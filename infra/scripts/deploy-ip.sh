@@ -23,10 +23,6 @@ services:
   api:
     environment:
       MEDIA_PUBLIC_BASE_URL: http://${DOMAIN}/media
-    healthcheck:
-      start_period: 120s
-      interval: 15s
-      retries: 10
   nginx:
     depends_on:
       api:
@@ -34,9 +30,10 @@ services:
 EOF
 
 echo "==> Building and starting (HTTP on port 80)..."
+echo "==> Tip: set RUN_SEED=0 in .env if startup is slow; seed manually later."
 docker compose -f docker-compose.prod.yml up -d --build
 
 echo ""
-echo "Deploy started. Wait ~2 min then:"
+echo "Wait 2-3 minutes, then:"
+echo "  docker compose -f docker-compose.prod.yml logs api --tail=30"
 echo "  curl http://${DOMAIN}/api/v1/health"
-echo "  curl http://${DOMAIN}/api/v1/health/ready"

@@ -12,7 +12,7 @@ RUN npm run build
 
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
-RUN apt-get update && apt-get install -y libvips42 wget ca-certificates \
+RUN apt-get update && apt-get install -y libvips42 libglib2.0-0 wget ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production
 

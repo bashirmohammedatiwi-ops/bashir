@@ -17,6 +17,10 @@ while true; do
     break
   fi
 
+  if echo "$OUTPUT" | grep -q "have been applied"; then
+    break
+  fi
+
   if echo "$OUTPUT" | grep -q "No pending migrations to apply"; then
     break
   fi
