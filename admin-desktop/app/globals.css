@@ -1,0 +1,74 @@
+@import "antd/dist/reset.css";
+
+html,
+body,
+#__next {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #f5f5f7;
+  font-family: "Segoe UI", Tahoma, Cairo, sans-serif;
+}
+
+.alhayaa-shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+  position: relative;
+}
+
+.alhayaa-sidebar {
+  background: #1c1c24;
+  color: #fff;
+  padding: 16px;
+  position: relative;
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.alhayaa-content {
+  padding: 20px 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.alhayaa-card {
+  background: #fff;
+  border: 1px solid #e8e6ea;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.alhayaa-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #cfcdd6;
+  text-decoration: none;
+  padding: 10px 12px;
+  border-radius: 10px;
+  margin-bottom: 4px;
+  font-size: 14px;
+  position: relative;
+  z-index: 30;
+  pointer-events: auto;
+}
+
+.alhayaa-nav-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.alhayaa-nav-item.active {
+  background: linear-gradient(135deg, #4a2466, #2a1338);
+  color: #fff;
+}
+
+.alhayaa-brand {
+  color: #c9a961;
+  font-weight: 700;
+  font-size: 18px;
+  margin-bottom: 20px;
+}

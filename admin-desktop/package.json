@@ -1,0 +1,79 @@
+{
+  "name": "alhayaa-admin",
+  "version": "1.0.0",
+  "description": "Alhayaa Admin Desktop (Electron + Next.js)",
+  "main": "dist-electron/main.js",
+  "author": "Alhayaa",
+  "scripts": {
+    "dev:next": "next dev -p 3001",
+    "dev:electron": "wait-on http://localhost:3001 && tsc -p tsconfig.electron.json && electron .",
+    "dev": "concurrently \"npm:dev:next\" \"npm:dev:electron\"",
+    "build:next": "next build",
+    "build:electron": "tsc -p tsconfig.electron.json",
+    "build": "npm run build:next && npm run build:electron",
+    "dist": "npm run build && electron-builder --win",
+    "dist:portable": "npm run build && electron-builder --win portable",
+    "start": "electron .",
+    "lint": "tsc --noEmit"
+  },
+  "license": "ISC",
+  "private": true,
+  "build": {
+    "appId": "com.alhayaa.admin",
+    "productName": "Alhayaa Admin",
+    "copyright": "Copyright © 2026 Alhayaa",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "!**/*",
+      "dist-electron/**/*",
+      "out/**/*",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "dependencies": {}
+    },
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        }
+      ],
+      "artifactName": "Alhayaa-Admin-Setup-${version}.${ext}",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Alhayaa Admin"
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "concurrently": "^9.2.1",
+    "electron": "^42.2.0",
+    "electron-builder": "^26.8.1",
+    "tsc-watch": "^7.2.0",
+    "typescript": "^6.0.3",
+    "wait-on": "^9.0.10"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.100.11",
+    "antd": "^6.4.3",
+    "axios": "^1.16.1",
+    "dayjs": "^1.11.20",
+    "next": "^14.2.35",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^4.4.3",
+    "zustand": "^5.0.13"
+  }
+}

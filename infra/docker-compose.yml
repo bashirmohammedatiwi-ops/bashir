@@ -1,0 +1,83 @@
+# Local development stack — for production VPS use docker-compose.prod.yml
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: alhayaa
+      POSTGRES_PASSWORD: alhayaa
+      POSTGRES_DB: alhayaa
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alhayaa -d alhayaa"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://alhayaa:alhayaa@postgres:5432/alhayaa?schema=public
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CORS_ORIGIN: "*"
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-change_me_access_dev}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change_me_refresh_dev}
+      MEDIA_ROOT: /data/uploads
+      MEDIA_PUBLIC_PREFIX: /media
+      MEDIA_PUBLIC_BASE_URL: http://localhost/media
+      MEDIA_MAX_ORIGINAL_WIDTH: 1920
+      MEDIA_WEBP_QUALITY: 80
+      MEDIA_JPEG_QUALITY: 82
+      RUN_SEED: ${RUN_SEED:-1}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@alhayaa.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@12345}
+    volumes:
+      - mediadata:/data/uploads
+    expose:
+      - "3000"
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx/default.local.conf:/etc/nginx/conf.d/default.conf:ro
+      - mediadata:/var/www/alhayaa/uploads:ro
+
+volumes:
+  pgdata:
+  redisdata:
+  mediadata:

@@ -1,0 +1,67 @@
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { NotificationType, Role } from "@prisma/client";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
+import { RolesGuard } from "../auth/guards/roles.guard";
+import { NotificationsService } from "./notifications.service";
+
+@ApiTags("notifications")
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Controller("notifications")
+export class NotificationsController {
+  constructor(private readonly notifications: NotificationsService) {}
+
+  @Get()
+  @Roles(Role.CUSTOMER, Role.ADMIN, Role.SUPER_ADMIN, Role.STAFF)
+  list(
+    @CurrentUser() user: any,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+    @Query("admin") admin?: string,
+  ) {
+    if ([Role.ADMIN, Role.SUPER_ADMIN, Role.STAFF].includes(user.role) && admin === "1") {
+      return this.notifications.adminList(Number(page ?? 1), Number(limit ?? 20));
+    }
+    return this.notifications.listForUser(
+      user.id,
+      Number(page ?? 1),
+      Number(limit ?? 20),
+    );
+  }
+
+  @Patch("read-all")
+  @Roles(Role.CUSTOMER, Role.ADMIN, Role.SUPER_ADMIN)
+  markAllRead(@CurrentUser() user: any) {
+    return this.notifications.markAllRead(user.id);
+  }
+
+  @Patch(":id/read")
+  @Roles(Role.CUSTOMER, Role.ADMIN, Role.SUPER_ADMIN)
+  markRead(@CurrentUser() user: any, @Param("id") id: string) {
+    return this.notifications.markRead(user.id, id);
+  }
+
+  @Post()
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  create(
+    @Body()
+    body: {
+      userId?: string;
+      type?: NotificationType;
+      title: string;
+      body: string;
+      data?: any;
+    },
+  ) {
+    return this.notifications.create(body);
+  }
+
+  @Delete(":id")
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  remove(@Param("id") id: string) {
+    return this.notifications.remove(id);
+  }
+}

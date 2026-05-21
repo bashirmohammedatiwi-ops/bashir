@@ -1,0 +1,10 @@
+node_modules/
+.next/
+out/
+dist-electron/
+renderer-out/
+release/
+.env
+.env.local
+.env.production
+*.log
