@@ -91,7 +91,7 @@ services:
     restart: unless-stopped
     depends_on:
       api:
-        condition: service_healthy
+        condition: service_started
     ports:
       - "80:80"
       - "443:443"
