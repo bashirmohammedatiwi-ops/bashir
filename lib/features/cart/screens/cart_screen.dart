@@ -12,8 +12,8 @@ import '../../../core/widgets/animated_counter.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/luxe.dart';
 import '../../../core/widgets/product_showcase.dart';
-import '../../../data/mock/mock_coupons.dart';
 import '../../../data/models/coupon_model.dart';
+import '../../../data/remote/app_remote_data_source.dart';
 import '../../loyalty/providers/loyalty_provider.dart';
 import '../providers/cart_provider.dart';
 
@@ -36,28 +36,35 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     super.dispose();
   }
 
-  void _applyCoupon() {
-    final coupon = MockCoupons.findByCode(_couponController.text);
+  Future<void> _applyCoupon() async {
+    final code = _couponController.text.trim();
+    if (code.isEmpty) return;
+    final coupon =
+        await ref.read(appRemoteDataSourceProvider).validateCoupon(code);
+    if (!mounted) return;
     if (coupon == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('كود غير صالح')),
       );
       return;
     }
+    final subtotal = ref.read(cartProvider.notifier).subtotal;
     setState(() {
       _appliedCoupon = coupon.code;
       _couponDiscount = coupon.type == CouponType.percent
-          ? (ref.read(cartProvider.notifier).subtotal * coupon.value ~/ 100)
-          : 0;
+          ? (subtotal * coupon.value ~/ 100)
+          : coupon.type == CouponType.freeShipping
+              ? 5000
+              : coupon.value;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider);
-    final loyalty = ref.watch(loyaltyProvider);
+    final loyaltyPoints = ref.watch(loyaltyProvider).valueOrNull?.points ?? 0;
     final subtotal = cart.fold(0, (s, i) => s + i.totalPrice);
-    final pointsDiscount = _usePoints ? (loyalty.points ~/ 100) * 1000 : 0;
+    final pointsDiscount = _usePoints ? (loyaltyPoints ~/ 100) * 1000 : 0;
     final shipping = subtotal >= 50000 ? 0 : 5000;
     final total = subtotal - _couponDiscount - pointsDiscount + shipping;
 
@@ -158,7 +165,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                 _couponDiscount = 0;
               }),
               usePoints: _usePoints,
-              loyaltyPoints: loyalty.points,
+              loyaltyPoints: loyaltyPoints,
               onTogglePoints: (v) => setState(() => _usePoints = v),
               onCheckout: () => context.push('/checkout'),
             ),

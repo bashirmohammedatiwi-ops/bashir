@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../core/utils/currency_formatter.dart';
-import '../../../data/mock/mock_brands.dart';
+import '../../home/providers/home_provider.dart';
 import '../providers/filter_provider.dart';
 
 class FilterBottomSheet extends ConsumerStatefulWidget {
@@ -71,26 +71,40 @@ class _FilterBottomSheetState extends ConsumerState<FilterBottomSheet> {
               onChanged: (v) => setState(() => _inStock = v),
             ),
             Text('البراند', style: AppTextStyles.title()),
-            Wrap(
-              spacing: 8,
-              children: MockBrands.all.take(10).map((brand) {
-                final selected =
-                    ref.watch(filterProvider).selectedBrands.contains(brand.id);
-                return FilterChip(
-                  label: Text(brand.name),
-                  selected: selected,
-                  onSelected: (_) {
-                    final current = ref.read(filterProvider).selectedBrands;
-                    final updated = selected
-                        ? current.where((id) => id != brand.id).toList()
-                        : [...current, brand.id];
-                    ref.read(filterProvider.notifier).update(
-                        ref.read(filterProvider)
-                            .copyWith(selectedBrands: updated));
-                  },
-                );
-              }).toList(),
-            ),
+            ref.watch(brandsProvider).when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: LinearProgressIndicator(),
+                  ),
+                  error: (_, __) => const SizedBox.shrink(),
+                  data: (brands) => Wrap(
+                    spacing: 8,
+                    children: brands.take(10).map((brand) {
+                      final brandId = brand.id;
+                      final brandName = brand.name;
+                      final selected = ref
+                          .watch(filterProvider)
+                          .selectedBrands
+                          .contains(brandId);
+                      return FilterChip(
+                        label: Text(brandName),
+                        selected: selected,
+                        onSelected: (_) {
+                          final current =
+                              ref.read(filterProvider).selectedBrands;
+                          final updated = selected
+                              ? current.where((id) => id != brandId).toList()
+                              : [...current, brandId];
+                          ref.read(filterProvider.notifier).update(
+                                ref
+                                    .read(filterProvider)
+                                    .copyWith(selectedBrands: updated),
+                              );
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () {

@@ -11,7 +11,7 @@ class AddressesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final addresses = ref.watch(addressesProvider);
+    final addressesAsync = ref.watch(addressesProvider);
 
     return Scaffold(
       appBar: AppBar(title: Text(AppStrings.addresses)),
@@ -20,31 +20,44 @@ class AddressesScreen extends ConsumerWidget {
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: addresses.length,
-        itemBuilder: (context, index) {
-          final addr = addresses[index];
-          return Card(
-            child: ListTile(
-              leading: addr.isDefault
-                  ? const Icon(Icons.star, color: AppColors.primary)
-                  : const Icon(Icons.location_on_outlined),
-              title: Text(addr.name, style: AppTextStyles.title()),
-              subtitle: Text(addr.fullAddress),
-              trailing: PopupMenuButton(
-                itemBuilder: (_) => [
-                  const PopupMenuItem(value: 'edit', child: Text('تعديل')),
-                  const PopupMenuItem(value: 'delete', child: Text('حذف')),
-                ],
-                onSelected: (v) {
-                  if (v == 'delete') {
-                    ref.read(addressesProvider.notifier).state =
-                        addresses.where((a) => a.id != addr.id).toList();
-                  }
-                },
-              ),
-            ),
+      body: addressesAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => Center(
+          child: TextButton(
+            onPressed: () => ref.invalidate(addressesProvider),
+            child: const Text('إعادة المحاولة'),
+          ),
+        ),
+        data: (addresses) {
+          if (addresses.isEmpty) {
+            return const Center(child: Text('لا توجد عناوين محفوظة'));
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: addresses.length,
+            itemBuilder: (context, index) {
+              final addr = addresses[index];
+              return Card(
+                child: ListTile(
+                  leading: addr.isDefault
+                      ? const Icon(Icons.star, color: AppColors.primary)
+                      : const Icon(Icons.location_on_outlined),
+                  title: Text(addr.name, style: AppTextStyles.title()),
+                  subtitle: Text(addr.fullAddress),
+                  trailing: PopupMenuButton(
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(value: 'edit', child: Text('تعديل')),
+                      const PopupMenuItem(value: 'delete', child: Text('حذف')),
+                    ],
+                    onSelected: (v) {
+                      if (v == 'delete') {
+                        ref.invalidate(addressesProvider);
+                      }
+                    },
+                  ),
+                ),
+              );
+            },
           );
         },
       ),
@@ -56,25 +69,11 @@ class AddressesScreen extends ConsumerWidget {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('إضافة عنوان'),
-        content: const Text('نموذج إضافة عنوان (واجهة تجريبية)'),
+        content: const Text('أضيفي العنوان من إعدادات الحساب أو تواصلي مع الدعم.'),
         actions: [
           TextButton(
-            onPressed: () {
-              ref.read(addressesProvider.notifier).state = [
-                ...ref.read(addressesProvider),
-                const AddressModel(
-                  id: 'new_addr',
-                  name: 'عنوان جديد',
-                  phone: '+9647701234567',
-                  governorate: 'بغداد',
-                  area: 'المنصور',
-                  street: 'شارع 14',
-                  house: '15',
-                ),
-              ];
-              Navigator.pop(context);
-            },
-            child: const Text('حفظ'),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('حسناً'),
           ),
         ],
       ),

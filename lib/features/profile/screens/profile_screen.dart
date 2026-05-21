@@ -20,7 +20,9 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).valueOrNull;
-    final loyalty = ref.watch(loyaltyProvider);
+    final loyalty = ref.watch(loyaltyProvider).valueOrNull;
+    final loyaltyPoints = loyalty?.points ?? 0;
+    final loyaltyTier = loyalty?.tier.label ?? '';
     final wishlistCount = ref.watch(wishlistCountProvider);
 
     return Scaffold(
@@ -32,8 +34,8 @@ class ProfileScreen extends ConsumerWidget {
             child: _ProfileHero(
               name: user?.name ?? 'سارة أحمد',
               phone: user?.phone ?? '+9647701234567',
-              tier: loyalty.tier.label,
-              points: loyalty.points,
+              tier: loyaltyTier,
+              points: loyaltyPoints,
               onEdit: () => context.push('/edit-profile'),
             ),
           ),
@@ -46,7 +48,7 @@ class ProfileScreen extends ConsumerWidget {
               child: _StatsRow(
                 orders: user?.orderCount ?? 0,
                 wishlist: wishlistCount,
-                points: loyalty.points,
+                points: loyaltyPoints,
               ),
             ),
           ),
@@ -78,7 +80,7 @@ class ProfileScreen extends ConsumerWidget {
                         icon: Icons.diamond_outlined,
                         title: AppStrings.loyaltyPoints,
                         subtitle:
-                            'لديكِ ${CurrencyFormatter.formatPoints(loyalty.points)} نقطة',
+                            'لديكِ ${CurrencyFormatter.formatPoints(loyaltyPoints)} نقطة',
                         onTap: () => context.push('/loyalty'),
                       ),
                       _MenuData(

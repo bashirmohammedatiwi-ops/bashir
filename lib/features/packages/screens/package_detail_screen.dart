@@ -8,11 +8,10 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/product_visuals.dart';
 import '../../../core/widgets/cached_image_widget.dart';
 import '../../../core/widgets/product_showcase.dart';
-import '../../../data/mock/mock_packages.dart';
-import '../../../data/mock/mock_products.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/models/product_package_model.dart';
 import '../../cart/providers/cart_provider.dart';
+import '../../products/providers/products_provider.dart';
 
 class PackageDetailScreen extends ConsumerWidget {
   const PackageDetailScreen({super.key, required this.packageId});
@@ -21,200 +20,224 @@ class PackageDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final package = MockPackages.findById(packageId);
-    if (package == null) {
-      return Scaffold(
+    final packageAsync = ref.watch(packageDetailProvider(packageId));
+
+    return packageAsync.when(
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, __) => Scaffold(
         appBar: AppBar(title: const Text('الباقة')),
-        body: const Center(child: Text('الباقة غير موجودة')),
-      );
-    }
-
-    final products = package.productIds
-        .map(MockProducts.findById)
-        .whereType<ProductModel>()
-        .toList();
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 240,
-            pinned: true,
-            backgroundColor: AppColors.surface,
-            foregroundColor: AppColors.textPrimary,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  CachedImageWidget(
-                    imageUrl: package.coverImageUrl,
-                    fit: BoxFit.cover,
-                  ),
-                  const DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0x33000000),
-                          Color(0xCC1C1C24),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+        body: Center(
+          child: TextButton(
+            onPressed: () => ref.invalidate(packageDetailProvider(packageId)),
+            child: const Text('إعادة المحاولة'),
           ),
-          SliverToBoxAdapter(
-            child: Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (package.badge != null) ...[
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 9,
-                          vertical: 3,
-                        ),
+        ),
+      ),
+      data: (ProductPackageModel? package) {
+        if (package == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('الباقة')),
+            body: const Center(child: Text('الباقة غير موجودة')),
+          );
+        }
+
+        final productsAsync =
+            ref.watch(packageProductsProvider(package.productIds));
+        final products = productsAsync.valueOrNull ?? const <ProductModel>[];
+
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              SliverAppBar(
+                expandedHeight: 240,
+                pinned: true,
+                backgroundColor: AppColors.surface,
+                foregroundColor: AppColors.textPrimary,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      CachedImageWidget(
+                        imageUrl: package.coverImageUrl,
+                        fit: BoxFit.cover,
+                      ),
+                      const DecoratedBox(
                         decoration: BoxDecoration(
-                          color: AppColors.goldSoft,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: AppColors.gold),
-                        ),
-                        child: Text(
-                          package.badge!,
-                          style: AppTextStyles.caption(
-                            color: AppColors.primaryDark,
-                            size: 10,
-                          ).copyWith(fontWeight: FontWeight.w800),
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              Color(0x33000000),
+                              Color(0xCC1C1C24),
+                            ],
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 10),
                     ],
-                    Text(
-                      package.name,
-                      style: AppTextStyles.headline(size: 22).copyWith(
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.4,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      package.subtitle,
-                      style: AppTextStyles.body(
-                        color: AppColors.textSecondary,
-                        size: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Text(
-                          CurrencyFormatter.format(package.price),
-                          style: AppTextStyles.headline(size: 20).copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          CurrencyFormatter.format(package.originalPrice),
-                          style: AppTextStyles.caption(size: 12).copyWith(
-                            decoration: TextDecoration.lineThrough,
-                            color: AppColors.textMuted,
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.canvas,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Text(
-                            'وفّري ${package.savingsPercent}%',
-                            style: AppTextStyles.caption(
-                              color: AppColors.primary,
-                              size: 11,
-                            ).copyWith(fontWeight: FontWeight.w800),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        Text(
-                          'محتويات الباقة',
-                          style: AppTextStyles.title(size: 15).copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '(${products.length})',
-                          style: AppTextStyles.caption(
-                            color: AppColors.gold,
-                            size: 12,
-                          ).copyWith(fontWeight: FontWeight.w700),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                  ],
+                  ),
                 ),
               ),
-            ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-            sliver: SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final product = products[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: _IncludedProductTile(product: product),
-                  );
-                },
-                childCount: products.length,
-              ),
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: _PurchaseBar(
-        package: package,
-        onAddAll: () {
-          final cart = ref.read(cartProvider.notifier);
-          for (final p in products) {
-            if (p.inStock) cart.addProduct(p);
-          }
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'تمت إضافة ${products.length} منتجات إلى السلة',
-                  style: AppTextStyles.body(color: Colors.white, size: 13),
+              SliverToBoxAdapter(
+                child: Container(
+                  width: double.infinity,
+                  decoration: const BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (package.badge != null) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 9,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.goldSoft,
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: AppColors.gold),
+                            ),
+                            child: Text(
+                              package.badge!,
+                              style: AppTextStyles.caption(
+                                color: AppColors.primaryDark,
+                                size: 10,
+                              ).copyWith(fontWeight: FontWeight.w800),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                        ],
+                        Text(
+                          package.name,
+                          style: AppTextStyles.headline(size: 22).copyWith(
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.4,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          package.subtitle,
+                          style: AppTextStyles.body(
+                            color: AppColors.textSecondary,
+                            size: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Text(
+                              CurrencyFormatter.format(package.price),
+                              style: AppTextStyles.headline(size: 20).copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              CurrencyFormatter.format(package.originalPrice),
+                              style: AppTextStyles.caption(size: 12).copyWith(
+                                decoration: TextDecoration.lineThrough,
+                                color: AppColors.textMuted,
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.canvas,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppColors.border),
+                              ),
+                              child: Text(
+                                'وفّري ${package.savingsPercent}%',
+                                style: AppTextStyles.caption(
+                                  color: AppColors.primary,
+                                  size: 11,
+                                ).copyWith(fontWeight: FontWeight.w800),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          children: [
+                            Text(
+                              'محتويات الباقة',
+                              style: AppTextStyles.title(size: 15).copyWith(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '(${products.length})',
+                              style: AppTextStyles.caption(
+                                color: AppColors.gold,
+                                size: 12,
+                              ).copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            );
-          }
-        },
-      ),
+              if (productsAsync.isLoading && products.isEmpty)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final product = products[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _IncludedProductTile(product: product),
+                        );
+                      },
+                      childCount: products.length,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          bottomNavigationBar: _PurchaseBar(
+            package: package,
+            onAddAll: () {
+              final cart = ref.read(cartProvider.notifier);
+              for (final p in products) {
+                if (p.inStock) cart.addProduct(p);
+              }
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'تمت إضافة ${products.length} منتجات إلى السلة',
+                      style: AppTextStyles.body(color: Colors.white, size: 13),
+                    ),
+                  ),
+                );
+              }
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -243,7 +266,9 @@ class _IncludedProductTile extends StatelessWidget {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: ProductShowcase.forProduct(
-                  imageUrl: product.images.first,
+                  imageUrl: product.images.isNotEmpty
+                      ? product.images.first
+                      : '',
                   product: product,
                   layout: ProductShowcaseLayout.cartThumb,
                   width: 64,

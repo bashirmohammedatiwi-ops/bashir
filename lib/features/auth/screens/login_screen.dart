@@ -21,28 +21,37 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  String? _errorMessage;
   final _passwordController = TextEditingController();
   bool _obscure = true;
   bool _loading = false;
 
   @override
   void dispose() {
-    _phoneController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _loading = true);
-    await ref.read(authProvider.notifier).login(
-          _phoneController.text,
-          _passwordController.text,
-        );
-    if (mounted) {
-      setState(() => _loading = false);
-      context.go(AppRoutes.home);
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+    });
+    try {
+      await ref.read(authProvider.notifier).login(
+            _emailController.text,
+            _passwordController.text,
+          );
+      if (mounted) context.go(AppRoutes.home);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _errorMessage = 'البريد أو كلمة المرور غير صحيحة');
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -187,21 +196,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 26),
 
-                    // Phone field
+                    if (_errorMessage != null) ...[
+                      Reveal(
+                        delay: const Duration(milliseconds: 480),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppColors.error.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Text(
+                            _errorMessage!,
+                            style: AppTextStyles.caption(
+                              color: AppColors.error,
+                              size: 12,
+                            ).copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     Reveal(
                       delay: const Duration(milliseconds: 500),
                       child: _LuxeField(
-                        controller: _phoneController,
-                        label: AppStrings.phone,
-                        hint: '7XX XXX XXXX',
-                        leadingIcon: Icons.phone_outlined,
-                        keyboardType: TextInputType.phone,
-                        prefixLabel: '+964',
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(10),
-                        ],
-                        validator: Validators.phone,
+                        controller: _emailController,
+                        label: 'البريد الإلكتروني',
+                        hint: 'name@example.com',
+                        leadingIcon: Icons.email_outlined,
+                        keyboardType: TextInputType.emailAddress,
+                        validator: Validators.email,
                       ),
                     ),
                     const SizedBox(height: 14),

@@ -1,7 +1,14 @@
 import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../data/mock/mock_chat_responses.dart';
 import '../../../data/models/chat_message_model.dart';
+
+const _supportReplies = [
+  'مرحباً بكِ في متجر الحياة! 💜 كيف يمكنني مساعدتك؟',
+  'شكراً لتواصلك معنا! سأساعدك في أقرب وقت ممكن 😊',
+  'يسعدنا خدمتك! هل لديك استفسار عن منتج أو طلب؟',
+  'تم استلام رسالتك ✅ فريقنا سيرد عليك خلال دقائق',
+  'للاستفسار عن طلبك، يرجى إرسال رقم الطلب 📦',
+];
 
 class ChatNotifier extends StateNotifier<ChatState> {
   ChatNotifier() : super(const ChatState());
@@ -31,8 +38,7 @@ class ChatNotifier extends StateNotifier<ChatState> {
     });
     Future.delayed(const Duration(milliseconds: 3500), () {
       if (!mounted) return;
-      final reply = MockChatResponses.replies[
-          _random.nextInt(MockChatResponses.replies.length)];
+      final reply = _supportReplies[_random.nextInt(_supportReplies.length)];
       final supportMsg = ChatMessageModel(
         id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
         text: reply,

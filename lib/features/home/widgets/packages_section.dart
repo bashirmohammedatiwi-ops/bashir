@@ -1,21 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/cached_image_widget.dart';
-import '../../../data/mock/mock_packages.dart';
-import '../../../data/mock/mock_products.dart';
-import '../../../data/models/product_package_model.dart';
 import '../../../data/models/product_model.dart';
+import '../../../data/models/product_package_model.dart';
+import '../../products/providers/products_provider.dart';
+import '../providers/home_provider.dart';
 
 /// قسم الباقات — مجموعات منتجات بسعر مخفّض.
-class PackagesSection extends StatelessWidget {
-  const PackagesSection({super.key});
+class PackagesSection extends ConsumerWidget {
+  const PackagesSection({super.key, this.packages});
+
+  final List<ProductPackageModel>? packages;
 
   @override
-  Widget build(BuildContext context) {
-    final packages = MockPackages.featured;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final list = packages ??
+        ref
+            .watch(packagesProvider)
+            .valueOrNull
+            ?.where((ProductPackageModel p) => p.isFeatured)
+            .toList() ??
+        const <ProductPackageModel>[];
+
+    if (list.isEmpty) {
+      return const SizedBox(height: 228);
+    }
 
     return SizedBox(
       height: 228,
@@ -23,11 +36,11 @@ class PackagesSection extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: packages.length,
+        itemCount: list.length,
         itemBuilder: (context, index) {
           return Padding(
             padding: const EdgeInsets.only(left: 12),
-            child: _PackageCard(package: packages[index]),
+            child: _PackageCard(package: list[index]),
           );
         },
       ),
@@ -35,19 +48,15 @@ class PackagesSection extends StatelessWidget {
   }
 }
 
-class _PackageCard extends StatelessWidget {
+class _PackageCard extends ConsumerWidget {
   const _PackageCard({required this.package});
 
   final ProductPackageModel package;
 
-  List<ProductModel> get _products => package.productIds
-      .map(MockProducts.findById)
-      .whereType<ProductModel>()
-      .toList();
-
   @override
-  Widget build(BuildContext context) {
-    final products = _products;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final productsAsync = ref.watch(packageProductsProvider(package.productIds));
+    final products = productsAsync.valueOrNull ?? const <ProductModel>[];
 
     return GestureDetector(
       onTap: () => context.push('/package/${package.id}'),

@@ -6,7 +6,9 @@ import '../../../core/providers/prefs_provider.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/product_card.dart';
+import '../../../data/models/product_model.dart';
 import '../../products/providers/filter_provider.dart';
+import '../../products/providers/products_provider.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -52,7 +54,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final results = _query.isEmpty ? const [] : ref.watch(filteredProductsProvider);
+    final List<ProductModel> results = _query.isEmpty
+        ? const []
+        : (ref.watch(filteredProductsProvider).valueOrNull ?? const []);
 
     return Scaffold(
       appBar: AppBar(title: const Text('البحث')),

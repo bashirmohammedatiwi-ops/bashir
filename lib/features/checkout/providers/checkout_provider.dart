@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../data/models/address_model.dart';
+import '../../../data/models/order_model.dart';
+import '../../../data/remote/app_remote_data_source.dart';
 import '../../cart/providers/cart_provider.dart';
 import '../../loyalty/providers/loyalty_provider.dart';
-import '../../../core/providers/prefs_provider.dart';
-import '../../../core/utils/points_calculator.dart';
-import '../../../data/models/address_model.dart';
 
 enum DeliveryOption { standard, express, pickup }
 
@@ -59,40 +59,51 @@ class CheckoutNotifier extends StateNotifier<CheckoutState> {
 
   final Ref _ref;
 
-  int shippingCost(int subtotal) {
+  int shippingCost(int subtotal, Map<String, dynamic>? settings) {
     if (state.delivery == DeliveryOption.pickup) return 0;
-    if (state.delivery == DeliveryOption.express) return 5000;
-    return subtotal >= 50000 ? 0 : 5000;
+    final express = (settings?['expressShippingFee'] as num?)?.toInt() ?? 5000;
+    final standard = (settings?['shippingFee'] as num?)?.toInt() ?? 5000;
+    final freeAt = (settings?['freeShippingThreshold'] as num?)?.toInt() ?? 50000;
+    if (state.delivery == DeliveryOption.express) return express;
+    return subtotal >= freeAt ? 0 : standard;
   }
 
   Future<String?> placeOrder() async {
     state = state.copyWith(isPlacingOrder: true);
-    await Future.delayed(const Duration(milliseconds: 800));
-    final orderNum = 'HAY-${1000 + DateTime.now().millisecondsSinceEpoch % 9000}';
-    final cart = _ref.read(cartProvider);
-    final subtotal = cart.fold(0, (s, i) => s + i.totalPrice);
-    final earned = PointsCalculator.earnFromPurchase(subtotal);
-    await _ref.read(loyaltyProvider.notifier).addPoints(earned, 'شراء منتجات');
-    final prefs = _ref.read(prefsProvider);
-    if (!prefs.firstOrderDone) {
-      await _ref.read(loyaltyProvider.notifier).addPoints(50, 'أول طلب');
-      await prefs.setFirstOrderDone(true);
+    try {
+      final cart = _ref.read(cartProvider);
+      final remote = _ref.read(appRemoteDataSourceProvider);
+      final delivery = switch (state.delivery) {
+        DeliveryOption.express => 'EXPRESS',
+        DeliveryOption.pickup => 'PICKUP',
+        _ => 'STANDARD',
+      };
+      final result = await remote.createOrder({
+        'items': cart
+            .map((i) => {
+                  'productId': i.product.id,
+                  'quantity': i.quantity,
+                  if (i.selectedShade != null) 'shadeId': i.selectedShade,
+                })
+            .toList(),
+        if (state.selectedAddress != null) 'addressId': state.selectedAddress!.id,
+        if (state.couponCode != null) 'couponCode': state.couponCode,
+        'deliveryOption': delivery,
+        if (state.useLoyaltyPoints && state.pointsToUse > 0)
+          'loyaltySpent': state.pointsToUse,
+      });
+      _ref.read(cartProvider.notifier).clear();
+      await _ref.read(loyaltyProvider.notifier).refresh();
+      final orderNumber = (result['orderNumber'] as String?) ?? result['id'] as String?;
+      state = state.copyWith(isPlacingOrder: false, lastOrderNumber: orderNumber);
+      return orderNumber;
+    } catch (_) {
+      state = state.copyWith(isPlacingOrder: false);
+      rethrow;
     }
-    if (state.useLoyaltyPoints && state.pointsToUse > 0) {
-      await _ref
-          .read(loyaltyProvider.notifier)
-          .redeemPoints(state.pointsToUse);
-    }
-    _ref.read(cartProvider.notifier).clear();
-    state = state.copyWith(
-      isPlacingOrder: false,
-      lastOrderNumber: orderNum,
-    );
-    return orderNum;
   }
 
   void reset() => state = const CheckoutState();
-
   void update(CheckoutState newState) => state = newState;
 }
 
@@ -101,26 +112,15 @@ final checkoutProvider =
   return CheckoutNotifier(ref);
 });
 
-final addressesProvider = StateProvider<List<AddressModel>>((ref) {
-  return [
-    const AddressModel(
-      id: 'addr_1',
-      name: 'سارة أحمد',
-      phone: '+9647701234567',
-      governorate: 'بغداد',
-      area: 'الكرادة',
-      street: 'شارع 62',
-      house: 'بناية 5، طابق 3',
-      isDefault: true,
-    ),
-    const AddressModel(
-      id: 'addr_2',
-      name: 'سارة أحمد',
-      phone: '+9647701234567',
-      governorate: 'أربيل',
-      area: 'عنكاوا',
-      street: 'شارع 100',
-      house: 'منزل 12',
-    ),
-  ];
+final addressesProvider = FutureProvider<List<AddressModel>>((ref) async {
+  return ref.read(appRemoteDataSourceProvider).listAddresses();
+});
+
+final ordersProvider = FutureProvider<List<OrderModel>>((ref) async {
+  return ref.read(appRemoteDataSourceProvider).listOrders();
+});
+
+final orderDetailProvider =
+    FutureProvider.family<OrderModel, String>((ref, id) async {
+  return ref.read(appRemoteDataSourceProvider).findOrder(id);
 });

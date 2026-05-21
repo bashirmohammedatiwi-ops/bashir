@@ -1,115 +1,163 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { Button } from "antd";
 import { useAuth } from "@/store/auth";
 import { api } from "@/lib/api";
+import { appNavigate } from "@/lib/navigate";
 
-const nav = [
-  { href: "/dashboard", label: "لوحة المعلومات", icon: "📊" },
-  { href: "/products", label: "المنتجات", icon: "🛍️" },
-  { href: "/categories", label: "الفئات", icon: "🗂️" },
-  { href: "/subcategories", label: "الأقسام الفرعية", icon: "📂" },
-  { href: "/brands", label: "البراندات", icon: "💎" },
-  { href: "/orders", label: "الطلبات", icon: "📦" },
-  { href: "/users", label: "العملاء", icon: "👥" },
-  { href: "/reviews", label: "التقييمات", icon: "⭐" },
-  { href: "/notifications", label: "الإشعارات", icon: "🔔" },
-  { href: "/packages", label: "الباقات", icon: "🎁" },
-  { href: "/banners", label: "البنرات", icon: "🖼️" },
-  { href: "/coupons", label: "الكوبونات", icon: "🏷️" },
-  { href: "/home-blocks", label: "الصفحة الرئيسية", icon: "🏠" },
-  { href: "/media", label: "الوسائط", icon: "📁" },
-  { href: "/settings", label: "الإعدادات", icon: "⚙️" },
+type NavItem = { href: string; label: string; short: string };
+
+const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
+  {
+    title: "الرئيسية",
+    items: [
+      { href: "/dashboard", label: "لوحة المعلومات", short: "لو" },
+      { href: "/orders", label: "الطلبات", short: "ط" },
+      { href: "/notifications", label: "الإشعارات", short: "إ" },
+    ],
+  },
+  {
+    title: "المنتجات",
+    items: [
+      { href: "/products", label: "المنتجات", short: "م" },
+      { href: "/categories", label: "الفئات", short: "ف" },
+      { href: "/subcategories", label: "الأقسام الفرعية", short: "ق" },
+      { href: "/brands", label: "البراندات", short: "ب" },
+      { href: "/media", label: "الوسائط", short: "ص" },
+    ],
+  },
+  {
+    title: "التسويق",
+    items: [
+      { href: "/banners", label: "البنرات", short: "ن" },
+      { href: "/coupons", label: "الكوبونات", short: "ك" },
+      { href: "/packages", label: "الباقات", short: "ع" },
+      { href: "/home-blocks", label: "الصفحة الرئيسية", short: "ر" },
+    ],
+  },
+  {
+    title: "الإدارة",
+    items: [
+      { href: "/users", label: "العملاء", short: "ع" },
+      { href: "/reviews", label: "التقييمات", short: "ت" },
+      { href: "/settings", label: "الإعدادات", short: "ض" },
+    ],
+  },
 ];
 
-export function Shell({ children }: { children: React.ReactNode }) {
+const NavLink = memo(function NavLink({
+  item,
+  active,
+  collapsed,
+}: {
+  item: NavItem;
+  active: boolean;
+  collapsed: boolean;
+}) {
+  return (
+    <Link
+      href={item.href}
+      prefetch={false}
+      className={`alhayaa-nav-item${active ? " active" : ""}`}
+      title={collapsed ? item.label : undefined}
+    >
+      <span className="alhayaa-nav-icon">{item.short}</span>
+      {!collapsed && <span className="alhayaa-nav-label">{item.label}</span>}
+    </Link>
+  );
+});
+
+export const Shell = memo(function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, clearSession } = useAuth();
+  const [collapsed, setCollapsed] = useState(false);
   const [online, setOnline] = useState<"checking" | "online" | "offline">("checking");
 
-  useEffect(() => {
-    let cancelled = false;
-    async function ping() {
-      try {
-        await api.get("/health", { timeout: 1500 });
-        if (!cancelled) setOnline("online");
-      } catch {
-        if (!cancelled) setOnline("offline");
-      }
+  const ping = useCallback(async () => {
+    try {
+      await api.get("/health", { timeout: 2000 });
+      setOnline("online");
+    } catch {
+      setOnline("offline");
     }
-    ping();
-    const t = setInterval(ping, 60_000);
-    return () => {
-      cancelled = true;
-      clearInterval(t);
-    };
   }, []);
 
-  const statusColor =
-    online === "online" ? "#3ecf8e" : online === "offline" ? "#f59e0b" : "#888";
-  const statusLabel =
-    online === "online"
-      ? "Backend متصل"
-      : online === "offline"
-        ? "وضع البيانات المحلية"
-        : "...جارٍ الفحص";
+  useEffect(() => {
+    ping();
+    const t = setInterval(ping, 120_000);
+    return () => clearInterval(t);
+  }, [ping]);
+
+  const logout = useCallback(() => {
+    clearSession();
+    appNavigate(router, "/login");
+  }, [clearSession, router]);
+
+  const shellClass = useMemo(
+    () => `alhayaa-shell${collapsed ? " collapsed" : ""}`,
+    [collapsed],
+  );
 
   return (
-    <div className="alhayaa-shell">
+    <div className={shellClass}>
       <aside className="alhayaa-sidebar">
-        <div className="alhayaa-brand">الحياة • Admin</div>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "8px 10px",
-            borderRadius: 8,
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.06)",
-            marginBottom: 14,
-            fontSize: 11.5,
-          }}
-        >
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: 999,
-              background: statusColor,
-              boxShadow: `0 0 8px ${statusColor}`,
-            }}
-          />
-          <span style={{ color: "#cfcdd6" }}>{statusLabel}</span>
+        <div className="alhayaa-sidebar-top">
+          <div className="alhayaa-brand">{collapsed ? "ح" : "الحياة • Admin"}</div>
+          <button
+            type="button"
+            className="alhayaa-collapse-btn"
+            onClick={() => setCollapsed((c) => !c)}
+            aria-label={collapsed ? "توسيع القائمة" : "طي القائمة"}
+          >
+            {collapsed ? "»" : "«"}
+          </button>
         </div>
 
-        {nav.map((n) => (
-          <Link
-            key={n.href}
-            href={n.href}
-            prefetch={false}
-            className={`alhayaa-nav-item ${pathname?.startsWith(n.href) ? "active" : ""}`}
-          >
-            <span>{n.icon}</span>
-            <span>{n.label}</span>
-          </Link>
-        ))}
+        <div className={`alhayaa-status alhayaa-status--${online}`} title={online}>
+          <span className="alhayaa-status-dot" />
+          {!collapsed && (
+            <span>
+              {online === "online"
+                ? "السيرفر متصل"
+                : online === "offline"
+                  ? "السيرفر غير متصل"
+                  : "جارٍ الفحص..."}
+            </span>
+          )}
+        </div>
 
-        <div
-          style={{
-            marginTop: 24,
-            paddingTop: 12,
-            borderTop: "1px solid #2a2a36",
-            fontSize: 12,
-            opacity: 0.7,
-          }}
-        >
-          {user?.name ?? user?.email ?? "مسؤول"}
+        <nav className="alhayaa-nav">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.title} className="alhayaa-nav-group">
+              {!collapsed && <div className="alhayaa-nav-group-title">{group.title}</div>}
+              {group.items.map((item) => (
+                <NavLink
+                  key={item.href}
+                  item={item}
+                  collapsed={collapsed}
+                  active={!!pathname?.startsWith(item.href)}
+                />
+              ))}
+            </div>
+          ))}
+        </nav>
+
+        <div className="alhayaa-sidebar-footer">
+          {!collapsed && (
+            <div className="alhayaa-user">
+              {user?.name ?? user?.email ?? "—"}
+            </div>
+          )}
+          <Button size="small" type="text" className="alhayaa-logout" onClick={logout}>
+            {collapsed ? "↪" : "تسجيل الخروج"}
+          </Button>
         </div>
       </aside>
+
       <main className="alhayaa-content">{children}</main>
     </div>
   );
-}
+});

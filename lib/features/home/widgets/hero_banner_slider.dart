@@ -7,7 +7,9 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_motion.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/theme/text_styles.dart';
+import '../../../core/widgets/cached_image_widget.dart';
 import '../../../core/widgets/luxe.dart';
+import '../../../data/models/banner_model.dart';
 
 /// بانر هيرو سينمائي بأسلوب editorial:
 /// - خلفية متدرجة (فاخرة)
@@ -15,7 +17,9 @@ import '../../../core/widgets/luxe.dart';
 /// - عنوان بخط Cormorant + tagline متباعد الأحرف
 /// - CTA على شكل underline ذهبي
 class HeroBannerSlider extends StatefulWidget {
-  const HeroBannerSlider({super.key});
+  const HeroBannerSlider({super.key, this.banners = const []});
+
+  final List<BannerModel> banners;
 
   @override
   State<HeroBannerSlider> createState() => _HeroBannerSliderState();
@@ -28,7 +32,7 @@ class _HeroBannerSliderState extends State<HeroBannerSlider>
   Timer? _timer;
   int _current = 0;
 
-  static const List<_HeroSlide> _slides = [
+  static const List<_HeroSlide> _fallbackSlides = [
     _HeroSlide(
       tag: 'مجموعة الموسم',
       title: 'لمعة المساء',
@@ -66,6 +70,24 @@ class _HeroBannerSliderState extends State<HeroBannerSlider>
     ),
   ];
 
+  List<_HeroSlide> get _slides {
+    if (widget.banners.isEmpty) return _fallbackSlides;
+    return widget.banners
+        .map(
+          (b) => _HeroSlide(
+            tag: 'عرض خاص',
+            title: b.title,
+            subtitle: b.subtitle,
+            cta: 'تسوّقي الآن',
+            route: b.actionRoute ?? '/products',
+            gradient: AppColors.nightGradient,
+            symbol: '✦',
+            imageUrl: b.imageUrl,
+          ),
+        )
+        .toList();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -74,7 +96,7 @@ class _HeroBannerSliderState extends State<HeroBannerSlider>
       duration: const Duration(seconds: 6),
     )..repeat();
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (!mounted) return;
+      if (!mounted || _slides.isEmpty) return;
       final next = (_current + 1) % _slides.length;
       _controller.animateToPage(
         next,
@@ -94,6 +116,9 @@ class _HeroBannerSliderState extends State<HeroBannerSlider>
 
   @override
   Widget build(BuildContext context) {
+    final slides = _slides;
+    if (slides.isEmpty) return const SizedBox.shrink();
+
     return Column(
       children: [
         SizedBox(
@@ -101,11 +126,11 @@ class _HeroBannerSliderState extends State<HeroBannerSlider>
           child: PageView.builder(
             controller: _controller,
             onPageChanged: (i) => setState(() => _current = i),
-            itemCount: _slides.length,
+            itemCount: slides.length,
             itemBuilder: (context, index) {
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: _HeroCard(slide: _slides[index], ambient: _ambient),
+                child: _HeroCard(slide: slides[index], ambient: _ambient),
               );
             },
           ),
@@ -113,7 +138,7 @@ class _HeroBannerSliderState extends State<HeroBannerSlider>
         const SizedBox(height: 12),
         SmoothPageIndicator(
           controller: _controller,
-          count: _slides.length,
+          count: slides.length,
           effect: const ExpandingDotsEffect(
             dotHeight: 5,
             dotWidth: 5,
@@ -137,6 +162,7 @@ class _HeroSlide {
     required this.route,
     required this.gradient,
     required this.symbol,
+    this.imageUrl,
   });
 
   final String tag;
@@ -146,6 +172,7 @@ class _HeroSlide {
   final String route;
   final Gradient gradient;
   final String symbol;
+  final String? imageUrl;
 }
 
 class _HeroCard extends StatelessWidget {
@@ -164,13 +191,35 @@ class _HeroCard extends StatelessWidget {
           final t = ambient.value;
           return Container(
             decoration: BoxDecoration(
-              gradient: slide.gradient,
+              gradient: slide.imageUrl == null ? slide.gradient : null,
               borderRadius: BorderRadius.circular(AppSizes.cardRadiusLg),
               boxShadow: const [AppColors.plumShadow],
             ),
             clipBehavior: Clip.antiAlias,
             child: Stack(
               children: [
+                if (slide.imageUrl != null)
+                  Positioned.fill(
+                    child: CachedImageWidget(
+                      imageUrl: slide.imageUrl!,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                if (slide.imageUrl != null)
+                  Positioned.fill(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.black.withValues(alpha: 0.35),
+                            Colors.black.withValues(alpha: 0.55),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ),
+                  ),
                 // Decorative big ring (moving)
                 Positioned(
                   top: -50 + math.sin(t * math.pi * 2) * 8,

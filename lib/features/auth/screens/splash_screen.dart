@@ -32,7 +32,6 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
       vsync: this,
       duration: const Duration(seconds: 8),
     )..repeat(reverse: true);
-    AppBootstrap.warmCatalog();
     _prepareNavigation();
   }
 
@@ -43,7 +42,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen>
   }
 
   Future<void> _prepareNavigation() async {
-    await AppBootstrap.ensureCatalog();
+    await AppBootstrap.init();
     final prefs = ref.read(prefsProvider);
     if (!mounted) return;
     final isLoggedIn =

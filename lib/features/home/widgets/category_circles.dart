@@ -1,18 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../core/widgets/luxe.dart';
-import '../../../data/mock/mock_categories.dart';
+import '../../../data/models/category_model.dart';
+import '../providers/home_provider.dart';
 
 /// شريط فئات أنيق بدوائر تونّت دافئة + lottie-like ripple.
-class CategoryCircles extends StatelessWidget {
-  const CategoryCircles({super.key});
+class CategoryCircles extends ConsumerWidget {
+  const CategoryCircles({super.key, this.categories});
+
+  final List<CategoryModel>? categories;
 
   @override
-  Widget build(BuildContext context) {
-    final cats = MockCategories.all;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final cats = categories ??
+        ref.watch(categoriesProvider).valueOrNull ??
+        const <CategoryModel>[];
+
+    if (cats.isEmpty) {
+      return const SizedBox(height: 102);
+    }
+
     return SizedBox(
       height: 102,
       child: ListView.builder(
@@ -22,7 +33,8 @@ class CategoryCircles extends StatelessWidget {
         itemCount: cats.length,
         itemBuilder: (context, index) {
           final cat = cats[index];
-          final tint = AppColors.productTints[index % AppColors.productTints.length];
+          final tint =
+              AppColors.productTints[index % AppColors.productTints.length];
           return PressedScale(
             onTap: () => context.push(
               '/products?categoryId=${cat.id}&title=${Uri.encodeComponent(cat.name)}',
@@ -36,7 +48,6 @@ class CategoryCircles extends StatelessWidget {
                   Stack(
                     alignment: Alignment.center,
                     children: [
-                      // Outer subtle ring
                       Container(
                         width: 64,
                         height: 64,
@@ -67,7 +78,6 @@ class CategoryCircles extends StatelessWidget {
                           ),
                         ),
                       ),
-                      // Top-right tiny gold dot
                       Positioned(
                         top: 6,
                         right: 6,
@@ -88,7 +98,10 @@ class CategoryCircles extends StatelessWidget {
                     style: AppTextStyles.caption(
                       color: AppColors.textPrimary,
                       size: 10.5,
-                    ).copyWith(fontWeight: FontWeight.w700, letterSpacing: 0.1),
+                    ).copyWith(
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.1,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,

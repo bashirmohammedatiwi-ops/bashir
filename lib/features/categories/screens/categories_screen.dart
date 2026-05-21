@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_motion.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../core/widgets/luxe.dart';
-import '../../../data/mock/mock_categories.dart';
 import '../../../data/models/category_model.dart';
+import '../../home/providers/home_provider.dart';
 
 /// صفحة الفئات Premium:
 /// - شريط جانبي بأسلوب editorial.
 /// - منطقة محتوى تعرض بطاقة hero للفئة + grid لأقسامها الفرعية.
-class CategoriesScreen extends StatefulWidget {
+class CategoriesScreen extends ConsumerStatefulWidget {
   const CategoriesScreen({super.key});
 
   @override
-  State<CategoriesScreen> createState() => _CategoriesScreenState();
+  ConsumerState<CategoriesScreen> createState() => _CategoriesScreenState();
 }
 
-class _CategoriesScreenState extends State<CategoriesScreen>
+class _CategoriesScreenState extends ConsumerState<CategoriesScreen>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
@@ -28,63 +29,79 @@ class _CategoriesScreenState extends State<CategoriesScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final categories = MockCategories.all;
-    final selected = categories[_selected];
+    final categoriesAsync = ref.watch(categoriesProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: Column(
-          children: [
-            _TopBar(
-              count: categories.length,
-              onSearch: () => context.push('/search'),
+        child: categoriesAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, __) => Center(
+            child: TextButton(
+              onPressed: () => ref.invalidate(categoriesProvider),
+              child: const Text('إعادة المحاولة'),
             ),
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: AnimatedSwitcher(
-                      duration: AppMotion.medium,
-                      switchInCurve: AppMotion.precise,
-                      transitionBuilder: (child, anim) {
-                        return FadeTransition(
-                          opacity: anim,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(-0.05, 0),
-                              end: Offset.zero,
-                            ).animate(anim),
-                            child: child,
+          ),
+          data: (categories) {
+            if (categories.isEmpty) {
+              return const Center(child: Text('لا توجد فئات'));
+            }
+            final safeIndex = _selected.clamp(0, categories.length - 1);
+            final selected = categories[safeIndex];
+
+            return Column(
+              children: [
+                _TopBar(
+                  count: categories.length,
+                  onSearch: () => context.push('/search'),
+                ),
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: AnimatedSwitcher(
+                          duration: AppMotion.medium,
+                          switchInCurve: AppMotion.precise,
+                          transitionBuilder: (child, anim) {
+                            return FadeTransition(
+                              opacity: anim,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(-0.05, 0),
+                                  end: Offset.zero,
+                                ).animate(anim),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: _CategoryPanel(
+                            key: ValueKey(selected.id),
+                            category: selected,
+                            index: safeIndex,
+                            onBrowseAll: () => context.push(
+                              '/products?categoryId=${selected.id}'
+                              '&title=${Uri.encodeComponent(selected.name)}',
+                            ),
+                            onSubTap: (s) => context.push(
+                              '/products?subcategoryId=${s.id}'
+                              '&categoryId=${selected.id}'
+                              '&title=${Uri.encodeComponent(s.name)}',
+                            ),
                           ),
-                        );
-                      },
-                      child: _CategoryPanel(
-                        key: ValueKey(selected.id),
-                        category: selected,
-                        index: _selected,
-                        onBrowseAll: () => context.push(
-                          '/products?categoryId=${selected.id}'
-                          '&title=${Uri.encodeComponent(selected.name)}',
-                        ),
-                        onSubTap: (s) => context.push(
-                          '/products?subcategoryId=${s.id}'
-                          '&categoryId=${selected.id}'
-                          '&title=${Uri.encodeComponent(s.name)}',
                         ),
                       ),
-                    ),
+                      _SideRail(
+                        categories: categories,
+                        selected: safeIndex,
+                        onSelect: (i) => setState(() => _selected = i),
+                      ),
+                    ],
                   ),
-                  _SideRail(
-                    categories: categories,
-                    selected: _selected,
-                    onSelect: (i) => setState(() => _selected = i),
-                  ),
-                ],
-              ),
-            ),
-          ],
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

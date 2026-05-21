@@ -9,8 +9,11 @@ import '../../../core/theme/text_styles.dart';
 import '../../../core/widgets/luxe.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../core/widgets/section_header.dart';
-import '../../../data/mock/mock_products.dart';
+import '../../../data/models/brand_model.dart';
 import '../../../data/models/product_model.dart';
+import '../../../data/models/product_package_model.dart';
+import '../../../data/repositories/catalog_repository.dart';
+import '../providers/home_provider.dart';
 import '../widgets/brand_horizontal_list.dart';
 import '../widgets/category_circles.dart';
 import '../widgets/flash_sale_section.dart';
@@ -29,146 +32,203 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with AutomaticKeepAliveClientMixin {
-  final List<ProductModel> _recommended =
-      List<ProductModel>.from(MockProducts.all.take(20));
-  int _page = 1;
+  final List<ProductModel> _extraRecommended = [];
+  int _recommendedPage = 1;
+  bool _loadingMore = false;
 
   @override
   bool get wantKeepAlive => true;
 
-  void _loadMore() {
-    final start = _page * 20;
-    if (start >= MockProducts.all.length) return;
-    setState(() {
-      _recommended.addAll(MockProducts.all.skip(start).take(20));
-      _page++;
-    });
+  Future<void> _loadMoreRecommended() async {
+    if (_loadingMore) return;
+    setState(() => _loadingMore = true);
+    try {
+      final more = await ref.read(catalogRepositoryProvider).recommended(
+            page: _recommendedPage + 1,
+          );
+      if (more.isEmpty) return;
+      setState(() {
+        _recommendedPage++;
+        _extraRecommended.addAll(more);
+      });
+    } finally {
+      if (mounted) setState(() => _loadingMore = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final feedAsync = ref.watch(homeFeedProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         bottom: false,
-        child: RefreshIndicator(
-          color: AppColors.primary,
-          backgroundColor: AppColors.surface,
-          onRefresh: () async {
-            setState(() {
-              _recommended
-                ..clear()
-                ..addAll(MockProducts.all.take(20));
-              _page = 1;
-            });
-          },
-          child: CustomScrollView(
-            cacheExtent: 500,
-            physics: const BouncingScrollPhysics(),
-            slivers: [
-              const SliverToBoxAdapter(child: HomeGreetingHeader()),
-              const SliverToBoxAdapter(child: HomeSearchBar()),
-              const SliverToBoxAdapter(child: HeroBannerSlider()),
-              const SliverToBoxAdapter(child: SizedBox(height: 16)),
-              SliverToBoxAdapter(
-                child: SectionHeader(
-                  title: 'تسوّقي حسب الفئة',
-                  subtitle: 'اكتشفي ما يناسبكِ',
-                  onSeeAll: () => context.go('/categories'),
-                ),
-              ),
-              const SliverToBoxAdapter(child: CategoryCircles()),
-              const SliverToBoxAdapter(child: SizedBox(height: 12)),
-              const SliverToBoxAdapter(child: PromoStrip()),
-              const SliverToBoxAdapter(child: SizedBox(height: 14)),
-              const SliverToBoxAdapter(child: FlashSaleSection()),
-              const SliverToBoxAdapter(child: SizedBox(height: 8)),
-              SliverToBoxAdapter(
-                child: SectionHeader(
-                  title: AppStrings.featuredBrands,
-                  subtitle: 'أرقى البراندات العالمية',
-                  onSeeAll: () => context.go('/brands'),
-                ),
-              ),
-              const SliverToBoxAdapter(child: BrandHorizontalList()),
-              const SliverToBoxAdapter(child: SizedBox(height: 14)),
-              SliverToBoxAdapter(
-                child: SectionHeader(
-                  title: AppStrings.packages,
-                  subtitle: AppStrings.packagesSubtitle,
-                ),
-              ),
-              const SliverToBoxAdapter(child: PackagesSection()),
-              const SliverToBoxAdapter(child: SizedBox(height: 14)),
-              SliverToBoxAdapter(
-                child: SectionHeader(
-                  title: AppStrings.newArrivals,
-                  subtitle: 'وصلت لتوّها',
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: ProductHorizontalList(
-                  products: MockProducts.newArrivals,
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 14)),
-              const SliverToBoxAdapter(child: _SpecialOfferCard()),
-              const SliverToBoxAdapter(child: SizedBox(height: 14)),
-              SliverToBoxAdapter(
-                child: SectionHeader(
-                  title: AppStrings.bestSellers,
-                  subtitle: 'الأكثر مبيعاً هذا الأسبوع',
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: ProductHorizontalList(
-                  products: MockProducts.bestSellers,
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 14)),
-              SliverToBoxAdapter(
-                child: SectionHeader(
-                  title: AppStrings.recommended,
-                  subtitle: 'مختارة خصيصاً لكِ',
-                ),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSizes.lg,
-                  0,
-                  AppSizes.lg,
-                  140,
-                ),
-                sliver: SliverGrid(
-                  gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.62,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      if (index == _recommended.length - 3) {
-                        WidgetsBinding.instance
-                            .addPostFrameCallback((_) => _loadMore());
-                      }
-                      return ProductCard(
-                        product: _recommended[index],
-                        index: index.clamp(0, 5),
-                      );
-                    },
-                    childCount: _recommended.length,
-                  ),
-                ),
-              ),
-            ],
+        child: feedAsync.when(
+          loading: () => const Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
           ),
+          error: (_, __) => Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('تعذّر تحميل الصفحة الرئيسية'),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: () => ref.invalidate(homeFeedProvider),
+                  child: const Text('إعادة المحاولة'),
+                ),
+              ],
+            ),
+          ),
+          data: (feed) {
+            final recommended = [...feed.recommended, ..._extraRecommended];
+            return RefreshIndicator(
+              color: AppColors.primary,
+              backgroundColor: AppColors.surface,
+              onRefresh: () async {
+                setState(() {
+                  _recommendedPage = 1;
+                  _extraRecommended.clear();
+                });
+                ref.invalidate(homeFeedProvider);
+                await ref.read(homeFeedProvider.future);
+              },
+              child: CustomScrollView(
+                cacheExtent: 500,
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  const SliverToBoxAdapter(child: HomeGreetingHeader()),
+                  const SliverToBoxAdapter(child: HomeSearchBar()),
+                  SliverToBoxAdapter(
+                    child: HeroBannerSlider(banners: feed.banners),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                  SliverToBoxAdapter(
+                    child: SectionHeader(
+                      title: 'تسوّقي حسب الفئة',
+                      subtitle: 'اكتشفي ما يناسبكِ',
+                      onSeeAll: () => context.go('/categories'),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: CategoryCircles(categories: feed.categories),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                  const SliverToBoxAdapter(child: PromoStrip()),
+                  const SliverToBoxAdapter(child: SizedBox(height: 14)),
+                  SliverToBoxAdapter(
+                    child: FlashSaleSection(
+                      products: feed.promoProducts,
+                      endsAt: feed.flashEndsAt,
+                    ),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                  SliverToBoxAdapter(
+                    child: SectionHeader(
+                      title: AppStrings.featuredBrands,
+                      subtitle: 'أرقى البراندات العالمية',
+                      onSeeAll: () => context.go('/brands'),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: BrandHorizontalList(
+                      brands: feed.brands
+                          .where((BrandModel b) => b.isFeatured)
+                          .toList(),
+                    ),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 14)),
+                  SliverToBoxAdapter(
+                    child: SectionHeader(
+                      title: AppStrings.packages,
+                      subtitle: AppStrings.packagesSubtitle,
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: PackagesSection(
+                      packages: feed.packages
+                          .where((ProductPackageModel p) => p.isFeatured)
+                          .toList(),
+                    ),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 14)),
+                  SliverToBoxAdapter(
+                    child: SectionHeader(
+                      title: AppStrings.newArrivals,
+                      subtitle: 'وصلت لتوّها',
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: ProductHorizontalList(products: feed.newArrivals),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 14)),
+                  const SliverToBoxAdapter(child: _SpecialOfferCard()),
+                  const SliverToBoxAdapter(child: SizedBox(height: 14)),
+                  SliverToBoxAdapter(
+                    child: SectionHeader(
+                      title: AppStrings.bestSellers,
+                      subtitle: 'الأكثر مبيعاً هذا الأسبوع',
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: ProductHorizontalList(products: feed.bestSellers),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 14)),
+                  SliverToBoxAdapter(
+                    child: SectionHeader(
+                      title: AppStrings.recommended,
+                      subtitle: 'مختارة خصيصاً لكِ',
+                    ),
+                  ),
+                  if (recommended.isEmpty)
+                    const SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Center(child: Text('لا توجد منتجات مقترحة')),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSizes.lg,
+                        0,
+                        AppSizes.lg,
+                        140,
+                      ),
+                      sliver: SliverGrid(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.62,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        delegate: SliverChildBuilderDelegate(
+                          (context, index) {
+                            if (index == recommended.length - 3 &&
+                                !_loadingMore) {
+                              WidgetsBinding.instance.addPostFrameCallback(
+                                (_) => _loadMoreRecommended(),
+                              );
+                            }
+                            return ProductCard(
+                              product: recommended[index],
+                              index: index.clamp(0, 5),
+                            );
+                          },
+                          childCount: recommended.length,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
         ),
       ),
-      floatingActionButton: _ChatFab(),
+      floatingActionButton: _ChatFab(whatsapp: feedAsync.valueOrNull?.whatsapp),
     );
   }
 }
@@ -290,8 +350,12 @@ class _SpecialOfferCard extends StatelessWidget {
 }
 
 class _ChatFab extends StatelessWidget {
+  const _ChatFab({this.whatsapp});
+  final String? whatsapp;
+
   @override
   Widget build(BuildContext context) {
+    final number = whatsapp ?? AppStrings.whatsappNumber;
     return Padding(
       padding: const EdgeInsets.only(bottom: 70),
       child: Material(
@@ -300,9 +364,7 @@ class _ChatFab extends StatelessWidget {
         elevation: 6,
         shadowColor: AppColors.whatsapp.withValues(alpha: 0.35),
         child: InkWell(
-          onTap: () => launchUrl(
-            Uri.parse('https://wa.me/${AppStrings.whatsappNumber}'),
-          ),
+          onTap: () => launchUrl(Uri.parse('https://wa.me/$number')),
           customBorder: const CircleBorder(),
           child: const SizedBox(
             width: 50,

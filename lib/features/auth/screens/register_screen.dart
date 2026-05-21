@@ -19,6 +19,7 @@ class RegisterScreen extends ConsumerStatefulWidget {
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
@@ -28,6 +29,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _emailController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
@@ -43,14 +45,22 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       return;
     }
     setState(() => _loading = true);
-    await ref.read(authProvider.notifier).register(
-          _nameController.text,
-          _phoneController.text,
-          _passwordController.text,
+    try {
+      await ref.read(authProvider.notifier).register(
+            name: _nameController.text,
+            email: _emailController.text,
+            phone: _phoneController.text,
+            password: _passwordController.text,
+          );
+      if (mounted) context.go(AppRoutes.home);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذّر إنشاء الحساب')),
         );
-    if (mounted) {
-      setState(() => _loading = false);
-      context.go(AppRoutes.home);
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -68,6 +78,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 controller: _nameController,
                 label: AppStrings.fullName,
                 validator: (v) => Validators.required(v, 'الاسم'),
+              ),
+              const SizedBox(height: 16),
+              CustomTextField(
+                controller: _emailController,
+                label: 'البريد الإلكتروني',
+                keyboardType: TextInputType.emailAddress,
+                validator: Validators.email,
               ),
               const SizedBox(height: 16),
               CustomTextField(

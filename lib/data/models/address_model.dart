@@ -48,13 +48,13 @@ class AddressModel {
       };
 
   factory AddressModel.fromJson(Map<String, dynamic> json) => AddressModel(
-        id: json['id'] as String,
-        name: json['name'] as String,
-        phone: json['phone'] as String,
-        governorate: json['governorate'] as String,
-        area: json['area'] as String,
-        street: json['street'] as String,
-        house: json['house'] as String,
+        id: json['id'] as String? ?? '',
+        name: (json['fullName'] ?? json['name']) as String? ?? '',
+        phone: json['phone'] as String? ?? '',
+        governorate: (json['governorate'] ?? json['city']) as String? ?? '',
+        area: json['area'] as String? ?? '',
+        street: json['street'] as String? ?? '',
+        house: json['house'] as String? ?? '',
         notes: json['notes'] as String?,
         isDefault: json['isDefault'] as bool? ?? false,
       );

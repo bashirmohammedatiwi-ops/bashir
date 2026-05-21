@@ -1,72 +1,42 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/providers/prefs_provider.dart';
 import '../../../data/models/loyalty_model.dart';
+import '../../../data/remote/app_remote_data_source.dart';
 
-class LoyaltyNotifier extends StateNotifier<LoyaltyState> {
-  LoyaltyNotifier(this._ref)
-      : super(const LoyaltyState(points: 120, tier: LoyaltyTier.silver)) {
-    _load();
+class LoyaltyNotifier extends StateNotifier<AsyncValue<LoyaltyState>> {
+  LoyaltyNotifier(this._ref) : super(const AsyncValue.loading()) {
+    refresh();
   }
 
   final Ref _ref;
 
-  Future<void> _load() async {
-    final prefs = _ref.read(prefsProvider);
-    final points = prefs.loyaltyPoints;
-    state = LoyaltyState(
-      points: points,
-      tier: LoyaltyTierX.fromPoints(points),
-      history: _defaultHistory,
-    );
-  }
-
-  static final List<LoyaltyHistoryEntry> _defaultHistory = [
-    LoyaltyHistoryEntry(
-      id: 'h1',
-      title: 'شراء منتجات',
-      points: 25,
-      date: DateTime.now().subtract(const Duration(days: 2)),
-      isEarned: true,
-    ),
-    LoyaltyHistoryEntry(
-      id: 'h2',
-      title: 'استخدام نقاط',
-      points: -100,
-      date: DateTime.now().subtract(const Duration(days: 5)),
-      isEarned: false,
-    ),
-    LoyaltyHistoryEntry(
-      id: 'h3',
-      title: 'أول طلب',
-      points: 50,
-      date: DateTime.now().subtract(const Duration(days: 10)),
-      isEarned: true,
-    ),
-  ];
-
-  Future<void> addPoints(int points, String reason) async {
-    final newPoints = state.points + points;
-    state = state.copyWith(
-      points: newPoints,
-      tier: LoyaltyTierX.fromPoints(newPoints),
-      history: [
-        LoyaltyHistoryEntry(
-          id: 'h_${DateTime.now().millisecondsSinceEpoch}',
-          title: reason,
-          points: points,
-          date: DateTime.now(),
-          isEarned: points > 0,
-        ),
-        ...state.history,
-      ],
-    );
-    final prefs = _ref.read(prefsProvider);
-    await prefs.setLoyaltyPoints(newPoints);
-    await prefs.setLoyaltyTier(state.tier.name);
-  }
-
-  Future<void> redeemPoints(int points) async {
-    await addPoints(-points, 'استخدام نقاط');
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    try {
+      final raw = await _ref.read(appRemoteDataSourceProvider).loyaltySummary();
+      final points = (raw['points'] as num?)?.toInt() ?? 0;
+      final tierName = (raw['tier'] as String?) ?? 'normal';
+      final tier = LoyaltyTier.values.firstWhere(
+        (e) => e.name == tierName,
+        orElse: () => LoyaltyTier.normal,
+      );
+      final history = (raw['history'] as List? ?? const [])
+          .cast<Map<String, dynamic>>()
+          .map(
+            (h) => LoyaltyHistoryEntry(
+              id: h['id'] as String,
+              title: (h['title'] as String?) ?? '',
+              points: (h['points'] as num?)?.toInt() ?? 0,
+              date: DateTime.tryParse(h['date']?.toString() ?? '') ?? DateTime.now(),
+              isEarned: h['isEarned'] as bool? ?? true,
+            ),
+          )
+          .toList();
+      state = AsyncValue.data(
+        LoyaltyState(points: points, tier: tier, history: history),
+      );
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
   }
 }
 
@@ -100,6 +70,6 @@ class LoyaltyState {
 }
 
 final loyaltyProvider =
-    StateNotifierProvider<LoyaltyNotifier, LoyaltyState>((ref) {
+    StateNotifierProvider<LoyaltyNotifier, AsyncValue<LoyaltyState>>((ref) {
   return LoyaltyNotifier(ref);
 });

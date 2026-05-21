@@ -1,17 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../core/widgets/luxe.dart';
-import '../../../data/mock/mock_brands.dart';
+import '../../../data/models/brand_model.dart';
+import '../providers/home_provider.dart';
 
-class BrandHorizontalList extends StatelessWidget {
-  const BrandHorizontalList({super.key});
+class BrandHorizontalList extends ConsumerWidget {
+  const BrandHorizontalList({super.key, this.brands});
+
+  final List<BrandModel>? brands;
 
   @override
-  Widget build(BuildContext context) {
-    final brands = MockBrands.all.where((b) => b.isFeatured).toList();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final list = brands ??
+        ref
+            .watch(brandsProvider)
+            .valueOrNull
+            ?.where((BrandModel b) => b.isFeatured)
+            .toList() ??
+        const <BrandModel>[];
+
+    if (list.isEmpty) {
+      return const SizedBox(height: 112);
+    }
 
     return SizedBox(
       height: 112,
@@ -19,9 +33,9 @@ class BrandHorizontalList extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: AppSizes.lg),
-        itemCount: brands.length,
+        itemCount: list.length,
         itemBuilder: (context, index) {
-          final brand = brands[index];
+          final brand = list[index];
           return PressedScale(
             onTap: () => context.push(
               '/products?brandId=${brand.id}&title=${Uri.encodeComponent(brand.name)}',
@@ -38,7 +52,6 @@ class BrandHorizontalList extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Initial badge with shimmer
                   Container(
                     width: 46,
                     height: 46,
@@ -76,7 +89,10 @@ class BrandHorizontalList extends StatelessWidget {
                       style: AppTextStyles.caption(
                         color: AppColors.textPrimary,
                         size: 10.5,
-                      ).copyWith(fontWeight: FontWeight.w800, letterSpacing: 0.2),
+                      ).copyWith(
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.2,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,

@@ -1,8 +1,7 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3000/api/v1";
+import { MEDIA_BASE, API_BASE } from "./config";
 
 function mediaBase(): string {
-  if (process.env.NEXT_PUBLIC_MEDIA_BASE) return process.env.NEXT_PUBLIC_MEDIA_BASE.replace(/\/$/, "");
-  return API_BASE.replace(/\/api\/v1\/?$/, "");
+  return MEDIA_BASE || API_BASE.replace(/\/api\/v1\/?$/, "");
 }
 
 export function mediaUrl(path?: string | null): string | null {

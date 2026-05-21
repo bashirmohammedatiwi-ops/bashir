@@ -13,6 +13,9 @@ T unwrap<T>(dynamic response) {
   return response as T;
 }
 
+Map<String, dynamic> unwrapData(dynamic response) =>
+    unwrap<Map<String, dynamic>>(response);
+
 List<Map<String, dynamic>> unwrapList(dynamic response) {
   if (response is List) {
     return response.cast<Map<String, dynamic>>();

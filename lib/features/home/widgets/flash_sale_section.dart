@@ -7,28 +7,44 @@ import '../../../core/theme/text_styles.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/luxe.dart';
 import '../../../core/widgets/product_card.dart';
-import '../../../data/mock/mock_products.dart';
+import '../../../data/models/product_model.dart';
 
 class FlashSaleSection extends StatefulWidget {
-  const FlashSaleSection({super.key});
+  const FlashSaleSection({
+    super.key,
+    required this.products,
+    this.endsAt,
+  });
+
+  final List<ProductModel> products;
+  final DateTime? endsAt;
 
   @override
   State<FlashSaleSection> createState() => _FlashSaleSectionState();
 }
 
 class _FlashSaleSectionState extends State<FlashSaleSection> {
-  Duration _remaining = const Duration(hours: 5, minutes: 30, seconds: 45);
+  late Duration _remaining;
   Timer? _timer;
 
   @override
   void initState() {
     super.initState();
+    _remaining = _initialRemaining();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (!mounted) return;
       if (_remaining.inSeconds > 0) {
         setState(() => _remaining -= const Duration(seconds: 1));
       }
     });
+  }
+
+  Duration _initialRemaining() {
+    if (widget.endsAt != null) {
+      final diff = widget.endsAt!.difference(DateTime.now());
+      if (diff.inSeconds > 0) return diff;
+    }
+    return const Duration(hours: 5, minutes: 30, seconds: 45);
   }
 
   @override
@@ -39,7 +55,11 @@ class _FlashSaleSectionState extends State<FlashSaleSection> {
 
   @override
   Widget build(BuildContext context) {
-    final products = MockProducts.promoProducts;
+    if (widget.products.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final products = widget.products;
     final h = _remaining.inHours.remainder(24).toString().padLeft(2, '0');
     final m = _remaining.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = _remaining.inSeconds.remainder(60).toString().padLeft(2, '0');

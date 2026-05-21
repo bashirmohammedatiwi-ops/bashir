@@ -9,6 +9,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/widgets/custom_button.dart';
 import '../../../data/models/address_model.dart';
 import '../../cart/providers/cart_provider.dart';
+import '../../home/providers/home_provider.dart';
 import '../providers/checkout_provider.dart';
 
 class CheckoutScreen extends ConsumerWidget {
@@ -17,10 +18,13 @@ class CheckoutScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final checkout = ref.watch(checkoutProvider);
-    final addresses = ref.watch(addressesProvider);
+    final addresses =
+        ref.watch(addressesProvider).valueOrNull ?? const <AddressModel>[];
+    final settings = ref.watch(settingsProvider).valueOrNull;
     final cart = ref.watch(cartProvider);
     final subtotal = cart.fold(0, (s, i) => s + i.totalPrice);
-    final shipping = ref.read(checkoutProvider.notifier).shippingCost(subtotal);
+    final shipping =
+        ref.read(checkoutProvider.notifier).shippingCost(subtotal, settings);
 
     return Scaffold(
       appBar: AppBar(title: const Text('إتمام الطلب')),

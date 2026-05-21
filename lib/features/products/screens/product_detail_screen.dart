@@ -12,13 +12,12 @@ import '../../../core/widgets/cached_image_widget.dart';
 import '../../../core/widgets/luxe.dart';
 import '../../../core/widgets/reveal.dart';
 import '../../../core/widgets/product_card.dart';
-import '../../../data/mock/mock_products.dart';
-import '../../../data/mock/mock_reviews.dart';
 import '../../../data/models/product_model.dart';
 import '../../../data/models/product_shade.dart';
 import '../../../data/models/review_model.dart';
 import '../../cart/providers/cart_provider.dart';
 import '../../wishlist/providers/wishlist_provider.dart';
+import '../providers/products_provider.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   const ProductDetailScreen({super.key, required this.productId});
@@ -36,8 +35,6 @@ class _State extends ConsumerState<ProductDetailScreen> {
   int _tabIndex = 0;
   final _pageController = PageController();
 
-  ProductModel? get _product => MockProducts.findById(widget.productId);
-
   @override
   void dispose() {
     _pageController.dispose();
@@ -46,27 +43,41 @@ class _State extends ConsumerState<ProductDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final product = _product;
-    if (product == null) {
-      return Scaffold(
+    final productAsync = ref.watch(productDetailProvider(widget.productId));
+    final reviews = ref.watch(productReviewsProvider(widget.productId)).valueOrNull ?? [];
+    final related = ref.watch(relatedProductsProvider(widget.productId)).valueOrNull ?? [];
+
+    return productAsync.when(
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, __) => Scaffold(
         appBar: AppBar(),
-        body: const Center(child: Text('المنتج غير موجود')),
-      );
-    }
+        body: Center(
+          child: TextButton(
+            onPressed: () =>
+                ref.invalidate(productDetailProvider(widget.productId)),
+            child: const Text('إعادة المحاولة'),
+          ),
+        ),
+      ),
+      data: (ProductModel? product) {
+        if (product == null) {
+          return Scaffold(
+            appBar: AppBar(),
+            body: const Center(child: Text('المنتج غير موجود')),
+          );
+        }
 
-    final style = ProductVisuals.resolve(
-      product,
-      layout: ProductShowcaseLayout.hero,
-    );
-    final tint = style.backgroundColor;
-    final reviews = MockReviews.forProduct(product.id);
-    final related = MockProducts.all
-        .where((p) => p.categoryId == product.categoryId && p.id != product.id)
-        .take(6)
-        .toList();
-    final isWishlisted = ref.watch(wishlistProvider).contains(product.id);
+        final style = ProductVisuals.resolve(
+          product,
+          layout: ProductShowcaseLayout.hero,
+        );
+        final tint = style.backgroundColor;
+        final isWishlisted =
+            ref.watch(isProductWishlistedProvider(product.id));
 
-    return Scaffold(
+        return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
@@ -234,6 +245,8 @@ class _State extends ConsumerState<ProductDetailScreen> {
               }
             : null,
       ),
+        );
+      },
     );
   }
 }

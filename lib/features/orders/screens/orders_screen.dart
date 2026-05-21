@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../core/utils/currency_formatter.dart';
-import '../../../data/mock/mock_orders.dart';
 import '../../../data/models/order_model.dart';
+import '../../checkout/providers/checkout_provider.dart';
 
-class OrdersScreen extends StatefulWidget {
+class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
 
   @override
-  State<OrdersScreen> createState() => _OrdersScreenState();
+  ConsumerState<OrdersScreen> createState() => _OrdersScreenState();
 }
 
-class _OrdersScreenState extends State<OrdersScreen>
+class _OrdersScreenState extends ConsumerState<OrdersScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
@@ -30,8 +31,7 @@ class _OrdersScreenState extends State<OrdersScreen>
     super.dispose();
   }
 
-  List<OrderModel> _filter(int tab) {
-    final orders = MockOrders.all;
+  List<OrderModel> _filter(List<OrderModel> orders, int tab) {
     return switch (tab) {
       0 => orders,
       1 => orders
@@ -55,6 +55,8 @@ class _OrdersScreenState extends State<OrdersScreen>
 
   @override
   Widget build(BuildContext context) {
+    final ordersAsync = ref.watch(ordersProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('طلباتي'),
@@ -68,47 +70,59 @@ class _OrdersScreenState extends State<OrdersScreen>
           ],
         ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: List.generate(4, (tab) {
-          final orders = _filter(tab);
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: orders.length,
-            itemBuilder: (context, index) {
-              final order = orders[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                child: ListTile(
-                  onTap: () => context.push('/orders/${order.id}'),
-                  title: Text('#${order.orderNumber}'),
-                  subtitle: Text(
-                    '${order.itemCount} منتج • ${CurrencyFormatter.format(order.total)}',
-                  ),
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
+      body: ordersAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => Center(
+          child: TextButton(
+            onPressed: () => ref.invalidate(ordersProvider),
+            child: const Text('إعادة المحاولة'),
+          ),
+        ),
+        data: (orders) => TabBarView(
+          controller: _tabController,
+          children: List.generate(4, (tab) {
+            final filtered = _filter(orders, tab);
+            if (filtered.isEmpty) {
+              return const Center(child: Text('لا توجد طلبات'));
+            }
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: filtered.length,
+              itemBuilder: (context, index) {
+                final order = filtered[index];
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    onTap: () => context.push('/orders/${order.id}'),
+                    title: Text('#${order.orderNumber}'),
+                    subtitle: Text(
+                      '${order.itemCount} منتج • ${CurrencyFormatter.format(order.total)}',
                     ),
-                    decoration: BoxDecoration(
-                      color: _statusColor(order.status).withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      order.status.label,
-                      style: AppTextStyles.caption(
-                        color: _statusColor(order.status),
-                        size: 11,
+                    trailing: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _statusColor(order.status).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        order.status.label,
+                        style: AppTextStyles.caption(
+                          color: _statusColor(order.status),
+                          size: 11,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ).animate().fadeIn(
-                    delay: Duration(milliseconds: index * 50),
-                  );
-            },
-          );
-        }),
+                ).animate().fadeIn(
+                      delay: Duration(milliseconds: index * 50),
+                    );
+              },
+            );
+          }),
+        ),
       ),
     );
   }

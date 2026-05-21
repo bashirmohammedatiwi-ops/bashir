@@ -5,9 +5,11 @@ import '../../../core/theme/text_styles.dart';
 import '../../../core/utils/product_visuals.dart';
 import '../../../core/widgets/product_card.dart';
 import '../../../core/widgets/shimmer_card.dart';
-import '../../../data/mock/mock_brands.dart';
+import '../../../data/models/brand_model.dart';
 import '../../brands/widgets/brand_listing_banner.dart';
+import '../../home/providers/home_provider.dart';
 import '../providers/filter_provider.dart';
+import '../providers/products_provider.dart';
 import '../widgets/filter_bottom_sheet.dart';
 import '../widgets/sort_bottom_sheet.dart';
 
@@ -32,7 +34,6 @@ class ProductListingScreen extends ConsumerStatefulWidget {
 
 class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
   bool _isGrid = true;
-  bool _loading = true;
   int _visibleCount = 20;
 
   @override
@@ -40,132 +41,145 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(filterProvider.notifier).update(FilterState(
-        categoryId: widget.categoryId,
-        subcategoryId: widget.subcategoryId,
-        brandId: widget.brandId,
-      ));
-      _load();
+            categoryId: widget.categoryId,
+            subcategoryId: widget.subcategoryId,
+            brandId: widget.brandId,
+          ));
     });
-  }
-
-  Future<void> _load() async {
-    setState(() => _loading = true);
-    await Future<void>.delayed(Duration.zero);
-    if (mounted) setState(() => _loading = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    final products = ref.watch(filteredProductsProvider);
-    final visible = products.take(_visibleCount).toList();
-    final brand = widget.brandId != null
-        ? MockBrands.findById(widget.brandId!)
-        : null;
-    final showcaseLayout = brand != null
-        ? ProductShowcaseLayout.brandSpotlight
-        : ProductShowcaseLayout.gridCard;
+    final productsAsync = ref.watch(filteredProductsProvider);
+    BrandModel? brand;
+    if (widget.brandId != null) {
+      final brands = ref.watch(brandsProvider).valueOrNull ?? [];
+      for (final b in brands) {
+        if (b.id == widget.brandId) {
+          brand = b;
+          break;
+        }
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title ?? 'المنتجات'),
       ),
-      body: RefreshIndicator(
-        color: AppColors.primary,
-        onRefresh: _load,
-        child: _loading
-            ? const ShimmerProductGrid()
-            : CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                      child: _HeaderPanel(
-                        title: widget.title ?? 'كل المنتجات',
-                        count: products.length,
+      body: productsAsync.when(
+        loading: () => const ShimmerProductGrid(),
+        error: (_, __) => Center(
+          child: TextButton(
+            onPressed: () => ref.invalidate(filteredProductsProvider),
+            child: const Text('إعادة المحاولة'),
+          ),
+        ),
+        data: (products) {
+          final visible = products.take(_visibleCount).toList();
+          final showcaseLayout = brand != null
+              ? ProductShowcaseLayout.brandSpotlight
+              : ProductShowcaseLayout.gridCard;
+
+          return RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async {
+              ref.invalidate(filteredProductsProvider);
+              await ref.read(filteredProductsProvider.future);
+            },
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    child: _HeaderPanel(
+                      title: widget.title ?? 'كل المنتجات',
+                      count: products.length,
+                    ),
+                  ),
+                ),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
+                    child: _ControlsRow(
+                      isGrid: _isGrid,
+                      onToggleLayout: () => setState(() => _isGrid = !_isGrid),
+                      onSort: () => showModalBottomSheet(
+                        context: context,
+                        builder: (_) => const SortBottomSheet(),
+                      ),
+                      onFilter: () => showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        builder: (_) => const FilterBottomSheet(),
                       ),
                     ),
                   ),
+                ),
+                if (brand != null && visible.isNotEmpty)
                   SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 2, 16, 10),
-                      child: _ControlsRow(
-                        isGrid: _isGrid,
-                        onToggleLayout: () => setState(() => _isGrid = !_isGrid),
-                        onSort: () => showModalBottomSheet(
-                          context: context,
-                          builder: (_) => const SortBottomSheet(),
-                        ),
-                        onFilter: () => showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          builder: (_) => const FilterBottomSheet(),
-                        ),
-                      ),
+                    child: BrandListingBanner(
+                      brand: brand,
+                      featuredProduct: visible.first,
+                      productCount: products.length,
                     ),
                   ),
-                  if (brand != null && visible.isNotEmpty)
-                    SliverToBoxAdapter(
-                      child: BrandListingBanner(
-                        brand: brand,
-                        featuredProduct: visible.first,
-                        productCount: products.length,
+                if (products.isEmpty)
+                  const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _EmptyProductsState(),
+                  )
+                else if (_isGrid)
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                    sliver: SliverGrid(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.62,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 6,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) {
+                          if (index == visible.length - 1 &&
+                              _visibleCount < products.length) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (mounted) {
+                                setState(() => _visibleCount += 20);
+                              }
+                            });
+                          }
+                          return ProductCard(
+                            product: visible[index],
+                            index: index,
+                            showcaseLayout: showcaseLayout,
+                          );
+                        },
+                        childCount: visible.length,
                       ),
                     ),
-                  if (products.isEmpty)
-                    const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: _EmptyProductsState(),
-                    )
-                  else if (_isGrid)
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-                      sliver: SliverGrid(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.62,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 6,
-                        ),
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            if (index == visible.length - 1 &&
-                                _visibleCount < products.length) {
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                if (mounted) {
-                                  setState(() => _visibleCount += 20);
-                                }
-                              });
-                            }
-                            return ProductCard(
-                              product: visible[index],
-                              index: index,
-                              showcaseLayout: showcaseLayout,
-                            );
-                          },
-                          childCount: visible.length,
-                        ),
-                      ),
-                    )
-                  else
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: ProductCard(
-                              product: visible[index],
-                              index: index,
-                              showcaseLayout: showcaseLayout,
-                            ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 120),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: ProductCard(
+                            product: visible[index],
+                            index: index,
+                            showcaseLayout: showcaseLayout,
                           ),
-                          childCount: visible.length,
                         ),
+                        childCount: visible.length,
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

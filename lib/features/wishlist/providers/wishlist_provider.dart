@@ -1,50 +1,47 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/providers/prefs_provider.dart';
-import '../../../data/mock/mock_products.dart';
 import '../../../data/models/product_model.dart';
+import '../../../data/remote/app_remote_data_source.dart';
 
-class WishlistNotifier extends StateNotifier<List<String>> {
-  WishlistNotifier(this._ref) : super([]) {
-    _load();
+class WishlistNotifier extends StateNotifier<AsyncValue<List<ProductModel>>> {
+  WishlistNotifier(this._ref) : super(const AsyncValue.loading()) {
+    refresh();
   }
 
   final Ref _ref;
 
-  Future<void> _load() async {
-    final prefs = _ref.read(prefsProvider);
-    state = prefs.wishlistIds;
-  }
-
-  Future<void> _save() async {
-    final prefs = _ref.read(prefsProvider);
-    await prefs.setWishlistIds(state);
-  }
-
-  bool contains(String id) => state.contains(id);
-
-  void toggle(String id) {
-    if (state.contains(id)) {
-      state = state.where((i) => i != id).toList();
-    } else {
-      state = [...state, id];
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    try {
+      final items = await _ref.read(appRemoteDataSourceProvider).wishlist();
+      state = AsyncValue.data(items);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
     }
-    _save();
   }
 
-  void remove(String id) {
-    state = state.where((i) => i != id).toList();
-    _save();
+  Future<void> toggle(String productId) async {
+    await _ref.read(appRemoteDataSourceProvider).toggleWishlist(productId);
+    await refresh();
   }
 
-  List<ProductModel> get products =>
-      state.map(MockProducts.findById).whereType<ProductModel>().toList();
+  bool contains(String productId) {
+    return state.valueOrNull?.any((p) => p.id == productId) ?? false;
+  }
 }
 
 final wishlistProvider =
-    StateNotifierProvider<WishlistNotifier, List<String>>((ref) {
+    StateNotifierProvider<WishlistNotifier, AsyncValue<List<ProductModel>>>((ref) {
   return WishlistNotifier(ref);
 });
 
+final notificationsProvider = FutureProvider((ref) async {
+  return ref.read(appRemoteDataSourceProvider).notifications();
+});
+
 final wishlistCountProvider = Provider<int>((ref) {
-  return ref.watch(wishlistProvider).length;
+  return ref.watch(wishlistProvider).valueOrNull?.length ?? 0;
+});
+
+final isProductWishlistedProvider = Provider.family<bool, String>((ref, id) {
+  return ref.watch(wishlistProvider).valueOrNull?.any((p) => p.id == id) ?? false;
 });

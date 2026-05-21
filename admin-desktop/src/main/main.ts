@@ -6,7 +6,8 @@ import { pathToFileURL } from "url";
 
 const isDev = !app.isPackaged;
 const APP_SCHEME = "app";
-
+/** Must match NEXT_PUBLIC_API_BASE host in .env.production */
+const VPS_ORIGIN = "http://187.127.88.146";
 protocol.registerSchemesAsPrivileged([
   {
     scheme: APP_SCHEME,
@@ -85,16 +86,17 @@ async function createWindow() {
     return { action: "deny" };
   });
 
-  // Allow API calls to localhost from the packaged app.
+  // Allow API + media requests to the production VPS from the packaged app.
   win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
         ...details.responseHeaders,
-        "Content-Security-Policy": ["default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: http://localhost:* http://127.0.0.1:*"],
+        "Content-Security-Policy": [
+          `default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: ${VPS_ORIGIN}; connect-src 'self' ${VPS_ORIGIN} http: https: data: blob:; img-src 'self' data: blob: ${VPS_ORIGIN} http: https:;`,
+        ],
       },
     });
   });
-
   if (isDev) {
     await win.loadURL("http://localhost:3001/dashboard/");
   } else {

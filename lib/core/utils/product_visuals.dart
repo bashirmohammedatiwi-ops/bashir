@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../data/mock/mock_brands.dart';
-import '../../data/models/brand_model.dart';
 import '../../data/models/product_model.dart';
 import '../theme/product_visual_style.dart';
 
@@ -25,8 +23,7 @@ abstract final class ProductVisuals {
     ProductShowcaseLayout layout = ProductShowcaseLayout.gridCard,
   }) {
     final seed = _seed(product) + layout.index * 11;
-    final brand = MockBrands.findById(product.brandId);
-    final hue = _resolveHue(seed, brand, layout);
+    final hue = _resolveHue(seed, product.brand, layout);
 
     return ProductVisualStyle(
       backgroundColor: _solidBackground(hue, layout),
@@ -38,10 +35,14 @@ abstract final class ProductVisuals {
     );
   }
 
-  static double _resolveHue(int seed, BrandModel? brand, ProductShowcaseLayout layout) {
+  static double _resolveHue(
+    int seed,
+    String brandName,
+    ProductShowcaseLayout layout,
+  ) {
     var hue = _hueSeeds[seed.abs() % _hueSeeds.length];
-    if (brand?.bgColor != null) {
-      final brandHue = HSLColor.fromColor(brand!.bgColor!).hue;
+    if (brandName.isNotEmpty) {
+      final brandHue = (brandName.hashCode % 360).toDouble();
       final t = layout == ProductShowcaseLayout.gridCard ? 0.25 : 0.4;
       final diff = ((brandHue - hue + 540) % 360) - 180;
       hue = (hue + diff * t) % 360;

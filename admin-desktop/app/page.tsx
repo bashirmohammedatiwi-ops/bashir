@@ -1,27 +1,26 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { appNavigate } from "@/lib/navigate";
+import { useAuth } from "@/store/auth";
 
 export default function Index() {
   const router = useRouter();
+  const accessToken = useAuth((s) => s.accessToken);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    appNavigate(router, "/dashboard");
-  }, [router]);
+    if (useAuth.persist.hasHydrated()) {
+      setHydrated(true);
+      return;
+    }
+    return useAuth.persist.onFinishHydration(() => setHydrated(true));
+  }, []);
 
-  return (
-    <div
-      style={{
-        display: "grid",
-        placeItems: "center",
-        minHeight: "100vh",
-        background: "#f5f5f7",
-        color: "#4a2466",
-        fontFamily: 'Cairo, "Segoe UI", sans-serif',
-      }}
-    >
-      جاري التحميل...
-    </div>
-  );
+  useEffect(() => {
+    if (!hydrated) return;
+    appNavigate(router, accessToken ? "/dashboard" : "/login");
+  }, [hydrated, accessToken, router]);
+
+  return <div className="alhayaa-loading-screen">جاري التحميل...</div>;
 }

@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_motion.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/theme/text_styles.dart';
 import '../../../core/widgets/luxe.dart';
-import '../../../data/mock/mock_brands.dart';
 import '../../../data/models/brand_model.dart';
+import '../../home/providers/home_provider.dart';
 
-class BrandsScreen extends StatefulWidget {
+class BrandsScreen extends ConsumerStatefulWidget {
   const BrandsScreen({super.key});
 
   @override
-  State<BrandsScreen> createState() => _BrandsScreenState();
+  ConsumerState<BrandsScreen> createState() => _BrandsScreenState();
 }
 
-class _BrandsScreenState extends State<BrandsScreen>
+class _BrandsScreenState extends ConsumerState<BrandsScreen>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
@@ -29,17 +30,17 @@ class _BrandsScreenState extends State<BrandsScreen>
     super.dispose();
   }
 
-  List<BrandModel> get _filtered {
-    if (_query.isEmpty) return MockBrands.all;
-    return MockBrands.all
+  List<BrandModel> _filtered(List<BrandModel> all) {
+    if (_query.isEmpty) return all;
+    return all
         .where((b) => b.name.toLowerCase().contains(_query.toLowerCase()))
         .toList();
   }
 
-  Map<String, List<BrandModel>> get _grouped {
+  Map<String, List<BrandModel>> _grouped(List<BrandModel> filtered) {
     final map = <String, List<BrandModel>>{};
-    for (final b in _filtered) {
-      final letter = b.name[0].toUpperCase();
+    for (final b in filtered) {
+      final letter = b.name.isNotEmpty ? b.name[0].toUpperCase() : '#';
       map.putIfAbsent(letter, () => []).add(b);
     }
     return Map.fromEntries(
@@ -50,94 +51,105 @@ class _BrandsScreenState extends State<BrandsScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    final featured = MockBrands.all.where((b) => b.isFeatured).toList();
-    final grouped = _grouped;
-    final showFeatured = _query.isEmpty;
+    final brandsAsync = ref.watch(brandsProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: _Header(count: MockBrands.all.length),
+        child: brandsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (_, __) => Center(
+            child: TextButton(
+              onPressed: () => ref.invalidate(brandsProvider),
+              child: const Text('إعادة المحاولة'),
             ),
-            SliverToBoxAdapter(
-              child: _SearchField(
-                controller: _controller,
-                onChanged: (v) => setState(() => _query = v),
-                onClear: () {
-                  _controller.clear();
-                  setState(() => _query = '');
-                },
-              ),
-            ),
-            if (showFeatured) ...[
-              SliverToBoxAdapter(
-                child: Luxe.sectionTitle(
-                  title: 'البراندات المميزة',
-                  subtitle: '${featured.length} علامة فاخرة',
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 152,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: featured.length,
-                    itemBuilder: (context, i) {
-                      return _FeaturedBrandCard(
-                        brand: featured[i],
-                        index: i,
-                        onTap: () => _goToBrand(context, featured[i]),
-                      );
+          ),
+          data: (List<BrandModel> all) {
+            final filtered = _filtered(all);
+            final featured =
+                all.where((BrandModel b) => b.isFeatured).toList();
+            final grouped = _grouped(filtered);
+            final showFeatured = _query.isEmpty;
+
+            return CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(child: _Header(count: all.length)),
+                SliverToBoxAdapter(
+                  child: _SearchField(
+                    controller: _controller,
+                    onChanged: (v) => setState(() => _query = v),
+                    onClear: () {
+                      _controller.clear();
+                      setState(() => _query = '');
                     },
                   ),
                 ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 12)),
-            ],
-            SliverToBoxAdapter(
-              child: Luxe.sectionTitle(
-                title: _query.isEmpty ? 'كل البراندات' : 'نتائج البحث',
-                subtitle: '${_filtered.length} براند',
-              ),
-            ),
-            if (_filtered.isEmpty)
-              const SliverFillRemaining(
-                hasScrollBody: false,
-                child: _EmptyState(),
-              )
-            else
-              ...grouped.entries.map(
-                (e) => SliverMainAxisGroup(
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: _LetterHeader(letter: e.key),
+                if (showFeatured) ...[
+                  SliverToBoxAdapter(
+                    child: Luxe.sectionTitle(
+                      title: 'البراندات المميزة',
+                      subtitle: '${featured.length} علامة فاخرة',
                     ),
-                    SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      sliver: SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, i) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: _BrandTile(
-                              brand: e.value[i],
-                              onTap: () => _goToBrand(context, e.value[i]),
-                            ),
-                          ),
-                          childCount: e.value.length,
-                        ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: 152,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        itemCount: featured.length,
+                        itemBuilder: (context, i) {
+                          return _FeaturedBrandCard(
+                            brand: featured[i],
+                            index: i,
+                            onTap: () => _goToBrand(context, featured[i]),
+                          );
+                        },
                       ),
                     ),
-                  ],
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                ],
+                SliverToBoxAdapter(
+                  child: Luxe.sectionTitle(
+                    title: _query.isEmpty ? 'كل البراندات' : 'نتائج البحث',
+                    subtitle: '${filtered.length} براند',
+                  ),
                 ),
-              ),
-            const SliverToBoxAdapter(child: SizedBox(height: 140)),
-          ],
+                if (filtered.isEmpty)
+                  const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _EmptyState(),
+                  )
+                else
+                  ...grouped.entries.map(
+                    (e) => SliverMainAxisGroup(
+                      slivers: [
+                        SliverToBoxAdapter(child: _LetterHeader(letter: e.key)),
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, i) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: _BrandTile(
+                                  brand: e.value[i],
+                                  onTap: () => _goToBrand(context, e.value[i]),
+                                ),
+                              ),
+                              childCount: e.value.length,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const SliverToBoxAdapter(child: SizedBox(height: 140)),
+              ],
+            );
+          },
         ),
       ),
     );

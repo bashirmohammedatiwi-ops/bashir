@@ -7,9 +7,9 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/product_visuals.dart';
 import '../../../core/widgets/product_showcase.dart';
 import '../../../core/widgets/custom_button.dart';
-import '../../../data/mock/mock_products.dart';
 import '../../../data/models/product_model.dart';
 import '../../cart/providers/cart_provider.dart';
+import '../providers/products_provider.dart';
 
 class ProductComparisonScreen extends ConsumerWidget {
   const ProductComparisonScreen({
@@ -23,8 +23,17 @@ class ProductComparisonScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final p1 = MockProducts.findById(id1);
-    final p2 = MockProducts.findById(id2);
+    final p1Async = ref.watch(productDetailProvider(id1));
+    final p2Async = ref.watch(productDetailProvider(id2));
+
+    if (p1Async.isLoading || p2Async.isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final p1 = p1Async.valueOrNull;
+    final p2 = p2Async.valueOrNull;
 
     if (p1 == null || p2 == null) {
       return Scaffold(
@@ -47,9 +56,25 @@ class ProductComparisonScreen extends ConsumerWidget {
               ],
             ).animate().fadeIn(),
             const SizedBox(height: 24),
-            _CompareRow(label: 'السعر', v1: CurrencyFormatter.format(p1.price), v2: CurrencyFormatter.format(p2.price)),
-            _CompareRow(label: 'التقييم', v1: '${p1.rating}', v2: '${p2.rating}'),
-            _CompareRow(label: 'المكونات', v1: p1.ingredients.substring(0, 40), v2: p2.ingredients.substring(0, 40)),
+            _CompareRow(
+              label: 'السعر',
+              v1: CurrencyFormatter.format(p1.price),
+              v2: CurrencyFormatter.format(p2.price),
+            ),
+            _CompareRow(
+              label: 'التقييم',
+              v1: '${p1.rating}',
+              v2: '${p2.rating}',
+            ),
+            _CompareRow(
+              label: 'المكونات',
+              v1: p1.ingredients.length > 40
+                  ? '${p1.ingredients.substring(0, 40)}...'
+                  : p1.ingredients,
+              v2: p2.ingredients.length > 40
+                  ? '${p2.ingredients.substring(0, 40)}...'
+                  : p2.ingredients,
+            ),
           ],
         ),
       ),
@@ -70,7 +95,7 @@ class _ProductColumn extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           child: ProductShowcase.forProduct(
             product: product,
-            imageUrl: product.images.first,
+            imageUrl: product.images.isNotEmpty ? product.images.first : '',
             layout: ProductShowcaseLayout.compact,
             height: 140,
             width: double.infinity,
@@ -78,7 +103,11 @@ class _ProductColumn extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        Text(product.name, style: AppTextStyles.title(size: 13), textAlign: TextAlign.center),
+        Text(
+          product.name,
+          style: AppTextStyles.title(size: 13),
+          textAlign: TextAlign.center,
+        ),
         const SizedBox(height: 12),
         CustomButton(
           label: AppStrings.addToCart,

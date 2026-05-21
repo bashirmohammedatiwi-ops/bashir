@@ -1,4 +1,14 @@
 abstract final class Validators {
+  static String? email(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'البريد الإلكتروني مطلوب';
+    }
+    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value.trim())) {
+      return 'البريد الإلكتروني غير صحيح';
+    }
+    return null;
+  }
+
   static String? phone(String? value) {
     if (value == null || value.isEmpty) return 'رقم الهاتف مطلوب';
     final digits = value.replaceAll(RegExp(r'\D'), '');

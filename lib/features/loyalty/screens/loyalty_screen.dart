@@ -13,45 +13,54 @@ class LoyaltyScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final loyalty = ref.watch(loyaltyProvider);
+    final loyaltyAsync = ref.watch(loyaltyProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('نقاط الولاء')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.gold, Color(0xFFFDE68A)],
+      body: loyaltyAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => Center(
+          child: TextButton(
+            onPressed: () => ref.read(loyaltyProvider.notifier).refresh(),
+            child: const Text('إعادة المحاولة'),
+          ),
+        ),
+        data: (loyalty) => ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.gold, Color(0xFFFDE68A)],
+                ),
+                borderRadius: BorderRadius.circular(20),
               ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              children: [
-                Text('رصيدكِ', style: AppTextStyles.body()),
-                AnimatedCounter(
-                  value: loyalty.points,
-                  formatCurrency: false,
-                  style: AppTextStyles.display(size: 48),
-                ),
-                Text('نقطة', style: AppTextStyles.title()),
-                const SizedBox(height: 8),
-                Chip(
-                  label: Text(loyalty.tier.label),
-                  backgroundColor: Colors.white,
-                ),
-              ],
-            ),
-          ).animate().fadeIn().scale(),
-          const SizedBox(height: 24),
-          Text('مستواكِ', style: AppTextStyles.headline()),
-          const SizedBox(height: 12),
-          _TierProgress(current: loyalty.points),
-          const SizedBox(height: 24),
-          Text('السجل', style: AppTextStyles.headline()),
-          ...loyalty.history.map((h) => ListTile(
+              child: Column(
+                children: [
+                  Text('رصيدكِ', style: AppTextStyles.body()),
+                  AnimatedCounter(
+                    value: loyalty.points,
+                    formatCurrency: false,
+                    style: AppTextStyles.display(size: 48),
+                  ),
+                  Text('نقطة', style: AppTextStyles.title()),
+                  const SizedBox(height: 8),
+                  Chip(
+                    label: Text(loyalty.tier.label),
+                    backgroundColor: Colors.white,
+                  ),
+                ],
+              ),
+            ).animate().fadeIn().scale(),
+            const SizedBox(height: 24),
+            Text('مستواكِ', style: AppTextStyles.headline()),
+            const SizedBox(height: 12),
+            _TierProgress(current: loyalty.points),
+            const SizedBox(height: 24),
+            Text('السجل', style: AppTextStyles.headline()),
+            ...loyalty.history.map(
+              (h) => ListTile(
                 leading: Icon(
                   h.isEarned ? Icons.add_circle : Icons.remove_circle,
                   color: h.isEarned ? AppColors.success : AppColors.error,
@@ -60,17 +69,19 @@ class LoyaltyScreen extends ConsumerWidget {
                 trailing: Text(
                   '${h.isEarned ? '+' : ''}${CurrencyFormatter.formatPoints(h.points)}',
                 ),
-              )),
-          const SizedBox(height: 16),
-          Text('كيف تكسبين', style: AppTextStyles.headline()),
-          const _InfoTile('كل ١,٠٠٠ د.ع = ١ نقطة'),
-          const _InfoTile('تقييم منتج = ٥ نقاط'),
-          const _InfoTile('أول طلب = ٥٠ نقطة'),
-          const _InfoTile('عيد ميلادك = ١٠٠ نقطة'),
-          const SizedBox(height: 16),
-          Text('كيف تستخدمين', style: AppTextStyles.headline()),
-          const _InfoTile('١٠٠ نقطة = ١,٠٠٠ د.ع خصم'),
-        ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('كيف تكسبين', style: AppTextStyles.headline()),
+            const _InfoTile('كل ١,٠٠٠ د.ع = ١ نقطة'),
+            const _InfoTile('تقييم منتج = ٥ نقاط'),
+            const _InfoTile('أول طلب = ٥٠ نقطة'),
+            const _InfoTile('عيد ميلادك = ١٠٠ نقطة'),
+            const SizedBox(height: 16),
+            Text('كيف تستخدمين', style: AppTextStyles.headline()),
+            const _InfoTile('١٠٠ نقطة = ١,٠٠٠ د.ع خصم'),
+          ],
+        ),
       ),
     );
   }

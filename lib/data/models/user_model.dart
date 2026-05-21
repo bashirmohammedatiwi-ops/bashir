@@ -57,18 +57,18 @@ class UserModel {
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
         id: json['id'] as String,
-        name: json['name'] as String,
-        phone: json['phone'] as String,
+        name: (json['name'] as String?) ?? '',
+        phone: (json['phone'] as String?) ?? '',
         email: json['email'] as String?,
         birthday: json['birthday'] != null
-            ? DateTime.parse(json['birthday'] as String)
+            ? DateTime.tryParse(json['birthday'].toString())
             : null,
         avatarUrl: json['avatarUrl'] as String?,
-        points: json['points'] as int,
+        points: (json['loyaltyPoints'] as num?)?.toInt() ?? (json['points'] as num?)?.toInt() ?? 0,
         tier: LoyaltyTier.values.firstWhere(
-          (e) => e.name == json['tier'],
+          (e) => e.name == (json['tier'] as String? ?? 'normal'),
           orElse: () => LoyaltyTier.normal,
         ),
-        orderCount: json['orderCount'] as int? ?? 0,
+        orderCount: json['orderCount'] as int? ?? (json['_count']?['orders'] as num?)?.toInt() ?? 0,
       );
 }

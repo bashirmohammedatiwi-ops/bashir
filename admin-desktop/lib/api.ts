@@ -1,6 +1,5 @@
 import axios from "axios";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3000/api/v1";
+import { API_BASE } from "./config";
 
 export const api = axios.create({
   baseURL: API_BASE,
@@ -21,7 +20,7 @@ function readPersistedToken(): string | null {
   } catch {
     /* ignore */
   }
-  return localStorage.getItem("accessToken");
+  return null;
 }
 
 if (typeof window !== "undefined") {
@@ -37,14 +36,25 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (res) => res,
+  (error) => {
+    if (error?.response?.status === 401 && typeof window !== "undefined") {
+      const path = window.location.pathname;
+      if (!path.includes("/login")) {
+        localStorage.removeItem("alhayaa-auth");
+        inMemoryAccessToken = null;
+        window.location.href = "/login/";
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+
 export function setAuthToken(token: string | null) {
   inMemoryAccessToken = token;
-  if (typeof window !== "undefined") {
-    if (token) localStorage.setItem("accessToken", token);
-    else localStorage.removeItem("accessToken");
-  }
 }
 
 export function getAuthToken(): string | null {
-  return inMemoryAccessToken;
+  return inMemoryAccessToken ?? readPersistedToken();
 }

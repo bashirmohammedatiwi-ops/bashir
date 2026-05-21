@@ -79,7 +79,7 @@ class _ProductCardState extends ConsumerState<ProductCard>
       layout: widget.showcaseLayout ?? ProductShowcaseLayout.gridCard,
     );
     final tint = style.backgroundColor;
-    final wished = ref.watch(wishlistProvider).contains(p.id);
+    final wished = ref.watch(isProductWishlistedProvider(p.id));
     final hero = widget.heroTag ?? 'product_${p.id}';
 
     return AnimatedBuilder(
