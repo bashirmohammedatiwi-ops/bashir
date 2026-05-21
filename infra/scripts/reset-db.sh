@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Reset PostgreSQL after a failed Prisma migration (first deploy / dev only).
+# Full reset: wipe volumes + redeploy (fixes P3009 failed migrations).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -15,18 +15,10 @@ fi
 
 COMPOSE="docker compose -f docker-compose.prod.yml"
 
-echo "==> Stopping stack..."
-$COMPOSE stop api nginx 2>/dev/null || true
+echo "==> Stopping and removing all volumes (DB + redis + media)..."
+$COMPOSE down -v
 
-echo "==> Dropping public schema..."
-$COMPOSE exec -T postgres psql -U "${POSTGRES_USER:-alhayaa}" -d "${POSTGRES_DB:-alhayaa}" <<'SQL'
-DROP SCHEMA IF EXISTS public CASCADE;
-CREATE SCHEMA public;
-GRANT ALL ON SCHEMA public TO alhayaa;
-GRANT ALL ON SCHEMA public TO public;
-SQL
-
-echo "==> IP deploy config (HTTP + media URL override)..."
+echo "==> IP deploy config..."
 cp nginx/default.bootstrap.conf nginx/default.conf
 
 cat > docker-compose.override.yml <<EOF
@@ -34,15 +26,17 @@ services:
   api:
     environment:
       MEDIA_PUBLIC_BASE_URL: http://${DOMAIN}/media
+      AUTO_FIX_MIGRATIONS: "1"
   nginx:
     depends_on:
       api:
         condition: service_started
 EOF
 
-echo "==> Rebuild and start (seed may take 1-2 min — wait before health check)..."
-$COMPOSE up -d --build postgres redis api nginx
+echo "==> Starting fresh stack..."
+$COMPOSE up -d --build
 
 echo ""
-echo "==> Follow logs: docker compose -f docker-compose.prod.yml logs -f api"
-echo "==> Then test: curl http://${DOMAIN}/api/v1/health"
+echo "Wait 2-3 minutes, then:"
+echo "  docker compose -f docker-compose.prod.yml logs api --tail=30"
+echo "  curl http://${DOMAIN}/api/v1/health"

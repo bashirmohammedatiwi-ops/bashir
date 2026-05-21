@@ -5,10 +5,15 @@ migrate_once() {
   npx prisma migrate deploy 2>&1
 }
 
+fix_failed_migration() {
+  echo "[entrypoint] P3009 detected — resetting database and re-applying migrations..."
+  npx prisma migrate reset --force --skip-seed 2>&1 || true
+}
+
 echo "[entrypoint] Applying database migrations..."
 TRIES=0
 MAX_TRIES=30
-OUTPUT=""
+FIXED=0
 while true; do
   OUTPUT="$(migrate_once)" || true
   echo "$OUTPUT"
@@ -26,8 +31,12 @@ while true; do
   fi
 
   if echo "$OUTPUT" | grep -q "P3009"; then
-    echo "[entrypoint] ERROR: Failed migration recorded in database (P3009)."
-    echo "[entrypoint] On VPS run: cd infra && ./scripts/reset-db.sh && docker compose -f docker-compose.prod.yml up -d --build"
+    if [ "$FIXED" -eq 0 ] && [ "${AUTO_FIX_MIGRATIONS:-1}" = "1" ]; then
+      fix_failed_migration
+      FIXED=1
+      continue
+    fi
+    echo "[entrypoint] ERROR: Failed migration (P3009). Run: cd infra && docker compose -f docker-compose.prod.yml down -v && ./scripts/deploy-ip.sh"
     exit 1
   fi
 
