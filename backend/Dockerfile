@@ -1,6 +1,7 @@
-FROM node:20-alpine AS builder
+FROM node:20-bookworm-slim AS builder
 WORKDIR /app
-RUN apk add --no-cache python3 make g++ vips-dev
+RUN apt-get update && apt-get install -y python3 make g++ libvips-dev \
+    && rm -rf /var/lib/apt/lists/*
 COPY package*.json ./
 COPY prisma ./prisma
 RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
@@ -9,9 +10,10 @@ COPY src ./src
 RUN npx prisma generate
 RUN npm run build
 
-FROM node:20-alpine AS runner
+FROM node:20-bookworm-slim AS runner
 WORKDIR /app
-RUN apk add --no-cache vips wget tar
+RUN apt-get update && apt-get install -y libvips42 wget ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production
 
 COPY package*.json ./
