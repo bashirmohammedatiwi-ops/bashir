@@ -259,9 +259,11 @@ body {
 }
 
 .alhayaa-content {
-  padding: 18px 22px 28px;
+  padding: 20px 24px 32px;
   min-width: 0;
   contain: layout style;
+  background: linear-gradient(180deg, #f0eef3 0%, #ebe8ef 100%);
+  min-height: 100vh;
 }
 
 .alhayaa-page-header {
@@ -303,4 +305,355 @@ body {
 
 .alhayaa-content .ant-table-wrapper {
   contain: content;
+}
+
+/* ─── Page layout ─── */
+.alhayaa-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.alhayaa-filter-card,
+.alhayaa-table-card {
+  border-radius: 16px !important;
+  border: 1px solid #e8e4ed !important;
+  box-shadow: 0 2px 12px rgba(74, 36, 102, 0.04) !important;
+}
+
+.alhayaa-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.alhayaa-filter-search {
+  flex: 1;
+  min-width: 200px;
+  max-width: 320px;
+}
+
+.alhayaa-filter-select {
+  min-width: 160px;
+}
+
+/* ─── Product table ─── */
+.alhayaa-product-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.alhayaa-product-cell-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.alhayaa-product-name {
+  border: 0;
+  background: none;
+  padding: 0;
+  text-align: start;
+  font: inherit;
+  font-weight: 600;
+  color: #4a2466;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+.alhayaa-product-name:hover {
+  color: #6b3d8f;
+  text-decoration: underline;
+}
+
+.alhayaa-product-sku {
+  font-size: 11px;
+  color: #8a8194;
+  font-family: ui-monospace, monospace;
+}
+
+.alhayaa-product-thumb {
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #f3eef8, #ebe4f2);
+  border: 1px solid #e8e4ed;
+  display: grid;
+  place-items: center;
+}
+
+.alhayaa-product-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.alhayaa-product-thumb-fallback {
+  font-size: 16px;
+  font-weight: 700;
+  color: #4a2466;
+  opacity: 0.55;
+}
+
+.alhayaa-tags-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.alhayaa-tag-soft {
+  background: #f5f0fa !important;
+  border-color: #e8dff0 !important;
+  color: #4a2466 !important;
+}
+
+.alhayaa-tag-mini {
+  font-size: 10px !important;
+  line-height: 16px !important;
+  padding-inline: 4px !important;
+  margin: 0 !important;
+}
+
+.alhayaa-price-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.alhayaa-stock {
+  font-weight: 600;
+  color: #1a1520;
+}
+
+.alhayaa-stock.low {
+  color: #dc2626;
+}
+
+.alhayaa-table-row:hover td {
+  background: #faf8fc !important;
+}
+
+/* ─── Wizard tabs (product drawer) ─── */
+.alhayaa-wizard {
+  margin-bottom: 20px;
+}
+
+.alhayaa-wizard-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.alhayaa-wizard-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e8e4ed;
+  background: #faf9fb;
+  color: #6e6478;
+  border-radius: 999px;
+  padding: 6px 14px 6px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12.5px;
+  transition: all 140ms ease;
+}
+
+.alhayaa-wizard-step:hover {
+  border-color: #c9b8d9;
+  color: #4a2466;
+}
+
+.alhayaa-wizard-step.active {
+  background: linear-gradient(135deg, #4a2466, #3a1a52);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(74, 36, 102, 0.25);
+}
+
+.alhayaa-wizard-step.done:not(.active) {
+  border-color: #c8e6d4;
+  background: #f0faf4;
+  color: #15803d;
+}
+
+.alhayaa-wizard-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.alhayaa-wizard-step.active .alhayaa-wizard-step-num {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.alhayaa-wizard-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #8a8194;
+  padding: 8px 12px;
+  background: #f8f6fa;
+  border-radius: 10px;
+  border: 1px dashed #e0dae8;
+}
+
+.alhayaa-wizard-hint kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 5px;
+  border: 1px solid #d8d2e0;
+  background: #fff;
+  font-size: 10px;
+  font-family: ui-monospace, monospace;
+  box-shadow: 0 1px 0 #e8e4ed;
+}
+
+.alhayaa-wizard-hint-sep {
+  opacity: 0.45;
+}
+
+/* ─── Product form drawer ─── */
+.alhayaa-product-drawer .ant-drawer-body {
+  padding-top: 16px;
+}
+
+.alhayaa-drawer-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.alhayaa-drawer-title small {
+  font-size: 12px;
+  font-weight: 400;
+  color: #8a8194;
+}
+
+.alhayaa-form-section {
+  animation: alhayaaFadeIn 180ms ease;
+}
+
+@keyframes alhayaaFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.alhayaa-form-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.alhayaa-form-col {
+  flex: 1;
+  min-width: 200px;
+}
+
+.alhayaa-variants-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alhayaa-variants-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.alhayaa-variant-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border-radius: 12px;
+  background: #faf9fb;
+  border: 1px solid #ece8f0;
+}
+
+.alhayaa-empty-hint {
+  margin: 0;
+  padding: 16px;
+  text-align: center;
+  color: #8a8194;
+  font-size: 13px;
+  background: #faf9fb;
+  border-radius: 12px;
+  border: 1px dashed #e0dae8;
+}
+
+.alhayaa-flags-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 4px 24px;
+}
+
+.alhayaa-flags-divider {
+  grid-column: 1 / -1;
+  margin: 8px 0 !important;
+}
+
+.alhayaa-skeleton-block {
+  height: 120px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #f0eef3 25%, #faf9fb 50%, #f0eef3 75%);
+  background-size: 200% 100%;
+  animation: alhayaaShimmer 1.2s infinite;
+}
+
+@keyframes alhayaaShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* ─── Enhanced Ant overrides ─── */
+.alhayaa-content .ant-table-thead > tr > th {
+  background: #faf8fc !important;
+  font-weight: 600;
+  color: #4a2466;
+  border-bottom: 1px solid #ece8f0 !important;
+}
+
+.alhayaa-content .ant-pagination {
+  padding: 12px 16px !important;
+  margin: 0 !important;
+}
+
+.alhayaa-content .ant-btn-primary {
+  box-shadow: 0 2px 8px rgba(74, 36, 102, 0.2);
+}
+
+.alhayaa-content .ant-input-search .ant-input-group-addon .ant-btn {
+  border-start-start-radius: 0;
+  border-end-start-radius: 0;
 }

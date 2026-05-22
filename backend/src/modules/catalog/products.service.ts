@@ -21,6 +21,11 @@ const productRelationsLite = {
   brand: { select: { id: true, name: true, slug: true } },
   category: { select: { id: true, name: true, slug: true } },
   subcategory: { select: { id: true, name: true, slug: true, parentId: true } },
+  images: {
+    take: 1,
+    orderBy: { position: "asc" as const },
+    include: { media: true },
+  },
   _count: { select: { shades: true, variants: true, images: true } },
 };
 

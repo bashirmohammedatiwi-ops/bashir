@@ -16,6 +16,7 @@ import {
 } from "antd";
 import Link from "next/link";
 import { useState } from "react";
+import { PageHeader } from "@/components/PageHeader";
 import { MediaPicker } from "@/components/MediaPicker";
 import { mediaThumb } from "@/lib/mediaUrl";
 import { mutations, queries } from "@/lib/queries";
@@ -84,24 +85,11 @@ export default function CategoriesPage() {
   }
 
   return (
-     <>
-      <Space direction="vertical" size={12} style={{ width: "100%" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: 12,
-          }}
-        >
-          <div>
-            <h2 style={{ margin: 0 }}>الفئات الرئيسية</h2>
-            <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
-              الفئات العليا — الأقسام الفرعية تُدار من صفحة{" "}
-              <Link href="/subcategories">الأقسام الفرعية</Link>
-            </div>
-          </div>
+    <div className="alhayaa-page">
+      <PageHeader
+        title="الفئات الرئيسية"
+        subtitle="الفئات العليا — الأقسام الفرعية من صفحة الأقسام الفرعية"
+        extra={
           <Space>
             <Link href="/subcategories">
               <Button>الأقسام الفرعية</Button>
@@ -110,8 +98,9 @@ export default function CategoriesPage() {
               + فئة رئيسية
             </Button>
           </Space>
-        </div>
-        <Card styles={{ body: { padding: 0 } }}>
+        }
+      />
+      <Card className="alhayaa-table-card" bordered={false} styles={{ body: { padding: 0 } }}>
           <Table
             rowKey="id"
             loading={isLoading}
@@ -197,8 +186,7 @@ export default function CategoriesPage() {
               },
             ]}
           />
-        </Card>
-      </Space>
+      </Card>
 
       <Modal
         title={editing ? "تعديل الفئة" : "فئة رئيسية جديدة"}
@@ -243,7 +231,6 @@ export default function CategoriesPage() {
           </Form.Item>
         </Form>
       </Modal>
-    
-    </>
+    </div>
   );
 }

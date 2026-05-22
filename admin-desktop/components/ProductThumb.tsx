@@ -1,0 +1,31 @@
+"use client";
+
+import { memo } from "react";
+import { productCoverUrl } from "@/lib/productCover";
+
+export const ProductThumb = memo(function ProductThumb({
+  product,
+  size = 44,
+  className = "",
+}: {
+  product?: { images?: Array<{ media?: unknown }>; name?: string } | null;
+  size?: number;
+  className?: string;
+}) {
+  const url = productCoverUrl(product);
+  const initial = (product?.name?.trim()?.[0] ?? "م").toUpperCase();
+
+  return (
+    <div
+      className={`alhayaa-product-thumb ${className}`.trim()}
+      style={{ width: size, height: size }}
+      aria-hidden
+    >
+      {url ? (
+        <img src={url} alt="" loading="lazy" decoding="async" />
+      ) : (
+        <span className="alhayaa-product-thumb-fallback">{initial}</span>
+      )}
+    </div>
+  );
+});

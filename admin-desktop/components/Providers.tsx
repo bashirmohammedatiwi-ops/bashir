@@ -39,13 +39,28 @@ export function Providers({ children }: { children: React.ReactNode }) {
         algorithm: theme.defaultAlgorithm,
         token: {
           colorPrimary: "#4a2466",
+          colorBgContainer: "#ffffff",
+          colorBgLayout: "#f0eef3",
           borderRadius: 10,
+          borderRadiusLG: 14,
           fontFamily: 'Cairo, "Segoe UI", sans-serif',
-          controlHeight: 36,
+          controlHeight: 38,
+          colorLink: "#4a2466",
+          colorLinkHover: "#6b3d8f",
         },
         components: {
-          Table: { cellPaddingBlock: 10, cellPaddingInline: 12 },
-          Card: { paddingLG: 16 },
+          Table: {
+            cellPaddingBlock: 12,
+            cellPaddingInline: 14,
+            headerBg: "#faf8fc",
+            headerColor: "#4a2466",
+            rowHoverBg: "#faf8fc",
+          },
+          Card: { paddingLG: 18 },
+          Drawer: { paddingLG: 20 },
+          Button: { primaryShadow: "0 2px 8px rgba(74, 36, 102, 0.18)" },
+          Input: { activeBorderColor: "#4a2466", hoverBorderColor: "#8b6fa8" },
+          Select: { optionSelectedBg: "#f3eef8" },
         },
       }}
     >
