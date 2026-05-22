@@ -78,7 +78,7 @@ export default function CategoriesPage() {
       position: row.position,
       isActive: row.isActive,
       description: row.description,
-      imageId: row.imageId,
+      imageId: row.imageId ?? row.image?.id,
     });
     setOpen(true);
   }

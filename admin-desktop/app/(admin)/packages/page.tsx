@@ -23,9 +23,32 @@ import { mutations, queries } from "@/lib/queries";
 function toFormValues(row: any) {
   if (!row) return { isActive: true, position: 0, productIds: [] };
   return {
-    ...row,
+    name: row.name,
     subtitle: row.subtitle ?? row.description ?? "",
-    productIds: row.items?.map((i: any) => i.productId ?? i.product?.id).filter(Boolean) ?? [],
+    price: row.price,
+    originalPrice: row.originalPrice,
+    badge: row.badge,
+    coverImageId: row.coverImageId ?? row.coverImage?.id,
+    position: row.position,
+    isActive: row.isActive,
+    isFeatured: row.isFeatured,
+    productIds:
+      row.items?.map((i: any) => i.productId ?? i.product?.id).filter(Boolean) ?? [],
+  };
+}
+
+function toPayload(values: any) {
+  return {
+    name: values.name,
+    subtitle: values.subtitle,
+    price: values.price,
+    originalPrice: values.originalPrice,
+    badge: values.badge,
+    coverImageId: values.coverImageId ?? undefined,
+    position: values.position,
+    isActive: values.isActive,
+    isFeatured: values.isFeatured,
+    productIds: values.productIds ?? [],
   };
 }
 
@@ -49,10 +72,12 @@ export default function PackagesPage() {
     productsData?.data?.map((p: any) => ({ value: p.id, label: p.name })) ?? [];
 
   const upsert = useMutation({
-    mutationFn: async (values: any) =>
-      editing?.id
-        ? mutations.updatePackage(editing.id, values)
-        : mutations.createPackage(values),
+    mutationFn: async (values: any) => {
+      const payload = toPayload(values);
+      return editing?.id
+        ? mutations.updatePackage(editing.id, payload)
+        : mutations.createPackage(payload);
+    },
     onSuccess: () => {
       message.success(editing ? "تم التحديث" : "تم الإنشاء");
       setOpen(false);

@@ -25,6 +25,30 @@ const COUPON_TYPES = [
   { value: "FIRST_ORDER", label: "أول طلب" },
 ];
 
+function toFormValues(row: any) {
+  return {
+    code: row.code,
+    type: row.type,
+    value: row.value,
+    description: row.description,
+    minOrder: row.minOrder,
+    maxRedemptions: row.maxRedemptions,
+    isActive: row.isActive,
+  };
+}
+
+function toPayload(values: any) {
+  return {
+    code: values.code,
+    type: values.type,
+    value: values.value,
+    description: values.description,
+    minOrder: values.minOrder,
+    maxRedemptions: values.maxRedemptions,
+    isActive: values.isActive,
+  };
+}
+
 export default function CouponsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["coupons"],
@@ -36,10 +60,12 @@ export default function CouponsPage() {
   const [form] = Form.useForm();
 
   const upsert = useMutation({
-    mutationFn: async (values: any) =>
-      editing?.id
-        ? mutations.updateCoupon(editing.id, values)
-        : mutations.createCoupon(values),
+    mutationFn: async (values: any) => {
+      const payload = toPayload(values);
+      return editing?.id
+        ? mutations.updateCoupon(editing.id, payload)
+        : mutations.createCoupon(payload);
+    },
     onSuccess: () => {
       message.success(editing ? "تم التحديث" : "تم الإنشاء");
       setOpen(false);
@@ -115,7 +141,7 @@ export default function CouponsPage() {
                       size="small"
                       onClick={() => {
                         setEditing(r);
-                        form.setFieldsValue(r);
+                        form.setFieldsValue(toFormValues(r));
                         setOpen(true);
                       }}
                     >

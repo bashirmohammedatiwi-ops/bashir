@@ -51,10 +51,13 @@ export default function HomeBlocksPage() {
   const upsert = useMutation({
     mutationFn: async (values: any) => {
       const payload = {
-        ...values,
+        title: values.title,
+        subtitle: values.subtitle,
+        type: values.type,
+        position: values.position,
+        isActive: values.isActive,
         payload: values.payloadJson ? JSON.parse(values.payloadJson) : {},
       };
-      delete payload.payloadJson;
       if (editing?.id) return mutations.updateHomeBlock(editing.id, payload);
       return mutations.createHomeBlock(payload);
     },
@@ -155,7 +158,11 @@ export default function HomeBlocksPage() {
                       onClick={() => {
                         setEditing(r);
                         form.setFieldsValue({
-                          ...r,
+                          title: r.title,
+                          subtitle: r.subtitle,
+                          type: r.type,
+                          position: r.position,
+                          isActive: r.isActive,
                           payloadJson: JSON.stringify(r.payload ?? {}, null, 2),
                         });
                         setOpen(true);

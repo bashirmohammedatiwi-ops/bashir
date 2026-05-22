@@ -61,7 +61,7 @@ export class SubcategoriesController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.SUPER_ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Delete(":id")
   remove(@Param("id") id: string) {
     return this.service.remove(id);

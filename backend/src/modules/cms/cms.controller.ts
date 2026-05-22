@@ -47,7 +47,7 @@ export class CmsController {
     return this.banners.update(id, data);
   }
 
-  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN)
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Delete("banners/:id") removeBanner(@Param("id") id: string) {
     return this.banners.remove(id);
   }
@@ -71,7 +71,7 @@ export class CmsController {
     return this.packages.update(id, data);
   }
 
-  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN)
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Delete("packages/:id") removePackage(@Param("id") id: string) {
     return this.packages.remove(id);
   }
@@ -96,7 +96,7 @@ export class CmsController {
     return this.coupons.update(id, data);
   }
 
-  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN)
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Delete("coupons/:id") removeCoupon(@Param("id") id: string) {
     return this.coupons.remove(id);
   }
@@ -121,7 +121,7 @@ export class CmsController {
     return this.home.reorder(body.ids);
   }
 
-  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN)
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Delete("home-blocks/:id") removeHome(@Param("id") id: string) {
     return this.home.remove(id);
   }

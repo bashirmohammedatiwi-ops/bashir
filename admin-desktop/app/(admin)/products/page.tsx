@@ -23,8 +23,8 @@ import type { ImageItem } from "@/components/ProductImageDropzone";
 import {
   initShadePreviews,
   shadeFromApi,
-  shadeToPayload,
 } from "@/components/ProductShadesEditor";
+import { buildProductPayload } from "@/lib/productPayload";
 import { mediaThumb } from "@/lib/mediaUrl";
 import { mutations, queries } from "@/lib/queries";
 
@@ -45,15 +45,6 @@ const SKIN_TYPES = [
   { value: "حساسة", label: "حساسة" },
   { value: "عادية", label: "عادية" },
 ];
-
-function slugify(name: string) {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^\w\u0600-\u06FF-]/g, "")
-    .slice(0, 80) || `product-${Date.now()}`;
-}
 
 function imagesFromProduct(full: any): ImageItem[] {
   return (full?.images ?? [])
@@ -108,24 +99,7 @@ export default function ProductsPage() {
 
   const upsert = useMutation({
     mutationFn: async (values: any) => {
-      const payload = {
-        ...values,
-        slug: values.slug || slugify(values.name),
-        sku: values.sku || `SKU-${Date.now()}`,
-        tags: values.tags
-          ? String(values.tags)
-              .split(",")
-              .map((t: string) => t.trim())
-              .filter(Boolean)
-          : [],
-        skinType: values.skinType ?? [],
-        imageIds: productImages.map((i) => i.id),
-        shades: (values.shades ?? [])
-          .map((s: any, i: number) => shadeToPayload(s, i))
-          .filter(Boolean),
-        variants: (values.variants ?? []).filter((v: any) => v?.label),
-      };
-      delete payload.isGradient;
+      const payload = buildProductPayload(values, productImages);
       if (editing?.id) return mutations.updateProduct(editing.id, payload);
       return mutations.createProduct(payload);
     },
@@ -134,10 +108,6 @@ export default function ProductsPage() {
       setOpen(false);
       setEditing(null);
       qc.invalidateQueries({ queryKey: ["products"] });
-    },
-    onError: (e: any) => {
-      const msg = e?.response?.data?.message;
-      message.error(Array.isArray(msg) ? msg.join(", ") : msg ?? "فشل الحفظ");
     },
   });
 

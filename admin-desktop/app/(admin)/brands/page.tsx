@@ -107,7 +107,16 @@ export default function BrandsPage() {
 
   function openEditBrand(row: any) {
     setEditing(row);
-    form.setFieldsValue(row);
+    form.setFieldsValue({
+      name: row.name,
+      slug: row.slug,
+      initial: row.initial,
+      bgColorHex: row.bgColorHex,
+      logoId: row.logoId ?? row.logo?.id,
+      position: row.position,
+      isFeatured: row.isFeatured,
+      isActive: row.isActive,
+    });
     setOpen(true);
   }
 
@@ -122,7 +131,13 @@ export default function BrandsPage() {
   function openEditCollection(row: any) {
     setBrandForCol({ id: row.brandId, name: row.brandName });
     setEditingCol(row);
-    colForm.setFieldsValue(row);
+    colForm.setFieldsValue({
+      name: row.name,
+      slug: row.slug,
+      description: row.description,
+      position: row.position,
+      isActive: row.isActive,
+    });
     setColOpen(true);
   }
 

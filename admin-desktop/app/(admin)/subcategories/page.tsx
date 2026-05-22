@@ -19,6 +19,7 @@ import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 import { MediaPicker } from "@/components/MediaPicker";
 import { mediaThumb } from "@/lib/mediaUrl";
+import { apiErrorMessage } from "@/lib/apiError";
 import { mutations, queries } from "@/lib/queries";
 
 function slugify(name: string) {
@@ -83,8 +84,8 @@ export default function SubcategoriesPage() {
       qc.invalidateQueries({ queryKey: ["subcategories"] });
       qc.invalidateQueries({ queryKey: ["categories"] });
     },
-    onError: (e: any) => {
-      message.error(e?.response?.data?.message ?? "فشل الحفظ");
+    onError: (e) => {
+      message.error(apiErrorMessage(e, "فشل الحفظ"));
     },
   });
 
@@ -115,7 +116,7 @@ export default function SubcategoriesPage() {
       slug: row.slug,
       description: row.description,
       parentId: row.parentId ?? row.parent?.id,
-      imageId: row.imageId,
+      imageId: row.imageId ?? row.image?.id,
       position: row.position,
       isActive: row.isActive,
     });

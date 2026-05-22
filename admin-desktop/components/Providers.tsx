@@ -3,8 +3,10 @@
 import React, { useState } from "react";
 import { keepPreviousData, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { App, ConfigProvider, theme } from "antd";
+import { apiErrorMessage } from "@/lib/apiError";
 
-export function Providers({ children }: { children: React.ReactNode }) {
+function QueryLayer({ children }: { children: React.ReactNode }) {
+  const { message } = App.useApp();
   const [client] = useState(
     () =>
       new QueryClient({
@@ -17,30 +19,39 @@ export function Providers({ children }: { children: React.ReactNode }) {
             retry: 1,
             placeholderData: keepPreviousData,
           },
+          mutations: {
+            onError: (error) => {
+              message.error(apiErrorMessage(error));
+            },
+          },
         },
       }),
   );
 
+  return <QueryClientProvider client={client}>{children}</QueryClientProvider>;
+}
+
+export function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <QueryClientProvider client={client}>
-      <ConfigProvider
-        direction="rtl"
-        theme={{
-          algorithm: theme.defaultAlgorithm,
-          token: {
-            colorPrimary: "#4a2466",
-            borderRadius: 10,
-            fontFamily: 'Cairo, "Segoe UI", sans-serif',
-            controlHeight: 36,
-          },
-          components: {
-            Table: { cellPaddingBlock: 10, cellPaddingInline: 12 },
-            Card: { paddingLG: 16 },
-          },
-        }}
-      >
-        <App>{children}</App>
-      </ConfigProvider>
-    </QueryClientProvider>
+    <ConfigProvider
+      direction="rtl"
+      theme={{
+        algorithm: theme.defaultAlgorithm,
+        token: {
+          colorPrimary: "#4a2466",
+          borderRadius: 10,
+          fontFamily: 'Cairo, "Segoe UI", sans-serif',
+          controlHeight: 36,
+        },
+        components: {
+          Table: { cellPaddingBlock: 10, cellPaddingInline: 12 },
+          Card: { paddingLG: 16 },
+        },
+      }}
+    >
+      <App>
+        <QueryLayer>{children}</QueryLayer>
+      </App>
+    </ConfigProvider>
   );
 }

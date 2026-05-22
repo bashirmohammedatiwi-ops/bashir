@@ -22,16 +22,31 @@ import { mutations, queries } from "@/lib/queries";
 function toFormValues(row: any) {
   if (!row) return { isActive: true, position: 0 };
   return {
-    ...row,
+    title: row.title,
+    subtitle: row.subtitle,
+    tag: row.tag,
+    ctaLabel: row.ctaLabel,
     link: row.link ?? row.ctaUrl ?? "",
+    imageId: row.imageId ?? row.image?.id,
+    position: row.position,
+    isActive: row.isActive,
+    startsAt: row.startsAt,
+    endsAt: row.endsAt,
   };
 }
 
 function toPayload(values: any) {
-  const { ctaUrl, ...rest } = values;
   return {
-    ...rest,
-    link: rest.link ?? ctaUrl ?? undefined,
+    title: values.title,
+    subtitle: values.subtitle,
+    tag: values.tag,
+    ctaLabel: values.ctaLabel,
+    link: values.link ?? values.ctaUrl ?? undefined,
+    imageId: values.imageId ?? undefined,
+    position: values.position,
+    isActive: values.isActive,
+    startsAt: values.startsAt,
+    endsAt: values.endsAt,
   };
 }
 

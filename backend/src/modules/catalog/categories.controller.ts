@@ -37,7 +37,7 @@ export class CategoriesController {
     return this.service.update(id, data);
   }
 
-  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN)
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Delete(":id") remove(@Param("id") id: string) {
     return this.service.remove(id);
   }
