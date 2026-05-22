@@ -4,8 +4,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Button } from "antd";
 import { useAuth } from "@/store/auth";
-import { api } from "@/lib/api";
 import { appNavigate } from "@/lib/navigate";
+import { pingServer } from "@/lib/pingServer";
+import { VPS_ORIGIN } from "@/lib/config";
 
 type NavItem = { href: string; label: string; short: string };
 
@@ -77,12 +78,9 @@ export const Shell = memo(function Shell({ children }: { children: React.ReactNo
   const [online, setOnline] = useState<"checking" | "online" | "offline">("checking");
 
   const ping = useCallback(async () => {
-    try {
-      await api.get("/health", { timeout: 2000 });
-      setOnline("online");
-    } catch {
-      setOnline("offline");
-    }
+    setOnline("checking");
+    const ok = await pingServer();
+    setOnline(ok ? "online" : "offline");
   }, []);
 
   useEffect(() => {
@@ -119,7 +117,7 @@ export const Shell = memo(function Shell({ children }: { children: React.ReactNo
         <div className={`alhayaa-status alhayaa-status--${online}`} title={online}>
           <span className="alhayaa-status-dot" />
           {!collapsed && (
-            <span>
+            <span className="alhayaa-status-text">
               {online === "online"
                 ? "السيرفر متصل"
                 : online === "offline"
@@ -127,7 +125,17 @@ export const Shell = memo(function Shell({ children }: { children: React.ReactNo
                   : "جارٍ الفحص..."}
             </span>
           )}
+          {!collapsed && online === "offline" && (
+            <Button size="small" type="link" className="alhayaa-status-retry" onClick={ping}>
+              إعادة المحاولة
+            </Button>
+          )}
         </div>
+        {!collapsed && online === "offline" && (
+          <div className="alhayaa-status-hint" title={VPS_ORIGIN}>
+            تحقق من السيرفر: {VPS_ORIGIN}
+          </div>
+        )}
 
         <nav className="alhayaa-nav">
           {NAV_GROUPS.map((group) => (

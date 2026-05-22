@@ -147,6 +147,30 @@ body {
   background: #888;
 }
 
+.alhayaa-status-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.alhayaa-status-retry {
+  padding: 0 !important;
+  height: auto !important;
+  font-size: 11px !important;
+  color: #d4b8ff !important;
+}
+
+.alhayaa-status-hint {
+  margin: -4px 0 8px;
+  padding: 0 10px;
+  font-size: 10.5px;
+  color: #9a96a3;
+  direction: ltr;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .alhayaa-nav {
   flex: 1;
   overflow: auto;
