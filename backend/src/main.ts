@@ -36,9 +36,13 @@ async function bootstrap() {
     decorateReply: false,
   });
 
+  const corsOrigins = (process.env.CORS_ORIGIN?.split(",") ?? ["*"]).map((o) => o.trim());
+
   app.enableCors({
-    origin: (process.env.CORS_ORIGIN?.split(",") ?? ["*"]).map((o) => o.trim()),
+    origin: corsOrigins.includes("*") ? true : corsOrigins,
     credentials: true,
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Requested-With"],
   });
 
   app.setGlobalPrefix("api/v1");
