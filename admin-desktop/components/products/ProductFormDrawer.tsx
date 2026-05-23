@@ -80,6 +80,10 @@ type ProductFormDrawerProps = {
   categoriesData: any[];
   brandsData: any[];
   subcategoryOptions: { value: string; label: string }[];
+  pricingFromSync?: boolean;
+  syncLoading?: boolean;
+  syncMeta?: { offerName?: string; syncedAt?: string } | null;
+  onBarcodeLookup?: (barcode: string) => void;
   onClose: () => void;
   onSubmit: (values: any) => void;
 };
@@ -98,6 +102,10 @@ export function ProductFormDrawer({
   categoriesData,
   brandsData,
   subcategoryOptions,
+  pricingFromSync = false,
+  syncLoading = false,
+  syncMeta = null,
+  onBarcodeLookup,
   onClose,
   onSubmit,
 }: ProductFormDrawerProps) {
@@ -161,6 +169,18 @@ export function ProductFormDrawer({
                 <Input placeholder="يُولَّد من الاسم" />
               </Form.Item>
             </div>
+            <Form.Item name="barcode" label="الباركود">
+              <Input.Search
+                placeholder="امسح أو أدخل الباركود — يُجلب السعر والكمية تلقائياً"
+                loading={syncLoading}
+                enterButton="جلب"
+                onSearch={(v) => onBarcodeLookup?.(v)}
+                onBlur={(e) => {
+                  const v = e.target.value.trim();
+                  if (v) onBarcodeLookup?.(v);
+                }}
+              />
+            </Form.Item>
             <Form.Item name="brandId" label="البراند" rules={[{ required: true }]}>
               <Select
                 showSearch
@@ -202,6 +222,12 @@ export function ProductFormDrawer({
         </TabPanel>
 
         <TabPanel tabKey="pricing" activeTab={activeTab}>
+            {pricingFromSync ? (
+              <div className="alhayaa-sync-banner">
+                الأسعار والكمية من بيانات المزامنة (POS) — لا تُعدَّل يدوياً
+                {syncMeta?.offerName ? ` — عرض: ${syncMeta.offerName}` : ""}
+              </div>
+            ) : null}
             <div className="alhayaa-form-row">
               <Form.Item
                 name="price"
@@ -209,15 +235,15 @@ export function ProductFormDrawer({
                 className="alhayaa-form-col"
                 rules={[{ required: true }]}
               >
-                <InputNumber style={{ width: "100%" }} min={0} />
+                <InputNumber style={{ width: "100%" }} min={0} disabled={pricingFromSync} />
               </Form.Item>
               <Form.Item name="originalPrice" label="السعر الأصلي" className="alhayaa-form-col">
-                <InputNumber style={{ width: "100%" }} min={0} />
+                <InputNumber style={{ width: "100%" }} min={0} disabled={pricingFromSync} />
               </Form.Item>
             </div>
             <div className="alhayaa-form-row">
               <Form.Item name="discountPercent" label="نسبة الخصم %" className="alhayaa-form-col">
-                <InputNumber style={{ width: "100%" }} min={0} max={100} />
+                <InputNumber style={{ width: "100%" }} min={0} max={100} disabled={pricingFromSync} />
               </Form.Item>
               <Form.Item
                 name="stock"
@@ -225,7 +251,7 @@ export function ProductFormDrawer({
                 className="alhayaa-form-col"
                 rules={[{ required: true }]}
               >
-                <InputNumber style={{ width: "100%" }} min={0} />
+                <InputNumber style={{ width: "100%" }} min={0} disabled={pricingFromSync} />
               </Form.Item>
             </div>
             <div className="alhayaa-form-row">
@@ -269,6 +295,7 @@ export function ProductFormDrawer({
                   form={form}
                   shadePreviews={shadePreviews}
                   setShadePreviews={setShadePreviews}
+                  onShadeBarcodeLookup={onBarcodeLookup}
                 />
               )}
             </Form.List>

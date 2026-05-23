@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alhayaa POS Sync</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: #f4f6f8;
+      color: #1a1a1a;
+    }
+    .wrap { max-width: 680px; margin: 0 auto; padding: 20px; }
+    h1 { font-size: 1.35rem; margin: 0 0 4px; }
+    .sub { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    }
+    label { display: block; font-size: 0.82rem; color: #555; margin-bottom: 4px; }
+    input, select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    button {
+      border: none;
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      background: #1677ff;
+      color: #fff;
+    }
+    button.secondary { background: #eef2f7; color: #333; }
+    button.primary { font-size: 1.05rem; padding: 14px 24px; flex: 1; min-width: 160px; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    #log {
+      height: 200px;
+      overflow: auto;
+      background: #111;
+      color: #ddd;
+      font-family: Consolas, monospace;
+      font-size: 12px;
+      padding: 10px;
+      border-radius: 8px;
+      white-space: pre-wrap;
+    }
+    .log-info { color: #aaa; }
+    .log-success { color: #52c41a; }
+    .log-error { color: #ff7875; }
+    .status { font-size: 0.85rem; color: #666; margin-top: 6px; }
+    .status.running { color: #1677ff; font-weight: 600; }
+    details { margin-top: 8px; }
+    summary { cursor: pointer; color: #555; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>مزامنة مخزون POS</h1>
+    <p class="sub">اضغط مزامنة الآن — بدون رمز أو تسجيل دخول</p>
+
+    <div class="card">
+      <div class="actions">
+        <button id="btnSync" class="primary">مزامنة الآن</button>
+        <button id="btnTest" class="secondary">اختبار قاعدة البيانات</button>
+      </div>
+      <p id="status" class="status">جاهز</p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">سجل المزامنة</h3>
+      <div id="log"></div>
+    </div>
+
+    <div class="card">
+      <details>
+        <summary>إعدادات متقدمة (اختياري)</summary>
+        <div style="margin-top:12px">
+          <label>SQL Server</label>
+          <input id="sqlServer" placeholder="localhost\FOTSQLSERVER" />
+          <label>قاعدة البيانات</label>
+          <input id="sqlDatabase" placeholder="HAYAT2025.mdf" />
+          <div class="row">
+            <div>
+              <label>المستخدم (فارغ = Windows Auth)</label>
+              <input id="sqlUser" />
+            </div>
+            <div>
+              <label>كلمة المرور</label>
+              <input id="sqlPassword" type="password" />
+            </div>
+          </div>
+          <label>عنوان السيرفر (API)</label>
+          <input id="apiBase" placeholder="http://187.127.88.146/api/v1" />
+          <div class="row">
+            <div>
+              <label>مزامنة تلقائية (دقائق — 0 = معطّلة)</label>
+              <input id="autoMinutes" type="number" min="0" value="5" />
+            </div>
+            <div>
+              <label>حجم الدفعة</label>
+              <input id="batchSize" type="number" min="10" value="500" />
+            </div>
+          </div>
+          <button id="btnSave" class="secondary">حفظ الإعدادات</button>
+          <p id="configPath" class="status"></p>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

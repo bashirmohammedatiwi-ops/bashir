@@ -15,6 +15,7 @@ type Props = {
   form: ReturnType<typeof Form.useForm>[0];
   shadePreviews: Record<number, ImageItem | null>;
   setShadePreviews: React.Dispatch<React.SetStateAction<Record<number, ImageItem | null>>>;
+  onShadeBarcodeLookup?: (barcode: string) => void;
 };
 
 export function ProductShadesEditor({
@@ -24,6 +25,7 @@ export function ProductShadesEditor({
   form,
   shadePreviews,
   setShadePreviews,
+  onShadeBarcodeLookup,
 }: Props) {
   const shadesWatch = Form.useWatch("shades", form) ?? [];
 
@@ -188,7 +190,17 @@ export function ProductShadesEditor({
                   label="الباركود"
                   style={{ marginTop: 8, marginBottom: 0 }}
                 >
-                  <Input placeholder="6281000123456" style={{ maxWidth: 280 }} />
+                  <Input
+                    placeholder="6281000123456"
+                    style={{ maxWidth: 280 }}
+                    onPressEnter={(e) =>
+                      onShadeBarcodeLookup?.((e.target as HTMLInputElement).value)
+                    }
+                    onBlur={(e) => {
+                      const v = e.target.value.trim();
+                      if (v) onShadeBarcodeLookup?.(v);
+                    }}
+                  />
                 </Form.Item>
               </div>
 

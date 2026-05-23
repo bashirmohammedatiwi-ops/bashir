@@ -107,6 +107,7 @@ export class ProductsService {
     const product = await this.prisma.product.create({
       data: {
         sku: dto.sku,
+        barcode: dto.barcode?.trim() || undefined,
         name: dto.name,
         slug: dto.slug,
         description: dto.description ?? "",
@@ -183,6 +184,7 @@ export class ProductsService {
       where: { id },
       data: {
         sku: dto.sku,
+        barcode: dto.barcode !== undefined ? dto.barcode?.trim() || null : undefined,
         name: dto.name,
         slug: dto.slug,
         description: dto.description,

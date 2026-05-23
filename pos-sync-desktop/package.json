@@ -1,0 +1,52 @@
+{
+  "name": "alhayaa-pos-sync",
+  "version": "1.0.0",
+  "description": "Alhayaa POS inventory sync — SQL Server to VPS",
+  "main": "dist/main.js",
+  "author": "Alhayaa",
+  "scripts": {
+    "build": "tsc",
+    "start": "npm run build && electron .",
+    "dev": "tsc && electron .",
+    "dist": "npm run build && electron-builder --win",
+    "dist:portable": "npm run build && electron-builder --win portable"
+  },
+  "license": "ISC",
+  "private": true,
+  "build": {
+    "appId": "com.alhayaa.pos-sync",
+    "productName": "Alhayaa POS Sync",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "renderer/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "Alhayaa-POSSync-Setup-${version}.${ext}",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Alhayaa POS Sync"
+    }
+  },
+  "dependencies": {
+    "axios": "^1.16.1",
+    "mssql": "^11.0.1"
+  },
+  "devDependencies": {
+    "@types/mssql": "^12.3.0",
+    "@types/node": "^25.9.1",
+    "electron": "^42.2.0",
+    "electron-builder": "^26.8.1",
+    "typescript": "^6.0.3"
+  }
+}

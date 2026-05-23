@@ -1,0 +1,19 @@
+{
+  "sqlServer": {
+    "server": "localhost\\FOTSQLSERVER",
+    "database": "HAYAT2025.mdf",
+    "user": "",
+    "password": "",
+    "options": {
+      "encrypt": false,
+      "trustServerCertificate": true
+    }
+  },
+  "api": {
+    "baseUrl": "http://187.127.88.146/api/v1"
+  },
+  "sync": {
+    "autoSyncMinutes": 5,
+    "batchSize": 500
+  }
+}

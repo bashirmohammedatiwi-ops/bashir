@@ -551,6 +551,16 @@ body {
   animation: alhayaaFadeIn 180ms ease;
 }
 
+.alhayaa-sync-banner {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #e6f4ff;
+  border: 1px solid #91caff;
+  color: #0958d9;
+  font-size: 13px;
+}
+
 @keyframes alhayaaFadeIn {
   from {
     opacity: 0;

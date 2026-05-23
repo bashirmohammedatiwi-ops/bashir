@@ -32,6 +32,7 @@ export class ProductVariantDto {
 
 export class CreateProductDto {
   @IsString() @IsNotEmpty() sku: string;
+  @IsOptional() @IsString() barcode?: string;
   @IsString() @IsNotEmpty() name: string;
   @IsString() @IsNotEmpty() slug: string;
   @IsString() @IsNotEmpty() brandId: string;

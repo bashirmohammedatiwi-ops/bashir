@@ -13,6 +13,7 @@ import { initShadePreviews, shadeFromApi } from "@/components/ProductShadesEdito
 import { imagesFromProduct } from "@/lib/productFormHelpers";
 import { buildProductPayload } from "@/lib/productPayload";
 import { mutations, queries } from "@/lib/queries";
+import { useBarcodeInventorySync } from "@/hooks/useBarcodeInventorySync";
 
 export default function ProductsPage() {
   const [page, setPage] = useState(1);
@@ -26,6 +27,13 @@ export default function ProductsPage() {
   const [shadePreviews, setShadePreviews] = useState<Record<number, ImageItem | null>>({});
   const [form] = Form.useForm();
   const qc = useQueryClient();
+  const {
+    pricingFromSync,
+    syncLoading,
+    syncMeta,
+    applyBarcode,
+    resetSync,
+  } = useBarcodeInventorySync(form);
 
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["products", page, search, filterCategoryId, filterSubcategoryId],
@@ -77,6 +85,7 @@ export default function ProductsPage() {
     setActiveTab("basic");
     setProductImages([]);
     setShadePreviews({});
+    resetSync();
     form.resetFields();
     form.setFieldsValue({
       isActive: true,
@@ -91,12 +100,13 @@ export default function ProductsPage() {
       skinType: [],
     });
     setOpen(true);
-  }, [form]);
+  }, [form, resetSync]);
 
   const openEdit = useCallback(
     async (row: any) => {
       setEditing(row);
       setActiveTab("basic");
+      resetSync();
       let full = row;
       try {
         full = (await queries.product(row.id)) ?? row;
@@ -137,7 +147,7 @@ export default function ProductsPage() {
       });
       setOpen(true);
     },
-    [form],
+    [form, resetSync],
   );
 
   useEffect(() => {
@@ -354,6 +364,10 @@ export default function ProductsPage() {
         categoriesData={categoriesData ?? []}
         brandsData={brandsData ?? []}
         subcategoryOptions={subcategoryOptions}
+        pricingFromSync={pricingFromSync}
+        syncLoading={syncLoading}
+        syncMeta={syncMeta}
+        onBarcodeLookup={applyBarcode}
         onClose={() => setOpen(false)}
         onSubmit={(v) => upsert.mutate(v)}
       />

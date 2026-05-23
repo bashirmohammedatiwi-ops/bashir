@@ -19,6 +19,7 @@ import { AddressesModule } from "./addresses/addresses.module";
 import { WishlistModule } from "./wishlist/wishlist.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { LoyaltyModule } from "./loyalty/loyalty.module";
+import { SyncModule } from "./sync/sync.module";
 import { HomeModule } from "./home/home.module";
 
 const redisEnabled = process.env.REDIS_DISABLED !== "1";
@@ -62,6 +63,7 @@ const conditionalImports: DynamicModule[] = redisEnabled
     NotificationsModule,
     LoyaltyModule,
     HomeModule,
+    SyncModule,
   ],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },

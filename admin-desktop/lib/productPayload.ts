@@ -17,6 +17,7 @@ export function buildProductPayload(
 
   return {
     sku: values.sku || `SKU-${Date.now()}`,
+    barcode: values.barcode?.trim() || undefined,
     name,
     slug: values.slug?.trim() || slugify(name, "product"),
     brandId: values.brandId,

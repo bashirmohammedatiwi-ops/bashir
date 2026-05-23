@@ -198,6 +198,7 @@ model BrandCollection {
 model Product {
   id              String          @id @default(uuid())
   sku             String          @unique
+  barcode         String?         @unique
   name            String
   slug            String          @unique
   description     String          @default("")
@@ -247,6 +248,24 @@ model Product {
   @@index([createdAt])
   @@index([price])
   @@index([rating])
+  @@index([barcode])
+}
+
+model InventorySyncSnapshot {
+  id              String   @id @default(uuid())
+  barcode         String   @unique
+  productCode     String?
+  productNum      String?
+  name            String?
+  price           Int
+  originalPrice   Int
+  discountPercent Int      @default(0)
+  stock           Int      @default(0)
+  offerName       String?
+  syncedAt        DateTime @updatedAt
+  createdAt       DateTime @default(now())
+
+  @@index([syncedAt])
 }
 
 model ProductVariant {
