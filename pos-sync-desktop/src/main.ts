@@ -21,6 +21,8 @@ type AppConfig = {
 
 let mainWindow: BrowserWindow | null = null;
 let autoSyncTimer: ReturnType<typeof setInterval> | null = null;
+let countdownTimer: ReturnType<typeof setInterval> | null = null;
+let nextAutoSyncAt: number | null = null;
 let config: AppConfig | null = null;
 let syncing = false;
 
@@ -40,7 +42,7 @@ function defaultConfig(): AppConfig {
     api: {
       baseUrl: "http://187.127.88.146/api/v1",
     },
-    sync: { autoSyncMinutes: 2, batchSize: 300, parallelUploads: 4 },
+    sync: { autoSyncMinutes: 5, batchSize: 300, parallelUploads: 4 },
   };
 }
 
@@ -92,7 +94,10 @@ async function runSync(manual = false): Promise<{
   }
 
   syncing = true;
-  mainWindow?.webContents.send("sync:status", { running: true, manual });
+  mainWindow?.webContents.send("sync:status", { running: true, manual, auto: !manual });
+  broadcastTimer();
+
+  let result = { ok: false, synced: 0, total: 0, changed: 0, skipped: 0 };
 
   try {
     log(manual ? "بدء المزامنة اليدوية..." : "بدء المزامنة التلقائية...");
@@ -103,7 +108,8 @@ async function runSync(manual = false): Promise<{
 
     if (items.length === 0) {
       log("لا توجد منتجات بسعر في قاعدة البيانات", "error");
-      return { ok: false, synced: 0, total: 0, changed: 0, skipped: 0 };
+      result = { ok: false, synced: 0, total: 0, changed: 0, skipped: 0 };
+      return result;
     }
 
     const uniqueItems = dedupeSyncItems(items);
@@ -117,7 +123,8 @@ async function runSync(manual = false): Promise<{
         `لا توجد تغييرات — ${uniqueItems.length} منتج محدّث (${knownCount} في الذاكرة المحلية)`,
         "success",
       );
-      return { ok: true, synced: 0, total: uniqueItems.length, changed: 0, skipped };
+      result = { ok: true, synced: 0, total: uniqueItems.length, changed: 0, skipped };
+      return result;
     }
 
     log(
@@ -158,44 +165,87 @@ async function runSync(manual = false): Promise<{
         `اكتملت جزئياً — رُفع ${synced} | فشل ${failed} | حُفظ ${pushed.length} | ${((Date.now() - uploadStarted) / 1000).toFixed(1)} ث`,
         "error",
       );
-      return {
+      result = {
         ok: synced > 0,
         synced,
         total: uniqueItems.length,
         changed: toSend.length,
         skipped,
       };
+      return result;
     }
 
     log(
       `اكتملت — رُفع ${synced} | حُفظ ${pushed.length} | ${((Date.now() - uploadStarted) / 1000).toFixed(1)} ث`,
       "success",
     );
-    return {
+    result = {
       ok: true,
       synced,
       total: uniqueItems.length,
       changed: toSend.length,
       skipped,
     };
+    return result;
   } catch (err: any) {
     log(`فشلت المزامنة: ${formatApiError(err)}`, "error");
-    return { ok: false, synced: 0, total: 0, changed: 0, skipped: 0 };
+    result = { ok: false, synced: 0, total: 0, changed: 0, skipped: 0 };
+    return result;
   } finally {
     syncing = false;
-    mainWindow?.webContents.send("sync:status", { running: false, manual });
+    mainWindow?.webContents.send("sync:status", { running: false, manual, auto: !manual });
+    mainWindow?.webContents.send("sync:complete", { manual, auto: !manual, ...result });
+    scheduleNextAutoSync();
   }
+}
+
+function broadcastTimer() {
+  const minutes = config?.sync?.autoSyncMinutes ?? 0;
+  if (minutes <= 0 || !nextAutoSyncAt) {
+    mainWindow?.webContents.send("sync:timer", { enabled: false, syncing });
+    return;
+  }
+
+  const secondsLeft = Math.max(0, Math.ceil((nextAutoSyncAt - Date.now()) / 1000));
+  mainWindow?.webContents.send("sync:timer", {
+    enabled: true,
+    minutes,
+    secondsLeft,
+    syncing,
+  });
+}
+
+function scheduleNextAutoSync() {
+  const minutes = config?.sync?.autoSyncMinutes ?? 0;
+  if (minutes <= 0) {
+    nextAutoSyncAt = null;
+    broadcastTimer();
+    return;
+  }
+
+  nextAutoSyncAt = Date.now() + minutes * 60_000;
+  broadcastTimer();
 }
 
 function restartAutoSync() {
   if (autoSyncTimer) clearInterval(autoSyncTimer);
+  if (countdownTimer) clearInterval(countdownTimer);
   autoSyncTimer = null;
+  countdownTimer = null;
 
   const minutes = config?.sync?.autoSyncMinutes ?? 0;
-  if (minutes > 0) {
-    autoSyncTimer = setInterval(() => void runSync(false), minutes * 60_000);
-    log(`المزامنة التلقائية كل ${minutes} دقيقة`);
+  if (minutes <= 0) {
+    nextAutoSyncAt = null;
+    broadcastTimer();
+    return;
   }
+
+  scheduleNextAutoSync();
+  autoSyncTimer = setInterval(() => {
+    if (!syncing) void runSync(false);
+  }, minutes * 60_000);
+  countdownTimer = setInterval(broadcastTimer, 1000);
+  log(`المزامنة التلقائية كل ${minutes} دقيقة — الرفع التالي خلال ${minutes}:00`);
 }
 
 function resolveRendererHtml(): string {

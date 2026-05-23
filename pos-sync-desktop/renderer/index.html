@@ -87,7 +87,21 @@
           </div>
 
           <h2 class="sync-title">مزامنة ذكية ومستمرة</h2>
-          <p class="sync-desc">يرسل فقط المنتجات التي تغيّر سعرها أو كميتها — تلقائياً كل دقيقتين</p>
+          <p id="syncDesc" class="sync-desc">يبحث ويرفع تلقائياً كل 5 دقائق — فقط المنتجات المتغيّرة</p>
+
+          <div id="autoTimerCard" class="auto-timer-card">
+            <div class="auto-timer-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+              </svg>
+            </div>
+            <div class="auto-timer-body">
+              <span id="timerLabel" class="auto-timer-label">الرفع التلقائي خلال</span>
+              <span id="timerCountdown" class="auto-timer-value">05:00</span>
+            </div>
+            <div id="timerRing" class="auto-timer-ring"></div>
+          </div>
 
           <div id="progressWrap" class="progress-wrap">
             <div class="progress-bar">
@@ -208,7 +222,7 @@
           <div class="field-row">
             <div class="field">
               <label>مزامنة تلقائية (دقائق — 0 = معطّلة)</label>
-              <input id="autoMinutes" type="number" min="0" value="2" />
+              <input id="autoMinutes" type="number" min="0" value="5" />
             </div>
             <div class="field">
               <label>حجم الدفعة (50–1000)</label>

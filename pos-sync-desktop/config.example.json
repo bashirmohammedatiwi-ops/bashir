@@ -13,7 +13,7 @@
     "baseUrl": "http://187.127.88.146/api/v1"
   },
   "sync": {
-    "autoSyncMinutes": 2,
+    "autoSyncMinutes": 5,
     "batchSize": 300,
     "parallelUploads": 4
   }

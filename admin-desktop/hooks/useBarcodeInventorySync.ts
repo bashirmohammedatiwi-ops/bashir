@@ -45,19 +45,12 @@ export function useBarcodeInventorySync(form: FormInstance) {
         const changed = pricingKey !== lastPricingRef.current;
         lastPricingRef.current = pricingKey;
 
-        const currentName = form.getFieldValue("name");
         form.setFieldsValue({
           barcode: normalizeBarcode(form.getFieldValue("barcode")) || data.barcode || barcode,
           price: data.price,
           originalPrice: data.originalPrice,
           discountPercent: data.discountPercent,
           stock: data.stock,
-          ...(currentName ? {} : data.name ? { name: data.name } : {}),
-          ...(form.getFieldValue("sku")
-            ? {}
-            : data.productNum
-              ? { sku: normalizeBarcode(data.productNum) }
-              : {}),
         });
 
         setHasSyncData(true);

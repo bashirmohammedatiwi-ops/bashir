@@ -372,9 +372,88 @@ body {
 .sync-desc {
   font-size: 0.88rem;
   color: var(--text-muted);
-  margin: 0 0 18px;
+  margin: 0 0 14px;
   max-width: 360px;
   line-height: 1.5;
+}
+
+.auto-timer-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 400px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, rgba(168, 128, 60, 0.12), rgba(232, 200, 130, 0.06));
+  border: 1px solid rgba(232, 200, 130, 0.22);
+  border-radius: 14px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.auto-timer-card.running {
+  border-color: rgba(232, 200, 130, 0.45);
+  box-shadow: 0 0 24px rgba(168, 128, 60, 0.18);
+}
+
+.auto-timer-card.disabled {
+  opacity: 0.55;
+}
+
+.auto-timer-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(168, 128, 60, 0.18);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.auto-timer-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.auto-timer-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.auto-timer-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.auto-timer-value {
+  font-size: 1.65rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--accent-light);
+  line-height: 1.1;
+}
+
+.auto-timer-ring {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid rgba(232, 200, 130, 0.15);
+  border-top-color: var(--accent);
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.auto-timer-card.running .auto-timer-ring {
+  opacity: 1;
+  animation: spin 1.2s linear infinite;
 }
 
 .progress-wrap {

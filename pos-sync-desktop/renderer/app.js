@@ -36,11 +36,55 @@ const els = {
   infoBarcode: $("infoBarcode"),
   configPath: $("configPath"),
   toastContainer: $("toastContainer"),
+  syncDesc: $("syncDesc"),
+  autoTimerCard: $("autoTimerCard"),
+  timerLabel: $("timerLabel"),
+  timerCountdown: $("timerCountdown"),
+  timerRing: $("timerRing"),
 };
 
 let logCount = 0;
 let dbStats = null;
 let progressTimer = null;
+let autoSyncMinutes = 5;
+
+function fmtCountdown(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+function updateAutoTimer({ enabled, minutes, secondsLeft, syncing: isSyncing }) {
+  autoSyncMinutes = minutes ?? autoSyncMinutes;
+
+  if (!enabled) {
+    els.autoTimerCard.classList.add("disabled");
+    els.autoTimerCard.classList.remove("running");
+    els.timerLabel.textContent = "الرفع التلقائي معطّل";
+    els.timerCountdown.textContent = "—";
+    els.syncDesc.textContent = "المزامنة التلقائية معطّلة — استخدم «مزامنة» يدوياً";
+    return;
+  }
+
+  els.autoTimerCard.classList.remove("disabled");
+  els.autoTimerCard.classList.toggle("running", Boolean(isSyncing));
+  els.syncDesc.textContent = `يبحث ويرفع تلقائياً كل ${minutes} دقائق — فقط المنتجات المتغيّرة`;
+
+  if (isSyncing) {
+    els.timerLabel.textContent = "جاري البحث والرفع التلقائي...";
+    els.timerCountdown.textContent = "●●●";
+  } else {
+    els.timerLabel.textContent = "الرفع التلقائي خلال";
+    els.timerCountdown.textContent = fmtCountdown(secondsLeft ?? 0);
+  }
+}
+
+function showLogsTab() {
+  const logsTab = document.querySelector('.tab[data-tab="logs"]');
+  if (logsTab && !logsTab.classList.contains("active")) {
+    logsTab.click();
+  }
+}
 
 function fmt(n) {
   if (n == null || n === "—") return "—";
@@ -69,13 +113,13 @@ function setProgress(visible, pct = 0, label = "") {
   if (label) els.progressLabel.textContent = label;
 }
 
-function simulateProgress() {
+function simulateProgress(label = "جاري قراءة SQL ورفع البيانات...") {
   let pct = 8;
-  setProgress(true, pct, "جاري قراءة SQL ورفع البيانات...");
+  setProgress(true, pct, label);
   clearInterval(progressTimer);
   progressTimer = setInterval(() => {
     pct = Math.min(pct + Math.random() * 12, 92);
-    setProgress(true, pct, "جاري الرفع إلى السيرفر...");
+    setProgress(true, pct, label.includes("تلقائي") ? "جاري الرفع التلقائي إلى السيرفر..." : "جاري الرفع إلى السيرفر...");
   }, 600);
 }
 
@@ -139,7 +183,7 @@ function fillForm(config) {
   fields.sqlUser.value = config.sqlServer?.user ?? "";
   fields.sqlPassword.value = config.sqlServer?.password ?? "";
   fields.apiBase.value = config.api?.baseUrl ?? "";
-  fields.autoMinutes.value = String(config.sync?.autoSyncMinutes ?? 2);
+  fields.autoMinutes.value = String(config.sync?.autoSyncMinutes ?? 5);
   fields.batchSize.value = String(config.sync?.batchSize ?? 300);
   fields.parallelUploads.value = String(config.sync?.parallelUploads ?? 4);
   updateInfoPanel(config);
@@ -151,10 +195,14 @@ function updateInfoPanel(config) {
   els.infoDb.textContent = config.sqlServer?.database || "—";
   els.infoApi.textContent = config.api?.baseUrl || "—";
   const mins = config.sync?.autoSyncMinutes ?? 0;
+  autoSyncMinutes = mins;
   els.infoAuto.innerHTML =
     mins > 0
       ? `<span class="badge badge-success">كل ${mins} د</span>`
       : `<span class="badge badge-muted">معطّل</span>`;
+  if (mins > 0) {
+    els.syncDesc.textContent = `يبحث ويرفع تلقائياً كل ${mins} دقائق — فقط المنتجات المتغيّرة`;
+  }
   els.infoBatch.textContent = fmt(config.sync?.batchSize ?? 300);
   els.infoParallel.textContent = `${config.sync?.parallelUploads ?? 4}×`;
 }
@@ -270,15 +318,43 @@ $("btnClearLog").addEventListener("click", () => {
 
 window.posSync.onLog(appendLog);
 
-window.posSync.onStatus(({ running }) => {
+window.posSync.onStatus(({ running, manual, auto }) => {
   if (running) {
-    setStatus(true);
-    simulateProgress();
+    const text = auto ? "رفع تلقائي جاري..." : "جاري المزامنة...";
+    setStatus(true, text);
+    simulateProgress(auto ? "جاري البحث والرفع التلقائي..." : "جاري قراءة SQL ورفع البيانات...");
+    if (auto) {
+      showLogsTab();
+      toast("بدء الرفع التلقائي", "success");
+    }
+    updateAutoTimer({
+      enabled: autoSyncMinutes > 0,
+      minutes: autoSyncMinutes,
+      secondsLeft: 0,
+      syncing: true,
+    });
   } else {
     setStatus(false);
     stopProgress(true);
   }
 });
+
+window.posSync.onComplete(({ auto, ...result }) => {
+  updateLastSync(result);
+  if (auto) {
+    if (result.ok) {
+      if (result.changed === 0) {
+        toast(`الرفع التلقائي — كل المنتجات محدّثة (${fmt(result.total)})`, "success");
+      } else {
+        toast(`الرفع التلقائي — رُفع ${fmt(result.synced)} منتج`, "success");
+      }
+    } else {
+      toast("فشل الرفع التلقائي", "error");
+    }
+  }
+});
+
+window.posSync.onTimer(updateAutoTimer);
 
 window.posSync.getConfig().then(async ({ config, configPath }) => {
   fillForm(config);
