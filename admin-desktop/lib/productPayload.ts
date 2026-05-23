@@ -1,16 +1,6 @@
 import { shadeToPayload } from "@/components/ProductShadesEditor";
 import type { ImageItem } from "@/components/ProductImageDropzone";
-
-function slugify(name: string) {
-  return (
-    name
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^\w\u0600-\u06FF-]/g, "")
-      .slice(0, 80) || `product-${Date.now()}`
-  );
-}
+import { slugify } from "./slugify";
 
 export function buildProductPayload(
   values: Record<string, any>,
@@ -23,10 +13,12 @@ export function buildProductPayload(
         .filter(Boolean)
     : [];
 
+  const name = values.name != null ? String(values.name).trim() : "";
+
   return {
     sku: values.sku || `SKU-${Date.now()}`,
-    name: values.name,
-    slug: values.slug || slugify(values.name),
+    name,
+    slug: values.slug?.trim() || slugify(name, "product"),
     brandId: values.brandId,
     categoryId: values.categoryId,
     subcategoryId: values.subcategoryId || undefined,

@@ -267,7 +267,7 @@ export function shadeToPayload(s: any, index: number) {
     name: s.name,
     colorHex: s.colorHex,
     colorHexEnd: s.isGradient && s.colorHexEnd ? s.colorHexEnd : undefined,
-    barcode: s.barcode?.trim() || undefined,
+    barcode: typeof s.barcode === "string" ? s.barcode.trim() || undefined : undefined,
     imageId: s.imageId || undefined,
     position: index,
   };

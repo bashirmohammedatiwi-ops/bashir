@@ -5,7 +5,7 @@ function isTypingTarget(target: EventTarget | null): boolean {
   const tag = target.tagName;
   if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
   if (target.isContentEditable) return true;
-  if (target.closest(".ant-select-dropdown, .ant-picker-dropdown, .ant-modal")) return true;
+  if (target.closest(".ant-select-dropdown, .ant-picker-dropdown")) return true;
   return false;
 }
 
@@ -47,17 +47,15 @@ export function useFormWizard(
         return;
       }
 
-      if (isTypingTarget(e.target)) return;
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
 
-      if (e.key === "ArrowLeft") {
-        e.preventDefault();
-        goNext();
-        return;
-      }
-      if (e.key === "ArrowRight") {
-        e.preventDefault();
-        goPrev();
-      }
+      const inField = isTypingTarget(e.target);
+      // Inside a field: only Alt+arrows navigate (plain arrows move the text cursor).
+      if (inField && !e.altKey) return;
+
+      e.preventDefault();
+      if (e.key === "ArrowLeft") goNext();
+      else goPrev();
     };
 
     window.addEventListener("keydown", onKey);

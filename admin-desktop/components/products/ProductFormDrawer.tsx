@@ -14,7 +14,7 @@ import {
   type FormInstance,
 } from "antd";
 import type { ImageItem } from "@/components/ProductImageDropzone";
-import { ProductShadesEditor, initShadePreviews, shadeFromApi } from "@/components/ProductShadesEditor";
+import { ProductShadesEditor } from "@/components/ProductShadesEditor";
 import { WizardTabs, type WizardTabItem } from "@/components/WizardTabs";
 import { useFormWizard } from "@/hooks/useFormWizard";
 
@@ -42,6 +42,29 @@ export const PRODUCT_WIZARD_TABS: WizardTabItem[] = [
 ];
 
 const TAB_KEYS = PRODUCT_WIZARD_TABS.map((t) => t.key);
+
+function TabPanel({
+  tabKey,
+  activeTab,
+  children,
+  className = "",
+}: {
+  tabKey: string;
+  activeTab: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const visible = tabKey === activeTab;
+  return (
+    <div
+      className={`alhayaa-form-section ${className}`.trim()}
+      hidden={!visible}
+      aria-hidden={!visible}
+    >
+      {children}
+    </div>
+  );
+}
 
 type ProductFormDrawerProps = {
   open: boolean;
@@ -112,9 +135,21 @@ export function ProductFormDrawer({
     >
       <WizardTabs tabs={tabsWithCounts} activeKey={activeTab} onChange={setActiveTab} />
 
-      <Form layout="vertical" form={form} onFinish={onSubmit} className="alhayaa-product-form">
-        {activeTab === "basic" && (
-          <div className="alhayaa-form-section">
+      <Form
+        layout="vertical"
+        form={form}
+        onFinish={onSubmit}
+        className="alhayaa-product-form"
+        onFinishFailed={(info) => {
+          const field = String(info.errorFields[0]?.name?.[0] ?? "");
+          if (["name", "sku", "slug", "brandId", "categoryId", "subcategoryId", "tags", "skinType"].includes(field)) {
+            setActiveTab("basic");
+          } else if (["price", "stock", "originalPrice", "discountPercent", "pointsEarned", "rating"].includes(field)) {
+            setActiveTab("pricing");
+          }
+        }}
+      >
+        <TabPanel tabKey="basic" activeTab={activeTab}>
             <Form.Item name="name" label="اسم المنتج" rules={[{ required: true }]}>
               <Input placeholder="كريم مرطب فاخر" autoFocus />
             </Form.Item>
@@ -164,11 +199,9 @@ export function ProductFormDrawer({
             <Form.Item name="skinType" label="نوع البشرة المناسب">
               <Select mode="multiple" options={SKIN_TYPES} placeholder="اختر..." />
             </Form.Item>
-          </div>
-        )}
+        </TabPanel>
 
-        {activeTab === "pricing" && (
-          <div className="alhayaa-form-section">
+        <TabPanel tabKey="pricing" activeTab={activeTab}>
             <div className="alhayaa-form-row">
               <Form.Item
                 name="price"
@@ -203,11 +236,9 @@ export function ProductFormDrawer({
                 <InputNumber style={{ width: "100%" }} min={0} max={5} step={0.1} />
               </Form.Item>
             </div>
-          </div>
-        )}
+        </TabPanel>
 
-        {activeTab === "content" && (
-          <div className="alhayaa-form-section">
+        <TabPanel tabKey="content" activeTab={activeTab}>
             <Form.Item name="description" label="وصف المنتج">
               <Input.TextArea rows={5} placeholder="وصف تفصيلي يظهر في صفحة المنتج..." />
             </Form.Item>
@@ -217,22 +248,18 @@ export function ProductFormDrawer({
             <Form.Item name="howToUse" label="طريقة الاستخدام">
               <Input.TextArea rows={4} placeholder="1. نظّفي البشرة..." />
             </Form.Item>
-          </div>
-        )}
+        </TabPanel>
 
-        {activeTab === "images" && (
-          <div className="alhayaa-form-section">
+        <TabPanel tabKey="images" activeTab={activeTab}>
             <ProductImageDropzone
               items={productImages}
               onChange={setProductImages}
               purpose="PRODUCT"
               max={12}
             />
-          </div>
-        )}
+        </TabPanel>
 
-        {activeTab === "shades" && (
-          <div className="alhayaa-form-section">
+        <TabPanel tabKey="shades" activeTab={activeTab}>
             <Form.List name="shades">
               {(fields, { add, remove }) => (
                 <ProductShadesEditor
@@ -245,11 +272,9 @@ export function ProductFormDrawer({
                 />
               )}
             </Form.List>
-          </div>
-        )}
+        </TabPanel>
 
-        {activeTab === "variants" && (
-          <div className="alhayaa-form-section">
+        <TabPanel tabKey="variants" activeTab={activeTab}>
             <Form.List name="variants">
               {(fields, { add, remove: rm }) => (
                 <div className="alhayaa-variants-list">
@@ -289,11 +314,9 @@ export function ProductFormDrawer({
                 </div>
               )}
             </Form.List>
-          </div>
-        )}
+        </TabPanel>
 
-        {activeTab === "flags" && (
-          <div className="alhayaa-form-section alhayaa-flags-grid">
+        <TabPanel tabKey="flags" activeTab={activeTab} className="alhayaa-flags-grid">
             <Form.Item name="isFeatured" label="منتج مميز" valuePropName="checked">
               <Switch />
             </Form.Item>
@@ -313,8 +336,7 @@ export function ProductFormDrawer({
             <Form.Item name="isActive" label="نشط ومتاح للبيع" valuePropName="checked">
               <Switch />
             </Form.Item>
-          </div>
-        )}
+        </TabPanel>
       </Form>
     </Drawer>
   );

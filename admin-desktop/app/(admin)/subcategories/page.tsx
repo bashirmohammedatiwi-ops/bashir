@@ -21,15 +21,7 @@ import { MediaPicker } from "@/components/MediaPicker";
 import { mediaThumb } from "@/lib/mediaUrl";
 import { apiErrorMessage } from "@/lib/apiError";
 import { mutations, queries } from "@/lib/queries";
-
-function slugify(name: string) {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^\w\u0600-\u06FF-]/g, "")
-    .slice(0, 60) || `section-${Date.now()}`;
-}
+import { slugify } from "@/lib/slugify";
 
 export default function SubcategoriesPage() {
   const [parentFilter, setParentFilter] = useState<string | undefined>();
@@ -71,7 +63,7 @@ export default function SubcategoriesPage() {
     mutationFn: async (values: any) => {
       const payload = {
         ...values,
-        slug: values.slug || slugify(values.name),
+        slug: values.slug?.trim() || slugify(values.name, "section"),
       };
       return editing?.id
         ? mutations.updateSubcategory(editing.id, payload)

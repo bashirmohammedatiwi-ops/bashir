@@ -18,17 +18,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { MediaPicker } from "@/components/MediaPicker";
+import { slugify } from "@/lib/slugify";
 import { mediaThumb } from "@/lib/mediaUrl";
 import { mutations, queries } from "@/lib/queries";
-
-function slugify(name: string) {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^\w\u0600-\u06FF-]/g, "")
-    .slice(0, 60) || `cat-${Date.now()}`;
-}
 
 export default function CategoriesPage() {
   const { data, isLoading } = useQuery({
@@ -204,7 +196,7 @@ export default function CategoriesPage() {
           onFinish={(v) => {
             upsert.mutate({
               ...v,
-              slug: v.slug || slugify(v.name),
+              slug: v.slug?.trim() || slugify(v.name, "cat"),
             });
           }}
         >

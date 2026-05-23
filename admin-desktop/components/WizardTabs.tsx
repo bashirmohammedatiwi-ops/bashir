@@ -41,7 +41,9 @@ export const WizardTabs = memo(function WizardTabs({
         })}
       </div>
       <div className="alhayaa-wizard-hint">
-        <kbd>←</kbd> <kbd>→</kbd> التنقل بين الأقسام
+        <kbd>Alt</kbd>+<kbd>←</kbd> <kbd>Alt</kbd>+<kbd>→</kbd> التنقل (حتى داخل الحقول)
+        <span className="alhayaa-wizard-hint-sep">•</span>
+        <kbd>←</kbd> <kbd>→</kbd> التنقل خارج الحقول
         <span className="alhayaa-wizard-hint-sep">•</span>
         <kbd>Ctrl</kbd>+<kbd>S</kbd> حفظ
         <span className="alhayaa-wizard-hint-sep">•</span>

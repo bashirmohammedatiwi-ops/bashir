@@ -17,15 +17,7 @@ import {
 import { useMemo, useState } from "react";
 import { MediaPicker } from "@/components/MediaPicker";
 import { mutations, queries } from "@/lib/queries";
-
-function slugify(name: string) {
-  return name
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^\w\u0600-\u06FF-]/g, "")
-    .slice(0, 60) || `line-${Date.now()}`;
-}
+import { slugify } from "@/lib/slugify";
 
 export default function BrandsPage() {
   const { data, isLoading } = useQuery({
@@ -306,7 +298,7 @@ export default function BrandsPage() {
           onFinish={(v) =>
             upsertCol.mutate({
               ...v,
-              slug: v.slug || slugify(v.name),
+              slug: v.slug?.trim() || slugify(v.name, "line"),
             })
           }
         >
