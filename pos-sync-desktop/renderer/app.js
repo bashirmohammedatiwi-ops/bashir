@@ -61,10 +61,12 @@ $("btnTest").addEventListener("click", async () => {
   $("btnTest").disabled = true;
   try {
     await window.posSync.saveConfig(readForm());
-    const { count } = await window.posSync.testDb();
+    const { count, stats } = await window.posSync.testDb();
     appendLog({
       at: new Date().toISOString(),
-      message: `اتصال ناجح — ${count} منتج بباركود`,
+      message: stats
+        ? `اتصال ناجح — ${count} منتج للمزامنة (إجمالي ${stats.totalArticles}، بسعر ${stats.totalWithPrice}، بباركود ${stats.withBarcode}، عروض ${stats.productsOnOffer})`
+        : `اتصال ناجح — ${count} منتج للمزامنة`,
       level: "success",
     });
   } catch (err) {

@@ -1,14 +1,14 @@
 export type PosArticleRow = {
-  Seq: number;
-  Num: string | null;
-  Name1: string | null;
-  Barcode: string | null;
-  SellPr4: number;
-  SellPr5: number;
-  CurTot1: number;
-  discount: number | null;
-  discount_type: number | null;
-  offer_name: string | null;
+  productCode: number;
+  productNum: string | null;
+  name: string | null;
+  barcode: string | null;
+  originalPrice: number;
+  storedFinalPrice: number;
+  quantity: number;
+  discountValue: number | null;
+  discountType: number | null;
+  offerName: string | null;
 };
 
 export type SyncItem = {
@@ -23,47 +23,66 @@ export type SyncItem = {
   offerName?: string;
 };
 
-export function computePricing(row: PosArticleRow): Omit<SyncItem, "barcode" | "productCode" | "productNum" | "name"> & {
-  offerName?: string;
-} {
-  const originalPrice = Math.round(Number(row.SellPr4) || 0);
-  let finalPrice = originalPrice;
+/** نفس calcPricing في Desktop\api\server.js */
+export function computePricing(row: PosArticleRow): Omit<
+  SyncItem,
+  "barcode" | "productCode" | "productNum" | "name"
+> & { offerName?: string } {
+  const original = Math.round(Number(row.originalPrice) || 0);
+  const storedFinal = Math.round(Number(row.storedFinalPrice) || 0);
+  const quantity = Math.max(0, Math.round(Number(row.quantity) || 0));
+  const discountValue = row.discountValue != null ? Number(row.discountValue) : null;
+  const discountType = row.discountType != null ? Number(row.discountType) : 0;
+
+  let hasOffer = false;
+  let finalPrice = original;
   let discountPercent = 0;
+  let offerName: string | undefined = row.offerName?.trim() || undefined;
 
-  const hasOffer = row.discount != null && Number(row.discount) > 0;
-  const sellPr5 = Math.round(Number(row.SellPr5) || 0);
-
-  if (hasOffer && sellPr5 > 0 && sellPr5 < originalPrice) {
-    finalPrice = sellPr5;
-  } else if (hasOffer && Number(row.discount_type) === 0) {
-    finalPrice = Math.round(originalPrice * (1 - Number(row.discount) / 100));
-  }
-
-  if (originalPrice > 0 && finalPrice < originalPrice) {
-    discountPercent = Math.round(((originalPrice - finalPrice) / originalPrice) * 100);
-  } else if (hasOffer && Number(row.discount_type) === 0) {
-    discountPercent = Math.round(Number(row.discount));
+  if (discountValue != null && discountValue > 0) {
+    hasOffer = true;
+    if (storedFinal > 0 && storedFinal < original) {
+      finalPrice = storedFinal;
+      discountPercent = Math.round((1 - finalPrice / original) * 1000) / 10;
+    } else if (discountType === 0) {
+      discountPercent = discountValue;
+      finalPrice = Math.round(original * (1 - discountValue / 100));
+    } else {
+      finalPrice = Math.max(0, Math.round(original - discountValue));
+      discountPercent = original > 0 ? Math.round((discountValue / original) * 1000) / 10 : 0;
+    }
   }
 
   return {
-    price: finalPrice,
-    originalPrice,
-    discountPercent,
-    stock: Math.max(0, Math.round(Number(row.CurTot1) || 0)),
-    offerName: row.offer_name ?? undefined,
+    price: hasOffer ? finalPrice : original,
+    originalPrice: original,
+    discountPercent: hasOffer ? Math.round(discountPercent) : 0,
+    stock: quantity,
+    offerName: hasOffer ? offerName : undefined,
   };
 }
 
+export function resolveSyncBarcode(row: PosArticleRow): string | null {
+  const barcode = String(row.barcode ?? "").trim();
+  if (barcode) return barcode;
+
+  const num = String(row.productNum ?? "").trim();
+  if (num) return num;
+
+  if (row.productCode) return String(row.productCode);
+  return null;
+}
+
 export function rowToSyncItem(row: PosArticleRow): SyncItem | null {
-  const barcode = String(row.Barcode ?? "").trim();
+  const barcode = resolveSyncBarcode(row);
   if (!barcode) return null;
 
   const pricing = computePricing(row);
   return {
     barcode,
-    productCode: String(row.Seq),
-    productNum: row.Num ?? undefined,
-    name: row.Name1 ?? undefined,
+    productCode: String(row.productCode),
+    productNum: row.productNum?.trim() || undefined,
+    name: row.name?.trim() || undefined,
     ...pricing,
   };
 }

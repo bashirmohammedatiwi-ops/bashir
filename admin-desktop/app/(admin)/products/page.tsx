@@ -28,10 +28,11 @@ export default function ProductsPage() {
   const [form] = Form.useForm();
   const qc = useQueryClient();
   const {
-    pricingFromSync,
+    hasSyncData,
     syncLoading,
     syncMeta,
     applyBarcode,
+    refreshPricing,
     resetSync,
   } = useBarcodeInventorySync(form);
 
@@ -45,6 +46,7 @@ export default function ProductsPage() {
         categoryId: filterCategoryId,
         subcategoryId: filterSubcategoryId,
       }),
+    refetchInterval: 20_000,
   });
 
   const { data: categoriesData } = useQuery({
@@ -146,9 +148,18 @@ export default function ProductsPage() {
         variants: full?.variants ?? [],
       });
       setOpen(true);
+      window.setTimeout(() => void applyBarcode(), 0);
     },
-    [form, resetSync],
+    [form, resetSync, applyBarcode],
   );
+
+  useEffect(() => {
+    if (!open) return;
+    const tick = () => void refreshPricing();
+    tick();
+    const id = window.setInterval(tick, 15_000);
+    return () => window.clearInterval(id);
+  }, [open, refreshPricing]);
 
   useEffect(() => {
     if (!open) {
@@ -364,7 +375,7 @@ export default function ProductsPage() {
         categoriesData={categoriesData ?? []}
         brandsData={brandsData ?? []}
         subcategoryOptions={subcategoryOptions}
-        pricingFromSync={pricingFromSync}
+        hasSyncData={hasSyncData}
         syncLoading={syncLoading}
         syncMeta={syncMeta}
         onBarcodeLookup={applyBarcode}

@@ -80,7 +80,7 @@ type ProductFormDrawerProps = {
   categoriesData: any[];
   brandsData: any[];
   subcategoryOptions: { value: string; label: string }[];
-  pricingFromSync?: boolean;
+  hasSyncData?: boolean;
   syncLoading?: boolean;
   syncMeta?: { offerName?: string; syncedAt?: string } | null;
   onBarcodeLookup?: (barcode: string) => void;
@@ -102,7 +102,7 @@ export function ProductFormDrawer({
   categoriesData,
   brandsData,
   subcategoryOptions,
-  pricingFromSync = false,
+  hasSyncData = false,
   syncLoading = false,
   syncMeta = null,
   onBarcodeLookup,
@@ -222,12 +222,14 @@ export function ProductFormDrawer({
         </TabPanel>
 
         <TabPanel tabKey="pricing" activeTab={activeTab}>
-            {pricingFromSync ? (
-              <div className="alhayaa-sync-banner">
-                الأسعار والكمية من بيانات المزامنة (POS) — لا تُعدَّل يدوياً
-                {syncMeta?.offerName ? ` — عرض: ${syncMeta.offerName}` : ""}
-              </div>
-            ) : null}
+            <div className="alhayaa-sync-banner">
+              السعر والكمية تُحدَّث تلقائياً من POS — لا يمكن تعديلها يدوياً
+              {syncMeta?.syncedAt
+                ? ` — آخر مزامنة: ${new Date(syncMeta.syncedAt).toLocaleString("ar-IQ")}`
+                : ""}
+              {syncMeta?.offerName ? ` — عرض: ${syncMeta.offerName}` : ""}
+              {!hasSyncData ? " — أدخل باركود وشغّل POS Sync" : ""}
+            </div>
             <div className="alhayaa-form-row">
               <Form.Item
                 name="price"
@@ -235,15 +237,15 @@ export function ProductFormDrawer({
                 className="alhayaa-form-col"
                 rules={[{ required: true }]}
               >
-                <InputNumber style={{ width: "100%" }} min={0} disabled={pricingFromSync} />
+                <InputNumber style={{ width: "100%" }} min={0} disabled readOnly />
               </Form.Item>
               <Form.Item name="originalPrice" label="السعر الأصلي" className="alhayaa-form-col">
-                <InputNumber style={{ width: "100%" }} min={0} disabled={pricingFromSync} />
+                <InputNumber style={{ width: "100%" }} min={0} disabled readOnly />
               </Form.Item>
             </div>
             <div className="alhayaa-form-row">
               <Form.Item name="discountPercent" label="نسبة الخصم %" className="alhayaa-form-col">
-                <InputNumber style={{ width: "100%" }} min={0} max={100} disabled={pricingFromSync} />
+                <InputNumber style={{ width: "100%" }} min={0} max={100} disabled readOnly />
               </Form.Item>
               <Form.Item
                 name="stock"
@@ -251,7 +253,7 @@ export function ProductFormDrawer({
                 className="alhayaa-form-col"
                 rules={[{ required: true }]}
               >
-                <InputNumber style={{ width: "100%" }} min={0} disabled={pricingFromSync} />
+                <InputNumber style={{ width: "100%" }} min={0} disabled readOnly />
               </Form.Item>
             </div>
             <div className="alhayaa-form-row">

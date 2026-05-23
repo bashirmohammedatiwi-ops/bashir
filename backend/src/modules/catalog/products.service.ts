@@ -4,6 +4,7 @@ import { PrismaService } from "../../common/prisma.service";
 import { paginate } from "../../common/dto/pagination.dto";
 import { CategoriesService } from "./categories.service";
 import { CreateProductDto, QueryProductsDto, UpdateProductDto } from "./dto/product.dto";
+import { InventorySyncService } from "../sync/inventory-sync.service";
 
 const productRelationsFull = {
   brand: { select: { id: true, name: true, slug: true } },
@@ -34,6 +35,7 @@ export class ProductsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly categories: CategoriesService,
+    private readonly inventorySync: InventorySyncService,
   ) {}
 
   async list(q: QueryProductsDto) {
@@ -99,6 +101,7 @@ export class ProductsService {
   }
 
   async create(dto: CreateProductDto) {
+    dto = await this.applySyncedPricing(dto);
     const subcategoryId = await this.categories.validateSubcategoryForCategory(
       dto.subcategoryId,
       dto.categoryId,
@@ -159,6 +162,7 @@ export class ProductsService {
   }
 
   async update(id: string, dto: UpdateProductDto) {
+    dto = await this.applySyncedPricing(dto);
     await this.ensureExists(id);
     const existing = await this.prisma.product.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException("Product not found");
@@ -242,6 +246,30 @@ export class ProductsService {
   private async ensureExists(id: string) {
     const exists = await this.prisma.product.findUnique({ where: { id } });
     if (!exists) throw new NotFoundException("Product not found");
+  }
+
+  private collectBarcodes(dto: CreateProductDto): string[] {
+    const codes: string[] = [];
+    if (dto.barcode?.trim()) codes.push(dto.barcode.trim());
+    for (const shade of dto.shades ?? []) {
+      if (shade.barcode?.trim()) codes.push(shade.barcode.trim());
+    }
+    return codes;
+  }
+
+  private async applySyncedPricing<T extends CreateProductDto>(dto: T): Promise<T> {
+    const snapshot = await this.inventorySync.getSnapshotForBarcodes(this.collectBarcodes(dto));
+    if (!snapshot) return dto;
+
+    const pricing = this.inventorySync.pricingFromSnapshot(snapshot);
+    return {
+      ...dto,
+      price: pricing.price,
+      originalPrice: pricing.originalPrice,
+      discountPercent: pricing.discountPercent,
+      stock: pricing.stock,
+      isPromo: pricing.isPromo,
+    };
   }
 
   private buildOrderBy(sort?: string): Prisma.ProductOrderByWithRelationInput {

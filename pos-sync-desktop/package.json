@@ -22,20 +22,35 @@
     "files": [
       "dist/**/*",
       "renderer/**/*",
+      "config.example.json",
       "package.json"
     ],
+    "extraMetadata": {
+      "main": "dist/main.js"
+    },
     "win": {
       "target": [
-        "nsis"
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
       ],
-      "artifactName": "Alhayaa-POSSync-Setup-${version}.${ext}",
-      "signAndEditExecutable": false
+      "signAndEditExecutable": false,
+      "requestedExecutionLevel": "asInvoker"
+    },
+    "portable": {
+      "artifactName": "Alhayaa-POSSync-Portable-${version}.exe"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": true,
-      "shortcutName": "Alhayaa POS Sync"
+      "createStartMenuShortcut": true,
+      "runAfterFinish": true,
+      "shortcutName": "Alhayaa POS Sync",
+      "installerLanguages": ["en_US", "ar_SA"],
+      "language": "1025",
+      "artifactName": "Alhayaa-POSSync-Setup-${version}.${ext}"
     }
   },
   "dependencies": {

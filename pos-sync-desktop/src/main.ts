@@ -1,9 +1,15 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import * as fs from "fs";
 import * as path from "path";
-import { createApiClient, pushBulk } from "./apiClient";
-import { rowToSyncItem } from "./pricing";
+import { createApiClient, formatApiError, pushBulkWithRetry } from "./apiClient";
+import { rowToSyncItem, type SyncItem } from "./pricing";
 import { fetchArticles, testConnection, type SqlServerConfig } from "./sqlServer";
+import {
+  filterChangedItems,
+  loadSyncState,
+  mergeSyncState,
+  saveSyncState,
+} from "./syncState";
 
 type AppConfig = {
   sqlServer: SqlServerConfig;
@@ -32,7 +38,7 @@ function defaultConfig(): AppConfig {
     api: {
       baseUrl: "http://187.127.88.146/api/v1",
     },
-    sync: { autoSyncMinutes: 5, batchSize: 100 },
+    sync: { autoSyncMinutes: 2, batchSize: 50 },
   };
 }
 
@@ -86,25 +92,60 @@ async function runSync(manual = false): Promise<{ ok: boolean; synced: number; t
     const items = rows.map(rowToSyncItem).filter((x): x is NonNullable<typeof x> => x != null);
 
     if (items.length === 0) {
-      log("لا توجد منتجات بباركود في قاعدة البيانات", "error");
+      log("لا توجد منتجات بسعر في قاعدة البيانات", "error");
       return { ok: false, synced: 0, total: 0 };
     }
 
-    const client = createApiClient(config.api);
-    const batchSize = config.sync.batchSize || 100;
-    let synced = 0;
+    const previousState = loadSyncState(app.getPath("userData"));
+    const toSend = filterChangedItems(items, previousState);
 
-    for (let i = 0; i < items.length; i += batchSize) {
-      const batch = items.slice(i, i + batchSize);
-      const result = await pushBulk(client, batch);
-      synced += result.synced ?? batch.length;
-      log(`تم إرسال ${Math.min(i + batch.length, items.length)} / ${items.length} منتج`);
+    if (toSend.length === 0) {
+      log("لا توجد تغييرات جديدة — البيانات محدّثة على السيرفر", "success");
+      return { ok: true, synced: 0, total: items.length };
+    }
+
+    log(
+      manual
+        ? `مزامنة ${toSend.length} منتج من ${items.length}`
+        : `تحديث ${toSend.length} منتج متغيّر من ${items.length}`,
+    );
+
+    const client = createApiClient(config.api);
+    const batchSize = Math.max(10, Math.min(config.sync.batchSize || 50, 100));
+    let synced = 0;
+    let failed = 0;
+    const pushed: SyncItem[] = [];
+
+    for (let i = 0; i < toSend.length; i += batchSize) {
+      const batch = toSend.slice(i, i + batchSize);
+      try {
+        const result = await pushBulkWithRetry(client, batch);
+        synced += result.synced ?? batch.length;
+        failed += result.failed ?? 0;
+        pushed.push(...batch);
+        log(`تم إرسال ${Math.min(i + batch.length, toSend.length)} / ${toSend.length}`);
+      } catch (err) {
+        log(
+          `فشل الدفعة ${i + 1}-${Math.min(i + batch.length, toSend.length)}: ${formatApiError(err)}`,
+          "error",
+        );
+        failed += batch.length;
+      }
+    }
+
+    if (pushed.length > 0) {
+      saveSyncState(app.getPath("userData"), mergeSyncState(previousState, pushed));
+    }
+
+    if (failed > 0) {
+      log(`اكتملت المزامنة جزئياً — ناجح: ${synced} | فاشل: ${failed}`, "error");
+      return { ok: synced > 0, synced, total: items.length };
     }
 
     log(`اكتملت المزامنة — ${synced} منتج`, "success");
     return { ok: true, synced, total: items.length };
   } catch (err: any) {
-    log(`فشلت المزامنة: ${err?.message ?? err}`, "error");
+    log(`فشلت المزامنة: ${formatApiError(err)}`, "error");
     return { ok: false, synced: 0, total: 0 };
   } finally {
     syncing = false;
@@ -123,6 +164,17 @@ function restartAutoSync() {
   }
 }
 
+function resolveRendererHtml(): string {
+  if (app.isPackaged) {
+    return path.join(__dirname, "..", "renderer", "index.html");
+  }
+  return path.join(__dirname, "..", "renderer", "index.html");
+}
+
+function resolvePreload(): string {
+  return path.join(__dirname, "preload.js");
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 720,
@@ -131,15 +183,23 @@ function createWindow() {
     minHeight: 480,
     title: "Alhayaa POS Sync",
     autoHideMenuBar: true,
+    show: false,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: resolvePreload(),
       contextIsolation: true,
       nodeIntegration: false,
+      sandbox: false,
     },
   });
 
-  mainWindow.loadFile(path.join(__dirname, "..", "renderer", "index.html"));
+  mainWindow.once("ready-to-show", () => mainWindow?.show());
+  void mainWindow.loadFile(resolveRendererHtml());
 }
+
+app.setPath(
+  "userData",
+  path.join(app.getPath("appData"), "alhayaa-pos-sync"),
+);
 
 app.whenReady().then(() => {
   config = loadConfig();
@@ -163,8 +223,8 @@ ipcMain.handle("config:save", (_e, next: AppConfig) => {
 
 ipcMain.handle("db:test", async () => {
   if (!config) throw new Error("Config not loaded");
-  const count = await testConnection(config.sqlServer);
-  return { count };
+  const { count, stats } = await testConnection(config.sqlServer);
+  return { count, stats };
 });
 
 ipcMain.handle("sync:run", async () => runSync(true));
