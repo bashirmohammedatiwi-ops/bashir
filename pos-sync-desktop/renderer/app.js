@@ -8,6 +8,7 @@ const fields = {
   apiBase: $("apiBase"),
   autoMinutes: $("autoMinutes"),
   batchSize: $("batchSize"),
+  parallelUploads: $("parallelUploads"),
 };
 
 const logEl = $("log");
@@ -36,7 +37,8 @@ function readForm() {
     },
     sync: {
       autoSyncMinutes: Number(fields.autoMinutes.value) || 0,
-      batchSize: Number(fields.batchSize.value) || 500,
+      batchSize: Number(fields.batchSize.value) || 300,
+      parallelUploads: Number(fields.parallelUploads.value) || 4,
     },
   };
 }
@@ -48,8 +50,9 @@ function fillForm(config) {
   fields.sqlUser.value = config.sqlServer?.user ?? "";
   fields.sqlPassword.value = config.sqlServer?.password ?? "";
   fields.apiBase.value = config.api?.baseUrl ?? "";
-  fields.autoMinutes.value = String(config.sync?.autoSyncMinutes ?? 5);
-  fields.batchSize.value = String(config.sync?.batchSize ?? 500);
+  fields.autoMinutes.value = String(config.sync?.autoSyncMinutes ?? 2);
+  fields.batchSize.value = String(config.sync?.batchSize ?? 300);
+  fields.parallelUploads.value = String(config.sync?.parallelUploads ?? 4);
 }
 
 $("btnSave").addEventListener("click", async () => {

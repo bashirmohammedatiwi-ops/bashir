@@ -109,10 +109,12 @@
               <input id="autoMinutes" type="number" min="0" value="2" />
             </div>
             <div>
-              <label>حجم الدفعة</label>
-              <input id="batchSize" type="number" min="10" value="500" />
+              <label>حجم الدفعة (50–1000)</label>
+              <input id="batchSize" type="number" min="50" max="1000" value="300" />
             </div>
           </div>
+          <label>رفع متوازي (1–8 طلبات)</label>
+          <input id="parallelUploads" type="number" min="1" max="8" value="4" />
           <button id="btnSave" class="secondary">حفظ الإعدادات</button>
           <p id="configPath" class="status"></p>
         </div>

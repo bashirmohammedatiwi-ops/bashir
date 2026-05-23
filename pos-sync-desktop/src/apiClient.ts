@@ -9,7 +9,10 @@ export function createApiClient(config: ApiConfig): AxiosInstance {
   return axios.create({
     baseURL: config.baseUrl.replace(/\/$/, ""),
     timeout: 300_000,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Accept-Encoding": "gzip, deflate",
+    },
     maxBodyLength: Infinity,
     maxContentLength: Infinity,
   });
@@ -28,7 +31,7 @@ export function formatApiError(err: unknown): string {
 export async function pushBulk(
   client: AxiosInstance,
   items: SyncItem[],
-): Promise<{ synced: number; failed?: number; items: Array<{ barcode: string; error?: string }> }> {
+): Promise<BulkSyncResult> {
   const { data } = await client.post("/sync/inventory/bulk", { items });
   const payload = data?.data ?? data;
   return payload;
@@ -47,11 +50,17 @@ async function sleep(ms: number) {
   await new Promise((r) => setTimeout(r, ms));
 }
 
+export type BulkSyncResult = {
+  synced: number;
+  failed?: number;
+  items?: Array<{ barcode: string; error?: string }>;
+};
+
 export async function pushBulkWithRetry(
   client: AxiosInstance,
   items: SyncItem[],
   retries = 3,
-): Promise<{ synced: number; failed?: number }> {
+): Promise<BulkSyncResult> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
@@ -62,8 +71,60 @@ export async function pushBulkWithRetry(
         isAxiosError(err) &&
         (!err.response || err.response.status >= 500 || err.response.status === 429);
       if (!retryable || attempt === retries) break;
-      await sleep(1500 * attempt);
+      await sleep(1000 * attempt);
     }
   }
   throw lastError;
+}
+
+export function chunkItems<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
+  }
+  return chunks;
+}
+
+export async function pushBatchesParallel(
+  client: AxiosInstance,
+  batches: SyncItem[][],
+  concurrency: number,
+  onProgress?: (done: number, total: number) => void,
+): Promise<{ synced: number; failed: number; pushed: SyncItem[] }> {
+  let synced = 0;
+  let failed = 0;
+  const pushed: SyncItem[] = [];
+  let completed = 0;
+  const total = batches.length;
+  const workers = Math.max(1, Math.min(concurrency, batches.length));
+
+  let cursor = 0;
+
+  async function worker() {
+    while (cursor < batches.length) {
+      const index = cursor++;
+      const batch = batches[index];
+      try {
+        const result = await pushBulkWithRetry(client, batch);
+        synced += result.synced ?? batch.length;
+        failed += result.failed ?? 0;
+
+        if (Array.isArray(result.items) && result.items.length) {
+          const ok = new Set(result.items.filter((i) => !i.error).map((i) => i.barcode));
+          pushed.push(...batch.filter((item) => ok.has(item.barcode)));
+        } else if (!result.failed) {
+          pushed.push(...batch);
+        }
+      } catch {
+        failed += batch.length;
+      } finally {
+        completed += 1;
+        onProgress?.(completed, total);
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: workers }, () => worker()));
+
+  return { synced, failed, pushed };
 }

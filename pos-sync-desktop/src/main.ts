@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import * as fs from "fs";
 import * as path from "path";
-import { createApiClient, formatApiError, pushBulkWithRetry } from "./apiClient";
+import { createApiClient, chunkItems, formatApiError, pushBatchesParallel } from "./apiClient";
 import { rowToSyncItem, type SyncItem } from "./pricing";
 import { fetchArticles, testConnection, type SqlServerConfig } from "./sqlServer";
 import {
@@ -14,7 +14,7 @@ import {
 type AppConfig = {
   sqlServer: SqlServerConfig;
   api: { baseUrl: string };
-  sync: { autoSyncMinutes: number; batchSize: number };
+  sync: { autoSyncMinutes: number; batchSize: number; parallelUploads?: number };
 };
 
 let mainWindow: BrowserWindow | null = null;
@@ -38,7 +38,7 @@ function defaultConfig(): AppConfig {
     api: {
       baseUrl: "http://187.127.88.146/api/v1",
     },
-    sync: { autoSyncMinutes: 2, batchSize: 50 },
+    sync: { autoSyncMinutes: 2, batchSize: 300, parallelUploads: 4 },
   };
 }
 
@@ -88,8 +88,10 @@ async function runSync(manual = false): Promise<{ ok: boolean; synced: number; t
 
   try {
     log(manual ? "بدء المزامنة اليدوية..." : "بدء المزامنة التلقائية...");
+    const readStarted = Date.now();
     const rows = await fetchArticles(config.sqlServer);
     const items = rows.map(rowToSyncItem).filter((x): x is NonNullable<typeof x> => x != null);
+    log(`قراءة SQL: ${items.length} منتج (${((Date.now() - readStarted) / 1000).toFixed(1)} ث)`);
 
     if (items.length === 0) {
       log("لا توجد منتجات بسعر في قاعدة البيانات", "error");
@@ -111,38 +113,40 @@ async function runSync(manual = false): Promise<{ ok: boolean; synced: number; t
     );
 
     const client = createApiClient(config.api);
-    const batchSize = Math.max(10, Math.min(config.sync.batchSize || 50, 100));
-    let synced = 0;
-    let failed = 0;
-    const pushed: SyncItem[] = [];
+    const batchSize = Math.max(50, Math.min(config.sync.batchSize || 300, 1000));
+    const parallelUploads = Math.max(1, Math.min(config.sync.parallelUploads || 4, 8));
+    const batches = chunkItems(toSend, batchSize);
+    const uploadStarted = Date.now();
 
-    for (let i = 0; i < toSend.length; i += batchSize) {
-      const batch = toSend.slice(i, i + batchSize);
-      try {
-        const result = await pushBulkWithRetry(client, batch);
-        synced += result.synced ?? batch.length;
-        failed += result.failed ?? 0;
-        pushed.push(...batch);
-        log(`تم إرسال ${Math.min(i + batch.length, toSend.length)} / ${toSend.length}`);
-      } catch (err) {
-        log(
-          `فشل الدفعة ${i + 1}-${Math.min(i + batch.length, toSend.length)}: ${formatApiError(err)}`,
-          "error",
-        );
-        failed += batch.length;
-      }
-    }
+    log(`رفع ${toSend.length} منتج — ${batches.length} دفعة × ${batchSize} (×${parallelUploads} متوازي)`);
+
+    const { synced, failed, pushed } = await pushBatchesParallel(
+      client,
+      batches,
+      parallelUploads,
+      (done, total) => {
+        if (done === total || done % parallelUploads === 0) {
+          log(`تقدّم الرفع: ${done}/${total} دفعة`);
+        }
+      },
+    );
 
     if (pushed.length > 0) {
       saveSyncState(app.getPath("userData"), mergeSyncState(previousState, pushed));
     }
 
     if (failed > 0) {
-      log(`اكتملت المزامنة جزئياً — ناجح: ${synced} | فاشل: ${failed}`, "error");
+      log(
+        `اكتملت المزامنة جزئياً — ناجح: ${synced} | فاشل: ${failed} | ${((Date.now() - uploadStarted) / 1000).toFixed(1)} ث`,
+        "error",
+      );
       return { ok: synced > 0, synced, total: items.length };
     }
 
-    log(`اكتملت المزامنة — ${synced} منتج`, "success");
+    log(
+      `اكتملت المزامنة — ${synced} منتج في ${((Date.now() - uploadStarted) / 1000).toFixed(1)} ث`,
+      "success",
+    );
     return { ok: true, synced, total: items.length };
   } catch (err: any) {
     log(`فشلت المزامنة: ${formatApiError(err)}`, "error");
