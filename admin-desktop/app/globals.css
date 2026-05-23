@@ -583,6 +583,20 @@ body {
   min-width: 200px;
 }
 
+/* باركود/SKU — LTR لقراءة AV_018_2025 بشكل صحيح */
+.alhayaa-ltr-input,
+.alhayaa-ltr-input input {
+  direction: ltr !important;
+  text-align: left !important;
+  font-family: "Cascadia Code", "Consolas", "Segoe UI", monospace !important;
+  letter-spacing: 0.02em;
+}
+
+.alhayaa-ltr-input .ant-input-group-addon,
+.alhayaa-ltr-input .ant-input-search-button {
+  direction: ltr;
+}
+
 .alhayaa-variants-list {
   display: flex;
   flex-direction: column;

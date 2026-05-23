@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
+import { barcodeLookupCandidates, normalizeBarcode } from "../../common/barcode.util";
 import { PrismaService } from "../../common/prisma.service";
 import { InventorySyncItemDto } from "./dto/inventory-sync.dto";
 
@@ -16,13 +17,18 @@ type SanitizedItem = {
 };
 
 function sanitizeItem(item: InventorySyncItemDto): SanitizedItem | null {
-  const barcode = item.barcode?.trim();
+  const barcode =
+    normalizeBarcode(item.barcode) ||
+    normalizeBarcode(item.productNum) ||
+    normalizeBarcode(item.productCode);
   if (!barcode) return null;
+
+  const productNum = normalizeBarcode(item.productNum) || barcode;
 
   return {
     barcode,
     productCode: item.productCode?.trim() || null,
-    productNum: item.productNum?.trim() || null,
+    productNum,
     name: item.name?.trim()?.slice(0, 500) || null,
     price: Math.max(0, Math.round(Number(item.price) || 0)),
     originalPrice: Math.max(0, Math.round(Number(item.originalPrice) || 0)),
@@ -48,15 +54,28 @@ export class InventorySyncService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findByBarcode(barcode: string) {
-    const normalized = barcode.trim();
-    if (!normalized) throw new NotFoundException("Barcode is required");
+    const candidates = barcodeLookupCandidates(barcode);
+    if (!candidates.length) throw new NotFoundException("Barcode is required");
 
-    const snapshot = await this.prisma.inventorySyncSnapshot.findUnique({
-      where: { barcode: normalized },
-    });
+    let snapshot: Awaited<
+      ReturnType<typeof this.prisma.inventorySyncSnapshot.findUnique>
+    > = null;
+
+    for (const code of candidates) {
+      snapshot = await this.prisma.inventorySyncSnapshot.findUnique({
+        where: { barcode: code },
+      });
+      if (snapshot) break;
+
+      snapshot = await this.prisma.inventorySyncSnapshot.findFirst({
+        where: { productNum: code },
+      });
+      if (snapshot) break;
+    }
+
     if (!snapshot) throw new NotFoundException("No synced inventory for this barcode");
 
-    const product = await this.findProductByBarcode(normalized);
+    const product = await this.findProductByBarcode(snapshot.barcode);
 
     return {
       ...snapshot,
@@ -66,11 +85,15 @@ export class InventorySyncService {
   }
 
   async getSnapshotForBarcodes(barcodes: string[]) {
-    const normalized = [...new Set(barcodes.map((b) => b?.trim()).filter(Boolean))];
-    if (!normalized.length) return null;
+    const candidates = [
+      ...new Set(barcodes.flatMap((b) => barcodeLookupCandidates(b))),
+    ];
+    if (!candidates.length) return null;
 
     return this.prisma.inventorySyncSnapshot.findFirst({
-      where: { barcode: { in: normalized } },
+      where: {
+        OR: [{ barcode: { in: candidates } }, { productNum: { in: candidates } }],
+      },
     });
   }
 
@@ -358,14 +381,23 @@ export class InventorySyncService {
   }
 
   private async findProductByBarcode(barcode: string) {
+    const code = normalizeBarcode(barcode);
+    if (!code) return null;
+
     const byProduct = await this.prisma.product.findFirst({
-      where: { barcode },
+      where: { barcode: code },
       select: { id: true, name: true, barcode: true },
     });
     if (byProduct) return byProduct;
 
+    const bySku = await this.prisma.product.findFirst({
+      where: { sku: code },
+      select: { id: true, name: true, barcode: true },
+    });
+    if (bySku) return bySku;
+
     const shade = await this.prisma.productShade.findFirst({
-      where: { barcode },
+      where: { barcode: code },
       select: { product: { select: { id: true, name: true, barcode: true } } },
     });
     return shade?.product ?? null;

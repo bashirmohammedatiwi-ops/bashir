@@ -3,7 +3,8 @@
 import { message } from "antd";
 import type { FormInstance } from "antd";
 import { useCallback, useRef, useState } from "react";
-import { fetchInventoryByBarcode } from "@/lib/inventorySync";
+import { fetchInventoryByBarcode, normalizeBarcodeInput } from "@/lib/inventorySync";
+import { normalizeBarcode } from "@/lib/barcode";
 import { resolveBarcodeFromForm } from "@/lib/resolveBarcode";
 
 type ApplyOptions = {
@@ -21,7 +22,7 @@ export function useBarcodeInventorySync(form: FormInstance) {
   const applyBarcode = useCallback(
     async (rawBarcode?: string, options?: ApplyOptions) => {
       const silent = options?.silent ?? false;
-      const barcode = (rawBarcode ?? resolveBarcodeFromForm(form)).trim();
+      const barcode = normalizeBarcodeInput(rawBarcode ?? resolveBarcodeFromForm(form));
       if (!barcode) {
         setHasSyncData(false);
         setSyncMeta(null);
@@ -46,13 +47,17 @@ export function useBarcodeInventorySync(form: FormInstance) {
 
         const currentName = form.getFieldValue("name");
         form.setFieldsValue({
-          barcode: form.getFieldValue("barcode") || barcode,
+          barcode: normalizeBarcode(form.getFieldValue("barcode")) || data.barcode || barcode,
           price: data.price,
           originalPrice: data.originalPrice,
           discountPercent: data.discountPercent,
           stock: data.stock,
           ...(currentName ? {} : data.name ? { name: data.name } : {}),
-          ...(form.getFieldValue("sku") ? {} : data.productNum ? { sku: data.productNum } : {}),
+          ...(form.getFieldValue("sku")
+            ? {}
+            : data.productNum
+              ? { sku: normalizeBarcode(data.productNum) }
+              : {}),
         });
 
         setHasSyncData(true);

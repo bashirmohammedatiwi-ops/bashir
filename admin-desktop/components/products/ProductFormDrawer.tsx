@@ -163,7 +163,7 @@ export function ProductFormDrawer({
             </Form.Item>
             <div className="alhayaa-form-row">
               <Form.Item name="sku" label="SKU" className="alhayaa-form-col">
-                <Input placeholder="يُولَّد تلقائياً" />
+                <Input placeholder="AV_018_2025" className="alhayaa-ltr-input" />
               </Form.Item>
               <Form.Item name="slug" label="Slug" className="alhayaa-form-col">
                 <Input placeholder="يُولَّد من الاسم" />
@@ -171,7 +171,8 @@ export function ProductFormDrawer({
             </div>
             <Form.Item name="barcode" label="الباركود">
               <Input.Search
-                placeholder="امسح أو أدخل الباركود — يُجلب السعر والكمية تلقائياً"
+                className="alhayaa-ltr-input"
+                placeholder="AV_018_2025 أو 6281000123456"
                 loading={syncLoading}
                 enterButton="جلب"
                 onSearch={(v) => onBarcodeLookup?.(v)}

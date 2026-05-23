@@ -7,6 +7,7 @@ import {
   type ImageItem,
 } from "@/components/ProductImageDropzone";
 import { mediaThumb } from "@/lib/mediaUrl";
+import { normalizeBarcode } from "@/lib/barcode";
 
 type Props = {
   fields: FormListFieldData[];
@@ -191,7 +192,8 @@ export function ProductShadesEditor({
                   style={{ marginTop: 8, marginBottom: 0 }}
                 >
                   <Input
-                    placeholder="6281000123456"
+                    className="alhayaa-ltr-input"
+                    placeholder="AV_018_2025"
                     style={{ maxWidth: 280 }}
                     onPressEnter={(e) =>
                       onShadeBarcodeLookup?.((e.target as HTMLInputElement).value)
@@ -279,7 +281,7 @@ export function shadeToPayload(s: any, index: number) {
     name: s.name,
     colorHex: s.colorHex,
     colorHexEnd: s.isGradient && s.colorHexEnd ? s.colorHexEnd : undefined,
-    barcode: typeof s.barcode === "string" ? s.barcode.trim() || undefined : undefined,
+    barcode: typeof s.barcode === "string" ? normalizeBarcode(s.barcode) || undefined : undefined,
     imageId: s.imageId || undefined,
     position: index,
   };

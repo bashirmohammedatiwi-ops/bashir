@@ -25,15 +25,17 @@ ActiveOffers AS (
 )
 `;
 
+const TRIM = (col: string) => `LTRIM(RTRIM(COALESCE(${col}, '')))`;
+
 const CLEAN = (col: string) =>
-  `REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(${col}, ''), '|', ' '), CHAR(9), ' '), CHAR(10), ' '), CHAR(13), ' ')`;
+  `REPLACE(REPLACE(REPLACE(REPLACE(${TRIM(col)}, '|', ' '), CHAR(9), ' '), CHAR(10), ' '), CHAR(13), ' ')`;
 
 export const ARTICLES_SELECT = `
 SELECT
   a.Seq AS productCode,
-  ${CLEAN("a.Num")} AS productNum,
+  ${TRIM("a.Num")} AS productNum,
   ${CLEAN("a.Name1")} AS name,
-  ${CLEAN("a.Barcode")} AS barcode,
+  ${TRIM("a.Barcode")} AS barcode,
   CAST(COALESCE(NULLIF(a.SellPr4, 0), 0) AS bigint) AS originalPrice,
   CAST(COALESCE(NULLIF(a.SellPr5, 0), 0) AS bigint) AS storedFinalPrice,
   CAST(COALESCE(a.CurTot1, 0) AS bigint) AS quantity,

@@ -1,4 +1,5 @@
 import { api } from "./api";
+import { barcodeLookupCandidates, normalizeBarcode } from "./barcode";
 
 export type InventorySyncPreview = {
   barcode: string;
@@ -17,12 +18,20 @@ export type InventorySyncPreview = {
 export async function fetchInventoryByBarcode(
   barcode: string,
 ): Promise<InventorySyncPreview | null> {
-  const code = barcode.trim();
-  if (!code) return null;
-  try {
-    const { data } = await api.get(`/sync/inventory/by-barcode/${encodeURIComponent(code)}`);
-    return (data?.data ?? data) as InventorySyncPreview;
-  } catch {
-    return null;
+  const candidates = barcodeLookupCandidates(barcode);
+  if (!candidates.length) return null;
+
+  for (const code of candidates) {
+    try {
+      const { data } = await api.get(`/sync/inventory/by-barcode/${encodeURIComponent(code)}`);
+      return (data?.data ?? data) as InventorySyncPreview;
+    } catch {
+      /* try next candidate */
+    }
   }
+  return null;
+}
+
+export function normalizeBarcodeInput(raw: string): string {
+  return normalizeBarcode(raw);
 }

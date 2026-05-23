@@ -109,10 +109,16 @@ export async function pushBatchesParallel(
         synced += result.synced ?? batch.length;
         failed += result.failed ?? 0;
 
-        if (Array.isArray(result.items) && result.items.length) {
-          const ok = new Set(result.items.filter((i) => !i.error).map((i) => i.barcode));
-          pushed.push(...batch.filter((item) => ok.has(item.barcode)));
-        } else if (!result.failed) {
+        const failedBarcodes = new Set(
+          (result.items ?? [])
+            .filter((item) => item.error)
+            .map((item) => String(item.barcode ?? "").trim())
+            .filter(Boolean),
+        );
+
+        if (failedBarcodes.size > 0) {
+          pushed.push(...batch.filter((item) => !failedBarcodes.has(item.barcode.trim())));
+        } else {
           pushed.push(...batch);
         }
       } catch {

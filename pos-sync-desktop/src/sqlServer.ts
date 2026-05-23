@@ -54,12 +54,14 @@ function sqlNumber(raw: string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+import { normalizeBarcode } from "./barcode";
+
 function normalizeRow(raw: Record<string, unknown>): PosArticleRow {
   return {
     productCode: Number(raw.productCode) || 0,
-    productNum: raw.productNum != null ? String(raw.productNum) : null,
+    productNum: raw.productNum != null ? normalizeBarcode(String(raw.productNum)) : null,
     name: raw.name != null ? String(raw.name) : null,
-    barcode: raw.barcode != null ? String(raw.barcode) : null,
+    barcode: raw.barcode != null ? normalizeBarcode(String(raw.barcode)) : null,
     originalPrice: Number(raw.originalPrice) || 0,
     storedFinalPrice: Number(raw.storedFinalPrice) || 0,
     quantity: Number(raw.quantity) || 0,
@@ -164,6 +166,8 @@ function buildSqlCmdArgs(config: SqlServerConfig, query: string, separator: stri
     args.unshift("-C");
   }
 
+  args.push("-f", "o:65001");
+
   return args;
 }
 
@@ -183,14 +187,17 @@ async function runSqlCmd(
 }
 
 function buildMssqlConfig(config: SqlServerConfig): import("mssql").config {
+  const useWindowsAuth = !config.user?.trim();
   return {
     server: config.server,
     database: config.database,
-    user: config.user,
-    password: config.password ?? "",
+    ...(useWindowsAuth
+      ? {}
+      : { user: config.user, password: config.password ?? "" }),
     options: {
       encrypt: config.options?.encrypt ?? false,
       trustServerCertificate: config.options?.trustServerCertificate ?? true,
+      ...(useWindowsAuth ? { trustedConnection: true } : {}),
     },
   };
 }
@@ -228,6 +235,11 @@ export async function fetchArticles(config: SqlServerConfig): Promise<PosArticle
   const useWindowsAuth = !config.user?.trim();
 
   if (process.platform === "win32" && useWindowsAuth) {
+    try {
+      return await fetchViaMssql(config);
+    } catch {
+      /* fallback to sqlcmd */
+    }
     const stdout = await runSqlCmd(config, ARTICLES_QUERY);
     return parseTabOutput(stdout);
   }
@@ -239,6 +251,11 @@ export async function fetchStats(config: SqlServerConfig): Promise<SqlServerStat
   const useWindowsAuth = !config.user?.trim();
 
   if (process.platform === "win32" && useWindowsAuth) {
+    try {
+      return await fetchStatsViaMssql(config);
+    } catch {
+      /* fallback */
+    }
     const stdout = await runSqlCmd(config, STATS_QUERY, "|");
     return parseStatsOutput(stdout);
   }

@@ -1,15 +1,16 @@
 import type { FormInstance } from "antd";
+import { normalizeBarcode } from "@/lib/barcode";
 
 export function resolveBarcodeFromForm(form: FormInstance): string {
-  const productBarcode = String(form.getFieldValue("barcode") ?? "").trim();
+  const productBarcode = normalizeBarcode(String(form.getFieldValue("barcode") ?? ""));
   if (productBarcode) return productBarcode;
 
-  const sku = String(form.getFieldValue("sku") ?? "").trim();
+  const sku = normalizeBarcode(String(form.getFieldValue("sku") ?? ""));
   if (sku) return sku;
 
   const shades = form.getFieldValue("shades") ?? [];
   for (const shade of shades) {
-    const bc = String(shade?.barcode ?? "").trim();
+    const bc = normalizeBarcode(String(shade?.barcode ?? ""));
     if (bc) return bc;
   }
   return "";

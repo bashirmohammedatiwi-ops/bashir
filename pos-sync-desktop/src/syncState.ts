@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as path from "path";
+import { normalizeBarcode } from "./barcode";
 import { SyncItem } from "./pricing";
 
 export type SyncStateEntry = {
@@ -19,10 +20,18 @@ function syncSignature(item: SyncItem | SyncStateEntry): string {
   return `${item.price}|${item.originalPrice}|${item.discountPercent}|${item.stock}`;
 }
 
+export function dedupeSyncItems(items: SyncItem[]): SyncItem[] {
+  const byBarcode = new Map<string, SyncItem>();
+  for (const item of items) {
+    byBarcode.set(normalizeBarcode(item.barcode), item);
+  }
+  return [...byBarcode.values()];
+}
+
 export function buildSyncState(items: SyncItem[]): SyncStateMap {
   const state: SyncStateMap = {};
   for (const item of items) {
-    state[item.barcode] = {
+    state[normalizeBarcode(item.barcode)] = {
       price: item.price,
       originalPrice: item.originalPrice,
       discountPercent: item.discountPercent,
@@ -34,7 +43,8 @@ export function buildSyncState(items: SyncItem[]): SyncStateMap {
 
 export function filterChangedItems(items: SyncItem[], previous: SyncStateMap): SyncItem[] {
   return items.filter((item) => {
-    const prev = previous[item.barcode];
+    const key = normalizeBarcode(item.barcode);
+    const prev = previous[key];
     if (!prev) return true;
     return syncSignature(item) !== syncSignature(prev);
   });
@@ -43,7 +53,7 @@ export function filterChangedItems(items: SyncItem[], previous: SyncStateMap): S
 export function mergeSyncState(previous: SyncStateMap, items: SyncItem[]): SyncStateMap {
   const next = { ...previous };
   for (const item of items) {
-    next[item.barcode] = {
+    next[normalizeBarcode(item.barcode)] = {
       price: item.price,
       originalPrice: item.originalPrice,
       discountPercent: item.discountPercent,
@@ -66,5 +76,12 @@ export function loadSyncState(userData: string): SyncStateMap {
 }
 
 export function saveSyncState(userData: string, state: SyncStateMap) {
-  fs.writeFileSync(stateFile(userData), JSON.stringify(state), "utf8");
+  const file = stateFile(userData);
+  const tmp = `${file}.tmp`;
+  fs.writeFileSync(tmp, JSON.stringify(state), "utf8");
+  fs.renameSync(tmp, file);
+}
+
+export function countSyncState(state: SyncStateMap) {
+  return Object.keys(state).length;
 }

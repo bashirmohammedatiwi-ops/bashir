@@ -3,124 +3,239 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'" />
   <title>Alhayaa POS Sync</title>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: "Segoe UI", Tahoma, sans-serif;
-      background: #f4f6f8;
-      color: #1a1a1a;
-    }
-    .wrap { max-width: 680px; margin: 0 auto; padding: 20px; }
-    h1 { font-size: 1.35rem; margin: 0 0 4px; }
-    .sub { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 14px;
-      box-shadow: 0 1px 3px rgba(0,0,0,.08);
-    }
-    label { display: block; font-size: 0.82rem; color: #555; margin-bottom: 4px; }
-    input, select {
-      width: 100%;
-      padding: 8px 10px;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      font-size: 0.95rem;
-    }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-    button {
-      border: none;
-      border-radius: 8px;
-      padding: 10px 16px;
-      font-size: 0.95rem;
-      cursor: pointer;
-      background: #1677ff;
-      color: #fff;
-    }
-    button.secondary { background: #eef2f7; color: #333; }
-    button.primary { font-size: 1.05rem; padding: 14px 24px; flex: 1; min-width: 160px; }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-    #log {
-      height: 200px;
-      overflow: auto;
-      background: #111;
-      color: #ddd;
-      font-family: Consolas, monospace;
-      font-size: 12px;
-      padding: 10px;
-      border-radius: 8px;
-      white-space: pre-wrap;
-    }
-    .log-info { color: #aaa; }
-    .log-success { color: #52c41a; }
-    .log-error { color: #ff7875; }
-    .status { font-size: 0.85rem; color: #666; margin-top: 6px; }
-    .status.running { color: #1677ff; font-weight: 600; }
-    details { margin-top: 8px; }
-    summary { cursor: pointer; color: #555; font-size: 0.9rem; }
-  </style>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="wrap">
-    <h1>مزامنة مخزون POS</h1>
-    <p class="sub">تحديث تلقائي مستمر — يرسل فقط المنتجات التي تغيّر سعرها أو كميتها</p>
-
-    <div class="card">
-      <div class="actions">
-        <button id="btnSync" class="primary">مزامنة الآن</button>
-        <button id="btnTest" class="secondary">اختبار قاعدة البيانات</button>
+  <div class="app">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-9-9"/>
+            <path d="M21 3v6h-6"/>
+            <path d="M12 7v5l3 2"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1>Alhayaa POS Sync</h1>
+          <p>مزامنة الأسعار والمخزون — SQL Server → السحابة</p>
+        </div>
       </div>
-      <p id="status" class="status">جاهز</p>
-    </div>
+      <div id="statusChip" class="status-chip ready">
+        <span class="status-dot"></span>
+        <span id="statusText">جاهز</span>
+      </div>
+    </header>
 
-    <div class="card">
-      <h3 style="margin-top:0">سجل المزامنة</h3>
-      <div id="log"></div>
-    </div>
+    <!-- Tabs -->
+    <nav class="tabs">
+      <button class="tab active" data-tab="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        لوحة التحكم
+      </button>
+      <button class="tab" data-tab="logs">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+        السجل
+        <span id="logBadge" class="badge badge-muted" hidden>0</span>
+      </button>
+      <button class="tab" data-tab="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+        الإعدادات
+      </button>
+    </nav>
 
-    <div class="card">
-      <details>
-        <summary>إعدادات متقدمة (اختياري)</summary>
-        <div style="margin-top:12px">
-          <label>SQL Server</label>
-          <input id="sqlServer" placeholder="localhost\FOTSQLSERVER" />
-          <label>قاعدة البيانات</label>
-          <input id="sqlDatabase" placeholder="HAYAT2025.mdf" />
-          <div class="row">
-            <div>
-              <label>المستخدم (فارغ = Windows Auth)</label>
-              <input id="sqlUser" />
+    <!-- Dashboard -->
+    <section id="panel-dashboard" class="panel active">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">منتجات للمزامنة</div>
+          <div id="statTotal" class="stat-value accent">—</div>
+          <div class="stat-sub">بسعر SellPr4 &gt; 0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">إجمالي الأصناف</div>
+          <div id="statArticles" class="stat-value">—</div>
+          <div class="stat-sub">جدول articles</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">على عروض</div>
+          <div id="statOffers" class="stat-value info">—</div>
+          <div class="stat-sub">عروض نشطة</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">آخر مزامنة</div>
+          <div id="statLastSync" class="stat-value success">—</div>
+          <div id="statLastDetail" class="stat-sub">لم تُجرَ بعد</div>
+        </div>
+      </div>
+
+      <div class="sync-hero">
+        <div class="sync-main">
+          <div id="syncRingWrap" class="sync-ring-wrap">
+            <div class="sync-ring-glow"></div>
+            <div id="syncRing" class="sync-ring"></div>
+            <button id="btnSync" class="btn-sync-core" title="مزامنة الآن">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 1 1-9-9"/>
+                <path d="M21 3v6h-6"/>
+              </svg>
+              <span>مزامنة</span>
+            </button>
+          </div>
+
+          <h2 class="sync-title">مزامنة ذكية ومستمرة</h2>
+          <p class="sync-desc">يرسل فقط المنتجات التي تغيّر سعرها أو كميتها — تلقائياً كل دقيقتين</p>
+
+          <div id="progressWrap" class="progress-wrap">
+            <div class="progress-bar">
+              <div id="progressFill" class="progress-fill"></div>
             </div>
-            <div>
-              <label>كلمة المرور</label>
-              <input id="sqlPassword" type="password" />
+            <div id="progressLabel" class="progress-label">جاري الرفع...</div>
+          </div>
+
+          <div class="quick-actions">
+            <button id="btnTest" class="btn btn-ghost">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+              اختبار SQL
+            </button>
+            <button id="btnRefreshStats" class="btn btn-ghost">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              تحديث الإحصائيات
+            </button>
+          </div>
+        </div>
+
+        <div class="info-stack">
+          <div class="info-card">
+            <h3>حالة الاتصال</h3>
+            <div class="info-row">
+              <span>SQL Server</span>
+              <span id="infoSql">—</span>
+            </div>
+            <div class="info-row">
+              <span>قاعدة البيانات</span>
+              <span id="infoDb">—</span>
+            </div>
+            <div class="info-row">
+              <span>API</span>
+              <span id="infoApi">—</span>
+            </div>
+            <div class="info-row">
+              <span>حالة DB</span>
+              <span id="infoDbStatus"><span class="badge badge-muted">غير مختبر</span></span>
             </div>
           </div>
-          <label>عنوان السيرفر (API)</label>
-          <input id="apiBase" placeholder="http://187.127.88.146/api/v1" />
-          <div class="row">
-            <div>
+
+          <div class="info-card">
+            <h3>إعدادات المزامنة</h3>
+            <div class="info-row">
+              <span>تلقائي</span>
+              <span id="infoAuto">—</span>
+            </div>
+            <div class="info-row">
+              <span>حجم الدفعة</span>
+              <span id="infoBatch">—</span>
+            </div>
+            <div class="info-row">
+              <span>رفع متوازي</span>
+              <span id="infoParallel">—</span>
+            </div>
+            <div class="info-row">
+              <span>بباركود</span>
+              <span id="infoBarcode">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Logs -->
+    <section id="panel-logs" class="panel">
+      <div class="log-header">
+        <h2>سجل العمليات</h2>
+        <div class="log-actions">
+          <button id="btnClearLog" class="btn btn-ghost">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            مسح
+          </button>
+        </div>
+      </div>
+      <div id="log" class="log-terminal">
+        <div class="log-empty">لا توجد عمليات بعد — اضغط «مزامنة» أو «اختبار SQL»</div>
+      </div>
+    </section>
+
+    <!-- Settings -->
+    <section id="panel-settings" class="panel">
+      <div class="settings-grid">
+        <div class="settings-section">
+          <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            SQL Server
+          </h3>
+          <div class="field">
+            <label>السيرفر</label>
+            <input id="sqlServer" placeholder="localhost\FOTSQLSERVER" />
+          </div>
+          <div class="field">
+            <label>قاعدة البيانات</label>
+            <input id="sqlDatabase" placeholder="HAYAT2025.mdf" />
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>المستخدم (فارغ = Windows Auth)</label>
+              <input id="sqlUser" autocomplete="off" />
+            </div>
+            <div class="field">
+              <label>كلمة المرور</label>
+              <input id="sqlPassword" type="password" autocomplete="off" />
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            السيرفر السحابي
+          </h3>
+          <div class="field">
+            <label>عنوان API</label>
+            <input id="apiBase" placeholder="http://187.127.88.146/api/v1" />
+          </div>
+          <div class="field-row">
+            <div class="field">
               <label>مزامنة تلقائية (دقائق — 0 = معطّلة)</label>
               <input id="autoMinutes" type="number" min="0" value="2" />
             </div>
-            <div>
+            <div class="field">
               <label>حجم الدفعة (50–1000)</label>
               <input id="batchSize" type="number" min="50" max="1000" value="300" />
             </div>
           </div>
-          <label>رفع متوازي (1–8 طلبات)</label>
-          <input id="parallelUploads" type="number" min="1" max="8" value="4" />
-          <button id="btnSave" class="secondary">حفظ الإعدادات</button>
-          <p id="configPath" class="status"></p>
+          <div class="field">
+            <label>رفع متوازي (1–8 طلبات)</label>
+            <input id="parallelUploads" type="number" min="1" max="8" value="4" />
+          </div>
         </div>
-      </details>
-    </div>
+
+        <div class="settings-section full">
+          <div id="configPath" class="config-path"></div>
+        </div>
+
+        <div class="settings-footer">
+          <button id="btnSave" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            حفظ الإعدادات
+          </button>
+        </div>
+      </div>
+    </section>
   </div>
+
+  <div id="toastContainer" class="toast-container"></div>
 
   <script src="app.js"></script>
 </body>

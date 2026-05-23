@@ -5,6 +5,8 @@ import { createApiClient, chunkItems, formatApiError, pushBatchesParallel } from
 import { rowToSyncItem, type SyncItem } from "./pricing";
 import { fetchArticles, testConnection, type SqlServerConfig } from "./sqlServer";
 import {
+  countSyncState,
+  dedupeSyncItems,
   filterChangedItems,
   loadSyncState,
   mergeSyncState,
@@ -73,14 +75,20 @@ function log(message: string, level: "info" | "error" | "success" = "info") {
   console.log(`[${level}] ${message}`);
 }
 
-async function runSync(manual = false): Promise<{ ok: boolean; synced: number; total: number }> {
+async function runSync(manual = false): Promise<{
+  ok: boolean;
+  synced: number;
+  total: number;
+  changed: number;
+  skipped: number;
+}> {
   if (syncing) {
     log("المزامنة جارية بالفعل...", "info");
-    return { ok: false, synced: 0, total: 0 };
+    return { ok: false, synced: 0, total: 0, changed: 0, skipped: 0 };
   }
   if (!config) {
     log("لم يتم إعداد ملف الإعدادات config.json", "error");
-    return { ok: false, synced: 0, total: 0 };
+    return { ok: false, synced: 0, total: 0, changed: 0, skipped: 0 };
   }
 
   syncing = true;
@@ -95,21 +103,27 @@ async function runSync(manual = false): Promise<{ ok: boolean; synced: number; t
 
     if (items.length === 0) {
       log("لا توجد منتجات بسعر في قاعدة البيانات", "error");
-      return { ok: false, synced: 0, total: 0 };
+      return { ok: false, synced: 0, total: 0, changed: 0, skipped: 0 };
     }
 
+    const uniqueItems = dedupeSyncItems(items);
     const previousState = loadSyncState(app.getPath("userData"));
-    const toSend = filterChangedItems(items, previousState);
+    const knownCount = countSyncState(previousState);
+    const toSend = filterChangedItems(uniqueItems, previousState);
+    const skipped = uniqueItems.length - toSend.length;
 
     if (toSend.length === 0) {
-      log("لا توجد تغييرات جديدة — البيانات محدّثة على السيرفر", "success");
-      return { ok: true, synced: 0, total: items.length };
+      log(
+        `لا توجد تغييرات — ${uniqueItems.length} منتج محدّث (${knownCount} في الذاكرة المحلية)`,
+        "success",
+      );
+      return { ok: true, synced: 0, total: uniqueItems.length, changed: 0, skipped };
     }
 
     log(
       manual
-        ? `مزامنة ${toSend.length} منتج من ${items.length}`
-        : `تحديث ${toSend.length} منتج متغيّر من ${items.length}`,
+        ? `مزامنة ${toSend.length} منتج متغيّر — ${skipped} بدون تغيير`
+        : `تحديث ${toSend.length} متغيّر — ${skipped} بدون تغيير من ${uniqueItems.length}`,
     );
 
     const client = createApiClient(config.api);
@@ -132,25 +146,41 @@ async function runSync(manual = false): Promise<{ ok: boolean; synced: number; t
     );
 
     if (pushed.length > 0) {
-      saveSyncState(app.getPath("userData"), mergeSyncState(previousState, pushed));
+      const nextState = mergeSyncState(previousState, pushed);
+      saveSyncState(app.getPath("userData"), nextState);
+      log(`حُفظت حالة ${pushed.length} منتج — الإجمالي في الذاكرة: ${countSyncState(nextState)}`);
+    } else if (synced > 0) {
+      log("تحذير: تم الرفع لكن لم تُحفظ الحالة المحلية — ستُعاد المزامنة", "error");
     }
 
     if (failed > 0) {
       log(
-        `اكتملت المزامنة جزئياً — ناجح: ${synced} | فاشل: ${failed} | ${((Date.now() - uploadStarted) / 1000).toFixed(1)} ث`,
+        `اكتملت جزئياً — رُفع ${synced} | فشل ${failed} | حُفظ ${pushed.length} | ${((Date.now() - uploadStarted) / 1000).toFixed(1)} ث`,
         "error",
       );
-      return { ok: synced > 0, synced, total: items.length };
+      return {
+        ok: synced > 0,
+        synced,
+        total: uniqueItems.length,
+        changed: toSend.length,
+        skipped,
+      };
     }
 
     log(
-      `اكتملت المزامنة — ${synced} منتج في ${((Date.now() - uploadStarted) / 1000).toFixed(1)} ث`,
+      `اكتملت — رُفع ${synced} | حُفظ ${pushed.length} | ${((Date.now() - uploadStarted) / 1000).toFixed(1)} ث`,
       "success",
     );
-    return { ok: true, synced, total: items.length };
+    return {
+      ok: true,
+      synced,
+      total: uniqueItems.length,
+      changed: toSend.length,
+      skipped,
+    };
   } catch (err: any) {
     log(`فشلت المزامنة: ${formatApiError(err)}`, "error");
-    return { ok: false, synced: 0, total: 0 };
+    return { ok: false, synced: 0, total: 0, changed: 0, skipped: 0 };
   } finally {
     syncing = false;
     mainWindow?.webContents.send("sync:status", { running: false, manual });
@@ -181,12 +211,13 @@ function resolvePreload(): string {
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 720,
-    height: 640,
-    minWidth: 560,
-    minHeight: 480,
+    width: 980,
+    height: 740,
+    minWidth: 820,
+    minHeight: 620,
     title: "Alhayaa POS Sync",
     autoHideMenuBar: true,
+    backgroundColor: "#080a0f",
     show: false,
     webPreferences: {
       preload: resolvePreload(),

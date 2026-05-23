@@ -1,5 +1,6 @@
 import { shadeToPayload } from "@/components/ProductShadesEditor";
 import type { ImageItem } from "@/components/ProductImageDropzone";
+import { normalizeBarcode } from "@/lib/barcode";
 import { slugify } from "./slugify";
 
 export function buildProductPayload(
@@ -17,7 +18,7 @@ export function buildProductPayload(
 
   return {
     sku: values.sku || `SKU-${Date.now()}`,
-    barcode: values.barcode?.trim() || undefined,
+    barcode: normalizeBarcode(values.barcode) || undefined,
     name,
     slug: values.slug?.trim() || slugify(name, "product"),
     brandId: values.brandId,
