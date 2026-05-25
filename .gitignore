@@ -42,8 +42,14 @@ backend/prisma/dev.db-journal
 
 # Admin desktop builds
 admin-desktop/release/
+admin-desktop/release-dist/
 admin-desktop/dist-electron/
 admin-desktop/renderer-out/
+
+# POS sync desktop builds
+pos-sync-desktop/release/
+pos-sync-desktop/release-dist/
+pos-sync-desktop/pos-release-dist/
 
 # Infra runtime
 infra/.env
