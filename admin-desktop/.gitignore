@@ -4,6 +4,7 @@ out/
 dist-electron/
 renderer-out/
 release/
+release-build/
 .env
 .env.local
 .env.production
