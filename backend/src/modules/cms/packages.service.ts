@@ -16,11 +16,30 @@ function slugify(name: string) {
 export class PackagesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  list(activeOnly = true, kind?: PackageKind) {
+  list(activeOnly = true, kind?: PackageKind, lite = false) {
     const where: Prisma.PackageWhereInput = {
       ...(activeOnly ? { isActive: true } : {}),
       ...(kind ? { kind } : {}),
     };
+
+    if (lite) {
+      return this.prisma.package.findMany({
+        where,
+        orderBy: { position: "asc" },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          kind: true,
+          position: true,
+          isActive: true,
+          coverImageId: true,
+          coverImage: { select: { id: true, url: true, thumbnailUrl: true } },
+          _count: { select: { items: true } },
+        },
+      });
+    }
+
     return this.prisma.package.findMany({
       where,
       orderBy: { position: "asc" },

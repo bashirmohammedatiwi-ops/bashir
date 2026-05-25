@@ -5,8 +5,17 @@ import * as os from "os";
 
 const isDev = !app.isPackaged;
 const APP_SCHEME = "app";
-/** Must match NEXT_PUBLIC_API_BASE host in .env.production */
 const VPS_ORIGIN = "http://187.127.88.146";
+
+type CachedAsset = {
+  body: Buffer;
+  contentType: string;
+  immutable: boolean;
+};
+
+const staticCache = new Map<string, CachedAsset>();
+const MAX_CACHE_ENTRIES = 400;
+
 protocol.registerSchemesAsPrivileged([
   {
     scheme: APP_SCHEME,
@@ -20,10 +29,7 @@ protocol.registerSchemesAsPrivileged([
   },
 ]);
 
-app.setPath(
-  "userData",
-  path.join(os.homedir(), ".alhayaa-admin-electron"),
-);
+app.setPath("userData", path.join(os.homedir(), ".alhayaa-admin-electron"));
 
 function getOutRoot(): string {
   return path.join(__dirname, "..", "out");
@@ -62,15 +68,41 @@ const MIME_TYPES: Record<string, string> = {
   ".ico": "image/x-icon",
 };
 
+function rememberAsset(filePath: string, body: Buffer, contentType: string, immutable: boolean) {
+  if (staticCache.size >= MAX_CACHE_ENTRIES) {
+    const firstKey = staticCache.keys().next().value;
+    if (firstKey) staticCache.delete(firstKey);
+  }
+  staticCache.set(filePath, { body, contentType, immutable });
+}
+
 async function registerAppProtocol() {
-  await protocol.handle(APP_SCHEME, (request) => {
+  await protocol.handle(APP_SCHEME, async (request) => {
     const { pathname } = new URL(request.url);
     const filePath = resolveStaticPath(pathname);
+    const cached = staticCache.get(filePath);
+    if (cached) {
+      return new Response(new Uint8Array(cached.body), {
+        headers: {
+          "Content-Type": cached.contentType,
+          ...(cached.immutable
+            ? { "Cache-Control": "public, max-age=31536000, immutable" }
+            : {}),
+        },
+      });
+    }
+
     const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] ?? "application/octet-stream";
-    const data = fs.readFileSync(filePath);
-    return new Response(data, {
-      headers: { "Content-Type": contentType },
+    const data = await fs.promises.readFile(filePath);
+    const immutable = pathname.includes("/_next/static/");
+    rememberAsset(filePath, data, contentType, immutable);
+
+    return new Response(new Uint8Array(data), {
+      headers: {
+        "Content-Type": contentType,
+        ...(immutable ? { "Cache-Control": "public, max-age=31536000, immutable" } : {}),
+      },
     });
   });
 }
@@ -94,19 +126,15 @@ async function createWindow() {
 
   win.once("ready-to-show", () => win.show());
 
-  win.webContents.on(
-    "did-fail-load",
-    (_event, errorCode, errorDescription, validatedURL) => {
-      console.error("[load failed]", errorCode, errorDescription, validatedURL);
-    },
-  );
+  win.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL) => {
+    console.error("[load failed]", errorCode, errorDescription, validatedURL);
+  });
 
   win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: "deny" };
   });
 
-  // Allow API + media requests to the production VPS from the packaged app.
   win.webContents.session.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
@@ -117,6 +145,7 @@ async function createWindow() {
       },
     });
   });
+
   if (isDev) {
     await win.loadURL("http://localhost:3001/dashboard/");
   } else {

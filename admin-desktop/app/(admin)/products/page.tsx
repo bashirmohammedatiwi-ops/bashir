@@ -1,19 +1,25 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Card, Form, Input, Popconfirm, Select, Space, Switch, Table, Tag, message } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ImageItem } from "@/components/ProductImageDropzone";
 import { PageHeader } from "@/components/PageHeader";
 import { ProductThumb } from "@/components/ProductThumb";
-import {
-  ProductFormDrawer,
-} from "@/components/products/ProductFormDrawer";
 import { initShadePreviews, shadeFromApi } from "@/components/ProductShadesEditor";
 import { imagesFromProduct } from "@/lib/productFormHelpers";
 import { buildProductPayload } from "@/lib/productPayload";
 import { mutations, queries } from "@/lib/queries";
 import { useBarcodeInventorySync } from "@/hooks/useBarcodeInventorySync";
+
+const ProductFormDrawer = dynamic(
+  () =>
+    import("@/components/products/ProductFormDrawer").then((m) => ({
+      default: m.ProductFormDrawer,
+    })),
+  { ssr: false },
+);
 
 export default function ProductsPage() {
   const [page, setPage] = useState(1);
@@ -48,7 +54,7 @@ export default function ProductsPage() {
         subcategoryId: filterSubcategoryId,
         concernId: filterConcernId,
       }),
-    refetchInterval: 20_000,
+    staleTime: 3 * 60_000,
   });
 
   const { data: categoriesData } = useQuery({

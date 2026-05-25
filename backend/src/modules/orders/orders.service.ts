@@ -33,6 +33,7 @@ export class OrdersService {
       paymentStatus: q.paymentStatus,
       userId: q.userId,
     };
+    const lite = q.lite !== false;
     const [total, items] = await this.prisma.$transaction([
       this.prisma.order.count({ where }),
       this.prisma.order.findMany({
@@ -40,11 +41,16 @@ export class OrdersService {
         orderBy: { createdAt: "desc" },
         skip: q.skip,
         take: q.limit,
-        include: {
-          user: { select: { id: true, name: true, email: true, phone: true } },
-          items: true,
-          address: true,
-        },
+        include: lite
+          ? {
+              user: { select: { id: true, name: true, email: true, phone: true } },
+              _count: { select: { items: true } },
+            }
+          : {
+              user: { select: { id: true, name: true, email: true, phone: true } },
+              items: true,
+              address: true,
+            },
       }),
     ]);
     return paginate(items, total, q.page, q.limit);

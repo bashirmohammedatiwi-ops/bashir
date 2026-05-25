@@ -5,7 +5,7 @@ import { Providers } from "@/components/Providers";
 
 const cairo = Cairo({
   subsets: ["arabic", "latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "600"],
   display: "swap",
   variable: "--font-cairo",
 });

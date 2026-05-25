@@ -282,6 +282,7 @@ model Product {
   @@index([price])
   @@index([rating])
   @@index([barcode])
+  @@index([soldCount])
 }
 
 model InventorySyncSnapshot {
@@ -461,6 +462,7 @@ model Order {
   @@index([status])
   @@index([paymentStatus])
   @@index([createdAt])
+  @@index([status, createdAt])
 }
 
 model OrderItem {
@@ -738,6 +740,7 @@ model AuditLog {
   @@index([actorId])
   @@index([entity])
   @@index([createdAt])
+  @@index([action, entity, createdAt])
 }
 
 // ---------------------- SETTINGS ----------------------

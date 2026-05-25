@@ -26,6 +26,7 @@ export default function ReportsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["sales-report", params.from, params.to],
     queryFn: () => queries.salesReport(params),
+    staleTime: 5 * 60_000,
   });
 
   const summary = data?.summary ?? {};
@@ -69,6 +70,7 @@ export default function ReportsPage() {
 
         <Card loading={isLoading}>
           <Tabs
+            destroyInactiveTabPane
             items={[
               {
                 key: "brand",

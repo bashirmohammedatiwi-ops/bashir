@@ -95,7 +95,7 @@ export default function SkinRoutinesPage() {
                   <div className="alhayaa-routine-grid">
                     {routines.map((routine: any) => {
                       const cover = mediaThumb(routine.coverImage);
-                      const steps = routine.items?.length ?? 0;
+                      const steps = routine._count?.items ?? routine.items?.length ?? 0;
                       return (
                         <article key={routine.id} className="alhayaa-routine-card">
                           <div

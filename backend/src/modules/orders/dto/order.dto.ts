@@ -1,6 +1,7 @@
 import { Type } from "class-transformer";
 import {
   IsArray,
+  IsBoolean,
   IsEnum,
   IsInt,
   IsNotEmpty,
@@ -40,4 +41,5 @@ export class QueryOrdersDto extends PaginationDto {
   @IsOptional() @IsEnum(OrderStatus) status?: OrderStatus;
   @IsOptional() @IsEnum(PaymentStatus) paymentStatus?: PaymentStatus;
   @IsOptional() @IsString() userId?: string;
+  @IsOptional() @Type(() => Boolean) @IsBoolean() lite?: boolean;
 }

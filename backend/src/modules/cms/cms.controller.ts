@@ -56,8 +56,12 @@ export class CmsController {
   }
 
   // ---- Packages ----
-  @Public() @Get("packages") listPackages(@Query("all") all?: string, @Query("kind") kind?: string) {
-    return this.packages.list(all !== "1", kind as any);
+  @Public() @Get("packages") listPackages(
+    @Query("all") all?: string,
+    @Query("kind") kind?: string,
+    @Query("lite") lite?: string,
+  ) {
+    return this.packages.list(all !== "1", kind as any, lite === "1");
   }
 
   @Public() @Get("packages/slug/:slug") packageBySlug(@Param("slug") slug: string) {

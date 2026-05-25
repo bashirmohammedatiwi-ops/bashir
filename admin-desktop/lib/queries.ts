@@ -17,11 +17,11 @@ export const queries = {
       .get("/subcategories", { params: { all: 1, ...params } })
       .then((r) => r.data?.data ?? r.data),
   brands: () => api.get("/brands", { params: { all: 1 } }).then((r) => r.data?.data ?? r.data),
-  orders: (params?: any) => api.get("/orders", { params }).then((r) => r.data),
+  orders: (params?: any) => api.get("/orders", { params: { lite: 1, ...params } }).then((r) => r.data),
   order: (id: string) => api.get(`/orders/${id}`).then((r) => r.data?.data ?? r.data),
   banners: () => api.get("/banners").then((r) => r.data?.data ?? r.data),
   packages: () =>
-    api.get("/packages", { params: { all: 1 } }).then((r) => r.data?.data ?? r.data),
+    api.get("/packages", { params: { all: 1, lite: 1 } }).then((r) => r.data?.data ?? r.data),
   coupons: () => api.get("/coupons").then((r) => r.data?.data ?? r.data),
   homeBlocks: () => api.get("/home-blocks?active=0").then((r) => r.data?.data ?? r.data),
   media: (params?: any) => api.get("/media", { params }).then((r) => r.data),

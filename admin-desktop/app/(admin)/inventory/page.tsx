@@ -44,7 +44,7 @@ export default function InventoryPage() {
   const { data: overview, isLoading: overviewLoading } = useQuery({
     queryKey: ["inventory-overview"],
     queryFn: queries.inventoryOverview,
-    refetchInterval: 30_000,
+    staleTime: 2 * 60_000,
   });
 
   const { data: alertsData, isLoading: alertsLoading } = useQuery({
@@ -56,7 +56,7 @@ export default function InventoryPage() {
   const { data: runsData, isLoading: runsLoading } = useQuery({
     queryKey: ["inventory-runs"],
     queryFn: () => queries.inventoryRuns({ page: 1, limit: 15 }),
-    refetchInterval: 30_000,
+    staleTime: 2 * 60_000,
   });
 
   const sendAlert = useMutation({

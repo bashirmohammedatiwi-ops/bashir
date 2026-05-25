@@ -28,6 +28,7 @@ export default function DashboardPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: queries.dashboard,
+    staleTime: 5 * 60_000,
   });
   const kpi = data?.kpi ?? {};
   const top = data?.topProducts ?? [];

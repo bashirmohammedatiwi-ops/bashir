@@ -95,7 +95,7 @@ export default function PackagesPage() {
               { title: "الوصف", dataIndex: "subtitle", ellipsis: true },
               {
                 title: "المنتجات",
-                render: (_: any, r: any) => r.items?.length ?? 0,
+                render: (_: any, r: any) => r._count?.items ?? r.items?.length ?? 0,
               },
               {
                 title: "السعر",

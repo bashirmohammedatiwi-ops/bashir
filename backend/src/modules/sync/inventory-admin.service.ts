@@ -171,27 +171,16 @@ export class InventoryAdminService {
   }
 
   private async countMatchedSnapshots() {
-    const [productBarcodes, shadeBarcodes] = await Promise.all([
-      this.prisma.product.findMany({
-        where: { barcode: { not: null } },
-        select: { barcode: true },
-      }),
-      this.prisma.productShade.findMany({
-        where: { barcode: { not: null } },
-        select: { barcode: true },
-      }),
-    ]);
-
-    const codes = [
-      ...productBarcodes.map((p) => p.barcode!),
-      ...shadeBarcodes.map((s) => s.barcode!),
-    ].filter(Boolean);
-
-    if (!codes.length) return 0;
-
-    return this.prisma.inventorySyncSnapshot.count({
-      where: { barcode: { in: codes } },
-    });
+    const rows = await this.prisma.$queryRaw<Array<{ count: bigint }>>`
+      SELECT COUNT(DISTINCT s.barcode)::bigint AS count
+      FROM "InventorySyncSnapshot" s
+      WHERE EXISTS (
+        SELECT 1 FROM "Product" p WHERE p.barcode = s.barcode
+      ) OR EXISTS (
+        SELECT 1 FROM "ProductShade" ps WHERE ps.barcode = s.barcode
+      )
+    `;
+    return Number(rows[0]?.count ?? 0);
   }
 
   private async buildProductMap(barcodes: string[]) {

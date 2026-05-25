@@ -12,7 +12,7 @@ const nextConfig = {
 
   experimental: {
 
-    optimizePackageImports: ["antd"],
+    optimizePackageImports: ["antd", "@ant-design/icons", "dayjs"],
 
   },
 
