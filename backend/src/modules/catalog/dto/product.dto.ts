@@ -59,6 +59,7 @@ export class CreateProductDto {
 
   @IsOptional() @IsArray() @IsString({ each: true }) tags?: string[];
   @IsOptional() @IsArray() @IsString({ each: true }) skinType?: string[];
+  @IsOptional() @IsArray() @IsString({ each: true }) concernIds?: string[];
 
   @IsOptional() @IsArray() @IsString({ each: true }) imageIds?: string[];
 
@@ -82,6 +83,9 @@ export class QueryProductsDto extends PaginationDto {
   @IsOptional() @IsString() subcategoryId?: string;
   @IsOptional() @IsString() brandId?: string;
   @IsOptional() @IsString() tag?: string;
+  @IsOptional() @IsString() concernId?: string;
+  @IsOptional() @IsString() concernSlug?: string;
+  @IsOptional() @IsString() skinType?: string;
   @IsOptional() @IsString() status?: string;
 
   @IsOptional() @IsBoolean() isFeatured?: boolean;

@@ -79,6 +79,7 @@ type ProductFormDrawerProps = {
   setShadePreviews: React.Dispatch<React.SetStateAction<Record<number, ImageItem | null>>>;
   categoriesData: any[];
   brandsData: any[];
+  skinConcernsData?: any[];
   subcategoryOptions: { value: string; label: string }[];
   hasSyncData?: boolean;
   syncLoading?: boolean;
@@ -101,6 +102,7 @@ export function ProductFormDrawer({
   setShadePreviews,
   categoriesData,
   brandsData,
+  skinConcernsData = [],
   subcategoryOptions,
   hasSyncData = false,
   syncLoading = false,
@@ -219,6 +221,16 @@ export function ProductFormDrawer({
             </Form.Item>
             <Form.Item name="skinType" label="نوع البشرة المناسب">
               <Select mode="multiple" options={SKIN_TYPES} placeholder="اختر..." />
+            </Form.Item>
+            <Form.Item name="concernIds" label="مشاكل البشرة (دليل البشرة)">
+              <Select
+                mode="multiple"
+                placeholder="حب شباب، تصبغات..."
+                options={(skinConcernsData ?? []).map((c: any) => ({
+                  value: c.id,
+                  label: c.name,
+                }))}
+              />
             </Form.Item>
         </TabPanel>
 

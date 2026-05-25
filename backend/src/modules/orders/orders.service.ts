@@ -7,6 +7,7 @@ import { DeliveryOption, DiscountType, OrderStatus, PaymentMethod, PaymentStatus
 import { randomBytes } from "crypto";
 import { PrismaService } from "../../common/prisma.service";
 import { SettingsService } from "../settings/settings.service";
+import { ShippingService } from "../shipping/shipping.service";
 import { LoyaltyService } from "../loyalty/loyalty.service";
 import { NotificationsService } from "../notifications/notifications.service";
 import { paginate } from "../../common/dto/pagination.dto";
@@ -21,6 +22,7 @@ export class OrdersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly settings: SettingsService,
+    private readonly shipping: ShippingService,
     private readonly loyalty: LoyaltyService,
     private readonly notifications: NotificationsService,
   ) {}
@@ -116,12 +118,23 @@ export class OrdersService {
 
     const delivery = dto.deliveryOption ?? DeliveryOption.STANDARD;
     let shippingTotal = 0;
+
     if (delivery === DeliveryOption.PICKUP) {
+      const storeSettings = await this.settings.getAll();
+      if (storeSettings.pickupEnabled === false) {
+        throw new BadRequestException("استلام من الفرع غير متاح حالياً");
+      }
       shippingTotal = 0;
-    } else if (delivery === DeliveryOption.EXPRESS) {
-      shippingTotal = 5000;
     } else {
-      shippingTotal = freeShipping ? 0 : await this.settings.getShipping(subtotal);
+      const address = dto.addressId
+        ? await this.prisma.address.findUnique({ where: { id: dto.addressId } })
+        : null;
+      shippingTotal = await this.shipping.calculateOrderShipping({
+        governorate: address?.governorate,
+        deliveryOption: delivery,
+        subtotal,
+        freeShipping,
+      });
     }
 
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
@@ -202,12 +215,23 @@ export class OrdersService {
     return order;
   }
 
-  async updateStatus(id: string, dto: UpdateOrderStatusDto) {
+  async updateStatus(id: string, dto: UpdateOrderStatusDto, actorId?: string) {
     const order = await this.findOne(id);
     const updated = await this.prisma.order.update({
       where: { id },
       data: { status: dto.status, paymentStatus: dto.paymentStatus },
     });
+    if (actorId) {
+      await this.prisma.auditLog.create({
+        data: {
+          actorId,
+          action: "ORDER_STATUS_UPDATE",
+          entity: "Order",
+          entityId: id,
+          meta: { status: dto.status, orderTotal: order.total, orderNumber: order.orderNumber },
+        },
+      });
+    }
     await this.notifications.create({
       userId: order.userId,
       type: "ORDER" as any,

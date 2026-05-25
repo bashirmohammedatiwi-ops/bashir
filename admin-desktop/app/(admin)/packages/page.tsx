@@ -19,11 +19,21 @@ import { useState } from "react";
 import { MediaPicker } from "@/components/MediaPicker";
 import { mediaThumb } from "@/lib/mediaUrl";
 import { mutations, queries } from "@/lib/queries";
+import { slugify } from "@/lib/slugify";
+
+const PACKAGE_KINDS = [
+  { value: "GENERAL", label: "عامة" },
+  { value: "ROUTINE_MORNING", label: "روتين صباحي" },
+  { value: "ROUTINE_EVENING", label: "روتين مسائي" },
+  { value: "BRIDAL_KIT", label: "Kit عروس" },
+];
 
 function toFormValues(row: any) {
-  if (!row) return { isActive: true, position: 0, productIds: [] };
+  if (!row) return { isActive: true, position: 0, productIds: [], kind: "GENERAL" };
   return {
     name: row.name,
+    slug: row.slug ?? "",
+    kind: row.kind ?? "GENERAL",
     subtitle: row.subtitle ?? row.description ?? "",
     price: row.price,
     originalPrice: row.originalPrice,
@@ -40,6 +50,8 @@ function toFormValues(row: any) {
 function toPayload(values: any) {
   return {
     name: values.name,
+    slug: values.slug?.trim() || slugify(values.name, "package"),
+    kind: values.kind ?? "GENERAL",
     subtitle: values.subtitle,
     price: values.price,
     originalPrice: values.originalPrice,
@@ -55,8 +67,11 @@ function toPayload(values: any) {
 export default function PackagesPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
+  const [pushOpen, setPushOpen] = useState(false);
+  const [pushTarget, setPushTarget] = useState<any | null>(null);
   const [editing, setEditing] = useState<any | null>(null);
   const [form] = Form.useForm();
+  const [pushForm] = Form.useForm();
 
   const { data, isLoading } = useQuery({
     queryKey: ["packages"],
@@ -94,6 +109,25 @@ export default function PackagesPage() {
     },
   });
 
+  const sendPush = useMutation({
+    mutationFn: (values: any) =>
+      mutations.createNotification({
+        type: "OFFER",
+        title: values.title,
+        body: values.body,
+        linkType: "PACKAGE",
+        linkId: pushTarget?.id,
+        targetType: "ALL",
+        sendPush: true,
+      }),
+    onSuccess: () => {
+      message.success("تم إرسال الإشعار");
+      setPushOpen(false);
+      pushForm.resetFields();
+    },
+    onError: () => message.error("تعذر إرسال الإشعار"),
+  });
+
   return (
      <>
       <Space direction="vertical" size={12} style={{ width: "100%" }}>
@@ -104,7 +138,7 @@ export default function PackagesPage() {
             onClick={() => {
               setEditing(null);
               form.resetFields();
-              form.setFieldsValue({ isActive: true, position: 0, productIds: [] });
+              form.setFieldsValue({ isActive: true, position: 0, productIds: [], kind: "GENERAL" });
               setOpen(true);
             }}
           >
@@ -137,6 +171,11 @@ export default function PackagesPage() {
                 },
               },
               { title: "الاسم", dataIndex: "name" },
+              {
+                title: "النوع",
+                dataIndex: "kind",
+                render: (v) => PACKAGE_KINDS.find((k) => k.value === v)?.label ?? v,
+              },
               { title: "الوصف", dataIndex: "subtitle", ellipsis: true },
               {
                 title: "المنتجات",
@@ -161,9 +200,22 @@ export default function PackagesPage() {
               },
               {
                 title: "إجراءات",
-                width: 200,
+                width: 260,
                 render: (_: any, r: any) => (
-                  <Space>
+                  <Space wrap>
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        setPushTarget(r);
+                        pushForm.setFieldsValue({
+                          title: r.name,
+                          body: r.subtitle || `اكتشفي ${r.name}`,
+                        });
+                        setPushOpen(true);
+                      }}
+                    >
+                      Push
+                    </Button>
                     <Button
                       size="small"
                       onClick={() => {
@@ -206,6 +258,12 @@ export default function PackagesPage() {
         <Form layout="vertical" form={form} onFinish={(v) => upsert.mutate(v)}>
           <Form.Item name="name" label="الاسم" rules={[{ required: true }]}>
             <Input />
+          </Form.Item>
+          <Form.Item name="slug" label="Slug">
+            <Input placeholder="morning-routine" />
+          </Form.Item>
+          <Form.Item name="kind" label="نوع الباقة" rules={[{ required: true }]}>
+            <Select options={PACKAGE_KINDS} />
           </Form.Item>
           <Form.Item name="subtitle" label="الوصف المختصر">
             <Input.TextArea rows={2} />
@@ -250,6 +308,26 @@ export default function PackagesPage() {
           </Form.Item>
           <Form.Item name="isActive" label="نشط" valuePropName="checked">
             <Switch />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      <Modal
+        title={`إشعار Push — ${pushTarget?.name ?? ""}`}
+        open={pushOpen}
+        onCancel={() => setPushOpen(false)}
+        onOk={() => pushForm.submit()}
+        confirmLoading={sendPush.isPending}
+        okText="إرسال"
+        cancelText="إلغاء"
+        destroyOnHidden
+      >
+        <Form layout="vertical" form={pushForm} onFinish={(v) => sendPush.mutate(v)}>
+          <Form.Item name="title" label="العنوان" rules={[{ required: true }]}>
+            <Input />
+          </Form.Item>
+          <Form.Item name="body" label="النص" rules={[{ required: true }]}>
+            <Input.TextArea rows={3} />
           </Form.Item>
         </Form>
       </Modal>

@@ -20,6 +20,7 @@ export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [filterCategoryId, setFilterCategoryId] = useState<string | undefined>();
   const [filterSubcategoryId, setFilterSubcategoryId] = useState<string | undefined>();
+  const [filterConcernId, setFilterConcernId] = useState<string | undefined>();
   const [editing, setEditing] = useState<any | null>(null);
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
@@ -37,7 +38,7 @@ export default function ProductsPage() {
   } = useBarcodeInventorySync(form);
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["products", page, search, filterCategoryId, filterSubcategoryId],
+    queryKey: ["products", page, search, filterCategoryId, filterSubcategoryId, filterConcernId],
     queryFn: () =>
       queries.products({
         page,
@@ -45,6 +46,7 @@ export default function ProductsPage() {
         search,
         categoryId: filterCategoryId,
         subcategoryId: filterSubcategoryId,
+        concernId: filterConcernId,
       }),
     refetchInterval: 20_000,
   });
@@ -57,6 +59,11 @@ export default function ProductsPage() {
   const { data: brandsData } = useQuery({
     queryKey: ["brands"],
     queryFn: queries.brands,
+    staleTime: 5 * 60_000,
+  });
+  const { data: skinConcernsData } = useQuery({
+    queryKey: ["skin-concerns"],
+    queryFn: () => queries.skinConcerns(true),
     staleTime: 5 * 60_000,
   });
 
@@ -100,6 +107,7 @@ export default function ProductsPage() {
       shades: [],
       variants: [],
       skinType: [],
+      concernIds: [],
     });
     setOpen(true);
   }, [form, resetSync]);
@@ -144,6 +152,7 @@ export default function ProductsPage() {
                 }
               })()
             : [],
+        concernIds: full?.concernIds ?? full?.skinConcerns?.map((c: any) => c.id) ?? [],
         shades: (full?.shades ?? []).map(shadeFromApi),
         variants: full?.variants ?? [],
       });
@@ -339,6 +348,17 @@ export default function ProductsPage() {
               setFilterSubcategoryId(v);
             }}
           />
+          <Select
+            allowClear
+            placeholder="مشكلة البشرة"
+            className="alhayaa-filter-select"
+            value={filterConcernId}
+            options={(skinConcernsData ?? []).map((c: any) => ({ value: c.id, label: c.name }))}
+            onChange={(v) => {
+              setPage(1);
+              setFilterConcernId(v);
+            }}
+          />
         </div>
       </Card>
 
@@ -374,6 +394,7 @@ export default function ProductsPage() {
         setShadePreviews={setShadePreviews}
         categoriesData={categoriesData ?? []}
         brandsData={brandsData ?? []}
+        skinConcernsData={skinConcernsData ?? []}
         subcategoryOptions={subcategoryOptions}
         hasSyncData={hasSyncData}
         syncLoading={syncLoading}

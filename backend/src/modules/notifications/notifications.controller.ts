@@ -1,10 +1,16 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { NotificationType, Role } from "@prisma/client";
+import { Role } from "@prisma/client";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
+import {
+  CreateNotificationDto,
+  RegisterDeviceDto,
+  SendNotificationDto,
+  UnregisterDeviceDto,
+} from "./dto/notification.dto";
 import { NotificationsService } from "./notifications.service";
 
 @ApiTags("notifications")
@@ -32,6 +38,12 @@ export class NotificationsController {
     );
   }
 
+  @Get("stats")
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
+  stats() {
+    return this.notifications.stats();
+  }
+
   @Patch("read-all")
   @Roles(Role.CUSTOMER, Role.ADMIN, Role.SUPER_ADMIN)
   markAllRead(@CurrentUser() user: any) {
@@ -44,19 +56,34 @@ export class NotificationsController {
     return this.notifications.markRead(user.id, id);
   }
 
+  @Post("devices")
+  @Roles(Role.CUSTOMER, Role.ADMIN, Role.SUPER_ADMIN)
+  registerDevice(@CurrentUser() user: any, @Body() dto: RegisterDeviceDto) {
+    return this.notifications.registerDevice(user.id, dto.token, dto.platform ?? "android");
+  }
+
+  @Delete("devices")
+  @Roles(Role.CUSTOMER, Role.ADMIN, Role.SUPER_ADMIN)
+  unregisterDevice(@CurrentUser() user: any, @Body() dto: UnregisterDeviceDto) {
+    return this.notifications.unregisterDevice(user.id, dto.token);
+  }
+
+  @Post("send")
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
+  send(@Body() dto: SendNotificationDto) {
+    return this.notifications.send(dto);
+  }
+
+  @Post(":id/resend")
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
+  resend(@Param("id") id: string) {
+    return this.notifications.resend(id);
+  }
+
   @Post()
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  create(
-    @Body()
-    body: {
-      userId?: string;
-      type?: NotificationType;
-      title: string;
-      body: string;
-      data?: any;
-    },
-  ) {
-    return this.notifications.create(body);
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
+  create(@Body() dto: CreateNotificationDto) {
+    return this.notifications.send(dto);
   }
 
   @Delete(":id")

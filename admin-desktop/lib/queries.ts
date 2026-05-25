@@ -29,8 +29,20 @@ export const queries = {
   user: (id: string) => api.get(`/users/${id}`).then((r) => r.data?.data ?? r.data),
   reviews: (params?: any) => api.get("/reviews", { params }).then((r) => r.data),
   settings: () => api.get("/settings").then((r) => r.data?.data ?? r.data),
+  inventoryOverview: () =>
+    api.get("/sync/inventory/overview").then((r) => r.data?.data ?? r.data),
+  inventoryStockAlerts: (params?: any) =>
+    api.get("/sync/inventory/stock-alerts", { params }).then((r) => r.data),
+  inventoryRuns: (params?: any) =>
+    api.get("/sync/inventory/runs", { params }).then((r) => r.data),
   notifications: (params?: any) =>
     api.get("/notifications", { params: { admin: 1, ...params } }).then((r) => r.data),
+  notificationStats: () => api.get("/notifications/stats").then((r) => r.data?.data ?? r.data),
+  skinConcerns: (all = true) =>
+    api.get("/skin-concerns", { params: { all: all ? 1 : 0 } }).then((r) => r.data?.data ?? r.data),
+  shippingZones: () => api.get("/shipping/zones/all").then((r) => r.data?.data ?? r.data),
+  salesReport: (params?: { from?: string; to?: string }) =>
+    api.get("/reports/sales", { params }).then((r) => r.data?.data ?? r.data),
   addresses: (userId: string) =>
     api.get("/addresses", { params: { userId } }).then((r) => r.data?.data ?? r.data),
   loyalty: (userId: string) =>
@@ -82,8 +94,12 @@ export const mutations = {
 
   updateSettings: (data: any) => api.patch("/settings", data).then((r) => r.data?.data ?? r.data),
 
+  sendStockAlert: (data: { barcode: string; alertType: "RESTOCK" | "LOW_STOCK" }) =>
+    api.post("/sync/inventory/stock-alerts/send", data).then((r) => r.data?.data ?? r.data),
   createNotification: (data: any) =>
-    api.post("/notifications", data).then((r) => r.data?.data ?? r.data),
+    api.post("/notifications/send", data).then((r) => r.data?.data ?? r.data),
+  resendNotification: (id: string) =>
+    api.post(`/notifications/${id}/resend`).then((r) => r.data?.data ?? r.data),
   deleteNotification: (id: string) => api.delete(`/notifications/${id}`).then((r) => r.data),
 
   createHomeBlock: (data: any) =>
@@ -99,6 +115,18 @@ export const mutations = {
   updatePackage: (id: string, data: any) =>
     api.patch(`/packages/${id}`, data).then((r) => r.data?.data ?? r.data),
   deletePackage: (id: string) => api.delete(`/packages/${id}`).then((r) => r.data),
+
+  createSkinConcern: (data: any) =>
+    api.post("/skin-concerns", data).then((r) => r.data?.data ?? r.data),
+  updateSkinConcern: (id: string, data: any) =>
+    api.patch(`/skin-concerns/${id}`, data).then((r) => r.data?.data ?? r.data),
+  deleteSkinConcern: (id: string) => api.delete(`/skin-concerns/${id}`).then((r) => r.data),
+
+  createShippingZone: (data: any) =>
+    api.post("/shipping/zones", data).then((r) => r.data?.data ?? r.data),
+  updateShippingZone: (id: string, data: any) =>
+    api.patch(`/shipping/zones/${id}`, data).then((r) => r.data?.data ?? r.data),
+  deleteShippingZone: (id: string) => api.delete(`/shipping/zones/${id}`).then((r) => r.data),
 
   createCoupon: (data: any) => api.post("/coupons", data).then((r) => r.data?.data ?? r.data),
   updateCoupon: (id: string, data: any) =>

@@ -1,7 +1,8 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
-import { createApiClient, chunkItems, formatApiError, pushBatchesParallel } from "./apiClient";
+import { createApiClient, chunkItems, formatApiError, pushBatchesParallel, reportSyncRun } from "./apiClient";
 import { rowToSyncItem, type SyncItem } from "./pricing";
 import { fetchArticles, testConnection, type SqlServerConfig } from "./sqlServer";
 import {
@@ -83,21 +84,25 @@ async function runSync(manual = false): Promise<{
   total: number;
   changed: number;
   skipped: number;
+  failed: number;
 }> {
   if (syncing) {
     log("المزامنة جارية بالفعل...", "info");
-    return { ok: false, synced: 0, total: 0, changed: 0, skipped: 0 };
+    return { ok: false, synced: 0, total: 0, changed: 0, skipped: 0, failed: 0 };
   }
   if (!config) {
     log("لم يتم إعداد ملف الإعدادات config.json", "error");
-    return { ok: false, synced: 0, total: 0, changed: 0, skipped: 0 };
+    return { ok: false, synced: 0, total: 0, changed: 0, skipped: 0, failed: 0 };
   }
+
+  const syncStarted = Date.now();
+  let errorMessage: string | undefined;
 
   syncing = true;
   mainWindow?.webContents.send("sync:status", { running: true, manual, auto: !manual });
   broadcastTimer();
 
-  let result = { ok: false, synced: 0, total: 0, changed: 0, skipped: 0 };
+  let result = { ok: false, synced: 0, total: 0, changed: 0, skipped: 0, failed: 0 };
 
   try {
     log(manual ? "بدء المزامنة اليدوية..." : "بدء المزامنة التلقائية...");
@@ -108,7 +113,7 @@ async function runSync(manual = false): Promise<{
 
     if (items.length === 0) {
       log("لا توجد منتجات بسعر في قاعدة البيانات", "error");
-      result = { ok: false, synced: 0, total: 0, changed: 0, skipped: 0 };
+      result = { ok: false, synced: 0, total: 0, changed: 0, skipped: 0, failed: 0 };
       return result;
     }
 
@@ -123,7 +128,7 @@ async function runSync(manual = false): Promise<{
         `لا توجد تغييرات — ${uniqueItems.length} منتج محدّث (${knownCount} في الذاكرة المحلية)`,
         "success",
       );
-      result = { ok: true, synced: 0, total: uniqueItems.length, changed: 0, skipped };
+      result = { ok: true, synced: 0, total: uniqueItems.length, changed: 0, skipped, failed: 0 };
       return result;
     }
 
@@ -171,6 +176,7 @@ async function runSync(manual = false): Promise<{
         total: uniqueItems.length,
         changed: toSend.length,
         skipped,
+        failed,
       };
       return result;
     }
@@ -185,17 +191,33 @@ async function runSync(manual = false): Promise<{
       total: uniqueItems.length,
       changed: toSend.length,
       skipped,
+      failed: 0,
     };
     return result;
   } catch (err: any) {
-    log(`فشلت المزامنة: ${formatApiError(err)}`, "error");
-    result = { ok: false, synced: 0, total: 0, changed: 0, skipped: 0 };
+    errorMessage = formatApiError(err);
+    log(`فشلت المزامنة: ${errorMessage}`, "error");
+    result = { ok: false, synced: 0, total: 0, changed: 0, skipped: 0, failed: 0 };
     return result;
   } finally {
     syncing = false;
     mainWindow?.webContents.send("sync:status", { running: false, manual, auto: !manual });
     mainWindow?.webContents.send("sync:complete", { manual, auto: !manual, ...result });
     scheduleNextAutoSync();
+    if (config) {
+      void reportSyncRun(createApiClient(config.api), {
+        manual,
+        ok: result.ok,
+        totalItems: result.total,
+        changedItems: result.changed,
+        syncedItems: result.synced,
+        failedItems: result.failed,
+        skippedItems: result.skipped,
+        durationMs: Date.now() - syncStarted,
+        errorMessage,
+        sourceHost: os.hostname(),
+      });
+    }
   }
 }
 

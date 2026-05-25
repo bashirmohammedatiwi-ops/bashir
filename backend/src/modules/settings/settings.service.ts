@@ -21,6 +21,12 @@ export const DEFAULT_STORE_SETTINGS = {
   firstOrderBonusPoints: 50,
   pointsPer1000Iqd: 1,
   redeem100PointsValue: 1000,
+  lowStockThreshold: 5,
+  stockAlertPushEnabled: true,
+  stockAlertCooldownHours: 24,
+  pickupEnabled: true,
+  pickupAddress: "فرع الكرادة — شارع أبو نؤاس، بغداد",
+  pickupHours: "10:00 – 22:00 يومياً",
 };
 
 const SETTINGS_KEY = "store";

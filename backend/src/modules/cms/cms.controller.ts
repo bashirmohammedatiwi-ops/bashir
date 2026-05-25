@@ -19,8 +19,10 @@ import { BannersService } from "./banners.service";
 import { CouponsService } from "./coupons.service";
 import { HomeBlocksService } from "./home-blocks.service";
 import { PackagesService } from "./packages.service";
+import { SkinConcernsService } from "./skin-concerns.service";
 import { CreateBannerDto, UpdateBannerDto } from "./dto/banner.dto";
 import { CreatePackageDto, UpdatePackageDto } from "./dto/package.dto";
+import { CreateSkinConcernDto, UpdateSkinConcernDto } from "./dto/skin-concern.dto";
 
 @ApiTags("cms")
 @Controller()
@@ -30,6 +32,7 @@ export class CmsController {
     private readonly packages: PackagesService,
     private readonly coupons: CouponsService,
     private readonly home: HomeBlocksService,
+    private readonly skinConcerns: SkinConcernsService,
   ) {}
 
   // ---- Banners ----
@@ -53,8 +56,12 @@ export class CmsController {
   }
 
   // ---- Packages ----
-  @Public() @Get("packages") listPackages(@Query("all") all?: string) {
-    return this.packages.list(all !== "1");
+  @Public() @Get("packages") listPackages(@Query("all") all?: string, @Query("kind") kind?: string) {
+    return this.packages.list(all !== "1", kind as any);
+  }
+
+  @Public() @Get("packages/slug/:slug") packageBySlug(@Param("slug") slug: string) {
+    return this.packages.findBySlug(slug);
   }
 
   @Public() @Get("packages/:id") packageOne(@Param("id") id: string) {
@@ -124,5 +131,33 @@ export class CmsController {
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Delete("home-blocks/:id") removeHome(@Param("id") id: string) {
     return this.home.remove(id);
+  }
+
+  // ---- Skin Concerns ----
+  @Public() @Get("skin-concerns") listSkinConcerns(@Query("all") all?: string) {
+    return this.skinConcerns.list(all !== "1", all === "1");
+  }
+
+  @Public() @Get("skin-concerns/:slug/products") skinConcernProducts(
+    @Param("slug") slug: string,
+    @Query("page") page?: string,
+    @Query("limit") limit?: string,
+  ) {
+    return this.skinConcerns.findBySlug(slug, Number(page) || 1, Number(limit) || 20);
+  }
+
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Post("skin-concerns") createSkinConcern(@Body() data: CreateSkinConcernDto) {
+    return this.skinConcerns.create(data);
+  }
+
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Patch("skin-concerns/:id") updateSkinConcern(@Param("id") id: string, @Body() data: UpdateSkinConcernDto) {
+    return this.skinConcerns.update(id, data);
+  }
+
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Delete("skin-concerns/:id") removeSkinConcern(@Param("id") id: string) {
+    return this.skinConcerns.remove(id);
   }
 }

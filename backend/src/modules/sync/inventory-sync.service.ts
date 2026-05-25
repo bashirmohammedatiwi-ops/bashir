@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { barcodeLookupCandidates, normalizeBarcode } from "../../common/barcode.util";
 import { PrismaService } from "../../common/prisma.service";
 import { InventorySyncItemDto } from "./dto/inventory-sync.dto";
+import { StockAlertService } from "./stock-alert.service";
 
 type SanitizedItem = {
   barcode: string;
@@ -51,7 +52,10 @@ const PRODUCT_UPDATE_CHUNK = 150;
 
 @Injectable()
 export class InventorySyncService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly stockAlerts: StockAlertService,
+  ) {}
 
   async findByBarcode(barcode: string) {
     const candidates = barcodeLookupCandidates(barcode);
@@ -137,9 +141,28 @@ export class InventorySyncService {
     }
 
     const barcodes = sanitized.map((item) => item.barcode);
+    const previousSnapshots = await this.prisma.inventorySyncSnapshot.findMany({
+      where: { barcode: { in: barcodes } },
+      select: { barcode: true, stock: true },
+    });
+    const previousStockMap = new Map(previousSnapshots.map((s) => [s.barcode, s.stock]));
+
     const productMap = await this.buildProductBarcodeMap(barcodes);
     const snapshotErrors = await this.bulkUpsertSnapshots(sanitized, syncedAt);
     const updatedBarcodes = await this.bulkUpdateProducts(sanitized, productMap);
+
+    const alertItems = sanitized.map((item) => {
+      const product = productMap.get(item.barcode);
+      return {
+        barcode: item.barcode,
+        name: item.name,
+        stock: item.stock,
+        previousStock: previousStockMap.get(item.barcode) ?? null,
+        productId: product?.id ?? null,
+        productName: product?.name ?? null,
+      };
+    });
+    const alerts = await this.stockAlerts.processStockChanges(alertItems);
 
     for (const item of sanitized) {
       const error = snapshotErrors.get(item.barcode);
@@ -159,6 +182,7 @@ export class InventorySyncService {
       failed,
       items: results,
       syncedAt,
+      alerts,
     };
   }
 

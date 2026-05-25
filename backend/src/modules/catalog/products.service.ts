@@ -16,6 +16,7 @@ const productRelationsFull = {
   },
   shades: { orderBy: { position: "asc" as const }, include: { image: true } },
   variants: true,
+  skinConcerns: { include: { concern: { select: { id: true, slug: true, name: true } } } },
 };
 
 const productRelationsLite = {
@@ -49,6 +50,12 @@ export class ProductsService {
       isBestSeller: q.isBestSeller,
       isPromo: q.isPromo,
       tags: q.tag ? { contains: q.tag } : undefined,
+      skinType: q.skinType ? { contains: q.skinType } : undefined,
+      skinConcerns: q.concernSlug
+        ? { some: { concern: { slug: q.concernSlug } } }
+        : q.concernId
+          ? { some: { concernId: q.concernId } }
+          : undefined,
       price:
         q.minPrice !== undefined || q.maxPrice !== undefined
           ? {
@@ -94,10 +101,33 @@ export class ProductsService {
         shades: { orderBy: { position: "asc" }, include: { image: true } },
         variants: { orderBy: { position: "asc" } },
         reviews: { take: 10, orderBy: { createdAt: "desc" } },
+        skinConcerns: { include: { concern: true } },
       },
     });
     if (!product) throw new NotFoundException("Product not found");
-    return product;
+    return this.formatProduct(product);
+  }
+
+  private formatProduct(product: any) {
+    let skinType: string[] = [];
+    let tags: string[] = [];
+    try {
+      skinType = JSON.parse(product.skinType || "[]");
+    } catch {
+      skinType = [];
+    }
+    try {
+      tags = JSON.parse(product.tags || "[]");
+    } catch {
+      tags = [];
+    }
+    return {
+      ...product,
+      skinType,
+      tags,
+      concernIds: product.skinConcerns?.map((sc: any) => sc.concernId) ?? [],
+      skinConcerns: product.skinConcerns?.map((sc: any) => sc.concern) ?? [],
+    };
   }
 
   async create(dto: CreateProductDto) {
@@ -156,9 +186,13 @@ export class ProductsService {
         subcategory: true,
         shades: true,
         variants: true,
+        skinConcerns: { include: { concern: true } },
       },
     });
-    return product;
+    if (dto.concernIds?.length) {
+      await this.syncSkinConcerns(product.id, dto.concernIds);
+    }
+    return this.findOne(product.id);
   }
 
   async update(id: string, dto: UpdateProductDto) {
@@ -184,7 +218,7 @@ export class ProductsService {
     if (dto.variants) {
       await this.prisma.productVariant.deleteMany({ where: { productId: id } });
     }
-    return this.prisma.product.update({
+    await this.prisma.product.update({
       where: { id },
       data: {
         sku: dto.sku,
@@ -227,13 +261,19 @@ export class ProductsService {
           ? { create: dto.variants.map((v, i) => ({ ...v, position: v.position ?? i })) }
           : undefined,
       },
-      include: {
-        images: { include: { media: true } },
-        shades: true,
-        variants: true,
-        category: true,
-        subcategory: true,
-      },
+    });
+    if (dto.concernIds) {
+      await this.syncSkinConcerns(id, dto.concernIds);
+    }
+    return this.findOne(id);
+  }
+
+  private async syncSkinConcerns(productId: string, concernIds: string[]) {
+    await this.prisma.productSkinConcern.deleteMany({ where: { productId } });
+    if (!concernIds.length) return;
+    await this.prisma.productSkinConcern.createMany({
+      data: concernIds.map((concernId) => ({ productId, concernId })),
+      skipDuplicates: true,
     });
   }
 

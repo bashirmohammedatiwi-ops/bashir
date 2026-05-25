@@ -77,6 +77,28 @@ export async function pushBulkWithRetry(
   throw lastError;
 }
 
+export async function reportSyncRun(
+  client: AxiosInstance,
+  payload: {
+    manual: boolean;
+    ok: boolean;
+    totalItems: number;
+    changedItems: number;
+    syncedItems: number;
+    failedItems: number;
+    skippedItems: number;
+    durationMs: number;
+    errorMessage?: string;
+    sourceHost?: string;
+  },
+): Promise<void> {
+  try {
+    await client.post("/sync/inventory/runs", payload);
+  } catch {
+    /* non-blocking */
+  }
+}
+
 export function chunkItems<T>(items: T[], size: number): T[][] {
   const chunks: T[][] = [];
   for (let i = 0; i < items.length; i += size) {

@@ -65,11 +65,42 @@ enum DeliveryOption {
   PICKUP
 }
 
+enum PackageKind {
+  GENERAL
+  ROUTINE_MORNING
+  ROUTINE_EVENING
+  BRIDAL_KIT
+}
+
 enum NotificationType {
   OFFER
   ORDER
   NEW_ARRIVAL
   REMINDER
+  RESTOCK
+  LOW_STOCK
+}
+
+enum NotificationLinkType {
+  NONE
+  PRODUCT
+  CATEGORY
+  BRAND
+  PACKAGE
+  EXTERNAL_URL
+}
+
+enum NotificationTargetType {
+  ALL
+  USER
+}
+
+enum NotificationPushStatus {
+  PENDING
+  SENT
+  PARTIAL
+  FAILED
+  SKIPPED
 }
 
 enum HomeBlockType {
@@ -107,6 +138,7 @@ model User {
   reviews         Review[]
   wishlist        Wishlist[]
   notifications   Notification[]
+  deviceTokens    DeviceToken[]
   auditLogs       AuditLog[]
   loyaltyHistory  LoyaltyHistory[]
 
@@ -236,6 +268,7 @@ model Product {
   orderItems      OrderItem[]
   wishlist        Wishlist[]
   packageItems    PackageItem[]
+  skinConcerns    ProductSkinConcern[]
 
   @@index([brandId])
   @@index([categoryId])
@@ -266,6 +299,26 @@ model InventorySyncSnapshot {
   createdAt       DateTime @default(now())
 
   @@index([syncedAt])
+  @@index([stock])
+}
+
+model PosSyncRun {
+  id            String    @id @default(uuid())
+  manual        Boolean   @default(false)
+  ok            Boolean   @default(true)
+  totalItems    Int       @default(0)
+  changedItems  Int       @default(0)
+  syncedItems   Int       @default(0)
+  failedItems   Int       @default(0)
+  skippedItems  Int       @default(0)
+  durationMs    Int       @default(0)
+  errorMessage  String?
+  sourceHost    String?
+  finishedAt    DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+
+  @@index([createdAt])
+  @@index([ok])
 }
 
 model ProductVariant {
@@ -454,7 +507,9 @@ model Coupon {
 model Package {
   id              String        @id @default(uuid())
   name            String
+  slug            String?       @unique
   subtitle        String        @default("")
+  kind            PackageKind   @default(GENERAL)
   price           Int
   originalPrice   Int           @default(0)
   badge           String?
@@ -471,6 +526,7 @@ model Package {
   @@index([isActive])
   @@index([isFeatured])
   @@index([position])
+  @@index([kind])
 }
 
 model PackageItem {
@@ -484,6 +540,50 @@ model PackageItem {
 
   @@unique([packageId, productId])
   @@index([packageId])
+}
+
+// ---------------------- SKIN CONCERNS ----------------------
+model SkinConcern {
+  id              String               @id @default(uuid())
+  slug            String               @unique
+  name            String
+  description     String               @default("")
+  icon            String?
+  position        Int                  @default(0)
+  isActive        Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  products        ProductSkinConcern[]
+
+  @@index([isActive])
+  @@index([position])
+}
+
+model ProductSkinConcern {
+  productId       String
+  concernId       String
+
+  product         Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  concern         SkinConcern  @relation(fields: [concernId], references: [id], onDelete: Cascade)
+
+  @@id([productId, concernId])
+  @@index([concernId])
+}
+
+// ---------------------- SHIPPING ----------------------
+model ShippingZone {
+  id              String   @id @default(uuid())
+  governorate     String   @unique
+  standardFee     Int      @default(5000)
+  expressFee      Int      @default(8000)
+  isActive        Boolean  @default(true)
+  position        Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([position])
 }
 
 // ---------------------- BANNERS / CMS ----------------------
@@ -542,20 +642,50 @@ model Review {
 }
 
 // ---------------------- NOTIFICATIONS ----------------------
+model DeviceToken {
+  id          String   @id @default(uuid())
+  userId      String
+  token       String   @unique
+  platform    String   @default("android")
+  isActive    Boolean  @default(true)
+  lastUsedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isActive])
+}
+
 model Notification {
-  id              String            @id @default(uuid())
+  id              String                   @id @default(uuid())
   userId          String?
-  type            NotificationType  @default(ORDER)
+  type            NotificationType         @default(ORDER)
   title           String
   body            String
   data            Json?
+  linkType        NotificationLinkType     @default(NONE)
+  linkId          String?
+  linkSlug        String?
+  linkLabel       String?
+  imageUrl        String?
+  externalUrl     String?
+  targetType      NotificationTargetType   @default(ALL)
+  pushStatus      NotificationPushStatus   @default(PENDING)
+  sentCount       Int                      @default(0)
+  failedCount     Int                      @default(0)
+  scheduledAt     DateTime?
+  sentAt          DateTime?
   readAt          DateTime?
-  createdAt       DateTime          @default(now())
+  createdAt       DateTime                 @default(now())
 
   user            User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([createdAt])
+  @@index([pushStatus])
+  @@index([linkType])
 }
 
 model LoyaltyHistory {

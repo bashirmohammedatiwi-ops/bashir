@@ -3,6 +3,7 @@ import {
   HomeBlockType,
   NotificationType,
   OrderStatus,
+  PackageKind,
   PaymentMethod,
   PaymentStatus,
   PrismaClient,
@@ -157,9 +158,56 @@ async function main() {
         freeShippingThreshold: 50000,
         cashOnDelivery: true,
         emailOrders: "orders@alhayaa.com",
+        pickupEnabled: true,
+        pickupAddress: "فرع الكرادة — شارع أبو نؤاس، بغداد",
+        pickupHours: "10:00 – 22:00 يومياً",
       },
     },
   });
+
+  const skinConcernDefs = [
+    { slug: "acne", name: "حب شباب", description: "منتجات لعلاج ومنع حب الشباب", icon: "🔴", position: 0 },
+    { slug: "pigmentation", name: "تصبغات", description: "توحيد لون البشرة وتفتيح التصبغات", icon: "✨", position: 1 },
+    { slug: "dryness", name: "جفاف", description: "ترطيب عميق للبشرة الجافة", icon: "💧", position: 2 },
+    { slug: "sensitivity", name: "حساسية", description: "منتجات لطيفة للبشرة الحساسة", icon: "🌿", position: 3 },
+  ];
+  const concernMap: Record<string, string> = {};
+  for (const c of skinConcernDefs) {
+    const row = await prisma.skinConcern.upsert({
+      where: { slug: c.slug },
+      update: c,
+      create: c,
+    });
+    concernMap[c.slug] = row.id;
+  }
+
+  const governorates = [
+    { governorate: "بغداد", standardFee: 5000, expressFee: 8000, position: 0 },
+    { governorate: "البصرة", standardFee: 7000, expressFee: 10000, position: 1 },
+    { governorate: "نينوى", standardFee: 7000, expressFee: 10000, position: 2 },
+    { governorate: "أربيل", standardFee: 8000, expressFee: 12000, position: 3 },
+    { governorate: "النجف", standardFee: 6000, expressFee: 9000, position: 4 },
+    { governorate: "كربلاء", standardFee: 6000, expressFee: 9000, position: 5 },
+    { governorate: "ذي قار", standardFee: 7000, expressFee: 10000, position: 6 },
+    { governorate: "بابل", standardFee: 6000, expressFee: 9000, position: 7 },
+    { governorate: "الأنبار", standardFee: 7000, expressFee: 10000, position: 8 },
+    { governorate: "ديالى", standardFee: 6000, expressFee: 9000, position: 9 },
+    { governorate: "كركوك", standardFee: 7000, expressFee: 10000, position: 10 },
+    { governorate: "ميسان", standardFee: 7000, expressFee: 10000, position: 11 },
+    { governorate: "واسط", standardFee: 6000, expressFee: 9000, position: 12 },
+    { governorate: "صلاح الدين", standardFee: 7000, expressFee: 10000, position: 13 },
+    { governorate: "دهوك", standardFee: 8000, expressFee: 12000, position: 14 },
+    { governorate: "السليمانية", standardFee: 8000, expressFee: 12000, position: 15 },
+    { governorate: "المثنى", standardFee: 7000, expressFee: 10000, position: 16 },
+    { governorate: "القادسية", standardFee: 6000, expressFee: 9000, position: 17 },
+  ];
+  for (const zone of governorates) {
+    await prisma.shippingZone.upsert({
+      where: { governorate: zone.governorate },
+      update: zone,
+      create: zone,
+    });
+  }
 
   const productDefs = [
     { sku: "SKU-1001", name: "أحمر شفاه مات فاخر", slug: "matte-lipstick", brand: "mac", cat: "makeup", price: 35000, orig: 42000, stock: 45, sold: 128, featured: true, new: true, tags: ["شفاه", "مات"] },
@@ -223,6 +271,26 @@ async function main() {
       },
     });
     productMap[p.sku] = row.id;
+  }
+
+  const skincareProducts = ["SKU-1005", "SKU-1007", "SKU-1011"];
+  for (const sku of skincareProducts) {
+    const pid = productMap[sku];
+    if (!pid) continue;
+    await prisma.productSkinConcern.upsert({
+      where: { productId_concernId: { productId: pid, concernId: concernMap.dryness } },
+      update: {},
+      create: { productId: pid, concernId: concernMap.dryness },
+    });
+  }
+  if (productMap["SKU-1007"]) {
+    await prisma.productSkinConcern.upsert({
+      where: {
+        productId_concernId: { productId: productMap["SKU-1007"], concernId: concernMap.pigmentation },
+      },
+      update: {},
+      create: { productId: productMap["SKU-1007"], concernId: concernMap.pigmentation },
+    });
   }
 
   for (const [i, customer] of customers.entries()) {
@@ -332,21 +400,61 @@ async function main() {
   });
 
   const pkgProducts = skus.slice(0, 3).map((s) => productMap[s]);
-  const existingPkg = await prisma.package.findFirst({ where: { name: "باقة العروس الذهبية" } });
-  if (!existingPkg) {
-    await prisma.package.create({
-      data: {
-        name: "باقة العروس الذهبية",
-        subtitle: "5 منتجات فاخرة",
-        price: 185000,
-        originalPrice: 245000,
-        badge: "الأكثر مبيعاً",
-        isFeatured: true,
-        position: 0,
-        items: { create: pkgProducts.map((pid, i) => ({ productId: pid, position: i })) },
-      },
-    });
-  }
+  await prisma.package.upsert({
+    where: { slug: "bridal-gold-kit" },
+    update: {
+      name: "باقة العروس الذهبية",
+      kind: PackageKind.BRIDAL_KIT,
+    },
+    create: {
+      name: "باقة العروس الذهبية",
+      slug: "bridal-gold-kit",
+      kind: PackageKind.BRIDAL_KIT,
+      subtitle: "5 منتجات فاخرة",
+      price: 185000,
+      originalPrice: 245000,
+      badge: "الأكثر مبيعاً",
+      isFeatured: true,
+      position: 0,
+      items: { create: pkgProducts.map((pid, i) => ({ productId: pid, position: i })) },
+    },
+  });
+
+  const morningProducts = skus.slice(3, 5).map((s) => productMap[s]);
+  await prisma.package.upsert({
+    where: { slug: "morning-routine" },
+    update: { kind: PackageKind.ROUTINE_MORNING },
+    create: {
+      name: "روتين صباحي",
+      slug: "morning-routine",
+      kind: PackageKind.ROUTINE_MORNING,
+      subtitle: "تنظيف + ترطيب + واقي",
+      price: 95000,
+      originalPrice: 115000,
+      badge: "روتين",
+      isFeatured: true,
+      position: 1,
+      items: { create: morningProducts.map((pid, i) => ({ productId: pid, position: i })) },
+    },
+  });
+
+  const eveningProducts = skus.slice(5, 7).map((s) => productMap[s]);
+  await prisma.package.upsert({
+    where: { slug: "evening-routine" },
+    update: { kind: PackageKind.ROUTINE_EVENING },
+    create: {
+      name: "روتين مسائي",
+      slug: "evening-routine",
+      kind: PackageKind.ROUTINE_EVENING,
+      subtitle: "تنظيف + سيروم + كريم ليل",
+      price: 88000,
+      originalPrice: 105000,
+      badge: "روتين",
+      isFeatured: false,
+      position: 2,
+      items: { create: eveningProducts.map((pid, i) => ({ productId: pid, position: i })) },
+    },
+  });
 
   const blockCount = await prisma.homeBlock.count();
   if (blockCount === 0) {

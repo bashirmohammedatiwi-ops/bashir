@@ -41,6 +41,7 @@ export function buildProductPayload(
     isActive: values.isActive !== false,
     tags,
     skinType: Array.isArray(values.skinType) ? values.skinType : [],
+    concernIds: Array.isArray(values.concernIds) ? values.concernIds : [],
     imageIds: productImages.map((i) => i.id),
     shades: (values.shades ?? [])
       .map((s: any, i: number) => shadeToPayload(s, i))

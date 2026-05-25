@@ -15,6 +15,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     title: "الرئيسية",
     items: [
       { href: "/dashboard", label: "لوحة المعلومات", short: "لو" },
+      { href: "/reports", label: "التقارير", short: "ت" },
       { href: "/orders", label: "الطلبات", short: "ط" },
       { href: "/notifications", label: "الإشعارات", short: "إ" },
     ],
@@ -23,6 +24,8 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     title: "المنتجات",
     items: [
       { href: "/products", label: "المنتجات", short: "م" },
+      { href: "/skin-concerns", label: "دليل البشرة", short: "ب" },
+      { href: "/inventory", label: "المخزون و POS", short: "مخ" },
       { href: "/categories", label: "الفئات", short: "ف" },
       { href: "/subcategories", label: "الأقسام الفرعية", short: "ق" },
       { href: "/brands", label: "البراندات", short: "ب" },
@@ -43,6 +46,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { href: "/users", label: "العملاء", short: "ع" },
       { href: "/reviews", label: "التقييمات", short: "ت" },
+      { href: "/shipping", label: "الشحن", short: "ش" },
       { href: "/settings", label: "الإعدادات", short: "ض" },
     ],
   },

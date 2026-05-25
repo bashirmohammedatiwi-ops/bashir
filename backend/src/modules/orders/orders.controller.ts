@@ -47,8 +47,8 @@ export class OrdersController {
 
   @Patch(":id/status")
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
-  update(@Param("id") id: string, @Body() dto: UpdateOrderStatusDto) {
-    return this.orders.updateStatus(id, dto);
+  update(@Param("id") id: string, @Body() dto: UpdateOrderStatusDto, @CurrentUser() user: any) {
+    return this.orders.updateStatus(id, dto, user.id);
   }
 
   @Patch(":id/cancel")

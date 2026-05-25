@@ -18,9 +18,15 @@ interface Settings {
   emailOrders: string;
   flashSaleEndsAt: string | null;
   firstOrderBonusPoints: number;
+  pickupEnabled?: boolean;
+  pickupAddress?: string;
+  pickupHours?: string;
   loyaltyTiers?: Record<string, number>;
   redeem100PointsValue?: number;
   pointsPer1000Iqd?: number;
+  lowStockThreshold?: number;
+  stockAlertPushEnabled?: boolean;
+  stockAlertCooldownHours?: number;
 }
 
 export default function SettingsPage() {
@@ -97,6 +103,43 @@ export default function SettingsPage() {
                         <InputNumber style={{ width: "100%" }} min={0} max={100} />
                       </Form.Item>
                       <Form.Item name="cashOnDelivery" label="الدفع عند الاستلام" valuePropName="checked">
+                        <Switch />
+                      </Form.Item>
+                      <Form.Item name="pickupEnabled" label="استلام من الفرع" valuePropName="checked">
+                        <Switch />
+                      </Form.Item>
+                      <Form.Item name="pickupAddress" label="عنوان الفرع">
+                        <Input />
+                      </Form.Item>
+                      <Form.Item name="pickupHours" label="ساعات الاستلام">
+                        <Input placeholder="10:00 – 22:00" />
+                      </Form.Item>
+                    </>
+                  ),
+                },
+                {
+                  key: "inventory",
+                  label: "المخزون",
+                  children: (
+                    <>
+                      <Form.Item
+                        name="lowStockThreshold"
+                        label="حدّ الكمية المنخفضة (باركود / منتج)"
+                        tooltip="يُستخدم لتنبيه «ينفد قريباً»"
+                      >
+                        <InputNumber style={{ width: "100%" }} min={1} max={100} />
+                      </Form.Item>
+                      <Form.Item
+                        name="stockAlertCooldownHours"
+                        label="فترة منع تكرار التنبيه (ساعات)"
+                      >
+                        <InputNumber style={{ width: "100%" }} min={1} max={168} />
+                      </Form.Item>
+                      <Form.Item
+                        name="stockAlertPushEnabled"
+                        label="إرسال Push تلقائي عند تغيّر المخزون"
+                        valuePropName="checked"
+                      >
                         <Switch />
                       </Form.Item>
                     </>

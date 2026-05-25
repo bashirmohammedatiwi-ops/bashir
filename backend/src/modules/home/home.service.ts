@@ -26,6 +26,7 @@ export class HomeService {
       categories,
       brands,
       packages,
+      skinConcerns,
       homeBlocks,
       newArrivals,
       bestSellers,
@@ -53,6 +54,10 @@ export class HomeService {
         where: { isActive: true },
         orderBy: { position: "asc" },
         include: { coverImage: true, items: { include: { product: true } } },
+      }),
+      this.prisma.skinConcern.findMany({
+        where: { isActive: true },
+        orderBy: { position: "asc" },
       }),
       this.prisma.homeBlock.findMany({
         where: { isActive: true },
@@ -89,6 +94,7 @@ export class HomeService {
       categories,
       brands,
       packages,
+      skinConcerns,
       homeBlocks,
       flashSale: {
         endsAt: flashEndsAt,
@@ -101,6 +107,9 @@ export class HomeService {
         storeName: (settings as any).storeName,
         whatsapp: (settings as any).whatsapp,
         supportPhone: (settings as any).supportPhone ?? (settings as any).whatsapp,
+        pickupEnabled: (settings as any).pickupEnabled ?? true,
+        pickupAddress: (settings as any).pickupAddress ?? "",
+        pickupHours: (settings as any).pickupHours ?? "",
       },
     };
   }
