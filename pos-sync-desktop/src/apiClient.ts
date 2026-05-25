@@ -107,15 +107,39 @@ export function chunkItems<T>(items: T[], size: number): T[][] {
   return chunks;
 }
 
+export type BatchUploadProgress = (done: number, total: number) => void;
+
+export type BatchUploadResult = {
+  synced: number;
+  failed: number;
+  pushed: SyncItem[];
+  failedItems: SyncItem[];
+  lastError?: string;
+};
+
+function collectFailedItems(batch: SyncItem[], result: BulkSyncResult): SyncItem[] {
+  const failedBarcodes = new Set(
+    (result.items ?? [])
+      .filter((item) => item.error)
+      .map((item) => String(item.barcode ?? "").trim())
+      .filter(Boolean),
+  );
+
+  if (failedBarcodes.size === 0) return [];
+  return batch.filter((item) => failedBarcodes.has(item.barcode.trim()));
+}
+
 export async function pushBatchesParallel(
   client: AxiosInstance,
   batches: SyncItem[][],
   concurrency: number,
-  onProgress?: (done: number, total: number) => void,
-): Promise<{ synced: number; failed: number; pushed: SyncItem[] }> {
+  onProgress?: BatchUploadProgress,
+): Promise<BatchUploadResult> {
   let synced = 0;
   let failed = 0;
   const pushed: SyncItem[] = [];
+  const failedItems: SyncItem[] = [];
+  let lastError: string | undefined;
   let completed = 0;
   const total = batches.length;
   const workers = Math.max(1, Math.min(concurrency, batches.length));
@@ -131,20 +155,17 @@ export async function pushBatchesParallel(
         synced += result.synced ?? batch.length;
         failed += result.failed ?? 0;
 
-        const failedBarcodes = new Set(
-          (result.items ?? [])
-            .filter((item) => item.error)
-            .map((item) => String(item.barcode ?? "").trim())
-            .filter(Boolean),
-        );
-
-        if (failedBarcodes.size > 0) {
-          pushed.push(...batch.filter((item) => !failedBarcodes.has(item.barcode.trim())));
+        const batchFailed = collectFailedItems(batch, result);
+        if (batchFailed.length > 0) {
+          failedItems.push(...batchFailed);
+          pushed.push(...batch.filter((item) => !batchFailed.some((f) => f.barcode === item.barcode)));
         } else {
           pushed.push(...batch);
         }
-      } catch {
+      } catch (err) {
         failed += batch.length;
+        failedItems.push(...batch);
+        lastError = formatApiError(err);
       } finally {
         completed += 1;
         onProgress?.(completed, total);
@@ -154,5 +175,18 @@ export async function pushBatchesParallel(
 
   await Promise.all(Array.from({ length: workers }, () => worker()));
 
-  return { synced, failed, pushed };
+  return { synced, failed, pushed, failedItems, lastError };
+}
+
+export async function retryFailedItems(
+  client: AxiosInstance,
+  items: SyncItem[],
+  batchSize = 50,
+): Promise<BatchUploadResult> {
+  if (!items.length) {
+    return { synced: 0, failed: 0, pushed: [], failedItems: [] };
+  }
+
+  const batches = chunkItems(items, batchSize);
+  return pushBatchesParallel(client, batches, 1);
 }

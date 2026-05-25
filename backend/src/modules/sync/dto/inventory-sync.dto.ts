@@ -1,14 +1,19 @@
-import { Type } from "class-transformer";
+import { Transform, Type } from "class-transformer";
 import {
   ArrayMinSize,
   IsArray,
-  IsInt,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   Min,
   ValidateNested,
 } from "class-validator";
+
+function roundInt({ value }: { value: unknown }) {
+  const n = Number(value);
+  return Number.isFinite(n) ? Math.round(n) : value;
+}
 
 export class InventorySyncItemDto {
   @IsString()
@@ -27,24 +32,28 @@ export class InventorySyncItemDto {
   @IsString()
   name?: string;
 
+  @Transform(roundInt)
   @Type(() => Number)
-  @IsInt()
+  @IsNumber()
   @Min(0)
   price!: number;
 
+  @Transform(roundInt)
   @Type(() => Number)
-  @IsInt()
+  @IsNumber()
   @Min(0)
   originalPrice!: number;
 
   @IsOptional()
+  @Transform(roundInt)
   @Type(() => Number)
-  @IsInt()
+  @IsNumber()
   @Min(0)
   discountPercent?: number;
 
+  @Transform(roundInt)
   @Type(() => Number)
-  @IsInt()
+  @IsNumber()
   @Min(0)
   stock!: number;
 

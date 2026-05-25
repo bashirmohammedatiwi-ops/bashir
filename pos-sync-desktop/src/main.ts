@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { createApiClient, chunkItems, formatApiError, pushBatchesParallel, reportSyncRun } from "./apiClient";
+import { createApiClient, chunkItems, formatApiError, pushBatchesParallel, reportSyncRun, retryFailedItems } from "./apiClient";
 import { rowToSyncItem, type SyncItem } from "./pricing";
 import { fetchArticles, testConnection, type SqlServerConfig } from "./sqlServer";
 import {
@@ -43,7 +43,7 @@ function defaultConfig(): AppConfig {
     api: {
       baseUrl: "http://187.127.88.146/api/v1",
     },
-    sync: { autoSyncMinutes: 5, batchSize: 300, parallelUploads: 4 },
+    sync: { autoSyncMinutes: 5, batchSize: 300, parallelUploads: 2 },
   };
 }
 
@@ -140,13 +140,13 @@ async function runSync(manual = false): Promise<{
 
     const client = createApiClient(config.api);
     const batchSize = Math.max(50, Math.min(config.sync.batchSize || 300, 1000));
-    const parallelUploads = Math.max(1, Math.min(config.sync.parallelUploads || 4, 8));
+    const parallelUploads = Math.max(1, Math.min(config.sync.parallelUploads || 2, 4));
     const batches = chunkItems(toSend, batchSize);
     const uploadStarted = Date.now();
 
     log(`رفع ${toSend.length} منتج — ${batches.length} دفعة × ${batchSize} (×${parallelUploads} متوازي)`);
 
-    const { synced, failed, pushed } = await pushBatchesParallel(
+    const { synced, failed, pushed, failedItems, lastError } = await pushBatchesParallel(
       client,
       batches,
       parallelUploads,
@@ -157,37 +157,56 @@ async function runSync(manual = false): Promise<{
       },
     );
 
-    if (pushed.length > 0) {
-      const nextState = mergeSyncState(previousState, pushed);
+    let finalSynced = synced;
+    let finalFailed = failed;
+    let finalPushed = [...pushed];
+
+    if (failedItems.length > 0) {
+      log(`إعادة محاولة ${failedItems.length} منتج فاشل — دفعات صغيرة...`);
+      const retry = await retryFailedItems(client, failedItems, 50);
+      finalSynced += retry.synced;
+      finalPushed.push(...retry.pushed);
+      finalFailed = retry.failedItems.length;
+      if (retry.lastError) {
+        log(`آخر خطأ في إعادة المحاولة: ${retry.lastError}`, "error");
+      }
+    }
+
+    if (lastError && failed > 0) {
+      log(`سبب فشل بعض الدفعات: ${lastError}`, "error");
+    }
+
+    if (finalPushed.length > 0) {
+      const nextState = mergeSyncState(previousState, finalPushed);
       saveSyncState(app.getPath("userData"), nextState);
-      log(`حُفظت حالة ${pushed.length} منتج — الإجمالي في الذاكرة: ${countSyncState(nextState)}`);
-    } else if (synced > 0) {
+      log(`حُفظت حالة ${finalPushed.length} منتج — الإجمالي في الذاكرة: ${countSyncState(nextState)}`);
+    } else if (finalSynced > 0) {
       log("تحذير: تم الرفع لكن لم تُحفظ الحالة المحلية — ستُعاد المزامنة", "error");
     }
 
-    if (failed > 0) {
+    if (finalFailed > 0) {
       log(
-        `اكتملت جزئياً — رُفع ${synced} | فشل ${failed} | حُفظ ${pushed.length} | ${((Date.now() - uploadStarted) / 1000).toFixed(1)} ث`,
+        `اكتملت جزئياً — رُفع ${finalSynced} | فشل ${finalFailed} | حُفظ ${finalPushed.length} | ${((Date.now() - uploadStarted) / 1000).toFixed(1)} ث`,
         "error",
       );
       result = {
-        ok: synced > 0,
-        synced,
+        ok: finalSynced > 0,
+        synced: finalSynced,
         total: uniqueItems.length,
         changed: toSend.length,
         skipped,
-        failed,
+        failed: finalFailed,
       };
       return result;
     }
 
     log(
-      `اكتملت — رُفع ${synced} | حُفظ ${pushed.length} | ${((Date.now() - uploadStarted) / 1000).toFixed(1)} ث`,
+      `اكتملت — رُفع ${finalSynced} | حُفظ ${finalPushed.length} | ${((Date.now() - uploadStarted) / 1000).toFixed(1)} ث`,
       "success",
     );
     result = {
       ok: true,
-      synced,
+      synced: finalSynced,
       total: uniqueItems.length,
       changed: toSend.length,
       skipped,

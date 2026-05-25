@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { SkipThrottle } from "@nestjs/throttler";
 import { Role } from "@prisma/client";
 import { Public } from "../../common/decorators/public.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
@@ -58,6 +59,7 @@ export class InventorySyncController {
   }
 
   @Public()
+  @SkipThrottle()
   @Post("runs")
   recordRun(@Body() dto: RecordPosSyncRunDto) {
     return this.admin.recordRun(dto);
@@ -80,12 +82,14 @@ export class InventorySyncController {
   }
 
   @Public()
+  @SkipThrottle()
   @Post()
   syncOne(@Body() dto: InventorySyncItemDto) {
     return this.sync.syncOne(dto);
   }
 
   @Public()
+  @SkipThrottle()
   @Post("bulk")
   syncBulk(@Body() dto: BulkInventorySyncDto) {
     return this.sync.syncMany(dto.items);

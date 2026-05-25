@@ -13,7 +13,7 @@ function decodeWin1256FromLatin1(value: string): string {
 /** Repair Arabic POS text when SQL Server VARCHAR (CP1256) is mis-read as UTF-8/Latin-1. */
 export function fixPosArabicText(value: string | null | undefined): string | null {
   if (value == null) return null;
-  const trimmed = value.trim();
+  const trimmed = value.replace(/\u0000/g, "").trim();
   if (!trimmed) return null;
 
   if (ARABIC_RE.test(trimmed) && replacementCount(trimmed) === 0) {

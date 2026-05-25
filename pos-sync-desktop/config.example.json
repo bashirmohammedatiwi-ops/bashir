@@ -15,6 +15,6 @@
   "sync": {
     "autoSyncMinutes": 5,
     "batchSize": 300,
-    "parallelUploads": 4
+    "parallelUploads": 2
   }
 }

@@ -174,7 +174,13 @@ export class InventorySyncService {
         productName: product?.name ?? null,
       };
     });
-    const alerts = await this.stockAlerts.processStockChanges(alertItems);
+
+    let alerts = { restock: 0, lowStock: 0 };
+    try {
+      alerts = await this.stockAlerts.processStockChanges(alertItems);
+    } catch {
+      /* stock alerts must not block inventory sync */
+    }
 
     for (const item of sanitized) {
       const error = snapshotErrors.get(item.barcode);
