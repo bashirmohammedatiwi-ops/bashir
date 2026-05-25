@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
+import { fixPosArabicText } from "../../common/pos-text-encoding.util";
 import { paginate } from "../../common/dto/pagination.dto";
 import { SettingsService } from "../settings/settings.service";
 import { RecordPosSyncRunDto } from "./dto/inventory-admin.dto";
@@ -127,6 +128,8 @@ export class InventoryAdminService {
       const linked = productMap.get(row.barcode);
       return {
         ...row,
+        name: fixPosArabicText(row.name) ?? row.name,
+        offerName: fixPosArabicText(row.offerName) ?? row.offerName,
         status: row.stock <= 0 ? "out" : row.stock <= threshold ? "low" : "ok",
         productId: linked?.id ?? null,
         productName: linked?.name ?? null,

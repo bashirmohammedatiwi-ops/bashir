@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { barcodeLookupCandidates, normalizeBarcode } from "../../common/barcode.util";
+import { fixPosArabicText } from "../../common/pos-text-encoding.util";
 import { PrismaService } from "../../common/prisma.service";
 import { InventorySyncItemDto } from "./dto/inventory-sync.dto";
 import { StockAlertService } from "./stock-alert.service";
@@ -30,12 +31,20 @@ function sanitizeItem(item: InventorySyncItemDto): SanitizedItem | null {
     barcode,
     productCode: item.productCode?.trim() || null,
     productNum,
-    name: item.name?.trim()?.slice(0, 500) || null,
+    name: fixPosArabicText(item.name?.trim()?.slice(0, 500)) || null,
     price: Math.max(0, Math.round(Number(item.price) || 0)),
     originalPrice: Math.max(0, Math.round(Number(item.originalPrice) || 0)),
     discountPercent: Math.min(100, Math.max(0, Math.round(Number(item.discountPercent) || 0))),
     stock: Math.max(0, Math.round(Number(item.stock) || 0)),
-    offerName: item.offerName?.trim()?.slice(0, 200) || null,
+    offerName: fixPosArabicText(item.offerName?.trim()?.slice(0, 200)) || null,
+  };
+}
+
+function fixSnapshotText<T extends { name?: string | null; offerName?: string | null }>(snapshot: T): T {
+  return {
+    ...snapshot,
+    name: fixPosArabicText(snapshot.name) ?? snapshot.name ?? null,
+    offerName: fixPosArabicText(snapshot.offerName) ?? snapshot.offerName ?? null,
   };
 }
 
@@ -79,10 +88,11 @@ export class InventorySyncService {
 
     if (!snapshot) throw new NotFoundException("No synced inventory for this barcode");
 
-    const product = await this.findProductByBarcode(snapshot.barcode);
+    const fixed = fixSnapshotText(snapshot);
+    const product = await this.findProductByBarcode(fixed.barcode);
 
     return {
-      ...snapshot,
+      ...fixed,
       productId: product?.id ?? null,
       productName: product?.name ?? null,
     };
@@ -94,11 +104,13 @@ export class InventorySyncService {
     ];
     if (!candidates.length) return null;
 
-    return this.prisma.inventorySyncSnapshot.findFirst({
+    const snapshot = await this.prisma.inventorySyncSnapshot.findFirst({
       where: {
         OR: [{ barcode: { in: candidates } }, { productNum: { in: candidates } }],
       },
     });
+
+    return snapshot ? fixSnapshotText(snapshot) : null;
   }
 
   pricingFromSnapshot(snapshot: {

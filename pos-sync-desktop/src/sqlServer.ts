@@ -1,6 +1,8 @@
 import { execFile } from "child_process";
 import { promisify } from "util";
 import { ARTICLES_QUERY, STATS_QUERY } from "./articlesQuery";
+import { normalizeBarcode } from "./barcode";
+import { fixPosArabicText } from "./encoding";
 import type { PosArticleRow } from "./pricing";
 
 const execFileAsync = promisify(execFile);
@@ -54,20 +56,18 @@ function sqlNumber(raw: string | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-import { normalizeBarcode } from "./barcode";
-
 function normalizeRow(raw: Record<string, unknown>): PosArticleRow {
   return {
     productCode: Number(raw.productCode) || 0,
     productNum: raw.productNum != null ? normalizeBarcode(String(raw.productNum)) : null,
-    name: raw.name != null ? String(raw.name) : null,
+    name: fixPosArabicText(raw.name != null ? String(raw.name) : null),
     barcode: raw.barcode != null ? normalizeBarcode(String(raw.barcode)) : null,
     originalPrice: Number(raw.originalPrice) || 0,
     storedFinalPrice: Number(raw.storedFinalPrice) || 0,
     quantity: Number(raw.quantity) || 0,
     discountValue: raw.discountValue != null ? Number(raw.discountValue) : null,
     discountType: raw.discountType != null ? Number(raw.discountType) : null,
-    offerName: raw.offerName != null ? String(raw.offerName) : null,
+    offerName: fixPosArabicText(raw.offerName != null ? String(raw.offerName) : null),
   };
 }
 

@@ -7,7 +7,7 @@ ActiveOffers AS (
     od.discount,
     od.discount_type,
     od.offer_id,
-    o.name AS offer_name,
+    CONVERT(NVARCHAR(4000), o.name) AS offer_name,
     o.priority,
     ROW_NUMBER() OVER (
       PARTITION BY od.item_id
@@ -30,18 +30,20 @@ const TRIM = (col: string) => `LTRIM(RTRIM(COALESCE(${col}, '')))`;
 const CLEAN = (col: string) =>
   `REPLACE(REPLACE(REPLACE(REPLACE(${TRIM(col)}, '|', ' '), CHAR(9), ' '), CHAR(10), ' '), CHAR(13), ' ')`;
 
+const POS_TEXT = (col: string) => CLEAN(`CONVERT(NVARCHAR(4000), ${col})`);
+
 export const ARTICLES_SELECT = `
 SELECT
   a.Seq AS productCode,
   ${TRIM("a.Num")} AS productNum,
-  ${CLEAN("a.Name1")} AS name,
+  ${POS_TEXT("a.Name1")} AS name,
   ${TRIM("a.Barcode")} AS barcode,
   CAST(COALESCE(NULLIF(a.SellPr4, 0), 0) AS bigint) AS originalPrice,
   CAST(COALESCE(NULLIF(a.SellPr5, 0), 0) AS bigint) AS storedFinalPrice,
   CAST(COALESCE(a.CurTot1, 0) AS bigint) AS quantity,
   CAST(COALESCE(ao.discount, 0) AS float) AS discountValue,
   CAST(COALESCE(ao.discount_type, 0) AS int) AS discountType,
-  ${CLEAN("ao.offer_name")} AS offerName
+  ${POS_TEXT("ao.offer_name")} AS offerName
 FROM dbo.articles a
 LEFT JOIN ActiveOffers ao ON a.Seq = ao.item_id AND ao.rn = 1
 WHERE COALESCE(a.SellPr4, 0) > 0

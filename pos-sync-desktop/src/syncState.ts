@@ -8,6 +8,8 @@ export type SyncStateEntry = {
   originalPrice: number;
   discountPercent: number;
   stock: number;
+  name?: string;
+  offerName?: string;
 };
 
 export type SyncStateMap = Record<string, SyncStateEntry>;
@@ -17,7 +19,9 @@ function stateFile(userData: string) {
 }
 
 function syncSignature(item: SyncItem | SyncStateEntry): string {
-  return `${item.price}|${item.originalPrice}|${item.discountPercent}|${item.stock}`;
+  const name = "name" in item ? item.name ?? "" : "";
+  const offerName = "offerName" in item ? item.offerName ?? "" : "";
+  return `${item.price}|${item.originalPrice}|${item.discountPercent}|${item.stock}|${name}|${offerName}`;
 }
 
 export function dedupeSyncItems(items: SyncItem[]): SyncItem[] {
@@ -36,6 +40,8 @@ export function buildSyncState(items: SyncItem[]): SyncStateMap {
       originalPrice: item.originalPrice,
       discountPercent: item.discountPercent,
       stock: item.stock,
+      name: item.name,
+      offerName: item.offerName,
     };
   }
   return state;
@@ -58,6 +64,8 @@ export function mergeSyncState(previous: SyncStateMap, items: SyncItem[]): SyncS
       originalPrice: item.originalPrice,
       discountPercent: item.discountPercent,
       stock: item.stock,
+      name: item.name,
+      offerName: item.offerName,
     };
   }
   return next;
