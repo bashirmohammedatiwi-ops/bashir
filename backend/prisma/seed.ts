@@ -182,24 +182,24 @@ async function main() {
   }
 
   const governorates = [
-    { governorate: "بغداد", standardFee: 5000, expressFee: 8000, position: 0 },
-    { governorate: "البصرة", standardFee: 7000, expressFee: 10000, position: 1 },
-    { governorate: "نينوى", standardFee: 7000, expressFee: 10000, position: 2 },
-    { governorate: "أربيل", standardFee: 8000, expressFee: 12000, position: 3 },
-    { governorate: "النجف", standardFee: 6000, expressFee: 9000, position: 4 },
-    { governorate: "كربلاء", standardFee: 6000, expressFee: 9000, position: 5 },
-    { governorate: "ذي قار", standardFee: 7000, expressFee: 10000, position: 6 },
-    { governorate: "بابل", standardFee: 6000, expressFee: 9000, position: 7 },
-    { governorate: "الأنبار", standardFee: 7000, expressFee: 10000, position: 8 },
-    { governorate: "ديالى", standardFee: 6000, expressFee: 9000, position: 9 },
-    { governorate: "كركوك", standardFee: 7000, expressFee: 10000, position: 10 },
-    { governorate: "ميسان", standardFee: 7000, expressFee: 10000, position: 11 },
-    { governorate: "واسط", standardFee: 6000, expressFee: 9000, position: 12 },
-    { governorate: "صلاح الدين", standardFee: 7000, expressFee: 10000, position: 13 },
-    { governorate: "دهوك", standardFee: 8000, expressFee: 12000, position: 14 },
-    { governorate: "السليمانية", standardFee: 8000, expressFee: 12000, position: 15 },
-    { governorate: "المثنى", standardFee: 7000, expressFee: 10000, position: 16 },
-    { governorate: "القادسية", standardFee: 6000, expressFee: 9000, position: 17 },
+    { governorate: "بغداد", standardFee: 5000, position: 0 },
+    { governorate: "البصرة", standardFee: 7000, position: 1 },
+    { governorate: "نينوى", standardFee: 7000, position: 2 },
+    { governorate: "أربيل", standardFee: 8000, position: 3 },
+    { governorate: "النجف", standardFee: 6000, position: 4 },
+    { governorate: "كربلاء", standardFee: 6000, position: 5 },
+    { governorate: "ذي قار", standardFee: 7000, position: 6 },
+    { governorate: "بابل", standardFee: 6000, position: 7 },
+    { governorate: "الأنبار", standardFee: 7000, position: 8 },
+    { governorate: "ديالى", standardFee: 6000, position: 9 },
+    { governorate: "كركوك", standardFee: 7000, position: 10 },
+    { governorate: "ميسان", standardFee: 7000, position: 11 },
+    { governorate: "واسط", standardFee: 6000, position: 12 },
+    { governorate: "صلاح الدين", standardFee: 7000, position: 13 },
+    { governorate: "دهوك", standardFee: 8000, position: 14 },
+    { governorate: "السليمانية", standardFee: 8000, position: 15 },
+    { governorate: "المثنى", standardFee: 7000, position: 16 },
+    { governorate: "القادسية", standardFee: 6000, position: 17 },
   ];
   for (const zone of governorates) {
     await prisma.shippingZone.upsert({
@@ -207,6 +207,22 @@ async function main() {
       update: zone,
       create: zone,
     });
+  }
+
+  const baghdad = await prisma.shippingZone.findUnique({ where: { governorate: "بغداد" } });
+  if (baghdad) {
+    const baghdadAreas = [
+      { name: "الكرادة", fee: null, position: 0 },
+      { name: "المنصور", fee: null, position: 1 },
+      { name: "الكاظمية", fee: 6000, position: 2 },
+    ];
+    for (const area of baghdadAreas) {
+      await prisma.shippingArea.upsert({
+        where: { zoneId_name: { zoneId: baghdad.id, name: area.name } },
+        update: area,
+        create: { zoneId: baghdad.id, ...area },
+      });
+    }
   }
 
   const productDefs = [

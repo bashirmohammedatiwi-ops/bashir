@@ -127,6 +127,11 @@ export const mutations = {
   updateShippingZone: (id: string, data: any) =>
     api.patch(`/shipping/zones/${id}`, data).then((r) => r.data?.data ?? r.data),
   deleteShippingZone: (id: string) => api.delete(`/shipping/zones/${id}`).then((r) => r.data),
+  createShippingArea: (data: any) =>
+    api.post("/shipping/areas", data).then((r) => r.data?.data ?? r.data),
+  updateShippingArea: (id: string, data: any) =>
+    api.patch(`/shipping/areas/${id}`, data).then((r) => r.data?.data ?? r.data),
+  deleteShippingArea: (id: string) => api.delete(`/shipping/areas/${id}`).then((r) => r.data),
 
   createCoupon: (data: any) => api.post("/coupons", data).then((r) => r.data?.data ?? r.data),
   updateCoupon: (id: string, data: any) =>

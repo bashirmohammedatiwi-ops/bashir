@@ -1,8 +1,7 @@
-import { app, BrowserWindow, protocol, net, shell } from "electron";
+import { app, BrowserWindow, protocol, shell } from "electron";
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import { pathToFileURL } from "url";
 
 const isDev = !app.isPackaged;
 const APP_SCHEME = "app";
@@ -47,11 +46,32 @@ function resolveStaticPath(urlPathname: string): string {
   return path.join(root, "index.html");
 }
 
+const MIME_TYPES: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "application/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+  ".ttf": "font/ttf",
+  ".ico": "image/x-icon",
+};
+
 async function registerAppProtocol() {
   await protocol.handle(APP_SCHEME, (request) => {
     const { pathname } = new URL(request.url);
     const filePath = resolveStaticPath(pathname);
-    return net.fetch(pathToFileURL(filePath).toString());
+    const ext = path.extname(filePath).toLowerCase();
+    const contentType = MIME_TYPES[ext] ?? "application/octet-stream";
+    const data = fs.readFileSync(filePath);
+    return new Response(data, {
+      headers: { "Content-Type": contentType },
+    });
   });
 }
 
@@ -92,7 +112,7 @@ async function createWindow() {
       responseHeaders: {
         ...details.responseHeaders,
         "Content-Security-Policy": [
-          `default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: ${VPS_ORIGIN}; connect-src 'self' ${VPS_ORIGIN} http: https: data: blob:; img-src 'self' data: blob: ${VPS_ORIGIN} http: https:;`,
+          `default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: ${VPS_ORIGIN}; connect-src 'self' ${VPS_ORIGIN} http: https: data: blob:; img-src 'self' data: blob: ${VPS_ORIGIN} http: https:; font-src 'self' data: blob:; style-src 'self' 'unsafe-inline';`,
         ],
       },
     });

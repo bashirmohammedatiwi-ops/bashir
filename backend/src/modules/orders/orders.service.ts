@@ -131,6 +131,7 @@ export class OrdersService {
         : null;
       shippingTotal = await this.shipping.calculateOrderShipping({
         governorate: address?.governorate,
+        area: address?.area,
         deliveryOption: delivery,
         subtotal,
         freeShipping,

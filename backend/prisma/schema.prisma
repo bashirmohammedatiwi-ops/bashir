@@ -573,15 +573,34 @@ model ProductSkinConcern {
 
 // ---------------------- SHIPPING ----------------------
 model ShippingZone {
-  id              String   @id @default(uuid())
-  governorate     String   @unique
-  standardFee     Int      @default(5000)
-  expressFee      Int      @default(8000)
-  isActive        Boolean  @default(true)
-  position        Int      @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id              String         @id @default(uuid())
+  governorate     String         @unique
+  standardFee     Int            @default(5000)
+  isActive        Boolean        @default(true)
+  position        Int            @default(0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
+  areas           ShippingArea[]
+
+  @@index([isActive])
+  @@index([position])
+}
+
+model ShippingArea {
+  id              String       @id @default(uuid())
+  zoneId          String
+  name            String
+  fee             Int?
+  isActive        Boolean      @default(true)
+  position        Int          @default(0)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  zone            ShippingZone @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+
+  @@unique([zoneId, name])
+  @@index([zoneId])
   @@index([isActive])
   @@index([position])
 }

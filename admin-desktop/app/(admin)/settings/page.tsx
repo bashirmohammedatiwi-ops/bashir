@@ -13,7 +13,6 @@ interface Settings {
   taxPercent: number;
   shippingFee: number;
   freeShippingThreshold: number;
-  expressShippingFee: number;
   cashOnDelivery: boolean;
   emailOrders: string;
   flashSaleEndsAt: string | null;
@@ -89,10 +88,7 @@ export default function SettingsPage() {
                   children: (
                     <>
                       <Space.Compact block>
-                        <Form.Item name="shippingFee" label="رسوم الشحن" style={{ flex: 1 }}>
-                          <InputNumber style={{ width: "100%" }} min={0} />
-                        </Form.Item>
-                        <Form.Item name="expressShippingFee" label="الشحن السريع" style={{ flex: 1, marginInlineStart: 8 }}>
+                        <Form.Item name="shippingFee" label="رسوم الشحن الافتراضية" style={{ flex: 1 }}>
                           <InputNumber style={{ width: "100%" }} min={0} />
                         </Form.Item>
                         <Form.Item name="freeShippingThreshold" label="شحن مجاني عند" style={{ flex: 1, marginInlineStart: 8 }}>

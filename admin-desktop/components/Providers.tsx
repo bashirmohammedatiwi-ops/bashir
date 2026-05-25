@@ -43,7 +43,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           colorBgLayout: "#f0eef3",
           borderRadius: 10,
           borderRadiusLG: 14,
-          fontFamily: 'Cairo, "Segoe UI", sans-serif',
+          fontFamily: 'var(--font-cairo), "Segoe UI", Tahoma, "Arabic Typesetting", sans-serif',
           controlHeight: 38,
           colorLink: "#4a2466",
           colorLinkHover: "#6b3d8f",

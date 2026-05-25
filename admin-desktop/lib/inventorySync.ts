@@ -13,6 +13,7 @@ export type InventorySyncPreview = {
   offerName?: string | null;
   syncedAt?: string;
   productId?: string | null;
+  productName?: string | null;
 };
 
 export async function fetchInventoryByBarcode(

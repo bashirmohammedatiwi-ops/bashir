@@ -6,8 +6,10 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import {
+  CreateShippingAreaDto,
   CreateShippingZoneDto,
   ShippingQuoteDto,
+  UpdateShippingAreaDto,
   UpdateShippingZoneDto,
 } from "./dto/shipping.dto";
 import { ShippingService } from "./shipping.service";
@@ -59,5 +61,29 @@ export class ShippingController {
   @Delete("zones/:id")
   remove(@Param("id") id: string) {
     return this.shipping.remove(id);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Post("areas")
+  createArea(@Body() dto: CreateShippingAreaDto) {
+    return this.shipping.createArea(dto);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Patch("areas/:id")
+  updateArea(@Param("id") id: string, @Body() dto: UpdateShippingAreaDto) {
+    return this.shipping.updateArea(id, dto);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Delete("areas/:id")
+  removeArea(@Param("id") id: string) {
+    return this.shipping.removeArea(id);
   }
 }

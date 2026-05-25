@@ -25,6 +25,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { href: "/products", label: "المنتجات", short: "م" },
       { href: "/skin-concerns", label: "دليل البشرة", short: "ب" },
+      { href: "/skin-routines", label: "روتين البشرة", short: "ر" },
       { href: "/inventory", label: "المخزون و POS", short: "مخ" },
       { href: "/categories", label: "الفئات", short: "ف" },
       { href: "/subcategories", label: "الأقسام الفرعية", short: "ق" },
