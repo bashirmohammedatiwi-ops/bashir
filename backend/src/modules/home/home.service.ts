@@ -42,7 +42,12 @@ export class HomeService {
         where: { isActive: true, parentId: null },
         orderBy: { position: "asc" },
         include: {
-          children: { where: { isActive: true }, orderBy: { position: "asc" } },
+          image: true,
+          children: {
+            where: { isActive: true },
+            orderBy: { position: "asc" },
+            include: { image: true },
+          },
         },
       }),
       this.prisma.brand.findMany({

@@ -51,6 +51,11 @@ pos-sync-desktop/release/
 pos-sync-desktop/release-dist/
 pos-sync-desktop/pos-release-dist/
 
+# Flutter mobile-app
+mobile-app/.dart_tool/
+mobile-app/build/
+mobile-app/.flutter-plugins-dependencies
+
 # Infra runtime
 infra/.env
 infra/backups/

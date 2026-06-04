@@ -1,0 +1,94 @@
+upstream alhayaa_api {
+    server api:3000;
+    keepalive 64;
+}
+
+open_file_cache max=10000 inactive=30s;
+open_file_cache_valid 60s;
+open_file_cache_min_uses 2;
+open_file_cache_errors on;
+
+proxy_buffering on;
+
+# HTTP → HTTPS + ACME renewal
+server {
+    listen 80;
+    listen [::]:80;
+    server_name DOMAIN_PLACEHOLDER;
+
+    client_max_body_size 25m;
+
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+        allow all;
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name DOMAIN_PLACEHOLDER;
+
+    ssl_certificate /etc/letsencrypt/live/DOMAIN_PLACEHOLDER/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/DOMAIN_PLACEHOLDER/privkey.pem;
+    include /etc/nginx/conf.d/ssl-params.conf;
+
+    client_max_body_size 25m;
+
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    aio threads;
+
+    gzip on;
+    gzip_comp_level 5;
+    gzip_min_length 1024;
+    gzip_vary on;
+    gzip_types text/plain text/css application/json application/javascript application/xml+rss image/svg+xml;
+
+    location /api/ {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 120s;
+        proxy_read_timeout 120s;
+
+        proxy_pass http://alhayaa_api;
+    }
+
+    location /media/ {
+        alias /var/www/alhayaa/uploads/;
+        access_log off;
+        autoindex off;
+
+        expires 365d;
+        add_header Cache-Control "public, max-age=31536000, immutable" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header Accept-Ranges bytes always;
+        etag on;
+
+        types {
+            image/webp webp;
+            image/jpeg jpg jpeg;
+            image/png png;
+            image/gif gif;
+            image/svg+xml svg;
+        }
+        default_type application/octet-stream;
+    }
+
+    location / {
+        return 200 "Alhayaa API is running";
+        add_header Content-Type text/plain;
+    }
+}

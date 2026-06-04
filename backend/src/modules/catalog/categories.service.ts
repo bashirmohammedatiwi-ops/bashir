@@ -41,19 +41,24 @@ export class CategoriesService {
 
   async list(all = false, minimal = false) {
     if (minimal) {
-      return this.prisma.category.findMany({
+      const rows = await this.prisma.category.findMany({
         where: { isActive: all ? undefined : true, parentId: null },
         orderBy: { position: "asc" },
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          icon: true,
-          position: true,
-          isActive: true,
+        include: {
+          image: true,
           _count: { select: { children: true } },
         },
       });
+      return rows.map((c) => ({
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        icon: c.icon,
+        position: c.position,
+        isActive: c.isActive,
+        image: c.image,
+        children: [],
+      }));
     }
     const rows = await this.prisma.category.findMany({
       where: { isActive: all ? undefined : true, parentId: null },

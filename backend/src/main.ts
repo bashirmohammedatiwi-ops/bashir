@@ -34,12 +34,27 @@ async function bootstrap() {
     root: mediaRoot,
     prefix: `${mediaPrefix}/`,
     decorateReply: false,
+    setHeaders: (res: { setHeader: (k: string, v: string) => void }) => {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+      res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    },
   });
 
   const corsOrigins = (process.env.CORS_ORIGIN?.split(",") ?? ["*"]).map((o) => o.trim());
+  const allowAllOrigins = corsOrigins.includes("*");
+  const isDev = process.env.NODE_ENV !== "production";
 
   app.enableCors({
-    origin: corsOrigins.includes("*") ? true : corsOrigins,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowAllOrigins) return callback(null, true);
+      if (corsOrigins.includes(origin)) return callback(null, true);
+      if (isDev && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+        return callback(null, true);
+      }
+      callback(new Error("Not allowed by CORS"), false);
+    },
     credentials: true,
     methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "Accept", "X-Requested-With"],

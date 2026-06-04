@@ -10,6 +10,7 @@ Monorepo for the Alhayaa e-commerce platform.
 | `admin-desktop/` | Electron admin panel (Next.js) |
 | `pos-sync-desktop/` | Electron POS sync (SQL Server → VPS) |
 | `infra/` | Docker Compose, Nginx, deployment scripts |
+| `mobile-app/` | Flutter customer app — API only (no mock data), synced with admin panel |
 | `docs/` | Project documentation |
 
 ## Quick start
