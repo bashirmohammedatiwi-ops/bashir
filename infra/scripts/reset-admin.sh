@@ -5,6 +5,27 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-echo "Updating admin credentials from .env via seed (admin user only)..."
-docker compose -f docker-compose.prod.yml exec -T api npx tsx prisma/seed.ts
-echo "Done. Use ADMIN_EMAIL and ADMIN_PASSWORD from infra/.env to log in."
+if [[ ! -f .env ]]; then
+  echo "Missing infra/.env"
+  exit 1
+fi
+
+set -a
+# shellcheck disable=SC1091
+source .env
+set +a
+
+: "${ADMIN_EMAIL:?Set ADMIN_EMAIL in .env}"
+: "${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}"
+
+echo "Updating admin credentials from .env via seed..."
+echo "  Email: $ADMIN_EMAIL"
+
+docker compose -f docker-compose.prod.yml up -d api
+
+docker compose -f docker-compose.prod.yml exec -T \
+  -e ADMIN_EMAIL="$ADMIN_EMAIL" \
+  -e ADMIN_PASSWORD="$ADMIN_PASSWORD" \
+  api npx tsx prisma/seed.ts
+
+echo "Done. Log in with ADMIN_EMAIL and ADMIN_PASSWORD from infra/.env"
