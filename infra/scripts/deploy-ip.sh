@@ -33,7 +33,13 @@ echo "==> Building and starting (HTTP on port 80)..."
 echo "==> Tip: set RUN_SEED=0 in .env if startup is slow; seed manually later."
 docker compose -f docker-compose.prod.yml up -d --build
 
+echo "==> Building admin web panel..."
+chmod +x scripts/build-admin-web.sh
+./scripts/build-admin-web.sh
+docker compose -f docker-compose.prod.yml up -d nginx
+
 echo ""
 echo "Wait 2-3 minutes, then:"
 echo "  docker compose -f docker-compose.prod.yml logs api --tail=30"
 echo "  curl http://${DOMAIN}/api/v1/health"
+echo "  Admin panel: http://${DOMAIN}/"

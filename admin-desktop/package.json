@@ -1,7 +1,7 @@
 {
   "name": "alhayaa-admin",
   "version": "1.0.0",
-  "description": "Alhayaa Admin Desktop (Electron + Next.js)",
+  "description": "Alhayaa Admin Panel (Electron desktop + static web)",
   "main": "dist-electron/main.js",
   "author": "Alhayaa",
   "scripts": {
@@ -9,8 +9,11 @@
     "dev:electron": "wait-on http://localhost:3001 && tsc -p tsconfig.electron.json && electron .",
     "dev": "concurrently \"npm:dev:next\" \"npm:dev:electron\"",
     "build:next": "next build",
+    "build:web": "next build",
     "build:electron": "tsc -p tsconfig.electron.json",
     "build": "npm run build:next && npm run build:electron",
+    "preview:web": "npx --yes serve out -p 3001 -s",
+    "start:web": "npm run preview:web",
     "dist": "npm run build && electron-builder --win",
     "dist:portable": "npm run build && electron-builder --win portable",
     "start": "electron .",

@@ -27,6 +27,10 @@ git -C ../.. pull --ff-only 2>/dev/null || true
 echo "==> Rebuild API..."
 $COMPOSE up -d --build api
 
+echo "==> Rebuild admin web panel..."
+chmod +x scripts/build-admin-web.sh
+./scripts/build-admin-web.sh
+
 echo "==> Restart Nginx..."
 $COMPOSE up -d nginx
 

@@ -61,6 +61,11 @@ echo "==> Enabling HTTPS Nginx config..."
 render_nginx ssl
 $COMPOSE up -d nginx
 
+echo "==> Building admin web panel..."
+chmod +x scripts/build-admin-web.sh
+./scripts/build-admin-web.sh
+$COMPOSE up -d nginx
+
 echo "==> Starting certbot renew loop (optional profile)..."
 $COMPOSE --profile certbot up -d certbot 2>/dev/null || true
 
@@ -74,7 +79,9 @@ echo "Deploy complete."
 echo "  API:   https://${DOMAIN}/api/v1/health"
 echo "  Ready: https://${DOMAIN}/api/v1/health/ready"
 echo "  Media: https://${DOMAIN}/media/"
+echo "  Admin: https://${DOMAIN}/"
 echo ""
-echo "Update admin-desktop/.env.production:"
-echo "  NEXT_PUBLIC_API_BASE=https://${DOMAIN}/api/v1"
-echo "Then rebuild the admin exe: npm run dist"
+echo "Desktop exe (optional):"
+echo "  cd admin-desktop && cp .env.production.example .env.production"
+echo "  # NEXT_PUBLIC_API_BASE=https://${DOMAIN}/api/v1"
+echo "  npm run dist"
