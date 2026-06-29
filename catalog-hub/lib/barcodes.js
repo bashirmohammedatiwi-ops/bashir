@@ -523,6 +523,69 @@ export async function lookupUpcByBarcode(barcode) {
   return null;
 }
 
+/** متاجر Shopify تخزّن الباركود في SKU — مصدر تلميح للمنتجات الصينية (SHEGLAM وغيرها) */
+const SHOPIFY_SKU_HOSTS = [
+  'elbeaute-eg.com',
+  'lra-cosmetics.com',
+  'modabodyshop.com',
+];
+
+async function scanShopifyHostForSku(host, digits, { maxPages = 4 } = {}) {
+  for (let page = 1; page <= maxPages; page++) {
+    const res = await fetch(`https://${host}/products.json?limit=250&page=${page}`, {
+      headers: { 'User-Agent': 'catalog-hub/1.0', Accept: 'application/json' },
+    });
+    if (!res.ok) break;
+    const data = await res.json().catch(() => ({}));
+    const products = data.products || [];
+    if (!products.length) break;
+
+    for (const p of products) {
+      for (const v of p.variants || []) {
+        const sku = String(v.sku || v.barcode || '').replace(/\D/g, '');
+        if (sku !== digits) continue;
+        const variantTitle = String(v.title || '').trim();
+        const shade = variantTitle && variantTitle !== 'Default Title' ? variantTitle : '';
+        return {
+          ean: digits,
+          brand: String(p.vendor || '').trim(),
+          title: String(p.title || '').trim(),
+          shade,
+          description: String(p.body_html || '').replace(/<[^>]+>/g, ' ').trim().slice(0, 500),
+          source: `shopify:${host}`,
+        };
+      }
+    }
+    if (products.length < 250) break;
+  }
+  return null;
+}
+
+/** بحث الباركود في feeds Shopify (SKU = EAN) */
+export async function lookupBarcodeFromShopifySku(barcode) {
+  const digits = String(barcode || '').replace(/\D/g, '');
+  if (!/^\d{8,14}$/.test(digits)) return null;
+
+  const key = `shopify_sku|${digits}`;
+  const cached = recall(key);
+  if (cached !== null) return cached || null;
+
+  for (const host of SHOPIFY_SKU_HOSTS) {
+    try {
+      const hit = await scanShopifyHostForSku(host, digits);
+      if (hit?.title) {
+        remember(key, hit);
+        saveDiskCache();
+        return hit;
+      }
+    } catch { /* next host */ }
+  }
+
+  remember(key, '');
+  saveDiskCache();
+  return null;
+}
+
 /** بحث UPCitemdb (أفضل مصدر خارجي للمستحضرات) */
 export async function lookupUpcItemDb(manufacturer = '', productName = '', shadeName = '', shadeNameEn = '') {
   const key = cacheKey(manufacturer, productName, shadeName, shadeNameEn);

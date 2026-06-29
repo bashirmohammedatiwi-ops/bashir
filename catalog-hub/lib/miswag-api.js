@@ -3,7 +3,11 @@
  * https://miswag.com/l1-categories/beauty
  */
 import crypto from 'crypto';
-import { lookupUpcByBarcode } from './barcodes.js';
+import {
+  lookupUpcByBarcode,
+  lookupBarcodeFromShopifySku,
+  findBarcodeLookup,
+} from './barcodes.js';
 
 const API_BASE = 'https://ganesh-lama.miswag.com';
 export const SITE = 'https://miswag.com';
@@ -126,26 +130,37 @@ async function getSearchConfig() {
     searchConfig = {
       host: process.env.MISWAG_TYPESENSE_HOST,
       apiKey: process.env.MISWAG_TYPESENSE_API_KEY,
-      index: process.env.MISWAG_TYPESENSE_INDEX || 'miswag_items',
+      index: process.env.MISWAG_TYPESENSE_INDEX || 'miswag-items-search',
       preset: process.env.MISWAG_TYPESENSE_PRESET || 'miswag-items-search',
     };
     searchConfigAt = Date.now();
     return searchConfig;
   }
 
-  const res = await fetch(`${SITE}/l1-categories/beauty`, {
-    headers: { 'User-Agent': 'catalog-hub/1.0', Accept: 'text/html' },
-  });
-  const html = await res.text();
-  const host = html.match(/typesenseHost:"([^"]+)"/)?.[1];
-  const apiKey = html.match(/typesenseSearchOnly:"([^"]+)"/)?.[1];
-  const index = html.match(/searchIndex:"([^"]+)"/)?.[1] || 'miswag_items';
-  const preset = html.match(/searchPreset:"([^"]+)"/)?.[1] || 'miswag-items-search';
-  if (!host || !apiKey) throw new Error('Miswag Typesense config not found');
+  for (const pageUrl of [
+    `${SITE}/l1-categories/beauty`,
+    `${SITE}/search?q=test`,
+    'https://search.miswag.com/searchanything?q=test&lang=ar',
+  ]) {
+    try {
+      const res = await fetch(pageUrl, {
+        headers: { 'User-Agent': 'catalog-hub/1.0', Accept: 'text/html' },
+      });
+      const html = await res.text();
+      const host = html.match(/typesenseHost:"([^"]+)"/)?.[1]
+        || html.match(/PUBLIC_TYPESENSE_HOST:"([^"]+)"/)?.[1];
+      const apiKey = html.match(/typesenseSearchOnly:"([^"]+)"/)?.[1]
+        || html.match(/PUBLIC_TYPESENSE_SEARCH_ONLY:"([^"]+)"/)?.[1];
+      const preset = html.match(/searchPreset:"([^"]+)"/)?.[1] || 'miswag-items-search';
+      if (host && apiKey) {
+        searchConfig = { host, apiKey, index: 'miswag-items-search', preset };
+        searchConfigAt = Date.now();
+        return searchConfig;
+      }
+    } catch { /* next source */ }
+  }
 
-  searchConfig = { host, apiKey, index, preset };
-  searchConfigAt = Date.now();
-  return searchConfig;
+  throw new Error('Miswag Typesense config not found');
 }
 
 async function typesenseSearch(query, { page = 1, perPage = 30 } = {}) {
@@ -153,60 +168,65 @@ async function typesenseSearch(query, { page = 1, perPage = 30 } = {}) {
   if (!q) return { hits: [], found: 0 };
 
   const cfg = await getSearchConfig();
-  const url = `https://${cfg.host}/multi_search`;
+  const url = new URL(`https://${cfg.host}/multi_search`);
+  url.searchParams.set('x-typesense-api-key', cfg.apiKey);
+
   const res = await fetch(url, {
     method: 'POST',
     headers: {
-      'X-TYPESENSE-API-KEY': cfg.apiKey,
-      'Content-Type': 'application/json',
+      'Content-Type': 'text/plain',
+      Accept: 'application/json, text/plain, */*',
+      Referer: `${SITE}/`,
+      'User-Agent': 'Mozilla/5.0 (compatible; catalog-hub/1.0)',
     },
     body: JSON.stringify({
       searches: [{
         collection: cfg.index,
         q,
-        query_by: 'title,brand,barcode,sku,ean,category,description',
+        preset: cfg.preset,
         per_page: perPage,
         page,
-        preset: cfg.preset,
+        enable_overrides: true,
       }],
     }),
   });
 
   const data = await res.json().catch(() => ({}));
+  const result = data.results?.[0] || {};
+  if (result.error || result.code) {
+    return { hits: [], found: 0, error: result.error || result.message };
+  }
   if (!res.ok) {
-    const singleUrl = new URL(`https://${cfg.host}/collections/${cfg.index}/documents/search`);
-    singleUrl.searchParams.set('q', q);
-    singleUrl.searchParams.set('query_by', 'title,brand,barcode,sku,ean');
-    singleUrl.searchParams.set('per_page', String(perPage));
-    singleUrl.searchParams.set('page', String(page));
-    singleUrl.searchParams.set('preset', cfg.preset);
-    const res2 = await fetch(singleUrl, {
-      headers: { 'X-TYPESENSE-API-KEY': cfg.apiKey, Accept: 'application/json' },
-    });
-    const data2 = await res2.json().catch(() => ({}));
-    if (!res2.ok) return { hits: [], found: 0, error: data2.message || data.message };
-    return { hits: data2.hits || [], found: data2.found || 0 };
+    return { hits: [], found: 0, error: data.message || `Typesense ${res.status}` };
   }
 
-  const result = data.results?.[0] || {};
   return { hits: result.hits || [], found: result.found || 0 };
 }
 
-function mapTypesenseHit(doc = {}) {
-  const title = parseTitle(doc.title);
+function mapTypesenseHit(doc = {}, matchedBarcode = '') {
+  const nameAr = String(doc.title_AR || doc.title || '').trim();
+  const nameEn = String(doc.title_EN || doc.title || nameAr).trim();
   return {
-    id: String(doc.id || doc.product_id || doc.item_id || ''),
-    name: title.ar || title.en || doc.name || '',
-    nameEn: title.en || title.ar || '',
-    manufacturer: String(doc.brand || '').trim(),
-    manufacturerEn: String(doc.brand || '').trim(),
+    id: String(doc.id || doc.alias || doc.product_id || doc.item_id || ''),
+    name: nameAr || nameEn,
+    nameEn: nameEn || nameAr,
+    manufacturer: String(doc.brand || doc.facet_brand || '').trim(),
+    manufacturerEn: String(doc.brand || doc.facet_brand || '').trim(),
     thumb: absImage(doc.image || doc.image_url || doc.thumb),
-    price: formatMiswagPrice(doc.price),
-    barcode: String(doc.barcode || doc.ean || doc.sku || '').replace(/\D/g, '') || '',
-    sku: String(doc.sku || doc.id || ''),
+    price: formatMiswagPrice({
+      value: doc.price_value ?? doc.price_numeric_value,
+      original_value: doc.price_original_value,
+      currency: doc.price_currency || 'IQD',
+    }),
+    barcode: matchedBarcode || '',
+    sku: String(doc.alias || doc.id || ''),
     productUrl: doc.url || (doc.id ? `${SITE}/products/${doc.id}` : ''),
-    category: String(doc.category || '').trim(),
-    brandAlias: String(doc.brand_alias || '').trim(),
+    category: [
+      doc.l1_division_ar,
+      doc.l2_division_ar,
+      doc.l3_division_ar,
+    ].filter(Boolean).join(' › ') || String(doc.category || '').trim(),
+    brandAlias: String(doc.brand_alias || doc.vendor_alias || '').trim(),
     source: 'typesense',
   };
 }
@@ -490,49 +510,196 @@ function barcodeMatches(value, barcode) {
   return false;
 }
 
+async function lookupBeautyFactsByBarcode(barcode) {
+  const digits = String(barcode || '').replace(/\D/g, '');
+  if (!/^\d{8,14}$/.test(digits)) return null;
+  try {
+    const res = await fetch(`https://world.openbeautyfacts.org/api/v2/product/${digits}.json`, {
+      headers: { 'User-Agent': 'catalog-hub/1.0', Accept: 'application/json' },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.status !== 1 || !data.product) return null;
+    const p = data.product;
+    return {
+      brand: String(p.brands || p.brand_owner || '').split(',')[0].trim(),
+      title: String(p.product_name || p.product_name_en || p.generic_name || '').trim(),
+      description: String(p.ingredients_text || '').trim(),
+      source: 'openbeautyfacts',
+    };
+  } catch {
+    return null;
+  }
+}
+
+function pushUnique(results, seen, hit) {
+  const key = `${hit.id}:${hit.barcode}:${hit.sku}`;
+  if (seen.has(key)) return;
+  seen.add(key);
+  results.push(hit);
+}
+
+function extractShadeHints(title = '', shade = '') {
+  const parts = [];
+  const t = String(title || '').trim();
+  const s = String(shade || '').trim();
+  if (s && s !== 'Default Title') parts.push(s);
+  const dash = t.split(/[-–—]/).pop()?.trim();
+  if (dash && dash.length >= 3 && dash !== t) parts.push(dash);
+  const words = t.split(/\s+/).filter((w) => w.length >= 4);
+  return [...new Set([...parts, ...words.slice(-3)])].filter(Boolean);
+}
+
+function rankMiswagHintMatch(item, meta = {}) {
+  let score = 0;
+  const hay = `${item.name} ${item.nameEn} ${item.manufacturer}`.toLowerCase();
+  const brand = String(meta.brand || '').toLowerCase();
+  if (brand && (hay.includes(brand) || brand.includes(item.manufacturer?.toLowerCase() || ''))) score += 8;
+
+  const titleWords = String(meta.title || '').toLowerCase().split(/\s+/).filter((w) => w.length >= 4);
+  score += titleWords.filter((w) => hay.includes(w)).length * 2;
+
+  for (const shade of extractShadeHints(meta.title, meta.shade)) {
+    if (hay.includes(shade.toLowerCase())) score += 12;
+  }
+  return score;
+}
+
+async function searchMiswagByMetaHints(meta, digits, { limit = 12 } = {}) {
+  if (!meta?.brand && !meta?.title) return [];
+
+  const queries = [
+    [meta.brand, meta.title].filter(Boolean).join(' '),
+    meta.title,
+    extractShadeHints(meta.title, meta.shade).join(' '),
+    meta.brand,
+  ].filter(Boolean);
+
+  const results = [];
+  const seen = new Set();
+  const scored = [];
+
+  for (const q of queries) {
+    try {
+      const ts = await typesenseSearch(q, { page: 1, perPage: 20 });
+      for (const hit of ts.hits || []) {
+        const doc = hit.document || hit;
+        const mapped = mapTypesenseHit(doc, digits);
+        const score = rankMiswagHintMatch(mapped, meta);
+        if (score < 4) continue;
+        scored.push({ mapped, score });
+      }
+    } catch { /* next query */ }
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  for (const { mapped, score } of scored) {
+    pushUnique(results, seen, {
+      ...mapped,
+      matchType: 'hint',
+      matchScore: score,
+      source: meta.source || 'meta-hint',
+    });
+    if (results.length >= limit) break;
+  }
+  return results;
+}
+
 export async function searchProductsByBarcode(barcode) {
   const digits = String(barcode || '').replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return [];
 
   const results = [];
+  const seen = new Set();
 
+  // (0) فهرس يدوي محلي
+  const manual = findBarcodeLookup(digits);
+  if (manual?.productId && (manual.store === 'miswag' || !manual.store)) {
+    try {
+      const detail = await fetchProductDetail(manual.productId);
+      if (detail?.id) {
+        pushUnique(results, seen, {
+          ...normalizeProductSummary(detail),
+          barcode: digits,
+          matchType: 'lookup',
+          source: 'barcode-lookup',
+        });
+        if (results.length) return results;
+      }
+    } catch { /* continue */ }
+  }
+
+  // (1) Typesense — باركود كنص (قد يظهر في keywords/description/variations)
   try {
     const ts = await typesenseSearch(digits, { page: 1, perPage: 12 });
     for (const hit of ts.hits || []) {
       const doc = hit.document || hit;
-      const bc = String(doc.barcode || doc.ean || doc.sku || '').replace(/\D/g, '');
-      if (!bc || barcodeMatches(bc, digits)) {
-        results.push(mapTypesenseHit(doc));
+      pushUnique(results, seen, mapTypesenseHit(doc, digits));
+    }
+    if (results.length) return results;
+  } catch { /* continue */ }
+
+  // (1b) بحث موسّع في حقول keywords/description/variations
+  try {
+    const cfg = await getSearchConfig();
+    const url = new URL(`https://${cfg.host}/multi_search`);
+    url.searchParams.set('x-typesense-api-key', cfg.apiKey);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'text/plain',
+        Referer: `${SITE}/`,
+        Accept: 'application/json, text/plain, */*',
+      },
+      body: JSON.stringify({
+        searches: [{
+          collection: cfg.index,
+          q: digits,
+          query_by: 'keywords,description,variations,alias,title_AR,title_EN,brand',
+          per_page: 12,
+          page: 1,
+        }],
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    for (const hit of data.results?.[0]?.hits || []) {
+      const doc = hit.document || hit;
+      const hay = JSON.stringify(doc).replace(/\D/g, '');
+      if (hay.includes(digits)) {
+        pushUnique(results, seen, mapTypesenseHit(doc, digits));
       }
     }
     if (results.length) return results;
   } catch { /* continue */ }
 
-  const textResults = await searchProducts(digits, 1, 12);
-  for (const item of textResults.items || []) {
-    if (barcodeMatches(item.barcode, digits)) results.push(item);
-  }
-  if (results.length) return results;
-
-  const upc = await lookupUpcByBarcode(digits).catch(() => null);
-  if (upc?.brand) {
-    const brandQuery = String(upc.brand).trim();
-    const hinted = await searchProducts(brandQuery, 1, 20);
-    const titleWords = String(upc.title || '')
-      .toLowerCase()
-      .split(/\s+/)
-      .filter((w) => w.length >= 4)
-      .slice(0, 6);
-    for (const item of hinted.items || []) {
-      const brandOk = item.manufacturer?.toLowerCase().includes(brandQuery.toLowerCase());
-      if (!brandOk) continue;
-      const titleOk = titleWords.length === 0 || titleWords.some((w) =>
-        `${item.name} ${item.nameEn}`.toLowerCase().includes(w),
-      );
-      if (titleOk) {
-        results.push({ ...item, barcode: digits, matchType: 'hint', source: 'upc-hint' });
+  // (2) إذا كان الباركود يشبه معرّف منتج مسواگ (10 أرقام)
+  if (/^\d{10}$/.test(digits)) {
+    try {
+      const detail = await fetchProductDetail(digits);
+      if (detail?.id) {
+        pushUnique(results, seen, { ...normalizeProductSummary(detail), barcode: digits, source: 'id' });
+        if (results.length) return results;
       }
-    }
+    } catch { /* continue */ }
+  }
+
+  // (3) Open Beauty Facts + UPC + Shopify SKU → بحث بالاسم/الماركة في Typesense
+  const [obf, upc, shopify] = await Promise.all([
+    lookupBeautyFactsByBarcode(digits),
+    lookupUpcByBarcode(digits).catch(() => null),
+    lookupBarcodeFromShopifySku(digits).catch(() => null),
+  ]);
+  const meta = shopify || upc || (obf ? {
+    brand: obf.brand,
+    title: obf.title,
+    description: obf.description,
+    source: obf.source,
+  } : null);
+
+  if (meta?.brand || meta?.title) {
+    const hinted = await searchMiswagByMetaHints(meta, digits);
+    for (const hit of hinted) pushUnique(results, seen, hit);
+    if (results.length) return results.slice(0, 12);
   }
 
   return results.slice(0, 12);
