@@ -726,5 +726,122 @@
     "brand": "SHEGLAM",
     "title": "sheglam Buttery Bling Highlight Stick-Pink Satin",
     "description": "Ready to slay your highlight with buttery bliss perfection? Our Buttery Bling Highlight Stick delivers the same silky-smooth, buttery texture you've grown to love, now infused with moisturizing benefits, in six oh-so-satisfying sparkly shades. Dewy, buildable, and compact, it's perfect for quick highlight touch-ups whenever you need."
+  },
+  "sheglam|buttery bling highlight stick|pink satin|pink satin": {
+    "ean": "",
+    "source": "none",
+    "at": 1782746962561
+  },
+  "obf|sheglam|buttery bling highlight stick|pink satin|pink satin": {
+    "ean": "",
+    "source": "none",
+    "at": 1782746965069
+  },
+  "sheglam|buttery bling highlight stick|vanilla frost|vanilla frost": {
+    "ean": "",
+    "source": "none",
+    "at": 1782746998711
+  },
+  "obf|sheglam|buttery bling highlight stick|vanilla frost|vanilla frost": {
+    "ean": "6978931641934",
+    "source": "openbeautyfacts",
+    "at": 1782747000274
+  },
+  "shopify_shade|sheglam|هايلايتر كريمي ستك buttery bling highlight stick|vanilla frost": {
+    "ean": "6978931640593",
+    "source": "shopify-shade:elbeaute-eg.com",
+    "at": 1782747050613,
+    "brand": "SHEGLAM",
+    "title": "sheglam Buttery Bling Highlight Stick-Vanilla Frost"
+  },
+  "shopify_shade|sheglam|هايلايتر كريمي ستك buttery bling highlight stick|pie crust": {
+    "ean": "6978931640630",
+    "source": "shopify-shade:elbeaute-eg.com",
+    "at": 1782747050812,
+    "brand": "SHEGLAM",
+    "title": "sheglam Buttery Bling Highlight Stick-Pie Crust"
+  },
+  "shopify_shade|sheglam|هايلايتر كريمي ستك buttery bling highlight stick|rose rush": {
+    "ean": "6957317604817",
+    "source": "shopify-shade:elbeaute-eg.com",
+    "at": 1782747051504,
+    "brand": "SHEGLAM",
+    "title": "Sheglam Buttery Bliss Blush Stick-Rose Ritual"
+  },
+  "shopify_shade|sheglam|هايلايتر كريمي ستك buttery bling highlight stick|pink satin": {
+    "ean": "6978931640616",
+    "source": "shopify-shade:elbeaute-eg.com",
+    "at": 1782747051669,
+    "brand": "SHEGLAM",
+    "title": "sheglam Buttery Bling Highlight Stick-Pink Satin"
+  },
+  "shopify_shade|sheglam|هايلايتر كريمي ستك buttery bling highlight stick|gold rings": {
+    "ean": "6978931640609",
+    "source": "shopify-shade:elbeaute-eg.com",
+    "at": 1782747051860,
+    "brand": "SHEGLAM",
+    "title": "sheglam Buttery Bling Highlight Stick-Gold Rings"
+  },
+  "upc_barcode|23635519836000": {
+    "ean": "",
+    "source": "none",
+    "at": 1782747344404
+  },
+  "shopify_sku|23635519836000": {
+    "ean": "",
+    "source": "none",
+    "at": 1782747346301
+  },
+  "upc_barcode|2363551983600": {
+    "ean": "",
+    "source": "none",
+    "at": 1782747346677
+  },
+  "shopify_sku|2363551983600": {
+    "ean": "",
+    "source": "none",
+    "at": 1782747348813
+  },
+  "upc_barcode|236355198360": {
+    "ean": "",
+    "source": "none",
+    "at": 1782747349176
+  },
+  "shopify_sku|236355198360": {
+    "ean": "",
+    "source": "none",
+    "at": 1782747350839
+  },
+  "upc_barcode|35519836000": {
+    "ean": "",
+    "source": "none",
+    "at": 1782747351392
+  },
+  "shopify_sku|35519836000": {
+    "ean": "",
+    "source": "none",
+    "at": 1782747353349
+  },
+  "web_search|2363551983600": {
+    "ean": "2363551983600",
+    "source": "shopify-json:jubbas.com",
+    "at": 1782747597398,
+    "brand": "Gissah",
+    "title": "Mavro Gissah EDP 200ml"
+  },
+  "product_meta|2363551983600": {
+    "ean": "2363551983600",
+    "source": "shopify-json:jubbas.com",
+    "at": 1782747597398,
+    "brand": "Gissah",
+    "title": "Mavro Gissah EDP 200ml"
+  },
+  "product_meta|6978931640616": {
+    "ean": "6978931640616",
+    "source": "shopify:elbeaute-eg.com",
+    "at": 1782747633422,
+    "brand": "SHEGLAM",
+    "title": "sheglam Buttery Bling Highlight Stick-Pink Satin",
+    "description": "Ready to slay your highlight with buttery bliss perfection? Our Buttery Bling Highlight Stick delivers the same silky-smooth, buttery texture you've grown to love, now infused with moisturizing benefits, in six oh-so-satisfying sparkly shades. Dewy, buildable, and compact, it's perfect for quick highlight touch-ups whenever you need."
   }
 }

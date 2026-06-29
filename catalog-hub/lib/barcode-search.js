@@ -636,6 +636,7 @@ async function searchMiswagByBarcode(barcode) {
         barcode: n.barcode || barcode,
         sku: n.sku,
         matchType: p.matchType === 'hint' ? 'hint' : 'product',
+        matchScore: p.matchScore,
         shadeCount: n.shadeCount || 0,
         categoryHint: n.category || '',
         categoryHintEn: n.categoryEn || '',

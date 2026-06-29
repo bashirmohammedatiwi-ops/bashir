@@ -7,12 +7,12 @@ import {
   normalizeProductDetail,
   extractBarcode,
 } from './api.js';
-import { enrichShadesFromDatabase } from './barcodes.js';
+import { enrichShadesFromDatabase, enrichShadesForImport } from './barcodes.js';
 import { fetchProductDetail as fetchVanillaDetail, normalizeProductDetail as normalizeVanillaDetail } from './vanilla-api.js';
 import { fetchProductByIdBilingual } from './elryan-api.js';
 import { fetchProductBySku, fetchProductById as fetchMiraayaById, normalizeProductDetail as normalizeMiraayaDetail, resolveProductByBarcode } from './miraaya-api.js';
 import { fetchProductById as fetchFacesById, normalizeProductDetailFromRaw as normalizeFacesDetail } from './faces-api.js';
-import { fetchProductByAsin as fetchAmazonByAsin, searchProductsByBarcode as searchAmazonByBarcode, isAmazonBundleListing } from './amazon-api.js';
+import { fetchProductByAsin as fetchAmazonByAsin, searchProductsByBarcode as searchAmazonByBarcode, isAmazonBundleListing, enrichAmazonShadeBarcodes } from './amazon-api.js';
 import { fetchProductDetail as fetchMiswagDetail, normalizeProductDetail as normalizeMiswagDetail } from './miswag-api.js';
 import { fetchProductDetail as fetchOrisdiDetail } from './orisdi-api.js';
 import { fetchProductDetail as fetchBeautywayDetail } from './beautyway-api.js';
@@ -261,26 +261,44 @@ async function fetchVanillaImport(id, hubOrigin) {
   return buildImportPayload('vanilla', normalized, { hubOrigin });
 }
 
-async function fetchAmazonImport(id, hubOrigin, barcodeHint = '') {
+async function fetchAmazonImport(id, hubOrigin, barcodeHint = '', { light = false } = {}) {
+  let product = null;
   if (barcodeHint) {
     const results = await searchAmazonByBarcode(barcodeHint);
     const wantId = String(id || '').trim().toUpperCase();
-    const product =
+    product =
       results.find((p) => String(p.asin || p.id).toUpperCase() === wantId && !isAmazonBundleListing(p.nameEn, p.nameAr)) ||
       results.find((p) => !isAmazonBundleListing(p.nameEn, p.nameAr)) ||
       results[0];
-    if (product?.id) return buildImportPayload('amazon', product, { hubOrigin });
   }
 
-  let product = await fetchAmazonByAsin(id);
+  if (!product?.id) {
+    product = await fetchAmazonByAsin(id);
+  }
   if (!product?.id || isAmazonBundleListing(product.nameEn, product.nameAr)) return null;
+
+  if (!light && product.shades?.length) {
+    product.shades = await enrichAmazonShadeBarcodes(product, { light: false });
+    product.shadeCount = product.shades.length;
+    if (!product.barcode && product.shades.length === 1) {
+      product.barcode = product.shades[0]?.barcode || '';
+    }
+  }
+
   return buildImportPayload('amazon', product, { hubOrigin });
 }
 
-async function fetchMiswagImport(id, hubOrigin) {
+async function fetchMiswagImport(id, hubOrigin, { light = false } = {}) {
   const detail = await fetchMiswagDetail(id);
   if (!detail?.id) return null;
   const normalized = normalizeMiswagDetail(detail);
+  if (!light && normalized.shades?.length) {
+    normalized.shades = await enrichShadesForImport(normalized, { maxLookups: Math.max(12, normalized.shades.length) });
+    normalized.shadeCount = normalized.shades.length;
+    if (!normalized.barcode && normalized.shades.length === 1) {
+      normalized.barcode = normalized.shades[0]?.barcode || '';
+    }
+  }
   return buildImportPayload('miswag', normalized, { hubOrigin });
 }
 
@@ -319,10 +337,10 @@ export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barc
       payload = await fetchVanillaImport(id, hubOrigin);
       break;
     case 'amazon':
-      payload = await fetchAmazonImport(id, hubOrigin, barcode);
+      payload = await fetchAmazonImport(id, hubOrigin, barcode, { light });
       break;
     case 'miswag':
-      payload = await fetchMiswagImport(id, hubOrigin);
+      payload = await fetchMiswagImport(id, hubOrigin, { light });
       break;
     case 'orisdi':
       payload = await fetchOrisdiImport(id, hubOrigin, barcode);

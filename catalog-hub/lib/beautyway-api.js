@@ -2,7 +2,7 @@
  * Beauty Way (بيوتي وي) — Drupal storefront
  * https://www.beautyway-iq.com/
  */
-import { lookupUpcByBarcode } from './barcodes.js';
+import { lookupBarcodeProductMeta, buildMetaHintQueries, scoreStoreHintMatch } from './barcodes.js';
 
 export const SITE = 'https://www.beautyway-iq.com';
 
@@ -389,19 +389,31 @@ export async function searchProductsByBarcode(barcode) {
   const results = await scanListingsForBarcode(digits);
   if (results.length) return results.slice(0, 12);
 
-  const upc = await lookupUpcByBarcode(digits).catch(() => null);
-  if (upc?.brand) {
-    const hinted = await searchProducts(String(upc.brand).trim(), 1, 16);
+  const meta = await lookupBarcodeProductMeta(digits).catch(() => null);
+  if (meta?.brand || meta?.title) {
+    const queries = buildMetaHintQueries(meta);
     const verified = [];
-    for (const item of hinted.items || []) {
-      try {
-        const detail = await fetchProductDetail(item.id, { slug: item.slug });
-        if (detail && barcodeMatches(detail.barcode, digits)) {
-          verified.push({ ...item, ...detail, barcode: digits, matchType: 'hint', source: 'upc-hint' });
-        }
-      } catch { /* skip */ }
+    for (const q of queries) {
+      const hinted = await searchProducts(q, 1, 16);
+      for (const item of hinted.items || []) {
+        const score = scoreStoreHintMatch(item, meta);
+        if (score < 8) continue;
+        try {
+          const detail = await fetchProductDetail(item.id, { slug: item.slug });
+          if (detail) {
+            verified.push({
+              ...item,
+              ...detail,
+              barcode: digits,
+              matchType: 'hint',
+              source: meta.source || 'meta-hint',
+              matchScore: score,
+            });
+          }
+        } catch { /* skip */ }
+      }
+      if (verified.length) return verified.slice(0, 12);
     }
-    if (verified.length) return verified.slice(0, 12);
   }
 
   return [];

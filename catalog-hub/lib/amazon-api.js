@@ -606,3 +606,37 @@ export function sortProductsClient(products = [], sort = 'default') {
       return list;
   }
 }
+
+/** إثراء باركود كل درجة لونية — جلب UPC من صفحة ASIN المتغيّر */
+export async function enrichAmazonShadeBarcodes(product, { light = false, maxAsinFetches = 10 } = {}) {
+  const { enrichShadesForImport } = await import('./barcodes.js');
+  const shades = [...(product.shades || [])];
+  if (!shades.length) return shades;
+
+  const parentAsin = String(product.id || product.asin || '').trim().toUpperCase();
+
+  if (!light) {
+    let fetches = 0;
+    for (const shade of shades) {
+      if (shade.barcode || shade.ean) continue;
+      if (fetches >= maxAsinFetches) break;
+
+      const asin = String(shade.optionId || shade.sku || '').trim().toUpperCase();
+      if (!/^B[A-Z0-9]{9}$/.test(asin) || asin === parentAsin) continue;
+
+      fetches += 1;
+      try {
+        const html = await fetchAmazonHtml(`${AMAZON_COM}/dp/${asin}`, 'en');
+        const parsed = parseProductDetail(html, asin);
+        const bc = String(parsed.barcode || '').replace(/\D/g, '');
+        if (/^\d{8,14}$/.test(bc)) {
+          shade.barcode = bc;
+          shade.ean = bc;
+          shade.barcodeSource = 'amazon-variation';
+        }
+      } catch { /* تجاهل فشل متغيّر واحد */ }
+    }
+  }
+
+  return enrichShadesForImport({ ...product, shades }, { light, maxLookups: Math.max(12, shades.length) });
+}

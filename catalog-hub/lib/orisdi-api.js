@@ -5,7 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { lookupUpcByBarcode } from './barcodes.js';
+import { lookupBarcodeProductMeta, buildMetaHintQueries, scoreStoreHintMatch } from './barcodes.js';
 
 export const SITE = 'https://orisdi.com';
 
@@ -613,25 +613,20 @@ export async function searchProductsByBarcode(barcode) {
     if (results.length) return results;
   }
 
-  const upc = await lookupUpcByBarcode(digits).catch(() => null);
-  if (upc?.brand) {
-    const hinted = await searchProducts(String(upc.brand).trim(), 1, 16);
-    const titleWords = String(upc.title || '')
-      .toLowerCase()
-      .split(/\s+/)
-      .filter((w) => w.length >= 4)
-      .slice(0, 6);
-    for (const item of hinted.items || []) {
-      const brandOk = item.manufacturer?.toLowerCase().includes(String(upc.brand).toLowerCase());
-      if (!brandOk) continue;
-      const titleOk = titleWords.length === 0 || titleWords.some((w) =>
-        `${item.name} ${item.nameEn}`.toLowerCase().includes(w),
-      );
-      if (!titleOk) continue;
-      const key = `${item.id}:hint`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      results.push({ ...item, barcode: digits, matchType: 'hint', source: 'upc-hint' });
+  const meta = await lookupBarcodeProductMeta(digits).catch(() => null);
+  if (meta?.brand || meta?.title) {
+    const queries = buildMetaHintQueries(meta);
+    for (const q of queries) {
+      const hinted = await searchProducts(q, 1, 16);
+      for (const item of hinted.items || []) {
+        const score = scoreStoreHintMatch(item, meta);
+        if (score < 8) continue;
+        const key = `${item.id}:hint`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        results.push({ ...item, barcode: digits, matchType: 'hint', source: meta.source || 'meta-hint', matchScore: score });
+      }
+      if (results.length) break;
     }
   }
 

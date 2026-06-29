@@ -4,9 +4,10 @@
  */
 import crypto from 'crypto';
 import {
-  lookupUpcByBarcode,
-  lookupBarcodeFromShopifySku,
   findBarcodeLookup,
+  lookupBarcodeProductMeta,
+  buildMetaHintQueries,
+  scoreStoreHintMatch,
 } from './barcodes.js';
 
 const API_BASE = 'https://ganesh-lama.miswag.com';
@@ -510,28 +511,6 @@ function barcodeMatches(value, barcode) {
   return false;
 }
 
-async function lookupBeautyFactsByBarcode(barcode) {
-  const digits = String(barcode || '').replace(/\D/g, '');
-  if (!/^\d{8,14}$/.test(digits)) return null;
-  try {
-    const res = await fetch(`https://world.openbeautyfacts.org/api/v2/product/${digits}.json`, {
-      headers: { 'User-Agent': 'catalog-hub/1.0', Accept: 'application/json' },
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (data.status !== 1 || !data.product) return null;
-    const p = data.product;
-    return {
-      brand: String(p.brands || p.brand_owner || '').split(',')[0].trim(),
-      title: String(p.product_name || p.product_name_en || p.generic_name || '').trim(),
-      description: String(p.ingredients_text || '').trim(),
-      source: 'openbeautyfacts',
-    };
-  } catch {
-    return null;
-  }
-}
-
 function pushUnique(results, seen, hit) {
   const key = `${hit.id}:${hit.barcode}:${hit.sku}`;
   if (seen.has(key)) return;
@@ -568,13 +547,7 @@ function rankMiswagHintMatch(item, meta = {}) {
 async function searchMiswagByMetaHints(meta, digits, { limit = 12 } = {}) {
   if (!meta?.brand && !meta?.title) return [];
 
-  const queries = [
-    [meta.brand, meta.title].filter(Boolean).join(' '),
-    meta.title,
-    extractShadeHints(meta.title, meta.shade).join(' '),
-    meta.brand,
-  ].filter(Boolean);
-
+  const queries = buildMetaHintQueries(meta);
   const results = [];
   const seen = new Set();
   const scored = [];
@@ -585,8 +558,8 @@ async function searchMiswagByMetaHints(meta, digits, { limit = 12 } = {}) {
       for (const hit of ts.hits || []) {
         const doc = hit.document || hit;
         const mapped = mapTypesenseHit(doc, digits);
-        const score = rankMiswagHintMatch(mapped, meta);
-        if (score < 4) continue;
+        const score = scoreStoreHintMatch(mapped, meta) + rankMiswagHintMatch(mapped, meta);
+        if (score < 8) continue;
         scored.push({ mapped, score });
       }
     } catch { /* next query */ }
@@ -612,19 +585,24 @@ export async function searchProductsByBarcode(barcode) {
   const results = [];
   const seen = new Set();
 
-  // (0) فهرس يدوي محلي
+  // (0) فهرس يدوي محلي — مع التحقق من metadata
   const manual = findBarcodeLookup(digits);
   if (manual?.productId && (manual.store === 'miswag' || !manual.store)) {
     try {
       const detail = await fetchProductDetail(manual.productId);
       if (detail?.id) {
-        pushUnique(results, seen, {
-          ...normalizeProductSummary(detail),
-          barcode: digits,
-          matchType: 'lookup',
-          source: 'barcode-lookup',
-        });
-        if (results.length) return results;
+        const summary = normalizeProductSummary(detail);
+        const meta = await lookupBarcodeProductMeta(digits).catch(() => null);
+        const score = meta ? scoreStoreHintMatch(summary, meta) : 20;
+        if (!meta || score >= 8) {
+          pushUnique(results, seen, {
+            ...summary,
+            barcode: digits,
+            matchType: manual.matchType || 'lookup',
+            source: 'barcode-lookup',
+          });
+          if (results.length) return results;
+        }
       }
     } catch { /* continue */ }
   }
@@ -683,19 +661,8 @@ export async function searchProductsByBarcode(barcode) {
     } catch { /* continue */ }
   }
 
-  // (3) Open Beauty Facts + UPC + Shopify SKU → بحث بالاسم/الماركة في Typesense
-  const [obf, upc, shopify] = await Promise.all([
-    lookupBeautyFactsByBarcode(digits),
-    lookupUpcByBarcode(digits).catch(() => null),
-    lookupBarcodeFromShopifySku(digits).catch(() => null),
-  ]);
-  const meta = shopify || upc || (obf ? {
-    brand: obf.brand,
-    title: obf.title,
-    description: obf.description,
-    source: obf.source,
-  } : null);
-
+  // (3) metadata موحّد (UPC + Shopify + OBF + بحث ويب) → Typesense
+  const meta = await lookupBarcodeProductMeta(digits);
   if (meta?.brand || meta?.title) {
     const hinted = await searchMiswagByMetaHints(meta, digits);
     for (const hit of hinted) pushUnique(results, seen, hit);

@@ -11,6 +11,7 @@ import {
   applyIsbnListToShades,
   collectBarcodeList,
   parseBarcodeList,
+  resolveShadeBarcode,
 } from './api.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -528,7 +529,324 @@ const SHOPIFY_SKU_HOSTS = [
   'elbeaute-eg.com',
   'lra-cosmetics.com',
   'modabodyshop.com',
+  'www.jubbas.com',
+  'jubbas.com',
+  'alrashidgalleria.co.uk',
+  'dubaiopal.com',
+  'alhajisperfumes.com',
 ];
+
+function decodeHtmlEntities(text = '') {
+  return String(text || '')
+    .replace(/&#x27;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
+}
+
+function slugifyProductHandle(text = '') {
+  return String(text || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\u0600-\u06FF]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+}
+
+async function fetchShopifyProductJson(host, handle) {
+  const h = String(handle || '').trim();
+  const hostName = String(host || '').replace(/^https?:\/\//, '').replace(/\/$/, '');
+  if (!h || !hostName) return null;
+  try {
+    const res = await fetch(`https://${hostName}/products/${encodeURIComponent(h)}.json`, {
+      headers: { 'User-Agent': 'catalog-hub/1.0', Accept: 'application/json' },
+    });
+    if (!res.ok) return null;
+    const data = await res.json().catch(() => ({}));
+    return data?.product || null;
+  } catch {
+    return null;
+  }
+}
+
+async function metaFromShopifyProduct(product, digits, host, sourceTag) {
+  if (!product) return null;
+  for (const v of product.variants || []) {
+    const val = String(v.sku || v.barcode || '').replace(/\D/g, '');
+    if (val !== digits) continue;
+    const variantTitle = String(v.title || '').trim();
+    return {
+      ean: digits,
+      brand: String(product.vendor || '').trim(),
+      title: String(product.title || '').trim(),
+      shade: variantTitle && variantTitle !== 'Default Title' ? variantTitle : '',
+      source: `${sourceTag}:${host}`,
+    };
+  }
+  return null;
+}
+
+async function lookupBarcodeFromShopifyProductJson(host, handle, digits) {
+  const product = await fetchShopifyProductJson(host, handle);
+  return metaFromShopifyProduct(product, digits, host, 'shopify-json');
+}
+
+async function lookupOpenBeautyFactsByBarcode(digits) {
+  try {
+    const res = await fetch(`https://world.openbeautyfacts.org/api/v2/product/${digits}.json`, {
+      headers: { 'User-Agent': 'catalog-hub/1.0', Accept: 'application/json' },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data.status !== 1 || !data.product) return null;
+    const p = data.product;
+    return {
+      ean: digits,
+      brand: String(p.brands || p.brand_owner || '').split(',')[0].trim(),
+      title: String(p.product_name || p.product_name_en || p.generic_name || '').trim(),
+      description: String(p.ingredients_text || '').trim(),
+      source: 'openbeautyfacts',
+    };
+  } catch {
+    return null;
+  }
+}
+
+function parseWebSearchResultMeta(title = '', snippet = '', barcode = '') {
+  let t = decodeHtmlEntities(title)
+    .replace(new RegExp(String(barcode), 'g'), '')
+    .replace(/\s*[-|–]\s*[^-|–]+$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  let brand = '';
+  const snippetText = decodeHtmlEntities(snippet).replace(/<[^>]+>/g, ' ');
+  const brandColon = snippetText.match(/Brand\s*:\s*([A-Za-z0-9][A-Za-z0-9\s&'.-]{1,40})/i);
+  const byBrand = snippetText.match(/\bby\s+([A-Za-z0-9][A-Za-z0-9\s&'.-]{1,40}?)(?:\s+at|\s+for|\.|,|$)/i);
+  brand = String(brandColon?.[1] || byBrand?.[1] || '').trim();
+
+  if (!brand) {
+    const lead = t.match(/^([A-Z][A-Za-z0-9&]+(?:\s+[A-Z][A-Za-z0-9&]+)?)\s+(.+)/);
+    if (lead) {
+      brand = lead[1].trim();
+      t = lead[2].trim();
+    }
+  } else {
+    t = t.replace(new RegExp(`^${brand}\\s+`, 'i'), '').trim();
+  }
+
+  t = t
+    .replace(/\b(Unisex|Men'?s|Women'?s|EDP|EDT|Spray|Eau de Parfum|Fragrances?|Premium|Authentic)\b/gi, ' ')
+    .replace(/\b\d+(?:\.\d+)?\s*(?:ml|oz|g|kg|lb)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const words = t.split(/\s+/).filter((w) => w.length >= 3);
+  const productTitle = words.slice(0, 5).join(' ') || t;
+
+  if (!brand && !productTitle) return null;
+  return { ean: barcode, brand, title: productTitle, source: 'web-search' };
+}
+
+async function fetchDuckDuckGoHtml(query) {
+  const res = await fetch('https://html.duckduckgo.com/html/', {
+    method: 'POST',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; catalog-hub/1.0)',
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: `q=${encodeURIComponent(query)}&b=`,
+  });
+  if (!res.ok) throw new Error(`DDG ${res.status}`);
+  return res.text();
+}
+
+function parseDuckDuckGoResults(html = '') {
+  const rows = [];
+  for (const m of html.matchAll(
+    /class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g,
+  )) {
+    rows.push({
+      url: decodeHtmlEntities(m[1] || ''),
+      title: decodeHtmlEntities(m[2] || '').replace(/<[^>]+>/g, '').trim(),
+      snippet: decodeHtmlEntities(m[3] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+    });
+  }
+  if (rows.length) return rows;
+  for (const m of html.matchAll(/class="result__a"[^>]*>([\s\S]*?)<\/a>/g)) {
+    rows.push({
+      url: '',
+      title: decodeHtmlEntities(m[1] || '').replace(/<[^>]+>/g, '').trim(),
+      snippet: '',
+    });
+  }
+  return rows;
+}
+
+async function lookupBarcodeFromShopifyWebHints(digits, ddgHtml = '') {
+  const tried = new Set();
+
+  for (const row of parseDuckDuckGoResults(ddgHtml)) {
+    const titleHost = row.title.match(/(.+?)\s*[-–]\s*((?:www\.)?[a-z0-9.-]+\.(?:com|co\.uk|net))\s*$/i);
+    if (titleHost) {
+      const host = titleHost[2].toLowerCase().replace(/^www\./, '');
+      const handle = slugifyProductHandle(titleHost[1]);
+      const key = `${host}|${handle}`;
+      if (handle && !tried.has(key)) {
+        tried.add(key);
+        const hit = await lookupBarcodeFromShopifyProductJson(host, handle, digits);
+        if (hit) return hit;
+        if (!host.startsWith('www.')) {
+          const hitWww = await lookupBarcodeFromShopifyProductJson(`www.${host}`, handle, digits);
+          if (hitWww) return hitWww;
+        }
+      }
+    }
+
+    for (const m of `${row.url} ${row.title}`.matchAll(/(?:https?:\/\/)?(?:www\.)?([a-z0-9.-]+\.(?:com|co\.uk|net))\/products\/([a-z0-9-]+)/gi)) {
+      const host = m[1].toLowerCase();
+      const handle = m[2];
+      const key = `${host}|${handle}`;
+      if (tried.has(key)) continue;
+      tried.add(key);
+      const hit = await lookupBarcodeFromShopifyProductJson(host, handle, digits);
+      if (hit) return hit;
+    }
+  }
+  return null;
+}
+
+/** بحث DuckDuckGo — يعمل لأي باركOD حتى لو غير موجود في UPC/OBF */
+export async function lookupBarcodeFromWebSearch(barcode) {
+  const digits = String(barcode || '').replace(/\D/g, '');
+  if (!/^\d{8,14}$/.test(digits)) return null;
+
+  const key = `web_search|${digits}`;
+  const cached = recall(key);
+  if (cached !== null) return cached || null;
+
+  try {
+    const html = await fetchDuckDuckGoHtml(digits);
+    const shopifyHit = await lookupBarcodeFromShopifyWebHints(digits, html);
+    if (shopifyHit?.title) {
+      remember(key, shopifyHit);
+      saveDiskCache();
+      return shopifyHit;
+    }
+
+    let best = null;
+    let bestScore = 0;
+    for (const row of parseDuckDuckGoResults(html)) {
+      const meta = parseWebSearchResultMeta(row.title, row.snippet, digits);
+      if (!meta?.brand && !meta?.title) continue;
+      let score = 0;
+      if (row.title.includes(digits)) score += 4;
+      if (meta.brand) score += 3;
+      if (meta.title) score += 2;
+      if (/perfume|fragrance|cosmetic|makeup|skincare|gissah|mavro/i.test(`${row.title} ${row.snippet}`)) score += 1;
+      if (score > bestScore) {
+        bestScore = score;
+        best = meta;
+      }
+    }
+
+    if (best?.brand || best?.title) {
+      remember(key, best);
+      saveDiskCache();
+      return best;
+    }
+  } catch { /* ignore */ }
+
+  remember(key, '');
+  saveDiskCache();
+  return null;
+}
+
+/** استعلامات نصية مشتقة من metadata الباركود — للبحث في المتاجر */
+export function buildMetaHintQueries(meta = {}) {
+  const brand = String(meta.brand || '').trim();
+  let title = String(meta.title || '').trim();
+  if (brand && title.toLowerCase().startsWith(brand.toLowerCase())) {
+    title = title.slice(brand.length).trim();
+  }
+  title = title.replace(/\b(edp|edt|spray|eau de parfum|fragrance)\b/gi, ' ').replace(/\s+/g, ' ').trim();
+  const queries = new Set();
+  if (brand && title) queries.add(`${brand} ${title}`);
+  if (title) queries.add(title);
+  if (brand && title) {
+    const words = title.split(/\s+/).filter((w) => w.length >= 3);
+    if (words.length) queries.add(`${brand} ${words[0]}`);
+    if (words.length >= 2) queries.add(words.slice(0, 2).join(' '));
+    if (words.length) queries.add(words[0]);
+  }
+  if (brand) queries.add(brand);
+  return [...queries].filter(Boolean);
+}
+
+/** درجة مطابقة نتيجة متجر مع metadata الباركود */
+export function scoreStoreHintMatch(item = {}, meta = {}) {
+  const hay = `${item.name || ''} ${item.nameEn || ''} ${item.manufacturer || ''} ${item.manufacturerEn || ''}`.toLowerCase();
+  let score = 0;
+  const brand = String(meta.brand || '').toLowerCase();
+  if (brand && (hay.includes(brand) || brand.includes((item.manufacturer || '').toLowerCase()))) score += 8;
+
+  const titleWords = String(meta.title || '').toLowerCase().split(/\s+/).filter((w) => w.length >= 3);
+  if (titleWords.length) {
+    const primary = titleWords[0];
+    if (primary && hay.includes(primary)) score += 16;
+    else if (primary && primary.length >= 4) score -= 12;
+    score += titleWords.slice(1).filter((w) => hay.includes(w)).length * 3;
+  }
+  return score;
+}
+
+/**
+ * محلّل باركود موحّد — UPC + Shopify + OBF + بحث ويب
+ * يُستخدم لكل المتاجر عند فشل البحث المباشر بالباركود.
+ */
+export async function lookupBarcodeProductMeta(barcode) {
+  const digits = String(barcode || '').replace(/\D/g, '');
+  if (!/^\d{8,14}$/.test(digits)) return null;
+
+  const key = `product_meta|${digits}`;
+  const cached = recall(key);
+  if (cached !== null) return cached || null;
+
+  const [shopify, upc, obf] = await Promise.all([
+    lookupBarcodeFromShopifySku(digits).catch(() => null),
+    lookupUpcByBarcode(digits).catch(() => null),
+    lookupOpenBeautyFactsByBarcode(digits).catch(() => null),
+  ]);
+
+  if (shopify?.title || shopify?.brand) {
+    remember(key, shopify);
+    saveDiskCache();
+    return shopify;
+  }
+  if (upc?.brand || upc?.title) {
+    const result = { ean: digits, brand: upc.brand || '', title: upc.title || '', source: upc.source || 'upc' };
+    remember(key, result);
+    saveDiskCache();
+    return result;
+  }
+  if (obf?.title || obf?.brand) {
+    remember(key, obf);
+    saveDiskCache();
+    return obf;
+  }
+
+  const web = await lookupBarcodeFromWebSearch(digits).catch(() => null);
+  if (web?.brand || web?.title) {
+    remember(key, web);
+    saveDiskCache();
+    return web;
+  }
+
+  remember(key, '');
+  saveDiskCache();
+  return null;
+}
 
 async function scanShopifyHostForSku(host, digits, { maxPages = 4 } = {}) {
   for (let page = 1; page <= maxPages; page++) {
@@ -584,6 +902,171 @@ export async function lookupBarcodeFromShopifySku(barcode) {
   remember(key, '');
   saveDiskCache();
   return null;
+}
+
+function normalizeMatchText(text = '') {
+  return String(text || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, ' ').trim();
+}
+
+function tokenOverlapScore(a = '', b = '') {
+  const aw = new Set(normalizeMatchText(a).split(/\s+/).filter((w) => w.length >= 3));
+  const bw = normalizeMatchText(b).split(/\s+/).filter((w) => w.length >= 3);
+  if (!aw.size || !bw.length) return 0;
+  return bw.filter((w) => aw.has(w)).length;
+}
+
+function productTitleMatches(title = '', query = '') {
+  const score = tokenOverlapScore(title, query);
+  if (score >= 2) return true;
+  const t = normalizeMatchText(title);
+  const q = normalizeMatchText(query);
+  return Boolean(q && (t.includes(q) || q.includes(t)));
+}
+
+function shadeMatchesProduct(productTitle = '', variantTitle = '', shadeName = '') {
+  const shade = normalizeMatchText(shadeName);
+  if (!shade) return true;
+  const variant = normalizeMatchText(variantTitle);
+  if (variant && variant !== 'default title' && (variant.includes(shade) || shade.includes(variant))) {
+    return true;
+  }
+  const tail = String(productTitle || '').split(/[-–—]/).pop()?.trim() || '';
+  const tailNorm = normalizeMatchText(tail);
+  return tailNorm.includes(shade) || shade.includes(tailNorm) || tokenOverlapScore(tail, shadeName) >= 1;
+}
+
+async function scanShopifyHostForShade(host, brand, productTitle, shadeName, { maxPages = 4 } = {}) {
+  const brandNorm = normalizeMatchText(brand);
+  for (let page = 1; page <= maxPages; page++) {
+    const res = await fetch(`https://${host}/products.json?limit=250&page=${page}`, {
+      headers: { 'User-Agent': 'catalog-hub/1.0', Accept: 'application/json' },
+    });
+    if (!res.ok) break;
+    const data = await res.json().catch(() => ({}));
+    const products = data.products || [];
+    if (!products.length) break;
+
+    for (const p of products) {
+      const vendor = normalizeMatchText(p.vendor || '');
+      if (brandNorm && vendor && !vendor.includes(brandNorm) && !brandNorm.includes(vendor)) continue;
+      if (!productTitleMatches(p.title || '', productTitle)) continue;
+
+      for (const v of p.variants || []) {
+        if (!shadeMatchesProduct(p.title || '', v.title || '', shadeName)) continue;
+        const sku = String(v.sku || v.barcode || '').replace(/\D/g, '');
+        if (!/^\d{8,14}$/.test(sku)) continue;
+        const variantTitle = String(v.title || '').trim();
+        return {
+          ean: sku,
+          brand: String(p.vendor || '').trim(),
+          title: String(p.title || '').trim(),
+          shade: variantTitle !== 'Default Title' ? variantTitle : shadeName,
+          source: `shopify-shade:${host}`,
+        };
+      }
+    }
+    if (products.length < 250) break;
+  }
+  return null;
+}
+
+/** بحث باركود درجة لونية في Shopify (SKU = EAN + مطابقة اسم الدرجة) */
+export async function lookupShopifyVariantByShade(brand = '', productTitle = '', shadeName = '') {
+  const shade = String(shadeName || '').trim();
+  const title = String(productTitle || '').trim();
+  if (!shade || !title) return null;
+
+  const key = `shopify_shade|${normalizeMatchText(brand)}|${normalizeMatchText(title)}|${normalizeMatchText(shade)}`;
+  const cached = recall(key);
+  if (cached !== null) return cached || null;
+
+  for (const host of SHOPIFY_SKU_HOSTS) {
+    try {
+      const hit = await scanShopifyHostForShade(host, brand, title, shade);
+      if (hit?.ean) {
+        remember(key, hit);
+        saveDiskCache();
+        return hit;
+      }
+    } catch { /* next host */ }
+  }
+
+  remember(key, '');
+  saveDiskCache();
+  return null;
+}
+
+function applyBarcodeToShade(shade, barcode, source = 'external') {
+  const digits = String(barcode || '').replace(/\D/g, '');
+  if (!isValidBarcodeValue(digits)) return;
+  shade.ean = normalizeEan(digits);
+  shade.barcode = shade.ean;
+  shade.barcodeSource = source;
+}
+
+function resolveImportShadeImages(shade = {}) {
+  return [
+    shade.swatchImage,
+    shade.colorSourceImage,
+    shade.rawImage,
+    shade.image,
+    shade.thumb,
+    shade.imageUrl,
+  ].filter(Boolean);
+}
+
+/** إثراء باركودات الدرجات عند الاستيراد (مسواگ، Amazon، وغير Nice One) */
+export async function enrichShadesForImport(product, { light = false, maxLookups = 12 } = {}) {
+  const shades = (product.shades || []).map((s) => ({ ...s }));
+  if (!shades.length) return shades;
+
+  const manufacturer = product.manufacturerEn || product.en_manufacturer || product.manufacturer || product.brandEn || product.brandAr || '';
+  const productName = product.nameEn || product.en_name || product.name || product.nameAr || '';
+  const shadeCount = shades.length;
+
+  for (let i = 0; i < shades.length; i++) {
+    const shade = shades[i];
+    if (shade.barcode || shade.ean) continue;
+
+    const resolved = resolveShadeBarcode(shade, product, i, shadeCount);
+    if (isValidBarcodeValue(resolved.barcode) && ['variant', 'image', 'list', 'attributes', 'product'].includes(resolved.barcodeSource)) {
+      applyBarcodeToShade(shade, resolved.barcode, resolved.barcodeSource);
+      continue;
+    }
+
+    for (const url of resolveImportShadeImages(shade)) {
+      const bc = extractBarcodeFromImage(url, product.id);
+      if (bc) {
+        applyBarcodeToShade(shade, bc, 'image');
+        break;
+      }
+    }
+  }
+
+  if (light) return shades;
+
+  let looked = 0;
+  for (const shade of shades) {
+    if (shade.barcode || shade.ean) continue;
+    if (looked >= maxLookups) break;
+
+    const { ar, en } = shadeNames(shade);
+    const shadeLabel = en || ar || shade.nameEn || shade.name || '';
+
+    const shopify = await lookupShopifyVariantByShade(manufacturer, productName, shadeLabel).catch(() => null);
+    if (shopify?.ean) {
+      applyExternalResult(shade, shopify);
+      looked += 1;
+      continue;
+    }
+
+    const ext = await lookupExternalBarcode(manufacturer, productName, ar, en, shade.sku);
+    if (ext?.ean) applyExternalResult(shade, ext);
+    looked += 1;
+  }
+
+  saveDiskCache();
+  return shades;
 }
 
 /** بحث UPCitemdb (أفضل مصدر خارجي للمستحضرات) */

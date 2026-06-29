@@ -944,5 +944,21 @@
     "source": "live",
     "barcode": "3346475560432",
     "updatedAt": 1782740695208
+  },
+  "02363551983600": {
+    "store": "miswag",
+    "productId": "1756127528",
+    "id": "1756127528",
+    "name": "عطر مافرو Eau de Parfum لكلا الجنسين Mavro Eau de Parfum for Unisex",
+    "nameEn": "Mavro Eau de Parfum for Unisex",
+    "manufacturer": "Gissah",
+    "manufacturerEn": "Gissah",
+    "thumb": "",
+    "shadeName": "",
+    "sku": "1756127528",
+    "matchType": "product",
+    "source": "verified",
+    "barcode": "2363551983600",
+    "updatedAt": 1782749000000
   }
 }
