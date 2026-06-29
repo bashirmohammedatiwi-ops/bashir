@@ -36,9 +36,16 @@ fi
 API_BASE="${API_BASE:-http://localhost:8080/api/v1}"
 MEDIA_BASE="${MEDIA_BASE:-http://localhost:8080/media}"
 
+CATALOG_HUB_URL="${NEXT_PUBLIC_CATALOG_HUB_URL:-}"
+if [[ -z "$CATALOG_HUB_URL" && -n "${DOMAIN:-}" ]]; then
+  CATALOG_HUB_URL="http://${DOMAIN}:10000"
+fi
+CATALOG_HUB_URL="${CATALOG_HUB_URL:-http://localhost:10000}"
+
 echo "==> Building admin web panel"
-echo "    API:   $API_BASE"
-echo "    Media: $MEDIA_BASE"
+echo "    API:    $API_BASE"
+echo "    Media:  $MEDIA_BASE"
+echo "    Catalog: $CATALOG_HUB_URL"
 
 cd "$ADMIN_ROOT"
 
@@ -50,6 +57,7 @@ fi
 
 NEXT_PUBLIC_API_BASE="$API_BASE" \
 NEXT_PUBLIC_MEDIA_BASE="$MEDIA_BASE" \
+NEXT_PUBLIC_CATALOG_HUB_URL="$CATALOG_HUB_URL" \
 npm run build:web
 
 rm -rf "$STAGING_DIR"

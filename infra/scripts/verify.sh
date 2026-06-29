@@ -59,6 +59,7 @@ check "API ready" "$BASE/api/v1/health/ready" '"ready":true'
 check "Admin home" "$BASE/"
 check "Admin login" "$BASE/login/"
 check "Admin products" "$BASE/products/"
+check "Admin catalog import" "$BASE/catalog-import/" "الاستيراد من الكتالوج"
 
 if $COMPOSE exec -T api wget -qO- http://127.0.0.1:3000/api/v1/health/ready 2>/dev/null | grep -q '"ready":true'; then
   echo "OK  API container ready"
