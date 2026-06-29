@@ -13,11 +13,21 @@ import { fetchProductByIdBilingual } from './elryan-api.js';
 import { fetchProductBySku, fetchProductById as fetchMiraayaById, normalizeProductDetail as normalizeMiraayaDetail, resolveProductByBarcode } from './miraaya-api.js';
 import { fetchProductById as fetchFacesById, normalizeProductDetailFromRaw as normalizeFacesDetail } from './faces-api.js';
 
+function normalizeHubOrigin(hubOrigin = '') {
+  const base = String(hubOrigin || '').trim().replace(/\/$/, '');
+  if (!base) return '';
+  if (base.endsWith('/catalog-hub')) return base.slice(0, -'/catalog-hub'.length);
+  return base;
+}
+
 function absImageUrl(url = '', hubOrigin = '') {
   const u = String(url || '').trim();
   if (!u) return '';
-  if (u.startsWith('http')) return u;
-  if (u.startsWith('/') && hubOrigin) return `${hubOrigin.replace(/\/$/, '')}${u}`;
+  if (u.startsWith('http')) {
+    return u.replace(/\/catalog-hub\/catalog-hub\//g, '/catalog-hub/');
+  }
+  const origin = normalizeHubOrigin(hubOrigin);
+  if (u.startsWith('/') && origin) return `${origin}${u}`;
   return u;
 }
 
@@ -124,8 +134,8 @@ async function fetchNiceOneImport(id, hubOrigin) {
   return buildImportPayload('niceone', normalized, { hubOrigin });
 }
 
-async function fetchFacesImport(id, hubOrigin) {
-  const raw = await fetchFacesById(id);
+async function fetchFacesImport(id, hubOrigin, { light = false } = {}) {
+  const raw = await fetchFacesById(id, { enrichShades: !light });
   if (!raw?.id) return null;
   const normalized = normalizeFacesDetail(raw);
   return buildImportPayload('faces', normalized, { hubOrigin });
@@ -158,7 +168,7 @@ async function fetchVanillaImport(id, hubOrigin) {
   return buildImportPayload('vanilla', normalized, { hubOrigin });
 }
 
-export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barcode = '' } = {}) {
+export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barcode = '', light = false } = {}) {
   const id = String(sourceId || '').trim();
   if (!id || !store) return { error: 'المتجر ومعرّف المنتج مطلوبان' };
 
@@ -168,7 +178,7 @@ export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barc
       payload = await fetchNiceOneImport(id, hubOrigin);
       break;
     case 'faces':
-      payload = await fetchFacesImport(id, hubOrigin);
+      payload = await fetchFacesImport(id, hubOrigin, { light });
       break;
     case 'elryan':
       payload = await fetchElryanImport(id, hubOrigin);
@@ -206,7 +216,7 @@ function toImportSummary(payload) {
 }
 
 export async function fetchImportSummary(store, sourceId, { hubOrigin = '', barcode = '' } = {}) {
-  const result = await fetchImportProduct(store, sourceId, { hubOrigin, barcode });
+  const result = await fetchImportProduct(store, sourceId, { hubOrigin, barcode, light: true });
   if (result.error) return { error: result.error };
   return { summary: toImportSummary(result.product) };
 }

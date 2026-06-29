@@ -655,7 +655,7 @@ async function findTilesFromSearchSlug(barcode) {
 
 async function enrichShadeBarcodes(masterPid, shades = [], locale = LOCALE_AR) {
   const limited = shades.slice(0, 40);
-  await Promise.all(limited.map(async (shade) => {
+  await mapPool(limited, async (shade) => {
     if (!shade.variationUrl) return;
     try {
       const url = shade.variationUrl.includes('format=')
@@ -674,11 +674,11 @@ async function enrichShadeBarcodes(masterPid, shades = [], locale = LOCALE_AR) {
     } catch {
       /* skip */
     }
-  }));
+  }, 4);
   return shades;
 }
 
-export async function fetchProductById(pid) {
+export async function fetchProductById(pid, { enrichShades = true } = {}) {
   if (!pid) return null;
   const [pAr, pEn] = await Promise.all([
     fetchQuickView(pid, LOCALE_AR),
@@ -687,7 +687,7 @@ export async function fetchProductById(pid) {
   if (!pAr?.id) return null;
 
   let shades = extractShades(pAr, pEn);
-  if (shades.length) {
+  if (shades.length && enrichShades) {
     shades = await enrichShadeBarcodes(pid, shades, LOCALE_AR);
   }
 

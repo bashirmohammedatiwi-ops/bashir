@@ -11,3 +11,6 @@ export const MEDIA_BASE =
 export const CATALOG_HUB_URL =
   process.env.NEXT_PUBLIC_CATALOG_HUB_URL?.replace(/\/$/, "") ??
   `${VPS_ORIGIN}/catalog-hub`;
+
+/** Site origin without /catalog-hub — for building absolute catalog asset URLs */
+export const CATALOG_HUB_ORIGIN = CATALOG_HUB_URL.replace(/\/catalog-hub$/, "");

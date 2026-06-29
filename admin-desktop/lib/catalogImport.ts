@@ -1,4 +1,4 @@
-import { CATALOG_HUB_URL } from "./config";
+import { CATALOG_HUB_URL, CATALOG_HUB_ORIGIN } from "./config";
 
 export type CatalogImportOption = {
   store: string;
@@ -163,7 +163,7 @@ export async function fetchCatalogProduct(store: string, sourceId: string, barco
   const params = new URLSearchParams({
     store,
     id: sourceId,
-    hubOrigin: CATALOG_HUB_URL,
+    hubOrigin: CATALOG_HUB_ORIGIN,
   });
   if (barcode) params.set("barcode", barcode);
   const data = await catalogFetch<{ product: CatalogImportProduct }>(
@@ -176,7 +176,7 @@ export async function fetchCatalogSummary(store: string, sourceId: string, barco
   const params = new URLSearchParams({
     store,
     id: sourceId,
-    hubOrigin: CATALOG_HUB_URL,
+    hubOrigin: CATALOG_HUB_ORIGIN,
   });
   if (barcode) params.set("barcode", barcode);
   try {
