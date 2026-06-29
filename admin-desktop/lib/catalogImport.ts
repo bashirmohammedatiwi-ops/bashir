@@ -95,16 +95,30 @@ function catalogApiErrorMessage(payload: unknown, fallback: string): string {
   return fallback;
 }
 
-async function catalogFetch<T>(path: string): Promise<T> {
+async function catalogFetch<T>(path: string, timeoutMs = 45_000): Promise<T> {
   const url = `${CATALOG_HUB_URL}${path}`;
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
-  const json = await res.json();
-  if (!res.ok) {
-    throw new Error(
-      catalogApiErrorMessage(json?.error, res.statusText || "فشل الاتصال بكتالوج المتاجر"),
-    );
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+      signal: ctrl.signal,
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(
+        catalogApiErrorMessage(json?.error, res.statusText || "فشل الاتصال بكتالوج المتاجر"),
+      );
+    }
+    return json as T;
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error("انتهت مهلة البحث — جرّب مرة أخرى");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
   }
-  return json as T;
 }
 
 type CatalogSearchResponse = {
@@ -133,7 +147,8 @@ export async function searchCatalogByBarcode(
     }));
     params.set("hints", encodeURIComponent(JSON.stringify(hints)));
   }
-  return catalogFetch<CatalogSearchResponse>(`/api/import/search?${params}`);
+  const timeoutMs = options.fast ? 8_000 : 50_000;
+  return catalogFetch<CatalogSearchResponse>(`/api/import/search?${params}`, timeoutMs);
 }
 
 function mergeCatalogOptions(lists: CatalogImportOption[][]): CatalogImportOption[] {
@@ -151,7 +166,7 @@ function mergeCatalogOptions(lists: CatalogImportOption[][]): CatalogImportOptio
 }
 
 /**
- * بحث متدرّج: فهرس محلي فوري ثم تحديث المتاجر في الخلفية.
+ * بحث متدرّج: فهرس محلي فوري ثم بحث موحّد واحد (أسرع وأثبت من 6 طلبات منفصلة).
  */
 export async function searchCatalogByBarcodeProgressive(
   barcode: string,
@@ -164,73 +179,52 @@ export async function searchCatalogByBarcodeProgressive(
     return cached.data;
   }
 
-  const collected: CatalogImportOption[][] = [];
-
-  const push = (options: CatalogImportOption[]) => {
+  const buildResult = (options: CatalogImportOption[]) => {
     const filtered = filterCatalogOptions(options);
-    if (!filtered.length) return;
-    collected.push(filtered);
-    onPartial?.(mergeCatalogOptions(collected));
-  };
-
-  const buildResult = () => {
-    const options = filterCatalogOptions(mergeCatalogOptions(collected));
     return {
       barcode: digits,
-      options,
+      options: filtered,
       byStore: Object.fromEntries(
-        CATALOG_STORES.map((store) => [store, options.filter((o) => o.store === store).length]),
+        CATALOG_STORES.map((store) => [store, filtered.filter((o) => o.store === store).length]),
       ),
     };
   };
 
+  // مرحلة 1: فهرس محلي فوري (~1 ثانية)
   try {
     const fastData = await searchCatalogByBarcode(barcode, { fast: true });
-    push(fastData.options || []);
+    const fastOpts = filterCatalogOptions(fastData.options || []);
+    if (fastOpts.length) {
+      onPartial?.(fastOpts);
+      const initial = buildResult(fastOpts);
+      clientSearchCache.set(digits, { at: Date.now(), data: initial });
+
+      // تحديث كامل في الخلفية — طلب واحد يجمع كل المتاجر مع تلميحات متقاطعة
+      void searchCatalogByBarcode(barcode)
+        .then((full) => {
+          const updated = filterCatalogOptions(full.options || []);
+          if (updated.length) {
+            const result = buildResult(updated);
+            clientSearchCache.set(digits, { at: Date.now(), data: result });
+            onPartial?.(updated);
+          }
+        })
+        .catch(() => {});
+
+      return initial;
+    }
   } catch {
-    /* local index optional */
+    /* optional local index */
   }
 
-  const refreshStores = () =>
-    Promise.allSettled(
-      (initial.options.length
-        ? CATALOG_STORES.filter(
-            (store) => store === "faces" || !initial.options.some((o) => o.store === store),
-          )
-        : ["faces", ...CATALOG_STORES.filter((s) => s !== "faces")]
-      ).map(async (store) => {
-        try {
-          const hints = mergeCatalogOptions(collected);
-          const data = await searchCatalogByBarcode(barcode, {
-            store,
-            hints: store === "faces" ? hints : undefined,
-          });
-          push(data.options || []);
-        } catch {
-          /* store timeout — continue */
-        }
-      }),
-    );
-
-  const initial = buildResult();
-  if (initial.options.length) {
-    clientSearchCache.set(digits, { at: Date.now(), data: initial });
-    void refreshStores().then(() => {
-      const updated = buildResult();
-      if (updated.options.length) {
-        clientSearchCache.set(digits, { at: Date.now(), data: updated });
-        onPartial?.(updated.options);
-      }
-    });
-    return initial;
+  // مرحلة 2: بحث موحّد — وجوه يستفيد من نتائج Amazon/Nice One في نفس الطلب
+  const fullData = await searchCatalogByBarcode(barcode);
+  const result = buildResult(fullData.options || []);
+  if (result.options.length) {
+    clientSearchCache.set(digits, { at: Date.now(), data: result });
   }
-
-  await refreshStores();
-  const final = buildResult();
-  if (final.options.length) {
-    clientSearchCache.set(digits, { at: Date.now(), data: final });
-  }
-  return final;
+  onPartial?.(result.options);
+  return result;
 }
 
 export async function fetchCatalogProduct(store: string, sourceId: string, barcode = "") {

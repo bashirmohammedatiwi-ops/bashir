@@ -608,12 +608,12 @@ async function searchAmazonByBarcode(barcode) {
 }
 
 const SEARCHERS = [
-  { store: 'niceone', fn: searchNiceOneByBarcode, timeoutMs: 10_000 },
-  { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 6_000 },
-  { store: 'vanilla', fn: searchVanillaByBarcode, timeoutMs: 6_000 },
-  { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 6_000 },
-  { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 12_000 },
-  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 90_000 },
+  { store: 'niceone', fn: searchNiceOneByBarcode, timeoutMs: 8_000 },
+  { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 5_000 },
+  { store: 'vanilla', fn: searchVanillaByBarcode, timeoutMs: 5_000 },
+  { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 5_000 },
+  { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 15_000 },
+  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 35_000 },
 ];
 
 function withStoreTimeout(promise, ms, store) {
@@ -709,7 +709,14 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
     });
   }
 
+  // وجوه: فهرس محلي فوري + بحث حي مع تلميحات المتاجر الأخرى (بالتوازي مع مهلة منفصلة)
   if (facesSearcher) {
+    const localFaces = buildFacesLocalHits(barcode);
+    if (localFaces.length) {
+      byStore.faces = dedupeHits([...(byStore.faces || []), ...localFaces]);
+      results.push(...localFaces.filter((h) => !results.some((r) => r.store === 'faces' && r.id === h.id)));
+    }
+
     const combinedHints = [
       ...hintHits,
       ...sortHitsStable(dedupeHits(results))
@@ -723,24 +730,35 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
           store: h.store,
         })),
     ];
-    try {
-      const facesLive = await withStoreTimeout(
-        searchFacesByBarcode(barcode, combinedHints),
-        facesSearcher.timeoutMs,
-        'faces',
-      );
-      const mergedFaces = dedupeHits([...(facesLive || []), ...(byStore.faces || []), ...(localByStore.faces || [])]);
-      const nonFaces = results.filter((r) => r.store !== 'faces');
-      results.length = 0;
-      results.push(...nonFaces, ...mergedFaces);
-      byStore.faces = mergedFaces;
-    } catch (err) {
-      errors.push({ store: 'faces', message: err?.message || 'فشل البحث' });
-      const fallbackFaces = buildFacesLocalHits(barcode);
-      byStore.faces = dedupeHits([...fallbackFaces, ...(localByStore.faces || []), ...(byStore.faces || [])]);
-      const nonFaces = results.filter((r) => r.store !== 'faces');
-      results.length = 0;
-      results.push(...nonFaces, ...byStore.faces);
+
+    const facesPromise = withStoreTimeout(
+      searchFacesByBarcode(barcode, combinedHints),
+      facesSearcher.timeoutMs,
+      'faces',
+    );
+
+    // إذا وُجدت نتائج من متاجر أخرى — أرجع فوراً وابحث وجوه بالخلفية
+    const hasOtherResults = results.some((r) => r.store !== 'faces');
+    if (hasOtherResults) {
+      void facesPromise.then((facesLive) => {
+        if (!facesLive?.length) return;
+        rememberBarcodeSearchHits(facesLive);
+      }).catch(() => {});
+    } else {
+      try {
+        const facesLive = await facesPromise;
+        const mergedFaces = dedupeHits([...(facesLive || []), ...(byStore.faces || []), ...(localByStore.faces || [])]);
+        const nonFaces = results.filter((r) => r.store !== 'faces');
+        results.length = 0;
+        results.push(...nonFaces, ...mergedFaces);
+        byStore.faces = mergedFaces;
+      } catch (err) {
+        errors.push({ store: 'faces', message: err?.message || 'فشل البحث' });
+        byStore.faces = dedupeHits([...(byStore.faces || []), ...(localByStore.faces || [])]);
+        const nonFaces = results.filter((r) => r.store !== 'faces');
+        results.length = 0;
+        results.push(...nonFaces, ...byStore.faces);
+      }
     }
   }
 
