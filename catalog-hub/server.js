@@ -106,6 +106,15 @@ import {
   normalizeProductDetail as normalizeBeautywayProductDetail,
   sortProductsClient as sortBeautywayProductsClient,
 } from './lib/beautyway-api.js';
+import {
+  fetchCategoryTree as fetchVaneersaCategoryTree,
+  fetchCategoryProducts as fetchVaneersaCategoryProducts,
+  searchProducts as searchVaneersaProducts,
+  fetchProductDetail as fetchVaneersaProductDetail,
+  normalizeProductSummary as normalizeVaneersaProductSummary,
+  normalizeProductDetail as normalizeVaneersaProductDetail,
+  sortProductsClient as sortVaneersaProductsClient,
+} from './lib/vaneersa-api.js';
 import { collectDescendantIds, findCategoryNode, applyProductCounts } from './lib/category-scope.js';
 import { searchBarcodeAllStores, searchBarcodeAllStoresStreaming, warmupBarcodeSearch } from './lib/barcode-search.js';
 import { searchImportByBarcode, searchImportByBarcodeStream, fetchImportProduct, fetchImportSummary } from './lib/catalog-import.js';
@@ -133,6 +142,7 @@ let facesCategoryCache = { tree: null, leaves: null, all: null, fetchedAt: 0 };
 let miswagCategoryCache = { tree: null, leaves: null, fetchedAt: 0 };
 let orisdiCategoryCache = { tree: null, leaves: null, fetchedAt: 0 };
 let beautywayCategoryCache = { tree: null, leaves: null, fetchedAt: 0 };
+let vaneersaCategoryCache = { tree: null, leaves: null, fetchedAt: 0 };
 let facesCategoryInflight = null;
 let niceoneBrandsCache = { brands: null, fetchedAt: 0 };
 let miraayaBrandsCache = { brands: null, fetchedAt: 0 };
@@ -757,6 +767,15 @@ async function getBeautywayCategoryTree() {
   return beautywayCategoryCache;
 }
 
+async function getVaneersaCategoryTree() {
+  if (vaneersaCategoryCache.tree && Date.now() - vaneersaCategoryCache.fetchedAt < CACHE_MS) {
+    return vaneersaCategoryCache;
+  }
+  const { tree, leaves } = await fetchVaneersaCategoryTree();
+  vaneersaCategoryCache = { tree, leaves, fetchedAt: Date.now() };
+  return vaneersaCategoryCache;
+}
+
 async function handleBeautywayApi(req, res, url) {
   try {
     const q = parseQuery(url);
@@ -817,6 +836,70 @@ async function handleBeautywayApi(req, res, url) {
     return sendJson(res, 404, { error: 'Unknown Beauty Way API route' });
   } catch (err) {
     console.error('Beauty Way API error:', err.message);
+    return sendJson(res, 502, { error: err.message });
+  }
+}
+
+async function handleVaneersaApi(req, res, url) {
+  try {
+    const q = parseQuery(url);
+
+    if (url.pathname === '/api/vaneersa/health') {
+      return sendJson(res, 200, { ok: true, source: 'vaneersa.com', scope: 'beauty-skincare-makeup', bilingual: true });
+    }
+
+    if (url.pathname === '/api/vaneersa/categories') {
+      const { tree, leaves } = await getVaneersaCategoryTree();
+      return sendJson(res, 200, { tree, leaves, totalLeaves: leaves.length });
+    }
+
+    const catMatch = url.pathname.match(/^\/api\/vaneersa\/categories\/([^/]+)\/products$/);
+    if (catMatch) {
+      const categoryId = decodeURIComponent(catMatch[1]);
+      const page = Number(q.page) || 1;
+      const limit = Math.min(Number(q.limit) || 30, 60);
+      const sort = q.sort || 'default';
+      const data = await fetchVaneersaCategoryProducts(categoryId, { page, limit });
+      let products = (data.items || []).map((p) => normalizeVaneersaProductSummary(p));
+      if (sort !== 'default') products = sortVaneersaProductsClient(products, sort);
+      return sendJson(res, 200, {
+        meta: { categoryId, path: categoryId, name: categoryId },
+        products,
+        page: data.page || page,
+        limit: data.pageSize || limit,
+        hasMore: !!data.hasMore,
+      });
+    }
+
+    if (url.pathname === '/api/vaneersa/search') {
+      const query = q.q || q.search || '';
+      if (!query.trim()) return sendJson(res, 400, { error: 'q required' });
+      const page = Number(q.page) || 1;
+      const limit = Math.min(Number(q.limit) || 30, 60);
+      const data = await searchVaneersaProducts(query, page, limit);
+      let products = (data.items || []).map((p) => normalizeVaneersaProductSummary(p));
+      const sort = q.sort || 'default';
+      if (sort !== 'default') products = sortVaneersaProductsClient(products, sort);
+      return sendJson(res, 200, {
+        meta: { query, path: `بحث: ${query}` },
+        products,
+        page: data.page || page,
+        limit: data.pageSize || limit,
+        hasMore: !!data.hasMore,
+      });
+    }
+
+    const productMatch = url.pathname.match(/^\/api\/vaneersa\/products\/(\d+)$/);
+    if (productMatch) {
+      const id = productMatch[1];
+      const product = await fetchVaneersaProductDetail(id, { barcode: q.barcode || '' });
+      if (!product?.id) return sendJson(res, 404, { error: 'Product not found' });
+      return sendJson(res, 200, { product: normalizeVaneersaProductDetail(product) });
+    }
+
+    return sendJson(res, 404, { error: 'Unknown Vaneersa API route' });
+  } catch (err) {
+    console.error('Vaneersa API error:', err.message);
     return sendJson(res, 502, { error: err.message });
   }
 }
@@ -1387,6 +1470,7 @@ const APP_PREFIXES = [
   ['/miswag', path.join(VIEWER_ROOT, 'miswag')],
   ['/orisdi', path.join(VIEWER_ROOT, 'orisdi')],
   ['/beautyway', path.join(VIEWER_ROOT, 'beautyway')],
+  ['/vaneersa', path.join(VIEWER_ROOT, 'vaneersa')],
 ];
 
 function serveStatic(req, res, urlPath) {
@@ -1567,6 +1651,9 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname.startsWith('/api/beautyway/')) {
     return handleBeautywayApi(req, res, url);
   }
+  if (url.pathname.startsWith('/api/vaneersa/')) {
+    return handleVaneersaApi(req, res, url);
+  }
   if (url.pathname.startsWith('/api/')) {
     return handleApi(req, res, url);
   }
@@ -1588,6 +1675,7 @@ server.listen(PORT, HOST, () => {
   console.log(`  Miswag      → /miswag/   (miswag.com — الجمال والعناية · AR+EN)`);
   console.log(`  Orisdi      → /orisdi/   (orisdi.com — أورزدي · مكياج وعطور · AR+EN)`);
   console.log(`  Beauty Way  → /beautyway/ (beautyway-iq.com — بيوتي وي · عطور وتجميل · AR+EN)`);
+  console.log(`  Vaneersa    → /vaneersa/  (vaneersa.com — ڤانير · عناية ومكياج · AR+EN)`);
   if (facesCategoryCache.tree?.length) {
     console.log(`  Faces cache: ${facesCategoryCache.leaves?.length || 0} تصنيف جاهز من القرص`);
   } else {

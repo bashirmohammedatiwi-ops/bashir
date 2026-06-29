@@ -23,6 +23,7 @@ const STORE_LABELS = {
   miswag: 'مسواگ Miswag',
   orisdi: 'أورزدي Orisdi',
   beautyway: 'بيوتي وي Beauty Way',
+  vaneersa: 'ڤانير Vaneersa',
 };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
