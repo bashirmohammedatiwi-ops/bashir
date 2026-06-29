@@ -83,7 +83,7 @@ function filterCatalogOptions(options: CatalogImportOption[]) {
 const CLIENT_SEARCH_CACHE_MS = 5 * 60 * 1000;
 const clientSearchCache = new Map<
   string,
-  { at: number; data: { barcode: string; options: CatalogImportOption[]; byStore: Record<string, number> } }
+  { at: number; data: CatalogSearchCacheEntry }
 >();
 
 function catalogApiErrorMessage(payload: unknown, fallback: string): string {
@@ -129,6 +129,20 @@ type CatalogSearchResponse = {
   byStore?: Record<string, number>;
   fast?: boolean;
 };
+
+type CatalogSearchCacheEntry = {
+  barcode: string;
+  options: CatalogImportOption[];
+  byStore: Record<string, number>;
+};
+
+function normalizeSearchResult(result: CatalogSearchResponse): CatalogSearchCacheEntry {
+  return {
+    barcode: result.barcode,
+    options: result.options,
+    byStore: result.byStore ?? {},
+  };
+}
 
 export type CatalogStoreSearchStatus = {
   store: string;
@@ -236,14 +250,14 @@ export async function searchCatalogByBarcodeStream(
         finalResult = {
           barcode: event.barcode || digits,
           options: filterCatalogOptions(event.options || []),
-          byStore: event.byStore,
+          byStore: event.byStore ?? {},
         };
       }
       if (event.type === "done") {
         finalResult = {
           barcode: event.barcode || digits,
           options: filterCatalogOptions(event.options || []),
-          byStore: event.byStore,
+          byStore: event.byStore ?? {},
           errors: event.errors,
         };
       }
@@ -252,7 +266,7 @@ export async function searchCatalogByBarcodeStream(
   );
 
   if (finalResult.options.length) {
-    clientSearchCache.set(digits, { at: Date.now(), data: finalResult });
+    clientSearchCache.set(digits, { at: Date.now(), data: normalizeSearchResult(finalResult) });
   }
   return finalResult;
 }
