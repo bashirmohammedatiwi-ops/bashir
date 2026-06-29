@@ -42,6 +42,7 @@ import {
   searchProductsByBarcode as searchAmazonProductsByBarcode,
   normalizeProductSummary as normalizeAmazonSummary,
   isUsableAmazonProduct,
+  isAmazonBundleListing,
 } from './amazon-api.js';
 
 function barcodeQueryVariants(barcode) {
@@ -586,6 +587,7 @@ async function searchAmazonByBarcode(barcode) {
   return dedupeHits(
     products
       .filter((p) => isUsableAmazonProduct(p))
+      .filter((p) => !isAmazonBundleListing(p.nameEn, p.nameAr))
       .map((p) => {
         const n = normalizeAmazonSummary(p);
         return hit('amazon', {

@@ -227,7 +227,8 @@ function hasArabicText(text = '') {
 /** استبعاد حزم/مجموعات (مثل NYX + wet n wild) من نتائج الباركود */
 export function isAmazonBundleListing(nameEn = '', nameAr = '') {
   const t = `${nameEn} ${nameAr}`.toLowerCase();
-  if (/\b(pack of|عبوة|قطعتين|-piece|\d+\s*count|bundle|مجموعة|with.*bonus)\b/i.test(t)) return true;
+  if (/\b(pack of|عبوة|قطعتين|قطعة\s*2|2\s*قطع|-piece|\d+\s*count|bundle|مجموعة|with.*bonus)\b/i.test(t)) return true;
+  if (/\bpack\s+of\s+\d+\b/i.test(t)) return true;
   if (/\band\b/i.test(nameEn) && /\b(wet n wild|maybelline|e\.l\.f|revlon|l'oreal)\b/i.test(t)) return true;
   return false;
 }

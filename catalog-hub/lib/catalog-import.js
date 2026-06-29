@@ -12,7 +12,7 @@ import { fetchProductDetail as fetchVanillaDetail, normalizeProductDetail as nor
 import { fetchProductByIdBilingual } from './elryan-api.js';
 import { fetchProductBySku, fetchProductById as fetchMiraayaById, normalizeProductDetail as normalizeMiraayaDetail, resolveProductByBarcode } from './miraaya-api.js';
 import { fetchProductById as fetchFacesById, normalizeProductDetailFromRaw as normalizeFacesDetail } from './faces-api.js';
-import { fetchProductByAsin as fetchAmazonByAsin } from './amazon-api.js';
+import { fetchProductByAsin as fetchAmazonByAsin, searchProductsByBarcode as searchAmazonByBarcode, isAmazonBundleListing } from './amazon-api.js';
 
 function hasArabicText(text = '') {
   return /[\u0600-\u06FF]/.test(String(text || ''));
@@ -32,6 +32,13 @@ function absImageUrl(url = '', hubOrigin = '') {
     return u.replace(/\/catalog-hub\/catalog-hub\//g, '/catalog-hub/');
   }
   const origin = normalizeHubOrigin(hubOrigin);
+  const catalogBase = origin ? `${origin}/catalog-hub` : '';
+  if (u.startsWith('/api/')) {
+    return catalogBase ? `${catalogBase}${u}` : u;
+  }
+  if (u.startsWith('/catalog-hub/')) {
+    return origin ? `${origin}${u}` : u;
+  }
   if (u.startsWith('/') && origin) return `${origin}${u}`;
   return u;
 }
@@ -99,6 +106,10 @@ export async function searchImportByBarcode(rawBarcode, { fast = false, stores =
     .filter((r) => {
       if (r.store !== 'amazon') return true;
       return Boolean(r.name || r.nameEn || r.thumb);
+    })
+    .filter((r) => {
+      if (r.store !== 'amazon') return true;
+      return !isAmazonBundleListing(r.nameEn || '', r.name || '');
     })
     .filter((r, _i, arr) => {
       if (r.store !== 'amazon') return true;
@@ -193,8 +204,13 @@ async function fetchVanillaImport(id, hubOrigin) {
   return buildImportPayload('vanilla', normalized, { hubOrigin });
 }
 
-async function fetchAmazonImport(id, hubOrigin) {
-  const product = await fetchAmazonByAsin(id);
+async function fetchAmazonImport(id, hubOrigin, barcodeHint = '') {
+  let product = await fetchAmazonByAsin(id);
+  const bundle = product && isAmazonBundleListing(product.nameEn, product.nameAr);
+  if ((!product?.id || bundle) && barcodeHint) {
+    const results = await searchAmazonByBarcode(barcodeHint);
+    product = results.find((p) => !isAmazonBundleListing(p.nameEn, p.nameAr)) || results[0] || null;
+  }
   if (!product?.id) return null;
   return buildImportPayload('amazon', product, { hubOrigin });
 }
@@ -221,7 +237,7 @@ export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barc
       payload = await fetchVanillaImport(id, hubOrigin);
       break;
     case 'amazon':
-      payload = await fetchAmazonImport(id, hubOrigin);
+      payload = await fetchAmazonImport(id, hubOrigin, barcode);
       break;
     default:
       return { error: `متجر غير معروف: ${store}` };

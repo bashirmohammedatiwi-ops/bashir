@@ -70,6 +70,15 @@ export type CatalogImportProduct = {
 
 const CATALOG_STORES = ["niceone", "elryan", "vanilla", "miraaya", "faces", "amazon"] as const;
 
+function isLikelyAmazonBundle(opt: CatalogImportOption) {
+  const t = `${opt.nameAr || ""} ${opt.nameEn || ""}`.toLowerCase();
+  return /\b(pack of|عبوة|قطعتين|قطعة\s*2|2\s*قطع|bundle|مجموعة)\b/i.test(t);
+}
+
+function filterCatalogOptions(options: CatalogImportOption[]) {
+  return options.filter((o) => !(o.store === "amazon" && isLikelyAmazonBundle(o)));
+}
+
 const CLIENT_SEARCH_CACHE_MS = 5 * 60 * 1000;
 const clientSearchCache = new Map<
   string,
@@ -158,13 +167,14 @@ export async function searchCatalogByBarcodeProgressive(
   const collected: CatalogImportOption[][] = [];
 
   const push = (options: CatalogImportOption[]) => {
-    if (!options.length) return;
-    collected.push(options);
+    const filtered = filterCatalogOptions(options);
+    if (!filtered.length) return;
+    collected.push(filtered);
     onPartial?.(mergeCatalogOptions(collected));
   };
 
   const buildResult = () => {
-    const options = mergeCatalogOptions(collected);
+    const options = filterCatalogOptions(mergeCatalogOptions(collected));
     return {
       barcode: digits,
       options,
@@ -184,7 +194,9 @@ export async function searchCatalogByBarcodeProgressive(
   const refreshStores = () =>
     Promise.allSettled(
       (initial.options.length
-        ? [...CATALOG_STORES]
+        ? CATALOG_STORES.filter(
+            (store) => store === "faces" || !initial.options.some((o) => o.store === store),
+          )
         : ["faces", ...CATALOG_STORES.filter((s) => s !== "faces")]
       ).map(async (store) => {
         try {
