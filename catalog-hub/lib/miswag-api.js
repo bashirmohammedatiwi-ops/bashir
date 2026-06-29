@@ -290,13 +290,36 @@ export async function searchProducts(query, page = 1, limit = 30) {
   const q = String(query || '').trim();
   if (!q) return { items: [], total: 0, page, pageSize: limit };
 
-  if (/^\d{10,12}$/.test(q)) {
+  // باركود (8–14 رقم): استخدم بحث الباركود الدقيق بدل البحث النصي
+  if (/^\d{8,14}$/.test(q)) {
     try {
-      const detail = await fetchProductDetail(q);
-      if (detail?.id) {
-        return { items: [normalizeProductSummary(detail)], total: 1, page: 1, pageSize: limit };
+      const hits = await searchProductsByBarcode(q);
+      if (hits.length) {
+        return {
+          items: hits.map((h) => ({
+            ...normalizeProductSummary(h),
+            shadeName: h.shadeName || '',
+            matchType: h.matchType || '',
+          })),
+          total: hits.length,
+          page: 1,
+          pageSize: limit,
+        };
       }
-    } catch { /* continue */ }
+    } catch { /* continue to text search */ }
+
+    // معرّف منتج مسواگ مباشر (10 أرقام)
+    if (/^\d{10}$/.test(q)) {
+      try {
+        const detail = await fetchProductDetail(q);
+        if (detail?.id) {
+          return { items: [normalizeProductSummary(detail)], total: 1, page: 1, pageSize: limit };
+        }
+      } catch { /* continue */ }
+    }
+
+    // لا تُرجع نتائج نصية عشوائية لاستعلام رقمي يشبه الباركود
+    return { items: [], total: 0, page, pageSize: limit };
   }
 
   try {
