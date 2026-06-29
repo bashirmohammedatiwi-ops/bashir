@@ -451,9 +451,8 @@ async function searchMiraayaByBarcode(barcode) {
   return [];
 }
 
-async function searchFacesByBarcode(barcode, hintHits = []) {
+function buildFacesLocalHits(barcode) {
   const localHits = [];
-
   const indexed = lookupFacesBarcodeIndex(barcode);
   if (indexed?.pid && (indexed.nameAr || indexed.nameEn || indexed.thumb)) {
     localHits.push(hit('faces', {
@@ -470,25 +469,31 @@ async function searchFacesByBarcode(barcode, hintHits = []) {
       source: 'faces-index',
     }));
   }
-
   for (const u of searchUnifiedByStore(barcode, 'faces')) {
     const dup = localHits.some(
       (h) => h.id === u.id && (h.shadeName || '') === (u.shadeName || ''),
     );
     if (!dup) localHits.push({ ...u, source: u.source || 'unified-index' });
   }
+  return dedupeHits(localHits);
+}
+
+async function searchFacesByBarcode(barcode, hintHits = []) {
+  const localHits = buildFacesLocalHits(barcode);
+  const indexed = lookupFacesBarcodeIndex(barcode);
 
   const indexFresh = indexed?.updatedAt && Date.now() - indexed.updatedAt < 24 * 60 * 60 * 1000;
   const shouldLive = hintHits.length > 0 || !localHits.length || !indexFresh;
 
-  if (!shouldLive) return dedupeHits(localHits);
+  if (!shouldLive) return localHits;
 
-  const matches = await searchProductsByBarcode(barcode, {
-    limit: 10,
-    hintHits,
-    light: false,
-  });
-  const liveHits = matches.map((m) => {
+  try {
+    const matches = await searchProductsByBarcode(barcode, {
+      limit: 10,
+      hintHits,
+      light: false,
+    });
+    const liveHits = matches.map((m) => {
     const tile = m.tile;
     if (m.matchType === 'shade' && m.shade) {
       return hit('faces', {
@@ -519,7 +524,10 @@ async function searchFacesByBarcode(barcode, hintHits = []) {
   });
 
   if (liveHits.length) return dedupeHits([...liveHits, ...localHits]);
-  return dedupeHits(localHits);
+  return localHits;
+  } catch {
+    return localHits;
+  }
 }
 
 async function searchVanillaByBarcode(barcode) {
@@ -603,7 +611,7 @@ const SEARCHERS = [
   { store: 'vanilla', fn: searchVanillaByBarcode, timeoutMs: 6_000 },
   { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 6_000 },
   { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 12_000 },
-  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 60_000 },
+  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 90_000 },
 ];
 
 function withStoreTimeout(promise, ms, store) {
@@ -726,10 +734,11 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
       byStore.faces = mergedFaces;
     } catch (err) {
       errors.push({ store: 'faces', message: err?.message || 'فشل البحث' });
-      byStore.faces = byStore.faces?.length ? byStore.faces : (localByStore.faces || []);
-      if (byStore.faces.length && !results.some((r) => r.store === 'faces')) {
-        results.push(...byStore.faces);
-      }
+      const fallbackFaces = buildFacesLocalHits(barcode);
+      byStore.faces = dedupeHits([...fallbackFaces, ...(localByStore.faces || []), ...(byStore.faces || [])]);
+      const nonFaces = results.filter((r) => r.store !== 'faces');
+      results.length = 0;
+      results.push(...nonFaces, ...byStore.faces);
     }
   }
 
