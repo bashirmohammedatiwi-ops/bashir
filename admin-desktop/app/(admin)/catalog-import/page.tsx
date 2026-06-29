@@ -23,7 +23,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { CATALOG_HUB_URL } from "@/lib/config";
 import {
   fetchCatalogProduct,
-  searchCatalogByBarcode,
+  searchCatalogByBarcodeProgressive,
   type CatalogImportOption,
   type CatalogImportProduct,
 } from "@/lib/catalogImport";
@@ -156,7 +156,12 @@ export default function CatalogImportPage() {
     setPreview(null);
     setStep(0);
     try {
-      const data = await searchCatalogByBarcode(q);
+      const data = await searchCatalogByBarcodeProgressive(q, (partial) => {
+        if (partial.length) {
+          setOptions(partial);
+          setStep(1);
+        }
+      });
       setOptions(data.options || []);
       if (!data.options?.length) {
         message.info("لا توجد نتائج في الكتالوج لهذا الباركود");

@@ -4,6 +4,12 @@ import {
   saveProductToIndex,
 } from './barcodes.js';
 import {
+  buildUnifiedBarcodeIndex,
+  searchUnifiedBarcodeIndex,
+  searchUnifiedByStore,
+  rememberBarcodeSearchHits,
+} from './unified-barcode-index.js';
+import {
   fetchProductDetail,
   fetchCategoryProducts,
   extractBarcode,
@@ -54,11 +60,12 @@ export const STORE_META = {
 
 let elryanBeautyIdsPromise = null;
 const searchResultCache = new Map();
-const SEARCH_CACHE_MS = 15 * 60 * 1000;
+const SEARCH_CACHE_MS = 24 * 60 * 60 * 1000;
 const foundationCache = { products: [], at: 0 };
 const FOUNDATION_CACHE_MS = 10 * 60 * 1000;
 
 export function warmupBarcodeSearch() {
+  buildUnifiedBarcodeIndex();
   buildBarcodeRamIndex();
   getFoundationProductsCached().catch(() => {});
   try { loadFacesBarcodeIndex(); } catch { /* optional */ }
@@ -188,8 +195,8 @@ async function searchNiceOneCatalogScan(barcode) {
     (a, b) => catalogThumbPriority(b, digits) - catalogThumbPriority(a, digits),
   );
   const withOptions = products.filter((p) => p.has_option);
-  const batchSize = 12;
-  for (let i = 0; i < Math.min(withOptions.length, 24); i += batchSize) {
+  const batchSize = 8;
+  for (let i = 0; i < Math.min(withOptions.length, 12); i += batchSize) {
     const batch = withOptions.slice(i, i + batchSize);
     const matches = await Promise.all(batch.map((p) => matchNiceOneProductFast(p, barcode)));
     const found = matches.find(Boolean);
@@ -213,6 +220,9 @@ async function enrichNiceOneHit(detail, fields = {}) {
 }
 
 async function searchNiceOneByBarcode(barcode) {
+  const unified = searchUnifiedByStore(barcode, 'niceone');
+  if (unified.length) return dedupeHits(unified);
+
   const instant = searchRamBarcodeIndex(barcode);
   if (instant.length) {
     const seen = new Set();
@@ -239,6 +249,9 @@ async function searchNiceOneByBarcode(barcode) {
 }
 
 async function searchElryanByBarcode(barcode) {
+  const unified = searchUnifiedByStore(barcode, 'elryan');
+  if (unified.length) return dedupeHits(unified);
+
   const beautyIds = await getElryanBeautyIds();
   const data = await elryanAr.searchProducts(barcode, 1, 24, beautyIds);
   const results = [];
@@ -293,6 +306,9 @@ async function fetchMiraayaRestBySku(sku) {
 }
 
 async function searchMiraayaByBarcode(barcode) {
+  const unified = searchUnifiedByStore(barcode, 'miraaya');
+  if (unified.length) return dedupeHits(unified);
+
   const results = [];
   for (const q of barcodeQueryVariants(barcode)) {
     const restItems = await fetchMiraayaRestBySku(q);
@@ -343,6 +359,9 @@ async function searchMiraayaByBarcode(barcode) {
 }
 
 async function searchFacesByBarcode(barcode, hintHits = []) {
+  const unified = searchUnifiedByStore(barcode, 'faces');
+  if (unified.length) return dedupeHits(unified);
+
   const matches = await searchProductsByBarcode(barcode, { limit: 10, hintHits });
   return dedupeHits(matches.map((m) => {
     const tile = m.tile;
@@ -374,6 +393,9 @@ async function searchFacesByBarcode(barcode, hintHits = []) {
 }
 
 async function searchVanillaByBarcode(barcode) {
+  const unified = searchUnifiedByStore(barcode, 'vanilla');
+  if (unified.length) return dedupeHits(unified);
+
   const results = [];
   for (const q of barcodeQueryVariants(barcode)) {
     const data = await vanillaSearchProducts(q, 1, 30);
@@ -422,13 +444,12 @@ async function searchVanillaByBarcode(barcode) {
 }
 
 const SEARCHERS = [
-  { store: 'niceone', fn: searchNiceOneByBarcode, timeoutMs: 12_000 },
-  { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 8_000 },
-  { store: 'vanilla', fn: searchVanillaByBarcode, timeoutMs: 8_000 },
-  { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 8_000 },
+  { store: 'niceone', fn: searchNiceOneByBarcode, timeoutMs: 10_000 },
+  { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 6_000 },
+  { store: 'vanilla', fn: searchVanillaByBarcode, timeoutMs: 6_000 },
+  { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 6_000 },
+  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 20_000 },
 ];
-
-const FACES_SEARCHER = { store: 'faces', timeoutMs: 40_000 };
 
 function withStoreTimeout(promise, ms, store) {
   let timer;
@@ -440,24 +461,60 @@ function withStoreTimeout(promise, ms, store) {
   ]).finally(() => clearTimeout(timer));
 }
 
-export async function searchBarcodeAllStores(rawQuery, { stores = null } = {}) {
+export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = false } = {}) {
   const barcode = normalizeBarcodeQuery(rawQuery);
   if (!barcode) {
     return { barcode: null, error: 'أدخل باركوداً صالحاً (8–14 رقم)', results: [], byStore: {}, errors: [] };
   }
 
-  const cached = searchResultCache.get(barcode);
+  const storeKey = stores?.length ? [...stores].sort().join(',') : 'all';
+  const cacheKey = `${fast ? 'fast:' : 'full:'}${storeKey}:${barcode}`;
+  const cached = searchResultCache.get(cacheKey);
   if (cached && Date.now() - cached.at < SEARCH_CACHE_MS) {
     return cached.data;
+  }
+
+  const localHits = searchUnifiedBarcodeIndex(barcode);
+  if (fast) {
+    const localByStore = {};
+    for (const h of localHits) {
+      if (!localByStore[h.store]) localByStore[h.store] = [];
+      localByStore[h.store].push(h);
+    }
+    const payload = {
+      barcode,
+      fast: true,
+      results: dedupeHits(localHits),
+      byStore: localByStore,
+      errors: [],
+      stores: Object.keys(STORE_META).map((store) => ({
+        ...STORE_META[store],
+        count: (localByStore[store] || []).length,
+      })),
+    };
+    if (payload.results.length) {
+      searchResultCache.set(cacheKey, { at: Date.now(), data: payload });
+    }
+    return payload;
   }
 
   const enabled = stores?.length
     ? SEARCHERS.filter((s) => stores.includes(s.store))
     : SEARCHERS;
-  const facesEnabled = !stores?.length || stores.includes('faces');
+
+  const localByStore = {};
+  for (const h of localHits) {
+    if (!localByStore[h.store]) localByStore[h.store] = [];
+    localByStore[h.store].push(h);
+  }
 
   const settled = await Promise.allSettled(
-    enabled.map(({ store, fn, timeoutMs }) => withStoreTimeout(fn(barcode), timeoutMs, store)),
+    enabled.map(({ store, fn, timeoutMs }) => {
+      if (localByStore[store]?.length) {
+        return Promise.resolve(localByStore[store]);
+      }
+      return withStoreTimeout(fn(barcode), timeoutMs, store);
+    }),
   );
   const results = [];
   const errors = [];
@@ -470,29 +527,12 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null } = {}) {
       results.push(...outcome.value);
     } else {
       errors.push({ store, message: outcome.reason?.message || 'فشل البحث' });
-      byStore[store] = [];
+      byStore[store] = localByStore[store] || [];
+      if (byStore[store].length) results.push(...byStore[store]);
     }
   });
 
-  if (facesEnabled) {
-    try {
-      const hintHits = results.filter((r) => r.store !== 'faces');
-      const facesHits = await withStoreTimeout(
-        searchFacesByBarcode(barcode, hintHits),
-        FACES_SEARCHER.timeoutMs,
-        'faces',
-      );
-      byStore.faces = facesHits;
-      results.push(...facesHits);
-    } catch (err) {
-      errors.push({ store: 'faces', message: err?.message || 'فشل البحث' });
-      byStore.faces = byStore.faces || [];
-    }
-  }
-
-  const storeList = facesEnabled
-    ? [...enabled.map(({ store }) => store), 'faces']
-    : enabled.map(({ store }) => store);
+  const storeList = enabled.map(({ store }) => store);
   const uniqueStores = [...new Set(storeList)];
 
   const payload = {
@@ -505,10 +545,15 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null } = {}) {
       count: (byStore[store] || []).length,
     })),
   };
-  if (facesEnabled && !(byStore.faces?.length)) {
-    searchResultCache.delete(barcode);
+
+  if (payload.results.length) {
+    rememberBarcodeSearchHits(payload.results);
+    searchResultCache.set(cacheKey, { at: Date.now(), data: payload });
+    if (storeKey === 'all') {
+      searchResultCache.set(`fast:all:${barcode}`, { at: Date.now(), data: { ...payload, fast: true } });
+    }
   } else {
-    searchResultCache.set(barcode, { at: Date.now(), data: payload });
+    searchResultCache.delete(cacheKey);
   }
   return payload;
 }

@@ -11,7 +11,7 @@
       "price": 261,
       "shadeName": "",
       "productUrl": "https://www.faces.ae/ar/p/kerastase-blond-absolu-masque-ultra-violet-purple-hair-mask-018115150657.html",
-      "updatedAt": 1782638300375
+      "updatedAt": 1782695033831
     },
     "00006614852957": {
       "pid": "PM_CHANEL_Chance_Eau_Tendre_EDP",
@@ -37,7 +37,7 @@
       "price": "960 درهم",
       "shadeName": "150ml",
       "productUrl": "https://www.faces.ae/ar/p/chanel-chance-eau-tendre-spray-eau-de-parfum-PM_CHANEL_Chance_Eau_Tendre_EDP.html?dwvar_PM__CHANEL__Chance__Eau__Tendre__EDP_size=150ml",
-      "updatedAt": 1782693638322
+      "updatedAt": 1782695035068
     },
     "03145891262605": {
       "pid": "PM_CHANEL_Chance_Eau_Tendre_EDP",
@@ -50,7 +50,7 @@
       "price": "795 درهم",
       "shadeName": "100مل",
       "productUrl": "https://www.faces.ae/ar/p/chanel-chance-eau-tendre-spray-eau-de-parfum-PM_CHANEL_Chance_Eau_Tendre_EDP.html?dwvar_PM__CHANEL__Chance__Eau__Tendre__EDP_size=150ml",
-      "updatedAt": 1782693638322
+      "updatedAt": 1782695035069
     },
     "03145891262506": {
       "pid": "PM_CHANEL_Chance_Eau_Tendre_EDP",
@@ -63,7 +63,7 @@
       "price": "580 درهم",
       "shadeName": "50مل",
       "productUrl": "https://www.faces.ae/ar/p/chanel-chance-eau-tendre-spray-eau-de-parfum-PM_CHANEL_Chance_Eau_Tendre_EDP.html?dwvar_PM__CHANEL__Chance__Eau__Tendre__EDP_size=150ml",
-      "updatedAt": 1782693638322
+      "updatedAt": 1782695035069
     },
     "08435415049542": {
       "pid": "017215333734",
@@ -76,10 +76,10 @@
       "price": 705,
       "shadeName": "",
       "productUrl": "https://www.faces.ae/ar/p/jean-paul-gaultier-la-belle-le-parfum-eau-de-parfum-017215333734.html",
-      "updatedAt": 1782685938669
+      "updatedAt": 1782695035263
     }
   },
   "meta": {
-    "updatedAt": 1782693638322
+    "updatedAt": 1782695035263
   }
 }

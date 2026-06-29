@@ -994,6 +994,10 @@ export async function searchProductsByBarcode(barcode, { limit = 12, hintHits = 
 
   const indexed = lookupFacesBarcodeIndex(barcode);
   if (indexed?.pid) {
+    if (indexed.nameAr || indexed.nameEn || indexed.thumb) {
+      pushProduct(tileFromFacesIndex(indexed));
+      if (hits.length) return hits.slice(0, limit);
+    }
     const resolved = await resolveFacesBarcodeOnProduct(indexed.pid, barcode, indexed);
     if (resolved?.matchType === 'shade') pushShade(resolved.tile, resolved.shade);
     else if (resolved) pushProduct({ ...resolved.tile, ean: resolved.barcode, shadeName: indexed.shadeName || '' });

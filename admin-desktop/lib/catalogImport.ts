@@ -46,6 +46,8 @@ export type CatalogImportProduct = {
   categoryHintEn?: string;
 };
 
+const CATALOG_STORES = ["niceone", "elryan", "vanilla", "miraaya", "faces"] as const;
+
 async function catalogFetch<T>(path: string): Promise<T> {
   const url = `${CATALOG_HUB_URL}${path}`;
   const res = await fetch(url, { headers: { Accept: "application/json" } });
@@ -56,14 +58,83 @@ async function catalogFetch<T>(path: string): Promise<T> {
   return json as T;
 }
 
-export async function searchCatalogByBarcode(barcode: string) {
+type CatalogSearchResponse = {
+  barcode: string;
+  options: CatalogImportOption[];
+  errors?: { store: string; message: string }[];
+  byStore?: Record<string, number>;
+  fast?: boolean;
+};
+
+export async function searchCatalogByBarcode(
+  barcode: string,
+  options: { fast?: boolean; store?: string } = {},
+) {
   const q = encodeURIComponent(barcode.trim());
-  return catalogFetch<{
-    barcode: string;
-    options: CatalogImportOption[];
-    errors?: { store: string; message: string }[];
-    byStore?: Record<string, number>;
-  }>(`/api/import/search?q=${q}`);
+  const params = new URLSearchParams({ q });
+  if (options.fast) params.set("fast", "1");
+  if (options.store) params.set("store", options.store);
+  return catalogFetch<CatalogSearchResponse>(`/api/import/search?${params}`);
+}
+
+function mergeCatalogOptions(lists: CatalogImportOption[][]): CatalogImportOption[] {
+  const seen = new Set<string>();
+  const out: CatalogImportOption[] = [];
+  for (const list of lists) {
+    for (const opt of list) {
+      const key = `${opt.store}:${opt.sourceId}:${opt.shadeName || ""}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(opt);
+    }
+  }
+  return out;
+}
+
+/**
+ * بحث متدرّج: فهرس محلي فوري ثم كل متجر على حدة — تظهر النتائج بمجرد وصولها.
+ */
+export async function searchCatalogByBarcodeProgressive(
+  barcode: string,
+  onPartial?: (options: CatalogImportOption[]) => void,
+) {
+  const collected: CatalogImportOption[][] = [];
+
+  const push = (options: CatalogImportOption[]) => {
+    if (!options.length) return;
+    collected.push(options);
+    onPartial?.(mergeCatalogOptions(collected));
+  };
+
+  try {
+    const fastData = await searchCatalogByBarcode(barcode, { fast: true });
+    push(fastData.options || []);
+  } catch {
+    /* local index optional */
+  }
+
+  await Promise.all(
+    CATALOG_STORES.map(async (store) => {
+      try {
+        const data = await searchCatalogByBarcode(barcode, { store });
+        push(data.options || []);
+      } catch {
+        /* store timeout — continue */
+      }
+    }),
+  );
+
+  const options = mergeCatalogOptions(collected);
+  return {
+    barcode: barcode.replace(/\D/g, ""),
+    options,
+    byStore: Object.fromEntries(
+      CATALOG_STORES.map((store) => [
+        store,
+        options.filter((o) => o.store === store).length,
+      ]),
+    ),
+  };
 }
 
 export async function fetchCatalogProduct(store: string, sourceId: string) {

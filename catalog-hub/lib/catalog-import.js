@@ -73,8 +73,8 @@ function buildImportPayload(store, product, { hubOrigin = '' } = {}) {
   };
 }
 
-export async function searchImportByBarcode(rawBarcode) {
-  const data = await searchBarcodeAllStores(rawBarcode);
+export async function searchImportByBarcode(rawBarcode, { fast = false, stores = null } = {}) {
+  const data = await searchBarcodeAllStores(rawBarcode, { fast, stores });
   if (data.error) {
     return { barcode: null, error: data.error, options: [], errors: [] };
   }

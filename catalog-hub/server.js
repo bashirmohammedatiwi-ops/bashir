@@ -1020,7 +1020,10 @@ const server = http.createServer(async (req, res) => {
     try {
       const q = parseQuery(url);
       const query = q.q || q.barcode || '';
-      const data = await searchImportByBarcode(query);
+      const fast = q.fast === '1' || q.fast === 'true';
+      const store = q.store || '';
+      const stores = store ? store.split(',').map((s) => s.trim()).filter(Boolean) : null;
+      const data = await searchImportByBarcode(query, { fast, stores });
       if (data.error) return sendJson(res, 400, data);
       return sendJson(res, 200, data);
     } catch (err) {
