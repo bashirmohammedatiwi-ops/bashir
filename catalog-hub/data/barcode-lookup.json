@@ -1068,5 +1068,14 @@
     "source": "verified",
     "barcode": "077802146847",
     "updatedAt": 1782751000003
+  },
+  "06972421575211": {
+    "store": "miswag",
+    "productId": "1756132567",
+    "name": "Sheglam Lock & Go Long-Lasting Cushion Foundation",
+    "shadeName": "CHANTILLY",
+    "matchType": "shade",
+    "barcode": "6972421575211",
+    "updatedAt": 1782762039097
   }
 }

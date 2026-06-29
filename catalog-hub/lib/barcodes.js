@@ -29,9 +29,19 @@ let lastUpcRequestAt = 0;
 
 const UPC_MIN_INTERVAL_MS = 2200;
 const OBF_DELAY_MS = 400;
+// النتائج السلبية (لم يُعثر على شيء) تنتهي بعد مدة حتى لا يُسمَّم الباركود للأبد عند فشل مؤقت
+const NEGATIVE_CACHE_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+/** يحدّ زمن أي عملية؛ يعيد fallback إن تجاوزت المهلة (يمنع حجب البحث) */
+function withTimeout(promise, ms, fallback = null) {
+  return Promise.race([
+    Promise.resolve(promise).catch(() => fallback),
+    new Promise((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
 }
 
 function cacheKey(manufacturer, productName, shadeName = '', shadeNameEn = '') {
@@ -420,6 +430,10 @@ function recall(key) {
   const hit = loadDiskCache()[key];
   if (!hit) return null;
   if (!hit.ean) {
+    // نتيجة سلبية: أعِد المحاولة بعد انتهاء المدة (تجنّب التسميم الدائم بفشل مؤقت)
+    if (hit.at && Date.now() - hit.at > NEGATIVE_CACHE_TTL_MS) {
+      return null;
+    }
     memoryCache.set(key, '');
     return '';
   }
@@ -773,9 +787,77 @@ async function fetchDuckDuckGoHtml(query) {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: `q=${encodeURIComponent(query)}&b=`,
+    signal: AbortSignal.timeout(6000),
   });
   if (!res.ok) throw new Error(`DDG ${res.status}`);
   return res.text();
+}
+
+async function fetchBingHtml(query) {
+  const res = await fetch(`https://www.bing.com/search?q=${encodeURIComponent(query)}&setlang=en`, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36',
+      'Accept-Language': 'en-US,en;q=0.9',
+    },
+    signal: AbortSignal.timeout(6000),
+  });
+  if (!res.ok) throw new Error(`Bing ${res.status}`);
+  return res.text();
+}
+
+async function fetchLiteDuckDuckGoHtml(query) {
+  const res = await fetch('https://lite.duckduckgo.com/lite/', {
+    method: 'POST',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36',
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: `q=${encodeURIComponent(query)}`,
+    signal: AbortSignal.timeout(6000),
+  });
+  if (!res.ok) throw new Error(`DDG-lite ${res.status}`);
+  return res.text();
+}
+
+function parseLiteDuckDuckGoResults(html = '') {
+  if (html.includes('anomaly')) return [];
+  const titles = [...html.matchAll(/<a[^>]+class="result-link"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g)];
+  const snippets = [...html.matchAll(/class="result-snippet"[^>]*>([\s\S]*?)<\/td>/g)]
+    .map((m) => decodeHtmlEntities(m[1] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+  return titles.map((m, i) => ({
+    url: decodeHtmlEntities(m[1] || ''),
+    title: decodeHtmlEntities(m[2] || '').replace(/<[^>]+>/g, '').trim(),
+    snippet: snippets[i] || '',
+  }));
+}
+
+function parseBingResults(html = '') {
+  const rows = [];
+  for (const m of html.matchAll(/<li class="b_algo"[\s\S]*?<h2>\s*<a[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?(?:<p[^>]*>([\s\S]*?)<\/p>)?<\/li>/g)) {
+    rows.push({
+      url: decodeHtmlEntities(m[1] || ''),
+      title: decodeHtmlEntities(m[2] || '').replace(/<[^>]+>/g, '').trim(),
+      snippet: decodeHtmlEntities(m[3] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+    });
+  }
+  return rows;
+}
+
+/** صفوف نتائج بحث موحّدة: DuckDuckGo → DDG-lite → Bing (تدوير عند الحظر/الفشل) */
+async function fetchWebSearchRows(query) {
+  try {
+    const rows = parseDuckDuckGoResults(await fetchDuckDuckGoHtml(query));
+    if (rows.length) return rows;
+  } catch { /* جرّب التالي */ }
+  try {
+    const rows = parseLiteDuckDuckGoResults(await fetchLiteDuckDuckGoHtml(query));
+    if (rows.length) return rows;
+  } catch { /* جرّب التالي */ }
+  try {
+    const rows = parseBingResults(await fetchBingHtml(query));
+    if (rows.length) return rows;
+  } catch { /* لا نتائج */ }
+  return [];
 }
 
 function parseDuckDuckGoResults(html = '') {
@@ -800,10 +882,10 @@ function parseDuckDuckGoResults(html = '') {
   return rows;
 }
 
-async function lookupBarcodeFromShopifyWebHints(digits, ddgHtml = '') {
+async function lookupBarcodeFromShopifyWebHints(digits, rows = []) {
   const tried = new Set();
 
-  for (const row of parseDuckDuckGoResults(ddgHtml)) {
+  for (const row of rows) {
     const titleHost = row.title.match(/(.+?)\s*[-–]\s*((?:www\.)?[a-z0-9.-]+\.(?:com|co\.uk|net))\s*$/i);
     if (titleHost) {
       const host = titleHost[2].toLowerCase().replace(/^www\./, '');
@@ -840,13 +922,13 @@ function buildWebSearchQueries(digits) {
   return [...new Set(queries)];
 }
 
-async function parseBestWebSearchMeta(digits, html) {
-  const shopifyHit = await lookupBarcodeFromShopifyWebHints(digits, html);
+async function parseBestWebSearchMeta(digits, rows = []) {
+  const shopifyHit = await lookupBarcodeFromShopifyWebHints(digits, rows);
   if (shopifyHit?.title) return normalizeBarcodeMeta(shopifyHit);
 
   let best = null;
   let bestScore = 0;
-  for (const row of parseDuckDuckGoResults(html)) {
+  for (const row of rows) {
     const meta = parseWebSearchResultMeta(row.title, row.snippet, digits);
     if (!meta?.brand && !meta?.title) continue;
     let score = 0;
@@ -875,8 +957,9 @@ export async function lookupBarcodeFromWebSearch(barcode) {
   try {
     let best = null;
     for (const query of buildWebSearchQueries(digits)) {
-      const html = await fetchDuckDuckGoHtml(query);
-      const hit = await parseBestWebSearchMeta(digits, html);
+      const rows = await fetchWebSearchRows(query);
+      if (!rows.length) continue;
+      const hit = await parseBestWebSearchMeta(digits, rows);
       if (hit?.brand || hit?.title) {
         best = hit;
         if (query === digits || hit.shade) break;
@@ -1102,61 +1185,45 @@ export async function lookupBarcodeProductMeta(barcode) {
     return cached || null;
   }
 
-  const [shopify, upc, obf] = await Promise.all([
-    lookupBarcodeFromShopifySku(digits).catch(() => null),
+  const finish = (result) => {
+    remember(key, result || '');
+    saveDiskCache();
+    return result || null;
+  };
+
+  // المصادر السريعة أولاً (≈1ث لكل منها) — تُغطّي غالبية الباركودات دون انتظار مسح Shopify البطيء
+  const [upc, obf, web] = await Promise.all([
     lookupUpcByBarcode(digits).catch(() => null),
     lookupOpenBeautyFactsByBarcode(digits).catch(() => null),
+    lookupBarcodeFromWebSearch(digits).catch(() => null),
   ]);
 
-  if (shopify?.title || shopify?.brand) {
-    const result = normalizeBarcodeMeta(shopify);
-    remember(key, result);
-    saveDiskCache();
-    return result;
-  }
-  if (upc?.brand || upc?.title) {
-    const result = normalizeBarcodeMeta({
-      ean: digits,
-      brand: upc.brand || '',
-      title: upc.title || '',
-      source: upc.source || 'upc',
-    });
-    remember(key, result);
-    saveDiskCache();
-    return result;
-  }
-  if (obf?.title || obf?.brand) {
-    const result = normalizeBarcodeMeta(obf);
-    remember(key, result);
-    saveDiskCache();
-    return result;
-  }
+  // نفضّل المصدر الذي يحمل اسم درجة (أدق لمطابقة المتغيرات)، ثم الذي يحمل ماركة+عنوان
+  const upcMeta = (upc?.brand || upc?.title)
+    ? { ean: digits, brand: upc.brand || '', title: upc.title || '', source: upc.source || 'upc' }
+    : null;
+  const fastCandidates = [upcMeta, obf, web].filter((m) => m && (m.brand || m.title));
+  const withShade = fastCandidates.find((m) => m.shade);
+  if (withShade) return finish(normalizeBarcodeMeta(withShade));
+  if (fastCandidates.length) return finish(normalizeBarcodeMeta(fastCandidates[0]));
 
-  const goUpc = await lookupBarcodeFromGoUpc(digits).catch(() => null);
-  if (goUpc?.brand || goUpc?.title) {
-    remember(key, goUpc);
-    saveDiskCache();
-    return goUpc;
-  }
+  // حلول أبطأ كملاذ أخير فقط — مع حدّ زمني حتى لا تحجب الاستجابة
+  const shopify = await withTimeout(lookupBarcodeFromShopifySku(digits), 6000, null);
+  if (shopify?.title || shopify?.brand) return finish(normalizeBarcodeMeta(shopify));
 
-  const web = await lookupBarcodeFromWebSearch(digits).catch(() => null);
-  if (web?.brand || web?.title) {
-    remember(key, web);
-    saveDiskCache();
-    return web;
-  }
+  const goUpc = await withTimeout(lookupBarcodeFromGoUpc(digits), 6000, null);
+  if (goUpc?.brand || goUpc?.title) return finish(goUpc);
 
-  remember(key, '');
-  saveDiskCache();
-  return null;
+  return finish(null);
 }
 
-async function scanShopifyHostForSku(host, digits, { maxPages = 4 } = {}) {
+async function scanShopifyHostForSku(host, digits, { maxPages = 2 } = {}) {
   for (let page = 1; page <= maxPages; page++) {
     const res = await fetch(`https://${host}/products.json?limit=250&page=${page}`, {
       headers: { 'User-Agent': 'catalog-hub/1.0', Accept: 'application/json' },
-    });
-    if (!res.ok) break;
+      signal: AbortSignal.timeout(3500),
+    }).catch(() => null);
+    if (!res || !res.ok) break;
     const data = await res.json().catch(() => ({}));
     const products = data.products || [];
     if (!products.length) break;

@@ -5,6 +5,7 @@
 import crypto from 'crypto';
 import {
   findBarcodeLookup,
+  upsertBarcodeLookup,
   lookupBarcodeProductMeta,
   buildMetaHintQueries,
   scoreStoreHintMatch,
@@ -834,6 +835,23 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
   const results = [];
   const seen = new Set();
 
+  // يحفظ نتيجة الحلّ الحي في الفهرس اليدوي ليصبح البحث القادم فورياً ودائماً
+  const learn = (list) => {
+    const top = list[0];
+    if (top?.id) {
+      try {
+        upsertBarcodeLookup(digits, {
+          store: 'miswag',
+          productId: String(top.id),
+          name: top.name || '',
+          shadeName: top.shadeName || '',
+          matchType: top.matchType || 'lookup',
+        });
+      } catch { /* الحفظ اختياري */ }
+    }
+    return list;
+  };
+
   // (0a) فهرس باركود موحّد — أسرع وأدق من البحث الحي
   for (const indexed of searchUnifiedByStore(digits, 'miswag')) {
     pushUnique(results, seen, {
@@ -896,7 +914,7 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
       const doc = hit.document || hit;
       pushUnique(results, seen, mapTypesenseHit(doc, digits));
     }
-    if (results.length) return results;
+    if (results.length) return learn(results);
   } catch { /* continue */ }
 
   // (1b) بحث موسّع في حقول keywords/description/variations
@@ -929,7 +947,7 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
         pushUnique(results, seen, mapTypesenseHit(doc, digits));
       }
     }
-    if (results.length) return results;
+    if (results.length) return learn(results);
   } catch { /* continue */ }
 
   // (2) إذا كان الباركود يشبه معرّف منتج مسواگ (10 أرقام)
@@ -938,7 +956,7 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
       const detail = await fetchProductDetail(digits);
       if (detail?.id) {
         pushUnique(results, seen, { ...normalizeProductSummary(detail), barcode: digits, source: 'id' });
-        if (results.length) return results;
+        if (results.length) return learn(results);
       }
     } catch { /* continue */ }
   }
@@ -948,7 +966,7 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
   if (meta?.brand || meta?.title) {
     const hinted = await searchMiswagByMetaHints(meta, digits);
     for (const hit of hinted) pushUnique(results, seen, hit);
-    if (results.length) return results.slice(0, 12);
+    if (results.length) return learn(results.slice(0, 12));
   }
 
   return results.slice(0, 12);
