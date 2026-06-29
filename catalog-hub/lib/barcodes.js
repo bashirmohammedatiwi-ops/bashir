@@ -12,7 +12,6 @@ import {
   collectBarcodeList,
   parseBarcodeList,
   resolveShadeBarcode,
-  lookupAmazonVariantByAsin, // New import
 } from './api.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -1201,8 +1200,8 @@ export async function enrichShadesForImport(product, { light = false, maxLookups
       return;
     }
 
-    // Try Amazon variant lookup if SKU looks like an ASIN
-    if (shade.sku && String(shade.sku).startsWith('B0')) {
+    if (shade.sku && /^B0[A-Z0-9]{8}$/i.test(String(shade.sku))) {
+      const { lookupAmazonVariantByAsin } = await import('./amazon-api.js');
       const amazonVariant = await lookupAmazonVariantByAsin(shade.sku).catch(() => null);
       if (amazonVariant?.ean) {
         applyExternalResult(shade, amazonVariant);

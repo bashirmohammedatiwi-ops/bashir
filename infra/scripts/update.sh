@@ -19,9 +19,22 @@ set +a
 COMPOSE="docker compose -f docker-compose.prod.yml"
 
 render_nginx() {
-  if [[ -f nginx/default.conf.template ]] && [[ -n "${DOMAIN:-}" ]]; then
-    if grep -q "ssl_certificate" nginx/default.conf 2>/dev/null; then
-      sed "s/DOMAIN_PLACEHOLDER/${DOMAIN}/g" nginx/default.conf.template > nginx/default.conf
+  local domain="${DOMAIN:-}"
+
+  # IP-only VPS: always use HTTP bootstrap config
+  if [[ "$domain" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    cp nginx/default.bootstrap.conf nginx/default.conf
+    return
+  fi
+
+  if [[ -f nginx/default.conf.template ]] && [[ -n "$domain" ]]; then
+    local use_ssl=false
+    if $COMPOSE ps --status running nginx 2>/dev/null | grep -q nginx \
+      && $COMPOSE exec -T nginx test -f "/etc/letsencrypt/live/${domain}/fullchain.pem" 2>/dev/null; then
+      use_ssl=true
+    fi
+    if [[ "$use_ssl" == "true" ]]; then
+      sed "s/DOMAIN_PLACEHOLDER/${domain}/g" nginx/default.conf.template > nginx/default.conf
     else
       cp nginx/default.bootstrap.conf nginx/default.conf
     fi

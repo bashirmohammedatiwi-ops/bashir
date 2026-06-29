@@ -534,7 +534,6 @@ export async function fetchProductByAsin(asin, listing = {}) {
   const id = String(asin || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(id)) return null;
   const detail = await normalizeProductDetailBilingual(id, listing);
-  console.log('Detail object in fetchProductByAsin:', detail);
   if (isAmazonBundleListing(detail.nameEn, detail.nameAr)) {
     return null;
   }
