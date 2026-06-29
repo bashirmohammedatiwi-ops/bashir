@@ -728,6 +728,9 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
     return payload;
   }
 
+  // ⚡ ابدأ جلب UPC بالتوازي مع باقي المتاجر — لا تنتظر قبل بدء البحث
+  const upcPromise = lookupUpcByBarcode(barcode).catch(() => null);
+
   if (others.length) {
     const settled = await Promise.allSettled(
       others.map(({ store, fn, timeoutMs }) => {
@@ -752,8 +755,11 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
     });
   }
 
-  // ⚡ جلب بيانات UPC مسبقاً لاستخدامها كتلميح لوجوه (سريع — مخزّن بعد أول طلب)
-  const upcData = await lookupUpcByBarcode(barcode).catch(() => null);
+  // انتظر UPC — في الغالب انتهى مع المتاجر الأخرى (بدأنا بالتوازي)
+  const upcData = await Promise.race([
+    upcPromise,
+    new Promise((r) => setTimeout(() => r(null), 2000)),
+  ]);
   const upcHints = upcData?.brand
     ? [{
         manufacturer: upcData.brand,

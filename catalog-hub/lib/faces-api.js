@@ -1325,7 +1325,8 @@ async function resolveFacesGtinBarcode(barcode, scanOpts) {
 
   const deepScan = { ...scanOpts, light: false };
 
-  const catalogTiles = await findFacesTilesByCatalogScan(barcode, { maxPages: 3 });
+  // ⚡ صفحة واحدة فقط (بدلاً من 3) — إذا كان المنتج موجوداً في أول صفحة كفى
+  const catalogTiles = await findFacesTilesByCatalogScan(barcode, { maxPages: 1 });
   if (catalogTiles.length) {
     await scanTilesForBarcode(catalogTiles, barcode, deepScan, { deepLimit: 40 });
     if (scanOpts.hits.length) return true;
@@ -1334,7 +1335,7 @@ async function resolveFacesGtinBarcode(barcode, scanOpts) {
   const pidSet = new Set();
   const catResults = await Promise.allSettled(
     FACES_BARCODE_CATALOG_CATEGORIES.map(async (categoryId) => {
-      for (let page = 1; page <= 3; page++) {
+      for (let page = 1; page <= 2; page++) {
         const html = await fetchCategoryHtml(categoryId, { page });
         for (const pid of parsePidsNearBarcodeInHtml(html, barcode)) pidSet.add(pid);
         if ([...pidSet].length) return;
@@ -1498,6 +1499,15 @@ export async function searchProductsByBarcode(barcode, { limit = 12, hintHits = 
   };
 
   const scanOpts = { pushProduct, pushShade, limit, hits, light: false };
+
+  // ⚡ المسار الأسرع: بحث مباشر بالباركود في API وجوه (طلب واحد فقط)
+  if (looksLikeGtinBarcode(barcode)) {
+    try {
+      const directApi = await searchProducts(barcode, 1, 20, { enrich: true });
+      await scanTilesForBarcode(directApi.items || [], barcode, scanOpts, { deepLimit: 20 });
+    } catch { /* continue */ }
+    if (hits.length) return cacheFacesSearchHits(barcode, hits, limit);
+  }
 
   if (hintHits.length) {
     const hinted = await tryFacesGtinWithHints(barcode, hintHits, scanOpts);
