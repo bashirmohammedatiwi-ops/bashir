@@ -232,6 +232,8 @@ model Product {
   sku             String          @unique
   barcode         String?         @unique
   name            String
+  nameAr          String?
+  nameEn          String?
   slug            String          @unique
   description     String          @default("")
   ingredients     String          @default("")

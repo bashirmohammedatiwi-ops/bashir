@@ -17,6 +17,7 @@ import type { ImageItem } from "@/components/ProductImageDropzone";
 import { ProductShadesEditor } from "@/components/ProductShadesEditor";
 import { WizardTabs, type WizardTabItem } from "@/components/WizardTabs";
 import { useFormWizard } from "@/hooks/useFormWizard";
+import { displayProductName, productNameValidator } from "@/lib/productName";
 
 const ProductImageDropzone = dynamic(
   () => import("@/components/ProductImageDropzone").then((m) => ({ default: m.ProductImageDropzone })),
@@ -126,7 +127,7 @@ export function ProductFormDrawer({
       title={
         <div className="alhayaa-drawer-title">
           <span>{editing?.id ? "تعديل منتج" : "منتج جديد"}</span>
-          {editing?.name ? <small>{editing.name}</small> : null}
+          {editing ? <small>{displayProductName(editing)}</small> : null}
         </div>
       }
       open={open}
@@ -152,7 +153,7 @@ export function ProductFormDrawer({
         className="alhayaa-product-form"
         onFinishFailed={(info) => {
           const field = String(info.errorFields[0]?.name?.[0] ?? "");
-          if (["name", "sku", "slug", "brandId", "categoryId", "subcategoryId", "tags", "skinType"].includes(field)) {
+          if (["nameAr", "nameEn", "sku", "slug", "brandId", "categoryId", "subcategoryId", "tags", "skinType"].includes(field)) {
             setActiveTab("basic");
           } else if (["price", "stock", "originalPrice", "discountPercent", "pointsEarned", "rating"].includes(field)) {
             setActiveTab("pricing");
@@ -160,9 +161,25 @@ export function ProductFormDrawer({
         }}
       >
         <TabPanel tabKey="basic" activeTab={activeTab}>
-            <Form.Item name="name" label="اسم المنتج" rules={[{ required: true }]}>
-              <Input placeholder="كريم مرطب فاخر" autoFocus />
-            </Form.Item>
+            <div className="alhayaa-form-row">
+              <Form.Item
+                name="nameAr"
+                label="اسم المنتج (عربي)"
+                className="alhayaa-form-col"
+                rules={[productNameValidator(() => form.getFieldValue("nameEn"))]}
+              >
+                <Input placeholder="كريم مرطب فاخر" autoFocus />
+              </Form.Item>
+              <Form.Item
+                name="nameEn"
+                label="اسم المنتج (إنجليزي)"
+                className="alhayaa-form-col alhayaa-ltr-input"
+                rules={[productNameValidator(() => form.getFieldValue("nameAr"))]}
+              >
+                <Input placeholder="Luxury Moisturizing Cream" />
+              </Form.Item>
+            </div>
+            <p className="alhayaa-empty-hint">يمكنك إدخال الاسم بلغة واحدة فقط أو باللغتين معاً.</p>
             <div className="alhayaa-form-row">
               <Form.Item name="sku" label="SKU" className="alhayaa-form-col">
                 <Input placeholder="AV_018_2025" className="alhayaa-ltr-input" />

@@ -6,6 +6,14 @@ import '../models/product_shade.dart';
 
 /// Maps a backend Product DTO (with nested images/variants) to ProductModel.
 class ProductRemoteMapper {
+  static String _resolveName(Map<String, dynamic> json) {
+    final nameAr = (json['nameAr'] as String?)?.trim();
+    if (nameAr != null && nameAr.isNotEmpty) return nameAr;
+    final nameEn = (json['nameEn'] as String?)?.trim();
+    if (nameEn != null && nameEn.isNotEmpty) return nameEn;
+    return (json['name'] as String?)?.trim() ?? '';
+  }
+
   /// قائمة من API قد تكون `[]` أو `"[]"` (حقل Prisma كنص JSON).
   static List<String> parseStringList(dynamic raw) {
     if (raw == null) return const [];
@@ -67,7 +75,7 @@ class ProductRemoteMapper {
 
     return ProductModel(
       id: json['id']?.toString() ?? '',
-      name: (json['name'] as String?) ?? '',
+      name: _resolveName(json),
       brand: (json['brand'] is Map<String, dynamic>
               ? (json['brand']['name'] as String?)
               : (json['brand'] as String?)) ??

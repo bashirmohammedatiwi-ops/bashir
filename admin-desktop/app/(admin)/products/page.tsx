@@ -10,6 +10,7 @@ import { ProductThumb } from "@/components/ProductThumb";
 import { initShadePreviews, shadeFromApi } from "@/components/ProductShadesEditor";
 import { imagesFromProduct } from "@/lib/productFormHelpers";
 import { buildProductPayload } from "@/lib/productPayload";
+import { displayProductName } from "@/lib/productName";
 import { mutations, queries } from "@/lib/queries";
 import { useBarcodeInventorySync } from "@/hooks/useBarcodeInventorySync";
 
@@ -133,6 +134,8 @@ export default function ProductsPage() {
       setShadePreviews(initShadePreviews(full?.shades));
       form.setFieldsValue({
         ...full,
+        nameAr: full?.nameAr ?? full?.name ?? "",
+        nameEn: full?.nameEn ?? "",
         brandId: full?.brand?.id ?? full?.brandId,
         categoryId: full?.category?.id ?? full?.categoryId,
         subcategoryId: full?.subcategory?.id ?? full?.subcategoryId,
@@ -216,8 +219,11 @@ export default function ProductsPage() {
             <ProductThumb product={r} size={48} />
             <div className="alhayaa-product-cell-text">
               <button type="button" className="alhayaa-product-name" onClick={() => openEdit(r)}>
-                {r.name}
+                {displayProductName(r)}
               </button>
+              {(r.nameAr && r.nameEn) ? (
+                <span className="alhayaa-product-sku alhayaa-ltr-input">{r.nameEn}</span>
+              ) : null}
               <span className="alhayaa-product-sku">{r.sku ?? "—"}</span>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { shadeToPayload } from "@/components/ProductShadesEditor";
 import type { ImageItem } from "@/components/ProductImageDropzone";
 import { normalizeBarcode } from "@/lib/barcode";
+import { slugSourceName } from "@/lib/productName";
 import { slugify } from "./slugify";
 
 export function buildProductPayload(
@@ -14,13 +15,17 @@ export function buildProductPayload(
         .filter(Boolean)
     : [];
 
-  const name = values.name != null ? String(values.name).trim() : "";
+  const nameAr = values.nameAr != null ? String(values.nameAr).trim() : "";
+  const nameEn = values.nameEn != null ? String(values.nameEn).trim() : "";
+  const name = nameAr || nameEn;
 
   return {
     sku: values.sku || `SKU-${Date.now()}`,
     barcode: normalizeBarcode(values.barcode) || undefined,
     name,
-    slug: values.slug?.trim() || slugify(name, "product"),
+    nameAr: nameAr || undefined,
+    nameEn: nameEn || undefined,
+    slug: values.slug?.trim() || slugify(slugSourceName(values), "product"),
     brandId: values.brandId,
     categoryId: values.categoryId,
     subcategoryId: values.subcategoryId || undefined,

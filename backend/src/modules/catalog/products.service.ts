@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
+import { resolveProductNames } from "../../common/product-names.util";
 import { paginate } from "../../common/dto/pagination.dto";
 import { CategoriesService } from "./categories.service";
 import { CreateProductDto, QueryProductsDto, UpdateProductDto } from "./dto/product.dto";
@@ -66,6 +67,8 @@ export class ProductsService {
       OR: q.search
         ? [
             { name: { contains: q.search } },
+            { nameAr: { contains: q.search } },
+            { nameEn: { contains: q.search } },
             { sku: { contains: q.search } },
             { tags: { contains: q.search } },
           ]
@@ -132,6 +135,7 @@ export class ProductsService {
 
   async create(dto: CreateProductDto) {
     dto = await this.applySyncedPricing(dto);
+    const names = resolveProductNames(dto);
     const subcategoryId = await this.categories.validateSubcategoryForCategory(
       dto.subcategoryId,
       dto.categoryId,
@@ -141,7 +145,9 @@ export class ProductsService {
       data: {
         sku: dto.sku,
         barcode: dto.barcode?.trim() || undefined,
-        name: dto.name,
+        name: names.name,
+        nameAr: names.nameAr,
+        nameEn: names.nameEn,
         slug: dto.slug,
         description: dto.description ?? "",
         ingredients: dto.ingredients ?? "",
@@ -201,6 +207,7 @@ export class ProductsService {
     const existing = await this.prisma.product.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException("Product not found");
 
+    const names = resolveProductNames(dto);
     const categoryId = dto.categoryId ?? existing.categoryId;
     let subcategoryId: string | null | undefined = dto.subcategoryId;
     if (dto.subcategoryId !== undefined || dto.categoryId !== undefined) {
@@ -223,7 +230,9 @@ export class ProductsService {
       data: {
         sku: dto.sku,
         barcode: dto.barcode !== undefined ? dto.barcode?.trim() || null : undefined,
-        name: dto.name,
+        name: names.name,
+        nameAr: names.nameAr,
+        nameEn: names.nameEn,
         slug: dto.slug,
         description: dto.description,
         ingredients: dto.ingredients,
