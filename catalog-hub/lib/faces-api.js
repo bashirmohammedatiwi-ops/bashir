@@ -1117,9 +1117,53 @@ function collectBrandNames(hintHits = [], upc = null) {
       const s = String(b || '').trim();
       if (s.length >= 2) brands.add(s);
     }
+    for (const title of [h.nameEn, h.name, h.title]) {
+      const lead = String(title || '').match(/^([A-Z][A-Za-z0-9&.'-]+)/)?.[1];
+      if (lead && lead.length >= 2) brands.add(lead);
+      const arLead = String(title || '').match(/(?:من|من\s+)([\u0600-\u06FF]{2,12})/)?.[1];
+      if (arLead) brands.add(arLead);
+    }
   }
   if (upc?.brand) brands.add(upc.brand.trim());
   return [...brands];
+}
+
+/** مسار سريع لباركود GTIN عند توفر تلميح من متجر آخر (مثل Amazon) */
+async function tryFacesGtinWithHints(barcode, hintHits = [], scanOpts) {
+  if (!hintHits.length || !looksLikeGtinBarcode(barcode)) return false;
+
+  for (const h of hintHits) {
+    const title = String(h.nameEn || h.name || h.title || '')
+      .replace(/\s*[-–#|].*$/, '')
+      .replace(/\s+\d+\s*ml.*$/i, '')
+      .trim();
+    if (title.length < 6) continue;
+    try {
+      const data = await searchProducts(title, 1, 25, { enrich: true });
+      await scanTilesForBarcode(data.items || [], barcode, scanOpts, { deepLimit: 20 });
+      if (scanOpts.hits.length) return true;
+    } catch {
+      /* next hint */
+    }
+  }
+
+  const upc = await lookupUpcByBarcode(barcode).catch(() => null);
+  const brands = collectBrandNames(hintHits, upc);
+  if (brands.length) {
+    await scanFacesBrandCatalogs(barcode, brands, scanOpts);
+    if (scanOpts.hits.length) return true;
+  }
+  const queries = [
+    ...buildFacesHintQueries(hintHits),
+    ...(upc ? buildFacesHintQueriesFromUpc(upc) : []),
+  ];
+  if (queries.length) {
+    await scanFacesHintQueries(barcode, queries, scanOpts, {
+      maxPages: scanOpts.light ? 2 : 3,
+      pageSize: 30,
+    });
+  }
+  return scanOpts.hits.length > 0;
 }
 
 async function scanTilesForBarcode(tiles, barcode, { pushProduct, pushShade, limit, hits, light = false }, { deepLimit = 12 } = {}) {
@@ -1242,6 +1286,11 @@ export async function searchProductsByBarcode(barcode, { limit = 12, hintHits = 
   };
 
   const scanOpts = { pushProduct, pushShade, limit, hits, light };
+
+  if (hintHits.length) {
+    const hinted = await tryFacesGtinWithHints(barcode, hintHits, scanOpts);
+    if (hinted) return cacheFacesSearchHits(barcode, hits, limit);
+  }
 
   const indexed = lookupFacesBarcodeIndex(barcode);
   if (indexed?.pid && (indexed.nameAr || indexed.nameEn || indexed.thumb)) {

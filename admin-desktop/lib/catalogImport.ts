@@ -108,12 +108,22 @@ type CatalogSearchResponse = {
 
 export async function searchCatalogByBarcode(
   barcode: string,
-  options: { fast?: boolean; store?: string } = {},
+  options: { fast?: boolean; store?: string; hints?: CatalogImportOption[] } = {},
 ) {
   const q = encodeURIComponent(barcode.trim());
   const params = new URLSearchParams({ q });
   if (options.fast) params.set("fast", "1");
   if (options.store) params.set("store", options.store);
+  if (options.hints?.length) {
+    const hints = options.hints.map((h) => ({
+      name: h.nameAr,
+      nameEn: h.nameEn,
+      manufacturer: h.brandAr,
+      manufacturerEn: h.brandEn,
+      brand: h.brandAr,
+    }));
+    params.set("hints", encodeURIComponent(JSON.stringify(hints)));
+  }
   return catalogFetch<CatalogSearchResponse>(`/api/import/search?${params}`);
 }
 
@@ -178,7 +188,11 @@ export async function searchCatalogByBarcodeProgressive(
         : ["faces", ...CATALOG_STORES.filter((s) => s !== "faces")]
       ).map(async (store) => {
         try {
-          const data = await searchCatalogByBarcode(barcode, { store });
+          const hints = mergeCatalogOptions(collected);
+          const data = await searchCatalogByBarcode(barcode, {
+            store,
+            hints: store === "faces" ? hints : undefined,
+          });
           push(data.options || []);
         } catch {
           /* store timeout — continue */

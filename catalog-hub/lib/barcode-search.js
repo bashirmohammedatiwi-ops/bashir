@@ -445,7 +445,11 @@ async function searchFacesByBarcode(barcode, hintHits = []) {
     })]);
   }
 
-  const matches = await searchProductsByBarcode(barcode, { limit: 10, hintHits, light: true });
+  const matches = await searchProductsByBarcode(barcode, {
+    limit: 10,
+    hintHits,
+    light: !hintHits.length,
+  });
   return dedupeHits(matches.map((m) => {
     const tile = m.tile;
     if (m.matchType === 'shade' && m.shade) {
@@ -550,8 +554,8 @@ const SEARCHERS = [
   { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 6_000 },
   { store: 'vanilla', fn: searchVanillaByBarcode, timeoutMs: 6_000 },
   { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 6_000 },
-  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 35_000 },
   { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 12_000 },
+  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 45_000 },
 ];
 
 function withStoreTimeout(promise, ms, store) {
@@ -564,7 +568,7 @@ function withStoreTimeout(promise, ms, store) {
   ]).finally(() => clearTimeout(timer));
 }
 
-export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = false } = {}) {
+export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = false, hintHits = [] } = {}) {
   const barcode = normalizeBarcodeQuery(rawQuery);
   if (!barcode) {
     return { barcode: null, error: 'أدخل باركوداً صالحاً (8–14 رقم)', results: [], byStore: {}, errors: [] };
@@ -611,56 +615,74 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
     localByStore[h.store].push(h);
   }
 
-  const settled = await Promise.allSettled(
-    enabled.map(({ store, fn, timeoutMs }) => {
-      const local = localByStore[store] || [];
-      return withStoreTimeout(fn(barcode), timeoutMs, store).then((live) => {
-        if (!live?.length) return local;
-        if (!local.length) return live;
-        return dedupeHits([...live, ...local]);
-      });
-    }),
-  );
+  const others = enabled.filter((s) => s.store !== 'faces');
+  const facesSearcher = enabled.find((s) => s.store === 'faces');
+
   const results = [];
   const errors = [];
   const byStore = {};
 
-  settled.forEach((outcome, i) => {
-    const { store } = enabled[i];
-    if (outcome.status === 'fulfilled') {
-      byStore[store] = outcome.value;
-      results.push(...outcome.value);
-    } else {
-      errors.push({ store, message: outcome.reason?.message || 'فشل البحث' });
-      byStore[store] = localByStore[store] || [];
-      if (byStore[store].length) results.push(...byStore[store]);
+  for (const [store, hits] of Object.entries(localByStore)) {
+    if (hits.length) {
+      byStore[store] = hits;
+      results.push(...hits);
     }
-  });
+  }
 
-  const facesEnabled = enabled.some((s) => s.store === 'faces');
-  if (facesEnabled && !(byStore.faces || []).length) {
-    const hintHits = dedupeHits(results).map((h) => ({
-      name: h.name,
-      nameEn: h.nameEn,
-      manufacturer: h.manufacturer,
-      manufacturerEn: h.manufacturerEn,
-      brand: h.manufacturer,
-    }));
+  if (others.length) {
+    const settled = await Promise.allSettled(
+      others.map(({ store, fn, timeoutMs }) => {
+        const local = localByStore[store] || [];
+        return withStoreTimeout(fn(barcode), timeoutMs, store).then((live) => {
+          if (!live?.length) return local;
+          if (!local.length) return live;
+          return dedupeHits([...live, ...local]);
+        });
+      }),
+    );
+    settled.forEach((outcome, i) => {
+      const { store } = others[i];
+      if (outcome.status === 'fulfilled') {
+        byStore[store] = outcome.value;
+        results.push(...outcome.value);
+      } else {
+        errors.push({ store, message: outcome.reason?.message || 'فشل البحث' });
+        byStore[store] = localByStore[store] || [];
+        if (byStore[store].length) results.push(...byStore[store]);
+      }
+    });
+  }
+
+  if (facesSearcher && !(byStore.faces || []).length) {
+    const combinedHints = [
+      ...hintHits,
+      ...dedupeHits(results).map((h) => ({
+        name: h.name,
+        nameEn: h.nameEn,
+        manufacturer: h.manufacturer,
+        manufacturerEn: h.manufacturerEn,
+        brand: h.manufacturer,
+      })),
+    ];
     try {
-      const facesRetry = await withStoreTimeout(
-        searchFacesByBarcode(barcode, hintHits),
-        25_000,
+      const facesLive = await withStoreTimeout(
+        searchFacesByBarcode(barcode, combinedHints),
+        facesSearcher.timeoutMs,
         'faces',
       );
-      if (facesRetry?.length) {
-        byStore.faces = facesRetry;
-        results.push(...facesRetry);
+      if (facesLive?.length) {
+        byStore.faces = facesLive;
+        results.push(...facesLive);
+      } else {
+        byStore.faces = localByStore.faces || [];
       }
     } catch (err) {
-      if (!errors.some((e) => e.store === 'faces')) {
-        errors.push({ store: 'faces', message: err?.message || 'فشل البحث' });
-      }
+      errors.push({ store: 'faces', message: err?.message || 'فشل البحث' });
+      byStore.faces = localByStore.faces || [];
+      if (byStore.faces.length) results.push(...byStore.faces);
     }
+  } else if (facesSearcher && byStore.faces?.length) {
+    /* already from local index */
   }
 
   const storeList = enabled.map(({ store }) => store);

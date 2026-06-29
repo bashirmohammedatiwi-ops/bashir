@@ -1158,7 +1158,15 @@ const server = http.createServer(async (req, res) => {
       const fast = q.fast === '1' || q.fast === 'true';
       const store = q.store || '';
       const stores = store ? store.split(',').map((s) => s.trim()).filter(Boolean) : null;
-      const data = await searchImportByBarcode(query, { fast, stores });
+      let hintHits = [];
+      if (q.hints) {
+        try {
+          hintHits = JSON.parse(decodeURIComponent(q.hints));
+        } catch {
+          hintHits = [];
+        }
+      }
+      const data = await searchImportByBarcode(query, { fast, stores, hintHits });
       if (data.error) return sendJson(res, 400, data);
       return sendJson(res, 200, data);
     } catch (err) {

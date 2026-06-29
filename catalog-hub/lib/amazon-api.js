@@ -223,6 +223,27 @@ function formatPrice(amount, locale = 'en', currency = '') {
   return `$${n.toLocaleString('en-US')}`;
 }
 
+/** استخراج العلامة من عنوان المنتج عند غياب حقل brand في HTML */
+function inferBrandFromTitle(title = '') {
+  const t = String(title || '').trim();
+  if (!t) return '';
+  const fromStore = t.match(/(?:Visit the|تسوق من)\s+(.+?)\s+(?:Store|متجر)/i)?.[1]?.trim();
+  if (fromStore && fromStore.length <= 40) return fromStore;
+  const enLead = t.match(/^([A-Z][A-Za-z0-9&.'-]+)/);
+  if (enLead) return enLead[1].trim();
+  const arLead = t.match(/^([\u0600-\u06FF]+(?:\s+[\u0600-\u06FF]+){0,1})/);
+  if (arLead && arLead[1].length <= 24) return arLead[1].trim();
+  return '';
+}
+
+function resolveBrands(ar = {}, en = {}) {
+  let brandEn = en.brand || ar.brand || '';
+  let brandAr = ar.brand || en.brand || '';
+  if (!brandEn) brandEn = inferBrandFromTitle(en.title) || inferBrandFromTitle(ar.title);
+  if (!brandAr) brandAr = inferBrandFromTitle(ar.title) || brandEn;
+  return { brandAr, brandEn };
+}
+
 export function normalizeProductSummary(raw, meta = {}) {
   const asin = raw.asin || raw.id;
   const nameAr = raw.nameAr || meta.nameAr || raw.name || '';
@@ -259,6 +280,7 @@ export async function normalizeProductDetailBilingual(asin) {
   ]);
   const ar = htmlAr ? parseProductDetail(htmlAr, asin) : { asin, title: '', brand: '', thumb: '', images: [], description: '', price: '', barcode: '' };
   const en = htmlEn ? parseProductDetail(htmlEn, asin) : ar;
+  const { brandAr, brandEn } = resolveBrands(ar, en);
   const images = [...new Set([...(ar.images || []), ...(en.images || [])])].map(proxyAmazonImage).filter(Boolean);
   const thumb = proxyAmazonImage(ar.thumb || en.thumb || images[0] || '');
   return {
@@ -268,10 +290,10 @@ export async function normalizeProductDetailBilingual(asin) {
     name: ar.title || en.title,
     nameAr: ar.title,
     nameEn: en.title,
-    manufacturer: ar.brand || en.brand,
-    manufacturerEn: en.brand || ar.brand,
-    brandAr: ar.brand,
-    brandEn: en.brand,
+    manufacturer: brandAr || brandEn,
+    manufacturerEn: brandEn || brandAr,
+    brandAr,
+    brandEn,
     description: ar.description,
     descriptionEn: en.description,
     price: ar.price ? formatPrice(ar.price, 'ar') : en.price ? formatPrice(en.price, 'en') : '',
@@ -380,7 +402,18 @@ export async function searchProductsByBarcode(barcode) {
       const detail = await normalizeProductDetailBilingual(asin);
       if (!detail?.id) continue;
       const bc = String(detail.barcode || '').replace(/\D/g, '');
-      if (bc && bc !== digits && !bc.endsWith(digits) && !digits.endsWith(bc)) continue;
+      const barcodeMatches =
+        !bc || bc === digits || bc.endsWith(digits) || digits.endsWith(bc);
+      if (!barcodeMatches && asins.size > 1) continue;
+      if (!detail.barcode) detail.barcode = digits;
+      const { brandAr, brandEn } = resolveBrands(
+        { brand: detail.brandAr, title: detail.nameAr },
+        { brand: detail.brandEn, title: detail.nameEn },
+      );
+      detail.brandAr = brandAr;
+      detail.brandEn = brandEn;
+      detail.manufacturer = brandAr || brandEn;
+      detail.manufacturerEn = brandEn || brandAr;
       results.push(detail);
     } catch {
       /* skip */
