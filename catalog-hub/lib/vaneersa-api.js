@@ -10,6 +10,7 @@ export const SITE_EN = `${SITE}/en`;
 
 const STORE_ID = process.env.VANEERSA_STORE_ID || '1109203104';
 const SALLA_API = 'https://api.salla.dev/store/v1';
+const SALLA_SOURCE_SEARCH = 'search';
 
 let categoryCache = null;
 let categoryCacheAt = 0;
@@ -85,8 +86,10 @@ function sallaHeaders(lang = 'ar') {
   };
 }
 
-async function sallaFetch(path, { lang = 'ar', retries = 2 } = {}) {
-  const url = `${SALLA_API}/${path.startsWith('/') ? path.slice(1) : path}`;
+async function sallaFetch(pathOrUrl, { lang = 'ar', retries = 2 } = {}) {
+  const url = String(pathOrUrl || '').startsWith('http')
+    ? pathOrUrl
+    : `${SALLA_API}/${pathOrUrl.startsWith('/') ? pathOrUrl.slice(1) : pathOrUrl}`;
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     const res = await fetch(url, { headers: sallaHeaders(lang) });
@@ -109,6 +112,71 @@ async function sallaFetch(path, { lang = 'ar', retries = 2 } = {}) {
     return data;
   }
   throw new Error('Vaneersa request failed');
+}
+
+function buildProductsQuery(params = {}) {
+  const q = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') q.set(key, String(value));
+  }
+  return q.toString();
+}
+
+async function fetchProductPage(queryParams, { page = 1, limit = 30, lang = 'ar' } = {}) {
+  const perPage = Math.min(Math.max(limit, 1), 50);
+  const params = { ...queryParams, per_page: String(perPage) };
+  let url = `${SALLA_API}/products?${buildProductsQuery(params)}`;
+
+  let data = null;
+  for (let current = 1; current <= page; current++) {
+    data = await sallaFetch(url, { lang });
+    if (current === page) break;
+    url = data.cursor?.next;
+    if (!url) {
+      return { data: { data: [] }, page, pageSize: perPage, hasMore: false };
+    }
+  }
+
+  return {
+    data,
+    page,
+    pageSize: perPage,
+    hasMore: !!(data?.data?.length >= perPage && data?.cursor?.next),
+  };
+}
+
+function findCategoryNode(nodes = [], id = '') {
+  const key = String(id || '').trim();
+  if (!key) return null;
+  for (const node of nodes) {
+    if (String(node.id) === key || String(node.slug) === key) return node;
+    const child = findCategoryNode(node.children || [], key);
+    if (child) return child;
+  }
+  return null;
+}
+
+async function resolveCategorySearchKeyword(categoryId) {
+  const id = String(categoryId || '').trim();
+  if (!id) return '';
+  const { tree, leaves } = await fetchCategoryTree();
+  const node = findCategoryNode(tree, id) || leaves.find((c) => c.id === id);
+  return node?.name || node?.nameEn || id;
+}
+
+async function attachEnglishNames(items, queryParams, { page = 1, limit = 30 } = {}) {
+  try {
+    const { data } = await fetchProductPage(queryParams, { page, limit, lang: 'en' });
+    const nameEnMap = new Map(
+      (data?.data || []).map((p) => [String(p.id), String(p.name || '').trim()]),
+    );
+    return items.map((item) => ({
+      ...item,
+      nameEn: nameEnMap.get(String(item.id)) || item.nameEn || item.name,
+    }));
+  } catch {
+    return items;
+  }
 }
 
 function mapRawProduct(raw, { lang = 'ar', nameEnMap = null } = {}) {
@@ -296,71 +364,50 @@ async function findProductById(id, { lang = 'ar' } = {}) {
   const key = String(id).trim();
   if (!key) return null;
 
-  const data = await sallaFetch(`products?keyword=${encodeURIComponent(key)}&per_page=20`, { lang });
-  const hit = (data.data || []).find((p) => String(p.id) === key);
-  return hit || null;
+  try {
+    const data = await sallaFetch(`products/${encodeURIComponent(key)}/details`, { lang });
+    if (data.data?.id) return data.data;
+  } catch { /* fallback below */ }
+
+  const data = await sallaFetch(
+    `products?keyword=${encodeURIComponent(key)}&per_page=20&source=${SALLA_SOURCE_SEARCH}`,
+    { lang },
+  );
+  return (data.data || []).find((p) => String(p.id) === key) || null;
 }
 
 export async function fetchCategoryProducts(categoryId, { page = 1, limit = 30 } = {}) {
-  const id = String(categoryId || '').trim();
-  const perPage = Math.min(Math.max(limit, 1), 50);
+  const keyword = await resolveCategorySearchKeyword(categoryId);
+  const queryParams = { keyword, source: SALLA_SOURCE_SEARCH };
+  const { data, pageSize, hasMore } = await fetchProductPage(queryParams, { page, limit, lang: 'ar' });
 
-  const data = await sallaFetch(
-    `products?category=${encodeURIComponent(id)}&per_page=${perPage}&page=${page}`,
-    { lang: 'ar' },
-  );
-
-  let nameEnMap = null;
-  try {
-    const enData = await sallaFetch(
-      `products?category=${encodeURIComponent(id)}&per_page=${perPage}&page=${page}`,
-      { lang: 'en' },
-    );
-    nameEnMap = new Map(
-      (enData.data || []).map((p) => [String(p.id), String(p.name || '').trim()]),
-    );
-  } catch { /* optional EN */ }
-
-  const items = (data.data || [])
-    .map((p) => mapRawProduct(p, { nameEnMap }))
+  let items = (data.data || [])
+    .map((p) => mapRawProduct(p))
     .filter(Boolean);
 
-  const hasMore = items.length >= perPage && !!data.cursor?.next;
+  if (items.length) {
+    items = await attachEnglishNames(items, queryParams, { page, limit });
+  }
 
-  return { items, page, pageSize: perPage, hasMore };
+  return { items, page, pageSize, hasMore };
 }
 
 export async function searchProducts(query, page = 1, limit = 30) {
   const q = String(query || '').trim();
   if (!q) return { items: [], page, pageSize: limit, hasMore: false };
 
-  const perPage = Math.min(Math.max(limit, 1), 50);
-  const data = await sallaFetch(
-    `products?keyword=${encodeURIComponent(q)}&per_page=${perPage}&page=${page}`,
-    { lang: 'ar' },
-  );
+  const queryParams = { keyword: q, source: SALLA_SOURCE_SEARCH };
+  const { data, pageSize, hasMore } = await fetchProductPage(queryParams, { page, limit, lang: 'ar' });
 
-  let nameEnMap = null;
-  try {
-    const enData = await sallaFetch(
-      `products?keyword=${encodeURIComponent(q)}&per_page=${perPage}&page=${page}`,
-      { lang: 'en' },
-    );
-    nameEnMap = new Map(
-      (enData.data || []).map((p) => [String(p.id), String(p.name || '').trim()]),
-    );
-  } catch { /* optional */ }
-
-  const items = (data.data || [])
-    .map((p) => mapRawProduct(p, { nameEnMap }))
+  let items = (data.data || [])
+    .map((p) => mapRawProduct(p))
     .filter(Boolean);
 
-  return {
-    items,
-    page,
-    pageSize: perPage,
-    hasMore: items.length >= perPage && !!data.cursor?.next,
-  };
+  if (items.length) {
+    items = await attachEnglishNames(items, queryParams, { page, limit });
+  }
+
+  return { items, page, pageSize, hasMore };
 }
 
 export async function fetchProductDetail(id, { lang = 'ar', barcode = '' } = {}) {
@@ -397,7 +444,10 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
 
   for (const q of barcodeQueryVariants(digits)) {
     try {
-      const data = await sallaFetch(`products?keyword=${encodeURIComponent(q)}&per_page=20`, { lang: 'ar' });
+      const data = await sallaFetch(
+        `products?keyword=${encodeURIComponent(q)}&per_page=20&source=${SALLA_SOURCE_SEARCH}`,
+        { lang: 'ar' },
+      );
       for (const raw of data.data || []) {
         const sku = String(raw.sku || '').replace(/\D/g, '');
         const gtin = String(raw.gtin || '').replace(/\D/g, '');

@@ -1328,5 +1328,24 @@
     "at": 1782752743999,
     "brand": "Wet n Wild",
     "title": "Mega Slicks Lip Gloss"
+  },
+  "upc_barcode|079656603682": {
+    "ean": "079656603682",
+    "source": "upcitemdb_lookup",
+    "at": 1782757602221,
+    "brand": "Banana Boat",
+    "title": "6X Banana Boat Sport Performance Cool Zone SPF 50 6oz"
+  },
+  "shopify_sku|079656603682": {
+    "ean": "",
+    "source": "none",
+    "at": 1782757624454
+  },
+  "product_meta|079656603682": {
+    "ean": "079656603682",
+    "source": "upcitemdb_lookup",
+    "at": 1782757624456,
+    "brand": "Banana Boat",
+    "title": "6X Banana Boat Sport Performance Cool Zone SPF 50 6oz"
   }
 }
