@@ -56,7 +56,7 @@ import {
   searchProductsByBarcode as searchBeautywayProductsByBarcode,
   normalizeProductSummary as normalizeBeautywaySummary,
 } from './beautyway-api.js';
-import { lookupUpcByBarcode } from './barcodes.js';
+import { lookupUpcByBarcode, lookupBarcodeProductMeta } from './barcodes.js';
 
 function barcodeQueryVariants(barcode) {
   const digits = String(barcode).replace(/\D/g, '');
@@ -626,8 +626,8 @@ async function searchVanillaByBarcode(barcode) {
   return dedupeHits(results);
 }
 
-async function searchMiswagByBarcode(barcode) {
-  const products = await searchMiswagProductsByBarcode(barcode);
+async function searchMiswagByBarcode(barcode, { getMeta } = {}) {
+  const products = await searchMiswagProductsByBarcode(barcode, { getMeta });
   return dedupeHits(
     products.map((p) => {
       const n = normalizeMiswagSummary(p);
@@ -653,8 +653,8 @@ async function searchMiswagByBarcode(barcode) {
   );
 }
 
-async function searchOrisdiByBarcode(barcode) {
-  const products = await searchOrisdiProductsByBarcode(barcode);
+async function searchOrisdiByBarcode(barcode, { getMeta } = {}) {
+  const products = await searchOrisdiProductsByBarcode(barcode, { getMeta });
   return dedupeHits(
     products.map((p) => {
       const n = normalizeOrisdiSummary(p);
@@ -666,9 +666,11 @@ async function searchOrisdiByBarcode(barcode) {
         manufacturerEn: n.manufacturerEn,
         price: n.price,
         thumb: n.thumb,
-        barcode: n.barcode || barcode,
+        barcode: p.barcode || n.barcode || barcode,
         sku: n.sku,
+        shadeName: p.shadeName || '',
         matchType: p.matchType === 'hint' ? 'hint' : (p.matchType === 'shade' ? 'shade' : 'product'),
+        matchScore: p.matchScore,
         shadeCount: n.shadeCount || 0,
         categoryHint: n.category || n.productType || '',
         categoryHintEn: n.categoryEn || n.productType || '',
@@ -678,8 +680,8 @@ async function searchOrisdiByBarcode(barcode) {
   );
 }
 
-async function searchAmazonByBarcode(barcode) {
-  const products = await searchAmazonProductsByBarcode(barcode);
+async function searchAmazonByBarcode(barcode, { getMeta } = {}) {
+  const products = await searchAmazonProductsByBarcode(barcode, { getMeta });
   return dedupeHits(
     products
       .filter((p) => isUsableAmazonProduct(p))
@@ -695,7 +697,8 @@ async function searchAmazonByBarcode(barcode) {
           price: n.price,
           thumb: n.thumb,
           barcode: n.barcode || barcode,
-          matchType: 'product',
+          matchType: p.matchType === 'hint' ? 'hint' : 'product',
+          matchScore: p.matchScore,
           shadeCount: n.shadeCount || 0,
           openUrl: `/amazon/?product=${n.id}`,
         });
@@ -703,8 +706,8 @@ async function searchAmazonByBarcode(barcode) {
   );
 }
 
-async function searchBeautywayByBarcode(barcode) {
-  const products = await searchBeautywayProductsByBarcode(barcode);
+async function searchBeautywayByBarcode(barcode, { getMeta } = {}) {
+  const products = await searchBeautywayProductsByBarcode(barcode, { getMeta });
   return dedupeHits(
     products.map((p) => {
       const n = normalizeBeautywaySummary(p);
@@ -716,9 +719,11 @@ async function searchBeautywayByBarcode(barcode) {
         manufacturerEn: n.manufacturerEn,
         price: n.price,
         thumb: n.thumb,
-        barcode: n.barcode || barcode,
+        barcode: p.barcode || n.barcode || barcode,
         sku: n.sku,
-        matchType: p.matchType === 'hint' ? 'hint' : 'product',
+        shadeName: p.shadeName || '',
+        matchType: p.matchType === 'shade' ? 'shade' : (p.matchType === 'hint' ? 'hint' : 'product'),
+        matchScore: p.matchScore,
         shadeCount: n.shadeCount || 0,
         categoryHint: n.category || '',
         categoryHintEn: n.categoryEn || '',
@@ -900,6 +905,15 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
   }
 
   const upcPromise = lookupUpcByBarcode(barcode).catch(() => null);
+
+  // 🔑 بحث metadata موحّد لمرة واحدة — تُشارَك بين كل المتاجر (تجنّب طلبات go-upc/DDG المكررة)
+  // كسول: لا يُشغَّل إلا عند احتياج أول متجر للبحث بالتلميحات.
+  let metaPromise = null;
+  const getMeta = () => {
+    if (!metaPromise) metaPromise = lookupBarcodeProductMeta(barcode).catch(() => null);
+    return metaPromise;
+  };
+
   const nonFaces = enabled.filter((s) => s.store !== 'faces');
   const facesSearcher = enabled.find((s) => s.store === 'faces');
 
@@ -958,7 +972,7 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
     if (!local.length) {
       emit('store-status', { store, status: 'searching', label: STORE_META[store]?.label || store });
     }
-    return withStoreTimeout(fn(barcode), timeoutMs, store)
+    return withStoreTimeout(fn(barcode, { getMeta }), timeoutMs, store)
       .then((live) => {
         const merged = !live?.length ? local : !local.length ? live : dedupeHits([...local, ...live]);
         byStore[store] = merged;

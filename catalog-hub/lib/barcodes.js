@@ -974,6 +974,105 @@ export function buildMetaHintQueries(meta = {}) {
   return [...queries].filter(Boolean);
 }
 
+/** مطابقة أسماء الدرجات بمرونة (عربي/إنجليزي) — مشتركة بين المتاجر */
+export function shadeNamesMatch(a = '', b = '') {
+  const norm = (v) => String(v || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\u0600-\u06FF]+/g, ' ')
+    .trim();
+  const na = norm(a);
+  const nb = norm(b);
+  if (!na || !nb) return false;
+  if (na === nb || na.includes(nb) || nb.includes(na)) return true;
+  const wa = new Set(na.split(/\s+/).filter((w) => w.length >= 3));
+  const wb = nb.split(/\s+/).filter((w) => w.length >= 3);
+  if (!wa.size || !wb.length) return false;
+  const overlap = wb.filter((w) => wa.has(w)).length;
+  return overlap >= Math.min(wa.size, wb.length);
+}
+
+/**
+ * حلّ الدرجة الصحيحة من تفاصيل منتج Shopify-style (shades[].name/barcode).
+ * يُستخدم في orisdi/beautyway لتحويل نتيجة hint إلى درجة دقيقة.
+ */
+export function resolveHintShadeFromDetail(detail, meta = {}) {
+  const parsed = parseBarcodeMetaFields(meta);
+  if (!parsed.shade || !detail?.shades?.length) return null;
+  const match = detail.shades.find((s) => shadeNamesMatch(s.name || s.nameEn, parsed.shade));
+  return match || null;
+}
+
+/**
+ * منطق موحّد للبحث بالتلميحات عبر المتاجر:
+ * يبني الاستعلامات، يصنّف المرشّحين، يحلّ الدرجة الصحيحة إن وُجدت،
+ * ويعيد أفضل نتيجة (أو أفضل مجموعة) — يستخدمه orisdi/beautyway وغيرهما.
+ */
+export async function resolveStoreHintMatches({
+  meta,
+  searchFn,
+  fetchDetailFn = null,
+  toShadeHit = null,
+  toHit,
+  limit = 12,
+  minScore = 10,
+  perPage = 16,
+  maxQueries = 6,
+}) {
+  if ((!meta?.brand && !meta?.title) || typeof searchFn !== 'function' || typeof toHit !== 'function') {
+    return [];
+  }
+
+  const parsed = parseBarcodeMetaFields(meta);
+  const queries = buildMetaHintQueries(meta).slice(0, maxQueries);
+  const scored = [];
+  const seenIds = new Set();
+
+  for (const q of queries) {
+    let items = [];
+    try {
+      items = await searchFn(q, perPage);
+    } catch {
+      continue;
+    }
+    for (const item of items || []) {
+      const idKey = String(item.id || item.sku || '');
+      if (!idKey || seenIds.has(idKey)) continue;
+      const score = scoreStoreHintMatch(item, meta);
+      if (score < minScore) continue;
+      seenIds.add(idKey);
+      scored.push({ item, score });
+    }
+  }
+
+  if (!scored.length) return [];
+  scored.sort((a, b) => b.score - a.score);
+
+  if (parsed.shade && fetchDetailFn && toShadeHit) {
+    for (const { item } of scored.slice(0, 6)) {
+      let detail = null;
+      try {
+        detail = await fetchDetailFn(item);
+      } catch {
+        detail = null;
+      }
+      const shade = detail ? resolveHintShadeFromDetail(detail, meta) : null;
+      if (shade) {
+        const resolved = toShadeHit(item, detail, shade);
+        if (resolved) return [resolved];
+      }
+    }
+  }
+
+  const top = scored[0];
+  const second = scored[1];
+  const margin = second ? top.score - second.score : top.score;
+  if (top.score >= 50 && margin >= 18) {
+    return [toHit(top.item, top.score)];
+  }
+
+  return scored.slice(0, limit).map(({ item, score }) => toHit(item, score));
+}
+
 /** درجة مطابقة نتيجة متجر مع metadata الباركود */
 export function scoreStoreHintMatch(item = {}, meta = {}) {
   const parsed = parseBarcodeMetaFields(meta);

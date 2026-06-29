@@ -697,9 +697,11 @@ async function searchMiswagByMetaHints(meta, digits, { limit = 12 } = {}) {
   return pickBestMiswagHintResults(scored, meta, { limit });
 }
 
-export async function searchProductsByBarcode(barcode) {
+export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
   const digits = String(barcode || '').replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return [];
+
+  const resolveMeta = () => (getMeta ? getMeta() : lookupBarcodeProductMeta(digits));
 
   const results = [];
   const seen = new Set();
@@ -743,7 +745,7 @@ export async function searchProductsByBarcode(barcode) {
           entry.matchType = manual.matchType || 'shade';
         }
 
-        const meta = await lookupBarcodeProductMeta(digits).catch(() => null);
+        const meta = await resolveMeta().catch(() => null);
         const parsed = parseBarcodeMetaFields(meta || manual);
 
         if (parsed.shade || manual.shadeName) {
@@ -814,7 +816,7 @@ export async function searchProductsByBarcode(barcode) {
   }
 
   // (3) metadata موحّد (UPC + Shopify + OBF + بحث ويب) → Typesense
-  const meta = await lookupBarcodeProductMeta(digits);
+  const meta = await resolveMeta().catch(() => null);
   if (meta?.brand || meta?.title) {
     const hinted = await searchMiswagByMetaHints(meta, digits);
     for (const hit of hinted) pushUnique(results, seen, hit);

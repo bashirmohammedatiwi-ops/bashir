@@ -601,7 +601,57 @@ async function enrichAmazonShadeAsinsParallel(shades = [], concurrency = 4) {
   }
 }
 
-export async function searchProductsByBarcode(barcode) {
+/** بحث Amazon نصّي بالتلميحات (ماركة + اسم المنتج) عند فشل البحث بالباركود */
+async function searchAmazonByMetaHint(meta, digits) {
+  const { buildMetaHintQueries, scoreStoreHintMatch } = await import('./barcodes.js');
+  const queries = buildMetaHintQueries(meta).slice(0, 3);
+
+  for (const q of queries) {
+    const html = await fetchAmazonHtml(buildSearchUrl(q, 1, 'en'), 'en').catch(() => '');
+    const list = parseSearchResults(html);
+    if (!list.length) continue;
+
+    const settled = await Promise.allSettled(
+      list.slice(0, 3).map((p) => normalizeProductDetailBilingual(p.asin, {
+        nameEn: p.name,
+        nameAr: p.name,
+        thumb: p.thumb,
+        price: p.price,
+      })),
+    );
+
+    const scored = [];
+    for (const outcome of settled) {
+      if (outcome.status !== 'fulfilled') continue;
+      const detail = outcome.value;
+      if (!isUsableAmazonProduct(detail)) continue;
+      if (isAmazonBundleListing(detail.nameEn, detail.nameAr)) continue;
+      const item = {
+        id: detail.asin,
+        name: detail.nameAr || detail.nameEn,
+        nameEn: detail.nameEn,
+        manufacturer: detail.brandAr || detail.brand || '',
+        manufacturerEn: detail.brandEn || detail.brand || '',
+        shadeName: '',
+      };
+      const score = scoreStoreHintMatch(item, meta);
+      if (score < 14) continue;
+      if (!detail.barcode) detail.barcode = digits;
+      detail.matchType = 'hint';
+      detail.matchScore = score;
+      detail.source = meta.source || 'meta-hint';
+      scored.push({ detail, score });
+    }
+
+    if (scored.length) {
+      scored.sort((a, b) => b.score - a.score);
+      return [scored[0].detail];
+    }
+  }
+  return [];
+}
+
+export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
   const digits = String(barcode).replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return [];
 
@@ -651,9 +701,22 @@ export async function searchProductsByBarcode(barcode) {
     results.push(detail);
   }
 
-  return results
-    .sort((a, b) => productCompletenessScore(b) - productCompletenessScore(a))
-    .slice(0, 1);
+  if (results.length) {
+    return results
+      .sort((a, b) => productCompletenessScore(b) - productCompletenessScore(a))
+      .slice(0, 1);
+  }
+
+  // احتياطي: البحث بالماركة + اسم المنتج عند عدم وجود الباركود مباشرة على Amazon
+  if (getMeta) {
+    const meta = await getMeta().catch(() => null);
+    if (meta?.brand || meta?.title) {
+      const hinted = await searchAmazonByMetaHint(meta, digits).catch(() => []);
+      if (hinted.length) return hinted;
+    }
+  }
+
+  return [];
 }
 
 export function sortProductsClient(products = [], sort = 'default') {

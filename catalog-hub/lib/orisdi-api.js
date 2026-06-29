@@ -5,7 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { lookupBarcodeProductMeta, buildMetaHintQueries, scoreStoreHintMatch } from './barcodes.js';
+import { lookupBarcodeProductMeta, resolveStoreHintMatches } from './barcodes.js';
 
 export const SITE = 'https://orisdi.com';
 
@@ -551,7 +551,7 @@ function collectBarcodeMatches(product, barcode) {
   return matches;
 }
 
-export async function searchProductsByBarcode(barcode) {
+export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
   const digits = String(barcode || '').replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return [];
 
@@ -613,20 +613,33 @@ export async function searchProductsByBarcode(barcode) {
     if (results.length) return results;
   }
 
-  const meta = await lookupBarcodeProductMeta(digits).catch(() => null);
+  const meta = await (getMeta ? getMeta() : lookupBarcodeProductMeta(digits)).catch(() => null);
   if (meta?.brand || meta?.title) {
-    const queries = buildMetaHintQueries(meta);
-    for (const q of queries) {
-      const hinted = await searchProducts(q, 1, 16);
-      for (const item of hinted.items || []) {
-        const score = scoreStoreHintMatch(item, meta);
-        if (score < 8) continue;
-        const key = `${item.id}:hint`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        results.push({ ...item, barcode: digits, matchType: 'hint', source: meta.source || 'meta-hint', matchScore: score });
-      }
-      if (results.length) break;
+    const hinted = await resolveStoreHintMatches({
+      meta,
+      searchFn: async (q) => (await searchProducts(q, 1, 16)).items || [],
+      fetchDetailFn: (item) => fetchProductDetail(item.id, { slug: item.slug }),
+      toShadeHit: (item, _detail, shade) => ({
+        ...item,
+        barcode: digits,
+        shadeName: shade.name,
+        matchType: 'shade',
+        source: meta.source || 'meta-hint',
+        matchScore: 999,
+      }),
+      toHit: (item, score) => ({
+        ...item,
+        barcode: digits,
+        matchType: 'hint',
+        source: meta.source || 'meta-hint',
+        matchScore: score,
+      }),
+    });
+    for (const h of hinted) {
+      const key = `${h.id}:hint`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      results.push(h);
     }
   }
 

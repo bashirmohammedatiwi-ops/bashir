@@ -2,7 +2,7 @@
  * Beauty Way (بيوتي وي) — Drupal storefront
  * https://www.beautyway-iq.com/
  */
-import { lookupBarcodeProductMeta, buildMetaHintQueries, scoreStoreHintMatch } from './barcodes.js';
+import { lookupBarcodeProductMeta, resolveStoreHintMatches } from './barcodes.js';
 
 export const SITE = 'https://www.beautyway-iq.com';
 
@@ -382,38 +382,46 @@ export async function fetchProductDetail(id, { slug } = {}) {
   return raw ? normalizeProductDetail(raw) : null;
 }
 
-export async function searchProductsByBarcode(barcode) {
+export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
   const digits = String(barcode || '').replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return [];
 
   const results = await scanListingsForBarcode(digits);
   if (results.length) return results.slice(0, 12);
 
-  const meta = await lookupBarcodeProductMeta(digits).catch(() => null);
+  const meta = await (getMeta ? getMeta() : lookupBarcodeProductMeta(digits)).catch(() => null);
   if (meta?.brand || meta?.title) {
-    const queries = buildMetaHintQueries(meta);
-    const verified = [];
-    for (const q of queries) {
-      const hinted = await searchProducts(q, 1, 16);
-      for (const item of hinted.items || []) {
-        const score = scoreStoreHintMatch(item, meta);
-        if (score < 8) continue;
-        try {
-          const detail = await fetchProductDetail(item.id, { slug: item.slug });
-          if (detail) {
-            verified.push({
-              ...item,
-              ...detail,
-              barcode: digits,
-              matchType: 'hint',
-              source: meta.source || 'meta-hint',
-              matchScore: score,
-            });
-          }
-        } catch { /* skip */ }
-      }
-      if (verified.length) return verified.slice(0, 12);
-    }
+    const detailCache = new Map();
+    const getDetail = async (item) => {
+      const key = String(item.id);
+      if (detailCache.has(key)) return detailCache.get(key);
+      const detail = await fetchProductDetail(item.id, { slug: item.slug }).catch(() => null);
+      detailCache.set(key, detail);
+      return detail;
+    };
+
+    const hinted = await resolveStoreHintMatches({
+      meta,
+      searchFn: async (q) => (await searchProducts(q, 1, 16)).items || [],
+      fetchDetailFn: getDetail,
+      toShadeHit: (item, detail, shade) => ({
+        ...item,
+        ...(detail || {}),
+        barcode: digits,
+        shadeName: shade.name,
+        matchType: 'shade',
+        source: meta.source || 'meta-hint',
+        matchScore: 999,
+      }),
+      toHit: (item, score) => ({
+        ...item,
+        barcode: digits,
+        matchType: 'hint',
+        source: meta.source || 'meta-hint',
+        matchScore: score,
+      }),
+    });
+    if (hinted.length) return hinted.slice(0, 12);
   }
 
   return [];
