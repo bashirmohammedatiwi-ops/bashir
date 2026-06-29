@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
 import { resolveProductNames } from "../../common/product-names.util";
+import { resolveProductDescriptions } from "../../common/product-descriptions.util";
 import { paginate } from "../../common/dto/pagination.dto";
 import { CategoriesService } from "./categories.service";
 import { CreateProductDto, QueryProductsDto, UpdateProductDto } from "./dto/product.dto";
@@ -137,6 +138,7 @@ export class ProductsService {
     dto = await this.applySyncedPricing(dto);
     dto = this.applyShadeAggregates(dto);
     const names = resolveProductNames(dto);
+    const descriptions = resolveProductDescriptions(dto);
     const subcategoryId = await this.categories.validateSubcategoryForCategory(
       dto.subcategoryId,
       dto.categoryId,
@@ -150,7 +152,9 @@ export class ProductsService {
         nameAr: names.nameAr,
         nameEn: names.nameEn,
         slug: dto.slug,
-        description: dto.description ?? "",
+        description: descriptions.description,
+        descriptionAr: descriptions.descriptionAr,
+        descriptionEn: descriptions.descriptionEn,
         ingredients: dto.ingredients ?? "",
         howToUse: dto.howToUse ?? "",
         price: dto.price,
@@ -210,6 +214,7 @@ export class ProductsService {
     if (!existing) throw new NotFoundException("Product not found");
 
     const names = resolveProductNames(dto);
+    const descriptions = resolveProductDescriptions(dto);
     const categoryId = dto.categoryId ?? existing.categoryId;
     let subcategoryId: string | null | undefined = dto.subcategoryId;
     if (dto.subcategoryId !== undefined || dto.categoryId !== undefined) {
@@ -236,7 +241,9 @@ export class ProductsService {
         nameAr: names.nameAr,
         nameEn: names.nameEn,
         slug: dto.slug,
-        description: dto.description,
+        description: descriptions.description,
+        descriptionAr: descriptions.descriptionAr,
+        descriptionEn: descriptions.descriptionEn,
         ingredients: dto.ingredients,
         howToUse: dto.howToUse,
         price: dto.price,

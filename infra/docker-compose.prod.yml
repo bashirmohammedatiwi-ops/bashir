@@ -73,6 +73,7 @@ services:
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@alhayaa.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@12345}
       RUN_SEED: ${RUN_SEED:-0}
+      CATALOG_HUB_INTERNAL_URL: http://catalog-hub:10000
     volumes:
       - mediadata:/data/uploads
     expose:

@@ -46,6 +46,8 @@ export class CreateProductDto {
 
   @IsOptional() @IsString() subcategoryId?: string;
   @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() descriptionAr?: string;
+  @IsOptional() @IsString() descriptionEn?: string;
   @IsOptional() @IsString() ingredients?: string;
   @IsOptional() @IsString() howToUse?: string;
 

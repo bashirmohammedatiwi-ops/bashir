@@ -28,10 +28,10 @@ import {
   type CatalogImportProduct,
 } from "@/lib/catalogImport";
 import { fetchInventoryByBarcode, type InventorySyncPreview } from "@/lib/inventorySync";
-import { uploadImageFromUrl } from "@/lib/uploadFromUrl";
+import { uploadCatalogImportImages } from "@/lib/uploadCatalogImages";
+import { resolveCatalogImageUrl } from "@/lib/uploadFromUrl";
 import { buildProductPayload } from "@/lib/productPayload";
 import { mutations, queries } from "@/lib/queries";
-import type { ImageItem } from "@/components/ProductImageDropzone";
 
 const STORE_COLORS: Record<string, string> = {
   niceone: "#e91e63",
@@ -53,13 +53,6 @@ function matchBrandId(brands: any[] = [], brandAr = "", brandEn = "") {
 
 function stripHtml(html = "") {
   return String(html).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-}
-
-function buildDescription(ar = "", en = "") {
-  const a = stripHtml(ar);
-  const e = stripHtml(en);
-  if (a && e && a !== e) return `${a}\n\n${e}`;
-  return a || e;
 }
 
 export default function CatalogImportPage() {
@@ -207,31 +200,25 @@ export default function CatalogImportPage() {
 
       message.loading({ content: "جاري رفع الصور...", key: "import" });
 
-      const productImages: ImageItem[] = [];
-      for (const img of preview.images.slice(0, 8)) {
-        try {
-          const media = await uploadImageFromUrl(img.url, "PRODUCT");
-          productImages.push({
-            id: media.id,
-            url: media.previewUrl || media.url || null,
+      const { productImages, shadeImageIds, failed: failedImages } =
+        await uploadCatalogImportImages(preview, ({ done, total, failed }) => {
+          message.loading({
+            content: `جاري رفع الصور (${done}/${total})${failed ? ` · فشل ${failed}` : ""}...`,
+            key: "import",
           });
-        } catch {
-          /* skip failed image */
-        }
+        });
+
+      if (!productImages.length && (preview.images.length > 0 || preview.shades.some((s) => s.imageUrl))) {
+        throw new Error("تعذّر رفع صور المنتج من الكتالوج");
+      }
+      if (failedImages > 0) {
+        message.warning(`${failedImages} صورة لم تُرفع — سيتم استيراد الباقي`);
       }
 
       const shades: any[] = [];
       for (let i = 0; i < (preview.shades || []).length; i++) {
         const s = preview.shades[i];
-        let imageId: string | undefined;
-        if (s.imageUrl) {
-          try {
-            const media = await uploadImageFromUrl(s.imageUrl, "PRODUCT");
-            imageId = media.id;
-          } catch {
-            /* optional */
-          }
-        }
+        const imageId = s.imageUrl ? shadeImageIds.get(s.imageUrl) : undefined;
 
         let price: number | undefined;
         let originalPrice = 0;
@@ -290,7 +277,8 @@ export default function CatalogImportPage() {
           ...values,
           nameAr: preview.nameAr,
           nameEn: preview.nameEn,
-          description: buildDescription(preview.descriptionAr, preview.descriptionEn),
+          descriptionAr: stripHtml(preview.descriptionAr),
+          descriptionEn: stripHtml(preview.descriptionEn),
           barcode: mainBc,
           sku: preview.sku || `CAT-${preview.store}-${preview.sourceId}`,
           price,
@@ -495,14 +483,22 @@ export default function CatalogImportPage() {
                 />
               )}
               <Typography.Paragraph ellipsis={{ rows: 4 }}>
-                <strong>الوصف:</strong> {stripHtml(preview.descriptionAr).slice(0, 300)}
+                <strong>الوصف (عربي):</strong>{" "}
+                {stripHtml(preview.descriptionAr).slice(0, 300) || "—"}
                 {stripHtml(preview.descriptionAr).length > 300 ? "…" : ""}
               </Typography.Paragraph>
+              {preview.descriptionEn && (
+                <Typography.Paragraph ellipsis={{ rows: 4 }} className="alhayaa-ltr-input">
+                  <strong>الوصف (إنجليزي):</strong>{" "}
+                  {stripHtml(preview.descriptionEn).slice(0, 300)}
+                  {stripHtml(preview.descriptionEn).length > 300 ? "…" : ""}
+                </Typography.Paragraph>
+              )}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                {preview.images.slice(0, 6).map((img) => (
+                {preview.images.map((img) => (
                   <img
                     key={img.url}
-                    src={img.url.startsWith("http") ? img.url : `${CATALOG_HUB_URL}${img.url}`}
+                    src={resolveCatalogImageUrl(img.url)}
                     alt=""
                     style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 8 }}
                   />

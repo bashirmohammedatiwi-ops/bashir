@@ -14,6 +14,14 @@ class ProductRemoteMapper {
     return (json['name'] as String?)?.trim() ?? '';
   }
 
+  static String _resolveDescription(Map<String, dynamic> json) {
+    final descAr = (json['descriptionAr'] as String?)?.trim();
+    if (descAr != null && descAr.isNotEmpty) return descAr;
+    final descEn = (json['descriptionEn'] as String?)?.trim();
+    if (descEn != null && descEn.isNotEmpty) return descEn;
+    return (json['description'] as String?)?.trim() ?? '';
+  }
+
   /// قائمة من API قد تكون `[]` أو `"[]"` (حقل Prisma كنص JSON).
   static List<String> parseStringList(dynamic raw) {
     if (raw == null) return const [];
@@ -90,7 +98,7 @@ class ProductRemoteMapper {
       rating: (json['rating'] as num?)?.toDouble() ?? 0,
       reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
       soldCount: (json['soldCount'] as num?)?.toInt() ?? 0,
-      description: (json['description'] as String?) ?? '',
+      description: _resolveDescription(json),
       ingredients: (json['ingredients'] as String?) ?? '',
       howToUse: (json['howToUse'] as String?) ?? '',
       shades: shades.isEmpty ? null : shades,

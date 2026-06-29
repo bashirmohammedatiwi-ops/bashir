@@ -16,6 +16,7 @@ import { paginate, PaginationDto } from "../../common/dto/pagination.dto";
 import { IMAGE_VARIANTS, VariantsRecord } from "./media.constants";
 import { generateMediaVariants } from "./media-variants.helper";
 import { optimizeForStorage } from "./media-optimize.helper";
+import { assertSafeRemoteUrl } from "./media-url.helper";
 
 interface UploadInput {
   buffer: Buffer;
@@ -180,6 +181,73 @@ export class MediaService {
         error instanceof Error ? error.stack : String(error),
       );
       throw new BadRequestException("فشل رفع الصورة. تأكد أن الملف صورة صالحة (JPG/PNG/WebP)");
+    }
+  }
+
+  /** Fetch a remote catalog image, then store with the same compression pipeline as multipart upload. */
+  async uploadFromUrl(url: string, purpose?: MediaPurpose, alt?: string) {
+    const safeUrl = assertSafeRemoteUrl(url);
+    const timeoutMs = Number(process.env.MEDIA_FETCH_TIMEOUT_MS ?? 90_000);
+    const maxBytes = Number(process.env.MEDIA_MAX_FILE_SIZE_MB ?? 15) * 1024 * 1024;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const res = await fetch(safeUrl, {
+        signal: controller.signal,
+        redirect: "follow",
+        headers: {
+          Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
+          "User-Agent": "Alhayaa-MediaFetcher/1.0",
+        },
+      });
+
+      if (!res.ok) {
+        throw new BadRequestException(`تعذّر تحميل الصورة (${res.status})`);
+      }
+
+      const contentType = (res.headers.get("content-type") || "image/jpeg").split(";")[0].trim();
+      if (!contentType.startsWith("image/")) {
+        throw new BadRequestException("الرابط لا يشير إلى صورة صالحة");
+      }
+
+      const arrayBuffer = await res.arrayBuffer();
+      if (arrayBuffer.byteLength > maxBytes) {
+        throw new BadRequestException(
+          `حجم الصورة كبير جداً (الحد ${process.env.MEDIA_MAX_FILE_SIZE_MB ?? 15}MB)`,
+        );
+      }
+      if (arrayBuffer.byteLength < 64) {
+        throw new BadRequestException("ملف الصورة فارغ أو تالف");
+      }
+
+      const ext = contentType.includes("png")
+        ? "png"
+        : contentType.includes("webp")
+          ? "webp"
+          : contentType.includes("gif")
+            ? "gif"
+            : "jpg";
+
+      return this.upload({
+        buffer: Buffer.from(arrayBuffer),
+        filename: `catalog-import-${Date.now()}.${ext}`,
+        mime: contentType,
+        purpose: purpose ?? MediaPurpose.PRODUCT,
+        alt,
+      });
+    } catch (error) {
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
+        throw error;
+      }
+      const name = error instanceof Error ? error.name : "";
+      if (name === "AbortError") {
+        throw new BadRequestException("انتهت مهلة تحميل الصورة من الكتالوج");
+      }
+      this.logger.warn(`uploadFromUrl failed for ${safeUrl}: ${error instanceof Error ? error.message : error}`);
+      throw new BadRequestException("تعذّر تحميل الصورة من الكتالوج");
+    } finally {
+      clearTimeout(timer);
     }
   }
 

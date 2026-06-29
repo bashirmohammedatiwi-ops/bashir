@@ -301,9 +301,13 @@ export function ProductFormDrawer({
         </TabPanel>
 
         <TabPanel tabKey="content" activeTab={activeTab}>
-            <Form.Item name="description" label="وصف المنتج">
-              <Input.TextArea rows={5} placeholder="وصف تفصيلي يظهر في صفحة المنتج..." />
+            <Form.Item name="descriptionAr" label="وصف المنتج (عربي)">
+              <Input.TextArea rows={5} placeholder="وصف تفصيلي بالعربية..." />
             </Form.Item>
+            <Form.Item name="descriptionEn" label="وصف المنتج (إنجليزي)" className="alhayaa-ltr-input">
+              <Input.TextArea rows={5} placeholder="Detailed product description in English..." />
+            </Form.Item>
+            <p className="alhayaa-empty-hint">يمكنك إدخال الوصف بلغة واحدة أو باللغتين إن وُجدتا.</p>
             <Form.Item name="ingredients" label="المكونات / المواد">
               <Input.TextArea rows={4} placeholder="Aqua, Glycerin, Niacinamide..." />
             </Form.Item>

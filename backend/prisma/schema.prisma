@@ -236,6 +236,8 @@ model Product {
   nameEn          String?
   slug            String          @unique
   description     String          @default("")
+  descriptionAr   String?
+  descriptionEn   String?
   ingredients     String          @default("")
   howToUse        String          @default("")
   price           Int             // stored as smallest currency unit

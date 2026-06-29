@@ -138,6 +138,8 @@ export default function ProductsPage() {
         ...full,
         nameAr: full?.nameAr ?? full?.name ?? "",
         nameEn: full?.nameEn ?? "",
+        descriptionAr: full?.descriptionAr ?? full?.description ?? "",
+        descriptionEn: full?.descriptionEn ?? "",
         brandId: full?.brand?.id ?? full?.brandId,
         categoryId: full?.category?.id ?? full?.categoryId,
         subcategoryId: full?.subcategory?.id ?? full?.subcategoryId,

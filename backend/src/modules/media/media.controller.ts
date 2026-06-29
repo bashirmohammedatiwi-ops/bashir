@@ -79,6 +79,16 @@ export class MediaController {
     throw new BadRequestException("Invalid upload payload");
   }
 
+  @Post("upload-from-url")
+  uploadFromUrl(
+    @Body() body: { url?: string; purpose?: MediaPurpose; alt?: string },
+  ) {
+    if (!body?.url?.trim()) {
+      throw new BadRequestException("url is required");
+    }
+    return this.media.uploadFromUrl(body.url.trim(), body.purpose, body.alt);
+  }
+
   @Delete(":id")
   remove(@Param("id") id: string) {
     return this.media.remove(id);

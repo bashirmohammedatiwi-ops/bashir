@@ -1,7 +1,9 @@
-import { uploadMediaFile } from "./uploadMedia";
+import { api } from "./api";
 import { CATALOG_HUB_URL } from "./config";
+import { mediaThumb } from "./mediaUrl";
+import { uploadMediaFile } from "./uploadMedia";
 
-function resolveFetchUrl(url: string): string {
+export function resolveCatalogImageUrl(url: string): string {
   const u = String(url || "").trim();
   if (!u) return "";
   if (u.startsWith("http")) return u;
@@ -9,8 +11,33 @@ function resolveFetchUrl(url: string): string {
   return u;
 }
 
+function uploadErrorMessage(error: unknown): string {
+  const e = error as any;
+  return (
+    e?.response?.data?.error?.message ??
+    e?.response?.data?.message ??
+    e?.message ??
+    "فشل رفع الصورة"
+  );
+}
+
+/** Server fetch + same optimizeForStorage pipeline as ProductImageDropzone uploads. */
 export async function uploadImageFromUrl(url: string, purpose = "PRODUCT") {
-  const fetchUrl = resolveFetchUrl(url);
+  const fetchUrl = resolveCatalogImageUrl(url);
+  if (!fetchUrl) throw new Error("رابط صورة غير صالح");
+
+  try {
+    const res = await api.post("/media/upload-from-url", { url: fetchUrl, purpose }, { timeout: 120_000 });
+    const media = res.data?.data ?? res.data;
+    return { ...media, previewUrl: mediaThumb(media) };
+  } catch (error) {
+    throw new Error(uploadErrorMessage(error));
+  }
+}
+
+/** Fallback when API cannot reach the URL (local dev). Still uses /media/upload compression. */
+export async function uploadImageFromUrlClient(url: string, purpose = "PRODUCT") {
+  const fetchUrl = resolveCatalogImageUrl(url);
   if (!fetchUrl) throw new Error("رابط صورة غير صالح");
 
   const res = await fetch(fetchUrl);
@@ -26,4 +53,12 @@ export async function uploadImageFromUrl(url: string, purpose = "PRODUCT") {
     type: blob.type || "image/jpeg",
   });
   return uploadMediaFile(file, purpose);
+}
+
+export async function uploadImageFromUrlWithFallback(url: string, purpose = "PRODUCT") {
+  try {
+    return await uploadImageFromUrl(url, purpose);
+  } catch {
+    return uploadImageFromUrlClient(url, purpose);
+  }
 }
