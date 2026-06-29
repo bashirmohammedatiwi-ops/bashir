@@ -273,16 +273,19 @@ export function isAmazonBundleListing(nameEn = '', nameAr = '') {
 }
 
 function parseProductDetail(html, asin) {
-  const title = html.match(/id="productTitle"[^>]*>\s*([^<]+)/)?.[1]?.trim() || '';
-  const brand =
+  const titleMatch = html.match(/id="productTitle"[^>]*>\s*([^<]+)/);
+  const title = titleMatch?.[1]?.trim() || '';
+  const brandMatch =
     html.match(/"brand":"([^"]+)"/)?.[1]?.trim() ||
-    html.match(/Visit the ([^<]+) Store/i)?.[1]?.trim() ||
-    '';
+    html.match(/Visit the ([^<]+) Store/i)?.[1]?.trim();
+  const brand = brandMatch || '';
   const hiRes = html.match(/"hiRes":"([^"]+)"/)?.[1];
   const large = html.match(/"large":"([^"]+)"/)?.[1];
-  const landing =
+  const landingMatch =
     html.match(/id="landingImage"[^>]*data-old-hires="([^"]+)"/)?.[1] ||
     html.match(/id="landingImage"[^>]*src="([^"]+)"/)?.[1];
+  const landing = landingMatch || '';
+  const thumb = hiRes || large || landing || '';
   const descHtml = html.match(/id="productDescription"[^>]*>([\s\S]*?)<\/div>/i)?.[1] || '';
   let desc = descHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   const bullets = parseFeatureBullets(html);
@@ -299,13 +302,13 @@ function parseProductDetail(html, asin) {
   const gtin = html.match(/"gtin[^"]*":"([0-9]{8,14})"/i)?.[1];
   const barcode = upc || ean || gtin || '';
   const images = [...new Set([...html.matchAll(/"hiRes":"(https:\/\/[^"]+)"/g)].map((x) => x[1]))];
-  const thumb = hiRes || large || landing || images[0] || '';
-  if (!images.length && thumb) images.push(thumb);
+  const finalThumb = hiRes || large || landing || images[0] || '';
+  if (!images.length && finalThumb) images.push(finalThumb);
   return {
     asin,
     title,
     brand,
-    thumb,
+    thumb: finalThumb,
     images,
     description: desc || bullets.join('\n'),
     price,
@@ -531,8 +534,32 @@ export async function fetchProductByAsin(asin, listing = {}) {
   const id = String(asin || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(id)) return null;
   const detail = await normalizeProductDetailBilingual(id, listing);
-  if (isAmazonBundleListing(detail.nameEn, detail.nameAr)) return null;
-  return isUsableAmazonProduct(detail) ? detail : null;
+  console.log('Detail object in fetchProductByAsin:', detail);
+  if (isAmazonBundleListing(detail.nameEn, detail.nameAr)) {
+    return null;
+  }
+  if (!isUsableAmazonProduct(detail)) {
+    return null;
+  }
+  return detail;
+}
+
+/** بحث باركود ASIN لدرجة معينة */
+export async function lookupAmazonVariantByAsin(asin) {
+  const id = String(asin || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{10}$/.test(id)) return null;
+  const html = await fetchAmazonHtml(`${AMAZON_COM}/dp/${id}`, 'en').catch(() => '');
+  if (!html) return null;
+  const parsed = parseProductDetail(html, id);
+  if (parsed.barcode) {
+    return {
+      ean: parsed.barcode,
+      brand: parsed.brand || '',
+      title: parsed.title || '',
+      source: `amazon-variant:${id}`,
+    };
+  }
+  return null;
 }
 
 export async function searchProductsByBarcode(barcode) {

@@ -12,6 +12,7 @@ import {
   collectBarcodeList,
   parseBarcodeList,
   resolveShadeBarcode,
+  lookupAmazonVariantByAsin, // New import
 } from './api.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -1190,7 +1191,24 @@ export async function enrichShadesForImport(product, { light = false, maxLookups
     const { ar, en } = shadeNames(shade);
     const shadeLabel = en || ar || shade.nameEn || shade.name || '';
     const shopify = await lookupShopifyVariantByShade(manufacturer, productName, shadeLabel).catch(() => null);
-    if (shopify?.ean) applyExternalResult(shade, shopify);
+    if (shopify?.ean) {
+      applyExternalResult(shade, shopify);
+      return;
+    }
+    const ext = await lookupExternalBarcode(manufacturer, productName, ar, en, shade.sku).catch(() => null);
+    if (ext?.ean) {
+      applyExternalResult(shade, ext);
+      return;
+    }
+
+    // Try Amazon variant lookup if SKU looks like an ASIN
+    if (shade.sku && String(shade.sku).startsWith('B0')) {
+      const amazonVariant = await lookupAmazonVariantByAsin(shade.sku).catch(() => null);
+      if (amazonVariant?.ean) {
+        applyExternalResult(shade, amazonVariant);
+        return;
+      }
+    }
   }));
 
   saveDiskCache();
