@@ -26,6 +26,9 @@ const DEFAULT_HEADERS = {
 
 const idHandleCache = new Map();
 
+/** Shopify Storefront API — عام على صفحات Orisdi، يبحث SKU مباشرة */
+const STOREFRONT_TOKEN = 'e7020593fd60b631b300feacd9a58426';
+
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
@@ -394,6 +397,96 @@ function lookupFeedByBarcode(index, barcode) {
   return [];
 }
 
+function mergeProductIntoFeedIndex(product) {
+  if (!feedIndex || !product?.id) return;
+  indexProductInMaps(feedIndex.byBarcode, feedIndex.byId, product);
+  rememberHandle(product);
+}
+
+async function storefrontGraphql(query, variables = {}) {
+  const res = await fetch(`${SITE}/api/2024-01/graphql.json`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Shopify-Storefront-Access-Token': STOREFRONT_TOKEN,
+      ...DEFAULT_HEADERS,
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+  if (!res.ok) throw new Error(`Orisdi GraphQL ${res.status}`);
+  const data = await res.json();
+  if (data.errors?.length) throw new Error(data.errors[0].message);
+  return data.data;
+}
+
+function graphqlNodeToRaw(node) {
+  const id = String(node.id || '').replace('gid://shopify/Product/', '');
+  return {
+    id,
+    handle: node.handle,
+    title: node.title,
+    vendor: node.vendor || '',
+    product_type: node.productType || '',
+    body_html: node.descriptionHtml || '',
+    images: (node.images?.edges || []).map((e) => ({ src: e.node?.url })),
+    variants: (node.variants?.edges || []).map((e) => {
+      const v = e.node || {};
+      return {
+        id: String(v.id || '').replace('gid://shopify/ProductVariant/', ''),
+        title: v.title,
+        sku: v.sku,
+        barcode: v.barcode,
+        price: v.price?.amount,
+        compare_at_price: v.compareAtPrice?.amount,
+        available: v.availableForSale,
+        featured_image: v.image?.url ? { src: v.image.url } : null,
+      };
+    }),
+  };
+}
+
+async function searchViaStorefrontGraphql(barcode) {
+  const found = [];
+  const seenIds = new Set();
+  for (const q of barcodeQueryVariants(barcode)) {
+    let data;
+    try {
+      data = await storefrontGraphql(
+        `query OrisdiBarcode($q: String!) {
+          products(first: 8, query: $q) {
+            edges {
+              node {
+                id title handle vendor productType descriptionHtml
+                images(first: 10) { edges { node { url } } }
+                variants(first: 25) {
+                  edges {
+                    node {
+                      id title sku barcode availableForSale
+                      price { amount } compareAtPrice { amount }
+                      image { url }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }`,
+        { q },
+      );
+    } catch {
+      continue;
+    }
+    for (const edge of data?.products?.edges || []) {
+      const raw = graphqlNodeToRaw(edge.node);
+      if (!raw.id || seenIds.has(raw.id)) continue;
+      seenIds.add(raw.id);
+      found.push(raw);
+    }
+    if (found.length) break;
+  }
+  return found;
+}
+
 export async function fetchProductByHandle(handle) {
   const data = await shopifyJson(`/products/${encodeURIComponent(handle)}.json`);
   return data.product || null;
@@ -483,9 +576,21 @@ export async function searchProductsByBarcode(barcode) {
       }));
     }
     if (results.length) return results;
-  } catch { /* fall through to text search */ }
+  } catch { /* fall through */ }
 
-  // (2) احتياطي: بحث Shopify النصي (نادراً ما يطابق الباركود)
+  // (2) احتياطي مباشر: Shopify GraphQL — يلتقط منتجات جديدة قبل تحديث الفهرس
+  try {
+    const gqlProducts = await searchViaStorefrontGraphql(digits);
+    for (const product of gqlProducts) {
+      mergeProductIntoFeedIndex(product);
+      for (const hit of collectBarcodeMatches(product, digits)) {
+        pushHit(hit);
+      }
+    }
+    if (results.length) return results;
+  } catch { /* fall through */ }
+
+  // (3) احتياطي: بحث Shopify النصي (نادراً ما يطابق الباركود)
   for (const q of barcodeQueryVariants(digits)) {
     let html = '';
     try {

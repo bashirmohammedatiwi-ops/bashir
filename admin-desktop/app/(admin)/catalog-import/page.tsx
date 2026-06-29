@@ -90,6 +90,7 @@ export default function CatalogImportPage() {
   const [form] = Form.useForm();
   const qc = useQueryClient();
   const enrichGen = useRef(0);
+  const searchGen = useRef(0);
 
   const { data: categoriesData = [] } = useQuery({
     queryKey: ["categories"],
@@ -218,6 +219,7 @@ export default function CatalogImportPage() {
     searchAbortRef.current?.abort();
     const controller = new AbortController();
     searchAbortRef.current = controller;
+    const gen = ++searchGen.current;
 
     setSearching(true);
     setOptions([]);
@@ -267,17 +269,21 @@ export default function CatalogImportPage() {
         controller.signal,
       );
       setOptions(data.options || []);
+      if (gen !== searchGen.current) return;
       if (!data.options?.length) {
-        message.info("لا توجد نتائج في الكتالوج لهذا الباركود");
+        message.info({
+          key: "catalog-no-results",
+          content: "لا توجد نتائج في الكتالوج لهذا الباركود",
+        });
       } else {
         setStep(1);
       }
     } catch (err: any) {
-      if (err?.name !== "AbortError") {
+      if (err?.name !== "AbortError" && gen === searchGen.current) {
         message.error(errorMessage(err, "فشل البحث"));
       }
     } finally {
-      if (searchAbortRef.current === controller) {
+      if (searchAbortRef.current === controller && gen === searchGen.current) {
         setSearching(false);
         searchAbortRef.current = null;
       }
@@ -524,6 +530,17 @@ export default function CatalogImportPage() {
         <div className="catalog-import-empty">
           <Spin size="large" />
           <p style={{ marginTop: 16 }}>جاري البحث — النتائج تظهر فور وصولها من كل متجر</p>
+        </div>
+      )}
+
+      {!searching && !options.length && Object.keys(storeStatuses).length > 0 && (
+        <div className="catalog-import-empty">
+          <Alert
+            type="info"
+            showIcon
+            message="لا توجد نتائج لهذا الباركود"
+            description="تم البحث في جميع المتاجر المتصلة. قد يكون المنتج غير معروض في الكتالوج، أو يستخدم كوداً داخلياً (وليس باركود EAN) — خصوصاً في أورزدي حيث ~65% من المنتجات لا تحتوي باركود EAN."
+          />
         </div>
       )}
 
