@@ -38,8 +38,10 @@ export default function ProductsPage() {
   const {
     hasSyncData,
     syncLoading,
+    shadeSyncLoading,
     syncMeta,
     applyBarcode,
+    applyShadeBarcode,
     refreshPricing,
     resetSync,
   } = useBarcodeInventorySync(form);
@@ -412,6 +414,8 @@ export default function ProductsPage() {
         syncLoading={syncLoading}
         syncMeta={syncMeta}
         onBarcodeLookup={applyBarcode}
+        onShadeBarcodeLookup={applyShadeBarcode}
+        shadeSyncLoading={shadeSyncLoading}
         onClose={() => setOpen(false)}
         onSubmit={(v) => upsert.mutate(v)}
       />

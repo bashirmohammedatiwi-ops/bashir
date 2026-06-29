@@ -86,6 +86,8 @@ type ProductFormDrawerProps = {
   syncLoading?: boolean;
   syncMeta?: { offerName?: string; syncedAt?: string } | null;
   onBarcodeLookup?: (barcode: string) => void;
+  onShadeBarcodeLookup?: (shadeIndex: number, barcode: string) => void;
+  shadeSyncLoading?: Record<number, boolean>;
   onClose: () => void;
   onSubmit: (values: any) => void;
 };
@@ -109,6 +111,8 @@ export function ProductFormDrawer({
   syncLoading = false,
   syncMeta = null,
   onBarcodeLookup,
+  onShadeBarcodeLookup,
+  shadeSyncLoading,
   onClose,
   onSubmit,
 }: ProductFormDrawerProps) {
@@ -327,7 +331,8 @@ export function ProductFormDrawer({
                   form={form}
                   shadePreviews={shadePreviews}
                   setShadePreviews={setShadePreviews}
-                  onShadeBarcodeLookup={onBarcodeLookup}
+                  onShadeBarcodeLookup={onShadeBarcodeLookup}
+                  shadeSyncLoading={shadeSyncLoading}
                 />
               )}
             </Form.List>

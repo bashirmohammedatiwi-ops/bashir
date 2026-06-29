@@ -135,6 +135,7 @@ export class ProductsService {
 
   async create(dto: CreateProductDto) {
     dto = await this.applySyncedPricing(dto);
+    dto = this.applyShadeAggregates(dto);
     const names = resolveProductNames(dto);
     const subcategoryId = await this.categories.validateSubcategoryForCategory(
       dto.subcategoryId,
@@ -179,7 +180,7 @@ export class ProductsService {
             }
           : undefined,
         shades: dto.shades?.length
-          ? { create: dto.shades.map((s, i) => ({ ...s, position: s.position ?? i })) }
+          ? { create: this.shadeCreateData(dto.shades) }
           : undefined,
         variants: dto.variants?.length
           ? { create: dto.variants.map((v, i) => ({ ...v, position: v.position ?? i })) }
@@ -203,6 +204,7 @@ export class ProductsService {
 
   async update(id: string, dto: UpdateProductDto) {
     dto = await this.applySyncedPricing(dto);
+    dto = this.applyShadeAggregates(dto);
     await this.ensureExists(id);
     const existing = await this.prisma.product.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException("Product not found");
@@ -264,7 +266,7 @@ export class ProductsService {
             }
           : undefined,
         shades: dto.shades?.length
-          ? { create: dto.shades.map((s, i) => ({ ...s, position: s.position ?? i })) }
+          ? { create: this.shadeCreateData(dto.shades) }
           : undefined,
         variants: dto.variants?.length
           ? { create: dto.variants.map((v, i) => ({ ...v, position: v.position ?? i })) }
@@ -298,12 +300,40 @@ export class ProductsService {
   }
 
   private collectBarcodes(dto: CreateProductDto): string[] {
-    const codes: string[] = [];
-    if (dto.barcode?.trim()) codes.push(dto.barcode.trim());
-    for (const shade of dto.shades ?? []) {
-      if (shade.barcode?.trim()) codes.push(shade.barcode.trim());
-    }
-    return codes;
+    if (dto.barcode?.trim()) return [dto.barcode.trim()];
+    return [];
+  }
+
+  private shadeCreateData(shades: CreateProductDto["shades"]) {
+    return (shades ?? []).map((s, i) => ({
+      name: s.name,
+      colorHex: s.colorHex,
+      colorHexEnd: s.colorHexEnd,
+      barcode: s.barcode?.trim() || undefined,
+      imageId: s.imageId,
+      price: s.price ?? null,
+      originalPrice: s.originalPrice ?? 0,
+      discountPercent: s.discountPercent ?? 0,
+      stock: s.stock ?? 0,
+      position: s.position ?? i,
+    }));
+  }
+
+  private applyShadeAggregates<T extends CreateProductDto>(dto: T): T {
+    if (!dto.shades?.length) return dto;
+
+    const totalStock = dto.shades.reduce((sum, shade) => sum + (shade.stock ?? 0), 0);
+    const priced = dto.shades.find((shade) => shade.price != null) ?? dto.shades[0];
+    if (!priced) return dto;
+
+    return {
+      ...dto,
+      stock: totalStock,
+      price: priced.price ?? dto.price,
+      originalPrice: priced.originalPrice ?? dto.originalPrice ?? dto.price,
+      discountPercent: priced.discountPercent ?? dto.discountPercent ?? 0,
+      isPromo: (priced.discountPercent ?? dto.discountPercent ?? 0) > 0,
+    };
   }
 
   private async applySyncedPricing<T extends CreateProductDto>(dto: T): Promise<T> {

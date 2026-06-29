@@ -19,6 +19,10 @@ export class ProductShadeDto {
   @IsOptional() @IsString() colorHexEnd?: string;
   @IsOptional() @IsString() imageId?: string;
   @IsOptional() @IsString() barcode?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) price?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) originalPrice?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(100) discountPercent?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) stock?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) position?: number;
 }
 

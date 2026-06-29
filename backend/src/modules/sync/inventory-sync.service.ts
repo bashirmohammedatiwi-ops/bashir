@@ -161,6 +161,7 @@ export class InventorySyncService {
 
     const productMap = await this.buildProductBarcodeMap(barcodes);
     const snapshotErrors = await this.bulkUpsertSnapshots(sanitized, syncedAt);
+    const updatedShadeBarcodes = await this.bulkUpdateShades(sanitized);
     const updatedBarcodes = await this.bulkUpdateProducts(sanitized, productMap);
 
     const alertItems = sanitized.map((item) => {
@@ -185,9 +186,11 @@ export class InventorySyncService {
     for (const item of sanitized) {
       const error = snapshotErrors.get(item.barcode);
       const product = productMap.get(item.barcode);
+      const shadeUpdated = updatedShadeBarcodes.has(item.barcode);
+      const productUpdated = updatedBarcodes.has(item.barcode);
       results.push({
         barcode: item.barcode,
-        updatedProduct: !error && updatedBarcodes.has(item.barcode),
+        updatedProduct: !error && (productUpdated || shadeUpdated),
         productId: product?.id ?? null,
         error,
       });
@@ -320,6 +323,43 @@ export class InventorySyncService {
     return errors;
   }
 
+  private async bulkUpdateShades(items: SanitizedItem[]) {
+    const updated = new Set<string>();
+    const barcodes = items.map((item) => item.barcode);
+    if (!barcodes.length) return updated;
+
+    const shades = await this.prisma.productShade.findMany({
+      where: { barcode: { in: barcodes } },
+      select: { id: true, barcode: true },
+    });
+    if (!shades.length) return updated;
+
+    const shadeByBarcode = new Map(
+      shades.filter((shade) => shade.barcode).map((shade) => [shade.barcode!, shade.id]),
+    );
+
+    for (const item of items) {
+      const shadeId = shadeByBarcode.get(item.barcode);
+      if (!shadeId) continue;
+      try {
+        await this.prisma.productShade.update({
+          where: { id: shadeId },
+          data: {
+            stock: item.stock,
+            price: item.price,
+            originalPrice: item.originalPrice,
+            discountPercent: item.discountPercent,
+          },
+        });
+        updated.add(item.barcode);
+      } catch {
+        /* skip failed shade update */
+      }
+    }
+
+    return updated;
+  }
+
   private async bulkUpdateProducts(
     items: SanitizedItem[],
     productMap: Map<string, { id: string; name: string | null }>,
@@ -344,8 +384,22 @@ export class InventorySyncService {
     const updates = [...byProductId.values()];
     if (!updates.length) return updated;
 
-    for (let i = 0; i < updates.length; i += PRODUCT_UPDATE_CHUNK) {
-      const chunk = updates.slice(i, i + PRODUCT_UPDATE_CHUNK);
+    const productBarcodes = new Set(
+      (
+        await this.prisma.product.findMany({
+          where: { barcode: { in: items.map((item) => item.barcode) } },
+          select: { barcode: true },
+        })
+      )
+        .map((row) => row.barcode)
+        .filter((code): code is string => Boolean(code)),
+    );
+
+    const productOnlyUpdates = updates.filter((entry) => productBarcodes.has(entry.barcode));
+    if (!productOnlyUpdates.length) return updated;
+
+    for (let i = 0; i < productOnlyUpdates.length; i += PRODUCT_UPDATE_CHUNK) {
+      const chunk = productOnlyUpdates.slice(i, i + PRODUCT_UPDATE_CHUNK);
       try {
         await this.updateProductChunk(chunk);
         for (const entry of chunk) updated.add(entry.barcode);

@@ -16,7 +16,8 @@ type Props = {
   form: ReturnType<typeof Form.useForm>[0];
   shadePreviews: Record<number, ImageItem | null>;
   setShadePreviews: React.Dispatch<React.SetStateAction<Record<number, ImageItem | null>>>;
-  onShadeBarcodeLookup?: (barcode: string) => void;
+  onShadeBarcodeLookup?: (shadeIndex: number, barcode: string) => void;
+  shadeSyncLoading?: Record<number, boolean>;
 };
 
 export function ProductShadesEditor({
@@ -27,6 +28,7 @@ export function ProductShadesEditor({
   shadePreviews,
   setShadePreviews,
   onShadeBarcodeLookup,
+  shadeSyncLoading = {},
 }: Props) {
   const shadesWatch = Form.useWatch("shades", form) ?? [];
 
@@ -57,6 +59,10 @@ export function ProductShadesEditor({
               isGradient: false,
               barcode: "",
               imageId: undefined,
+              price: undefined,
+              originalPrice: 0,
+              discountPercent: 0,
+              stock: 0,
             })
           }
         >
@@ -191,18 +197,52 @@ export function ProductShadesEditor({
                   label="الباركود"
                   style={{ marginTop: 8, marginBottom: 0 }}
                 >
-                  <Input
+                  <Input.Search
                     className="alhayaa-ltr-input"
                     placeholder="AV_018_2025"
-                    style={{ maxWidth: 280 }}
-                    onPressEnter={(e) =>
-                      onShadeBarcodeLookup?.((e.target as HTMLInputElement).value)
-                    }
+                    style={{ maxWidth: 320 }}
+                    loading={shadeSyncLoading[field.name] === true}
+                    enterButton="جلب"
+                    onSearch={(v) => onShadeBarcodeLookup?.(field.name, v)}
                     onBlur={(e) => {
                       const v = e.target.value.trim();
-                      if (v) onShadeBarcodeLookup?.(v);
+                      if (v) onShadeBarcodeLookup?.(field.name, v);
                     }}
                   />
+                </Form.Item>
+
+                {(shade.price != null || (shade.stock ?? 0) > 0) && (
+                  <div className="alhayaa-shade-sync-grid">
+                    <div>
+                      <span>السعر</span>
+                      <strong>{Number(shade.price ?? 0).toLocaleString("ar-IQ")} د.ع</strong>
+                    </div>
+                    <div>
+                      <span>الأصلي</span>
+                      <strong>{Number(shade.originalPrice ?? 0).toLocaleString("ar-IQ")} د.ع</strong>
+                    </div>
+                    <div>
+                      <span>الخصم</span>
+                      <strong>{Number(shade.discountPercent ?? 0)}%</strong>
+                    </div>
+                    <div>
+                      <span>المخزون</span>
+                      <strong>{Number(shade.stock ?? 0)}</strong>
+                    </div>
+                  </div>
+                )}
+
+                <Form.Item {...field} name={[field.name, "price"]} hidden>
+                  <Input />
+                </Form.Item>
+                <Form.Item {...field} name={[field.name, "originalPrice"]} hidden>
+                  <Input />
+                </Form.Item>
+                <Form.Item {...field} name={[field.name, "discountPercent"]} hidden>
+                  <Input />
+                </Form.Item>
+                <Form.Item {...field} name={[field.name, "stock"]} hidden>
+                  <Input />
                 </Form.Item>
               </div>
 
@@ -272,6 +312,10 @@ export function shadeFromApi(s: any) {
     isGradient: Boolean(s.colorHexEnd),
     barcode: s.barcode ?? "",
     imageId: s.imageId ?? undefined,
+    price: s.price ?? undefined,
+    originalPrice: s.originalPrice ?? 0,
+    discountPercent: s.discountPercent ?? 0,
+    stock: s.stock ?? 0,
   };
 }
 
@@ -283,6 +327,10 @@ export function shadeToPayload(s: any, index: number) {
     colorHexEnd: s.isGradient && s.colorHexEnd ? s.colorHexEnd : undefined,
     barcode: typeof s.barcode === "string" ? normalizeBarcode(s.barcode) || undefined : undefined,
     imageId: s.imageId || undefined,
+    price: s.price != null ? Number(s.price) : undefined,
+    originalPrice: Number(s.originalPrice ?? 0),
+    discountPercent: Number(s.discountPercent ?? 0),
+    stock: Number(s.stock ?? 0),
     position: index,
   };
 }
