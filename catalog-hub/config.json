@@ -1,0 +1,10 @@
+{
+  "locale": "en",
+  "categories": [
+    "sunscreen"
+  ],
+  "downloadImages": true,
+  "fetchFullDetails": true,
+  "delayMs": 300,
+  "pageSize": 30
+}

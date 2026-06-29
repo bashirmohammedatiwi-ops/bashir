@@ -85,6 +85,7 @@ check_http "Admin products" "$ADMIN_BASE/products/"
 
 if [[ -f admin-static/catalog-import/index.html ]]; then
   check_http "Admin catalog import" "$ADMIN_BASE/catalog-import/"
+  check_json "Catalog hub API" "$ADMIN_BASE/catalog-hub/api/health" '"ok"'
 fi
 
 if $COMPOSE exec -T api wget -qO- http://127.0.0.1:3000/api/v1/health/ready 2>/dev/null | grep -q '"ready":true'; then

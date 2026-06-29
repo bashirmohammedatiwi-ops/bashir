@@ -1,0 +1,2530 @@
+{
+  "products": {
+    "340": {
+      "id": "340",
+      "name": "Bourjois Healthy Mix Foundation - 30ml",
+      "manufacturer": "Bourjois",
+      "productEan": "",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "841",
+          "name": "51W Vanille Clair",
+          "sku": "B-11.236",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "842",
+          "name": "N54 Beige",
+          "sku": "B-01.097",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "844",
+          "name": "52W Vanilla",
+          "sku": "B-01.109",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "845",
+          "name": "50C Rose Ivory",
+          "sku": "B-03.263",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "846",
+          "name": "53W Light Beige",
+          "sku": "B-05.098",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "847",
+          "name": "N55 DEEP BEIGE , BEIGE FONCE",
+          "sku": "B-01.105",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9043",
+          "name": "56 LIGHT BRONZE",
+          "sku": "B-11.018",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9044",
+          "name": "56.5 MAPLE",
+          "sku": "Default Bin-1A",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9045",
+          "name": "51.2 GOLDEN VANILLA",
+          "sku": "B-11.247",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9046",
+          "name": "52.2 GOLDEN BEIGE",
+          "sku": "B-11.021",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9083",
+          "name": "52.5C Rose Beige",
+          "sku": "B1-10.262",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 11,
+        "withEan": 0,
+        "withSku": 11,
+        "withAny": 11
+      },
+      "updatedAt": 1782693634825
+    },
+    "2241": {
+      "id": "2241",
+      "name": "Huda Beauty FauxFilter Luminous Matte Liquid Foundation",
+      "manufacturer": "HUDA BEAUTY",
+      "productEan": "",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "756",
+          "name": "Crème Brulée",
+          "sku": "B-16.167",
+          "ean": "6291106035360",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "757",
+          "name": "Latte",
+          "sku": "B-02.173",
+          "ean": "6291106036176",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "755",
+          "name": "Amaretti 310G",
+          "sku": "B-05.217",
+          "ean": "6291106036183",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "758",
+          "name": "Tres Leches",
+          "sku": "B-06.056",
+          "ean": "6291106035407",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "1002",
+          "name": "Chai",
+          "sku": "B-02.172",
+          "ean": "6291106035285",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "1003",
+          "name": "Toasted Coconut",
+          "sku": "B-10.013",
+          "ean": "6291106035384",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "1001",
+          "name": "Cheesecake",
+          "sku": "B-06.093",
+          "ean": "6291106036152",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "1069",
+          "name": "Custard",
+          "sku": "B-01.204",
+          "ean": "6291106035377",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "1070",
+          "name": "Baklava",
+          "sku": "B-07.129",
+          "ean": "6291106036220",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "3068",
+          "name": "Dulce De Leche",
+          "sku": "B1-19.056",
+          "ean": "6291106035339",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "3315",
+          "name": "Shortbread 200B",
+          "sku": "B-04.004",
+          "ean": "6291106035520",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "8072",
+          "name": "230N Macaroon",
+          "sku": "B-03.269",
+          "ean": "6291106036138",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "8073",
+          "name": "410G Brown Sugar",
+          "sku": "B-04.247",
+          "ean": "6291106036251",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "8075",
+          "name": "420G Toffee",
+          "sku": "B1-10.119",
+          "ean": "6291106036275",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "8076",
+          "name": "430N Gingerbread",
+          "sku": "Default Bin-1A",
+          "ean": "6291106035452",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "8079",
+          "name": "255B Apple Pie",
+          "sku": "D1-04.133",
+          "ean": "6291106036169",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "8080",
+          "name": "315B Shortcake",
+          "sku": "D1-04.098",
+          "ean": "6291106036190",
+          "barcodeSource": "image"
+        }
+      ],
+      "stats": {
+        "total": 17,
+        "withEan": 17,
+        "withSku": 17,
+        "withAny": 17
+      },
+      "updatedAt": 1782693634851
+    },
+    "3106": {
+      "id": "3106",
+      "name": "MAC Studio Fix Fluid SPF 15 Foundation - 30ml",
+      "manufacturer": "MAC",
+      "productEan": "",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "743",
+          "name": "NC35",
+          "sku": "B-18.221",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "742",
+          "name": "NC15",
+          "sku": "B-18.222",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "1020",
+          "name": "NC20",
+          "sku": "B-15.269",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "1120",
+          "name": "NC25",
+          "sku": "B-05.282",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "1144",
+          "name": "NC30",
+          "sku": "B-18.223",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 5,
+        "withEan": 0,
+        "withSku": 5,
+        "withAny": 5
+      },
+      "updatedAt": 1782693634352
+    },
+    "3227": {
+      "id": "3227",
+      "name": "Maybelline Fit Me Matte And Poreless Foundation - 30ml",
+      "manufacturer": "Maybelline",
+      "productEan": "",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "967",
+          "name": "115",
+          "sku": "B-04.176",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "968",
+          "name": "120Classic ivory",
+          "sku": "B-04.044",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "969",
+          "name": "220",
+          "sku": "B-04.014",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "966",
+          "name": "110 Porcelain",
+          "sku": "B-05.070",
+          "ean": "29164264",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "1041",
+          "name": "128 Warm Nude",
+          "sku": "B-03.234",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6161",
+          "name": "100",
+          "sku": "B-01.196",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9956",
+          "name": "360 Mocha",
+          "sku": "B1-12.049",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9959",
+          "name": "238 Rich Tan",
+          "sku": "Default Bin-1A",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9960",
+          "name": "112 Soft Beige",
+          "sku": "B-12.098",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 9,
+        "withEan": 1,
+        "withSku": 9,
+        "withAny": 9
+      },
+      "updatedAt": 1782693634842
+    },
+    "3555": {
+      "id": "3555",
+      "name": "Topface Perfect Coverage Foundation",
+      "manufacturer": "Topface",
+      "productEan": "",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "1005",
+          "name": "005",
+          "sku": "B-02.255",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "1004",
+          "name": "004",
+          "sku": "B-02.104",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "1006",
+          "name": "2",
+          "sku": "B-02.043",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "1007",
+          "name": "6",
+          "sku": "B-02.082",
+          "ean": "29684939",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "1318",
+          "name": "008",
+          "sku": "B-03.071",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "1317",
+          "name": "007",
+          "sku": "B-01.233",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "1316",
+          "name": "003",
+          "sku": "B-18.219",
+          "ean": "56693003",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "1315",
+          "name": "1",
+          "sku": "B-02.264",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "2943",
+          "name": "010",
+          "sku": "B-03.109",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "2942",
+          "name": "009",
+          "sku": "B-02.108",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6721",
+          "name": "202",
+          "sku": "B-12.117",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6722",
+          "name": "203",
+          "sku": "B-12.141",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6723",
+          "name": "205",
+          "sku": "B-12.004",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6724",
+          "name": "206",
+          "sku": "B-12.002",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 14,
+        "withEan": 2,
+        "withSku": 14,
+        "withAny": 14
+      },
+      "updatedAt": 1782693634420
+    },
+    "5916": {
+      "id": "5916",
+      "name": "Topface Skin Editor Matte Foundation",
+      "manufacturer": "Topface",
+      "productEan": "",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "1332",
+          "name": "008",
+          "sku": "B-02.063",
+          "ean": "18843941",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "1331",
+          "name": "007",
+          "sku": "B1-08.250",
+          "ean": "71130491",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "1329",
+          "name": "005",
+          "sku": "B1-08.214",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "1328",
+          "name": "004",
+          "sku": "B1-12.144",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "1327",
+          "name": "003",
+          "sku": "B1-08.278",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "1330",
+          "name": "6",
+          "sku": "B1-10.268",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "2803",
+          "name": "002",
+          "sku": "B-01.223",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "4459",
+          "name": "001",
+          "sku": "B1-08.149",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6730",
+          "name": "009",
+          "sku": "B-15.031",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6731",
+          "name": "010",
+          "sku": "B-15.030",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6734",
+          "name": "203",
+          "sku": "B-07.156",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6735",
+          "name": "204",
+          "sku": "B-12.080",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6736",
+          "name": "205",
+          "sku": "B-07.145",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6737",
+          "name": "206",
+          "sku": "B-12.005",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 14,
+        "withEan": 2,
+        "withSku": 14,
+        "withAny": 14
+      },
+      "updatedAt": 1782693634362
+    },
+    "10946": {
+      "id": "10946",
+      "name": "Nars Natural Radiant Long Wear Foundation",
+      "manufacturer": "NARS",
+      "productEan": "",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "2849",
+          "name": "Vienna",
+          "sku": "B-07.109",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "2850",
+          "name": "Barcelona",
+          "sku": "B-05.182",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "2887",
+          "name": "FIJI",
+          "sku": "B-07.020",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "2888",
+          "name": "PUNJAB",
+          "sku": "B-05.060",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "2889",
+          "name": "ARUBA",
+          "sku": "B-15.044",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "2890",
+          "name": "STROMBOLI",
+          "sku": "B-06.075",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "2891",
+          "name": "VALENCIA",
+          "sku": "B-07.102",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "4941",
+          "name": "Santa Fe",
+          "sku": "B-13.016",
+          "ean": "15627964",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "4942",
+          "name": "Gobi",
+          "sku": "B-13.017",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "4943",
+          "name": "Mont Blanc",
+          "sku": "B-13.018",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "4944",
+          "name": "Deauville",
+          "sku": "B-13.019",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "5051",
+          "name": "SLZBURG",
+          "sku": "B-12.110",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "7237",
+          "name": "Tahoe",
+          "sku": "B-05.081",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9748",
+          "name": "Patagonia",
+          "sku": "B-18.071",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 14,
+        "withEan": 1,
+        "withSku": 14,
+        "withAny": 14
+      },
+      "updatedAt": 1782693634413
+    },
+    "17043": {
+      "id": "17043",
+      "name": "Topface Sensitive Mineral 3 in 1 Concealer Contour Foundation - 12ml",
+      "manufacturer": "Topface",
+      "productEan": "",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "5295",
+          "name": "005",
+          "sku": "B1-10.091",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "5296",
+          "name": "004",
+          "sku": "B-18.156",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "5298",
+          "name": "003",
+          "sku": "B-02.083",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "5299",
+          "name": "002",
+          "sku": "B-18.052",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "5297",
+          "name": "001",
+          "sku": "B-02.011",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "5294",
+          "name": "006",
+          "sku": "B-19.247",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 6,
+        "withEan": 0,
+        "withSku": 6,
+        "withAny": 6
+      },
+      "updatedAt": 1782693634841
+    },
+    "20670": {
+      "id": "20670",
+      "name": "Charlotte Tilbury Hollywood Flawless Filter",
+      "manufacturer": "Charlotte Tilbury",
+      "productEan": "",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "6620",
+          "name": "4",
+          "sku": "B-02.193",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6621",
+          "name": "3",
+          "sku": "B-02.194",
+          "ean": "37650216",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "7145",
+          "name": "6",
+          "sku": "B-06.021",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "7146",
+          "name": "5",
+          "sku": "B-19.029",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "7153",
+          "name": "2",
+          "sku": "B-06.003",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "7156",
+          "name": "2.5",
+          "sku": "B-06.246",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "7157",
+          "name": "5.5",
+          "sku": "B-06.020",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "7763",
+          "name": "4.5",
+          "sku": "B-14.132",
+          "ean": "5060696173308",
+          "barcodeSource": "image"
+        }
+      ],
+      "stats": {
+        "total": 8,
+        "withEan": 2,
+        "withSku": 8,
+        "withAny": 8
+      },
+      "updatedAt": 1782693634393
+    },
+    "21019": {
+      "id": "21019",
+      "name": "Topface Skinwear Matte Effect Foundation",
+      "manufacturer": "Topface",
+      "productEan": "",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "6740",
+          "name": "001",
+          "sku": "B-10.276",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6741",
+          "name": "002",
+          "sku": "B-18.133",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6742",
+          "name": "003",
+          "sku": "B-12.151",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6743",
+          "name": "004",
+          "sku": "B-18.134",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6744",
+          "name": "005",
+          "sku": "B-13.154",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6746",
+          "name": "007",
+          "sku": "B-05.126",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "6747",
+          "name": "008",
+          "sku": "B-05.064",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 7,
+        "withEan": 0,
+        "withSku": 7,
+        "withAny": 7
+      },
+      "updatedAt": 1782693634395
+    },
+    "22701": {
+      "id": "22701",
+      "name": "Charlotte Tilbury Airbrush Flawless Filter Foundation",
+      "manufacturer": "Charlotte Tilbury",
+      "productEan": "",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "7149",
+          "name": "2",
+          "sku": "B-11.031",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "8754",
+          "name": "3 Neutral",
+          "sku": "B1-19.233",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "8755",
+          "name": "4 Neutral",
+          "sku": "B-07.095",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "8756",
+          "name": "5 Neutral",
+          "sku": "B-07.230",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9139",
+          "name": "5 Warm",
+          "sku": "B-06.068",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9156",
+          "name": "4 Warm",
+          "sku": "Default Bin-1A",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 6,
+        "withEan": 0,
+        "withSku": 6,
+        "withAny": 6
+      },
+      "updatedAt": 1782693634354
+    },
+    "23425": {
+      "id": "23425",
+      "name": "Maybelline Fit Me Matte + Poreless Liquid Foundation SPF22",
+      "manufacturer": "Maybelline",
+      "productEan": "",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "7284",
+          "name": "110",
+          "sku": "B-07.011",
+          "ean": "6902395774211",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "7285",
+          "name": "120",
+          "sku": "B-15.102",
+          "ean": "6902395774259",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "7286",
+          "name": "123",
+          "sku": "B-13.072",
+          "ean": "6902395826859",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "7287",
+          "name": "128",
+          "sku": "B-08.172",
+          "ean": "6902395774280",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "7288",
+          "name": "111",
+          "sku": "B-15.037",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "7289",
+          "name": "119",
+          "sku": "D1-04.106",
+          "ean": "6902395834397",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "7290",
+          "name": "121",
+          "sku": "B-06.141",
+          "ean": "6902395834403",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "7291",
+          "name": "125",
+          "sku": "B-02.107",
+          "ean": "6902395774273",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "7292",
+          "name": "130",
+          "sku": "B-06.074",
+          "ean": "6902395774297",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "7294",
+          "name": "136",
+          "sku": "B-11.072",
+          "ean": "6902395834410",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "7296",
+          "name": "220",
+          "sku": "B-02.139",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "7299",
+          "name": "228",
+          "sku": "B-07.161",
+          "ean": "6902395774334",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "7300",
+          "name": "230",
+          "sku": "B-07.167",
+          "ean": "6902395774341",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "7301",
+          "name": "332",
+          "sku": "B1-11.231",
+          "ean": "6902395774419",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "7305",
+          "name": "330",
+          "sku": "B-17.124",
+          "ean": "6902395774402",
+          "barcodeSource": "image"
+        }
+      ],
+      "stats": {
+        "total": 15,
+        "withEan": 13,
+        "withSku": 15,
+        "withAny": 15
+      },
+      "updatedAt": 1782693634374
+    },
+    "24263": {
+      "id": "24263",
+      "name": "KIKO Full Coverage 2-In-1 Foundation & Concealer",
+      "manufacturer": "KIKO Milano",
+      "productEan": "",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "7520",
+          "name": "WB30",
+          "sku": "B-09.188",
+          "ean": "8025272636490",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "7521",
+          "name": "WB15",
+          "sku": "B-12.097",
+          "ean": "8025272636483",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "7522",
+          "name": "N60",
+          "sku": "B-02.204",
+          "ean": "8025272636537",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "8420",
+          "name": "N40",
+          "sku": "B-16.095",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "8676",
+          "name": "N80",
+          "sku": "B-14.147",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9805",
+          "name": "10N",
+          "sku": "B-15.256",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9810",
+          "name": "NG95",
+          "sku": "B-08.035",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 7,
+        "withEan": 3,
+        "withSku": 7,
+        "withAny": 7
+      },
+      "updatedAt": 1782693634409
+    },
+    "24657": {
+      "id": "24657",
+      "name": "Elf Halo Glow Liquid Filter",
+      "manufacturer": "Elf",
+      "productEan": "609332821163",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "7747",
+          "name": "4 Medium Moyen",
+          "sku": "B-11.004",
+          "ean": "609332821163",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "7939",
+          "name": "1 Fair",
+          "sku": "B-02.263",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "7940",
+          "name": "5 Medium / Tan",
+          "sku": "B-10.238",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "7941",
+          "name": "2 Fair / Light",
+          "sku": "B-10.239",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "7942",
+          "name": "3 Light / Medium",
+          "sku": "B-11.224",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22806",
+          "name": "7 Deep / Rich",
+          "sku": "B1-19.234",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22807",
+          "name": "6 Tan / Deep",
+          "sku": "B1-19.235",
+          "ean": "55893893",
+          "barcodeSource": "image"
+        }
+      ],
+      "stats": {
+        "total": 7,
+        "withEan": 2,
+        "withSku": 7,
+        "withAny": 7
+      },
+      "updatedAt": 1782693634343
+    },
+    "25385": {
+      "id": "25385",
+      "name": "NYX Bare With Me Blur Skin Tint Foundation",
+      "manufacturer": "NYX",
+      "productEan": "",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "8345",
+          "name": "Medium",
+          "sku": "B-12.064",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "8346",
+          "name": "Golden",
+          "sku": "B-13.068",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "8347",
+          "name": "Golden Light",
+          "sku": "B-13.029",
+          "ean": "800897234348",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "8348",
+          "name": "Vanilla",
+          "sku": "B-15.057",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "8349",
+          "name": "Light Neutral",
+          "sku": "B-17.192",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "8350",
+          "name": "Medium Neutral",
+          "sku": "B-17.193",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "8351",
+          "name": "Medium Dark",
+          "sku": "B-17.194",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "8352",
+          "name": "Rich",
+          "sku": "B-14.158",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "8353",
+          "name": "Light Medium",
+          "sku": "B1-13.022",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "8354",
+          "name": "Soft Peige",
+          "sku": "B-05.112",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 10,
+        "withEan": 1,
+        "withSku": 10,
+        "withAny": 10
+      },
+      "updatedAt": 1782693634130
+    },
+    "26583": {
+      "id": "26583",
+      "name": "TIRTIR Mask Fit Red Cushion Foundation - 18gm",
+      "manufacturer": "TIRTIR",
+      "productEan": "",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "9538",
+          "name": "17C Porcelain",
+          "sku": "B-15.024",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9540",
+          "name": "23N Sand",
+          "sku": "B-08.138",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9541",
+          "name": "24N Latte",
+          "sku": "B-08.033",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9542",
+          "name": "24W Soft Beige",
+          "sku": "B-08.066",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9543",
+          "name": "25N Mocha",
+          "sku": "B-08.029",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9544",
+          "name": "27N Camel",
+          "sku": "B-08.128",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9545",
+          "name": "21W Natural Ivory",
+          "sku": "B-08.051",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9546",
+          "name": "29N Natural Beige",
+          "sku": "B-08.123",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9583",
+          "name": "13C Fair",
+          "sku": "B-08.163",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9584",
+          "name": "13N Fair Ivory",
+          "sku": "B-08.164",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9585",
+          "name": "15C Fair Porcelain",
+          "sku": "B-05.149",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9586",
+          "name": "17N Vanilla",
+          "sku": "B-07.160",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9587",
+          "name": "17W French Vanilla",
+          "sku": "B-08.157",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "9588",
+          "name": "21C Cool Ivory",
+          "sku": "B-06.197",
+          "ean": "57711195",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "12120",
+          "name": "33W Ginger",
+          "sku": "B-15.050",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15528",
+          "name": "51N Fudge",
+          "sku": "B-21.172",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15529",
+          "name": "37C Almond",
+          "sku": "B1-10.220",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15530",
+          "name": "55N Espresso",
+          "sku": "B-04.236",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15531",
+          "name": "34N Pecan",
+          "sku": "B1-09.070",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15532",
+          "name": "40N Cinnamon",
+          "sku": "B-04.098",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15537",
+          "name": "34C Amber",
+          "sku": "B1-08.199",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15539",
+          "name": "33N Macchiato",
+          "sku": "B1-15.105",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15540",
+          "name": "35N Walnut",
+          "sku": "B1-20.162",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15541",
+          "name": "33C Hazel",
+          "sku": "B1-07.219",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15543",
+          "name": "34W Toffee",
+          "sku": "B1-15.185",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15544",
+          "name": "43N Deep Cocoa",
+          "sku": "B-04.049",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 26,
+        "withEan": 1,
+        "withSku": 26,
+        "withAny": 26
+      },
+      "updatedAt": 1782693634835
+    },
+    "27503": {
+      "id": "27503",
+      "name": "Topface Natural Glow CC Cream & Concealer",
+      "manufacturer": "Topface",
+      "productEan": "8681217252646",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "11193",
+          "name": "002",
+          "sku": "B-10.287",
+          "ean": "9016795477805",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "11194",
+          "name": "003",
+          "sku": "B-21.013",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11196",
+          "name": "004",
+          "sku": "B-11.269",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11199",
+          "name": "005",
+          "sku": "B-06.256",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11201",
+          "name": "006",
+          "sku": "B-09.269",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11203",
+          "name": "007",
+          "sku": "B-21.011",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11204",
+          "name": "008",
+          "sku": "B-09.271",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11240",
+          "name": "001",
+          "sku": "B-13.103",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 8,
+        "withEan": 1,
+        "withSku": 8,
+        "withAny": 8
+      },
+      "updatedAt": 1782634316162
+    },
+    "27507": {
+      "id": "27507",
+      "name": "Topface Super Match Foundation 24H",
+      "manufacturer": "Topface",
+      "productEan": "8681217253100",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "11221",
+          "name": "001",
+          "sku": "B-12.094",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11223",
+          "name": "002",
+          "sku": "B-15.023",
+          "ean": "15263001",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "11228",
+          "name": "003",
+          "sku": "B-15.034",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11231",
+          "name": "004",
+          "sku": "B-14.236",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11232",
+          "name": "005",
+          "sku": "B-14.155",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11234",
+          "name": "006",
+          "sku": "B-14.039",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11235",
+          "name": "007",
+          "sku": "B-12.105",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11236",
+          "name": "008",
+          "sku": "B-12.100",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 8,
+        "withEan": 1,
+        "withSku": 8,
+        "withAny": 8
+      },
+      "updatedAt": 1782693634838
+    },
+    "27508": {
+      "id": "27508",
+      "name": "Topface Super Match Foundation In a Powder 24H",
+      "manufacturer": "Topface",
+      "productEan": "8681217252875",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "11222",
+          "name": "001",
+          "sku": "B1-20.036",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11224",
+          "name": "002",
+          "sku": "B1-16.104",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11225",
+          "name": "003",
+          "sku": "B1-16.105",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11226",
+          "name": "004",
+          "sku": "B-15.115",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11227",
+          "name": "005",
+          "sku": "B-15.258",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11229",
+          "name": "006",
+          "sku": "B-13.085",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11230",
+          "name": "007",
+          "sku": "B1-16.106",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11233",
+          "name": "008",
+          "sku": "B1-16.107",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 8,
+        "withEan": 0,
+        "withSku": 8,
+        "withAny": 8
+      },
+      "updatedAt": 1782693634849
+    },
+    "27584": {
+      "id": "27584",
+      "name": "Essence Baby Got Blush Liquid Blush",
+      "manufacturer": "essence",
+      "productEan": "4059729447371",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "11304",
+          "name": "20 Blushin Berry",
+          "sku": "B-01.209",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11305",
+          "name": "30 Dusty Rose",
+          "sku": "B-01.210",
+          "ean": "4059729447395",
+          "barcodeSource": "openbeautyfacts"
+        },
+        {
+          "optionId": "11306",
+          "name": "40 Coral Crush",
+          "sku": "B1-10.058",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 3,
+        "withEan": 1,
+        "withSku": 3,
+        "withAny": 3
+      },
+      "updatedAt": 1782633563479
+    },
+    "27586": {
+      "id": "27586",
+      "name": "Essence Blush Crush",
+      "manufacturer": "essence",
+      "productEan": "4059729446756",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "11309",
+          "name": "30 Cool Berry",
+          "sku": "B-12.145",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11310",
+          "name": "70 Berry Blush",
+          "sku": "B1-17.279",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11311",
+          "name": "80 Warm Copper",
+          "sku": "B-15.143",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 3,
+        "withEan": 0,
+        "withSku": 3,
+        "withAny": 3
+      },
+      "updatedAt": 1782635278828
+    },
+    "27901": {
+      "id": "27901",
+      "name": "Flormar BB Cream",
+      "manufacturer": "Flormar",
+      "productEan": "8690604535392",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "11616",
+          "name": "001 Fair",
+          "sku": "B-01.236",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "11617",
+          "name": "002 Fair/Light",
+          "sku": "B-19.010",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 2,
+        "withEan": 0,
+        "withSku": 2,
+        "withAny": 2
+      },
+      "updatedAt": 1782629955284
+    },
+    "29506": {
+      "id": "29506",
+      "name": "3CE Cloud Lip Tint",
+      "manufacturer": "3 Concept Eyes",
+      "productEan": "8809664980084",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "12636",
+          "name": "Macaron Red",
+          "sku": "B1-07.144",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "12637",
+          "name": "Live a Little",
+          "sku": "B1-07.143",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "12638",
+          "name": "Blossom Day",
+          "sku": "B1-07.142",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 3,
+        "withEan": 0,
+        "withSku": 3,
+        "withAny": 3
+      },
+      "updatedAt": 1782634276268
+    },
+    "31286": {
+      "id": "31286",
+      "name": "Loca Dreamy Under Eye Concealer",
+      "manufacturer": "Loca",
+      "productEan": "6287014571519",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "13323",
+          "name": "Meringue (01)",
+          "sku": "B-06.163",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "13324",
+          "name": "Scone (02)",
+          "sku": "B-19.146",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "13325",
+          "name": "Tart (03)",
+          "sku": "B-19.004",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "13326",
+          "name": "Croissant (04)",
+          "sku": "B-12.161",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "13327",
+          "name": "Churros (05)",
+          "sku": "B-12.162",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "13328",
+          "name": "Brownie (06)",
+          "sku": "B-12.163",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "21915",
+          "name": "Macaron 07",
+          "sku": "B-03.066",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "21916",
+          "name": "09 Biscotti",
+          "sku": "B-03.128",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "21917",
+          "name": "Toffee 08",
+          "sku": "B-01.058",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 9,
+        "withEan": 0,
+        "withSku": 9,
+        "withAny": 9
+      },
+      "updatedAt": 1782634140984
+    },
+    "31289": {
+      "id": "31289",
+      "name": "Loca Dreamy Glowy Skin Ultra Weightless Foundation",
+      "manufacturer": "Loca",
+      "productEan": "6287014571458",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "13341",
+          "name": "Latte (01)",
+          "sku": "B-08.231",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "13342",
+          "name": "Capuccino (02)",
+          "sku": "B-15.165",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "13343",
+          "name": "Macchiato (03)",
+          "sku": "B-15.188",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "13344",
+          "name": "Mocha (04)",
+          "sku": "B-03.101",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "13345",
+          "name": "Espresso (05)",
+          "sku": "B-08.258",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 5,
+        "withEan": 0,
+        "withSku": 5,
+        "withAny": 5
+      },
+      "updatedAt": 1782693634819
+    },
+    "31942": {
+      "id": "31942",
+      "name": "CALLA Makeup Filter Me",
+      "manufacturer": "CALLA Makeup",
+      "productEan": "6287041462101",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "14307",
+          "name": "LightMe",
+          "sku": "B-02.229",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "14308",
+          "name": "WarmMe",
+          "sku": "B1-07.102",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "14309",
+          "name": "HoneyMe",
+          "sku": "B-02.248",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 3,
+        "withEan": 0,
+        "withSku": 3,
+        "withAny": 3
+      },
+      "updatedAt": 1782693634855
+    },
+    "32936": {
+      "id": "32936",
+      "name": "Flormar Compact Powder",
+      "manufacturer": "Flormar",
+      "productEan": "8682536051354",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "15485",
+          "name": "096 Light Porcelain Opal",
+          "sku": "B-01.066",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15486",
+          "name": "095 Lightporcelainbeig",
+          "sku": "B-01.183",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15487",
+          "name": "092 Medium Soft Peach",
+          "sku": "B-09.276",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15491",
+          "name": "089 Medium Cream",
+          "sku": "B-03.024",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15492",
+          "name": "088 Medium Peach Beige",
+          "sku": "B-04.214",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15493",
+          "name": "102 Almond",
+          "sku": "B1-07.066",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15496",
+          "name": "091 Medium Cream Rose",
+          "sku": "B-15.176",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 7,
+        "withEan": 0,
+        "withSku": 7,
+        "withAny": 7
+      },
+      "updatedAt": 1782620814108
+    },
+    "33475": {
+      "id": "33475",
+      "name": "Maybelline New York Super Stay Lumi Matte Foundation",
+      "manufacturer": "Maybelline",
+      "productEan": "3600531691950",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "15652",
+          "name": "108",
+          "sku": "B-04.078",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15653",
+          "name": "115",
+          "sku": "B-02.245",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15654",
+          "name": "118",
+          "sku": "B-02.282",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15655",
+          "name": "119",
+          "sku": "B-15.184",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15656",
+          "name": "128",
+          "sku": "B-09.268",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15657",
+          "name": "140",
+          "sku": "B-08.250",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15658",
+          "name": "350",
+          "sku": "B-03.249",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15659",
+          "name": "96",
+          "sku": "B-03.279",
+          "ean": "23908710",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "15660",
+          "name": "98",
+          "sku": "B-01.026",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15661",
+          "name": "250",
+          "sku": "B-19.138",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15662",
+          "name": "332",
+          "sku": "B-15.255",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "15663",
+          "name": "327",
+          "sku": "B-15.249",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 12,
+        "withEan": 1,
+        "withSku": 12,
+        "withAny": 12
+      },
+      "updatedAt": 1782693634597
+    },
+    "34011": {
+      "id": "34011",
+      "name": "L'Oreal Paris 24 Hour Tinted Serum",
+      "manufacturer": "LOreal Paris",
+      "productEan": "3600524190514",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "16326",
+          "name": "Very Light 0.5-2",
+          "sku": "B-13.093",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "16331",
+          "name": "Rosy Light 1-2",
+          "sku": "B-01.119",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "16333",
+          "name": "Light 2-3",
+          "sku": "B-01.120",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "16334",
+          "name": "Light Medium 3-4",
+          "sku": "B-01.121",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "16336",
+          "name": "Medium 4-5",
+          "sku": "B-09.163",
+          "ean": "88799070",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "16338",
+          "name": "Medium Tan 5-6",
+          "sku": "B1-16.030",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "16340",
+          "name": "Tan 6-7",
+          "sku": "B1-16.031",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 7,
+        "withEan": 1,
+        "withSku": 7,
+        "withAny": 7
+      },
+      "updatedAt": 1782693634820
+    },
+    "38816": {
+      "id": "38816",
+      "name": "Bogenia Longwear Angelic Foundation",
+      "manufacturer": "Bogenia",
+      "productEan": "4823121500626",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "21406",
+          "name": "006 Caramel",
+          "sku": "B1-13.125",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "21407",
+          "name": "008 Dark Beige",
+          "sku": "B-02.163",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "21408",
+          "name": "007 Latte",
+          "sku": "B-16.041",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "21409",
+          "name": "005 Vanilla",
+          "sku": "B1-13.128",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 4,
+        "withEan": 0,
+        "withSku": 4,
+        "withAny": 4
+      },
+      "updatedAt": 1782693634928
+    },
+    "38919": {
+      "id": "38919",
+      "name": "Essence Hydra Kiss Lip Tint",
+      "manufacturer": "essence",
+      "productEan": "4059729541758",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "21626",
+          "name": "07 Hazelnut Haze",
+          "sku": "B1-13.156",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "21639",
+          "name": "01 Blushing Nude",
+          "sku": "B1-13.157",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "21640",
+          "name": "02 Vintage Rose",
+          "sku": "B1-13.158",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "21641",
+          "name": "03 Rosy Blossom",
+          "sku": "B1-13.159",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "21642",
+          "name": "04 Classy Red",
+          "sku": "Default Bin-1A",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "21643",
+          "name": "06 Berry Crush",
+          "sku": "B-13.057",
+          "ean": "486924529182",
+          "barcodeSource": "image"
+        }
+      ],
+      "stats": {
+        "total": 6,
+        "withEan": 1,
+        "withSku": 6,
+        "withAny": 6
+      },
+      "updatedAt": 1782633628377
+    },
+    "39479": {
+      "id": "39479",
+      "name": "Hearts Natural Longwear Foundation",
+      "manufacturer": "Hearts",
+      "productEan": "6924476802446",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "22015",
+          "name": "L1",
+          "sku": "B1-19.203",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22016",
+          "name": "L2 Light with Neutral",
+          "sku": "B-10.139",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22017",
+          "name": "L3 Light to Medium",
+          "sku": "B-10.169",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22018",
+          "name": "M1 Medium Neutral",
+          "sku": "B-10.132",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22019",
+          "name": "M2 Medium Warm",
+          "sku": "B-10.137",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22020",
+          "name": "M3 Medium to Medium",
+          "sku": "B1-08.232",
+          "ean": "51161255",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "22021",
+          "name": "M4 Medium Deep",
+          "sku": "B1-08.231",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22022",
+          "name": "D1",
+          "sku": "B1-19.240",
+          "ean": "",
+          "barcodeSource": "sku"
+        }
+      ],
+      "stats": {
+        "total": 8,
+        "withEan": 1,
+        "withSku": 8,
+        "withAny": 8
+      },
+      "updatedAt": 1782638314560
+    },
+    "40285": {
+      "id": "40285",
+      "name": "Nyx Make ‘Em Wonder Soft Matte Buildable Foundation",
+      "manufacturer": "NYX",
+      "productEan": "800897275129",
+      "hasOptions": true,
+      "shades": [
+        {
+          "optionId": "22662",
+          "name": "Classic Ivory",
+          "sku": "B1-20.092",
+          "ean": "35278757",
+          "barcodeSource": "image"
+        },
+        {
+          "optionId": "22670",
+          "name": "Classic Tan",
+          "sku": "B1-20.093",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22671",
+          "name": "Golden Caramel",
+          "sku": "B1-20.094",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22672",
+          "name": "Golden",
+          "sku": "B1-20.095",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22673",
+          "name": "True Caramel",
+          "sku": "B1-20.096",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22674",
+          "name": "Warm Pecan",
+          "sku": "B1-20.097",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22675",
+          "name": "Light Nutmeg",
+          "sku": "B1-20.098",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22676",
+          "name": "Cappuccino",
+          "sku": "B1-20.099",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22677",
+          "name": "Mahogany",
+          "sku": "B1-20.100",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22678",
+          "name": "Soft Mocha",
+          "sku": "B1-20.101",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22680",
+          "name": "Warm Walnut",
+          "sku": "B1-20.102",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22681",
+          "name": "Deep Ebony",
+          "sku": "B1-20.103",
+          "ean": "",
+          "barcodeSource": "sku"
+        },
+        {
+          "optionId": "22683",
+          "name": "Rich Cocoa",
+          "sku": "B1-20.104",
+          "ean": "23764712",
+          "barcodeSource": "image"
+        }
+      ],
+      "stats": {
+        "total": 13,
+        "withEan": 2,
+        "withSku": 13,
+        "withAny": 13
+      },
+      "updatedAt": 1782693634836
+    }
+  },
+  "meta": {
+    "updatedAt": 1782693634928
+  }
+}

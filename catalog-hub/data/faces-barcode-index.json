@@ -1,0 +1,85 @@
+{
+  "barcodes": {
+    "03474636692408": {
+      "pid": "018115150657",
+      "ean": "3474636692408",
+      "nameAr": "بلوند أبسلو ماسك ألترا فيلوت البنفسجي 200مل",
+      "nameEn": "Blond Absolu Masque Ultra-Violet Purple Hair Mask  200ml",
+      "brandAr": "كيراستاس",
+      "brandEn": "Kerastase",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dw818e2fc9/product/3474636692408/3474636692408.jpg?sw=800&sh=800",
+      "price": 261,
+      "shadeName": "",
+      "productUrl": "https://www.faces.ae/ar/p/kerastase-blond-absolu-masque-ultra-violet-purple-hair-mask-018115150657.html",
+      "updatedAt": 1782638300375
+    },
+    "00006614852957": {
+      "pid": "PM_CHANEL_Chance_Eau_Tendre_EDP",
+      "ean": "006614852957",
+      "nameAr": "CHANCE EAU TENDRE",
+      "nameEn": "CHANCE EAU TENDRE",
+      "brandAr": "شانيل",
+      "brandEn": "Chanel",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwbd5f5dbf/PM_CHANEL_Chance_Eau_Tendre_EDP_11.png?sw=800&sh=800",
+      "price": 960,
+      "shadeName": "",
+      "productUrl": "https://www.faces.ae/ar/p/chanel-chance-eau-tendre-spray-eau-de-parfum-PM_CHANEL_Chance_Eau_Tendre_EDP.html",
+      "updatedAt": 1782693637096
+    },
+    "03145891262704": {
+      "pid": "PM_CHANEL_Chance_Eau_Tendre_EDP",
+      "ean": "3145891262704",
+      "nameAr": "CHANCE EAU TENDRE",
+      "nameEn": "CHANCE EAU TENDRE",
+      "brandAr": "شانيل",
+      "brandEn": "Chanel",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwbd5f5dbf/PM_CHANEL_Chance_Eau_Tendre_EDP_11.png?sw=800&sh=800",
+      "price": "960 درهم",
+      "shadeName": "150ml",
+      "productUrl": "https://www.faces.ae/ar/p/chanel-chance-eau-tendre-spray-eau-de-parfum-PM_CHANEL_Chance_Eau_Tendre_EDP.html?dwvar_PM__CHANEL__Chance__Eau__Tendre__EDP_size=150ml",
+      "updatedAt": 1782693638322
+    },
+    "03145891262605": {
+      "pid": "PM_CHANEL_Chance_Eau_Tendre_EDP",
+      "ean": "3145891262605",
+      "nameAr": "CHANCE EAU TENDRE",
+      "nameEn": "CHANCE EAU TENDRE",
+      "brandAr": "شانيل",
+      "brandEn": "Chanel",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwbd5f5dbf/PM_CHANEL_Chance_Eau_Tendre_EDP_11.png?sw=800&sh=800",
+      "price": "795 درهم",
+      "shadeName": "100مل",
+      "productUrl": "https://www.faces.ae/ar/p/chanel-chance-eau-tendre-spray-eau-de-parfum-PM_CHANEL_Chance_Eau_Tendre_EDP.html?dwvar_PM__CHANEL__Chance__Eau__Tendre__EDP_size=150ml",
+      "updatedAt": 1782693638322
+    },
+    "03145891262506": {
+      "pid": "PM_CHANEL_Chance_Eau_Tendre_EDP",
+      "ean": "3145891262506",
+      "nameAr": "CHANCE EAU TENDRE",
+      "nameEn": "CHANCE EAU TENDRE",
+      "brandAr": "شانيل",
+      "brandEn": "Chanel",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwbd5f5dbf/PM_CHANEL_Chance_Eau_Tendre_EDP_11.png?sw=800&sh=800",
+      "price": "580 درهم",
+      "shadeName": "50مل",
+      "productUrl": "https://www.faces.ae/ar/p/chanel-chance-eau-tendre-spray-eau-de-parfum-PM_CHANEL_Chance_Eau_Tendre_EDP.html?dwvar_PM__CHANEL__Chance__Eau__Tendre__EDP_size=150ml",
+      "updatedAt": 1782693638322
+    },
+    "08435415049542": {
+      "pid": "017215333734",
+      "ean": "8435415049542",
+      "nameAr": "عطر لا بيل لي بيرفيوم",
+      "nameEn": "La Belle Le Parfum",
+      "brandAr": "جان بول غوتييه",
+      "brandEn": "Jean Paul Gaultier",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwb52c97eb/images/017215333734_11.jpg?sw=800&sh=800",
+      "price": 705,
+      "shadeName": "",
+      "productUrl": "https://www.faces.ae/ar/p/jean-paul-gaultier-la-belle-le-parfum-eau-de-parfum-017215333734.html",
+      "updatedAt": 1782685938669
+    }
+  },
+  "meta": {
+    "updatedAt": 1782693638322
+  }
+}

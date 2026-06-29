@@ -66,8 +66,8 @@ sync_repo
 
 chmod +x scripts/*.sh
 
-echo "==> Rebuild API..."
-$COMPOSE up -d --build api postgres redis
+echo "==> Rebuild API + Catalog Hub..."
+$COMPOSE up -d --build api catalog-hub postgres redis
 
 echo "==> Apply database migrations..."
 if ! $COMPOSE exec -T api npx prisma migrate deploy; then

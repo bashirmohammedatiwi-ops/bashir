@@ -38,9 +38,9 @@ MEDIA_BASE="${MEDIA_BASE:-http://localhost:8080/media}"
 
 CATALOG_HUB_URL="${NEXT_PUBLIC_CATALOG_HUB_URL:-}"
 if [[ -z "$CATALOG_HUB_URL" && -n "${DOMAIN:-}" ]]; then
-  CATALOG_HUB_URL="http://${DOMAIN}:10000"
+  CATALOG_HUB_URL="http://${DOMAIN}/catalog-hub"
 fi
-CATALOG_HUB_URL="${CATALOG_HUB_URL:-http://localhost:10000}"
+CATALOG_HUB_URL="${CATALOG_HUB_URL:-http://localhost:8080/catalog-hub}"
 
 echo "==> Building admin web panel"
 echo "    API:    $API_BASE"

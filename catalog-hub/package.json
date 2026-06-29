@@ -1,0 +1,16 @@
+{
+  "name": "niceone-backup",
+  "version": "1.0.0",
+  "description": "Backup & viewer for Nice One product catalog via public API",
+  "type": "module",
+  "scripts": {
+    "start": "PORT=10000 node server.js",
+    "serve": "node server.js",
+    "backup": "node backup.js",
+    "enrich-barcodes": "node scripts/enrich-all-barcodes.js",
+    "enrich-barcodes:resume": "node scripts/enrich-all-barcodes.js --resume"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

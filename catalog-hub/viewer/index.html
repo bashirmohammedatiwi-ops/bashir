@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>اختر المتجر — كتالوج المنتجات</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="hub.css" />
+</head>
+<body>
+  <main class="hub">
+    <header class="hub-head">
+      <h1>كتالوج المنتجات</h1>
+      <p>اختر المتجر لعرض التصنيفات والمنتجات والباركود مباشرة من الموقع</p>
+    </header>
+
+    <section class="barcode-search" aria-label="بحث بالباركود">
+      <h2>بحث بالباركود في كل المتاجر</h2>
+      <p class="barcode-search-hint">أدخل باركود EAN (8–14 رقم) للبحث في Nice One و Vanilla والريان وميرايا ووجوه دفعة واحدة</p>
+      <form id="barcodeSearchForm" class="barcode-search-form">
+        <input
+          type="search"
+          id="barcodeInput"
+          inputmode="numeric"
+          pattern="[0-9]*"
+          autocomplete="off"
+          placeholder="مثال: 3616303397180"
+          dir="ltr"
+          aria-label="الباركود"
+        />
+        <button type="submit" id="barcodeSearchBtn">بحث</button>
+      </form>
+      <div id="barcodeStatus" class="barcode-status" role="status"></div>
+      <div id="barcodeSummary" class="barcode-summary"></div>
+      <div id="barcodeResults" class="barcode-results"></div>
+    </section>
+
+    <div class="hub-grid">
+      <a class="hub-card hub-card--niceone" href="/niceone/">
+        <div class="hub-card-icon">N</div>
+        <h2>Nice One</h2>
+        <p class="hub-domain">niceonesa.com</p>
+        <p class="hub-desc">كتالوج سعودي — تصنيفات متعددة، درجات لونية، وبحث باركود متقدم</p>
+        <span class="hub-cta">فتح الكتالوج ←</span>
+      </a>
+
+      <a class="hub-card hub-card--vanilla" href="/vanilla/">
+        <div class="hub-card-icon">V</div>
+        <h2>Vanilla Cosmetics</h2>
+        <p class="hub-domain">vanillacosmetics.com</p>
+        <p class="hub-desc">متجر عراقي — باركود مباشر من قاعدة بيانات vanillacosmetics.com</p>
+        <span class="hub-cta">فتح الكتالوج ←</span>
+      </a>
+
+      <a class="hub-card hub-card--elryan" href="/elryan/">
+        <div class="hub-card-icon">E</div>
+        <h2>الريان Elryan</h2>
+        <p class="hub-domain">elryan.com</p>
+        <p class="hub-desc">عراقي — العطور ومنتجات التجميل مع عربي/إنجليزي وباركود EAN</p>
+        <span class="hub-cta">فتح الكتالوج ←</span>
+      </a>
+
+      <a class="hub-card hub-card--miraaya" href="/miraaya/">
+        <div class="hub-card-icon">M</div>
+        <h2>ميرايا Miraaya</h2>
+        <p class="hub-domain">miraaya.com</p>
+        <p class="hub-desc">عراقي — مكياج، عطور، عناية بالبشرة والشعر مع باركود EAN مباشر</p>
+        <span class="hub-cta">فتح الكتالوج ←</span>
+      </a>
+
+      <a class="hub-card hub-card--faces" href="/faces/">
+        <div class="hub-card-icon">F</div>
+        <h2>وجوه FACES</h2>
+        <p class="hub-domain">faces.ae</p>
+        <p class="hub-desc">إماراتي — عطور، مكياج، عناية بالبشرة مع عربي/إنجليزي وباركود EAN</p>
+        <span class="hub-cta">فتح الكتالوج ←</span>
+      </a>
+    </div>
+
+    <footer class="hub-foot">
+      البيانات تُجلب مباشرة من APIs المتاجر — بدون تخزين محلي
+    </footer>
+  </main>
+  <script src="hub.js" type="module"></script>
+</body>
+</html>

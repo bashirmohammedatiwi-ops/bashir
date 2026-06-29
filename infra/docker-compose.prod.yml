@@ -86,11 +86,36 @@ services:
       retries: 10
       start_period: 180s
 
+  catalog-hub:
+    build:
+      context: ../catalog-hub
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 10000
+      HOST: 0.0.0.0
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    volumes:
+      - catalog_hub_data:/app/data
+    expose:
+      - "10000"
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:10000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
   nginx:
     image: nginx:1.27-alpine
     restart: unless-stopped
     depends_on:
       api:
+        condition: service_started
+      catalog-hub:
         condition: service_started
     ports:
       - "80:80"
@@ -121,6 +146,7 @@ volumes:
   pgdata:
   redisdata:
   mediadata:
+  catalog_hub_data:
   certbot_www:
   certbot_certs:
 

@@ -7,7 +7,7 @@ export const VPS_ORIGIN = API_BASE.replace(/\/api\/v1\/?$/, "");
 export const MEDIA_BASE =
   process.env.NEXT_PUBLIC_MEDIA_BASE?.replace(/\/$/, "") ?? VPS_ORIGIN;
 
-/** Catalog Hub (Nice One + Vanilla + Elryan + Miraaya + Faces) */
+/** Catalog Hub (Nice One + Vanilla + Elryan + Miraaya + Faces) — via Nginx on same host */
 export const CATALOG_HUB_URL =
   process.env.NEXT_PUBLIC_CATALOG_HUB_URL?.replace(/\/$/, "") ??
-  `${VPS_ORIGIN.replace(/:\d+$/, "")}:10000`;
+  `${VPS_ORIGIN}/catalog-hub`;

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>كتالوج الريان — العطور والتجميل</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="/shared/store-ui.css" />
+</head>
+<body>
+  <div id="app" class="app app--elryan">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-head">
+        <a href="/" class="hub-back" title="العودة لاختيار المتجر">← المتاجر</a>
+        <div class="logo">الريان Elryan</div>
+        <div class="logo-sub">العطور ومنتجات التجميل · elryan.com</div>
+        <button type="button" class="sidebar-close" id="sidebarClose" aria-label="إغلاق">×</button>
+      </div>
+      <div class="sidebar-body">
+        <div class="sidebar-sticky">
+          <div class="sidebar-tabs">
+            <button type="button" class="sidebar-tab active" data-tab="categories">التصنيفات</button>
+            <button type="button" class="sidebar-tab" data-tab="brands">العلامات</button>
+          </div>
+          <div class="sidebar-search">
+            <input type="search" id="globalSearch" placeholder="بحث في العطور والتجميل..." autocomplete="off" />
+          </div>
+        </div>
+        <div id="sidebarCategoriesPanel" class="sidebar-panel sidebar-panel--categories">
+          <div class="sidebar-cat-filter">
+            <input type="search" id="catFilter" placeholder="تصفية التصنيفات..." autocomplete="off" />
+          </div>
+          <nav class="cat-tree sidebar-scroll" id="catTree">
+            <div class="loading-tree">جاري تحميل التصنيفات...</div>
+          </nav>
+        </div>
+        <div id="sidebarBrandsPanel" class="sidebar-panel hidden sidebar-brands">
+          <div class="brand-filter-input">
+            <input type="search" id="brandFilter" placeholder="بحث في العلامات..." autocomplete="off" />
+          </div>
+          <div class="brands-grid brands-grid--sidebar sidebar-scroll" id="sidebarBrands"></div>
+        </div>
+      </div>
+    </aside>
+
+    <div class="overlay" id="overlay"></div>
+
+    <main class="main">
+      <header class="topbar">
+        <button type="button" class="menu-btn" id="menuBtn" aria-label="القائمة">☰</button>
+        <div class="topbar-main">
+          <div class="topbar-title" id="pageTitle">اختر تصنيفاً</div>
+          <div class="topbar-stats" id="pageStats"></div>
+        </div>
+      </header>
+
+      <div class="catalog-toolbar hidden" id="catalogToolbar">
+        <div class="toolbar-row">
+          <div class="sort-pills" id="sortPills">
+            <button type="button" class="sort-pill active" data-sort="default">الأكثر مبيعاً</button>
+            <button type="button" class="sort-pill" data-sort="name_asc">أ-ي</button>
+            <button type="button" class="sort-pill" data-sort="name_desc">ي-أ</button>
+            <button type="button" class="sort-pill" data-sort="price_asc">السعر ↑</button>
+            <button type="button" class="sort-pill" data-sort="price_desc">السعر ↓</button>
+          </div>
+          <div class="toolbar-hint" id="sortHint"></div>
+        </div>
+        <div class="progress-wrap hidden" id="progressWrap">
+          <div class="progress-meta">
+            <span id="progressLabel">0 / 0</span>
+            <span id="progressPct">0%</span>
+          </div>
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content" id="content">
+        <div class="welcome" id="welcome">
+          <h1>كتالوج الريان — العطور والتجميل</h1>
+          <p>تصنيفات ومنتجات من <strong>elryan.com</strong> مع <strong>باركود EAN</strong>.</p>
+          <p class="welcome-note">عربي + إنجليزي · باركود EAN · العطور والتجميل فقط</p>
+          <div class="welcome-stats" id="welcomeStats"></div>
+          <div class="brands-section" id="welcomeBrandsSection">
+            <div class="brands-section-head">
+              <h2>العلامات التجارية</h2>
+              <span id="welcomeBrandsCount"></span>
+            </div>
+            <div class="brands-grid" id="welcomeBrands"></div>
+          </div>
+        </div>
+        <div class="grid grid--comfortable" id="grid"></div>
+        <div class="load-more-wrap hidden" id="loadMoreWrap">
+          <button type="button" class="btn" id="loadMoreBtn">تحميل المزيد</button>
+        </div>
+        <div class="status-msg hidden" id="statusMsg"></div>
+      </div>
+    </main>
+
+    <aside class="product-panel" id="productPanel" aria-hidden="true">
+      <div class="panel-head">
+        <button type="button" class="panel-close" id="panelClose">×</button>
+        <span id="panelTitle">تفاصيل المنتج</span>
+      </div>
+      <div class="panel-body" id="panelBody">
+        <div class="panel-loading">جاري التحميل...</div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>

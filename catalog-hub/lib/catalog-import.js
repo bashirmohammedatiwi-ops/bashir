@@ -1,0 +1,181 @@
+/**
+ * استيراد منتجات موحّد من متاجر الكتالوج — للربط مع تطبيق Alhayaa
+ */
+import { searchBarcodeAllStores, STORE_META } from './barcode-search.js';
+import {
+  fetchProductDetail,
+  normalizeProductDetail,
+  extractBarcode,
+} from './api.js';
+import { enrichShadesFromDatabase } from './barcodes.js';
+import { fetchProductDetail as fetchVanillaDetail, normalizeProductDetail as normalizeVanillaDetail } from './vanilla-api.js';
+import { fetchProductByIdBilingual } from './elryan-api.js';
+import { fetchProductBySku, fetchProductById as fetchMiraayaById, normalizeProductDetail as normalizeMiraayaDetail } from './miraaya-api.js';
+import { fetchProductById as fetchFacesById, normalizeProductDetailFromRaw as normalizeFacesDetail } from './faces-api.js';
+
+function absImageUrl(url = '', hubOrigin = '') {
+  const u = String(url || '').trim();
+  if (!u) return '';
+  if (u.startsWith('http')) return u;
+  if (u.startsWith('/') && hubOrigin) return `${hubOrigin.replace(/\/$/, '')}${u}`;
+  return u;
+}
+
+function mapShades(shades = [], hubOrigin = '') {
+  return shades.map((s, i) => ({
+    name: String(s.name || s.nameAr || `درجة ${i + 1}`).trim(),
+    nameEn: String(s.nameEn || '').trim() || undefined,
+    barcode: String(s.barcode || s.ean || '').replace(/\D/g, '') || undefined,
+    colorHex: s.hex || s.colorHex || undefined,
+    colorHexEnd: s.colorHexEnd || s.hexEnd || undefined,
+    isGradient: !!s.isGradient,
+    imageUrl: absImageUrl(s.image || s.thumb || '', hubOrigin),
+    sku: s.sku || s.optionId || undefined,
+  })).filter((s) => s.name || s.barcode);
+}
+
+function buildImportPayload(store, product, { hubOrigin = '' } = {}) {
+  const meta = STORE_META[store] || {};
+  const images = [];
+  const addImg = (url, isPrimary = false) => {
+    const abs = absImageUrl(url, hubOrigin);
+    if (!abs || images.some((x) => x.url === abs)) return;
+    images.push({ url: abs, isPrimary });
+  };
+
+  addImg(product.thumb, true);
+  for (const url of product.images || []) addImg(url);
+
+  const shades = mapShades(product.shades || [], hubOrigin);
+  for (const shade of shades) {
+    if (shade.imageUrl) addImg(shade.imageUrl);
+  }
+
+  return {
+    store,
+    storeLabel: meta.label || store,
+    sourceId: String(product.id || product.sku || ''),
+    nameAr: String(product.name || product.nameAr || '').trim(),
+    nameEn: String(product.nameEn || '').trim(),
+    brandAr: String(product.manufacturer || product.brandAr || '').trim(),
+    brandEn: String(product.manufacturerEn || product.brandEn || product.manufacturer || '').trim(),
+    descriptionAr: String(product.description || '').trim(),
+    descriptionEn: String(product.descriptionEn || '').trim(),
+    barcode: String(product.barcode || extractBarcode(product) || '').replace(/\D/g, '') || undefined,
+    sku: String(product.sku || product.id || '').trim(),
+    images,
+    shades,
+    hasShades: shades.length > 0,
+    sourceUrl: product.productUrl || product.slug || '',
+    priceHint: product.price || '',
+    categoryHint: product.category || '',
+    categoryHintEn: product.categoryEn || '',
+  };
+}
+
+export async function searchImportByBarcode(rawBarcode) {
+  const data = await searchBarcodeAllStores(rawBarcode);
+  if (data.error) {
+    return { barcode: null, error: data.error, options: [], errors: [] };
+  }
+
+  const options = (data.results || []).map((r) => ({
+    store: r.store,
+    storeLabel: r.storeLabel,
+    sourceId: r.id,
+    nameAr: r.name,
+    nameEn: r.nameEn,
+    brandAr: r.manufacturer,
+    brandEn: r.manufacturerEn,
+    thumb: r.thumb,
+    barcode: r.barcode,
+    shadeName: r.shadeName,
+    matchType: r.matchType || 'product',
+  }));
+
+  return {
+    barcode: data.barcode,
+    options,
+    errors: data.errors || [],
+    byStore: Object.fromEntries(
+      Object.entries(data.byStore || {}).map(([k, v]) => [k, (v || []).length]),
+    ),
+  };
+}
+
+async function fetchNiceOneImport(id, hubOrigin) {
+  const [detail, detailEn] = await Promise.all([
+    fetchProductDetail(id),
+    fetchProductDetail(id, null, { lang: 'en' }),
+  ]);
+  if (!detail?.id) return null;
+  let normalized = normalizeProductDetail(detail, detailEn);
+  if (normalized.shades?.length) {
+    const enriched = await enrichShadesFromDatabase(detail);
+    normalized.shades = enriched;
+    normalized.shadeCount = enriched.length;
+  }
+  normalized.barcode = extractBarcode(detail) || normalized.barcode;
+  return buildImportPayload('niceone', normalized, { hubOrigin });
+}
+
+async function fetchFacesImport(id, hubOrigin) {
+  const raw = await fetchFacesById(id);
+  if (!raw?.id) return null;
+  const normalized = normalizeFacesDetail(raw);
+  return buildImportPayload('faces', normalized, { hubOrigin });
+}
+
+async function fetchElryanImport(id, hubOrigin) {
+  const product = await fetchProductByIdBilingual(id);
+  if (!product?.id) return null;
+  return buildImportPayload('elryan', product, { hubOrigin });
+}
+
+async function fetchMiraayaImport(id, hubOrigin) {
+  let product = null;
+  if (/^\d+$/.test(String(id))) {
+    product = await fetchMiraayaById(id);
+  } else {
+    product = await fetchProductBySku(id);
+  }
+  if (!product?.id && !product?.sku) return null;
+  const normalized = normalizeMiraayaDetail(product);
+  return buildImportPayload('miraaya', normalized, { hubOrigin });
+}
+
+async function fetchVanillaImport(id, hubOrigin) {
+  const detail = await fetchVanillaDetail(id);
+  if (!detail?.id) return null;
+  const normalized = await normalizeVanillaDetail(detail);
+  return buildImportPayload('vanilla', normalized, { hubOrigin });
+}
+
+export async function fetchImportProduct(store, sourceId, { hubOrigin = '' } = {}) {
+  const id = String(sourceId || '').trim();
+  if (!id || !store) return { error: 'المتجر ومعرّف المنتج مطلوبان' };
+
+  let payload = null;
+  switch (store) {
+    case 'niceone':
+      payload = await fetchNiceOneImport(id, hubOrigin);
+      break;
+    case 'faces':
+      payload = await fetchFacesImport(id, hubOrigin);
+      break;
+    case 'elryan':
+      payload = await fetchElryanImport(id, hubOrigin);
+      break;
+    case 'miraaya':
+      payload = await fetchMiraayaImport(id, hubOrigin);
+      break;
+    case 'vanilla':
+      payload = await fetchVanillaImport(id, hubOrigin);
+      break;
+    default:
+      return { error: `متجر غير معروف: ${store}` };
+  }
+
+  if (!payload) return { error: 'لم يُعثر على المنتج في الكتالوج' };
+  return { product: payload };
+}
