@@ -389,8 +389,21 @@ export function applyIndexToShades(productId, shades) {
 function remember(key, value) {
   memoryCache.set(key, value);
   const disk = loadDiskCache();
-  if (value) disk[key] = { ean: value.ean || value, source: value.source || 'cache', at: Date.now() };
-  else disk[key] = { ean: '', source: 'none', at: Date.now() };
+  if (value && typeof value === 'object') {
+    // احفظ كل الحقول المفيدة (brand, title, description) ولا تحذفها
+    disk[key] = {
+      ean: value.ean || '',
+      source: value.source || 'cache',
+      at: Date.now(),
+      ...(value.brand ? { brand: value.brand } : {}),
+      ...(value.title ? { title: value.title } : {}),
+      ...(value.description ? { description: value.description } : {}),
+    };
+  } else if (value) {
+    disk[key] = { ean: String(value), source: 'cache', at: Date.now() };
+  } else {
+    disk[key] = { ean: '', source: 'none', at: Date.now() };
+  }
   diskDirty = true;
 }
 
@@ -398,7 +411,18 @@ function recall(key) {
   if (memoryCache.has(key)) return memoryCache.get(key);
   const hit = loadDiskCache()[key];
   if (!hit) return null;
-  const val = hit.ean ? { ean: hit.ean, source: hit.source || 'cache' } : '';
+  if (!hit.ean) {
+    memoryCache.set(key, '');
+    return '';
+  }
+  // أعِد البنية الكاملة بما فيها brand وtitle إن كانت محفوظة
+  const val = {
+    ean: hit.ean,
+    source: hit.source || 'cache',
+    ...(hit.brand ? { brand: hit.brand } : {}),
+    ...(hit.title ? { title: hit.title } : {}),
+    ...(hit.description ? { description: hit.description } : {}),
+  };
   memoryCache.set(key, val);
   return val;
 }

@@ -44,6 +44,7 @@ import {
   isUsableAmazonProduct,
   isAmazonBundleListing,
 } from './amazon-api.js';
+import { lookupUpcByBarcode } from './barcodes.js';
 
 function barcodeQueryVariants(barcode) {
   const digits = String(barcode).replace(/\D/g, '');
@@ -751,7 +752,20 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
     });
   }
 
-  // وجوه: فهرس محلي فوري + بحث حي مع تلميحات المتاجر الأخرى (بالتوازي مع مهلة منفصلة)
+  // ⚡ جلب بيانات UPC مسبقاً لاستخدامها كتلميح لوجوه (سريع — مخزّن بعد أول طلب)
+  const upcData = await lookupUpcByBarcode(barcode).catch(() => null);
+  const upcHints = upcData?.brand
+    ? [{
+        manufacturer: upcData.brand,
+        manufacturerEn: upcData.brand,
+        nameEn: upcData.title || '',
+        name: upcData.title || upcData.brand,
+        brand: upcData.brand,
+        source: 'upc',
+      }]
+    : [];
+
+  // وجوه: فهرس محلي فوري + بحث حي مع تلميحات المتاجر الأخرى وبيانات UPC (بالتوازي مع مهلة منفصلة)
   if (facesSearcher) {
     const localFaces = buildFacesLocalHits(barcode);
     if (localFaces.length) {
@@ -761,6 +775,7 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
 
     const combinedHints = [
       ...hintHits,
+      ...upcHints,
       ...sortHitsStable(dedupeHits(results))
         .filter((h) => h.store !== 'faces')
         .map((h) => ({
@@ -773,9 +788,14 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
         })),
     ];
 
+    // زيادة المهلة تلقائياً عندما يكون لدينا تلميح ماركة من UPC (بحث موجّه أسرع بكثير)
+    const facesDynamicTimeout = combinedHints.length > 0
+      ? Math.max(facesSearcher.timeoutMs, 60_000)
+      : facesSearcher.timeoutMs;
+
     const facesPromise = withStoreTimeout(
       searchFacesByBarcode(barcode, combinedHints),
-      facesSearcher.timeoutMs,
+      facesDynamicTimeout,
       'faces',
     );
 
@@ -818,14 +838,19 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
     })),
   };
 
+  const hadTimeout = errors.some((e) => e.message?.includes('انتهت مهلة'));
+
   if (payload.results.length) {
     rememberBarcodeSearchHits(payload.results);
     searchResultCache.set(cacheKey, { at: Date.now(), data: payload });
     if (storeKey === 'all') {
       searchResultCache.set(`fast:all:${barcode}`, { at: Date.now(), data: { ...payload, fast: true } });
     }
-  } else {
+  } else if (!hadTimeout) {
+    // لا نتائج ولا توقف مهلة → المنتج غير موجود فعلاً → خزّن 3 دقائق
     searchResultCache.set(cacheKey, { at: Date.now(), data: payload });
   }
+  // عند وجود توقف مهلة + لا نتائج → لا تخزّن → يُعاد المحاولة فوراً في الطلب التالي
+
   return payload;
 }
