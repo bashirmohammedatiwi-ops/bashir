@@ -1,7 +1,3 @@
-const API = '/api/elryan';
-const $ = (sel, root = document) => root.querySelector(sel);
-const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-
 import {
   sortProducts,
   bindSortPills,
@@ -12,6 +8,11 @@ import {
   deferIdle,
   scheduleCategoryCountRefresh,
 } from '/shared/store-ui.js';
+import { hubApi, initHubLinks } from '/shared/catalog-hub-base.js';
+
+const API = hubApi('/api/elryan');
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 const state = {
   categories: { tree: [], leaves: [], all: [] },
@@ -541,6 +542,7 @@ function closeAll() {
 }
 
 async function init() {
+  initHubLinks();
   $('#menuBtn').addEventListener('click', openSidebar);
   $('#sidebarClose').addEventListener('click', closeSidebar);
   $('#overlay').addEventListener('click', closeAll);

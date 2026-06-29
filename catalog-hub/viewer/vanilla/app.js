@@ -1,4 +1,6 @@
-const API = '/api/vanilla';
+import { hubApi, initHubLinks } from '/shared/catalog-hub-base.js';
+
+const API = hubApi('/api/vanilla');
 const $ = (sel, root = document) => root.querySelector(sel);
 
 const state = {
@@ -410,6 +412,7 @@ function closeAll() {
 }
 
 async function init() {
+  initHubLinks();
   $('#menuBtn').addEventListener('click', openSidebar);
   $('#sidebarClose').addEventListener('click', closeSidebar);
   $('#overlay').addEventListener('click', closeAll);

@@ -1,3 +1,5 @@
+import { hubApi, fixHubAssetUrl, fixStoreUrl, initHubLinks } from '/shared/catalog-hub-base.js';
+
 const $ = (sel) => document.querySelector(sel);
 
 function esc(s) {
@@ -19,12 +21,12 @@ function isValidBarcodeInput(raw) {
 
 function renderResultCard(item) {
   const storeClass = STORE_CLASS[item.store] || '';
-  const openHref = item.id && item.openUrl ? item.openUrl : `/${item.store || 'niceone'}/`;
+  const openHref = fixStoreUrl(item.openUrl || `/${item.store || 'niceone'}/`);
   const shade = item.shadeName
     ? `<div class="barcode-result-shade">تدرج: ${esc(item.shadeName)}</div>`
     : '';
   const thumb = item.thumb
-    ? `<img src="${esc(item.thumb)}" alt="" loading="lazy" />`
+    ? `<img src="${esc(fixHubAssetUrl(item.thumb))}" alt="" loading="lazy" />`
     : '<span class="barcode-result-fallback">?</span>';
   return `
     <a class="barcode-result ${storeClass}" href="${esc(openHref)}" target="_blank" rel="noopener">
@@ -83,7 +85,7 @@ async function runBarcodeSearch(raw) {
   }, 4000);
 
   try {
-    const res = await fetch(`/api/search/barcode?q=${encodeURIComponent(q)}`, { signal: controller.signal });
+    const res = await fetch(hubApi(`/api/search/barcode?q=${encodeURIComponent(q)}`), { signal: controller.signal });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || res.statusText);
 
@@ -122,6 +124,7 @@ async function runBarcodeSearch(raw) {
 }
 
 function init() {
+  initHubLinks();
   const form = $('#barcodeSearchForm');
   const input = $('#barcodeInput');
 

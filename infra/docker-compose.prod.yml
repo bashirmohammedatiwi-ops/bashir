@@ -97,6 +97,7 @@ services:
       PORT: 10000
       HOST: 0.0.0.0
       CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      CATALOG_HUB_PUBLIC_PREFIX: /catalog-hub
     volumes:
       - catalog_hub_data:/app/data
     expose:

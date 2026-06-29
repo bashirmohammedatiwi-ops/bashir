@@ -11,6 +11,7 @@ import {
   invalidateBarcodeRamIndex,
 } from './barcodes.js';
 import { loadFacesBarcodeIndex } from './faces-api.js';
+import { publicPath } from './public-prefix.js';
 
 const STORE_LABELS = {
   niceone: 'Nice One',
@@ -37,7 +38,7 @@ export function gtinKey(digits = '') {
 
 function hit(store, fields = {}) {
   const label = STORE_LABELS[store] || store;
-  const storePath = `/${store}/`;
+  const storePath = publicPath(`/${store}/`);
   return {
     store,
     storeLabel: label,

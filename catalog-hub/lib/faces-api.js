@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { mapPool } from './category-scope.js';
 import { lookupUpcByBarcode } from './barcodes.js';
+import { publicPath } from './public-prefix.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FACES_BARCODE_FILE = path.join(__dirname, '..', 'data', 'faces-barcode-index.json');
@@ -56,7 +57,7 @@ export function proxyFacesImage(url = '') {
   if (!u) return '';
   if (u.startsWith('/api/faces/img')) return u;
   if (!u.includes('faces.ae')) return u;
-  return `/api/faces/img?u=${encodeURIComponent(u)}`;
+  return publicPath(`/api/faces/img?u=${encodeURIComponent(u)}`);
 }
 
 async function getCnstrcKey() {
@@ -567,6 +568,91 @@ async function fetchQuickView(pid, locale = LOCALE_AR) {
   return data?.product || null;
 }
 
+/** بحث سريع: جرّب الباركود كمعرّف منتج مباشرة في QuickView */
+async function tryDirectBarcodeQuickView(barcode) {
+  const variants = barcodeQueryVariants(barcode);
+  for (const pid of variants) {
+    try {
+      const [ar, en] = await Promise.all([
+        fetchQuickView(pid, LOCALE_AR),
+        fetchQuickView(pid, LOCALE_EN),
+      ]);
+      if (!ar?.id) continue;
+
+      const tile = {
+        pid: ar.id,
+        ean: ar.EAN || '',
+        nameAr: (ar.productName || '').trim(),
+        nameEn: (en?.productName || '').trim(),
+        brandAr: ar.brand || '',
+        brandEn: en?.brand || '',
+        thumb: productImage(ar) || '',
+        price: ar.price?.sales?.value,
+        productUrl: absUrl(ar.selectedProductUrl),
+        hasOptions: (ar.variationAttributes || []).length > 0,
+        inStock: ar.available !== false,
+      };
+
+      if (gtinEqual(ar.EAN, barcode)) {
+        return { tile, matchType: 'product', barcode: ar.EAN };
+      }
+
+      const shades = extractShades(ar, en);
+      if (shades.length) {
+        const enriched = await enrichShadeBarcodes(ar.id, shades, LOCALE_AR);
+        for (const shade of enriched) {
+          if (!gtinEqual(shade.barcode, barcode)) continue;
+          return { tile, shade, matchType: 'shade', barcode: shade.barcode };
+        }
+      }
+
+      if (gtinEqual(ar.id, barcode) || gtinEqual(pid, barcode)) {
+        return { tile, matchType: 'product', barcode: ar.EAN || barcode };
+      }
+    } catch {
+      /* next variant */
+    }
+  }
+  return null;
+}
+
+/** استخراج روابط منتجات من HTML البحث عندما يظهر الباركود في الرابط */
+async function findTilesFromSearchSlug(barcode) {
+  const digits = String(barcode).replace(/\D/g, '');
+  if (!digits) return [];
+  const url = `${SITE}/ar/search?q=${encodeURIComponent(digits)}&sz=48`;
+  const { html } = await fetchText(url, { timeoutMs: 12000 });
+  const links = [...html.matchAll(/href="(\/ar\/p\/[^"]+\.html)"/g)]
+    .map((m) => m[1])
+    .filter((href) => href.includes(digits));
+  const tiles = [];
+  const seen = new Set();
+  for (const href of links) {
+    const pidMatch = href.match(/-([A-Za-z0-9_]+)\.html$/) || href.match(/\/([A-Za-z0-9_]+)\.html$/);
+    const pid = pidMatch?.[1];
+    if (!pid || seen.has(pid)) continue;
+    seen.add(pid);
+    try {
+      const ar = await fetchQuickView(pid, LOCALE_AR);
+      if (!ar?.id) continue;
+      tiles.push({
+        pid: ar.id,
+        ean: ar.EAN || '',
+        nameAr: (ar.productName || '').trim(),
+        nameEn: '',
+        brandAr: ar.brand || '',
+        thumb: productImage(ar) || '',
+        price: ar.price?.sales?.value,
+        productUrl: absUrl(ar.selectedProductUrl || href),
+        hasOptions: (ar.variationAttributes || []).length > 0,
+      });
+    } catch {
+      /* skip */
+    }
+  }
+  return tiles;
+}
+
 async function enrichShadeBarcodes(masterPid, shades = [], locale = LOCALE_AR) {
   const limited = shades.slice(0, 40);
   await Promise.all(limited.map(async (shade) => {
@@ -992,6 +1078,13 @@ export async function searchProductsByBarcode(barcode, { limit = 12, hintHits = 
 
   const scanOpts = { pushProduct, pushShade, limit, hits };
 
+  const direct = await tryDirectBarcodeQuickView(barcode);
+  if (direct) {
+    if (direct.matchType === 'shade' && direct.shade) pushShade(direct.tile, direct.shade);
+    else pushProduct(direct.tile);
+    if (hits.length) return hits.slice(0, limit);
+  }
+
   const indexed = lookupFacesBarcodeIndex(barcode);
   if (indexed?.pid) {
     if (indexed.nameAr || indexed.nameEn || indexed.thumb) {
@@ -1016,6 +1109,12 @@ export async function searchProductsByBarcode(barcode, { limit = 12, hintHits = 
     break;
   }
   if (hits.length) return hits.slice(0, limit);
+
+  const slugTiles = await findTilesFromSearchSlug(barcode);
+  if (slugTiles.length) {
+    await scanTilesForBarcode(slugTiles, barcode, scanOpts);
+    if (hits.length) return hits.slice(0, limit);
+  }
 
   const variants = barcodeQueryVariants(barcode);
   for (const q of variants) {

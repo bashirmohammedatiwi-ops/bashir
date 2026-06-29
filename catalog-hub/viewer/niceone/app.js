@@ -1,7 +1,3 @@
-const API = '/api';
-const $ = (sel, root = document) => root.querySelector(sel);
-const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-
 import {
   sortProducts,
   bindSortPills,
@@ -13,6 +9,11 @@ import {
   renderShadeSwatchMarkup,
   shadeSelectionLabelParts,
 } from '/shared/store-ui.js';
+import { hubApi, initHubLinks } from '/shared/catalog-hub-base.js';
+
+const API = hubApi('/api');
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 const state = {
   categories: { tree: [], leaves: [] },
@@ -74,7 +75,7 @@ async function enrichListBarcodes() {
   const ids = state.products.map((p) => p.id).filter(Boolean);
   if (!ids.length) return;
   try {
-    const { barcodes } = await api('/api/products/barcodes', {
+    const { barcodes } = await api(`${API}/products/barcodes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ids, deep: false }),
@@ -598,7 +599,7 @@ async function pollShadeBarcodes(product, shades, productId) {
     }
     if (badge) badge.textContent = `جاري البحث... ${current.length - missing}/${current.length} باركود`;
     try {
-      const enriched = await api(`/api/products/${productId}/shades?lookup=1&max=8`);
+      const enriched = await api(`${API}/products/${productId}/shades?lookup=1&max=8`);
       if (enriched.shades?.length) {
         current = enriched.shades;
         refreshShadesUI(product, current);
@@ -708,6 +709,7 @@ async function loadCategories() {
 }
 
 async function init() {
+  initHubLinks();
   $('#menuBtn').addEventListener('click', openSidebar);
   $('#sidebarClose').addEventListener('click', closeSidebar);
   $('#overlay').addEventListener('click', closeAll);

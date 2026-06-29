@@ -1,7 +1,3 @@
-const API = '/api/faces';
-const $ = (sel, root = document) => root.querySelector(sel);
-const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-
 import {
   sortProducts,
   bindSortPills,
@@ -13,6 +9,11 @@ import {
   renderShadeSwatchMarkup,
   shadeSelectionLabelParts,
 } from '/shared/store-ui.js';
+import { hubApi, fixHubAssetUrl, initHubLinks } from '/shared/catalog-hub-base.js';
+
+const API = hubApi('/api/faces');
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 const QUICK_CATS = [
   { id: 'perfume-for-women', label: 'عطور نسائية', labelEn: "Women's Perfume" },
@@ -48,6 +49,10 @@ const state = {
 
 function esc(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function escUrl(url = '') {
+  return esc(fixHubAssetUrl(url));
 }
 
 function biText(ar, en, { block = true, fallback = '' } = {}) {
@@ -325,7 +330,7 @@ function renderProductCard(p) {
       <article class="card card--list" data-id="${esc(p.id)}">
         <div class="card-img">
           ${badges}
-          <img src="${esc(p.thumb)}" alt="" loading="lazy" decoding="async" />
+          <img src="${escUrl(p.thumb)}" alt="" loading="lazy" decoding="async" />
         </div>
         <div class="card-body">
           ${brand ? `<div class="card-brand">${brand}</div>` : ''}
@@ -346,7 +351,7 @@ function renderProductCard(p) {
     <article class="card" data-id="${esc(p.id)}">
       <div class="card-img">
         ${badges}
-        <img src="${esc(p.thumb)}" alt="" loading="lazy" decoding="async" />
+        <img src="${escUrl(p.thumb)}" alt="" loading="lazy" decoding="async" />
         <div class="card-img-overlay">
           <span class="card-view-hint">عرض التفاصيل</span>
         </div>
@@ -618,7 +623,7 @@ function applyShadeSelection(product, shades, shade) {
     [labelParts.en, displayBarcode(shade), shade.sku].filter(Boolean).join(' · '),
     { block: false },
   ) || '—';
-  if (shade.image) $('#mainImg').src = shade.image;
+  if (shade.image) $('#mainImg').src = fixHubAssetUrl(shade.image);
   if (shade.price) $('#panelPrice').textContent = shade.price;
   $('#metaGrid').innerHTML = barcodeMetaRows(product, shade);
 
@@ -642,10 +647,13 @@ function applyShadeSelection(product, shades, shade) {
 }
 
 function renderProductPanel(product, shades) {
-  const mainImg = product.images?.[0] || product.thumb;
-  const gallery = (product.images?.length ? product.images : [mainImg])
+  const mainImg = fixHubAssetUrl(product.images?.[0] || product.thumb);
+  const gallery = (product.images?.length ? product.images : [product.images?.[0] || product.thumb])
     .filter(Boolean)
-    .map((url, i) => `<img src="${esc(url)}" class="${i === 0 ? 'active' : ''}" data-full="${esc(url)}" alt="" loading="lazy" decoding="async" />`)
+    .map((url, i) => {
+      const fixed = fixHubAssetUrl(url);
+      return `<img src="${esc(fixed)}" class="${i === 0 ? 'active' : ''}" data-full="${esc(fixed)}" alt="" loading="lazy" decoding="async" />`;
+    })
     .join('');
 
   const shadesHtml = product.hasOptions && shades.length
@@ -770,6 +778,7 @@ function closeAll() {
 }
 
 async function init() {
+  initHubLinks();
   $('#menuBtn').addEventListener('click', openSidebar);
   $('#sidebarClose').addEventListener('click', closeSidebar);
   $('#overlay').addEventListener('click', closeAll);

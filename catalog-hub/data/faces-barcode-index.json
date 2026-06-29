@@ -76,10 +76,23 @@
       "price": 705,
       "shadeName": "",
       "productUrl": "https://www.faces.ae/ar/p/jean-paul-gaultier-la-belle-le-parfum-eau-de-parfum-017215333734.html",
-      "updatedAt": 1782695035263
+      "updatedAt": 1782698642654
+    },
+    "00017215333734": {
+      "pid": "017215333734",
+      "ean": "8435415049542",
+      "nameAr": "عطر لا بيل لي بيرفيوم",
+      "nameEn": "La Belle Le Parfum",
+      "brandAr": "جان بول غوتييه",
+      "brandEn": "Jean Paul Gaultier",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwb52c97eb/images/017215333734_11.jpg?sw=800&sh=800",
+      "price": 705,
+      "shadeName": "",
+      "productUrl": "https://www.faces.ae/ar/p/jean-paul-gaultier-la-belle-le-parfum-eau-de-parfum-017215333734.html",
+      "updatedAt": 1782698642497
     }
   },
   "meta": {
-    "updatedAt": 1782698097964
+    "updatedAt": 1782698642654
   }
 }

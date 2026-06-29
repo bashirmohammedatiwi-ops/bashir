@@ -532,6 +532,32 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
     }
   });
 
+  const facesEnabled = enabled.some((s) => s.store === 'faces');
+  if (facesEnabled && !(byStore.faces || []).length) {
+    const hintHits = dedupeHits(results).map((h) => ({
+      name: h.name,
+      nameEn: h.nameEn,
+      manufacturer: h.manufacturer,
+      manufacturerEn: h.manufacturerEn,
+      brand: h.manufacturer,
+    }));
+    try {
+      const facesRetry = await withStoreTimeout(
+        searchFacesByBarcode(barcode, hintHits),
+        25_000,
+        'faces',
+      );
+      if (facesRetry?.length) {
+        byStore.faces = facesRetry;
+        results.push(...facesRetry);
+      }
+    } catch (err) {
+      if (!errors.some((e) => e.store === 'faces')) {
+        errors.push({ store: 'faces', message: err?.message || 'فشل البحث' });
+      }
+    }
+  }
+
   const storeList = enabled.map(({ store }) => store);
   const uniqueStores = [...new Set(storeList)];
 
