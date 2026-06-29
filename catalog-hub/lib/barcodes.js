@@ -974,23 +974,6 @@ export function buildMetaHintQueries(meta = {}) {
   return [...queries].filter(Boolean);
 }
 
-/** مطابقة أسماء الدرجات بمرونة (عربي/إنجليزي) — مشتركة بين المتاجر */
-export function shadeNamesMatch(a = '', b = '') {
-  const norm = (v) => String(v || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9\u0600-\u06FF]+/g, ' ')
-    .trim();
-  const na = norm(a);
-  const nb = norm(b);
-  if (!na || !nb) return false;
-  if (na === nb || na.includes(nb) || nb.includes(na)) return true;
-  const wa = new Set(na.split(/\s+/).filter((w) => w.length >= 3));
-  const wb = nb.split(/\s+/).filter((w) => w.length >= 3);
-  if (!wa.size || !wb.length) return false;
-  const overlap = wb.filter((w) => wa.has(w)).length;
-  return overlap >= Math.min(wa.size, wb.length);
-}
-
 /**
  * حلّ الدرجة الصحيحة من تفاصيل منتج Shopify-style (shades[].name/barcode).
  * يُستخدم في orisdi/beautyway لتحويل نتيجة hint إلى درجة دقيقة.
