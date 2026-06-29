@@ -1,7 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
-import { CreateSubcategoryDto, UpdateSubcategoryDto } from "./dto/category.dto";
+import {
+  CreateSubcategoryDto,
+  CreateTertiarySectionDto,
+  UpdateSubcategoryDto,
+  UpdateTertiarySectionDto,
+} from "./dto/category.dto";
 
 const categoryInclude = {
   image: true,
@@ -9,21 +14,26 @@ const categoryInclude = {
     orderBy: { position: "asc" as const },
     include: {
       image: true,
-      _count: { select: { subcategoryProducts: true } },
+      children: {
+        orderBy: { position: "asc" as const },
+        include: {
+          image: true,
+          _count: { select: { tertiaryCategoryProducts: true } },
+        },
+      },
+      _count: { select: { subcategoryProducts: true, children: true } },
     },
   },
   _count: { select: { products: true, children: true } },
 };
 
-function mapCategory(c: any) {
+function mapTertiarySection(c: any) {
   return {
     ...c,
-    productCount: c._count?.products ?? 0,
-    subcategoriesCount: c._count?.children ?? c.children?.length ?? 0,
-    children: c.children?.map((child: any) => ({
-      ...child,
-      productCount: child._count?.subcategoryProducts ?? 0,
-    })),
+    productCount: c._count?.tertiaryCategoryProducts ?? 0,
+    parentName: c.parent?.name,
+    grandparentId: c.parent?.parentId ?? c.parent?.parent?.id,
+    grandparentName: c.parent?.parent?.name,
   };
 }
 
@@ -31,13 +41,40 @@ function mapSubcategory(c: any) {
   return {
     ...c,
     productCount: c._count?.subcategoryProducts ?? 0,
+    tertiaryCount: c._count?.children ?? c.children?.length ?? 0,
     parentName: c.parent?.name,
+    children: c.children?.map(mapTertiarySection),
+  };
+}
+
+function mapCategory(c: any) {
+  return {
+    ...c,
+    productCount: c._count?.products ?? 0,
+    subcategoriesCount: c._count?.children ?? c.children?.length ?? 0,
+    children: c.children?.map(mapSubcategory),
   };
 }
 
 @Injectable()
 export class CategoriesService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private subcategoryWhere(parentId?: string, all?: boolean): Prisma.CategoryWhereInput {
+    return {
+      parent: { parentId: null },
+      ...(parentId ? { parentId } : {}),
+      ...(all ? {} : { isActive: true }),
+    };
+  }
+
+  private tertiaryWhere(parentId?: string, all?: boolean): Prisma.CategoryWhereInput {
+    return {
+      parent: { parent: { parentId: null } },
+      ...(parentId ? { parentId } : {}),
+      ...(all ? {} : { isActive: true }),
+    };
+  }
 
   async list(all = false, minimal = false) {
     if (minimal) {
@@ -70,7 +107,15 @@ export class CategoriesService {
           orderBy: { position: "asc" },
           include: {
             image: true,
-            _count: { select: { subcategoryProducts: true } },
+            children: {
+              where: { isActive: all ? undefined : true },
+              orderBy: { position: "asc" },
+              include: {
+                image: true,
+                _count: { select: { tertiaryCategoryProducts: true } },
+              },
+            },
+            _count: { select: { subcategoryProducts: true, children: true } },
           },
         },
       },
@@ -84,9 +129,7 @@ export class CategoriesService {
     search?: string;
   }) {
     const where: Prisma.CategoryWhereInput = {
-      parentId: { not: null },
-      ...(opts.parentId ? { parentId: opts.parentId } : {}),
-      ...(opts.all ? {} : { isActive: true }),
+      ...this.subcategoryWhere(opts.parentId, opts.all),
       ...(opts.search
         ? {
             OR: [
@@ -103,10 +146,54 @@ export class CategoriesService {
       include: {
         image: true,
         parent: { select: { id: true, name: true, slug: true, icon: true } },
-        _count: { select: { subcategoryProducts: true } },
+        children: {
+          orderBy: { position: "asc" },
+          include: {
+            image: true,
+            _count: { select: { tertiaryCategoryProducts: true } },
+          },
+        },
+        _count: { select: { subcategoryProducts: true, children: true } },
       },
     });
     return rows.map(mapSubcategory);
+  }
+
+  async listTertiarySections(opts: {
+    parentId?: string;
+    all?: boolean;
+    search?: string;
+  }) {
+    const where: Prisma.CategoryWhereInput = {
+      ...this.tertiaryWhere(opts.parentId, opts.all),
+      ...(opts.search
+        ? {
+            OR: [
+              { name: { contains: opts.search } },
+              { slug: { contains: opts.search } },
+            ],
+          }
+        : {}),
+    };
+
+    const rows = await this.prisma.category.findMany({
+      where,
+      orderBy: [{ parent: { position: "asc" } }, { position: "asc" }],
+      include: {
+        image: true,
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            parentId: true,
+            parent: { select: { id: true, name: true, slug: true } },
+          },
+        },
+        _count: { select: { tertiaryCategoryProducts: true } },
+      },
+    });
+    return rows.map(mapTertiarySection);
   }
 
   async listSubcategories(parentIdOrSlug: string, all = false) {
@@ -121,21 +208,47 @@ export class CategoriesService {
     const row = await this.prisma.category.findFirst({
       where: {
         OR: [{ id: idOrSlug }, { slug: idOrSlug }],
+        parent: { parentId: null },
         parentId: { not: null },
       },
       include: {
         image: true,
         parent: { select: { id: true, name: true, slug: true } },
-        _count: { select: { subcategoryProducts: true } },
+        _count: { select: { subcategoryProducts: true, children: true } },
       },
     });
     if (!row) throw new NotFoundException("Subcategory not found");
     return mapSubcategory(row);
   }
 
+  async findTertiarySection(idOrSlug: string) {
+    const row = await this.prisma.category.findFirst({
+      where: {
+        OR: [{ id: idOrSlug }, { slug: idOrSlug }],
+        parent: { parent: { parentId: null } },
+        parentId: { not: null },
+      },
+      include: {
+        image: true,
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            parentId: true,
+            parent: { select: { id: true, name: true, slug: true } },
+          },
+        },
+        _count: { select: { tertiaryCategoryProducts: true } },
+      },
+    });
+    if (!row) throw new NotFoundException("Tertiary section not found");
+    return mapTertiarySection(row);
+  }
+
   async findOne(idOrSlug: string) {
     const category = await this.prisma.category.findFirst({
-      where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }] },
+      where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }], parentId: null },
       include: categoryInclude,
     });
     if (!category) throw new NotFoundException("Category not found");
@@ -144,7 +257,7 @@ export class CategoriesService {
 
   async create(data: any) {
     if (data.parentId) {
-      throw new BadRequestException("Use POST /subcategories to create secondary sections");
+      throw new BadRequestException("Use POST /subcategories to create sub-sections");
     }
     const row = await this.prisma.category.create({ data });
     return this.findOne(row.id);
@@ -152,57 +265,150 @@ export class CategoriesService {
 
   async createSubcategory(data: CreateSubcategoryDto) {
     const parent = await this.prisma.category.findUnique({ where: { id: data.parentId } });
-    if (!parent) throw new BadRequestException("Parent category not found");
-    if (parent.parentId) throw new BadRequestException("Cannot nest subcategories");
+    if (!parent) throw new BadRequestException("Parent section not found");
+    if (parent.parentId) throw new BadRequestException("Parent must be a top-level section");
     const row = await this.prisma.category.create({
       data: { ...data, parentId: data.parentId },
     });
     return this.findSubcategory(row.id);
   }
 
+  async createTertiarySection(data: CreateTertiarySectionDto) {
+    const parent = await this.prisma.category.findUnique({
+      where: { id: data.parentId },
+      include: { parent: { select: { parentId: true } } },
+    });
+    if (!parent?.parentId) {
+      throw new BadRequestException("Parent must be a sub-section");
+    }
+    if (parent.parent?.parentId) {
+      throw new BadRequestException("Cannot nest more than three category levels");
+    }
+    const row = await this.prisma.category.create({
+      data: { ...data, parentId: data.parentId },
+    });
+    return this.findTertiarySection(row.id);
+  }
+
   async update(id: string, data: any) {
-    await this.ensureExists(id);
+    await this.ensureRootSection(id);
     if (data.parentId) {
-      throw new BadRequestException("Use PATCH /subcategories/:id for secondary sections");
+      throw new BadRequestException("Use PATCH /subcategories/:id for sub-sections");
     }
     await this.prisma.category.update({ where: { id }, data });
     return this.findOne(id);
   }
 
   async updateSubcategory(id: string, data: UpdateSubcategoryDto) {
-    const existing = await this.prisma.category.findUnique({ where: { id } });
-    if (!existing?.parentId) throw new NotFoundException("Subcategory not found");
+    const existing = await this.prisma.category.findUnique({
+      where: { id },
+      include: { parent: { select: { parentId: true } } },
+    });
+    if (!existing?.parentId || existing.parent?.parentId) {
+      throw new NotFoundException("Subcategory not found");
+    }
     const parent = await this.prisma.category.findUnique({ where: { id: data.parentId } });
-    if (!parent) throw new BadRequestException("Parent category not found");
-    if (parent.parentId) throw new BadRequestException("Invalid parent category");
+    if (!parent || parent.parentId) {
+      throw new BadRequestException("Parent must be a top-level section");
+    }
     await this.prisma.category.update({ where: { id }, data });
     return this.findSubcategory(id);
   }
 
+  async updateTertiarySection(id: string, data: UpdateTertiarySectionDto) {
+    const existing = await this.prisma.category.findUnique({
+      where: { id },
+      include: { parent: { include: { parent: { select: { parentId: true } } } } },
+    });
+    if (!existing?.parentId || !existing.parent?.parentId || existing.parent.parent?.parentId) {
+      throw new NotFoundException("Tertiary section not found");
+    }
+    const parent = await this.prisma.category.findUnique({
+      where: { id: data.parentId },
+      include: { parent: { select: { parentId: true } } },
+    });
+    if (!parent?.parentId || parent.parent?.parentId) {
+      throw new BadRequestException("Parent must be a sub-section");
+    }
+    await this.prisma.category.update({ where: { id }, data });
+    return this.findTertiarySection(id);
+  }
+
   async remove(id: string) {
     await this.ensureExists(id);
+    const children = await this.prisma.category.findMany({
+      where: { parentId: id },
+      select: { id: true },
+    });
+    for (const child of children) {
+      await this.remove(child.id);
+    }
     await this.prisma.product.updateMany({
       where: { subcategoryId: id },
-      data: { subcategoryId: null },
+      data: { subcategoryId: null, tertiaryCategoryId: null },
     });
-    await this.prisma.category.deleteMany({ where: { parentId: id } });
+    await this.prisma.product.updateMany({
+      where: { tertiaryCategoryId: id },
+      data: { tertiaryCategoryId: null },
+    });
     await this.prisma.category.delete({ where: { id } });
     return { success: true };
   }
 
   async validateSubcategoryForCategory(subcategoryId: string | undefined | null, categoryId: string) {
     if (!subcategoryId) return null;
-    const sub = await this.prisma.category.findUnique({ where: { id: subcategoryId } });
-    if (!sub?.parentId) {
-      throw new BadRequestException("Invalid subcategory");
+    const sub = await this.prisma.category.findUnique({
+      where: { id: subcategoryId },
+      include: { parent: { select: { parentId: true } } },
+    });
+    if (!sub?.parentId || sub.parent?.parentId) {
+      throw new BadRequestException("Invalid sub-section");
     }
     if (sub.parentId !== categoryId) {
-      throw new BadRequestException("Subcategory does not belong to the selected category");
+      throw new BadRequestException("Sub-section does not belong to the selected section");
     }
     if (!sub.isActive) {
-      throw new BadRequestException("Subcategory is inactive");
+      throw new BadRequestException("Sub-section is inactive");
     }
     return subcategoryId;
+  }
+
+  async validateTertiaryForProduct(
+    tertiaryCategoryId: string | undefined | null,
+    subcategoryId: string | undefined | null,
+    categoryId: string,
+  ) {
+    if (!tertiaryCategoryId) return null;
+    if (!subcategoryId) {
+      throw new BadRequestException("Select a sub-section before choosing a tertiary section");
+    }
+    const tertiary = await this.prisma.category.findUnique({
+      where: { id: tertiaryCategoryId },
+      include: {
+        parent: {
+          include: { parent: { select: { id: true, parentId: true } } },
+        },
+      },
+    });
+    if (!tertiary?.parentId || !tertiary.parent?.parentId || tertiary.parent.parent?.parentId) {
+      throw new BadRequestException("Invalid tertiary section");
+    }
+    if (tertiary.parentId !== subcategoryId) {
+      throw new BadRequestException("Tertiary section does not belong to the selected sub-section");
+    }
+    if (tertiary.parent.parentId !== categoryId) {
+      throw new BadRequestException("Tertiary section does not belong to the selected section");
+    }
+    if (!tertiary.isActive) {
+      throw new BadRequestException("Tertiary section is inactive");
+    }
+    return tertiaryCategoryId;
+  }
+
+  private async ensureRootSection(id: string) {
+    const c = await this.prisma.category.findUnique({ where: { id } });
+    if (!c) throw new NotFoundException("Category not found");
+    if (c.parentId) throw new NotFoundException("Category not found");
   }
 
   private async ensureExists(id: string) {

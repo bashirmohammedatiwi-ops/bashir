@@ -130,14 +130,17 @@ export default function SubcategoriesPage() {
           }}
         >
           <div>
-            <h2 style={{ margin: 0 }}>الأقسام الفرعية</h2>
+            <h2 style={{ margin: 0 }}>أقسام فرعية</h2>
             <div style={{ fontSize: 12, color: "#888", marginTop: 4 }}>
-              أقسام ثانوية داخل كل فئة رئيسية — تُربط بالمنتجات
+              المستوى الثاني — داخل كل قسم رئيسي
             </div>
           </div>
           <Space>
             <Link href="/categories">
-              <Button>الفئات الرئيسية</Button>
+              <Button>الأقسام</Button>
+            </Link>
+            <Link href="/tertiary-sections">
+              <Button>أقسام ثانوية</Button>
             </Link>
             <Button type="primary" onClick={openCreate} disabled={!parentOptions.length}>
               + قسم فرعي
@@ -149,7 +152,7 @@ export default function SubcategoriesPage() {
           <Space wrap style={{ marginBottom: 12 }}>
             <Select
               allowClear
-              placeholder="فلترة حسب الفئة"
+              placeholder="فلترة حسب القسم"
               style={{ width: 220 }}
               value={parentFilter}
               options={parentOptions}
@@ -190,9 +193,18 @@ export default function SubcategoriesPage() {
               },
               { title: "الاسم", dataIndex: "name" },
               {
-                title: "الفئة الرئيسية",
+                title: "القسم",
                 render: (_: any, r: any) => (
                   <Tag color="purple">{r.parent?.name ?? r.parentName ?? "—"}</Tag>
+                ),
+              },
+              {
+                title: "أقسام ثانوية",
+                width: 120,
+                render: (_: any, r: any) => (
+                  <Link href={`/tertiary-sections?parentId=${r.id}`}>
+                    {r.tertiaryCount ?? r.children?.length ?? 0} قسم
+                  </Link>
                 ),
               },
               { title: "Slug", dataIndex: "slug", width: 160 },
@@ -218,6 +230,9 @@ export default function SubcategoriesPage() {
                 width: 160,
                 render: (_: any, r: any) => (
                   <Space>
+                    <Link href={`/tertiary-sections?parentId=${r.id}`}>
+                      <Button size="small">+ ثانوي</Button>
+                    </Link>
                     <Button size="small" onClick={() => openEdit(r)}>
                       تعديل
                     </Button>
@@ -257,10 +272,10 @@ export default function SubcategoriesPage() {
         <Form layout="vertical" form={form} onFinish={(v) => upsert.mutate(v)}>
           <Form.Item
             name="parentId"
-            label="الفئة الرئيسية"
-            rules={[{ required: true, message: "اختر الفئة" }]}
+            label="القسم"
+            rules={[{ required: true, message: "اختر القسم" }]}
           >
-            <Select options={parentOptions} placeholder="اختر الفئة" />
+            <Select options={parentOptions} placeholder="اختر القسم" />
           </Form.Item>
           <Form.Item name="name" label="اسم القسم" rules={[{ required: true }]}>
             <Input placeholder="أحمر الشفاه" />

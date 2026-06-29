@@ -45,6 +45,7 @@ export class CreateProductDto {
   @IsString() @IsNotEmpty() categoryId: string;
 
   @IsOptional() @IsString() subcategoryId?: string;
+  @IsOptional() @IsString() tertiaryCategoryId?: string;
   @IsOptional() @IsString() description?: string;
   @IsOptional() @IsString() descriptionAr?: string;
   @IsOptional() @IsString() descriptionEn?: string;
@@ -89,6 +90,7 @@ export class UpdateProductDto extends CreateProductDto {}
 export class QueryProductsDto extends PaginationDto {
   @IsOptional() @IsString() categoryId?: string;
   @IsOptional() @IsString() subcategoryId?: string;
+  @IsOptional() @IsString() tertiaryCategoryId?: string;
   @IsOptional() @IsString() brandId?: string;
   @IsOptional() @IsString() tag?: string;
   @IsOptional() @IsString() concernId?: string;

@@ -180,6 +180,7 @@ model Category {
   children        Category[]     @relation("CategoryHierarchy")
   products        Product[]      @relation("ProductCategory")
   subcategoryProducts Product[]  @relation("ProductSubcategory")
+  tertiaryCategoryProducts Product[] @relation("ProductTertiaryCategory")
   image           Media?         @relation("CategoryImage", fields: [imageId], references: [id])
 
   @@index([isActive])
@@ -259,12 +260,14 @@ model Product {
   brandId         String
   categoryId      String
   subcategoryId   String?
+  tertiaryCategoryId String?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
   brand           Brand           @relation(fields: [brandId], references: [id])
   category        Category        @relation("ProductCategory", fields: [categoryId], references: [id])
   subcategory     Category?       @relation("ProductSubcategory", fields: [subcategoryId], references: [id])
+  tertiaryCategory Category?      @relation("ProductTertiaryCategory", fields: [tertiaryCategoryId], references: [id])
   variants        ProductVariant[]
   shades          ProductShade[]
   images          ProductImage[]
@@ -277,6 +280,7 @@ model Product {
   @@index([brandId])
   @@index([categoryId])
   @@index([subcategoryId])
+  @@index([tertiaryCategoryId])
   @@index([isActive])
   @@index([isFeatured])
   @@index([isNew])

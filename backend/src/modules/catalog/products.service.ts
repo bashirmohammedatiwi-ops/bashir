@@ -12,6 +12,7 @@ const productRelationsFull = {
   brand: { select: { id: true, name: true, slug: true } },
   category: { select: { id: true, name: true, slug: true } },
   subcategory: { select: { id: true, name: true, slug: true, parentId: true } },
+  tertiaryCategory: { select: { id: true, name: true, slug: true, parentId: true } },
   images: {
     orderBy: { position: "asc" as const },
     include: { media: true },
@@ -25,6 +26,7 @@ const productRelationsLite = {
   brand: { select: { id: true, name: true, slug: true } },
   category: { select: { id: true, name: true, slug: true } },
   subcategory: { select: { id: true, name: true, slug: true, parentId: true } },
+  tertiaryCategory: { select: { id: true, name: true, slug: true, parentId: true } },
   images: {
     take: 1,
     orderBy: { position: "asc" as const },
@@ -46,6 +48,7 @@ export class ProductsService {
       isActive: q.status === "all" ? undefined : true,
       categoryId: q.categoryId,
       subcategoryId: q.subcategoryId,
+      tertiaryCategoryId: q.tertiaryCategoryId,
       brandId: q.brandId,
       isFeatured: q.isFeatured,
       isNew: q.isNew,
@@ -101,6 +104,7 @@ export class ProductsService {
         brand: true,
         category: true,
         subcategory: { select: { id: true, name: true, slug: true, parentId: true } },
+        tertiaryCategory: { select: { id: true, name: true, slug: true, parentId: true } },
         images: { orderBy: { position: "asc" }, include: { media: true } },
         shades: { orderBy: { position: "asc" }, include: { image: true } },
         variants: { orderBy: { position: "asc" } },
@@ -143,6 +147,11 @@ export class ProductsService {
       dto.subcategoryId,
       dto.categoryId,
     );
+    const tertiaryCategoryId = await this.categories.validateTertiaryForProduct(
+      dto.tertiaryCategoryId,
+      subcategoryId,
+      dto.categoryId,
+    );
 
     const product = await this.prisma.product.create({
       data: {
@@ -172,6 +181,7 @@ export class ProductsService {
         brandId: dto.brandId,
         categoryId: dto.categoryId,
         subcategoryId,
+        tertiaryCategoryId,
         tags: JSON.stringify(dto.tags ?? []),
         skinType: JSON.stringify(dto.skinType ?? []),
         images: dto.imageIds && dto.imageIds.length
@@ -217,9 +227,15 @@ export class ProductsService {
     const descriptions = resolveProductDescriptions(dto);
     const categoryId = dto.categoryId ?? existing.categoryId;
     let subcategoryId: string | null | undefined = dto.subcategoryId;
-    if (dto.subcategoryId !== undefined || dto.categoryId !== undefined) {
+    let tertiaryCategoryId: string | null | undefined = dto.tertiaryCategoryId;
+    if (dto.subcategoryId !== undefined || dto.categoryId !== undefined || dto.tertiaryCategoryId !== undefined) {
       subcategoryId = await this.categories.validateSubcategoryForCategory(
         dto.subcategoryId ?? null,
+        categoryId,
+      );
+      tertiaryCategoryId = await this.categories.validateTertiaryForProduct(
+        dto.tertiaryCategoryId ?? null,
+        subcategoryId,
         categoryId,
       );
     }
@@ -261,6 +277,7 @@ export class ProductsService {
         brandId: dto.brandId,
         categoryId: dto.categoryId,
         subcategoryId: subcategoryId !== undefined ? subcategoryId : undefined,
+        tertiaryCategoryId: tertiaryCategoryId !== undefined ? tertiaryCategoryId : undefined,
         tags: dto.tags ? JSON.stringify(dto.tags) : undefined,
         skinType: dto.skinType ? JSON.stringify(dto.skinType) : undefined,
         images: dto.imageIds && dto.imageIds.length

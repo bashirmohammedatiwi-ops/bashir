@@ -29,6 +29,7 @@ export function buildProductPayload(
     brandId: values.brandId,
     categoryId: values.categoryId,
     subcategoryId: values.subcategoryId || undefined,
+    tertiaryCategoryId: values.tertiaryCategoryId || undefined,
     description: values.descriptionAr?.trim() || values.descriptionEn?.trim() || values.description?.trim() || "",
     descriptionAr: values.descriptionAr?.trim() || undefined,
     descriptionEn: values.descriptionEn?.trim() || undefined,

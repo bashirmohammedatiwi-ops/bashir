@@ -52,6 +52,7 @@ export default function CategoriesPage() {
       qc.invalidateQueries({ queryKey: ["categories"] });
       qc.invalidateQueries({ queryKey: ["categories-full"] });
       qc.invalidateQueries({ queryKey: ["subcategories"] });
+      qc.invalidateQueries({ queryKey: ["tertiary-sections"] });
     },
   });
 
@@ -79,15 +80,18 @@ export default function CategoriesPage() {
   return (
     <div className="alhayaa-page">
       <PageHeader
-        title="الفئات الرئيسية"
-        subtitle="الفئات العليا — الأقسام الفرعية من صفحة الأقسام الفرعية"
+        title="الأقسام"
+        subtitle="المستوى الأول — الأقسام الفرعية والثانوية من صفحاتها"
         extra={
           <Space>
             <Link href="/subcategories">
-              <Button>الأقسام الفرعية</Button>
+              <Button>أقسام فرعية</Button>
+            </Link>
+            <Link href="/tertiary-sections">
+              <Button>أقسام ثانوية</Button>
             </Link>
             <Button type="primary" onClick={openCreate}>
-              + فئة رئيسية
+              + قسم
             </Button>
           </Space>
         }
@@ -127,7 +131,7 @@ export default function CategoriesPage() {
               { title: "الاسم", dataIndex: "name" },
               { title: "Slug", dataIndex: "slug", width: 160 },
               {
-                title: "الأقسام الفرعية",
+                title: "أقسام فرعية",
                 width: 130,
                 render: (_: any, r: any) => (
                   <Link href={`/subcategories?parentId=${r.id}`}>
@@ -163,8 +167,8 @@ export default function CategoriesPage() {
                       تعديل
                     </Button>
                     <Popconfirm
-                      title="حذف الفئة؟"
-                      description="سيُحذف القسم وجميع الأقسام الفرعية التابعة"
+                      title="حذف القسم؟"
+                      description="سيُحذف القسم وجميع الأقسام الفرعية والثانوية التابعة"
                       okText="حذف"
                       cancelText="إلغاء"
                       onConfirm={() => remove.mutate(r.id)}

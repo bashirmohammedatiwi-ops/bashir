@@ -78,10 +78,16 @@ export default function CatalogImportPage() {
   });
 
   const categoryId = Form.useWatch("categoryId", form);
+  const subcategoryId = Form.useWatch("subcategoryId", form);
   const { data: subcategoriesData = [] } = useQuery({
     queryKey: ["subcategories", categoryId],
     queryFn: () => queries.subcategories({ parentId: categoryId }),
     enabled: !!categoryId,
+  });
+  const { data: tertiarySectionsData = [] } = useQuery({
+    queryKey: ["tertiary-sections", subcategoryId],
+    queryFn: () => queries.tertiarySections({ parentId: subcategoryId }),
+    enabled: !!subcategoryId,
   });
 
   const subcategoryOptions = useMemo(
@@ -91,6 +97,14 @@ export default function CatalogImportPage() {
         label: s.nameAr || s.name || s.nameEn,
       })),
     [subcategoriesData],
+  );
+  const tertiaryOptions = useMemo(
+    () =>
+      (tertiarySectionsData || []).map((s: any) => ({
+        value: s.id,
+        label: s.nameAr || s.name || s.nameEn,
+      })),
+    [tertiarySectionsData],
   );
 
   useEffect(() => {
@@ -535,7 +549,7 @@ export default function CatalogImportPage() {
                 />
               )}
               <Typography.Text type="secondary" style={{ display: "block", marginBottom: 12 }}>
-                يدوياً: القسم · القسم الفرعي · البراند في متجرك
+                يدوياً: القسم · القسم الفرعي · القسم الثانوي · البراند
               </Typography.Text>
               <Form form={form} layout="vertical">
                 <Form.Item
@@ -551,6 +565,10 @@ export default function CatalogImportPage() {
                     }))}
                     showSearch
                     optionFilterProp="label"
+                    onChange={() => {
+                      form.setFieldValue("subcategoryId", undefined);
+                      form.setFieldValue("tertiaryCategoryId", undefined);
+                    }}
                   />
                 </Form.Item>
                 <Form.Item name="subcategoryId" label="القسم الفرعي">
@@ -559,6 +577,17 @@ export default function CatalogImportPage() {
                     placeholder="اختياري"
                     options={subcategoryOptions}
                     disabled={!categoryId}
+                    showSearch
+                    optionFilterProp="label"
+                    onChange={() => form.setFieldValue("tertiaryCategoryId", undefined)}
+                  />
+                </Form.Item>
+                <Form.Item name="tertiaryCategoryId" label="القسم الثانوي">
+                  <Select
+                    allowClear
+                    placeholder="اختياري"
+                    options={tertiaryOptions}
+                    disabled={!subcategoryId}
                     showSearch
                     optionFilterProp="label"
                   />

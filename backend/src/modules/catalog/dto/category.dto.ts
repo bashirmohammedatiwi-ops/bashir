@@ -31,3 +31,15 @@ export class CreateSubcategoryDto {
 }
 
 export class UpdateSubcategoryDto extends CreateSubcategoryDto {}
+
+export class CreateTertiarySectionDto {
+  @IsString() @IsNotEmpty() name: string;
+  @IsString() @IsNotEmpty() slug: string;
+  @IsString() @IsNotEmpty() parentId: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() imageId?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) position?: number;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}
+
+export class UpdateTertiarySectionDto extends CreateTertiarySectionDto {}

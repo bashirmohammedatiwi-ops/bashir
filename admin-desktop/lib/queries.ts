@@ -16,6 +16,10 @@ export const queries = {
     api
       .get("/subcategories", { params: { all: 1, ...params } })
       .then((r) => r.data?.data ?? r.data),
+  tertiarySections: (params?: { parentId?: string; search?: string }) =>
+    api
+      .get("/tertiary-sections", { params: { all: 1, ...params } })
+      .then((r) => r.data?.data ?? r.data),
   brands: () => api.get("/brands", { params: { all: 1 } }).then((r) => r.data?.data ?? r.data),
   orders: (params?: any) => api.get("/orders", { params: { lite: 1, ...params } }).then((r) => r.data),
   order: (id: string) => api.get(`/orders/${id}`).then((r) => r.data?.data ?? r.data),
@@ -69,6 +73,12 @@ export const mutations = {
   updateSubcategory: (id: string, data: any) =>
     api.patch(`/subcategories/${id}`, data).then((r) => r.data?.data ?? r.data),
   deleteSubcategory: (id: string) => api.delete(`/subcategories/${id}`).then((r) => r.data),
+
+  createTertiarySection: (data: any) =>
+    api.post("/tertiary-sections", data).then((r) => r.data?.data ?? r.data),
+  updateTertiarySection: (id: string, data: any) =>
+    api.patch(`/tertiary-sections/${id}`, data).then((r) => r.data?.data ?? r.data),
+  deleteTertiarySection: (id: string) => api.delete(`/tertiary-sections/${id}`).then((r) => r.data),
 
   createBrand: (data: any) => api.post("/brands", data).then((r) => r.data?.data ?? r.data),
   updateBrand: (id: string, data: any) =>

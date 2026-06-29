@@ -27,6 +27,7 @@ export default function ProductsPage() {
   const [search, setSearch] = useState("");
   const [filterCategoryId, setFilterCategoryId] = useState<string | undefined>();
   const [filterSubcategoryId, setFilterSubcategoryId] = useState<string | undefined>();
+  const [filterTertiaryCategoryId, setFilterTertiaryCategoryId] = useState<string | undefined>();
   const [filterConcernId, setFilterConcernId] = useState<string | undefined>();
   const [editing, setEditing] = useState<any | null>(null);
   const [open, setOpen] = useState(false);
@@ -47,7 +48,7 @@ export default function ProductsPage() {
   } = useBarcodeInventorySync(form);
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["products", page, search, filterCategoryId, filterSubcategoryId, filterConcernId],
+    queryKey: ["products", page, search, filterCategoryId, filterSubcategoryId, filterTertiaryCategoryId, filterConcernId],
     queryFn: () =>
       queries.products({
         page,
@@ -55,6 +56,7 @@ export default function ProductsPage() {
         search,
         categoryId: filterCategoryId,
         subcategoryId: filterSubcategoryId,
+        tertiaryCategoryId: filterTertiaryCategoryId,
         concernId: filterConcernId,
       }),
     staleTime: 3 * 60_000,
@@ -140,6 +142,7 @@ export default function ProductsPage() {
         nameEn: full?.nameEn ?? "",
         descriptionAr: full?.descriptionAr ?? full?.description ?? "",
         descriptionEn: full?.descriptionEn ?? "",
+        tertiaryCategoryId: full?.tertiaryCategoryId ?? full?.tertiaryCategory?.id,
         brandId: full?.brand?.id ?? full?.brandId,
         categoryId: full?.category?.id ?? full?.categoryId,
         subcategoryId: full?.subcategory?.id ?? full?.subcategoryId,
@@ -200,17 +203,32 @@ export default function ProductsPage() {
     queryFn: () => queries.subcategories({ parentId: filterCategoryId }),
     enabled: !!filterCategoryId,
   });
+  const { data: filterTertiarySections } = useQuery({
+    queryKey: ["tertiary-sections", filterSubcategoryId],
+    queryFn: () => queries.tertiarySections({ parentId: filterSubcategoryId }),
+    enabled: !!filterSubcategoryId,
+  });
 
   const selectedCategoryId = Form.useWatch("categoryId", form);
+  const selectedSubcategoryId = Form.useWatch("subcategoryId", form);
   const { data: formSubcategories } = useQuery({
     queryKey: ["subcategories", selectedCategoryId],
     queryFn: () => queries.subcategories({ parentId: selectedCategoryId }),
     enabled: !!selectedCategoryId,
   });
+  const { data: formTertiarySections } = useQuery({
+    queryKey: ["tertiary-sections", selectedSubcategoryId],
+    queryFn: () => queries.tertiarySections({ parentId: selectedSubcategoryId }),
+    enabled: !!selectedSubcategoryId,
+  });
 
   const subcategoryOptions = useMemo(
     () => (formSubcategories ?? []).map((s: any) => ({ value: s.id, label: s.name })),
     [formSubcategories],
+  );
+  const tertiaryCategoryOptions = useMemo(
+    () => (formTertiarySections ?? []).map((s: any) => ({ value: s.id, label: s.name })),
+    [formTertiarySections],
   );
 
   const columns = useMemo(
@@ -241,12 +259,13 @@ export default function ProductsPage() {
         ),
       },
       {
-        title: "الفئة",
-        width: 130,
+        title: "القسم",
+        width: 150,
         render: (_: unknown, r: any) => (
           <div className="alhayaa-tags-stack">
             <Tag>{r.category?.name ?? "—"}</Tag>
             {r.subcategory?.name ? <Tag color="blue">{r.subcategory.name}</Tag> : null}
+            {r.tertiaryCategory?.name ? <Tag color="cyan">{r.tertiaryCategory.name}</Tag> : null}
           </div>
         ),
       },
@@ -339,7 +358,7 @@ export default function ProductsPage() {
           />
           <Select
             allowClear
-            placeholder="الفئة"
+            placeholder="القسم"
             className="alhayaa-filter-select"
             value={filterCategoryId}
             options={(categoriesData ?? []).map((c: any) => ({ value: c.id, label: c.name }))}
@@ -347,11 +366,12 @@ export default function ProductsPage() {
               setPage(1);
               setFilterCategoryId(v);
               setFilterSubcategoryId(undefined);
+              setFilterTertiaryCategoryId(undefined);
             }}
           />
           <Select
             allowClear
-            placeholder="القسم الفرعي"
+            placeholder="قسم فرعي"
             className="alhayaa-filter-select"
             value={filterSubcategoryId}
             disabled={!filterCategoryId}
@@ -362,6 +382,22 @@ export default function ProductsPage() {
             onChange={(v) => {
               setPage(1);
               setFilterSubcategoryId(v);
+              setFilterTertiaryCategoryId(undefined);
+            }}
+          />
+          <Select
+            allowClear
+            placeholder="قسم ثانوي"
+            className="alhayaa-filter-select"
+            value={filterTertiaryCategoryId}
+            disabled={!filterSubcategoryId}
+            options={(filterTertiarySections ?? []).map((s: any) => ({
+              value: s.id,
+              label: s.name,
+            }))}
+            onChange={(v) => {
+              setPage(1);
+              setFilterTertiaryCategoryId(v);
             }}
           />
           <Select
@@ -412,6 +448,7 @@ export default function ProductsPage() {
         brandsData={brandsData ?? []}
         skinConcernsData={skinConcernsData ?? []}
         subcategoryOptions={subcategoryOptions}
+        tertiaryCategoryOptions={tertiaryCategoryOptions}
         hasSyncData={hasSyncData}
         syncLoading={syncLoading}
         syncMeta={syncMeta}

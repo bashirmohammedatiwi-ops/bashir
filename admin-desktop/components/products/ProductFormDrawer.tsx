@@ -82,6 +82,7 @@ type ProductFormDrawerProps = {
   brandsData: any[];
   skinConcernsData?: any[];
   subcategoryOptions: { value: string; label: string }[];
+  tertiaryCategoryOptions?: { value: string; label: string }[];
   hasSyncData?: boolean;
   syncLoading?: boolean;
   syncMeta?: { offerName?: string; syncedAt?: string } | null;
@@ -107,6 +108,7 @@ export function ProductFormDrawer({
   brandsData,
   skinConcernsData = [],
   subcategoryOptions,
+  tertiaryCategoryOptions = [],
   hasSyncData = false,
   syncLoading = false,
   syncMeta = null,
@@ -216,14 +218,17 @@ export function ProductFormDrawer({
             <div className="alhayaa-form-row">
               <Form.Item
                 name="categoryId"
-                label="الفئة"
+                label="القسم"
                 className="alhayaa-form-col"
                 rules={[{ required: true }]}
               >
                 <Select
-                  placeholder="اختر الفئة"
+                  placeholder="اختر القسم"
                   options={(categoriesData ?? []).map((c: any) => ({ value: c.id, label: c.name }))}
-                  onChange={() => form.setFieldValue("subcategoryId", undefined)}
+                  onChange={() => {
+                    form.setFieldValue("subcategoryId", undefined);
+                    form.setFieldValue("tertiaryCategoryId", undefined);
+                  }}
                 />
               </Form.Item>
               {subcategoryOptions.length > 0 && (
@@ -233,10 +238,23 @@ export function ProductFormDrawer({
                   className="alhayaa-form-col"
                   rules={[{ required: true, message: "اختر القسم الفرعي" }]}
                 >
-                  <Select placeholder="اختر القسم الفرعي" options={subcategoryOptions} />
+                  <Select
+                    placeholder="اختر القسم الفرعي"
+                    options={subcategoryOptions}
+                    onChange={() => form.setFieldValue("tertiaryCategoryId", undefined)}
+                  />
                 </Form.Item>
               )}
             </div>
+            {tertiaryCategoryOptions.length > 0 && (
+              <Form.Item name="tertiaryCategoryId" label="القسم الثانوي (اختياري)">
+                <Select
+                  allowClear
+                  placeholder="اختر القسم الثانوي"
+                  options={tertiaryCategoryOptions}
+                />
+              </Form.Item>
+            )}
             <Form.Item name="tags" label="الوسوم (مفصولة بفاصلة)">
               <Input placeholder="شفاه, مات, فاخر" />
             </Form.Item>
