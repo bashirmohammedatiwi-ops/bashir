@@ -500,15 +500,19 @@ export async function searchProductsByBarcode(barcode) {
   const digits = String(barcode).replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return [];
 
-  let htmlEn = await fetchAmazonHtml(buildSearchUrl(digits, 1, 'en'), 'en').catch(() => '');
-  let enList = parseSearchResults(htmlEn);
+  // ⚡ صفحتا البحث EN + AR بالتوازي بدل التسلسل
+  const saEnUrl = `${AMAZON_SA}/-/en/s?${new URLSearchParams({ k: digits, i: 'beauty', page: '1' })}`;
+  const [htmlEnCom, htmlAr] = await Promise.all([
+    fetchAmazonHtml(buildSearchUrl(digits, 1, 'en'), 'en').catch(() => ''),
+    fetchAmazonHtml(buildSearchUrl(digits, 1, 'ar'), 'ar').catch(() => ''),
+  ]);
+
+  let enList = parseSearchResults(htmlEnCom);
   if (!enList.length) {
-    const saEnUrl = `${AMAZON_SA}/-/en/s?${new URLSearchParams({ k: digits, i: 'beauty', page: '1' })}`;
-    htmlEn = await fetchAmazonHtml(saEnUrl, 'en').catch(() => '');
-    enList = parseSearchResults(htmlEn);
+    const htmlSaEn = await fetchAmazonHtml(saEnUrl, 'en').catch(() => '');
+    enList = parseSearchResults(htmlSaEn);
   }
 
-  const htmlAr = await fetchAmazonHtml(buildSearchUrl(digits, 1, 'ar'), 'ar').catch(() => '');
   const arByAsin = new Map(parseSearchResults(htmlAr).map((p) => [p.asin, p]));
   const listingByAsin = new Map();
   for (const p of enList) {
@@ -520,23 +524,28 @@ export async function searchProductsByBarcode(barcode) {
       price: p.price || ar?.price,
     });
   }
+
+  // ⚡ جلب تفاصيل أعلى 3 ASIN بالتوازي بدل 5 بالتسلسل
   const asinOrder = enList.map((p) => p.asin).filter(Boolean);
+  const settled = await Promise.allSettled(
+    asinOrder.slice(0, 3).map((asin) =>
+      normalizeProductDetailBilingual(asin, listingByAsin.get(asin) || {}),
+    ),
+  );
+
   const results = [];
-  for (const asin of asinOrder.slice(0, 5)) {
-    try {
-      const listing = listingByAsin.get(asin) || {};
-      const detail = await normalizeProductDetailBilingual(asin, listing);
-      if (!isUsableAmazonProduct(detail)) continue;
-      if (isAmazonBundleListing(detail.nameEn, detail.nameAr)) continue;
-      const bc = String(detail.barcode || '').replace(/\D/g, '');
-      const barcodeMatches = !bc || bc === digits || bc.endsWith(digits) || digits.endsWith(bc);
-      if (!barcodeMatches && asinOrder.length > 1) continue;
-      if (!detail.barcode) detail.barcode = digits;
-      results.push(detail);
-    } catch {
-      /* skip */
-    }
+  for (const outcome of settled) {
+    if (outcome.status !== 'fulfilled') continue;
+    const detail = outcome.value;
+    if (!isUsableAmazonProduct(detail)) continue;
+    if (isAmazonBundleListing(detail.nameEn, detail.nameAr)) continue;
+    const bc = String(detail.barcode || '').replace(/\D/g, '');
+    const barcodeMatch = !bc || bc === digits || bc.endsWith(digits) || digits.endsWith(bc);
+    if (!barcodeMatch && asinOrder.length > 1) continue;
+    if (!detail.barcode) detail.barcode = digits;
+    results.push(detail);
   }
+
   return results
     .sort((a, b) => productCompletenessScore(b) - productCompletenessScore(a))
     .slice(0, 1);

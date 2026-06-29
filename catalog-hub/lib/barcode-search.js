@@ -342,6 +342,10 @@ async function searchNiceOneByBarcode(barcode) {
 
   results.push(...searchUnifiedByStore(barcode, 'niceone').filter(isUsableCatalogHit));
 
+  // ⚡ توقّف فوراً إذا وُجد المنتج في الفهرس المحلي — لا حاجة للبحث الحي ولا مسح الكتالوج
+  const indexedNiceOne = dedupeHits(results.filter(isUsableCatalogHit));
+  if (indexedNiceOne.length) return indexedNiceOne;
+
   try {
     const live = await searchNiceOneLiveByBarcode(barcode);
     results.push(...live);
@@ -349,8 +353,11 @@ async function searchNiceOneByBarcode(barcode) {
     /* optional */
   }
 
-  const catalog = await searchNiceOneCatalogScan(barcode);
-  results.push(...catalog);
+  // مسح الكتالوج فقط عند فشل البحث الحي (الأبطأ — يُترك أخيراً)
+  if (!results.some(isUsableCatalogHit)) {
+    const catalog = await searchNiceOneCatalogScan(barcode);
+    results.push(...catalog);
+  }
 
   return dedupeHits(results.filter(isUsableCatalogHit));
 }
@@ -419,6 +426,10 @@ function dedupeElryanHits(list = []) {
 }
 
 async function searchMiraayaByBarcode(barcode) {
+  // ⚡ الفهرس المحلي أولاً — تجنّب طلبات GraphQL/REST للباركودات المعروفة
+  const unifiedFirst = searchUnifiedByStore(barcode, 'miraaya');
+  if (unifiedFirst.length) return dedupeHits(unifiedFirst);
+
   const product = await resolveProductByBarcode(barcode);
   if (product) {
     const summary = normalizeMiraayaSummary(product, {});
@@ -538,7 +549,10 @@ async function searchVanillaByBarcode(barcode) {
   const results = [];
   for (const q of barcodeQueryVariants(barcode)) {
     const data = await vanillaSearchProducts(q, 1, 30);
-    for (const p of data.items || []) {
+    const items = data.items || [];
+    // منتجات طابقت على مستوى المنتج مباشرة
+    const variationCandidates = [];
+    for (const p of items) {
       const bc = parseVanillaBarcode(p.barcode);
       if (barcodeMatches(bc.barcode, barcode) || barcodeMatches(p.sku, barcode)) {
         const n = normalizeVanillaSummary(p, {});
@@ -552,13 +566,23 @@ async function searchVanillaByBarcode(barcode) {
           sku: n.sku,
           matchType: 'product',
         }));
+        continue; // ⚡ طابق على مستوى المنتج — لا حاجة لجلب المتغيّرات
       }
-      if (!p.hasVariations && !p.listingUsesVariation) continue;
-      const n = normalizeVanillaSummary(p, {});
-      try {
-        const { fetchProductVariations } = await import('./vanilla-api.js');
-        const vars = await fetchProductVariations(p.id);
-        for (const v of vars) {
+      if (p.hasVariations || p.listingUsesVariation) variationCandidates.push(p);
+    }
+
+    // ⚡ جلب متغيّرات المرشّحين بالتوازي (حد أقصى 8) بدل التسلسل
+    if (variationCandidates.length) {
+      const { fetchProductVariations } = await import('./vanilla-api.js');
+      const limited = variationCandidates.slice(0, 8);
+      const varResults = await Promise.allSettled(
+        limited.map((p) => fetchProductVariations(p.id)),
+      );
+      varResults.forEach((outcome, idx) => {
+        if (outcome.status !== 'fulfilled') return;
+        const p = limited[idx];
+        const n = normalizeVanillaSummary(p, {});
+        for (const v of outcome.value) {
           const vbc = parseVanillaBarcode(v.barcode);
           if (!barcodeMatches(vbc.barcode, barcode) && !barcodeMatches(v.sku, barcode)) continue;
           results.push(hit('vanilla', {
@@ -573,9 +597,7 @@ async function searchVanillaByBarcode(barcode) {
             matchType: 'shade',
           }));
         }
-      } catch {
-        /* skip */
-      }
+      });
     }
     if (results.length) break;
   }
@@ -608,12 +630,12 @@ async function searchAmazonByBarcode(barcode) {
 }
 
 const SEARCHERS = [
-  { store: 'niceone', fn: searchNiceOneByBarcode, timeoutMs: 8_000 },
+  { store: 'niceone', fn: searchNiceOneByBarcode, timeoutMs: 7_000 },
   { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 5_000 },
   { store: 'vanilla', fn: searchVanillaByBarcode, timeoutMs: 5_000 },
   { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 5_000 },
-  { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 15_000 },
-  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 35_000 },
+  { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 10_000 },
+  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 30_000 },
 ];
 
 function withStoreTimeout(promise, ms, store) {
@@ -683,6 +705,26 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
       byStore[store] = hits;
       results.push(...hits);
     }
+  }
+
+  // ⚡ مسار سريع جداً: إذا الفهرس المحلي غطّى كل المتاجر المطلوبة، أرجع فوراً (<1s)
+  // ولا تلمس الشبكة. تحديث المتاجر يجري في الخلفية لإبقاء الفهرس حديثاً.
+  const coveredStores = new Set(Object.keys(byStore).filter((s) => (byStore[s] || []).length));
+  const allCovered = enabled.every(({ store }) => coveredStores.has(store));
+  if (allCovered && results.length) {
+    const payload = {
+      barcode,
+      results: sortHitsStable(dedupeHits(results)),
+      byStore,
+      errors,
+      fromIndex: true,
+      stores: [...new Set(enabled.map(({ store }) => store))].map((store) => ({
+        ...STORE_META[store],
+        count: (byStore[store] || []).length,
+      })),
+    };
+    searchResultCache.set(cacheKey, { at: Date.now(), data: payload });
+    return payload;
   }
 
   if (others.length) {
