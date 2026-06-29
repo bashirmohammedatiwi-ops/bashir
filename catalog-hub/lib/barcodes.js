@@ -124,7 +124,14 @@ export function upsertBarcodeLookup(barcode, fields = {}) {
 
 export function findBarcodeLookup(barcode) {
   const lookup = loadBarcodeLookup();
-  return lookup[gtinKey(barcode)] || null;
+  const key = gtinKey(barcode);
+  if (lookup[key]) return lookup[key];
+
+  for (const [k, row] of Object.entries(lookup)) {
+    if (gtinEqual(k, barcode)) return row;
+    if (row?.barcode && gtinEqual(row.barcode, barcode)) return row;
+  }
+  return null;
 }
 
 /** بحث سريع في products.json المحلي (نسخة احتياطية) */
@@ -699,7 +706,9 @@ export function normalizeBarcodeMeta(meta = {}) {
 async function lookupBarcodeFromGoUpc(digits) {
   const key = `go_upc|${digits}`;
   const cached = recall(key);
-  if (cached !== null) return cached || null;
+  if (cached !== null) {
+    if (!cached || cached.shade || !cached.title) return cached || null;
+  }
 
   try {
     const res = await fetch(`https://go-upc.com/search?q=${encodeURIComponent(digits)}`, {
@@ -957,6 +966,11 @@ export function buildMetaHintQueries(meta = {}) {
     if (core) queries.add(`${core} ${shade}`);
   }
   if (brand && shade) queries.add(`${brand} ${shade}`);
+  if (shade) {
+    queries.add(shade);
+    if (productLine) queries.add(`${productLine} ${shade}`);
+    if (productWords.length >= 2) queries.add(`${productWords.slice(0, 2).join(' ')} ${shade}`);
+  }
   return [...queries].filter(Boolean);
 }
 
@@ -998,7 +1012,13 @@ export async function lookupBarcodeProductMeta(barcode) {
 
   const key = `product_meta|${digits}`;
   const cached = recall(key);
-  if (cached !== null) return cached || null;
+  if (cached !== null) {
+    if (cached && !cached.shade) {
+      const goCached = recall(`go_upc|${digits}`);
+      if (goCached?.shade) return normalizeBarcodeMeta({ ...cached, shade: goCached.shade });
+    }
+    return cached || null;
+  }
 
   const [shopify, upc, obf] = await Promise.all([
     lookupBarcodeFromShopifySku(digits).catch(() => null),

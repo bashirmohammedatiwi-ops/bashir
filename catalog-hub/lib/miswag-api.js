@@ -11,6 +11,7 @@ import {
   parseBarcodeMetaFields,
   productLineConflicts,
 } from './barcodes.js';
+import { searchUnifiedByStore } from './unified-barcode-index.js';
 
 const API_BASE = 'https://ganesh-lama.miswag.com';
 export const SITE = 'https://miswag.com';
@@ -703,7 +704,28 @@ export async function searchProductsByBarcode(barcode) {
   const results = [];
   const seen = new Set();
 
-  // (0) فهرس يدوي محلي — مع التحقق + حل الدرجة
+  // (0a) فهرس باركود موحّد — أسرع وأدق من البحث الحي
+  for (const indexed of searchUnifiedByStore(digits, 'miswag')) {
+    pushUnique(results, seen, {
+      id: String(indexed.id || indexed.productId || ''),
+      name: indexed.name || '',
+      nameEn: indexed.nameEn || indexed.name || '',
+      manufacturer: indexed.manufacturer || '',
+      manufacturerEn: indexed.manufacturerEn || indexed.manufacturer || '',
+      price: indexed.price || '',
+      thumb: indexed.thumb || '',
+      sku: indexed.sku || String(indexed.id || ''),
+      barcode: digits,
+      shadeName: indexed.shadeName || '',
+      matchType: indexed.matchType || 'lookup',
+      matchScore: indexed.matchScore,
+      shadeCount: indexed.shadeCount,
+      source: indexed.source || 'barcode-index',
+    });
+  }
+  if (results.length) return results;
+
+  // (0b) فهرس يدوي محلي — مع التحقق + حل الدرجة
   const manual = findBarcodeLookup(digits);
   if (manual?.productId && (manual.store === 'miswag' || !manual.store)) {
     try {

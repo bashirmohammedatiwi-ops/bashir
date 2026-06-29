@@ -960,7 +960,7 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
     }
     return withStoreTimeout(fn(barcode), timeoutMs, store)
       .then((live) => {
-        const merged = !live?.length ? local : !local.length ? live : dedupeHits([...live, ...local]);
+        const merged = !live?.length ? local : !local.length ? live : dedupeHits([...local, ...live]);
         byStore[store] = merged;
         emit('store-status', {
           store,
