@@ -70,6 +70,12 @@ export type CatalogImportProduct = {
 
 const CATALOG_STORES = ["niceone", "elryan", "vanilla", "miraaya", "faces"] as const;
 
+const CLIENT_SEARCH_CACHE_MS = 5 * 60 * 1000;
+const clientSearchCache = new Map<
+  string,
+  { at: number; data: { barcode: string; options: CatalogImportOption[]; byStore: Record<string, number> } }
+>();
+
 function catalogApiErrorMessage(payload: unknown, fallback: string): string {
   if (typeof payload === "string" && payload.trim()) return payload.trim();
   if (payload && typeof payload === "object") {
@@ -126,18 +132,36 @@ function mergeCatalogOptions(lists: CatalogImportOption[][]): CatalogImportOptio
 }
 
 /**
- * بحث متدرّج: فهرس محلي فوري ثم كل متجر على حدة — تظهر النتائج بمجرد وصولها.
+ * بحث متدرّج: فهرس محلي فوري ثم تحديث المتاجر في الخلفية.
  */
 export async function searchCatalogByBarcodeProgressive(
   barcode: string,
   onPartial?: (options: CatalogImportOption[]) => void,
 ) {
+  const digits = barcode.replace(/\D/g, "");
+  const cached = clientSearchCache.get(digits);
+  if (cached && Date.now() - cached.at < CLIENT_SEARCH_CACHE_MS) {
+    onPartial?.(cached.data.options);
+    return cached.data;
+  }
+
   const collected: CatalogImportOption[][] = [];
 
   const push = (options: CatalogImportOption[]) => {
     if (!options.length) return;
     collected.push(options);
     onPartial?.(mergeCatalogOptions(collected));
+  };
+
+  const buildResult = () => {
+    const options = mergeCatalogOptions(collected);
+    return {
+      barcode: digits,
+      options,
+      byStore: Object.fromEntries(
+        CATALOG_STORES.map((store) => [store, options.filter((o) => o.store === store).length]),
+      ),
+    };
   };
 
   try {
@@ -147,28 +171,37 @@ export async function searchCatalogByBarcodeProgressive(
     /* local index optional */
   }
 
-  await Promise.all(
-    CATALOG_STORES.map(async (store) => {
-      try {
-        const data = await searchCatalogByBarcode(barcode, { store });
-        push(data.options || []);
-      } catch {
-        /* store timeout — continue */
-      }
-    }),
-  );
+  const refreshStores = () =>
+    Promise.allSettled(
+      CATALOG_STORES.map(async (store) => {
+        try {
+          const data = await searchCatalogByBarcode(barcode, { store });
+          push(data.options || []);
+        } catch {
+          /* store timeout — continue */
+        }
+      }),
+    );
 
-  const options = mergeCatalogOptions(collected);
-  return {
-    barcode: barcode.replace(/\D/g, ""),
-    options,
-    byStore: Object.fromEntries(
-      CATALOG_STORES.map((store) => [
-        store,
-        options.filter((o) => o.store === store).length,
-      ]),
-    ),
-  };
+  const initial = buildResult();
+  if (initial.options.length) {
+    clientSearchCache.set(digits, { at: Date.now(), data: initial });
+    void refreshStores().then(() => {
+      const updated = buildResult();
+      if (updated.options.length) {
+        clientSearchCache.set(digits, { at: Date.now(), data: updated });
+        onPartial?.(updated.options);
+      }
+    });
+    return initial;
+  }
+
+  await refreshStores();
+  const final = buildResult();
+  if (final.options.length) {
+    clientSearchCache.set(digits, { at: Date.now(), data: final });
+  }
+  return final;
 }
 
 export async function fetchCatalogProduct(store: string, sourceId: string, barcode = "") {

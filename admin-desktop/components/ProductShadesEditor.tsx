@@ -320,10 +320,15 @@ export function shadeFromApi(s: any) {
 }
 
 export function shadeToPayload(s: any, index: number) {
-  if (!s?.name || !s?.colorHex) return null;
+  const name = String(s?.name ?? "").trim();
+  if (!name) return null;
+  const colorHex =
+    String(s?.colorHex ?? "").trim() ||
+    (s?.imageId ? "#9E9E9E" : "");
+  if (!colorHex) return null;
   return {
-    name: s.name,
-    colorHex: s.colorHex,
+    name,
+    colorHex,
     colorHexEnd: s.isGradient && s.colorHexEnd ? s.colorHexEnd : undefined,
     barcode: typeof s.barcode === "string" ? normalizeBarcode(s.barcode) || undefined : undefined,
     imageId: s.imageId || undefined,

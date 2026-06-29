@@ -8,6 +8,7 @@ import {
   searchUnifiedBarcodeIndex,
   searchUnifiedByStore,
   rememberBarcodeSearchHits,
+  isUsableCatalogHit,
 } from './unified-barcode-index.js';
 import {
   fetchProductDetail,
@@ -16,6 +17,7 @@ import {
   extractBarcodeFromImage,
   enrichShades,
   normalizeProductSummary,
+  searchProducts,
 } from './api.js';
 import { elryanAr, absImage, fetchBeautyCategoriesBilingual } from './elryan-api.js';
 import {
@@ -29,6 +31,7 @@ import {
   proxyFacesImage,
   loadFacesBarcodeIndex,
   expandFacesBarcodeIndex,
+  lookupFacesBarcodeIndex,
 } from './faces-api.js';
 import {
   searchProducts as vanillaSearchProducts,
@@ -66,7 +69,7 @@ export function warmupBarcodeSearch() {
   buildBarcodeRamIndex();
   getFoundationProductsCached().catch(() => {});
   try { loadFacesBarcodeIndex(); } catch { /* optional */ }
-  expandFacesBarcodeIndex().catch(() => {});
+  setTimeout(() => expandFacesBarcodeIndex().catch(() => {}), 120_000);
 }
 
 async function getFoundationProductsCached() {
@@ -228,14 +231,65 @@ async function enrichNiceOneHit(detail, fields = {}) {
   });
 }
 
-async function searchNiceOneByBarcode(barcode) {
-  const unified = searchUnifiedByStore(barcode, 'niceone');
-  if (unified.length) return dedupeHits(unified);
+async function searchNiceOneLiveByBarcode(barcode) {
+  const results = [];
+  for (const q of barcodeQueryVariants(barcode)) {
+    const data = await searchProducts(q, 1, 24);
+    for (const p of data.products || []) {
+      const productBc = extractBarcode(p);
+      if (barcodeMatches(productBc, barcode)) {
+        results.push(await enrichNiceOneHit(p, {
+          barcode: productBc,
+          matchType: 'product',
+          source: 'live',
+        }));
+        continue;
+      }
+      if (!p.has_option) continue;
+      const shades = enrichShades(p);
+      for (const shade of shades) {
+        const sBc = shade.ean || shade.barcode;
+        if (!barcodeMatches(sBc, barcode)) continue;
+        results.push(await enrichNiceOneHit(p, {
+          barcode: sBc,
+          shadeName: shade.name,
+          sku: shade.sku,
+          price: shade.price || p.price_formated,
+          thumb: shade.image || p.thumb,
+          matchType: 'shade',
+          source: 'live',
+        }));
+      }
+      if (!shades.length) {
+        const detail = await fetchProductDetail(p.id);
+        const detailShades = enrichShades(detail);
+        for (const shade of detailShades) {
+          const sBc = shade.ean || shade.barcode;
+          if (!barcodeMatches(sBc, barcode)) continue;
+          results.push(await enrichNiceOneHit(detail, {
+            barcode: sBc,
+            shadeName: shade.name,
+            sku: shade.sku,
+            price: shade.price || detail.price_formated,
+            thumb: shade.image || detail.thumb,
+            matchType: 'shade',
+            source: 'live-detail',
+          }));
+        }
+      }
+    }
+    if (results.length) break;
+  }
+  return dedupeHits(results.filter(isUsableCatalogHit));
+}
 
-  const instant = searchRamBarcodeIndex(barcode);
+async function searchNiceOneByBarcode(barcode) {
+  const results = [];
+
+  const instant = searchRamBarcodeIndex(barcode).filter((h) => (h.store || 'niceone') === 'niceone');
   if (instant.length) {
     const seen = new Set();
-    return dedupeHits(instant.map((h) => {
+    results.push(...instant.map((h) => {
       const key = `${h.productId}:${h.shadeName || ''}`;
       if (seen.has(key)) return null;
       seen.add(key);
@@ -250,11 +304,22 @@ async function searchNiceOneByBarcode(barcode) {
         matchType: h.matchType || 'product',
         source: h.source,
       });
-    }).filter(Boolean));
+    }).filter(Boolean).filter(isUsableCatalogHit));
+  }
+
+  results.push(...searchUnifiedByStore(barcode, 'niceone').filter(isUsableCatalogHit));
+
+  try {
+    const live = await searchNiceOneLiveByBarcode(barcode);
+    results.push(...live);
+  } catch {
+    /* optional */
   }
 
   const catalog = await searchNiceOneCatalogScan(barcode);
-  return dedupeHits(catalog.filter((r) => r.id || r.name));
+  results.push(...catalog);
+
+  return dedupeHits(results.filter(isUsableCatalogHit));
 }
 
 async function searchElryanByBarcode(barcode) {
@@ -358,7 +423,24 @@ async function searchFacesByBarcode(barcode, hintHits = []) {
   const unified = searchUnifiedByStore(barcode, 'faces');
   if (unified.length) return dedupeHits(unified);
 
-  const matches = await searchProductsByBarcode(barcode, { limit: 10, hintHits });
+  const indexed = lookupFacesBarcodeIndex(barcode);
+  if (indexed?.pid && (indexed.nameAr || indexed.nameEn || indexed.thumb)) {
+    return dedupeHits([hit('faces', {
+      id: indexed.pid,
+      name: indexed.nameAr || indexed.nameEn,
+      nameEn: indexed.nameEn,
+      manufacturer: indexed.brandAr || indexed.brandEn,
+      manufacturerEn: indexed.brandEn,
+      price: indexed.price ? String(indexed.price) : '',
+      thumb: proxyFacesImage(indexed.thumb),
+      barcode: indexed.ean || barcode,
+      shadeName: indexed.shadeName || undefined,
+      matchType: indexed.shadeName ? 'shade' : 'product',
+      source: 'faces-index',
+    })]);
+  }
+
+  const matches = await searchProductsByBarcode(barcode, { limit: 10, hintHits, light: true });
   return dedupeHits(matches.map((m) => {
     const tile = m.tile;
     if (m.matchType === 'shade' && m.shade) {

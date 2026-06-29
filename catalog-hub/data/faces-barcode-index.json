@@ -11,7 +11,7 @@
       "price": 261,
       "shadeName": "",
       "productUrl": "https://www.faces.ae/ar/p/kerastase-blond-absolu-masque-ultra-violet-purple-hair-mask-018115150657.html",
-      "updatedAt": 1782698097964
+      "updatedAt": 1782702803969
     },
     "00006614852957": {
       "pid": "PM_CHANEL_Chance_Eau_Tendre_EDP",
@@ -37,7 +37,7 @@
       "price": "960 درهم",
       "shadeName": "150ml",
       "productUrl": "https://www.faces.ae/ar/p/chanel-chance-eau-tendre-spray-eau-de-parfum-PM_CHANEL_Chance_Eau_Tendre_EDP.html?dwvar_PM__CHANEL__Chance__Eau__Tendre__EDP_size=150ml",
-      "updatedAt": 1782695035068
+      "updatedAt": 1782702805204
     },
     "03145891262605": {
       "pid": "PM_CHANEL_Chance_Eau_Tendre_EDP",
@@ -50,7 +50,7 @@
       "price": "795 درهم",
       "shadeName": "100مل",
       "productUrl": "https://www.faces.ae/ar/p/chanel-chance-eau-tendre-spray-eau-de-parfum-PM_CHANEL_Chance_Eau_Tendre_EDP.html?dwvar_PM__CHANEL__Chance__Eau__Tendre__EDP_size=150ml",
-      "updatedAt": 1782695035069
+      "updatedAt": 1782702805204
     },
     "03145891262506": {
       "pid": "PM_CHANEL_Chance_Eau_Tendre_EDP",
@@ -63,7 +63,7 @@
       "price": "580 درهم",
       "shadeName": "50مل",
       "productUrl": "https://www.faces.ae/ar/p/chanel-chance-eau-tendre-spray-eau-de-parfum-PM_CHANEL_Chance_Eau_Tendre_EDP.html?dwvar_PM__CHANEL__Chance__Eau__Tendre__EDP_size=150ml",
-      "updatedAt": 1782695035069
+      "updatedAt": 1782702805205
     },
     "08435415049542": {
       "pid": "017215333734",
@@ -76,7 +76,7 @@
       "price": 705,
       "shadeName": "",
       "productUrl": "https://www.faces.ae/ar/p/jean-paul-gaultier-la-belle-le-parfum-eau-de-parfum-017215333734.html",
-      "updatedAt": 1782698642654
+      "updatedAt": 1782702805334
     },
     "00017215333734": {
       "pid": "017215333734",
@@ -90,9 +90,243 @@
       "shadeName": "",
       "productUrl": "https://www.faces.ae/ar/p/jean-paul-gaultier-la-belle-le-parfum-eau-de-parfum-017215333734.html",
       "updatedAt": 1782698642497
+    },
+    "03380810365863": {
+      "pid": "PM_Clarins_LipComfort_Oil_Intense",
+      "ean": "3380810365863",
+      "nameAr": "زيت شفاه مريح مكثف",
+      "nameEn": "Lip Comfort Oil Intense",
+      "brandAr": "كلارنس",
+      "brandEn": "Clarins",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwf3958168/product/3380810365863_/3380810365863_.jpg?sw=800&sh=800",
+      "price": "125 درهم",
+      "shadeName": "06",
+      "productUrl": "https://www.faces.ae/ar/p/clarins-lip-comfort-oil-intense-PM_Clarins_LipComfort_Oil_Intense.html?dwvar_PM__Clarins__LipComfort__Oil__Intense_color=06",
+      "updatedAt": 1782702807094
+    },
+    "03380810365887": {
+      "pid": "PM_Clarins_LipComfort_Oil_Intense",
+      "ean": "3380810365887",
+      "nameAr": "زيت شفاه مريح مكثف",
+      "nameEn": "Lip Comfort Oil Intense",
+      "brandAr": "كلارنس",
+      "brandEn": "Clarins",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwf3958168/product/3380810365863_/3380810365863_.jpg?sw=800&sh=800",
+      "price": "125 درهم",
+      "shadeName": "08",
+      "productUrl": "https://www.faces.ae/ar/p/clarins-lip-comfort-oil-intense-PM_Clarins_LipComfort_Oil_Intense.html?dwvar_PM__Clarins__LipComfort__Oil__Intense_color=06",
+      "updatedAt": 1782702807094
+    },
+    "03380810365818": {
+      "pid": "PM_Clarins_LipComfort_Oil_Intense",
+      "ean": "3380810365818",
+      "nameAr": "زيت شفاه مريح مكثف",
+      "nameEn": "Lip Comfort Oil Intense",
+      "brandAr": "كلارنس",
+      "brandEn": "Clarins",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwf3958168/product/3380810365863_/3380810365863_.jpg?sw=800&sh=800",
+      "price": "125 درهم",
+      "shadeName": "01",
+      "productUrl": "https://www.faces.ae/ar/p/clarins-lip-comfort-oil-intense-PM_Clarins_LipComfort_Oil_Intense.html?dwvar_PM__Clarins__LipComfort__Oil__Intense_color=06",
+      "updatedAt": 1782702807095
+    },
+    "03380810365849": {
+      "pid": "PM_Clarins_LipComfort_Oil_Intense",
+      "ean": "3380810365849",
+      "nameAr": "زيت شفاه مريح مكثف",
+      "nameEn": "Lip Comfort Oil Intense",
+      "brandAr": "كلارنس",
+      "brandEn": "Clarins",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwf3958168/product/3380810365863_/3380810365863_.jpg?sw=800&sh=800",
+      "price": "125 درهم",
+      "shadeName": "04",
+      "productUrl": "https://www.faces.ae/ar/p/clarins-lip-comfort-oil-intense-PM_Clarins_LipComfort_Oil_Intense.html?dwvar_PM__Clarins__LipComfort__Oil__Intense_color=06",
+      "updatedAt": 1782702807095
+    },
+    "03380810365832": {
+      "pid": "PM_Clarins_LipComfort_Oil_Intense",
+      "ean": "3380810365832",
+      "nameAr": "زيت شفاه مريح مكثف",
+      "nameEn": "Lip Comfort Oil Intense",
+      "brandAr": "كلارنس",
+      "brandEn": "Clarins",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwf3958168/product/3380810365863_/3380810365863_.jpg?sw=800&sh=800",
+      "price": "125 درهم",
+      "shadeName": "03",
+      "productUrl": "https://www.faces.ae/ar/p/clarins-lip-comfort-oil-intense-PM_Clarins_LipComfort_Oil_Intense.html?dwvar_PM__Clarins__LipComfort__Oil__Intense_color=06",
+      "updatedAt": 1782702807095
+    },
+    "03380810365825": {
+      "pid": "PM_Clarins_LipComfort_Oil_Intense",
+      "ean": "3380810365825",
+      "nameAr": "زيت شفاه مريح مكثف",
+      "nameEn": "Lip Comfort Oil Intense",
+      "brandAr": "كلارنس",
+      "brandEn": "Clarins",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwf3958168/product/3380810365863_/3380810365863_.jpg?sw=800&sh=800",
+      "price": "125 درهم",
+      "shadeName": "02",
+      "productUrl": "https://www.faces.ae/ar/p/clarins-lip-comfort-oil-intense-PM_Clarins_LipComfort_Oil_Intense.html?dwvar_PM__Clarins__LipComfort__Oil__Intense_color=06",
+      "updatedAt": 1782702807095
+    },
+    "03380810365856": {
+      "pid": "PM_Clarins_LipComfort_Oil_Intense",
+      "ean": "3380810365856",
+      "nameAr": "زيت شفاه مريح مكثف",
+      "nameEn": "Lip Comfort Oil Intense",
+      "brandAr": "كلارنس",
+      "brandEn": "Clarins",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwf3958168/product/3380810365863_/3380810365863_.jpg?sw=800&sh=800",
+      "price": "125 درهم",
+      "shadeName": "05",
+      "productUrl": "https://www.faces.ae/ar/p/clarins-lip-comfort-oil-intense-PM_Clarins_LipComfort_Oil_Intense.html?dwvar_PM__Clarins__LipComfort__Oil__Intense_color=06",
+      "updatedAt": 1782702807096
+    },
+    "03380810365870": {
+      "pid": "PM_Clarins_LipComfort_Oil_Intense",
+      "ean": "3380810365870",
+      "nameAr": "زيت شفاه مريح مكثف",
+      "nameEn": "Lip Comfort Oil Intense",
+      "brandAr": "كلارنس",
+      "brandEn": "Clarins",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwf3958168/product/3380810365863_/3380810365863_.jpg?sw=800&sh=800",
+      "price": "125 درهم",
+      "shadeName": "07",
+      "productUrl": "https://www.faces.ae/ar/p/clarins-lip-comfort-oil-intense-PM_Clarins_LipComfort_Oil_Intense.html?dwvar_PM__Clarins__LipComfort__Oil__Intense_color=06",
+      "updatedAt": 1782702807096
+    },
+    "03348901670432": {
+      "pid": "009116082395",
+      "ean": "3348901670432",
+      "nameAr": "إصبع كريم أساس فوريفر سكين برفكت متعدد الاستخدامات",
+      "nameEn": "Forever Skin Perfect Multi-Use Foundation Stick",
+      "brandAr": "ديور",
+      "brandEn": "Dior",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwb7448fea/images/009116082395_11.jpg?sw=800&sh=800",
+      "price": "260 درهم",
+      "shadeName": "0 N Neutral",
+      "productUrl": "https://www.faces.ae/ar/p/dior-forever-skin-perfect-multi-use-foundation-stick-pm009116915719.html?dwvar_pm009116915719_color=2_n_neutral",
+      "updatedAt": 1782703065365
+    },
+    "03348901670319": {
+      "pid": "009116082395",
+      "ean": "3348901670319",
+      "nameAr": "إصبع كريم أساس فوريفر سكين برفكت متعدد الاستخدامات",
+      "nameEn": "Forever Skin Perfect Multi-Use Foundation Stick",
+      "brandAr": "ديور",
+      "brandEn": "Dior",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwb7448fea/images/009116082395_11.jpg?sw=800&sh=800",
+      "price": 260,
+      "shadeName": "",
+      "productUrl": "https://www.faces.ae/ar/p/dior-forever-skin-perfect-multi-use-foundation-stick-pm009116915719.html?dwvar_pm009116915719_color=2_n_neutral",
+      "updatedAt": 1782703065360
+    },
+    "03348901670272": {
+      "pid": "009116082395",
+      "ean": "3348901670272",
+      "nameAr": "إصبع كريم أساس فوريفر سكين برفكت متعدد الاستخدامات",
+      "nameEn": "Forever Skin Perfect Multi-Use Foundation Stick",
+      "brandAr": "ديور",
+      "brandEn": "Dior",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwb7448fea/images/009116082395_11.jpg?sw=800&sh=800",
+      "price": "260 درهم",
+      "shadeName": "2 N Neutral",
+      "productUrl": "https://www.faces.ae/ar/p/dior-forever-skin-perfect-multi-use-foundation-stick-pm009116915719.html?dwvar_pm009116915719_color=2_n_neutral",
+      "updatedAt": 1782703065362
+    },
+    "03348901670289": {
+      "pid": "009116082395",
+      "ean": "3348901670289",
+      "nameAr": "إصبع كريم أساس فوريفر سكين برفكت متعدد الاستخدامات",
+      "nameEn": "Forever Skin Perfect Multi-Use Foundation Stick",
+      "brandAr": "ديور",
+      "brandEn": "Dior",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwb7448fea/images/009116082395_11.jpg?sw=800&sh=800",
+      "price": "260 درهم",
+      "shadeName": "1 W Warm",
+      "productUrl": "https://www.faces.ae/ar/p/dior-forever-skin-perfect-multi-use-foundation-stick-pm009116915719.html?dwvar_pm009116915719_color=2_n_neutral",
+      "updatedAt": 1782703065362
+    },
+    "03348901670302": {
+      "pid": "009116082395",
+      "ean": "3348901670302",
+      "nameAr": "إصبع كريم أساس فوريفر سكين برفكت متعدد الاستخدامات",
+      "nameEn": "Forever Skin Perfect Multi-Use Foundation Stick",
+      "brandAr": "ديور",
+      "brandEn": "Dior",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwb7448fea/images/009116082395_11.jpg?sw=800&sh=800",
+      "price": "260 درهم",
+      "shadeName": "1,5 N Neutral",
+      "productUrl": "https://www.faces.ae/ar/p/dior-forever-skin-perfect-multi-use-foundation-stick-pm009116915719.html?dwvar_pm009116915719_color=2_n_neutral",
+      "updatedAt": 1782703065362
+    },
+    "03348901670333": {
+      "pid": "009116082395",
+      "ean": "3348901670333",
+      "nameAr": "إصبع كريم أساس فوريفر سكين برفكت متعدد الاستخدامات",
+      "nameEn": "Forever Skin Perfect Multi-Use Foundation Stick",
+      "brandAr": "ديور",
+      "brandEn": "Dior",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwb7448fea/images/009116082395_11.jpg?sw=800&sh=800",
+      "price": "260 درهم",
+      "shadeName": "2 CR Cool Rosy",
+      "productUrl": "https://www.faces.ae/ar/p/dior-forever-skin-perfect-multi-use-foundation-stick-pm009116915719.html?dwvar_pm009116915719_color=2_n_neutral",
+      "updatedAt": 1782703065363
+    },
+    "03348901670340": {
+      "pid": "009116082395",
+      "ean": "3348901670340",
+      "nameAr": "إصبع كريم أساس فوريفر سكين برفكت متعدد الاستخدامات",
+      "nameEn": "Forever Skin Perfect Multi-Use Foundation Stick",
+      "brandAr": "ديور",
+      "brandEn": "Dior",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwb7448fea/images/009116082395_11.jpg?sw=800&sh=800",
+      "price": "260 درهم",
+      "shadeName": "2,5 N Neutral",
+      "productUrl": "https://www.faces.ae/ar/p/dior-forever-skin-perfect-multi-use-foundation-stick-pm009116915719.html?dwvar_pm009116915719_color=2_n_neutral",
+      "updatedAt": 1782703065363
+    },
+    "03348901670623": {
+      "pid": "009116082395",
+      "ean": "3348901670623",
+      "nameAr": "إصبع كريم أساس فوريفر سكين برفكت متعدد الاستخدامات",
+      "nameEn": "Forever Skin Perfect Multi-Use Foundation Stick",
+      "brandAr": "ديور",
+      "brandEn": "Dior",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwb7448fea/images/009116082395_11.jpg?sw=800&sh=800",
+      "price": "260 درهم",
+      "shadeName": "3 N Neutral",
+      "productUrl": "https://www.faces.ae/ar/p/dior-forever-skin-perfect-multi-use-foundation-stick-pm009116915719.html?dwvar_pm009116915719_color=2_n_neutral",
+      "updatedAt": 1782703065363
+    },
+    "03348901670364": {
+      "pid": "009116082395",
+      "ean": "3348901670364",
+      "nameAr": "إصبع كريم أساس فوريفر سكين برفكت متعدد الاستخدامات",
+      "nameEn": "Forever Skin Perfect Multi-Use Foundation Stick",
+      "brandAr": "ديور",
+      "brandEn": "Dior",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwb7448fea/images/009116082395_11.jpg?sw=800&sh=800",
+      "price": "260 درهم",
+      "shadeName": "3,5 N Neutral",
+      "productUrl": "https://www.faces.ae/ar/p/dior-forever-skin-perfect-multi-use-foundation-stick-pm009116915719.html?dwvar_pm009116915719_color=2_n_neutral",
+      "updatedAt": 1782703065364
+    },
+    "03348901670371": {
+      "pid": "009116082395",
+      "ean": "3348901670371",
+      "nameAr": "إصبع كريم أساس فوريفر سكين برفكت متعدد الاستخدامات",
+      "nameEn": "Forever Skin Perfect Multi-Use Foundation Stick",
+      "brandAr": "ديور",
+      "brandEn": "Dior",
+      "thumb": "https://www.faces.ae/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dwb7448fea/images/009116082395_11.jpg?sw=800&sh=800",
+      "price": "260 درهم",
+      "shadeName": "4 N Neutral",
+      "productUrl": "https://www.faces.ae/ar/p/dior-forever-skin-perfect-multi-use-foundation-stick-pm009116915719.html?dwvar_pm009116915719_color=2_n_neutral",
+      "updatedAt": 1782703065364
     }
   },
   "meta": {
-    "updatedAt": 1782698642654
+    "updatedAt": 1782703065365
   }
 }

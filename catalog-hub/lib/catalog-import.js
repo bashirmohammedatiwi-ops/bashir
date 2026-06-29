@@ -33,15 +33,15 @@ function absImageUrl(url = '', hubOrigin = '') {
 
 function mapShades(shades = [], hubOrigin = '') {
   return shades.map((s, i) => ({
-    name: String(s.name || s.nameAr || `درجة ${i + 1}`).trim(),
+    name: String(s.name || s.nameAr || s.nameEn || s.sku || `درجة ${i + 1}`).trim(),
     nameEn: String(s.nameEn || '').trim() || undefined,
     barcode: String(s.barcode || s.ean || '').replace(/\D/g, '') || undefined,
     colorHex: s.hex || s.colorHex || undefined,
     colorHexEnd: s.colorHexEnd || s.hexEnd || undefined,
     isGradient: !!s.isGradient,
-    imageUrl: absImageUrl(s.image || s.thumb || '', hubOrigin),
+    imageUrl: absImageUrl(s.image || s.thumb || s.rawImage || '', hubOrigin),
     sku: s.sku || s.optionId || undefined,
-  })).filter((s) => s.name || s.barcode);
+  })).filter((s) => s.name || s.barcode || s.imageUrl);
 }
 
 function buildImportPayload(store, product, { hubOrigin = '' } = {}) {
@@ -89,7 +89,9 @@ export async function searchImportByBarcode(rawBarcode, { fast = false, stores =
     return { barcode: null, error: data.error, options: [], errors: [] };
   }
 
-  const options = (data.results || []).map((r) => ({
+  const options = (data.results || [])
+    .filter((r) => r.id || r.sku)
+    .map((r) => ({
     store: r.store,
     storeLabel: r.storeLabel,
     sourceId: r.id || r.sku,
@@ -118,14 +120,14 @@ export async function searchImportByBarcode(rawBarcode, { fast = false, stores =
   };
 }
 
-async function fetchNiceOneImport(id, hubOrigin) {
+async function fetchNiceOneImport(id, hubOrigin, { light = false } = {}) {
   const [detail, detailEn] = await Promise.all([
     fetchProductDetail(id),
     fetchProductDetail(id, null, { lang: 'en' }),
   ]);
   if (!detail?.id) return null;
   let normalized = normalizeProductDetail(detail, detailEn);
-  if (normalized.shades?.length) {
+  if (!light && normalized.shades?.length) {
     const enriched = await enrichShadesFromDatabase(detail);
     normalized.shades = enriched;
     normalized.shadeCount = enriched.length;
@@ -175,7 +177,7 @@ export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barc
   let payload = null;
   switch (store) {
     case 'niceone':
-      payload = await fetchNiceOneImport(id, hubOrigin);
+      payload = await fetchNiceOneImport(id, hubOrigin, { light });
       break;
     case 'faces':
       payload = await fetchFacesImport(id, hubOrigin, { light });

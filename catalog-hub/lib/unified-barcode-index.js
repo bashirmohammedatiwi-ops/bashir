@@ -61,6 +61,11 @@ function addToMap(map, barcode, entry) {
   list.push(entry);
 }
 
+function isMetadataCacheKey(cacheKey = '') {
+  const key = String(cacheKey || '');
+  return key.startsWith('upc_barcode|') || key.startsWith('meta|');
+}
+
 function loadVanillaCache() {
   try {
     return JSON.parse(fs.readFileSync(VANILLA_CACHE_FILE, 'utf8'));
@@ -128,10 +133,12 @@ export function buildUnifiedBarcodeIndex({ force = false } = {}) {
 
   for (const [cacheKey, entry] of Object.entries(loadDiskCacheEntries())) {
     if (!entry?.ean) continue;
+    if (isMetadataCacheKey(cacheKey)) continue;
     const parts = String(cacheKey).split('|');
+    if (parts.length < 2) continue;
     addToMap(map, entry.ean, hit('niceone', {
       id: '',
-      name: parts[1] || parts[0] || '',
+      name: parts[1] || '',
       manufacturer: parts[0] || '',
       shadeName: parts[2] || '',
       barcode: entry.ean,
@@ -209,7 +216,7 @@ export function searchUnifiedBarcodeIndex(barcode) {
   const key = gtinKey(barcode);
   if (!key) return [];
   const direct = map.get(key) || [];
-  if (direct.length) return direct;
+  if (direct.length) return direct.filter(isUsableCatalogHit);
 
   const variants = new Set([key]);
   const stripped = key.replace(/^0+/, '') || key;
@@ -220,6 +227,7 @@ export function searchUnifiedBarcodeIndex(barcode) {
   const seen = new Set();
   for (const v of variants) {
     for (const entry of map.get(v) || []) {
+      if (!isUsableCatalogHit(entry)) continue;
       const k = `${entry.store}:${entry.id}:${entry.shadeName || ''}`;
       if (seen.has(k)) continue;
       seen.add(k);
@@ -227,6 +235,21 @@ export function searchUnifiedBarcodeIndex(barcode) {
     }
   }
   return out;
+}
+
+/** استبعاد نتائج الفهرس الوهمية (مثل upc_barcode بدون productId) */
+export function isUsableCatalogHit(h) {
+  if (!h?.store) return false;
+  const id = String(h.id || '').trim();
+  const sku = String(h.sku || '').trim();
+  const name = String(h.name || '').trim();
+  const manufacturer = String(h.manufacturer || h.brandAr || '').trim().toLowerCase();
+  const barcode = String(h.barcode || '').replace(/\D/g, '');
+
+  if (manufacturer === 'upc_barcode') return false;
+  if (!id && !sku) return false;
+  if (!id && name && barcode && name.replace(/\D/g, '') === barcode) return false;
+  return true;
 }
 
 export function searchUnifiedByStore(barcode, store) {

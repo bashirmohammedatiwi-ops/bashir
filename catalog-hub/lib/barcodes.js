@@ -206,7 +206,8 @@ export function buildBarcodeRamIndex({ force = false } = {}) {
   for (const entry of Object.values(loadBarcodeLookup())) {
     if (!entry?.barcode) continue;
     add(entry.barcode, {
-      productId: entry.productId || '',
+      store: entry.store || 'niceone',
+      productId: entry.productId || entry.id || '',
       name: entry.name || '',
       manufacturer: entry.manufacturer || '',
       thumb: entry.thumb || '',
@@ -220,8 +221,9 @@ export function buildBarcodeRamIndex({ force = false } = {}) {
 
   for (const entry of Object.values(loadBarcodeIndex().products || {})) {
     if (entry.productEan) {
-      add(entry.productEan, {
-        productId: entry.id,
+    add(entry.productEan, {
+      store: 'niceone',
+      productId: entry.id,
         name: entry.name,
         manufacturer: entry.manufacturer || '',
         matchType: 'product',
@@ -232,6 +234,7 @@ export function buildBarcodeRamIndex({ force = false } = {}) {
     for (const shade of entry.shades || []) {
       if (!shade.ean) continue;
       add(shade.ean, {
+        store: 'niceone',
         productId: entry.id,
         name: entry.name,
         manufacturer: entry.manufacturer || '',
@@ -246,8 +249,11 @@ export function buildBarcodeRamIndex({ force = false } = {}) {
 
   for (const [cacheKey, entry] of Object.entries(loadDiskCache())) {
     if (!entry?.ean) continue;
-    const parts = String(cacheKey).split('|');
+    const key = String(cacheKey || '');
+    if (key.startsWith('upc_barcode|') || key.startsWith('meta|')) continue;
+    const parts = key.split('|');
     add(entry.ean, {
+      store: 'niceone',
       productId: '',
       name: parts[1] || parts[0] || '',
       manufacturer: parts[0] || '',
@@ -268,6 +274,7 @@ export function buildBarcodeRamIndex({ force = false } = {}) {
           if (!bc) {
             const fromThumb = extractBarcodeFromImage(p.thumb, p.id);
             if (fromThumb) add(fromThumb, {
+              store: 'niceone',
               productId: String(p.id),
               name: p.en_name || p.name || '',
               manufacturer: p.manufacturer || '',
@@ -279,6 +286,7 @@ export function buildBarcodeRamIndex({ force = false } = {}) {
             continue;
           }
           add(bc, {
+            store: 'niceone',
             productId: String(p.id),
             name: p.en_name || p.name || '',
             manufacturer: p.manufacturer || '',

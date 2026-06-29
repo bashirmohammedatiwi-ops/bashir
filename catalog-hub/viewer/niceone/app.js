@@ -9,7 +9,7 @@ import {
   renderShadeSwatchMarkup,
   shadeSelectionLabelParts,
 } from '../shared/store-ui.js';
-import { hubApi, initHubLinks } from '../shared/catalog-hub-base.js';
+import { hubApi, fixHubAssetUrl, initHubLinks } from '../shared/catalog-hub-base.js';
 
 const API = hubApi('/api');
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -38,6 +38,13 @@ const state = {
 
 function esc(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function fixImageUrl(url = '') {
+  const u = String(url || '').trim();
+  if (!u) return '';
+  if (u.startsWith('http://') || u.startsWith('https://')) return u;
+  return fixHubAssetUrl(u);
 }
 
 function biText(ar, en, { block = true, fallback = '' } = {}) {
@@ -251,7 +258,7 @@ function renderProductCard(p) {
     <article class="card" data-id="${esc(p.id)}">
       <div class="card-img">
         ${badge}
-        <img src="${esc(p.thumb)}" alt="" loading="lazy" />
+        <img src="${esc(fixHubAssetUrl(p.thumb))}" alt="" loading="lazy" referrerpolicy="no-referrer" />
       </div>
       <div class="card-body">
         <div class="card-brand">${brand}</div>
@@ -531,10 +538,10 @@ function applyShadeSelection(product, shades, shade) {
 }
 
 function renderProductPanel(product, shades, activeShadeId) {
-  const mainImg = product.images?.[0] || product.thumb;
+  const mainImg = fixImageUrl(product.images?.[0] || product.thumb);
   const gallery = (product.images?.length ? product.images : [mainImg])
     .filter(Boolean)
-    .map((url, i) => `<img src="${esc(url)}" class="${i === 0 ? 'active' : ''}" data-full="${esc(url)}" alt="" />`)
+    .map((url, i) => `<img src="${esc(fixImageUrl(url))}" class="${i === 0 ? 'active' : ''}" data-full="${esc(fixImageUrl(url))}" alt="" />`)
     .join('');
 
   const shadesHtml = product.hasOptions && shades.length
@@ -571,7 +578,7 @@ function renderProductPanel(product, shades, activeShadeId) {
   ].filter(Boolean).join(' · ');
 
   return `
-    <img class="p-main-img" id="mainImg" src="${esc(mainImg)}" alt="" />
+    <img class="p-main-img" id="mainImg" src="${esc(mainImg)}" alt="" referrerpolicy="no-referrer" />
     ${gallery ? `<div class="p-gallery" id="gallery">${gallery}</div>` : ''}
     <h2 class="p-title">${biTitle(product.name, product.nameEn)}</h2>
     <div class="p-brand">${biText(product.manufacturer, product.manufacturerEn, { block: false })}</div>

@@ -37,6 +37,7 @@ import { fetchInventoryByBarcode, type InventorySyncPreview } from "@/lib/invent
 import { uploadCatalogImportImages } from "@/lib/uploadCatalogImages";
 import { resolveCatalogImageUrl } from "@/lib/resolveCatalogImageUrl";
 import { buildProductPayload } from "@/lib/productPayload";
+import { resolveShadeColorHex } from "@/lib/shadeColorFromImage";
 import { mutations, queries } from "@/lib/queries";
 import "./catalog-import.css";
 
@@ -218,17 +219,22 @@ export default function CatalogImportPage() {
     setSelected(null);
     setPreview(null);
     setStep(0);
+    let idle = false;
     try {
       const data = await searchCatalogByBarcodeProgressive(q, (partial) => {
         if (partial.length) {
           setOptions(partial);
           setStep(1);
+          if (!idle) {
+            idle = true;
+            setSearching(false);
+          }
         }
       });
       setOptions(data.options || []);
       if (!data.options?.length) {
         message.info("لا توجد نتائج في الكتالوج لهذا الباركود");
-      } else {
+      } else if (!idle) {
         message.success(`وُجد ${data.options.length} نسخة في الكتالوج`);
         setStep(1);
       }
@@ -310,6 +316,7 @@ export default function CatalogImportPage() {
       for (let i = 0; i < (preview.shades || []).length; i++) {
         const s = preview.shades[i];
         const imageId = s.imageUrl ? shadeImageIds.get(s.imageUrl) : undefined;
+        const colorHex = (await resolveShadeColorHex(s)) || s.colorHex || "#CCCCCC";
 
         let price: number | undefined;
         let originalPrice = 0;
@@ -325,9 +332,10 @@ export default function CatalogImportPage() {
           }
         }
 
+        const shadeName = String(s.name || s.nameEn || `درجة ${i + 1}`).trim();
         shades.push({
-          name: s.name,
-          colorHex: s.colorHex || "#CCCCCC",
+          name: shadeName,
+          colorHex,
           colorHexEnd: s.colorHexEnd,
           isGradient: !!s.isGradient,
           barcode: s.barcode || "",

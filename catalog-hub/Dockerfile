@@ -2,10 +2,12 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-# wget for container healthcheck
-RUN apk add --no-cache wget
+# wget for container healthcheck; vips for sharp (swatch color sampling)
+RUN apk add --no-cache wget vips-dev
 
 COPY package.json ./
+RUN npm install --omit=dev
+
 COPY server.js ./
 COPY lib ./lib
 COPY viewer ./viewer

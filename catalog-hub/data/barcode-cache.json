@@ -709,5 +709,15 @@
     "ean": "5056446651868",
     "source": "upcitemdb_lookup",
     "at": 1782698695739
+  },
+  "upc_barcode|3380810365863": {
+    "ean": "3380810365863",
+    "source": "upcitemdb_lookup",
+    "at": 1782702441668
+  },
+  "upc_barcode|3348901670432": {
+    "ean": "3348901670432",
+    "source": "upcitemdb_lookup",
+    "at": 1782702809746
   }
 }
