@@ -71,7 +71,7 @@ import {
 } from './lib/faces-api.js';
 import { collectDescendantIds, findCategoryNode, applyProductCounts } from './lib/category-scope.js';
 import { searchBarcodeAllStores, warmupBarcodeSearch } from './lib/barcode-search.js';
-import { searchImportByBarcode, fetchImportProduct } from './lib/catalog-import.js';
+import { searchImportByBarcode, fetchImportProduct, fetchImportSummary } from './lib/catalog-import.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 10000;
@@ -1042,6 +1042,20 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, data);
     } catch (err) {
       console.error('Import product error:', err.message);
+      return sendJson(res, 502, { error: err.message });
+    }
+  }
+  if (url.pathname === '/api/import/summary') {
+    try {
+      const q = parseQuery(url);
+      const store = q.store || '';
+      const sourceId = q.id || q.sourceId || '';
+      const hubOrigin = q.hubOrigin || `http://${req.headers.host || `localhost:${PORT}`}`;
+      const data = await fetchImportSummary(store, sourceId, { hubOrigin });
+      if (data.error) return sendJson(res, 404, data);
+      return sendJson(res, 200, data);
+    } catch (err) {
+      console.error('Import summary error:', err.message);
       return sendJson(res, 502, { error: err.message });
     }
   }

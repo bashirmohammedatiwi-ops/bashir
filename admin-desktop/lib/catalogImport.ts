@@ -14,6 +14,24 @@ export type CatalogImportOption = {
   matchType?: string;
 };
 
+export type CatalogImportSummary = {
+  imageCount: number;
+  shadeCount: number;
+  hasShades: boolean;
+  categoryHint: string;
+  categoryHintEn: string;
+  thumb: string;
+  priceHint: string;
+  brandAr: string;
+  brandEn: string;
+  nameAr: string;
+  nameEn: string;
+};
+
+export function catalogOptionKey(opt: Pick<CatalogImportOption, "store" | "sourceId">) {
+  return `${opt.store}:${opt.sourceId}`;
+}
+
 export type CatalogImportShade = {
   name: string;
   nameEn?: string;
@@ -147,4 +165,50 @@ export async function fetchCatalogProduct(store: string, sourceId: string) {
     `/api/import/product?${params}`,
   );
   return data.product;
+}
+
+export async function fetchCatalogSummary(store: string, sourceId: string) {
+  const params = new URLSearchParams({
+    store,
+    id: sourceId,
+    hubOrigin: CATALOG_HUB_URL,
+  });
+  const data = await catalogFetch<{ summary: CatalogImportSummary }>(
+    `/api/import/summary?${params}`,
+  );
+  return data.summary;
+}
+
+/** جلب ملخصات متوازية مع حد أقصى للتزامن */
+export async function fetchCatalogSummariesBatch(
+  items: Pick<CatalogImportOption, "store" | "sourceId">[],
+  onItem?: (key: string, summary: CatalogImportSummary | null) => void,
+  concurrency = 4,
+) {
+  const unique = new Map<string, Pick<CatalogImportOption, "store" | "sourceId">>();
+  for (const item of items) {
+    const key = catalogOptionKey(item);
+    if (!unique.has(key)) unique.set(key, item);
+  }
+  const queue = [...unique.values()];
+  const results = new Map<string, CatalogImportSummary | null>();
+
+  async function worker() {
+    while (queue.length) {
+      const item = queue.shift();
+      if (!item) break;
+      const key = catalogOptionKey(item);
+      try {
+        const summary = await fetchCatalogSummary(item.store, item.sourceId);
+        results.set(key, summary);
+        onItem?.(key, summary);
+      } catch {
+        results.set(key, null);
+        onItem?.(key, null);
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, queue.length || 1) }, () => worker()));
+  return results;
 }

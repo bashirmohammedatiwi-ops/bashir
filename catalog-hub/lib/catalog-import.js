@@ -179,3 +179,27 @@ export async function fetchImportProduct(store, sourceId, { hubOrigin = '' } = {
   if (!payload) return { error: 'لم يُعثر على المنتج في الكتالوج' };
   return { product: payload };
 }
+
+function toImportSummary(payload) {
+  if (!payload) return null;
+  const primaryThumb = payload.images?.find((i) => i.isPrimary)?.url || payload.images?.[0]?.url || '';
+  return {
+    imageCount: payload.images?.length ?? 0,
+    shadeCount: payload.shades?.length ?? 0,
+    hasShades: !!payload.hasShades,
+    categoryHint: payload.categoryHint || '',
+    categoryHintEn: payload.categoryHintEn || '',
+    thumb: primaryThumb,
+    priceHint: payload.priceHint || '',
+    brandAr: payload.brandAr || '',
+    brandEn: payload.brandEn || '',
+    nameAr: payload.nameAr || '',
+    nameEn: payload.nameEn || '',
+  };
+}
+
+export async function fetchImportSummary(store, sourceId, { hubOrigin = '' } = {}) {
+  const result = await fetchImportProduct(store, sourceId, { hubOrigin });
+  if (result.error) return { error: result.error };
+  return { summary: toImportSummary(result.product) };
+}
