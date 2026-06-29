@@ -1,15 +1,8 @@
 import { api } from "./api";
-import { CATALOG_HUB_URL } from "./config";
 import { mediaThumb } from "./mediaUrl";
 import { uploadMediaFile } from "./uploadMedia";
-
-export function resolveCatalogImageUrl(url: string): string {
-  const u = String(url || "").trim();
-  if (!u) return "";
-  if (u.startsWith("http")) return u;
-  if (u.startsWith("/")) return `${CATALOG_HUB_URL}${u}`;
-  return u;
-}
+export { resolveCatalogImageUrl } from "./resolveCatalogImageUrl";
+import { resolveCatalogImageUrl } from "./resolveCatalogImageUrl";
 
 function uploadErrorMessage(error: unknown): string {
   const e = error as any;

@@ -8,7 +8,6 @@ import {
   Form,
   Input,
   Select,
-  Space,
   Spin,
   Steps,
   Tag,
@@ -36,7 +35,7 @@ import {
 } from "@/lib/catalogImport";
 import { fetchInventoryByBarcode, type InventorySyncPreview } from "@/lib/inventorySync";
 import { uploadCatalogImportImages } from "@/lib/uploadCatalogImages";
-import { resolveCatalogImageUrl } from "@/lib/uploadFromUrl";
+import { resolveCatalogImageUrl } from "@/lib/resolveCatalogImageUrl";
 import { buildProductPayload } from "@/lib/productPayload";
 import { mutations, queries } from "@/lib/queries";
 import "./catalog-import.css";
@@ -49,6 +48,11 @@ function matchBrandId(brands: any[] = [], brandAr = "", brandEn = "") {
     return keys.some((k) => names.some((n) => n === k || n.includes(k) || k.includes(n)));
   });
   return hit?.id;
+}
+
+function hintToString(v?: string | string[]) {
+  if (!v) return "";
+  return Array.isArray(v) ? v.join(" › ") : v;
 }
 
 function stripHtml(html = "") {
@@ -248,8 +252,8 @@ export default function CatalogImportPage() {
           categoriesData,
           allSubcategories || [],
           allTertiary || [],
-          product.categoryHint,
-          product.categoryHintEn,
+          hintToString(product.categoryHint),
+          hintToString(product.categoryHintEn),
         );
 
         form.setFieldsValue({
@@ -408,26 +412,26 @@ export default function CatalogImportPage() {
         ]}
       />
 
-      <section className="catalog-import-hero">
-        <h3>
-          <BarcodeOutlined style={{ marginInlineEnd: 8 }} />
-          بحث سريع بالباركود
-        </h3>
-        <p>امسح الباركود أو أدخله يدوياً — ستظهر النتائج تدريجياً مع تصنيف كل منتج وعدد الصور والتدرجات.</p>
+      <section className="catalog-import-toolbar">
+        <div className="catalog-import-toolbar-text">
+          <h3>
+            <BarcodeOutlined style={{ marginInlineEnd: 6 }} />
+            بحث بالباركود
+          </h3>
+          <p>ابحث في Nice One · Vanilla · الريان · ميرايا · وجوه — تظهر النتائج أفقياً مع الصور والتدرجات</p>
+        </div>
         <div className="catalog-import-search-row">
           <Input
             prefix={<SearchOutlined style={{ color: "#9a8faa" }} />}
-            placeholder="امسح أو أدخل الباركود (8–14 رقم)"
+            placeholder="باركود (8–14 رقم)"
             value={barcode}
             onChange={(e) => setBarcode(e.target.value)}
             onPressEnter={runSearch}
-            style={{ flex: "1 1 280px", maxWidth: 420 }}
             dir="ltr"
             maxLength={20}
-            size="large"
           />
-          <Button type="primary" size="large" icon={<CloudDownloadOutlined />} loading={searching} onClick={runSearch}>
-            بحث في الكتالوج
+          <Button type="primary" icon={<CloudDownloadOutlined />} loading={searching} onClick={runSearch}>
+            بحث
           </Button>
         </div>
       </section>
@@ -440,24 +444,18 @@ export default function CatalogImportPage() {
       )}
 
       {options.length > 0 && (
-        <Card
-          className="catalog-preview-card"
-          title={
-            <Space>
-              <span>النسخ المتوفرة</span>
-              <Tag>{options.length} نتيجة</Tag>
-            </Space>
-          }
-          style={{ marginBottom: 16 }}
-        >
+        <section className="catalog-import-results">
+          <div className="catalog-import-results-head">
+            <h4>النسخ المتوفرة في الكتالوج</h4>
+            <Tag color="purple">{options.length} نتيجة</Tag>
+          </div>
           {optionsByStore.map(([store, storeOptions]) => (
-            <div key={store} className="catalog-import-store-group">
-              <div className="catalog-import-store-header">
+            <div key={store} className="catalog-import-store-block">
+              <div className="catalog-import-store-label">
                 <Tag color={STORE_COLORS[store] || "default"}>{storeOptions[0]?.storeLabel || store}</Tag>
-                <h4>منتجات {storeOptions[0]?.storeLabel}</h4>
-                <span className="catalog-import-store-count">{storeOptions.length}</span>
+                <span className="count">{storeOptions.length}</span>
               </div>
-              <div className="catalog-import-grid">
+              <div className="catalog-import-rows">
                 {storeOptions.map((opt) => {
                   const key = catalogOptionKey(opt);
                   return (
@@ -474,7 +472,7 @@ export default function CatalogImportPage() {
               </div>
             </div>
           ))}
-        </Card>
+        </section>
       )}
 
       {loadingPreview && (
@@ -486,51 +484,53 @@ export default function CatalogImportPage() {
       {preview && !loadingPreview && (
         <div className="catalog-import-preview-layout">
           <Card className="catalog-preview-card" title="معاينة من الكتالوج">
-            {selected && <Tag color={STORE_COLORS[selected.store]}>{selected.storeLabel}</Tag>}
-
-            <Typography.Title level={4} style={{ marginTop: 12, marginBottom: 4 }}>
-              {preview.nameAr}
-            </Typography.Title>
-            {preview.nameEn && (
-              <Typography.Paragraph type="secondary" style={{ marginBottom: 12 }}>
-                {preview.nameEn}
-              </Typography.Paragraph>
-            )}
-
-            <div className="catalog-preview-stats">
-              <Tag icon={<span>📷</span>} color="processing">
-                {preview.images.length} {preview.images.length === 1 ? "صورة" : "صور"}
-              </Tag>
-              {preview.hasShades && (
-                <Tag icon={<span>🎨</span>} color="purple">
-                  {preview.shades.length} {preview.shades.length === 1 ? "تدرج لوني" : "تدرجات لونية"}
-                </Tag>
+            <div className="catalog-preview-hero">
+              {preview.images[0]?.url && (
+                <img
+                  className="catalog-preview-hero-img"
+                  src={resolveCatalogImageUrl(preview.images[0].url)}
+                  alt={preview.nameAr}
+                  referrerPolicy="no-referrer"
+                />
               )}
-              {preview.priceHint && (
-                <Tag color="gold" dir="ltr">
-                  {preview.priceHint}
-                </Tag>
-              )}
+              <div className="catalog-preview-hero-body">
+                {selected && <Tag color={STORE_COLORS[selected.store]}>{selected.storeLabel}</Tag>}
+                <Typography.Title level={5} style={{ margin: "8px 0 4px" }}>
+                  {preview.nameAr}
+                </Typography.Title>
+                {preview.nameEn && (
+                  <Typography.Text type="secondary" className="alhayaa-ltr-input">
+                    {preview.nameEn}
+                  </Typography.Text>
+                )}
+                <div className="catalog-preview-stats">
+                  <Tag color="processing">{preview.images.length} صور</Tag>
+                  {preview.hasShades && <Tag color="purple">{preview.shades.length} تدرجات</Tag>}
+                  {preview.priceHint && <Tag dir="ltr">{preview.priceHint}</Tag>}
+                </div>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }} dir="ltr">
+                  {preview.barcode || "—"}
+                </Typography.Text>
+              </div>
             </div>
 
             {(preview.categoryHint || preview.categoryHintEn) && (
               <div className="catalog-preview-category-box">
                 <strong>تصنيف الكتالوج</strong>
                 <span>
-                  {preview.categoryHint}
+                  {Array.isArray(preview.categoryHint)
+                    ? preview.categoryHint.join(" › ")
+                    : preview.categoryHint}
                   {preview.categoryHintEn && preview.categoryHint !== preview.categoryHintEn
-                    ? ` · ${preview.categoryHintEn}`
+                    ? ` · ${Array.isArray(preview.categoryHintEn) ? preview.categoryHintEn.join(" › ") : preview.categoryHintEn}`
                     : ""}
                 </span>
               </div>
             )}
 
-            <p>
+            <p style={{ fontSize: 13, margin: "0 0 8px" }}>
               <strong>العلامة:</strong> {preview.brandAr}
               {preview.brandEn ? ` / ${preview.brandEn}` : ""}
-            </p>
-            <p>
-              <strong>الباركود:</strong> <span dir="ltr">{preview.barcode || "—"}</span>
             </p>
 
             {preview.shades?.length > 0 && (
@@ -556,6 +556,7 @@ export default function CatalogImportPage() {
                             alt=""
                             className="catalog-shade-swatch"
                             style={{ objectFit: "cover" }}
+                            referrerPolicy="no-referrer"
                           />
                         ) : null}
                         <div style={{ minWidth: 0 }}>
@@ -591,7 +592,12 @@ export default function CatalogImportPage() {
 
             <div className="catalog-preview-gallery">
               {preview.images.map((img) => (
-                <img key={img.url} src={resolveCatalogImageUrl(img.url)} alt="" />
+                <img
+                  key={img.url}
+                  src={resolveCatalogImageUrl(img.url)}
+                  alt=""
+                  referrerPolicy="no-referrer"
+                />
               ))}
             </div>
           </Card>

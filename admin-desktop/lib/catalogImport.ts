@@ -14,8 +14,8 @@ export type CatalogImportOption = {
   matchType?: string;
   shadeCount?: number;
   imageCount?: number;
-  categoryHint?: string;
-  categoryHintEn?: string;
+  categoryHint?: string | string[];
+  categoryHintEn?: string | string[];
 };
 
 export type CatalogImportSummary = {
@@ -64,8 +64,8 @@ export type CatalogImportProduct = {
   hasShades: boolean;
   sourceUrl?: string;
   priceHint?: string;
-  categoryHint?: string;
-  categoryHintEn?: string;
+  categoryHint?: string | string[];
+  categoryHintEn?: string | string[];
 };
 
 const CATALOG_STORES = ["niceone", "elryan", "vanilla", "miraaya", "faces"] as const;

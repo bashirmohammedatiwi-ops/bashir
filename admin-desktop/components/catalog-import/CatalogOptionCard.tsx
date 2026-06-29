@@ -1,14 +1,16 @@
 "use client";
 
-import { Button, Skeleton, Tag, Tooltip } from "antd";
+import { useState } from "react";
+import { Button, Tag, Tooltip } from "antd";
 import {
   AppstoreOutlined,
   BgColorsOutlined,
-  FolderOpenOutlined,
+  CheckOutlined,
   PictureOutlined,
+  RightOutlined,
 } from "@ant-design/icons";
 import type { CatalogImportOption, CatalogImportSummary } from "@/lib/catalogImport";
-import { resolveCatalogImageUrl } from "@/lib/uploadFromUrl";
+import { resolveCatalogImageUrl } from "@/lib/resolveCatalogImageUrl";
 
 const STORE_COLORS: Record<string, string> = {
   niceone: "#e91e63",
@@ -26,6 +28,30 @@ type Props = {
   onSelect: (option: CatalogImportOption) => void;
 };
 
+function CatalogThumb({ src, alt }: { src: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  const resolved = resolveCatalogImageUrl(src);
+
+  if (!resolved || failed) {
+    return (
+      <div className="catalog-option-thumb-placeholder">
+        <AppstoreOutlined />
+      </div>
+    );
+  }
+
+  return (
+    <img
+      className="catalog-option-thumb"
+      src={resolved}
+      alt={alt}
+      loading="lazy"
+      referrerPolicy="no-referrer"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 export function CatalogOptionCard({
   option,
   summary,
@@ -33,18 +59,21 @@ export function CatalogOptionCard({
   selected,
   onSelect,
 }: Props) {
-  const thumb = summary?.thumb || option.thumb;
+  const thumb = summary?.thumb || option.thumb || "";
   const imageCount = summary?.imageCount ?? option.imageCount;
   const shadeCount = summary?.shadeCount ?? option.shadeCount ?? 0;
   const categoryHint = summary?.categoryHint || option.categoryHint || "";
-  const categoryHintEn = summary?.categoryHintEn || option.categoryHintEn || "";
   const brand = summary?.brandAr || option.brandAr;
   const nameAr = summary?.nameAr || option.nameAr;
   const nameEn = summary?.nameEn || option.nameEn;
 
+  const categoryText = Array.isArray(categoryHint)
+    ? categoryHint.join(" › ")
+    : String(categoryHint || "").trim();
+
   return (
     <article
-      className={`catalog-option-card${selected ? " selected" : ""}${summaryLoading ? " loading-summary" : ""}`}
+      className={`catalog-option-row${selected ? " selected" : ""}${summaryLoading ? " loading" : ""}`}
       onClick={() => onSelect(option)}
       role="button"
       tabIndex={0}
@@ -55,88 +84,65 @@ export function CatalogOptionCard({
         }
       }}
     >
-      <div className="catalog-option-thumb-wrap">
-        <Tag className="catalog-option-store-badge" color={STORE_COLORS[option.store] || "default"}>
-          {option.storeLabel}
-        </Tag>
-        {thumb ? (
-          <img
-            className="catalog-option-thumb"
-            src={resolveCatalogImageUrl(thumb)}
-            alt={nameAr}
-            loading="lazy"
-          />
-        ) : (
-          <div className="catalog-option-thumb-placeholder">
-            <AppstoreOutlined />
-          </div>
-        )}
+      <div className="catalog-option-row-thumb">
+        <CatalogThumb src={thumb} alt={nameAr} />
       </div>
 
-      <div className="catalog-option-body">
-        <div className="catalog-option-title">{nameAr}</div>
-        {nameEn && <div className="catalog-option-subtitle">{nameEn}</div>}
-        {brand && (
-          <div className="catalog-option-subtitle" style={{ color: "#4a2466" }}>
-            {brand}
+      <div className="catalog-option-row-main">
+        <div className="catalog-option-row-top">
+          <Tag className="catalog-option-row-store" color={STORE_COLORS[option.store] || "default"}>
+            {option.storeLabel}
+          </Tag>
+          {brand && <span className="catalog-option-row-brand">{brand}</span>}
+          {summaryLoading && <span className="catalog-option-row-loading">جاري التحميل...</span>}
+        </div>
+
+        <div className="catalog-option-row-title">{nameAr}</div>
+        {nameEn && nameEn !== nameAr && (
+          <div className="catalog-option-row-subtitle" dir="ltr">
+            {nameEn}
           </div>
         )}
 
-        {(categoryHint || categoryHintEn) && !summaryLoading && (
-          <div className="catalog-option-category">
-            <FolderOpenOutlined className="catalog-option-category-icon" />
-            <span>
-              {categoryHint || categoryHintEn}
-              {categoryHint && categoryHintEn && categoryHint !== categoryHintEn ? (
-                <span style={{ display: "block", opacity: 0.75, marginTop: 2 }}>{categoryHintEn}</span>
-              ) : null}
-            </span>
-          </div>
-        )}
-
-        {summaryLoading && (
-          <div style={{ display: "grid", gap: 6 }}>
-            <div className="catalog-summary-skeleton" style={{ width: "90%" }} />
-            <div className="catalog-summary-skeleton" style={{ width: "65%" }} />
-          </div>
-        )}
-
-        <div className="catalog-option-meta">
-          {summaryLoading ? (
-            <>
-              <Skeleton.Button active size="small" style={{ width: 72, height: 22 }} />
-              <Skeleton.Button active size="small" style={{ width: 88, height: 22 }} />
-            </>
-          ) : (
-            <>
-              {imageCount != null && (
-                <Tooltip title="عدد صور المنتج في الكتالوج">
-                  <Tag icon={<PictureOutlined />} color="processing">
-                    {imageCount} {imageCount === 1 ? "صورة" : "صور"}
-                  </Tag>
-                </Tooltip>
-              )}
-              {shadeCount > 0 && (
-                <Tooltip title="عدد التدرجات اللونية">
-                  <Tag icon={<BgColorsOutlined />} color="purple">
-                    {shadeCount} {shadeCount === 1 ? "تدرج" : "تدرجات"}
-                  </Tag>
-                </Tooltip>
-              )}
-              {option.shadeName && shadeCount === 0 && (
-                <Tag color="geekblue">{option.shadeName}</Tag>
-              )}
-            </>
+        <div className="catalog-option-row-meta">
+          {categoryText && !summaryLoading && (
+            <span className="catalog-option-row-category">{categoryText}</span>
           )}
+          {imageCount != null && imageCount > 0 && (
+            <Tooltip title="عدد الصور">
+              <Tag bordered={false} className="catalog-option-pill" icon={<PictureOutlined />}>
+                {imageCount}
+              </Tag>
+            </Tooltip>
+          )}
+          {shadeCount > 0 && (
+            <Tooltip title="التدرجات اللونية">
+              <Tag bordered={false} className="catalog-option-pill catalog-option-pill--shade" icon={<BgColorsOutlined />}>
+                {shadeCount}
+              </Tag>
+            </Tooltip>
+          )}
+          {option.shadeName && shadeCount === 0 && (
+            <Tag bordered={false} className="catalog-option-pill">
+              {option.shadeName}
+            </Tag>
+          )}
+          <span className="catalog-option-row-barcode" dir="ltr">
+            {option.barcode || "—"}
+          </span>
         </div>
       </div>
 
-      <div className="catalog-option-footer">
-        <span className="catalog-option-barcode">{option.barcode || "—"}</span>
-        <Button type={selected ? "primary" : "default"} size="small" onClick={(e) => {
-          e.stopPropagation();
-          onSelect(option);
-        }}>
+      <div className="catalog-option-row-action">
+        <Button
+          type={selected ? "primary" : "default"}
+          size="small"
+          icon={selected ? <CheckOutlined /> : <RightOutlined />}
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect(option);
+          }}
+        >
           {selected ? "محدد" : "اختيار"}
         </Button>
       </div>
