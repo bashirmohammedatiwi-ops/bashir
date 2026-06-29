@@ -200,21 +200,60 @@ function parseDimensionValuesDisplayData(html) {
   }
 }
 
+/**
+ * خريطة ASIN → صورة المتغيّر (السواتش) من بيانات twister في صفحة أمازون.
+ * كل متغيّر يأتي بالشكل: "imageAttribute":{...,"url":"..."},...,"defaultAsin":"ASIN"
+ */
+function parseVariationImageMap(html = '') {
+  const map = {};
+  if (!html) return map;
+  for (const m of html.matchAll(
+    /"imageAttribute"\s*:\s*\{[^}]*?"url"\s*:\s*"(https:\/\/[^"]+)"\}[^{]*?"defaultAsin"\s*:\s*"(B0[A-Z0-9]{8})"/g,
+  )) {
+    const url = m[1];
+    const asin = m[2];
+    if (asin && url && !map[asin]) map[asin] = url;
+  }
+  // احتياطي: صور hiRes/large مرتبطة مباشرة بـ ASIN
+  for (const m of html.matchAll(
+    /"(B0[A-Z0-9]{8})"\s*:\s*\{[^}]*?"(?:hiRes|large)"\s*:\s*"(https:\/\/[^"]+)"/g,
+  )) {
+    if (!map[m[1]]) map[m[1]] = m[2];
+  }
+  return map;
+}
+
+/** ترقية رابط صورة السواتش الصغير إلى نسخة أكبر مناسبة للعرض */
+function upscaleAmazonImage(url = '') {
+  return String(url || '').replace(/\._[A-Z0-9_,]+_\.(jpg|png|webp)/i, '._AC_SL500_.$1');
+}
+
 function parseAmazonVariations(htmlAr, htmlEn) {
   const arMap = parseDimensionValuesDisplayData(htmlAr);
   const enMap = parseDimensionValuesDisplayData(htmlEn);
+  const imgEn = parseVariationImageMap(htmlEn);
+  const imgAr = parseVariationImageMap(htmlAr);
   const asins = new Set([...Object.keys(arMap), ...Object.keys(enMap)]);
   const shades = [];
   for (const asin of asins) {
     const nameAr = String((arMap[asin] || [])[0] || '').trim();
     const nameEn = String((enMap[asin] || [])[0] || '').trim();
     if (!nameAr && !nameEn) continue;
+    const swatchUrl = imgEn[asin] || imgAr[asin] || '';
+    const displayUrl = swatchUrl ? upscaleAmazonImage(swatchUrl) : '';
     shades.push({
       optionId: asin,
       name: nameAr || nameEn,
       nameAr,
       nameEn,
       sku: asin,
+      // صورة العرض المرتبطة باللون (نسخة أكبر)
+      rawImage: displayUrl,
+      image: displayUrl ? proxyAmazonImage(displayUrl) : '',
+      thumb: displayUrl ? proxyAmazonImage(displayUrl) : '',
+      // صورة السواتش الأصلية (مربّع اللون) — أدقّ لاستخراج قيمة اللون
+      swatchImage: swatchUrl ? proxyAmazonImage(swatchUrl) : '',
+      colorSourceImage: swatchUrl || displayUrl || '',
     });
   }
   return shades.sort((a, b) => (a.nameEn || a.nameAr).localeCompare(b.nameEn || b.nameAr, 'en'));

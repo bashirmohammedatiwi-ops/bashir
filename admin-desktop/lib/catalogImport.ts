@@ -44,6 +44,7 @@ export type CatalogImportShade = {
   colorHexEnd?: string;
   isGradient?: boolean;
   imageUrl?: string;
+  swatchUrl?: string;
   sku?: string;
 };
 

@@ -60,10 +60,13 @@ export async function resolveShadeColorHex(shade: {
   colorHex?: string;
   colorHexEnd?: string;
   imageUrl?: string;
+  swatchUrl?: string;
 }): Promise<string | undefined> {
   const existing = String(shade.colorHex || "").trim();
   if (existing) return existing;
-  if (!shade.imageUrl) return undefined;
-  const sampled = await averageColorFromImageUrl(shade.imageUrl);
+  // صورة السواتش (مربّع اللون) أدقّ من صورة المنتج الكاملة لاستخراج اللون
+  const source = String(shade.swatchUrl || "").trim() || String(shade.imageUrl || "").trim();
+  if (!source) return undefined;
+  const sampled = await averageColorFromImageUrl(source);
   return sampled || undefined;
 }

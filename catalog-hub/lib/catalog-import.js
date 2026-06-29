@@ -52,6 +52,8 @@ function mapShades(shades = [], hubOrigin = '') {
     colorHexEnd: s.colorHexEnd || s.hexEnd || undefined,
     isGradient: !!s.isGradient,
     imageUrl: absImageUrl(s.image || s.thumb || s.rawImage || '', hubOrigin),
+    // صورة السواتش (مربّع اللون) — أدقّ لاستخراج قيمة اللون من صورة المنتج الكاملة
+    swatchUrl: absImageUrl(s.swatchImage || s.colorSourceImage || s.image || s.thumb || '', hubOrigin) || undefined,
     sku: s.sku || s.optionId || undefined,
   })).filter((s) => s.name || s.barcode || s.imageUrl);
 }
