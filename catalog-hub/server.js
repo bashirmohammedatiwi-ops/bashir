@@ -61,6 +61,7 @@ import {
   fetchCategoryTreeRaw as fetchFacesCategoriesRaw,
   fetchCategoryProducts as fetchFacesCategoryProducts,
   searchProducts as searchFacesProducts,
+  searchProductsIncludingBarcode as searchFacesProductsIncludingBarcode,
   fetchProductById as fetchFacesProductById,
   normalizeProductSummary as normalizeFacesProductSummary,
   normalizeProductDetailFromRaw as normalizeFacesProductDetail,
@@ -934,7 +935,7 @@ async function handleFacesApi(req, res, url) {
       const page = Number(q.page) || 1;
       const limit = Math.min(Number(q.limit) || 30, 60);
       const sort = q.sort || 'default';
-      const data = await searchFacesProducts(query, page, limit);
+      const data = await searchFacesProductsIncludingBarcode(query, page, limit);
       let products = (data.items || []).map((p) =>
         normalizeFacesProductSummary(p, { path: `بحث: ${query}`, pathEn: `Search: ${query}` })
       );

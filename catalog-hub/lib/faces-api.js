@@ -386,7 +386,47 @@ export function parseProductTilesContainingBarcode(html, barcode) {
 
 const FACES_BARCODE_CATALOG_CATEGORIES = [
   'makeup', 'lipstick', 'foundation', 'skincare', 'perfume', 'bestsellers', 'haircare',
+  'new-beauty-products', 'makeup-bestsellers', 'perfume-for-women', 'perfume-for-men',
+  'eyes', 'nails', 'bath-and-body',
 ];
+
+/** استخراج معرّفات منتجات من HTML عند ظهور الباركود في نفس كتلة الصفحة */
+function parsePidsNearBarcodeInHtml(html, barcode) {
+  const variants = new Set(barcodeQueryVariants(barcode));
+  const pids = new Set();
+  const chunks = String(html || '').split(/data-pid="/);
+  for (const chunk of chunks.slice(1)) {
+    const pid = chunk.match(/^([^"]+)"/)?.[1];
+    if (!pid) continue;
+    const window = chunk.slice(0, 12_000);
+    if ([...variants].some((v) => window.includes(v))) pids.add(pid);
+  }
+  return [...pids];
+}
+
+async function tilesFromPids(pids = []) {
+  const tiles = [];
+  for (const pid of pids.slice(0, 24)) {
+    try {
+      const ar = await fetchQuickView(pid, LOCALE_AR);
+      if (!ar?.id) continue;
+      tiles.push({
+        pid: ar.id,
+        ean: ar.EAN || '',
+        nameAr: (ar.productName || '').trim(),
+        nameEn: '',
+        brandAr: ar.brand || '',
+        thumb: productImage(ar) || '',
+        price: ar.price?.sales?.value,
+        productUrl: absUrl(ar.selectedProductUrl),
+        hasOptions: (ar.variationAttributes || []).length > 0,
+      });
+    } catch {
+      /* skip */
+    }
+  }
+  return tiles;
+}
 
 async function fetchCategoryHtml(categoryId, { page = 1, pageSize = 48 } = {}) {
   const start = (page - 1) * pageSize;
@@ -618,6 +658,35 @@ export async function fetchCategoryProducts(categoryId, { page = 1, limit = 30, 
   }
 }
 
+export function isBarcodeQuery(query = '') {
+  const digits = String(query).replace(/\D/g, '');
+  return digits.length >= 8 && digits.length <= 14 && /^\d+$/.test(digits);
+}
+
+/** بحث وجوه — إن كان الاستعلام باركوداً يُحل عبر مسار GTIN الكامل */
+export async function searchProductsIncludingBarcode(query, page = 1, limit = 30, { enrich = false } = {}) {
+  const q = String(query || '').trim();
+  if (!isBarcodeQuery(q)) {
+    return searchProducts(q, page, limit, { enrich });
+  }
+
+  const matches = await searchProductsByBarcode(q, { limit: Math.min(limit, 20) });
+  const items = matches.map((m) => {
+    const t = { ...m.tile };
+    if (m.matchType === 'shade' && m.shade) {
+      t.ean = m.barcode;
+      t.shadeName = m.shade.name;
+      if (m.shade.image) t.thumb = m.shade.image;
+      if (m.shade.price) t.price = m.shade.price;
+    } else {
+      t.ean = m.barcode || t.ean;
+    }
+    return t;
+  });
+
+  return { items, total: items.length, page: 1, pageSize: limit };
+}
+
 export async function searchProducts(query, page = 1, limit = 30, { enrich = false } = {}) {
   try {
     const response = await fetchCnstrc(`/search/${encodeURIComponent(query)}`, {
@@ -820,6 +889,15 @@ export async function fetchProductById(pid, { enrichShades = true } = {}) {
 
   pAr._shades = shades;
   pAr._enProduct = pEn;
+  indexFacesProductBarcodes(pid, {
+    nameAr: pAr.productName,
+    nameEn: pEn?.productName,
+    brandAr: pAr.brand,
+    brandEn: pEn?.brand,
+    thumb: productImage(pAr),
+    productUrl: absUrl(pAr.selectedProductUrl),
+    price: pAr.price?.sales?.value,
+  }).catch(() => {});
   return pAr;
 }
 
@@ -1166,6 +1244,69 @@ async function tryFacesGtinWithHints(barcode, hintHits = [], scanOpts) {
   return scanOpts.hits.length > 0;
 }
 
+/**
+ * حل GTIN نهائي — نفس منطق fetchProductById: يفحص كل درجة بباركودها الحقيقي
+ * (لا يعتمد على light mode ولا يتخطى الباركودات الرقمية)
+ */
+async function resolveFacesGtinBarcode(barcode, scanOpts) {
+  const digits = String(barcode || '').replace(/\D/g, '');
+  if (!/^\d{8,14}$/.test(digits)) return false;
+
+  const deepScan = { ...scanOpts, light: false };
+
+  const catalogTiles = await findFacesTilesByCatalogScan(barcode, { maxPages: 3 });
+  if (catalogTiles.length) {
+    await scanTilesForBarcode(catalogTiles, barcode, deepScan, { deepLimit: 40 });
+    if (scanOpts.hits.length) return true;
+  }
+
+  const pidSet = new Set();
+  const catResults = await Promise.allSettled(
+    FACES_BARCODE_CATALOG_CATEGORIES.map(async (categoryId) => {
+      for (let page = 1; page <= 3; page++) {
+        const html = await fetchCategoryHtml(categoryId, { page });
+        for (const pid of parsePidsNearBarcodeInHtml(html, barcode)) pidSet.add(pid);
+        if ([...pidSet].length) return;
+      }
+    }),
+  );
+  void catResults;
+  if (pidSet.size) {
+    const pidTiles = await tilesFromPids([...pidSet]);
+    await scanTilesForBarcode(pidTiles, barcode, deepScan, { deepLimit: 40 });
+    if (scanOpts.hits.length) return true;
+  }
+
+  const upc = await lookupUpcByBarcode(barcode).catch(() => null);
+  const obf = upc ? null : await lookupObfByBarcode(barcode).catch(() => null);
+  const external = upc || obf;
+  if (external?.brand) {
+    for (let page = 1; page <= 8; page++) {
+      if (scanOpts.hits.length >= scanOpts.limit) break;
+      try {
+        const data = await fetchBrandProducts(external.brand, { page, limit: 40, enrich: true });
+        await scanTilesForBarcode(data.items || [], barcode, deepScan, { deepLimit: 40 });
+        if (scanOpts.hits.length) return true;
+        if (!data.items?.length || data.items.length < 40) break;
+      } catch {
+        break;
+      }
+    }
+  }
+
+  const index = loadFacesBarcodeIndex();
+  const knownPids = [...new Set(Object.values(index.barcodes || {}).map((e) => e.pid).filter(Boolean))];
+  for (const pid of knownPids) {
+    if (scanOpts.hits.length >= scanOpts.limit) break;
+    const resolved = await resolveFacesBarcodeOnProduct(pid, barcode);
+    if (!resolved) continue;
+    if (resolved.matchType === 'shade' && resolved.shade) scanOpts.pushShade(resolved.tile, resolved.shade);
+    else scanOpts.pushProduct({ ...resolved.tile, ean: resolved.barcode });
+  }
+
+  return scanOpts.hits.length > 0;
+}
+
 async function scanTilesForBarcode(tiles, barcode, { pushProduct, pushShade, limit, hits, light = false }, { deepLimit = 12 } = {}) {
   const merged = mergeTilesByPid(tiles);
   const needsEan = merged.filter((t) => !t.ean);
@@ -1251,7 +1392,7 @@ function cacheFacesSearchHits(barcode, hits, limit) {
   return hits.slice(0, limit);
 }
 
-/** بحث باركود في وجوه: فهرس محلي + HTML + Constructor + UPC + تلميحات متاجر */
+/** بحث باركود في وجوه — فهرس محلي ثم فحص كامل لكل درجة (نفس fetchProductById) */
 export async function searchProductsByBarcode(barcode, { limit = 12, hintHits = [], light = false } = {}) {
   const cacheKey = gtinKey(barcode);
   const cached = facesSearchCache.get(cacheKey);
@@ -1285,19 +1426,24 @@ export async function searchProductsByBarcode(barcode, { limit = 12, hintHits = 
     indexFacesProductBarcodes(tile.pid, tile).catch(() => {});
   };
 
-  const scanOpts = { pushProduct, pushShade, limit, hits, light };
-
-  if (hintHits.length) {
-    const hinted = await tryFacesGtinWithHints(barcode, hintHits, scanOpts);
-    if (hinted) return cacheFacesSearchHits(barcode, hits, limit);
-  }
+  const scanOpts = { pushProduct, pushShade, limit, hits, light: false };
 
   const indexed = lookupFacesBarcodeIndex(barcode);
   if (indexed?.pid && (indexed.nameAr || indexed.nameEn || indexed.thumb)) {
     return cacheFacesSearchHits(barcode, hitsFromFacesIndex(barcode, indexed, scanOpts), limit);
   }
 
-  const direct = await tryDirectBarcodeQuickView(barcode, { light });
+  if (hintHits.length) {
+    const hinted = await tryFacesGtinWithHints(barcode, hintHits, scanOpts);
+    if (hinted) return cacheFacesSearchHits(barcode, hits, limit);
+  }
+
+  if (looksLikeGtinBarcode(barcode)) {
+    const resolved = await resolveFacesGtinBarcode(barcode, scanOpts);
+    if (resolved) return cacheFacesSearchHits(barcode, hits, limit);
+  }
+
+  const direct = await tryDirectBarcodeQuickView(barcode, { light: false });
   if (direct) {
     if (direct.matchType === 'shade' && direct.shade) pushShade(direct.tile, direct.shade);
     else pushProduct(direct.tile);
@@ -1312,91 +1458,44 @@ export async function searchProductsByBarcode(barcode, { limit = 12, hintHits = 
     if (hits.length) return cacheFacesSearchHits(barcode, hits, limit);
   }
 
-  const catalogTiles = await findFacesTilesByCatalogScan(barcode, { maxPages: light ? 1 : 2 });
-  if (catalogTiles.length) {
-    await scanTilesForBarcode(catalogTiles, barcode, scanOpts);
-    if (hits.length) return cacheFacesSearchHits(barcode, hits, limit);
-  }
-
-  const earlyHints = [...hintHits];
-  if (earlyHints.length) {
-    const brands = collectBrandNames(earlyHints, null);
-    if (brands.length) {
-      await scanFacesBrandCatalogs(barcode, brands, scanOpts);
-      if (hits.length) return hits.slice(0, limit);
-    }
-    const queries = buildFacesHintQueries(earlyHints);
-    if (queries.length) {
-      await scanFacesHintQueries(barcode, queries, scanOpts, { maxPages: 2, pageSize: 30 });
-      if (hits.length) return hits.slice(0, limit);
+  if (!looksLikeGtinBarcode(barcode)) {
+    const variants = barcodeQueryVariants(barcode);
+    for (const q of variants) {
+      if (hits.length >= limit) break;
+      const [apiOut, htmlOut] = await Promise.allSettled([
+        searchProducts(q, 1, 20, { enrich: true }),
+        fetchSearchHtmlTiles(q, 20),
+      ]);
+      const tiles = [
+        ...(apiOut.status === 'fulfilled' ? apiOut.value.items : []),
+        ...(htmlOut.status === 'fulfilled' ? htmlOut.value : []),
+      ];
+      await scanTilesForBarcode(tiles, barcode, scanOpts, { deepLimit: 25 });
     }
   }
 
-  const index = loadFacesBarcodeIndex();
-  const knownPids = [...new Set(Object.values(index.barcodes || {}).map((e) => e.pid).filter(Boolean))];
-  for (const pid of knownPids.slice(0, light ? 3 : hintHits.length ? 5 : 8)) {
-    if (hits.length >= limit) break;
-    const resolved = await resolveFacesBarcodeOnProduct(pid, barcode);
-    if (!resolved) continue;
-    if (resolved.matchType === 'shade') pushShade(resolved.tile, resolved.shade);
-    else pushProduct({ ...resolved.tile, ean: resolved.barcode });
-    break;
-  }
-  if (hits.length) return cacheFacesSearchHits(barcode, hits, limit);
-
-  const slugTiles = await findTilesFromSearchSlug(barcode);
-  if (slugTiles.length) {
-    await scanTilesForBarcode(slugTiles, barcode, scanOpts);
-    if (hits.length) return hits.slice(0, limit);
+  if (!hits.length && hintHits.length) {
+    await tryFacesGtinWithHints(barcode, hintHits, scanOpts);
   }
 
-  const variants = barcodeQueryVariants(barcode);
-  for (const q of variants) {
-    if (hits.length >= limit) break;
-
-    const [apiOut, htmlOut] = await Promise.allSettled([
-      searchProducts(q, 1, 15, { enrich: !light }),
-      fetchSearchHtmlTiles(q, 15),
-    ]);
-
-    const tiles = [
-      ...(apiOut.status === 'fulfilled' ? apiOut.value.items : []),
-      ...(htmlOut.status === 'fulfilled' ? htmlOut.value : []),
-    ];
-    await scanTilesForBarcode(tiles, barcode, scanOpts);
-  }
-
-  if (hits.length) return hits.slice(0, limit);
-
-  const upc = await lookupUpcByBarcode(barcode);
-  const obf = upc ? null : await lookupObfByBarcode(barcode);
-  const external = upc || obf;
-  const upcHints = external
-    ? [{
+  if (!hits.length) {
+    const upc = await lookupUpcByBarcode(barcode).catch(() => null);
+    const obf = upc ? null : await lookupObfByBarcode(barcode).catch(() => null);
+    const external = upc || obf;
+    const allHints = [...hintHits, ...(external ? [{
       brand: external.brand,
       manufacturer: external.brand,
       name: external.title,
       nameEn: external.title,
-      title: external.title,
-    }]
-    : [];
-  const allHints = [...hintHits, ...upcHints];
-
-  const queries = [
-    ...buildFacesHintQueries(allHints),
-    ...(external ? buildFacesHintQueriesFromUpc(external) : []),
-  ];
-  await scanFacesHintQueries(barcode, queries, scanOpts);
-
-  if (!hits.length) {
-    const brands = collectBrandNames(allHints, external);
-    await scanFacesBrandCatalogs(barcode, brands, scanOpts);
-  }
-
-  if (!hits.length && (await probeFacesBarcodeInCatalog(barcode))) {
-    const fallbackBrands = collectBrandNames(allHints, external);
-    if (fallbackBrands.length) {
-      await scanFacesBrandCatalogs(barcode, fallbackBrands, scanOpts);
+    }] : [])];
+    const queries = [
+      ...buildFacesHintQueries(allHints),
+      ...(external ? buildFacesHintQueriesFromUpc(external) : []),
+    ];
+    await scanFacesHintQueries(barcode, queries, scanOpts, { maxPages: 3, pageSize: 30 });
+    if (!hits.length) {
+      const brands = collectBrandNames(allHints, external);
+      await scanFacesBrandCatalogs(barcode, brands, scanOpts);
     }
   }
 

@@ -449,7 +449,7 @@ async function searchFacesByBarcode(barcode, hintHits = []) {
   const matches = await searchProductsByBarcode(barcode, {
     limit: 10,
     hintHits,
-    light: !hintHits.length,
+    light: false,
   });
   return dedupeHits(matches.map((m) => {
     const tile = m.tile;
@@ -560,7 +560,7 @@ const SEARCHERS = [
   { store: 'vanilla', fn: searchVanillaByBarcode, timeoutMs: 6_000 },
   { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 6_000 },
   { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 12_000 },
-  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 45_000 },
+  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 60_000 },
 ];
 
 function withStoreTimeout(promise, ms, store) {
