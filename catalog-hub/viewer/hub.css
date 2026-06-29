@@ -105,6 +105,10 @@ body {
   border-color: #02c0ef;
 }
 
+.hub-card--beautyway:hover {
+  border-color: #8b2c9e;
+}
+
 .hub-card-icon {
   width: 52px;
   height: 52px;
@@ -148,6 +152,10 @@ body {
 
 .hub-card--orisdi .hub-card-icon {
   background: linear-gradient(135deg, #02c0ef, #0288d1);
+}
+
+.hub-card--beautyway .hub-card-icon {
+  background: linear-gradient(135deg, #8b2c9e, #6a1b9a);
 }
 
 .hub-card h2 {
@@ -216,6 +224,10 @@ body {
 
 .hub-card--orisdi .hub-cta {
   color: #02c0ef;
+}
+
+.hub-card--beautyway .hub-cta {
+  color: #8b2c9e;
 }
 
 .hub-foot {
@@ -371,6 +383,7 @@ body {
 .barcode-result.hub-card--amazon:hover { border-color: #ff9900; }
 .barcode-result.hub-card--miswag:hover { border-color: #df1c24; }
 .barcode-result.hub-card--orisdi:hover { border-color: #02c0ef; }
+.barcode-result.hub-card--beautyway:hover { border-color: #8b2c9e; }
 
 .barcode-result-img {
   width: 72px;

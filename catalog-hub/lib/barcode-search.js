@@ -52,6 +52,10 @@ import {
   searchProductsByBarcode as searchOrisdiProductsByBarcode,
   normalizeProductSummary as normalizeOrisdiSummary,
 } from './orisdi-api.js';
+import {
+  searchProductsByBarcode as searchBeautywayProductsByBarcode,
+  normalizeProductSummary as normalizeBeautywaySummary,
+} from './beautyway-api.js';
 import { lookupUpcByBarcode } from './barcodes.js';
 
 function barcodeQueryVariants(barcode) {
@@ -74,13 +78,14 @@ export const STORE_META = {
   amazon: { id: 'amazon', label: 'Amazon Cosmetics', path: '/amazon/', domain: 'amazon.com' },
   miswag: { id: 'miswag', label: 'مسواگ Miswag', path: '/miswag/', domain: 'miswag.com' },
   orisdi: { id: 'orisdi', label: 'أورزدي Orisdi', path: '/orisdi/', domain: 'orisdi.com' },
+  beautyway: { id: 'beautyway', label: 'بيوتي وي Beauty Way', path: '/beautyway/', domain: 'beautyway-iq.com' },
 };
 
 let elryanBeautyIdsPromise = null;
 const searchResultCache = new Map();
 const SEARCH_CACHE_MS = 15 * 60 * 1000;
 const SEARCH_NEGATIVE_CACHE_MS = 3 * 60 * 1000;
-const STORE_SEARCH_RANK = { niceone: 0, elryan: 1, vanilla: 2, miraaya: 3, orisdi: 4, miswag: 5, amazon: 6, faces: 7 };
+const STORE_SEARCH_RANK = { niceone: 0, elryan: 1, vanilla: 2, miraaya: 3, orisdi: 4, beautyway: 5, miswag: 6, amazon: 7, faces: 8 };
 const foundationCache = { products: [], at: 0 };
 const FOUNDATION_CACHE_MS = 10 * 60 * 1000;
 
@@ -690,12 +695,38 @@ async function searchAmazonByBarcode(barcode) {
   );
 }
 
+async function searchBeautywayByBarcode(barcode) {
+  const products = await searchBeautywayProductsByBarcode(barcode);
+  return dedupeHits(
+    products.map((p) => {
+      const n = normalizeBeautywaySummary(p);
+      return hit('beautyway', {
+        id: n.id,
+        name: n.name,
+        nameEn: n.nameEn,
+        manufacturer: n.manufacturer,
+        manufacturerEn: n.manufacturerEn,
+        price: n.price,
+        thumb: n.thumb,
+        barcode: n.barcode || barcode,
+        sku: n.sku,
+        matchType: p.matchType === 'hint' ? 'hint' : 'product',
+        shadeCount: n.shadeCount || 0,
+        categoryHint: n.category || '',
+        categoryHintEn: n.categoryEn || '',
+        source: p.source || 'live',
+      });
+    }),
+  );
+}
+
 const SEARCHERS = [
   { store: 'niceone', fn: searchNiceOneByBarcode, timeoutMs: 7_000 },
   { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 5_000 },
   { store: 'vanilla', fn: searchVanillaByBarcode, timeoutMs: 5_000 },
   { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 5_000 },
   { store: 'orisdi', fn: searchOrisdiByBarcode, timeoutMs: 12_000 },
+  { store: 'beautyway', fn: searchBeautywayByBarcode, timeoutMs: 14_000 },
   { store: 'miswag', fn: searchMiswagByBarcode, timeoutMs: 15_000 },
   { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 10_000 },
   { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 30_000 },

@@ -15,6 +15,7 @@ import { fetchProductById as fetchFacesById, normalizeProductDetailFromRaw as no
 import { fetchProductByAsin as fetchAmazonByAsin, searchProductsByBarcode as searchAmazonByBarcode, isAmazonBundleListing } from './amazon-api.js';
 import { fetchProductDetail as fetchMiswagDetail, normalizeProductDetail as normalizeMiswagDetail } from './miswag-api.js';
 import { fetchProductDetail as fetchOrisdiDetail } from './orisdi-api.js';
+import { fetchProductDetail as fetchBeautywayDetail } from './beautyway-api.js';
 
 function hasArabicText(text = '') {
   return /[\u0600-\u06FF]/.test(String(text || ''));
@@ -289,6 +290,13 @@ async function fetchOrisdiImport(id, hubOrigin, barcodeHint = '') {
   return buildImportPayload('orisdi', normalized, { hubOrigin });
 }
 
+async function fetchBeautywayImport(id, hubOrigin, barcodeHint = '') {
+  const normalized = await fetchBeautywayDetail(id, { slug: '' });
+  if (!normalized?.id) return null;
+  if (barcodeHint && !normalized.barcode) normalized.barcode = barcodeHint;
+  return buildImportPayload('beautyway', normalized, { hubOrigin });
+}
+
 export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barcode = '', light = false } = {}) {
   const id = String(sourceId || '').trim();
   if (!id || !store) return { error: 'المتجر ومعرّف المنتج مطلوبان' };
@@ -318,6 +326,9 @@ export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barc
       break;
     case 'orisdi':
       payload = await fetchOrisdiImport(id, hubOrigin, barcode);
+      break;
+    case 'beautyway':
+      payload = await fetchBeautywayImport(id, hubOrigin, barcode);
       break;
     default:
       return { error: `متجر غير معروف: ${store}` };

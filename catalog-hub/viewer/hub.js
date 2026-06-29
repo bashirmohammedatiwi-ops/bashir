@@ -15,6 +15,7 @@ const STORE_CLASS = {
   amazon: 'hub-card--amazon',
   miswag: 'hub-card--miswag',
   orisdi: 'hub-card--orisdi',
+  beautyway: 'hub-card--beautyway',
 };
 
 const STORE_LABELS = {
@@ -26,6 +27,7 @@ const STORE_LABELS = {
   amazon: 'Amazon',
   miswag: 'مسواگ',
   orisdi: 'أورزدي',
+  beautyway: 'بيوتي وي',
 };
 
 function isValidBarcodeInput(raw) {

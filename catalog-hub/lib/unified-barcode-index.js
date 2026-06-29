@@ -22,6 +22,7 @@ const STORE_LABELS = {
   amazon: 'Amazon Cosmetics',
   miswag: 'مسواگ Miswag',
   orisdi: 'أورزدي Orisdi',
+  beautyway: 'بيوتي وي Beauty Way',
 };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

@@ -460,7 +460,7 @@ export default function CatalogImportPage() {
     <div className="catalog-import-page">
       <PageHeader
         title="الاستيراد من الكتالوج"
-        subtitle={`البحث في Nice One · Vanilla · الريان · ميرايا · أورزدي · مسواگ · وجوه · Amazon — ${CATALOG_HUB_URL}`}
+        subtitle={`البحث في Nice One · Vanilla · الريان · ميرايا · أورزدي · بيوتي وي · مسواگ · وجوه · Amazon — ${CATALOG_HUB_URL}`}
       />
 
       <Steps
@@ -479,7 +479,7 @@ export default function CatalogImportPage() {
             <BarcodeOutlined style={{ marginInlineEnd: 6 }} />
             بحث بالباركود
           </h3>
-          <p>ابحث في Nice One · Vanilla · الريان · ميرايا · أورزدي · مسواگ · وجوه · Amazon — تظهر النتائج أفقياً مع الصور والتدرجات</p>
+          <p>ابحث في Nice One · Vanilla · الريان · ميرايا · أورزدي · بيوتي وي · مسواگ · وجوه · Amazon — تظهر النتائج أفقياً مع الصور والتدرجات</p>
         </div>
         <div className="catalog-import-search-row">
           <Input

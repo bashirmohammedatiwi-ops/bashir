@@ -2,9 +2,15 @@
  * Orisdi (أورزدي) — Iraq Shopify storefront
  * https://orisdi.com
  */
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { lookupUpcByBarcode } from './barcodes.js';
 
 export const SITE = 'https://orisdi.com';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FEED_CACHE_FILE = path.join(__dirname, '..', 'data', 'orisdi-feed-index.json');
 
 const BEAUTY_COLLECTIONS = [
   { handle: 'makeup', name: 'مكياج', nameEn: 'Makeup' },
@@ -223,6 +229,171 @@ export function normalizeProductDetail(product) {
   };
 }
 
+/* ─────────────────────────────────────────────────────────────
+ * فهرس التغذية الكامل (Full feed index)
+ * يبني خريطة باركود/SKU → منتج من products.json كاملاً.
+ * هذا هو المسار الموثوق للبحث — بحث Shopify النصي لا يفهرس الباركود/SKU.
+ * ───────────────────────────────────────────────────────────── */
+
+const FEED_TTL_MS = 6 * 60 * 60 * 1000; // 6 ساعات
+const FEED_MAX_PAGES = 80;
+
+let feedIndex = null; // { byBarcode: Map, byId: Map, builtAt }
+let feedBuildPromise = null;
+
+function feedBarcodeKeys(value) {
+  const digits = String(value ?? '').replace(/\D/g, '');
+  if (digits.length < 8 || digits.length > 14) return [];
+  const keys = new Set([digits]);
+  const stripped = digits.replace(/^0+/, '') || digits;
+  keys.add(stripped);
+  if (digits.length === 13 && digits.startsWith('0')) keys.add(digits.slice(1));
+  if (stripped.length <= 12) keys.add(stripped.padStart(12, '0'));
+  if (stripped.length <= 13) keys.add(stripped.padStart(13, '0'));
+  if (stripped.length <= 14) keys.add(stripped.padStart(14, '0'));
+  return [...keys];
+}
+
+function indexProductInMaps(byBarcode, byId, product) {
+  if (!product?.id) return;
+  byId.set(String(product.id), product);
+  for (const variant of product.variants || []) {
+    for (const raw of [variant.barcode, variant.sku]) {
+      for (const key of feedBarcodeKeys(raw)) {
+        if (!byBarcode.has(key)) byBarcode.set(key, []);
+        const list = byBarcode.get(key);
+        if (!list.some((entry) => entry.product.id === product.id && entry.variantId === variant.id)) {
+          list.push({ product, variant, variantId: variant.id });
+        }
+      }
+    }
+  }
+}
+
+function slimProduct(p) {
+  return {
+    id: p.id,
+    handle: p.handle,
+    title: p.title,
+    vendor: p.vendor,
+    product_type: p.product_type,
+    body_html: p.body_html,
+    images: (p.images || []).map((img) => ({ src: img.src })),
+    variants: (p.variants || []).map((v) => ({
+      id: v.id,
+      title: v.title,
+      barcode: v.barcode,
+      sku: v.sku,
+      price: v.price,
+      compare_at_price: v.compare_at_price,
+      available: v.available,
+      featured_image: v.featured_image ? { src: v.featured_image.src } : null,
+    })),
+  };
+}
+
+function serializeFeedIndex(index) {
+  const products = [...index.byId.values()].map(slimProduct);
+  return JSON.stringify({ builtAt: index.builtAt, products });
+}
+
+function loadFeedFromDisk() {
+  try {
+    const raw = JSON.parse(fs.readFileSync(FEED_CACHE_FILE, 'utf8'));
+    if (!raw?.products?.length) return null;
+    const byBarcode = new Map();
+    const byId = new Map();
+    for (const product of raw.products) {
+      indexProductInMaps(byBarcode, byId, product);
+      rememberHandle(product);
+    }
+    return { byBarcode, byId, builtAt: raw.builtAt || 0 };
+  } catch {
+    return null;
+  }
+}
+
+function saveFeedToDisk(index) {
+  try {
+    fs.mkdirSync(path.dirname(FEED_CACHE_FILE), { recursive: true });
+    fs.writeFileSync(FEED_CACHE_FILE, serializeFeedIndex(index));
+  } catch { /* optional persistence */ }
+}
+
+async function buildFeedIndex() {
+  const byBarcode = new Map();
+  const byId = new Map();
+  let count = 0;
+
+  for (let page = 1; page <= FEED_MAX_PAGES; page++) {
+    let data;
+    try {
+      data = await shopifyJson('/products.json', { limit: 250, page });
+    } catch {
+      if (page === 1) throw new Error('Orisdi feed unavailable');
+      break;
+    }
+    const products = data.products || [];
+    if (!products.length) break;
+    for (const product of products) {
+      indexProductInMaps(byBarcode, byId, product);
+      rememberHandle(product);
+      count++;
+    }
+    if (products.length < 250) break;
+  }
+
+  const index = { byBarcode, byId, builtAt: Date.now() };
+  if (count > 0) saveFeedToDisk(index);
+  return index;
+}
+
+async function getFeedIndex({ allowStale = true } = {}) {
+  const fresh = feedIndex && Date.now() - feedIndex.builtAt < FEED_TTL_MS;
+  if (fresh) return feedIndex;
+
+  // حمّل من القرص أولاً إن لم يكن في الذاكرة (إقلاع سريع)
+  if (!feedIndex) {
+    const disk = loadFeedFromDisk();
+    if (disk) {
+      feedIndex = disk;
+      if (Date.now() - disk.builtAt < FEED_TTL_MS) return feedIndex;
+    }
+  }
+
+  // إعادة بناء — مع منع البناء المتزامن المتعدد
+  if (!feedBuildPromise) {
+    feedBuildPromise = buildFeedIndex()
+      .then((idx) => { feedIndex = idx; return idx; })
+      .catch((err) => {
+        if (feedIndex && allowStale) return feedIndex; // استخدم القديم عند الفشل
+        throw err;
+      })
+      .finally(() => { feedBuildPromise = null; });
+  }
+
+  // إذا لدينا فهرس قديم نعيده فوراً ونحدّث بالخلفية
+  if (feedIndex && allowStale) {
+    void feedBuildPromise.catch(() => {});
+    return feedIndex;
+  }
+
+  return feedBuildPromise;
+}
+
+/** تحديث فهرس Orisdi مسبقاً (يُستدعى عند الإقلاع) */
+export function warmupOrisdiFeed() {
+  getFeedIndex({ allowStale: true }).catch(() => {});
+}
+
+function lookupFeedByBarcode(index, barcode) {
+  for (const key of feedBarcodeKeys(barcode)) {
+    const entries = index.byBarcode.get(key);
+    if (entries?.length) return entries;
+  }
+  return [];
+}
+
 export async function fetchProductByHandle(handle) {
   const data = await shopifyJson(`/products/${encodeURIComponent(handle)}.json`);
   return data.product || null;
@@ -249,7 +420,13 @@ export async function fetchProductById(id, { handle, barcode } = {}) {
     if (found?._raw) return found._raw;
   }
 
-  for (let page = 1; page <= 60; page++) {
+  try {
+    const index = await getFeedIndex({ allowStale: true });
+    const found = index.byId.get(key);
+    if (found) return found;
+  } catch { /* fall through */ }
+
+  for (let page = 1; page <= 80; page++) {
     const data = await shopifyJson('/products.json', { limit: 250, page });
     const products = data.products || [];
     const found = products.find((p) => String(p.id) === key);
@@ -288,6 +465,27 @@ export async function searchProductsByBarcode(barcode) {
   const results = [];
   const seen = new Set();
 
+  const pushHit = (hit) => {
+    const key = `${hit.id}:${hit.barcode}:${hit.sku}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    results.push(hit);
+  };
+
+  // (1) المسار الأساسي الموثوق: فهرس التغذية الكامل (باركود/SKU)
+  try {
+    const index = await getFeedIndex({ allowStale: true });
+    const entries = lookupFeedByBarcode(index, digits);
+    for (const { product, variant } of entries) {
+      pushHit(mapRawProduct(product, {
+        matchType: (product.variants || []).length > 1 ? 'shade' : 'product',
+        matchedVariant: variant,
+      }));
+    }
+    if (results.length) return results;
+  } catch { /* fall through to text search */ }
+
+  // (2) احتياطي: بحث Shopify النصي (نادراً ما يطابق الباركود)
   for (const q of barcodeQueryVariants(digits)) {
     let html = '';
     try {
@@ -304,10 +502,7 @@ export async function searchProductsByBarcode(barcode) {
     for (const outcome of fetched) {
       if (outcome.status !== 'fulfilled' || !outcome.value) continue;
       for (const hit of collectBarcodeMatches(outcome.value, digits)) {
-        const key = `${hit.id}:${hit.barcode}:${hit.sku}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        results.push(hit);
+        pushHit(hit);
       }
     }
     if (results.length) return results;
