@@ -177,6 +177,61 @@ function buildSearchUrl(query, page, locale) {
   return `${AMAZON_COM}/s?${params}`;
 }
 
+function parseFeatureBullets(html) {
+  const section =
+    html.match(/id="feature-bullets"[\s\S]*?<\/ul>/i)?.[0] ||
+    html.match(/feature-bullets[\s\S]{0,12_000}?<\/ul>/i)?.[0];
+  if (!section) return [];
+  return [...section.matchAll(/<span class="a-list-item">\s*([^<]{5,400})/g)]
+    .map((m) => m[1].trim())
+    .filter((t) => t && !/اذهب إلى|مشترياتك|الإرجاع|استرداد|return|refund/i.test(t));
+}
+
+function parseDimensionValuesDisplayData(html) {
+  const start = String(html || '').indexOf('dimensionValuesDisplayData');
+  if (start < 0) return {};
+  const chunk = html.slice(start, start + 12_000);
+  const jsonMatch = chunk.match(/dimensionValuesDisplayData"\s*:\s*(\{[\s\S]*?\})\s*,\s*"/);
+  if (!jsonMatch) return {};
+  try {
+    return JSON.parse(jsonMatch[1]);
+  } catch {
+    return {};
+  }
+}
+
+function parseAmazonVariations(htmlAr, htmlEn) {
+  const arMap = parseDimensionValuesDisplayData(htmlAr);
+  const enMap = parseDimensionValuesDisplayData(htmlEn);
+  const asins = new Set([...Object.keys(arMap), ...Object.keys(enMap)]);
+  const shades = [];
+  for (const asin of asins) {
+    const nameAr = String((arMap[asin] || [])[0] || '').trim();
+    const nameEn = String((enMap[asin] || [])[0] || '').trim();
+    if (!nameAr && !nameEn) continue;
+    shades.push({
+      optionId: asin,
+      name: nameAr || nameEn,
+      nameAr,
+      nameEn,
+      sku: asin,
+    });
+  }
+  return shades.sort((a, b) => (a.nameEn || a.nameAr).localeCompare(b.nameEn || b.nameAr, 'en'));
+}
+
+function hasArabicText(text = '') {
+  return /[\u0600-\u06FF]/.test(String(text || ''));
+}
+
+/** استبعاد حزم/مجموعات (مثل NYX + wet n wild) من نتائج الباركود */
+export function isAmazonBundleListing(nameEn = '', nameAr = '') {
+  const t = `${nameEn} ${nameAr}`.toLowerCase();
+  if (/\b(pack of|عبوة|قطعتين|-piece|\d+\s*count|bundle|مجموعة|with.*bonus)\b/i.test(t)) return true;
+  if (/\band\b/i.test(nameEn) && /\b(wet n wild|maybelline|e\.l\.f|revlon|l'oreal)\b/i.test(t)) return true;
+  return false;
+}
+
 function parseProductDetail(html, asin) {
   const title = html.match(/id="productTitle"[^>]*>\s*([^<]+)/)?.[1]?.trim() || '';
   const brand =
@@ -189,10 +244,13 @@ function parseProductDetail(html, asin) {
     html.match(/id="landingImage"[^>]*data-old-hires="([^"]+)"/)?.[1] ||
     html.match(/id="landingImage"[^>]*src="([^"]+)"/)?.[1];
   const descHtml = html.match(/id="productDescription"[^>]*>([\s\S]*?)<\/div>/i)?.[1] || '';
-  const desc = descHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-  const bullets = [...html.matchAll(/<span class="a-list-item">\s*([^<]{5,400})/g)]
-    .map((x) => x[1].trim())
-    .filter(Boolean);
+  let desc = descHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const bullets = parseFeatureBullets(html);
+  if (!desc || /الإرجاع|مشترياتك|return/i.test(desc)) {
+    desc = bullets.join('\n');
+  } else if (bullets.length) {
+    desc = [desc, ...bullets].filter(Boolean).join('\n');
+  }
   const priceWhole = html.match(/class="a-price-whole">([^<]+)/)?.[1]?.replace(/[,\s]/g, '');
   const priceFrac = html.match(/class="a-price-fraction">([^<]+)/)?.[1];
   const price = priceWhole ? `${priceWhole}${priceFrac ? `.${priceFrac}` : ''}` : '';
@@ -254,22 +312,27 @@ export function isUsableAmazonProduct(detail = {}) {
 
 function productCompletenessScore(detail = {}) {
   let score = 0;
-  if (detail.nameAr) score += 3;
+  if (detail.nameAr && hasArabicText(detail.nameAr)) score += 6;
+  else if (detail.nameAr) score += 2;
   if (detail.nameEn) score += 3;
   if (detail.thumb) score += 4;
   if (detail.images?.length) score += Math.min(detail.images.length, 5);
   if (detail.brandAr || detail.brandEn) score += 2;
-  if (detail.description || detail.descriptionEn) score += 1;
+  if (detail.description && hasArabicText(detail.description)) score += 3;
+  if (detail.descriptionEn) score += 1;
   if (detail.barcode) score += 1;
+  if (detail.shades?.length > 1) score += 4;
+  if (isAmazonBundleListing(detail.nameEn, detail.nameAr)) score -= 20;
   return score;
 }
 
-function buildDetailFromParsed(asin, ar, en, listing = {}) {
+function buildDetailFromParsed(asin, ar, en, listing = {}, htmlAr = '', htmlEn = '') {
   const { brandAr, brandEn } = resolveBrands(ar, en);
   const images = [...new Set([...(ar.images || []), ...(en.images || [])])].map(proxyAmazonImage).filter(Boolean);
   const listThumb = listing.thumb ? proxyAmazonImage(listing.thumb) : '';
   const thumb = proxyAmazonImage(ar.thumb || en.thumb || listThumb || images[0] || '');
   if (listThumb && !images.includes(listThumb)) images.unshift(listThumb);
+  const shades = parseAmazonVariations(htmlAr, htmlEn);
   return {
     id: asin,
     asin,
@@ -290,9 +353,9 @@ function buildDetailFromParsed(asin, ar, en, listing = {}) {
     barcode: ar.barcode || en.barcode || '',
     productUrl: `${AMAZON_SA}/dp/${asin}`,
     productUrlEn: `${AMAZON_COM}/dp/${asin}`,
-    shades: [],
-    shadeCount: 0,
-    hasOptions: false,
+    shades,
+    shadeCount: shades.length,
+    hasOptions: shades.length > 1,
   };
 }
 
@@ -321,7 +384,8 @@ export function normalizeProductSummary(raw, meta = {}) {
     categoryEn: meta.pathEn || meta.nameEn || '',
     productUrl: `${AMAZON_SA}/dp/${asin}`,
     productUrlEn: `${AMAZON_COM}/dp/${asin}`,
-    hasOptions: false,
+    hasOptions: (raw.shades?.length || 0) > 1,
+    shadeCount: raw.shadeCount ?? raw.shades?.length ?? 0,
   };
 }
 
@@ -332,10 +396,11 @@ export async function normalizeProductDetailBilingual(asin, listing = {}) {
   ]);
   let ar = htmlAr ? parseProductDetail(htmlAr, asin) : { asin, title: '', brand: '', thumb: '', images: [], description: '', price: '', barcode: '' };
   let en = htmlEnSa ? parseProductDetail(htmlEnSa, asin) : { asin, title: '', brand: '', thumb: '', images: [], description: '', price: '', barcode: '' };
+  let htmlCom = '';
 
   const needsComFallback = !(ar.title || en.title) || !(ar.thumb || en.thumb || ar.images?.length || en.images?.length);
   if (needsComFallback) {
-    const htmlCom = await fetchAmazonHtml(`${AMAZON_COM}/dp/${asin}`, 'en').catch(() => '');
+    htmlCom = await fetchAmazonHtml(`${AMAZON_COM}/dp/${asin}`, 'en').catch(() => '');
     if (htmlCom) {
       const com = parseProductDetail(htmlCom, asin);
       if (!en.title && com.title) en = com;
@@ -348,7 +413,8 @@ export async function normalizeProductDetailBilingual(asin, listing = {}) {
     }
   }
 
-  return buildDetailFromParsed(asin, ar, en, listing);
+  const htmlEn = htmlEnSa || htmlCom;
+  return buildDetailFromParsed(asin, ar, en, listing, htmlAr, htmlEn);
 }
 
 async function fetchBrowseMerged(nodeId, { page = 1, keyword, keywordAr } = {}) {
@@ -425,6 +491,7 @@ export async function fetchProductByAsin(asin, listing = {}) {
   const id = String(asin || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(id)) return null;
   const detail = await normalizeProductDetailBilingual(id, listing);
+  if (isAmazonBundleListing(detail.nameEn, detail.nameAr)) return null;
   return isUsableAmazonProduct(detail) ? detail : null;
 }
 
@@ -459,6 +526,7 @@ export async function searchProductsByBarcode(barcode) {
       const listing = listingByAsin.get(asin) || {};
       const detail = await normalizeProductDetailBilingual(asin, listing);
       if (!isUsableAmazonProduct(detail)) continue;
+      if (isAmazonBundleListing(detail.nameEn, detail.nameAr)) continue;
       const bc = String(detail.barcode || '').replace(/\D/g, '');
       const barcodeMatches = !bc || bc === digits || bc.endsWith(digits) || digits.endsWith(bc);
       if (!barcodeMatches && asinOrder.length > 1) continue;
@@ -470,7 +538,7 @@ export async function searchProductsByBarcode(barcode) {
   }
   return results
     .sort((a, b) => productCompletenessScore(b) - productCompletenessScore(a))
-    .slice(0, 2);
+    .slice(0, 1);
 }
 
 export function sortProductsClient(products = [], sort = 'default') {

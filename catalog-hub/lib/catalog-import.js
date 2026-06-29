@@ -14,6 +14,10 @@ import { fetchProductBySku, fetchProductById as fetchMiraayaById, normalizeProdu
 import { fetchProductById as fetchFacesById, normalizeProductDetailFromRaw as normalizeFacesDetail } from './faces-api.js';
 import { fetchProductByAsin as fetchAmazonByAsin } from './amazon-api.js';
 
+function hasArabicText(text = '') {
+  return /[\u0600-\u06FF]/.test(String(text || ''));
+}
+
 function normalizeHubOrigin(hubOrigin = '') {
   const base = String(hubOrigin || '').trim().replace(/\/$/, '');
   if (!base) return '';
@@ -95,6 +99,20 @@ export async function searchImportByBarcode(rawBarcode, { fast = false, stores =
     .filter((r) => {
       if (r.store !== 'amazon') return true;
       return Boolean(r.name || r.nameEn || r.thumb);
+    })
+    .filter((r, _i, arr) => {
+      if (r.store !== 'amazon') return true;
+      const amazonRows = arr.filter((x) => x.store === 'amazon');
+      if (amazonRows.length <= 1) return true;
+      const best = [...amazonRows].sort((a, b) => {
+        const score = (x) =>
+          (hasArabicText(x.name) ? 5 : 0) +
+          (x.nameEn ? 2 : 0) +
+          (x.thumb ? 3 : 0) +
+          (x.shadeCount || 0);
+        return score(b) - score(a);
+      })[0];
+      return (r.id || r.sku) === (best.id || best.sku);
     })
     .map((r) => ({
     store: r.store,

@@ -548,6 +548,7 @@ async function searchAmazonByBarcode(barcode) {
           thumb: n.thumb,
           barcode: n.barcode || barcode,
           matchType: 'product',
+          shadeCount: n.shadeCount || 0,
           openUrl: `/amazon/?product=${n.id}`,
         });
       }),
