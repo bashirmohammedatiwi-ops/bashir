@@ -205,13 +205,18 @@ async function fetchVanillaImport(id, hubOrigin) {
 }
 
 async function fetchAmazonImport(id, hubOrigin, barcodeHint = '') {
-  let product = await fetchAmazonByAsin(id);
-  const bundle = product && isAmazonBundleListing(product.nameEn, product.nameAr);
-  if ((!product?.id || bundle) && barcodeHint) {
+  if (barcodeHint) {
     const results = await searchAmazonByBarcode(barcodeHint);
-    product = results.find((p) => !isAmazonBundleListing(p.nameEn, p.nameAr)) || results[0] || null;
+    const wantId = String(id || '').trim().toUpperCase();
+    const product =
+      results.find((p) => String(p.asin || p.id).toUpperCase() === wantId && !isAmazonBundleListing(p.nameEn, p.nameAr)) ||
+      results.find((p) => !isAmazonBundleListing(p.nameEn, p.nameAr)) ||
+      results[0];
+    if (product?.id) return buildImportPayload('amazon', product, { hubOrigin });
   }
-  if (!product?.id) return null;
+
+  let product = await fetchAmazonByAsin(id);
+  if (!product?.id || isAmazonBundleListing(product.nameEn, product.nameAr)) return null;
   return buildImportPayload('amazon', product, { hubOrigin });
 }
 
