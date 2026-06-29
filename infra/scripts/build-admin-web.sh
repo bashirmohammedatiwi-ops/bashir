@@ -37,8 +37,10 @@ API_BASE="${API_BASE:-http://localhost:8080/api/v1}"
 MEDIA_BASE="${MEDIA_BASE:-http://localhost:8080/media}"
 
 CATALOG_HUB_URL="${NEXT_PUBLIC_CATALOG_HUB_URL:-}"
-if [[ -z "$CATALOG_HUB_URL" && -n "${DOMAIN:-}" ]]; then
-  CATALOG_HUB_URL="http://${DOMAIN}/catalog-hub"
+if [[ -n "${DOMAIN:-}" ]]; then
+  if [[ -z "$CATALOG_HUB_URL" || "$CATALOG_HUB_URL" == *":10000"* ]]; then
+    CATALOG_HUB_URL="http://${DOMAIN}/catalog-hub"
+  fi
 fi
 CATALOG_HUB_URL="${CATALOG_HUB_URL:-http://localhost:8080/catalog-hub}"
 
