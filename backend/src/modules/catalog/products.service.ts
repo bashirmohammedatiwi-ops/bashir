@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
 import { resolveProductNames } from "../../common/product-names.util";
@@ -152,68 +152,73 @@ export class ProductsService {
       subcategoryId,
       dto.categoryId,
     );
+    const imageIds = this.uniqueImageIds(dto.imageIds);
 
-    const product = await this.prisma.product.create({
-      data: {
-        sku: dto.sku,
-        barcode: dto.barcode?.trim() || undefined,
-        name: names.name,
-        nameAr: names.nameAr,
-        nameEn: names.nameEn,
-        slug: dto.slug,
-        description: descriptions.description,
-        descriptionAr: descriptions.descriptionAr,
-        descriptionEn: descriptions.descriptionEn,
-        ingredients: dto.ingredients ?? "",
-        howToUse: dto.howToUse ?? "",
-        price: dto.price,
-        originalPrice: dto.originalPrice ?? dto.price,
-        discountPercent: dto.discountPercent ?? 0,
-        stock: dto.stock ?? 0,
-        rating: dto.rating ?? 0,
-        pointsEarned: dto.pointsEarned ?? Math.floor(dto.price / 1000),
-        isNew: dto.isNew ?? false,
-        isBestSeller: dto.isBestSeller ?? false,
-        isFeatured: dto.isFeatured ?? false,
-        isPromo: dto.isPromo ?? false,
-        isBogo: dto.isBogo ?? false,
-        isActive: dto.isActive ?? true,
-        brandId: dto.brandId,
-        categoryId: dto.categoryId,
-        subcategoryId,
-        tertiaryCategoryId,
-        tags: JSON.stringify(dto.tags ?? []),
-        skinType: JSON.stringify(dto.skinType ?? []),
-        images: dto.imageIds && dto.imageIds.length
-          ? {
-              create: dto.imageIds.map((mediaId, i) => ({
-                mediaId,
-                position: i,
-                isPrimary: i === 0,
-              })),
-            }
-          : undefined,
-        shades: dto.shades?.length
-          ? { create: this.shadeCreateData(dto.shades) }
-          : undefined,
-        variants: dto.variants?.length
-          ? { create: dto.variants.map((v, i) => ({ ...v, position: v.position ?? i })) }
-          : undefined,
-      },
-      include: {
-        images: { include: { media: true } },
-        brand: true,
-        category: true,
-        subcategory: true,
-        shades: true,
-        variants: true,
-        skinConcerns: { include: { concern: true } },
-      },
-    });
-    if (dto.concernIds?.length) {
-      await this.syncSkinConcerns(product.id, dto.concernIds);
+    try {
+      const product = await this.prisma.product.create({
+        data: {
+          sku: dto.sku,
+          barcode: dto.barcode?.trim() || undefined,
+          name: names.name,
+          nameAr: names.nameAr,
+          nameEn: names.nameEn,
+          slug: dto.slug,
+          description: descriptions.description,
+          descriptionAr: descriptions.descriptionAr,
+          descriptionEn: descriptions.descriptionEn,
+          ingredients: dto.ingredients ?? "",
+          howToUse: dto.howToUse ?? "",
+          price: dto.price,
+          originalPrice: dto.originalPrice ?? dto.price,
+          discountPercent: dto.discountPercent ?? 0,
+          stock: dto.stock ?? 0,
+          rating: dto.rating ?? 0,
+          pointsEarned: dto.pointsEarned ?? Math.floor(dto.price / 1000),
+          isNew: dto.isNew ?? false,
+          isBestSeller: dto.isBestSeller ?? false,
+          isFeatured: dto.isFeatured ?? false,
+          isPromo: dto.isPromo ?? false,
+          isBogo: dto.isBogo ?? false,
+          isActive: dto.isActive ?? true,
+          brandId: dto.brandId,
+          categoryId: dto.categoryId,
+          subcategoryId,
+          tertiaryCategoryId,
+          tags: JSON.stringify(dto.tags ?? []),
+          skinType: JSON.stringify(dto.skinType ?? []),
+          images: imageIds.length
+            ? {
+                create: imageIds.map((mediaId, i) => ({
+                  mediaId,
+                  position: i,
+                  isPrimary: i === 0,
+                })),
+              }
+            : undefined,
+          shades: dto.shades?.length
+            ? { create: this.shadeCreateData(dto.shades) }
+            : undefined,
+          variants: dto.variants?.length
+            ? { create: dto.variants.map((v, i) => ({ ...v, position: v.position ?? i })) }
+            : undefined,
+        },
+        include: {
+          images: { include: { media: true } },
+          brand: true,
+          category: true,
+          subcategory: true,
+          shades: true,
+          variants: true,
+          skinConcerns: { include: { concern: true } },
+        },
+      });
+      if (dto.concernIds?.length) {
+        await this.syncSkinConcerns(product.id, dto.concernIds);
+      }
+      return this.findOne(product.id);
+    } catch (error) {
+      throw this.mapProductWriteError(error);
     }
-    return this.findOne(product.id);
   }
 
   async update(id: string, dto: UpdateProductDto) {
@@ -248,55 +253,60 @@ export class ProductsService {
     if (dto.variants) {
       await this.prisma.productVariant.deleteMany({ where: { productId: id } });
     }
-    await this.prisma.product.update({
-      where: { id },
-      data: {
-        sku: dto.sku,
-        barcode: dto.barcode !== undefined ? dto.barcode?.trim() || null : undefined,
-        name: names.name,
-        nameAr: names.nameAr,
-        nameEn: names.nameEn,
-        slug: dto.slug,
-        description: descriptions.description,
-        descriptionAr: descriptions.descriptionAr,
-        descriptionEn: descriptions.descriptionEn,
-        ingredients: dto.ingredients,
-        howToUse: dto.howToUse,
-        price: dto.price,
-        originalPrice: dto.originalPrice,
-        discountPercent: dto.discountPercent,
-        stock: dto.stock,
-        rating: dto.rating,
-        pointsEarned: dto.pointsEarned,
-        isNew: dto.isNew,
-        isBestSeller: dto.isBestSeller,
-        isFeatured: dto.isFeatured,
-        isPromo: dto.isPromo,
-        isBogo: dto.isBogo,
-        isActive: dto.isActive,
-        brandId: dto.brandId,
-        categoryId: dto.categoryId,
-        subcategoryId: subcategoryId !== undefined ? subcategoryId : undefined,
-        tertiaryCategoryId: tertiaryCategoryId !== undefined ? tertiaryCategoryId : undefined,
-        tags: dto.tags ? JSON.stringify(dto.tags) : undefined,
-        skinType: dto.skinType ? JSON.stringify(dto.skinType) : undefined,
-        images: dto.imageIds && dto.imageIds.length
-          ? {
-              create: dto.imageIds.map((mediaId, i) => ({
-                mediaId,
-                position: i,
-                isPrimary: i === 0,
-              })),
-            }
-          : undefined,
-        shades: dto.shades?.length
-          ? { create: this.shadeCreateData(dto.shades) }
-          : undefined,
-        variants: dto.variants?.length
-          ? { create: dto.variants.map((v, i) => ({ ...v, position: v.position ?? i })) }
-          : undefined,
-      },
-    });
+    const imageIds = dto.imageIds ? this.uniqueImageIds(dto.imageIds) : undefined;
+    try {
+      await this.prisma.product.update({
+        where: { id },
+        data: {
+          sku: dto.sku,
+          barcode: dto.barcode !== undefined ? dto.barcode?.trim() || null : undefined,
+          name: names.name,
+          nameAr: names.nameAr,
+          nameEn: names.nameEn,
+          slug: dto.slug,
+          description: descriptions.description,
+          descriptionAr: descriptions.descriptionAr,
+          descriptionEn: descriptions.descriptionEn,
+          ingredients: dto.ingredients,
+          howToUse: dto.howToUse,
+          price: dto.price,
+          originalPrice: dto.originalPrice,
+          discountPercent: dto.discountPercent,
+          stock: dto.stock,
+          rating: dto.rating,
+          pointsEarned: dto.pointsEarned,
+          isNew: dto.isNew,
+          isBestSeller: dto.isBestSeller,
+          isFeatured: dto.isFeatured,
+          isPromo: dto.isPromo,
+          isBogo: dto.isBogo,
+          isActive: dto.isActive,
+          brandId: dto.brandId,
+          categoryId: dto.categoryId,
+          subcategoryId: subcategoryId !== undefined ? subcategoryId : undefined,
+          tertiaryCategoryId: tertiaryCategoryId !== undefined ? tertiaryCategoryId : undefined,
+          tags: dto.tags ? JSON.stringify(dto.tags) : undefined,
+          skinType: dto.skinType ? JSON.stringify(dto.skinType) : undefined,
+          images: imageIds?.length
+            ? {
+                create: imageIds.map((mediaId, i) => ({
+                  mediaId,
+                  position: i,
+                  isPrimary: i === 0,
+                })),
+              }
+            : undefined,
+          shades: dto.shades?.length
+            ? { create: this.shadeCreateData(dto.shades) }
+            : undefined,
+          variants: dto.variants?.length
+            ? { create: dto.variants.map((v, i) => ({ ...v, position: v.position ?? i })) }
+            : undefined,
+        },
+      });
+    } catch (error) {
+      throw this.mapProductWriteError(error);
+    }
     if (dto.concernIds) {
       await this.syncSkinConcerns(id, dto.concernIds);
     }
@@ -323,9 +333,46 @@ export class ProductsService {
     if (!exists) throw new NotFoundException("Product not found");
   }
 
+  private uniqueImageIds(imageIds?: string[]) {
+    const seen = new Set<string>();
+    const unique: string[] = [];
+    for (const id of imageIds ?? []) {
+      const mediaId = id?.trim();
+      if (!mediaId || seen.has(mediaId)) continue;
+      seen.add(mediaId);
+      unique.push(mediaId);
+    }
+    return unique;
+  }
+
+  private mapProductWriteError(error: unknown) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        const target = Array.isArray(error.meta?.target)
+          ? error.meta.target.join(",")
+          : String(error.meta?.target ?? "");
+        if (target.includes("sku")) {
+          return new ConflictException("رمز SKU مستخدم مسبقاً");
+        }
+        if (target.includes("slug")) {
+          return new ConflictException("الرابط الدائم (slug) مستخدم مسبقاً");
+        }
+        if (target.includes("barcode")) {
+          return new ConflictException("الباركود مستخدم في منتج آخر");
+        }
+        return new ConflictException("قيمة مكررة — تحقق من الصور أو الباركود");
+      }
+    }
+    return error;
+  }
+
   private collectBarcodes(dto: CreateProductDto): string[] {
-    if (dto.barcode?.trim()) return [dto.barcode.trim()];
-    return [];
+    const codes = new Set<string>();
+    if (dto.barcode?.trim()) codes.add(dto.barcode.trim());
+    for (const shade of dto.shades ?? []) {
+      if (shade.barcode?.trim()) codes.add(shade.barcode.trim());
+    }
+    return [...codes];
   }
 
   private shadeCreateData(shades: CreateProductDto["shades"]) {

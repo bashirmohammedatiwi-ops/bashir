@@ -331,7 +331,9 @@ export default function CatalogImportPage() {
       let originalPrice = 0;
       let discountPercent = 0;
       let stock = 0;
-      const mainBc = preview.barcode || selected?.barcode || barcode;
+      const mainBc =
+        preview.barcode ||
+        (preview.shades?.length ? undefined : selected?.barcode || barcode);
       if (mainBc) {
         const inv = await fetchInventoryByBarcode(mainBc);
         if (inv) {
@@ -389,7 +391,12 @@ export default function CatalogImportPage() {
       form.resetFields();
     },
     onError: (err: any) => {
-      message.error({ content: err?.message || "فشل الاستيراد", key: "import" });
+      const msg =
+        err?.response?.data?.error?.message ??
+        err?.response?.data?.message ??
+        err?.message ??
+        "فشل الاستيراد";
+      message.error({ content: msg, key: "import" });
     },
   });
 

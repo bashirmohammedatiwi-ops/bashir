@@ -95,9 +95,13 @@ export async function uploadCatalogImportImages(
   );
 
   const productImages: ImageItem[] = [];
+  const seenProductImageIds = new Set<string>();
   for (const rawUrl of orderedProductUrls) {
     const item = urlToItem.get(resolveCatalogImageUrl(rawUrl));
-    if (item) productImages.push(item);
+    if (item && !seenProductImageIds.has(item.id)) {
+      seenProductImageIds.add(item.id);
+      productImages.push(item);
+    }
   }
 
   const shadeImageIds = new Map<string, string>();
