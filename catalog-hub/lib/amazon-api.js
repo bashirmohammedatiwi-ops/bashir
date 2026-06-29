@@ -272,6 +272,21 @@ export function isAmazonBundleListing(nameEn = '', nameAr = '') {
   return false;
 }
 
+function parseAmazonBarcodeFromHtml(html = '') {
+  const patterns = [
+    /UPC[\s\S]{0,200}?voyager-ns-desktop-table-value[^0-9]*([0-9]{8,14})/i,
+    /EAN[\s\S]{0,200}?voyager-ns-desktop-table-value[^0-9]*([0-9]{8,14})/i,
+    /UPC[\s\S]{0,120}?([0-9]{8,14})/i,
+    /EAN[\s\S]{0,120}?([0-9]{8,14})/i,
+    /"gtin[^"]*":"([0-9]{8,14})"/i,
+  ];
+  for (const re of patterns) {
+    const m = String(html || '').match(re);
+    if (m?.[1]) return m[1];
+  }
+  return '';
+}
+
 function parseProductDetail(html, asin) {
   const titleMatch = html.match(/id="productTitle"[^>]*>\s*([^<]+)/);
   const title = titleMatch?.[1]?.trim() || '';
@@ -297,10 +312,7 @@ function parseProductDetail(html, asin) {
   const priceWhole = html.match(/class="a-price-whole">([^<]+)/)?.[1]?.replace(/[,\s]/g, '');
   const priceFrac = html.match(/class="a-price-fraction">([^<]+)/)?.[1];
   const price = priceWhole ? `${priceWhole}${priceFrac ? `.${priceFrac}` : ''}` : '';
-  const upc = html.match(/UPC[\s\S]{0,40}?([0-9]{8,14})/i)?.[1];
-  const ean = html.match(/EAN[\s\S]{0,40}?([0-9]{8,14})/i)?.[1];
-  const gtin = html.match(/"gtin[^"]*":"([0-9]{8,14})"/i)?.[1];
-  const barcode = upc || ean || gtin || '';
+  const barcode = parseAmazonBarcodeFromHtml(html);
   const images = [...new Set([...html.matchAll(/"hiRes":"(https:\/\/[^"]+)"/g)].map((x) => x[1]))];
   const finalThumb = hiRes || large || landing || images[0] || '';
   if (!images.length && finalThumb) images.push(finalThumb);
@@ -547,18 +559,46 @@ export async function fetchProductByAsin(asin, listing = {}) {
 export async function lookupAmazonVariantByAsin(asin) {
   const id = String(asin || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(id)) return null;
-  const html = await fetchAmazonHtml(`${AMAZON_COM}/dp/${id}`, 'en').catch(() => '');
-  if (!html) return null;
-  const parsed = parseProductDetail(html, id);
-  if (parsed.barcode) {
-    return {
-      ean: parsed.barcode,
-      brand: parsed.brand || '',
-      title: parsed.title || '',
-      source: `amazon-variant:${id}`,
-    };
+  const [htmlCom, htmlSa] = await Promise.all([
+    fetchAmazonHtml(`${AMAZON_COM}/dp/${id}`, 'en').catch(() => ''),
+    fetchAmazonHtml(`${AMAZON_SA}/dp/${id}`, 'en').catch(() => ''),
+  ]);
+  for (const html of [htmlCom, htmlSa]) {
+    if (!html) continue;
+    const parsed = parseProductDetail(html, id);
+    if (parsed.barcode) {
+      return {
+        ean: parsed.barcode,
+        brand: parsed.brand || '',
+        title: parsed.title || '',
+        source: `amazon-variant:${id}`,
+      };
+    }
   }
   return null;
+}
+
+async function enrichAmazonShadeAsinsParallel(shades = [], concurrency = 4) {
+  const tasks = shades
+    .filter((s) => !s.barcode && !s.ean)
+    .map((shade) => ({
+      shade,
+      asin: String(shade.sku || shade.optionId || '').trim().toUpperCase(),
+    }))
+    .filter((t) => /^[A-Z0-9]{10}$/.test(t.asin));
+
+  for (let i = 0; i < tasks.length; i += concurrency) {
+    const batch = tasks.slice(i, i + concurrency);
+    await Promise.all(batch.map(async ({ shade, asin }) => {
+      const variant = await lookupAmazonVariantByAsin(asin).catch(() => null);
+      if (!variant?.ean) return;
+      const digits = String(variant.ean).replace(/\D/g, '');
+      if (!/^\d{8,14}$/.test(digits)) return;
+      shade.barcode = digits;
+      shade.ean = digits;
+      shade.barcodeSource = variant.source || 'amazon-variant';
+    }));
+  }
 }
 
 export async function searchProductsByBarcode(barcode) {
@@ -633,12 +673,12 @@ export function sortProductsClient(products = [], sort = 'default') {
   }
 }
 
-/** إثراء باركود الدرجات — سريع: بدون جلب صفحات ASIN متعددة */
+/** إثراء باركود الدرجات — جلب باركود كل ASIN بالتوازي ثم مصادر خارجية */
 export async function enrichAmazonShadeBarcodes(product, {
   light = false,
   barcodeHint = '',
-  maxLookups = 5,
-  timeoutMs = 18_000,
+  maxLookups = 12,
+  timeoutMs = 45_000,
 } = {}) {
   const { enrichShadesForImport } = await import('./barcodes.js');
   const shades = [...(product.shades || [])];
@@ -649,9 +689,10 @@ export async function enrichAmazonShadeBarcodes(product, {
 
   const run = async () => {
     if (light) return shades;
+    await enrichAmazonShadeAsinsParallel(shades, 4);
     return enrichShadesForImport(
       { ...product, shades },
-      { maxLookups, barcodeHint: hint, light: false },
+      { maxLookups: Math.max(maxLookups, shades.length), barcodeHint: hint, light: false },
     );
   };
 

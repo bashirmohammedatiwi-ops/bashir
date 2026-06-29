@@ -1179,16 +1179,24 @@ export async function enrichShadesForImport(product, { light = false, maxLookups
   if (barcodeHint) {
     const meta = await lookupBarcodeProductMeta(barcodeHint).catch(() => null);
     applyBarcodeHintToShades(shades, barcodeHint, meta, product.id || product.asin);
-    const hintDigits = String(barcodeHint).replace(/\D/g, '');
-    if (shades.some((s) => String(s.barcode || '').replace(/\D/g, '') === hintDigits)) {
-      return shades;
-    }
   }
 
-  const needLookup = shades.filter((s) => !s.barcode && !s.ean).slice(0, maxLookups);
-  await Promise.all(needLookup.map(async (shade) => {
+  const needLookup = shades.filter((s) => !s.barcode && !s.ean);
+  const lookupLimit = Math.max(maxLookups, needLookup.length);
+  await Promise.all(needLookup.slice(0, lookupLimit).map(async (shade) => {
     const { ar, en } = shadeNames(shade);
     const shadeLabel = en || ar || shade.nameEn || shade.name || '';
+    const asin = String(shade.sku || shade.optionId || '').trim().toUpperCase();
+
+    if (/^[A-Z0-9]{10}$/.test(asin)) {
+      const { lookupAmazonVariantByAsin } = await import('./amazon-api.js');
+      const amazonVariant = await lookupAmazonVariantByAsin(asin).catch(() => null);
+      if (amazonVariant?.ean) {
+        applyExternalResult(shade, amazonVariant);
+        return;
+      }
+    }
+
     const shopify = await lookupShopifyVariantByShade(manufacturer, productName, shadeLabel).catch(() => null);
     if (shopify?.ean) {
       applyExternalResult(shade, shopify);
@@ -1197,16 +1205,6 @@ export async function enrichShadesForImport(product, { light = false, maxLookups
     const ext = await lookupExternalBarcode(manufacturer, productName, ar, en, shade.sku).catch(() => null);
     if (ext?.ean) {
       applyExternalResult(shade, ext);
-      return;
-    }
-
-    if (shade.sku && /^B0[A-Z0-9]{8}$/i.test(String(shade.sku))) {
-      const { lookupAmazonVariantByAsin } = await import('./amazon-api.js');
-      const amazonVariant = await lookupAmazonVariantByAsin(shade.sku).catch(() => null);
-      if (amazonVariant?.ean) {
-        applyExternalResult(shade, amazonVariant);
-        return;
-      }
     }
   }));
 

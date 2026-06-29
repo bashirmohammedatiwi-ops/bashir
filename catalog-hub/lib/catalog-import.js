@@ -275,8 +275,8 @@ async function fetchAmazonImport(id, hubOrigin, barcodeHint = '', { light = fals
     product.shades = await enrichAmazonShadeBarcodes(product, {
       light: false,
       barcodeHint: hint,
-      maxLookups: 5,
-      timeoutMs: 18_000,
+      maxLookups: product.shades.length,
+      timeoutMs: 45_000,
     });
     product.shadeCount = product.shades.length;
   }
@@ -294,7 +294,7 @@ async function fetchMiswagImport(id, hubOrigin, { light = false, barcode = '' } 
   const normalized = normalizeMiswagDetail(detail);
   if (!light && normalized.shades?.length) {
     normalized.shades = await enrichShadesForImport(normalized, {
-      maxLookups: Math.min(6, normalized.shades.length),
+      maxLookups: normalized.shades.length,
       barcodeHint: String(barcode || '').replace(/\D/g, ''),
     });
     normalized.shadeCount = normalized.shades.length;
