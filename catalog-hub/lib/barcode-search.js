@@ -44,6 +44,10 @@ import {
   isUsableAmazonProduct,
   isAmazonBundleListing,
 } from './amazon-api.js';
+import {
+  searchProductsByBarcode as searchMiswagProductsByBarcode,
+  normalizeProductSummary as normalizeMiswagSummary,
+} from './miswag-api.js';
 import { lookupUpcByBarcode } from './barcodes.js';
 
 function barcodeQueryVariants(barcode) {
@@ -64,13 +68,14 @@ export const STORE_META = {
   miraaya: { id: 'miraaya', label: 'ميرايا Miraaya', path: '/miraaya/', domain: 'miraaya.com' },
   faces: { id: 'faces', label: 'وجوه FACES', path: '/faces/', domain: 'faces.ae' },
   amazon: { id: 'amazon', label: 'Amazon Cosmetics', path: '/amazon/', domain: 'amazon.com' },
+  miswag: { id: 'miswag', label: 'مسواگ Miswag', path: '/miswag/', domain: 'miswag.com' },
 };
 
 let elryanBeautyIdsPromise = null;
 const searchResultCache = new Map();
 const SEARCH_CACHE_MS = 15 * 60 * 1000;
 const SEARCH_NEGATIVE_CACHE_MS = 3 * 60 * 1000;
-const STORE_SEARCH_RANK = { niceone: 0, elryan: 1, vanilla: 2, miraaya: 3, amazon: 4, faces: 5 };
+const STORE_SEARCH_RANK = { niceone: 0, elryan: 1, vanilla: 2, miraaya: 3, miswag: 4, amazon: 5, faces: 6 };
 const foundationCache = { products: [], at: 0 };
 const FOUNDATION_CACHE_MS = 10 * 60 * 1000;
 
@@ -605,6 +610,31 @@ async function searchVanillaByBarcode(barcode) {
   return dedupeHits(results);
 }
 
+async function searchMiswagByBarcode(barcode) {
+  const products = await searchMiswagProductsByBarcode(barcode);
+  return dedupeHits(
+    products.map((p) => {
+      const n = normalizeMiswagSummary(p);
+      return hit('miswag', {
+        id: n.id,
+        name: n.name,
+        nameEn: n.nameEn,
+        manufacturer: n.manufacturer,
+        manufacturerEn: n.manufacturerEn,
+        price: n.price,
+        thumb: n.thumb,
+        barcode: n.barcode || barcode,
+        sku: n.sku,
+        matchType: p.matchType === 'hint' ? 'hint' : 'product',
+        shadeCount: n.shadeCount || 0,
+        categoryHint: n.category || '',
+        categoryHintEn: n.categoryEn || '',
+        source: p.source || 'live',
+      });
+    }),
+  );
+}
+
 async function searchAmazonByBarcode(barcode) {
   const products = await searchAmazonProductsByBarcode(barcode);
   return dedupeHits(
@@ -635,6 +665,7 @@ const SEARCHERS = [
   { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 5_000 },
   { store: 'vanilla', fn: searchVanillaByBarcode, timeoutMs: 5_000 },
   { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 5_000 },
+  { store: 'miswag', fn: searchMiswagByBarcode, timeoutMs: 15_000 },
   { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 10_000 },
   { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 30_000 },
 ];

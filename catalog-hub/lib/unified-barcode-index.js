@@ -20,6 +20,7 @@ const STORE_LABELS = {
   miraaya: 'ميرايا Miraaya',
   faces: 'وجوه FACES',
   amazon: 'Amazon Cosmetics',
+  miswag: 'مسواگ Miswag',
 };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

@@ -69,7 +69,7 @@ export type CatalogImportProduct = {
   categoryHintEn?: string | string[];
 };
 
-const CATALOG_STORES = ["niceone", "elryan", "vanilla", "miraaya", "faces", "amazon"] as const;
+const CATALOG_STORES = ["niceone", "elryan", "vanilla", "miraaya", "faces", "amazon", "miswag"] as const;
 
 function isLikelyAmazonBundle(opt: CatalogImportOption) {
   const t = `${opt.nameAr || ""} ${opt.nameEn || ""}`.toLowerCase();

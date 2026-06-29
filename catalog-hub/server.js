@@ -78,6 +78,16 @@ import {
   normalizeProductSummary as normalizeAmazonProductSummary,
   sortProductsClient as sortAmazonProductsClient,
 } from './lib/amazon-api.js';
+import {
+  fetchCategoryTree as fetchMiswagCategoryTree,
+  fetchCategoryProducts as fetchMiswagCategoryProducts,
+  searchProducts as searchMiswagProducts,
+  fetchProductDetail as fetchMiswagProductDetail,
+  normalizeProductSummary as normalizeMiswagProductSummary,
+  normalizeProductDetail as normalizeMiswagProductDetail,
+  sortProductsClient as sortMiswagProductsClient,
+  fetchBrands as fetchMiswagBrands,
+} from './lib/miswag-api.js';
 import { collectDescendantIds, findCategoryNode, applyProductCounts } from './lib/category-scope.js';
 import { searchBarcodeAllStores, warmupBarcodeSearch } from './lib/barcode-search.js';
 import { searchImportByBarcode, fetchImportProduct, fetchImportSummary } from './lib/catalog-import.js';
@@ -102,6 +112,7 @@ let elryanCategoryCache = { tree: null, leaves: null, all: null, ids: null, fetc
 let elryanBrandsCache = { brands: null, fetchedAt: 0 };
 let miraayaCategoryCache = { tree: null, leaves: null, all: null, fetchedAt: 0 };
 let facesCategoryCache = { tree: null, leaves: null, all: null, fetchedAt: 0 };
+let miswagCategoryCache = { tree: null, leaves: null, fetchedAt: 0 };
 let facesCategoryInflight = null;
 let niceoneBrandsCache = { brands: null, fetchedAt: 0 };
 let miraayaBrandsCache = { brands: null, fetchedAt: 0 };
@@ -536,6 +547,93 @@ async function handleVanillaApi(req, res, url) {
     return sendJson(res, 404, { error: 'Unknown Vanilla API route' });
   } catch (err) {
     console.error('Vanilla API error:', err.message);
+    return sendJson(res, 502, { error: err.message });
+  }
+}
+
+async function getMiswagCategoryTree() {
+  if (miswagCategoryCache.tree && Date.now() - miswagCategoryCache.fetchedAt < CACHE_MS) {
+    return miswagCategoryCache;
+  }
+  const { tree, leaves } = await fetchMiswagCategoryTree();
+  miswagCategoryCache = { tree, leaves, fetchedAt: Date.now() };
+  return miswagCategoryCache;
+}
+
+async function handleMiswagApi(req, res, url) {
+  try {
+    const q = parseQuery(url);
+
+    if (url.pathname === '/api/miswag/health') {
+      return sendJson(res, 200, { ok: true, source: 'miswag.com', scope: 'beauty', bilingual: true });
+    }
+
+    if (url.pathname === '/api/miswag/categories') {
+      const { tree, leaves } = await getMiswagCategoryTree();
+      return sendJson(res, 200, { tree, leaves, totalLeaves: leaves.length });
+    }
+
+    if (url.pathname === '/api/miswag/brands') {
+      const query = q.q || q.query || '';
+      const limit = Math.min(Number(q.limit) || 30, 60);
+      const data = await fetchMiswagBrands({ query, cursor: q.cursor || '', limit });
+      return sendJson(res, 200, data);
+    }
+
+    const catMatch = url.pathname.match(/^\/api\/miswag\/categories\/([^/]+)\/products$/);
+    if (catMatch) {
+      const categoryId = decodeURIComponent(catMatch[1]);
+      const page = Number(q.page) || 1;
+      const limit = Math.min(Number(q.limit) || 30, 60);
+      const sort = q.sort || 'default';
+      const data = await fetchMiswagCategoryProducts(categoryId, {
+        page,
+        limit,
+        cursor: q.cursor || '',
+      });
+      let products = (data.items || []).map((p) => normalizeMiswagProductSummary(p));
+      if (sort !== 'default') products = sortMiswagProductsClient(products, sort);
+      return sendJson(res, 200, {
+        meta: { categoryId, path: categoryId, name: categoryId },
+        products,
+        page: data.page || page,
+        limit: data.pageSize || limit,
+        hasMore: !!data.hasMore,
+        cursor: data.cursor || null,
+      });
+    }
+
+    if (url.pathname === '/api/miswag/search') {
+      const query = q.q || q.search || '';
+      if (!query.trim()) return sendJson(res, 400, { error: 'q required' });
+      const page = Number(q.page) || 1;
+      const limit = Math.min(Number(q.limit) || 30, 60);
+      const data = await searchMiswagProducts(query, page, limit);
+      let products = (data.items || []).map((p) => normalizeMiswagProductSummary(p));
+      const sort = q.sort || 'default';
+      if (sort !== 'default') products = sortMiswagProductsClient(products, sort);
+      return sendJson(res, 200, {
+        meta: { query, path: `بحث: ${query}`, fallback: !!data.fallback },
+        products,
+        page: data.page || page,
+        limit: data.pageSize || limit,
+        hasMore: (data.items || []).length >= limit,
+        total: data.total ?? null,
+      });
+    }
+
+    const productMatch = url.pathname.match(/^\/api\/miswag\/products\/(\d+)$/);
+    if (productMatch) {
+      const id = productMatch[1];
+      const detail = await fetchMiswagProductDetail(id);
+      if (!detail?.id) return sendJson(res, 404, { error: 'Product not found' });
+      const normalized = normalizeMiswagProductDetail(detail);
+      return sendJson(res, 200, { product: normalized });
+    }
+
+    return sendJson(res, 404, { error: 'Unknown Miswag API route' });
+  } catch (err) {
+    console.error('Miswag API error:', err.message);
     return sendJson(res, 502, { error: err.message });
   }
 }
@@ -1103,6 +1201,7 @@ const APP_PREFIXES = [
   ['/miraaya', path.join(VIEWER_ROOT, 'miraaya')],
   ['/faces', path.join(VIEWER_ROOT, 'faces')],
   ['/amazon', path.join(VIEWER_ROOT, 'amazon')],
+  ['/miswag', path.join(VIEWER_ROOT, 'miswag')],
 ];
 
 function serveStatic(req, res, urlPath) {
@@ -1226,6 +1325,9 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname.startsWith('/api/vanilla/')) {
     return handleVanillaApi(req, res, url);
   }
+  if (url.pathname.startsWith('/api/miswag/')) {
+    return handleMiswagApi(req, res, url);
+  }
   if (url.pathname.startsWith('/api/')) {
     return handleApi(req, res, url);
   }
@@ -1243,6 +1345,7 @@ server.listen(PORT, HOST, () => {
   console.log(`  Miraaya     → /miraaya/  (miraaya.com)`);
   console.log(`  Faces       → /faces/    (faces.ae — الإمارات)`);
   console.log(`  Amazon      → /amazon/   (amazon.com/sa — Cosmetics node 3760911 · AR+EN)`);
+  console.log(`  Miswag      → /miswag/   (miswag.com — الجمال والعناية · AR+EN)`);
   if (facesCategoryCache.tree?.length) {
     console.log(`  Faces cache: ${facesCategoryCache.leaves?.length || 0} تصنيف جاهز من القرص`);
   } else {

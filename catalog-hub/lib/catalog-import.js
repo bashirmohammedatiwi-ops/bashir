@@ -13,6 +13,7 @@ import { fetchProductByIdBilingual } from './elryan-api.js';
 import { fetchProductBySku, fetchProductById as fetchMiraayaById, normalizeProductDetail as normalizeMiraayaDetail, resolveProductByBarcode } from './miraaya-api.js';
 import { fetchProductById as fetchFacesById, normalizeProductDetailFromRaw as normalizeFacesDetail } from './faces-api.js';
 import { fetchProductByAsin as fetchAmazonByAsin, searchProductsByBarcode as searchAmazonByBarcode, isAmazonBundleListing } from './amazon-api.js';
+import { fetchProductDetail as fetchMiswagDetail, normalizeProductDetail as normalizeMiswagDetail } from './miswag-api.js';
 
 function hasArabicText(text = '') {
   return /[\u0600-\u06FF]/.test(String(text || ''));
@@ -222,6 +223,13 @@ async function fetchAmazonImport(id, hubOrigin, barcodeHint = '') {
   return buildImportPayload('amazon', product, { hubOrigin });
 }
 
+async function fetchMiswagImport(id, hubOrigin) {
+  const detail = await fetchMiswagDetail(id);
+  if (!detail?.id) return null;
+  const normalized = normalizeMiswagDetail(detail);
+  return buildImportPayload('miswag', normalized, { hubOrigin });
+}
+
 export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barcode = '', light = false } = {}) {
   const id = String(sourceId || '').trim();
   if (!id || !store) return { error: 'المتجر ومعرّف المنتج مطلوبان' };
@@ -245,6 +253,9 @@ export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barc
       break;
     case 'amazon':
       payload = await fetchAmazonImport(id, hubOrigin, barcode);
+      break;
+    case 'miswag':
+      payload = await fetchMiswagImport(id, hubOrigin);
       break;
     default:
       return { error: `متجر غير معروف: ${store}` };

@@ -19,6 +19,7 @@ const STORE_COLORS: Record<string, string> = {
   miraaya: "#00897b",
   faces: "#212121",
   amazon: "#ff9900",
+  miswag: "#df1c24",
 };
 
 type Props = {
