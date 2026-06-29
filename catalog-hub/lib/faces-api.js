@@ -1017,6 +1017,11 @@ export function buildFacesHintQueriesFromUpc(upc) {
 let facesBarcodeIndex = null;
 let facesBarcodeDirty = false;
 let facesIndexRebuildTimer = null;
+let facesIndexSaveTimer = null;
+let facesIndexExpandPromise = null;
+const facesEnrichQueued = new Set();
+const FACES_INDEX_SAVE_MS = 5000;
+const FACES_ENRICH_COOLDOWN_MS = 6 * 60 * 60 * 1000;
 
 function scheduleUnifiedIndexRebuild() {
   if (facesIndexRebuildTimer) clearTimeout(facesIndexRebuildTimer);
@@ -1050,6 +1055,14 @@ function saveFacesBarcodeIndex() {
   facesBarcodeDirty = false;
 }
 
+function scheduleFacesBarcodeIndexSave() {
+  if (facesIndexSaveTimer) return;
+  facesIndexSaveTimer = setTimeout(() => {
+    facesIndexSaveTimer = null;
+    saveFacesBarcodeIndex();
+  }, FACES_INDEX_SAVE_MS);
+}
+
 export function lookupFacesBarcodeIndex(barcode) {
   const index = loadFacesBarcodeIndex();
   const key = gtinKey(barcode);
@@ -1060,7 +1073,8 @@ export function saveFacesBarcodeIndexEntry(barcode, tile = {}) {
   if (!tile?.pid) return;
   const index = loadFacesBarcodeIndex();
   const key = gtinKey(barcode);
-  index.barcodes[key] = {
+  const prev = index.barcodes[key];
+  const next = {
     pid: tile.pid,
     ean: tile.ean || barcode,
     nameAr: tile.nameAr || '',
@@ -1073,9 +1087,32 @@ export function saveFacesBarcodeIndexEntry(barcode, tile = {}) {
     productUrl: tile.productUrl || '',
     updatedAt: Date.now(),
   };
+  if (
+    prev &&
+    prev.pid === next.pid &&
+    prev.ean === next.ean &&
+    prev.nameAr === next.nameAr &&
+    prev.nameEn === next.nameEn &&
+    prev.shadeName === next.shadeName
+  ) {
+    return;
+  }
+  index.barcodes[key] = next;
   facesBarcodeDirty = true;
-  saveFacesBarcodeIndex();
+  scheduleFacesBarcodeIndexSave();
   scheduleUnifiedIndexRebuild();
+}
+
+function queueFacesProductEnrich(pid, baseTile = {}) {
+  const id = String(pid || '').trim();
+  if (!id || facesEnrichQueued.has(id)) return;
+  const index = loadFacesBarcodeIndex();
+  const lastEnrich = Number(index.meta?.lastEnrichedPids?.[id] || 0);
+  if (lastEnrich && Date.now() - lastEnrich < FACES_ENRICH_COOLDOWN_MS) return;
+  facesEnrichQueued.add(id);
+  void indexFacesProductBarcodes(id, baseTile).finally(() => {
+    facesEnrichQueued.delete(id);
+  });
 }
 
 async function indexFacesProductBarcodes(pid, baseTile = {}) {
@@ -1105,18 +1142,40 @@ async function indexFacesProductBarcodes(pid, baseTile = {}) {
         shadeName: shade.name || '',
       });
     }
+    const index = loadFacesBarcodeIndex();
+    index.meta = index.meta || {};
+    index.meta.lastEnrichedPids = index.meta.lastEnrichedPids || {};
+    index.meta.lastEnrichedPids[pid] = Date.now();
+    facesBarcodeDirty = true;
+    scheduleFacesBarcodeIndexSave();
   } catch {
     /* optional index */
   }
 }
 
-export async function expandFacesBarcodeIndex() {
+export async function expandFacesBarcodeIndex({ force = false } = {}) {
+  if (facesIndexExpandPromise) return facesIndexExpandPromise;
+
   const index = loadFacesBarcodeIndex();
-  const pids = [...new Set(Object.values(index.barcodes || {}).map((e) => e.pid).filter(Boolean))];
-  for (const pid of pids) {
-    const sample = Object.values(index.barcodes).find((e) => e.pid === pid) || {};
-    await indexFacesProductBarcodes(pid, sample);
-  }
+  const lastExpanded = Number(index.meta?.lastExpandedAt || 0);
+  const autoExpand = process.env.FACES_AUTO_EXPAND_INDEX === '1';
+  if (!force && !autoExpand) return;
+  if (!force && lastExpanded && Date.now() - lastExpanded < 24 * 60 * 60 * 1000) return;
+
+  facesIndexExpandPromise = (async () => {
+    const pids = [...new Set(Object.values(index.barcodes || {}).map((e) => e.pid).filter(Boolean))];
+    for (const pid of pids) {
+      const sample = Object.values(index.barcodes).find((e) => e.pid === pid) || {};
+      await indexFacesProductBarcodes(pid, sample);
+    }
+    index.meta = { ...index.meta, lastExpandedAt: Date.now() };
+    facesBarcodeDirty = true;
+    saveFacesBarcodeIndex();
+  })().finally(() => {
+    facesIndexExpandPromise = null;
+  });
+
+  return facesIndexExpandPromise;
 }
 
 async function resolveFacesBarcodeOnProduct(pid, barcode, fallbackTile = {}) {
@@ -1421,7 +1480,7 @@ export async function searchProductsByBarcode(barcode, { limit = 12, hintHits = 
     seen.add(key);
     hits.push({ tile, matchType: 'product', barcode: tile.ean || barcode });
     saveFacesBarcodeIndexEntry(barcode, tile);
-    indexFacesProductBarcodes(tile.pid, tile).catch(() => {});
+    queueFacesProductEnrich(tile.pid, tile);
   };
 
   const pushShade = (tile, shade) => {
@@ -1435,7 +1494,7 @@ export async function searchProductsByBarcode(barcode, { limit = 12, hintHits = 
       price: shade.price || tile.price,
       shadeName: shade.name || '',
     });
-    indexFacesProductBarcodes(tile.pid, tile).catch(() => {});
+    queueFacesProductEnrich(tile.pid, tile);
   };
 
   const scanOpts = { pushProduct, pushShade, limit, hits, light: false };

@@ -78,7 +78,7 @@ export function warmupBarcodeSearch() {
   buildBarcodeRamIndex();
   getFoundationProductsCached().catch(() => {});
   try { loadFacesBarcodeIndex(); } catch { /* optional */ }
-  setTimeout(() => expandFacesBarcodeIndex().catch(() => {}), 120_000);
+  // التوسيع التلقائي للفهرس معطّل — يُشغَّل يدوياً أو عبر FACES_AUTO_EXPAND_INDEX=1
 }
 
 async function getFoundationProductsCached() {
