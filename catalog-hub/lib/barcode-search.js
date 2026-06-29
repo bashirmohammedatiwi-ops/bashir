@@ -48,6 +48,10 @@ import {
   searchProductsByBarcode as searchMiswagProductsByBarcode,
   normalizeProductSummary as normalizeMiswagSummary,
 } from './miswag-api.js';
+import {
+  searchProductsByBarcode as searchOrisdiProductsByBarcode,
+  normalizeProductSummary as normalizeOrisdiSummary,
+} from './orisdi-api.js';
 import { lookupUpcByBarcode } from './barcodes.js';
 
 function barcodeQueryVariants(barcode) {
@@ -69,13 +73,14 @@ export const STORE_META = {
   faces: { id: 'faces', label: 'وجوه FACES', path: '/faces/', domain: 'faces.ae' },
   amazon: { id: 'amazon', label: 'Amazon Cosmetics', path: '/amazon/', domain: 'amazon.com' },
   miswag: { id: 'miswag', label: 'مسواگ Miswag', path: '/miswag/', domain: 'miswag.com' },
+  orisdi: { id: 'orisdi', label: 'أورزدي Orisdi', path: '/orisdi/', domain: 'orisdi.com' },
 };
 
 let elryanBeautyIdsPromise = null;
 const searchResultCache = new Map();
 const SEARCH_CACHE_MS = 15 * 60 * 1000;
 const SEARCH_NEGATIVE_CACHE_MS = 3 * 60 * 1000;
-const STORE_SEARCH_RANK = { niceone: 0, elryan: 1, vanilla: 2, miraaya: 3, miswag: 4, amazon: 5, faces: 6 };
+const STORE_SEARCH_RANK = { niceone: 0, elryan: 1, vanilla: 2, miraaya: 3, orisdi: 4, miswag: 5, amazon: 6, faces: 7 };
 const foundationCache = { products: [], at: 0 };
 const FOUNDATION_CACHE_MS = 10 * 60 * 1000;
 
@@ -635,6 +640,31 @@ async function searchMiswagByBarcode(barcode) {
   );
 }
 
+async function searchOrisdiByBarcode(barcode) {
+  const products = await searchOrisdiProductsByBarcode(barcode);
+  return dedupeHits(
+    products.map((p) => {
+      const n = normalizeOrisdiSummary(p);
+      return hit('orisdi', {
+        id: n.id,
+        name: n.name,
+        nameEn: n.nameEn,
+        manufacturer: n.manufacturer,
+        manufacturerEn: n.manufacturerEn,
+        price: n.price,
+        thumb: n.thumb,
+        barcode: n.barcode || barcode,
+        sku: n.sku,
+        matchType: p.matchType === 'hint' ? 'hint' : (p.matchType === 'shade' ? 'shade' : 'product'),
+        shadeCount: n.shadeCount || 0,
+        categoryHint: n.category || n.productType || '',
+        categoryHintEn: n.categoryEn || n.productType || '',
+        source: p.source || 'live',
+      });
+    }),
+  );
+}
+
 async function searchAmazonByBarcode(barcode) {
   const products = await searchAmazonProductsByBarcode(barcode);
   return dedupeHits(
@@ -665,6 +695,7 @@ const SEARCHERS = [
   { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 5_000 },
   { store: 'vanilla', fn: searchVanillaByBarcode, timeoutMs: 5_000 },
   { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 5_000 },
+  { store: 'orisdi', fn: searchOrisdiByBarcode, timeoutMs: 12_000 },
   { store: 'miswag', fn: searchMiswagByBarcode, timeoutMs: 15_000 },
   { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 10_000 },
   { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 30_000 },
@@ -678,6 +709,254 @@ function withStoreTimeout(promise, ms, store) {
       timer = setTimeout(() => reject(new Error(`انتهت مهلة ${STORE_META[store]?.label || store}`)), ms);
     }),
   ]).finally(() => clearTimeout(timer));
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function buildFacesHintList(hintHits = [], upcData = null, resultHits = []) {
+  const upcHints = upcData?.brand
+    ? [{
+        manufacturer: upcData.brand,
+        manufacturerEn: upcData.brand,
+        nameEn: upcData.title || '',
+        name: upcData.title || upcData.brand,
+        brand: upcData.brand,
+        source: 'upc',
+      }]
+    : [];
+  return [
+    ...hintHits,
+    ...upcHints,
+    ...sortHitsStable(dedupeHits(resultHits))
+      .filter((h) => h.store !== 'faces')
+      .map((h) => ({
+        name: h.name,
+        nameEn: h.nameEn,
+        manufacturer: h.manufacturer,
+        manufacturerEn: h.manufacturerEn,
+        brand: h.manufacturer,
+        store: h.store,
+      })),
+  ];
+}
+
+function finalizeSearchPayload(barcode, byStore, errors, enabled) {
+  const storeList = enabled.map(({ store }) => store);
+  const uniqueStores = [...new Set(storeList)];
+  return {
+    barcode,
+    results: sortHitsStable(dedupeHits(Object.values(byStore).flat())),
+    byStore,
+    errors,
+    stores: uniqueStores.map((store) => ({
+      ...STORE_META[store],
+      count: (byStore[store] || []).length,
+    })),
+  };
+}
+
+function rememberSearchCache(cacheKey, storeKey, barcode, payload) {
+  const hadTimeout = payload.errors?.some((e) => e.message?.includes('انتهت مهلة'));
+  if (payload.results?.length) {
+    rememberBarcodeSearchHits(payload.results);
+    searchResultCache.set(cacheKey, { at: Date.now(), data: payload });
+    if (storeKey === 'all') {
+      searchResultCache.set(`fast:all:${barcode}`, { at: Date.now(), data: { ...payload, fast: true } });
+    }
+  } else if (!hadTimeout) {
+    searchResultCache.set(cacheKey, { at: Date.now(), data: payload });
+  }
+}
+
+/**
+ * بحث متدفّق — كل متجر يُرسل نتائجه فور انتهائه دون انتظار الباقي.
+ * onEvent({ type, ... }) — start | store-status | results | done | error
+ */
+export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { stores = null, hintHits = [] } = {}) {
+  const emit = (type, data = {}) => {
+    try {
+      onEvent?.({ type, ...data });
+    } catch { /* client callback */ }
+  };
+
+  const barcode = normalizeBarcodeQuery(rawQuery);
+  if (!barcode) {
+    const errPayload = { barcode: null, error: 'أدخل باركوداً صالحاً (8–14 رقم)', results: [], byStore: {}, errors: [] };
+    emit('error', { error: errPayload.error });
+    emit('done', { payload: errPayload });
+    return errPayload;
+  }
+
+  const storeKey = stores?.length ? [...stores].sort().join(',') : 'all';
+  const cacheKey = `full:${storeKey}:${barcode}`;
+  const cached = getCachedSearch(cacheKey);
+  if (cached) {
+    emit('start', { barcode, cached: true });
+    emit('results', { payload: cached, source: 'cache' });
+    emit('done', { payload: cached });
+    return cached;
+  }
+
+  const enabled = stores?.length
+    ? SEARCHERS.filter((s) => stores.includes(s.store))
+    : SEARCHERS;
+
+  const localHits = searchUnifiedBarcodeIndex(barcode);
+  const byStore = {};
+  const errors = [];
+
+  for (const h of localHits) {
+    if (!byStore[h.store]) byStore[h.store] = [];
+    byStore[h.store].push(h);
+  }
+
+  const pushPayload = (source) => {
+    const payload = finalizeSearchPayload(barcode, byStore, errors, enabled);
+    emit('results', { payload, source });
+    return payload;
+  };
+
+  emit('start', {
+    barcode,
+    stores: enabled.map(({ store }) => ({
+      id: store,
+      ...STORE_META[store],
+      status: (byStore[store] || []).length ? 'done' : 'pending',
+      count: (byStore[store] || []).length,
+      fromIndex: !!(byStore[store] || []).length,
+    })),
+  });
+
+  if (localHits.length) {
+    pushPayload('index');
+  }
+
+  for (const { store } of enabled) {
+    if ((byStore[store] || []).length) {
+      emit('store-status', {
+        store,
+        status: 'done',
+        label: STORE_META[store]?.label || store,
+        count: byStore[store].length,
+        fromIndex: true,
+      });
+    } else {
+      emit('store-status', {
+        store,
+        status: 'searching',
+        label: STORE_META[store]?.label || store,
+      });
+    }
+  }
+
+  const coveredStores = new Set(Object.keys(byStore).filter((s) => (byStore[s] || []).length));
+  const allCovered = enabled.every(({ store }) => coveredStores.has(store));
+  if (allCovered && localHits.length) {
+    const payload = pushPayload('index-only');
+    rememberSearchCache(cacheKey, storeKey, barcode, payload);
+    emit('done', { payload });
+    return payload;
+  }
+
+  const upcPromise = lookupUpcByBarcode(barcode).catch(() => null);
+  const nonFaces = enabled.filter((s) => s.store !== 'faces');
+  const facesSearcher = enabled.find((s) => s.store === 'faces');
+
+  let facesStarted = false;
+  let facesPromise = null;
+
+  const runFaces = async () => {
+    if (!facesSearcher || facesStarted) return facesPromise;
+    facesStarted = true;
+    emit('store-status', { store: 'faces', status: 'searching', label: STORE_META.faces?.label || 'faces' });
+
+    facesPromise = (async () => {
+      const localFaces = buildFacesLocalHits(barcode);
+      if (localFaces.length) {
+        byStore.faces = dedupeHits([...(byStore.faces || []), ...localFaces]);
+        pushPayload('faces-index');
+      }
+
+      const upcData = await Promise.race([upcPromise, sleep(2000).then(() => null)]);
+      const combinedHints = buildFacesHintList(hintHits, upcData, Object.values(byStore).flat());
+      const facesTimeout = combinedHints.length > 0
+        ? Math.max(facesSearcher.timeoutMs, 60_000)
+        : facesSearcher.timeoutMs;
+
+      try {
+        const facesLive = await withStoreTimeout(
+          searchFacesByBarcode(barcode, combinedHints),
+          facesTimeout,
+          'faces',
+        );
+        byStore.faces = dedupeHits([...(facesLive || []), ...(byStore.faces || [])]);
+        emit('store-status', {
+          store: 'faces',
+          status: 'done',
+          label: STORE_META.faces?.label || 'faces',
+          count: (byStore.faces || []).length,
+        });
+      } catch (err) {
+        errors.push({ store: 'faces', message: err?.message || 'فشل البحث' });
+        byStore.faces = dedupeHits([...(byStore.faces || [])]);
+        emit('store-status', {
+          store: 'faces',
+          status: 'error',
+          label: STORE_META.faces?.label || 'faces',
+          message: err?.message || 'فشل البحث',
+        });
+      }
+      return pushPayload('faces');
+    })();
+
+    return facesPromise;
+  };
+
+  const nonFacesPromises = nonFaces.map(({ store, fn, timeoutMs }) => {
+    const local = byStore[store] || [];
+    if (!local.length) {
+      emit('store-status', { store, status: 'searching', label: STORE_META[store]?.label || store });
+    }
+    return withStoreTimeout(fn(barcode), timeoutMs, store)
+      .then((live) => {
+        const merged = !live?.length ? local : !local.length ? live : dedupeHits([...live, ...local]);
+        byStore[store] = merged;
+        emit('store-status', {
+          store,
+          status: 'done',
+          label: STORE_META[store]?.label || store,
+          count: merged.length,
+        });
+        return pushPayload('store');
+      })
+      .catch((err) => {
+        errors.push({ store, message: err?.message || 'فشل البحث' });
+        byStore[store] = local;
+        emit('store-status', {
+          store,
+          status: 'error',
+          label: STORE_META[store]?.label || store,
+          message: err?.message || 'فشل البحث',
+        });
+        return pushPayload('store');
+      });
+  });
+
+  void Promise.race([
+    Promise.allSettled(nonFacesPromises),
+    sleep(3500),
+  ]).then(() => runFaces());
+
+  await Promise.allSettled(nonFacesPromises);
+  if (facesPromise) await facesPromise;
+  else if (facesSearcher && !facesStarted) await runFaces();
+
+  const finalPayload = pushPayload('final');
+  rememberSearchCache(cacheKey, storeKey, barcode, finalPayload);
+  emit('done', { payload: finalPayload });
+  return finalPayload;
 }
 
 export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = false, hintHits = [] } = {}) {
@@ -715,179 +994,15 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
     return payload;
   }
 
-  const enabled = stores?.length
-    ? SEARCHERS.filter((s) => stores.includes(s.store))
-    : SEARCHERS;
-
-  const localByStore = {};
-  for (const h of localHits) {
-    if (!localByStore[h.store]) localByStore[h.store] = [];
-    localByStore[h.store].push(h);
-  }
-
-  const others = enabled.filter((s) => s.store !== 'faces');
-  const facesSearcher = enabled.find((s) => s.store === 'faces');
-
-  const results = [];
-  const errors = [];
-  const byStore = {};
-
-  for (const [store, hits] of Object.entries(localByStore)) {
-    if (hits.length) {
-      byStore[store] = hits;
-      results.push(...hits);
-    }
-  }
-
-  // ⚡ مسار سريع جداً: إذا الفهرس المحلي غطّى كل المتاجر المطلوبة، أرجع فوراً (<1s)
-  // ولا تلمس الشبكة. تحديث المتاجر يجري في الخلفية لإبقاء الفهرس حديثاً.
-  const coveredStores = new Set(Object.keys(byStore).filter((s) => (byStore[s] || []).length));
-  const allCovered = enabled.every(({ store }) => coveredStores.has(store));
-  if (allCovered && results.length) {
-    const payload = {
-      barcode,
-      results: sortHitsStable(dedupeHits(results)),
-      byStore,
-      errors,
-      fromIndex: true,
-      stores: [...new Set(enabled.map(({ store }) => store))].map((store) => ({
-        ...STORE_META[store],
-        count: (byStore[store] || []).length,
-      })),
-    };
-    searchResultCache.set(cacheKey, { at: Date.now(), data: payload });
-    return payload;
-  }
-
-  // ⚡ ابدأ جلب UPC بالتوازي مع باقي المتاجر — لا تنتظر قبل بدء البحث
-  const upcPromise = lookupUpcByBarcode(barcode).catch(() => null);
-
-  if (others.length) {
-    const settled = await Promise.allSettled(
-      others.map(({ store, fn, timeoutMs }) => {
-        const local = localByStore[store] || [];
-        return withStoreTimeout(fn(barcode), timeoutMs, store).then((live) => {
-          if (!live?.length) return local;
-          if (!local.length) return live;
-          return dedupeHits([...live, ...local]);
-        });
-      }),
-    );
-    settled.forEach((outcome, i) => {
-      const { store } = others[i];
-      if (outcome.status === 'fulfilled') {
-        byStore[store] = outcome.value;
-        results.push(...outcome.value);
-      } else {
-        errors.push({ store, message: outcome.reason?.message || 'فشل البحث' });
-        byStore[store] = localByStore[store] || [];
-        if (byStore[store].length) results.push(...byStore[store]);
-      }
-    });
-  }
-
-  // انتظر UPC — في الغالب انتهى مع المتاجر الأخرى (بدأنا بالتوازي)
-  const upcData = await Promise.race([
-    upcPromise,
-    new Promise((r) => setTimeout(() => r(null), 2000)),
-  ]);
-  const upcHints = upcData?.brand
-    ? [{
-        manufacturer: upcData.brand,
-        manufacturerEn: upcData.brand,
-        nameEn: upcData.title || '',
-        name: upcData.title || upcData.brand,
-        brand: upcData.brand,
-        source: 'upc',
-      }]
-    : [];
-
-  // وجوه: فهرس محلي فوري + بحث حي مع تلميحات المتاجر الأخرى وبيانات UPC (بالتوازي مع مهلة منفصلة)
-  if (facesSearcher) {
-    const localFaces = buildFacesLocalHits(barcode);
-    if (localFaces.length) {
-      byStore.faces = dedupeHits([...(byStore.faces || []), ...localFaces]);
-      results.push(...localFaces.filter((h) => !results.some((r) => r.store === 'faces' && r.id === h.id)));
-    }
-
-    const combinedHints = [
-      ...hintHits,
-      ...upcHints,
-      ...sortHitsStable(dedupeHits(results))
-        .filter((h) => h.store !== 'faces')
-        .map((h) => ({
-          name: h.name,
-          nameEn: h.nameEn,
-          manufacturer: h.manufacturer,
-          manufacturerEn: h.manufacturerEn,
-          brand: h.manufacturer,
-          store: h.store,
-        })),
-    ];
-
-    // زيادة المهلة تلقائياً عندما يكون لدينا تلميح ماركة من UPC (بحث موجّه أسرع بكثير)
-    const facesDynamicTimeout = combinedHints.length > 0
-      ? Math.max(facesSearcher.timeoutMs, 60_000)
-      : facesSearcher.timeoutMs;
-
-    const facesPromise = withStoreTimeout(
-      searchFacesByBarcode(barcode, combinedHints),
-      facesDynamicTimeout,
-      'faces',
-    );
-
-    // إذا وُجدت نتائج من متاجر أخرى — أرجع فوراً وابحث وجوه بالخلفية
-    const hasOtherResults = results.some((r) => r.store !== 'faces');
-    if (hasOtherResults) {
-      void facesPromise.then((facesLive) => {
-        if (!facesLive?.length) return;
-        rememberBarcodeSearchHits(facesLive);
-      }).catch(() => {});
-    } else {
-      try {
-        const facesLive = await facesPromise;
-        const mergedFaces = dedupeHits([...(facesLive || []), ...(byStore.faces || []), ...(localByStore.faces || [])]);
-        const nonFaces = results.filter((r) => r.store !== 'faces');
-        results.length = 0;
-        results.push(...nonFaces, ...mergedFaces);
-        byStore.faces = mergedFaces;
-      } catch (err) {
-        errors.push({ store: 'faces', message: err?.message || 'فشل البحث' });
-        byStore.faces = dedupeHits([...(byStore.faces || []), ...(localByStore.faces || [])]);
-        const nonFaces = results.filter((r) => r.store !== 'faces');
-        results.length = 0;
-        results.push(...nonFaces, ...byStore.faces);
-      }
-    }
-  }
-
-  const storeList = enabled.map(({ store }) => store);
-  const uniqueStores = [...new Set(storeList)];
-
-  const payload = {
+  let finalPayload = null;
+  await searchBarcodeAllStoresStreaming(rawQuery, (event) => {
+    if (event.type === 'done') finalPayload = event.payload;
+  }, { stores, hintHits });
+  return finalPayload || {
     barcode,
-    results: sortHitsStable(dedupeHits(results)),
-    byStore,
-    errors,
-    stores: uniqueStores.map((store) => ({
-      ...STORE_META[store],
-      count: (byStore[store] || []).length,
-    })),
+    results: [],
+    byStore: {},
+    errors: [],
+    stores: [],
   };
-
-  const hadTimeout = errors.some((e) => e.message?.includes('انتهت مهلة'));
-
-  if (payload.results.length) {
-    rememberBarcodeSearchHits(payload.results);
-    searchResultCache.set(cacheKey, { at: Date.now(), data: payload });
-    if (storeKey === 'all') {
-      searchResultCache.set(`fast:all:${barcode}`, { at: Date.now(), data: { ...payload, fast: true } });
-    }
-  } else if (!hadTimeout) {
-    // لا نتائج ولا توقف مهلة → المنتج غير موجود فعلاً → خزّن 3 دقائق
-    searchResultCache.set(cacheKey, { at: Date.now(), data: payload });
-  }
-  // عند وجود توقف مهلة + لا نتائج → لا تخزّن → يُعاد المحاولة فوراً في الطلب التالي
-
-  return payload;
 }

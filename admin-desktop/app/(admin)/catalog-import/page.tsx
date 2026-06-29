@@ -32,6 +32,7 @@ import {
   type CatalogImportOption,
   type CatalogImportProduct,
   type CatalogImportSummary,
+  type CatalogStoreSearchStatus,
 } from "@/lib/catalogImport";
 import { fetchInventoryByBarcode, type InventorySyncPreview } from "@/lib/inventorySync";
 import { uploadCatalogImportImages } from "@/lib/uploadCatalogImages";
@@ -76,6 +77,8 @@ export default function CatalogImportPage() {
   const [barcode, setBarcode] = useState("");
   const [searching, setSearching] = useState(false);
   const [options, setOptions] = useState<CatalogImportOption[]>([]);
+  const [storeStatuses, setStoreStatuses] = useState<Record<string, CatalogStoreSearchStatus>>({});
+  const searchAbortRef = useRef<AbortController | null>(null);
   const [summaries, setSummaries] = useState<Record<string, CatalogImportSummary | null>>({});
   const [summaryLoadingKeys, setSummaryLoadingKeys] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<CatalogImportOption | null>(null);
@@ -212,36 +215,72 @@ export default function CatalogImportPage() {
       message.warning("أدخل باركوداً صالحاً (8–14 رقم)");
       return;
     }
+    searchAbortRef.current?.abort();
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+
     setSearching(true);
     setOptions([]);
+    setStoreStatuses({});
     setSummaries({});
     setSummaryLoadingKeys(new Set());
     setSelected(null);
     setPreview(null);
     setStep(0);
-    let idle = false;
+
     try {
-      const data = await searchCatalogByBarcodeProgressive(q, (partial) => {
-        if (partial.length) {
-          setOptions(partial);
-          setStep(1);
-          if (!idle) {
-            idle = true;
-            setSearching(false);
+      const data = await searchCatalogByBarcodeProgressive(
+        q,
+        (partial) => {
+          if (partial.length) {
+            setOptions(partial);
+            setStep(1);
           }
-        }
-      });
+        },
+        (event) => {
+          if (event.type === "start") {
+            const stores = (event as { stores?: Array<CatalogStoreSearchStatus & { id?: string }> }).stores;
+            if (stores?.length) {
+              const next: Record<string, CatalogStoreSearchStatus> = {};
+              for (const s of stores) {
+                const key = s.store || s.id || "";
+                if (!key) continue;
+                next[key] = { ...s, store: key };
+              }
+              setStoreStatuses(next);
+            }
+          }
+          if (event.type === "store-status") {
+            setStoreStatuses((prev) => ({
+              ...prev,
+              [event.store]: {
+                store: event.store,
+                status: event.status,
+                label: event.label,
+                count: event.count,
+                message: event.message,
+                fromIndex: event.fromIndex,
+              },
+            }));
+          }
+        },
+        controller.signal,
+      );
       setOptions(data.options || []);
       if (!data.options?.length) {
         message.info("لا توجد نتائج في الكتالوج لهذا الباركود");
-      } else if (!idle) {
-        message.success(`وُجد ${data.options.length} نسخة في الكتالوج`);
+      } else {
         setStep(1);
       }
     } catch (err: any) {
-      message.error(errorMessage(err, "فشل البحث"));
+      if (err?.name !== "AbortError") {
+        message.error(errorMessage(err, "فشل البحث"));
+      }
     } finally {
-      setSearching(false);
+      if (searchAbortRef.current === controller) {
+        setSearching(false);
+        searchAbortRef.current = null;
+      }
     }
   }, [barcode]);
 
@@ -421,7 +460,7 @@ export default function CatalogImportPage() {
     <div className="catalog-import-page">
       <PageHeader
         title="الاستيراد من الكتالوج"
-        subtitle={`البحث في Nice One · Vanilla · الريان · ميرايا · مسواگ · وجوه · Amazon — ${CATALOG_HUB_URL}`}
+        subtitle={`البحث في Nice One · Vanilla · الريان · ميرايا · أورزدي · مسواگ · وجوه · Amazon — ${CATALOG_HUB_URL}`}
       />
 
       <Steps
@@ -440,7 +479,7 @@ export default function CatalogImportPage() {
             <BarcodeOutlined style={{ marginInlineEnd: 6 }} />
             بحث بالباركود
           </h3>
-          <p>ابحث في Nice One · Vanilla · الريان · ميرايا · مسواگ · وجوه · Amazon — تظهر النتائج أفقياً مع الصور والتدرجات</p>
+          <p>ابحث في Nice One · Vanilla · الريان · ميرايا · أورزدي · مسواگ · وجوه · Amazon — تظهر النتائج أفقياً مع الصور والتدرجات</p>
         </div>
         <div className="catalog-import-search-row">
           <Input
@@ -458,10 +497,33 @@ export default function CatalogImportPage() {
         </div>
       </section>
 
+      {(searching || Object.keys(storeStatuses).length > 0) && (
+        <div className="catalog-import-store-progress">
+          {Object.values(storeStatuses).map((s) => {
+            const color = STORE_COLORS[s.store] || "#888";
+            const label = s.label || s.store;
+            let tag = "…";
+            if (s.status === "searching") tag = "جاري";
+            if (s.status === "done") tag = s.count ? `${s.count}` : "—";
+            if (s.status === "error") tag = "!";
+            return (
+              <Tag
+                key={s.store}
+                color={s.status === "error" ? "red" : s.status === "done" ? color : "default"}
+                style={{ opacity: s.status === "pending" ? 0.55 : 1 }}
+              >
+                {label} {tag}
+              </Tag>
+            );
+          })}
+          {searching && <Spin size="small" />}
+        </div>
+      )}
+
       {searching && !options.length && (
         <div className="catalog-import-empty">
           <Spin size="large" />
-          <p style={{ marginTop: 16 }}>جاري البحث في متاجر الكتالوج...</p>
+          <p style={{ marginTop: 16 }}>جاري البحث — النتائج تظهر فور وصولها من كل متجر</p>
         </div>
       )}
 
@@ -469,7 +531,7 @@ export default function CatalogImportPage() {
         <section className="catalog-import-results">
           <div className="catalog-import-results-head">
             <h4>النسخ المتوفرة في الكتالوج</h4>
-            <Tag color="purple">{options.length} نتيجة</Tag>
+            <Tag color="purple">{options.length} نتيجة{searching ? " · البحث مستمر…" : ""}</Tag>
           </div>
           {optionsByStore.map(([store, storeOptions]) => (
             <div key={store} className="catalog-import-store-block">

@@ -101,6 +101,10 @@ body {
   border-color: #df1c24;
 }
 
+.hub-card--orisdi:hover {
+  border-color: #02c0ef;
+}
+
 .hub-card-icon {
   width: 52px;
   height: 52px;
@@ -140,6 +144,10 @@ body {
 
 .hub-card--miswag .hub-card-icon {
   background: linear-gradient(135deg, #df1c24, #8b0000);
+}
+
+.hub-card--orisdi .hub-card-icon {
+  background: linear-gradient(135deg, #02c0ef, #0288d1);
 }
 
 .hub-card h2 {
@@ -204,6 +212,10 @@ body {
 
 .hub-card--miswag .hub-cta {
   color: #df1c24;
+}
+
+.hub-card--orisdi .hub-cta {
+  color: #02c0ef;
 }
 
 .hub-foot {
@@ -309,6 +321,15 @@ body {
   color: var(--text);
 }
 
+.barcode-store-pill--searching strong {
+  animation: barcode-pulse 1s ease-in-out infinite;
+}
+
+@keyframes barcode-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
 .barcode-results {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -349,6 +370,7 @@ body {
 .barcode-result.hub-card--faces:hover { border-color: #1a1a1a; }
 .barcode-result.hub-card--amazon:hover { border-color: #ff9900; }
 .barcode-result.hub-card--miswag:hover { border-color: #df1c24; }
+.barcode-result.hub-card--orisdi:hover { border-color: #02c0ef; }
 
 .barcode-result-img {
   width: 72px;

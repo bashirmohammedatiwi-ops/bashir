@@ -14,6 +14,18 @@ const STORE_CLASS = {
   faces: 'hub-card--faces',
   amazon: 'hub-card--amazon',
   miswag: 'hub-card--miswag',
+  orisdi: 'hub-card--orisdi',
+};
+
+const STORE_LABELS = {
+  niceone: 'Nice One',
+  vanilla: 'Vanilla',
+  elryan: 'الريان',
+  miraaya: 'ميرايا',
+  faces: 'وجوه',
+  amazon: 'Amazon',
+  miswag: 'مسواگ',
+  orisdi: 'أورزدي',
 };
 
 function isValidBarcodeInput(raw) {
@@ -45,16 +57,73 @@ function renderResultCard(item) {
     </a>`;
 }
 
-function renderStoreSummary(stores = []) {
-  if (!stores.length) return '';
-  return `
-    <div class="barcode-store-summary">
-      ${stores.map((s) => `
+function renderStoreSummary(stores = [], storeStatuses = {}) {
+  const pills = Object.keys(storeStatuses).length
+    ? Object.entries(storeStatuses).map(([id, s]) => {
+        const cls = STORE_CLASS[id] || '';
+        const label = s.label || STORE_LABELS[id] || id;
+        let count = '…';
+        if (s.status === 'done') count = s.count ?? 0;
+        if (s.status === 'error') count = '!';
+        if (s.status === 'searching') count = '●';
+        return `<span class="barcode-store-pill ${cls} barcode-store-pill--${s.status}">${esc(label)} <strong>${count}</strong></span>`;
+      })
+    : stores.map((s) => `
         <span class="barcode-store-pill ${STORE_CLASS[s.id] || ''}">
           ${esc(s.label)} <strong>${s.count}</strong>
-        </span>`).join('')}
-    </div>`;
+        </span>`);
+  if (!pills.length) return '';
+  return `<div class="barcode-store-summary">${pills.join('')}</div>`;
 }
+
+async function consumeSse(url, onEvent, signal) {
+  const res = await fetch(url, { headers: { Accept: 'text/event-stream' }, signal });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || res.statusText);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let eventName = 'message';
+  let dataLines = [];
+
+  const flush = () => {
+    if (!dataLines.length) {
+      eventName = 'message';
+      return;
+    }
+    const raw = dataLines.join('\n');
+    dataLines = [];
+    const name = eventName;
+    eventName = 'message';
+    if (!raw || raw.startsWith(':')) return;
+    try {
+      onEvent(name, JSON.parse(raw));
+    } catch { /* skip */ }
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+    for (const line of lines) {
+      if (line.startsWith('event:')) {
+        flush();
+        eventName = line.slice(6).trim();
+      } else if (line.startsWith('data:')) {
+        dataLines.push(line.slice(5).trimStart());
+      } else if (line.trim() === '') {
+        flush();
+      }
+    }
+  }
+  flush();
+}
+
+let activeSearchController = null;
 
 async function runBarcodeSearch(raw) {
   const input = $('#barcodeInput');
@@ -72,56 +141,99 @@ async function runBarcodeSearch(raw) {
     return;
   }
 
-  btn.disabled = true;
-  status.textContent = 'جاري البحث في كل المتاجر...';
-  status.className = 'barcode-status barcode-status--loading';
-      results.innerHTML = '<div class="barcode-loading">Nice One · Vanilla · الريان · ميرايا · مسواگ · وجوه · Amazon — عادةً 2–10 ثوانٍ</div>';
-  summary.innerHTML = '';
-
+  activeSearchController?.abort();
   const controller = new AbortController();
-  const clientTimer = setTimeout(() => controller.abort(), 20_000);
-  const tickTimer = setInterval(() => {
-    if (status.classList.contains('barcode-status--loading')) {
-      status.textContent = 'جاري البحث في كل المتاجر... (يرجى الانتظار)';
+  activeSearchController = controller;
+
+  btn.disabled = true;
+  status.textContent = 'جاري البحث — النتائج تظهر فور وصولها…';
+  status.className = 'barcode-status barcode-status--loading';
+  results.innerHTML = '';
+  summary.innerHTML = renderStoreSummary([], {});
+
+  const storeStatuses = {};
+  let resultItems = [];
+  let errors = [];
+  let barcode = q.replace(/\D/g, '');
+
+  const paint = () => {
+    summary.innerHTML = renderStoreSummary([], storeStatuses);
+    if (resultItems.length) {
+      results.innerHTML = resultItems.map(renderResultCard).join('');
+    } else if (!Object.values(storeStatuses).some((s) => s.status === 'searching' || s.status === 'pending')) {
+      results.innerHTML = '<div class="barcode-empty">جرّب باركوداً آخر أو افتح متجراً محدداً للبحث اليدوي</div>';
     }
-  }, 4000);
+  };
 
   try {
-    const res = await fetch(hubApi(`/api/search/barcode?q=${encodeURIComponent(q)}`), { signal: controller.signal });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || res.statusText);
+    await consumeSse(
+      hubApi(`/api/search/barcode/stream?q=${encodeURIComponent(q)}`),
+      (type, data) => {
+        if (type === 'start') {
+          barcode = data.barcode || barcode;
+          for (const s of data.stores || []) {
+            storeStatuses[s.id || s.store] = {
+              status: s.status || 'pending',
+              label: s.label || STORE_LABELS[s.id || s.store],
+              count: s.count,
+            };
+          }
+          paint();
+        }
+        if (type === 'store-status') {
+          storeStatuses[data.store] = {
+            status: data.status,
+            label: data.label || STORE_LABELS[data.store],
+            count: data.count,
+          };
+          paint();
+        }
+        if (type === 'results' && data.payload) {
+          resultItems = data.payload.results || [];
+          paint();
+          if (resultItems.length) {
+            status.textContent = `${resultItems.length} نتيجة حتى الآن — البحث مستمر…`;
+          }
+        }
+        if (type === 'done' && data.payload) {
+          resultItems = data.payload.results || [];
+          errors = data.payload.errors || [];
+          for (const s of data.payload.stores || []) {
+            storeStatuses[s.id] = {
+              status: (s.count ?? 0) > 0 ? 'done' : 'done',
+              label: s.label,
+              count: s.count,
+            };
+          }
+          paint();
+        }
+      },
+      controller.signal,
+    );
 
-    summary.innerHTML = renderStoreSummary(data.stores || []);
-
-    if (data.errors?.length) {
-      const errNote = data.errors.map((e) => `${e.store}: ${e.message}`).join(' · ');
-      status.textContent = data.results?.length
-        ? `تم العثور على ${data.results.length} نتيجة · تحذير: ${errNote}`
+    if (errors.length) {
+      const errNote = errors.map((e) => `${e.store}: ${e.message}`).join(' · ');
+      status.textContent = resultItems.length
+        ? `تم العثور على ${resultItems.length} نتيجة · تحذير: ${errNote}`
         : `لم يُعثر على نتائج · ${errNote}`;
-      status.className = data.results?.length ? 'barcode-status barcode-status--ok' : 'barcode-status barcode-status--warn';
-    } else if (!data.results?.length) {
-      status.textContent = `لا توجد نتائج للباركود ${data.barcode}`;
+      status.className = resultItems.length ? 'barcode-status barcode-status--ok' : 'barcode-status barcode-status--warn';
+    } else if (!resultItems.length) {
+      status.textContent = `لا توجد نتائج للباركود ${barcode}`;
       status.className = 'barcode-status barcode-status--warn';
     } else {
-      status.textContent = `${data.results.length} نتيجة للباركود ${data.barcode}`;
+      status.textContent = `${resultItems.length} نتيجة للباركود ${barcode}`;
       status.className = 'barcode-status barcode-status--ok';
     }
-
-    results.innerHTML = data.results?.length
-      ? data.results.map(renderResultCard).join('')
-      : '<div class="barcode-empty">جرّب باركوداً آخر أو افتح متجراً محدداً للبحث اليدوي</div>';
   } catch (err) {
-    if (err?.name === 'AbortError') {
-      status.textContent = 'انتهت مهلة البحث — جرّب مرة أخرى أو ابحث داخل متجر Nice One مباشرة';
-    } else {
-      status.textContent = `خطأ: ${err.message}`;
-    }
+    if (err?.name === 'AbortError') return;
+    status.textContent = `خطأ: ${err.message}`;
     status.className = 'barcode-status barcode-status--error';
-    results.innerHTML = '';
+    if (!resultItems.length) results.innerHTML = '';
   } finally {
-    clearTimeout(clientTimer);
-    clearInterval(tickTimer);
-    btn.disabled = false;
+    if (activeSearchController === controller) {
+      btn.disabled = false;
+      activeSearchController = null;
+    }
   }
 }
 

@@ -1,7 +1,7 @@
 /**
  * استيراد منتجات موحّد من متاجر الكتالوج — للربط مع تطبيق Alhayaa
  */
-import { searchBarcodeAllStores, STORE_META } from './barcode-search.js';
+import { searchBarcodeAllStores, searchBarcodeAllStoresStreaming, STORE_META } from './barcode-search.js';
 import {
   fetchProductDetail,
   normalizeProductDetail,
@@ -14,6 +14,7 @@ import { fetchProductBySku, fetchProductById as fetchMiraayaById, normalizeProdu
 import { fetchProductById as fetchFacesById, normalizeProductDetailFromRaw as normalizeFacesDetail } from './faces-api.js';
 import { fetchProductByAsin as fetchAmazonByAsin, searchProductsByBarcode as searchAmazonByBarcode, isAmazonBundleListing } from './amazon-api.js';
 import { fetchProductDetail as fetchMiswagDetail, normalizeProductDetail as normalizeMiswagDetail } from './miswag-api.js';
+import { fetchProductDetail as fetchOrisdiDetail } from './orisdi-api.js';
 
 function hasArabicText(text = '') {
   return /[\u0600-\u06FF]/.test(String(text || ''));
@@ -98,13 +99,8 @@ function buildImportPayload(store, product, { hubOrigin = '' } = {}) {
   };
 }
 
-export async function searchImportByBarcode(rawBarcode, { fast = false, stores = null, hintHits = [] } = {}) {
-  const data = await searchBarcodeAllStores(rawBarcode, { fast, stores, hintHits });
-  if (data.error) {
-    return { barcode: null, error: data.error, options: [], errors: [] };
-  }
-
-  const options = (data.results || [])
+function hitsToImportOptions(data) {
+  return (data.results || [])
     .filter((r) => r.id || r.sku)
     .filter((r) => {
       if (r.store !== 'amazon') return true;
@@ -129,24 +125,27 @@ export async function searchImportByBarcode(rawBarcode, { fast = false, stores =
       return (r.id || r.sku) === (best.id || best.sku);
     })
     .map((r) => ({
-    store: r.store,
-    storeLabel: r.storeLabel,
-    sourceId: r.id || r.sku,
-    sku: r.sku || r.id,
-    nameAr: r.name,
-    nameEn: r.nameEn,
-    brandAr: r.manufacturer,
-    brandEn: r.manufacturerEn,
-    thumb: r.thumb,
-    barcode: r.barcode,
-    shadeName: r.shadeName,
-    matchType: r.matchType || 'product',
-    shadeCount: r.shadeCount,
-    imageCount: r.imageCount,
-    categoryHint: r.categoryHint,
-    categoryHintEn: r.categoryHintEn,
-  }));
+      store: r.store,
+      storeLabel: r.storeLabel,
+      sourceId: r.id || r.sku,
+      sku: r.sku || r.id,
+      nameAr: r.name,
+      nameEn: r.nameEn,
+      brandAr: r.manufacturer,
+      brandEn: r.manufacturerEn,
+      thumb: r.thumb,
+      barcode: r.barcode,
+      shadeName: r.shadeName,
+      matchType: r.matchType || 'product',
+      shadeCount: r.shadeCount,
+      imageCount: r.imageCount,
+      categoryHint: r.categoryHint,
+      categoryHintEn: r.categoryHintEn,
+    }));
+}
 
+function importPayloadFromSearch(data) {
+  const options = hitsToImportOptions(data);
   return {
     barcode: data.barcode,
     options,
@@ -155,6 +154,60 @@ export async function searchImportByBarcode(rawBarcode, { fast = false, stores =
       Object.entries(data.byStore || {}).map(([k, v]) => [k, (v || []).length]),
     ),
   };
+}
+
+export async function searchImportByBarcode(rawBarcode, { fast = false, stores = null, hintHits = [] } = {}) {
+  const data = await searchBarcodeAllStores(rawBarcode, { fast, stores, hintHits });
+  if (data.error) {
+    return { barcode: null, error: data.error, options: [], errors: [] };
+  }
+  return importPayloadFromSearch(data);
+}
+
+/**
+ * بحث استيراد متدفّق — يرسل نتائج كل متجر فور جاهزيتها.
+ */
+export async function searchImportByBarcodeStream(rawBarcode, onEvent, { stores = null, hintHits = [] } = {}) {
+  const emit = (type, data = {}) => {
+    try {
+      onEvent?.({ type, ...data });
+    } catch { /* client */ }
+  };
+
+  let lastPayload = null;
+
+  await searchBarcodeAllStoresStreaming(rawBarcode, (event) => {
+    if (event.type === 'start') {
+      emit('start', { barcode: event.barcode, stores: event.stores, cached: event.cached });
+      return;
+    }
+    if (event.type === 'store-status') {
+      emit('store-status', event);
+      return;
+    }
+    if (event.type === 'results' && event.payload) {
+      lastPayload = event.payload;
+      const partial = importPayloadFromSearch(event.payload);
+      emit('results', { ...partial, source: event.source });
+      return;
+    }
+    if (event.type === 'error') {
+      emit('error', { error: event.error });
+      return;
+    }
+    if (event.type === 'done') {
+      lastPayload = event.payload || lastPayload;
+      const finalResult = lastPayload?.error
+        ? { barcode: null, error: lastPayload.error, options: [], errors: [] }
+        : importPayloadFromSearch(lastPayload || { barcode: null, results: [], byStore: {}, errors: [] });
+      emit('done', finalResult);
+    }
+  }, { stores, hintHits });
+
+  if (lastPayload?.error) {
+    return { barcode: null, error: lastPayload.error, options: [], errors: [] };
+  }
+  return importPayloadFromSearch(lastPayload || { barcode: null, results: [], byStore: {}, errors: [] });
 }
 
 async function fetchNiceOneImport(id, hubOrigin, { light = false } = {}) {
@@ -230,6 +283,12 @@ async function fetchMiswagImport(id, hubOrigin) {
   return buildImportPayload('miswag', normalized, { hubOrigin });
 }
 
+async function fetchOrisdiImport(id, hubOrigin, barcodeHint = '') {
+  const normalized = await fetchOrisdiDetail(id, { barcode: barcodeHint });
+  if (!normalized?.id) return null;
+  return buildImportPayload('orisdi', normalized, { hubOrigin });
+}
+
 export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barcode = '', light = false } = {}) {
   const id = String(sourceId || '').trim();
   if (!id || !store) return { error: 'المتجر ومعرّف المنتج مطلوبان' };
@@ -256,6 +315,9 @@ export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barc
       break;
     case 'miswag':
       payload = await fetchMiswagImport(id, hubOrigin);
+      break;
+    case 'orisdi':
+      payload = await fetchOrisdiImport(id, hubOrigin, barcode);
       break;
     default:
       return { error: `متجر غير معروف: ${store}` };

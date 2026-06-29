@@ -69,7 +69,7 @@ export type CatalogImportProduct = {
   categoryHintEn?: string | string[];
 };
 
-const CATALOG_STORES = ["niceone", "elryan", "vanilla", "miraaya", "faces", "amazon", "miswag"] as const;
+const CATALOG_STORES = ["niceone", "elryan", "vanilla", "miraaya", "faces", "amazon", "miswag", "orisdi"] as const;
 
 function isLikelyAmazonBundle(opt: CatalogImportOption) {
   const t = `${opt.nameAr || ""} ${opt.nameEn || ""}`.toLowerCase();
@@ -130,6 +130,133 @@ type CatalogSearchResponse = {
   fast?: boolean;
 };
 
+export type CatalogStoreSearchStatus = {
+  store: string;
+  status: "pending" | "searching" | "done" | "error";
+  label?: string;
+  count?: number;
+  message?: string;
+  fromIndex?: boolean;
+};
+
+export type CatalogSearchStreamEvent =
+  | { type: "start"; barcode: string; cached?: boolean }
+  | { type: "store-status"; store: string; status: CatalogStoreSearchStatus["status"]; label?: string; count?: number; message?: string; fromIndex?: boolean }
+  | { type: "results"; barcode: string; options: CatalogImportOption[]; byStore?: Record<string, number>; source?: string }
+  | { type: "error"; error: string }
+  | { type: "done"; barcode: string; options: CatalogImportOption[]; byStore?: Record<string, number>; errors?: { store: string; message: string }[] };
+
+async function consumeSseStream(
+  url: string,
+  onEvent: (event: CatalogSearchStreamEvent) => void,
+  signal?: AbortSignal,
+) {
+  const res = await fetch(url, {
+    headers: { Accept: "text/event-stream" },
+    signal,
+  });
+  if (!res.ok) {
+    let message = res.statusText || "فشل الاتصال بكتالوج المتاجر";
+    try {
+      const json = await res.json();
+      message = catalogApiErrorMessage(json?.error, message);
+    } catch {
+      /* SSE error body */
+    }
+    throw new Error(message);
+  }
+  if (!res.body) throw new Error("لا يوجد تدفّق من الخادم");
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let eventName = "message";
+  let dataLines: string[] = [];
+
+  const flush = () => {
+    if (!dataLines.length) {
+      eventName = "message";
+      return;
+    }
+    const raw = dataLines.join("\n");
+    dataLines = [];
+    const name = eventName;
+    eventName = "message";
+    if (!raw || raw.startsWith(":")) return;
+    try {
+      const payload = JSON.parse(raw) as Record<string, unknown>;
+      onEvent({ type: name, ...payload } as CatalogSearchStreamEvent);
+    } catch {
+      /* ignore malformed chunk */
+    }
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+    for (const line of lines) {
+      if (line.startsWith("event:")) {
+        flush();
+        eventName = line.slice(6).trim();
+      } else if (line.startsWith("data:")) {
+        dataLines.push(line.slice(5).trimStart());
+      } else if (line.trim() === "") {
+        flush();
+      }
+    }
+  }
+  flush();
+}
+
+export async function searchCatalogByBarcodeStream(
+  barcode: string,
+  onEvent?: (event: CatalogSearchStreamEvent) => void,
+  signal?: AbortSignal,
+): Promise<CatalogSearchResponse> {
+  const digits = barcode.replace(/\D/g, "");
+  const cached = clientSearchCache.get(digits);
+  if (cached && Date.now() - cached.at < CLIENT_SEARCH_CACHE_MS) {
+    onEvent?.({ type: "start", barcode: digits, cached: true });
+    onEvent?.({ type: "results", barcode: digits, options: cached.data.options, byStore: cached.data.byStore, source: "cache" });
+    onEvent?.({ type: "done", barcode: digits, options: cached.data.options, byStore: cached.data.byStore });
+    return cached.data;
+  }
+
+  const q = encodeURIComponent(digits);
+  let finalResult: CatalogSearchResponse = { barcode: digits, options: [], byStore: {} };
+
+  await consumeSseStream(
+    `${CATALOG_HUB_URL}/api/import/search/stream?q=${q}`,
+    (event) => {
+      onEvent?.(event);
+      if (event.type === "results") {
+        finalResult = {
+          barcode: event.barcode || digits,
+          options: filterCatalogOptions(event.options || []),
+          byStore: event.byStore,
+        };
+      }
+      if (event.type === "done") {
+        finalResult = {
+          barcode: event.barcode || digits,
+          options: filterCatalogOptions(event.options || []),
+          byStore: event.byStore,
+          errors: event.errors,
+        };
+      }
+    },
+    signal,
+  );
+
+  if (finalResult.options.length) {
+    clientSearchCache.set(digits, { at: Date.now(), data: finalResult });
+  }
+  return finalResult;
+}
+
 export async function searchCatalogByBarcode(
   barcode: string,
   options: { fast?: boolean; store?: string; hints?: CatalogImportOption[] } = {},
@@ -153,65 +280,27 @@ export async function searchCatalogByBarcode(
 }
 
 /**
- * بحث متدرّج: فهرس محلي فوري ثم بحث موحّد واحد (أسرع وأثبت من 6 طلبات منفصلة).
+ * بحث متدفّق — كل متجر يرسل نتائجه فوراً عبر SSE.
  */
 export async function searchCatalogByBarcodeProgressive(
   barcode: string,
   onPartial?: (options: CatalogImportOption[]) => void,
+  onEvent?: (event: CatalogSearchStreamEvent) => void,
+  signal?: AbortSignal,
 ) {
-  const digits = barcode.replace(/\D/g, "");
-  const cached = clientSearchCache.get(digits);
-  if (cached && Date.now() - cached.at < CLIENT_SEARCH_CACHE_MS) {
-    onPartial?.(cached.data.options);
-    return cached.data;
-  }
-
-  const buildResult = (options: CatalogImportOption[]) => {
-    const filtered = filterCatalogOptions(options);
-    return {
-      barcode: digits,
-      options: filtered,
-      byStore: Object.fromEntries(
-        CATALOG_STORES.map((store) => [store, filtered.filter((o) => o.store === store).length]),
-      ),
-    };
-  };
-
-  // مرحلة 1: فهرس محلي فوري (~1 ثانية)
-  try {
-    const fastData = await searchCatalogByBarcode(barcode, { fast: true });
-    const fastOpts = filterCatalogOptions(fastData.options || []);
-    if (fastOpts.length) {
-      onPartial?.(fastOpts);
-      const initial = buildResult(fastOpts);
-      clientSearchCache.set(digits, { at: Date.now(), data: initial });
-
-      // تحديث كامل في الخلفية — طلب واحد يجمع كل المتاجر مع تلميحات متقاطعة
-      void searchCatalogByBarcode(barcode)
-        .then((full) => {
-          const updated = filterCatalogOptions(full.options || []);
-          if (updated.length) {
-            const result = buildResult(updated);
-            clientSearchCache.set(digits, { at: Date.now(), data: result });
-            onPartial?.(updated);
-          }
-        })
-        .catch(() => {});
-
-      return initial;
-    }
-  } catch {
-    /* optional local index */
-  }
-
-  // مرحلة 2: بحث موحّد — وجوه يستفيد من نتائج Amazon/Nice One في نفس الطلب
-  const fullData = await searchCatalogByBarcode(barcode);
-  const result = buildResult(fullData.options || []);
-  if (result.options.length) {
-    clientSearchCache.set(digits, { at: Date.now(), data: result });
-  }
-  onPartial?.(result.options);
-  return result;
+  return searchCatalogByBarcodeStream(
+    barcode,
+    (event) => {
+      onEvent?.(event);
+      if (event.type === "results" && event.options?.length) {
+        onPartial?.(filterCatalogOptions(event.options));
+      }
+      if (event.type === "done" && event.options?.length) {
+        onPartial?.(filterCatalogOptions(event.options));
+      }
+    },
+    signal,
+  );
 }
 
 export async function fetchCatalogProduct(store: string, sourceId: string, barcode = "") {

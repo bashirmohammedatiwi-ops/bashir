@@ -88,9 +88,17 @@ import {
   sortProductsClient as sortMiswagProductsClient,
   fetchBrands as fetchMiswagBrands,
 } from './lib/miswag-api.js';
+import {
+  fetchCategoryTree as fetchOrisdiCategoryTree,
+  fetchCategoryProducts as fetchOrisdiCategoryProducts,
+  searchProducts as searchOrisdiProducts,
+  fetchProductDetail as fetchOrisdiProductDetail,
+  normalizeProductSummary as normalizeOrisdiProductSummary,
+  sortProductsClient as sortOrisdiProductsClient,
+} from './lib/orisdi-api.js';
 import { collectDescendantIds, findCategoryNode, applyProductCounts } from './lib/category-scope.js';
-import { searchBarcodeAllStores, warmupBarcodeSearch } from './lib/barcode-search.js';
-import { searchImportByBarcode, fetchImportProduct, fetchImportSummary } from './lib/catalog-import.js';
+import { searchBarcodeAllStores, searchBarcodeAllStoresStreaming, warmupBarcodeSearch } from './lib/barcode-search.js';
+import { searchImportByBarcode, searchImportByBarcodeStream, fetchImportProduct, fetchImportSummary } from './lib/catalog-import.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 10000;
@@ -113,6 +121,7 @@ let elryanBrandsCache = { brands: null, fetchedAt: 0 };
 let miraayaCategoryCache = { tree: null, leaves: null, all: null, fetchedAt: 0 };
 let facesCategoryCache = { tree: null, leaves: null, all: null, fetchedAt: 0 };
 let miswagCategoryCache = { tree: null, leaves: null, fetchedAt: 0 };
+let orisdiCategoryCache = { tree: null, leaves: null, fetchedAt: 0 };
 let facesCategoryInflight = null;
 let niceoneBrandsCache = { brands: null, fetchedAt: 0 };
 let miraayaBrandsCache = { brands: null, fetchedAt: 0 };
@@ -251,6 +260,22 @@ function sendJson(res, code, data) {
     ...corsHeaders(),
   });
   res.end(JSON.stringify(data));
+}
+
+function sendSseEvent(res, event, data) {
+  res.write(`event: ${event}\n`);
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
+}
+
+function startSseResponse(res) {
+  res.writeHead(200, {
+    ...corsHeaders(),
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache, no-transform',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  res.write(': connected\n\n');
 }
 
 function parseQuery(url) {
@@ -634,6 +659,80 @@ async function handleMiswagApi(req, res, url) {
     return sendJson(res, 404, { error: 'Unknown Miswag API route' });
   } catch (err) {
     console.error('Miswag API error:', err.message);
+    return sendJson(res, 502, { error: err.message });
+  }
+}
+
+async function getOrisdiCategoryTree() {
+  if (orisdiCategoryCache.tree && Date.now() - orisdiCategoryCache.fetchedAt < CACHE_MS) {
+    return orisdiCategoryCache;
+  }
+  const { tree, leaves } = await fetchOrisdiCategoryTree();
+  orisdiCategoryCache = { tree, leaves, fetchedAt: Date.now() };
+  return orisdiCategoryCache;
+}
+
+async function handleOrisdiApi(req, res, url) {
+  try {
+    const q = parseQuery(url);
+
+    if (url.pathname === '/api/orisdi/health') {
+      return sendJson(res, 200, { ok: true, source: 'orisdi.com', scope: 'beauty-perfumes-makeup', bilingual: true });
+    }
+
+    if (url.pathname === '/api/orisdi/categories') {
+      const { tree, leaves } = await getOrisdiCategoryTree();
+      return sendJson(res, 200, { tree, leaves, totalLeaves: leaves.length });
+    }
+
+    const catMatch = url.pathname.match(/^\/api\/orisdi\/categories\/([^/]+)\/products$/);
+    if (catMatch) {
+      const categoryId = decodeURIComponent(catMatch[1]);
+      const page = Number(q.page) || 1;
+      const limit = Math.min(Number(q.limit) || 30, 60);
+      const sort = q.sort || 'default';
+      const data = await fetchOrisdiCategoryProducts(categoryId, { page, limit });
+      let products = (data.items || []).map((p) => normalizeOrisdiProductSummary(p));
+      if (sort !== 'default') products = sortOrisdiProductsClient(products, sort);
+      return sendJson(res, 200, {
+        meta: { categoryId, path: categoryId, name: categoryId },
+        products,
+        page: data.page || page,
+        limit: data.pageSize || limit,
+        hasMore: !!data.hasMore,
+      });
+    }
+
+    if (url.pathname === '/api/orisdi/search') {
+      const query = q.q || q.search || '';
+      if (!query.trim()) return sendJson(res, 400, { error: 'q required' });
+      const page = Number(q.page) || 1;
+      const limit = Math.min(Number(q.limit) || 30, 60);
+      const data = await searchOrisdiProducts(query, page, limit);
+      let products = (data.items || []).map((p) => normalizeOrisdiProductSummary(p));
+      const sort = q.sort || 'default';
+      if (sort !== 'default') products = sortOrisdiProductsClient(products, sort);
+      return sendJson(res, 200, {
+        meta: { query, path: `بحث: ${query}` },
+        products,
+        page: data.page || page,
+        limit: data.pageSize || limit,
+        hasMore: !!data.hasMore,
+        total: data.total ?? null,
+      });
+    }
+
+    const productMatch = url.pathname.match(/^\/api\/orisdi\/products\/(\d+)$/);
+    if (productMatch) {
+      const id = productMatch[1];
+      const product = await fetchOrisdiProductDetail(id, { barcode: q.barcode || '' });
+      if (!product?.id) return sendJson(res, 404, { error: 'Product not found' });
+      return sendJson(res, 200, { product });
+    }
+
+    return sendJson(res, 404, { error: 'Unknown Orisdi API route' });
+  } catch (err) {
+    console.error('Orisdi API error:', err.message);
     return sendJson(res, 502, { error: err.message });
   }
 }
@@ -1202,6 +1301,7 @@ const APP_PREFIXES = [
   ['/faces', path.join(VIEWER_ROOT, 'faces')],
   ['/amazon', path.join(VIEWER_ROOT, 'amazon')],
   ['/miswag', path.join(VIEWER_ROOT, 'miswag')],
+  ['/orisdi', path.join(VIEWER_ROOT, 'orisdi')],
 ];
 
 function serveStatic(req, res, urlPath) {
@@ -1250,6 +1350,35 @@ const server = http.createServer(async (req, res) => {
   }
   if (url.pathname.startsWith('/api/amazon/')) {
     return handleAmazonApi(req, res, url);
+  }
+  if (url.pathname === '/api/import/search/stream') {
+    try {
+      const q = parseQuery(url);
+      const query = q.q || q.barcode || '';
+      const store = q.store || '';
+      const stores = store ? store.split(',').map((s) => s.trim()).filter(Boolean) : null;
+      let hintHits = [];
+      if (q.hints) {
+        try {
+          hintHits = JSON.parse(decodeURIComponent(q.hints));
+        } catch {
+          hintHits = [];
+        }
+      }
+      startSseResponse(res);
+      await searchImportByBarcodeStream(query, (event) => {
+        sendSseEvent(res, event.type, event);
+      }, { stores, hintHits });
+      res.end();
+    } catch (err) {
+      console.error('Import search stream error:', err.message);
+      if (!res.headersSent) {
+        return sendJson(res, 502, { error: err.message });
+      }
+      sendSseEvent(res, 'error', { error: err.message });
+      res.end();
+    }
+    return;
   }
   if (url.pathname === '/api/import/search') {
     try {
@@ -1304,6 +1433,25 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 502, { error: err.message });
     }
   }
+  if (url.pathname === '/api/search/barcode/stream') {
+    try {
+      const q = parseQuery(url);
+      const query = q.q || q.barcode || '';
+      startSseResponse(res);
+      await searchBarcodeAllStoresStreaming(query, (event) => {
+        sendSseEvent(res, event.type, event);
+      });
+      res.end();
+    } catch (err) {
+      console.error('Barcode search stream error:', err.message);
+      if (!res.headersSent) {
+        return sendJson(res, 502, { error: err.message });
+      }
+      sendSseEvent(res, 'error', { error: err.message });
+      res.end();
+    }
+    return;
+  }
   if (url.pathname === '/api/search/barcode') {
     try {
       const q = parseQuery(url);
@@ -1328,6 +1476,9 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname.startsWith('/api/miswag/')) {
     return handleMiswagApi(req, res, url);
   }
+  if (url.pathname.startsWith('/api/orisdi/')) {
+    return handleOrisdiApi(req, res, url);
+  }
   if (url.pathname.startsWith('/api/')) {
     return handleApi(req, res, url);
   }
@@ -1346,6 +1497,7 @@ server.listen(PORT, HOST, () => {
   console.log(`  Faces       → /faces/    (faces.ae — الإمارات)`);
   console.log(`  Amazon      → /amazon/   (amazon.com/sa — Cosmetics node 3760911 · AR+EN)`);
   console.log(`  Miswag      → /miswag/   (miswag.com — الجمال والعناية · AR+EN)`);
+  console.log(`  Orisdi      → /orisdi/   (orisdi.com — أورزدي · مكياج وعطور · AR+EN)`);
   if (facesCategoryCache.tree?.length) {
     console.log(`  Faces cache: ${facesCategoryCache.leaves?.length || 0} تصنيف جاهز من القرص`);
   } else {
