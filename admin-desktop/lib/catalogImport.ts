@@ -70,12 +70,24 @@ export type CatalogImportProduct = {
 
 const CATALOG_STORES = ["niceone", "elryan", "vanilla", "miraaya", "faces"] as const;
 
+function catalogApiErrorMessage(payload: unknown, fallback: string): string {
+  if (typeof payload === "string" && payload.trim()) return payload.trim();
+  if (payload && typeof payload === "object") {
+    const o = payload as Record<string, unknown>;
+    if (typeof o.message === "string" && o.message.trim()) return o.message.trim();
+    if (typeof o.reason === "string" && o.reason.trim()) return o.reason.trim();
+  }
+  return fallback;
+}
+
 async function catalogFetch<T>(path: string): Promise<T> {
   const url = `${CATALOG_HUB_URL}${path}`;
   const res = await fetch(url, { headers: { Accept: "application/json" } });
   const json = await res.json();
   if (!res.ok) {
-    throw new Error(json?.error || res.statusText || "فشل الاتصال بكتالوج المتاجر");
+    throw new Error(
+      catalogApiErrorMessage(json?.error, res.statusText || "فشل الاتصال بكتالوج المتاجر"),
+    );
   }
   return json as T;
 }

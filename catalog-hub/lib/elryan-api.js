@@ -102,7 +102,11 @@ function createElryanApi(locale = 'ar') {
     });
     const json = await res.json();
     if (!res.ok || json.error) {
-      throw new Error(json.result || json.error?.reason || `El Ryan API ${res.status}`);
+      const reason =
+        (typeof json.error === 'object' && json.error?.reason) ||
+        (typeof json.error === 'string' ? json.error : null) ||
+        (typeof json.result === 'string' ? json.result : null);
+      throw new Error(reason || `El Ryan API ${res.status}`);
     }
     return json;
   }
@@ -241,6 +245,35 @@ function createElryanApi(locale = 'ar') {
       _source: PRODUCT_DETAIL_SOURCE,
     });
     return data.hits?.hits?.[0]?._source || null;
+  }
+
+  async function fetchProductBySku(sku) {
+    const key = String(sku || '').trim();
+    if (!key) return null;
+    const data = await esSearch('product', {
+      size: 1,
+      query: {
+        bool: {
+          should: [
+            { term: { 'sku.keyword': key } },
+            { term: { sku: key } },
+          ],
+          minimum_should_match: 1,
+        },
+      },
+      _source: PRODUCT_DETAIL_SOURCE,
+    });
+    return data.hits?.hits?.[0]?._source || null;
+  }
+
+  async function fetchProductByKey(key) {
+    const k = String(key || '').trim();
+    if (!k) return null;
+    if (/^\d+$/.test(k)) {
+      const byId = await fetchProductById(k);
+      if (byId?.id) return byId;
+    }
+    return fetchProductBySku(k);
   }
 
   function normalizeBrandDoc(doc = {}, productCount = 0) {
@@ -434,6 +467,8 @@ function createElryanApi(locale = 'ar') {
     fetchCategoryProducts,
     searchProducts,
     fetchProductById,
+    fetchProductBySku,
+    fetchProductByKey,
     fetchProductsByIds,
     fetchBeautyBrands,
     fetchBrandProducts,
@@ -569,8 +604,8 @@ export async function enrichProductList(itemsAr = [], meta = {}) {
 
 export async function fetchProductByIdBilingual(id) {
   const [pAr, pEn] = await Promise.all([
-    elryanAr.fetchProductById(id),
-    elryanEn.fetchProductById(id),
+    elryanAr.fetchProductByKey(id),
+    elryanEn.fetchProductByKey(id),
   ]);
   if (!pAr?.id) return null;
   return normalizeBilingualDetail(pAr, pEn);
@@ -601,6 +636,8 @@ export const {
   fetchCategoryProducts,
   searchProducts,
   fetchProductById,
+  fetchProductBySku,
+  fetchProductByKey,
   fetchBeautyBrands,
   fetchBrandProducts,
   normalizeProductSummary,

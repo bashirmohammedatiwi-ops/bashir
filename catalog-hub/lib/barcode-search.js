@@ -17,7 +17,7 @@ import {
   enrichShades,
   normalizeProductSummary,
 } from './api.js';
-import { elryanAr, fetchBeautyCategoriesBilingual } from './elryan-api.js';
+import { elryanAr, absImage, fetchBeautyCategoriesBilingual } from './elryan-api.js';
 import {
   normalizeProductSummary as normalizeMiraayaSummary,
   fixProductImageUrl,
@@ -288,15 +288,36 @@ async function searchElryanByBarcode(barcode) {
         nameEn: n.nameEn,
         manufacturer: n.manufacturer,
         price: child.iqd_price || n.price,
-        thumb: child.image || n.thumb,
+        thumb: absImage(child.image) || n.thumb,
         barcode: String(child.barcode),
         shadeName: child.name || child.perfumes_size || '',
-        sku: child.sku,
+        sku: n.sku,
+        variantSku: child.sku,
         matchType: 'shade',
       }));
     }
   }
-  return dedupeHits(results);
+  return dedupeElryanHits(dedupeHits(results));
+}
+
+function dedupeElryanHits(list = []) {
+  const map = new Map();
+  for (const item of list) {
+    const key = `${item.id || item.sku}:${item.barcode || ''}`;
+    const prev = map.get(key);
+    if (!prev) {
+      map.set(key, item);
+      continue;
+    }
+    const prefer =
+      (item.shadeName && !prev.shadeName) ||
+      (item.thumb && !prev.thumb) ||
+      item.matchType === 'shade'
+        ? item
+        : prev;
+    map.set(key, { ...prev, ...prefer, thumb: prefer.thumb || prev.thumb });
+  }
+  return [...map.values()];
 }
 
 async function searchMiraayaByBarcode(barcode) {

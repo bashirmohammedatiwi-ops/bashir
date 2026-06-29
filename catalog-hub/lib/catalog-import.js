@@ -92,7 +92,7 @@ export async function searchImportByBarcode(rawBarcode, { fast = false, stores =
   const options = (data.results || []).map((r) => ({
     store: r.store,
     storeLabel: r.storeLabel,
-    sourceId: r.sku || r.id,
+    sourceId: r.id || r.sku,
     sku: r.sku || r.id,
     nameAr: r.name,
     nameEn: r.nameEn,

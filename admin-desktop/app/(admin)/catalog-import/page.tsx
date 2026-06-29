@@ -40,6 +40,18 @@ import { buildProductPayload } from "@/lib/productPayload";
 import { mutations, queries } from "@/lib/queries";
 import "./catalog-import.css";
 
+function errorMessage(err: unknown, fallback: string) {
+  const e = err as { message?: string; response?: { data?: { error?: unknown; message?: unknown } } };
+  const apiErr = e?.response?.data?.error;
+  if (typeof apiErr === "string" && apiErr.trim() && apiErr !== "[object Object]") return apiErr.trim();
+  if (apiErr && typeof apiErr === "object" && typeof (apiErr as { message?: string }).message === "string") {
+    return (apiErr as { message: string }).message;
+  }
+  if (typeof e?.response?.data?.message === "string") return e.response.data.message;
+  if (typeof e?.message === "string" && e.message.trim() && e.message !== "[object Object]") return e.message;
+  return fallback;
+}
+
 function matchBrandId(brands: any[] = [], brandAr = "", brandEn = "") {
   const keys = [brandAr, brandEn].map((s) => String(s || "").trim().toLowerCase()).filter(Boolean);
   if (!keys.length) return undefined;
@@ -221,7 +233,7 @@ export default function CatalogImportPage() {
         setStep(1);
       }
     } catch (err: any) {
-      message.error(err?.message || "فشل البحث");
+      message.error(errorMessage(err, "فشل البحث"));
     } finally {
       setSearching(false);
     }
@@ -264,7 +276,7 @@ export default function CatalogImportPage() {
         });
         setStep(2);
       } catch (err: any) {
-        message.error(err?.message || "فشل جلب تفاصيل المنتج");
+        message.error(errorMessage(err, "فشل جلب تفاصيل المنتج"));
       } finally {
         setLoadingPreview(false);
       }
@@ -390,13 +402,8 @@ export default function CatalogImportPage() {
       setPreview(null);
       form.resetFields();
     },
-    onError: (err: any) => {
-      const msg =
-        err?.response?.data?.error?.message ??
-        err?.response?.data?.message ??
-        err?.message ??
-        "فشل الاستيراد";
-      message.error({ content: msg, key: "import" });
+    onError: (err: unknown) => {
+      message.error({ content: errorMessage(err, "فشل الاستيراد"), key: "import" });
     },
   });
 
