@@ -61,10 +61,11 @@ ensure_api_ready() {
 echo "==> Alhayaa full update"
 echo "    Domain: ${DOMAIN:-localhost}"
 
-render_nginx
 sync_repo
 
 chmod +x scripts/*.sh
+
+render_nginx
 
 echo "==> Rebuild API + Catalog Hub..."
 $COMPOSE up -d --build api catalog-hub postgres redis
@@ -90,6 +91,7 @@ echo "==> Build admin web panel (atomic)..."
 chmod -R a+rX admin-static
 
 echo "==> Reload Nginx..."
+render_nginx
 $COMPOSE up -d --force-recreate nginx
 
 echo "==> Verify..."

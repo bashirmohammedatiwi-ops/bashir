@@ -46,11 +46,17 @@ check_json() {
   local name="$1"
   local url="$2"
   local expect="$3"
+  local body code
 
-  if curl -fsS --max-time 15 "$url" 2>/dev/null | grep -q "$expect"; then
+  body="$(curl -sS --max-time 15 "$url" 2>/dev/null || true)"
+  if echo "$body" | grep -q "$expect"; then
     echo "OK  $name"
   else
-    echo "FAIL $name ($url)"
+    code="$(curl -sS --max-time 15 -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")"
+    echo "FAIL $name ($url) HTTP $code"
+    if [[ -n "$body" ]]; then
+      echo "      $(echo "$body" | tr '\n' ' ' | head -c 160)"
+    fi
     FAILED=1
   fi
 }
@@ -85,7 +91,14 @@ check_http "Admin products" "$ADMIN_BASE/products/"
 
 if [[ -f admin-static/catalog-import/index.html ]]; then
   check_http "Admin catalog import" "$ADMIN_BASE/catalog-import/"
-  check_json "Catalog hub API" "$ADMIN_BASE/catalog-hub/api/health" '"ok"'
+  check_json "Catalog hub API" "$ADMIN_BASE/catalog-hub/api/health" '"ok":true'
+fi
+
+if $COMPOSE exec -T catalog-hub wget -qO- http://127.0.0.1:10000/api/health 2>/dev/null | grep -q '"ok":true'; then
+  echo "OK  Catalog hub container"
+else
+  echo "FAIL Catalog hub container (direct)"
+  FAILED=1
 fi
 
 if $COMPOSE exec -T api wget -qO- http://127.0.0.1:3000/api/v1/health/ready 2>/dev/null | grep -q '"ready":true'; then
