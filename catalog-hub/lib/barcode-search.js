@@ -735,7 +735,7 @@ const SEARCHERS = [
   { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 5_000 },
   { store: 'orisdi', fn: searchOrisdiByBarcode, timeoutMs: 12_000 },
   { store: 'beautyway', fn: searchBeautywayByBarcode, timeoutMs: 14_000 },
-  { store: 'miswag', fn: searchMiswagByBarcode, timeoutMs: 15_000 },
+  { store: 'miswag', fn: searchMiswagByBarcode, timeoutMs: 28_000 },
   { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 10_000 },
   { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 30_000 },
 ];

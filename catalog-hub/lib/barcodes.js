@@ -649,16 +649,111 @@ function parseWebSearchResultMeta(title = '', snippet = '', barcode = '') {
   }
 
   t = t
+    .replace(/\*/g, ' ')
     .replace(/\b(Unisex|Men'?s|Women'?s|EDP|EDT|Spray|Eau de Parfum|Fragrances?|Premium|Authentic)\b/gi, ' ')
     .replace(/\b\d+(?:\.\d+)?\s*(?:ml|oz|g|kg|lb)\b/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
+  let shade = '';
+  const comma = t.lastIndexOf(',');
+  if (comma > 0 && comma >= t.length - 28) {
+    shade = t.slice(comma + 1).trim();
+    t = t.slice(0, comma).trim();
+  }
+
   const words = t.split(/\s+/).filter((w) => w.length >= 3);
-  const productTitle = words.slice(0, 5).join(' ') || t;
+  const productTitle = words.slice(0, 6).join(' ') || t;
 
   if (!brand && !productTitle) return null;
-  return { ean: barcode, brand, title: productTitle, source: 'web-search' };
+  return normalizeBarcodeMeta({ ean: barcode, brand, title: productTitle, shade, source: 'web-search' });
+}
+
+/** توحيد ماركة/عنوان metadata — Wet n Wild و SHEGLAM وغيرها */
+export function normalizeBarcodeMeta(meta = {}) {
+  if (!meta) return meta;
+  let brand = String(meta.brand || '').trim();
+  let title = String(meta.title || '').trim();
+  let shade = String(meta.shade || '').trim();
+
+  title = title.replace(/\*/g, ' ').replace(/\s+/g, ' ').trim();
+
+  if (/^wet$/i.test(brand) && /^wild\b/i.test(title)) {
+    brand = 'Wet n Wild';
+    title = title.replace(/^wild\s+/i, '').trim();
+  }
+  if (/^wet\s*'?n'?\s*wild$/i.test(brand)) brand = 'Wet n Wild';
+  if (/^sheglam$/i.test(brand)) brand = 'SHEGLAM';
+
+  if (!shade && /,/.test(title)) {
+    const comma = title.lastIndexOf(',');
+    if (comma > 0) {
+      shade = title.slice(comma + 1).trim();
+      title = title.slice(0, comma).trim();
+    }
+  }
+
+  return { ...meta, brand, title, shade };
+}
+
+async function lookupBarcodeFromGoUpc(digits) {
+  const key = `go_upc|${digits}`;
+  const cached = recall(key);
+  if (cached !== null) return cached || null;
+
+  try {
+    const res = await fetch(`https://go-upc.com/search?q=${encodeURIComponent(digits)}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; catalog-hub/1.0)', Accept: 'text/html' },
+    });
+    if (!res.ok) {
+      remember(key, '');
+      saveDiskCache();
+      return null;
+    }
+    const html = await res.text();
+    const nameMatch = html.match(/<h1 class="product-name">([\s\S]*?)<\/h1>/i);
+    if (!nameMatch) {
+      remember(key, '');
+      saveDiskCache();
+      return null;
+    }
+
+    const fullTitle = decodeHtmlEntities(nameMatch[1].replace(/<[^>]+>/g, '').trim());
+    let brand = '';
+    let title = fullTitle;
+    let shade = '';
+
+    const wetMatch = fullTitle.match(/^Wet\s*'?n'?\s*Wild\s+(.+)$/i);
+    const sheglamMatch = fullTitle.match(/^SHEGLAM\s+(.+)$/i);
+    if (wetMatch) {
+      brand = 'Wet n Wild';
+      title = wetMatch[1].trim();
+    } else if (sheglamMatch) {
+      brand = 'SHEGLAM';
+      title = sheglamMatch[1].trim();
+    }
+
+    const comma = title.lastIndexOf(',');
+    if (comma > 0) {
+      shade = title.slice(comma + 1).trim();
+      title = title.slice(0, comma).trim();
+    }
+
+    const result = normalizeBarcodeMeta({
+      ean: digits,
+      brand,
+      title,
+      shade,
+      source: 'go-upc',
+    });
+    remember(key, result);
+    saveDiskCache();
+    return result.brand || result.title ? result : null;
+  } catch {
+    remember(key, '');
+    saveDiskCache();
+    return null;
+  }
 }
 
 async function fetchDuckDuckGoHtml(query) {
@@ -729,6 +824,36 @@ async function lookupBarcodeFromShopifyWebHints(digits, ddgHtml = '') {
   return null;
 }
 
+function buildWebSearchQueries(digits) {
+  const queries = [digits, `${digits} barcode`, `${digits} UPC`];
+  if (/^697/.test(digits)) queries.push(`${digits} SHEGLAM`, `SHEGLAM ${digits}`);
+  if (/^077802/.test(digits)) queries.push(`${digits} "Wet n Wild"`);
+  return [...new Set(queries)];
+}
+
+async function parseBestWebSearchMeta(digits, html) {
+  const shopifyHit = await lookupBarcodeFromShopifyWebHints(digits, html);
+  if (shopifyHit?.title) return normalizeBarcodeMeta(shopifyHit);
+
+  let best = null;
+  let bestScore = 0;
+  for (const row of parseDuckDuckGoResults(html)) {
+    const meta = parseWebSearchResultMeta(row.title, row.snippet, digits);
+    if (!meta?.brand && !meta?.title) continue;
+    let score = 0;
+    if (row.title.includes(digits)) score += 4;
+    if (meta.brand) score += 3;
+    if (meta.title) score += 2;
+    if (meta.shade) score += 2;
+    if (/perfume|fragrance|cosmetic|makeup|skincare|gissah|mavro|sheglam|concealer|lip gloss|foundation/i.test(`${row.title} ${row.snippet}`)) score += 1;
+    if (score > bestScore) {
+      bestScore = score;
+      best = meta;
+    }
+  }
+  return best;
+}
+
 /** بحث DuckDuckGo — يعمل لأي باركOD حتى لو غير موجود في UPC/OBF */
 export async function lookupBarcodeFromWebSearch(barcode) {
   const digits = String(barcode || '').replace(/\D/g, '');
@@ -739,27 +864,13 @@ export async function lookupBarcodeFromWebSearch(barcode) {
   if (cached !== null) return cached || null;
 
   try {
-    const html = await fetchDuckDuckGoHtml(digits);
-    const shopifyHit = await lookupBarcodeFromShopifyWebHints(digits, html);
-    if (shopifyHit?.title) {
-      remember(key, shopifyHit);
-      saveDiskCache();
-      return shopifyHit;
-    }
-
     let best = null;
-    let bestScore = 0;
-    for (const row of parseDuckDuckGoResults(html)) {
-      const meta = parseWebSearchResultMeta(row.title, row.snippet, digits);
-      if (!meta?.brand && !meta?.title) continue;
-      let score = 0;
-      if (row.title.includes(digits)) score += 4;
-      if (meta.brand) score += 3;
-      if (meta.title) score += 2;
-      if (/perfume|fragrance|cosmetic|makeup|skincare|gissah|mavro/i.test(`${row.title} ${row.snippet}`)) score += 1;
-      if (score > bestScore) {
-        bestScore = score;
-        best = meta;
+    for (const query of buildWebSearchQueries(digits)) {
+      const html = await fetchDuckDuckGoHtml(query);
+      const hit = await parseBestWebSearchMeta(digits, html);
+      if (hit?.brand || hit?.title) {
+        best = hit;
+        if (query === digits || hit.shade) break;
       }
     }
 
@@ -811,7 +922,7 @@ export function parseBarcodeMetaFields(meta = {}) {
   return { brand, title, shade, productLine, productWords };
 }
 
-function productLineConflicts(hay = '', productLine = '') {
+export function productLineConflicts(hay = '', productLine = '') {
   const line = String(productLine || '').toLowerCase();
   const h = String(hay || '').toLowerCase();
   const pairs = [
@@ -820,6 +931,9 @@ function productLineConflicts(hay = '', productLine = '') {
     ['blush', 'highlight'],
     ['blush', 'contour'],
     ['lipstick', 'foundation'],
+    ['corrector', 'foundation'],
+    ['concealer', 'foundation'],
+    ['color corrector', 'foundation'],
     ['mavro', 'valley'],
     ['mavro', 'tango'],
     ['mavro', 'calabria'],
@@ -893,20 +1007,34 @@ export async function lookupBarcodeProductMeta(barcode) {
   ]);
 
   if (shopify?.title || shopify?.brand) {
-    remember(key, shopify);
+    const result = normalizeBarcodeMeta(shopify);
+    remember(key, result);
     saveDiskCache();
-    return shopify;
+    return result;
   }
   if (upc?.brand || upc?.title) {
-    const result = { ean: digits, brand: upc.brand || '', title: upc.title || '', source: upc.source || 'upc' };
+    const result = normalizeBarcodeMeta({
+      ean: digits,
+      brand: upc.brand || '',
+      title: upc.title || '',
+      source: upc.source || 'upc',
+    });
     remember(key, result);
     saveDiskCache();
     return result;
   }
   if (obf?.title || obf?.brand) {
-    remember(key, obf);
+    const result = normalizeBarcodeMeta(obf);
+    remember(key, result);
     saveDiskCache();
-    return obf;
+    return result;
+  }
+
+  const goUpc = await lookupBarcodeFromGoUpc(digits).catch(() => null);
+  if (goUpc?.brand || goUpc?.title) {
+    remember(key, goUpc);
+    saveDiskCache();
+    return goUpc;
   }
 
   const web = await lookupBarcodeFromWebSearch(digits).catch(() => null);

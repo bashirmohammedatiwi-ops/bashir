@@ -9,6 +9,7 @@ import {
   buildMetaHintQueries,
   scoreStoreHintMatch,
   parseBarcodeMetaFields,
+  productLineConflicts,
 } from './barcodes.js';
 
 const API_BASE = 'https://ganesh-lama.miswag.com';
@@ -603,7 +604,53 @@ function rankMiswagHintMatch(item, meta = {}) {
   for (const hint of extractShadeHints(meta.title, meta.shade)) {
     if (hay.includes(hint.toLowerCase())) score += 10;
   }
+
+  for (const word of parsed.productWords) {
+    if (word.length >= 4 && hay.includes(word.toLowerCase())) score += 6;
+  }
+  if (productLineConflicts(hay, parsed.productLine)) score -= 40;
+
   return score;
+}
+
+function pickBestMiswagHintResults(scored, meta, { limit = 12 } = {}) {
+  if (!scored.length) return [];
+
+  const parsed = parseBarcodeMetaFields(meta);
+  const top = scored[0];
+  const second = scored[1];
+  const margin = second ? top.score - second.score : top.score;
+
+  if (parsed.shade && top.score >= 30 && margin >= 10) {
+    return [{
+      ...top.mapped,
+      matchType: 'hint',
+      matchScore: top.score,
+      source: meta.source || 'meta-hint',
+    }];
+  }
+
+  if (top.score >= 50 && margin >= 18) {
+    return [{
+      ...top.mapped,
+      matchType: 'hint',
+      matchScore: top.score,
+      source: meta.source || 'meta-hint',
+    }];
+  }
+
+  const results = [];
+  const seen = new Set();
+  for (const { mapped, score } of scored) {
+    pushUnique(results, seen, {
+      ...mapped,
+      matchType: 'hint',
+      matchScore: score,
+      source: meta.source || 'meta-hint',
+    });
+    if (results.length >= limit) break;
+  }
+  return results;
 }
 
 async function searchMiswagByMetaHints(meta, digits, { limit = 12 } = {}) {
@@ -634,7 +681,7 @@ async function searchMiswagByMetaHints(meta, digits, { limit = 12 } = {}) {
   const parsed = parseBarcodeMetaFields(meta);
 
   if (parsed.shade && scored.length) {
-    for (const { mapped, score } of scored.slice(0, 6)) {
+    for (const { mapped, score } of scored.slice(0, 8)) {
       const resolved = await resolveMiswagShadeVariationHit(
         { ...mapped, matchType: 'hint', matchScore: score, source: meta.source || 'meta-hint' },
         meta,
@@ -646,18 +693,7 @@ async function searchMiswagByMetaHints(meta, digits, { limit = 12 } = {}) {
     }
   }
 
-  const results = [];
-  const seen = new Set();
-  for (const { mapped, score } of scored) {
-    pushUnique(results, seen, {
-      ...mapped,
-      matchType: 'hint',
-      matchScore: score,
-      source: meta.source || 'meta-hint',
-    });
-    if (results.length >= limit) break;
-  }
-  return results;
+  return pickBestMiswagHintResults(scored, meta, { limit });
 }
 
 export async function searchProductsByBarcode(barcode) {
@@ -673,8 +709,6 @@ export async function searchProductsByBarcode(barcode) {
     try {
       const detail = await fetchProductDetail(manual.productId);
       if (detail?.id) {
-        const meta = await lookupBarcodeProductMeta(digits).catch(() => null);
-        const parsed = parseBarcodeMetaFields(meta || {});
         let entry = {
           ...normalizeProductSummary(detail),
           barcode: digits,
@@ -682,9 +716,16 @@ export async function searchProductsByBarcode(barcode) {
           source: 'barcode-lookup',
         };
 
-        if (parsed.shade) {
-          entry = await resolveMiswagShadeVariationHit(entry, meta, digits);
-          if (entry.matchType !== 'shade') throw new Error('manual shade mismatch');
+        if (manual.shadeName) {
+          entry.shadeName = manual.shadeName;
+          entry.matchType = manual.matchType || 'shade';
+        }
+
+        const meta = await lookupBarcodeProductMeta(digits).catch(() => null);
+        const parsed = parseBarcodeMetaFields(meta || manual);
+
+        if (parsed.shade || manual.shadeName) {
+          entry = await resolveMiswagShadeVariationHit(entry, { ...meta, shade: manual.shadeName || parsed.shade }, digits);
         } else {
           const score = meta ? scoreStoreHintMatch(entry, meta) : 20;
           if (meta && score < 10) throw new Error('manual score too low');
