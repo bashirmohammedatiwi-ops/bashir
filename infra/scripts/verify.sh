@@ -14,23 +14,40 @@ set -a
 source .env
 set +a
 
-BASE="http://${DOMAIN:-localhost}"
 COMPOSE="docker compose -f docker-compose.prod.yml"
 FAILED=0
 
-check() {
+admin_base() {
+  if curl -fsS --max-time 3 -o /dev/null "http://127.0.0.1/"; then
+    echo "http://127.0.0.1"
+  else
+    echo "http://${DOMAIN:-localhost}"
+  fi
+}
+
+ADMIN_BASE="$(admin_base)"
+API_BASE="http://${DOMAIN:-localhost}"
+
+check_http() {
   local name="$1"
   local url="$2"
-  local expect="${3:-}"
+  local code
 
-  if [[ -n "$expect" ]]; then
-    if curl -fsS --max-time 15 "$url" | grep -q "$expect"; then
-      echo "OK  $name"
-    else
-      echo "FAIL $name ($url)"
-      FAILED=1
-    fi
-  elif curl -fsS --max-time 15 -o /dev/null "$url"; then
+  code="$(curl -sS --max-time 15 -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")"
+  if [[ "$code" == "200" ]]; then
+    echo "OK  $name"
+  else
+    echo "FAIL $name ($url) HTTP $code"
+    FAILED=1
+  fi
+}
+
+check_json() {
+  local name="$1"
+  local url="$2"
+  local expect="$3"
+
+  if curl -fsS --max-time 15 "$url" 2>/dev/null | grep -q "$expect"; then
     echo "OK  $name"
   else
     echo "FAIL $name ($url)"
@@ -39,6 +56,8 @@ check() {
 }
 
 echo "==> Verifying Alhayaa stack..."
+echo "    Admin checks via: $ADMIN_BASE"
+echo "    API checks via:   $API_BASE"
 
 if [[ ! -f admin-static/index.html ]]; then
   echo "FAIL admin-static/index.html missing"
@@ -58,14 +77,14 @@ if [[ -f admin-static/catalog-import/index.html ]]; then
   echo "OK  admin-static/catalog-import/index.html"
 fi
 
-check "API health" "$BASE/api/v1/health" '"status":"ok"'
-check "API ready" "$BASE/api/v1/health/ready" '"ready":true'
-check "Admin home" "$BASE/"
-check "Admin login" "$BASE/login/"
-check "Admin products" "$BASE/products/"
+check_json "API health" "$API_BASE/api/v1/health" '"status":"ok"'
+check_json "API ready" "$API_BASE/api/v1/health/ready" '"ready":true'
+check_http "Admin home" "$ADMIN_BASE/"
+check_http "Admin login" "$ADMIN_BASE/login/"
+check_http "Admin products" "$ADMIN_BASE/products/"
 
 if [[ -f admin-static/catalog-import/index.html ]]; then
-  check "Admin catalog import" "$BASE/catalog-import/"
+  check_http "Admin catalog import" "$ADMIN_BASE/catalog-import/"
 fi
 
 if $COMPOSE exec -T api wget -qO- http://127.0.0.1:3000/api/v1/health/ready 2>/dev/null | grep -q '"ready":true'; then
@@ -83,5 +102,5 @@ fi
 
 echo ""
 echo "All checks passed."
-echo "  Admin: $BASE/"
-echo "  API:   $BASE/api/v1/health"
+echo "  Admin: http://${DOMAIN:-localhost}/"
+echo "  API:   $API_BASE/api/v1/health"
