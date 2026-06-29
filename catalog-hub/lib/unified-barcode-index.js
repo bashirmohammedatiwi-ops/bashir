@@ -268,8 +268,9 @@ export function rememberBarcodeSearchHits(hits = []) {
   let changed = false;
   for (const h of hits) {
     if (!h?.barcode || !h?.store || !h?.id) continue;
-    if (h.matchType === 'hint' && Number(h.matchScore || 0) < 12) continue;
-    if (h.matchType === 'hint' && h.source === 'barcode-lookup') continue;
+    if (h.matchType === 'hint') continue;
+    if (h.matchType !== 'shade' && h.matchType !== 'product') continue;
+    if (Number(h.matchScore || 0) < 20) continue;
     upsertBarcodeLookup(h.barcode, {
       store: h.store,
       productId: String(h.id),

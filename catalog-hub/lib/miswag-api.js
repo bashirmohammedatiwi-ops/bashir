@@ -8,6 +8,7 @@ import {
   lookupBarcodeProductMeta,
   buildMetaHintQueries,
   scoreStoreHintMatch,
+  parseBarcodeMetaFields,
 } from './barcodes.js';
 
 const API_BASE = 'https://ganesh-lama.miswag.com';
@@ -529,17 +530,78 @@ function extractShadeHints(title = '', shade = '') {
   return [...new Set([...parts, ...words.slice(-3)])].filter(Boolean);
 }
 
+function shadeNamesMatch(a = '', b = '') {
+  const na = String(a || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, ' ').trim();
+  const nb = String(b || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, ' ').trim();
+  if (!na || !nb) return false;
+  return na === nb || na.includes(nb) || nb.includes(na);
+}
+
+async function resolveMiswagShadeVariationHit(hit, meta, digits) {
+  const parsed = parseBarcodeMetaFields(meta);
+  if (!parsed.shade || !hit?.id) return hit;
+
+  const tryResolve = async (productId) => {
+    const detail = await fetchProductDetail(productId);
+    const shades = detail?.shades || [];
+    if (!shades.length) return null;
+
+    const direct = shades.find((s) => shadeNamesMatch(s.name, parsed.shade));
+    if (direct) {
+      return {
+        ...hit,
+        id: String(direct.optionId || direct.sku || productId),
+        shadeName: direct.name,
+        barcode: digits,
+        matchType: 'shade',
+        shadeCount: 1,
+        source: hit.source || meta.source || 'shade-resolve',
+      };
+    }
+
+    const parentId = String(detail.sku || detail.id || productId);
+    for (const s of shades) {
+      const sid = String(s.optionId || s.sku || '');
+      if (sid && sid === String(hit.id) && shadeNamesMatch(s.name, parsed.shade)) {
+        return {
+          ...hit,
+          id: sid,
+          shadeName: s.name,
+          barcode: digits,
+          matchType: 'shade',
+          shadeCount: 1,
+          source: hit.source || meta.source || 'shade-resolve',
+        };
+      }
+    }
+
+    return null;
+  };
+
+  try {
+    const resolved = await tryResolve(hit.id);
+    if (resolved) return resolved;
+
+    const parentGuess = String(hit.sku || hit.id);
+    if (parentGuess !== String(hit.id)) {
+      const alt = await tryResolve(parentGuess);
+      if (alt) return alt;
+    }
+  } catch { /* keep base hit */ }
+
+  return hit;
+}
+
 function rankMiswagHintMatch(item, meta = {}) {
   let score = 0;
-  const hay = `${item.name} ${item.nameEn} ${item.manufacturer}`.toLowerCase();
-  const brand = String(meta.brand || '').toLowerCase();
-  if (brand && (hay.includes(brand) || brand.includes(item.manufacturer?.toLowerCase() || ''))) score += 8;
+  const parsed = parseBarcodeMetaFields(meta);
+  const hay = `${item.name} ${item.nameEn} ${item.manufacturer} ${item.shadeName || ''}`.toLowerCase();
 
-  const titleWords = String(meta.title || '').toLowerCase().split(/\s+/).filter((w) => w.length >= 4);
-  score += titleWords.filter((w) => hay.includes(w)).length * 2;
+  if (parsed.shade && hay.includes(parsed.shade.toLowerCase())) score += 25;
+  if (parsed.shade && shadeNamesMatch(item.shadeName, parsed.shade)) score += 35;
 
-  for (const shade of extractShadeHints(meta.title, meta.shade)) {
-    if (hay.includes(shade.toLowerCase())) score += 12;
+  for (const hint of extractShadeHints(meta.title, meta.shade)) {
+    if (hay.includes(hint.toLowerCase())) score += 10;
   }
   return score;
 }
@@ -548,9 +610,8 @@ async function searchMiswagByMetaHints(meta, digits, { limit = 12 } = {}) {
   if (!meta?.brand && !meta?.title) return [];
 
   const queries = buildMetaHintQueries(meta);
-  const results = [];
-  const seen = new Set();
   const scored = [];
+  const seenIds = new Set();
 
   for (const q of queries) {
     try {
@@ -558,14 +619,35 @@ async function searchMiswagByMetaHints(meta, digits, { limit = 12 } = {}) {
       for (const hit of ts.hits || []) {
         const doc = hit.document || hit;
         const mapped = mapTypesenseHit(doc, digits);
+        const idKey = String(mapped.id || '');
+        if (!idKey || seenIds.has(idKey)) continue;
+        seenIds.add(idKey);
+
         const score = scoreStoreHintMatch(mapped, meta) + rankMiswagHintMatch(mapped, meta);
-        if (score < 8) continue;
+        if (score < 10) continue;
         scored.push({ mapped, score });
       }
     } catch { /* next query */ }
   }
 
   scored.sort((a, b) => b.score - a.score);
+  const parsed = parseBarcodeMetaFields(meta);
+
+  if (parsed.shade && scored.length) {
+    for (const { mapped, score } of scored.slice(0, 6)) {
+      const resolved = await resolveMiswagShadeVariationHit(
+        { ...mapped, matchType: 'hint', matchScore: score, source: meta.source || 'meta-hint' },
+        meta,
+        digits,
+      );
+      if (resolved.matchType === 'shade') {
+        return [resolved];
+      }
+    }
+  }
+
+  const results = [];
+  const seen = new Set();
   for (const { mapped, score } of scored) {
     pushUnique(results, seen, {
       ...mapped,
@@ -585,26 +667,33 @@ export async function searchProductsByBarcode(barcode) {
   const results = [];
   const seen = new Set();
 
-  // (0) فهرس يدوي محلي — مع التحقق من metadata
+  // (0) فهرس يدوي محلي — مع التحقق + حل الدرجة
   const manual = findBarcodeLookup(digits);
   if (manual?.productId && (manual.store === 'miswag' || !manual.store)) {
     try {
       const detail = await fetchProductDetail(manual.productId);
       if (detail?.id) {
-        const summary = normalizeProductSummary(detail);
         const meta = await lookupBarcodeProductMeta(digits).catch(() => null);
-        const score = meta ? scoreStoreHintMatch(summary, meta) : 20;
-        if (!meta || score >= 8) {
-          pushUnique(results, seen, {
-            ...summary,
-            barcode: digits,
-            matchType: manual.matchType || 'lookup',
-            source: 'barcode-lookup',
-          });
-          if (results.length) return results;
+        const parsed = parseBarcodeMetaFields(meta || {});
+        let entry = {
+          ...normalizeProductSummary(detail),
+          barcode: digits,
+          matchType: manual.matchType || 'lookup',
+          source: 'barcode-lookup',
+        };
+
+        if (parsed.shade) {
+          entry = await resolveMiswagShadeVariationHit(entry, meta, digits);
+          if (entry.matchType !== 'shade') throw new Error('manual shade mismatch');
+        } else {
+          const score = meta ? scoreStoreHintMatch(entry, meta) : 20;
+          if (meta && score < 10) throw new Error('manual score too low');
         }
+
+        pushUnique(results, seen, entry);
+        if (results.length) return results;
       }
-    } catch { /* continue */ }
+    } catch { /* continue to live search */ }
   }
 
   // (1) Typesense — باركود كنص (قد يظهر في keywords/description/variations)

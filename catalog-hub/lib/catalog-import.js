@@ -262,38 +262,41 @@ async function fetchVanillaImport(id, hubOrigin) {
 }
 
 async function fetchAmazonImport(id, hubOrigin, barcodeHint = '', { light = false } = {}) {
-  let product = null;
-  if (barcodeHint) {
-    const results = await searchAmazonByBarcode(barcodeHint);
-    const wantId = String(id || '').trim().toUpperCase();
-    product =
-      results.find((p) => String(p.asin || p.id).toUpperCase() === wantId && !isAmazonBundleListing(p.nameEn, p.nameAr)) ||
-      results.find((p) => !isAmazonBundleListing(p.nameEn, p.nameAr)) ||
-      results[0];
-  }
+  const asin = String(id || '').trim().toUpperCase();
+  if (!asin) return null;
 
-  if (!product?.id) {
-    product = await fetchAmazonByAsin(id);
-  }
+  const product = await fetchAmazonByAsin(asin);
   if (!product?.id || isAmazonBundleListing(product.nameEn, product.nameAr)) return null;
 
+  const hint = String(barcodeHint || '').replace(/\D/g, '');
+  if (hint) product.barcode = hint;
+
   if (!light && product.shades?.length) {
-    product.shades = await enrichAmazonShadeBarcodes(product, { light: false });
+    product.shades = await enrichAmazonShadeBarcodes(product, {
+      light: false,
+      barcodeHint: hint,
+      maxLookups: 5,
+      timeoutMs: 18_000,
+    });
     product.shadeCount = product.shades.length;
-    if (!product.barcode && product.shades.length === 1) {
-      product.barcode = product.shades[0]?.barcode || '';
-    }
+  }
+
+  if (!product.barcode && product.shades?.length === 1) {
+    product.barcode = product.shades[0]?.barcode || hint || '';
   }
 
   return buildImportPayload('amazon', product, { hubOrigin });
 }
 
-async function fetchMiswagImport(id, hubOrigin, { light = false } = {}) {
+async function fetchMiswagImport(id, hubOrigin, { light = false, barcode = '' } = {}) {
   const detail = await fetchMiswagDetail(id);
   if (!detail?.id) return null;
   const normalized = normalizeMiswagDetail(detail);
   if (!light && normalized.shades?.length) {
-    normalized.shades = await enrichShadesForImport(normalized, { maxLookups: Math.max(12, normalized.shades.length) });
+    normalized.shades = await enrichShadesForImport(normalized, {
+      maxLookups: Math.min(6, normalized.shades.length),
+      barcodeHint: String(barcode || '').replace(/\D/g, ''),
+    });
     normalized.shadeCount = normalized.shades.length;
     if (!normalized.barcode && normalized.shades.length === 1) {
       normalized.barcode = normalized.shades[0]?.barcode || '';
@@ -340,7 +343,7 @@ export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barc
       payload = await fetchAmazonImport(id, hubOrigin, barcode, { light });
       break;
     case 'miswag':
-      payload = await fetchMiswagImport(id, hubOrigin, { light });
+      payload = await fetchMiswagImport(id, hubOrigin, { light, barcode });
       break;
     case 'orisdi':
       payload = await fetchOrisdiImport(id, hubOrigin, barcode);

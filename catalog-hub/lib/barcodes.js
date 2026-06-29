@@ -576,11 +576,23 @@ async function metaFromShopifyProduct(product, digits, host, sourceTag) {
     const val = String(v.sku || v.barcode || '').replace(/\D/g, '');
     if (val !== digits) continue;
     const variantTitle = String(v.title || '').trim();
+    let title = String(product.title || '').trim();
+    let shade = variantTitle && variantTitle !== 'Default Title' ? variantTitle : '';
+    if (!shade && /[-–—]/.test(title)) {
+      const parts = title.split(/[-–—]/);
+      const tail = parts.pop()?.trim() || '';
+      const head = parts.join('-').trim();
+      if (tail && head && tail.split(/\s+/).length <= 4) {
+        shade = tail;
+        title = head;
+      }
+    }
     return {
       ean: digits,
       brand: String(product.vendor || '').trim(),
-      title: String(product.title || '').trim(),
-      shade: variantTitle && variantTitle !== 'Default Title' ? variantTitle : '',
+      title,
+      shade,
+      description: String(product.body_html || '').replace(/<[^>]+>/g, ' ').trim().slice(0, 500),
       source: `${sourceTag}:${host}`,
     };
   }
@@ -763,41 +775,102 @@ export async function lookupBarcodeFromWebSearch(barcode) {
   return null;
 }
 
-/** استعلامات نصية مشتقة من metadata الباركود — للبحث في المتاجر */
-export function buildMetaHintQueries(meta = {}) {
-  const brand = String(meta.brand || '').trim();
+/** استخراج ماركة + خط المنتج + الدرجة من metadata الباركود */
+export function parseBarcodeMetaFields(meta = {}) {
+  let brand = String(meta.brand || '').trim();
   let title = String(meta.title || '').trim();
+  let shade = String(meta.shade || '').trim();
+
+  if (!shade && /[-–—]/.test(title)) {
+    const parts = title.split(/[-–—]/).map((p) => p.trim()).filter(Boolean);
+    while (parts.length > 1) {
+      const tail = parts[parts.length - 1];
+      const isSize = /^\d[\d.]*\s*(oz|ml|g|kg|lb)?$/i.test(tail) || /^(oz|ml|g|kg|lb)$/i.test(tail);
+      if (isSize) {
+        parts.pop();
+        continue;
+      }
+      shade = tail;
+      title = parts.join(' - ').trim();
+      break;
+    }
+  }
+
   if (brand && title.toLowerCase().startsWith(brand.toLowerCase())) {
     title = title.slice(brand.length).trim();
   }
-  title = title.replace(/\b(edp|edt|spray|eau de parfum|fragrance)\b/gi, ' ').replace(/\s+/g, ' ').trim();
-  const queries = new Set();
-  if (brand && title) queries.add(`${brand} ${title}`);
-  if (title) queries.add(title);
-  if (brand && title) {
-    const words = title.split(/\s+/).filter((w) => w.length >= 3);
-    if (words.length) queries.add(`${brand} ${words[0]}`);
-    if (words.length >= 2) queries.add(words.slice(0, 2).join(' '));
-    if (words.length) queries.add(words[0]);
+
+  title = title
+    .replace(/\b(edp|edt|spray|eau de parfum|fragrance|sheglam)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const productLine = title;
+  const productWords = productLine.toLowerCase().split(/\s+/).filter((w) => w.length >= 3);
+
+  return { brand, title, shade, productLine, productWords };
+}
+
+function productLineConflicts(hay = '', productLine = '') {
+  const line = String(productLine || '').toLowerCase();
+  const h = String(hay || '').toLowerCase();
+  const pairs = [
+    ['highlight', 'blush'],
+    ['highlight', 'contour'],
+    ['blush', 'highlight'],
+    ['blush', 'contour'],
+    ['lipstick', 'foundation'],
+    ['mavro', 'valley'],
+    ['mavro', 'tango'],
+    ['mavro', 'calabria'],
+  ];
+  for (const [want, avoid] of pairs) {
+    if (line.includes(want) && h.includes(avoid) && !h.includes(want)) return true;
   }
-  if (brand) queries.add(brand);
+  return false;
+}
+
+/** استعلامات نصية مشتقة من metadata الباركود — للبحث في المتاجر */
+export function buildMetaHintQueries(meta = {}) {
+  const { brand, productLine, shade, productWords } = parseBarcodeMetaFields(meta);
+  const queries = new Set();
+  if (brand && productLine) queries.add(`${brand} ${productLine}`);
+  if (productLine) queries.add(productLine);
+  if (productWords.length >= 2) queries.add(productWords.slice(0, 3).join(' '));
+  if (brand && productWords.length) queries.add(`${brand} ${productWords[0]}`);
+  if (shade && productLine) {
+    const core = productWords.slice(0, 2).join(' ');
+    if (core) queries.add(`${core} ${shade}`);
+  }
+  if (brand && shade) queries.add(`${brand} ${shade}`);
   return [...queries].filter(Boolean);
 }
 
 /** درجة مطابقة نتيجة متجر مع metadata الباركود */
 export function scoreStoreHintMatch(item = {}, meta = {}) {
+  const parsed = parseBarcodeMetaFields(meta);
   const hay = `${item.name || ''} ${item.nameEn || ''} ${item.manufacturer || ''} ${item.manufacturerEn || ''}`.toLowerCase();
   let score = 0;
-  const brand = String(meta.brand || '').toLowerCase();
-  if (brand && (hay.includes(brand) || brand.includes((item.manufacturer || '').toLowerCase()))) score += 8;
 
-  const titleWords = String(meta.title || '').toLowerCase().split(/\s+/).filter((w) => w.length >= 3);
-  if (titleWords.length) {
-    const primary = titleWords[0];
-    if (primary && hay.includes(primary)) score += 16;
-    else if (primary && primary.length >= 4) score -= 12;
-    score += titleWords.slice(1).filter((w) => hay.includes(w)).length * 3;
+  const brand = parsed.brand.toLowerCase();
+  if (brand && (hay.includes(brand) || brand.includes((item.manufacturer || '').toLowerCase()))) score += 6;
+
+  const words = parsed.productWords.filter((w) => !['sheglam', 'the', 'for', 'with'].includes(w));
+  if (words.length) {
+    const primary = words[0];
+    if (primary && hay.includes(primary)) score += 14;
+    else if (primary && primary.length >= 4) score -= 18;
+    score += words.slice(1).filter((w) => hay.includes(w)).length * 5;
   }
+
+  if (productLineConflicts(hay, parsed.productLine)) score -= 30;
+
+  if (parsed.shade) {
+    const shade = parsed.shade.toLowerCase();
+    if (hay.includes(shade)) score += 22;
+    if (String(item.shadeName || '').toLowerCase().includes(shade)) score += 30;
+  }
+
   return score;
 }
 
@@ -1015,8 +1088,66 @@ function resolveImportShadeImages(shade = {}) {
   ].filter(Boolean);
 }
 
+function applyBarcodeHintToShades(shades = [], barcodeHint = '', meta = null, productId = '') {
+  const digits = String(barcodeHint || '').replace(/\D/g, '');
+  if (!/^\d{8,14}$/.test(digits)) return;
+
+  const pid = String(productId || '').trim().toUpperCase();
+  if (pid) {
+    for (const shade of shades) {
+      const sid = String(shade.sku || shade.optionId || '').trim().toUpperCase();
+      if (sid && sid === pid) {
+        applyBarcodeToShade(shade, digits, 'hint-asin');
+        return;
+      }
+    }
+  }
+
+  const parsed = parseBarcodeMetaFields(meta || {});
+  let assigned = false;
+
+  if (parsed.shade && !/^\d|oz|ml|g\b/i.test(parsed.shade)) {
+    for (const shade of shades) {
+      if (shade.barcode || shade.ean) continue;
+      const label = `${shade.name || ''} ${shade.nameEn || ''}`;
+      if (shadeNamesMatch(label, parsed.shade)) {
+        applyBarcodeToShade(shade, digits, 'hint-barcode');
+        assigned = true;
+      }
+    }
+    if (!assigned && parsed.shade) {
+      const key = parsed.shade.toLowerCase().split(/\s+/).filter((w) => w.length >= 4).pop();
+      if (key) {
+        for (const shade of shades) {
+          if (shade.barcode || shade.ean) continue;
+          const hay = `${shade.name || ''} ${shade.nameEn || ''}`.toLowerCase();
+          if (hay.includes(key)) {
+            applyBarcodeToShade(shade, digits, 'hint-barcode');
+            assigned = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if (!assigned) {
+    const empty = shades.filter((s) => !s.barcode && !s.ean);
+    if (empty.length === 1) {
+      applyBarcodeToShade(empty[0], digits, 'hint-barcode');
+    }
+  }
+}
+
+function shadeNamesMatch(a = '', b = '') {
+  const na = String(a || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, ' ').trim();
+  const nb = String(b || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, ' ').trim();
+  if (!na || !nb) return false;
+  return na === nb || na.includes(nb) || nb.includes(na);
+}
+
 /** إثراء باركودات الدرجات عند الاستيراد (مسواگ، Amazon، وغير Nice One) */
-export async function enrichShadesForImport(product, { light = false, maxLookups = 12 } = {}) {
+export async function enrichShadesForImport(product, { light = false, maxLookups = 6, barcodeHint = '' } = {}) {
   const shades = (product.shades || []).map((s) => ({ ...s }));
   if (!shades.length) return shades;
 
@@ -1045,25 +1176,22 @@ export async function enrichShadesForImport(product, { light = false, maxLookups
 
   if (light) return shades;
 
-  let looked = 0;
-  for (const shade of shades) {
-    if (shade.barcode || shade.ean) continue;
-    if (looked >= maxLookups) break;
+  if (barcodeHint) {
+    const meta = await lookupBarcodeProductMeta(barcodeHint).catch(() => null);
+    applyBarcodeHintToShades(shades, barcodeHint, meta, product.id || product.asin);
+    const hintDigits = String(barcodeHint).replace(/\D/g, '');
+    if (shades.some((s) => String(s.barcode || '').replace(/\D/g, '') === hintDigits)) {
+      return shades;
+    }
+  }
 
+  const needLookup = shades.filter((s) => !s.barcode && !s.ean).slice(0, maxLookups);
+  await Promise.all(needLookup.map(async (shade) => {
     const { ar, en } = shadeNames(shade);
     const shadeLabel = en || ar || shade.nameEn || shade.name || '';
-
     const shopify = await lookupShopifyVariantByShade(manufacturer, productName, shadeLabel).catch(() => null);
-    if (shopify?.ean) {
-      applyExternalResult(shade, shopify);
-      looked += 1;
-      continue;
-    }
-
-    const ext = await lookupExternalBarcode(manufacturer, productName, ar, en, shade.sku);
-    if (ext?.ean) applyExternalResult(shade, ext);
-    looked += 1;
-  }
+    if (shopify?.ean) applyExternalResult(shade, shopify);
+  }));
 
   saveDiskCache();
   return shades;

@@ -184,6 +184,12 @@ function dedupeHits(list = []) {
 
 function sortHitsStable(list = []) {
   return [...list].sort((a, b) => {
+    const sa = Number(a.matchScore ?? 0);
+    const sb = Number(b.matchScore ?? 0);
+    if (sa !== sb) return sb - sa;
+    const ma = a.matchType === 'shade' ? 1 : 0;
+    const mb = b.matchType === 'shade' ? 1 : 0;
+    if (ma !== mb) return mb - ma;
     const ra = STORE_SEARCH_RANK[a.store] ?? 99;
     const rb = STORE_SEARCH_RANK[b.store] ?? 99;
     if (ra !== rb) return ra - rb;
@@ -635,9 +641,10 @@ async function searchMiswagByBarcode(barcode) {
         thumb: n.thumb,
         barcode: n.barcode || barcode,
         sku: n.sku,
-        matchType: p.matchType === 'hint' ? 'hint' : 'product',
+        matchType: p.matchType === 'shade' ? 'shade' : (p.matchType === 'hint' ? 'hint' : 'product'),
         matchScore: p.matchScore,
-        shadeCount: n.shadeCount || 0,
+        shadeName: p.shadeName,
+        shadeCount: p.shadeCount ?? n.shadeCount ?? 0,
         categoryHint: n.category || '',
         categoryHintEn: n.categoryEn || '',
         source: p.source || 'live',

@@ -607,36 +607,33 @@ export function sortProductsClient(products = [], sort = 'default') {
   }
 }
 
-/** إثراء باركود كل درجة لونية — جلب UPC من صفحة ASIN المتغيّر */
-export async function enrichAmazonShadeBarcodes(product, { light = false, maxAsinFetches = 10 } = {}) {
+/** إثراء باركود الدرجات — سريع: بدون جلب صفحات ASIN متعددة */
+export async function enrichAmazonShadeBarcodes(product, {
+  light = false,
+  barcodeHint = '',
+  maxLookups = 5,
+  timeoutMs = 18_000,
+} = {}) {
   const { enrichShadesForImport } = await import('./barcodes.js');
   const shades = [...(product.shades || [])];
   if (!shades.length) return shades;
 
-  const parentAsin = String(product.id || product.asin || '').trim().toUpperCase();
+  const hint = String(barcodeHint || product.barcode || '').replace(/\D/g, '');
+  if (hint) product.barcode = hint;
 
-  if (!light) {
-    let fetches = 0;
-    for (const shade of shades) {
-      if (shade.barcode || shade.ean) continue;
-      if (fetches >= maxAsinFetches) break;
+  const run = async () => {
+    if (light) return shades;
+    return enrichShadesForImport(
+      { ...product, shades },
+      { maxLookups, barcodeHint: hint, light: false },
+    );
+  };
 
-      const asin = String(shade.optionId || shade.sku || '').trim().toUpperCase();
-      if (!/^B[A-Z0-9]{9}$/.test(asin) || asin === parentAsin) continue;
-
-      fetches += 1;
-      try {
-        const html = await fetchAmazonHtml(`${AMAZON_COM}/dp/${asin}`, 'en');
-        const parsed = parseProductDetail(html, asin);
-        const bc = String(parsed.barcode || '').replace(/\D/g, '');
-        if (/^\d{8,14}$/.test(bc)) {
-          shade.barcode = bc;
-          shade.ean = bc;
-          shade.barcodeSource = 'amazon-variation';
-        }
-      } catch { /* تجاهل فشل متغيّر واحد */ }
-    }
+  if (timeoutMs > 0) {
+    return Promise.race([
+      run(),
+      new Promise((resolve) => setTimeout(() => resolve(shades), timeoutMs)),
+    ]);
   }
-
-  return enrichShadesForImport({ ...product, shades }, { light, maxLookups: Math.max(12, shades.length) });
+  return run();
 }

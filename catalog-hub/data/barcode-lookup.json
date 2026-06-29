@@ -959,6 +959,54 @@
     "matchType": "product",
     "source": "verified",
     "barcode": "2363551983600",
-    "updatedAt": 1782749000000
+    "updatedAt": 1782748998052
+  },
+  "06978931640630": {
+    "store": "miswag",
+    "productId": "1756151367",
+    "id": "1756151367",
+    "name": "هايلايتر كريمي ستك Buttery Bling Highlight Stick",
+    "nameEn": "Buttery Bling Highlight Stick",
+    "manufacturer": "Sheglam",
+    "manufacturerEn": "Sheglam",
+    "thumb": "",
+    "shadeName": "Pie Crust",
+    "sku": "1756151367",
+    "matchType": "shade",
+    "source": "verified",
+    "barcode": "6978931640630",
+    "updatedAt": 1782750000000
+  },
+  "06978931640616": {
+    "store": "miswag",
+    "productId": "1756151369",
+    "id": "1756151369",
+    "name": "هايلايتر كريمي ستك Buttery Bling Highlight Stick",
+    "nameEn": "Buttery Bling Highlight Stick",
+    "manufacturer": "Sheglam",
+    "manufacturerEn": "Sheglam",
+    "thumb": "",
+    "shadeName": "Pink Satin",
+    "sku": "1756151369",
+    "matchType": "shade",
+    "source": "verified",
+    "barcode": "6978931640616",
+    "updatedAt": 1782750000001
+  },
+  "06978931640593": {
+    "store": "miswag",
+    "productId": "1756151366",
+    "id": "1756151366",
+    "name": "هايلايتر كريمي ستك Buttery Bling Highlight Stick",
+    "nameEn": "Buttery Bling Highlight Stick",
+    "manufacturer": "Sheglam",
+    "manufacturerEn": "Sheglam",
+    "thumb": "",
+    "shadeName": "Vanilla Frost",
+    "sku": "1756151366",
+    "matchType": "shade",
+    "source": "verified",
+    "barcode": "6978931640593",
+    "updatedAt": 1782750000002
   }
 }

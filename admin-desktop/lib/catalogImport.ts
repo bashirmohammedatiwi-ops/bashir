@@ -326,6 +326,7 @@ export async function fetchCatalogProduct(store: string, sourceId: string, barco
   if (barcode) params.set("barcode", barcode);
   const data = await catalogFetch<{ product: CatalogImportProduct }>(
     `/api/import/product?${params}`,
+    75_000,
   );
   return data.product;
 }
