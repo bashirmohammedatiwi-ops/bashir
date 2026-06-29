@@ -632,19 +632,24 @@ async function handleMiswagApi(req, res, url) {
       const page = Number(q.page) || 1;
       const limit = Math.min(Number(q.limit) || 30, 60);
       const sort = q.sort || 'default';
-      const data = await fetchMiswagCategoryProducts(categoryId, {
-        page,
-        limit,
-        cursor: q.cursor || '',
-      });
-      let products = (data.items || []).map((p) => normalizeMiswagProductSummary(p));
-      if (sort !== 'default') products = sortMiswagProductsClient(products, sort);
+      const data = await fetchMiswagCategoryProducts(categoryId, { page, limit, sort });
+      const products = (data.items || []).map((p) => normalizeMiswagProductSummary(p));
+
+      let name = categoryId;
+      let path = categoryId;
+      try {
+        const { leaves, tree } = await getMiswagCategoryTree();
+        const node = [...(leaves || []), ...(tree || [])].find((n) => n.slug === categoryId || n.id === categoryId);
+        if (node) { name = node.name || categoryId; path = node.name || categoryId; }
+      } catch { /* keep alias */ }
+
       return sendJson(res, 200, {
-        meta: { categoryId, path: categoryId, name: categoryId },
+        meta: { categoryId, path, name },
         products,
         page: data.page || page,
         limit: data.pageSize || limit,
         hasMore: !!data.hasMore,
+        total: data.total ?? null,
         cursor: data.cursor || null,
       });
     }

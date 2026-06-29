@@ -167,10 +167,12 @@ async function getSearchConfig() {
   throw new Error('Miswag Typesense config not found');
 }
 
-async function typesenseSearch(query, { page = 1, perPage = 30 } = {}) {
-  const q = String(query || '').trim();
-  if (!q) return { hits: [], found: 0 };
-
+/**
+ * مساعد عام لـ Typesense multi_search.
+ * يقبل مصفوفة من كائنات البحث (بدون collection) ويعيد مصفوفة النتائج.
+ */
+async function typesenseMultiSearch(searches = []) {
+  if (!searches.length) return [];
   const cfg = await getSearchConfig();
   const url = new URL(`https://${cfg.host}/multi_search`);
   url.searchParams.set('x-typesense-api-key', cfg.apiKey);
@@ -184,106 +186,140 @@ async function typesenseSearch(query, { page = 1, perPage = 30 } = {}) {
       'User-Agent': 'Mozilla/5.0 (compatible; catalog-hub/1.0)',
     },
     body: JSON.stringify({
-      searches: [{
-        collection: cfg.index,
-        q,
-        preset: cfg.preset,
-        per_page: perPage,
-        page,
-        enable_overrides: true,
-      }],
+      searches: searches.map((s) => ({ collection: cfg.index, ...s })),
     }),
   });
 
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || `Typesense ${res.status}`);
+  }
+
   const data = await res.json().catch(() => ({}));
-  const result = data.results?.[0] || {};
+  return data.results || [];
+}
+
+async function typesenseSearch(query, { page = 1, perPage = 30, filterBy = '', sortBy = '', queryBy = '' } = {}) {
+  const q = String(query || '').trim() || '*';
+
+  const cfg = await getSearchConfig();
+  const search = {
+    q,
+    per_page: perPage,
+    page,
+    enable_overrides: true,
+  };
+  if (q === '*') {
+    search.query_by = queryBy || 'title_AR';
+  } else if (cfg.preset) {
+    search.preset = cfg.preset;
+    if (queryBy) search.query_by = queryBy;
+  } else {
+    search.query_by = queryBy || 'title_AR,title_EN,brand,keywords';
+  }
+  if (filterBy) search.filter_by = filterBy;
+  if (sortBy) search.sort_by = sortBy;
+
+  const [result = {}] = await typesenseMultiSearch([search]);
   if (result.error || result.code) {
     return { hits: [], found: 0, error: result.error || result.message };
   }
-  if (!res.ok) {
-    return { hits: [], found: 0, error: data.message || `Typesense ${res.status}` };
-  }
-
   return { hits: result.hits || [], found: result.found || 0 };
+}
+
+const DIVISION_ALIAS_FIELDS = [
+  'l1_division_alias',
+  'l2_division_alias',
+  'l3_division_alias',
+  'l4_division_alias',
+];
+
+/** يبني مرشّح Typesense يطابق alias التصنيف في أي مستوى. */
+function buildCategoryFilter(alias) {
+  const a = String(alias || '').trim();
+  if (!a || a === BEAUTY_L1) return 'l1_division_alias:=beauty';
+  const escaped = a.replace(/`/g, '');
+  return DIVISION_ALIAS_FIELDS.map((f) => `${f}:=\`${escaped}\``).join(' || ');
 }
 
 function mapTypesenseHit(doc = {}, matchedBarcode = '') {
   const nameAr = String(doc.title_AR || doc.title || '').trim();
   const nameEn = String(doc.title_EN || doc.title || nameAr).trim();
+  const id = String(doc.id || doc.product_id || doc.item_id || '');
+  const ratingCount = Number(doc.rating_count) || 0;
+  const variationCount = countVariations(doc.variations);
+
   return {
-    id: String(doc.id || doc.alias || doc.product_id || doc.item_id || ''),
+    id,
     name: nameAr || nameEn,
     nameEn: nameEn || nameAr,
     manufacturer: String(doc.brand || doc.facet_brand || '').trim(),
     manufacturerEn: String(doc.brand || doc.facet_brand || '').trim(),
     thumb: absImage(doc.image || doc.image_url || doc.thumb),
     price: formatMiswagPrice({
-      value: doc.price_value ?? doc.price_numeric_value,
+      value: doc.price_numeric_value ?? doc.price_value,
       original_value: doc.price_original_value,
       currency: doc.price_currency || 'IQD',
     }),
     barcode: matchedBarcode || '',
     sku: String(doc.alias || doc.id || ''),
-    productUrl: doc.url || (doc.id ? `${SITE}/products/${doc.id}` : ''),
+    productUrl: doc.url || (id ? `${SITE}/products/${id}` : ''),
     category: [
       doc.l1_division_ar,
       doc.l2_division_ar,
       doc.l3_division_ar,
+      doc.l4_division_ar,
     ].filter(Boolean).join(' › ') || String(doc.category || '').trim(),
+    categoryEn: [
+      doc.l1_division_en,
+      doc.l2_division_en,
+      doc.l3_division_en,
+      doc.l4_division_en,
+    ].filter(Boolean).join(' › '),
     brandAlias: String(doc.brand_alias || doc.vendor_alias || '').trim(),
+    rating: Number(doc.rating) || 0,
+    ratingCount,
+    isOnSale: doc.is_on_sale === true || doc.is_on_sale === 'true',
+    inStock: doc.availability !== false && doc.availability !== 'false',
+    shadeCount: variationCount,
     source: 'typesense',
   };
 }
 
-function mapListItem(item = {}) {
-  const title = parseTitle(item.title);
-  return {
-    id: String(item.id || item.action?.id || ''),
-    name: title.ar || title.en || '',
-    nameEn: title.en || title.ar || '',
-    manufacturer: String(item.brand || '').trim(),
-    manufacturerEn: String(item.brand || '').trim(),
-    thumb: absImage(item.image),
-    price: formatMiswagPrice(item.price),
-    barcode: '',
-    sku: String(item.slug || item.id || ''),
-    productUrl: item.url || (item.id ? `${SITE}/products/${item.id}` : ''),
-    category: String(item.category || '').trim(),
-    brandAlias: String(item.brand_alias || '').trim(),
-    source: 'list',
-  };
+function countVariations(variations) {
+  if (!variations) return 0;
+  if (Array.isArray(variations)) return variations.length;
+  try {
+    const arr = JSON.parse(variations);
+    return Array.isArray(arr) ? arr.length : 0;
+  } catch {
+    return 0;
+  }
 }
 
-function scoreTextMatch(item, query) {
-  const q = String(query || '').toLowerCase();
-  const hay = `${item.name} ${item.nameEn} ${item.manufacturer} ${item.barcode} ${item.id}`.toLowerCase();
-  if (hay.includes(q)) return 10;
-  const words = q.split(/\s+/).filter(Boolean);
-  return words.filter((w) => hay.includes(w)).length;
-}
-
+/** بحث احتياطي مرن عبر Typesense (بدون preset، حقول أوسع) عند فشل البحث الأساسي. */
 async function fallbackTextSearch(query, { page = 1, limit = 30 } = {}) {
   const q = String(query || '').trim();
   if (!q) return { items: [], total: 0, page, pageSize: limit };
 
-  const data = await miswagFetch('/content/v1/items/', {
-    params: { category: BEAUTY_L1, limit: Math.min(limit * 3, 48) },
-  });
-  const raw = (data.content || []).map(mapListItem);
-  const ranked = raw
-    .map((item) => ({ item, score: scoreTextMatch(item, q) }))
-    .filter((x) => x.score > 0)
-    .sort((a, b) => b.score - a.score)
-    .map((x) => x.item);
-
-  const start = (page - 1) * limit;
-  return {
-    items: ranked.slice(start, start + limit),
-    total: ranked.length,
-    page,
-    pageSize: limit,
-    fallback: true,
-  };
+  try {
+    const [result = {}] = await typesenseMultiSearch([{
+      q,
+      query_by: 'title_AR,title_EN,brand,keywords,description',
+      per_page: limit,
+      page,
+    }]);
+    const hits = result.hits || [];
+    return {
+      items: hits.map((h) => mapTypesenseHit(h.document || h)),
+      total: result.found || hits.length,
+      page,
+      pageSize: limit,
+      fallback: true,
+    };
+  } catch {
+    return { items: [], total: 0, page, pageSize: limit, fallback: true };
+  }
 }
 
 export async function searchProducts(query, page = 1, limit = 30) {
@@ -439,77 +475,146 @@ export function normalizeProductDetail(product = {}) {
   };
 }
 
-export async function fetchCategoryTree() {
-  const data = await miswagFetch('/content/v1/l1_categories/tree');
-  const roots = data.content || [];
-  const leaves = [];
+let categoryTreeCache = null;
+let categoryTreeCacheAt = 0;
+const CATEGORY_TREE_TTL_MS = 30 * 60 * 1000;
 
-  function walk(node, path = []) {
-    const name = node.name || node.alias || '';
-    const alias = node.alias || String(node.id || '');
-    const entry = {
-      id: alias,
-      slug: alias,
-      name,
-      nameEn: name,
-      path: [...path, name].join(' › '),
-      icon: absImage(node.icon),
-      isLeaf: !node.l2_divisions?.length,
-      children: [],
-    };
-    if (entry.isLeaf) leaves.push(entry);
-    for (const child of node.l2_divisions || []) {
-      const sub = {
-        id: child.alias || String(child.id),
-        slug: child.alias || String(child.id),
-        name: child.name || '',
-        nameEn: child.name || '',
-        path: [...path, name, child.name].filter(Boolean).join(' › '),
-        isLeaf: true,
-        children: [],
-      };
-      entry.children.push(sub);
-      leaves.push(sub);
-    }
-    return entry;
+/** يجلب تصنيفات L2 ضمن "beauty" من واجهة المحتوى (أسماء عربية دقيقة). */
+async function fetchBeautyL2FromContent() {
+  try {
+    const data = await miswagFetch('/content/v1/l1_categories/tree');
+    const roots = data.content || [];
+    const beauty = roots.find((r) => (r.alias || '').toLowerCase() === BEAUTY_L1);
+    return (beauty?.l2_divisions || [])
+      .filter((d) => d.alias)
+      .map((d) => ({ alias: String(d.alias), nameAr: String(d.name || '').trim() }));
+  } catch {
+    return [];
   }
-
-  const tree = roots.map((n) => walk(n, []));
-  return { tree, leaves };
 }
 
-export async function fetchCategoryProducts(categoryAlias, { page = 1, limit = 30, cursor = '' } = {}) {
-  const alias = String(categoryAlias || BEAUTY_L1).trim() || BEAUTY_L1;
-  const data = await miswagFetch(`/content/v1/l1_categories/${encodeURIComponent(alias)}`, {
-    params: cursor ? { cursor } : {},
+/** بديل: يستخرج تصنيفات L2 من Typesense عند تعذّر واجهة المحتوى. */
+async function fetchBeautyL2FromTypesense() {
+  const { hits } = await typesenseSearch('*', {
+    perPage: 250,
+    filterBy: 'l1_division_alias:=beauty',
+    queryBy: 'title_AR',
   });
+  const map = new Map();
+  for (const h of hits) {
+    const d = h.document || h;
+    const alias = String(d.l2_division_alias || '').trim();
+    if (alias && !map.has(alias)) {
+      map.set(alias, { alias, nameAr: String(d.l2_division_ar || alias).trim() });
+    }
+  }
+  return [...map.values()];
+}
 
-  const gridItems = [];
-  for (const block of data.content || []) {
-    if (block.type === 'grid-products') gridItems.push(...(block.content || []));
+export async function fetchCategoryTree() {
+  if (categoryTreeCache && Date.now() - categoryTreeCacheAt < CATEGORY_TREE_TTL_MS) {
+    return categoryTreeCache;
   }
 
-  if (gridItems.length) {
+  let l2List = await fetchBeautyL2FromContent();
+  if (!l2List.length) l2List = await fetchBeautyL2FromTypesense();
+
+  // جلب أبناء L3 لكل L2 دفعة واحدة عبر group_by (أسماء AR/EN + أعداد دقيقة)
+  let l3Results = [];
+  try {
+    l3Results = await typesenseMultiSearch(
+      l2List.map((l2) => ({
+        q: '*',
+        query_by: 'title_AR',
+        filter_by: `l1_division_alias:=beauty && l2_division_alias:=\`${l2.alias}\``,
+        per_page: 250,
+        group_by: 'l3_division_alias',
+        group_limit: 1,
+        include_fields: 'l2_division_ar,l2_division_en,l3_division_alias,l3_division_ar,l3_division_en',
+      })),
+    );
+  } catch { /* tree without L3 children */ }
+
+  const tree = l2List.map((l2, i) => {
+    const result = l3Results[i] || {};
+    const groups = result.grouped_hits || [];
+    let nameAr = l2.nameAr;
+    let nameEn = l2.alias;
+
+    const children = [];
+    for (const g of groups) {
+      const doc = g.hits?.[0]?.document || {};
+      if (doc.l2_division_ar) nameAr = doc.l2_division_ar;
+      if (doc.l2_division_en) nameEn = doc.l2_division_en;
+      const childAlias = String(g.group_key?.[0] || doc.l3_division_alias || '').trim();
+      if (!childAlias) continue;
+      // تخطّي التصنيفات بدون اسم حقيقي (alias رقمي خام)
+      const childNameAr = String(doc.l3_division_ar || '').trim();
+      if (!childNameAr || /^\d+$/.test(childAlias)) continue;
+      children.push({
+        id: childAlias,
+        slug: childAlias,
+        name: childNameAr,
+        nameEn: String(doc.l3_division_en || childAlias).trim(),
+        level: 3,
+        productCount: g.found || null,
+        isLeaf: true,
+        children: [],
+      });
+    }
+
+    children.sort((a, b) => (b.productCount || 0) - (a.productCount || 0));
+    const totalCount = children.reduce((sum, c) => sum + (c.productCount || 0), 0) || null;
+
     return {
-      items: gridItems.map(mapListItem),
-      page,
-      pageSize: limit,
-      hasMore: Boolean(data.pagination?.cursor),
-      cursor: data.pagination?.cursor || null,
+      id: l2.alias,
+      slug: l2.alias,
+      name: nameAr || l2.alias,
+      nameEn: nameEn || l2.alias,
+      level: 2,
+      productCount: totalCount,
+      isLeaf: children.length === 0,
+      children,
     };
+  });
+
+  const leaves = [];
+  for (const node of tree) {
+    if (node.children.length) leaves.push(...node.children);
+    else leaves.push(node);
   }
 
-  const list = await miswagFetch('/content/v1/items/', {
-    params: { category: alias, limit: Math.min(limit, 48) },
-  });
-  const items = (list.content || []).map(mapListItem);
-  return {
-    items: items.slice(0, limit),
+  categoryTreeCache = { tree, leaves };
+  categoryTreeCacheAt = Date.now();
+  return categoryTreeCache;
+}
+
+const CATEGORY_SORT_MAP = {
+  default: 'rating_count:desc,rating:desc',
+  price_asc: 'price_numeric_value:asc',
+  price_desc: 'price_numeric_value:desc',
+  newest: 'created_at:desc',
+};
+
+export async function fetchCategoryProducts(categoryAlias, { page = 1, limit = 30, sort = 'default' } = {}) {
+  const alias = String(categoryAlias || BEAUTY_L1).trim() || BEAUTY_L1;
+  const perPage = Math.min(Math.max(limit, 1), 60);
+  const sortBy = CATEGORY_SORT_MAP[sort] || CATEGORY_SORT_MAP.default;
+
+  const { hits, found, error } = await typesenseSearch('*', {
     page,
-    pageSize: limit,
-    hasMore: items.length >= limit,
-    cursor: list.pagination?.cursor || null,
-  };
+    perPage,
+    filterBy: buildCategoryFilter(alias),
+    sortBy,
+    queryBy: 'title_AR',
+  });
+
+  if (error) throw new Error(`Miswag category fetch failed: ${error}`);
+
+  const items = hits.map((h) => mapTypesenseHit(h.document || h));
+  const hasMore = page * perPage < found;
+
+  return { items, page, pageSize: perPage, hasMore, total: found, cursor: null };
 }
 
 export async function fetchBrands({ query = '', cursor = '', limit = 30 } = {}) {
