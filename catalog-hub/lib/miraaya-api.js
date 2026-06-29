@@ -657,6 +657,42 @@ export async function fetchProductById(id) {
   return fetchProductBySku(sku);
 }
 
+const FIND_BY_VARIANT_QUERY = `
+  query FindByVariant($q: String!, $pageSize: Int!) {
+    products(search: $q, pageSize: $pageSize) {
+      items {
+        id
+        sku
+        name
+        __typename
+        ... on ConfigurableProduct {
+          variants {
+            product { id sku name }
+          }
+        }
+      }
+    }
+  }
+`;
+
+/** يحلّ باركود/‏SKU تدرّج إلى المنتج الأب (Configurable) مع كل التدرجات */
+export async function resolveProductByBarcode(barcode) {
+  const digits = String(barcode || '').replace(/\D/g, '');
+  if (!digits) return null;
+
+  const direct = await fetchProductBySku(digits);
+  if (direct) return direct;
+
+  const data = await gql(FIND_BY_VARIANT_QUERY, { q: digits, pageSize: 24 }, STORE_AR);
+  for (const item of data?.products?.items || []) {
+    if (item.__typename !== 'ConfigurableProduct') continue;
+    const hasVariant = (item.variants || []).some((v) => String(v.product?.sku || '') === digits);
+    if (hasVariant) return fetchProductBySku(item.sku);
+  }
+
+  return null;
+}
+
 const BROWSE_PRODUCTS_QUERY = `
   ${PRODUCT_LIST_FRAGMENT}
   query BrowseProducts($page: Int!, $pageSize: Int!) {

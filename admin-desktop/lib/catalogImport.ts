@@ -12,6 +12,10 @@ export type CatalogImportOption = {
   barcode?: string;
   shadeName?: string;
   matchType?: string;
+  shadeCount?: number;
+  imageCount?: number;
+  categoryHint?: string;
+  categoryHintEn?: string;
 };
 
 export type CatalogImportSummary = {
@@ -155,37 +159,43 @@ export async function searchCatalogByBarcodeProgressive(
   };
 }
 
-export async function fetchCatalogProduct(store: string, sourceId: string) {
+export async function fetchCatalogProduct(store: string, sourceId: string, barcode = "") {
   const params = new URLSearchParams({
     store,
     id: sourceId,
     hubOrigin: CATALOG_HUB_URL,
   });
+  if (barcode) params.set("barcode", barcode);
   const data = await catalogFetch<{ product: CatalogImportProduct }>(
     `/api/import/product?${params}`,
   );
   return data.product;
 }
 
-export async function fetchCatalogSummary(store: string, sourceId: string) {
+export async function fetchCatalogSummary(store: string, sourceId: string, barcode = "") {
   const params = new URLSearchParams({
     store,
     id: sourceId,
     hubOrigin: CATALOG_HUB_URL,
   });
-  const data = await catalogFetch<{ summary: CatalogImportSummary }>(
-    `/api/import/summary?${params}`,
-  );
-  return data.summary;
+  if (barcode) params.set("barcode", barcode);
+  try {
+    const data = await catalogFetch<{ summary: CatalogImportSummary }>(
+      `/api/import/summary?${params}`,
+    );
+    return data.summary;
+  } catch {
+    return null;
+  }
 }
 
 /** جلب ملخصات متوازية مع حد أقصى للتزامن */
 export async function fetchCatalogSummariesBatch(
-  items: Pick<CatalogImportOption, "store" | "sourceId">[],
+  items: Pick<CatalogImportOption, "store" | "sourceId" | "barcode">[],
   onItem?: (key: string, summary: CatalogImportSummary | null) => void,
   concurrency = 4,
 ) {
-  const unique = new Map<string, Pick<CatalogImportOption, "store" | "sourceId">>();
+  const unique = new Map<string, Pick<CatalogImportOption, "store" | "sourceId" | "barcode">>();
   for (const item of items) {
     const key = catalogOptionKey(item);
     if (!unique.has(key)) unique.set(key, item);
@@ -199,7 +209,7 @@ export async function fetchCatalogSummariesBatch(
       if (!item) break;
       const key = catalogOptionKey(item);
       try {
-        const summary = await fetchCatalogSummary(item.store, item.sourceId);
+        const summary = await fetchCatalogSummary(item.store, item.sourceId, item.barcode || "");
         results.set(key, summary);
         onItem?.(key, summary);
       } catch {

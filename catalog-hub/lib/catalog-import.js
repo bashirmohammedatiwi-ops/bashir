@@ -10,7 +10,7 @@ import {
 import { enrichShadesFromDatabase } from './barcodes.js';
 import { fetchProductDetail as fetchVanillaDetail, normalizeProductDetail as normalizeVanillaDetail } from './vanilla-api.js';
 import { fetchProductByIdBilingual } from './elryan-api.js';
-import { fetchProductBySku, fetchProductById as fetchMiraayaById, normalizeProductDetail as normalizeMiraayaDetail } from './miraaya-api.js';
+import { fetchProductBySku, fetchProductById as fetchMiraayaById, normalizeProductDetail as normalizeMiraayaDetail, resolveProductByBarcode } from './miraaya-api.js';
 import { fetchProductById as fetchFacesById, normalizeProductDetailFromRaw as normalizeFacesDetail } from './faces-api.js';
 
 function absImageUrl(url = '', hubOrigin = '') {
@@ -82,7 +82,8 @@ export async function searchImportByBarcode(rawBarcode, { fast = false, stores =
   const options = (data.results || []).map((r) => ({
     store: r.store,
     storeLabel: r.storeLabel,
-    sourceId: r.id,
+    sourceId: r.sku || r.id,
+    sku: r.sku || r.id,
     nameAr: r.name,
     nameEn: r.nameEn,
     brandAr: r.manufacturer,
@@ -91,6 +92,10 @@ export async function searchImportByBarcode(rawBarcode, { fast = false, stores =
     barcode: r.barcode,
     shadeName: r.shadeName,
     matchType: r.matchType || 'product',
+    shadeCount: r.shadeCount,
+    imageCount: r.imageCount,
+    categoryHint: r.categoryHint,
+    categoryHintEn: r.categoryHintEn,
   }));
 
   return {
@@ -132,13 +137,15 @@ async function fetchElryanImport(id, hubOrigin) {
   return buildImportPayload('elryan', product, { hubOrigin });
 }
 
-async function fetchMiraayaImport(id, hubOrigin) {
+async function fetchMiraayaImport(id, hubOrigin, barcodeHint = '') {
+  const key = String(id || '').trim();
   let product = null;
-  if (/^\d+$/.test(String(id))) {
-    product = await fetchMiraayaById(id);
-  } else {
-    product = await fetchProductBySku(id);
-  }
+
+  if (barcodeHint) product = await resolveProductByBarcode(barcodeHint);
+  if (!product && key.includes('-')) product = await fetchProductBySku(key);
+  if (!product && /^\d+$/.test(key) && key.length <= 7) product = await fetchMiraayaById(key);
+  if (!product) product = await fetchProductBySku(key);
+  if (!product) product = await resolveProductByBarcode(key);
   if (!product?.id && !product?.sku) return null;
   const normalized = normalizeMiraayaDetail(product);
   return buildImportPayload('miraaya', normalized, { hubOrigin });
@@ -151,7 +158,7 @@ async function fetchVanillaImport(id, hubOrigin) {
   return buildImportPayload('vanilla', normalized, { hubOrigin });
 }
 
-export async function fetchImportProduct(store, sourceId, { hubOrigin = '' } = {}) {
+export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barcode = '' } = {}) {
   const id = String(sourceId || '').trim();
   if (!id || !store) return { error: 'المتجر ومعرّف المنتج مطلوبان' };
 
@@ -167,7 +174,7 @@ export async function fetchImportProduct(store, sourceId, { hubOrigin = '' } = {
       payload = await fetchElryanImport(id, hubOrigin);
       break;
     case 'miraaya':
-      payload = await fetchMiraayaImport(id, hubOrigin);
+      payload = await fetchMiraayaImport(id, hubOrigin, barcode);
       break;
     case 'vanilla':
       payload = await fetchVanillaImport(id, hubOrigin);
@@ -198,8 +205,8 @@ function toImportSummary(payload) {
   };
 }
 
-export async function fetchImportSummary(store, sourceId, { hubOrigin = '' } = {}) {
-  const result = await fetchImportProduct(store, sourceId, { hubOrigin });
+export async function fetchImportSummary(store, sourceId, { hubOrigin = '', barcode = '' } = {}) {
+  const result = await fetchImportProduct(store, sourceId, { hubOrigin, barcode });
   if (result.error) return { error: result.error };
   return { summary: toImportSummary(result.product) };
 }

@@ -229,7 +229,7 @@ export default function CatalogImportPage() {
       setLoadingPreview(true);
       setPreview(null);
       try {
-        const product = await fetchCatalogProduct(opt.store, opt.sourceId);
+        const product = await fetchCatalogProduct(opt.store, opt.sourceId, opt.barcode || barcode.replace(/\D/g, ""));
         setPreview(product);
         const brandId = matchBrandId(brandsData, product.brandAr, product.brandEn);
 

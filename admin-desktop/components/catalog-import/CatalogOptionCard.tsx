@@ -34,10 +34,10 @@ export function CatalogOptionCard({
   onSelect,
 }: Props) {
   const thumb = summary?.thumb || option.thumb;
-  const imageCount = summary?.imageCount;
-  const shadeCount = summary?.shadeCount ?? 0;
-  const categoryHint = summary?.categoryHint || "";
-  const categoryHintEn = summary?.categoryHintEn || "";
+  const imageCount = summary?.imageCount ?? option.imageCount;
+  const shadeCount = summary?.shadeCount ?? option.shadeCount ?? 0;
+  const categoryHint = summary?.categoryHint || option.categoryHint || "";
+  const categoryHintEn = summary?.categoryHintEn || option.categoryHintEn || "";
   const brand = summary?.brandAr || option.brandAr;
   const nameAr = summary?.nameAr || option.nameAr;
   const nameEn = summary?.nameEn || option.nameEn;

@@ -1,4 +1,4 @@
-import { hubApi, fixHubAssetUrl, fixStoreUrl, initHubLinks } from '/shared/catalog-hub-base.js';
+import { hubApi, fixHubAssetUrl, fixStoreUrl, initHubLinks } from './shared/catalog-hub-base.js';
 
 const $ = (sel) => document.querySelector(sel);
 

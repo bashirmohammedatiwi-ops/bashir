@@ -8,8 +8,8 @@ import {
   deferIdle,
   renderShadeSwatchMarkup,
   shadeSelectionLabelParts,
-} from '/shared/store-ui.js';
-import { hubApi, initHubLinks } from '/shared/catalog-hub-base.js';
+} from '../shared/store-ui.js';
+import { hubApi, initHubLinks } from '../shared/catalog-hub-base.js';
 
 const API = hubApi('/api');
 const $ = (sel, root = document) => root.querySelector(sel);

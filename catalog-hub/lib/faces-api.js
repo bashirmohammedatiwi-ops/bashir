@@ -1098,9 +1098,23 @@ export async function searchProductsByBarcode(barcode, { limit = 12, hintHits = 
     if (hits.length) return hits.slice(0, limit);
   }
 
+  const earlyHints = [...hintHits];
+  if (earlyHints.length) {
+    const brands = collectBrandNames(earlyHints, null);
+    if (brands.length) {
+      await scanFacesBrandCatalogs(barcode, brands, scanOpts);
+      if (hits.length) return hits.slice(0, limit);
+    }
+    const queries = buildFacesHintQueries(earlyHints);
+    if (queries.length) {
+      await scanFacesHintQueries(barcode, queries, scanOpts, { maxPages: 2, pageSize: 30 });
+      if (hits.length) return hits.slice(0, limit);
+    }
+  }
+
   const index = loadFacesBarcodeIndex();
   const knownPids = [...new Set(Object.values(index.barcodes || {}).map((e) => e.pid).filter(Boolean))];
-  for (const pid of knownPids.slice(0, 30)) {
+  for (const pid of knownPids.slice(0, hintHits.length ? 8 : 20)) {
     if (hits.length >= limit) break;
     const resolved = await resolveFacesBarcodeOnProduct(pid, barcode);
     if (!resolved) continue;

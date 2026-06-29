@@ -19,11 +19,10 @@ import {
 } from './api.js';
 import { elryanAr, fetchBeautyCategoriesBilingual } from './elryan-api.js';
 import {
-  gql,
-  fetchProductBySku,
   normalizeProductSummary as normalizeMiraayaSummary,
-  extractBarcode as miraayaExtractBarcode,
   fixProductImageUrl,
+  resolveProductByBarcode,
+  normalizeProductDetail as normalizeMiraayaDetail,
 } from './miraaya-api.js';
 import {
   searchProductsByBarcode,
@@ -36,8 +35,6 @@ import {
   normalizeProductSummary as normalizeVanillaSummary,
   parseVanillaBarcode,
 } from './vanilla-api.js';
-
-const REST_MIRAAYA = 'https://magadmin.miraaya.com/rest/ar/V1';
 
 function barcodeQueryVariants(barcode) {
   const digits = String(barcode).replace(/\D/g, '');
@@ -129,15 +126,27 @@ function hit(store, fields = {}) {
 }
 
 function dedupeHits(list = []) {
-  const seen = new Set();
-  const out = [];
+  const map = new Map();
   for (const item of list) {
-    const key = `${item.store}:${item.id}:${item.shadeName || ''}:${item.barcode}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(item);
+    const key = `${item.store}:${item.id || item.sku}:${item.shadeName || ''}:${item.barcode}`;
+    const prev = map.get(key);
+    if (!prev) {
+      map.set(key, item);
+      continue;
+    }
+    const prefer = item.source === 'live' || (item.shadeCount ?? 0) > (prev.shadeCount ?? 0) ? item : prev;
+    const other = prefer === item ? prev : item;
+    map.set(key, {
+      ...other,
+      ...prefer,
+      shadeCount: Math.max(prefer.shadeCount ?? 0, other.shadeCount ?? 0) || undefined,
+      imageCount: Math.max(prefer.imageCount ?? 0, other.imageCount ?? 0) || undefined,
+      thumb: prefer.thumb || other.thumb,
+      categoryHint: prefer.categoryHint || other.categoryHint,
+      categoryHintEn: prefer.categoryHintEn || other.categoryHintEn,
+    });
   }
-  return out;
+  return [...map.values()];
 }
 
 function catalogThumbPriority(p, barcode) {
@@ -290,72 +299,38 @@ async function searchElryanByBarcode(barcode) {
   return dedupeHits(results);
 }
 
-async function fetchMiraayaRestBySku(sku) {
-  const params = new URLSearchParams({
-    'searchCriteria[pageSize]': '5',
-    'searchCriteria[filterGroups][0][filters][0][field]': 'sku',
-    'searchCriteria[filterGroups][0][filters][0][value]': sku,
-    'searchCriteria[filterGroups][0][filters][0][condition_type]': 'eq',
-  });
-  const res = await fetch(`${REST_MIRAAYA}/products?${params}`, {
-    headers: { Accept: 'application/json', Store: 'ar' },
-  });
-  if (!res.ok) return [];
-  const json = await res.json();
-  return json.items || [];
-}
-
 async function searchMiraayaByBarcode(barcode) {
+  const product = await resolveProductByBarcode(barcode);
+  if (product) {
+    const summary = normalizeMiraayaSummary(product, {});
+    const detail = normalizeMiraayaDetail(product);
+    const matchingShade = (detail.shades || []).find(
+      (s) => barcodeMatches(s.barcode, barcode) || barcodeMatches(s.sku, barcode),
+    );
+    return dedupeHits([hit('miraaya', {
+      id: summary.sku || String(product.sku),
+      name: summary.name,
+      nameEn: summary.nameEn,
+      manufacturer: summary.manufacturer,
+      manufacturerEn: summary.manufacturerEn,
+      price: summary.price,
+      thumb: summary.thumb,
+      barcode: matchingShade?.barcode || summary.barcode || barcode,
+      shadeName: matchingShade?.name || '',
+      sku: summary.sku,
+      matchType: matchingShade ? 'shade' : 'product',
+      shadeCount: detail.shades?.length || 0,
+      imageCount: detail.images?.length || (summary.thumb ? 1 : 0),
+      categoryHint: summary.category || '',
+      categoryHintEn: summary.categoryEn || '',
+      source: 'live',
+    })]);
+  }
+
   const unified = searchUnifiedByStore(barcode, 'miraaya');
   if (unified.length) return dedupeHits(unified);
 
-  const results = [];
-  for (const q of barcodeQueryVariants(barcode)) {
-    const restItems = await fetchMiraayaRestBySku(q);
-    for (const item of restItems) {
-      results.push(hit('miraaya', {
-        id: String(item.id),
-        name: item.name || item.sku,
-        barcode: q,
-        sku: item.sku,
-        matchType: 'product',
-      }));
-    }
-    if (results.length) return dedupeHits(results);
-  }
-
-  for (const q of barcodeQueryVariants(barcode)) {
-    const data = await gql(
-      `query SearchByBarcode($q: String!, $pageSize: Int!) {
-        products(search: $q, pageSize: $pageSize) {
-          items { id sku name image { url } }
-        }
-      }`,
-      { q, pageSize: 8 },
-    );
-    for (const p of (data?.products?.items || []).slice(0, 4)) {
-      if (String(p.sku) === q) continue;
-      const product = await fetchProductBySku(p.sku);
-      if (!product) continue;
-      const bc = miraayaExtractBarcode(product, {});
-      if (!barcodeMatches(bc, barcode) && !barcodeMatches(p.sku, barcode)) continue;
-      const n = normalizeMiraayaSummary(product, {});
-      results.push(hit('miraaya', {
-        id: n.id,
-        name: n.name,
-        nameEn: n.nameEn,
-        manufacturer: n.manufacturer,
-        price: n.price,
-        thumb: n.thumb,
-        barcode: bc || barcode,
-        sku: n.sku,
-        matchType: 'product',
-      }));
-      break;
-    }
-    if (results.length) break;
-  }
-  return dedupeHits(results);
+  return [];
 }
 
 async function searchFacesByBarcode(barcode, hintHits = []) {
@@ -448,7 +423,7 @@ const SEARCHERS = [
   { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 6_000 },
   { store: 'vanilla', fn: searchVanillaByBarcode, timeoutMs: 6_000 },
   { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 6_000 },
-  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 20_000 },
+  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 35_000 },
 ];
 
 function withStoreTimeout(promise, ms, store) {
@@ -510,10 +485,12 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
 
   const settled = await Promise.allSettled(
     enabled.map(({ store, fn, timeoutMs }) => {
-      if (localByStore[store]?.length) {
-        return Promise.resolve(localByStore[store]);
-      }
-      return withStoreTimeout(fn(barcode), timeoutMs, store);
+      const local = localByStore[store] || [];
+      return withStoreTimeout(fn(barcode), timeoutMs, store).then((live) => {
+        if (!live?.length) return local;
+        if (!local.length) return live;
+        return dedupeHits([...live, ...local]);
+      });
     }),
   );
   const results = [];

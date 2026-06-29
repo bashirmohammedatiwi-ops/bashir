@@ -1037,7 +1037,8 @@ const server = http.createServer(async (req, res) => {
       const store = q.store || '';
       const sourceId = q.id || q.sourceId || '';
       const hubOrigin = q.hubOrigin || `http://${req.headers.host || `localhost:${PORT}`}`;
-      const data = await fetchImportProduct(store, sourceId, { hubOrigin });
+      const barcode = q.barcode || '';
+      const data = await fetchImportProduct(store, sourceId, { hubOrigin, barcode });
       if (data.error) return sendJson(res, 404, data);
       return sendJson(res, 200, data);
     } catch (err) {
@@ -1051,7 +1052,8 @@ const server = http.createServer(async (req, res) => {
       const store = q.store || '';
       const sourceId = q.id || q.sourceId || '';
       const hubOrigin = q.hubOrigin || `http://${req.headers.host || `localhost:${PORT}`}`;
-      const data = await fetchImportSummary(store, sourceId, { hubOrigin });
+      const barcode = q.barcode || '';
+      const data = await fetchImportSummary(store, sourceId, { hubOrigin, barcode });
       if (data.error) return sendJson(res, 404, data);
       return sendJson(res, 200, data);
     } catch (err) {
