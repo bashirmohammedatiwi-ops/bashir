@@ -82,11 +82,13 @@ npm run dev:next
 
 ```bash
 cd infra
+chmod +x scripts/*.sh
+./scripts/update.sh          # تحديث كامل — أمر واحد فقط
+./scripts/verify.sh          # تحقق بعد التحديث
+./scripts/sync-postgres-password.sh  # إصلاح P1000 إذا تغيّرت كلمة سر DB
 docker compose -f docker-compose.prod.yml logs -f api
 docker compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
 docker compose -f docker-compose.prod.yml restart nginx
-chmod +x scripts/update.sh scripts/backup.sh
-./scripts/update.sh          # تحديث API بعد git pull
 ./scripts/backup.sh          # نسخ Postgres + الصور
 ```
 

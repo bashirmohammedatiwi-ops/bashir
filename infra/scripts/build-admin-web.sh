@@ -5,6 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 INFRA_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 ADMIN_ROOT="$(cd "$INFRA_ROOT/../admin-desktop" && pwd)"
 OUT_DIR="$INFRA_ROOT/admin-static"
+STAGING_DIR="$INFRA_ROOT/admin-static.__staging"
+BACKUP_DIR="$INFRA_ROOT/admin-static.__old"
 
 if [[ ! -f "$ADMIN_ROOT/package.json" ]]; then
   echo "admin-desktop not found at $ADMIN_ROOT"
@@ -50,9 +52,17 @@ NEXT_PUBLIC_API_BASE="$API_BASE" \
 NEXT_PUBLIC_MEDIA_BASE="$MEDIA_BASE" \
 npm run build:web
 
-rm -rf "$OUT_DIR"
-mkdir -p "$OUT_DIR"
-cp -r out/. "$OUT_DIR/"
-chmod -R a+rX "$OUT_DIR"
+rm -rf "$STAGING_DIR"
+mkdir -p "$STAGING_DIR"
+cp -r out/. "$STAGING_DIR/"
+chmod -R a+rX "$STAGING_DIR"
+
+# Atomic swap — avoids 403/500 while nginx still serves the old build
+rm -rf "$BACKUP_DIR"
+if [[ -d "$OUT_DIR" ]]; then
+  mv "$OUT_DIR" "$BACKUP_DIR"
+fi
+mv "$STAGING_DIR" "$OUT_DIR"
+rm -rf "$BACKUP_DIR"
 
 echo "==> Admin web build ready: infra/admin-static/"
