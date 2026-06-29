@@ -66,7 +66,9 @@ export const STORE_META = {
 
 let elryanBeautyIdsPromise = null;
 const searchResultCache = new Map();
-const SEARCH_CACHE_MS = 24 * 60 * 60 * 1000;
+const SEARCH_CACHE_MS = 15 * 60 * 1000;
+const SEARCH_NEGATIVE_CACHE_MS = 3 * 60 * 1000;
+const STORE_SEARCH_RANK = { niceone: 0, elryan: 1, vanilla: 2, miraaya: 3, amazon: 4, faces: 5 };
 const foundationCache = { products: [], at: 0 };
 const FOUNDATION_CACHE_MS = 10 * 60 * 1000;
 
@@ -143,7 +145,12 @@ function dedupeHits(list = []) {
       map.set(key, item);
       continue;
     }
-    const prefer = item.source === 'live' || (item.shadeCount ?? 0) > (prev.shadeCount ?? 0) ? item : prev;
+    const prefer =
+      item.source === 'live' ||
+      (item.source !== 'faces-index' && item.source !== 'unified-index' && item.source !== 'local-index' && prev.source !== 'live') ||
+      (item.shadeCount ?? 0) > (prev.shadeCount ?? 0)
+        ? item
+        : prev;
     const other = prefer === item ? prev : item;
     map.set(key, {
       ...other,
@@ -156,6 +163,25 @@ function dedupeHits(list = []) {
     });
   }
   return [...map.values()];
+}
+
+function sortHitsStable(list = []) {
+  return [...list].sort((a, b) => {
+    const ra = STORE_SEARCH_RANK[a.store] ?? 99;
+    const rb = STORE_SEARCH_RANK[b.store] ?? 99;
+    if (ra !== rb) return ra - rb;
+    const idCmp = String(a.id || a.sku || '').localeCompare(String(b.id || b.sku || ''));
+    if (idCmp !== 0) return idCmp;
+    return String(a.shadeName || '').localeCompare(String(b.shadeName || ''));
+  });
+}
+
+function getCachedSearch(cacheKey) {
+  const cached = searchResultCache.get(cacheKey);
+  if (!cached) return null;
+  const age = Date.now() - cached.at;
+  const ttl = cached.data?.results?.length ? SEARCH_CACHE_MS : SEARCH_NEGATIVE_CACHE_MS;
+  return age < ttl ? cached.data : null;
 }
 
 function catalogThumbPriority(p, barcode) {
@@ -426,12 +452,11 @@ async function searchMiraayaByBarcode(barcode) {
 }
 
 async function searchFacesByBarcode(barcode, hintHits = []) {
-  const unified = searchUnifiedByStore(barcode, 'faces');
-  if (unified.length) return dedupeHits(unified);
+  const localHits = [];
 
   const indexed = lookupFacesBarcodeIndex(barcode);
   if (indexed?.pid && (indexed.nameAr || indexed.nameEn || indexed.thumb)) {
-    return dedupeHits([hit('faces', {
+    localHits.push(hit('faces', {
       id: indexed.pid,
       name: indexed.nameAr || indexed.nameEn,
       nameEn: indexed.nameEn,
@@ -443,15 +468,27 @@ async function searchFacesByBarcode(barcode, hintHits = []) {
       shadeName: indexed.shadeName || undefined,
       matchType: indexed.shadeName ? 'shade' : 'product',
       source: 'faces-index',
-    })]);
+    }));
   }
+
+  for (const u of searchUnifiedByStore(barcode, 'faces')) {
+    const dup = localHits.some(
+      (h) => h.id === u.id && (h.shadeName || '') === (u.shadeName || ''),
+    );
+    if (!dup) localHits.push({ ...u, source: u.source || 'unified-index' });
+  }
+
+  const indexFresh = indexed?.updatedAt && Date.now() - indexed.updatedAt < 24 * 60 * 60 * 1000;
+  const shouldLive = hintHits.length > 0 || !localHits.length || !indexFresh;
+
+  if (!shouldLive) return dedupeHits(localHits);
 
   const matches = await searchProductsByBarcode(barcode, {
     limit: 10,
     hintHits,
     light: false,
   });
-  return dedupeHits(matches.map((m) => {
+  const liveHits = matches.map((m) => {
     const tile = m.tile;
     if (m.matchType === 'shade' && m.shade) {
       return hit('faces', {
@@ -464,6 +501,7 @@ async function searchFacesByBarcode(barcode, hintHits = []) {
         barcode: m.barcode,
         shadeName: m.shade.name,
         matchType: 'shade',
+        source: 'live',
       });
     }
     return hit('faces', {
@@ -476,8 +514,12 @@ async function searchFacesByBarcode(barcode, hintHits = []) {
       barcode: m.barcode || tile.ean || barcode,
       shadeName: tile.shadeName || undefined,
       matchType: tile.shadeName ? 'shade' : 'product',
+      source: 'live',
     });
-  }));
+  });
+
+  if (liveHits.length) return dedupeHits([...liveHits, ...localHits]);
+  return dedupeHits(localHits);
 }
 
 async function searchVanillaByBarcode(barcode) {
@@ -582,10 +624,8 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
 
   const storeKey = stores?.length ? [...stores].sort().join(',') : 'all';
   const cacheKey = `${fast ? 'fast:' : 'full:'}${storeKey}:${barcode}`;
-  const cached = searchResultCache.get(cacheKey);
-  if (cached && Date.now() - cached.at < SEARCH_CACHE_MS) {
-    return cached.data;
-  }
+  const cached = getCachedSearch(cacheKey);
+  if (cached) return cached;
 
   const localHits = searchUnifiedBarcodeIndex(barcode);
   if (fast) {
@@ -659,16 +699,19 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
     });
   }
 
-  if (facesSearcher && !(byStore.faces || []).length) {
+  if (facesSearcher) {
     const combinedHints = [
       ...hintHits,
-      ...dedupeHits(results).map((h) => ({
-        name: h.name,
-        nameEn: h.nameEn,
-        manufacturer: h.manufacturer,
-        manufacturerEn: h.manufacturerEn,
-        brand: h.manufacturer,
-      })),
+      ...sortHitsStable(dedupeHits(results))
+        .filter((h) => h.store !== 'faces')
+        .map((h) => ({
+          name: h.name,
+          nameEn: h.nameEn,
+          manufacturer: h.manufacturer,
+          manufacturerEn: h.manufacturerEn,
+          brand: h.manufacturer,
+          store: h.store,
+        })),
     ];
     try {
       const facesLive = await withStoreTimeout(
@@ -676,19 +719,18 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
         facesSearcher.timeoutMs,
         'faces',
       );
-      if (facesLive?.length) {
-        byStore.faces = facesLive;
-        results.push(...facesLive);
-      } else {
-        byStore.faces = localByStore.faces || [];
-      }
+      const mergedFaces = dedupeHits([...(facesLive || []), ...(byStore.faces || []), ...(localByStore.faces || [])]);
+      const nonFaces = results.filter((r) => r.store !== 'faces');
+      results.length = 0;
+      results.push(...nonFaces, ...mergedFaces);
+      byStore.faces = mergedFaces;
     } catch (err) {
       errors.push({ store: 'faces', message: err?.message || 'فشل البحث' });
-      byStore.faces = localByStore.faces || [];
-      if (byStore.faces.length) results.push(...byStore.faces);
+      byStore.faces = byStore.faces?.length ? byStore.faces : (localByStore.faces || []);
+      if (byStore.faces.length && !results.some((r) => r.store === 'faces')) {
+        results.push(...byStore.faces);
+      }
     }
-  } else if (facesSearcher && byStore.faces?.length) {
-    /* already from local index */
   }
 
   const storeList = enabled.map(({ store }) => store);
@@ -696,7 +738,7 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
 
   const payload = {
     barcode,
-    results: dedupeHits(results),
+    results: sortHitsStable(dedupeHits(results)),
     byStore,
     errors,
     stores: uniqueStores.map((store) => ({
@@ -712,7 +754,7 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
       searchResultCache.set(`fast:all:${barcode}`, { at: Date.now(), data: { ...payload, fast: true } });
     }
   } else {
-    searchResultCache.delete(cacheKey);
+    searchResultCache.set(cacheKey, { at: Date.now(), data: payload });
   }
   return payload;
 }

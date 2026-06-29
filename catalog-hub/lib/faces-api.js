@@ -1016,6 +1016,17 @@ export function buildFacesHintQueriesFromUpc(upc) {
 
 let facesBarcodeIndex = null;
 let facesBarcodeDirty = false;
+let facesIndexRebuildTimer = null;
+
+function scheduleUnifiedIndexRebuild() {
+  if (facesIndexRebuildTimer) clearTimeout(facesIndexRebuildTimer);
+  facesIndexRebuildTimer = setTimeout(() => {
+    facesIndexRebuildTimer = null;
+    import('./unified-barcode-index.js')
+      .then((m) => m.buildUnifiedBarcodeIndex({ force: true }))
+      .catch(() => {});
+  }, 1500);
+}
 
 export function loadFacesBarcodeIndex() {
   if (facesBarcodeIndex) return facesBarcodeIndex;
@@ -1064,6 +1075,7 @@ export function saveFacesBarcodeIndexEntry(barcode, tile = {}) {
   };
   facesBarcodeDirty = true;
   saveFacesBarcodeIndex();
+  scheduleUnifiedIndexRebuild();
 }
 
 async function indexFacesProductBarcodes(pid, baseTile = {}) {
@@ -1294,14 +1306,14 @@ async function resolveFacesGtinBarcode(barcode, scanOpts) {
     }
   }
 
-  const index = loadFacesBarcodeIndex();
-  const knownPids = [...new Set(Object.values(index.barcodes || {}).map((e) => e.pid).filter(Boolean))];
-  for (const pid of knownPids) {
-    if (scanOpts.hits.length >= scanOpts.limit) break;
-    const resolved = await resolveFacesBarcodeOnProduct(pid, barcode);
-    if (!resolved) continue;
-    if (resolved.matchType === 'shade' && resolved.shade) scanOpts.pushShade(resolved.tile, resolved.shade);
-    else scanOpts.pushProduct({ ...resolved.tile, ean: resolved.barcode });
+  const indexed = lookupFacesBarcodeIndex(barcode);
+  if (indexed?.pid) {
+    const resolved = await resolveFacesBarcodeOnProduct(indexed.pid, barcode, indexed);
+    if (resolved) {
+      if (resolved.matchType === 'shade' && resolved.shade) scanOpts.pushShade(resolved.tile, resolved.shade);
+      else scanOpts.pushProduct({ ...resolved.tile, ean: resolved.barcode });
+      if (scanOpts.hits.length) return true;
+    }
   }
 
   return scanOpts.hits.length > 0;
@@ -1383,7 +1395,7 @@ function hitsFromFacesIndex(barcode, indexed, { pushProduct, pushShade, limit, h
 }
 
 const facesSearchCache = new Map();
-const FACES_SEARCH_CACHE_MS = 30 * 60 * 1000;
+const FACES_SEARCH_CACHE_MS = 10 * 60 * 1000;
 
 function cacheFacesSearchHits(barcode, hits, limit) {
   const key = gtinKey(barcode);
@@ -1428,14 +1440,20 @@ export async function searchProductsByBarcode(barcode, { limit = 12, hintHits = 
 
   const scanOpts = { pushProduct, pushShade, limit, hits, light: false };
 
-  const indexed = lookupFacesBarcodeIndex(barcode);
-  if (indexed?.pid && (indexed.nameAr || indexed.nameEn || indexed.thumb)) {
-    return cacheFacesSearchHits(barcode, hitsFromFacesIndex(barcode, indexed, scanOpts), limit);
-  }
-
   if (hintHits.length) {
     const hinted = await tryFacesGtinWithHints(barcode, hintHits, scanOpts);
     if (hinted) return cacheFacesSearchHits(barcode, hits, limit);
+  }
+
+  const indexed = lookupFacesBarcodeIndex(barcode);
+  if (indexed?.pid && (indexed.nameAr || indexed.nameEn || indexed.thumb)) {
+    const verified = await resolveFacesBarcodeOnProduct(indexed.pid, barcode, indexed);
+    if (verified) {
+      if (verified.matchType === 'shade' && verified.shade) pushShade(verified.tile, verified.shade);
+      else pushProduct({ ...verified.tile, ean: verified.barcode, shadeName: indexed.shadeName || '' });
+      if (hits.length) return cacheFacesSearchHits(barcode, hits, limit);
+    }
+    return cacheFacesSearchHits(barcode, hitsFromFacesIndex(barcode, indexed, scanOpts), limit);
   }
 
   if (looksLikeGtinBarcode(barcode)) {
