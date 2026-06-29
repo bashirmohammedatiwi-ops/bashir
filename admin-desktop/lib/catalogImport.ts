@@ -173,7 +173,10 @@ export async function searchCatalogByBarcodeProgressive(
 
   const refreshStores = () =>
     Promise.allSettled(
-      CATALOG_STORES.map(async (store) => {
+      (initial.options.length
+        ? [...CATALOG_STORES]
+        : ["faces", ...CATALOG_STORES.filter((s) => s !== "faces")]
+      ).map(async (store) => {
         try {
           const data = await searchCatalogByBarcode(barcode, { store });
           push(data.options || []);

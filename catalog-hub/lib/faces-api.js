@@ -338,6 +338,87 @@ export function parseProductTiles(html, limit = 0) {
   return items;
 }
 
+/** منتجات يظهر باركودها في صورة الدرجة داخل HTML القائمة (حتى لو data-ean فارغ) */
+export function parseProductTilesContainingBarcode(html, barcode) {
+  const digits = String(barcode || '').replace(/\D/g, '');
+  if (!digits) return [];
+  const variants = new Set([digits]);
+  if (digits.length === 13 && digits.startsWith('0')) variants.add(digits.slice(1));
+  if (digits.length <= 13) variants.add(digits.padStart(13, '0'));
+
+  const seen = new Set();
+  const items = [];
+  const chunks = plpHtmlOnly(html).split(/class="js-product-tile-container\b/);
+
+  for (const chunk of chunks.slice(1)) {
+    const hasBarcode = [...variants].some((v) => chunk.includes(v));
+    if (!hasBarcode) continue;
+    const pid = chunk.match(/data-pid="([^"]+)"/)?.[1];
+    if (!pid || seen.has(pid)) continue;
+    seen.add(pid);
+
+    const ean = chunk.match(/data-ean="([^"]*)"/)?.[1]?.trim() || '';
+    const nameAr = chunk.match(/data-cnstrc-item-name="([^"]*)"/)?.[1]?.trim() || '';
+    const gtm = parseGtmImpression(chunk.match(/data-gtm-enhancedecommerce-impression="([^"]+)"/)?.[1]);
+    const brandAr = chunk.match(/product-tile-brand[^>]*>\s*([^<]+)/)?.[1]?.trim() || '';
+    const priceVal = gtm.price ?? chunk.match(/data-cnstrc-item-price="([^"]*)"/)?.[1];
+    const img = chunk.match(/src="(https:\/\/www\.faces\.ae\/dw\/image[^"]+)"/)?.[1]
+      || chunk.match(/srcset="(https:\/\/www\.faces\.ae\/dw\/image[^"]+)"/)?.[1];
+    const productUrl = chunk.match(/href="(\/ar\/p\/[^"]+\.html)"/)?.[1]
+      || chunk.match(/href="(\/en\/p\/[^"]+\.html)"/)?.[1];
+
+    items.push({
+      pid,
+      ean: ean || '',
+      nameAr: nameAr || gtm.item_name || '',
+      nameEn: gtm.item_name || '',
+      brandAr,
+      brandEn: gtm.item_brand || '',
+      price: priceVal,
+      inStock: gtm.item_in_stock !== false,
+      thumb: fixImageUrl(img),
+      productUrl: absUrl(productUrl),
+      hasOptions: true,
+    });
+  }
+  return items;
+}
+
+const FACES_BARCODE_CATALOG_CATEGORIES = [
+  'makeup', 'lipstick', 'foundation', 'skincare', 'perfume', 'bestsellers', 'haircare',
+];
+
+async function fetchCategoryHtml(categoryId, { page = 1, pageSize = 48 } = {}) {
+  const start = (page - 1) * pageSize;
+  const url = page <= 1
+    ? `${SITE}/ar/search?cgid=${encodeURIComponent(categoryId)}&sz=${pageSize}`
+    : `${SITE}/ar/search?cgid=${encodeURIComponent(categoryId)}&start=${start}&sz=${pageSize}`;
+  const { html } = await fetchText(url, { timeoutMs: 12000 });
+  return html;
+}
+
+/** مسح سريع لأقسام وجوه — يجد باركودات الدرجات المخفية في روابط الصور */
+async function findFacesTilesByCatalogScan(barcode, { maxPages = 1 } = {}) {
+  const digits = String(barcode || '').replace(/\D/g, '');
+  if (!digits) return [];
+
+  const settled = await Promise.allSettled(
+    FACES_BARCODE_CATALOG_CATEGORIES.map(async (categoryId) => {
+      const tiles = [];
+      for (let page = 1; page <= maxPages; page++) {
+        const html = await fetchCategoryHtml(categoryId, { page });
+        tiles.push(...parseProductTilesContainingBarcode(html, digits));
+        if (tiles.length) break;
+      }
+      return tiles;
+    }),
+  );
+
+  return mergeTilesByPid(
+    settled.flatMap((r) => (r.status === 'fulfilled' ? r.value : [])),
+  );
+}
+
 function parseTotalCount(html) {
   const ar = html.match(/products-count[^>]*>\s*([0-9,]+)/);
   if (ar) return Number(ar[1].replace(/,/g, ''));
@@ -794,23 +875,24 @@ async function fetchSearchHtmlTiles(query, limit = 20) {
   return parseProductTiles(html, limit);
 }
 
-/** يتحقق إن كان الباركود موجوداً في كتالوج صور وجوه */
+/** يتحقق إن كان الباركود موجوداً في كتالوج صور وجوه (صور الدرجات) */
 export async function probeFacesBarcodeInCatalog(barcode) {
-  const digits = String(barcode).replace(/\D/g, '');
+  const digits = String(barcode || '').replace(/\D/g, '');
   if (!digits) return false;
-  const templates = [
-    `${SITE}/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/product/${digits}/${digits}.jpg?sw=50&sh=50`,
-    `${SITE}/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog/default/dw/product/${digits}/${digits}.jpg?sw=50&sh=50`,
+  const suffix = `${digits}_/${digits}_.jpg`;
+  const prefixes = [
+    'default/dw818e2fc9/product',
+    'default/dwb7448fea/product',
+    'default/dw545057dd/product',
+    'default/dwf3958168/product',
+    'default/product',
   ];
-  for (const url of templates) {
-    try {
-      const res = await fetch(url, { method: 'HEAD', redirect: 'follow' });
-      if (res.ok) return true;
-    } catch {
-      /* next */
-    }
-  }
-  return false;
+  const base = `${SITE}/dw/image/v2/BJSM_PRD/on/demandware.static/-/Sites-faces-master-catalog`;
+  const checks = prefixes.map((p) => `${base}/${p}/${suffix}?sw=50&sh=50`);
+  const results = await Promise.allSettled(
+    checks.map((url) => fetch(url, { method: 'HEAD', redirect: 'follow', signal: AbortSignal.timeout(5000) })),
+  );
+  return results.some((r) => r.status === 'fulfilled' && r.value.ok);
 }
 
 export function buildFacesHintQueries(hintHits = []) {
@@ -1178,6 +1260,12 @@ export async function searchProductsByBarcode(barcode, { limit = 12, hintHits = 
     if (resolved?.matchType === 'shade') pushShade(resolved.tile, resolved.shade);
     else if (resolved) pushProduct({ ...resolved.tile, ean: resolved.barcode, shadeName: indexed.shadeName || '' });
     else pushProduct(tileFromFacesIndex(indexed));
+    if (hits.length) return cacheFacesSearchHits(barcode, hits, limit);
+  }
+
+  const catalogTiles = await findFacesTilesByCatalogScan(barcode, { maxPages: light ? 1 : 2 });
+  if (catalogTiles.length) {
+    await scanTilesForBarcode(catalogTiles, barcode, scanOpts);
     if (hits.length) return cacheFacesSearchHits(barcode, hits, limit);
   }
 
