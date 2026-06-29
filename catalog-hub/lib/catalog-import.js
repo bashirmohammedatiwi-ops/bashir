@@ -92,6 +92,10 @@ export async function searchImportByBarcode(rawBarcode, { fast = false, stores =
 
   const options = (data.results || [])
     .filter((r) => r.id || r.sku)
+    .filter((r) => {
+      if (r.store !== 'amazon') return true;
+      return Boolean(r.name || r.nameEn || r.thumb);
+    })
     .map((r) => ({
     store: r.store,
     storeLabel: r.storeLabel,

@@ -244,6 +244,58 @@ function resolveBrands(ar = {}, en = {}) {
   return { brandAr, brandEn };
 }
 
+export function isUsableAmazonProduct(detail = {}) {
+  const nameAr = String(detail.nameAr || detail.name || '').trim();
+  const nameEn = String(detail.nameEn || '').trim();
+  const thumb = String(detail.thumb || '').trim();
+  const images = detail.images || [];
+  return Boolean((nameAr || nameEn) && (thumb || images.length));
+}
+
+function productCompletenessScore(detail = {}) {
+  let score = 0;
+  if (detail.nameAr) score += 3;
+  if (detail.nameEn) score += 3;
+  if (detail.thumb) score += 4;
+  if (detail.images?.length) score += Math.min(detail.images.length, 5);
+  if (detail.brandAr || detail.brandEn) score += 2;
+  if (detail.description || detail.descriptionEn) score += 1;
+  if (detail.barcode) score += 1;
+  return score;
+}
+
+function buildDetailFromParsed(asin, ar, en, listing = {}) {
+  const { brandAr, brandEn } = resolveBrands(ar, en);
+  const images = [...new Set([...(ar.images || []), ...(en.images || [])])].map(proxyAmazonImage).filter(Boolean);
+  const listThumb = listing.thumb ? proxyAmazonImage(listing.thumb) : '';
+  const thumb = proxyAmazonImage(ar.thumb || en.thumb || listThumb || images[0] || '');
+  if (listThumb && !images.includes(listThumb)) images.unshift(listThumb);
+  return {
+    id: asin,
+    asin,
+    sku: asin,
+    name: ar.title || en.title || listing.nameEn || listing.nameAr || listing.name || '',
+    nameAr: ar.title || listing.nameAr || listing.name || '',
+    nameEn: en.title || listing.nameEn || listing.name || '',
+    manufacturer: brandAr || brandEn,
+    manufacturerEn: brandEn || brandAr,
+    brandAr,
+    brandEn,
+    description: ar.description,
+    descriptionEn: en.description,
+    price: ar.price ? formatPrice(ar.price, 'ar') : en.price ? formatPrice(en.price, 'en') : listing.price || '',
+    priceEn: en.price ? formatPrice(en.price, 'en') : '',
+    thumb,
+    images,
+    barcode: ar.barcode || en.barcode || '',
+    productUrl: `${AMAZON_SA}/dp/${asin}`,
+    productUrlEn: `${AMAZON_COM}/dp/${asin}`,
+    shades: [],
+    shadeCount: 0,
+    hasOptions: false,
+  };
+}
+
 export function normalizeProductSummary(raw, meta = {}) {
   const asin = raw.asin || raw.id;
   const nameAr = raw.nameAr || meta.nameAr || raw.name || '';
@@ -273,40 +325,30 @@ export function normalizeProductSummary(raw, meta = {}) {
   };
 }
 
-export async function normalizeProductDetailBilingual(asin) {
-  const [htmlAr, htmlEn] = await Promise.all([
+export async function normalizeProductDetailBilingual(asin, listing = {}) {
+  const [htmlAr, htmlEnSa] = await Promise.all([
     fetchAmazonHtml(`${AMAZON_SA}/dp/${asin}`, 'ar').catch(() => ''),
     fetchAmazonHtml(`${AMAZON_SA}/-/en/dp/${asin}`, 'en').catch(() => ''),
   ]);
-  const ar = htmlAr ? parseProductDetail(htmlAr, asin) : { asin, title: '', brand: '', thumb: '', images: [], description: '', price: '', barcode: '' };
-  const en = htmlEn ? parseProductDetail(htmlEn, asin) : ar;
-  const { brandAr, brandEn } = resolveBrands(ar, en);
-  const images = [...new Set([...(ar.images || []), ...(en.images || [])])].map(proxyAmazonImage).filter(Boolean);
-  const thumb = proxyAmazonImage(ar.thumb || en.thumb || images[0] || '');
-  return {
-    id: asin,
-    asin,
-    sku: asin,
-    name: ar.title || en.title,
-    nameAr: ar.title,
-    nameEn: en.title,
-    manufacturer: brandAr || brandEn,
-    manufacturerEn: brandEn || brandAr,
-    brandAr,
-    brandEn,
-    description: ar.description,
-    descriptionEn: en.description,
-    price: ar.price ? formatPrice(ar.price, 'ar') : en.price ? formatPrice(en.price, 'en') : '',
-    priceEn: en.price ? formatPrice(en.price, 'en') : '',
-    thumb,
-    images,
-    barcode: ar.barcode || en.barcode,
-    productUrl: `${AMAZON_SA}/dp/${asin}`,
-    productUrlEn: `${AMAZON_COM}/dp/${asin}`,
-    shades: [],
-    shadeCount: 0,
-    hasOptions: false,
-  };
+  let ar = htmlAr ? parseProductDetail(htmlAr, asin) : { asin, title: '', brand: '', thumb: '', images: [], description: '', price: '', barcode: '' };
+  let en = htmlEnSa ? parseProductDetail(htmlEnSa, asin) : { asin, title: '', brand: '', thumb: '', images: [], description: '', price: '', barcode: '' };
+
+  const needsComFallback = !(ar.title || en.title) || !(ar.thumb || en.thumb || ar.images?.length || en.images?.length);
+  if (needsComFallback) {
+    const htmlCom = await fetchAmazonHtml(`${AMAZON_COM}/dp/${asin}`, 'en').catch(() => '');
+    if (htmlCom) {
+      const com = parseProductDetail(htmlCom, asin);
+      if (!en.title && com.title) en = com;
+      if (!ar.title && com.title) ar = { ...ar, title: com.title };
+      if (!en.thumb && com.thumb) {
+        en = { ...en, thumb: com.thumb, images: com.images?.length ? com.images : en.images };
+      }
+      if (!en.description && com.description) en = { ...en, description: com.description };
+      if (!en.barcode && com.barcode) en = { ...en, barcode: com.barcode };
+    }
+  }
+
+  return buildDetailFromParsed(asin, ar, en, listing);
 }
 
 async function fetchBrowseMerged(nodeId, { page = 1, keyword, keywordAr } = {}) {
@@ -379,47 +421,56 @@ export async function searchProducts(query, page = 1, limit = 30) {
   };
 }
 
-export async function fetchProductByAsin(asin) {
+export async function fetchProductByAsin(asin, listing = {}) {
   const id = String(asin || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(id)) return null;
-  return normalizeProductDetailBilingual(id);
+  const detail = await normalizeProductDetailBilingual(id, listing);
+  return isUsableAmazonProduct(detail) ? detail : null;
 }
 
 export async function searchProductsByBarcode(barcode) {
   const digits = String(barcode).replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return [];
-  const [htmlEn, htmlAr] = await Promise.all([
-    fetchAmazonHtml(buildSearchUrl(digits, 1, 'en'), 'en').catch(() => ''),
-    fetchAmazonHtml(buildSearchUrl(digits, 1, 'ar'), 'ar').catch(() => ''),
-  ]);
-  const asins = new Set();
-  for (const html of [htmlEn, htmlAr]) {
-    for (const m of html.matchAll(/data-asin="([A-Z0-9]{10})"/g)) asins.add(m[1]);
+
+  let htmlEn = await fetchAmazonHtml(buildSearchUrl(digits, 1, 'en'), 'en').catch(() => '');
+  let enList = parseSearchResults(htmlEn);
+  if (!enList.length) {
+    const saEnUrl = `${AMAZON_SA}/-/en/s?${new URLSearchParams({ k: digits, i: 'beauty', page: '1' })}`;
+    htmlEn = await fetchAmazonHtml(saEnUrl, 'en').catch(() => '');
+    enList = parseSearchResults(htmlEn);
   }
+
+  const htmlAr = await fetchAmazonHtml(buildSearchUrl(digits, 1, 'ar'), 'ar').catch(() => '');
+  const arByAsin = new Map(parseSearchResults(htmlAr).map((p) => [p.asin, p]));
+  const listingByAsin = new Map();
+  for (const p of enList) {
+    const ar = arByAsin.get(p.asin);
+    listingByAsin.set(p.asin, {
+      nameEn: p.name,
+      nameAr: ar?.name || p.name,
+      thumb: p.thumb || ar?.thumb,
+      price: p.price || ar?.price,
+    });
+  }
+  const asinOrder = enList.map((p) => p.asin).filter(Boolean);
   const results = [];
-  for (const asin of [...asins].slice(0, 3)) {
+  for (const asin of asinOrder.slice(0, 5)) {
     try {
-      const detail = await normalizeProductDetailBilingual(asin);
-      if (!detail?.id) continue;
+      const listing = listingByAsin.get(asin) || {};
+      const detail = await normalizeProductDetailBilingual(asin, listing);
+      if (!isUsableAmazonProduct(detail)) continue;
       const bc = String(detail.barcode || '').replace(/\D/g, '');
-      const barcodeMatches =
-        !bc || bc === digits || bc.endsWith(digits) || digits.endsWith(bc);
-      if (!barcodeMatches && asins.size > 1) continue;
+      const barcodeMatches = !bc || bc === digits || bc.endsWith(digits) || digits.endsWith(bc);
+      if (!barcodeMatches && asinOrder.length > 1) continue;
       if (!detail.barcode) detail.barcode = digits;
-      const { brandAr, brandEn } = resolveBrands(
-        { brand: detail.brandAr, title: detail.nameAr },
-        { brand: detail.brandEn, title: detail.nameEn },
-      );
-      detail.brandAr = brandAr;
-      detail.brandEn = brandEn;
-      detail.manufacturer = brandAr || brandEn;
-      detail.manufacturerEn = brandEn || brandAr;
       results.push(detail);
     } catch {
       /* skip */
     }
   }
-  return results;
+  return results
+    .sort((a, b) => productCompletenessScore(b) - productCompletenessScore(a))
+    .slice(0, 2);
 }
 
 export function sortProductsClient(products = [], sort = 'default') {

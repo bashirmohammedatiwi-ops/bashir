@@ -19,6 +19,7 @@ const STORE_LABELS = {
   elryan: 'الريان Elryan',
   miraaya: 'ميرايا Miraaya',
   faces: 'وجوه FACES',
+  amazon: 'Amazon Cosmetics',
 };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -243,12 +244,15 @@ export function isUsableCatalogHit(h) {
   const id = String(h.id || '').trim();
   const sku = String(h.sku || '').trim();
   const name = String(h.name || '').trim();
+  const nameEn = String(h.nameEn || '').trim();
+  const thumb = String(h.thumb || '').trim();
   const manufacturer = String(h.manufacturer || h.brandAr || '').trim().toLowerCase();
   const barcode = String(h.barcode || '').replace(/\D/g, '');
 
   if (manufacturer === 'upc_barcode') return false;
   if (!id && !sku) return false;
   if (!id && name && barcode && name.replace(/\D/g, '') === barcode) return false;
+  if (h.store === 'amazon' && !name && !nameEn && !thumb) return false;
   return true;
 }
 

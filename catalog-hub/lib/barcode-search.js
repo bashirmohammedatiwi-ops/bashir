@@ -41,6 +41,7 @@ import {
 import {
   searchProductsByBarcode as searchAmazonProductsByBarcode,
   normalizeProductSummary as normalizeAmazonSummary,
+  isUsableAmazonProduct,
 } from './amazon-api.js';
 
 function barcodeQueryVariants(barcode) {
@@ -532,21 +533,25 @@ async function searchVanillaByBarcode(barcode) {
 
 async function searchAmazonByBarcode(barcode) {
   const products = await searchAmazonProductsByBarcode(barcode);
-  return dedupeHits(products.map((p) => {
-    const n = normalizeAmazonSummary(p);
-    return hit('amazon', {
-      id: n.id,
-      name: n.nameAr || n.name,
-      nameEn: n.nameEn,
-      manufacturer: n.brandAr || n.manufacturer,
-      manufacturerEn: n.brandEn || n.manufacturerEn,
-      price: n.price,
-      thumb: n.thumb,
-      barcode: n.barcode || barcode,
-      matchType: 'product',
-      openUrl: `/amazon/?product=${n.id}`,
-    });
-  }));
+  return dedupeHits(
+    products
+      .filter((p) => isUsableAmazonProduct(p))
+      .map((p) => {
+        const n = normalizeAmazonSummary(p);
+        return hit('amazon', {
+          id: n.id,
+          name: n.nameAr || n.name,
+          nameEn: n.nameEn,
+          manufacturer: n.brandAr || n.manufacturer,
+          manufacturerEn: n.brandEn || n.manufacturerEn,
+          price: n.price,
+          thumb: n.thumb,
+          barcode: n.barcode || barcode,
+          matchType: 'product',
+          openUrl: `/amazon/?product=${n.id}`,
+        });
+      }),
+  );
 }
 
 const SEARCHERS = [
