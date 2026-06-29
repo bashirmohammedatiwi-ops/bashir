@@ -12,6 +12,7 @@ const STORE_CLASS = {
   elryan: 'hub-card--elryan',
   miraaya: 'hub-card--miraaya',
   faces: 'hub-card--faces',
+  amazon: 'hub-card--amazon',
 };
 
 function isValidBarcodeInput(raw) {
@@ -73,7 +74,7 @@ async function runBarcodeSearch(raw) {
   btn.disabled = true;
   status.textContent = 'جاري البحث في كل المتاجر...';
   status.className = 'barcode-status barcode-status--loading';
-  results.innerHTML = '<div class="barcode-loading">Nice One · Vanilla · الريان · ميرايا · وجوه — عادةً 2–8 ثوانٍ</div>';
+  results.innerHTML = '<div class="barcode-loading">Nice One · Vanilla · الريان · ميرايا · وجوه · Amazon — عادةً 2–10 ثوانٍ</div>';
   summary.innerHTML = '';
 
   const controller = new AbortController();

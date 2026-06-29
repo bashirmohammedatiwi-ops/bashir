@@ -38,6 +38,10 @@ import {
   normalizeProductSummary as normalizeVanillaSummary,
   parseVanillaBarcode,
 } from './vanilla-api.js';
+import {
+  searchProductsByBarcode as searchAmazonProductsByBarcode,
+  normalizeProductSummary as normalizeAmazonSummary,
+} from './amazon-api.js';
 
 function barcodeQueryVariants(barcode) {
   const digits = String(barcode).replace(/\D/g, '');
@@ -56,6 +60,7 @@ export const STORE_META = {
   elryan: { id: 'elryan', label: 'الريان Elryan', path: '/elryan/', domain: 'elryan.com' },
   miraaya: { id: 'miraaya', label: 'ميرايا Miraaya', path: '/miraaya/', domain: 'miraaya.com' },
   faces: { id: 'faces', label: 'وجوه FACES', path: '/faces/', domain: 'faces.ae' },
+  amazon: { id: 'amazon', label: 'Amazon Cosmetics', path: '/amazon/', domain: 'amazon.com' },
 };
 
 let elryanBeautyIdsPromise = null;
@@ -521,12 +526,32 @@ async function searchVanillaByBarcode(barcode) {
   return dedupeHits(results);
 }
 
+async function searchAmazonByBarcode(barcode) {
+  const products = await searchAmazonProductsByBarcode(barcode);
+  return dedupeHits(products.map((p) => {
+    const n = normalizeAmazonSummary(p);
+    return hit('amazon', {
+      id: n.id,
+      name: n.nameAr || n.name,
+      nameEn: n.nameEn,
+      manufacturer: n.brandAr || n.manufacturer,
+      manufacturerEn: n.brandEn || n.manufacturerEn,
+      price: n.price,
+      thumb: n.thumb,
+      barcode: n.barcode || barcode,
+      matchType: 'product',
+      openUrl: `/amazon/?product=${n.id}`,
+    });
+  }));
+}
+
 const SEARCHERS = [
   { store: 'niceone', fn: searchNiceOneByBarcode, timeoutMs: 10_000 },
   { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 6_000 },
   { store: 'vanilla', fn: searchVanillaByBarcode, timeoutMs: 6_000 },
   { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 6_000 },
   { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 35_000 },
+  { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 12_000 },
 ];
 
 function withStoreTimeout(promise, ms, store) {

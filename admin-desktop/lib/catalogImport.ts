@@ -68,7 +68,7 @@ export type CatalogImportProduct = {
   categoryHintEn?: string | string[];
 };
 
-const CATALOG_STORES = ["niceone", "elryan", "vanilla", "miraaya", "faces"] as const;
+const CATALOG_STORES = ["niceone", "elryan", "vanilla", "miraaya", "faces", "amazon"] as const;
 
 const CLIENT_SEARCH_CACHE_MS = 5 * 60 * 1000;
 const clientSearchCache = new Map<

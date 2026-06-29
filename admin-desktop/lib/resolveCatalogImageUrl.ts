@@ -29,12 +29,20 @@ export function resolveCatalogImageUrl(url: string): string {
     return `${hub}${u.startsWith("/catalog-hub") ? u.replace(/^\/catalog-hub/, "") : u}`;
   }
 
+  if (u.includes("/api/amazon/img")) {
+    if (u.startsWith("http://") || u.startsWith("https://")) return u;
+    return `${hub}${u.startsWith("/catalog-hub") ? u.replace(/^\/catalog-hub/, "") : u}`;
+  }
+
   if (u.startsWith("http://") || u.startsWith("https://")) {
     const isDirectFaces =
       (u.includes("faces.ae") || u.includes("demandware.static")) &&
       (u.includes("/dw/image") || u.includes("demandware.static"));
     if (isDirectFaces) {
       return `${hub}/api/faces/img?u=${encodeURIComponent(u)}`;
+    }
+    if (u.includes("media-amazon.com") || u.includes("images-amazon.com")) {
+      return `${hub}/api/amazon/img?u=${encodeURIComponent(u)}`;
     }
     return u;
   }

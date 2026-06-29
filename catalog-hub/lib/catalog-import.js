@@ -12,6 +12,7 @@ import { fetchProductDetail as fetchVanillaDetail, normalizeProductDetail as nor
 import { fetchProductByIdBilingual } from './elryan-api.js';
 import { fetchProductBySku, fetchProductById as fetchMiraayaById, normalizeProductDetail as normalizeMiraayaDetail, resolveProductByBarcode } from './miraaya-api.js';
 import { fetchProductById as fetchFacesById, normalizeProductDetailFromRaw as normalizeFacesDetail } from './faces-api.js';
+import { fetchProductByAsin as fetchAmazonByAsin } from './amazon-api.js';
 
 function normalizeHubOrigin(hubOrigin = '') {
   const base = String(hubOrigin || '').trim().replace(/\/$/, '');
@@ -170,6 +171,12 @@ async function fetchVanillaImport(id, hubOrigin) {
   return buildImportPayload('vanilla', normalized, { hubOrigin });
 }
 
+async function fetchAmazonImport(id, hubOrigin) {
+  const product = await fetchAmazonByAsin(id);
+  if (!product?.id) return null;
+  return buildImportPayload('amazon', product, { hubOrigin });
+}
+
 export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barcode = '', light = false } = {}) {
   const id = String(sourceId || '').trim();
   if (!id || !store) return { error: 'المتجر ومعرّف المنتج مطلوبان' };
@@ -190,6 +197,9 @@ export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barc
       break;
     case 'vanilla':
       payload = await fetchVanillaImport(id, hubOrigin);
+      break;
+    case 'amazon':
+      payload = await fetchAmazonImport(id, hubOrigin);
       break;
     default:
       return { error: `متجر غير معروف: ${store}` };

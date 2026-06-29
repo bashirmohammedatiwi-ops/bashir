@@ -93,6 +93,10 @@ body {
   border-color: #1a1a1a;
 }
 
+.hub-card--amazon:hover {
+  border-color: #ff9900;
+}
+
 .hub-card-icon {
   width: 52px;
   height: 52px;
@@ -124,6 +128,10 @@ body {
 
 .hub-card--faces .hub-card-icon {
   background: linear-gradient(135deg, #1a1a1a, #4a4a4a);
+}
+
+.hub-card--amazon .hub-card-icon {
+  background: linear-gradient(135deg, #ff9900, #232f3e);
 }
 
 .hub-card h2 {
@@ -180,6 +188,10 @@ body {
 
 .hub-card--faces .hub-cta {
   color: #1a1a1a;
+}
+
+.hub-card--amazon .hub-cta {
+  color: #ff9900;
 }
 
 .hub-foot {
@@ -323,6 +335,7 @@ body {
 .barcode-result.hub-card--elryan:hover { border-color: #3b5dac; }
 .barcode-result.hub-card--miraaya:hover { border-color: #7b4b94; }
 .barcode-result.hub-card--faces:hover { border-color: #1a1a1a; }
+.barcode-result.hub-card--amazon:hover { border-color: #ff9900; }
 
 .barcode-result-img {
   width: 72px;
