@@ -151,20 +151,6 @@ export async function searchCatalogByBarcode(
   return catalogFetch<CatalogSearchResponse>(`/api/import/search?${params}`, timeoutMs);
 }
 
-function mergeCatalogOptions(lists: CatalogImportOption[][]): CatalogImportOption[] {
-  const seen = new Set<string>();
-  const out: CatalogImportOption[] = [];
-  for (const list of lists) {
-    for (const opt of list) {
-      const key = `${opt.store}:${opt.sourceId}:${opt.shadeName || ""}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push(opt);
-    }
-  }
-  return out;
-}
-
 /**
  * بحث متدرّج: فهرس محلي فوري ثم بحث موحّد واحد (أسرع وأثبت من 6 طلبات منفصلة).
  */
