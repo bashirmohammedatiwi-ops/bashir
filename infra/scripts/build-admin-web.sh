@@ -53,5 +53,6 @@ npm run build:web
 rm -rf "$OUT_DIR"
 mkdir -p "$OUT_DIR"
 cp -r out/. "$OUT_DIR/"
+chmod -R a+rX "$OUT_DIR"
 
 echo "==> Admin web build ready: infra/admin-static/"
