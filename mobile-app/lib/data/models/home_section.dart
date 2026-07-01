@@ -7,14 +7,28 @@ import 'product.dart';
 class PromoStrip {
   final String text;
   final String? link;
+  final String? linkType;
+  final String? linkValue;
   final String? backgroundColor;
-  const PromoStrip({required this.text, this.link, this.backgroundColor});
+  const PromoStrip({
+    required this.text,
+    this.link,
+    this.linkType,
+    this.linkValue,
+    this.backgroundColor,
+  });
+
+  bool get hasLink =>
+      (link != null && link!.isNotEmpty) ||
+      (linkType != null && linkType!.isNotEmpty);
 
   factory PromoStrip.fromJson(Map<String, dynamic>? json) {
     if (json == null) return const PromoStrip(text: '');
     return PromoStrip(
       text: asString(json['text']),
       link: json['link']?.toString(),
+      linkType: json['linkType']?.toString(),
+      linkValue: json['linkValue']?.toString(),
       backgroundColor: json['backgroundColor']?.toString(),
     );
   }

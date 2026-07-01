@@ -15,7 +15,6 @@ import {
   message,
 } from "antd";
 import { useState } from "react";
-import { MediaPicker } from "@/components/MediaPicker";
 import { BannerExtraFields } from "@/components/home-builder/SectionPayloadEditor";
 import { mediaThumb } from "@/lib/mediaUrl";
 import { mutations, queries } from "@/lib/queries";
@@ -64,6 +63,21 @@ export default function BannersPage() {
     queryKey: ["banners"],
     queryFn: queries.banners,
   });
+  const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: queries.categoriesFull });
+  const { data: subcategories } = useQuery({ queryKey: ["subcategories-all"], queryFn: () => queries.subcategories() });
+  const { data: tertiary } = useQuery({ queryKey: ["tertiary-all"], queryFn: () => queries.tertiarySections() });
+  const { data: brands } = useQuery({ queryKey: ["brands"], queryFn: queries.brands });
+  const { data: products } = useQuery({
+    queryKey: ["products-lite-banners"],
+    queryFn: () => queries.products({ limit: 200 }),
+  });
+  const bannerEntities = {
+    categories: categories ?? [],
+    subcategories: subcategories ?? [],
+    tertiary: tertiary ?? [],
+    brands: brands ?? [],
+    products: products?.items ?? products ?? [],
+  };
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
@@ -208,10 +222,7 @@ export default function BannersPage() {
           <Form.Item name="link" label="رابط الزر">
             <Input placeholder="/products?sale=1" />
           </Form.Item>
-          <BannerExtraFields />
-          <Form.Item name="imageId" label="صورة البنر">
-            <MediaPicker />
-          </Form.Item>
+          <BannerExtraFields entities={bannerEntities} />
           <Form.Item name="position" label="الترتيب">
             <InputNumber style={{ width: "100%" }} min={0} />
           </Form.Item>

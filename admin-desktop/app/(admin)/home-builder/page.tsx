@@ -1,24 +1,25 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Alert,
   Button,
-  Card,
-  Col,
   Drawer,
   Form,
   Input,
-  Modal,
-  Row,
-  Select,
   Space,
   Switch,
   Tabs,
+  Tag,
   Typography,
   message,
 } from "antd";
-import { EyeOutlined, PlusOutlined, ReloadOutlined } from "@ant-design/icons";
+import {
+  EyeOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+  SaveOutlined,
+} from "@ant-design/icons";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { HomePhonePreview } from "@/components/home-builder/HomePhonePreview";
 import { HomeSectionList } from "@/components/home-builder/HomeSectionList";
@@ -31,36 +32,70 @@ import {
   normalizePayload,
 } from "@/components/home-builder/section-types";
 import { mutations, queries } from "@/lib/queries";
+import "@/components/home-builder/home-builder.css";
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Paragraph, Text } = Typography;
+
+function cleanPayload(type: SectionType, payload: Record<string, unknown>) {
+  const p = normalizePayload(type, { ...payload });
+  delete (p as any).source;
+  for (const key of ["categoryId", "subcategoryId", "tertiaryCategoryId", "brandId", "linkType", "linkValue"]) {
+    if (p[key] === "") delete p[key];
+  }
+  return p;
+}
 
 export default function HomeBuilderPage() {
   const qc = useQueryClient();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [editorTab, setEditorTab] = useState("content");
   const [form] = Form.useForm();
 
   const { data: blocks, isLoading } = useQuery({
     queryKey: ["home-blocks"],
     queryFn: queries.homeBlocks,
   });
-  const { data: preview, refetch: refetchPreview } = useQuery({
+  const { data: preview, refetch: refetchPreview, isFetching: previewLoading } = useQuery({
     queryKey: ["home-preview"],
     queryFn: queries.homePreview,
   });
   const { data: banners } = useQuery({ queryKey: ["banners"], queryFn: queries.banners });
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: queries.categoriesFull });
+  const { data: subcategories } = useQuery({
+    queryKey: ["subcategories-all"],
+    queryFn: () => queries.subcategories(),
+  });
+  const { data: tertiary } = useQuery({
+    queryKey: ["tertiary-all"],
+    queryFn: () => queries.tertiarySections(),
+  });
   const { data: brands } = useQuery({ queryKey: ["brands"], queryFn: queries.brands });
   const { data: packages } = useQuery({ queryKey: ["packages"], queryFn: queries.packages });
   const { data: products } = useQuery({
     queryKey: ["products-lite"],
-    queryFn: () => queries.products({ limit: 200 }),
+    queryFn: () => queries.products({ limit: 300 }),
   });
   const { data: skinConcerns } = useQuery({
     queryKey: ["skin-concerns"],
     queryFn: () => queries.skinConcerns(true),
   });
+
+  const editorEntities = useMemo(
+    () => ({
+      banners: banners ?? [],
+      categories: categories ?? [],
+      subcategories: subcategories ?? [],
+      tertiary: tertiary ?? [],
+      brands: brands ?? [],
+      packages: packages ?? [],
+      products: products?.items ?? products ?? [],
+      skinConcerns: skinConcerns ?? [],
+    }),
+    [banners, categories, subcategories, tertiary, brands, packages, products, skinConcerns],
+  );
 
   const sorted = useMemo(
     () => [...(blocks ?? [])].sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
@@ -70,7 +105,7 @@ export default function HomeBuilderPage() {
   const upsert = useMutation({
     mutationFn: async (values: any) => {
       const type = values.type as SectionType;
-      const payload = normalizePayload(type, values.payload ?? {});
+      const payload = cleanPayload(type, values.payload ?? {});
       const body = {
         type,
         title: values.title,
@@ -95,6 +130,7 @@ export default function HomeBuilderPage() {
     mutationFn: mutations.deleteHomeBlock,
     onSuccess: () => {
       message.success("تم الحذف");
+      setSelectedId(null);
       qc.invalidateQueries({ queryKey: ["home-blocks"] });
       qc.invalidateQueries({ queryKey: ["home-preview"] });
     },
@@ -119,7 +155,7 @@ export default function HomeBuilderPage() {
 
   const duplicate = useMutation({
     mutationFn: async (block: any) => {
-      const payload = normalizePayload(block.type, block.payload ?? {});
+      const payload = cleanPayload(block.type, block.payload ?? {});
       return mutations.createHomeBlock({
         type: block.type,
         title: block.title ? `${block.title} (نسخة)` : undefined,
@@ -138,6 +174,7 @@ export default function HomeBuilderPage() {
   function openCreate(type: SectionType) {
     const def = SECTION_TYPES.find((t) => t.value === type)!;
     setEditing(null);
+    setEditorTab("content");
     form.resetFields();
     form.setFieldsValue({
       type,
@@ -150,6 +187,8 @@ export default function HomeBuilderPage() {
 
   function openEdit(block: any) {
     setEditing(block);
+    setSelectedId(block.id);
+    setEditorTab("content");
     form.setFieldsValue({
       type: block.type,
       title: block.title,
@@ -174,107 +213,133 @@ export default function HomeBuilderPage() {
   }, []);
 
   const activeCount = sorted.filter((b) => b.isActive !== false).length;
+  const selectedBlock = sorted.find((b) => b.id === selectedId);
 
   return (
-    <>
-      <Space direction="vertical" size={16} style={{ width: "100%" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-          <div>
-            <Title level={3} style={{ margin: 0 }}>
-              بناء الصفحة الرئيسية
-            </Title>
-            <Paragraph type="secondary" style={{ margin: "4px 0 0" }}>
-              رتّب أقسام التطبيق كما في Nice One — السحب والإفلات، معاينة مباشرة، {activeCount} قسم نشط
-            </Paragraph>
+    <div className="hb-page">
+      <div className="hb-toolbar">
+        <div>
+          <Title level={3}>استوديو الصفحة الرئيسية</Title>
+          <Paragraph type="secondary" style={{ margin: "4px 0 0" }}>
+            بناء مرئي كامل — صور، روابط ذكية، معاينة حية
+          </Paragraph>
+        </div>
+        <Space wrap>
+          <div className="hb-stats">
+            <span className="hb-stat-pill">{sorted.length} قسم</span>
+            <span className="hb-stat-pill">{activeCount} نشط</span>
           </div>
-          <Space wrap>
-            <Button icon={<ReloadOutlined />} onClick={() => refetchPreview()}>
-              تحديث المعاينة
-            </Button>
-            <Button icon={<EyeOutlined />} onClick={() => setPreviewOpen(true)}>
-              JSON
-            </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => openCreate("HERO_BANNER")}>
-              + بنر رئيسي
-            </Button>
-          </Space>
+          <Button icon={<ReloadOutlined />} loading={previewLoading} onClick={() => refetchPreview()}>
+            تحديث المعاينة
+          </Button>
+          <Button icon={<EyeOutlined />} onClick={() => setPreviewOpen(true)}>
+            JSON
+          </Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={() => openCreate("HERO_BANNER")}>
+            + بنر رئيسي
+          </Button>
+        </Space>
+      </div>
+
+      <Alert
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+        message="اسحب الأقسام للترتيب · انقر «تعديل» لإضافة صور وربط منتج/قسم/براند · المعاينة تعرض صور حقيقية من API"
+      />
+
+      <div className="hb-layout">
+        <div className="hb-panel">
+          <div className="hb-panel-head">
+            <span>📱 معاينة حية</span>
+            {selectedBlock && (
+              <Tag color="magenta">{labelForType(selectedBlock.type)}</Tag>
+            )}
+          </div>
+          <div className="hb-panel-body">
+            <HomePhonePreview
+              blocks={sorted}
+              previewSections={preview?.sections}
+              selectedId={selectedId}
+              onSelectSection={setSelectedId}
+            />
+          </div>
         </div>
 
-        <Alert
-          type="info"
-          showIcon
-          message="الترتيب في التطبيق يتبع ترتيبك هنا بالضبط — اسحب الأقسام أو استخدم الأسهم"
-        />
-
-        <Row gutter={[16, 16]}>
-          <Col xs={24} xl={7}>
-            <Card title="معاينة الهاتف" size="small" loading={isLoading}>
-              <HomePhonePreview blocks={sorted} previewSections={preview?.sections} />
-            </Card>
-            <Card title="إضافة قسم" size="small" style={{ marginTop: 16 }}>
-              <Space direction="vertical" style={{ width: "100%" }} size={12}>
-                {groupedTypes.map(([group, types]) => (
-                  <div key={group}>
-                    <Text strong style={{ display: "block", marginBottom: 6 }}>
-                      {group}
-                    </Text>
-                    <Space wrap>
-                      {types.map((t) => (
-                        <Button
-                          key={t.value}
-                          size="small"
-                          onClick={() => openCreate(t.value)}
-                          style={{ borderColor: t.color }}
-                        >
-                          {t.icon} {t.label}
-                        </Button>
-                      ))}
-                    </Space>
-                  </div>
-                ))}
-              </Space>
-            </Card>
-          </Col>
-
-          <Col xs={24} xl={17}>
-            <Card
-              title={`الأقسام (${sorted.length}) — اسحب للترتيب`}
+        <div className="hb-panel">
+          <div className="hb-panel-head">
+            <span>📋 الأقسام ({sorted.length})</span>
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              اسحب للترتيب
+            </Text>
+          </div>
+          <div className="hb-panel-body">
+            <HomeSectionList
+              blocks={sorted}
+              previewSections={preview?.sections}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              onEdit={openEdit}
+              onDuplicate={(b) => duplicate.mutate(b)}
+              onDelete={(id) => remove.mutate(id)}
+              onToggle={(id, active) => toggle.mutate({ id, isActive: active })}
+              onReorder={(ids) => reorder.mutate(ids)}
               loading={isLoading}
-              size="small"
-            >
-              <HomeSectionList
-                blocks={sorted}
-                onEdit={openEdit}
-                onDuplicate={(b) => duplicate.mutate(b)}
-                onDelete={(id) => remove.mutate(id)}
-                onToggle={(id, active) => toggle.mutate({ id, isActive: active })}
-                onReorder={(ids) => reorder.mutate(ids)}
-              />
-            </Card>
-          </Col>
-        </Row>
-      </Space>
+            />
+          </div>
+        </div>
+
+        <div className="hb-panel">
+          <div className="hb-panel-head">➕ إضافة قسم</div>
+          <div className="hb-panel-body">
+            <div className="hb-add-grid">
+              {groupedTypes.map(([group, types]) => (
+                <div key={group} style={{ display: "contents" }}>
+                  <div className="hb-add-group-title">{group}</div>
+                  {types.map((t) => (
+                    <button
+                      key={t.value}
+                      type="button"
+                      className="hb-add-btn"
+                      style={{ borderColor: t.color }}
+                      onClick={() => openCreate(t.value)}
+                    >
+                      <span>{t.icon}</span>
+                      <span>{t.label}</span>
+                    </button>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
 
       <Drawer
-        title={editing ? "تعديل القسم" : "قسم جديد"}
-        width={560}
+        title={
+          editing ? (
+            <Space>
+              <span>{metaForType(editing.type)?.icon}</span>
+              <span>تعديل: {editing.title || labelForType(editing.type)}</span>
+            </Space>
+          ) : (
+            "قسم جديد"
+          )
+        }
+        width={680}
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         destroyOnClose
         extra={
-          <Button type="primary" loading={upsert.isPending} onClick={() => form.submit()}>
+          <Button type="primary" icon={<SaveOutlined />} loading={upsert.isPending} onClick={() => form.submit()}>
             حفظ
           </Button>
         }
+        className="hb-drawer-tabs"
       >
         <Form form={form} layout="vertical" onFinish={(v) => upsert.mutate(v)}>
           <Form.Item name="type" label="نوع القسم" rules={[{ required: true }]}>
-            <Select
-              options={SECTION_TYPES.map((t) => ({
-                value: t.value,
-                label: `${t.icon} ${t.label} — ${t.group}`,
-              }))}
-            />
+            <Input readOnly variant="filled" />
           </Form.Item>
           <Form.Item noStyle shouldUpdate={(p, c) => p.type !== c.type}>
             {({ getFieldValue }) => {
@@ -284,42 +349,83 @@ export default function HomeBuilderPage() {
               ) : null;
             }}
           </Form.Item>
-          <Form.Item name="title" label="العنوان (يظهر في التطبيق)">
-            <Input placeholder="أقوى العروض" />
-          </Form.Item>
-          <Form.Item name="subtitle" label="عنوان فرعي">
-            <Input placeholder="نص صغير تحت العنوان" />
-          </Form.Item>
-          <Form.Item name="position" label="الترتيب">
-            <Input type="number" />
-          </Form.Item>
-          <Form.Item name="isActive" label="نشط" valuePropName="checked">
-            <Switch />
-          </Form.Item>
 
-          <Form.Item noStyle shouldUpdate={(p, c) => p.type !== c.type}>
-            {({ getFieldValue }) => (
-              <SectionPayloadEditor
-                type={getFieldValue("type") as SectionType}
-                form={form}
-                banners={banners ?? []}
-                categories={categories ?? []}
-                brands={brands ?? []}
-                packages={packages ?? []}
-                products={products?.items ?? products ?? []}
-                skinConcerns={skinConcerns ?? []}
-              />
-            )}
-          </Form.Item>
+          <Tabs
+            activeKey={editorTab}
+            onChange={setEditorTab}
+            items={[
+              {
+                key: "content",
+                label: "📝 المحتوى",
+                children: (
+                  <>
+                    <Form.Item name="title" label="العنوان (يظهر في التطبيق)">
+                      <Input placeholder="أقوى العروض" />
+                    </Form.Item>
+                    <Form.Item name="subtitle" label="عنوان فرعي">
+                      <Input placeholder="نص صغير تحت العنوان" />
+                    </Form.Item>
+                    <Form.Item name="position" label="الترتيب">
+                      <Input type="number" />
+                    </Form.Item>
+                    <Form.Item name="isActive" label="نشط" valuePropName="checked">
+                      <Switch />
+                    </Form.Item>
+                    <Form.Item noStyle shouldUpdate={(p, c) => p.type !== c.type}>
+                      {({ getFieldValue }) => (
+                        <SectionPayloadEditor
+                          type={getFieldValue("type") as SectionType}
+                          form={form}
+                          tab="content"
+                          {...editorEntities}
+                        />
+                      )}
+                    </Form.Item>
+                  </>
+                ),
+              },
+              {
+                key: "link",
+                label: "🔗 الربط",
+                children: (
+                  <Form.Item noStyle shouldUpdate={(p, c) => p.type !== c.type}>
+                    {({ getFieldValue }) => (
+                      <SectionPayloadEditor
+                        type={getFieldValue("type") as SectionType}
+                        form={form}
+                        tab="link"
+                        {...editorEntities}
+                      />
+                    )}
+                  </Form.Item>
+                ),
+              },
+              {
+                key: "style",
+                label: "🎨 التصميم",
+                children: (
+                  <Form.Item noStyle shouldUpdate={(p, c) => p.type !== c.type}>
+                    {({ getFieldValue }) => (
+                      <SectionPayloadEditor
+                        type={getFieldValue("type") as SectionType}
+                        form={form}
+                        tab="style"
+                        {...editorEntities}
+                      />
+                    )}
+                  </Form.Item>
+                ),
+              },
+            ]}
+          />
         </Form>
       </Drawer>
 
-      <Modal
-        title="معاينة API — sections"
+      <Drawer
+        title="معاينة API"
         open={previewOpen}
-        onCancel={() => setPreviewOpen(false)}
+        onClose={() => setPreviewOpen(false)}
         width={900}
-        footer={null}
       >
         <Tabs
           items={[
@@ -327,7 +433,7 @@ export default function HomeBuilderPage() {
               key: "sections",
               label: "الأقسام المحلّاة",
               children: (
-                <pre style={{ maxHeight: 480, overflow: "auto", fontSize: 11, direction: "ltr" }}>
+                <pre style={{ maxHeight: 520, overflow: "auto", fontSize: 11, direction: "ltr" }}>
                   {JSON.stringify(preview?.sections ?? [], null, 2)}
                 </pre>
               ),
@@ -336,14 +442,14 @@ export default function HomeBuilderPage() {
               key: "blocks",
               label: "الكتل الخام",
               children: (
-                <pre style={{ maxHeight: 480, overflow: "auto", fontSize: 11, direction: "ltr" }}>
+                <pre style={{ maxHeight: 520, overflow: "auto", fontSize: 11, direction: "ltr" }}>
                   {JSON.stringify(sorted, null, 2)}
                 </pre>
               ),
             },
           ]}
         />
-      </Modal>
-    </>
+      </Drawer>
+    </div>
   );
 }

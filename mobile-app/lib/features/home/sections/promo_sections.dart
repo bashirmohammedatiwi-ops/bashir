@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../data/models/home_section.dart';
 import '../home_link.dart';
@@ -21,7 +20,14 @@ class PromoStripSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
-          onTap: strip.link != null && strip.link!.isNotEmpty ? () => context.push(strip.link!) : null,
+          onTap: strip.link != null && strip.link!.isNotEmpty || strip.hasLink
+              ? () => openSectionLink(
+                    context,
+                    linkType: strip.linkType,
+                    linkValue: strip.linkValue,
+                    legacyLink: strip.link,
+                  )
+              : null,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Text(strip.text,

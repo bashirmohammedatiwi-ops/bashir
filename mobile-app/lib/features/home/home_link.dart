@@ -3,9 +3,16 @@ import 'package:go_router/go_router.dart';
 
 import '../../../data/models/banner.dart';
 
-void openBannerLink(BuildContext context, AppBanner banner) {
-  final type = banner.linkType ?? '';
-  final value = banner.linkValue ?? '';
+void openSectionLink(
+  BuildContext context, {
+  String? linkType,
+  String? linkValue,
+  String? legacyLink,
+}) {
+  final type = (linkType ?? '').trim();
+  final value = (linkValue ?? '').trim();
+  final legacy = (legacyLink ?? '').trim();
+
   if (type == 'product' && value.isNotEmpty) {
     context.push('/product/$value');
     return;
@@ -14,21 +21,51 @@ void openBannerLink(BuildContext context, AppBanner banner) {
     context.push('/products?categoryId=$value');
     return;
   }
+  if (type == 'subcategory' && value.isNotEmpty) {
+    context.push('/products?subcategoryId=$value');
+    return;
+  }
+  if (type == 'tertiary' && value.isNotEmpty) {
+    context.push('/products?tertiaryCategoryId=$value');
+    return;
+  }
   if (type == 'brand' && value.isNotEmpty) {
     context.push('/products?brandId=$value');
+    return;
+  }
+  if (type == 'search' && value.isNotEmpty) {
+    context.push('/search?q=${Uri.encodeComponent(value)}');
     return;
   }
   if (type == 'offers') {
     context.push('/products?isPromo=1&title=العروض');
     return;
   }
-  if (value.startsWith('/')) {
+  if (type == 'products' && value.isNotEmpty) {
+    final path = value.startsWith('/') ? value : '/products?$value';
+    context.push(path);
+    return;
+  }
+  if (type == 'url' && value.isNotEmpty) {
     context.push(value);
     return;
   }
-  if (banner.linkValue != null && banner.linkValue!.startsWith('/')) {
-    context.push(banner.linkValue!);
+  if (legacy.isNotEmpty) {
+    context.push(legacy);
+    return;
   }
+  if (value.startsWith('/')) {
+    context.push(value);
+  }
+}
+
+void openBannerLink(BuildContext context, AppBanner banner) {
+  openSectionLink(
+    context,
+    linkType: banner.linkType,
+    linkValue: banner.linkValue,
+    legacyLink: banner.linkValue,
+  );
 }
 
 Color? parseHexColor(String? hex) {

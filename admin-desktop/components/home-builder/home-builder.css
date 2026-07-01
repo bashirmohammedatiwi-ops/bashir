@@ -1,0 +1,259 @@
+/* Home Builder — visual CMS */
+
+.hb-page {
+  min-height: calc(100vh - 120px);
+}
+
+.hb-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.hb-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1200px) {
+  .hb-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hb-panel {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #f0f0f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.hb-panel-head {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f5f5f5;
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.hb-panel-body {
+  padding: 12px;
+}
+
+.hb-stats {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hb-stat-pill {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 12px;
+  color: #666;
+}
+
+.hb-add-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.hb-add-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  background: #fafafa;
+  cursor: pointer;
+  font-size: 11px;
+  text-align: right;
+  transition: all 0.15s;
+}
+
+.hb-add-btn:hover {
+  border-color: #E1306C;
+  background: #fff5f8;
+}
+
+.hb-add-group-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #888;
+  margin: 10px 0 6px;
+  grid-column: 1 / -1;
+}
+
+.hb-entity-picker {
+  width: 100%;
+}
+
+.hb-entity-selected-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.hb-entity-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f9f9fb;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 4px 6px;
+  max-width: 200px;
+}
+
+.hb-entity-chip-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.hb-entity-chip-label {
+  flex: 1;
+  font-size: 10px !important;
+  max-width: 80px;
+}
+
+.hb-entity-chip-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.hb-entity-chip-actions button {
+  border: none;
+  background: #eee;
+  border-radius: 4px;
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.hb-entity-chip-actions button.danger {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.hb-entity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.hb-entity-tile {
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 4px;
+  background: #fff;
+  cursor: pointer;
+  text-align: center;
+}
+
+.hb-entity-tile.active {
+  border-color: #E1306C;
+  background: #fff5f8;
+}
+
+.hb-entity-tile.disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.hb-entity-tile-img {
+  height: 64px;
+  border-radius: 8px;
+  position: relative;
+}
+
+.hb-entity-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: #E1306C;
+  color: #fff;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+}
+
+.hb-entity-tile-label {
+  display: block !important;
+  font-size: 9px !important;
+  margin-top: 4px;
+}
+
+.hb-section-card.selected {
+  box-shadow: 0 0 0 2px #E1306C !important;
+}
+
+.hb-section-thumb {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  background: #f5f5f5;
+}
+
+.hb-phone-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.hb-phone {
+  width: 280px;
+  height: 580px;
+  border-radius: 28px;
+  border: 8px solid #1a1a1a;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+}
+
+.hb-phone-notch {
+  height: 24px;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hb-phone-notch-bar {
+  width: 80px;
+  height: 6px;
+  border-radius: 3px;
+  background: #333;
+}
+
+.hb-phone-scroll {
+  height: calc(100% - 24px);
+  overflow-y: auto;
+}
+
+.hb-preview-img {
+  background-size: cover;
+  background-position: center;
+}

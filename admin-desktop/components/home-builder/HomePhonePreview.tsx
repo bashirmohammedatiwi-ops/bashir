@@ -1,7 +1,8 @@
 "use client";
 
-import { Typography, Tag } from "antd";
+import { Empty, Spin, Tag, Typography } from "antd";
 import { labelForType, metaForType } from "./section-types";
+import { mediaThumb } from "@/lib/mediaUrl";
 
 const { Text } = Typography;
 
@@ -18,60 +19,62 @@ type Block = {
 type Props = {
   blocks: Block[];
   previewSections?: any[];
+  selectedId?: string | null;
+  onSelectSection?: (id: string) => void;
 };
 
-export function HomePhonePreview({ blocks, previewSections }: Props) {
-  const sorted = [...blocks].sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+function imgUrl(obj: any): string | null {
+  if (!obj) return null;
+  return mediaThumb(obj.image ?? obj.logo ?? obj.coverImage ?? obj);
+}
+
+function productCover(p: any): string | null {
+  const imgs = p?.images;
+  if (Array.isArray(imgs) && imgs[0]?.media) return mediaThumb(imgs[0].media);
+  return null;
+}
+
+export function HomePhonePreview({ blocks, previewSections, selectedId, onSelectSection }: Props) {
+  const sorted = [...blocks].sort((a, b) => {
+    const heroA = a.type === "HERO_BANNER";
+    const heroB = b.type === "HERO_BANNER";
+    if (heroA && !heroB) return -1;
+    if (!heroA && heroB) return 1;
+    return (a.position ?? 0) - (b.position ?? 0);
+  });
   const active = sorted.filter((b) => b.isActive !== false);
 
   return (
-    <div style={{ display: "flex", justifyContent: "center", padding: "8px 0" }}>
-      <div
-        style={{
-          width: 280,
-          height: 560,
-          borderRadius: 28,
-          border: "8px solid #1a1a1a",
-          background: "#fff",
-          overflow: "hidden",
-          boxShadow: "0 12px 40px rgba(0,0,0,0.15)",
-          position: "relative",
-        }}
-      >
-        <div
-          style={{
-            height: 24,
-            background: "#000",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <div style={{ width: 80, height: 6, borderRadius: 3, background: "#333" }} />
+    <div className="hb-phone-wrap">
+      <div className="hb-phone">
+        <div className="hb-phone-notch">
+          <div className="hb-phone-notch-bar" />
         </div>
-        <div
-          style={{
-            height: "calc(100% - 24px)",
-            overflowY: "auto",
-            padding: "0 0 12px",
-          }}
-        >
+        <div className="hb-phone-scroll">
           {active.length === 0 ? (
-            <div style={{ padding: 24, textAlign: "center" }}>
-              <Text type="secondary">لا توجد أقسام نشطة</Text>
-            </div>
+            <Empty description="لا أقسام نشطة" style={{ marginTop: 80 }} />
           ) : (
             active.map((block, idx) => {
               const meta = metaForType(block.type);
               const resolved = previewSections?.find((s) => s.id === block.id);
+              const selected = selectedId === block.id;
               return (
-                <PhoneSectionBlock
+                <div
                   key={block.id}
-                  index={idx}
-                  block={block}
-                  meta={meta}
-                  resolved={resolved}
-                />
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onSelectSection?.(block.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") onSelectSection?.(block.id);
+                  }}
+                  style={{
+                    outline: selected ? "2px solid #E1306C" : "none",
+                    outlineOffset: -2,
+                    cursor: onSelectSection ? "pointer" : "default",
+                  }}
+                >
+                  <PhoneSectionBlock index={idx} block={block} meta={meta} resolved={resolved} />
+                </div>
               );
             })
           )}
@@ -96,51 +99,37 @@ function PhoneSectionBlock({
   const label = block.title || labelForType(block.type);
 
   if (block.type === "HERO_BANNER") {
+    const bannerUrl = imgUrl(resolved?.banners?.[0]);
+    const cats = resolved?.categories ?? [];
     return (
       <div style={{ marginBottom: 4 }}>
         <div
+          className="hb-preview-img"
           style={{
             height: 120,
-            background: "linear-gradient(135deg, #E1306C, #c2185b)",
-            position: "relative",
+            background: bannerUrl
+              ? `center/cover url(${bannerUrl})`
+              : "linear-gradient(135deg, #E1306C, #c2185b)",
           }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              top: 8,
-              left: 8,
-              right: 8,
-              height: 28,
-              borderRadius: 8,
-              background: "rgba(255,255,255,0.25)",
-            }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: 36,
-              background: "linear-gradient(transparent, white)",
-            }}
-          />
-        </div>
-        <div style={{ display: "flex", gap: 6, padding: "0 10px", marginTop: -18 }}>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div
-              key={i}
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: "50%",
-                background: "#fff",
-                border: "2px solid #eee",
-                flexShrink: 0,
-              }}
-            />
-          ))}
+        />
+        <div style={{ display: "flex", gap: 6, padding: "0 10px", marginTop: -18, overflow: "hidden" }}>
+          {(cats.length ? cats : [1, 2, 3, 4, 5]).slice(0, 5).map((c: any, i: number) => {
+            const url = typeof c === "object" ? imgUrl(c) : null;
+            return (
+              <div
+                key={i}
+                className="hb-preview-img"
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: "50%",
+                  background: url ? `center/cover url(${url})` : "#fff",
+                  border: "2px solid #eee",
+                  flexShrink: 0,
+                }}
+              />
+            );
+          })}
         </div>
       </div>
     );
@@ -150,40 +139,35 @@ function PhoneSectionBlock({
     const bg = (block.payload?.backgroundColor as string) ?? color;
     const text = (block.payload?.text as string) || label;
     return (
-      <div
-        style={{
-          margin: "6px 10px",
-          padding: "8px 10px",
-          borderRadius: 8,
-          background: bg,
-          fontSize: 10,
-          fontWeight: 700,
-          textAlign: "center",
-        }}
-      >
+      <div style={{ margin: "6px 10px", padding: "8px 10px", borderRadius: 8, background: bg, fontSize: 10, fontWeight: 700, textAlign: "center" }}>
         {text || "شريط ترويجي"}
       </div>
     );
   }
 
-  if (block.type === "SKIN_CONCERNS") {
+  if (block.type === "IMAGE_TILES") {
+    const items = resolved?.items ?? [];
+    const cols = (block.payload?.columns as number) ?? 2;
     return (
       <MiniSection title={label} subtitle={block.subtitle}>
-        <div style={{ display: "flex", gap: 4, padding: "0 10px 8px", overflow: "hidden" }}>
-          {["حب الشباب", "تصبغات", "جفاف", "حساسية"].map((t) => (
-            <span
-              key={t}
-              style={{
-                fontSize: 8,
-                padding: "4px 8px",
-                borderRadius: 12,
-                background: "#FCE4EC",
-                color: "#E1306C",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {t}
-            </span>
+        <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 4, padding: "0 10px 8px" }}>
+          {(items.length ? items : [1, 2]).map((item: any, i: number) => (
+            <div key={i} style={{ borderRadius: 8, overflow: "hidden" }}>
+              <div
+                className="hb-preview-img"
+                style={{
+                  height: cols === 3 ? 56 : 72,
+                  background: item.imageUrl
+                    ? `center/cover url(${item.imageUrl})`
+                    : color,
+                }}
+              />
+              {item.title && (
+                <Text style={{ fontSize: 8, display: "block", padding: "2px 4px" }} ellipsis>
+                  {item.title}
+                </Text>
+              )}
+            </div>
           ))}
         </div>
       </MiniSection>
@@ -192,72 +176,94 @@ function PhoneSectionBlock({
 
   if (block.type === "FLASH_SALE") {
     return (
-      <MiniSection title={label} subtitle={block.subtitle} badge="⏱ 02:15:30">
-        <ProductRow count={resolved?.products?.length ?? 4} accent="#FF5722" />
+      <MiniSection title={label} subtitle={block.subtitle} badge="⏱">
+        <ProductRow products={resolved?.products} accent="#FF5722" />
       </MiniSection>
     );
   }
 
   if (block.type === "PRODUCT_LIST" || block.type === "PACKAGES") {
+    const list = resolved?.products ?? resolved?.packages;
     return (
       <MiniSection title={label} subtitle={block.subtitle} showViewAll>
-        <ProductRow count={resolved?.products?.length ?? resolved?.packages?.length ?? 3} />
+        <ProductRow products={list} isPackage={block.type === "PACKAGES"} />
       </MiniSection>
     );
   }
 
   if (block.type.startsWith("BANNER")) {
+    const banners = resolved?.banners ?? resolved?.items ?? [];
     const cols = block.type === "BANNER_GRID_3" ? 3 : block.type === "BANNER_GRID_2" ? 2 : 1;
     return (
       <MiniSection title={block.type === "BANNER_FULL" ? undefined : label}>
         <div style={{ display: "flex", gap: 4, padding: "0 10px 8px" }}>
-          {Array.from({ length: cols }).map((_, i) => (
-            <div
-              key={i}
-              style={{
-                flex: 1,
-                height: cols === 1 ? 56 : 72,
-                borderRadius: 8,
-                background: color,
-              }}
-            />
-          ))}
+          {Array.from({ length: cols }).map((_, i) => {
+            const url = imgUrl(banners[i]);
+            return (
+              <div
+                key={i}
+                className="hb-preview-img"
+                style={{ flex: 1, height: cols === 1 ? 56 : 72, borderRadius: 8, background: url ? `center/cover url(${url})` : color }}
+              />
+            );
+          })}
         </div>
       </MiniSection>
     );
   }
 
   if (block.type.includes("CATEGORY") || block.type === "MAKEUP_CATEGORIES") {
+    const cats = resolved?.categories ?? [];
     return (
       <MiniSection title={label} subtitle={block.subtitle}>
         <div style={{ display: "flex", gap: 6, padding: "0 10px 8px" }}>
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} style={{ width: 56, flexShrink: 0 }}>
-              <div style={{ height: 56, borderRadius: 8, background: color }} />
-              <div style={{ height: 6, marginTop: 4, borderRadius: 3, background: "#eee" }} />
-            </div>
-          ))}
+          {(cats.length ? cats : [1, 2, 3, 4]).slice(0, 4).map((c: any, i: number) => {
+            const url = typeof c === "object" ? imgUrl(c) : null;
+            return (
+              <div key={i} style={{ width: 56, flexShrink: 0 }}>
+                <div className="hb-preview-img" style={{ height: 56, borderRadius: 8, background: url ? `center/cover url(${url})` : color }} />
+                {typeof c === "object" && c.name && (
+                  <Text style={{ fontSize: 7, display: "block", marginTop: 2 }} ellipsis>
+                    {c.name}
+                  </Text>
+                )}
+              </div>
+            );
+          })}
         </div>
       </MiniSection>
     );
   }
 
   if (block.type.includes("BRAND")) {
+    const brands = resolved?.brands ?? [];
     return (
       <MiniSection title={label} showViewAll>
         <div style={{ display: "flex", gap: 6, padding: "0 10px 8px" }}>
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div
-              key={i}
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 8,
-                background: "#f5f5f5",
-                border: "1px solid #eee",
-                flexShrink: 0,
-              }}
-            />
+          {(brands.length ? brands : [1, 2, 3, 4]).slice(0, 5).map((b: any, i: number) => {
+            const url = typeof b === "object" ? imgUrl(b) : null;
+            return (
+              <div
+                key={i}
+                className="hb-preview-img"
+                style={{ width: 48, height: 48, borderRadius: 8, background: url ? `center/cover url(${url})` : "#f5f5f5", border: "1px solid #eee", flexShrink: 0 }}
+              />
+            );
+          })}
+        </div>
+      </MiniSection>
+    );
+  }
+
+  if (block.type === "SKIN_CONCERNS") {
+    const concerns = resolved?.skinConcerns ?? [];
+    return (
+      <MiniSection title={label}>
+        <div style={{ display: "flex", gap: 4, padding: "0 10px 8px", overflow: "hidden" }}>
+          {(concerns.length ? concerns : [{ name: "حب الشباب" }, { name: "تصبغات" }]).slice(0, 4).map((c: any, i: number) => (
+            <span key={i} style={{ fontSize: 8, padding: "4px 8px", borderRadius: 12, background: "#FCE4EC", color: "#E1306C", whiteSpace: "nowrap" }}>
+              {c.icon ?? "✨"} {c.name}
+            </span>
           ))}
         </div>
       </MiniSection>
@@ -287,23 +293,12 @@ function MiniSection({
   if (!title) return <>{children}</>;
   return (
     <div style={{ marginBottom: 4 }}>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          padding: "8px 10px 4px",
-          gap: 6,
-        }}
-      >
+      <div style={{ display: "flex", alignItems: "center", padding: "8px 10px 4px", gap: 6 }}>
         <Text strong style={{ fontSize: 11, flex: 1 }}>
           {title}
         </Text>
-        {badge && (
-          <span style={{ fontSize: 8, color: "#E1306C", fontWeight: 700 }}>{badge}</span>
-        )}
-        {showViewAll && (
-          <span style={{ fontSize: 8, color: "#999" }}>عرض الكل ‹</span>
-        )}
+        {badge && <span style={{ fontSize: 8, color: "#E1306C", fontWeight: 700 }}>{badge}</span>}
+        {showViewAll && <span style={{ fontSize: 8, color: "#999" }}>عرض الكل ‹</span>}
       </div>
       {subtitle && (
         <Text type="secondary" style={{ fontSize: 9, padding: "0 10px", display: "block" }}>
@@ -315,42 +310,35 @@ function MiniSection({
   );
 }
 
-function ProductRow({ count, accent }: { count: number; accent?: string }) {
-  const n = Math.min(Math.max(count, 2), 5);
+function ProductRow({
+  products,
+  accent,
+  isPackage,
+}: {
+  products?: any[];
+  accent?: string;
+  isPackage?: boolean;
+}) {
+  const list = products?.length ? products : [null, null, null];
+  const n = Math.min(list.length, 4);
   return (
     <div style={{ display: "flex", gap: 6, padding: "0 10px 8px", overflow: "hidden" }}>
-      {Array.from({ length: n }).map((_, i) => (
-        <div key={i} style={{ width: 72, flexShrink: 0 }}>
-          <div
-            style={{
-              height: 72,
-              borderRadius: 8,
-              background: "#f7f7f7",
-              border: "1px solid #efefef",
-              position: "relative",
-            }}
-          >
-            {accent && i === 0 && (
-              <span
-                style={{
-                  position: "absolute",
-                  top: 4,
-                  right: 4,
-                  fontSize: 7,
-                  background: accent,
-                  color: "#fff",
-                  padding: "1px 4px",
-                  borderRadius: 4,
-                }}
-              >
-                -30%
-              </span>
+      {list.slice(0, n).map((p, i) => {
+        const url = isPackage ? imgUrl(p?.coverImage ?? p) : productCover(p);
+        return (
+          <div key={i} className="hb-preview-product">
+            <div
+              className="hb-preview-img hb-preview-product-img"
+              style={{ background: url ? `center/cover url(${url})` : "#f7f7f7" }}
+            />
+            {p?.name && (
+              <Text style={{ fontSize: 7, display: "block", marginTop: 2 }} ellipsis>
+                {p.name}
+              </Text>
             )}
           </div>
-          <div style={{ height: 5, marginTop: 4, borderRadius: 2, background: "#eee" }} />
-          <div style={{ height: 5, marginTop: 2, width: "60%", borderRadius: 2, background: accent ?? "#E1306C", opacity: 0.5 }} />
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

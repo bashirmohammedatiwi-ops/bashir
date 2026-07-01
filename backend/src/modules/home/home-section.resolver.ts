@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { HomeBlock, HomeBlockType } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
 
+import { buildAppLink } from "../../common/link-target.util";
 import { withPlaceholderImages } from "../../common/product-placeholder.util";
 
 const productInclude = {
@@ -30,7 +31,13 @@ export interface ResolvedHomeSection {
   products?: unknown[];
   brands?: unknown[];
   packages?: unknown[];
-  promoStrip?: { text: string; link?: string; backgroundColor?: string };
+  promoStrip?: {
+    text: string;
+    link?: string;
+    linkType?: string;
+    linkValue?: string;
+    backgroundColor?: string;
+  };
   items?: unknown[];
   skinConcerns?: unknown[];
 }
@@ -166,7 +173,7 @@ export class HomeSectionResolver {
           products,
           endsAt: endsAt ?? null,
           showViewAll: payload.showViewAll !== false,
-          viewAllQuery: this.filterToQuery(filter, block.title),
+          viewAllQuery: this.buildViewAllQuery(payload, filter, block.title),
         };
       }
 
@@ -186,14 +193,28 @@ export class HomeSectionResolver {
       }
 
       case HomeBlockType.PROMO_STRIP: {
+        const linkType = payload.linkType as string | undefined;
+        const linkValue = payload.linkValue as string | undefined;
+        const legacyLink = payload.link as string | undefined;
         return {
           ...base,
           layout: "strip",
           promoStrip: {
             text: (payload.text as string) ?? block.title ?? "",
-            link: payload.link as string | undefined,
+            linkType,
+            linkValue,
+            link: buildAppLink(linkType, linkValue, legacyLink),
             backgroundColor: (payload.backgroundColor as string) ?? "#FCE4EC",
           },
+        };
+      }
+
+      case HomeBlockType.IMAGE_TILES: {
+        const items = await this.resolveImageTiles(payload);
+        return {
+          ...base,
+          layout: `grid${(payload.columns as number) ?? 2}`,
+          items,
         };
       }
 
@@ -278,6 +299,56 @@ export class HomeSectionResolver {
     return ids.map((id) => map.get(id)).filter(Boolean);
   }
 
+  private async resolveImageTiles(payload: Payload) {
+    const raw = (payload.items as {
+      imageId?: string;
+      title?: string;
+      subtitle?: string;
+      linkType?: string;
+      linkValue?: string;
+    }[]) ?? [];
+    if (!raw.length) return [];
+
+    const mediaIds = raw.map((i) => i.imageId).filter(Boolean) as string[];
+    const mediaList = mediaIds.length
+      ? await this.prisma.media.findMany({ where: { id: { in: mediaIds } } })
+      : [];
+    const mediaMap = new Map(mediaList.map((m) => [m.id, m]));
+
+    return raw.map((item, idx) => {
+      const media = item.imageId ? mediaMap.get(item.imageId) : null;
+      const imageUrl = media ? this.mediaPublicUrl(media) : null;
+      return {
+        id: `tile-${idx}`,
+        title: item.title ?? "",
+        subtitle: item.subtitle ?? "",
+        imageUrl,
+        image: media,
+        linkType: item.linkType,
+        linkValue: item.linkValue,
+        link: buildAppLink(item.linkType, item.linkValue),
+      };
+    });
+  }
+
+  private mediaPublicUrl(media: {
+    publicUrlBase?: string | null;
+    filename?: string | null;
+    variants?: unknown;
+  }): string | null {
+    const variants = media.variants as Record<string, { formats?: Record<string, string> }> | undefined;
+    const rel =
+      variants?.medium?.formats?.webp ??
+      variants?.medium?.formats?.jpg ??
+      variants?.thumb?.formats?.webp ??
+      null;
+    if (rel) return rel;
+    if (media.publicUrlBase && media.filename) {
+      return `${media.publicUrlBase}/${media.filename}.webp`;
+    }
+    return null;
+  }
+
   private async resolveProducts(
     payload: Payload,
     filter: string,
@@ -292,10 +363,63 @@ export class HomeSectionResolver {
       const map = new Map(products.map((p) => [p.id, withPlaceholderImages(p)]));
       return productIds.map((id) => map.get(id)).filter(Boolean);
     }
+
+    const scoped = await this.queryScopedProducts(payload, filter);
+    if (scoped.length) return scoped;
+
     const limit = (payload.limit as number) ?? 10;
     return (buckets[filter] ?? buckets.bestSeller ?? [])
       .slice(0, limit)
       .map((p) => withPlaceholderImages(p as { images?: unknown[] }));
+  }
+
+  private async queryScopedProducts(payload: Payload, filter: string) {
+    const categoryId = payload.categoryId as string | undefined;
+    const subcategoryId = payload.subcategoryId as string | undefined;
+    const tertiaryCategoryId = payload.tertiaryCategoryId as string | undefined;
+    const brandId = payload.brandId as string | undefined;
+    if (!categoryId && !subcategoryId && !tertiaryCategoryId && !brandId) return [];
+
+    const where: Record<string, unknown> = {
+      isActive: true,
+      ...(categoryId ? { categoryId } : {}),
+      ...(subcategoryId ? { subcategoryId } : {}),
+      ...(tertiaryCategoryId ? { tertiaryCategoryId } : {}),
+      ...(brandId ? { brandId } : {}),
+    };
+    if (filter === "promo") where.isPromo = true;
+    else if (filter === "new") where.isNew = true;
+    else if (filter === "bestSeller") where.isBestSeller = true;
+    else if (filter === "featured") where.isFeatured = true;
+
+    const limit = (payload.limit as number) ?? 12;
+    const orderBy =
+      filter === "bestSeller"
+        ? { soldCount: "desc" as const }
+        : { createdAt: "desc" as const };
+
+    const products = await this.prisma.product.findMany({
+      where,
+      orderBy,
+      take: limit,
+      include: productInclude,
+    });
+    return products.map((p) => withPlaceholderImages(p));
+  }
+
+  private buildViewAllQuery(payload: Payload, filter: string, title?: string | null): string {
+    const parts: string[] = [];
+    const categoryId = payload.categoryId as string | undefined;
+    const subcategoryId = payload.subcategoryId as string | undefined;
+    const tertiaryCategoryId = payload.tertiaryCategoryId as string | undefined;
+    const brandId = payload.brandId as string | undefined;
+    if (categoryId) parts.push(`categoryId=${encodeURIComponent(categoryId)}`);
+    if (subcategoryId) parts.push(`subcategoryId=${encodeURIComponent(subcategoryId)}`);
+    if (tertiaryCategoryId) parts.push(`tertiaryCategoryId=${encodeURIComponent(tertiaryCategoryId)}`);
+    if (brandId) parts.push(`brandId=${encodeURIComponent(brandId)}`);
+    const filterPart = this.filterToQuery(filter, title);
+    if (parts.length) return `${parts.join("&")}&${filterPart}`;
+    return filterPart;
   }
 
   private filterToQuery(filter: string, title?: string | null): string {

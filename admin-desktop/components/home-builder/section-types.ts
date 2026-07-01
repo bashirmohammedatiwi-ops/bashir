@@ -14,7 +14,8 @@ export type SectionType =
   | "PACKAGES"
   | "PROMO_STRIP"
   | "CUSTOM_BANNER"
-  | "SKIN_CONCERNS";
+  | "SKIN_CONCERNS"
+  | "IMAGE_TILES";
 
 export const SECTION_TYPES: {
   value: SectionType;
@@ -38,10 +39,10 @@ export const SECTION_TYPES: {
     value: "PROMO_STRIP",
     label: "شريط ترويجي",
     group: "أعلى الصفحة",
-    description: "شريط ملون — شحن مجاني، عروض، إلخ",
+    description: "شريط ملون — شحن مجاني، عروض، إلخ — مع رابط ذكي",
     icon: "📢",
     color: "#FCE4EC",
-    defaultPayload: { text: "", backgroundColor: "#FCE4EC", link: "" },
+    defaultPayload: { text: "", backgroundColor: "#FCE4EC", linkType: "", linkValue: "", link: "" },
   },
   {
     value: "SKIN_CONCERNS",
@@ -59,7 +60,7 @@ export const SECTION_TYPES: {
     description: "سلايدر أفقي مع عدّاد تنازلي",
     icon: "⚡",
     color: "#FF5722",
-    defaultPayload: { filter: "promo", showViewAll: true, limit: 12 },
+    defaultPayload: { filter: "promo", showViewAll: true, limit: 12, productIds: [], categoryId: "", subcategoryId: "", tertiaryCategoryId: "", brandId: "" },
   },
   {
     value: "PRODUCT_LIST",
@@ -68,7 +69,7 @@ export const SECTION_TYPES: {
     description: "قائمة منتجات أفقية حسب فلتر أو اختيار يدوي",
     icon: "🛍️",
     color: "#E3F2FD",
-    defaultPayload: { filter: "bestSeller", showViewAll: true, limit: 12, productIds: [] },
+    defaultPayload: { filter: "bestSeller", showViewAll: true, limit: 12, productIds: [], categoryId: "", subcategoryId: "", tertiaryCategoryId: "", brandId: "" },
   },
   {
     value: "PACKAGES",
@@ -169,6 +170,15 @@ export const SECTION_TYPES: {
     color: "#E8F4FC",
     defaultPayload: { brandIds: [], layout: "cards" },
   },
+  {
+    value: "IMAGE_TILES",
+    label: "بطاقات صور مخصصة",
+    group: "بنرات",
+    description: "شبكة بطاقات — صورة + عنوان + رابط لأي منتج/قسم/براند",
+    icon: "🧱",
+    color: "#FFF3E0",
+    defaultPayload: { columns: 2, items: [] },
+  },
 ];
 
 export const PRODUCT_FILTERS = [
@@ -179,13 +189,15 @@ export const PRODUCT_FILTERS = [
 ];
 
 export const LINK_TYPES = [
-  { value: "url", label: "رابط خارجي" },
   { value: "product", label: "منتج" },
-  { value: "category", label: "قسم" },
+  { value: "category", label: "قسم رئيسي" },
+  { value: "subcategory", label: "قسم فرعي" },
+  { value: "tertiary", label: "قسم ثانوي" },
   { value: "brand", label: "براند" },
   { value: "search", label: "بحث" },
   { value: "offers", label: "صفحة العروض" },
   { value: "products", label: "قائمة منتجات" },
+  { value: "url", label: "مسار داخل التطبيق" },
 ];
 
 export function labelForType(type: string) {

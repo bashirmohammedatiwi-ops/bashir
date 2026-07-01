@@ -8,6 +8,7 @@ import 'sections/brand_sections.dart';
 import 'sections/category_sections.dart';
 import 'sections/hero_section.dart';
 import 'sections/product_sections.dart';
+import 'sections/image_tiles_section.dart';
 import 'sections/promo_sections.dart';
 import 'sections/skin_concerns_strip.dart';
 
@@ -42,6 +43,7 @@ class HomeSectionWidget extends ConsumerWidget {
       'FEATURED_BRANDS' || 'BRAND_SHOWCASE' => BrandHomeSection(section: section, compactTop: isFirstAfterHero),
       'PACKAGES' => PackagesHomeSection(section: section, compactTop: isFirstAfterHero),
       'PROMO_STRIP' => PromoStripSection(section: section),
+      'IMAGE_TILES' => ImageTilesSection(section: section),
       'SKIN_CONCERNS' => SkinConcernsStrip(
           concerns: section.skinConcerns,
           title: section.title,
