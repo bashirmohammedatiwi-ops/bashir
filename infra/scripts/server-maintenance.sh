@@ -16,11 +16,12 @@ $COMPOSE exec -T api npx prisma migrate deploy
 echo "==> Backfilling product placeholder images..."
 $COMPOSE exec -T api node scripts/backfill-product-images.js
 
+echo "==> Restarting nginx (fixes 502 after API rebuild)..."
+$COMPOSE up -d catalog-hub 2>/dev/null || true
+$COMPOSE restart nginx
+
 echo "==> API logs (last 40 lines)..."
 $COMPOSE logs api --tail=40
-
-echo "==> Restarting API..."
-$COMPOSE restart api
 
 echo "==> Done. Check health:"
 echo "    curl http://\${DOMAIN:-127.0.0.1}/api/v1/health"

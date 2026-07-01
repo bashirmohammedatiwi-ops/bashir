@@ -36,11 +36,17 @@ echo "========== 6) backfill صور (node) =========="
 $COMPOSE exec -T api node scripts/backfill-product-images.js 2>&1 || echo "backfill skipped"
 
 echo ""
-echo "========== 7) اختبار خارجي =========="
+echo "========== 7) إعادة تشغيل nginx (يحل 502 بعد rebuild) =========="
+$COMPOSE up -d catalog-hub 2>/dev/null || true
+$COMPOSE restart nginx
+sleep 3
+
+echo ""
+echo "========== 8) اختبار خارجي =========="
 curl -sS -m 15 "http://${DOMAIN}/api/v1/health" || echo "FAIL: health من الخارج"
 
 echo ""
-echo "========== 8) nginx =========="
+echo "========== 9) nginx -> api =========="
 $COMPOSE ps nginx
 $COMPOSE exec -T nginx wget -qO- http://api:3000/api/v1/health 2>&1 || echo "FAIL: nginx -> api"
 
