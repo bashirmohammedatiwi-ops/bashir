@@ -1,364 +1,227 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../data/models/product_model.dart';
-import '../../features/cart/providers/cart_provider.dart';
-import '../../features/wishlist/providers/wishlist_provider.dart';
-import '../constants/app_colors.dart';
-import '../constants/app_sizes.dart';
-import '../constants/app_strings.dart';
-import '../theme/text_styles.dart';
-import '../utils/currency_formatter.dart';
-import '../utils/product_visuals.dart';
-import 'cached_image_widget.dart';
-import 'luxe.dart';
 
-/// بطاقة منتج كلاسيكية — صورة، اسم، سعر، وإجراءات واضحة.
+import '../../data/models/product.dart';
+import '../../features/cart/cart_provider.dart';
+import '../../features/wishlist/wishlist_provider.dart';
+import '../../features/auth/auth_provider.dart';
+import '../theme/app_colors.dart';
+import '../utils/formatters.dart';
+import 'app_network_image.dart';
+
 class ProductCard extends ConsumerWidget {
+  final Product product;
+  final double? width;
+  final bool showPromoBadge;
+  final String? flashTimer;
   const ProductCard({
     super.key,
     required this.product,
-    this.index = 0,
-    this.heroTag,
-    this.showcaseLayout,
+    this.width,
+    this.showPromoBadge = false,
+    this.flashTimer,
   });
-
-  final ProductModel product;
-  final int index;
-  final String? heroTag;
-  final ProductShowcaseLayout? showcaseLayout;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final wished = ref.watch(wishlistProvider).contains(product.id);
-    final hero = heroTag ?? 'product_${product.id}';
-    final imageUrl = product.images.isNotEmpty ? product.images.first : '';
+    final wished = ref.watch(wishlistProvider).ids.contains(product.id);
 
-    return PressedScale(
-      onTap: () => context.push('/product/${product.id}'),
-      scale: 0.98,
-      child: DecoratedBox(
+    return GestureDetector(
+      onTap: () => context.push('/product/${product.slug.isNotEmpty ? product.slug : product.id}'),
+      child: Container(
+        width: width,
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppSizes.cardRadius),
-          border: Border.all(color: AppColors.divider),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0A000000),
-              blurRadius: 12,
-              offset: Offset(0, 4),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFEFEFEF)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Stack(
+              clipBehavior: Clip.none,
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(9)),
+                  child: AspectRatio(
+                    aspectRatio: 1,
+                    child: AppNetworkImage(url: product.coverUrl, fit: BoxFit.contain),
+                  ),
+                ),
+                Positioned(top: 5, left: 5, child: _WishButton(product: product, wished: wished)),
+                if (product.hasDiscount)
+                  Positioned(
+                    top: 5,
+                    right: 5,
+                    child: _Badge(label: '-${product.discountPercent}%', color: AppColors.sale),
+                  ),
+                Positioned(
+                  bottom: 5,
+                  left: 5,
+                  right: 5,
+                  child: Wrap(
+                    spacing: 3,
+                    runSpacing: 3,
+                    children: [
+                      if (flashTimer != null && flashTimer!.isNotEmpty)
+                        _Badge(label: 'ينتهي $flashTimer', color: AppColors.sale),
+                      if (product.isNew) const _Badge(label: 'جديد', color: AppColors.success),
+                      if (product.isBestSeller)
+                        const _Badge(label: 'الأكثر شهرة', color: Color(0xFF388E3C)),
+                      if (showPromoBadge && product.isPromo && flashTimer == null)
+                        const _Badge(label: 'عرض', color: AppColors.sale),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  bottom: -8,
+                  right: 6,
+                  child: _AddButton(product: product),
+                ),
+                if (!product.inStock)
+                  Positioned.fill(
+                    child: Container(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      alignment: Alignment.center,
+                      child: const Text('نفد المخزون',
+                          style: TextStyle(fontWeight: FontWeight.w800, color: AppColors.sale, fontSize: 11)),
+                    ),
+                  ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    product.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, height: 1.2),
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      Text(formatPrice(product.price),
+                          style: const TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w800, color: AppColors.primary)),
+                      if (product.hasDiscount) ...[
+                        const SizedBox(width: 4),
+                        Text(formatPrice(product.originalPrice),
+                            style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey.shade500,
+                                decoration: TextDecoration.lineThrough)),
+                      ],
+                      const Spacer(),
+                      if (product.brandName.isNotEmpty)
+                        Flexible(
+                          child: Text(product.brandName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.end,
+                              style: TextStyle(
+                                  color: Colors.grey.shade500,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600)),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppSizes.cardRadius),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _ImageSection(
-                product: product,
-                imageUrl: imageUrl,
-                heroTag: hero,
-                wished: wished,
-                onWish: () =>
-                    ref.read(wishlistProvider.notifier).toggle(product.id),
-              ),
-              _InfoSection(
-                product: product,
-                onAdd: product.inStock
-                    ? () => _addToCart(context, ref)
-                    : null,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _addToCart(BuildContext context, WidgetRef ref) {
-    ref.read(cartProvider.notifier).addProduct(product);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.primaryDark,
-        margin: const EdgeInsets.all(AppSizes.lg),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppSizes.buttonRadius),
-        ),
-        duration: const Duration(milliseconds: 1200),
-        content: Text(
-          'تمت الإضافة للسلة',
-          style: AppTextStyles.body(color: Colors.white, size: 13),
-        ),
-      ),
-    );
-  }
-}
-
-class _ImageSection extends StatelessWidget {
-  const _ImageSection({
-    required this.product,
-    required this.imageUrl,
-    required this.heroTag,
-    required this.wished,
-    required this.onWish,
-  });
-
-  final ProductModel product;
-  final String imageUrl;
-  final String heroTag;
-  final bool wished;
-  final VoidCallback onWish;
-
-  @override
-  Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 1,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          ColoredBox(color: AppColors.primaryMist),
-          if (imageUrl.isNotEmpty)
-            Hero(
-              tag: heroTag,
-              child: CachedImageWidget(
-                imageUrl: imageUrl,
-                fit: BoxFit.contain,
-              ),
-            )
-          else
-            const Center(
-              child: Icon(
-                Icons.image_outlined,
-                color: AppColors.textMuted,
-                size: 40,
-              ),
-            ),
-          PositionedDirectional(
-            top: AppSizes.sm,
-            start: AppSizes.sm,
-            child: _Badge(product: product),
-          ),
-          PositionedDirectional(
-            top: AppSizes.sm,
-            end: AppSizes.sm,
-            child: _WishButton(active: wished, onTap: onWish),
-          ),
-        ],
       ),
     );
   }
 }
 
 class _Badge extends StatelessWidget {
-  const _Badge({required this.product});
-  final ProductModel product;
+  final String label;
+  final Color color;
+  const _Badge({required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    final label = _label();
-    if (label == null) return const SizedBox.shrink();
-
-    final (bg, fg) = switch (label) {
-      _BadgeKind.discount => (AppColors.primaryDark, AppColors.gold),
-      _BadgeKind.newItem => (AppColors.primary, Colors.white),
-      _BadgeKind.featured => (AppColors.rose, Colors.white),
-      _BadgeKind.outOfStock => (AppColors.textMuted, Colors.white),
-    };
-
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.sm,
-        vertical: AppSizes.xs,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(AppSizes.chipRadius),
+        color: color,
+        borderRadius: BorderRadius.circular(4),
       ),
-      child: Text(
-        _text(label),
-        style: AppTextStyles.caption(color: fg, size: 10).copyWith(
-          fontWeight: FontWeight.w700,
+      child: Text(label,
+          style: const TextStyle(color: Colors.white, fontSize: 8.5, fontWeight: FontWeight.w700)),
+    );
+  }
+}
+
+class _AddButton extends ConsumerWidget {
+  final Product product;
+  const _AddButton({required this.product});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enabled = product.inStock;
+    return Material(
+      color: enabled ? Colors.white : Colors.grey.shade300,
+      elevation: 2,
+      shadowColor: Colors.black26,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: enabled
+            ? () {
+                if (product.shades.isNotEmpty) {
+                  context.push('/product/${product.slug.isNotEmpty ? product.slug : product.id}');
+                  return;
+                }
+                ref.read(cartProvider.notifier).add(product);
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(const SnackBar(
+                    content: Text('أُضيف إلى السلة'),
+                    duration: Duration(seconds: 1),
+                  ));
+              }
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.all(6),
+          child: Icon(Icons.add_rounded, color: enabled ? const Color(0xFF333333) : Colors.grey, size: 18),
         ),
       ),
     );
   }
-
-  _BadgeKind? _label() {
-    if (!product.inStock) return _BadgeKind.outOfStock;
-    if (product.discountPercent > 0) return _BadgeKind.discount;
-    if (product.isNew) return _BadgeKind.newItem;
-    if (product.isBestSeller) return _BadgeKind.featured;
-    return null;
-  }
-
-  String _text(_BadgeKind kind) => switch (kind) {
-        _BadgeKind.discount =>
-          '-${CurrencyFormatter.toArabicDigits('${product.discountPercent}')}٪',
-        _BadgeKind.newItem => 'جديد',
-        _BadgeKind.featured => 'الأكثر مبيعاً',
-        _BadgeKind.outOfStock => AppStrings.outOfStock,
-      };
 }
 
-enum _BadgeKind { discount, newItem, featured, outOfStock }
-
-class _WishButton extends StatelessWidget {
-  const _WishButton({required this.active, required this.onTap});
-  final bool active;
-  final VoidCallback onTap;
+class _WishButton extends ConsumerWidget {
+  final Product product;
+  final bool wished;
+  const _WishButton({required this.product, required this.wished});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Material(
       color: Colors.white.withValues(alpha: 0.95),
       shape: const CircleBorder(),
       elevation: 1,
       child: InkWell(
-        onTap: onTap,
         customBorder: const CircleBorder(),
+        onTap: () async {
+          if (!ref.read(authProvider).isAuthenticated) {
+            context.push('/login');
+            return;
+          }
+          await ref.read(wishlistProvider.notifier).toggle(product);
+        },
         child: Padding(
-          padding: const EdgeInsets.all(7),
+          padding: const EdgeInsets.all(4),
           child: Icon(
-            active ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-            size: 20,
-            color: active ? AppColors.rose : AppColors.textSecondary,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _InfoSection extends StatelessWidget {
-  const _InfoSection({required this.product, required this.onAdd});
-  final ProductModel product;
-  final VoidCallback? onAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        AppSizes.md,
-        AppSizes.md,
-        AppSizes.md,
-        AppSizes.sm + 2,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (product.brand.isNotEmpty)
-            Text(
-              product.brand,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.caption(
-                color: AppColors.textMuted,
-                size: 11,
-              ).copyWith(fontWeight: FontWeight.w600),
-            ),
-          const SizedBox(height: AppSizes.xs),
-          Text(
-            product.name,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: AppTextStyles.title(size: 13.5).copyWith(
-              fontWeight: FontWeight.w600,
-              height: 1.25,
-            ),
-          ),
-          if (product.rating > 0) ...[
-            const SizedBox(height: AppSizes.xs),
-            Row(
-              children: [
-                const Icon(
-                  Icons.star_rounded,
-                  size: 14,
-                  color: AppColors.gold,
-                ),
-                const SizedBox(width: 2),
-                Text(
-                  product.rating.toStringAsFixed(1),
-                  style: AppTextStyles.caption(size: 11),
-                ),
-                if (product.reviewCount > 0) ...[
-                  const SizedBox(width: 4),
-                  Text(
-                    '(${product.reviewCount})',
-                    style: AppTextStyles.caption(
-                      color: AppColors.textMuted,
-                      size: 10,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
-          const SizedBox(height: AppSizes.sm),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(child: _PriceBlock(product: product)),
-              const SizedBox(width: AppSizes.sm),
-              _AddButton(onTap: onAdd),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PriceBlock extends StatelessWidget {
-  const _PriceBlock({required this.product});
-  final ProductModel product;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (product.discountPercent > 0)
-          Text(
-            CurrencyFormatter.format(product.originalPrice),
-            style: AppTextStyles.caption(
-              color: AppColors.textMuted,
-              size: 11,
-            ).copyWith(decoration: TextDecoration.lineThrough),
-          ),
-        Text(
-          CurrencyFormatter.format(product.price),
-          style: AppTextStyles.title(
-            color: AppColors.primaryDark,
-            size: 16,
-          ).copyWith(fontWeight: FontWeight.w700),
-        ),
-      ],
-    );
-  }
-}
-
-class _AddButton extends StatelessWidget {
-  const _AddButton({required this.onTap});
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onTap != null;
-    return Material(
-      color: enabled ? AppColors.primary : AppColors.canvas,
-      borderRadius: BorderRadius.circular(AppSizes.buttonRadius),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSizes.buttonRadius),
-        child: SizedBox(
-          width: 40,
-          height: 40,
-          child: Icon(
-            enabled ? Icons.add_shopping_cart_rounded : Icons.block_rounded,
-            color: enabled ? Colors.white : AppColors.textMuted,
-            size: 20,
+            wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+            size: 14,
+            color: wished ? AppColors.sale : Colors.grey.shade600,
           ),
         ),
       ),

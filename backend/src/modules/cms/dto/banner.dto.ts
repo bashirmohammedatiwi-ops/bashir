@@ -15,6 +15,10 @@ export class CreateBannerDto {
   @IsOptional() @IsString() tag?: string;
   @IsOptional() @IsString() ctaLabel?: string;
   @IsOptional() @IsString() link?: string;
+  @IsOptional() @IsString() linkType?: string;
+  @IsOptional() @IsString() linkValue?: string;
+  @IsOptional() @IsString() discountText?: string;
+  @IsOptional() @IsString() backgroundColor?: string;
   @IsOptional() @IsString() imageId?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) position?: number;
   @IsOptional() @IsBoolean() isActive?: boolean;

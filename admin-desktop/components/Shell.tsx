@@ -39,9 +39,9 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     title: "التسويق",
     items: [
       { href: "/banners", label: "البنرات", short: "ن" },
+      { href: "/home-builder", label: "بناء الرئيسية", short: "ر" },
       { href: "/coupons", label: "الكوبونات", short: "ك" },
       { href: "/packages", label: "الباقات", short: "ع" },
-      { href: "/home-blocks", label: "الصفحة الرئيسية", short: "ر" },
     ],
   },
   {

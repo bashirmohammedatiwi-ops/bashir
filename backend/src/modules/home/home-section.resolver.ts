@@ -1,0 +1,281 @@
+import { Injectable } from "@nestjs/common";
+import { HomeBlock, HomeBlockType } from "@prisma/client";
+import { PrismaService } from "../../common/prisma.service";
+
+const productInclude = {
+  brand: { select: { id: true, name: true, slug: true } },
+  category: { select: { id: true, name: true, slug: true } },
+  images: { orderBy: { position: "asc" as const }, include: { media: true } },
+  shades: true,
+  variants: true,
+};
+
+type Payload = Record<string, unknown>;
+
+export interface ResolvedHomeSection {
+  id: string;
+  type: HomeBlockType;
+  title?: string | null;
+  subtitle?: string | null;
+  position: number;
+  layout?: string;
+  backgroundColor?: string;
+  showViewAll?: boolean;
+  viewAllQuery?: string;
+  endsAt?: string | null;
+  banners?: unknown[];
+  categories?: unknown[];
+  products?: unknown[];
+  brands?: unknown[];
+  packages?: unknown[];
+  promoStrip?: { text: string; link?: string; backgroundColor?: string };
+  items?: unknown[];
+}
+
+@Injectable()
+export class HomeSectionResolver {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async resolve(
+    blocks: HomeBlock[],
+    ctx: {
+      flashEndsAt: string | null;
+      defaultCategories: unknown[];
+      defaultBrands: unknown[];
+      defaultPackages: unknown[];
+      productBuckets: Record<string, unknown[]>;
+      allBanners: unknown[];
+    },
+  ): Promise<ResolvedHomeSection[]> {
+    const sections: ResolvedHomeSection[] = [];
+
+    for (const block of blocks) {
+      const payload = (block.payload ?? {}) as Payload;
+      const section = await this.resolveBlock(block, payload, ctx);
+      if (section && !this.isEmpty(section)) {
+        sections.push(section);
+      }
+    }
+
+    return sections;
+  }
+
+  private isEmpty(s: ResolvedHomeSection): boolean {
+    if (s.promoStrip?.text) return false;
+    const arrays = [s.banners, s.categories, s.products, s.brands, s.packages, s.items];
+    return !arrays.some((a) => Array.isArray(a) && a.length > 0);
+  }
+
+  private async resolveBlock(
+    block: HomeBlock,
+    payload: Payload,
+    ctx: {
+      flashEndsAt: string | null;
+      defaultCategories: unknown[];
+      defaultBrands: unknown[];
+      defaultPackages: unknown[];
+      productBuckets: Record<string, unknown[]>;
+      allBanners: unknown[];
+    },
+  ): Promise<ResolvedHomeSection | null> {
+    const base = {
+      id: block.id,
+      type: block.type,
+      title: block.title,
+      subtitle: block.subtitle,
+      position: block.position,
+      backgroundColor: (payload.backgroundColor as string) ?? undefined,
+      showViewAll: payload.showViewAll !== false,
+    };
+
+    switch (block.type) {
+      case HomeBlockType.HERO_BANNER: {
+        const bannerIds = payload.bannerIds as string[] | undefined;
+        const banners = this.pickBanners(ctx.allBanners, bannerIds);
+        const categories = await this.resolveCategories(payload, ctx.defaultCategories);
+        return {
+          ...base,
+          layout: "overlap",
+          banners,
+          categories,
+        };
+      }
+
+      case HomeBlockType.CATEGORY_GRID: {
+        const categories = await this.resolveCategories(payload, ctx.defaultCategories);
+        return {
+          ...base,
+          layout: (payload.layout as string) ?? "overlap",
+          categories,
+        };
+      }
+
+      case HomeBlockType.CATEGORY_TILES:
+      case HomeBlockType.MAKEUP_CATEGORIES: {
+        const categories = await this.resolveCategories(payload, ctx.defaultCategories);
+        return {
+          ...base,
+          layout: block.type === HomeBlockType.MAKEUP_CATEGORIES ? "makeup" : "tiles",
+          categories,
+        };
+      }
+
+      case HomeBlockType.BANNER_FULL:
+      case HomeBlockType.CUSTOM_BANNER: {
+        const bannerId = (payload.bannerId as string) ?? (payload.bannerIds as string[])?.[0];
+        const banners = bannerId
+          ? this.pickBanners(ctx.allBanners, [bannerId])
+          : this.pickBanners(ctx.allBanners, payload.bannerIds as string[]);
+        return { ...base, layout: "full", banners: banners.slice(0, 1) };
+      }
+
+      case HomeBlockType.BANNER_GRID_2: {
+        const banners = await this.resolveBannerItems(payload, ctx.allBanners, 2);
+        return { ...base, layout: "grid2", items: banners };
+      }
+
+      case HomeBlockType.BANNER_GRID_3: {
+        const banners = await this.resolveBannerItems(payload, ctx.allBanners, 3);
+        return { ...base, layout: "grid3", items: banners };
+      }
+
+      case HomeBlockType.BANNER_CAROUSEL: {
+        const banners = this.pickBanners(ctx.allBanners, payload.bannerIds as string[]);
+        return { ...base, layout: "carousel", banners };
+      }
+
+      case HomeBlockType.PRODUCT_LIST:
+      case HomeBlockType.FLASH_SALE: {
+        const filter = (payload.filter as string) ?? (block.type === HomeBlockType.FLASH_SALE ? "promo" : "bestSeller");
+        const products = await this.resolveProducts(payload, filter, ctx.productBuckets);
+        const endsAt =
+          block.type === HomeBlockType.FLASH_SALE
+            ? ((payload.endsAt as string) ?? ctx.flashEndsAt)
+            : undefined;
+        return {
+          ...base,
+          layout: block.type === HomeBlockType.FLASH_SALE ? "flash" : "carousel",
+          products,
+          endsAt: endsAt ?? null,
+          showViewAll: payload.showViewAll !== false,
+          viewAllQuery: this.filterToQuery(filter, block.title),
+        };
+      }
+
+      case HomeBlockType.FEATURED_BRANDS:
+      case HomeBlockType.BRAND_SHOWCASE: {
+        const brands = await this.resolveBrands(payload, ctx.defaultBrands);
+        return {
+          ...base,
+          layout: (payload.layout as string) ?? (block.type === HomeBlockType.BRAND_SHOWCASE ? "cards" : "logos"),
+          brands,
+        };
+      }
+
+      case HomeBlockType.PACKAGES: {
+        const packages = await this.resolvePackages(payload, ctx.defaultPackages);
+        return { ...base, layout: "carousel", packages };
+      }
+
+      case HomeBlockType.PROMO_STRIP: {
+        return {
+          ...base,
+          layout: "strip",
+          promoStrip: {
+            text: (payload.text as string) ?? block.title ?? "",
+            link: payload.link as string | undefined,
+            backgroundColor: (payload.backgroundColor as string) ?? "#FCE4EC",
+          },
+        };
+      }
+
+      default:
+        return null;
+    }
+  }
+
+  private pickBanners(all: unknown[], ids?: string[]): unknown[] {
+    if (!ids?.length) return all;
+    const map = new Map((all as { id: string }[]).map((b) => [b.id, b]));
+    return ids.map((id) => map.get(id)).filter(Boolean);
+  }
+
+  private async resolveBannerItems(payload: Payload, all: unknown[], max: number) {
+    const items = (payload.items as { bannerId?: string; title?: string; discountText?: string }[]) ?? [];
+    if (items.length) {
+      const map = new Map((all as { id: string }[]).map((b) => [b.id, b]));
+      return items
+        .slice(0, max)
+        .map((item) => {
+          const banner = item.bannerId ? map.get(item.bannerId) : null;
+          return banner ? { ...banner, title: item.title, discountText: item.discountText } : null;
+        })
+        .filter(Boolean);
+    }
+    const ids = payload.bannerIds as string[] | undefined;
+    return this.pickBanners(all, ids).slice(0, max);
+  }
+
+  private async resolveCategories(payload: Payload, fallback: unknown[]) {
+    const ids = payload.categoryIds as string[] | undefined;
+    const max = (payload.maxItems as number) ?? 8;
+    if (!ids?.length) return (fallback as unknown[]).slice(0, max);
+    const cats = await this.prisma.category.findMany({
+      where: { id: { in: ids }, isActive: true },
+      include: { image: true },
+    });
+    const map = new Map(cats.map((c) => [c.id, c]));
+    return ids.map((id) => map.get(id)).filter(Boolean);
+  }
+
+  private async resolveBrands(payload: Payload, fallback: unknown[]) {
+    const ids = payload.brandIds as string[] | undefined;
+    if (!ids?.length) return fallback;
+    const brands = await this.prisma.brand.findMany({
+      where: { id: { in: ids }, isActive: true },
+      include: { logo: true },
+    });
+    const map = new Map(brands.map((b) => [b.id, b]));
+    return ids.map((id) => map.get(id)).filter(Boolean);
+  }
+
+  private async resolvePackages(payload: Payload, fallback: unknown[]) {
+    const ids = payload.packageIds as string[] | undefined;
+    if (!ids?.length) return fallback;
+    const packages = await this.prisma.package.findMany({
+      where: { id: { in: ids }, isActive: true },
+      include: { coverImage: true, items: { include: { product: true } } },
+    });
+    const map = new Map(packages.map((p) => [p.id, p]));
+    return ids.map((id) => map.get(id)).filter(Boolean);
+  }
+
+  private async resolveProducts(
+    payload: Payload,
+    filter: string,
+    buckets: Record<string, unknown[]>,
+  ): Promise<unknown[]> {
+    const productIds = payload.productIds as string[] | undefined;
+    if (productIds?.length) {
+      const products = await this.prisma.product.findMany({
+        where: { id: { in: productIds }, isActive: true },
+        include: productInclude,
+      });
+      const map = new Map(products.map((p) => [p.id, p]));
+      return productIds.map((id) => map.get(id)).filter(Boolean);
+    }
+    const limit = (payload.limit as number) ?? 10;
+    return (buckets[filter] ?? buckets.bestSeller ?? []).slice(0, limit);
+  }
+
+  private filterToQuery(filter: string, title?: string | null): string {
+    const t = title ? `&title=${encodeURIComponent(title)}` : "";
+    const map: Record<string, string> = {
+      promo: `isPromo=1${t}`,
+      new: `isNew=1${t}`,
+      bestSeller: `isBestSeller=1${t}`,
+      featured: `isFeatured=1${t}`,
+    };
+    return map[filter] ?? `isFeatured=1${t}`;
+  }
+}

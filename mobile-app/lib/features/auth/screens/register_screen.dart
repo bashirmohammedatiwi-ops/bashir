@@ -1,126 +1,140 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_routes.dart';
-import '../../../core/constants/app_strings.dart';
-import '../../../core/utils/validators.dart';
-import '../../../core/widgets/custom_button.dart';
-import '../../../core/widgets/custom_text_field.dart';
-import '../providers/auth_provider.dart';
+
+import '../../../core/theme/app_colors.dart';
+import '../auth_provider.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
-
   @override
   ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmController = TextEditingController();
-  bool _terms = false;
+  final _name = TextEditingController();
+  final _email = TextEditingController();
+  final _phone = TextEditingController();
+  final _password = TextEditingController();
+  bool _obscure = true;
   bool _loading = false;
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _passwordController.dispose();
-    _confirmController.dispose();
+    _name.dispose();
+    _email.dispose();
+    _phone.dispose();
+    _password.dispose();
     super.dispose();
   }
 
-  Future<void> _register() async {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (!_terms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يجب الموافقة على الشروط')),
-      );
-      return;
-    }
     setState(() => _loading = true);
-    await ref.read(authProvider.notifier).register(
-          _nameController.text.trim(),
-          _emailController.text.trim(),
-          _passwordController.text,
-          phone: _phoneController.text.trim().isEmpty
-              ? null
-              : _phoneController.text.trim(),
-        );
-    if (mounted) {
-      setState(() => _loading = false);
-      context.go(AppRoutes.home);
+    try {
+      await ref.read(authProvider.notifier).register(
+            name: _name.text.trim(),
+            email: _email.text.trim(),
+            password: _password.text,
+            phone: _phone.text.trim(),
+          );
+      if (mounted) context.go('/');
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: AppColors.sale));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(AppStrings.register)),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              CustomTextField(
-                controller: _nameController,
-                label: AppStrings.fullName,
-                validator: (v) => Validators.required(v, 'الاسم'),
-              ),
-              const SizedBox(height: 16),
-              CustomTextField(
-                controller: _emailController,
-                label: 'البريد الإلكتروني',
-                keyboardType: TextInputType.emailAddress,
-                validator: Validators.email,
-              ),
-              const SizedBox(height: 16),
-              CustomTextField(
-                controller: _phoneController,
-                label: '${AppStrings.phone} (اختياري)',
-                keyboardType: TextInputType.phone,
-                prefix: const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Text('+964'),
+      appBar: AppBar(title: const Text('إنشاء حساب')),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text('انضم إلى الحياة',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900)),
+                const SizedBox(height: 6),
+                const Text('أنشئ حسابك وابدأ التسوّق واكسب نقاط الولاء',
+                    style: TextStyle(color: AppColors.textSecondary)),
+                const SizedBox(height: 24),
+                TextFormField(
+                  controller: _name,
+                  decoration: const InputDecoration(
+                    labelText: 'الاسم الكامل',
+                    prefixIcon: Icon(Icons.person_outline),
+                  ),
+                  validator: (v) =>
+                      (v == null || v.trim().length < 2) ? 'أدخل اسمك' : null,
                 ),
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              ),
-              const SizedBox(height: 16),
-              CustomTextField(
-                controller: _passwordController,
-                label: AppStrings.password,
-                obscureText: true,
-                validator: Validators.password,
-              ),
-              const SizedBox(height: 16),
-              CustomTextField(
-                controller: _confirmController,
-                label: AppStrings.confirmPassword,
-                obscureText: true,
-                validator: (v) =>
-                    Validators.confirmPassword(v, _passwordController.text),
-              ),
-              const SizedBox(height: 16),
-              CheckboxListTile(
-                value: _terms,
-                onChanged: (v) => setState(() => _terms = v ?? false),
-                title: Text(AppStrings.termsAgree),
-                controlAffinity: ListTileControlAffinity.leading,
-              ),
-              const SizedBox(height: 24),
-              CustomButton(
-                label: AppStrings.register,
-                onPressed: _register,
-                isLoading: _loading,
-              ),
-            ],
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _email,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'البريد الإلكتروني',
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                  validator: (v) =>
+                      (v == null || !v.contains('@')) ? 'أدخل بريداً صحيحاً' : null,
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _phone,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'رقم الهاتف (اختياري)',
+                    prefixIcon: Icon(Icons.phone_outlined),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextFormField(
+                  controller: _password,
+                  obscureText: _obscure,
+                  decoration: InputDecoration(
+                    labelText: 'كلمة المرور',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+                      onPressed: () => setState(() => _obscure = !_obscure),
+                    ),
+                  ),
+                  validator: (v) =>
+                      (v == null || v.length < 6) ? 'كلمة المرور 6 أحرف على الأقل' : null,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: _loading ? null : _submit,
+                  child: _loading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.4))
+                      : const Text('إنشاء الحساب'),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text('لديك حساب بالفعل؟'),
+                    TextButton(
+                      onPressed: () => context.pop(),
+                      child: const Text('سجّل الدخول'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

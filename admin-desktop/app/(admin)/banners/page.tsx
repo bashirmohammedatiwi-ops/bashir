@@ -16,6 +16,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { MediaPicker } from "@/components/MediaPicker";
+import { BannerExtraFields } from "@/components/home-builder/SectionPayloadEditor";
 import { mediaThumb } from "@/lib/mediaUrl";
 import { mutations, queries } from "@/lib/queries";
 
@@ -27,6 +28,10 @@ function toFormValues(row: any) {
     tag: row.tag,
     ctaLabel: row.ctaLabel,
     link: row.link ?? row.ctaUrl ?? "",
+    linkType: row.linkType,
+    linkValue: row.linkValue,
+    discountText: row.discountText,
+    backgroundColor: row.backgroundColor,
     imageId: row.imageId ?? row.image?.id,
     position: row.position,
     isActive: row.isActive,
@@ -42,6 +47,10 @@ function toPayload(values: any) {
     tag: values.tag,
     ctaLabel: values.ctaLabel,
     link: values.link ?? values.ctaUrl ?? undefined,
+    linkType: values.linkType ?? undefined,
+    linkValue: values.linkValue ?? undefined,
+    discountText: values.discountText ?? undefined,
+    backgroundColor: values.backgroundColor ?? undefined,
     imageId: values.imageId ?? undefined,
     position: values.position,
     isActive: values.isActive,
@@ -199,6 +208,7 @@ export default function BannersPage() {
           <Form.Item name="link" label="رابط الزر">
             <Input placeholder="/products?sale=1" />
           </Form.Item>
+          <BannerExtraFields />
           <Form.Item name="imageId" label="صورة البنر">
             <MediaPicker />
           </Form.Item>

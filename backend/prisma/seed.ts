@@ -476,11 +476,20 @@ async function main() {
   if (blockCount === 0) {
     await prisma.homeBlock.createMany({
       data: [
-        { type: HomeBlockType.HERO_BANNER, title: "مرحباً بكم في الحياة", position: 0, payload: { bannerIds: [] }, isActive: true },
-        { type: HomeBlockType.CATEGORY_GRID, title: "تسوق حسب الفئة", position: 1, payload: {}, isActive: true },
-        { type: HomeBlockType.PRODUCT_LIST, title: "الأكثر مبيعاً", subtitle: "منتجات مختارة", position: 2, payload: { filter: "bestSeller" }, isActive: true },
-        { type: HomeBlockType.FEATURED_BRANDS, title: "براندات مميزة", position: 3, payload: {}, isActive: true },
-        { type: HomeBlockType.FLASH_SALE, title: "عروض سريعة", position: 4, payload: { endsAt: null }, isActive: true },
+        { type: HomeBlockType.HERO_BANNER, title: "الرئيسية", position: 0, payload: { bannerIds: [], maxItems: 8 }, isActive: true },
+        { type: HomeBlockType.FLASH_SALE, title: "أقوى العروض", position: 1, payload: { filter: "promo", limit: 12, showViewAll: true }, isActive: true },
+        { type: HomeBlockType.BANNER_FULL, title: "عرض موسمي", position: 2, payload: { bannerId: "" }, isActive: false },
+        { type: HomeBlockType.BANNER_GRID_2, title: "عروض مزدوجة", position: 3, payload: { bannerIds: [] }, isActive: false },
+        { type: HomeBlockType.PRODUCT_LIST, title: "الأكثر مبيعاً", position: 4, payload: { filter: "bestSeller", limit: 12, showViewAll: true }, isActive: true },
+        { type: HomeBlockType.PRODUCT_LIST, title: "وصل حديثاً", position: 5, payload: { filter: "new", limit: 12, showViewAll: true }, isActive: true },
+        { type: HomeBlockType.CATEGORY_TILES, title: "تسوق حسب الفئة", position: 6, payload: { maxItems: 6 }, isActive: true },
+        { type: HomeBlockType.BANNER_CAROUSEL, title: "عروض البراندات", position: 7, payload: { bannerIds: [] }, isActive: false },
+        { type: HomeBlockType.MAKEUP_CATEGORIES, title: "أقسام المكياج", position: 8, payload: { accentColor: "#FCE4EC" }, isActive: true },
+        { type: HomeBlockType.FEATURED_BRANDS, title: "العلامات التجارية", position: 9, payload: { layout: "logos" }, isActive: true },
+        { type: HomeBlockType.PRODUCT_LIST, title: "منتجات مختارة", position: 10, payload: { filter: "featured", limit: 12, showViewAll: true }, isActive: true },
+        { type: HomeBlockType.BANNER_GRID_3, title: "ثلاثة عروض", position: 11, payload: { bannerIds: [] }, isActive: false },
+        { type: HomeBlockType.PACKAGES, title: "مجموعات العناية", position: 12, payload: {}, isActive: true },
+        { type: HomeBlockType.PROMO_STRIP, title: "شحن مجاني", position: 13, payload: { text: "شحن مجاني للطلبات فوق 50,000 د.ع", backgroundColor: "#FCE4EC" }, isActive: true },
       ],
     });
   }

@@ -18,12 +18,19 @@ import { useState } from "react";
 import { mutations, queries } from "@/lib/queries";
 
 const TYPE_LABELS: Record<string, string> = {
-  HERO_BANNER: "بنر رئيسي",
+  HERO_BANNER: "بنر رئيسي + فئات",
   CATEGORY_GRID: "شبكة الفئات",
-  PRODUCT_LIST: "قائمة منتجات",
-  FEATURED_BRANDS: "براندات مميزة",
+  CATEGORY_TILES: "بلاطات فئات",
+  MAKEUP_CATEGORIES: "أقسام المكياج",
+  BANNER_FULL: "بنر عريض",
+  BANNER_GRID_2: "شبكة بنرات (2)",
+  BANNER_GRID_3: "شبكة بنرات (3)",
+  BANNER_CAROUSEL: "سلايدر بنرات",
+  PRODUCT_LIST: "سلايدر منتجات",
+  FEATURED_BRANDS: "براندات (شعارات)",
+  BRAND_SHOWCASE: "براندات (بطاقات)",
   PACKAGES: "الباقات",
-  FLASH_SALE: "تخفيضات سريعة",
+  FLASH_SALE: "أقوى العروض",
   PROMO_STRIP: "شريط ترويجي",
   CUSTOM_BANNER: "بنر مخصص",
 };

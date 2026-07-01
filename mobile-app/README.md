@@ -1,53 +1,17 @@
-# Alhayaa — تطبيق العملاء (Flutter)
+# alhayaa
 
-مربوط بـ **VPS Backend** ولوحة التحكم (`admin-desktop`) — نفس العنوان:
+A new Flutter project.
 
-- API: `http://187.127.88.146/api/v1`
-- Media: `http://187.127.88.146/media`
+## Getting Started
 
-## تشغيل ضد VPS (افتراضي)
+This project is a starting point for a Flutter application.
 
-```powershell
-cd mobile-app
-flutter pub get
-flutter run -d chrome
-```
+A few resources to get you started if this is your first Flutter project:
 
-لا حاجة لـ `--dart-define` — التطبيق يتصل بالـ VPS مباشرة.
+- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
+- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
 
-## تطوير محلي (backend على الجهاز)
-
-```powershell
-# Terminal 1
-cd backend
-npm run start:dev
-
-# Terminal 2
-cd mobile-app
-flutter run -d chrome --dart-define=API_BASE_URL=http://127.0.0.1:3000/api/v1
-```
-
-## Android Emulator
-
-```powershell
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1
-```
-
-## التحقق من VPS
-
-```powershell
-curl http://187.127.88.146/api/v1/health
-curl http://187.127.88.146/api/v1/home
-```
-
-ملاحظة: الـ VPS يستخدم **HTTP** على IP (ليس HTTPS). لوحة التحكم تستخدم نفس الإعداد.
-
-## Endpoints
-
-| الميزة | Endpoint |
-|--------|----------|
-| الصحة | `GET /health` |
-| الرئيسية | `GET /home` |
-| المنتجات | `GET /products` |
-| المصادقة | `/auth/*` |
-| الطلبات | `POST /orders`, `GET /orders` |
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.

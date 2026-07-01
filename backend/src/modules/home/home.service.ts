@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import { SettingsService } from "../settings/settings.service";
+import { HomeSectionResolver } from "./home-section.resolver";
 
 const productInclude = {
   brand: { select: { id: true, name: true, slug: true } },
@@ -10,11 +11,23 @@ const productInclude = {
   variants: true,
 };
 
+function activeBannerWhere() {
+  const now = new Date();
+  return {
+    isActive: true,
+    AND: [
+      { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
+      { OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
+    ],
+  };
+}
+
 @Injectable()
 export class HomeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly settings: SettingsService,
+    private readonly sectionResolver: HomeSectionResolver,
   ) {}
 
   async feed() {
@@ -34,7 +47,7 @@ export class HomeService {
       promoProducts,
     ] = await Promise.all([
       this.prisma.banner.findMany({
-        where: { isActive: true },
+        where: activeBannerWhere(),
         orderBy: { position: "asc" },
         include: { image: true },
       }),
@@ -71,30 +84,47 @@ export class HomeService {
       this.prisma.product.findMany({
         where: { isActive: true, isNew: true },
         orderBy: { createdAt: "desc" },
-        take: 10,
+        take: 20,
         include: productInclude,
       }),
       this.prisma.product.findMany({
         where: { isActive: true, isBestSeller: true },
         orderBy: { soldCount: "desc" },
-        take: 10,
+        take: 20,
         include: productInclude,
       }),
       this.prisma.product.findMany({
         where: { isActive: true, isFeatured: true },
         orderBy: { createdAt: "desc" },
-        take: 10,
+        take: 20,
         include: productInclude,
       }),
       this.prisma.product.findMany({
         where: { isActive: true, isPromo: true },
         orderBy: { createdAt: "desc" },
-        take: 10,
+        take: 20,
         include: productInclude,
       }),
     ]);
 
+    const productBuckets = {
+      new: newArrivals,
+      bestSeller: bestSellers,
+      featured: featuredProducts,
+      promo: promoProducts,
+    };
+
+    const sections = await this.sectionResolver.resolve(homeBlocks, {
+      flashEndsAt,
+      defaultCategories: categories,
+      defaultBrands: brands,
+      defaultPackages: packages,
+      productBuckets,
+      allBanners: banners,
+    });
+
     return {
+      sections,
       banners,
       categories,
       brands,
@@ -115,6 +145,7 @@ export class HomeService {
         pickupEnabled: (settings as any).pickupEnabled ?? true,
         pickupAddress: (settings as any).pickupAddress ?? "",
         pickupHours: (settings as any).pickupHours ?? "",
+        freeShippingThreshold: (settings as any).freeShippingThreshold ?? 50000,
       },
     };
   }

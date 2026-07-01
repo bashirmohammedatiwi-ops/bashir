@@ -18,37 +18,10 @@ migrate_working_dir/
 *.iws
 .idea/
 
-# Env & secrets
-.env
-.env.local
-.env.*.local
-!.env.example
-!.env.production.example
-
-# Node / build artifacts
-node_modules/
-dist/
-.next/
-out/
-coverage/
-*.tsbuildinfo
-
-# Backend
-backend/uploads/
-backend/dev.db
-backend/dev.db-journal
-backend/prisma/dev.db
-backend/prisma/dev.db-journal
-
-# Admin desktop builds
-admin-desktop/release/
-admin-desktop/dist-electron/
-admin-desktop/renderer-out/
-
-# Infra runtime
-infra/.env
-infra/backups/
-infra/nginx/default.conf
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
 
 # Flutter/Dart/Pub related
 **/doc/api/

@@ -112,6 +112,13 @@ enum HomeBlockType {
   FLASH_SALE
   PROMO_STRIP
   CUSTOM_BANNER
+  BANNER_FULL
+  BANNER_GRID_2
+  BANNER_GRID_3
+  BANNER_CAROUSEL
+  CATEGORY_TILES
+  MAKEUP_CATEGORIES
+  BRAND_SHOWCASE
 }
 
 // ---------------------- USERS / AUTH ----------------------
@@ -627,6 +634,10 @@ model Banner {
   tag             String?
   ctaLabel        String?
   link            String?
+  linkType        String?
+  linkValue       String?
+  discountText    String?
+  backgroundColor String?
   imageId         String?
   position        Int        @default(0)
   isActive        Boolean    @default(true)
