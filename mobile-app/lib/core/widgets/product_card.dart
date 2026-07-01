@@ -55,8 +55,12 @@ class ProductCard extends ConsumerWidget {
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(9)),
                   child: AspectRatio(
                     aspectRatio: 1,
-                    child: product.coverUrl.isNotEmpty
-                        ? AppNetworkImage(url: product.coverUrl, width: width ?? 148, fit: BoxFit.contain)
+                    child: product.displayCoverUrl.isNotEmpty
+                        ? AppNetworkImage(
+                            url: product.displayCoverUrl,
+                            width: width ?? 148,
+                            fit: BoxFit.contain,
+                          )
                         : _ProductImagePlaceholder(
                             label: product.brandName.isNotEmpty
                                 ? product.brandName

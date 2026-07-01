@@ -8,7 +8,13 @@ import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 import { randomBytes, createHash } from "crypto";
 import { PrismaService } from "../../common/prisma.service";
-import { LoginDto, RefreshDto, RegisterDto, UpdateProfileDto } from "./dto/auth.dto";
+import {
+  ChangePasswordDto,
+  LoginDto,
+  RefreshDto,
+  RegisterDto,
+  UpdateProfileDto,
+} from "./dto/auth.dto";
 import { Role } from "@prisma/client";
 
 @Injectable()

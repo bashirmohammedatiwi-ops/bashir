@@ -1,4 +1,5 @@
 import '../../core/utils/json.dart';
+import '../../core/config/app_config.dart';
 import 'media.dart';
 import 'brand.dart';
 import 'category.dart';
@@ -171,10 +172,17 @@ class Product {
       if (url.isNotEmpty) return url;
     }
     for (final shade in shades) {
-      final url = shade.image?.thumb ?? '';
+      final url = shade.image?.thumb ?? shade.image?.full ?? '';
       if (url.isNotEmpty) return url;
     }
     return '';
+  }
+
+  /// رابط العرض — مع صورة بديلة من السيرفر إن لزم.
+  String get displayCoverUrl {
+    final url = coverUrl;
+    if (url.isNotEmpty) return url;
+    return AppConfig.productPlaceholderUrl;
   }
   List<String> get galleryUrls =>
       images.map((e) => e.fullUrl).where((e) => e.isNotEmpty).toList();

@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import { SettingsService } from "../settings/settings.service";
+import { withPlaceholderImages } from "../../common/product-placeholder.util";
 import { HomeSectionResolver } from "./home-section.resolver";
 
 const productInclude = {
@@ -108,10 +109,10 @@ export class HomeService {
     ]);
 
     const productBuckets = {
-      new: newArrivals,
-      bestSeller: bestSellers,
-      featured: featuredProducts,
-      promo: promoProducts,
+      new: newArrivals.map((p) => withPlaceholderImages(p)),
+      bestSeller: bestSellers.map((p) => withPlaceholderImages(p)),
+      featured: featuredProducts.map((p) => withPlaceholderImages(p)),
+      promo: promoProducts.map((p) => withPlaceholderImages(p)),
     };
 
     const sections = await this.sectionResolver.resolve(homeBlocks, {
@@ -134,11 +135,11 @@ export class HomeService {
       homeBlocks,
       flashSale: {
         endsAt: flashEndsAt,
-        products: promoProducts,
+        products: promoProducts.map((p) => withPlaceholderImages(p)),
       },
-      newArrivals,
-      bestSellers,
-      featuredProducts,
+      newArrivals: newArrivals.map((p) => withPlaceholderImages(p)),
+      bestSellers: bestSellers.map((p) => withPlaceholderImages(p)),
+      featuredProducts: featuredProducts.map((p) => withPlaceholderImages(p)),
       settings: {
         storeName: (settings as any).storeName,
         whatsapp: (settings as any).whatsapp,

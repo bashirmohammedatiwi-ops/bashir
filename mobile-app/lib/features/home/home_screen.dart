@@ -21,7 +21,7 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _scroll = ScrollController();
   String? _precachedFor;
-  bool _showStickyHeader = false;
+  bool _compactHeader = false;
 
   @override
   void initState() {
@@ -30,9 +30,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _onScroll() {
-    final show = _scroll.hasClients && _scroll.offset > 260;
-    if (show != _showStickyHeader && mounted) {
-      setState(() => _showStickyHeader = show);
+    final compact = _scroll.hasClients && _scroll.offset > 200;
+    if (compact != _compactHeader && mounted) {
+      setState(() => _compactHeader = compact);
     }
   }
 
@@ -49,12 +49,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final topPad = MediaQuery.paddingOf(context).top;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: _showStickyHeader
+      value: _compactHeader
           ? SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent)
           : SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
         backgroundColor: Colors.white,
         body: Stack(
+          clipBehavior: Clip.none,
           children: [
             feed.when(
               loading: () => const _HomeLoading(),
@@ -74,7 +75,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 }
                 return RefreshIndicator(
                   color: AppColors.primary,
-                  edgeOffset: topPad,
+                  edgeOffset: topPad + (_compactHeader ? 56 : 120),
                   onRefresh: () async {
                     await ref.read(apiCacheProvider).remove('home_v1');
                     ref.invalidate(homeFeedProvider);
@@ -83,8 +84,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   child: ListView(
                     controller: _scroll,
                     padding: EdgeInsets.zero,
-                    cacheExtent: 1000,
-                    addAutomaticKeepAlives: true,
+                    cacheExtent: 800,
                     physics: const AlwaysScrollableScrollPhysics(
                       parent: BouncingScrollPhysics(),
                     ),
@@ -93,20 +93,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 );
               },
             ),
-            AnimatedSlide(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
-              offset: _showStickyHeader ? Offset.zero : const Offset(0, -1),
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 180),
-                opacity: _showStickyHeader ? 1 : 0,
-                child: Material(
-                  elevation: 3,
-                  shadowColor: Colors.black26,
-                  color: Colors.white.withValues(alpha: 0.97),
-                  child: Padding(
-                    padding: EdgeInsets.only(top: topPad),
-                    child: const NiceOneHeader(compact: true, onLightBackground: true),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOutCubic,
+                decoration: BoxDecoration(
+                  color: _compactHeader ? Colors.white.withValues(alpha: 0.98) : Colors.transparent,
+                  boxShadow: _compactHeader
+                      ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, 2))]
+                      : null,
+                ),
+                child: Padding(
+                  padding: EdgeInsets.only(top: topPad),
+                  child: NiceOneHeader(
+                    compact: _compactHeader,
+                    onLightBackground: _compactHeader,
                   ),
                 ),
               ),

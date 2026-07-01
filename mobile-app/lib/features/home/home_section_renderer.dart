@@ -81,6 +81,9 @@ List<Widget> buildHomeSections(HomeFeed feed) {
 
   for (final s in _orderedSections(feed.sections)) {
     if (s.type == 'CATEGORY_GRID' && heroHasCategories) continue;
+    if ((s.type == 'CATEGORY_TILES' || s.type == 'MAKEUP_CATEGORIES') && heroHasCategories) {
+      continue;
+    }
 
     if (s.type == 'HERO_BANNER') {
       heroHasCategories = s.categories.isNotEmpty;

@@ -111,12 +111,6 @@ class NiceOneHeader extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               _CircleBtn(
-                icon: Icons.qr_code_scanner_rounded,
-                light: onLightBackground,
-                onTap: () => context.push('/scan'),
-              ),
-              const SizedBox(width: 8),
-              _CircleBtn(
                 icon: Icons.notifications_none_rounded,
                 light: onLightBackground,
                 badgeCount: unread,

@@ -26,6 +26,10 @@ class AppConfig {
   static const String storeName = 'الحياة';
   static const String currency = 'د.ع';
 
+  /// صورة بديلة للمنتجات بدون صور (من السيرفر).
+  static String get productPlaceholderUrl =>
+      '$mediaBaseUrl/placeholder/product.webp';
+
   /// مهلة الاتصال الأولى — أقصر لعدم انتظار الشبكة البطيئة.
   static const Duration connectTimeout = Duration(seconds: 12);
   static const Duration receiveTimeout = Duration(seconds: 25);

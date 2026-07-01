@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../../core/widgets/app_network_image.dart';
-import '../../../core/widgets/nice_one_header.dart';
 import '../../../data/models/banner.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/home_section.dart';
@@ -63,7 +62,6 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
                     )
                   : _DefaultBanner(height: bannerH),
             ),
-            Positioned(top: topPad, left: 0, right: 0, child: const NiceOneHeader()),
             Positioned(
               left: 0,
               right: 0,

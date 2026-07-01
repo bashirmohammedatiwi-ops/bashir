@@ -25,15 +25,27 @@ class AppMedia {
       );
 
   String? _variantPath(String size) {
-    final formats = asMap(asMap(variants[size])['formats']);
-    return (formats['webp'] ?? formats['jpg'] ?? formats['avif'])?.toString();
+    final node = asMap(variants[size]);
+    final formats = asMap(node['formats']);
+    final direct = (formats['webp'] ?? formats['jpg'] ?? formats['avif'] ?? node['url'])?.toString();
+    if (direct != null && direct.isNotEmpty) return direct;
+    return null;
+  }
+
+  String? _anyVariantUrl() {
+    for (final key in ['thumb', 'small', 'medium', 'large']) {
+      final p = _variantPath(key);
+      if (p != null && p.isNotEmpty) return p;
+    }
+    return null;
   }
 
   /// رابط مناسب لبطاقات المنتجات.
   String get thumb {
-    final rel = _variantPath('medium') ?? _variantPath('thumb') ?? _variantPath('small');
+    final rel = _variantPath('medium') ?? _variantPath('thumb') ?? _variantPath('small') ?? _anyVariantUrl();
     if (rel != null) return resolveMediaUrl(rel);
     if (publicUrlBase.isNotEmpty && filename.isNotEmpty) {
+      if (publicUrlBase.contains('.')) return resolveMediaUrl(publicUrlBase);
       return resolveMediaUrl('$publicUrlBase/$filename.webp');
     }
     return '';
