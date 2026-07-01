@@ -30,7 +30,13 @@ if [ "$RUN_SEED" = "1" ]; then
 fi
 
 echo "[entrypoint] Ensuring product placeholder images..."
-npx tsx prisma/scripts/backfill-product-images.ts || echo "[entrypoint] Image backfill skipped"
+set +e
+node scripts/backfill-product-images.js
+BACKFILL=$?
+set -e
+if [ "$BACKFILL" -ne 0 ]; then
+  echo "[entrypoint] Image backfill skipped (exit $BACKFILL)"
+fi
 
 echo "[entrypoint] Starting API on port ${PORT:-3000}..."
 exec node dist/main.js

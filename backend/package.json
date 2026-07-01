@@ -12,7 +12,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "seed": "npx tsx prisma/seed.ts",
-    "backfill:images": "npx tsx prisma/scripts/backfill-product-images.ts"
+    "backfill:images": "node scripts/backfill-product-images.js"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

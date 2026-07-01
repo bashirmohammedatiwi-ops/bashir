@@ -22,7 +22,7 @@ RUN npm ci --omit=dev --legacy-peer-deps || npm install --omit=dev --legacy-peer
 RUN npx prisma generate
 
 COPY --from=builder /app/dist ./dist
-COPY prisma/scripts ./prisma/scripts
+COPY scripts ./scripts
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 

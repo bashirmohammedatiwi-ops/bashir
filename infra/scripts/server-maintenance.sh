@@ -14,7 +14,10 @@ echo "==> Applying database migrations..."
 $COMPOSE exec -T api npx prisma migrate deploy
 
 echo "==> Backfilling product placeholder images..."
-$COMPOSE exec -T api npx tsx prisma/scripts/backfill-product-images.ts
+$COMPOSE exec -T api node scripts/backfill-product-images.js
+
+echo "==> API logs (last 40 lines)..."
+$COMPOSE logs api --tail=40
 
 echo "==> Restarting API..."
 $COMPOSE restart api
