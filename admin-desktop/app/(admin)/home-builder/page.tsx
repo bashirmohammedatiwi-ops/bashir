@@ -1,14 +1,34 @@
 "use client";
 
-import { Drawer, Form, Input, Modal, Tabs, Typography, message } from "antd";
+import {
+  CloudDownloadOutlined,
+  CloudUploadOutlined,
+  LayoutOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
+import {
+  Button,
+  Card,
+  Col,
+  Drawer,
+  Dropdown,
+  Form,
+  Input,
+  Modal,
+  Row,
+  Space,
+  Statistic,
+  Tabs,
+  Typography,
+  message,
+} from "antd";
+import type { MenuProps } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
-import { PhoneCanvas } from "@/components/home-builder/PhoneCanvas";
-import { SectionInspector } from "@/components/home-builder/SectionInspector";
-import { SectionOutline } from "@/components/home-builder/SectionOutline";
+import { SectionEditorPanel } from "@/components/home-builder/SectionEditorPanel";
+import { SectionListPanel } from "@/components/home-builder/SectionListPanel";
 import { SectionTypeModal } from "@/components/home-builder/SectionTypeModal";
-import { StudioToolbar, DeviceSize } from "@/components/home-builder/StudioToolbar";
-import { resolveBlockPreview } from "@/components/home-builder/preview-resolver";
 import { PAGE_TEMPLATES } from "@/components/home-builder/section-templates";
 import {
   SECTION_TYPES,
@@ -19,7 +39,7 @@ import { countWarnings } from "@/components/home-builder/section-validation";
 import { mutations, queries } from "@/lib/queries";
 import "@/components/home-builder/home-builder.css";
 
-const { Text } = Typography;
+const { Title, Text } = Typography;
 
 function cleanPayload(type: SectionType, payload: Record<string, unknown>) {
   const p = normalizePayload(type, { ...payload });
@@ -34,21 +54,18 @@ export default function HomeBuilderPage() {
   const qc = useQueryClient();
   const [typeModalOpen, setTypeModalOpen] = useState(false);
   const [insertAt, setInsertAt] = useState<number | null>(null);
-  const [previewOpen, setPreviewOpen] = useState(false);
+  const [jsonOpen, setJsonOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importJson, setImportJson] = useState("");
   const [editing, setEditing] = useState<any | null>(null);
   const [isNew, setIsNew] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editorTab, setEditorTab] = useState("content");
-  const [zoom, setZoom] = useState(1);
-  const [deviceSize, setDeviceSize] = useState<DeviceSize>("375");
   const [form] = Form.useForm();
 
-  const { data: blocks, isLoading } = useQuery({ queryKey: ["home-blocks"], queryFn: queries.homeBlocks });
-  const { data: preview, refetch: refetchPreview, isFetching: previewLoading } = useQuery({
-    queryKey: ["home-preview"],
-    queryFn: queries.homePreview,
+  const { data: blocks, isLoading, refetch } = useQuery({
+    queryKey: ["home-blocks"],
+    queryFn: queries.homeBlocks,
   });
   const { data: banners } = useQuery({ queryKey: ["banners"], queryFn: queries.banners });
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: queries.categoriesFull });
@@ -78,16 +95,8 @@ export default function HomeBuilderPage() {
     [blocks],
   );
 
-  const mergedPreview = useMemo(() => {
-    return sorted.map((block) => {
-      const apiResolved = preview?.sections?.find((s: any) => s.id === block.id);
-      const local = resolveBlockPreview(block, editorEntities, apiResolved);
-      return local ? { id: block.id, ...local } : apiResolved ? { id: block.id, ...apiResolved } : null;
-    }).filter(Boolean);
-  }, [sorted, preview?.sections, editorEntities]);
-
-  const { errors: errorCount, warns: warnCount } = useMemo(() => countWarnings(sorted), [sorted]);
   const activeCount = sorted.filter((b) => b.isActive !== false).length;
+  const { errors: errorCount, warns: warnCount } = useMemo(() => countWarnings(sorted), [sorted]);
 
   const upsert = useMutation({
     mutationFn: async () => {
@@ -106,7 +115,7 @@ export default function HomeBuilderPage() {
       return mutations.createHomeBlock(body);
     },
     onSuccess: async (result) => {
-      message.success(editing ? "تم الحفظ ✓" : "تمت الإضافة ✓");
+      message.success(editing?.id ? "تم الحفظ" : "تمت الإضافة");
       const newId = result?.id ?? result?.data?.id;
       if (isNew && insertAt != null && newId) {
         const ids = sorted.map((b) => b.id);
@@ -114,10 +123,19 @@ export default function HomeBuilderPage() {
         await mutations.reorderHomeBlocks(ids);
       }
       setInsertAt(null);
-      if (isNew && newId) setSelectedId(newId);
+      if (isNew && newId) {
+        setSelectedId(newId);
+        setEditing({
+          id: newId,
+          type: form.getFieldValue("type"),
+          title: form.getFieldValue("title"),
+          subtitle: form.getFieldValue("subtitle"),
+          isActive: form.getFieldValue("isActive"),
+          payload: form.getFieldValue("payload"),
+        });
+      }
       setIsNew(false);
       await qc.invalidateQueries({ queryKey: ["home-blocks"] });
-      await qc.invalidateQueries({ queryKey: ["home-preview"] });
     },
     onError: () => message.error("تعذر الحفظ"),
   });
@@ -130,25 +148,18 @@ export default function HomeBuilderPage() {
       setEditing(null);
       setIsNew(false);
       qc.invalidateQueries({ queryKey: ["home-blocks"] });
-      qc.invalidateQueries({ queryKey: ["home-preview"] });
     },
   });
 
   const reorder = useMutation({
     mutationFn: mutations.reorderHomeBlocks,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["home-blocks"] });
-      qc.invalidateQueries({ queryKey: ["home-preview"] });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["home-blocks"] }),
   });
 
   const toggle = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
       mutations.updateHomeBlock(id, { isActive }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["home-blocks"] });
-      qc.invalidateQueries({ queryKey: ["home-preview"] });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["home-blocks"] }),
   });
 
   const duplicate = useMutation({
@@ -164,7 +175,7 @@ export default function HomeBuilderPage() {
       });
     },
     onSuccess: () => {
-      message.success("تم النسخ");
+      message.success("تم النسخ — القسم الجديد مخفي حتى تفعّله");
       qc.invalidateQueries({ queryKey: ["home-blocks"] });
     },
   });
@@ -189,7 +200,6 @@ export default function HomeBuilderPage() {
     onSuccess: () => {
       message.success("تم تطبيق القالب");
       qc.invalidateQueries({ queryKey: ["home-blocks"] });
-      qc.invalidateQueries({ queryKey: ["home-preview"] });
     },
     onError: () => message.error("تعذر تطبيق القالب"),
   });
@@ -219,19 +229,17 @@ export default function HomeBuilderPage() {
       setImportOpen(false);
       setImportJson("");
       qc.invalidateQueries({ queryKey: ["home-blocks"] });
-      qc.invalidateQueries({ queryKey: ["home-preview"] });
     },
-    onError: () => message.error("JSON غير صالح أو فارغ"),
+    onError: () => message.error("JSON غير صالح"),
   });
 
-  const openAddAt = useCallback((index: number) => {
-    setInsertAt(index);
+  const openAdd = useCallback(() => {
+    setInsertAt(sorted.length);
     setTypeModalOpen(true);
-  }, []);
+  }, [sorted.length]);
 
   function startCreate(type: SectionType) {
     const def = SECTION_TYPES.find((t) => t.value === type)!;
-    const pos = insertAt ?? sorted.length;
     setEditing(null);
     setIsNew(true);
     setEditorTab("content");
@@ -239,7 +247,7 @@ export default function HomeBuilderPage() {
     form.setFieldsValue({
       type,
       isActive: true,
-      position: pos,
+      position: insertAt ?? sorted.length,
       payload: { ...def.defaultPayload },
     });
   }
@@ -259,17 +267,6 @@ export default function HomeBuilderPage() {
         ...block.payload,
         source: block.payload?.productIds?.length ? "manual" : "filter",
       },
-    });
-  }
-
-  function confirmDelete(id: string) {
-    Modal.confirm({
-      title: "حذف القسم؟",
-      content: "لا يمكن التراجع عن هذا الإجراء.",
-      okText: "حذف",
-      okType: "danger",
-      cancelText: "إلغاء",
-      onOk: () => remove.mutate(id),
     });
   }
 
@@ -296,86 +293,96 @@ export default function HomeBuilderPage() {
     message.success("تم التصدير");
   }
 
+  const toolsMenu: MenuProps = {
+    items: [
+      { key: "export", icon: <CloudDownloadOutlined />, label: "تصدير JSON", onClick: exportJson },
+      { key: "import", icon: <CloudUploadOutlined />, label: "استيراد JSON", onClick: () => setImportOpen(true) },
+      { key: "json", label: "عرض البيانات", onClick: () => setJsonOpen(true) },
+    ],
+  };
+
   return (
-    <div className="hb-studio">
-      <StudioToolbar
-        sectionCount={sorted.length}
-        activeCount={activeCount}
-        errorCount={errorCount}
-        warnCount={warnCount}
-        previewLoading={previewLoading}
-        zoom={zoom}
-        deviceSize={deviceSize}
-        onRefresh={() => refetchPreview()}
-        onExport={exportJson}
-        onImport={() => setImportOpen(true)}
-        onOpenTemplates={() => setTypeModalOpen(true)}
-        onOpenJson={() => setPreviewOpen(true)}
-        onZoomIn={() => setZoom((z) => Math.min(1.2, z + 0.1))}
-        onZoomOut={() => setZoom((z) => Math.max(0.7, z - 0.1))}
-        onDeviceChange={setDeviceSize}
-      />
+    <div className="hb-page">
+      <div className="hb-page-header">
+        <div>
+          <Title level={4} style={{ margin: 0 }}>
+            بناء الصفحة الرئيسية
+          </Title>
+          <Text type="secondary">رتّب الأقسام وحرّر محتواها — يظهر في التطبيق بالترتيب من الأعلى للأسفل</Text>
+        </div>
+        <Space wrap>
+          <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
+            تحديث
+          </Button>
+          <Dropdown menu={toolsMenu}>
+            <Button>أدوات</Button>
+          </Dropdown>
+          <Button icon={<LayoutOutlined />} onClick={() => setTypeModalOpen(true)}>
+            قوالب
+          </Button>
+          <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>
+            إضافة قسم
+          </Button>
+        </Space>
+      </div>
 
-      <div className="hb-studio-main">
-        <SectionOutline
-          blocks={sorted}
-          selectedId={selectedId}
-          onSelect={(id) => {
-            setSelectedId(id);
-            const b = sorted.find((x) => x.id === id);
-            if (b) openEdit(b);
-          }}
-          onAdd={() => openAddAt(sorted.length)}
-          onDuplicate={(b) => duplicate.mutate(b)}
-          onDelete={confirmDelete}
-          onToggle={(id, active) => toggle.mutate({ id, isActive: active })}
-          onReorder={(ids) => reorder.mutate(ids)}
-        />
+      <Row gutter={[12, 12]} className="hb-stats-row">
+        <Col xs={12} sm={6}>
+          <Card size="small"><Statistic title="إجمالي الأقسام" value={sorted.length} /></Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card size="small"><Statistic title="نشط" value={activeCount} valueStyle={{ color: "#52c41a" }} /></Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card size="small"><Statistic title="مخفي" value={sorted.length - activeCount} /></Card>
+        </Col>
+        <Col xs={12} sm={6}>
+          <Card size="small">
+            <Statistic
+              title="تنبيهات"
+              value={errorCount + warnCount}
+              valueStyle={{ color: errorCount ? "#ff4d4f" : warnCount ? "#faad14" : undefined }}
+            />
+          </Card>
+        </Col>
+      </Row>
 
-        <main className="hb-studio-canvas">
-          {isLoading ? (
-            <div className="hb-studio-loading">
-              <div className="hb-loading-spinner" />
-              <Text>جاري تحميل الصفحة...</Text>
-            </div>
-          ) : (
-            <PhoneCanvas
+      <Row gutter={16} className="hb-workspace">
+        <Col xs={24} lg={10} xl={9}>
+          <Card title="ترتيب الأقسام" className="hb-list-card" styles={{ body: { padding: 0 } }}>
+            <SectionListPanel
               blocks={sorted}
-              previewSections={mergedPreview}
               selectedId={selectedId}
-              zoom={zoom}
-              deviceSize={deviceSize}
+              loading={isLoading}
               onSelect={(id) => {
                 setSelectedId(id);
                 const b = sorted.find((x) => x.id === id);
                 if (b) openEdit(b);
               }}
+              onAdd={openAdd}
               onEdit={openEdit}
-              onAddAt={openAddAt}
               onMove={moveBlock}
               onDuplicate={(b) => duplicate.mutate(b)}
-              onDelete={confirmDelete}
+              onDelete={(id) => remove.mutate(id)}
               onToggle={(id, active) => toggle.mutate({ id, isActive: active })}
               onReorder={(ids) => reorder.mutate(ids)}
             />
-          )}
-        </main>
+          </Card>
+        </Col>
 
-        <SectionInspector
-          editing={editing}
-          isNew={isNew}
-          form={form}
-          editorTab={editorTab}
-          onTabChange={setEditorTab}
-          onSave={() => upsert.mutate()}
-          onClose={() => {
-            setEditing(null);
-            setIsNew(false);
-          }}
-          saving={upsert.isPending}
-          editorEntities={editorEntities}
-        />
-      </div>
+        <Col xs={24} lg={14} xl={15}>
+          <SectionEditorPanel
+            editing={editing}
+            isNew={isNew}
+            form={form}
+            editorTab={editorTab}
+            onTabChange={setEditorTab}
+            onSave={() => upsert.mutate()}
+            saving={upsert.isPending}
+            editorEntities={editorEntities}
+          />
+        </Col>
+      </Row>
 
       <SectionTypeModal
         open={typeModalOpen}
@@ -388,36 +395,20 @@ export default function HomeBuilderPage() {
         hasExistingSections={sorted.length > 0}
       />
 
-      <Drawer title="معاينة API" open={previewOpen} onClose={() => setPreviewOpen(false)} width={920}>
+      <Drawer title="بيانات الأقسام (JSON)" open={jsonOpen} onClose={() => setJsonOpen(false)} width={720}>
         <Tabs
           items={[
             {
-              key: "resolved",
-              label: `محلّاة (${preview?.sections?.length ?? 0})`,
-              children: (
-                <pre className="hb-json-pre">{JSON.stringify(preview?.sections ?? [], null, 2)}</pre>
-              ),
-            },
-            {
-              key: "merged",
-              label: `معاينة (${mergedPreview.length})`,
-              children: (
-                <pre className="hb-json-pre">{JSON.stringify(mergedPreview, null, 2)}</pre>
-              ),
-            },
-            {
               key: "blocks",
-              label: `خام (${sorted.length})`,
-              children: (
-                <pre className="hb-json-pre">{JSON.stringify(sorted, null, 2)}</pre>
-              ),
+              label: `الأقسام (${sorted.length})`,
+              children: <pre className="hb-json-pre">{JSON.stringify(sorted, null, 2)}</pre>,
             },
           ]}
         />
       </Drawer>
 
       <Modal
-        title="استيراد أقسام من JSON"
+        title="استيراد من JSON"
         open={importOpen}
         onCancel={() => setImportOpen(false)}
         okText="استيراد"
@@ -426,13 +417,13 @@ export default function HomeBuilderPage() {
         onOk={() => importBlocks.mutate(importJson)}
       >
         <Text type="secondary" style={{ display: "block", marginBottom: 12 }}>
-          الصق مصفوفة أقسام JSON — سيتم إضافتها في نهاية الصفحة
+          يُضاف في نهاية القائمة الحالية
         </Text>
         <Input.TextArea
-          rows={12}
+          rows={10}
           value={importJson}
           onChange={(e) => setImportJson(e.target.value)}
-          placeholder='[{"type":"PRODUCT_LIST","title":"...","payload":{...}}]'
+          placeholder='[{"type":"PRODUCT_LIST","title":"...","payload":{}}]'
           style={{ direction: "ltr", fontFamily: "monospace", fontSize: 12 }}
         />
       </Modal>
