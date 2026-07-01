@@ -1,25 +1,15 @@
 "use client";
 
-import {
-  Button,
-  Drawer,
-  Space,
-  Tabs,
-  Tag,
-  Typography,
-  message,
-} from "antd";
+import { Button, Drawer, Form, Modal, Space, Tabs, Typography, message } from "antd";
 import {
   AppstoreAddOutlined,
-  CloudUploadOutlined,
   EyeOutlined,
-  PlusOutlined,
+  LayoutOutlined,
   ReloadOutlined,
 } from "@ant-design/icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { HomePhonePreview } from "@/components/home-builder/HomePhonePreview";
-import { HomeSectionList } from "@/components/home-builder/HomeSectionList";
+import { PhoneCanvas } from "@/components/home-builder/PhoneCanvas";
 import { SectionInspector } from "@/components/home-builder/SectionInspector";
 import { SectionTypeModal } from "@/components/home-builder/SectionTypeModal";
 import {
@@ -28,10 +18,19 @@ import {
   normalizePayload,
 } from "@/components/home-builder/section-types";
 import { mutations, queries } from "@/lib/queries";
-import { Form } from "antd";
 import "@/components/home-builder/home-builder.css";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
+
+const NICE_ONE_TEMPLATE: { type: SectionType; title?: string; payload?: Record<string, unknown> }[] = [
+  { type: "HERO_BANNER", title: "مرحباً بكم" },
+  { type: "PROMO_STRIP", title: "شحن مجاني", payload: { text: "🚚 شحن مجاني للطلبات فوق 50,000 د.ع", backgroundColor: "#FCE4EC", linkType: "offers" } },
+  { type: "FLASH_SALE", title: "أقوى العروض", payload: { filter: "promo", showViewAll: true, limit: 12 } },
+  { type: "PRODUCT_LIST", title: "الأكثر مبيعاً", payload: { filter: "bestSeller", showViewAll: true, limit: 12 } },
+  { type: "FEATURED_BRANDS", title: "براندات مميزة" },
+  { type: "BANNER_CAROUSEL", title: "عروض حصرية" },
+  { type: "PRODUCT_LIST", title: "وصل حديثاً", payload: { filter: "new", showViewAll: true, limit: 12 } },
+];
 
 function cleanPayload(type: SectionType, payload: Record<string, unknown>) {
   const p = normalizePayload(type, { ...payload });
@@ -45,6 +44,7 @@ function cleanPayload(type: SectionType, payload: Record<string, unknown>) {
 export default function HomeBuilderPage() {
   const qc = useQueryClient();
   const [typeModalOpen, setTypeModalOpen] = useState(false);
+  const [insertAt, setInsertAt] = useState<number | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
   const [isNew, setIsNew] = useState(false);
@@ -52,10 +52,7 @@ export default function HomeBuilderPage() {
   const [editorTab, setEditorTab] = useState("content");
   const [form] = Form.useForm();
 
-  const { data: blocks, isLoading } = useQuery({
-    queryKey: ["home-blocks"],
-    queryFn: queries.homeBlocks,
-  });
+  const { data: blocks, isLoading } = useQuery({ queryKey: ["home-blocks"], queryFn: queries.homeBlocks });
   const { data: preview, refetch: refetchPreview, isFetching: previewLoading } = useQuery({
     queryKey: ["home-preview"],
     queryFn: queries.homePreview,
@@ -66,14 +63,8 @@ export default function HomeBuilderPage() {
   const { data: tertiary } = useQuery({ queryKey: ["tertiary-all"], queryFn: () => queries.tertiarySections() });
   const { data: brands } = useQuery({ queryKey: ["brands"], queryFn: queries.brands });
   const { data: packages } = useQuery({ queryKey: ["packages"], queryFn: queries.packages });
-  const { data: products } = useQuery({
-    queryKey: ["products-lite"],
-    queryFn: () => queries.products({ limit: 300 }),
-  });
-  const { data: skinConcerns } = useQuery({
-    queryKey: ["skin-concerns"],
-    queryFn: () => queries.skinConcerns(true),
-  });
+  const { data: products } = useQuery({ queryKey: ["products-lite"], queryFn: () => queries.products({ limit: 300 }) });
+  const { data: skinConcerns } = useQuery({ queryKey: ["skin-concerns"], queryFn: () => queries.skinConcerns(true) });
 
   const editorEntities = useMemo(
     () => ({
@@ -110,11 +101,18 @@ export default function HomeBuilderPage() {
       if (editing?.id) return mutations.updateHomeBlock(editing.id, body);
       return mutations.createHomeBlock(body);
     },
-    onSuccess: () => {
-      message.success(editing ? "تم حفظ القسم ✓" : "تم إضافة القسم ✓");
+    onSuccess: async (result) => {
+      message.success(editing ? "تم الحفظ ✓" : "تمت الإضافة ✓");
+      const newId = result?.id ?? result?.data?.id;
+      if (isNew && insertAt != null && newId) {
+        const ids = sorted.map((b) => b.id);
+        ids.splice(insertAt, 0, newId);
+        await mutations.reorderHomeBlocks(ids);
+      }
+      setInsertAt(null);
       setIsNew(false);
-      qc.invalidateQueries({ queryKey: ["home-blocks"] });
-      qc.invalidateQueries({ queryKey: ["home-preview"] });
+      await qc.invalidateQueries({ queryKey: ["home-blocks"] });
+      await qc.invalidateQueries({ queryKey: ["home-preview"] });
     },
     onError: () => message.error("تعذر الحفظ"),
   });
@@ -161,13 +159,40 @@ export default function HomeBuilderPage() {
       });
     },
     onSuccess: () => {
-      message.success("تم نسخ القسم");
+      message.success("تم النسخ");
       qc.invalidateQueries({ queryKey: ["home-blocks"] });
     },
   });
 
+  const applyTemplate = useMutation({
+    mutationFn: async () => {
+      for (let i = 0; i < NICE_ONE_TEMPLATE.length; i++) {
+        const t = NICE_ONE_TEMPLATE[i];
+        const def = SECTION_TYPES.find((s) => s.value === t.type)!;
+        await mutations.createHomeBlock({
+          type: t.type,
+          title: t.title,
+          position: sorted.length + i,
+          isActive: true,
+          payload: { ...def.defaultPayload, ...t.payload },
+        });
+      }
+    },
+    onSuccess: () => {
+      message.success("تم تطبيق قالب Nice One");
+      qc.invalidateQueries({ queryKey: ["home-blocks"] });
+      qc.invalidateQueries({ queryKey: ["home-preview"] });
+    },
+  });
+
+  function openAddAt(index: number) {
+    setInsertAt(index);
+    setTypeModalOpen(true);
+  }
+
   function startCreate(type: SectionType) {
     const def = SECTION_TYPES.find((t) => t.value === type)!;
+    const pos = insertAt ?? sorted.length;
     setEditing(null);
     setIsNew(true);
     setEditorTab("content");
@@ -175,9 +200,10 @@ export default function HomeBuilderPage() {
     form.setFieldsValue({
       type,
       isActive: true,
-      position: sorted.length,
+      position: pos,
       payload: { ...def.defaultPayload },
     });
+    // insertAt kept until save for reorder
   }
 
   function openEdit(block: any) {
@@ -198,113 +224,93 @@ export default function HomeBuilderPage() {
     });
   }
 
-  function closeInspector() {
-    setEditing(null);
-    setIsNew(false);
+  function moveBlock(id: string, dir: -1 | 1) {
+    const idx = sorted.findIndex((b) => b.id === id);
+    const next = idx + dir;
+    if (next < 0 || next >= sorted.length) return;
+    const ids = sorted.map((b) => b.id);
+    [ids[idx], ids[next]] = [ids[next], ids[idx]];
+    reorder.mutate(ids);
   }
 
-  const activeCount = sorted.filter((b) => b.isActive !== false).length;
   const inspectorOpen = isNew || !!editing;
 
   return (
-    <div className="hb-studio">
-      <header className="hb-hero">
-        <div className="hb-hero-text">
-          <Title level={2} className="hb-hero-title">
-            استوديو الصفحة الرئيسية
-          </Title>
-          <Text className="hb-hero-sub">
-            صور · روابط ذكية · معاينة حية — {sorted.length} قسم · {activeCount} نشط
+    <div className="hb-wysiwyg">
+      <header className="hb-wysiwyg-toolbar">
+        <div>
+          <Text strong style={{ fontSize: 18 }}>محرّر الصفحة الرئيسية</Text>
+          <Text type="secondary" style={{ display: "block", fontSize: 12 }}>
+            عدّل الشاشة مباشرة — ما تراه هنا = ما يراه العميل
           </Text>
         </div>
         <Space wrap>
           <Button icon={<ReloadOutlined />} loading={previewLoading} onClick={() => refetchPreview()}>
-            تحديث المعاينة
+            تحديث
           </Button>
-          <Button icon={<EyeOutlined />} onClick={() => setPreviewOpen(true)}>
-            JSON
-          </Button>
-          <Button
-            type="primary"
-            size="large"
-            icon={<AppstoreAddOutlined />}
-            onClick={() => setTypeModalOpen(true)}
-            className="hb-hero-cta"
-          >
-            + إضافة قسم
+          <Button icon={<EyeOutlined />} onClick={() => setPreviewOpen(true)}>JSON</Button>
+          {sorted.length === 0 && (
+            <Button icon={<LayoutOutlined />} loading={applyTemplate.isPending} onClick={() => applyTemplate.mutate()}>
+              قالب Nice One
+            </Button>
+          )}
+          <Button type="primary" icon={<AppstoreAddOutlined />} onClick={() => openAddAt(sorted.length)}>
+            + قسم
           </Button>
         </Space>
       </header>
 
-      <div className={`hb-studio-grid${inspectorOpen ? " hb-studio-grid--editing" : ""}`}>
-        <aside className="hb-studio-phone">
-          <div className="hb-panel-head">📱 معاينة التطبيق</div>
-          <HomePhonePreview
-            blocks={sorted}
-            previewSections={preview?.sections}
-            selectedId={selectedId}
-            onSelectSection={(id) => {
-              setSelectedId(id);
-              const block = sorted.find((b) => b.id === id);
-              if (block) openEdit(block);
-            }}
-          />
-        </aside>
-
-        <main className="hb-studio-main">
-          <div className="hb-panel-head">
-            <span>📋 أقسام الصفحة</span>
-            <Tag>اسحب للترتيب</Tag>
-          </div>
-          <HomeSectionList
-            blocks={sorted}
-            previewSections={preview?.sections}
-            selectedId={selectedId}
-            onSelect={(id) => {
-              setSelectedId(id);
-              const block = sorted.find((b) => b.id === id);
-              if (block) openEdit(block);
-            }}
-            onEdit={openEdit}
-            onDuplicate={(b) => duplicate.mutate(b)}
-            onDelete={(id) => remove.mutate(id)}
-            onToggle={(id, active) => toggle.mutate({ id, isActive: active })}
-            onReorder={(ids) => reorder.mutate(ids)}
-            loading={isLoading}
-          />
-        </main>
-
-        <aside className={`hb-studio-inspector${inspectorOpen ? " open" : ""}`}>
-          <SectionInspector
-            editing={editing}
-            isNew={isNew}
-            form={form}
-            editorTab={editorTab}
-            onTabChange={setEditorTab}
-            onSave={() => upsert.mutate()}
-            onClose={closeInspector}
-            saving={upsert.isPending}
-            editorEntities={editorEntities}
-          />
-          {!inspectorOpen && (
-            <div className="hb-inspector-hint">
-              <Button
-                block
-                type="dashed"
-                size="large"
-                icon={<PlusOutlined />}
-                onClick={() => setTypeModalOpen(true)}
-              >
-                إضافة قسم جديد
-              </Button>
-            </div>
+      <div className={`hb-wysiwyg-body${inspectorOpen ? " editing" : ""}`}>
+        <div className="hb-wysiwyg-phone-col">
+          {isLoading ? (
+            <div className="hb-wysiwyg-loading">جاري التحميل...</div>
+          ) : (
+            <PhoneCanvas
+              blocks={sorted}
+              previewSections={preview?.sections}
+              selectedId={selectedId}
+              onSelect={(id) => {
+                setSelectedId(id);
+                const b = sorted.find((x) => x.id === id);
+                if (b) openEdit(b);
+              }}
+              onEdit={openEdit}
+              onAddAt={openAddAt}
+              onMove={moveBlock}
+              onDuplicate={(b) => duplicate.mutate(b)}
+              onDelete={(id) => remove.mutate(id)}
+              onToggle={(id, active) => toggle.mutate({ id, isActive: active })}
+              onReorder={(ids) => reorder.mutate(ids)}
+            />
           )}
-        </aside>
+        </div>
+
+        {inspectorOpen && (
+          <aside className="hb-wysiwyg-inspector">
+            <SectionInspector
+              editing={editing}
+              isNew={isNew}
+              form={form}
+              editorTab={editorTab}
+              onTabChange={setEditorTab}
+              onSave={() => upsert.mutate()}
+              onClose={() => {
+                setEditing(null);
+                setIsNew(false);
+              }}
+              saving={upsert.isPending}
+              editorEntities={editorEntities}
+            />
+          </aside>
+        )}
       </div>
 
       <SectionTypeModal
         open={typeModalOpen}
-        onClose={() => setTypeModalOpen(false)}
+        onClose={() => {
+          setTypeModalOpen(false);
+          setInsertAt(null);
+        }}
         onPick={(type) => {
           startCreate(type);
           setTypeModalOpen(false);
@@ -316,7 +322,7 @@ export default function HomeBuilderPage() {
           items={[
             {
               key: "sections",
-              label: "الأقسام المحلّاة",
+              label: "محلّاة",
               children: (
                 <pre style={{ maxHeight: 520, overflow: "auto", fontSize: 11, direction: "ltr" }}>
                   {JSON.stringify(preview?.sections ?? [], null, 2)}
@@ -325,7 +331,7 @@ export default function HomeBuilderPage() {
             },
             {
               key: "blocks",
-              label: "الكتل الخام",
+              label: "خام",
               children: (
                 <pre style={{ maxHeight: 520, overflow: "auto", fontSize: 11, direction: "ltr" }}>
                   {JSON.stringify(sorted, null, 2)}

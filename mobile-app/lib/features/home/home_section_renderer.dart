@@ -69,11 +69,6 @@ class HomeSectionWidget extends ConsumerWidget {
 List<HomeSection> _orderedSections(List<HomeSection> sections) {
   final copy = List<HomeSection>.from(sections);
   copy.sort((a, b) => a.position.compareTo(b.position));
-  // البنر + الفئات دائماً في الأعلى — لوحة التحكم قد تضع HERO في منتصف القائمة.
-  final heroIdx = copy.indexWhere((s) => s.type == 'HERO_BANNER');
-  if (heroIdx > 0) {
-    copy.insert(0, copy.removeAt(heroIdx));
-  }
   return copy;
 }
 
