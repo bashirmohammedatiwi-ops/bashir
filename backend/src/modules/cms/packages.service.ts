@@ -34,7 +34,7 @@ export class PackagesService {
           position: true,
           isActive: true,
           coverImageId: true,
-          coverImage: { select: { id: true, url: true, thumbnailUrl: true } },
+          coverImage: true,
           _count: { select: { items: true } },
         },
       });
