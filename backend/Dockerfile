@@ -7,8 +7,10 @@ COPY prisma ./prisma
 RUN npm ci --legacy-peer-deps || npm install --legacy-peer-deps
 COPY tsconfig*.json nest-cli.json ./
 COPY src ./src
-RUN npx prisma generate
-RUN npm run build
+RUN npx prisma generate \
+    && npm run build \
+    && npm cache clean --force \
+    && rm -rf /root/.npm
 
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
@@ -18,7 +20,9 @@ ENV NODE_ENV=production
 
 COPY package*.json ./
 COPY prisma ./prisma
-RUN npm ci --omit=dev --legacy-peer-deps || npm install --omit=dev --legacy-peer-deps
+RUN npm ci --omit=dev --legacy-peer-deps || npm install --omit=dev --legacy-peer-deps \
+    && npm cache clean --force \
+    && rm -rf /root/.npm
 RUN npx prisma generate
 
 COPY --from=builder /app/dist ./dist

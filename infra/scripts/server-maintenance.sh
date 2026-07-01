@@ -20,8 +20,9 @@ echo "==> Restarting nginx (fixes 502 after API rebuild)..."
 $COMPOSE up -d catalog-hub 2>/dev/null || true
 $COMPOSE restart nginx
 
-echo "==> API logs (last 40 lines)..."
-$COMPOSE logs api --tail=40
+echo "==> Docker cleanup..."
+chmod +x scripts/docker-cleanup.sh
+./scripts/docker-cleanup.sh
 
 echo "==> Done. Check health:"
 echo "    curl http://\${DOMAIN:-127.0.0.1}/api/v1/health"

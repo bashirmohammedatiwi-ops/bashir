@@ -111,6 +111,10 @@ echo "==> Verify..."
 sleep 2
 ./scripts/verify.sh
 
+echo "==> Free disk space (Docker cleanup)..."
+chmod +x scripts/docker-cleanup.sh
+./scripts/docker-cleanup.sh
+
 echo ""
 echo "Update complete."
 echo "  Admin: http://${DOMAIN:-localhost}/"
