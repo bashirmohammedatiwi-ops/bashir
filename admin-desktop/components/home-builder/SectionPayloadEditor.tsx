@@ -308,13 +308,15 @@ export function SectionPayloadEditor(props: Props) {
       return (
         <>
           <Form.Item name={["payload", "text"]} label="نص الشريط" rules={[{ required: true }]}>
-            <Input.TextArea rows={2} placeholder="شحن مجاني للطلبات فوق 50,000 د.ع" />
+            <Input.TextArea rows={3} placeholder="شحن مجاني للطلبات فوق 50,000 د.ع" />
           </Form.Item>
           <Form.Item name={["payload", "backgroundColor"]} label="لون الخلفية" initialValue="#FCE4EC">
             <Input placeholder="#FCE4EC" />
           </Form.Item>
-          <Divider plain>الربط — من تبويب «الربط»</Divider>
-          <Text type="secondary">استخدم تبويب الربط لاختيار منتج / قسم / براند</Text>
+          <Typography.Text strong style={{ display: "block", margin: "12px 0 8px" }}>
+            عند الضغط — ينتقل إلى:
+          </Typography.Text>
+          <LinkTargetPicker prefix={["payload"]} entities={entities} showLegacyLink optional={false} />
         </>
       );
 

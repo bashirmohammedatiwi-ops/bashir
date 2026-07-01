@@ -1,8 +1,10 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Empty, Modal, Pagination, Space, Tag } from "antd";
+import { Button, Empty, Modal, Pagination, Space, Tag, Upload, message } from "antd";
+import { UploadOutlined } from "@ant-design/icons";
 import { useState } from "react";
 import { mediaThumb } from "@/lib/mediaUrl";
+import { uploadMediaFile } from "@/lib/uploadMedia";
 import { queries } from "@/lib/queries";
 
 type Props = {
@@ -41,7 +43,23 @@ export function MediaPicker({ value, onChange, label = "اختر صورة" }: Pr
             }}
           />
         )}
-        <Space>
+        <Space wrap>
+          <Upload
+            showUploadList={false}
+            accept="image/*"
+            beforeUpload={async (file) => {
+              try {
+                const media = await uploadMediaFile(file as File, "GENERAL");
+                onChange?.(media.id);
+                message.success("تم رفع الصورة");
+              } catch (e: any) {
+                message.error(e.message ?? "فشل الرفع");
+              }
+              return false;
+            }}
+          >
+            <Button icon={<UploadOutlined />}>رفع صورة</Button>
+          </Upload>
           <Button onClick={() => setOpen(true)}>{label}</Button>
           {value && (
             <Button danger type="link" onClick={() => onChange?.(null)}>
