@@ -236,46 +236,76 @@ class _CategorySection extends StatelessWidget {
           ),
         ),
         if (expanded)
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              childAspectRatio: 0.72,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 14,
-            ),
-            itemCount: items.length,
-            itemBuilder: (_, i) {
-              final c = items[i];
-              return GestureDetector(
-                onTap: () => context.push(
-                    '/products?categoryId=${c.id}&title=${Uri.encodeComponent(c.name)}'),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: AppColors.scaffold,
-                          shape: BoxShape.circle,
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: c.imageUrl.isNotEmpty
-                            ? AppNetworkImage(url: c.imageUrl)
-                            : const Icon(Icons.spa_outlined, color: AppColors.primary, size: 28),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(c.name,
-                        maxLines: 2,
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, height: 1.2)),
-                  ],
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  childAspectRatio: 0.72,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 14,
                 ),
-              );
-            },
+                itemCount: items.length,
+                itemBuilder: (_, i) {
+                  final c = items[i];
+                  return GestureDetector(
+                    onTap: () => context.push(
+                        '/products?subcategoryId=${c.id}&title=${Uri.encodeComponent(c.name)}'),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            width: double.infinity,
+                            decoration: const BoxDecoration(
+                              color: AppColors.scaffold,
+                              shape: BoxShape.circle,
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: c.imageUrl.isNotEmpty
+                                ? AppNetworkImage(url: c.imageUrl)
+                                : const Icon(Icons.spa_outlined, color: AppColors.primary, size: 28),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(c.name,
+                            maxLines: 2,
+                            textAlign: TextAlign.center,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                                fontSize: 11, fontWeight: FontWeight.w600, height: 1.2)),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              ...items.where((c) => c.children.isNotEmpty).map((sub) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(sub.name,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: sub.children.map((t) {
+                          return ActionChip(
+                            label: Text(t.name, style: const TextStyle(fontSize: 12)),
+                            onPressed: () => context.push(
+                                '/products?tertiaryCategoryId=${t.id}&title=${Uri.encodeComponent(t.name)}'),
+                          );
+                        }).toList(),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
           ),
       ],
     );

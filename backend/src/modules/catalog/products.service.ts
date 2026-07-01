@@ -45,42 +45,49 @@ export class ProductsService {
   ) {}
 
   async list(q: QueryProductsDto) {
-    const where: Prisma.ProductWhereInput = {
-      isActive: q.status === "all" ? undefined : true,
-      categoryId: q.categoryId,
-      subcategoryId: q.subcategoryId,
-      tertiaryCategoryId: q.tertiaryCategoryId,
-      brandId: q.brandId,
-      isFeatured: q.isFeatured,
-      isNew: q.isNew,
-      isBestSeller: q.isBestSeller,
-      isPromo: q.isPromo,
-      tags: q.tag ? { contains: q.tag } : undefined,
-      skinType: q.skinType ? { contains: q.skinType } : undefined,
-      skinConcerns: q.concernSlug
-        ? { some: { concern: { slug: q.concernSlug } } }
-        : q.concernId
-          ? { some: { concernId: q.concernId } }
-          : undefined,
-      price:
-        q.minPrice !== undefined || q.maxPrice !== undefined
-          ? {
-              gte: q.minPrice ?? undefined,
-              lte: q.maxPrice ?? undefined,
-            }
-          : undefined,
-      OR: q.search
-        ? [
-            { name: { contains: q.search } },
-            { nameAr: { contains: q.search } },
-            { nameEn: { contains: q.search } },
-            { sku: { contains: q.search } },
-            { tags: { contains: q.search } },
-          ]
-        : undefined,
-      rating: q.minRating !== undefined ? { gte: q.minRating } : undefined,
-      stock: q.inStock ? { gt: 0 } : undefined,
-    };
+    const andFilters: Prisma.ProductWhereInput[] = [
+      {
+        isActive: q.status === "all" ? undefined : true,
+        brandId: q.brandId,
+        isFeatured: q.isFeatured,
+        isNew: q.isNew,
+        isBestSeller: q.isBestSeller,
+        isPromo: q.isPromo,
+        tags: q.tag ? { contains: q.tag } : undefined,
+        skinType: q.skinType ? { contains: q.skinType } : undefined,
+        skinConcerns: q.concernSlug
+          ? { some: { concern: { slug: q.concernSlug } } }
+          : q.concernId
+            ? { some: { concernId: q.concernId } }
+            : undefined,
+        price:
+          q.minPrice !== undefined || q.maxPrice !== undefined
+            ? {
+                gte: q.minPrice ?? undefined,
+                lte: q.maxPrice ?? undefined,
+              }
+            : undefined,
+        rating: q.minRating !== undefined ? { gte: q.minRating } : undefined,
+        stock: q.inStock ? { gt: 0 } : undefined,
+      },
+    ];
+
+    const categoryFilter = this.buildCategoryFilter(q);
+    if (categoryFilter) andFilters.push(categoryFilter);
+
+    if (q.search) {
+      andFilters.push({
+        OR: [
+          { name: { contains: q.search } },
+          { nameAr: { contains: q.search } },
+          { nameEn: { contains: q.search } },
+          { sku: { contains: q.search } },
+          { tags: { contains: q.search } },
+        ],
+      });
+    }
+
+    const where: Prisma.ProductWhereInput = { AND: andFilters };
 
     const orderBy = this.buildOrderBy(q.sort);
 
@@ -426,6 +433,30 @@ export class ProductsService {
       stock: pricing.stock,
       isPromo: pricing.isPromo,
     };
+  }
+
+  private buildCategoryFilter(q: QueryProductsDto): Prisma.ProductWhereInput | null {
+    if (q.tertiaryCategoryId) {
+      return { tertiaryCategoryId: q.tertiaryCategoryId };
+    }
+    if (q.subcategoryId) {
+      return {
+        OR: [
+          { subcategoryId: q.subcategoryId },
+          { tertiaryCategory: { parentId: q.subcategoryId } },
+        ],
+      };
+    }
+    if (q.categoryId) {
+      return {
+        OR: [
+          { categoryId: q.categoryId },
+          { subcategory: { parentId: q.categoryId } },
+          { tertiaryCategory: { parent: { parentId: q.categoryId } } },
+        ],
+      };
+    }
+    return null;
   }
 
   private buildOrderBy(sort?: string): Prisma.ProductOrderByWithRelationInput {

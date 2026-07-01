@@ -1,0 +1,118 @@
+import { SectionType } from "./section-types";
+
+export type TemplateSection = {
+  type: SectionType;
+  title?: string;
+  subtitle?: string;
+  payload?: Record<string, unknown>;
+};
+
+export type PageTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  accent: string;
+  sections: TemplateSection[];
+};
+
+export const PAGE_TEMPLATES: PageTemplate[] = [
+  {
+    id: "nice-one",
+    name: "Nice One كامل",
+    description: "تخطيط متجر تجميل احترافي — هيرو، عروض، أكثر مبيعاً، براندات",
+    icon: "💄",
+    accent: "#E1306C",
+    sections: [
+      { type: "HERO_BANNER", title: "مرحباً بكم" },
+      {
+        type: "PROMO_STRIP",
+        title: "شحن مجاني",
+        payload: {
+          text: "🚚 شحن مجاني للطلبات فوق 50,000 د.ع",
+          backgroundColor: "#FCE4EC",
+          linkType: "offers",
+        },
+      },
+      { type: "SKIN_CONCERNS", title: "تسوّق حسب مشكلتك" },
+      { type: "FLASH_SALE", title: "أقوى العروض", payload: { filter: "promo", showViewAll: true, limit: 12 } },
+      { type: "PRODUCT_LIST", title: "الأكثر مبيعاً", payload: { filter: "bestSeller", showViewAll: true, limit: 12 } },
+      { type: "FEATURED_BRANDS", title: "براندات مميزة" },
+      { type: "BANNER_CAROUSEL", title: "عروض حصرية" },
+      { type: "MAKEUP_CATEGORIES", title: "أقسام المكياج" },
+      { type: "PRODUCT_LIST", title: "وصل حديثاً", payload: { filter: "new", showViewAll: true, limit: 12 } },
+    ],
+  },
+  {
+    id: "minimal",
+    name: "بسيط وأنيق",
+    description: "هيرو + منتجات + براندات — مناسب للبداية السريعة",
+    icon: "✨",
+    accent: "#6366F1",
+    sections: [
+      { type: "HERO_BANNER", title: "اكتشفي جمالك" },
+      { type: "PRODUCT_LIST", title: "منتجات مختارة", payload: { filter: "featured", showViewAll: true, limit: 12 } },
+      { type: "FEATURED_BRANDS", title: "برانداتنا" },
+      { type: "BANNER_FULL", title: "عرض خاص" },
+    ],
+  },
+  {
+    id: "promo-heavy",
+    name: "تركيز العروض",
+    description: "عروض فلاش، شرائط ترويجية، وبنرات متعددة",
+    icon: "⚡",
+    accent: "#FF5722",
+    sections: [
+      {
+        type: "PROMO_STRIP",
+        payload: { text: "🔥 خصم 30% على المكياج — لفترة محدودة", backgroundColor: "#FFEBEE", linkType: "offers" },
+      },
+      { type: "FLASH_SALE", title: "تخفيضات اليوم", payload: { filter: "promo", showViewAll: true, limit: 16 } },
+      { type: "BANNER_GRID_2", title: "عروض مزدوجة" },
+      { type: "PRODUCT_LIST", title: "عروض لا تفوت", payload: { filter: "promo", showViewAll: true, limit: 12 } },
+      { type: "BANNER_CAROUSEL", title: "المزيد من العروض" },
+    ],
+  },
+  {
+    id: "categories",
+    name: "تصفّح بالأقسام",
+    description: "فئات، مكياج، مشاكل البشرة — لتسهيل التصفح",
+    icon: "🧩",
+    accent: "#0EA5E9",
+    sections: [
+      { type: "CATEGORY_GRID", title: "تسوّقي حسب القسم" },
+      { type: "MAKEUP_CATEGORIES", title: "المكياج" },
+      { type: "CATEGORY_TILES", title: "العناية" },
+      { type: "SKIN_CONCERNS", title: "حسب نوع بشرتك" },
+      { type: "PRODUCT_LIST", title: "الأكثر مبيعاً", payload: { filter: "bestSeller", showViewAll: true } },
+    ],
+  },
+  {
+    id: "brands",
+    name: "واجهة البراندات",
+    description: "عرض البراندات والباقات بشكل بارز",
+    icon: "🏷️",
+    accent: "#8B5CF6",
+    sections: [
+      { type: "FEATURED_BRANDS", title: "براندات عالمية" },
+      { type: "BRAND_SHOWCASE", title: "خصومات البراندات" },
+      { type: "BANNER_CAROUSEL", title: "حملات البراندات" },
+      { type: "PACKAGES", title: "باقات العناية" },
+      { type: "PRODUCT_LIST", title: "منتجات مختارة", payload: { filter: "featured", showViewAll: true } },
+    ],
+  },
+  {
+    id: "visual",
+    name: "بصري غني",
+    description: "بطاقات صور مخصصة + بنرات + سلايدرات",
+    icon: "🖼️",
+    accent: "#F59E0B",
+    sections: [
+      { type: "HERO_BANNER" },
+      { type: "IMAGE_TILES", title: "اكتشفي المزيد", payload: { columns: 2, items: [] } },
+      { type: "BANNER_GRID_3", title: "مجموعات" },
+      { type: "BANNER_FULL" },
+      { type: "PRODUCT_LIST", title: "جديدنا", payload: { filter: "new", showViewAll: true } },
+    ],
+  },
+];

@@ -12,6 +12,8 @@ import '../../data/services/api_service.dart';
 class ProductListingScreen extends ConsumerStatefulWidget {
   final String title;
   final String? categoryId;
+  final String? subcategoryId;
+  final String? tertiaryCategoryId;
   final String? brandId;
   final String? search;
   final bool isNew;
@@ -24,6 +26,8 @@ class ProductListingScreen extends ConsumerStatefulWidget {
     super.key,
     required this.title,
     this.categoryId,
+    this.subcategoryId,
+    this.tertiaryCategoryId,
     this.brandId,
     this.search,
     this.isNew = false,
@@ -87,6 +91,8 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
             page: _page,
             limit: AppConfig.pageSize,
             categoryId: widget.categoryId,
+            subcategoryId: widget.subcategoryId,
+            tertiaryCategoryId: widget.tertiaryCategoryId,
             brandId: widget.brandId,
             search: widget.search,
             isNew: widget.isNew ? true : null,

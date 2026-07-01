@@ -41,6 +41,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, s) => ProductListingScreen(
           title: s.uri.queryParameters['title'] ?? 'المنتجات',
           categoryId: s.uri.queryParameters['categoryId'],
+          subcategoryId: s.uri.queryParameters['subcategoryId'],
+          tertiaryCategoryId: s.uri.queryParameters['tertiaryCategoryId'],
           brandId: s.uri.queryParameters['brandId'],
           search: s.uri.queryParameters['search'],
           isNew: s.uri.queryParameters['isNew'] == '1',

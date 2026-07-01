@@ -1,7 +1,9 @@
 "use client";
 
 import { Typography } from "antd";
+import { useEffect, useState } from "react";
 import { labelForType } from "./section-types";
+import { formatCountdown } from "./preview-resolver";
 import { mediaThumb } from "@/lib/mediaUrl";
 
 const { Text } = Typography;
@@ -22,6 +24,21 @@ function fmtPrice(n?: number) {
   return `${n.toLocaleString("ar-IQ")} د.ع`;
 }
 
+function useCountdown(endsAt?: string | null) {
+  const [display, setDisplay] = useState<string | undefined>(() => formatCountdown(endsAt));
+  useEffect(() => {
+    if (!endsAt) {
+      setDisplay(undefined);
+      return;
+    }
+    const tick = () => setDisplay(formatCountdown(endsAt));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [endsAt]);
+  return display;
+}
+
 type Props = {
   block: { type: string; title?: string; subtitle?: string; payload?: Record<string, unknown> };
   resolved?: any;
@@ -39,11 +56,10 @@ export function PhoneCanvasSection({ block, resolved, meta }: Props) {
       return <PromoStrip block={block} title={title} />;
     case "FLASH_SALE":
       return (
-        <ProductRowSection
+        <FlashSaleSection
           title={title}
           products={resolved?.products}
-          accent="#E1306C"
-          timer={resolved?.endsAt ? "02:15:30" : undefined}
+          endsAt={(resolved?.endsAt ?? block.payload?.endsAt) as string | undefined}
         />
       );
     case "PRODUCT_LIST":
@@ -110,6 +126,21 @@ function PromoStrip({ block, title }: { block: Props["block"]; title: string }) 
   const bg = (block.payload?.backgroundColor as string) ?? "#FCE4EC";
   const text = (block.payload?.text as string) || title;
   return <div className="pcs-promo" style={{ background: bg }}>{text || "شريط ترويجي"}</div>;
+}
+
+function FlashSaleSection({
+  title,
+  products,
+  endsAt,
+}: {
+  title: string;
+  products?: any[];
+  endsAt?: string;
+}) {
+  const timer = useCountdown(endsAt);
+  return (
+    <ProductRowSection title={title} products={products} accent="#E1306C" timer={timer} />
+  );
 }
 
 function SectionHead({ title, subtitle, timer, action = "عرض الكل ‹" }: { title: string; subtitle?: string; timer?: string; action?: string }) {
