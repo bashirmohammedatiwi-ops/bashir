@@ -33,6 +33,8 @@ class WishlistNotifier extends StateNotifier<WishlistState> {
   }
 
   /// يبدّل حالة المفضلة. يعيد true إن أصبح مضافاً.
+  void clear() => state = const WishlistState();
+
   Future<bool> toggle(Product product) async {
     final added = await _api.toggleWishlist(product.id);
     final ids = {...state.ids};
@@ -55,6 +57,8 @@ final wishlistProvider =
   ref.listen(authProvider, (prev, next) {
     if (next.isAuthenticated) {
       notifier.load();
+    } else if (prev?.isAuthenticated == true) {
+      notifier.clear();
     }
   });
   return notifier;

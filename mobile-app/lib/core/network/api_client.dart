@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../cache/api_cache.dart';
 import '../config/app_config.dart';
 
 /// مخزن آمن لتوكنات الدخول.
@@ -40,16 +42,30 @@ final tokenStoreProvider = Provider<TokenStore>(
   (ref) => TokenStore(ref.read(secureStorageProvider)),
 );
 
+/// يُعيَّن من main() بعد تهيئة SharedPreferences.
+final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
+  throw StateError('SharedPreferences not initialized — call initAppStorage() in main()');
+});
+
+final apiCacheProvider = Provider<ApiCache>(
+  (ref) => ApiCache(ref.read(sharedPreferencesProvider)),
+);
+
 /// Dio مُهيّأ مع إرفاق التوكن وتجديده تلقائياً عند 401.
 final dioProvider = Provider<Dio>((ref) {
   final tokens = ref.read(tokenStoreProvider);
   final dio = Dio(
     BaseOptions(
       baseUrl: AppConfig.apiBaseUrl,
-      connectTimeout: AppConfig.networkTimeout,
-      receiveTimeout: AppConfig.networkTimeout,
-      sendTimeout: AppConfig.networkTimeout,
-      headers: const {'Accept': 'application/json'},
+      connectTimeout: AppConfig.connectTimeout,
+      receiveTimeout: AppConfig.receiveTimeout,
+      sendTimeout: AppConfig.sendTimeout,
+      headers: const {
+        'Accept': 'application/json',
+        'Accept-Encoding': 'gzip',
+      },
+      responseType: ResponseType.json,
+      persistentConnection: true,
     ),
   );
 

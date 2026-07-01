@@ -7,6 +7,7 @@ import { paginate } from "../../common/dto/pagination.dto";
 import { CategoriesService } from "./categories.service";
 import { CreateProductDto, QueryProductsDto, UpdateProductDto } from "./dto/product.dto";
 import { InventorySyncService } from "../sync/inventory-sync.service";
+import { withPlaceholderImages } from "../../common/product-placeholder.util";
 
 const productRelationsFull = {
   brand: { select: { id: true, name: true, slug: true } },
@@ -94,7 +95,12 @@ export class ProductsService {
       }),
     ]);
 
-    return paginate(items, total, q.page, q.limit);
+    return paginate(
+      items.map((p) => withPlaceholderImages(p)),
+      total,
+      q.page,
+      q.limit,
+    );
   }
 
   async findOne(idOrSlug: string) {
@@ -113,7 +119,7 @@ export class ProductsService {
       },
     });
     if (!product) throw new NotFoundException("Product not found");
-    return this.formatProduct(product);
+    return withPlaceholderImages(this.formatProduct(product));
   }
 
   private formatProduct(product: any) {

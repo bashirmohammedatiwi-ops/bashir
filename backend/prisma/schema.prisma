@@ -119,6 +119,7 @@ enum HomeBlockType {
   CATEGORY_TILES
   MAKEUP_CATEGORIES
   BRAND_SHOWCASE
+  SKIN_CONCERNS
 }
 
 // ---------------------- USERS / AUTH ----------------------

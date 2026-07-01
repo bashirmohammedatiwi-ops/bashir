@@ -1,4 +1,9 @@
-import { Injectable, UnauthorizedException, ConflictException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import * as bcrypt from "bcrypt";
 import { randomBytes, createHash } from "crypto";
@@ -111,6 +116,30 @@ export class AuthService {
       orderCount: user._count.orders,
       wishlistCount: user._count.wishlist,
     };
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, passwordHash: true },
+    });
+    if (!user?.passwordHash) {
+      throw new BadRequestException("لا يمكن تغيير كلمة المرور لهذا الحساب");
+    }
+    const ok = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    if (!ok) throw new UnauthorizedException("كلمة المرور الحالية غير صحيحة");
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException("اختر كلمة مرور جديدة مختلفة عن الحالية");
+    }
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: userId }, data: { passwordHash } }),
+      this.prisma.session.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+    return { success: true };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {

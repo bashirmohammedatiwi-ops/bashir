@@ -4,6 +4,15 @@ import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/banner.dart';
 import '../../../data/models/home_section.dart';
 import '../home_link.dart';
+import '../widgets/home_section_shell.dart';
+
+List<AppBanner> sectionBanners(HomeSection section) {
+  if (section.banners.isNotEmpty) return section.banners;
+  return section.items
+      .whereType<Map>()
+      .map((e) => AppBanner.fromJson(Map<String, dynamic>.from(e)))
+      .toList();
+}
 
 class BannerFullSection extends StatelessWidget {
   final HomeSection section;
@@ -11,17 +20,21 @@ class BannerFullSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (section.banners.isEmpty) return const SizedBox.shrink();
-    final b = section.banners.first;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
-      child: GestureDetector(
-        onTap: () => openBannerLink(context, b),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
-          child: AspectRatio(
-            aspectRatio: 2.1,
-            child: _BannerContent(banner: b),
+    final list = sectionBanners(section);
+    if (list.isEmpty) return const SizedBox.shrink();
+    final b = list.first;
+    return HomeSectionShell(
+      section: section,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+        child: GestureDetector(
+          onTap: () => openBannerLink(context, b),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: AspectRatio(
+              aspectRatio: 2.1,
+              child: _BannerContent(banner: b),
+            ),
           ),
         ),
       ),
@@ -36,30 +49,34 @@ class BannerGridSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (section.banners.isEmpty) return const SizedBox.shrink();
+    final list = sectionBanners(section);
+    if (list.isEmpty) return const SizedBox.shrink();
     final count = columns == 2 ? 2 : 3;
-    final list = section.banners.take(count).toList();
+    final banners = list.take(count).toList();
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
-      child: Row(
-        children: [
-          for (int i = 0; i < list.length; i++) ...[
-            if (i > 0) const SizedBox(width: 10),
-            Expanded(
-              child: GestureDetector(
-                onTap: () => openBannerLink(context, list[i]),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: AspectRatio(
-                    aspectRatio: columns == 2 ? 0.72 : 0.62,
-                    child: _BannerContent(banner: list[i]),
+    return HomeSectionShell(
+      section: section,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+        child: Row(
+          children: [
+            for (int i = 0; i < banners.length; i++) ...[
+              if (i > 0) const SizedBox(width: 10),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => openBannerLink(context, banners[i]),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: AspectRatio(
+                      aspectRatio: columns == 2 ? 0.72 : 0.62,
+                      child: _BannerContent(banner: banners[i]),
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -71,27 +88,31 @@ class BannerCarouselSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (section.banners.isEmpty) return const SizedBox.shrink();
-    return SizedBox(
-      height: 140,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
-        itemCount: section.banners.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
-        itemBuilder: (_, i) {
-          final b = section.banners[i];
-          return GestureDetector(
-            onTap: () => openBannerLink(context, b),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: SizedBox(
-                width: 280,
-                child: _BannerContent(banner: b),
+    final list = sectionBanners(section);
+    if (list.isEmpty) return const SizedBox.shrink();
+    return HomeSectionShell(
+      section: section,
+      child: SizedBox(
+        height: 148,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+          itemCount: list.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (_, i) {
+            final b = list[i];
+            return GestureDetector(
+              onTap: () => openBannerLink(context, b),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: SizedBox(
+                  width: 280,
+                  child: _BannerContent(banner: b),
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }

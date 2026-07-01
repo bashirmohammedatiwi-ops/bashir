@@ -165,7 +165,17 @@ class Product {
     );
   }
 
-  String get coverUrl => images.isNotEmpty ? images.first.url : '';
+  String get coverUrl {
+    for (final img in images) {
+      final url = img.url.isNotEmpty ? img.url : img.fullUrl;
+      if (url.isNotEmpty) return url;
+    }
+    for (final shade in shades) {
+      final url = shade.image?.thumb ?? '';
+      if (url.isNotEmpty) return url;
+    }
+    return '';
+  }
   List<String> get galleryUrls =>
       images.map((e) => e.fullUrl).where((e) => e.isNotEmpty).toList();
   bool get inStock => stock > 0;

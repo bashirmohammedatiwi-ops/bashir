@@ -8,42 +8,51 @@ class SectionHeader extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
   final SectionHeaderStyle style;
+  final bool compact;
   const SectionHeader({
     super.key,
     required this.title,
     this.actionLabel,
     this.onAction,
     this.style = SectionHeaderStyle.standard,
+    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
     if (style == SectionHeaderStyle.niceOne) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+        padding: EdgeInsets.fromLTRB(16, compact ? 2 : 10, 16, 10),
         child: Row(
           children: [
-            if (actionLabel != null && onAction != null)
-              GestureDetector(
-                onTap: onAction,
-                child: Text(
-                  actionLabel!,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            const Spacer(),
             Text(
               title,
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: 17,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
+                letterSpacing: -0.2,
               ),
             ),
+            const Spacer(),
+            if (actionLabel != null && onAction != null)
+              GestureDetector(
+                onTap: onAction,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      actionLabel!,
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const Icon(Icons.chevron_left, size: 18, color: AppColors.textMuted),
+                  ],
+                ),
+              ),
           ],
         ),
       );

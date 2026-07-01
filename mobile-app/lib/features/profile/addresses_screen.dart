@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/auth_gate.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/address.dart';
 import '../../data/services/api_service.dart';
@@ -10,6 +11,19 @@ import 'widgets/address_form.dart';
 
 class AddressesScreen extends ConsumerWidget {
   const AddressesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return AuthGate(
+      title: 'عناويني',
+      emptyTitle: 'سجّل الدخول لإدارة عناوينك',
+      child: const _AddressesBody(),
+    );
+  }
+}
+
+class _AddressesBody extends ConsumerWidget {
+  const _AddressesBody();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

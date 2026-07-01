@@ -1,0 +1,2 @@
+-- Add SKIN_CONCERNS home block type
+ALTER TYPE "HomeBlockType" ADD VALUE IF NOT EXISTS 'SKIN_CONCERNS';

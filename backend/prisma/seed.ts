@@ -489,7 +489,8 @@ async function main() {
         { type: HomeBlockType.PRODUCT_LIST, title: "منتجات مختارة", position: 10, payload: { filter: "featured", limit: 12, showViewAll: true }, isActive: true },
         { type: HomeBlockType.BANNER_GRID_3, title: "ثلاثة عروض", position: 11, payload: { bannerIds: [] }, isActive: false },
         { type: HomeBlockType.PACKAGES, title: "مجموعات العناية", position: 12, payload: {}, isActive: true },
-        { type: HomeBlockType.PROMO_STRIP, title: "شحن مجاني", position: 13, payload: { text: "شحن مجاني للطلبات فوق 50,000 د.ع", backgroundColor: "#FCE4EC" }, isActive: true },
+        { type: HomeBlockType.PROMO_STRIP, title: "شحن مجاني", position: 2, payload: { text: "شحن مجاني للطلبات فوق 50,000 د.ع", backgroundColor: "#FCE4EC" }, isActive: true },
+        { type: HomeBlockType.SKIN_CONCERNS, title: "تسوّق حسب مشكلتك", position: 3, payload: { maxItems: 10 }, isActive: true },
       ],
     });
   }

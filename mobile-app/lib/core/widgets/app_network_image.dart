@@ -1,8 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+
+import '../cache/image_cache.dart';
 import '../theme/app_colors.dart';
 
-/// صورة شبكية مع كاش وتحميل سلس وبديل عند الفشل.
+/// صورة شبكية مع كاش محسّن وتحجيم حسب حجم العرض الفعلي.
 class AppNetworkImage extends StatelessWidget {
   final String url;
   final double? width;
@@ -25,15 +27,24 @@ class AppNetworkImage extends StatelessWidget {
     if (url.isEmpty) {
       child = _placeholder();
     } else {
+      final pixelW = cachePixelWidth(context, width);
+      final pixelH = height != null && height!.isFinite
+          ? (height! * MediaQuery.devicePixelRatioOf(context)).ceil()
+          : null;
+
       child = CachedNetworkImage(
         imageUrl: url,
+        cacheManager: AppImageCacheManager.instance,
         width: width,
         height: height,
         fit: fit,
-        fadeInDuration: const Duration(milliseconds: 200),
-        memCacheWidth: width != null && width != double.infinity
-            ? (width! * 2.5).round()
-            : 720,
+        fadeInDuration: const Duration(milliseconds: 150),
+        fadeOutDuration: const Duration(milliseconds: 100),
+        memCacheWidth: pixelW,
+        memCacheHeight: pixelH,
+        maxWidthDiskCache: pixelW,
+        maxHeightDiskCache: pixelH,
+        filterQuality: FilterQuality.medium,
         placeholder: (_, __) => Container(color: AppColors.shimmerBase),
         errorWidget: (_, __, ___) => _placeholder(),
       );

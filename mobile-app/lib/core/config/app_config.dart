@@ -25,6 +25,18 @@ class AppConfig {
 
   static const String storeName = 'الحياة';
   static const String currency = 'د.ع';
-  static const Duration networkTimeout = Duration(seconds: 30);
+
+  /// مهلة الاتصال الأولى — أقصر لعدم انتظار الشبكة البطيئة.
+  static const Duration connectTimeout = Duration(seconds: 12);
+  static const Duration receiveTimeout = Duration(seconds: 25);
+  static const Duration sendTimeout = Duration(seconds: 20);
+  static const Duration networkTimeout = receiveTimeout;
+
   static const int pageSize = 20;
+
+  /// مدة كاش البيانات العامة.
+  static const Duration homeCacheTtl = Duration(minutes: 5);
+  static const Duration catalogCacheTtl = Duration(hours: 1);
+  static const Duration productCacheTtl = Duration(minutes: 15);
+  static const Duration listingCacheTtl = Duration(minutes: 3);
 }

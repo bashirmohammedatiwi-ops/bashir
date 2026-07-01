@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 import { HomeBlock, HomeBlockType } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
 
+import { withPlaceholderImages } from "../../common/product-placeholder.util";
+
 const productInclude = {
   brand: { select: { id: true, name: true, slug: true } },
   category: { select: { id: true, name: true, slug: true } },
@@ -30,6 +32,7 @@ export interface ResolvedHomeSection {
   packages?: unknown[];
   promoStrip?: { text: string; link?: string; backgroundColor?: string };
   items?: unknown[];
+  skinConcerns?: unknown[];
 }
 
 @Injectable()
@@ -45,6 +48,7 @@ export class HomeSectionResolver {
       defaultPackages: unknown[];
       productBuckets: Record<string, unknown[]>;
       allBanners: unknown[];
+      skinConcerns: unknown[];
     },
   ): Promise<ResolvedHomeSection[]> {
     const sections: ResolvedHomeSection[] = [];
@@ -62,7 +66,7 @@ export class HomeSectionResolver {
 
   private isEmpty(s: ResolvedHomeSection): boolean {
     if (s.promoStrip?.text) return false;
-    const arrays = [s.banners, s.categories, s.products, s.brands, s.packages, s.items];
+    const arrays = [s.banners, s.categories, s.products, s.brands, s.packages, s.items, s.skinConcerns];
     return !arrays.some((a) => Array.isArray(a) && a.length > 0);
   }
 
@@ -76,6 +80,7 @@ export class HomeSectionResolver {
       defaultPackages: unknown[];
       productBuckets: Record<string, unknown[]>;
       allBanners: unknown[];
+      skinConcerns: unknown[];
     },
   ): Promise<ResolvedHomeSection | null> {
     const base = {
@@ -84,7 +89,10 @@ export class HomeSectionResolver {
       title: block.title,
       subtitle: block.subtitle,
       position: block.position,
-      backgroundColor: (payload.backgroundColor as string) ?? undefined,
+      backgroundColor:
+        (payload.backgroundColor as string) ??
+        (payload.accentColor as string) ??
+        undefined,
       showViewAll: payload.showViewAll !== false,
     };
 
@@ -130,13 +138,13 @@ export class HomeSectionResolver {
       }
 
       case HomeBlockType.BANNER_GRID_2: {
-        const banners = await this.resolveBannerItems(payload, ctx.allBanners, 2);
-        return { ...base, layout: "grid2", items: banners };
+        const items = await this.resolveBannerItems(payload, ctx.allBanners, 2);
+        return { ...base, layout: "grid2", items, banners: items };
       }
 
       case HomeBlockType.BANNER_GRID_3: {
-        const banners = await this.resolveBannerItems(payload, ctx.allBanners, 3);
-        return { ...base, layout: "grid3", items: banners };
+        const items = await this.resolveBannerItems(payload, ctx.allBanners, 3);
+        return { ...base, layout: "grid3", items, banners: items };
       }
 
       case HomeBlockType.BANNER_CAROUSEL: {
@@ -186,6 +194,15 @@ export class HomeSectionResolver {
             link: payload.link as string | undefined,
             backgroundColor: (payload.backgroundColor as string) ?? "#FCE4EC",
           },
+        };
+      }
+
+      case HomeBlockType.SKIN_CONCERNS: {
+        const concerns = await this.resolveSkinConcerns(payload, ctx.skinConcerns);
+        return {
+          ...base,
+          layout: "chips",
+          skinConcerns: concerns,
         };
       }
 
@@ -250,6 +267,17 @@ export class HomeSectionResolver {
     return ids.map((id) => map.get(id)).filter(Boolean);
   }
 
+  private async resolveSkinConcerns(payload: Payload, fallback: unknown[]) {
+    const ids = payload.concernIds as string[] | undefined;
+    const max = (payload.maxItems as number) ?? 12;
+    if (!ids?.length) return (fallback as unknown[]).slice(0, max);
+    const concerns = await this.prisma.skinConcern.findMany({
+      where: { id: { in: ids }, isActive: true },
+    });
+    const map = new Map(concerns.map((c) => [c.id, c]));
+    return ids.map((id) => map.get(id)).filter(Boolean);
+  }
+
   private async resolveProducts(
     payload: Payload,
     filter: string,
@@ -261,11 +289,13 @@ export class HomeSectionResolver {
         where: { id: { in: productIds }, isActive: true },
         include: productInclude,
       });
-      const map = new Map(products.map((p) => [p.id, p]));
+      const map = new Map(products.map((p) => [p.id, withPlaceholderImages(p)]));
       return productIds.map((id) => map.get(id)).filter(Boolean);
     }
     const limit = (payload.limit as number) ?? 10;
-    return (buckets[filter] ?? buckets.bestSeller ?? []).slice(0, limit);
+    return (buckets[filter] ?? buckets.bestSeller ?? [])
+      .slice(0, limit)
+      .map((p) => withPlaceholderImages(p as { images?: unknown[] }));
   }
 
   private filterToQuery(filter: string, title?: string | null): string {

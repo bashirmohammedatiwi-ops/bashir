@@ -7,6 +7,7 @@ import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/product.dart';
 import '../../data/services/api_service.dart';
+import '../catalog/recently_viewed_provider.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -100,10 +101,43 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     if (_loading) return const ProductGridSkeleton(count: 6);
     if (_error != null) return ErrorView(message: _error!);
     if (!_searched) {
-      return const EmptyState(
-          icon: Icons.search_rounded,
-          title: 'ابحث في متجر الحياة',
-          subtitle: 'اكتب اسم المنتج أو العلامة التجارية');
+      final recent = ref.watch(recentlyViewedProvider);
+      if (recent.isEmpty) {
+        return const EmptyState(
+            icon: Icons.search_rounded,
+            title: 'ابحث في متجر الحياة',
+            subtitle: 'اكتب اسم المنتج أو العلامة التجارية');
+      }
+      return ListView(
+        padding: const EdgeInsets.all(12),
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text('شاهدت مؤخراً',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+              ),
+              TextButton(
+                onPressed: () => ref.read(recentlyViewedProvider.notifier).clear(),
+                child: const Text('مسح'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 0.6,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
+            itemCount: recent.length,
+            itemBuilder: (_, i) => ProductCard(product: recent[i]),
+          ),
+        ],
+      );
     }
     if (_results.isEmpty) {
       return const EmptyState(icon: Icons.search_off_rounded, title: 'لا توجد نتائج');

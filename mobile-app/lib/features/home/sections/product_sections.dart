@@ -4,45 +4,37 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/product_card.dart';
-import '../../../core/widgets/section_header.dart';
 import '../../../data/models/home_section.dart';
-import '../home_link.dart';
+import '../widgets/home_section_shell.dart';
 
 class ProductCarouselSection extends StatelessWidget {
   final HomeSection section;
-  const ProductCarouselSection({super.key, required this.section});
+  final bool compactTop;
+  const ProductCarouselSection({super.key, required this.section, this.compactTop = false});
 
   @override
   Widget build(BuildContext context) {
     if (section.products.isEmpty) return const SizedBox.shrink();
-    final bg = parseHexColor(section.backgroundColor) ?? Colors.white;
 
-    return ColoredBox(
-      color: bg,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (section.title != null && section.title!.isNotEmpty)
-            SectionHeader(
-              title: section.title!,
-              actionLabel: section.showViewAll ? 'عرض الكل' : null,
-              style: SectionHeaderStyle.niceOne,
-              onAction: section.showViewAll && section.viewAllQuery != null
-                  ? () => context.push('/products?${section.viewAllQuery}')
-                  : null,
-            ),
-          SizedBox(
-            height: 248,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-              itemCount: section.products.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => ProductCard(product: section.products[i], width: 150),
-            ),
-          ),
-        ],
+    return HomeSectionShell(
+      section: section,
+      compactTop: compactTop,
+      actionLabel: section.showViewAll ? 'عرض الكل' : null,
+      onAction: section.showViewAll && section.viewAllQuery != null
+          ? () => context.push('/products?${section.viewAllQuery}')
+          : null,
+      child: SizedBox(
+        height: 262,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+          itemCount: section.products.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (_, i) => ProductCard(product: section.products[i], width: 148, showRating: true),
+        ),
       ),
     );
   }
@@ -50,7 +42,8 @@ class ProductCarouselSection extends StatelessWidget {
 
 class FlashSaleHomeSection extends StatefulWidget {
   final HomeSection section;
-  const FlashSaleHomeSection({super.key, required this.section});
+  final bool compactTop;
+  const FlashSaleHomeSection({super.key, required this.section, this.compactTop = false});
 
   @override
   State<FlashSaleHomeSection> createState() => _FlashSaleHomeSectionState();
@@ -93,34 +86,28 @@ class _FlashSaleHomeSectionState extends State<FlashSaleHomeSection> {
     if (widget.section.products.isEmpty) return const SizedBox.shrink();
     final hasTimer = widget.section.endsAt != null && _remaining > Duration.zero;
 
-    return ColoredBox(
-      color: Colors.white,
-      child: Column(
-        children: [
-          SectionHeader(
-            title: widget.section.title ?? 'أقوى العروض',
-            actionLabel: widget.section.showViewAll ? 'عرض الكل' : null,
-            style: SectionHeaderStyle.niceOne,
-            onAction: widget.section.showViewAll
-                ? () => context.push('/products?${widget.section.viewAllQuery ?? 'isPromo=1'}')
-                : null,
+    return HomeSectionShell(
+      section: widget.section,
+      compactTop: widget.compactTop,
+      actionLabel: widget.section.showViewAll ? 'عرض الكل' : null,
+      onAction: widget.section.showViewAll
+          ? () => context.push('/products?${widget.section.viewAllQuery ?? 'isPromo=1'}')
+          : null,
+      child: SizedBox(
+        height: 262,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+          itemCount: widget.section.products.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (_, i) => ProductCard(
+            product: widget.section.products[i],
+            width: 148,
+            showPromoBadge: true,
+            showRating: true,
+            flashTimer: hasTimer ? _timerLabel : null,
           ),
-          SizedBox(
-            height: 248,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-              itemCount: widget.section.products.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => ProductCard(
-                product: widget.section.products[i],
-                width: 150,
-                showPromoBadge: true,
-                flashTimer: hasTimer ? _timerLabel : null,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -128,57 +115,93 @@ class _FlashSaleHomeSectionState extends State<FlashSaleHomeSection> {
 
 class PackagesHomeSection extends StatelessWidget {
   final HomeSection section;
-  const PackagesHomeSection({super.key, required this.section});
+  final bool compactTop;
+  const PackagesHomeSection({super.key, required this.section, this.compactTop = false});
 
   @override
   Widget build(BuildContext context) {
     if (section.packages.isEmpty) return const SizedBox.shrink();
-    return ColoredBox(
-      color: Colors.white,
-      child: Column(
-        children: [
-          if (section.title != null)
-            SectionHeader(
-              title: section.title!,
-              actionLabel: 'عرض الكل',
-              style: SectionHeaderStyle.niceOne,
-              onAction: () {},
-            ),
-          SizedBox(
-            height: 160,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
-              itemCount: section.packages.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, i) {
-                final p = section.packages[i];
-                return Container(
-                  width: 200,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFEFEFEF)),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: p.coverUrl != null && p.coverUrl!.isNotEmpty
-                            ? Image.network(p.coverUrl!, fit: BoxFit.cover, width: double.infinity)
-                            : Container(color: AppColors.primaryLight),
+    return HomeSectionShell(
+      section: section,
+      compactTop: compactTop,
+      actionLabel: 'عرض الكل',
+      onAction: () => context.push('/products?isPromo=1&title=الباقات'),
+      child: SizedBox(
+        height: 188,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+          itemCount: section.packages.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          itemBuilder: (_, i) {
+            final p = section.packages[i];
+            final hasDiscount = p.originalPrice != null && p.originalPrice! > p.price;
+            return GestureDetector(
+              onTap: () => context.push('/package/${p.slug.isNotEmpty ? p.slug : p.id}'),
+              child: Container(
+                width: 210,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFEFEFEF)),
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: p.coverUrl != null && p.coverUrl!.isNotEmpty
+                          ? AppNetworkImage(url: p.coverUrl!, width: 210, fit: BoxFit.cover)
+                          : Container(
+                              color: AppColors.primaryLight,
+                              alignment: Alignment.center,
+                              child: const Icon(Icons.card_giftcard_rounded,
+                                  color: AppColors.primary, size: 40),
+                            ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(p.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Text(formatPrice(p.price),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      color: AppColors.primary,
+                                      fontSize: 13)),
+                              if (hasDiscount) ...[
+                                const SizedBox(width: 6),
+                                Text(formatPrice(p.originalPrice!),
+                                    style: const TextStyle(
+                                        fontSize: 11,
+                                        color: AppColors.textMuted,
+                                        decoration: TextDecoration.lineThrough)),
+                              ],
+                            ],
+                          ),
+                        ],
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Text(p.name, maxLines: 1, style: const TextStyle(fontWeight: FontWeight.w700)),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }

@@ -13,9 +13,11 @@ import '../../../data/models/home_section.dart';
 import '../../shell/main_shell.dart';
 import '../home_link.dart';
 
-const _kBannerHeightFactor = 0.42;
-const _kCategoryOverlap = 56.0;
-const _kCategoryBlockH = 220.0;
+const _kBannerHeightFactor = 0.36;
+const _kCategoryOverlap = 48.0;
+
+/// ارتفاع صف الفئات: دائرة 56 + نص + مسافات
+const _kCategoryRowH = 88.0;
 
 class HeroHomeSection extends ConsumerStatefulWidget {
   final HomeSection section;
@@ -32,9 +34,10 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
   Widget build(BuildContext context) {
     final topPad = MediaQuery.paddingOf(context).top;
     final bannerH = MediaQuery.sizeOf(context).height * _kBannerHeightFactor + topPad;
-    final heroH = bannerH + _kCategoryBlockH - _kCategoryOverlap;
+    final cats = _normalizeCategories(widget.section.categories);
+    final gridH = categoryGridHeight(cats.length);
+    final heroH = bannerH + gridH - _kCategoryOverlap;
     final banners = widget.section.banners;
-    final categories = widget.section.categories;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
@@ -44,7 +47,7 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
       child: SizedBox(
         height: heroH,
         child: Stack(
-          clipBehavior: Clip.none,
+          clipBehavior: Clip.hardEdge,
           children: [
             Positioned(
               top: 0,
@@ -64,31 +67,59 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
             Positioned(
               left: 0,
               right: 0,
-              top: bannerH - 24,
-              bottom: 0,
+              top: bannerH - 28,
+              height: gridH + 32,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    stops: const [0.0, 0.35, 1.0],
-                    colors: [Colors.white.withValues(alpha: 0), Colors.white.withValues(alpha: 0.85), Colors.white],
+                    stops: const [0.0, 0.35, 0.7, 1.0],
+                    colors: [
+                      Colors.white.withValues(alpha: 0),
+                      Colors.white.withValues(alpha: 0.55),
+                      Colors.white.withValues(alpha: 0.96),
+                      Colors.white,
+                    ],
                   ),
                 ),
               ),
             ),
-            if (categories.isNotEmpty)
+            if (cats.isNotEmpty)
               Positioned(
                 left: 0,
                 right: 0,
                 top: bannerH - _kCategoryOverlap,
-                child: _QuickCategoryGrid(categories: categories),
+                height: gridH,
+                child: QuickCategoryGrid(categories: cats),
               ),
+            // امتداد أبيض أسفل الفئات لانتقال نظيف
+            Positioned(
+              left: 0,
+              right: 0,
+              top: bannerH + gridH - _kCategoryOverlap,
+              bottom: 0,
+              child: const ColoredBox(color: Colors.white),
+            ),
           ],
         ),
       ),
     );
   }
+}
+
+List<Category> _normalizeCategories(List<Category> raw) {
+  final seen = <String>{};
+  final out = <Category>[];
+  for (final c in raw) {
+    if (seen.add(c.id)) out.add(c);
+  }
+  return out.take(8).toList();
+}
+
+double categoryGridHeight(int count) {
+  if (count <= 0) return 0;
+  return _kCategoryRowH;
 }
 
 class _BannerStack extends StatelessWidget {
@@ -127,11 +158,11 @@ class _BannerStack extends StatelessWidget {
           top: 0,
           left: 0,
           right: 0,
-          height: height * 0.22,
+          height: height * 0.2,
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.black.withValues(alpha: 0.22), Colors.transparent],
+                colors: [Colors.black.withValues(alpha: 0.2), Colors.transparent],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -142,11 +173,11 @@ class _BannerStack extends StatelessWidget {
           left: 0,
           right: 0,
           bottom: 0,
-          height: height * 0.28,
+          height: height * 0.24,
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.transparent, Colors.white.withValues(alpha: 0.45), Colors.white],
+                colors: [Colors.transparent, Colors.white.withValues(alpha: 0.5), Colors.white],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -155,7 +186,7 @@ class _BannerStack extends StatelessWidget {
         ),
         if (banners.length > 1)
           Positioned(
-            bottom: 64,
+            bottom: 56,
             left: 0,
             right: 0,
             child: Center(
@@ -185,8 +216,14 @@ class _BannerTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenW = MediaQuery.sizeOf(context).width;
     if (banner.hasImage) {
-      return AppNetworkImage(url: banner.imageUrl, height: height, fit: BoxFit.cover);
+      return AppNetworkImage(
+        url: banner.imageUrl,
+        width: screenW,
+        height: height,
+        fit: BoxFit.cover,
+      );
     }
     return Container(
       height: height,
@@ -199,18 +236,6 @@ class _BannerTile extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 80, 20, 90),
-      alignment: Alignment.bottomRight,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (banner.subtitle != null && banner.subtitle!.isNotEmpty)
-            Text(banner.subtitle!, style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
-          if (banner.title != null && banner.title!.isNotEmpty)
-            Text(banner.title!, style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900)),
-        ],
       ),
     );
   }
@@ -233,81 +258,153 @@ class _DefaultBanner extends StatelessWidget {
   }
 }
 
-class _QuickCategoryGrid extends ConsumerWidget {
+/// صف أفقي واحد للفئات + «الكل».
+class QuickCategoryGrid extends ConsumerWidget {
   final List<Category> categories;
-  const _QuickCategoryGrid({required this.categories});
-
-  static const _icons = [
-    Icons.percent_rounded,
-    Icons.trending_up_rounded,
-    Icons.spa_outlined,
-    Icons.face_retouching_natural_outlined,
-  ];
+  const QuickCategoryGrid({super.key, required this.categories});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final items = categories.take(8).toList();
-    while (items.length < 8) {
-      items.add(Category(id: 'p${items.length}', name: 'قسم', slug: ''));
-    }
+    if (categories.isEmpty) return const SizedBox.shrink();
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(6, 0, 6, 0),
-      child: GridView.count(
-        crossAxisCount: 4,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        mainAxisSpacing: 8,
-        crossAxisSpacing: 2,
-        childAspectRatio: 0.74,
-        children: [
-          for (int i = 0; i < 8; i++)
-            _QuickCat(
-              name: items[i].name,
-              imageUrl: items[i].imageUrl.isNotEmpty ? items[i].imageUrl : null,
-              icon: items[i].imageUrl.isEmpty ? _icons[i % 4] : null,
-              onTap: items[i].id.startsWith('p')
-                  ? () => ref.read(navIndexProvider.notifier).state = i == 0 ? 2 : 1
-                  : () => context.push(
-                      '/products?categoryId=${items[i].id}&title=${Uri.encodeComponent(items[i].name)}'),
+    return SizedBox(
+      height: _kCategoryRowH,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        itemCount: categories.length + 1,
+        separatorBuilder: (_, __) => const SizedBox(width: 4),
+        itemBuilder: (context, i) {
+          if (i == categories.length) {
+            return _SeeAllCategory(
+              onTap: () => ref.read(navIndexProvider.notifier).state = 1,
+            );
+          }
+          final c = categories[i];
+          return _QuickCat(
+            category: c,
+            onTap: () => context.push(
+              '/products?categoryId=${c.id}&title=${Uri.encodeComponent(c.name)}',
             ),
-        ],
+          );
+        },
       ),
     );
   }
 }
 
+IconData _categoryFallbackIcon(String slug) {
+  if (slug.contains('makeup') || slug.contains('maki')) return Icons.brush_outlined;
+  if (slug.contains('perfume') || slug.contains('fragrance')) return Icons.local_florist_outlined;
+  if (slug.contains('hair')) return Icons.content_cut_outlined;
+  if (slug.contains('skin')) return Icons.spa_outlined;
+  if (slug.contains('device') || slug.contains('tool')) return Icons.devices_other_outlined;
+  return Icons.category_outlined;
+}
+
 class _QuickCat extends StatelessWidget {
-  final String name;
-  final String? imageUrl;
-  final IconData? icon;
+  final Category category;
   final VoidCallback onTap;
-  const _QuickCat({required this.name, this.imageUrl, this.icon, required this.onTap});
+  const _QuickCat({required this.category, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.14), blurRadius: 14, offset: const Offset(0, 4))],
+    return SizedBox(
+      width: 76,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: _CategoryAvatar(category: category),
             ),
-            clipBehavior: Clip.antiAlias,
-            child: imageUrl != null
-                ? AppNetworkImage(url: imageUrl!, fit: BoxFit.cover)
-                : Icon(icon, color: const Color(0xFF888888), size: 26),
-          ),
-          const SizedBox(height: 7),
-          Text(name, maxLines: 2, textAlign: TextAlign.center, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-        ],
+            const SizedBox(height: 5),
+            Text(
+              category.name,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, height: 1.15),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class _SeeAllCategory extends StatelessWidget {
+  final VoidCallback onTap;
+  const _SeeAllCategory({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 76,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F8),
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFE8E8EE)),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(Icons.grid_view_rounded, color: Color(0xFF888888), size: 22),
+            ),
+            const SizedBox(height: 5),
+            const Text(
+              'الكل',
+              maxLines: 1,
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, height: 1.15),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryAvatar extends StatelessWidget {
+  final Category category;
+  const _CategoryAvatar({required this.category});
+
+  @override
+  Widget build(BuildContext context) {
+    if (category.imageUrl.isNotEmpty) {
+      return AppNetworkImage(url: category.imageUrl, fit: BoxFit.cover);
+    }
+    final emoji = category.icon?.trim();
+    if (emoji != null && emoji.isNotEmpty) {
+      return Center(child: Text(emoji, style: const TextStyle(fontSize: 26, height: 1)));
+    }
+    return Icon(
+      _categoryFallbackIcon(category.slug),
+      color: const Color(0xFF888888),
+      size: 26,
     );
   }
 }
@@ -315,13 +412,16 @@ class _QuickCat extends StatelessWidget {
 class CategoryGridSection extends StatelessWidget {
   final HomeSection section;
   const CategoryGridSection({super.key, required this.section});
+
   @override
   Widget build(BuildContext context) {
+    final cats = _normalizeCategories(section.categories);
+    if (cats.isEmpty) return const SizedBox.shrink();
     return ColoredBox(
       color: Colors.white,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(6, 12, 6, 8),
-        child: _QuickCategoryGrid(categories: section.categories),
+        padding: const EdgeInsets.fromLTRB(0, 8, 0, 4),
+        child: QuickCategoryGrid(categories: cats),
       ),
     );
   }

@@ -121,6 +121,7 @@ export class HomeService {
       defaultPackages: packages,
       productBuckets,
       allBanners: banners,
+      skinConcerns,
     });
 
     return {

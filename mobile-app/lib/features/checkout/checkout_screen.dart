@@ -9,6 +9,8 @@ import '../../data/models/coupon.dart';
 import '../../data/services/api_service.dart';
 import '../cart/cart_provider.dart';
 import '../cart/coupon_provider.dart';
+import '../../core/widgets/auth_gate.dart';
+import '../auth/auth_provider.dart';
 import '../profile/profile_providers.dart';
 import '../profile/widgets/address_form.dart';
 
@@ -25,6 +27,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   int _shippingFee = 0;
   bool _shippingLoading = false;
   bool _placing = false;
+  bool _useLoyalty = false;
+  int _loyaltySpent = 0;
+  String _paymentMethod = 'COD';
   final _couponCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
 
@@ -103,6 +108,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           .showSnackBar(const SnackBar(content: Text('يرجى اختيار عنوان التوصيل')));
       return;
     }
+    if (_paymentMethod == 'CARD') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('الدفع بالبطاقة قيد التفعيل — اختر الدفع عند الاستلام حالياً'),
+        ),
+      );
+      return;
+    }
     setState(() => _placing = true);
     try {
       final order = await ref.read(apiServiceProvider).createOrder(
@@ -110,9 +123,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             addressId: _selected!.id,
             couponCode: _coupon?.code,
             notes: _notesCtrl.text.trim(),
+            loyaltySpent: _useLoyalty ? _loyaltySpent : 0,
+            paymentMethod: _paymentMethod,
           );
       ref.read(cartProvider.notifier).clear();
+      ref.read(appliedCouponProvider.notifier).state = null;
       ref.invalidate(ordersProvider);
+      ref.read(authProvider.notifier).refreshUser();
       if (mounted) context.pushReplacement('/order-success/${order.id}');
     } catch (e) {
       if (mounted) {
@@ -124,14 +141,40 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
 
+  int get _loyaltyDiscount => (_loyaltySpent ~/ 100) * 1000;
+
+  void _toggleLoyalty(bool value, int points, int orderBeforeLoyalty) {
+    setState(() {
+      _useLoyalty = value;
+      if (!value) {
+        _loyaltySpent = 0;
+        return;
+      }
+      final maxByPoints = (points ~/ 100) * 100;
+      final maxByTotal = (orderBeforeLoyalty ~/ 1000) * 100;
+      _loyaltySpent = maxByPoints < maxByTotal ? maxByPoints : maxByTotal;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    return AuthGate(
+      title: 'إتمام الطلب',
+      emptyTitle: 'سجّل الدخول لإتمام الطلب',
+      child: _buildCheckout(),
+    );
+  }
+
+  Widget _buildCheckout() {
     final cart = ref.watch(cartProvider);
     final addresses = ref.watch(addressesProvider);
+    final points = ref.watch(authProvider).user?.points ?? 0;
     final subtotal = cart.subtotal;
     final discount = _coupon?.discountFor(subtotal) ?? 0;
     final shipping = (_coupon?.freeShipping ?? false) ? 0 : _shippingFee;
-    final total = (subtotal - discount + shipping).clamp(0, 1 << 31);
+    final beforeLoyalty = (subtotal - discount + shipping).clamp(0, 1 << 31);
+    final loyaltyDiscount = _useLoyalty ? _loyaltyDiscount : 0;
+    final total = (beforeLoyalty - loyaltyDiscount).clamp(0, 1 << 31);
 
     return Scaffold(
       appBar: AppBar(title: const Text('إتمام الطلب')),
@@ -216,6 +259,25 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ),
             ),
           const Divider(height: 28),
+          _sectionTitle('طريقة الدفع'),
+          _PaymentOption(
+            title: 'الدفع عند الاستلام',
+            subtitle: 'ادفع نقداً عند استلام الطلب',
+            icon: Icons.payments_outlined,
+            selected: _paymentMethod == 'COD',
+            onTap: () => setState(() => _paymentMethod = 'COD'),
+          ),
+          const SizedBox(height: 8),
+          _PaymentOption(
+            title: 'بطاقة ائتمان / مدى',
+            subtitle: 'قريباً — سيتم تفعيل الدفع الإلكتروني',
+            icon: Icons.credit_card_rounded,
+            selected: _paymentMethod == 'CARD',
+            enabled: false,
+            badge: 'قريباً',
+            onTap: () {},
+          ),
+          const Divider(height: 28),
           _sectionTitle('ملاحظات الطلب'),
           TextField(
             controller: _notesCtrl,
@@ -223,6 +285,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             decoration: const InputDecoration(hintText: 'أي تعليمات خاصة بالتوصيل...'),
           ),
           const Divider(height: 28),
+          if (points >= 100) ...[
+            _sectionTitle('نقاط الولاء'),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text('استخدم $points نقطة'),
+              subtitle: Text(
+                _useLoyalty && _loyaltySpent > 0
+                    ? 'خصم ${formatPrice(loyaltyDiscount)} (100 نقطة = ${formatPrice(1000)})'
+                    : '100 نقطة = ${formatPrice(1000)}',
+                style: const TextStyle(fontSize: 12),
+              ),
+              value: _useLoyalty,
+              activeColor: AppColors.primary,
+              onChanged: (v) => _toggleLoyalty(v, points, beforeLoyalty),
+            ),
+            const Divider(height: 28),
+          ],
           _sectionTitle('طريقة الدفع'),
           Container(
             padding: const EdgeInsets.all(14),
@@ -247,6 +326,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           _sectionTitle('ملخّص الطلب'),
           _row('المجموع الفرعي', formatPrice(subtotal)),
           if (discount > 0) _row('الخصم', '- ${formatPrice(discount)}', color: AppColors.success),
+          if (loyaltyDiscount > 0)
+            _row('نقاط الولاء', '- ${formatPrice(loyaltyDiscount)}', color: AppColors.success),
           _row(
             'الشحن',
             _shippingLoading
@@ -325,6 +406,81 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           ],
         ),
       );
+}
+
+class _PaymentOption extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final bool selected;
+  final bool enabled;
+  final String? badge;
+  final VoidCallback onTap;
+
+  const _PaymentOption({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+    this.enabled = true,
+    this.badge,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: enabled ? 1 : 0.55,
+      child: Material(
+        color: selected ? AppColors.primaryLight : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          borderRadius: BorderRadius.circular(14),
+          child: Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: selected ? AppColors.primary : AppColors.border, width: selected ? 1.5 : 1),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: selected ? AppColors.primary : AppColors.textSecondary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 2),
+                      Text(subtitle,
+                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    ],
+                  ),
+                ),
+                if (badge != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.warning.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(badge!,
+                        style: const TextStyle(
+                            color: AppColors.warning, fontSize: 11, fontWeight: FontWeight.w800)),
+                  )
+                else
+                  Icon(
+                    selected ? Icons.radio_button_checked : Icons.radio_button_off,
+                    color: selected ? AppColors.primary : AppColors.textMuted,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _AddAddressCard extends StatelessWidget {

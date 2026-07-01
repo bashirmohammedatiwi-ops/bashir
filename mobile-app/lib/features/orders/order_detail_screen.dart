@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/order.dart';
+import '../../data/models/product.dart';
 import '../../data/services/api_service.dart';
+import '../cart/cart_provider.dart';
 import '../profile/profile_providers.dart';
+import '../shell/main_shell.dart';
 
 const _statusFlow = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
 
@@ -101,7 +105,16 @@ class OrderDetailScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 16),
-            if (order.status == 'PENDING' || order.status == 'CONFIRMED')
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => _reorder(context, ref, order),
+                icon: const Icon(Icons.replay_rounded),
+                label: const Text('إعادة الطلب'),
+              ),
+            ),
+            if (order.status == 'PENDING' || order.status == 'CONFIRMED') ...[
+              const SizedBox(height: 8),
               OutlinedButton.icon(
                 onPressed: () => _cancel(context, ref),
                 style: OutlinedButton.styleFrom(
@@ -111,7 +124,64 @@ class OrderDetailScreen extends ConsumerWidget {
                 icon: const Icon(Icons.close),
                 label: const Text('إلغاء الطلب'),
               ),
+            ],
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                onPressed: () {
+                  ref.read(navIndexProvider.notifier).state = 0;
+                  context.go('/');
+                },
+                child: const Text('متابعة التسوّق'),
+              ),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _reorder(BuildContext context, WidgetRef ref, AppOrder order) async {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      const SnackBar(content: Text('جاري إضافة المنتجات إلى السلة…')),
+    );
+    final api = ref.read(apiServiceProvider);
+    var added = 0;
+    for (final item in order.items) {
+      try {
+        final product = await api.getProduct(item.productId);
+        ProductShade? shade;
+        if (item.shadeId != null) {
+          for (final s in product.shades) {
+            if (s.id == item.shadeId) {
+              shade = s;
+              break;
+            }
+          }
+        }
+        ref.read(cartProvider.notifier).add(product, quantity: item.quantity, shade: shade);
+        added++;
+      } catch (_) {}
+    }
+    if (!context.mounted) return;
+    messenger.hideCurrentSnackBar();
+    if (added == 0) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('تعذّر إضافة المنتجات. حاول لاحقاً')),
+      );
+      return;
+    }
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text('تمت إضافة $added منتج إلى السلة'),
+        action: SnackBarAction(
+          label: 'السلة',
+          onPressed: () {
+            ref.read(navIndexProvider.notifier).state = 3;
+            context.go('/');
+          },
         ),
       ),
     );
@@ -182,33 +252,40 @@ class _ItemRow extends StatelessWidget {
   const _ItemRow({required this.item});
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          AppNetworkImage(
-            url: item.imageUrl,
-            width: 56,
-            height: 56,
-            radius: BorderRadius.circular(8),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => context.push('/product/${item.productId}'),
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Row(
+            children: [
+              AppNetworkImage(
+                url: item.imageUrl,
+                width: 56,
+                height: 56,
+                radius: BorderRadius.circular(8),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.productName,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    Text('الكمية: ${item.quantity}',
+                        style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                  ],
+                ),
+              ),
+              Text(formatPrice(item.totalPrice),
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
+            ],
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item.productName,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                Text('الكمية: ${item.quantity}',
-                    style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
-              ],
-            ),
-          ),
-          Text(formatPrice(item.totalPrice),
-              style: const TextStyle(fontWeight: FontWeight.w700)),
-        ],
+        ),
       ),
     );
   }

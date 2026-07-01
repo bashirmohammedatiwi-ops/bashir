@@ -2,41 +2,107 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/config/app_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/widgets/auth_gate.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/order.dart';
-import '../profile/profile_providers.dart';
+import '../../data/services/api_service.dart';
 
-class OrdersScreen extends ConsumerWidget {
+class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final orders = ref.watch(ordersProvider);
-    return Scaffold(
-      appBar: AppBar(title: const Text('طلباتي')),
-      body: orders.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (e, _) =>
-            ErrorView(message: e.toString(), onRetry: () => ref.invalidate(ordersProvider)),
-        data: (list) {
-          if (list.isEmpty) {
-            return const EmptyState(
-                icon: Icons.receipt_long_outlined,
-                title: 'لا توجد طلبات بعد',
-                subtitle: 'ستظهر طلباتك هنا بعد الشراء');
+  ConsumerState<OrdersScreen> createState() => _OrdersScreenState();
+}
+
+class _OrdersScreenState extends ConsumerState<OrdersScreen> {
+  final _scroll = ScrollController();
+  final _items = <AppOrder>[];
+  int _page = 1;
+  bool _loading = false;
+  bool _hasMore = true;
+  bool _firstLoad = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
+    _scroll.addListener(() {
+      if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 200) {
+        _fetch();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetch({bool reset = false}) async {
+    if (_loading) return;
+    if (reset) {
+      _page = 1;
+      _hasMore = true;
+      _items.clear();
+      _firstLoad = true;
+    }
+    if (!_hasMore) return;
+    setState(() => _loading = true);
+    try {
+      final result = await ref.read(apiServiceProvider).getOrders(page: _page, limit: AppConfig.pageSize);
+      setState(() {
+        _items.addAll(result.items);
+        _hasMore = result.hasNext;
+        _page++;
+        _firstLoad = false;
+      });
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AuthGate(
+      title: 'طلباتي',
+      emptyTitle: 'سجّل الدخول لعرض طلباتك',
+      child: Scaffold(
+        appBar: AppBar(title: const Text('طلباتي')),
+        body: _buildBody(),
+      ),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_firstLoad && _loading) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+    }
+    if (_items.isEmpty) {
+      return const EmptyState(
+          icon: Icons.receipt_long_outlined,
+          title: 'لا توجد طلبات بعد',
+          subtitle: 'ستظهر طلباتك هنا بعد الشراء');
+    }
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: () => _fetch(reset: true),
+      child: ListView.separated(
+        controller: _scroll,
+        padding: const EdgeInsets.all(12),
+        itemCount: _items.length + (_hasMore ? 1 : 0),
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (_, i) {
+          if (i >= _items.length) {
+            return const Padding(
+              padding: EdgeInsets.all(16),
+              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            );
           }
-          return RefreshIndicator(
-            color: AppColors.primary,
-            onRefresh: () async => ref.invalidate(ordersProvider),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(12),
-              itemCount: list.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (_, i) => _OrderCard(order: list[i]),
-            ),
-          );
+          return _OrderCard(order: _items[i]);
         },
       ),
     );

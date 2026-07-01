@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -9,9 +10,11 @@ import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/product.dart';
 import '../../data/models/review.dart';
+import '../../data/services/api_service.dart';
 import '../auth/auth_provider.dart';
 import '../cart/cart_provider.dart';
 import '../catalog/catalog_providers.dart';
+import '../catalog/recently_viewed_provider.dart';
 import '../shell/main_shell.dart';
 import '../wishlist/wishlist_provider.dart';
 
@@ -31,6 +34,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final async = ref.watch(productDetailProvider(widget.idOrSlug));
+    ref.listen(productDetailProvider(widget.idOrSlug), (prev, next) {
+      next.whenData((p) => ref.read(recentlyViewedProvider.notifier).add(p));
+    });
     return Scaffold(
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
@@ -383,29 +389,142 @@ class _ProductTabs extends StatelessWidget {
   }
 }
 
-class _ReviewsSection extends ConsumerWidget {
+class _ReviewsSection extends ConsumerStatefulWidget {
   final String productId;
   const _ReviewsSection({required this.productId});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(productReviewsProvider(productId));
-    return async.when(
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
-      data: (reviews) {
-        if (reviews.isEmpty) return const SizedBox.shrink();
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  ConsumerState<_ReviewsSection> createState() => _ReviewsSectionState();
+}
+
+class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
+  bool _showForm = false;
+  double _rating = 5;
+  final _commentCtrl = TextEditingController();
+  bool _submitting = false;
+
+  @override
+  void dispose() {
+    _commentCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!ref.read(authProvider).isAuthenticated) {
+      context.push('/login');
+      return;
+    }
+    setState(() => _submitting = true);
+    try {
+      await ref.read(apiServiceProvider).addReview(
+            widget.productId,
+            _rating,
+            _commentCtrl.text.trim(),
+          );
+      ref.invalidate(productReviewsProvider(widget.productId));
+      ref.invalidate(productDetailProvider(widget.productId));
+      if (mounted) {
+        setState(() {
+          _showForm = false;
+          _commentCtrl.clear();
+          _rating = 5;
+        });
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('شكراً على تقييمك!')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: AppColors.sale));
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final async = ref.watch(productReviewsProvider(widget.productId));
+    final authed = ref.watch(authProvider).isAuthenticated;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Divider(height: 28),
+        Row(
           children: [
-            const Divider(height: 28),
-            Text('التقييمات (${reviews.length})',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 12),
-            for (final Review r in reviews.take(5)) _ReviewTile(review: r),
+            async.maybeWhen(
+              data: (reviews) => Text('التقييمات (${reviews.length})',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+              orElse: () => const Text('التقييمات',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+            ),
+            const Spacer(),
+            if (authed)
+              TextButton.icon(
+                onPressed: () => setState(() => _showForm = !_showForm),
+                icon: Icon(_showForm ? Icons.close : Icons.rate_review_outlined, size: 18),
+                label: Text(_showForm ? 'إلغاء' : 'أضف تقييماً'),
+              ),
           ],
-        );
-      },
+        ),
+        if (_showForm) ...[
+          const SizedBox(height: 8),
+          RatingBar.builder(
+            initialRating: _rating,
+            minRating: 1,
+            direction: Axis.horizontal,
+            allowHalfRating: true,
+            itemCount: 5,
+            itemSize: 28,
+            unratedColor: AppColors.border,
+            itemBuilder: (_, __) => const Icon(Icons.star_rounded, color: AppColors.star),
+            onRatingUpdate: (v) => setState(() => _rating = v),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _commentCtrl,
+            maxLines: 3,
+            decoration: const InputDecoration(hintText: 'اكتبي تجربتك مع المنتج...'),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: ElevatedButton(
+              onPressed: _submitting ? null : _submit,
+              child: _submitting
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Text('إرسال التقييم'),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        async.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
+          ),
+          error: (_, __) => const SizedBox.shrink(),
+          data: (reviews) {
+            if (reviews.isEmpty && !_showForm) {
+              return Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  authed ? 'كن أول من يقيّم هذا المنتج' : 'سجّل الدخول لإضافة تقييم',
+                  style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                ),
+              );
+            }
+            return Column(
+              children: [for (final Review r in reviews.take(5)) _ReviewTile(review: r)],
+            );
+          },
+        ),
+      ],
     );
   }
 }

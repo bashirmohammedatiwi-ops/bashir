@@ -17,6 +17,8 @@ class ProductListingScreen extends ConsumerStatefulWidget {
   final bool isNew;
   final bool isBestSeller;
   final bool isPromo;
+  final bool isFeatured;
+  final String? concernSlug;
 
   const ProductListingScreen({
     super.key,
@@ -27,6 +29,8 @@ class ProductListingScreen extends ConsumerStatefulWidget {
     this.isNew = false,
     this.isBestSeller = false,
     this.isPromo = false,
+    this.isFeatured = false,
+    this.concernSlug,
   });
 
   @override
@@ -88,11 +92,14 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
             isNew: widget.isNew ? true : null,
             isBestSeller: widget.isBestSeller ? true : null,
             isPromo: widget.isPromo ? true : null,
+            isFeatured: widget.isFeatured ? true : null,
+            concernSlug: widget.concernSlug,
             sort: _sort == 'default' ? null : _sort,
             minPrice: _minPrice,
             maxPrice: _maxPrice,
             inStock: _inStock ? true : null,
             minRating: _minRating,
+            forceRefresh: reset,
           );
       setState(() {
         _items.addAll(result.items);
@@ -140,6 +147,8 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
       child: GridView.builder(
         controller: _scroll,
         padding: const EdgeInsets.all(12),
+        cacheExtent: 600,
+        addAutomaticKeepAlives: true,
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
           childAspectRatio: 0.6,

@@ -82,6 +82,7 @@ class HomeSection {
   final List<Brand> brands;
   final List<HomePackage> packages;
   final List<dynamic> items;
+  final List<Category> skinConcerns;
   final PromoStrip? promoStrip;
 
   const HomeSection({
@@ -101,6 +102,7 @@ class HomeSection {
     this.brands = const [],
     this.packages = const [],
     this.items = const [],
+    this.skinConcerns = const [],
     this.promoStrip,
   });
 
@@ -121,6 +123,7 @@ class HomeSection {
         brands: asList(json['brands']).map((e) => Brand.fromJson(asMap(e))).toList(),
         packages: asList(json['packages']).map((e) => HomePackage.fromJson(asMap(e))).toList(),
         items: asList(json['items']),
+        skinConcerns: asList(json['skinConcerns']).map((e) => Category.fromJson(asMap(e))).toList(),
         promoStrip: json['promoStrip'] != null
             ? PromoStrip.fromJson(asMap(json['promoStrip']))
             : null,

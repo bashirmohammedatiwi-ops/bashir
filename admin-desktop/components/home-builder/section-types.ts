@@ -13,13 +13,16 @@ export type SectionType =
   | "BRAND_SHOWCASE"
   | "PACKAGES"
   | "PROMO_STRIP"
-  | "CUSTOM_BANNER";
+  | "CUSTOM_BANNER"
+  | "SKIN_CONCERNS";
 
 export const SECTION_TYPES: {
   value: SectionType;
   label: string;
   group: string;
   description: string;
+  icon: string;
+  color: string;
   defaultPayload: Record<string, unknown>;
 }[] = [
   {
@@ -27,27 +30,71 @@ export const SECTION_TYPES: {
     label: "بنر رئيسي + فئات",
     group: "أعلى الصفحة",
     description: "سلايدر كامل مع دوائر الأقسام المتداخلة (Nice One)",
-    defaultPayload: { bannerIds: [], maxItems: 8, showQuickCategories: true },
+    icon: "🏠",
+    color: "#E1306C",
+    defaultPayload: { bannerIds: [], categoryIds: [], maxItems: 8 },
+  },
+  {
+    value: "PROMO_STRIP",
+    label: "شريط ترويجي",
+    group: "أعلى الصفحة",
+    description: "شريط ملون — شحن مجاني، عروض، إلخ",
+    icon: "📢",
+    color: "#FCE4EC",
+    defaultPayload: { text: "", backgroundColor: "#FCE4EC", link: "" },
+  },
+  {
+    value: "SKIN_CONCERNS",
+    label: "مشاكل البشرة",
+    group: "فئات",
+    description: "شرائح أفقية — حب الشباب، تصبغات، جفاف…",
+    icon: "✨",
+    color: "#FFF3E0",
+    defaultPayload: { concernIds: [], maxItems: 10 },
   },
   {
     value: "FLASH_SALE",
     label: "أقوى العروض",
     group: "منتجات",
     description: "سلايدر أفقي مع عدّاد تنازلي",
+    icon: "⚡",
+    color: "#FF5722",
     defaultPayload: { filter: "promo", showViewAll: true, limit: 12 },
+  },
+  {
+    value: "PRODUCT_LIST",
+    label: "سلايدر منتجات",
+    group: "منتجات",
+    description: "قائمة منتجات أفقية حسب فلتر أو اختيار يدوي",
+    icon: "🛍️",
+    color: "#E3F2FD",
+    defaultPayload: { filter: "bestSeller", showViewAll: true, limit: 12, productIds: [] },
+  },
+  {
+    value: "PACKAGES",
+    label: "الباقات",
+    group: "منتجات",
+    description: "باقات ومجموعات العناية",
+    icon: "🎁",
+    color: "#F3E5F5",
+    defaultPayload: { packageIds: [] },
   },
   {
     value: "BANNER_FULL",
     label: "بنر عريض",
     group: "بنرات",
     description: "بنر واحد بعرض الشاشة",
+    icon: "🖼️",
+    color: "#E8F5E9",
     defaultPayload: { bannerId: "" },
   },
   {
     value: "BANNER_GRID_2",
     label: "شبكة بنرات (2)",
     group: "بنرات",
-    description: "بنران جنباً إلى جنب",
+    description: "بنران جنباً إلى جنب مع نص خصم",
+    icon: "▦",
+    color: "#E0F7FA",
     defaultPayload: { bannerIds: [], items: [] },
   },
   {
@@ -55,20 +102,44 @@ export const SECTION_TYPES: {
     label: "شبكة بنرات (3)",
     group: "بنرات",
     description: "ثلاثة بنرات أفقية",
-    defaultPayload: { bannerIds: [] },
+    icon: "▦",
+    color: "#E0F7FA",
+    defaultPayload: { bannerIds: [], items: [] },
   },
   {
     value: "BANNER_CAROUSEL",
     label: "سلايدر بنرات",
     group: "بنرات",
     description: "بنرات تمرير أفقي (ماركات/عروض)",
+    icon: "🎠",
+    color: "#FFF8E1",
     defaultPayload: { bannerIds: [] },
+  },
+  {
+    value: "CUSTOM_BANNER",
+    label: "بنر مخصص",
+    group: "بنرات",
+    description: "بنر واحد قابل للتخصيص",
+    icon: "🎨",
+    color: "#F1F8E9",
+    defaultPayload: { bannerId: "" },
+  },
+  {
+    value: "CATEGORY_GRID",
+    label: "شبكة فئات (دوائر)",
+    group: "فئات",
+    description: "صف دوائر أفقي — بديل للفئات في الهيرو",
+    icon: "⭕",
+    color: "#E8EAF6",
+    defaultPayload: { categoryIds: [], maxItems: 8 },
   },
   {
     value: "CATEGORY_TILES",
     label: "بلاطات فئات",
     group: "فئات",
     description: "فئات بصور أفقية (هايلايتر، بلاشر…)",
+    icon: "🧩",
+    color: "#E1F5FE",
     defaultPayload: { categoryIds: [], maxItems: 6 },
   },
   {
@@ -76,20 +147,17 @@ export const SECTION_TYPES: {
     label: "أقسام المكياج",
     group: "فئات",
     description: "بطاقات وردية (وجه، شفاه، عيون)",
+    icon: "💄",
+    color: "#FCE4EC",
     defaultPayload: { categoryIds: [], accentColor: "#FCE4EC" },
-  },
-  {
-    value: "PRODUCT_LIST",
-    label: "سلايدر منتجات",
-    group: "منتجات",
-    description: "قائمة منتجات أفقية حسب فلتر",
-    defaultPayload: { filter: "bestSeller", showViewAll: true, limit: 12 },
   },
   {
     value: "FEATURED_BRANDS",
     label: "براندات (شعارات)",
     group: "براندات",
     description: "صف أفقي من شعارات البراندات",
+    icon: "🏷️",
+    color: "#FAFAFA",
     defaultPayload: { brandIds: [], layout: "logos" },
   },
   {
@@ -97,28 +165,9 @@ export const SECTION_TYPES: {
     label: "براندات (بطاقات)",
     group: "براندات",
     description: "بطاقات براند مع خصم",
+    icon: "💎",
+    color: "#E8F4FC",
     defaultPayload: { brandIds: [], layout: "cards" },
-  },
-  {
-    value: "PACKAGES",
-    label: "الباقات",
-    group: "منتجات",
-    description: "باقات ومجموعات العناية",
-    defaultPayload: { packageIds: [] },
-  },
-  {
-    value: "PROMO_STRIP",
-    label: "شريط ترويجي",
-    group: "أخرى",
-    description: "شريط نصي ملون",
-    defaultPayload: { text: "", backgroundColor: "#FCE4EC", link: "" },
-  },
-  {
-    value: "CUSTOM_BANNER",
-    label: "بنر مخصص",
-    group: "بنرات",
-    description: "بنر واحد قابل للتخصيص",
-    defaultPayload: { bannerId: "" },
   },
 ];
 
@@ -141,4 +190,16 @@ export const LINK_TYPES = [
 
 export function labelForType(type: string) {
   return SECTION_TYPES.find((t) => t.value === type)?.label ?? type;
+}
+
+export function metaForType(type: string) {
+  return SECTION_TYPES.find((t) => t.value === type);
+}
+
+export function normalizePayload(type: SectionType, payload: Record<string, unknown>) {
+  const copy = { ...payload };
+  if (type === "MAKEUP_CATEGORIES" && copy.accentColor && !copy.backgroundColor) {
+    copy.backgroundColor = copy.accentColor;
+  }
+  return copy;
 }

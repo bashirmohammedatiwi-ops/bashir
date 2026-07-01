@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/cache/api_cache.dart';
+import '../../core/config/app_config.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/json.dart';
 import '../models/address.dart';
@@ -8,6 +10,7 @@ import '../models/brand.dart';
 import '../models/category.dart';
 import '../models/coupon.dart';
 import '../models/home_feed.dart';
+import '../models/loyalty_summary.dart';
 import '../models/notification.dart';
 import '../models/order.dart';
 import '../models/paginated.dart';
@@ -26,7 +29,8 @@ class ApiException implements Exception {
 /// واجهة موحّدة لكل نقاط الاتصال مع خادم لوحة التحكم.
 class ApiService {
   final Dio _dio;
-  ApiService(this._dio);
+  final ApiCache _cache;
+  ApiService(this._dio, this._cache);
 
   // ---- helpers ----
   dynamic _data(Response r) {
@@ -54,35 +58,69 @@ class ApiService {
   }
 
   // ---- HOME ----
-  Future<HomeFeed> getHome() async {
+  Future<HomeFeed> getHome({bool forceRefresh = false}) async {
     try {
-      final r = await _dio.get('/home', options: Options(extra: {'auth': false}));
-      return HomeFeed.fromJson(asMap(_data(r)));
+      final raw = await _cache.getOrFetch<Map<String, dynamic>>(
+        key: 'home_v1',
+        ttl: AppConfig.homeCacheTtl,
+        forceRefresh: forceRefresh,
+        fetch: () async {
+          final r = await _dio.get('/home', options: Options(extra: {'auth': false}));
+          return asMap(_data(r));
+        },
+        parse: (json) => asMap(json),
+        serialize: (m) => m,
+      );
+      return HomeFeed.fromJson(raw);
     } catch (e) {
       _throw(e);
     }
   }
 
   // ---- CATEGORIES ----
-  Future<List<Category>> getCategories() async {
+  Future<List<Category>> getCategories({bool forceRefresh = false}) async {
     try {
-      final r = await _dio.get('/categories',
-          queryParameters: {'all': '1'}, options: Options(extra: {'auth': false}));
-      final data = _data(r);
-      return asList(data).map(Category.fromJson).toList();
+      final raw = await _cache.getOrFetch<List<dynamic>>(
+        key: 'categories_all_v1',
+        ttl: AppConfig.catalogCacheTtl,
+        forceRefresh: forceRefresh,
+        fetch: () async {
+          final r = await _dio.get('/categories',
+              queryParameters: {'all': '1'}, options: Options(extra: {'auth': false}));
+          return asList(_data(r));
+        },
+        parse: (json) => asList(json),
+        serialize: (list) => list,
+      );
+      return raw.map((e) => Category.fromJson(asMap(e))).toList();
     } catch (e) {
       _throw(e);
     }
   }
 
   // ---- BRANDS ----
-  Future<List<Brand>> getBrands({bool featured = false, bool all = true}) async {
+  Future<List<Brand>> getBrands({
+    bool featured = false,
+    bool all = true,
+    bool forceRefresh = false,
+  }) async {
     try {
-      final r = await _dio.get('/brands', queryParameters: {
-        if (featured) 'featured': '1',
-        if (all) 'all': '1',
-      }, options: Options(extra: {'auth': false}));
-      return asList(_data(r)).map(Brand.fromJson).toList();
+      final key = 'brands_f${featured ? 1 : 0}_a${all ? 1 : 0}';
+      final raw = await _cache.getOrFetch<List<dynamic>>(
+        key: key,
+        ttl: AppConfig.catalogCacheTtl,
+        forceRefresh: forceRefresh,
+        fetch: () async {
+          final r = await _dio.get('/brands', queryParameters: {
+            if (featured) 'featured': '1',
+            if (all) 'all': '1',
+          }, options: Options(extra: {'auth': false}));
+          return asList(_data(r));
+        },
+        parse: (json) => asList(json),
+        serialize: (list) => list,
+      );
+      return raw.map((e) => Brand.fromJson(asMap(e))).toList();
     } catch (e) {
       _throw(e);
     }
@@ -104,38 +142,115 @@ class ApiService {
     bool? isNew,
     bool? isBestSeller,
     bool? isPromo,
+    String? concernSlug,
     bool? isFeatured,
     bool lite = true,
+    bool forceRefresh = false,
   }) async {
     try {
-      final r = await _dio.get('/products', queryParameters: {
-        'page': page,
-        'limit': limit,
-        'lite': lite,
-        if (search != null && search.isNotEmpty) 'search': search,
-        if (categoryId != null) 'categoryId': categoryId,
-        if (subcategoryId != null) 'subcategoryId': subcategoryId,
-        if (brandId != null) 'brandId': brandId,
-        if (sort != null) 'sort': sort,
-        if (minPrice != null) 'minPrice': minPrice,
-        if (maxPrice != null) 'maxPrice': maxPrice,
-        if (minRating != null) 'minRating': minRating,
-        if (inStock == true) 'inStock': 'true',
-        if (isNew == true) 'isNew': true,
-        if (isBestSeller == true) 'isBestSeller': true,
-        if (isPromo == true) 'isPromo': true,
-        if (isFeatured == true) 'isFeatured': true,
-      }, options: Options(extra: {'auth': false}));
-      return Paginated.fromJson(_body(r), Product.fromJson);
+      final cacheKey = _productsCacheKey(
+        page: page,
+        limit: limit,
+        search: search,
+        categoryId: categoryId,
+        subcategoryId: subcategoryId,
+        brandId: brandId,
+        sort: sort,
+        isNew: isNew,
+        isBestSeller: isBestSeller,
+        isPromo: isPromo,
+        concernSlug: concernSlug,
+        isFeatured: isFeatured,
+      );
+
+      Future<Map<String, dynamic>> fetch() async {
+        final r = await _dio.get('/products', queryParameters: {
+          'page': page,
+          'limit': limit,
+          'lite': lite,
+          if (search != null && search.isNotEmpty) 'search': search,
+          if (categoryId != null) 'categoryId': categoryId,
+          if (subcategoryId != null) 'subcategoryId': subcategoryId,
+          if (brandId != null) 'brandId': brandId,
+          if (sort != null) 'sort': sort,
+          if (minPrice != null) 'minPrice': minPrice,
+          if (maxPrice != null) 'maxPrice': maxPrice,
+          if (minRating != null) 'minRating': minRating,
+          if (inStock == true) 'inStock': 'true',
+          if (isNew == true) 'isNew': true,
+          if (isBestSeller == true) 'isBestSeller': true,
+          if (isPromo == true) 'isPromo': true,
+          if (isFeatured == true) 'isFeatured': true,
+          if (concernSlug != null && concernSlug.isNotEmpty) 'concernSlug': concernSlug,
+        }, options: Options(extra: {'auth': false}));
+        return _body(r);
+      }
+
+      if (cacheKey != null) {
+        final raw = await _cache.getOrFetch<Map<String, dynamic>>(
+          key: cacheKey,
+          ttl: AppConfig.listingCacheTtl,
+          forceRefresh: forceRefresh,
+          fetch: fetch,
+          parse: (json) => asMap(json),
+          serialize: (m) => m,
+        );
+        return Paginated.fromJson(raw, Product.fromJson);
+      }
+
+      return Paginated.fromJson(await fetch(), Product.fromJson);
     } catch (e) {
       _throw(e);
     }
   }
 
-  Future<Product> getProduct(String idOrSlug) async {
+  String? _productsCacheKey({
+    required int page,
+    required int limit,
+    String? search,
+    String? categoryId,
+    String? subcategoryId,
+    String? brandId,
+    String? sort,
+    bool? isNew,
+    bool? isBestSeller,
+    bool? isPromo,
+    String? concernSlug,
+    bool? isFeatured,
+  }) {
+    if (page != 1) return null;
+    if (search != null && search.isNotEmpty) return null;
+    final parts = <String>[
+      'products_v1',
+      'l$limit',
+      if (categoryId != null) 'c$categoryId',
+      if (subcategoryId != null) 'sc$subcategoryId',
+      if (brandId != null) 'b$brandId',
+      if (sort != null) 's$sort',
+      if (isNew == true) 'new',
+      if (isBestSeller == true) 'best',
+      if (isPromo == true) 'promo',
+      if (isFeatured == true) 'feat',
+      if (concernSlug != null && concernSlug.isNotEmpty) 'cn$concernSlug',
+    ];
+    return parts.join('_');
+  }
+
+  Future<Product> getProduct(String idOrSlug, {bool forceRefresh = false}) async {
     try {
-      final r = await _dio.get('/products/$idOrSlug', options: Options(extra: {'auth': false}));
-      return Product.fromJson(asMap(_data(r)));
+      final raw = await _cache.getOrFetch<Map<String, dynamic>>(
+        key: 'product_v1_$idOrSlug',
+        ttl: AppConfig.productCacheTtl,
+        forceRefresh: forceRefresh,
+        fetch: () async {
+          final r =
+              await _dio.get('/products/$idOrSlug', options: Options(extra: {'auth': false}));
+          return asMap(_data(r));
+        },
+        parse: (json) => asMap(json),
+        serialize: (m) => m,
+      );
+      return Product.fromJson(raw);
     } catch (e) {
       _throw(e);
     }
@@ -215,6 +330,20 @@ class ApiService {
     }
   }
 
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await _dio.post('/auth/change-password', data: {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+      });
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
   Future<void> logout(String refreshToken) async {
     try {
       await _dio.post('/auth/logout', data: {'refreshToken': refreshToken});
@@ -289,15 +418,55 @@ class ApiService {
     }
   }
 
-  Future<int> shippingQuote({String? governorate, String? area, int? subtotal}) async {
+  Future<int> shippingQuote({
+    String? governorate,
+    String? area,
+    int? subtotal,
+    String deliveryOption = 'STANDARD',
+  }) async {
     try {
       final r = await _dio.get('/shipping/quote', queryParameters: {
         if (governorate != null) 'governorate': governorate,
         if (area != null) 'area': area,
         if (subtotal != null) 'subtotal': subtotal,
-        'deliveryOption': 'STANDARD',
+        'deliveryOption': deliveryOption,
       }, options: Options(extra: {'auth': false}));
       return asInt(asMap(_data(r))['fee']);
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  // ---- LOYALTY ----
+  Future<LoyaltySummary> getLoyalty() async {
+    try {
+      final r = await _dio.get('/loyalty');
+      return LoyaltySummary.fromJson(asMap(_data(r)));
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  // ---- PACKAGES ----
+  Future<Map<String, dynamic>> getPackage(String idOrSlug) async {
+    try {
+      final r = await _dio.get('/packages/$idOrSlug', options: Options(extra: {'auth': false}));
+      return asMap(_data(r));
+    } catch (e) {
+      try {
+        final r = await _dio.get('/packages/slug/$idOrSlug', options: Options(extra: {'auth': false}));
+        return asMap(_data(r));
+      } catch (e2) {
+        _throw(e);
+      }
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getPackages() async {
+    try {
+      final r = await _dio.get('/packages', queryParameters: {'all': '1', 'lite': '1'},
+          options: Options(extra: {'auth': false}));
+      return asList(_data(r)).map((e) => asMap(e)).toList();
     } catch (e) {
       _throw(e);
     }
@@ -342,11 +511,12 @@ class ApiService {
     String? notes,
     String deliveryOption = 'STANDARD',
     int loyaltySpent = 0,
+    String paymentMethod = 'COD',
   }) async {
     try {
       final r = await _dio.post('/orders', data: {
         'items': items,
-        'paymentMethod': 'COD',
+        'paymentMethod': paymentMethod,
         'deliveryOption': deliveryOption,
         if (addressId != null) 'addressId': addressId,
         if (couponCode != null && couponCode.isNotEmpty) 'couponCode': couponCode,
@@ -388,6 +558,25 @@ class ApiService {
       await _dio.patch('/notifications/read-all');
     } catch (_) {}
   }
+
+  Future<void> registerDevice({required String token, required String platform}) async {
+    try {
+      await _dio.post('/notifications/devices', data: {
+        'token': token,
+        'platform': platform,
+      });
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  Future<void> unregisterDevice({required String token}) async {
+    try {
+      await _dio.delete('/notifications/devices', data: {'token': token});
+    } catch (_) {}
+  }
 }
 
-final apiServiceProvider = Provider<ApiService>((ref) => ApiService(ref.read(dioProvider)));
+final apiServiceProvider = Provider<ApiService>(
+  (ref) => ApiService(ref.read(dioProvider), ref.read(apiCacheProvider)),
+);

@@ -29,5 +29,8 @@ if [ "$RUN_SEED" = "1" ]; then
   npx tsx prisma/seed.ts || echo "[entrypoint] Seed skipped"
 fi
 
+echo "[entrypoint] Ensuring product placeholder images..."
+npx tsx prisma/scripts/backfill-product-images.ts || echo "[entrypoint] Image backfill skipped"
+
 echo "[entrypoint] Starting API on port ${PORT:-3000}..."
 exec node dist/main.js

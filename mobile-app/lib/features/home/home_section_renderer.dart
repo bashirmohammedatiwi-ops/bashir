@@ -9,60 +9,96 @@ import 'sections/category_sections.dart';
 import 'sections/hero_section.dart';
 import 'sections/product_sections.dart';
 import 'sections/promo_sections.dart';
+import 'sections/skin_concerns_strip.dart';
 
 export 'sections/hero_section.dart' show HeroHomeSection;
 
 /// يعرض قسماً واحداً من الصفحة الرئيسية حسب نوعه.
 class HomeSectionWidget extends ConsumerWidget {
   final HomeSection section;
-  const HomeSectionWidget({super.key, required this.section});
+  final bool isFirstAfterHero;
+  const HomeSectionWidget({
+    super.key,
+    required this.section,
+    this.isFirstAfterHero = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    switch (section.type) {
-      case 'HERO_BANNER':
-        return HeroHomeSection(section: section);
-      case 'CATEGORY_GRID':
-        return CategoryGridSection(section: section);
-      case 'CATEGORY_TILES':
-        return CategoryTilesSection(section: section);
-      case 'MAKEUP_CATEGORIES':
-        return MakeupCategoriesSection(section: section);
-      case 'BANNER_FULL':
-      case 'CUSTOM_BANNER':
-        return BannerFullSection(section: section);
-      case 'BANNER_GRID_2':
-        return BannerGridSection(section: section, columns: 2);
-      case 'BANNER_GRID_3':
-        return BannerGridSection(section: section, columns: 3);
-      case 'BANNER_CAROUSEL':
-        return BannerCarouselSection(section: section);
-      case 'PRODUCT_LIST':
-        return ProductCarouselSection(section: section);
-      case 'FLASH_SALE':
-        return FlashSaleHomeSection(section: section);
-      case 'FEATURED_BRANDS':
-      case 'BRAND_SHOWCASE':
-        return BrandHomeSection(section: section);
-      case 'PACKAGES':
-        return PackagesHomeSection(section: section);
-      case 'PROMO_STRIP':
-        return PromoStripSection(section: section);
-      default:
-        return const SizedBox.shrink();
+    if (section.type == 'HERO_BANNER') {
+      return HeroHomeSection(section: section);
     }
+
+    final child = switch (section.type) {
+      'CATEGORY_GRID' => CategoryGridSection(section: section),
+      'CATEGORY_TILES' => CategoryTilesSection(section: section),
+      'MAKEUP_CATEGORIES' => MakeupCategoriesSection(section: section),
+      'BANNER_FULL' || 'CUSTOM_BANNER' => BannerFullSection(section: section),
+      'BANNER_GRID_2' => BannerGridSection(section: section, columns: 2),
+      'BANNER_GRID_3' => BannerGridSection(section: section, columns: 3),
+      'BANNER_CAROUSEL' => BannerCarouselSection(section: section),
+      'PRODUCT_LIST' => ProductCarouselSection(section: section, compactTop: isFirstAfterHero),
+      'FLASH_SALE' => FlashSaleHomeSection(section: section, compactTop: isFirstAfterHero),
+      'FEATURED_BRANDS' || 'BRAND_SHOWCASE' => BrandHomeSection(section: section, compactTop: isFirstAfterHero),
+      'PACKAGES' => PackagesHomeSection(section: section, compactTop: isFirstAfterHero),
+      'PROMO_STRIP' => PromoStripSection(section: section),
+      'SKIN_CONCERNS' => SkinConcernsStrip(
+          concerns: section.skinConcerns,
+          title: section.title,
+          subtitle: section.subtitle,
+        ),
+      _ => const SizedBox.shrink(),
+    };
+
+    if (section.type == 'PROMO_STRIP' || section.type == 'SKIN_CONCERNS') {
+      return Padding(
+        padding: EdgeInsets.only(top: isFirstAfterHero ? 2 : 8, bottom: 4),
+        child: child,
+      );
+    }
+
+    return Padding(
+      padding: EdgeInsets.only(top: isFirstAfterHero ? 2 : 10, bottom: 4),
+      child: child,
+    );
   }
 }
 
-/// يبني قائمة أقسام من API أو fallback للتخطيط القديم.
+List<HomeSection> _orderedSections(List<HomeSection> sections) {
+  final copy = List<HomeSection>.from(sections);
+  copy.sort((a, b) => a.position.compareTo(b.position));
+  return copy;
+}
+
+/// يبني قائمة أقسام من API — يحترم ترتيب لوحة التحكم.
 List<Widget> buildHomeSections(HomeFeed feed) {
-  if (feed.sections.isNotEmpty) {
-    return [
-      for (final s in feed.sections) HomeSectionWidget(section: s),
-      const SizedBox(height: 24),
-    ];
+  if (feed.sections.isEmpty) return _legacySections(feed);
+
+  final widgets = <Widget>[];
+  var heroHasCategories = false;
+  var seenHero = false;
+  var firstAfterHero = true;
+
+  for (final s in _orderedSections(feed.sections)) {
+    if (s.type == 'CATEGORY_GRID' && heroHasCategories) continue;
+
+    if (s.type == 'HERO_BANNER') {
+      heroHasCategories = s.categories.isNotEmpty;
+      seenHero = true;
+      firstAfterHero = false;
+      widgets.add(HomeSectionWidget(section: s));
+      continue;
+    }
+
+    widgets.add(HomeSectionWidget(
+      section: s,
+      isFirstAfterHero: seenHero && firstAfterHero,
+    ));
+    if (seenHero) firstAfterHero = false;
   }
-  return _legacySections(feed);
+
+  widgets.add(const SizedBox(height: 20));
+  return widgets;
 }
 
 List<Widget> _legacySections(HomeFeed feed) {
@@ -76,15 +112,21 @@ List<Widget> _legacySections(HomeFeed feed) {
           categories: feed.categories,
         ),
       ),
+    if (feed.skinConcerns.isNotEmpty)
+      SkinConcernsStrip(concerns: feed.skinConcerns, title: 'تسوّق حسب مشكلتك'),
     if (feed.flashSale.products.isNotEmpty)
-      FlashSaleHomeSection(
-        section: HomeSection(
-          id: 'legacy-flash',
-          type: 'FLASH_SALE',
-          title: 'أقوى العروض',
-          products: feed.flashSale.products,
-          endsAt: feed.flashSale.endsAt,
-          viewAllQuery: 'isPromo=1&title=أقوى العروض',
+      Padding(
+        padding: const EdgeInsets.only(top: 4),
+        child: FlashSaleHomeSection(
+          section: HomeSection(
+            id: 'legacy-flash',
+            type: 'FLASH_SALE',
+            title: 'أقوى العروض',
+            products: feed.flashSale.products,
+            endsAt: feed.flashSale.endsAt,
+            viewAllQuery: 'isPromo=1&title=أقوى العروض',
+          ),
+          compactTop: true,
         ),
       ),
     if (feed.bestSellers.isNotEmpty)
@@ -97,6 +139,15 @@ List<Widget> _legacySections(HomeFeed feed) {
           viewAllQuery: 'isBestSeller=1&title=الأكثر مبيعاً',
         ),
       ),
+    if (feed.brands.isNotEmpty)
+      BrandHomeSection(
+        section: HomeSection(
+          id: 'legacy-brands',
+          type: 'FEATURED_BRANDS',
+          title: 'العلامات التجارية',
+          brands: feed.brands,
+        ),
+      ),
     if (feed.newArrivals.isNotEmpty)
       ProductCarouselSection(
         section: HomeSection(
@@ -105,15 +156,6 @@ List<Widget> _legacySections(HomeFeed feed) {
           title: 'وصل حديثاً',
           products: feed.newArrivals,
           viewAllQuery: 'isNew=1&title=وصل حديثاً',
-        ),
-      ),
-    if (feed.brands.isNotEmpty)
-      BrandHomeSection(
-        section: HomeSection(
-          id: 'legacy-brands',
-          type: 'FEATURED_BRANDS',
-          title: 'العلامات التجارية',
-          brands: feed.brands,
         ),
       ),
     if (feed.featured.isNotEmpty)
@@ -126,6 +168,6 @@ List<Widget> _legacySections(HomeFeed feed) {
           viewAllQuery: 'isFeatured=1&title=منتجات مختارة',
         ),
       ),
-    const SizedBox(height: 24),
+    const SizedBox(height: 20),
   ];
 }

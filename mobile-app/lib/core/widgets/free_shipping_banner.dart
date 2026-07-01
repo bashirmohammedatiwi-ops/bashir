@@ -6,7 +6,13 @@ import '../../core/utils/formatters.dart';
 class FreeShippingBanner extends StatelessWidget {
   final int subtotal;
   final int threshold;
-  const FreeShippingBanner({super.key, required this.subtotal, required this.threshold});
+  final VoidCallback? onAddMore;
+  const FreeShippingBanner({
+    super.key,
+    required this.subtotal,
+    required this.threshold,
+    this.onAddMore,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -40,9 +46,9 @@ class FreeShippingBanner extends StatelessWidget {
                   ),
                 ),
               ),
-              if (!achieved)
+              if (!achieved && onAddMore != null)
                 TextButton(
-                  onPressed: () {},
+                  onPressed: onAddMore,
                   style: TextButton.styleFrom(
                     foregroundColor: AppColors.primary,
                     padding: EdgeInsets.zero,

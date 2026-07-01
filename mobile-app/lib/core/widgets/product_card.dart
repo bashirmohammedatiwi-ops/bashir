@@ -14,12 +14,14 @@ class ProductCard extends ConsumerWidget {
   final Product product;
   final double? width;
   final bool showPromoBadge;
+  final bool showRating;
   final String? flashTimer;
   const ProductCard({
     super.key,
     required this.product,
     this.width,
     this.showPromoBadge = false,
+    this.showRating = false,
     this.flashTimer,
   });
 
@@ -33,8 +35,15 @@ class ProductCard extends ConsumerWidget {
         width: width,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFEFEFEF)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -46,7 +55,13 @@ class ProductCard extends ConsumerWidget {
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(9)),
                   child: AspectRatio(
                     aspectRatio: 1,
-                    child: AppNetworkImage(url: product.coverUrl, fit: BoxFit.contain),
+                    child: product.coverUrl.isNotEmpty
+                        ? AppNetworkImage(url: product.coverUrl, width: width ?? 148, fit: BoxFit.contain)
+                        : _ProductImagePlaceholder(
+                            label: product.brandName.isNotEmpty
+                                ? product.brandName
+                                : product.name,
+                          ),
                   ),
                 ),
                 Positioned(top: 5, left: 5, child: _WishButton(product: product, wished: wished)),
@@ -101,6 +116,24 @@ class ProductCard extends ConsumerWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, height: 1.2),
                   ),
+                  if (showRating && product.rating > 0) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Icon(Icons.star_rounded, size: 12, color: AppColors.star),
+                        const SizedBox(width: 2),
+                        Text(
+                          product.rating.toStringAsFixed(1),
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                        ),
+                        if (product.reviewCount > 0)
+                          Text(
+                            ' (${product.reviewCount})',
+                            style: TextStyle(fontSize: 9, color: Colors.grey.shade500),
+                          ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 3),
                   Row(
                     children: [
@@ -133,6 +166,38 @@ class ProductCard extends ConsumerWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProductImagePlaceholder extends StatelessWidget {
+  final String label;
+  const _ProductImagePlaceholder({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final initial = label.trim().isNotEmpty ? label.trim()[0].toUpperCase() : '?';
+    return Container(
+      color: const Color(0xFFF7F7F7),
+      alignment: Alignment.center,
+      child: Container(
+        width: 48,
+        height: 48,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          border: Border.all(color: AppColors.primaryLight, width: 2),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          initial,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppColors.primary,
+          ),
         ),
       ),
     );

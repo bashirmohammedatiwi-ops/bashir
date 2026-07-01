@@ -2,20 +2,82 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/config/app_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/product_card.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
-import '../catalog/catalog_providers.dart';
+import '../../data/models/product.dart';
+import '../../data/services/api_service.dart';
 
-/// تبويب العروض المركزي — مثل زر Nice One الأوسط.
-class OffersScreen extends ConsumerWidget {
+/// تبويب العروض — منتجات promo من API مع تحميل تدريجي.
+class OffersScreen extends ConsumerStatefulWidget {
   const OffersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final feed = ref.watch(homeFeedProvider);
+  ConsumerState<OffersScreen> createState() => _OffersScreenState();
+}
 
+class _OffersScreenState extends ConsumerState<OffersScreen> {
+  final _scroll = ScrollController();
+  final _items = <Product>[];
+  int _page = 1;
+  bool _loading = false;
+  bool _hasMore = true;
+  bool _firstLoad = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
+    _scroll.addListener(() {
+      if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 300) {
+        _fetch();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  Future<void> _fetch({bool reset = false}) async {
+    if (_loading) return;
+    if (reset) {
+      _page = 1;
+      _hasMore = true;
+      _items.clear();
+      _firstLoad = true;
+    }
+    if (!_hasMore) return;
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final result = await ref.read(apiServiceProvider).getProducts(
+            page: _page,
+            limit: AppConfig.pageSize,
+            isPromo: true,
+          );
+      setState(() {
+        _items.addAll(result.items);
+        _hasMore = result.hasNext;
+        _page++;
+        _firstLoad = false;
+      });
+    } catch (e) {
+      setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.scaffold,
       appBar: AppBar(
@@ -27,37 +89,49 @@ class OffersScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: feed.when(
-        loading: () => const ProductGridSkeleton(count: 6),
-        error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(homeFeedProvider)),
-        data: (data) {
-          final products = data.flashSale.products;
-          if (products.isEmpty) {
-            return EmptyState(
-              icon: Icons.local_offer_outlined,
-              title: 'لا توجد عروض حالياً',
-              subtitle: 'تابعنا لمعرفة أحدث التخفيضات',
-              action: ElevatedButton(
-                onPressed: () => context.push('/products?isPromo=1&title=العروض'),
-                child: const Text('تصفّح المنتجات'),
-              ),
-            );
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_firstLoad && _loading) {
+      return const ProductGridSkeleton(count: 6);
+    }
+    if (_error != null && _items.isEmpty) {
+      return ErrorView(message: _error!, onRetry: () => _fetch(reset: true));
+    }
+    if (_items.isEmpty) {
+      return EmptyState(
+        icon: Icons.local_offer_outlined,
+        title: 'لا توجد عروض حالياً',
+        subtitle: 'تابعينا لمعرفة أحدث التخفيضات',
+        action: ElevatedButton(
+          onPressed: () => context.push('/products?isPromo=1&title=العروض'),
+          child: const Text('تصفّح المنتجات'),
+        ),
+      );
+    }
+    return RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: () => _fetch(reset: true),
+      child: GridView.builder(
+        controller: _scroll,
+        padding: const EdgeInsets.all(12),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.6,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemCount: _items.length + (_hasMore ? 1 : 0),
+        itemBuilder: (_, i) {
+          if (i >= _items.length) {
+            return const Center(child: Padding(
+              padding: EdgeInsets.all(16),
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ));
           }
-          return RefreshIndicator(
-            color: AppColors.primary,
-            onRefresh: () async => ref.invalidate(homeFeedProvider),
-            child: GridView.builder(
-              padding: const EdgeInsets.all(12),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.6,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: products.length,
-              itemBuilder: (_, i) => ProductCard(product: products[i], showPromoBadge: true),
-            ),
-          );
+          return ProductCard(product: _items[i], showPromoBadge: true);
         },
       ),
     );
