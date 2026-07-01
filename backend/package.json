@@ -11,11 +11,11 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
-    "seed": "tsx prisma/seed.ts",
-    "backfill:images": "tsx prisma/scripts/backfill-product-images.ts"
+    "seed": "npx tsx prisma/seed.ts",
+    "backfill:images": "npx tsx prisma/scripts/backfill-product-images.ts"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "npx tsx prisma/seed.ts"
   },
   "keywords": [
     "nestjs",
@@ -58,6 +58,7 @@
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "sharp": "^0.34.5",
+    "tsx": "^4.22.3",
     "uuid": "^14.0.0"
   },
   "devDependencies": {
@@ -68,7 +69,6 @@
     "@types/uuid": "^10.0.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "tsx": "^4.22.3",
     "typescript": "^6.0.3"
   }
 }

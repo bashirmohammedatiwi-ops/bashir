@@ -22,6 +22,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _scroll = ScrollController();
   String? _precachedFor;
   bool _compactHeader = false;
+  bool _solidHeader = false;
 
   @override
   void initState() {
@@ -30,9 +31,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _onScroll() {
-    final compact = _scroll.hasClients && _scroll.offset > 200;
-    if (compact != _compactHeader && mounted) {
-      setState(() => _compactHeader = compact);
+    if (!_scroll.hasClients || !mounted) return;
+    final offset = _scroll.offset;
+    final compact = offset > 72;
+    final solid = offset > 8;
+    if (compact != _compactHeader || solid != _solidHeader) {
+      setState(() {
+        _compactHeader = compact;
+        _solidHeader = solid;
+      });
     }
   }
 
@@ -47,15 +54,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final feed = ref.watch(homeFeedProvider);
     final topPad = MediaQuery.paddingOf(context).top;
+    final headerH = topPad + (_compactHeader ? 54.0 : 118.0);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: _compactHeader
+      value: _solidHeader
           ? SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent)
           : SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent),
       child: Scaffold(
         backgroundColor: Colors.white,
         body: Stack(
-          clipBehavior: Clip.none,
+          fit: StackFit.expand,
           children: [
             feed.when(
               loading: () => const _HomeLoading(),
@@ -73,22 +81,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     if (mounted) precacheHomeFeedImages(context, data);
                   });
                 }
+                final sections = buildHomeSections(data);
                 return RefreshIndicator(
                   color: AppColors.primary,
-                  edgeOffset: topPad + (_compactHeader ? 56 : 120),
+                  edgeOffset: headerH,
                   onRefresh: () async {
                     await ref.read(apiCacheProvider).remove('home_v1');
                     ref.invalidate(homeFeedProvider);
                     await ref.read(homeFeedProvider.future);
                   },
-                  child: ListView(
+                  child: CustomScrollView(
                     controller: _scroll,
-                    padding: EdgeInsets.zero,
                     cacheExtent: 800,
                     physics: const AlwaysScrollableScrollPhysics(
                       parent: BouncingScrollPhysics(),
                     ),
-                    children: buildHomeSections(data),
+                    slivers: [
+                      for (final section in sections)
+                        SliverToBoxAdapter(child: section),
+                    ],
                   ),
                 );
               },
@@ -97,20 +108,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               top: 0,
               left: 0,
               right: 0,
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOutCubic,
-                decoration: BoxDecoration(
-                  color: _compactHeader ? Colors.white.withValues(alpha: 0.98) : Colors.transparent,
-                  boxShadow: _compactHeader
-                      ? [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, 2))]
-                      : null,
-                ),
+              child: Material(
+                color: _solidHeader ? Colors.white : Colors.transparent,
+                elevation: _solidHeader ? 2 : 0,
+                shadowColor: Colors.black26,
                 child: Padding(
                   padding: EdgeInsets.only(top: topPad),
                   child: NiceOneHeader(
                     compact: _compactHeader,
-                    onLightBackground: _compactHeader,
+                    onLightBackground: _solidHeader,
                   ),
                 ),
               ),

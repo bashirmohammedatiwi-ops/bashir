@@ -14,7 +14,7 @@ echo "==> Applying database migrations..."
 $COMPOSE exec -T api npx prisma migrate deploy
 
 echo "==> Backfilling product placeholder images..."
-$COMPOSE exec -T api npm run backfill:images
+$COMPOSE exec -T api npx tsx prisma/scripts/backfill-product-images.ts
 
 echo "==> Restarting API..."
 $COMPOSE restart api

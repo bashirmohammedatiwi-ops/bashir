@@ -1,5 +1,4 @@
 import '../../core/utils/json.dart';
-import '../../core/config/app_config.dart';
 import 'media.dart';
 import 'brand.dart';
 import 'category.dart';
@@ -178,12 +177,8 @@ class Product {
     return '';
   }
 
-  /// رابط العرض — مع صورة بديلة من السيرفر إن لزم.
-  String get displayCoverUrl {
-    final url = coverUrl;
-    if (url.isNotEmpty) return url;
-    return AppConfig.productPlaceholderUrl;
-  }
+  /// رابط العرض — فقط من بيانات المنتج (بدون placeholder شبكي).
+  String get displayCoverUrl => coverUrl;
   List<String> get galleryUrls =>
       images.map((e) => e.fullUrl).where((e) => e.isNotEmpty).toList();
   bool get inStock => stock > 0;

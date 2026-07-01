@@ -55,17 +55,11 @@ class ProductCard extends ConsumerWidget {
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(9)),
                   child: AspectRatio(
                     aspectRatio: 1,
-                    child: product.displayCoverUrl.isNotEmpty
-                        ? AppNetworkImage(
-                            url: product.displayCoverUrl,
-                            width: width ?? 148,
-                            fit: BoxFit.contain,
-                          )
-                        : _ProductImagePlaceholder(
-                            label: product.brandName.isNotEmpty
-                                ? product.brandName
-                                : product.name,
-                          ),
+                    child: ProductCoverImage(
+                      url: product.coverUrl,
+                      width: width ?? 148,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
                 Positioned(top: 5, left: 5, child: _WishButton(product: product, wished: wished)),
@@ -172,39 +166,7 @@ class ProductCard extends ConsumerWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ProductImagePlaceholder extends StatelessWidget {
-  final String label;
-  const _ProductImagePlaceholder({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final initial = label.trim().isNotEmpty ? label.trim()[0].toUpperCase() : '?';
-    return Container(
-      color: const Color(0xFFF7F7F7),
-      alignment: Alignment.center,
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-          border: Border.all(color: AppColors.primaryLight, width: 2),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          initial,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: AppColors.primary,
-          ),
-        ),
-      ),
-    );
+      );
   }
 }
 

@@ -58,7 +58,7 @@ class HomeSectionWidget extends ConsumerWidget {
     }
 
     return Padding(
-      padding: EdgeInsets.only(top: isFirstAfterHero ? 2 : 10, bottom: 4),
+      padding: EdgeInsets.only(top: isFirstAfterHero ? 8 : 10, bottom: 4),
       child: child,
     );
   }
@@ -78,18 +78,21 @@ List<Widget> buildHomeSections(HomeFeed feed) {
   var heroHasCategories = false;
   var seenHero = false;
   var firstAfterHero = true;
+  var skipExtraCategories = false;
 
   for (final s in _orderedSections(feed.sections)) {
-    if (s.type == 'CATEGORY_GRID' && heroHasCategories) continue;
-    if ((s.type == 'CATEGORY_TILES' || s.type == 'MAKEUP_CATEGORIES') && heroHasCategories) {
-      continue;
-    }
-
     if (s.type == 'HERO_BANNER') {
       heroHasCategories = s.categories.isNotEmpty;
+      if (heroHasCategories) skipExtraCategories = true;
       seenHero = true;
       firstAfterHero = false;
       widgets.add(HomeSectionWidget(section: s));
+      continue;
+    }
+
+    if (skipExtraCategories && _isCategorySectionType(s.type)) continue;
+    if (s.type == 'CATEGORY_GRID' && heroHasCategories) continue;
+    if ((s.type == 'CATEGORY_TILES' || s.type == 'MAKEUP_CATEGORIES') && heroHasCategories) {
       continue;
     }
 
@@ -102,6 +105,12 @@ List<Widget> buildHomeSections(HomeFeed feed) {
 
   widgets.add(const SizedBox(height: 20));
   return widgets;
+}
+
+bool _isCategorySectionType(String type) {
+  return type == 'CATEGORY_GRID' ||
+      type == 'CATEGORY_TILES' ||
+      type == 'MAKEUP_CATEGORIES';
 }
 
 List<Widget> _legacySections(HomeFeed feed) {
