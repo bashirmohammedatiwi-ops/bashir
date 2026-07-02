@@ -697,6 +697,24 @@ function closeAll() {
   closePanel();
 }
 
+function pickDefaultCategory() {
+  const leaves = state.categories.leaves || [];
+  if (!leaves.length) return null;
+  const preferredSlugs = ['foundation', 'makeup', 'lipstick', 'lipsticks', 'mascara', 'skincare', 'perfume'];
+  for (const slug of preferredSlugs) {
+    const hit = leaves.find((l) => l.slug === slug);
+    if (hit) return hit;
+  }
+  return leaves[0];
+}
+
+function autoLoadDefaultCategory() {
+  if (state.currentSlug || state.isSearch || state.isBrand) return;
+  const leaf = pickDefaultCategory();
+  if (!leaf) return;
+  loadCategory(leaf.slug, leaf.path, leaf.pathEn || '');
+}
+
 async function loadCategories() {
   const container = $('#catTree');
   container.innerHTML = '<div class="loading-tree">جاري تحميل التصنيفات...</div>';
@@ -709,8 +727,11 @@ async function loadCategories() {
       <div class="stat-box"><strong>EAN</strong><span>باركود + بحث خارجي</span></div>
       <div class="stat-box"><strong>AR + EN</strong><span>ثنائي اللغة</span></div>`;
     deferIdle(() => loadBrands());
+    autoLoadDefaultCategory();
   } catch (err) {
     container.innerHTML = `<div class="loading-tree loading-tree--error">خطأ: ${esc(err.message)}<br><button type="button" class="btn-retry" id="retryCategories">إعادة المحاولة</button></div>`;
+    $('#statusMsg').textContent = `خطأ في تحميل التصنيفات: ${err.message}`;
+    $('#statusMsg').classList.remove('hidden');
     $('#retryCategories')?.addEventListener('click', loadCategories);
   }
 }

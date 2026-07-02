@@ -200,7 +200,14 @@ async function typesenseMultiSearch(searches = []) {
   return data.results || [];
 }
 
-async function typesenseSearch(query, { page = 1, perPage = 30, filterBy = '', sortBy = '', queryBy = '' } = {}) {
+async function typesenseSearch(query, {
+  page = 1,
+  perPage = 30,
+  filterBy = '',
+  sortBy = '',
+  queryBy = '',
+  strict = false,
+} = {}) {
   const q = String(query || '').trim() || '*';
 
   const cfg = await getSearchConfig();
@@ -212,11 +219,16 @@ async function typesenseSearch(query, { page = 1, perPage = 30, filterBy = '', s
   };
   if (q === '*') {
     search.query_by = queryBy || 'title_AR';
-  } else if (cfg.preset) {
+  } else if (cfg.preset && !strict) {
     search.preset = cfg.preset;
     if (queryBy) search.query_by = queryBy;
   } else {
     search.query_by = queryBy || 'title_AR,title_EN,brand,keywords';
+    if (strict) {
+      search.num_typos = 1;
+      search.drop_tokens_threshold = 0;
+      search.prioritize_exact_match = true;
+    }
   }
   if (filterBy) search.filter_by = filterBy;
   if (sortBy) search.sort_by = sortBy;
@@ -235,12 +247,111 @@ const DIVISION_ALIAS_FIELDS = [
   'l4_division_alias',
 ];
 
+const BEAUTY_FILTER = 'l1_division_alias:=beauty';
+
 /** يبني مرشّح Typesense يطابق alias التصنيف في أي مستوى. */
 function buildCategoryFilter(alias) {
   const a = String(alias || '').trim();
-  if (!a || a === BEAUTY_L1) return 'l1_division_alias:=beauty';
+  if (!a || a === BEAUTY_L1) return BEAUTY_FILTER;
   const escaped = a.replace(/`/g, '');
-  return DIVISION_ALIAS_FIELDS.map((f) => `${f}:=\`${escaped}\``).join(' || ');
+  return `${BEAUTY_FILTER} && (${DIVISION_ALIAS_FIELDS.map((f) => `${f}:=\`${escaped}\``).join(' || ')})`;
+}
+
+function dedupeProductsById(items = []) {
+  const seen = new Set();
+  return items.filter((p) => {
+    const id = String(p?.id || '').trim();
+    if (!id || seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
+
+/** يدمج نتائج البحث المتكررة (نفس الاسم، معرّفات درجات مختلفة في Typesense). */
+function dedupeSearchResults(items = []) {
+  const byId = dedupeProductsById(items);
+  const seenNames = new Set();
+  return byId.filter((p) => {
+    const key = String(p?.name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+    if (!key) return true;
+    if (seenNames.has(key)) return false;
+    seenNames.add(key);
+    return true;
+  });
+}
+
+function isDefaultVariationTitle(title = '') {
+  const s = String(title || '').trim().toLowerCase();
+  return !s || s === 'default' || s === 'افتراضي';
+}
+
+function mapMiswagColorVariation(v, optionGroup = '') {
+  return {
+    name: String(v.title || '').trim(),
+    nameEn: String(v.title || '').trim(),
+    barcode: '',
+    image: absImage(v.image),
+    hex: v.color || undefined,
+    sku: String(v.id || ''),
+    price: formatMiswagPrice(v.price),
+    optionId: String(v.id || ''),
+    optionGroup,
+    inStock: v.is_available !== false,
+  };
+}
+
+function buildShadesFromVarInfo(varInfo = {}) {
+  const optionGroup = String(varInfo.variation_title || 'الألوان').trim();
+  const colors = (varInfo.variations || []).map((v) => mapMiswagColorVariation(v, optionGroup));
+  const sizes = varInfo.sizes || [];
+  const realColors = colors.filter((c) => !isDefaultVariationTitle(c.name));
+
+  if (realColors.length) return realColors;
+
+  if (colors.length === 1 && sizes.length > 1) {
+    const sizeGroup = String(varInfo.size_title || 'الحجم').trim();
+    const base = colors[0];
+    return sizes.map((s) => ({
+      name: String(s.title || s.id || '').trim(),
+      nameEn: String(s.title || s.id || '').trim(),
+      barcode: '',
+      image: base.image,
+      hex: base.hex,
+      sku: String(s.id || base.sku || ''),
+      price: base.price,
+      optionId: `${base.optionId || base.sku}-${s.id}`,
+      optionGroup: sizeGroup,
+      inStock: s.is_available !== false,
+    }));
+  }
+
+  return colors;
+}
+
+async function fetchAllVariations(pid) {
+  const allVariations = [];
+  const sizeMap = new Map();
+  let varInfo = {};
+  let cursor = null;
+  let pages = 0;
+
+  do {
+    const params = cursor ? { cursor } : {};
+    const chunk = await miswagFetch(`/content/v1/items/${encodeURIComponent(pid)}/variations`, { params }).catch(() => null);
+    if (!chunk) break;
+    const info = chunk.info || chunk;
+    varInfo = { ...varInfo, ...info, variation_title: info.variation_title || varInfo.variation_title, size_title: info.size_title || varInfo.size_title };
+    for (const v of info.variations || []) allVariations.push(v);
+    for (const s of info.sizes || []) sizeMap.set(String(s.id), s);
+    cursor = chunk.pagination?.cursor || null;
+    pages += 1;
+  } while (cursor && pages < 20);
+
+  return {
+    ...varInfo,
+    variations: allVariations,
+    sizes: [...sizeMap.values()],
+  };
 }
 
 function mapTypesenseHit(doc = {}, matchedBarcode = '') {
@@ -306,14 +417,18 @@ async function fallbackTextSearch(query, { page = 1, limit = 30 } = {}) {
   try {
     const [result = {}] = await typesenseMultiSearch([{
       q,
-      query_by: 'title_AR,title_EN,brand,keywords,description',
+      query_by: 'title_AR,title_EN,brand,keywords',
       per_page: limit,
       page,
+      filter_by: BEAUTY_FILTER,
+      num_typos: 1,
+      drop_tokens_threshold: 0,
     }]);
     const hits = result.hits || [];
+    const items = dedupeSearchResults(hits.map((h) => mapTypesenseHit(h.document || h)));
     return {
-      items: hits.map((h) => mapTypesenseHit(h.document || h)),
-      total: result.found || hits.length,
+      items,
+      total: result.found || items.length,
       page,
       pageSize: limit,
       fallback: true,
@@ -360,11 +475,17 @@ export async function searchProducts(query, page = 1, limit = 30) {
   }
 
   try {
-    const ts = await typesenseSearch(q, { page, perPage: limit });
+    const ts = await typesenseSearch(q, {
+      page,
+      perPage: limit,
+      filterBy: BEAUTY_FILTER,
+      strict: true,
+    });
     if (ts.hits?.length) {
+      const items = dedupeSearchResults(ts.hits.map((h) => mapTypesenseHit(h.document || h)));
       return {
-        items: ts.hits.map((h) => mapTypesenseHit(h.document || h)),
-        total: ts.found || ts.hits.length,
+        items,
+        total: ts.found || items.length,
         page,
         pageSize: limit,
       };
@@ -395,9 +516,9 @@ export async function fetchProductDetail(id) {
   const pid = String(id || '').trim();
   if (!pid) return null;
 
-  const [detail, variations] = await Promise.all([
+  const [detail, varInfo] = await Promise.all([
     miswagFetch(`/content/v1/items/${encodeURIComponent(pid)}`),
-    miswagFetch(`/content/v1/items/${encodeURIComponent(pid)}/variations`).catch(() => null),
+    fetchAllVariations(pid).catch(() => ({})),
   ]);
 
   const meta = detail?.info?.meta || {};
@@ -407,19 +528,7 @@ export async function fetchProductDetail(id) {
     images.unshift(absImage(meta.image_url));
   }
 
-  const varInfo = variations?.info || {};
-  const shades = (varInfo.variations || []).map((v) => ({
-    name: String(v.title || '').trim(),
-    nameEn: String(v.title || '').trim(),
-    barcode: '',
-    image: absImage(v.image),
-    hex: v.color || undefined,
-    sku: String(v.id || ''),
-    price: formatMiswagPrice(v.price),
-    optionId: String(v.id || ''),
-  }));
-
-  const nameParts = String(meta.name || '').split(/\s+/);
+  const shades = buildShadesFromVarInfo(varInfo);
   const brand = String(meta.brand || '').trim();
 
   return {
@@ -436,16 +545,18 @@ export async function fetchProductDetail(id) {
     images,
     shades,
     shadeCount: shades.length,
+    hasOptions: shades.length > 1 || (varInfo.sizes?.length > 1),
     barcode: '',
     productUrl: meta.url || meta.share_link || `${SITE}/products/${meta.product_id || pid}`,
     category: String(meta.category || '').trim(),
     categoryEn: String(meta.category || '').trim(),
     inStock: detail?.info?.size?.is_available !== false,
-    raw: { detail, variations },
+    raw: { detail, variations: varInfo },
   };
 }
 
 export function normalizeProductSummary(product = {}) {
+  const shadeCount = product.shadeCount || product.shades?.length || 0;
   return {
     id: String(product.id || ''),
     name: product.name || '',
@@ -459,20 +570,23 @@ export function normalizeProductSummary(product = {}) {
     productUrl: product.productUrl || product.url || '',
     category: product.category || '',
     categoryEn: product.categoryEn || product.category || '',
-    shadeCount: product.shadeCount || product.shades?.length || 0,
+    shadeCount,
+    hasOptions: product.hasOptions ?? shadeCount > 1,
   };
 }
 
 export function normalizeProductDetail(product = {}) {
   const summary = normalizeProductSummary(product);
+  const shades = product.shades || [];
   return {
     ...summary,
     description: product.description || '',
     descriptionEn: product.descriptionEn || product.description || '',
     images: (product.images || []).length ? product.images : (summary.thumb ? [summary.thumb] : []),
-    shades: product.shades || [],
-    shadeCount: product.shadeCount ?? (product.shades?.length || 0),
-    hasShades: (product.shades?.length || 0) > 0,
+    shades,
+    shadeCount: product.shadeCount ?? shades.length,
+    hasOptions: product.hasOptions ?? shades.length > 0,
+    hasShades: shades.length > 0,
   };
 }
 
