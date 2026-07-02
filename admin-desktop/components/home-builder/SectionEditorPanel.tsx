@@ -14,6 +14,7 @@ import {
 } from "antd";
 import { SaveOutlined } from "@ant-design/icons";
 import { SectionPayloadEditor } from "./SectionPayloadEditor";
+import { SectionLayoutFields } from "./SectionLayoutFields";
 import { SectionType, labelForType, metaForType } from "./section-types";
 import { validateSection } from "./section-validation";
 import { MediaPicker } from "@/components/MediaPicker";
@@ -138,6 +139,19 @@ export function SectionEditorPanel({
               label: "المحتوى",
               children: type ? (
                 <SectionPayloadEditor {...editorEntities} type={type} form={form} tab="content" />
+              ) : null,
+            },
+            {
+              key: "layout",
+              label: "التخطيط والأحجام",
+              children: type ? (
+                <SectionLayoutFields
+                  type={type}
+                  form={form}
+                  categories={editorEntities.categories}
+                  brands={editorEntities.brands}
+                  banners={editorEntities.banners}
+                />
               ) : null,
             },
             {

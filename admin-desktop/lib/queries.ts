@@ -21,7 +21,8 @@ export const queries = {
       .get("/tertiary-sections", { params: { all: 1, ...params } })
       .then((r) => r.data?.data ?? r.data),
   brands: () => api.get("/brands", { params: { all: 1 } }).then((r) => r.data?.data ?? r.data),
-  orders: (params?: any) => api.get("/orders", { params: { lite: 1, ...params } }).then((r) => r.data),
+  orders: (params?: any) =>
+    api.get("/orders", { params: { preview: 1, ...params } }).then((r) => r.data),
   order: (id: string) => api.get(`/orders/${id}`).then((r) => r.data?.data ?? r.data),
   banners: () => api.get("/banners").then((r) => r.data?.data ?? r.data),
   packages: () =>

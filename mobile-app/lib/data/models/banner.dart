@@ -10,6 +10,7 @@ class AppBanner {
   final String? linkValue;
   final String? discountText;
   final String? backgroundColor;
+  final String? cardSize;
   final AppMedia? image;
 
   const AppBanner({
@@ -21,6 +22,7 @@ class AppBanner {
     this.linkValue,
     this.discountText,
     this.backgroundColor,
+    this.cardSize,
     this.image,
   });
 
@@ -33,6 +35,7 @@ class AppBanner {
         linkValue: (json['linkValue'] ?? json['link'] ?? json['target'])?.toString(),
         discountText: json['discountText']?.toString(),
         backgroundColor: json['backgroundColor']?.toString(),
+        cardSize: json['cardSize']?.toString(),
         image: json['image'] is Map ? AppMedia.fromJson(asMap(json['image'])) : null,
       );
 

@@ -1,4 +1,5 @@
 import { labelForType } from "./section-types";
+import { labelForCardSize } from "./card-sizes";
 
 export function sectionSummary(block: {
   type: string;
@@ -7,6 +8,8 @@ export function sectionSummary(block: {
 }): string {
   const p = block.payload ?? {};
   const arr = (k: string) => (Array.isArray(p[k]) ? (p[k] as unknown[]).length : 0);
+  const layout = p.sectionLayout ? ` · ${p.sectionLayout}` : "";
+  const size = p.cardSize ? ` · ${labelForCardSize(String(p.cardSize))}` : "";
 
   switch (block.type) {
     case "HERO_BANNER":
@@ -25,7 +28,7 @@ export function sectionSummary(block: {
     case "CATEGORY_GRID":
     case "CATEGORY_TILES":
     case "MAKEUP_CATEGORIES":
-      return arr("categoryIds") ? `${arr("categoryIds")} فئة` : "كل الفئات";
+      return arr("categoryIds") ? `${arr("categoryIds")} فئة` : `كل الفئات${layout}${size}`;
     case "SKIN_CONCERNS":
       return arr("concernIds") ? `${arr("concernIds")} مشكلة` : "كل المشاكل";
     case "BANNER_FULL":
@@ -36,9 +39,9 @@ export function sectionSummary(block: {
     case "BANNER_CAROUSEL":
       return arr("bannerIds") ? `${arr("bannerIds")} بنر` : "كل البنرات";
     case "IMAGE_TILES":
-      return `${arr("items")} بطاقة · ${p.columns ?? 2} أعمدة`;
+      return `${arr("items")} بطاقة · ${p.columns ?? 2} أعمدة${layout}${size}`;
     default:
-      return labelForType(block.type);
+      return `${labelForType(block.type)}${layout}${size}`;
   }
 }
 

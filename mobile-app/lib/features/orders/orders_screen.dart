@@ -4,8 +4,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_typography.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/auth_gate.dart';
+import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/order.dart';
 import '../../data/services/api_service.dart';
@@ -71,7 +74,8 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       title: 'طلباتي',
       emptyTitle: 'سجّل الدخول لعرض طلباتك',
       child: Scaffold(
-        appBar: AppBar(title: const Text('طلباتي')),
+        backgroundColor: AppColors.scaffold,
+        appBar: AppBar(title: const Text('طلباتي'), elevation: 0),
         body: _buildBody(),
       ),
     );
@@ -79,7 +83,13 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
 
   Widget _buildBody() {
     if (_firstLoad && _loading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return ListView.separated(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: 4,
+        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm + 2),
+        itemBuilder: (_, __) => const ShimmerBox(height: 110, radius: AppRadius.lg),
+      );
     }
     if (_items.isEmpty) {
       return const EmptyState(
@@ -92,9 +102,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       onRefresh: () => _fetch(reset: true),
       child: ListView.separated(
         controller: _scroll,
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpacing.md),
         itemCount: _items.length + (_hasMore ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm + 2),
         itemBuilder: (_, i) {
           if (i >= _items.length) {
             return const Padding(
@@ -118,35 +128,37 @@ class _OrderCard extends StatelessWidget {
     return GestureDetector(
       onTap: () => context.push('/orders/${order.id}'),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(AppSpacing.md + 2),
         decoration: BoxDecoration(
           color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(color: AppColors.border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Text('#${order.orderNumber}',
-                    style: const TextStyle(fontWeight: FontWeight.w800)),
+                Text('#${order.orderNumber}', style: AppTypography.body.copyWith(fontWeight: FontWeight.w800)),
                 const Spacer(),
                 _StatusChip(status: order.status),
               ],
             ),
-            const SizedBox(height: 6),
-            Text(formatDateTime(order.createdAt),
-                style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
-            const Divider(height: 18),
+            const SizedBox(height: AppSpacing.xs + 2),
+            Text(formatDateTime(order.createdAt), style: AppTypography.caption),
+            const Divider(height: AppSpacing.lg + 2),
             Row(
               children: [
-                Text('${order.itemCount} منتج',
-                    style: const TextStyle(color: AppColors.textSecondary)),
+                Text('${order.itemCount} منتج', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
                 const Spacer(),
-                Text(order.totalLabel,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w900, color: AppColors.primary, fontSize: 16)),
+                Text(order.totalLabel, style: AppTypography.price.copyWith(fontSize: 16)),
               ],
             ),
           ],
@@ -173,7 +185,7 @@ class _StatusChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: _color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(orderStatusLabel(status),
           style: TextStyle(color: _color, fontSize: 12, fontWeight: FontWeight.w700)),

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/home_feed.dart';
 import '../../data/models/home_section.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/card_sizes.dart';
 import 'sections/banner_sections.dart';
 import 'sections/brand_sections.dart';
 import 'sections/category_sections.dart';
@@ -53,15 +55,31 @@ class HomeSectionWidget extends ConsumerWidget {
     };
 
     if (section.type == 'PROMO_STRIP' || section.type == 'SKIN_CONCERNS') {
-      return Padding(
-        padding: EdgeInsets.only(top: isFirstAfterHero ? 2 : 8, bottom: 4),
-        child: child,
+      return RepaintBoundary(
+        child: Padding(
+          padding: EdgeInsets.only(
+            top: sectionPadding(
+              section.paddingTop?.toDouble(),
+              isFirstAfterHero ? AppSpacing.xs : AppSpacing.sm,
+            ),
+            bottom: sectionPadding(section.paddingBottom?.toDouble(), AppSpacing.xs),
+          ),
+          child: child,
+        ),
       );
     }
 
-    return Padding(
-      padding: EdgeInsets.only(top: isFirstAfterHero ? 8 : 10, bottom: 4),
-      child: child,
+    return RepaintBoundary(
+      child: Padding(
+        padding: EdgeInsets.only(
+          top: sectionPadding(
+            section.paddingTop?.toDouble(),
+            isFirstAfterHero ? AppSpacing.sm : AppSpacing.sectionV,
+          ),
+          bottom: sectionPadding(section.paddingBottom?.toDouble(), AppSpacing.xs),
+        ),
+        child: child,
+      ),
     );
   }
 }
@@ -105,7 +123,7 @@ List<Widget> buildHomeSections(HomeFeed feed) {
     if (seenHero) firstAfterHero = false;
   }
 
-  widgets.add(const SizedBox(height: 20));
+  widgets.add(const SizedBox(height: AppSpacing.xl));
   return widgets;
 }
 
@@ -127,7 +145,7 @@ List<Widget> _legacySections(HomeFeed feed) {
         ),
       ),
     if (feed.skinConcerns.isNotEmpty)
-      SkinConcernsStrip(concerns: feed.skinConcerns, title: 'تسوّق حسب مشكلتك'),
+      SkinConcernsStrip(concerns: feed.skinConcerns),
     if (feed.flashSale.products.isNotEmpty)
       Padding(
         padding: const EdgeInsets.only(top: 4),
@@ -136,6 +154,7 @@ List<Widget> _legacySections(HomeFeed feed) {
             id: 'legacy-flash',
             type: 'FLASH_SALE',
             title: 'أقوى العروض',
+            showTitle: true,
             products: feed.flashSale.products,
             endsAt: feed.flashSale.endsAt,
             viewAllQuery: 'isPromo=1&title=أقوى العروض',

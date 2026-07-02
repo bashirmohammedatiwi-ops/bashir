@@ -74,6 +74,31 @@ class CartNotifier extends StateNotifier<CartState> {
     setQuantity(key, item.quantity - 1);
   }
 
+  int quantityForProduct(String productId) =>
+      state.items.where((e) => e.productId == productId).fold(0, (s, e) => s + e.quantity);
+
+  CartItem? firstItemForProduct(String productId) {
+    for (final item in state.items) {
+      if (item.productId == productId) return item;
+    }
+    return null;
+  }
+
+  void incrementProduct(Product product) {
+    if (product.shades.isNotEmpty) return;
+    final existing = firstItemForProduct(product.id);
+    if (existing != null && existing.shadeId == null) {
+      increment(existing.key);
+    } else {
+      add(product);
+    }
+  }
+
+  void decrementProduct(String productId) {
+    final item = firstItemForProduct(productId);
+    if (item != null) decrement(item.key);
+  }
+
   void remove(String key) {
     state = CartState(state.items.where((e) => e.key != key).toList());
     _persist();

@@ -36,9 +36,28 @@ class Coupon {
       case 'FIRST_ORDER':
         return (subtotal * value / 100).round();
       case 'FIXED':
-        return value;
+      case 'AMOUNT':
+        return value.clamp(0, subtotal);
       default:
         return 0; // FREE_SHIPPING يُعالج في الشحن
+    }
+  }
+
+  bool get isPercent => type == 'PERCENT' || type == 'FIRST_ORDER';
+  bool get isFixedAmount => type == 'FIXED' || type == 'AMOUNT';
+
+  String benefitLabel({String Function(int)? formatPrice}) {
+    switch (type) {
+      case 'PERCENT':
+      case 'FIRST_ORDER':
+        return 'خصم $value%';
+      case 'FIXED':
+      case 'AMOUNT':
+        return formatPrice != null ? 'خصم ${formatPrice(value)}' : 'خصم ثابت';
+      case 'FREE_SHIPPING':
+        return 'شحن مجاني';
+      default:
+        return description.isNotEmpty ? description : code;
     }
   }
 

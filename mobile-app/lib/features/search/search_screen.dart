@@ -1,8 +1,13 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/widgets/product_card.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_typography.dart';
+import '../../core/utils/friendly_error.dart';
+import '../../core/widgets/product_grid.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/product.dart';
@@ -55,7 +60,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       setState(() => _results = result.items);
     } catch (e) {
       if (!mounted) return;
-      setState(() => _error = e.toString());
+      setState(() => _error = friendlyError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -64,26 +69,36 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.scaffold,
       appBar: AppBar(
         titleSpacing: 0,
+        elevation: 0,
         title: Padding(
-          padding: const EdgeInsets.only(left: 12),
+          padding: const EdgeInsets.only(left: AppSpacing.md),
           child: TextField(
             controller: _controller,
             autofocus: true,
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
               hintText: 'ابحث عن منتج، علامة، تصنيف...',
-              prefixIcon: const Icon(Icons.search),
+              prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: _controller.text.isNotEmpty
                   ? IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(Icons.close_rounded),
                       onPressed: () {
                         _controller.clear();
                         _onChanged('');
+                        setState(() {});
                       },
                     )
                   : null,
+              filled: true,
+              fillColor: AppColors.scaffold,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
             ),
             onChanged: (v) {
               setState(() {});
@@ -99,59 +114,36 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Widget _buildBody() {
     if (_loading) return const ProductGridSkeleton(count: 6);
-    if (_error != null) return ErrorView(message: _error!);
+    if (_error != null) return ErrorView(message: _error!, onRetry: () => _search(_controller.text.trim()));
     if (!_searched) {
       final recent = ref.watch(recentlyViewedProvider);
       if (recent.isEmpty) {
         return const EmptyState(
-            icon: Icons.search_rounded,
-            title: 'ابحث في متجر الحياة',
-            subtitle: 'اكتب اسم المنتج أو العلامة التجارية');
+          icon: Icons.search_rounded,
+          title: 'ابحث في متجر الحياة',
+          subtitle: 'اكتب اسم المنتج أو العلامة التجارية',
+        );
       }
       return ListView(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpacing.md),
         children: [
           Row(
             children: [
-              const Expanded(
-                child: Text('شاهدت مؤخراً',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-              ),
+              Expanded(child: Text('شاهدت مؤخراً', style: AppTypography.sectionTitle.copyWith(fontSize: 16))),
               TextButton(
                 onPressed: () => ref.read(recentlyViewedProvider.notifier).clear(),
                 child: const Text('مسح'),
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 0.6,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: recent.length,
-            itemBuilder: (_, i) => ProductCard(product: recent[i]),
-          ),
+          const SizedBox(height: AppSpacing.sm),
+          ProductGrid(products: recent),
         ],
       );
     }
     if (_results.isEmpty) {
       return const EmptyState(icon: Icons.search_off_rounded, title: 'لا توجد نتائج');
     }
-    return GridView.builder(
-      padding: const EdgeInsets.all(12),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.6,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-      ),
-      itemCount: _results.length,
-      itemBuilder: (_, i) => ProductCard(product: _results[i]),
-    );
+    return ProductGrid(products: _results);
   }
 }

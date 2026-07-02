@@ -1,12 +1,13 @@
-import 'dart:math' as math;
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:video_player/video_player.dart';
 
-const kAlhayaaLogoAsset = 'assets/images/alhayaa_logo.png';
+const _welcomeVideo = 'assets/videos/welcome.mp4';
 
-/// شاشة ترحيب — أسود نقي، لوكو فقط، أنيميشن سينمائي فخم.
+/// لون خلفية شاشة الترحيب أثناء التحميل (مطابق لشاشة الإقلاع).
+const _videoBackdrop = Colors.white;
+
+/// شاشة ترحيب — فيدio يملأ الشاشة من الأعلى للأسفل.
 class WelcomeScreen extends StatefulWidget {
   final VoidCallback? onAnimationComplete;
   const WelcomeScreen({super.key, this.onAnimationComplete});
@@ -15,28 +16,54 @@ class WelcomeScreen extends StatefulWidget {
   State<WelcomeScreen> createState() => _WelcomeScreenState();
 }
 
-class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateMixin {
-  late final AnimationController _c;
-  late final AnimationController _breathe;
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  VideoPlayerController? _controller;
   bool _done = false;
+  bool _failed = false;
 
   @override
   void initState() {
     super.initState();
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Colors.black,
-      systemNavigationBarIconBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.dark,
+      systemNavigationBarColor: _videoBackdrop,
+      systemNavigationBarIconBrightness: Brightness.dark,
     ));
+    _initVideo();
+  }
 
-    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 3400));
-    _breathe = AnimationController(vsync: this, duration: const Duration(milliseconds: 2200));
+  Future<void> _initVideo() async {
+    final controller = VideoPlayerController.asset(_welcomeVideo);
+    _controller = controller;
 
-    _c.forward().whenComplete(_finish);
-    Future.delayed(const Duration(milliseconds: 1400), () {
-      if (mounted) _breathe.repeat(reverse: true);
-    });
+    try {
+      await controller.initialize();
+      if (!mounted) return;
+
+      controller
+        ..setLooping(false)
+        ..setVolume(0)
+        ..addListener(_onVideoTick);
+
+      setState(() {});
+      await controller.play();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _failed = true);
+      _finish();
+    }
+  }
+
+  void _onVideoTick() {
+    final c = _controller;
+    if (c == null || !c.value.isInitialized || _done) return;
+
+    final pos = c.value.position;
+    final dur = c.value.duration;
+    if (dur.inMilliseconds > 0 && pos.inMilliseconds >= dur.inMilliseconds - 80) {
+      _finish();
+    }
   }
 
   void _finish() {
@@ -47,178 +74,45 @@ class _WelcomeScreenState extends State<WelcomeScreen> with TickerProviderStateM
 
   @override
   void dispose() {
-    _c.dispose();
-    _breathe.dispose();
+    _controller?.removeListener(_onVideoTick);
+    _controller?.dispose();
     super.dispose();
-  }
-
-  double _t(double time, double a, double b, Curve curve) {
-    if (time <= a) return 0;
-    if (time >= b) return 1;
-    return curve.transform((time - a) / (b - a));
   }
 
   @override
   Widget build(BuildContext context) {
-    final logoW = MediaQuery.sizeOf(context).width * 0.80;
+    final c = _controller;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-        systemNavigationBarColor: Colors.black,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: _videoBackdrop,
+        systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: Colors.black,
-        body: AnimatedBuilder(
-          animation: Listenable.merge([_c, _breathe]),
-          builder: (context, _) {
-            final t = _c.value;
-
-            // ── مراحل الأنيميشن ──
-            final exit = _t(t, 0.90, 1.0, Curves.easeInCubic);
-            final reveal = _t(t, 0.12, 0.72, Curves.easeInOutCubic);
-            final shine = _t(t, 0.58, 0.82, Curves.easeInOut);
-            final lineExpand = _t(t, 0.06, 0.28, Curves.easeOutCubic);
-            final lineFade = _t(t, 0.55, 0.72, Curves.easeIn);
-
-            final blur = ui.lerpDouble(22, 0, reveal)!;
-            final opacity = _t(t, 0.10, 0.45, Curves.easeOut);
-            final baseScale = ui.lerpDouble(1.07, 1.0, reveal)!;
-            final breatheScale = 1.0 + _breathe.value * 0.012 * reveal;
-            final scale = baseScale * breatheScale;
-
-            return Opacity(
-              opacity: 1 - exit,
-              child: Stack(
-                fit: StackFit.expand,
-                alignment: Alignment.center,
-                children: [
-                  // خطوط ذهبية رفيعة — افتتاح سينمائي
-                  Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _LuxuryLine(width: logoW * lineExpand, opacity: (1 - lineFade) * 0.55),
-                        SizedBox(height: logoW * 0.52 + 24),
-                        _LuxuryLine(width: logoW * lineExpand, opacity: (1 - lineFade) * 0.55),
-                      ],
-                    ),
-                  ),
-
-                  // الشعار
-                  Transform.scale(
-                    scale: scale,
-                    child: Opacity(
-                      opacity: opacity,
-                      child: _CinematicLogo(
-                        width: logoW,
-                        blur: blur,
-                        shine: shine,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
-
-/// خط ذهبي رفيع — لمسة فخمة.
-class _LuxuryLine extends StatelessWidget {
-  final double width;
-  final double opacity;
-
-  const _LuxuryLine({required this.width, required this.opacity});
-
-  @override
-  Widget build(BuildContext context) {
-    if (width <= 0 || opacity <= 0) return const SizedBox.shrink();
-    return Opacity(
-      opacity: opacity.clamp(0, 1),
-      child: Container(
-        width: width,
-        height: 0.5,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.transparent,
-              Colors.white.withValues(alpha: 0.7),
-              const Color(0xFFD4AF37).withValues(alpha: 0.9),
-              Colors.white.withValues(alpha: 0.7),
-              Colors.transparent,
-            ],
-            stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// الشعار — ضبابية → وضوح + لمعان يمرّ مرة واحدة.
-class _CinematicLogo extends StatelessWidget {
-  final double width;
-  final double blur;
-  final double shine;
-
-  const _CinematicLogo({
-    required this.width,
-    required this.blur,
-    required this.shine,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    Widget img = Image.asset(
-      kAlhayaaLogoAsset,
-      width: width,
-      fit: BoxFit.contain,
-      filterQuality: FilterQuality.high,
-    );
-
-    if (blur > 0.3) {
-      img = ImageFiltered(
-        imageFilter: ui.ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-        child: img,
-      );
-    }
-
-    return SizedBox(
-      width: width,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          img,
-          if (shine > 0 && shine < 1)
-            ClipRect(
-              child: Align(
-                alignment: Alignment(-1.2 + shine * 2.4, 0),
-                widthFactor: 0.22,
-                child: Transform.rotate(
-                  angle: -0.08,
-                  child: Container(
-                    height: width * 0.55,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.white.withValues(alpha: 0.06 + math.sin(shine * math.pi) * 0.14),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
+        backgroundColor: _videoBackdrop,
+        body: c != null && c.value.isInitialized
+            ? SizedBox.expand(
+                child: FittedBox(
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  child: SizedBox(
+                    width: c.value.size.width,
+                    height: c.value.size.height,
+                    child: VideoPlayer(c),
                   ),
                 ),
+              )
+            : Center(
+                child: _failed
+                    ? const Icon(Icons.movie_outlined, color: Colors.black38, size: 48)
+                    : Image.asset(
+                        'assets/images/app_icon_source.png',
+                        width: 120,
+                        height: 120,
+                      ),
               ),
-            ),
-        ],
       ),
     );
   }

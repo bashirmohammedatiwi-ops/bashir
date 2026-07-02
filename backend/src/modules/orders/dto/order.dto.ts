@@ -41,5 +41,7 @@ export class QueryOrdersDto extends PaginationDto {
   @IsOptional() @IsEnum(OrderStatus) status?: OrderStatus;
   @IsOptional() @IsEnum(PaymentStatus) paymentStatus?: PaymentStatus;
   @IsOptional() @IsString() userId?: string;
+  @IsOptional() @IsString() search?: string;
   @IsOptional() @Type(() => Boolean) @IsBoolean() lite?: boolean;
+  @IsOptional() @Type(() => Boolean) @IsBoolean() preview?: boolean;
 }

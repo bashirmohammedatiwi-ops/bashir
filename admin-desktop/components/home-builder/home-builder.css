@@ -415,6 +415,119 @@
   border: 1px solid #f0f0f0;
 }
 
+/* ── Card size picker ── */
+.hb-card-sizes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hb-card-sizes.compact .hb-card-size-opt {
+  min-width: 52px;
+  padding: 6px 4px;
+}
+
+.hb-card-size-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 72px;
+  padding: 10px 8px;
+  border: 2px solid #e8e8e8;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.hb-card-size-opt:hover {
+  border-color: #91caff;
+}
+
+.hb-card-size-opt.active {
+  border-color: #1677ff;
+  background: #e6f4ff;
+}
+
+.hb-card-size-preview {
+  display: block;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #f0f0f0, #d9d9d9);
+  border: 1px solid #ccc;
+}
+
+.hb-card-size-opt.active .hb-card-size-preview {
+  background: linear-gradient(135deg, #bae0ff, #69b1ff);
+  border-color: #1677ff;
+}
+
+.hb-card-size-label {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+
+.hb-card-size-desc {
+  font-size: 10px !important;
+  text-align: center;
+}
+
+.hb-card-size-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11px;
+  color: #888;
+  margin-top: 8px;
+}
+
+.hb-entity-sizes {
+  border: 1px solid #f0f0f0;
+  border-radius: 10px;
+  padding: 12px;
+  background: #fafafa;
+  margin-bottom: 16px;
+}
+
+.hb-entity-size-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.hb-entity-size-row:last-child {
+  border-bottom: none;
+}
+
+.hb-entity-size-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+  max-width: 140px;
+}
+
+.hb-entity-size-order {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: #1677ff;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hb-entity-size-name {
+  font-size: 12px !important;
+  flex: 1;
+}
+
 @media (max-width: 992px) {
   .hb-list-card,
   .hb-editor-card {

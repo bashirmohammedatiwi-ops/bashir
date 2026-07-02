@@ -4,7 +4,20 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/theme/app_colors.dart';
 
-/// مسح QR / باركود — يفتح المنتج أو البحث حسب المحتوى.
+/// تنسيقات الباركود الخطي للمنتجات (بدون QR).
+const _barcodeFormats = <BarcodeFormat>[
+  BarcodeFormat.ean13,
+  BarcodeFormat.ean8,
+  BarcodeFormat.upcA,
+  BarcodeFormat.upcE,
+  BarcodeFormat.code128,
+  BarcodeFormat.code39,
+  BarcodeFormat.code93,
+  BarcodeFormat.itf14,
+  BarcodeFormat.codabar,
+];
+
+/// مسح باركود المنتج بالكاميرا.
 class QrScanScreen extends StatefulWidget {
   const QrScanScreen({super.key});
 
@@ -16,6 +29,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
   final _controller = MobileScannerController(
     detectionSpeed: DetectionSpeed.normal,
     facing: CameraFacing.back,
+    formats: _barcodeFormats,
   );
   bool _handled = false;
 
@@ -28,7 +42,15 @@ class _QrScanScreenState extends State<QrScanScreen> {
   void _onDetect(BarcodeCapture capture) {
     if (_handled) return;
     if (capture.barcodes.isEmpty) return;
-    final raw = capture.barcodes.first.rawValue?.trim();
+
+    final barcode = capture.barcodes.firstWhere(
+      (b) => b.format != BarcodeFormat.qrCode && (b.rawValue?.trim().isNotEmpty ?? false),
+      orElse: () => capture.barcodes.first,
+    );
+
+    if (barcode.format == BarcodeFormat.qrCode) return;
+
+    final raw = barcode.rawValue?.trim();
     if (raw == null || raw.isEmpty) return;
     _handled = true;
     _navigateForCode(context, raw);
@@ -58,7 +80,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('مسح QR'),
+        title: const Text('مسح الباركود'),
         actions: [
           IconButton(
             tooltip: 'تبديل الكاميرا',
@@ -86,11 +108,11 @@ class _QrScanScreenState extends State<QrScanScreen> {
           IgnorePointer(
             child: Center(
               child: Container(
-                width: 260,
-                height: 260,
+                width: 300,
+                height: 120,
                 decoration: BoxDecoration(
                   border: Border.all(color: AppColors.primary, width: 3),
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
@@ -100,7 +122,7 @@ class _QrScanScreenState extends State<QrScanScreen> {
             right: 0,
             bottom: 32,
             child: Text(
-              'وجّه الكاميرا نحو رمز QR أو الباركود',
+              'وجّه الكاميرا نحو باركود المنتج',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white,

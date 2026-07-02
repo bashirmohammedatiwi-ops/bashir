@@ -17,6 +17,7 @@ import { MediaPicker } from "@/components/MediaPicker";
 import { EntityMultiPicker } from "./EntityMultiPicker";
 import { LinkTargetPicker, ProductScopeFields } from "./LinkTargetPicker";
 import { SectionStyleFields } from "./SectionStyleFields";
+import { CardSizePicker } from "./CardSizePicker";
 import { PRODUCT_FILTERS, SectionType } from "./section-types";
 
 const { Text } = Typography;
@@ -182,6 +183,9 @@ export function SectionPayloadEditor(props: Props) {
                     </Form.Item>
                     <Form.Item {...rest} name={[name, "discountText"]} label="نص الخصم">
                       <Input placeholder="50%" />
+                    </Form.Item>
+                    <Form.Item {...rest} name={[name, "cardSize"]} label="حجم البطاقة" initialValue="md">
+                      <CardSizePicker context="banner" compact />
                     </Form.Item>
                     <Button danger type="link" icon={<MinusCircleOutlined />} onClick={() => remove(name)}>
                       حذف
@@ -359,6 +363,9 @@ export function SectionPayloadEditor(props: Props) {
                       الرابط
                     </Text>
                     <LinkTargetPicker prefix={["payload", "items", name]} entities={entities} />
+                    <Form.Item {...rest} name={[name, "cardSize"]} label="حجم البطاقة" initialValue="md">
+                      <CardSizePicker context="image" compact />
+                    </Form.Item>
                   </Card>
                 ))}
                 <Button type="dashed" onClick={() => add({})} block icon={<PlusOutlined />}>

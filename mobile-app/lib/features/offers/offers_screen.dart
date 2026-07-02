@@ -4,7 +4,10 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/widgets/product_card.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_typography.dart';
+import '../../core/utils/friendly_error.dart';
+import '../../core/widgets/product_grid.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/product.dart';
@@ -70,7 +73,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
         _firstLoad = false;
       });
     } catch (e) {
-      setState(() => _error = e.toString());
+      setState(() => _error = friendlyError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -82,6 +85,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
       backgroundColor: AppColors.scaffold,
       appBar: AppBar(
         title: const Text('العروض'),
+        elevation: 0,
         actions: [
           TextButton(
             onPressed: () => context.push('/products?isPromo=1&title=كل العروض'),
@@ -114,25 +118,25 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
     return RefreshIndicator(
       color: AppColors.primary,
       onRefresh: () => _fetch(reset: true),
-      child: GridView.builder(
-        controller: _scroll,
-        padding: const EdgeInsets.all(12),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.6,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-        ),
-        itemCount: _items.length + (_hasMore ? 1 : 0),
-        itemBuilder: (_, i) {
-          if (i >= _items.length) {
-            return const Center(child: Padding(
-              padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator(color: AppColors.primary),
-            ));
-          }
-          return ProductCard(product: _items[i], showPromoBadge: true);
-        },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 0),
+            child: Text(
+              '${_items.length} عرض',
+              style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          Expanded(
+            child: ProductGrid(
+              controller: _scroll,
+              products: _items,
+              showPromoBadge: true,
+              extraSlots: _hasMore ? 2 : 0,
+            ),
+          ),
+        ],
       ),
     );
   }

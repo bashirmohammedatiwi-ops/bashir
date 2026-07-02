@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_typography.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/app_network_image.dart';
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/widgets/order_detail_skeleton.dart';
+import '../../core/widgets/section_card.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/order.dart';
 import '../../data/models/product.dart';
@@ -23,88 +30,108 @@ class OrderDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(orderDetailProvider(orderId));
     return Scaffold(
-      appBar: AppBar(title: const Text('تفاصيل الطلب')),
+      backgroundColor: AppColors.scaffold,
+      appBar: AppBar(title: const Text('تفاصيل الطلب'), elevation: 0),
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (e, _) => ErrorView(
-            message: e.toString(), onRetry: () => ref.invalidate(orderDetailProvider(orderId))),
+        loading: () => const OrderDetailSkeleton(),
+        error: (e, _) => ErrorView.from(
+          e,
+          onRetry: () => ref.invalidate(orderDetailProvider(orderId)),
+        ),
         data: (order) => ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
-            Row(
-              children: [
-                Text('#${order.orderNumber}',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
-                const Spacer(),
-                Text(formatDate(order.createdAt),
-                    style: const TextStyle(color: AppColors.textMuted)),
-              ],
-            ),
-            const SizedBox(height: 16),
+            _OrderHeader(order: order),
+            const SizedBox(height: AppSpacing.lg),
             if (order.status != 'CANCELLED' && order.status != 'RETURNED')
-              _Tracker(status: order.status)
+              SectionCard(
+                child: _Tracker(status: order.status),
+              )
             else
               Container(
-                padding: const EdgeInsets.all(14),
+                padding: const EdgeInsets.all(AppSpacing.md + 2),
                 decoration: BoxDecoration(
-                    color: AppColors.sale.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12)),
-                child: Row(children: [
-                  const Icon(Icons.info_outline, color: AppColors.sale),
-                  const SizedBox(width: 8),
-                  Text(orderStatusLabel(order.status),
-                      style: const TextStyle(color: AppColors.sale, fontWeight: FontWeight.w700)),
-                ]),
+                  color: AppColors.sale.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  border: Border.all(color: AppColors.sale.withValues(alpha: 0.2)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline_rounded, color: AppColors.sale),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Text(
+                        orderStatusLabel(order.status),
+                        style: const TextStyle(color: AppColors.sale, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            const SizedBox(height: 20),
-            _card(
+            const SizedBox(height: AppSpacing.md),
+            SectionCard(
               title: 'المنتجات',
               child: Column(
-                children: [for (final item in order.items) _ItemRow(item: item)],
+                children: [
+                  for (var i = 0; i < order.items.length; i++) ...[
+                    if (i > 0) const Divider(height: AppSpacing.lg),
+                    _ItemRow(item: order.items[i]),
+                  ],
+                ],
               ),
             ),
-            const SizedBox(height: 12),
-            if (order.address != null)
-              _card(
+            if (order.address != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              SectionCard(
                 title: 'عنوان التوصيل',
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(order.address!.fullName,
-                        style: const TextStyle(fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 2),
-                    Text(order.address!.phone,
-                        style: const TextStyle(color: AppColors.textSecondary)),
-                    const SizedBox(height: 2),
-                    Text(order.address!.summary,
-                        style: const TextStyle(color: AppColors.textSecondary, height: 1.4)),
+                    Text(order.address!.fullName, style: AppTypography.body.copyWith(fontWeight: FontWeight.w700)),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(order.address!.phone, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      order.address!.summary,
+                      style: AppTypography.caption.copyWith(color: AppColors.textSecondary, height: 1.5),
+                    ),
                   ],
                 ),
               ),
-            const SizedBox(height: 12),
-            _card(
+            ],
+            const SizedBox(height: AppSpacing.md),
+            SectionCard(
               title: 'ملخّص الدفع',
               child: Column(
                 children: [
-                  _row('المجموع الفرعي', formatPrice(order.subtotal)),
+                  SummaryRow(label: 'المجموع الفرعي', value: formatPrice(order.subtotal)),
                   if (order.discountTotal > 0)
-                    _row('الخصم', '- ${formatPrice(order.discountTotal)}',
-                        color: AppColors.success),
-                  _row('الشحن',
-                      order.shippingTotal == 0 ? 'مجاني' : formatPrice(order.shippingTotal)),
-                  const Divider(height: 18),
-                  _row('الإجمالي', formatPrice(order.total), bold: true),
-                  const SizedBox(height: 8),
-                  Row(children: [
-                    const Icon(Icons.payments_outlined, size: 18, color: AppColors.textSecondary),
-                    const SizedBox(width: 6),
-                    const Text('الدفع عند الاستلام',
-                        style: TextStyle(color: AppColors.textSecondary)),
-                  ]),
+                    SummaryRow(
+                      label: 'الخصم',
+                      value: '- ${formatPrice(order.discountTotal)}',
+                      valueColor: AppColors.success,
+                    ),
+                  SummaryRow(
+                    label: 'الشحن',
+                    value: order.shippingTotal == 0 ? 'مجاني' : formatPrice(order.shippingTotal),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                    child: Divider(height: 1),
+                  ),
+                  SummaryRow(label: 'الإجمالي', value: formatPrice(order.total), bold: true),
+                  const SizedBox(height: AppSpacing.sm),
+                  Row(
+                    children: [
+                      Icon(Icons.payments_outlined, size: 18, color: AppColors.textSecondary.withValues(alpha: 0.8)),
+                      const SizedBox(width: AppSpacing.sm),
+                      Text('الدفع عند الاستلام', style: AppTypography.caption),
+                    ],
+                  ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: AppSpacing.lg),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -114,28 +141,30 @@ class OrderDetailScreen extends ConsumerWidget {
               ),
             ),
             if (order.status == 'PENDING' || order.status == 'CONFIRMED') ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               OutlinedButton.icon(
                 onPressed: () => _cancel(context, ref),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.sale,
                   side: const BorderSide(color: AppColors.sale),
                 ),
-                icon: const Icon(Icons.close),
+                icon: const Icon(Icons.close_rounded),
                 label: const Text('إلغاء الطلب'),
               ),
             ],
-            const SizedBox(height: 8),
+            const SizedBox(height: AppSpacing.sm),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
                 onPressed: () {
+                  HapticFeedback.selectionClick();
                   ref.read(navIndexProvider.notifier).state = 0;
                   context.go('/');
                 },
                 child: const Text('متابعة التسوّق'),
               ),
             ),
+            const SizedBox(height: AppSpacing.md),
           ],
         ),
       ),
@@ -143,10 +172,8 @@ class OrderDetailScreen extends ConsumerWidget {
   }
 
   Future<void> _reorder(BuildContext context, WidgetRef ref, AppOrder order) async {
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.showSnackBar(
-      const SnackBar(content: Text('جاري إضافة المنتجات إلى السلة…')),
-    );
+    HapticFeedback.mediumImpact();
+    AppSnackbar.show(context, 'جاري إضافة المنتجات إلى السلة…', duration: const Duration(seconds: 4));
     final api = ref.read(apiServiceProvider);
     var added = 0;
     for (final item in order.items) {
@@ -166,24 +193,19 @@ class OrderDetailScreen extends ConsumerWidget {
       } catch (_) {}
     }
     if (!context.mounted) return;
-    messenger.hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
     if (added == 0) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('تعذّر إضافة المنتجات. حاول لاحقاً')),
-      );
+      AppSnackbar.error(context, 'تعذّر إضافة المنتجات. حاول لاحقاً');
       return;
     }
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text('تمت إضافة $added منتج إلى السلة'),
-        action: SnackBarAction(
-          label: 'السلة',
-          onPressed: () {
-            ref.read(navIndexProvider.notifier).state = 3;
-            context.go('/');
-          },
-        ),
-      ),
+    AppSnackbar.action(
+      context,
+      message: 'تمت إضافة $added منتج إلى السلة',
+      actionLabel: 'السلة',
+      onAction: () {
+        ref.read(navIndexProvider.notifier).state = 3;
+        context.go('/');
+      },
     );
   }
 
@@ -191,13 +213,15 @@ class OrderDetailScreen extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
         title: const Text('إلغاء الطلب'),
         content: const Text('هل أنت متأكد من إلغاء هذا الطلب؟'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('تراجع')),
           TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('إلغاء الطلب', style: TextStyle(color: AppColors.sale))),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('إلغاء الطلب', style: TextStyle(color: AppColors.sale)),
+          ),
         ],
       ),
     );
@@ -206,83 +230,79 @@ class OrderDetailScreen extends ConsumerWidget {
       await ref.read(apiServiceProvider).cancelOrder(orderId);
       ref.invalidate(orderDetailProvider(orderId));
       ref.invalidate(ordersProvider);
+      if (context.mounted) AppSnackbar.success(context, 'تم إلغاء الطلب');
     } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
-      }
+      if (context.mounted) AppSnackbar.error(context, friendlyError(e));
     }
   }
+}
 
-  Widget _card({required String title, required Widget child}) => Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-            const SizedBox(height: 10),
-            child,
-          ],
-        ),
-      );
+class _OrderHeader extends StatelessWidget {
+  final AppOrder order;
+  const _OrderHeader({required this.order});
 
-  Widget _row(String label, String value, {bool bold = false, Color? color}) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Row(
-          children: [
-            Text(label, style: const TextStyle(color: AppColors.textSecondary)),
-            const Spacer(),
-            Text(value,
-                style: TextStyle(
-                    fontWeight: bold ? FontWeight.w900 : FontWeight.w700,
-                    color: color ?? (bold ? AppColors.primary : AppColors.textPrimary),
-                    fontSize: bold ? 16 : 14)),
-          ],
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('#${order.orderNumber}', style: AppTypography.sectionTitle),
+              const SizedBox(height: AppSpacing.xs),
+              Text(formatDate(order.createdAt), style: AppTypography.caption),
+            ],
+          ),
         ),
-      );
+        StatusChip(status: order.status),
+      ],
+    );
+  }
 }
 
 class _ItemRow extends StatelessWidget {
   final OrderItem item;
   const _ItemRow({required this.item});
+
   @override
   Widget build(BuildContext context) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => context.push('/product/${item.productId}'),
-        borderRadius: BorderRadius.circular(8),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          context.push('/product/${item.productId}');
+        },
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
           child: Row(
             children: [
               AppNetworkImage(
                 url: item.imageUrl,
-                width: 56,
-                height: 56,
-                radius: BorderRadius.circular(8),
+                width: 60,
+                height: 60,
+                radius: BorderRadius.circular(AppRadius.sm),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.sm + 2),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(item.productName,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                    Text('الكمية: ${item.quantity}',
-                        style: const TextStyle(fontSize: 12, color: AppColors.textMuted)),
+                    Text(
+                      item.productName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.body.copyWith(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text('الكمية: ${item.quantity}', style: AppTypography.caption),
                   ],
                 ),
               ),
-              Text(formatPrice(item.totalPrice),
-                  style: const TextStyle(fontWeight: FontWeight.w700)),
+              Text(formatPrice(item.totalPrice), style: AppTypography.price),
             ],
           ),
         ),
@@ -294,46 +314,66 @@ class _ItemRow extends StatelessWidget {
 class _Tracker extends StatelessWidget {
   final String status;
   const _Tracker({required this.status});
+
   @override
   Widget build(BuildContext context) {
     final currentIndex = _statusFlow.indexOf(status).clamp(0, _statusFlow.length - 1);
     const labels = ['تم الطلب', 'مؤكد', 'التجهيز', 'الشحن', 'التسليم'];
+
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (int i = 0; i < _statusFlow.length; i++) ...[
-          Column(
-            children: [
-              Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: i <= currentIndex ? AppColors.primary : AppColors.border,
-                  shape: BoxShape.circle,
+          Expanded(
+            child: Column(
+              children: [
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: i <= currentIndex ? AppColors.primary : AppColors.border,
+                    shape: BoxShape.circle,
+                    boxShadow: i == currentIndex
+                        ? [
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Icon(
+                    i < currentIndex ? Icons.check_rounded : Icons.circle,
+                    color: Colors.white,
+                    size: i < currentIndex ? 18 : 8,
+                  ),
                 ),
-                child: Icon(
-                  i < currentIndex ? Icons.check : Icons.circle,
-                  color: Colors.white,
-                  size: i < currentIndex ? 16 : 10,
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  labels[i],
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: i <= currentIndex ? FontWeight.w700 : FontWeight.w400,
+                    color: i <= currentIndex ? AppColors.primary : AppColors.textMuted,
+                    height: 1.2,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              SizedBox(
-                width: 54,
-                child: Text(labels[i],
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: i <= currentIndex ? FontWeight.w700 : FontWeight.w400,
-                        color: i <= currentIndex ? AppColors.primary : AppColors.textMuted)),
-              ),
-            ],
+              ],
+            ),
           ),
           if (i < _statusFlow.length - 1)
-            Expanded(
-              child: Container(
-                height: 2,
-                margin: const EdgeInsets.only(bottom: 22),
-                color: i < currentIndex ? AppColors.primary : AppColors.border,
+            Padding(
+              padding: const EdgeInsets.only(top: 15),
+              child: SizedBox(
+                width: 16,
+                child: Container(
+                  height: 2,
+                  color: i < currentIndex ? AppColors.primary : AppColors.border,
+                ),
               ),
             ),
         ],

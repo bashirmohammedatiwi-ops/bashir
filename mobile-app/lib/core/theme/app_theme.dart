@@ -86,6 +86,18 @@ class AppTheme {
         elevation: 0,
       ),
       dividerTheme: const DividerThemeData(color: AppColors.divider, thickness: 1),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+          TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+        },
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        contentTextStyle: GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.w600),
+      ),
       chipTheme: base.chipTheme.copyWith(
         backgroundColor: AppColors.primaryLight,
         labelStyle: GoogleFonts.cairo(color: AppColors.primaryDark, fontWeight: FontWeight.w600),

@@ -87,3 +87,41 @@ class HorizontalProductsSkeleton extends StatelessWidget {
     );
   }
 }
+
+/// هيكل تحميل الصفحة الرئيسية — يشبه التخطيط الفعلي.
+class HomeLoadingSkeleton extends StatelessWidget {
+  const HomeLoadingSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: EdgeInsets.zero,
+      physics: const NeverScrollableScrollPhysics(),
+      children: [
+        const ShimmerBox(height: 360, radius: 0),
+        const SizedBox(height: 12),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: List.generate(
+              5,
+              (_) => const Padding(
+                padding: EdgeInsets.only(left: 10),
+                child: ShimmerBox(width: 56, height: 56, radius: 28),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: ShimmerBox(height: 18, width: 140),
+        ),
+        const SizedBox(height: 12),
+        const HorizontalProductsSkeleton(),
+        const SizedBox(height: 8),
+        const HorizontalProductsSkeleton(),
+      ],
+    );
+  }
+}

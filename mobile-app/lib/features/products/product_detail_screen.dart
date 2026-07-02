@@ -5,8 +5,12 @@ import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_typography.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/app_network_image.dart';
+import '../../core/widgets/product_detail_skeleton.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/product.dart';
 import '../../data/models/review.dart';
@@ -39,11 +43,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     });
     return Scaffold(
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        loading: () => const ProductDetailSkeleton(),
         error: (e, _) => Scaffold(
           appBar: AppBar(),
-          body: ErrorView(
-            message: e.toString(),
+          body: ErrorView.from(
+            e,
             onRetry: () => ref.invalidate(productDetailProvider(widget.idOrSlug)),
           ),
         ),
@@ -140,18 +144,19 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
         ),
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (product.brandName.isNotEmpty)
-                  Text(product.brandName,
-                      style: const TextStyle(
-                          color: AppColors.primary, fontWeight: FontWeight.w700, fontSize: 13)),
-                const SizedBox(height: 4),
-                Text(product.name,
-                    style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w800, height: 1.3)),
-                const SizedBox(height: 10),
+                  Text(product.brandName, style: AppTypography.caption.copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  )),
+                const SizedBox(height: AppSpacing.xs),
+                Text(product.name, style: AppTypography.sectionTitle.copyWith(fontSize: 19, height: 1.3)),
+                const SizedBox(height: AppSpacing.sm + 2),
                 Row(
                   children: [
                     const Icon(Icons.star_rounded, color: AppColors.star, size: 20),
@@ -170,9 +175,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(formatPrice(price),
-                        style: const TextStyle(
-                            fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.primary)),
+                    Text(formatPrice(price), style: AppTypography.priceLarge),
                     const SizedBox(width: 10),
                     if (product.hasDiscount)
                       Padding(
@@ -435,7 +438,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: AppColors.sale));
+            .showSnackBar(SnackBar(content: Text(friendlyError(e)), backgroundColor: AppColors.sale));
       }
     } finally {
       if (mounted) setState(() => _submitting = false);

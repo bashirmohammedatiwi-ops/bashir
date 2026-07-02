@@ -1,0 +1,513 @@
+/* ═══════════════════════════════════════════════════════════
+   Orders admin — split list + detail
+   ═══════════════════════════════════════════════════════════ */
+
+.ord-page {
+  max-width: 1480px;
+}
+
+.ord-page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.ord-page-header h2 {
+  margin: 0 0 4px;
+}
+
+.ord-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.ord-status-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.ord-status-chip {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ord-status-chip:hover {
+  border-color: #94a3b8;
+}
+
+.ord-status-chip.active {
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.ord-workspace {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.ord-list-panel {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 14px;
+  overflow: hidden;
+  max-height: calc(100vh - 220px);
+  display: flex;
+  flex-direction: column;
+}
+
+.ord-list-scroll {
+  overflow-y: auto;
+  flex: 1;
+}
+
+.ord-list-row {
+  display: flex;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f5f5f5;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.ord-list-row:hover {
+  background: #fafafa;
+}
+
+.ord-list-row.selected {
+  background: #eff6ff;
+  border-right: 3px solid #1677ff;
+}
+
+.ord-list-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.ord-list-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.ord-list-number {
+  font-weight: 800;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.ord-list-customer {
+  font-size: 13px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.ord-list-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.ord-list-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ord-list-total {
+  font-weight: 800;
+  font-size: 14px;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+.ord-list-count {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.ord-detail-panel {
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 14px;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
+}
+
+.ord-detail {
+  padding: 20px;
+}
+
+.ord-detail--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 420px;
+  text-align: center;
+  padding: 40px 24px;
+}
+
+.ord-detail-empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.ord-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ord-detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── Status stepper ── */
+.ord-stepper {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  padding: 16px 8px 20px;
+  margin-bottom: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.ord-stepper--terminal {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border: 1px solid;
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.ord-stepper-terminal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.ord-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  min-width: 72px;
+  flex: 1;
+}
+
+.ord-step-dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  z-index: 1;
+  background: #fff;
+}
+
+.ord-step-label {
+  margin-top: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 68px;
+}
+
+.ord-step-line {
+  position: absolute;
+  top: 13px;
+  left: calc(50% + 14px);
+  width: calc(100% - 28px);
+  height: 2px;
+  z-index: 0;
+}
+
+/* ── Info cards ── */
+.ord-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.ord-info-card {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ord-info-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.ord-info-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.ord-info-sub {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.ord-info-note {
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+}
+
+/* ── Items ── */
+.ord-section {
+  margin-bottom: 16px;
+}
+
+.ord-section-title {
+  display: block;
+  font-weight: 700;
+  font-size: 13px;
+  color: #334155;
+  margin-bottom: 10px;
+}
+
+.ord-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ord-item-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 10px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
+}
+
+.ord-item-img {
+  width: 64px;
+  height: 64px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.ord-items.compact .ord-item-img {
+  width: 48px;
+  height: 48px;
+}
+
+.ord-item-img-fallback {
+  font-size: 22px;
+}
+
+.ord-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ord-item-name {
+  display: block;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.ord-item-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 4px;
+}
+
+.ord-item-shade {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ord-shade-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.ord-item-unit {
+  font-size: 11px;
+  display: block;
+  margin-top: 2px;
+}
+
+.ord-item-side {
+  text-align: left;
+  flex-shrink: 0;
+}
+
+.ord-item-qty {
+  display: block;
+  font-size: 12px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.ord-item-price {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* ── Image stack (list) ── */
+.ord-img-stack {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.ord-img-stack--empty {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.ord-img-stack-item {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.ord-img-stack-more {
+  margin-right: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+/* ── Summary ── */
+.ord-summary-card,
+.ord-notes-card,
+.ord-actions-card {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+
+.ord-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #475569;
+  padding: 3px 0;
+}
+
+.ord-summary-discount span:last-child {
+  color: #10b981;
+}
+
+.ord-summary-total {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.ord-summary-meta {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.ord-action-label {
+  display: block;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.ord-list-pagination {
+  padding: 12px 16px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: center;
+}
+
+.ord-mobile-detail-btn {
+  display: none;
+}
+
+@media (max-width: 992px) {
+  .ord-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .ord-detail-panel {
+    display: none;
+  }
+
+  .ord-mobile-detail-btn {
+    display: inline-flex;
+  }
+
+  .ord-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}

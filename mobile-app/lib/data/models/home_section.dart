@@ -86,6 +86,12 @@ class HomeSection {
   final String? subtitle;
   final int position;
   final String? layout;
+  final String? sectionLayout;
+  final String? cardSize;
+  final bool showTitle;
+  final double? paddingTop;
+  final double? paddingBottom;
+  final String? productCardSize;
   final String? backgroundColor;
   final bool showViewAll;
   final String? viewAllQuery;
@@ -106,6 +112,12 @@ class HomeSection {
     this.subtitle,
     this.position = 0,
     this.layout,
+    this.sectionLayout,
+    this.cardSize,
+    this.showTitle = false,
+    this.paddingTop,
+    this.paddingBottom,
+    this.productCardSize,
     this.backgroundColor,
     this.showViewAll = true,
     this.viewAllQuery,
@@ -127,6 +139,12 @@ class HomeSection {
         subtitle: json['subtitle']?.toString(),
         position: asInt(json['position']),
         layout: json['layout']?.toString(),
+        sectionLayout: json['sectionLayout']?.toString(),
+        cardSize: json['cardSize']?.toString(),
+        showTitle: json['showTitle'] == true,
+        paddingTop: json['paddingTop'] != null ? (json['paddingTop'] as num).toDouble() : null,
+        paddingBottom: json['paddingBottom'] != null ? (json['paddingBottom'] as num).toDouble() : null,
+        productCardSize: json['productCardSize']?.toString(),
         backgroundColor: json['backgroundColor']?.toString(),
         showViewAll: json['showViewAll'] != false,
         viewAllQuery: json['viewAllQuery']?.toString(),

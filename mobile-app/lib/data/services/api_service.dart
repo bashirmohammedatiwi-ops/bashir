@@ -479,13 +479,23 @@ class ApiService {
 
   // ---- COUPONS ----
   Future<Coupon?> validateCoupon(String code) async {
+    final trimmed = code.trim();
+    if (trimmed.isEmpty) return null;
     try {
-      final r = await _dio.get('/coupons/validate/$code',
-          options: Options(extra: {'auth': false}));
-      final data = asMap(_data(r));
+      final r = await _dio.get(
+        '/coupons/validate/${Uri.encodeComponent(trimmed)}',
+        options: Options(extra: {'auth': false}),
+      );
+      final raw = _data(r);
+      if (raw == null) return null;
+      if (raw is! Map) return null;
+      final data = Map<String, dynamic>.from(raw);
       if (data.isEmpty) return null;
-      return Coupon.fromJson(data);
+      final coupon = Coupon.fromJson(data);
+      if (!coupon.isActive || coupon.code.isEmpty) return null;
+      return coupon;
     } catch (e) {
+      if (e is DioException && e.response?.statusCode == 404) return null;
       _throw(e);
     }
   }

@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../core/widgets/product_card.dart';
+import '../../core/widgets/product_grid.dart';
+import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../auth/auth_provider.dart';
 import '../shell/main_shell.dart';
@@ -32,7 +33,11 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
     final wishlist = ref.watch(wishlistProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('المفضلة')),
+      backgroundColor: AppColors.scaffold,
+      appBar: AppBar(
+        title: const Text('المفضلة'),
+        elevation: 0,
+      ),
       body: !auth.isAuthenticated
           ? EmptyState(
               icon: Icons.favorite_border_rounded,
@@ -44,7 +49,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
               ),
             )
           : wishlist.loading && wishlist.products.isEmpty
-              ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+              ? const ProductGridSkeleton(count: 6)
               : wishlist.products.isEmpty
                   ? EmptyState(
                       icon: Icons.favorite_border_rounded,
@@ -58,17 +63,7 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
                   : RefreshIndicator(
                       color: AppColors.primary,
                       onRefresh: () => ref.read(wishlistProvider.notifier).load(),
-                      child: GridView.builder(
-                        padding: const EdgeInsets.all(12),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          childAspectRatio: 0.6,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                        ),
-                        itemCount: wishlist.products.length,
-                        itemBuilder: (_, i) => ProductCard(product: wishlist.products[i]),
-                      ),
+                      child: ProductGrid(products: wishlist.products),
                     ),
     );
   }

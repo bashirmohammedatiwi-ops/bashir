@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/card_sizes.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/banner.dart';
 import '../../../data/models/home_section.dart';
@@ -14,6 +16,9 @@ List<AppBanner> sectionBanners(HomeSection section) {
       .toList();
 }
 
+double _bannerAspect(AppBanner b, HomeSection section) =>
+    cardSizeSpec(b.cardSize ?? section.cardSize).bannerAspect;
+
 class BannerFullSection extends StatelessWidget {
   final HomeSection section;
   const BannerFullSection({super.key, required this.section});
@@ -26,13 +31,13 @@ class BannerFullSection extends StatelessWidget {
     return HomeSectionShell(
       section: section,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
         child: GestureDetector(
           onTap: () => openBannerLink(context, b),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             child: AspectRatio(
-              aspectRatio: 2.1,
+              aspectRatio: _bannerAspect(b, section),
               child: _BannerContent(banner: b),
             ),
           ),
@@ -51,32 +56,127 @@ class BannerGridSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final list = sectionBanners(section);
     if (list.isEmpty) return const SizedBox.shrink();
-    final count = columns == 2 ? 2 : 3;
-    final banners = list.take(count).toList();
+    final layout = section.sectionLayout ?? 'asymmetric';
 
     return HomeSectionShell(
       section: section,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-        child: Row(
-          children: [
-            for (int i = 0; i < banners.length; i++) ...[
-              if (i > 0) const SizedBox(width: 10),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => openBannerLink(context, banners[i]),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: AspectRatio(
-                      aspectRatio: columns == 2 ? 0.72 : 0.62,
-                      child: _BannerContent(banner: banners[i]),
-                    ),
-                  ),
-                ),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
+        child: layout == 'uniform'
+            ? _UniformBannerRow(banners: list, section: section)
+            : columns == 2
+                ? _AsymmetricBannerPair(banners: list, section: section)
+                : _TripleBannerRow(banners: list, section: section),
+      ),
+    );
+  }
+}
+
+int _sizeFlex(String? cardSize) {
+  final spec = cardSizeSpec(cardSize);
+  return spec.width.clamp(88, 168).round();
+}
+
+class _UniformBannerRow extends StatelessWidget {
+  final List<AppBanner> banners;
+  final HomeSection section;
+
+  const _UniformBannerRow({required this.banners, required this.section});
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        children: [
+          for (var i = 0; i < banners.length; i++) ...[
+            if (i > 0) const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: _BannerTile(
+                banner: banners[i],
+                height: cardSizeSpec(banners[i].cardSize ?? section.cardSize).height,
+                radius: AppRadius.md,
+                onTap: () => openBannerLink(context, banners[i]),
               ),
-            ],
+            ),
           ],
-        ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AsymmetricBannerPair extends StatelessWidget {
+  final List<AppBanner> banners;
+  final HomeSection section;
+
+  const _AsymmetricBannerPair({required this.banners, required this.section});
+
+  @override
+  Widget build(BuildContext context) {
+    final a = banners[0];
+    final b = banners.length > 1 ? banners[1] : null;
+    final flexA = _sizeFlex(a.cardSize ?? section.cardSize);
+    final flexB = b != null ? _sizeFlex(b.cardSize ?? section.cardSize) : 42;
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            flex: flexA,
+            child: _BannerTile(
+              banner: a,
+              radius: AppRadius.lg,
+              onTap: () => openBannerLink(context, a),
+            ),
+          ),
+          if (b != null) ...[
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              flex: flexB,
+              child: _BannerTile(
+                banner: b,
+                radius: AppRadius.md,
+                onTap: () => openBannerLink(context, b),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TripleBannerRow extends StatelessWidget {
+  final List<AppBanner> banners;
+  final HomeSection section;
+
+  const _TripleBannerRow({required this.banners, required this.section});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = banners.take(3).toList();
+    final maxH = items
+        .map((b) => cardSizeSpec(b.cardSize ?? section.cardSize).height)
+        .fold(168.0, (a, b) => a > b ? a : b);
+
+    return SizedBox(
+      height: maxH,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < items.length; i++) ...[
+            if (i > 0) const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              flex: _sizeFlex(items[i].cardSize ?? section.cardSize),
+              child: _BannerTile(
+                banner: items[i],
+                radius: AppRadius.md,
+                onTap: () => openBannerLink(context, items[i]),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -90,29 +190,71 @@ class BannerCarouselSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final list = sectionBanners(section);
     if (list.isEmpty) return const SizedBox.shrink();
+
+    final maxH = list
+        .map((b) => cardSizeSpec(b.cardSize ?? section.cardSize).height)
+        .fold(148.0, (a, b) => a > b ? a : b);
+
     return HomeSectionShell(
       section: section,
       child: SizedBox(
-        height: 148,
+        height: maxH + 20,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
           itemCount: list.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
           itemBuilder: (_, i) {
             final b = list[i];
-            return GestureDetector(
-              onTap: () => openBannerLink(context, b),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: SizedBox(
-                  width: 280,
-                  child: _BannerContent(banner: b),
+            final spec = resolveItemCardSize(
+              cardSize: b.cardSize,
+              sectionLayout: section.sectionLayout,
+              index: i,
+              defaultSize: section.cardSize,
+            );
+            final w = spec.width > 0 ? spec.width : 280.0;
+            return Align(
+              alignment: Alignment.bottomCenter,
+              child: GestureDetector(
+                onTap: () => openBannerLink(context, b),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                  child: SizedBox(
+                    width: w,
+                    height: spec.height,
+                    child: _BannerContent(banner: b),
+                  ),
                 ),
               ),
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _BannerTile extends StatelessWidget {
+  final AppBanner banner;
+  final double radius;
+  final double? height;
+  final VoidCallback onTap;
+
+  const _BannerTile({
+    required this.banner,
+    required this.radius,
+    required this.onTap,
+    this.height,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final child = _BannerContent(banner: banner);
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(radius),
+        child: height != null ? SizedBox(height: height, child: child) : child,
       ),
     );
   }
@@ -139,8 +281,10 @@ class _BannerContent extends StatelessWidget {
                   color: Colors.white.withValues(alpha: 0.92),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(banner.discountText!,
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                child: Text(
+                  banner.discountText!,
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                ),
               ),
             ),
         ],

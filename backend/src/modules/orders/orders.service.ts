@@ -28,12 +28,43 @@ export class OrdersService {
   ) {}
 
   async list(q: QueryOrdersDto) {
+    const search = q.search?.trim();
     const where = {
       status: q.status,
       paymentStatus: q.paymentStatus,
       userId: q.userId,
+      ...(search
+        ? {
+            OR: [
+              { orderNumber: { contains: search, mode: "insensitive" as const } },
+              { user: { name: { contains: search, mode: "insensitive" as const } } },
+              { user: { email: { contains: search, mode: "insensitive" as const } } },
+              { user: { phone: { contains: search } } },
+            ],
+          }
+        : {}),
     };
-    const lite = q.lite !== false;
+    const preview = q.preview === true;
+    const lite = !preview && q.lite !== false;
+
+    const itemPreviewInclude = {
+      take: 6,
+      orderBy: { id: "asc" as const },
+      include: {
+        product: {
+          include: {
+            images: {
+              take: 1,
+              orderBy: { position: "asc" as const },
+              include: { media: true },
+            },
+            shades: { include: { image: true } },
+            variants: true,
+          },
+        },
+      },
+    };
+
     const [total, items] = await this.prisma.$transaction([
       this.prisma.order.count({ where }),
       this.prisma.order.findMany({
@@ -41,16 +72,26 @@ export class OrdersService {
         orderBy: { createdAt: "desc" },
         skip: q.skip,
         take: q.limit,
-        include: lite
+        include: preview
           ? {
               user: { select: { id: true, name: true, email: true, phone: true } },
+              address: {
+                select: { city: true, governorate: true, area: true, fullName: true, phone: true },
+              },
+              coupon: { select: { id: true, code: true, type: true, value: true } },
               _count: { select: { items: true } },
+              items: itemPreviewInclude,
             }
-          : {
-              user: { select: { id: true, name: true, email: true, phone: true } },
-              items: true,
-              address: true,
-            },
+          : lite
+            ? {
+                user: { select: { id: true, name: true, email: true, phone: true } },
+                _count: { select: { items: true } },
+              }
+            : {
+                user: { select: { id: true, name: true, email: true, phone: true } },
+                items: true,
+                address: true,
+              },
       }),
     ]);
     return paginate(items, total, q.page, q.limit);
@@ -62,7 +103,18 @@ export class OrdersService {
       include: {
         user: { select: { id: true, name: true, email: true, phone: true } },
         address: true,
-        items: { include: { product: { include: { images: { include: { media: true } } } } } },
+        items: {
+          orderBy: { id: "asc" },
+          include: {
+            product: {
+              include: {
+                images: { orderBy: { position: "asc" }, include: { media: true } },
+                shades: { include: { image: true } },
+                variants: true,
+              },
+            },
+          },
+        },
         coupon: true,
       },
     });

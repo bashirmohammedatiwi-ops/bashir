@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/theme/app_typography.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/utils/friendly_error.dart';
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/widgets/section_card.dart';
+import '../../core/widgets/shimmer_box.dart';
+import '../../core/widgets/states.dart';
 import '../../data/models/address.dart';
 import '../../data/models/coupon.dart';
 import '../../data/services/api_service.dart';
@@ -104,16 +112,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Future<void> _placeOrder() async {
     final cart = ref.read(cartProvider);
     if (_selected == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('يرجى اختيار عنوان التوصيل')));
+      AppSnackbar.error(context, 'يرجى اختيار عنوان التوصيل');
       return;
     }
     if (_paymentMethod == 'CARD') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('الدفع بالبطاقة قيد التفعيل — اختر الدفع عند الاستلام حالياً'),
-        ),
-      );
+      AppSnackbar.show(context, 'الدفع بالبطاقة قيد التفعيل — اختر الدفع عند الاستلام حالياً');
       return;
     }
     setState(() => _placing = true);
@@ -132,10 +135,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ref.read(authProvider.notifier).refreshUser();
       if (mounted) context.pushReplacement('/order-success/${order.id}');
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: AppColors.sale));
-      }
+      if (mounted) AppSnackbar.error(context, friendlyError(e));
     } finally {
       if (mounted) setState(() => _placing = false);
     }
@@ -177,17 +177,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final total = (beforeLoyalty - loyaltyDiscount).clamp(0, 1 << 31);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('إتمام الطلب')),
+      backgroundColor: AppColors.scaffold,
+      appBar: AppBar(title: const Text('إتمام الطلب'), elevation: 0),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          _sectionTitle('عنوان التوصيل'),
+          const SectionTitle('عنوان التوصيل'),
           addresses.when(
-            loading: () => const Center(child: Padding(
-              padding: EdgeInsets.all(16),
-              child: CircularProgressIndicator(color: AppColors.primary),
-            )),
-            error: (e, _) => Text(e.toString()),
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              child: ShimmerBox(height: 80, radius: AppRadius.lg),
+            ),
+            error: (e, _) => ErrorView.from(e, onRetry: () => ref.invalidate(addressesProvider)),
             data: (list) {
               if (_selected == null && list.isNotEmpty) {
                 _selected = list.firstWhere((a) => a.isDefault, orElse: () => list.first);
@@ -201,15 +202,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               return Column(
                 children: [
                   for (final a in list)
-                    RadioListTile<String>(
-                      value: a.id,
-                      groupValue: _selected?.id,
-                      activeColor: AppColors.primary,
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(a.fullName, style: const TextStyle(fontWeight: FontWeight.w700)),
-                      subtitle: Text('${a.phone}\n${a.summary}'),
-                      isThreeLine: true,
-                      onChanged: (v) {
+                    _AddressTile(
+                      address: a,
+                      selected: _selected?.id == a.id,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
                         setState(() => _selected = a);
                         _refreshShipping();
                       },
@@ -218,7 +215,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     alignment: AlignmentDirectional.centerStart,
                     child: TextButton.icon(
                       onPressed: _addAddress,
-                      icon: const Icon(Icons.add),
+                      icon: const Icon(Icons.add_rounded),
                       label: const Text('إضافة عنوان جديد'),
                     ),
                   ),
@@ -226,8 +223,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               );
             },
           ),
-          const Divider(height: 28),
-          _sectionTitle('كود الخصم'),
+          const SizedBox(height: AppSpacing.lg),
+          const SectionTitle('كود الخصم'),
           Row(
             children: [
               Expanded(
@@ -258,8 +255,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ],
               ),
             ),
-          const Divider(height: 28),
-          _sectionTitle('طريقة الدفع'),
+          const SizedBox(height: AppSpacing.lg),
+          const SectionTitle('طريقة الدفع'),
           _PaymentOption(
             title: 'الدفع عند الاستلام',
             subtitle: 'ادفع نقداً عند استلام الطلب',
@@ -277,69 +274,61 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             badge: 'قريباً',
             onTap: () {},
           ),
-          const Divider(height: 28),
-          _sectionTitle('ملاحظات الطلب'),
+          const SizedBox(height: AppSpacing.lg),
+          const SectionTitle('ملاحظات الطلب'),
           TextField(
             controller: _notesCtrl,
             maxLines: 2,
             decoration: const InputDecoration(hintText: 'أي تعليمات خاصة بالتوصيل...'),
           ),
-          const Divider(height: 28),
           if (points >= 100) ...[
-            _sectionTitle('نقاط الولاء'),
+            const SizedBox(height: AppSpacing.lg),
+            const SectionTitle('نقاط الولاء'),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: Text('استخدم $points نقطة'),
+              title: Text('استخدم $points نقطة', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
               subtitle: Text(
                 _useLoyalty && _loyaltySpent > 0
                     ? 'خصم ${formatPrice(loyaltyDiscount)} (100 نقطة = ${formatPrice(1000)})'
                     : '100 نقطة = ${formatPrice(1000)}',
-                style: const TextStyle(fontSize: 12),
+                style: AppTypography.caption,
               ),
               value: _useLoyalty,
-              activeColor: AppColors.primary,
+              activeThumbColor: AppColors.primary,
               onChanged: (v) => _toggleLoyalty(v, points, beforeLoyalty),
             ),
-            const Divider(height: 28),
           ],
-          _sectionTitle('طريقة الدفع'),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.primary),
-            ),
-            child: Row(
-              children: const [
-                Icon(Icons.payments_outlined, color: AppColors.primary),
-                SizedBox(width: 10),
-                Expanded(
-                  child: Text('الدفع عند الاستلام (نقداً)',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: AppSpacing.lg),
+          SectionCard(
+            title: 'ملخّص الطلب',
+            child: Column(
+              children: [
+                SummaryRow(label: 'المجموع الفرعي', value: formatPrice(subtotal)),
+                if (discount > 0)
+                  SummaryRow(label: 'الخصم', value: '- ${formatPrice(discount)}', valueColor: AppColors.success),
+                if (loyaltyDiscount > 0)
+                  SummaryRow(
+                    label: 'نقاط الولاء',
+                    value: '- ${formatPrice(loyaltyDiscount)}',
+                    valueColor: AppColors.success,
+                  ),
+                SummaryRow(
+                  label: 'الشحن',
+                  value: _shippingLoading ? '...' : (shipping == 0 ? 'مجاني' : formatPrice(shipping)),
                 ),
-                Icon(Icons.check_circle, color: AppColors.primary),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  child: Divider(height: 1),
+                ),
+                SummaryRow(label: 'الإجمالي', value: formatPrice(total), bold: true),
               ],
             ),
           ),
-          const Divider(height: 28),
-          _sectionTitle('ملخّص الطلب'),
-          _row('المجموع الفرعي', formatPrice(subtotal)),
-          if (discount > 0) _row('الخصم', '- ${formatPrice(discount)}', color: AppColors.success),
-          if (loyaltyDiscount > 0)
-            _row('نقاط الولاء', '- ${formatPrice(loyaltyDiscount)}', color: AppColors.success),
-          _row(
-            'الشحن',
-            _shippingLoading
-                ? '...'
-                : (shipping == 0 ? 'مجاني' : formatPrice(shipping)),
-          ),
-          const Divider(height: 20),
-          _row('الإجمالي', formatPrice(total), bold: true),
+          const SizedBox(height: AppSpacing.lg),
         ],
       ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm + 2, AppSpacing.lg, AppSpacing.sm + 2),
         decoration: BoxDecoration(
           color: AppColors.surface,
           boxShadow: [
@@ -377,35 +366,82 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       setState(() => _selected = created);
       _refreshShipping();
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
-      }
+      if (mounted) AppSnackbar.error(context, friendlyError(e));
     }
   }
+}
 
-  Widget _sectionTitle(String t) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: Text(t, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-      );
+class _AddressTile extends StatelessWidget {
+  final Address address;
+  final bool selected;
+  final VoidCallback onTap;
 
-  Widget _row(String label, String value, {bool bold = false, Color? color}) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          children: [
-            Text(label,
-                style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontWeight: bold ? FontWeight.w800 : FontWeight.w500,
-                    fontSize: bold ? 16 : 14)),
-            const Spacer(),
-            Text(value,
-                style: TextStyle(
-                    color: color ?? (bold ? AppColors.primary : AppColors.textPrimary),
-                    fontWeight: bold ? FontWeight.w900 : FontWeight.w700,
-                    fontSize: bold ? 18 : 14)),
-          ],
+  const _AddressTile({required this.address, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: Material(
+        color: selected ? AppColors.primaryLight : AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          child: Container(
+            padding: const EdgeInsets.all(AppSpacing.md + 2),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: selected ? AppColors.primary : AppColors.border, width: selected ? 1.5 : 1),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                  color: selected ? AppColors.primary : AppColors.textMuted,
+                ),
+                const SizedBox(width: AppSpacing.sm + 2),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(address.fullName, style: AppTypography.body.copyWith(fontWeight: FontWeight.w700)),
+                          if (address.isDefault) ...[
+                            const SizedBox(width: AppSpacing.sm),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(AppRadius.sm),
+                              ),
+                              child: Text(
+                                'افتراضي',
+                                style: AppTypography.caption.copyWith(
+                                  color: AppColors.primary,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(address.phone, style: AppTypography.caption),
+                      Text(address.summary, style: AppTypography.caption.copyWith(height: 1.4)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-      );
+      ),
+    );
+  }
 }
 
 class _PaymentOption extends StatelessWidget {

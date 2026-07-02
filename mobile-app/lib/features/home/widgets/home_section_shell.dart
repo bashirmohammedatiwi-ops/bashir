@@ -1,16 +1,22 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../data/models/home_section.dart';
 import '../home_link.dart';
 
-/// غلاف موحّد لأقسام الرئيسية — عنوان، عنوان فرعي، خلفية.
+/// عرض العنوان — يُتحكم به من لوحة التحكم (حقل showTitle).
+bool homeSectionShowsTitle(HomeSection section) => section.showTitle;
+
+/// غلاف موحّد لأقسام الرئيسية — عناوين خفيفة، إجراء «عرض الكل» فقط عند الحاجة.
 class HomeSectionShell extends StatelessWidget {
   final HomeSection section;
   final bool compactTop;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final Widget? headerTrailing;
+  final bool? showTitle;
   final Widget child;
 
   const HomeSectionShell({
@@ -20,40 +26,104 @@ class HomeSectionShell extends StatelessWidget {
     this.compactTop = false,
     this.actionLabel,
     this.onAction,
+    this.headerTrailing,
+    this.showTitle,
   });
+
+  bool get _showTitle => showTitle ?? homeSectionShowsTitle(section);
 
   @override
   Widget build(BuildContext context) {
-    final bg = parseHexColor(section.backgroundColor) ?? Colors.white;
-    final hasTitle = section.title != null && section.title!.isNotEmpty;
+    final bg = parseHexColor(section.backgroundColor) ?? AppColors.scaffold;
+    final hasAction = actionLabel != null && onAction != null;
 
     return ColoredBox(
       color: bg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (hasTitle)
+          if (_showTitle)
             SectionHeader(
-              title: section.title!,
+              title: section.title ?? '',
               actionLabel: actionLabel,
               onAction: onAction,
               style: SectionHeaderStyle.niceOne,
               compact: compactTop,
-            ),
-          if (section.subtitle != null && section.subtitle!.isNotEmpty)
+              trailing: headerTrailing,
+            )
+          else if (hasAction || headerTrailing != null)
             Padding(
-              padding: EdgeInsets.fromLTRB(16, hasTitle ? 0 : (compactTop ? 4 : 12), 16, 8),
+              padding: EdgeInsets.fromLTRB(
+                AppSpacing.screenH,
+                compactTop ? AppSpacing.xs : AppSpacing.sm,
+                AppSpacing.screenH,
+                AppSpacing.xs,
+              ),
+              child: Row(
+                children: [
+                  if (headerTrailing != null) ...[
+                    headerTrailing!,
+                    const Spacer(),
+                  ] else
+                    const Spacer(),
+                  if (hasAction)
+                    _ViewAllLink(label: actionLabel!, onTap: onAction!),
+                ],
+              ),
+            ),
+          if (section.subtitle != null &&
+              section.subtitle!.isNotEmpty &&
+              _showTitle)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.screenH,
+                0,
+                AppSpacing.screenH,
+                AppSpacing.sm,
+              ),
               child: Text(
                 section.subtitle!,
                 style: const TextStyle(
                   color: AppColors.textMuted,
-                  fontSize: 12.5,
-                  height: 1.3,
+                  fontSize: 13,
+                  height: 1.35,
                 ),
               ),
             ),
           child,
         ],
+      ),
+    );
+  }
+}
+
+class _ViewAllLink extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _ViewAllLink({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const Icon(Icons.chevron_left, size: 16, color: AppColors.textMuted),
+          ],
+        ),
       ),
     );
   }

@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/widgets/product_card.dart';
+import '../../core/theme/app_spacing.dart';
+import '../../core/utils/friendly_error.dart';
+import '../../core/widgets/listing_toolbar.dart';
+import '../../core/widgets/product_grid.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/product.dart';
@@ -55,6 +58,14 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
   int? _maxPrice;
   bool _inStock = false;
   double? _minRating;
+
+  static const _sortLabels = {
+    'default': 'الأحدث',
+    'price_asc': 'السعر ↑',
+    'price_desc': 'السعر ↓',
+    'rating': 'التقييم',
+    'popular': 'الأكثر مبيعاً',
+  };
 
   @override
   void initState() {
@@ -114,7 +125,7 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
         _firstLoad = false;
       });
     } catch (e) {
-      setState(() => _error = e.toString());
+      setState(() => _error = friendlyError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -123,11 +134,15 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
+      backgroundColor: AppColors.scaffold,
+      appBar: AppBar(
+        title: Text(widget.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        elevation: 0,
+      ),
       body: Column(
         children: [
-          _Toolbar(
-            sort: _sort,
+          ListingToolbar(
+            sortLabel: _sortLabels[_sort] ?? 'ترتيب',
             onSort: _openSort,
             onFilter: _openFilter,
             count: _items.length,
@@ -150,24 +165,11 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
     return RefreshIndicator(
       color: AppColors.primary,
       onRefresh: () => _fetch(reset: true),
-      child: GridView.builder(
+      child: ProductGrid(
         controller: _scroll,
-        padding: const EdgeInsets.all(12),
-        cacheExtent: 600,
-        addAutomaticKeepAlives: true,
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          childAspectRatio: 0.6,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-        ),
-        itemCount: _items.length + (_hasMore ? 2 : 0),
-        itemBuilder: (_, i) {
-          if (i >= _items.length) {
-            return const ShimmerBox(height: double.infinity, radius: 16);
-          }
-          return ProductCard(product: _items[i]);
-        },
+        products: _items,
+        showPromoBadge: widget.isPromo,
+        extraSlots: _hasMore ? 2 : 0,
       ),
     );
   }
@@ -177,7 +179,8 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
       context: context,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+      ),
       builder: (_) {
         const options = {
           'default': 'الأحدث',
@@ -190,22 +193,33 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Container(
+                margin: const EdgeInsets.only(top: 10, bottom: 4),
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
               const Padding(
-                padding: EdgeInsets.all(16),
+                padding: EdgeInsets.all(AppSpacing.lg),
                 child: Text('ترتيب حسب', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
               ),
               for (final entry in options.entries)
-                RadioListTile<String>(
-                  value: entry.key,
-                  groupValue: _sort,
-                  activeColor: AppColors.primary,
+                ListTile(
+                  leading: Icon(
+                    _sort == entry.key ? Icons.radio_button_checked : Icons.radio_button_off,
+                    color: _sort == entry.key ? AppColors.primary : AppColors.textMuted,
+                  ),
                   title: Text(entry.value),
-                  onChanged: (v) {
+                  onTap: () {
                     Navigator.pop(context);
-                    setState(() => _sort = v!);
+                    setState(() => _sort = entry.key);
                     _fetch(reset: true);
                   },
                 ),
+              const SizedBox(height: AppSpacing.sm),
             ],
           ),
         );
@@ -226,23 +240,35 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
       isScrollControlled: true,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+      ),
       builder: (_) => StatefulBuilder(
         builder: (ctx, setSheet) => Padding(
           padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
+            left: AppSpacing.lg,
+            right: AppSpacing.lg,
+            top: AppSpacing.lg,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.lg,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
               const Text('تصفية', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.lg),
               const Text('نطاق السعر', style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Row(children: [
                 Expanded(
                   child: TextField(
@@ -251,7 +277,7 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
                     decoration: const InputDecoration(hintText: 'الأدنى'),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: TextField(
                     controller: maxCtrl,
@@ -260,7 +286,6 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
                   ),
                 ),
               ]),
-              const SizedBox(height: 8),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 activeThumbColor: AppColors.primary,
@@ -269,8 +294,9 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
                 onChanged: (v) => setSheet(() => inStock = v),
               ),
               const Text('الحد الأدنى للتقييم', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: AppSpacing.sm),
               Wrap(
-                spacing: 8,
+                spacing: AppSpacing.sm,
                 children: [
                   for (final r in [0.0, 3.0, 4.0, 4.5])
                     ChoiceChip(
@@ -281,7 +307,7 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
                     ),
                 ],
               ),
-              const SizedBox(height: 18),
+              const SizedBox(height: AppSpacing.lg),
               Row(children: [
                 Expanded(
                   child: OutlinedButton(
@@ -298,7 +324,7 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
                     child: const Text('إعادة تعيين'),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () {
@@ -318,51 +344,6 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _Toolbar extends StatelessWidget {
-  final String sort;
-  final VoidCallback onSort;
-  final VoidCallback onFilter;
-  final int count;
-  final bool hasFilter;
-  const _Toolbar({
-    required this.sort,
-    required this.onSort,
-    required this.onFilter,
-    required this.count,
-    required this.hasFilter,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.surface,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextButton.icon(
-              onPressed: onSort,
-              icon: const Icon(Icons.swap_vert_rounded, size: 20),
-              label: const Text('ترتيب'),
-              style: TextButton.styleFrom(foregroundColor: AppColors.textPrimary),
-            ),
-          ),
-          Container(width: 1, height: 24, color: AppColors.border),
-          Expanded(
-            child: TextButton.icon(
-              onPressed: onFilter,
-              icon: Icon(Icons.tune_rounded,
-                  size: 20, color: hasFilter ? AppColors.primary : AppColors.textPrimary),
-              label: Text('تصفية',
-                  style: TextStyle(color: hasFilter ? AppColors.primary : AppColors.textPrimary)),
-            ),
-          ),
-        ],
       ),
     );
   }

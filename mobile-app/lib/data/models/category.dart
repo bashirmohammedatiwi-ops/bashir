@@ -7,6 +7,7 @@ class Category {
   final String slug;
   final String? icon;
   final String? parentId;
+  final String? cardSize;
   final AppMedia? image;
   final List<Category> children;
 
@@ -16,6 +17,7 @@ class Category {
     required this.slug,
     this.icon,
     this.parentId,
+    this.cardSize,
     this.image,
     this.children = const [],
   });
@@ -26,6 +28,7 @@ class Category {
         slug: asString(json['slug']),
         icon: json['icon']?.toString(),
         parentId: json['parentId']?.toString(),
+        cardSize: json['cardSize']?.toString(),
         image: json['image'] is Map ? AppMedia.fromJson(asMap(json['image'])) : null,
         children: asList(json['children']).map(Category.fromJson).toList(),
       );
