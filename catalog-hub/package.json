@@ -1,7 +1,7 @@
 {
-  "name": "niceone-backup",
-  "version": "1.0.0",
-  "description": "Backup & viewer for Nice One product catalog via public API",
+  "name": "catalog-hub",
+  "version": "2.0.0",
+  "description": "Multi-store product catalog hub — Nice One, Elryan, Miraaya, Faces, Amazon, Miswag, Orisdi, Beauty Way, Vaneersa, Najd",
   "type": "module",
   "scripts": {
     "start": "PORT=10000 node server.js",

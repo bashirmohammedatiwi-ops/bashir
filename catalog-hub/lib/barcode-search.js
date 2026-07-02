@@ -34,11 +34,6 @@ import {
   lookupFacesBarcodeIndex,
 } from './faces-api.js';
 import {
-  searchProducts as vanillaSearchProducts,
-  normalizeProductSummary as normalizeVanillaSummary,
-  parseVanillaBarcode,
-} from './vanilla-api.js';
-import {
   searchProductsByBarcode as searchAmazonProductsByBarcode,
   normalizeProductSummary as normalizeAmazonSummary,
   isUsableAmazonProduct,
@@ -79,7 +74,6 @@ function barcodeQueryVariants(barcode) {
 
 export const STORE_META = {
   niceone: { id: 'niceone', label: 'Nice One', path: '/niceone/', domain: 'niceonesa.com' },
-  vanilla: { id: 'vanilla', label: 'Vanilla Cosmetics', path: '/vanilla/', domain: 'vanillacosmetics.com' },
   elryan: { id: 'elryan', label: 'الريان Elryan', path: '/elryan/', domain: 'elryan.com' },
   miraaya: { id: 'miraaya', label: 'ميرايا Miraaya', path: '/miraaya/', domain: 'miraaya.com' },
   faces: { id: 'faces', label: 'وجوه FACES', path: '/faces/', domain: 'faces.ae' },
@@ -95,7 +89,7 @@ let elryanBeautyIdsPromise = null;
 const searchResultCache = new Map();
 const SEARCH_CACHE_MS = 15 * 60 * 1000;
 const SEARCH_NEGATIVE_CACHE_MS = 3 * 60 * 1000;
-const STORE_SEARCH_RANK = { niceone: 0, elryan: 1, vanilla: 2, miraaya: 3, najd: 4, orisdi: 5, beautyway: 6, vaneersa: 7, miswag: 8, amazon: 9, faces: 10 };
+const STORE_SEARCH_RANK = { niceone: 0, elryan: 1, miraaya: 2, najd: 3, orisdi: 4, beautyway: 5, vaneersa: 6, miswag: 7, amazon: 8, faces: 9 };
 const foundationCache = { products: [], at: 0 };
 const FOUNDATION_CACHE_MS = 10 * 60 * 1000;
 
@@ -574,68 +568,6 @@ async function searchFacesByBarcode(barcode, hintHits = []) {
   }
 }
 
-async function searchVanillaByBarcode(barcode) {
-  const unified = searchUnifiedByStore(barcode, 'vanilla');
-  if (unified.length) return dedupeHits(unified);
-
-  const results = [];
-  for (const q of barcodeQueryVariants(barcode)) {
-    const data = await vanillaSearchProducts(q, 1, 30);
-    const items = data.items || [];
-    // منتجات طابقت على مستوى المنتج مباشرة
-    const variationCandidates = [];
-    for (const p of items) {
-      const bc = parseVanillaBarcode(p.barcode);
-      if (barcodeMatches(bc.barcode, barcode) || barcodeMatches(p.sku, barcode)) {
-        const n = normalizeVanillaSummary(p, {});
-        results.push(hit('vanilla', {
-          id: n.id,
-          name: n.name,
-          manufacturer: n.manufacturer,
-          price: n.price,
-          thumb: n.thumb,
-          barcode: bc.barcode || barcode,
-          sku: n.sku,
-          matchType: 'product',
-        }));
-        continue; // ⚡ طابق على مستوى المنتج — لا حاجة لجلب المتغيّرات
-      }
-      if (p.hasVariations || p.listingUsesVariation) variationCandidates.push(p);
-    }
-
-    // ⚡ جلب متغيّرات المرشّحين بالتوازي (حد أقصى 8) بدل التسلسل
-    if (variationCandidates.length) {
-      const { fetchProductVariations } = await import('./vanilla-api.js');
-      const limited = variationCandidates.slice(0, 8);
-      const varResults = await Promise.allSettled(
-        limited.map((p) => fetchProductVariations(p.id)),
-      );
-      varResults.forEach((outcome, idx) => {
-        if (outcome.status !== 'fulfilled') return;
-        const p = limited[idx];
-        const n = normalizeVanillaSummary(p, {});
-        for (const v of outcome.value) {
-          const vbc = parseVanillaBarcode(v.barcode);
-          if (!barcodeMatches(vbc.barcode, barcode) && !barcodeMatches(v.sku, barcode)) continue;
-          results.push(hit('vanilla', {
-            id: String(p.id),
-            name: p.name,
-            manufacturer: p.brandName || '',
-            price: n.price,
-            thumb: n.thumb,
-            barcode: vbc.barcode || v.sku,
-            shadeName: v.shortDescription || v.displayName || String(v.id),
-            sku: v.sku,
-            matchType: 'shade',
-          }));
-        }
-      });
-    }
-    if (results.length) break;
-  }
-  return dedupeHits(results);
-}
-
 async function searchMiswagByBarcode(barcode, { getMeta } = {}) {
   const products = await searchMiswagProductsByBarcode(barcode, { getMeta });
   return dedupeHits(
@@ -798,7 +730,6 @@ async function searchNajdByBarcode(barcode, { getMeta } = {}) {
 const SEARCHERS = [
   { store: 'niceone', fn: searchNiceOneByBarcode, timeoutMs: 7_000 },
   { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 5_000 },
-  { store: 'vanilla', fn: searchVanillaByBarcode, timeoutMs: 5_000 },
   { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 5_000 },
   { store: 'najd', fn: searchNajdByBarcode, timeoutMs: 14_000 },
   { store: 'orisdi', fn: searchOrisdiByBarcode, timeoutMs: 12_000 },

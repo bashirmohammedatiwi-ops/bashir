@@ -8,7 +8,6 @@ import {
   extractBarcode,
 } from './api.js';
 import { enrichShadesFromDatabase, enrichShadesForImport } from './barcodes.js';
-import { fetchProductDetail as fetchVanillaDetail, normalizeProductDetail as normalizeVanillaDetail } from './vanilla-api.js';
 import { fetchProductByIdBilingual } from './elryan-api.js';
 import { fetchProductBySku, fetchProductById as fetchMiraayaById, normalizeProductDetail as normalizeMiraayaDetail, resolveProductByBarcode } from './miraaya-api.js';
 import { fetchProductById as fetchFacesById, normalizeProductDetailFromRaw as normalizeFacesDetail } from './faces-api.js';
@@ -256,13 +255,6 @@ async function fetchMiraayaImport(id, hubOrigin, barcodeHint = '') {
   return buildImportPayload('miraaya', normalized, { hubOrigin });
 }
 
-async function fetchVanillaImport(id, hubOrigin) {
-  const detail = await fetchVanillaDetail(id);
-  if (!detail?.id) return null;
-  const normalized = await normalizeVanillaDetail(detail);
-  return buildImportPayload('vanilla', normalized, { hubOrigin });
-}
-
 async function fetchAmazonImport(id, hubOrigin, barcodeHint = '', { light = false } = {}) {
   const asin = String(id || '').trim().toUpperCase();
   if (!asin) return null;
@@ -351,9 +343,6 @@ export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barc
       break;
     case 'miraaya':
       payload = await fetchMiraayaImport(id, hubOrigin, barcode);
-      break;
-    case 'vanilla':
-      payload = await fetchVanillaImport(id, hubOrigin);
       break;
     case 'amazon':
       payload = await fetchAmazonImport(id, hubOrigin, barcode, { light });

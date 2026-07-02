@@ -8,7 +8,6 @@ function esc(s) {
 
 const STORE_CLASS = {
   niceone: 'hub-card--niceone',
-  vanilla: 'hub-card--vanilla',
   elryan: 'hub-card--elryan',
   miraaya: 'hub-card--miraaya',
   faces: 'hub-card--faces',
@@ -22,7 +21,6 @@ const STORE_CLASS = {
 
 const STORE_LABELS = {
   niceone: 'Nice One',
-  vanilla: 'Vanilla',
   elryan: 'الريان',
   miraaya: 'ميرايا',
   faces: 'وجوه',

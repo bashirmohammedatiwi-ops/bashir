@@ -15,7 +15,6 @@ import { publicPath } from './public-prefix.js';
 
 const STORE_LABELS = {
   niceone: 'Nice One',
-  vanilla: 'Vanilla Cosmetics',
   elryan: 'الريان Elryan',
   miraaya: 'ميرايا Miraaya',
   faces: 'وجوه FACES',
@@ -24,11 +23,11 @@ const STORE_LABELS = {
   orisdi: 'أورزدي Orisdi',
   beautyway: 'بيوتي وي Beauty Way',
   vaneersa: 'ڤانير Vaneersa',
+  najd: 'نجد العذية Najd',
 };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LOCAL_PRODUCTS_FILE = path.join(__dirname, '..', 'data', 'products.json');
-const VANILLA_CACHE_FILE = path.join(__dirname, '..', 'data', 'vanilla-barcode-cache.json');
 const CACHE_FILE = path.join(__dirname, '..', 'data', 'barcode-cache.json');
 
 let unifiedIndex = null;
@@ -69,14 +68,6 @@ function addToMap(map, barcode, entry) {
 function isMetadataCacheKey(cacheKey = '') {
   const key = String(cacheKey || '');
   return key.startsWith('upc_barcode|') || key.startsWith('meta|');
-}
-
-function loadVanillaCache() {
-  try {
-    return JSON.parse(fs.readFileSync(VANILLA_CACHE_FILE, 'utf8'));
-  } catch {
-    return {};
-  }
 }
 
 function loadDiskCacheEntries() {
@@ -168,21 +159,6 @@ export function buildUnifiedBarcodeIndex({ force = false } = {}) {
       shadeName: entry.shadeName || '',
       matchType: entry.shadeName ? 'shade' : 'product',
       source: 'faces-index',
-    }));
-  }
-
-  for (const row of Object.values(loadVanillaCache())) {
-    if (!row?.ean) continue;
-    addToMap(map, row.ean, hit('vanilla', {
-      id: row.productId || '',
-      name: row.name || '',
-      manufacturer: row.brand || '',
-      thumb: row.thumb || '',
-      barcode: row.ean,
-      sku: row.sku || '',
-      matchType: row.shadeName ? 'shade' : 'product',
-      shadeName: row.shadeName || '',
-      source: 'vanilla-cache',
     }));
   }
 

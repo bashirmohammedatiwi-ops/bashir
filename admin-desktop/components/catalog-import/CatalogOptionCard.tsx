@@ -14,7 +14,6 @@ import { resolveCatalogImageUrl } from "@/lib/resolveCatalogImageUrl";
 
 const STORE_COLORS: Record<string, string> = {
   niceone: "#e91e63",
-  vanilla: "#9c27b0",
   elryan: "#1976d2",
   miraaya: "#00897b",
   faces: "#212121",
@@ -23,6 +22,7 @@ const STORE_COLORS: Record<string, string> = {
   orisdi: "#02c0ef",
   beautyway: "#8b2c9e",
   vaneersa: "#5b8666",
+  najd: "#8b6914",
 };
 
 type Props = {

@@ -77,10 +77,6 @@ body {
   border-color: #c2185b;
 }
 
-.hub-card--vanilla:hover {
-  border-color: #8d6e3f;
-}
-
 .hub-card--elryan:hover {
   border-color: #3b5dac;
 }
@@ -132,10 +128,6 @@ body {
 
 .hub-card--niceone .hub-card-icon {
   background: linear-gradient(135deg, #c2185b, #880e4f);
-}
-
-.hub-card--vanilla .hub-card-icon {
-  background: linear-gradient(135deg, #a67c52, #6d4c2f);
 }
 
 .hub-card--elryan .hub-card-icon {
@@ -212,10 +204,6 @@ body {
 
 .hub-card--niceone .hub-cta {
   color: #c2185b;
-}
-
-.hub-card--vanilla .hub-cta {
-  color: #8d6e3f;
 }
 
 .hub-card--elryan .hub-cta {
@@ -400,7 +388,6 @@ body {
 }
 
 .barcode-result.hub-card--niceone:hover { border-color: #c2185b; }
-.barcode-result.hub-card--vanilla:hover { border-color: #8d6e3f; }
 .barcode-result.hub-card--elryan:hover { border-color: #3b5dac; }
 .barcode-result.hub-card--miraaya:hover { border-color: #7b4b94; }
 .barcode-result.hub-card--faces:hover { border-color: #1a1a1a; }
