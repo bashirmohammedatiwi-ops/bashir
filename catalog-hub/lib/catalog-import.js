@@ -17,6 +17,7 @@ import { fetchProductDetail as fetchMiswagDetail, normalizeProductDetail as norm
 import { fetchProductDetail as fetchOrisdiDetail } from './orisdi-api.js';
 import { fetchProductDetail as fetchBeautywayDetail } from './beautyway-api.js';
 import { fetchProductDetail as fetchVaneersaDetail } from './vaneersa-api.js';
+import { fetchProductDetail as fetchNajdDetail } from './najd-api.js';
 
 function hasArabicText(text = '') {
   return /[\u0600-\u06FF]/.test(String(text || ''));
@@ -326,6 +327,13 @@ async function fetchVaneersaImport(id, hubOrigin, barcodeHint = '') {
   return buildImportPayload('vaneersa', normalized, { hubOrigin });
 }
 
+async function fetchNajdImport(id, hubOrigin, barcodeHint = '') {
+  const normalized = await fetchNajdDetail(id, { barcode: barcodeHint });
+  if (!normalized?.id) return null;
+  if (barcodeHint && !normalized.barcode) normalized.barcode = barcodeHint;
+  return buildImportPayload('najd', normalized, { hubOrigin });
+}
+
 export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barcode = '', light = false } = {}) {
   const id = String(sourceId || '').trim();
   if (!id || !store) return { error: 'المتجر ومعرّف المنتج مطلوبان' };
@@ -361,6 +369,9 @@ export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barc
       break;
     case 'vaneersa':
       payload = await fetchVaneersaImport(id, hubOrigin, barcode);
+      break;
+    case 'najd':
+      payload = await fetchNajdImport(id, hubOrigin, barcode);
       break;
     default:
       return { error: `متجر غير معروف: ${store}` };

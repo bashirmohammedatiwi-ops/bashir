@@ -107,14 +107,14 @@ import {
   sortProductsClient as sortBeautywayProductsClient,
 } from './lib/beautyway-api.js';
 import {
-  fetchCategoryTree as fetchVaneersaCategoryTree,
-  fetchCategoryProducts as fetchVaneersaCategoryProducts,
-  searchProducts as searchVaneersaProducts,
-  fetchProductDetail as fetchVaneersaProductDetail,
-  normalizeProductSummary as normalizeVaneersaProductSummary,
-  normalizeProductDetail as normalizeVaneersaProductDetail,
-  sortProductsClient as sortVaneersaProductsClient,
-} from './lib/vaneersa-api.js';
+  fetchCategoryTree as fetchNajdCategoryTree,
+  fetchCategoryProducts as fetchNajdCategoryProducts,
+  searchProducts as searchNajdProducts,
+  fetchProductDetail as fetchNajdProductDetail,
+  normalizeProductSummary as normalizeNajdProductSummary,
+  normalizeProductDetail as normalizeNajdProductDetail,
+  sortProductsClient as sortNajdProductsClient,
+} from './lib/najd-api.js';
 import { collectDescendantIds, findCategoryNode, applyProductCounts } from './lib/category-scope.js';
 import { searchBarcodeAllStores, searchBarcodeAllStoresStreaming, warmupBarcodeSearch } from './lib/barcode-search.js';
 import { searchImportByBarcode, searchImportByBarcodeStream, fetchImportProduct, fetchImportSummary } from './lib/catalog-import.js';
@@ -143,6 +143,7 @@ let miswagCategoryCache = { tree: null, leaves: null, fetchedAt: 0 };
 let orisdiCategoryCache = { tree: null, leaves: null, fetchedAt: 0 };
 let beautywayCategoryCache = { tree: null, leaves: null, fetchedAt: 0 };
 let vaneersaCategoryCache = { tree: null, leaves: null, fetchedAt: 0 };
+let najdCategoryCache = { tree: null, leaves: null, fetchedAt: 0 };
 let facesCategoryInflight = null;
 let niceoneBrandsCache = { brands: null, fetchedAt: 0 };
 let miraayaBrandsCache = { brands: null, fetchedAt: 0 };
@@ -845,6 +846,88 @@ async function handleBeautywayApi(req, res, url) {
   }
 }
 
+async function getNajdCategoryTree() {
+  if (najdCategoryCache.tree && Date.now() - najdCategoryCache.fetchedAt < CACHE_MS) {
+    return najdCategoryCache;
+  }
+  const { tree, leaves } = await fetchNajdCategoryTree();
+  najdCategoryCache = { tree, leaves, fetchedAt: Date.now() };
+  return najdCategoryCache;
+}
+
+async function handleNajdApi(req, res, url) {
+  try {
+    const q = parseQuery(url);
+
+    if (url.pathname === '/api/najd/health') {
+      return sendJson(res, 200, {
+        ok: true,
+        source: 'najdalatheyah.com',
+        scope: 'perfumes-niche-global',
+        bilingual: true,
+      });
+    }
+
+    if (url.pathname === '/api/najd/categories') {
+      const { tree, leaves } = await getNajdCategoryTree();
+      return sendJson(res, 200, { tree, leaves, totalLeaves: leaves.length });
+    }
+
+    const catMatch = url.pathname.match(/^\/api\/najd\/categories\/([^/]+)\/products$/);
+    if (catMatch) {
+      const categoryId = decodeURIComponent(catMatch[1]);
+      const page = Number(q.page) || 1;
+      const limit = Math.min(Number(q.limit) || 30, 60);
+      const sort = q.sort || 'default';
+      const { tree, leaves } = await getNajdCategoryTree();
+      const node = findCategoryNode(tree, categoryId) || leaves.find((c) => c.id === categoryId);
+      const data = await fetchNajdCategoryProducts(categoryId, { page, limit });
+      let products = (data.items || []).map((p) =>
+        normalizeNajdProductSummary(p, { name: node?.name, nameEn: node?.nameEn }),
+      );
+      if (sort !== 'default') products = sortNajdProductsClient(products, sort);
+      return sendJson(res, 200, {
+        meta: { categoryId, path: node?.path || categoryId, name: node?.name || categoryId },
+        products,
+        page: data.page || page,
+        limit: data.pageSize || limit,
+        hasMore: !!data.hasMore,
+      });
+    }
+
+    if (url.pathname === '/api/najd/search') {
+      const query = q.q || q.search || '';
+      if (!query.trim()) return sendJson(res, 400, { error: 'q required' });
+      const page = Number(q.page) || 1;
+      const limit = Math.min(Number(q.limit) || 30, 60);
+      const data = await searchNajdProducts(query, page, limit);
+      let products = (data.items || []).map((p) => normalizeNajdProductSummary(p));
+      const sort = q.sort || 'default';
+      if (sort !== 'default') products = sortNajdProductsClient(products, sort);
+      return sendJson(res, 200, {
+        meta: { query, path: `بحث: ${query}` },
+        products,
+        page: data.page || page,
+        limit: data.pageSize || limit,
+        hasMore: !!data.hasMore,
+      });
+    }
+
+    const productMatch = url.pathname.match(/^\/api\/najd\/products\/(\d+)$/);
+    if (productMatch) {
+      const id = productMatch[1];
+      const product = await fetchNajdProductDetail(id, { barcode: q.barcode || '' });
+      if (!product?.id) return sendJson(res, 404, { error: 'Product not found' });
+      return sendJson(res, 200, { product: normalizeNajdProductDetail(product) });
+    }
+
+    return sendJson(res, 404, { error: 'Unknown Najd API route' });
+  } catch (err) {
+    console.error('Najd API error:', err.message);
+    return sendJson(res, 502, { error: err.message });
+  }
+}
+
 async function handleVaneersaApi(req, res, url) {
   try {
     const q = parseQuery(url);
@@ -1476,6 +1559,7 @@ const APP_PREFIXES = [
   ['/orisdi', path.join(VIEWER_ROOT, 'orisdi')],
   ['/beautyway', path.join(VIEWER_ROOT, 'beautyway')],
   ['/vaneersa', path.join(VIEWER_ROOT, 'vaneersa')],
+  ['/najd', path.join(VIEWER_ROOT, 'najd')],
 ];
 
 function serveStatic(req, res, urlPath) {
@@ -1659,6 +1743,9 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname.startsWith('/api/vaneersa/')) {
     return handleVaneersaApi(req, res, url);
   }
+  if (url.pathname.startsWith('/api/najd/')) {
+    return handleNajdApi(req, res, url);
+  }
   if (url.pathname.startsWith('/api/')) {
     return handleApi(req, res, url);
   }
@@ -1681,6 +1768,7 @@ server.listen(PORT, HOST, () => {
   console.log(`  Orisdi      → /orisdi/   (orisdi.com — أورزدي · مكياج وعطور · AR+EN)`);
   console.log(`  Beauty Way  → /beautyway/ (beautyway-iq.com — بيوتي وي · عطور وتجميل · AR+EN)`);
   console.log(`  Vaneersa    → /vaneersa/  (vaneersa.com — ڤانير · عناية ومكياج · AR+EN)`);
+  console.log(`  Najd        → /najd/      (najdalatheyah.com — نجد العذية · عطور · Salla)`);
   if (facesCategoryCache.tree?.length) {
     console.log(`  Faces cache: ${facesCategoryCache.leaves?.length || 0} تصنيف جاهز من القرص`);
   } else {

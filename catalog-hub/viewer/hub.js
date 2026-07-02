@@ -17,6 +17,7 @@ const STORE_CLASS = {
   orisdi: 'hub-card--orisdi',
   beautyway: 'hub-card--beautyway',
   vaneersa: 'hub-card--vaneersa',
+  najd: 'hub-card--najd',
 };
 
 const STORE_LABELS = {
@@ -30,6 +31,7 @@ const STORE_LABELS = {
   orisdi: 'أورزدي',
   beautyway: 'بيوتي وي',
   vaneersa: 'ڤانير',
+  najd: 'نجد العذية',
 };
 
 function isValidBarcodeInput(raw) {

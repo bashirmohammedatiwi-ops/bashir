@@ -113,6 +113,10 @@ body {
   border-color: #5b8666;
 }
 
+.hub-card--najd:hover {
+  border-color: #8b6914;
+}
+
 .hub-card-icon {
   width: 52px;
   height: 52px;
@@ -164,6 +168,10 @@ body {
 
 .hub-card--vaneersa .hub-card-icon {
   background: linear-gradient(135deg, #5b8666, #3d5c46);
+}
+
+.hub-card--najd .hub-card-icon {
+  background: linear-gradient(135deg, #b8860b, #6b4f0a);
 }
 
 .hub-card h2 {
@@ -240,6 +248,10 @@ body {
 
 .hub-card--vaneersa .hub-cta {
   color: #5b8666;
+}
+
+.hub-card--najd .hub-cta {
+  color: #8b6914;
 }
 
 .hub-foot {
@@ -397,6 +409,7 @@ body {
 .barcode-result.hub-card--orisdi:hover { border-color: #02c0ef; }
 .barcode-result.hub-card--beautyway:hover { border-color: #8b2c9e; }
 .barcode-result.hub-card--vaneersa:hover { border-color: #5b8666; }
+.barcode-result.hub-card--najd:hover { border-color: #8b6914; }
 
 .barcode-result-img {
   width: 72px;

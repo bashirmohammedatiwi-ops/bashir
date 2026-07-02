@@ -277,7 +277,7 @@
         "withSku": 5,
         "withAny": 5
       },
-      "updatedAt": 1782754046880
+      "updatedAt": 1782957707758
     },
     "3227": {
       "id": "3227",
@@ -356,7 +356,7 @@
         "withSku": 9,
         "withAny": 9
       },
-      "updatedAt": 1782754047312
+      "updatedAt": 1782957708105
     },
     "3555": {
       "id": "3555",
@@ -470,7 +470,7 @@
         "withSku": 14,
         "withAny": 14
       },
-      "updatedAt": 1782754047313
+      "updatedAt": 1782957708167
     },
     "5916": {
       "id": "5916",
@@ -550,13 +550,6 @@
           "barcodeSource": "sku"
         },
         {
-          "optionId": "6734",
-          "name": "203",
-          "sku": "B-07.156",
-          "ean": "",
-          "barcodeSource": "sku"
-        },
-        {
           "optionId": "6735",
           "name": "204",
           "sku": "B-12.080",
@@ -579,12 +572,12 @@
         }
       ],
       "stats": {
-        "total": 14,
+        "total": 13,
         "withEan": 2,
-        "withSku": 14,
-        "withAny": 14
+        "withSku": 13,
+        "withAny": 13
       },
-      "updatedAt": 1782754046852
+      "updatedAt": 1782957708150
     },
     "10946": {
       "id": "10946",
@@ -698,7 +691,7 @@
         "withSku": 14,
         "withAny": 14
       },
-      "updatedAt": 1782754046962
+      "updatedAt": 1782957707757
     },
     "17043": {
       "id": "17043",
@@ -828,7 +821,7 @@
         "withSku": 8,
         "withAny": 8
       },
-      "updatedAt": 1782754046117
+      "updatedAt": 1782957707755
     },
     "21019": {
       "id": "21019",
@@ -893,7 +886,7 @@
         "withSku": 7,
         "withAny": 7
       },
-      "updatedAt": 1782754047173
+      "updatedAt": 1782957707862
     },
     "22701": {
       "id": "22701",
@@ -951,7 +944,7 @@
         "withSku": 6,
         "withAny": 6
       },
-      "updatedAt": 1782754047320
+      "updatedAt": 1782957708104
     },
     "23425": {
       "id": "23425",
@@ -1024,13 +1017,6 @@
           "barcodeSource": "image"
         },
         {
-          "optionId": "7294",
-          "name": "136",
-          "sku": "B-11.072",
-          "ean": "6902395834410",
-          "barcodeSource": "image"
-        },
-        {
           "optionId": "7296",
           "name": "220",
           "sku": "B-02.139",
@@ -1067,12 +1053,12 @@
         }
       ],
       "stats": {
-        "total": 15,
-        "withEan": 13,
-        "withSku": 15,
-        "withAny": 15
+        "total": 14,
+        "withEan": 12,
+        "withSku": 14,
+        "withAny": 14
       },
-      "updatedAt": 1782754046886
+      "updatedAt": 1782957707866
     },
     "24263": {
       "id": "24263",
@@ -1137,7 +1123,7 @@
         "withSku": 7,
         "withAny": 7
       },
-      "updatedAt": 1782754046749
+      "updatedAt": 1782957707875
     },
     "24657": {
       "id": "24657",
@@ -1202,7 +1188,7 @@
         "withSku": 7,
         "withAny": 7
       },
-      "updatedAt": 1782754046745
+      "updatedAt": 1782957707756
     },
     "25385": {
       "id": "25385",
@@ -1288,7 +1274,7 @@
         "withSku": 10,
         "withAny": 10
       },
-      "updatedAt": 1782754045952
+      "updatedAt": 1782957707457
     },
     "26583": {
       "id": "26583",
@@ -1630,7 +1616,7 @@
         "withSku": 8,
         "withAny": 8
       },
-      "updatedAt": 1782754047206
+      "updatedAt": 1782957708106
     },
     "27508": {
       "id": "27508",
@@ -1973,7 +1959,7 @@
         "withSku": 5,
         "withAny": 5
       },
-      "updatedAt": 1782754047311
+      "updatedAt": 1782957708145
     },
     "31942": {
       "id": "31942",
@@ -2010,7 +1996,7 @@
         "withSku": 3,
         "withAny": 3
       },
-      "updatedAt": 1782754047188
+      "updatedAt": 1782957708154
     },
     "32936": {
       "id": "32936",
@@ -2175,7 +2161,7 @@
         "withSku": 12,
         "withAny": 12
       },
-      "updatedAt": 1782754047208
+      "updatedAt": 1782957708097
     },
     "34011": {
       "id": "34011",
@@ -2525,6 +2511,6 @@
     }
   },
   "meta": {
-    "updatedAt": 1782754047320
+    "updatedAt": 1782957708167
   }
 }

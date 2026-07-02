@@ -60,6 +60,10 @@ import {
   searchProductsByBarcode as searchVaneersaProductsByBarcode,
   normalizeProductSummary as normalizeVaneersaSummary,
 } from './vaneersa-api.js';
+import {
+  searchProductsByBarcode as searchNajdProductsByBarcode,
+  normalizeProductSummary as normalizeNajdSummary,
+} from './najd-api.js';
 import { lookupUpcByBarcode, lookupBarcodeProductMeta } from './barcodes.js';
 
 function barcodeQueryVariants(barcode) {
@@ -84,13 +88,14 @@ export const STORE_META = {
   orisdi: { id: 'orisdi', label: 'أورزدي Orisdi', path: '/orisdi/', domain: 'orisdi.com' },
   beautyway: { id: 'beautyway', label: 'بيوتي وي Beauty Way', path: '/beautyway/', domain: 'beautyway-iq.com' },
   vaneersa: { id: 'vaneersa', label: 'ڤانير Vaneersa', path: '/vaneersa/', domain: 'vaneersa.com' },
+  najd: { id: 'najd', label: 'نجد العذية Najd', path: '/najd/', domain: 'najdalatheyah.com' },
 };
 
 let elryanBeautyIdsPromise = null;
 const searchResultCache = new Map();
 const SEARCH_CACHE_MS = 15 * 60 * 1000;
 const SEARCH_NEGATIVE_CACHE_MS = 3 * 60 * 1000;
-const STORE_SEARCH_RANK = { niceone: 0, elryan: 1, vanilla: 2, miraaya: 3, orisdi: 4, beautyway: 5, vaneersa: 6, miswag: 7, amazon: 8, faces: 9 };
+const STORE_SEARCH_RANK = { niceone: 0, elryan: 1, vanilla: 2, miraaya: 3, najd: 4, orisdi: 5, beautyway: 6, vaneersa: 7, miswag: 8, amazon: 9, faces: 10 };
 const foundationCache = { products: [], at: 0 };
 const FOUNDATION_CACHE_MS = 10 * 60 * 1000;
 
@@ -764,11 +769,38 @@ async function searchVaneersaByBarcode(barcode, { getMeta } = {}) {
   );
 }
 
+async function searchNajdByBarcode(barcode, { getMeta } = {}) {
+  const products = await searchNajdProductsByBarcode(barcode, { getMeta });
+  return dedupeHits(
+    products.map((p) => {
+      const n = normalizeNajdSummary(p);
+      return hit('najd', {
+        id: n.id,
+        name: n.name,
+        nameEn: n.nameEn,
+        manufacturer: n.manufacturer,
+        manufacturerEn: n.manufacturerEn,
+        price: n.price,
+        thumb: n.thumb,
+        barcode: p.barcode || n.barcode || barcode,
+        sku: n.sku,
+        shadeName: p.shadeName || '',
+        matchType: p.matchType === 'shade' ? 'shade' : (p.matchType === 'hint' ? 'hint' : 'product'),
+        matchScore: p.matchScore,
+        shadeCount: n.hasOptions ? 1 : 0,
+        categoryHint: n.category || '',
+        source: p.source || 'live',
+      });
+    }),
+  );
+}
+
 const SEARCHERS = [
   { store: 'niceone', fn: searchNiceOneByBarcode, timeoutMs: 7_000 },
   { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 5_000 },
   { store: 'vanilla', fn: searchVanillaByBarcode, timeoutMs: 5_000 },
   { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 5_000 },
+  { store: 'najd', fn: searchNajdByBarcode, timeoutMs: 14_000 },
   { store: 'orisdi', fn: searchOrisdiByBarcode, timeoutMs: 12_000 },
   { store: 'beautyway', fn: searchBeautywayByBarcode, timeoutMs: 14_000 },
   { store: 'vaneersa', fn: searchVaneersaByBarcode, timeoutMs: 14_000 },

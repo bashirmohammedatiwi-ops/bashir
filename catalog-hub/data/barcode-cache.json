@@ -1391,5 +1391,27 @@
     "ean": "",
     "source": "none",
     "at": 1782761707979
+  },
+  "upc_barcode|3348901571449": {
+    "ean": "3348901571449",
+    "source": "upcitemdb_lookup",
+    "at": 1782957708929,
+    "brand": "DIOR",
+    "title": "Miss Dior Eau de Parfum at Nordstrom, Size 1.7 Oz",
+    "description": "What it is: Miss Dior's new eau de parfum is a couture dream--a multi-colored fragrance composition in a reinvented bottle adorned by an exceptional bow. Fragrance story: The new Miss Dior eau de parfum is a colorful floral bouquet, like a 'millefiori' alive with notes of Grasse rose, peony, iris and lily-of-the-valley. The Miss Dior couture bow, an extraordinary piece of craftsmanship, is embroidered with a myriad of colorful specks to reflect the flowers' vividness. Style: Floral. Notes: flora"
+  },
+  "web_search|3348901571449": {
+    "ean": "3348901571449",
+    "source": "web-search",
+    "at": 1782957710082,
+    "brand": "Dior",
+    "title": "Ladies Miss Dior"
+  },
+  "product_meta|3348901571449": {
+    "ean": "3348901571449",
+    "source": "upcitemdb_lookup",
+    "at": 1782957712064,
+    "brand": "DIOR",
+    "title": "Miss Dior Eau de Parfum at Nordstrom"
   }
 }
