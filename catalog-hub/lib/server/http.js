@@ -19,6 +19,7 @@ export function corsHeaders() {
 }
 
 export function sendJson(res, code, data) {
+  if (res.headersSent || res.writableEnded) return;
   res.writeHead(code, {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',

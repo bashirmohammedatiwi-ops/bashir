@@ -6,6 +6,7 @@ import {
   parseQuery,
 } from '../http.js';
 import { searchBarcodeAllStores, searchBarcodeAllStoresStreaming } from '../../barcode-search.js';
+import { STORES } from '../../stores/registry.js';
 import {
   searchImportByBarcode,
   searchImportByBarcodeStream,
@@ -28,6 +29,10 @@ function parseStoreFilter(q) {
 }
 
 export async function handleCrossStoreApi(req, res, url, { port }) {
+  if (url.pathname === '/api/stores') {
+    return sendJson(res, 200, { stores: STORES, total: STORES.length });
+  }
+
   if (url.pathname === '/api/import/search/stream') {
     try {
       const q = parseQuery(url);

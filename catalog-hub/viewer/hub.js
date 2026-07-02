@@ -19,18 +19,7 @@ const STORE_CLASS = {
   najd: 'hub-card--najd',
 };
 
-const STORE_LABELS = {
-  niceone: 'Nice One',
-  elryan: 'الريان',
-  miraaya: 'ميرايا',
-  faces: 'وجوه',
-  amazon: 'Amazon',
-  miswag: 'مسواگ',
-  orisdi: 'أورزدي',
-  beautyway: 'بيوتي وي',
-  vaneersa: 'ڤانير',
-  najd: 'نجد العذية',
-};
+let STORE_LABELS = {};
 
 function isValidBarcodeInput(raw) {
   const digits = String(raw).replace(/\D/g, '');
@@ -243,6 +232,21 @@ async function runBarcodeSearch(raw) {
 
 function init() {
   initHubLinks();
+  fetch(hubApi('/api/stores'))
+    .then((r) => r.json())
+    .then((data) => {
+      for (const s of data.stores || []) {
+        STORE_LABELS[s.id] = s.label;
+      }
+    })
+    .catch(() => {
+      Object.assign(STORE_LABELS, {
+        niceone: 'Nice One', elryan: 'الريان', miraaya: 'ميرايا', faces: 'وجوه',
+        amazon: 'Amazon', miswag: 'مسواگ', orisdi: 'أورزدي', beautyway: 'بيوتي وي',
+        vaneersa: 'ڤانير', najd: 'نجد العذية',
+      });
+    });
+
   const form = $('#barcodeSearchForm');
   const input = $('#barcodeInput');
 

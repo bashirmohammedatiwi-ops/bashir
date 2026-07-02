@@ -10,6 +10,9 @@ const UA =
 
 const HUB_PREFIX = process.env.CATALOG_HUB_PUBLIC_PREFIX || '';
 
+const browseCache = new Map();
+const BROWSE_CACHE_MS = 15 * 60 * 1000;
+
 /** شجرة ثنائية اللغة لقسم Makeup على Amazon (node 3760911) */
 const CATEGORY_DEFS = [
   {
@@ -476,14 +479,36 @@ async function fetchBrowseMerged(nodeId, { page = 1, keyword, keywordAr } = {}) 
   const cat = findCategoryDef(nodeId) || { nodeId, keyword: keyword || 'cosmetics', keywordAr: keywordAr || 'مستحضرات تجميل' };
   const kwEn = keyword || cat.keyword || 'cosmetics';
   const kwAr = keywordAr || cat.keywordAr || cat.keyword || 'مستحضرات تجميل';
-  const [htmlEn, htmlAr] = await Promise.all([
-    fetchAmazonHtml(buildBrowseUrl(cat.nodeId || nodeId, kwEn, page, 'en'), 'en'),
-    fetchAmazonHtml(buildBrowseUrl(cat.nodeId || nodeId, kwAr, page, 'ar'), 'ar'),
-  ]);
+  const cacheKey = `${nodeId}:${page}:${kwEn}:${kwAr}`;
+  const cached = browseCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < BROWSE_CACHE_MS) return cached.items;
+
+  const htmlEn = await fetchAmazonHtml(buildBrowseUrl(cat.nodeId || nodeId, kwEn, page, 'en'), 'en');
   const enList = parseSearchResults(htmlEn);
-  const arList = parseSearchResults(htmlAr);
-  const arByAsin = new Map(arList.map((p) => [p.asin, p]));
-  return enList.map((p) => {
+  let arByAsin = new Map();
+  if (enList.length) {
+    try {
+      const htmlAr = await fetchAmazonHtml(buildBrowseUrl(cat.nodeId || nodeId, kwAr, page, 'ar'), 'ar');
+      arByAsin = new Map(parseSearchResults(htmlAr).map((p) => [p.asin, p]));
+    } catch { /* EN results sufficient */ }
+  } else {
+    const htmlAr = await fetchAmazonHtml(buildBrowseUrl(cat.nodeId || nodeId, kwAr, page, 'ar'), 'ar');
+    const arList = parseSearchResults(htmlAr);
+    arByAsin = new Map(arList.map((p) => [p.asin, p]));
+    if (!enList.length) {
+      const items = arList.map((p) => ({
+        ...p,
+        nameAr: p.name,
+        nameEn: p.name,
+        brandAr: '',
+        brandEn: '',
+      }));
+      browseCache.set(cacheKey, { items, at: Date.now() });
+      return items;
+    }
+  }
+
+  const items = enList.map((p) => {
     const ar = arByAsin.get(p.asin);
     return {
       ...p,
@@ -493,6 +518,8 @@ async function fetchBrowseMerged(nodeId, { page = 1, keyword, keywordAr } = {}) 
       brandEn: '',
     };
   });
+  browseCache.set(cacheKey, { items, at: Date.now() });
+  return items;
 }
 
 export async function fetchCategoryProducts(categoryId, { page = 1, limit = 30, search = '' } = {}) {

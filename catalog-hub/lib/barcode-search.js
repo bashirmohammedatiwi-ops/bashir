@@ -728,16 +728,16 @@ async function searchNajdByBarcode(barcode, { getMeta } = {}) {
 }
 
 const SEARCHERS = [
-  { store: 'niceone', fn: searchNiceOneByBarcode, timeoutMs: 7_000 },
-  { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 5_000 },
-  { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 5_000 },
-  { store: 'najd', fn: searchNajdByBarcode, timeoutMs: 14_000 },
-  { store: 'orisdi', fn: searchOrisdiByBarcode, timeoutMs: 12_000 },
-  { store: 'beautyway', fn: searchBeautywayByBarcode, timeoutMs: 14_000 },
-  { store: 'vaneersa', fn: searchVaneersaByBarcode, timeoutMs: 14_000 },
-  { store: 'miswag', fn: searchMiswagByBarcode, timeoutMs: 28_000 },
-  { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 10_000 },
-  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 30_000 },
+  { store: 'niceone', fn: searchNiceOneByBarcode, timeoutMs: 18_000 },
+  { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 12_000 },
+  { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 12_000 },
+  { store: 'najd', fn: searchNajdByBarcode, timeoutMs: 16_000 },
+  { store: 'orisdi', fn: searchOrisdiByBarcode, timeoutMs: 14_000 },
+  { store: 'beautyway', fn: searchBeautywayByBarcode, timeoutMs: 16_000 },
+  { store: 'vaneersa', fn: searchVaneersaByBarcode, timeoutMs: 16_000 },
+  { store: 'miswag', fn: searchMiswagByBarcode, timeoutMs: 30_000 },
+  { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 20_000 },
+  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 45_000 },
 ];
 
 function withStoreTimeout(promise, ms, store) {
