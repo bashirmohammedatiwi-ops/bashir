@@ -8,7 +8,8 @@
     "serve": "node server.js",
     "backup": "node backup.js",
     "enrich-barcodes": "node scripts/enrich-all-barcodes.js",
-    "test:stores": "node scripts/test-all-stores.mjs",
+    "enrich-barcodes:resume": "node scripts/enrich-all-barcodes.js --resume",
+    "test:stores": "node scripts/test-all-stores.mjs"
   },
   "engines": {
     "node": ">=18"
