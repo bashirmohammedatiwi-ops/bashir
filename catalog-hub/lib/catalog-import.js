@@ -9,6 +9,7 @@ import {
 } from './barcode-engine.js';
 import { fetchStoreProduct } from './adapters/index.js';
 import { buildImportPayload, toImportSummary } from './core/import-payload.js';
+import { pickBestHitPerStore } from './core/hit-filter.js';
 import { isAmazonBundleListing } from './amazon-api.js';
 
 function hasArabicText(text = '') {
@@ -16,7 +17,8 @@ function hasArabicText(text = '') {
 }
 
 function hitsToImportOptions(data) {
-  return (data.results || [])
+  const filtered = pickBestHitPerStore(data.results || []);
+  return filtered
     .filter((r) => r.id || r.sku)
     .filter((r) => {
       if (r.store !== 'amazon') return true;

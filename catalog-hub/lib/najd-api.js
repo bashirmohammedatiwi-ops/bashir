@@ -477,11 +477,13 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
         source: meta.source || 'meta-hint',
         matchScore: score,
       }),
+      minScore: 18,
+      limit: 2,
     });
     for (const h of hinted) pushHit(h);
   }
 
-  return results.slice(0, 12);
+  return results.slice(0, 2);
 }
 
 export function sortProductsClient(products = [], sort = 'default') {

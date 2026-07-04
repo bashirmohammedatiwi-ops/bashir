@@ -1079,8 +1079,8 @@ export async function resolveStoreHintMatches({
   fetchDetailFn = null,
   toShadeHit = null,
   toHit,
-  limit = 12,
-  minScore = 10,
+  limit = 2,
+  minScore = 16,
   perPage = 16,
   maxQueries = 6,
 }) {
@@ -1148,7 +1148,8 @@ export function scoreStoreHintMatch(item = {}, meta = {}) {
   const brand = parsed.brand.toLowerCase();
   if (brand && (hay.includes(brand) || brand.includes((item.manufacturer || '').toLowerCase()))) score += 6;
 
-  const words = parsed.productWords.filter((w) => !['sheglam', 'the', 'for', 'with'].includes(w));
+  const GENERIC = new Set(['makeup', 'make', 'up', 'professional', 'perfume', 'parfum', 'eau', 'pour', 'homme', 'femme', 'women', 'men', 'for', 'the', 'with', 'sheglam']);
+  const words = parsed.productWords.filter((w) => !GENERIC.has(w.toLowerCase()));
   if (words.length) {
     const primary = words[0];
     if (primary && hay.includes(primary)) score += 14;

@@ -1,5 +1,5 @@
 /**
- * @deprecated Use barcode-engine.js — kept for backward-compatible imports.
+ * Backward-compatible re-exports.
  */
 export {
   STORE_META,
@@ -8,4 +8,4 @@ export {
   normalizeGtinCompare,
   searchBarcodeAllStores,
   searchBarcodeAllStoresStreaming,
-} from './barcode-engine.js';
+} from './adapters/store-barcode-search.js';

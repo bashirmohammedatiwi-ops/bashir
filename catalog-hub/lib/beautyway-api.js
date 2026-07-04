@@ -420,8 +420,10 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
         source: meta.source || 'meta-hint',
         matchScore: score,
       }),
+      minScore: 18,
+      limit: 2,
     });
-    if (hinted.length) return hinted.slice(0, 12);
+    if (hinted.length) return hinted.slice(0, 2);
   }
 
   return [];

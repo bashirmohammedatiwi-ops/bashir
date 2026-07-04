@@ -1025,57 +1025,33 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
     return list;
   };
 
-  // (0a) فهرس باركود موحّد — أسرع وأدق من البحث الحي
-  for (const indexed of searchUnifiedByStore(digits, 'miswag')) {
-    pushUnique(results, seen, {
-      id: String(indexed.id || indexed.productId || ''),
-      name: indexed.name || '',
-      nameEn: indexed.nameEn || indexed.name || '',
-      manufacturer: indexed.manufacturer || '',
-      manufacturerEn: indexed.manufacturerEn || indexed.manufacturer || '',
-      price: indexed.price || '',
-      thumb: indexed.thumb || '',
-      sku: indexed.sku || String(indexed.id || ''),
-      barcode: digits,
-      shadeName: indexed.shadeName || '',
-      matchType: indexed.matchType || 'lookup',
-      matchScore: indexed.matchScore,
-      shadeCount: indexed.shadeCount,
-      source: indexed.source || 'barcode-index',
-    });
+  // (0a) فهرس باركود موحّد — مع التحقق من كل نتيجة
+  const unifiedHits = searchUnifiedByStore(digits, 'miswag');
+  if (unifiedHits.length) {
+    const meta = await resolveMeta().catch(() => null);
+    for (const indexed of unifiedHits.slice(0, 3)) {
+      try {
+        const entry = await confirmMiswagBarcodeHit(
+          String(indexed.id || indexed.productId || ''),
+          digits,
+          meta,
+        );
+        if (entry) pushUnique(results, seen, entry);
+      } catch { /* skip stale index */ }
+    }
+    if (results.length) return learn(results);
   }
-  if (results.length) return results;
 
-  // (0b) فهرس يدوي محلي — مع التحقق + حل الدرجة
+  // (0b) فهرس يدوي محلي — مع التحقق الصارم
   const manual = findBarcodeLookup(digits);
   if (manual?.productId && (manual.store === 'miswag' || !manual.store)) {
     try {
-      const detail = await fetchProductDetail(manual.productId);
-      if (detail?.id) {
-        let entry = {
-          ...normalizeProductSummary(detail),
-          barcode: digits,
-          matchType: manual.matchType || 'lookup',
-          source: 'barcode-lookup',
-        };
-
-        if (manual.shadeName) {
-          entry.shadeName = manual.shadeName;
-          entry.matchType = manual.matchType || 'shade';
-        }
-
-        const meta = await resolveMeta().catch(() => null);
-        const parsed = parseBarcodeMetaFields(meta || manual);
-
-        if (parsed.shade || manual.shadeName) {
-          entry = await resolveMiswagShadeVariationHit(entry, { ...meta, shade: manual.shadeName || parsed.shade }, digits);
-        } else {
-          const score = meta ? scoreStoreHintMatch(entry, meta) : 20;
-          if (meta && score < 10) throw new Error('manual score too low');
-        }
-
+      const meta = await resolveMeta().catch(() => null);
+      const entry = await confirmMiswagBarcodeHit(manual.productId, digits, { ...meta, shade: manual.shadeName });
+      if (entry) {
+        if (manual.shadeName && !entry.shadeName) entry.shadeName = manual.shadeName;
         pushUnique(results, seen, entry);
-        if (results.length) return results;
+        if (results.length) return learn(results);
       }
     } catch { /* continue to live search */ }
   }
