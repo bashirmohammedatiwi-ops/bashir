@@ -82,7 +82,11 @@
         <div class="welcome" id="welcome">
           <h1>مرحباً في كتالوج Nice One</h1>
           <p>تصنيفات ومنتجات مباشرة من <strong>api.niceonesa.com</strong> — مكياج، عطور، عناية بالبشرة والشعر.</p>
-          <p class="welcome-note">عربي + إنجليزي · باركود EAN · درجات لونية · علامات تجارية</p>
+          <p class="welcome-note">عربي + إنجليزي · باركود EAN · درجات لونية · ~12,000+ منتج</p>
+          <div class="welcome-actions">
+            <button type="button" class="btn btn--primary" id="loadFullCatalogBtn">جلب كل المنتجات (~12K)</button>
+            <button type="button" class="btn btn--secondary" id="loadMakeupBtn">مكياج (3,500+)</button>
+          </div>
           <div class="welcome-stats" id="welcomeStats"></div>
           <div class="brands-section" id="welcomeBrandsSection">
             <div class="brands-section-head">
@@ -95,6 +99,7 @@
         <div class="grid grid--comfortable" id="grid"></div>
         <div class="load-more-wrap hidden" id="loadMoreWrap">
           <button type="button" class="btn" id="loadMoreBtn">تحميل المزيد</button>
+          <button type="button" class="btn btn--secondary" id="loadAllBtn">تحميل الكل</button>
         </div>
         <div class="status-msg hidden" id="statusMsg"></div>
       </div>

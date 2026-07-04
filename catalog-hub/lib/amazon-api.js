@@ -421,7 +421,7 @@ export function normalizeProductSummary(raw, meta = {}) {
   const asin = raw.asin || raw.id;
   const nameAr = raw.nameAr || meta.nameAr || raw.name || '';
   const nameEn = raw.nameEn || meta.nameEn || raw.name || '';
-  const thumb = proxyAmazonImage(raw.thumb || '');
+  const thumb = proxyAmazonImage(raw.thumb || raw.images?.[0] || '');
   return {
     id: asin,
     asin,
@@ -782,7 +782,12 @@ export async function enrichAmazonShadeBarcodes(product, {
     await enrichAmazonShadeAsinsParallel(shades, 4);
     return enrichShadesForImport(
       { ...product, shades },
-      { maxLookups: Math.max(maxLookups, shades.length), barcodeHint: hint, light: false },
+      {
+        maxLookups: Math.min(maxLookups, shades.length),
+        barcodeHint: hint,
+        light: false,
+        skipAmazonAsinLookup: true,
+      },
     );
   };
 

@@ -17,24 +17,30 @@ const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 const state = {
   categories: { tree: [], leaves: [] },
+  catalogOverview: null,
   brands: [],
   currentSlug: null,
   currentPath: '',
   currentPathEn: '',
   isSearch: false,
   isBrand: false,
+  isFullCatalog: false,
   currentBrandId: null,
   searchQuery: '',
   page: 1,
   hasMore: false,
   products: [],
   loading: false,
+  loadingAll: false,
   sort: 'default',
   totalCount: null,
   catFilter: '',
   brandFilter: '',
   sidebarTab: 'categories',
+  fetchAbort: null,
 };
+
+const PAGE_SIZE = 100;
 
 function esc(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -117,10 +123,11 @@ function openSidebar() {
 }
 
 function renderCategoryNode(node, depth = 0) {
-  const active = state.currentSlug === node.slug && !state.isBrand && !state.isSearch ? ' active' : '';
+  const active = state.currentSlug === node.slug && !state.isBrand && !state.isSearch && !state.isFullCatalog ? ' active' : '';
   const hasKids = (node.children || []).length > 0;
   const openClass = node._forceOpen || depth < 1 ? ' open' : '';
-  const link = `<a class="cat-link${node.isLeaf ? ' leaf' : ' parent'}${active}" data-slug="${esc(node.slug)}" data-path="${esc(node.path)}" data-path-en="${esc(node.pathEn || '')}" style="--depth:${depth}">${biText(node.name, node.nameEn)}</a>`;
+  const count = node.productCount ? ` <span class="cat-count">(${node.productCount.toLocaleString('ar-SA')})</span>` : '';
+  const link = `<a class="cat-link${node.isLeaf ? ' leaf' : ' parent'}${active}" data-slug="${esc(node.slug)}" data-path="${esc(node.path)}" data-path-en="${esc(node.pathEn || '')}" style="--depth:${depth}">${biText(node.name, node.nameEn)}${count}</a>`;
   if (!hasKids) return link;
   const toggle = `<button type="button" class="cat-toggle${openClass}" data-toggle aria-label="طي/فتح">▾</button>`;
   const children = (node.children || []).map((c) => renderCategoryNode(c, depth + 1)).join('');
@@ -276,7 +283,7 @@ function updateUI() {
   const loadWrap = $('#loadMoreWrap');
   const status = $('#statusMsg');
 
-  if (!state.currentSlug && !state.isSearch && !state.isBrand) {
+  if (!state.currentSlug && !state.isSearch && !state.isBrand && !state.isFullCatalog) {
     welcome.classList.remove('hidden');
     grid.innerHTML = '';
     toolbar?.classList.add('hidden');
@@ -319,11 +326,17 @@ function updateUI() {
     el.addEventListener('click', () => openProduct(el.dataset.id));
   });
 
-  loadWrap.classList.toggle('hidden', !state.hasMore);
-  $('#loadMoreBtn').disabled = state.loading;
+  loadWrap.classList.toggle('hidden', !state.hasMore && !state.loadingAll);
+  $('#loadMoreBtn').disabled = state.loading || state.loadingAll;
+  $('#loadAllBtn') && ($('#loadAllBtn').disabled = state.loading || state.loadingAll);
   $('#loadMoreBtn').textContent = state.loading
     ? 'جاري التحميل...'
     : `تحميل المزيد${state.totalCount ? ` (${state.products.length}/${state.totalCount})` : ''}`;
+  if ($('#loadAllBtn')) {
+    $('#loadAllBtn').textContent = state.loadingAll
+      ? `جاري جلب الكل... ${state.products.length}${state.totalCount ? `/${state.totalCount}` : ''}`
+      : `تحميل الكل${state.totalCount ? ` (${state.totalCount})` : ''}`;
+  }
 }
 
 async function fetchProductsPage(page, append = false) {
@@ -332,7 +345,7 @@ async function fetchProductsPage(page, append = false) {
 
   try {
     let data;
-    const params = new URLSearchParams({ page, limit: 30, sort: state.sort });
+    const params = new URLSearchParams({ page, limit: PAGE_SIZE, sort: state.sort });
     if (state.isSearch) {
       data = await api(`${API}/search?${params}&q=${encodeURIComponent(state.searchQuery)}`);
     } else if (state.isBrand) {
@@ -358,11 +371,140 @@ async function fetchProductsPage(page, append = false) {
   }
 }
 
+async function fetchCategoryAllServer(slug) {
+  state.loadingAll = true;
+  state.isFullCatalog = false;
+  updateUI();
+  try {
+    const params = new URLSearchParams({ all: '1', limit: PAGE_SIZE, sort: state.sort });
+    const data = await api(`${API}/categories/${encodeURIComponent(slug)}/products?${params}`, {}, { timeoutMs: 600000 });
+    state.products = data.products || [];
+    state.totalCount = data.meta?.totalCount ?? state.products.length;
+    state.hasMore = false;
+    state.page = 1;
+    if (data.meta?.path) state.currentPath = data.meta.path;
+    if (data.meta?.pathEn) state.currentPathEn = data.meta.pathEn;
+  } catch (err) {
+    $('#statusMsg').textContent = `خطأ: ${err.message}`;
+    $('#statusMsg').classList.remove('hidden');
+  } finally {
+    state.loadingAll = false;
+    updateUI();
+    enrichListBarcodes();
+  }
+}
+
+async function loadAllPages() {
+  if (state.loading || state.loadingAll || !state.hasMore) {
+    if (state.currentSlug && !state.isSearch && !state.isBrand) {
+      return fetchCategoryAllServer(state.currentSlug);
+    }
+    return;
+  }
+  state.loadingAll = true;
+  updateUI();
+  try {
+    while (state.hasMore && !state.loading) {
+      await fetchProductsPage(state.page + 1, true);
+      if (!state.hasMore) break;
+    }
+  } finally {
+    state.loadingAll = false;
+    updateUI();
+  }
+}
+
+async function consumeCatalogSse(url, onEvent, signal) {
+  const res = await fetch(url, { headers: { Accept: 'text/event-stream' }, signal });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || res.statusText);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let eventName = 'message';
+  let dataLines = [];
+
+  const flush = () => {
+    if (!dataLines.length) { eventName = 'message'; return; }
+    const raw = dataLines.join('\n');
+    dataLines = [];
+    const name = eventName;
+    eventName = 'message';
+    if (!raw || raw.startsWith(':')) return;
+    try { onEvent(name, JSON.parse(raw)); } catch { /* skip */ }
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+    for (const line of lines) {
+      if (line.startsWith('event:')) { flush(); eventName = line.slice(6).trim(); }
+      else if (line.startsWith('data:')) dataLines.push(line.slice(5).trimStart());
+      else if (line.trim() === '') flush();
+    }
+  }
+  flush();
+}
+
+async function loadEntireCatalog() {
+  state.fetchAbort?.abort();
+  const controller = new AbortController();
+  state.fetchAbort = controller;
+
+  state.isFullCatalog = true;
+  state.isSearch = false;
+  state.isBrand = false;
+  state.currentSlug = 'catalog';
+  state.currentPath = 'كل المنتجات';
+  state.currentPathEn = 'All Products';
+  state.products = [];
+  state.totalCount = null;
+  state.hasMore = false;
+  state.loadingAll = true;
+  updateUI();
+  closeSidebar();
+
+  try {
+    await consumeCatalogSse(`${API}/catalog/stream`, (type, data) => {
+      if (type === 'progress' && data.uniqueTotal != null) {
+        state.totalCount = Math.max(state.totalCount || 0, data.uniqueTotal);
+        refreshProgressBar();
+        $('#pageStats').textContent = `${state.products.length.toLocaleString('ar-SA')} محمّل · جاري الجلب...`;
+      }
+      if (type === 'batch' && data.products?.length) {
+        state.products = [...state.products, ...data.products];
+        updateUI();
+      }
+      if (type === 'done') {
+        state.totalCount = data.total ?? state.products.length;
+        state.hasMore = false;
+      }
+      if (type === 'error') throw new Error(data.error || 'فشل جلب الكatalog');
+    }, controller.signal);
+    enrichListBarcodes();
+  } catch (err) {
+    if (err?.name !== 'AbortError') {
+      $('#statusMsg').textContent = `خطأ: ${err.message}`;
+      $('#statusMsg').classList.remove('hidden');
+    }
+  } finally {
+    state.loadingAll = false;
+    updateUI();
+  }
+}
+
 function resetCatalogState() {
   state.page = 1;
   state.products = [];
   state.totalCount = null;
   state.hasMore = false;
+  state.isFullCatalog = false;
+  state.fetchAbort?.abort();
 }
 
 function loadCategory(slug, path, pathEn = '') {
@@ -371,6 +513,7 @@ function loadCategory(slug, path, pathEn = '') {
   state.currentPathEn = pathEn;
   state.isSearch = false;
   state.isBrand = false;
+  state.isFullCatalog = false;
   state.currentBrandId = null;
   state.searchQuery = '';
   state.sort = 'default';
@@ -698,18 +841,49 @@ function closeAll() {
 }
 
 function pickDefaultCategory() {
+  const tree = state.categories.tree || [];
   const leaves = state.categories.leaves || [];
-  if (!leaves.length) return null;
-  const preferredSlugs = ['foundation', 'makeup', 'lipstick', 'lipsticks', 'mascara', 'skincare', 'perfume'];
-  for (const slug of preferredSlugs) {
-    const hit = leaves.find((l) => l.slug === slug);
-    if (hit) return hit;
+  const roots = state.catalogOverview?.roots || [];
+  const makeupRoot = roots.find((r) => r.slug === 'makeup') || tree.find((n) => n.slug === 'makeup');
+  if (makeupRoot) {
+    return {
+      slug: makeupRoot.slug,
+      path: makeupRoot.path || 'المكياج',
+      pathEn: makeupRoot.pathEn || 'Makeup',
+    };
   }
-  return leaves[0];
+  const preferredSlugs = ['makeup', 'foundation', 'lipstick', 'perfume', 'care'];
+  for (const slug of preferredSlugs) {
+    const hit = leaves.find((l) => l.slug === slug) || tree.find((n) => n.slug === slug);
+    if (hit) return { slug: hit.slug, path: hit.path || hit.name, pathEn: hit.pathEn || hit.nameEn || '' };
+  }
+  const leaf = leaves[0];
+  return leaf ? { slug: leaf.slug, path: leaf.path, pathEn: leaf.pathEn || '' } : null;
+}
+
+async function loadCatalogOverview() {
+  try {
+    state.catalogOverview = await api(`${API}/catalog/overview`);
+    const o = state.catalogOverview;
+    const totalLabel = (o.estimatedUnique || o.searchTotal || o.sumRoots || 0).toLocaleString('ar-SA');
+    $('#welcomeStats').innerHTML = `
+      <div class="stat-box"><strong>${totalLabel}</strong><span>منتج تقريباً</span></div>
+      <div class="stat-box"><strong>${o.leaves}</strong><span>تصنيف فرعي</span></div>
+      <div class="stat-box"><strong>${o.roots?.length || 10}</strong><span>أقسام رئيسية</span></div>`;
+    if (o.roots?.length && state.categories.tree?.length) {
+      for (const root of o.roots) {
+        const node = state.categories.tree.find((n) => n.slug === root.slug);
+        if (node) node.productCount = root.total;
+      }
+      renderCategoryTree();
+    }
+  } catch {
+    /* optional */
+  }
 }
 
 function autoLoadDefaultCategory() {
-  if (state.currentSlug || state.isSearch || state.isBrand) return;
+  if (state.currentSlug || state.isSearch || state.isBrand || state.isFullCatalog) return;
   const leaf = pickDefaultCategory();
   if (!leaf) return;
   loadCategory(leaf.slug, leaf.path, leaf.pathEn || '');
@@ -719,14 +893,13 @@ async function loadCategories() {
   const container = $('#catTree');
   container.innerHTML = '<div class="loading-tree">جاري تحميل التصنيفات...</div>';
   try {
-    const data = await api(`${API}/categories`);
+    const data = await api(`${API}/categories?counts=1`);
     state.categories = data;
     renderCategoryTree();
-    $('#welcomeStats').innerHTML = `
-      <div class="stat-box"><strong>${data.totalLeaves}</strong><span>تصنيف فرعي</span></div>
-      <div class="stat-box"><strong>EAN</strong><span>باركود + بحث خارجي</span></div>
-      <div class="stat-box"><strong>AR + EN</strong><span>ثنائي اللغة</span></div>`;
-    deferIdle(() => loadBrands());
+    deferIdle(() => {
+      loadBrands();
+      loadCatalogOverview();
+    });
     autoLoadDefaultCategory();
   } catch (err) {
     container.innerHTML = `<div class="loading-tree loading-tree--error">خطأ: ${esc(err.message)}<br><button type="button" class="btn-retry" id="retryCategories">إعادة المحاولة</button></div>`;
@@ -775,7 +948,17 @@ async function init() {
   });
 
   $('#loadMoreBtn').addEventListener('click', () => {
-    if (!state.loading && state.hasMore) fetchProductsPage(state.page + 1, true);
+    if (!state.loading && !state.loadingAll && state.hasMore) fetchProductsPage(state.page + 1, true);
+  });
+
+  $('#loadAllBtn')?.addEventListener('click', () => loadAllPages());
+  $('#loadFullCatalogBtn')?.addEventListener('click', () => loadEntireCatalog());
+  $('#loadMakeupBtn')?.addEventListener('click', () => {
+    const makeup = state.catalogOverview?.roots?.find((r) => r.slug === 'makeup')
+      || state.categories.tree?.find((n) => n.slug === 'makeup');
+    if (makeup) loadCategory(makeup.slug, makeup.path || makeup.name, makeup.pathEn || 'Makeup');
+    else loadCategory('makeup', 'المكياج', 'Makeup');
+    closeSidebar();
   });
 
   let searchTimer;

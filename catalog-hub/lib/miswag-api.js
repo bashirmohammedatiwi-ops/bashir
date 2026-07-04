@@ -13,6 +13,8 @@ import {
   productLineConflicts,
 } from './barcodes.js';
 import { searchUnifiedByStore } from './unified-barcode-index.js';
+import { verifyBarcodeOnProduct } from './core/match.js';
+import { fromLegacyProduct } from './core/product.js';
 
 const API_BASE = 'https://ganesh-lama.miswag.com';
 export const SITE = 'https://miswag.com';
@@ -757,6 +759,63 @@ function barcodeMatches(value, barcode) {
   return false;
 }
 
+async function confirmMiswagBarcodeHit(productId, digits, meta = null) {
+  const detail = await fetchProductDetail(String(productId));
+  if (!detail?.id) return null;
+  const unified = fromLegacyProduct(detail);
+  const check = verifyBarcodeOnProduct(unified, digits);
+  if (check.ok) {
+    return {
+      ...normalizeProductSummary(detail),
+      barcode: digits,
+      shadeName: check.shadeName,
+      matchType: check.matchType,
+      matchScore: 28,
+      source: 'verified',
+    };
+  }
+
+  const hay = JSON.stringify(detail.raw?.variations || detail).replace(/\D/g, '');
+  const stripped = digits.replace(/^0+/, '');
+  const inRaw = hay.includes(digits) || (stripped.length >= 8 && hay.includes(stripped));
+
+  if (meta?.shade || meta?.title) {
+    const hinted = await resolveMiswagShadeVariationHit(
+      { ...normalizeProductSummary(detail), barcode: digits },
+      meta,
+      digits,
+    );
+    if (hinted?.matchType === 'shade') return hinted;
+  }
+
+  if (inRaw) {
+    return {
+      ...normalizeProductSummary(detail),
+      barcode: digits,
+      matchType: 'product',
+      matchScore: 22,
+      source: 'verified-raw',
+    };
+  }
+
+  return null;
+}
+
+async function verifyTypesenseBarcodeHits(hits, digits, resolveMeta) {
+  const verified = [];
+  const meta = await resolveMeta().catch(() => null);
+  for (const hit of hits.slice(0, 5)) {
+    const doc = hit.document || hit;
+    const id = String(doc.id || doc.product_id || doc.item_id || '');
+    if (!id) continue;
+    try {
+      const entry = await confirmMiswagBarcodeHit(id, digits, meta);
+      if (entry) verified.push(entry);
+    } catch { /* skip */ }
+  }
+  return verified;
+}
+
 function pushUnique(results, seen, hit) {
   const key = `${hit.id}:${hit.barcode}:${hit.sku}`;
   if (seen.has(key)) return;
@@ -1021,17 +1080,15 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
     } catch { /* continue to live search */ }
   }
 
-  // (1) Typesense — باركود كنص (قد يظهر في keywords/description/variations)
+  // (1) Typesense — يُتحقَّق من كل نتيجة عبر جلب تفاصيل المنتج + التدرجات
   try {
-    const ts = await typesenseSearch(digits, { page: 1, perPage: 12 });
-    for (const hit of ts.hits || []) {
-      const doc = hit.document || hit;
-      pushUnique(results, seen, mapTypesenseHit(doc, digits));
-    }
+    const ts = await typesenseSearch(digits, { page: 1, perPage: 8 });
+    const verified = await verifyTypesenseBarcodeHits(ts.hits || [], digits, resolveMeta);
+    for (const entry of verified) pushUnique(results, seen, entry);
     if (results.length) return learn(results);
   } catch { /* continue */ }
 
-  // (1b) بحث موسّع في حقول keywords/description/variations
+  // (1b) بحث موسّع — فقط عند وجود الباركود في بيانات المنتج بعد التحقق
   try {
     const cfg = await getSearchConfig();
     const url = new URL(`https://${cfg.host}/multi_search`);
@@ -1047,20 +1104,20 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
         searches: [{
           collection: cfg.index,
           q: digits,
-          query_by: 'keywords,description,variations,alias,title_AR,title_EN,brand',
-          per_page: 12,
+          query_by: 'variations,alias,title_AR,title_EN,brand',
+          per_page: 8,
           page: 1,
         }],
       }),
     });
     const data = await res.json().catch(() => ({}));
-    for (const hit of data.results?.[0]?.hits || []) {
+    const candidates = (data.results?.[0]?.hits || []).filter((hit) => {
       const doc = hit.document || hit;
       const hay = JSON.stringify(doc).replace(/\D/g, '');
-      if (hay.includes(digits)) {
-        pushUnique(results, seen, mapTypesenseHit(doc, digits));
-      }
-    }
+      return hay.includes(digits);
+    });
+    const verified = await verifyTypesenseBarcodeHits(candidates, digits, resolveMeta);
+    for (const entry of verified) pushUnique(results, seen, entry);
     if (results.length) return learn(results);
   } catch { /* continue */ }
 

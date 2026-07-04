@@ -1444,7 +1444,13 @@ function shadeNamesMatch(a = '', b = '') {
 }
 
 /** إثراء باركودات الدرجات عند الاستيراد (مسواگ، Amazon، وغير Nice One) */
-export async function enrichShadesForImport(product, { light = false, maxLookups = 6, barcodeHint = '' } = {}) {
+export async function enrichShadesForImport(product, {
+  light = false,
+  maxLookups = 6,
+  barcodeHint = '',
+  skipAmazonAsinLookup = false,
+  timeoutMs = 0,
+} = {}) {
   const shades = (product.shades || []).map((s) => ({ ...s }));
   if (!shades.length) return shades;
 
@@ -1473,37 +1479,48 @@ export async function enrichShadesForImport(product, { light = false, maxLookups
 
   if (light) return shades;
 
-  if (barcodeHint) {
-    const meta = await lookupBarcodeProductMeta(barcodeHint).catch(() => null);
-    applyBarcodeHintToShades(shades, barcodeHint, meta, product.id || product.asin);
-  }
+  const runExternal = async () => {
+    if (barcodeHint) {
+      const meta = await lookupBarcodeProductMeta(barcodeHint).catch(() => null);
+      applyBarcodeHintToShades(shades, barcodeHint, meta, product.id || product.asin);
+    }
 
-  const needLookup = shades.filter((s) => !s.barcode && !s.ean);
-  const lookupLimit = Math.max(maxLookups, needLookup.length);
-  await Promise.all(needLookup.slice(0, lookupLimit).map(async (shade) => {
-    const { ar, en } = shadeNames(shade);
-    const shadeLabel = en || ar || shade.nameEn || shade.name || '';
-    const asin = String(shade.sku || shade.optionId || '').trim().toUpperCase();
+    const needLookup = shades.filter((s) => !s.barcode && !s.ean);
+    const lookupLimit = Math.min(Math.max(1, maxLookups), needLookup.length);
+    await Promise.all(needLookup.slice(0, lookupLimit).map(async (shade) => {
+      const { ar, en } = shadeNames(shade);
+      const shadeLabel = en || ar || shade.nameEn || shade.name || '';
+      const asin = String(shade.sku || shade.optionId || '').trim().toUpperCase();
 
-    if (/^[A-Z0-9]{10}$/.test(asin)) {
-      const { lookupAmazonVariantByAsin } = await import('./amazon-api.js');
-      const amazonVariant = await lookupAmazonVariantByAsin(asin).catch(() => null);
-      if (amazonVariant?.ean) {
-        applyExternalResult(shade, amazonVariant);
+      if (!skipAmazonAsinLookup && /^[A-Z0-9]{10}$/.test(asin)) {
+        const { lookupAmazonVariantByAsin } = await import('./amazon-api.js');
+        const amazonVariant = await lookupAmazonVariantByAsin(asin).catch(() => null);
+        if (amazonVariant?.ean) {
+          applyExternalResult(shade, amazonVariant);
+          return;
+        }
+      }
+
+      const shopify = await lookupShopifyVariantByShade(manufacturer, productName, shadeLabel).catch(() => null);
+      if (shopify?.ean) {
+        applyExternalResult(shade, shopify);
         return;
       }
-    }
+      const ext = await lookupExternalBarcode(manufacturer, productName, ar, en, shade.sku).catch(() => null);
+      if (ext?.ean) {
+        applyExternalResult(shade, ext);
+      }
+    }));
+  };
 
-    const shopify = await lookupShopifyVariantByShade(manufacturer, productName, shadeLabel).catch(() => null);
-    if (shopify?.ean) {
-      applyExternalResult(shade, shopify);
-      return;
-    }
-    const ext = await lookupExternalBarcode(manufacturer, productName, ar, en, shade.sku).catch(() => null);
-    if (ext?.ean) {
-      applyExternalResult(shade, ext);
-    }
-  }));
+  if (timeoutMs > 0) {
+    await Promise.race([
+      runExternal(),
+      new Promise((resolve) => setTimeout(resolve, timeoutMs)),
+    ]);
+  } else {
+    await runExternal();
+  }
 
   saveDiskCache();
   return shades;

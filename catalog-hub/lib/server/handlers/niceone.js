@@ -13,6 +13,12 @@ import {
   sortProductsClient,
 } from '../../api.js';
 import {
+  fetchCatalogOverview,
+  fetchAllCategoryProducts,
+  streamEntireCatalog,
+  enrichTreeWithCounts,
+} from '../../niceone-catalog.js';
+import {
   enrichShadesDeep,
   enrichShadesFromDatabase,
   enrichShadesLookup,
@@ -21,7 +27,7 @@ import {
   shadeStats,
   getBarcodeCacheStats,
 } from '../../barcodes.js';
-import { CACHE_MS, sendJson, parseQuery, readBody } from '../http.js';
+import { CACHE_MS, sendJson, parseQuery, readBody, startSseResponse, sendSseEvent } from '../http.js';
 
 let categoryCache = { tree: null, leaves: null, fetchedAt: 0 };
 let niceoneBrandsCache = { brands: null, fetchedAt: 0 };
@@ -62,7 +68,35 @@ export async function handleNiceoneApi(req, res, url) {
 
     if (url.pathname === '/api/categories') {
       const { tree, leaves } = await getCategoryTree();
+      const withCounts = q.counts === '1' || q.counts === 'true';
+      if (withCounts) {
+        await enrichTreeWithCounts(tree, { maxLeaves: 60 });
+      }
       return sendJson(res, 200, { tree, leaves, totalLeaves: leaves.length });
+    }
+
+    if (url.pathname === '/api/catalog/overview') {
+      const overview = await fetchCatalogOverview();
+      return sendJson(res, 200, overview);
+    }
+
+    if (url.pathname === '/api/catalog/stream') {
+      startSseResponse(res);
+      try {
+        sendSseEvent(res, 'start', { ok: true });
+        await streamEntireCatalog((ev) => {
+          if (ev.type === 'batch') {
+            const products = (ev.products || []).map((p) => normalizeProductSummary(p, { slug: 'catalog', path: 'كل المنتجات', pathEn: 'All Products' }));
+            sendSseEvent(res, 'batch', { products, uniqueTotal: ev.uniqueTotal });
+          } else {
+            sendSseEvent(res, ev.type, ev);
+          }
+        });
+      } catch (err) {
+        sendSseEvent(res, 'error', { error: err.message });
+      }
+      res.end();
+      return;
     }
 
     if (url.pathname === '/api/brands') {
@@ -76,7 +110,7 @@ export async function handleNiceoneApi(req, res, url) {
     if (niceoneBrandMatch) {
       const brandId = decodeURIComponent(niceoneBrandMatch[1]);
       const page = Number(q.page) || 1;
-      const limit = Math.min(Number(q.limit) || 30, 60);
+      const limit = Math.min(Number(q.limit) || 30, 100);
       const sort = q.sort || 'default';
       const brand = (niceoneBrandsCache.brands || []).find((b) => String(b.id) === String(brandId));
       const data = await fetchManufacturerProducts(brandId, { page, limit, sort });
@@ -104,11 +138,37 @@ export async function handleNiceoneApi(req, res, url) {
     if (catMatch) {
       const slug = decodeURIComponent(catMatch[1]);
       const page = Number(q.page) || 1;
-      const limit = Math.min(Number(q.limit) || 30, 60);
+      const limit = Math.min(Number(q.limit) || 30, 100);
       const sort = q.sort || 'default';
       const search = q.search || '';
       const manufacturerIds = q.manufacturers || q.manufacturer_ids || '';
       const apiSort = mapClientSort(sort);
+      const fetchAll = q.all === '1' || q.all === 'true';
+
+      if (fetchAll) {
+        const { products: raw, total, pages } = await fetchAllCategoryProducts(slug, {
+          limit,
+          sort: apiSort,
+        });
+        const leaf = (await getCategoryTree()).leaves.find((c) => c.slug === slug);
+        const meta = {
+          slug,
+          path: leaf?.path || slug,
+          pathEn: leaf?.pathEn || leaf?.path || slug,
+          totalCount: total,
+          pages,
+          complete: true,
+        };
+        let products = raw.map((p) => normalizeProductSummary(p, meta));
+        if (sort !== 'default') products = sortProductsClient(products, sort);
+        return sendJson(res, 200, {
+          meta,
+          products,
+          page: 1,
+          limit: products.length,
+          hasMore: false,
+        });
+      }
 
       const data = await fetchCategoryProducts(slug, {
         page,
@@ -146,7 +206,7 @@ export async function handleNiceoneApi(req, res, url) {
       const query = q.q || q.search || '';
       if (!query.trim()) return sendJson(res, 400, { error: 'q required' });
       const page = Number(q.page) || 1;
-      const limit = Math.min(Number(q.limit) || 30, 60);
+      const limit = Math.min(Number(q.limit) || 30, 100);
       const sort = q.sort || 'default';
       const data = await searchProducts(query, page, limit);
       let products = (data.products || []).map((p) => normalizeProductSummary(p, { slug: 'search', path: `بحث: ${query}`, pathEn: `Search: ${query}` }));
