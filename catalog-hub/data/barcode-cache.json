@@ -1817,5 +1817,24 @@
     "at": 1783508984327,
     "brand": "Kerastase",
     "title": "Kerastase Blond Absolu Hair Masque Ultra-Violet Purple Hair Mask"
+  },
+  "upc_barcode|6287020281204": {
+    "ean": "",
+    "source": "none",
+    "at": 1783517746293
+  },
+  "web_search|6287020281204": {
+    "ean": "6287020281204",
+    "source": "web-search",
+    "at": 1783517767506,
+    "brand": "Musk",
+    "title": "Luban"
+  },
+  "product_meta|6287020281204": {
+    "ean": "6287020281204",
+    "source": "web-search",
+    "at": 1783517767507,
+    "brand": "Musk",
+    "title": "Luban"
   }
 }

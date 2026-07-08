@@ -31,6 +31,7 @@ import {
   fetchCatalogSummariesBatch,
   searchCatalogByBarcodeProgressive,
   CATALOG_STORES,
+  CATALOG_STORE_META,
   type CatalogImportOption,
   type CatalogImportProduct,
   type CatalogImportSummary,
@@ -266,6 +267,24 @@ export default function CatalogImportPage() {
                 fromIndex: event.fromIndex,
               },
             }));
+          }
+          if (event.type === "done") {
+            setStoreStatuses((prev) => {
+              const next = { ...prev };
+              for (const storeId of CATALOG_STORES) {
+                const cur = next[storeId];
+                if (!cur || cur.status === "pending" || cur.status === "searching") {
+                  next[storeId] = {
+                    store: storeId,
+                    status: "done",
+                    label: CATALOG_STORE_META[storeId] || storeId,
+                    count: cur?.count ?? 0,
+                    message: cur?.message,
+                  };
+                }
+              }
+              return next;
+            });
           }
         },
         controller.signal,

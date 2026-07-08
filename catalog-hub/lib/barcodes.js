@@ -1253,6 +1253,17 @@ export async function lookupBarcodeProductMeta(barcode) {
   const goUpc = await withTimeout(lookupBarcodeFromGoUpc(digits), 6000, null);
   if (goUpc?.brand || goUpc?.title) return finish(goUpc);
 
+  const manual = findBarcodeLookup(digits);
+  if (manual?.name || manual?.manufacturer) {
+    return finish(normalizeBarcodeMeta({
+      ean: digits,
+      brand: manual.manufacturer || '',
+      title: manual.name || '',
+      shade: manual.shadeName || '',
+      source: 'barcode-lookup',
+    }));
+  }
+
   return finish(null);
 }
 

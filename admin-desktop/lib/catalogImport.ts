@@ -206,11 +206,24 @@ async function consumeSseStream(
   url: string,
   onEvent: (event: CatalogSearchStreamEvent) => void,
   signal?: AbortSignal,
+  timeoutMs = 120_000,
 ) {
-  const res = await fetch(url, {
-    headers: { Accept: "text/event-stream" },
-    signal,
-  });
+  const timeoutCtrl = new AbortController();
+  const timer = setTimeout(() => timeoutCtrl.abort(), timeoutMs);
+  if (signal) {
+    if (signal.aborted) timeoutCtrl.abort();
+    else signal.addEventListener("abort", () => timeoutCtrl.abort(), { once: true });
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      headers: { Accept: "text/event-stream" },
+      signal: timeoutCtrl.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
   if (!res.ok) {
     let message = res.statusText || "فشل الاتصال بكتالوج المتاجر";
     try {

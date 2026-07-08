@@ -14,7 +14,7 @@ import {
   productLineConflicts,
   normalizeBarcodeMeta,
 } from './barcodes.js';
-import { searchUnifiedByStore } from './unified-barcode-index.js';
+import { searchUnifiedByStore, searchUnifiedBarcodeIndex } from './unified-barcode-index.js';
 import { verifyBarcodeOnProduct } from './core/match.js';
 import { fromLegacyProduct } from './core/product.js';
 
@@ -1040,11 +1040,53 @@ async function searchMiswagByMetaHints(meta, digits, { limit = 12 } = {}) {
   return pickBestMiswagHintResults(scored, meta, { limit });
 }
 
+async function resolveMiswagLookupHit(manual, digits, metaEarly) {
+  const meta = {
+    ...metaEarly,
+    shade: manual.shadeName || metaEarly?.shade || '',
+    brand: metaEarly?.brand || manual.manufacturer || '',
+    title: metaEarly?.title || manual.name || '',
+  };
+  try {
+    const entry = await confirmMiswagBarcodeHit(manual.productId, digits, meta);
+    if (entry) {
+      if (manual.shadeName && !entry.shadeName) entry.shadeName = manual.shadeName;
+      return entry;
+    }
+  } catch { /* fallback below */ }
+
+  const detail = await fetchProductDetail(String(manual.productId));
+  if (!detail?.id) return null;
+  return {
+    ...normalizeProductSummary(detail),
+    barcode: digits,
+    shadeName: manual.shadeName || '',
+    matchType: 'lookup',
+    matchScore: 28,
+    source: 'barcode-lookup',
+  };
+}
+
+function metaFromLocalBarcodeSources(digits) {
+  const manual = findBarcodeLookup(digits);
+  if (manual?.name || manual?.manufacturer) {
+    return normalizeBarcodeMeta({
+      brand: manual.manufacturer || '',
+      title: manual.name || '',
+      shade: manual.shadeName || '',
+      source: 'barcode-lookup',
+    });
+  }
+  return buildMetaFromSearchHits(searchUnifiedBarcodeIndex(digits));
+}
+
 export async function searchProductsByBarcode(barcode, { getMeta, hintHits = [], upcMeta = null } = {}) {
   const digits = String(barcode || '').replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return [];
 
   const resolveMeta = async () => {
+    const local = metaFromLocalBarcodeSources(digits);
+    if (local?.brand || local?.title) return local;
     if (getMeta) {
       const shared = await getMeta().catch(() => null);
       if (shared?.brand || shared?.title) return shared;
@@ -1093,13 +1135,12 @@ export async function searchProductsByBarcode(barcode, { getMeta, hintHits = [],
 
   const metaEarly = await resolveMeta().catch(() => null);
 
-  // (0b) فهرس يدوي محلي — مع التحقق
+  // (0b) فهرس يدوي محلي — يُقبل عند وجود المنتج حتى بدون باركود في API
   const manual = findBarcodeLookup(digits);
   if (manual?.productId && (manual.store === 'miswag' || !manual.store)) {
     try {
-      const entry = await confirmMiswagBarcodeHit(manual.productId, digits, { ...metaEarly, shade: manual.shadeName });
+      const entry = await resolveMiswagLookupHit(manual, digits, metaEarly);
       if (entry) {
-        if (manual.shadeName && !entry.shadeName) entry.shadeName = manual.shadeName;
         pushUnique(results, seen, entry);
         if (results.length) return learn(results);
       }
@@ -1195,6 +1236,26 @@ export async function searchProductsByBarcode(barcode, { getMeta, hintHits = [],
       const hinted = await searchMiswagByMetaHints(meta, digits);
       for (const hit of hinted) pushUnique(results, seen, hit);
     }
+  }
+
+  // (5) بحث نصي مباشر من اسم المنتج في الفهرس المحلي
+  if (!results.length && manual?.name) {
+    try {
+      const meta = normalizeBarcodeMeta({
+        brand: manual.manufacturer || '',
+        title: manual.name,
+        shade: manual.shadeName || '',
+        source: 'barcode-lookup',
+      });
+      const ts = await typesenseSearch(manual.name, { page: 1, perPage: 6, strict: true });
+      for (const hit of ts.hits || []) {
+        const doc = hit.document || hit;
+        const id = String(doc.id || doc.product_id || '');
+        if (!id) continue;
+        const entry = await confirmMiswagBarcodeHit(id, digits, meta);
+        if (entry) pushUnique(results, seen, entry);
+      }
+    } catch { /* optional */ }
   }
 
   return results.slice(0, 12);

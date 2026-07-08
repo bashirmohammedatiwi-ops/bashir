@@ -59,7 +59,7 @@ import {
   searchProductsByBarcode as searchNajdProductsByBarcode,
   normalizeProductSummary as normalizeNajdSummary,
 } from '../najd-api.js';
-import { lookupUpcByBarcode, lookupBarcodeProductMeta, buildMetaFromSearchHits } from '../barcodes.js';
+import { lookupUpcByBarcode, lookupBarcodeProductMeta, buildMetaFromSearchHits, findBarcodeLookup, normalizeBarcodeMeta } from '../barcodes.js';
 import { pickBestHitPerStore } from '../core/hit-filter.js';
 import { filterStrictHits } from '../core/match.js';
 
@@ -963,6 +963,15 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
   void metaPromise;
 
   const getMeta = async () => {
+    const manual = findBarcodeLookup(barcode);
+    if (manual?.name || manual?.manufacturer) {
+      return normalizeBarcodeMeta({
+        brand: manual.manufacturer || '',
+        title: manual.name || '',
+        shade: manual.shadeName || '',
+        source: 'barcode-lookup',
+      });
+    }
     const [meta, upc] = await Promise.all([metaPromise, upcPromise]);
     if (meta?.brand || meta?.title) return meta;
     if (upc?.brand || upc?.title) {
