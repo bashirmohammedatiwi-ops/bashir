@@ -11,6 +11,13 @@ const PREFIX_FILE = path.join(__dirname, '..', '..', 'data', 'gs1-prefixes.json'
  */
 const SEED_PREFIXES = {
   '0077802': 'Wet N Wild', // Markwins Beauty Brands
+  // L'Oréal Group / Maybelline (GS1 France 360…)
+  '3600531': 'Maybelline',
+  '3600522': 'Maybelline',
+  '3600523': 'LOreal',
+  '3600520': 'LOreal',
+  '0712493': 'Maybelline', // US Maybelline
+  '0415540': 'LOreal',
 };
 
 let learnedCache = null;

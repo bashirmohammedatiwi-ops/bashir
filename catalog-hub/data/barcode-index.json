@@ -793,10 +793,66 @@
       "barcode": "3760004321286",
       "updatedAt": 1783549055139,
       "shadeName": ""
+    },
+    "03600531668464": {
+      "store": "miswag",
+      "productId": "1756292625",
+      "matchType": "v2_shade",
+      "barcode": "3600531668464",
+      "updatedAt": 1783552601827,
+      "shadeName": "08 Shades On"
+    },
+    "03600531668440": {
+      "store": "miswag",
+      "productId": "1756292625",
+      "matchType": "v2_shade",
+      "barcode": "3600531668440",
+      "updatedAt": 1783552601827,
+      "shadeName": "06 City Sizzle"
+    },
+    "03600531668501": {
+      "store": "miswag",
+      "productId": "1756292625",
+      "matchType": "v2_shade",
+      "barcode": "3600531668501",
+      "updatedAt": 1783552601827,
+      "shadeName": "12 Summer in the City"
+    },
+    "03600531668433": {
+      "store": "miswag",
+      "productId": "1756292625",
+      "matchType": "v2_shade",
+      "barcode": "3600531668433",
+      "updatedAt": 1783552601827,
+      "shadeName": "05 Blazing Blush"
+    },
+    "03600531668495": {
+      "store": "miswag",
+      "productId": "1756292625",
+      "matchType": "v2_shade",
+      "barcode": "3600531668495",
+      "updatedAt": 1783552601827,
+      "shadeName": "11 Electric Bronze"
+    },
+    "03600531668396": {
+      "store": "miswag",
+      "productId": "1756292625",
+      "matchType": "v2_shade",
+      "barcode": "3600531668396",
+      "updatedAt": 1783552601827,
+      "shadeName": "01 Downtown Rush"
+    },
+    "03600531668419": {
+      "store": "miswag",
+      "productId": "1756292625",
+      "matchType": "v2_shade",
+      "barcode": "3600531668419",
+      "updatedAt": 1783552601827,
+      "shadeName": "03 Sol Search"
     }
   },
   "meta": {
-    "updatedAt": 1783549055506,
+    "updatedAt": 1783552601893,
     "source": "seed"
   }
 }

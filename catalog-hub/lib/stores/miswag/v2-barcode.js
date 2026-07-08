@@ -1,5 +1,7 @@
 import { miswagFetch, cacheGet, cacheSet, DETAIL_TTL } from './client.js';
-export { isMiswagInternalId, isValidEan } from './ids.js';
+import { isMiswagInternalId, isValidEan } from './ids.js';
+
+export { isMiswagInternalId, isValidEan };
 
 const V2_TTL = DETAIL_TTL;
 
