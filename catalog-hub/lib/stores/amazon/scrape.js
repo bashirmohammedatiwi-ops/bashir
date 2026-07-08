@@ -3,20 +3,39 @@ import { splitBilingualText } from '../../core/bilingual.js';
 import { BEAUTY_ROOT_NODE } from './client.js';
 
 const DEFAULT_TTL = 10 * 60 * 1000;
-const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
-const MARKET = {
-  com: {
-    host: 'www.amazon.com',
-    currency: 'USD',
-    lang: 'en-US,en;q=0.9',
-  },
-  ae: {
+const USER_AGENTS = [
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1',
+];
+
+/** أسواق بالأولوية — ae/sa أقل captcha من .com على سيرفرات المنطقة */
+const MARKETS = [
+  {
+    id: 'ae',
     host: 'www.amazon.ae',
-    currency: 'AED',
     lang: 'ar-AE,ar;q=0.9,en;q=0.8',
+    cookie: 'i18n-prefs=AED; lc-acbae=ar_AE',
   },
-};
+  {
+    id: 'sa',
+    host: 'www.amazon.sa',
+    lang: 'ar-SA,ar;q=0.9,en;q=0.8',
+    cookie: 'i18n-prefs=SAR; lc-acbsa=ar_AE',
+  },
+  {
+    id: 'com',
+    host: 'www.amazon.com',
+    lang: 'en-US,en;q=0.9',
+    cookie: 'i18n-prefs=USD; lc-main=en_US',
+  },
+];
+
+let uaIndex = 0;
+let captchaUntil = 0;
+let preferredMarketId = 'ae';
 
 function decodeHtml(s = '') {
   return String(s)
@@ -34,33 +53,101 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-async function fetchHtml(url, { lang = 'en-US,en;q=0.9', ttl = DEFAULT_TTL / 2, cacheKey = '' } = {}) {
-  const key = cacheKey || `amazon:html:${url}`;
-  const cached = cacheGet(key, ttl);
-  if (cached) return cached;
+function nextUa() {
+  uaIndex = (uaIndex + 1) % USER_AGENTS.length;
+  return USER_AGENTS[uaIndex];
+}
 
+function isCaptchaHtml(html = '') {
+  return /enter the characters you see|type the characters|robot check|automated access|validateCaptcha|opfcaptcha/i.test(html);
+}
+
+function isBlocked() {
+  return Date.now() < captchaUntil;
+}
+
+function markCaptcha(ms = 90_000) {
+  captchaUntil = Math.max(captchaUntil, Date.now() + ms);
+}
+
+function marketOrder() {
+  const preferred = MARKETS.find((m) => m.id === preferredMarketId);
+  const rest = MARKETS.filter((m) => m.id !== preferredMarketId);
+  return preferred ? [preferred, ...rest] : MARKETS;
+}
+
+async function fetchHtmlOnce(url, market) {
   const res = await fetch(url, {
     headers: {
-      'User-Agent': UA,
-      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Language': lang,
+      'User-Agent': nextUa(),
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+      'Accept-Language': market.lang,
       'Accept-Encoding': 'gzip, deflate, br',
-      'Cache-Control': 'no-cache',
-      Pragma: 'no-cache',
+      'Cache-Control': 'max-age=0',
+      Cookie: market.cookie || '',
       'Upgrade-Insecure-Requests': '1',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Sec-Fetch-User': '?1',
     },
     redirect: 'follow',
-    signal: AbortSignal.timeout(18_000),
+    signal: AbortSignal.timeout(16_000),
   });
 
   const html = await res.text();
-  if (!res.ok) throw new Error(`Amazon HTTP ${res.status}`);
-  if (/enter the characters you see|type the characters|robot check|automated access/i.test(html)) {
-    throw new Error('Amazon حظر الطلب مؤقتاً (captcha) — أعد المحاولة بعد قليل');
+  if (!res.ok) {
+    const err = new Error(`Amazon HTTP ${res.status}`);
+    err.code = 'HTTP';
+    throw err;
+  }
+  if (isCaptchaHtml(html)) {
+    const err = new Error('captcha');
+    err.code = 'CAPTCHA';
+    throw err;
+  }
+  return html;
+}
+
+/**
+ * جلب HTML مع تدوير الأسواق عند captcha — لا يرمي خطأ للمستخدم إن نجح سوق بديل.
+ */
+async function fetchHtml(urlBuilder, { ttl = DEFAULT_TTL / 2, cacheKey = '' } = {}) {
+  const key = cacheKey || '';
+  if (key) {
+    const cached = cacheGet(key, ttl);
+    if (cached) return { html: cached, market: marketOrder()[0] };
   }
 
-  cacheSet(key, html);
-  return html;
+  if (isBlocked()) {
+    const err = new Error('Amazon في فترة تهدئة بعد captcha');
+    err.code = 'COOLDOWN';
+    throw err;
+  }
+
+  let lastErr = null;
+  for (const market of marketOrder()) {
+    const url = typeof urlBuilder === 'function' ? urlBuilder(market) : urlBuilder;
+    try {
+      const html = await fetchHtmlOnce(url, market);
+      preferredMarketId = market.id;
+      if (key) cacheSet(key, html);
+      return { html, market };
+    } catch (err) {
+      lastErr = err;
+      if (err?.code === 'CAPTCHA') {
+        markCaptcha(60_000);
+        await sleep(400);
+        continue;
+      }
+      await sleep(200);
+    }
+  }
+
+  if (lastErr?.code === 'CAPTCHA' || lastErr?.code === 'COOLDOWN') {
+    markCaptcha(90_000);
+  }
+  throw lastErr || new Error('تعذّر جلب Amazon');
 }
 
 function categoryBrowseKeyword(categoryId = '') {
@@ -82,15 +169,18 @@ function categoryBrowseKeyword(categoryId = '') {
   return map[String(categoryId)] || 'beauty';
 }
 
-function searchUrl({ host, query, categoryId, page = 1 }) {
+function searchUrl(market, { query, categoryId, page = 1 }) {
   const q = encodeURIComponent(query || categoryBrowseKeyword(categoryId));
-  const node = encodeURIComponent(String(categoryId || BEAUTY_ROOT_NODE));
   const p = Math.max(1, Math.min(20, Number(page) || 1));
-  // i=beauty يقيّد النتائج لقسم الجمال على amazon.com
-  return `https://${host}/s?k=${q}&i=beauty&rh=n%3A${node}&page=${p}`;
+  // .com يدعم i=beauty + node؛ ae/sa غالباً بحث عام داخل beauty
+  if (market.id === 'com') {
+    const node = encodeURIComponent(String(categoryId || BEAUTY_ROOT_NODE));
+    return `https://${market.host}/s?k=${q}&i=beauty&rh=n%3A${node}&page=${p}`;
+  }
+  return `https://${market.host}/s?k=${q}&page=${p}`;
 }
 
-function parseSearchCards(html = '') {
+function parseSearchCards(html = '', marketHost = 'www.amazon.com') {
   const parts = html.split('data-component-type="s-search-result"');
   const items = [];
   const seen = new Set();
@@ -121,7 +211,7 @@ function parseSearchCards(html = '') {
     const offscreen = decodeHtml(chunk.match(/a-price[^>]*>[\s\S]*?a-offscreen">([^<]+)/)?.[1] || '');
     let price = offscreen;
     if (!price && whole) {
-      price = `${symbol || '$'}${whole}${frac ? `.${frac}` : ''}`;
+      price = `${symbol || ''}${whole}${frac ? `.${frac}` : ''}`.trim();
     }
 
     items.push({
@@ -138,7 +228,7 @@ function parseSearchCards(html = '') {
       category: 'Beauty',
       shadeCount: 1,
       hasOptions: false,
-      productUrl: `https://www.amazon.com/dp/${asin}`,
+      productUrl: `https://${marketHost}/dp/${asin}`,
       inStock: true,
       source: 'scrape',
     });
@@ -164,7 +254,6 @@ function parseVariations(html = '') {
   const shades = [];
   const seen = new Set();
 
-  // dimensionValuesDisplayData: {"ASIN":["Color","Size"],...}
   const dimMatch = html.match(/dimensionValuesDisplayData"\s*:\s*(\{[\s\S]*?\})\s*,\s*"/);
   if (dimMatch?.[1]) {
     try {
@@ -189,7 +278,6 @@ function parseVariations(html = '') {
     } catch { /* ignore */ }
   }
 
-  // fallback: color_name map
   if (!shades.length) {
     const colorMatch = html.match(/"color_name"\s*:\s*(\{[\s\S]*?\})\s*,\s*"/);
     if (colorMatch?.[1]) {
@@ -219,7 +307,7 @@ function parseVariations(html = '') {
   return shades.slice(0, 80);
 }
 
-function parseDetailHtml(html = '', asin = '') {
+function parseDetailHtml(html = '', asin = '', marketHost = 'www.amazon.com') {
   const title = decodeHtml(
     html.match(/id="productTitle"[^>]*>([^<]+)/)?.[1]
     || html.match(/"title"\s*:\s*"([^"]{5,300})"/)?.[1]
@@ -280,11 +368,11 @@ function parseDetailHtml(html = '', asin = '') {
     descriptionEn: features.join(' • '),
     thumb: (uniqImages[0] || '').replace(/\._SL\d+_/, '._SL500_'),
     images: uniqImages,
-    price: price.includes('$') || price.includes('AED') || /[^\d.]/.test(price)
+    price: price.includes('$') || price.includes('AED') || price.includes('SAR') || /[^\d.]/.test(price)
       ? price
       : (price ? `$${price}` : ''),
     category: 'Beauty',
-    productUrl: `https://www.amazon.com/dp/${asin}`,
+    productUrl: `https://${marketHost}/dp/${asin}`,
     inStock: true,
     shades: shades.length
       ? shades
@@ -315,45 +403,38 @@ export async function scrapeSearchProducts(query, { page = 1, limit = 30, catego
   const pageNum = Math.max(1, Math.min(20, Number(page) || 1));
   const pageSize = Math.max(1, Math.min(48, Number(limit) || 30));
 
-  const url = searchUrl({
-    host: MARKET.com.host,
-    query: q,
-    categoryId: node,
-    page: pageNum,
-  });
+  try {
+    const { html, market } = await fetchHtml(
+      (m) => searchUrl(m, { query: q, categoryId: node, page: pageNum }),
+      { cacheKey: `amazon:scrape:search:${node}:${q}:${pageNum}`, ttl: DEFAULT_TTL / 2 },
+    );
 
-  const html = await fetchHtml(url, {
-    lang: MARKET.com.lang,
-    cacheKey: `amazon:scrape:search:${node}:${q}:${pageNum}`,
-  });
-
-  let items = parseSearchCards(html);
-
-  // إن كانت النتائج ضعيفة، جرّب amazon.ae
-  if (items.length < 4) {
-    try {
-      const aeUrl = `https://${MARKET.ae.host}/s?k=${encodeURIComponent(q)}&page=${pageNum}`;
-      const aeHtml = await fetchHtml(aeUrl, {
-        lang: MARKET.ae.lang,
-        cacheKey: `amazon:scrape:ae:${q}:${pageNum}`,
-      });
-      const aeItems = parseSearchCards(aeHtml).map((p) => ({
-        ...p,
-        productUrl: `https://www.amazon.ae/dp/${p.id}`,
-      }));
-      if (aeItems.length > items.length) items = aeItems;
-    } catch { /* ignore */ }
+    const items = parseSearchCards(html, market.host).slice(0, pageSize);
+    return {
+      items,
+      page: pageNum,
+      pageSize,
+      total: items.length + (items.length >= 16 ? pageNum * pageSize + 1 : pageNum * pageSize),
+      hasMore: items.length >= 12 && pageNum < 20,
+      source: 'scrape',
+      market: market.id,
+    };
+  } catch (err) {
+    // لا نرمي captcha للواجهة — نرجع قائمة فارغة بهدوء
+    if (err?.code === 'CAPTCHA' || err?.code === 'COOLDOWN') {
+      return {
+        items: [],
+        page: pageNum,
+        pageSize,
+        total: 0,
+        hasMore: false,
+        source: 'scrape',
+        softBlocked: true,
+        message: 'Amazon مؤقتاً محدود — يُعرض الفهرس المحلي إن وُجد',
+      };
+    }
+    throw err;
   }
-
-  items = items.slice(0, pageSize);
-  return {
-    items,
-    page: pageNum,
-    pageSize,
-    total: items.length + (items.length >= 16 ? pageNum * pageSize + 1 : pageNum * pageSize),
-    hasMore: items.length >= 12 && pageNum < 20,
-    source: 'scrape',
-  };
 }
 
 export async function scrapeProductDetail(id, { light = false } = {}) {
@@ -364,34 +445,36 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
   const cached = cacheGet(cacheKey, DEFAULT_TTL);
   if (cached) return cached;
 
-  const url = `https://${MARKET.com.host}/dp/${asin}`;
-  const html = await fetchHtml(url, {
-    lang: MARKET.com.lang,
-    cacheKey: `amazon:scrape:dp:${asin}`,
-    ttl: DEFAULT_TTL,
-  });
+  try {
+    const { html, market } = await fetchHtml(
+      (m) => `https://${m.host}/dp/${asin}`,
+      { cacheKey: `amazon:scrape:dp:${asin}`, ttl: DEFAULT_TTL },
+    );
 
-  let detail = parseDetailHtml(html, asin);
-  if (!detail) return null;
+    let detail = parseDetailHtml(html, asin, market.host);
+    if (!detail) return null;
 
-  // عنوان عربي من amazon.ae إن أمكن
-  if (!light) {
-    try {
-      await sleep(200);
-      const aeHtml = await fetchHtml(`https://${MARKET.ae.host}/dp/${asin}`, {
-        lang: MARKET.ae.lang,
-        cacheKey: `amazon:scrape:dp-ae:${asin}`,
-        ttl: DEFAULT_TTL,
-      });
-      const arTitle = decodeHtml(aeHtml.match(/id="productTitle"[^>]*>([^<]+)/)?.[1] || '');
-      if (arTitle && /[\u0600-\u06FF]/.test(arTitle)) {
-        detail = { ...detail, nameAr: arTitle };
-      }
-    } catch { /* اختياري */ }
+    // عنوان عربي من ae إن أمكن
+    if (!light && market.id === 'com' && /[A-Za-z]/.test(detail.nameAr || '')) {
+      try {
+        await sleep(250);
+        const aeMarket = MARKETS.find((m) => m.id === 'ae');
+        if (aeMarket && !isBlocked()) {
+          const aeHtml = await fetchHtmlOnce(`https://${aeMarket.host}/dp/${asin}`, aeMarket).catch(() => '');
+          const arTitle = decodeHtml(aeHtml.match(/id="productTitle"[^>]*>([^<]+)/)?.[1] || '');
+          if (arTitle && /[\u0600-\u06FF]/.test(arTitle)) {
+            detail = { ...detail, nameAr: arTitle };
+          }
+        }
+      } catch { /* اختياري */ }
+    }
+
+    cacheSet(cacheKey, detail);
+    return detail;
+  } catch (err) {
+    if (err?.code === 'CAPTCHA' || err?.code === 'COOLDOWN') return null;
+    throw err;
   }
-
-  cacheSet(cacheKey, detail);
-  return detail;
 }
 
 export async function scrapeBarcode(code) {
@@ -399,6 +482,8 @@ export async function scrapeBarcode(code) {
   if (digits.length < 8) return [];
 
   const data = await scrapeSearchProducts(digits, { page: 1, limit: 10, categoryId: BEAUTY_ROOT_NODE });
+  if (data.softBlocked || !data.items?.length) return [];
+
   const exact = [];
   for (const item of data.items.slice(0, 5)) {
     try {
@@ -409,12 +494,20 @@ export async function scrapeBarcode(code) {
         exact.push({ ...item, barcode: digits, matchType: 'keyword' });
       }
       if (exact.length >= 3) break;
-      await sleep(250);
+      await sleep(350);
     } catch {
       exact.push({ ...item, barcode: digits, matchType: 'keyword' });
     }
   }
   return exact;
+}
+
+export function amazonScrapeStatus() {
+  return {
+    blocked: isBlocked(),
+    cooldownMs: Math.max(0, captchaUntil - Date.now()),
+    preferredMarket: preferredMarketId,
+  };
 }
 
 export { categoryBrowseKeyword };

@@ -19,6 +19,8 @@ async function listVariationIds(productId) {
   do {
     const chunk = await miswagFetch(`/content/v1/items/${encodeURIComponent(pid)}/variations`, {
       params: cursor ? { cursor } : {},
+      timeoutMs: 6_000,
+      retries: 0,
     }).catch(() => null);
     if (!chunk) break;
 
@@ -30,7 +32,7 @@ async function listVariationIds(productId) {
 
     cursor = chunk.pagination?.cursor || null;
     pages += 1;
-  } while (cursor && pages < 30);
+  } while (cursor && pages < 12); // حد أدنى كافٍ — لا نمسح 30 صفحة في بحث باركود
 
   return ids;
 }

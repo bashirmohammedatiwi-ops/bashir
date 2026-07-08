@@ -66,6 +66,7 @@ async function getAuthToken() {
       'Accept-Language': 'ar',
     },
     body: '',
+    signal: AbortSignal.timeout(8_000),
   });
   const data = await res.json();
   const token = data?.data?.token;
@@ -75,7 +76,7 @@ async function getAuthToken() {
   return token;
 }
 
-export async function miswagFetch(path, { params = {}, retries = 2 } = {}) {
+export async function miswagFetch(path, { params = {}, retries = 1, timeoutMs = 8_000 } = {}) {
   const token = await getAuthToken();
   const url = new URL(`${API_BASE}${path.startsWith('/') ? path : `/${path}`}`);
   for (const [k, v] of Object.entries(params)) {
@@ -83,28 +84,40 @@ export async function miswagFetch(path, { params = {}, retries = 2 } = {}) {
   }
 
   for (let attempt = 0; attempt <= retries; attempt++) {
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Client-Id': CLIENT_ID,
-        'Accept-Language': 'ar',
-        Accept: 'application/json',
-      },
-    });
-    if (res.status === 401 && attempt < retries) {
-      authToken = null;
-      await getAuthToken();
-      continue;
-    }
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data.success === false) {
-      if (attempt < retries && res.status >= 500) {
-        await sleep(300 * (attempt + 1));
+    try {
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Client-Id': CLIENT_ID,
+          'Accept-Language': 'ar',
+          Accept: 'application/json',
+        },
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (res.status === 401 && attempt < retries) {
+        authToken = null;
+        await getAuthToken();
         continue;
       }
-      throw new Error(data.message || data.error || `Miswag ${res.status}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.success === false) {
+        if (attempt < retries && res.status >= 500) {
+          await sleep(250 * (attempt + 1));
+          continue;
+        }
+        throw new Error(data.message || data.error || `Miswag ${res.status}`);
+      }
+      return data.data ?? data;
+    } catch (err) {
+      const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError'
+        || /aborted|timeout/i.test(String(err?.message || ''));
+      if (timedOut && attempt < retries) {
+        await sleep(200);
+        continue;
+      }
+      if (timedOut) throw new Error('Miswag timeout');
+      throw err;
     }
-    return data.data ?? data;
   }
   throw new Error('Miswag request failed');
 }
@@ -158,6 +171,7 @@ export async function typesenseMultiSearch(searches = []) {
     body: JSON.stringify({
       searches: searches.map((s) => ({ collection: cfg.index, ...s })),
     }),
+    signal: AbortSignal.timeout(8_000),
   });
   if (!res.ok) throw new Error(`Typesense ${res.status}`);
   const data = await res.json();

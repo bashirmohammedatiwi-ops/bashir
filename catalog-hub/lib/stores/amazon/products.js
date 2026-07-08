@@ -125,9 +125,11 @@ async function liveSearchPaapi(query, { page = 1, limit = 30, categoryId = '' } 
 
 async function liveSearchScrape(query, { page = 1, limit = 30, categoryId = '' } = {}) {
   const data = await scrapeSearchProducts(query, { page, limit, categoryId });
-  upsertAmazonProducts(data.items, { categoryId: categoryId || BEAUTY_ROOT_NODE });
-  if (categoryId && categoryId !== BEAUTY_ROOT_NODE) {
-    upsertAmazonProducts(data.items, { categoryId: BEAUTY_ROOT_NODE });
+  if (!data.softBlocked && data.items?.length) {
+    upsertAmazonProducts(data.items, { categoryId: categoryId || BEAUTY_ROOT_NODE });
+    if (categoryId && categoryId !== BEAUTY_ROOT_NODE) {
+      upsertAmazonProducts(data.items, { categoryId: BEAUTY_ROOT_NODE });
+    }
   }
   return data;
 }
@@ -160,6 +162,12 @@ export async function searchProducts(query, { page = 1, limit = 30, categoryId =
   if (pageNum === 1) {
     try {
       const live = await liveFn(q, { page: 1, limit: Math.min(usePaapi() ? 10 : 30, pageSize), categoryId: node });
+      // captcha ناعم — لا نرمي خطأ؛ نعرض الفهرس إن وُجد
+      if (live.softBlocked) {
+        return indexed.total > 0
+          ? { ...indexed, softBlocked: true, message: live.message }
+          : { ...live, items: [], total: 0, hasMore: false };
+      }
       const merged = queryAmazonIndex({
         query: q,
         categoryId: node,
@@ -174,8 +182,18 @@ export async function searchProducts(query, { page = 1, limit = 30, categoryId =
       }
       return live;
     } catch (err) {
-      if (indexed.total > 0) return indexed;
-      throw err;
+      // أي فشل حيّ → فهرس محلي بدل رسالة حمراء
+      if (indexed.total > 0) return { ...indexed, softBlocked: true };
+      return {
+        items: [],
+        page: 1,
+        pageSize,
+        total: 0,
+        hasMore: false,
+        source: 'index',
+        softBlocked: true,
+        message: err?.message || 'تعذّر جلب Amazon مؤقتاً',
+      };
     }
   }
 
@@ -186,6 +204,7 @@ export async function searchProducts(query, { page = 1, limit = 30, categoryId =
         limit: Math.min(usePaapi() ? 10 : 30, pageSize),
         categoryId: node,
       });
+      if (live.softBlocked) return indexed;
       const merged = queryAmazonIndex({
         query: q,
         categoryId: node,

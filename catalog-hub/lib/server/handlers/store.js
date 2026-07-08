@@ -58,15 +58,41 @@ function mapBarcodeSearchHit(adapter, item, digits) {
   };
 }
 
+function withTimeout(promise, ms, label = 'timeout') {
+  let timer;
+  return Promise.race([
+    promise.finally(() => clearTimeout(timer)),
+    new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(label)), ms);
+    }),
+  ]);
+}
+
 async function searchAdapter(adapter, query, digits) {
   let results = [];
-  if (digits.length >= 8 && adapter.searchBarcode) {
-    results = await adapter.searchBarcode(digits);
+  const isBarcodeish = digits.length >= 8;
+  // مهلة لكل متجر — مسواگ أطول قليلاً، الباقي قصير حتى لا يعلّق البحث
+  const barcodeBudget = adapter.id === 'miswag' ? 16_000 : 10_000;
+
+  if (isBarcodeish && adapter.searchBarcode) {
+    try {
+      results = await withTimeout(
+        adapter.searchBarcode(digits),
+        barcodeBudget,
+        `${adapter.id} barcode timeout`,
+      );
+    } catch {
+      results = [];
+    }
   }
 
   const isEanQuery = digits.length >= 8 && isValidEan(digits) && !isMiswagInternalId(digits);
   if (!results.length && !isEanQuery) {
-    const data = await adapter.searchProducts(query, { page: 1, limit: 20 });
+    const data = await withTimeout(
+      adapter.searchProducts(query, { page: 1, limit: 20 }),
+      12_000,
+      `${adapter.id} search timeout`,
+    );
     return {
       results: data.items.map((item) => mapTextSearchHit(adapter, item)),
       count: data.items.length,
@@ -203,8 +229,23 @@ export async function handleStoreApi(req, res, url) {
         limit: data.pageSize,
         hasMore: data.hasMore,
         total: data.total,
+        softBlocked: data.softBlocked || false,
+        message: data.message || undefined,
       });
     } catch (err) {
+      // أمازون captcha: لا تُرجع 502 — قائمة فارغة بهدوء
+      if (adapter.id === 'amazon' && /captcha|حظر|تهدئة/i.test(String(err.message || ''))) {
+        return sendJson(res, 200, {
+          meta: { categoryId, page, limit, sort },
+          products: [],
+          page,
+          limit,
+          hasMore: false,
+          total: 0,
+          softBlocked: true,
+          message: 'Amazon محدود مؤقتاً — جرّب بعد دقيقة أو استخدم متجراً آخر',
+        });
+      }
       return sendJson(res, 502, { error: err.message });
     }
   }

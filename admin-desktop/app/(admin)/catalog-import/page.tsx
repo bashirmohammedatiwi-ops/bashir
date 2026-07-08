@@ -217,8 +217,17 @@ export default function CatalogImportPage() {
         setProductPage(data.page);
         setProductTotal(data.total || 0);
         setHasMore(data.hasMore);
+        // أمازون captcha: تنبيه خفيف فقط إن لم تُعرض منتجات
+        if (data.softBlocked && !(data.products || []).length && !append) {
+          message.warning(data.message || "أمازون محدود مؤقتاً — جرّب بعد دقيقة أو متجراً آخر");
+        }
       } catch (err) {
-        message.error(errorMessage(err, "فشل تحميل المنتجات"));
+        const msg = errorMessage(err, "فشل تحميل المنتجات");
+        if (/captcha|حظر|تهدئة/i.test(msg)) {
+          message.warning("أمازون محدود مؤقتاً — جرّب بعد دقيقة أو استخدم مسواگ/الريان");
+        } else {
+          message.error(msg);
+        }
       } finally {
         setLoadingProducts(false);
       }
@@ -577,16 +586,15 @@ export default function CatalogImportPage() {
   const isSearchMode = options.length > 0;
   const drawerOpen = step === 2 || loadingPreview;
 
-  const toggleSearchStore = useCallback((id: string) => {
-    setActiveStores((prev) => {
-      if (prev.includes(id)) {
-        if (prev.length === 1) return prev;
-        const next = prev.filter((x) => x !== id);
-        if (!next.includes(browseStore)) setBrowseStore(next[0]);
-        return next;
-      }
-      return [...prev, id];
-    });
+  const selectStoreForBrowse = useCallback((id: string) => {
+    setActiveStores((prev) => (prev.includes(id) ? prev : [...prev, id]));
+    if (browseStore === id) return;
+    setBrowseStore(id);
+    setSelectedCategory(null);
+    setCategoryPath("");
+    setProducts([]);
+    setOptions([]);
+    setStep(0);
   }, [browseStore]);
 
   const closeImportDrawer = useCallback(() => {
@@ -647,8 +655,8 @@ export default function CatalogImportPage() {
                   type="button"
                   className={`ci-store-chip${active ? " is-active" : ""}${browsing ? " is-browse" : ""}`}
                   style={active ? { background: color } : { color }}
-                  onClick={() => toggleSearchStore(store.id)}
-                  title={active ? "إزالة من البحث" : "إضافة إلى البحث"}
+                  onClick={() => selectStoreForBrowse(store.id)}
+                  title={browsing ? "متجر التصفح الحالي" : "فتح تصفح هذا المتجر"}
                 >
                   <span className="ci-store-dot" style={active ? undefined : { background: color }} />
                   {store.label}

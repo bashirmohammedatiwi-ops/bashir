@@ -434,8 +434,8 @@ function clearMiss(digits) {
   missCache.delete(String(digits || '').replace(/\D/g, ''));
 }
 
-// ميزانية أقصر للمسار السريع — المراحل الثقيلة تُقطع مبكراً
-const TIME_BUDGET_MS = 18_000;
+// ميزانية قصيرة — لا نعلّق الطلب؛ الفهرس يتعلّم من النجاحات اللاحقة
+const TIME_BUDGET_MS = 12_000;
 
 /**
  * بحث بالباركود العالمي (EAN/UPC) — مسار سريع أولاً ثم عميق.
@@ -488,14 +488,14 @@ export async function searchByEan(barcode) {
     if (hinted.length) return hinted;
   }
 
-  // 5) روابط miswag.com من الويب
-  if (budgetLeft() > 4000) {
+  // 5) روابط miswag.com من الويب — فقط إن بقي وقت كافٍ
+  if (budgetLeft() > 5000) {
     const fromWeb = await searchFromWebLinks(digits, { deadline });
     if (fromWeb.length) return fromWeb;
   }
 
-  // 6) باركودات خليجية بلا UPC
-  if (budgetLeft() > 5000) {
+  // 6) باركودات خليجية بلا UPC — اختياري وسريع
+  if (budgetLeft() > 6000) {
     const gulfHit = await searchByGulfBrandV2Sweep(digits, budgetLeft, deadline);
     if (gulfHit) return [gulfHit];
   }
