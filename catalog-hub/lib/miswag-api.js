@@ -623,6 +623,49 @@ export async function enrichMiswagShadeBarcodes(product, {
   ]);
 }
 
+async function fetchTypesenseDetailFallback(pid) {
+  try {
+    const safeId = String(pid).replace(/`/g, '');
+    const ts = await typesenseSearch('*', {
+      page: 1,
+      perPage: 8,
+      filterBy: `id:=\`${safeId}\` || product_id:=\`${safeId}\` || item_id:=\`${safeId}\``,
+    });
+    const doc = (ts.hits || [])
+      .map((h) => h.document || h)
+      .find((d) => String(d.id || d.product_id || d.item_id || '') === String(pid));
+    if (!doc) return null;
+    const summary = mapTypesenseHit(doc);
+    if (!summary?.id) return null;
+    const images = [summary.thumb].filter(Boolean);
+    return {
+      id: summary.id,
+      sku: summary.sku || summary.id,
+      name: summary.name,
+      nameEn: summary.nameEn,
+      manufacturer: summary.manufacturer,
+      manufacturerEn: summary.manufacturerEn,
+      description: '',
+      descriptionEn: '',
+      price: summary.price,
+      thumb: summary.thumb,
+      images,
+      shades: [],
+      shadeCount: summary.shadeCount || 0,
+      hasOptions: (summary.shadeCount || 0) > 1,
+      barcode: summary.barcode || '',
+      productUrl: summary.productUrl,
+      category: summary.category,
+      categoryEn: summary.categoryEn,
+      inStock: summary.inStock !== false,
+      raw: { typesense: doc },
+      source: 'typesense-fallback',
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchProductDetail(id) {
   const pid = String(id || '').trim();
   if (!pid) return null;
@@ -631,10 +674,18 @@ export async function fetchProductDetail(id) {
   const cached = miswagDetailCache.get(cacheKey);
   if (cached && Date.now() - cached.at < MISWAG_DETAIL_TTL_MS) return cached.data;
 
-  const [detail, varInfo] = await Promise.all([
-    miswagFetch(`/content/v1/items/${encodeURIComponent(pid)}`),
-    fetchAllVariations(pid).catch(() => ({})),
-  ]);
+  let detail;
+  let varInfo;
+  try {
+    [detail, varInfo] = await Promise.all([
+      miswagFetch(`/content/v1/items/${encodeURIComponent(pid)}`),
+      fetchAllVariations(pid).catch(() => ({})),
+    ]);
+  } catch (err) {
+    const fallback = await fetchTypesenseDetailFallback(pid);
+    if (fallback) return fallback;
+    throw err;
+  }
 
   if (!detail?.info) return null;
 

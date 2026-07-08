@@ -19,7 +19,7 @@ import {
 import {
   fetchProductDetail as fetchNiceOneDetail,
 } from '../api.js';
-import { enrichShadesFromDatabase } from '../barcodes.js';
+import { enrichShadesCached, enrichShadesFromDatabase } from '../barcodes.js';
 import { fetchProductByIdBilingual } from '../elryan-api.js';
 import {
   resolveProductByBarcode,
@@ -111,7 +111,8 @@ export const ADAPTERS = {
     if (!detail?.id) return null;
     let normalized = normalizeProductDetail(detail, detailEn);
     if (!light && normalized.shades?.length) {
-      normalized.shades = await enrichShadesFromDatabase(detail);
+      const cachedShades = enrichShadesCached(detail);
+      normalized.shades = await withTimeout(enrichShadesFromDatabase(detail), 8_000, cachedShades);
       normalized.shadeCount = normalized.shades.length;
     }
     normalized.barcode = extractBarcode(detail) || barcodeHint || normalized.barcode;

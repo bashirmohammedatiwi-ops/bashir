@@ -20,7 +20,7 @@ console.log(`Search: ${search.results?.length || 0} hits from ${Object.keys(sear
 let failed = 0;
 
 for (const hit of search.results || []) {
-  const sourceId = hit.sku || hit.id;
+  const sourceId = hit.id || hit.sku;
   const label = `${hit.store} (${sourceId})`;
   process.stdout.write(`[${label}] `);
   const t1 = Date.now();

@@ -871,16 +871,16 @@ export async function searchNajdByBarcode(barcode, { getMeta } = {}) {
 }
 
 const SEARCHERS = [
-  { store: 'niceone', fn: searchNiceOneByBarcode, timeoutMs: 12_000 },
-  { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 10_000 },
-  { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 10_000 },
-  { store: 'najd', fn: searchNajdByBarcode, timeoutMs: 10_000 },
-  { store: 'orisdi', fn: searchOrisdiByBarcode, timeoutMs: 10_000 },
-  { store: 'beautyway', fn: searchBeautywayByBarcode, timeoutMs: 12_000 },
-  { store: 'vaneersa', fn: searchVaneersaByBarcode, timeoutMs: 10_000 },
+  { store: 'niceone', fn: searchNiceOneByBarcode, timeoutMs: 18_000 },
+  { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 12_000 },
+  { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 12_000 },
+  { store: 'najd', fn: searchNajdByBarcode, timeoutMs: 16_000 },
+  { store: 'orisdi', fn: searchOrisdiByBarcode, timeoutMs: 14_000 },
+  { store: 'beautyway', fn: searchBeautywayByBarcode, timeoutMs: 16_000 },
+  { store: 'vaneersa', fn: searchVaneersaByBarcode, timeoutMs: 16_000 },
   { store: 'miswag', fn: searchMiswagByBarcode, timeoutMs: 18_000 },
-  { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 14_000 },
-  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 8_000 },
+  { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 22_000 },
+  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 12_000 },
 ];
 
 const SEARCH_WAVE1 = new Set(['niceone', 'elryan', 'miraaya', 'najd']);
@@ -1230,7 +1230,7 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
     const upcData = await Promise.race([upcPromise, sleep(2000).then(() => null)]);
     const combinedHints = buildFacesHintList(hintHits, upcData, Object.values(byStore).flat());
     const facesTimeout = combinedHints.length > 0
-      ? Math.min(Math.max(facesSearcher.timeoutMs, 18_000), 22_000)
+      ? Math.min(Math.max(facesSearcher.timeoutMs, 8_000), 10_000)
       : facesSearcher.timeoutMs;
 
     const local = byStore.faces || [];
@@ -1313,7 +1313,7 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
     if (facesSearcher) facesPromise = runFaces();
   });
 
-  await initialWork;
+  await Promise.race([initialWork, sleep(10_000)]);
   const upcMeta = await Promise.race([upcPromise, sleep(1500).then(() => null)]);
 
   // موجة 3: إذا كانت النتائج قليلة فقط، أعد محاولة المتاجر المفقودة باستخدام تلميحات المتاجر الأخرى.
@@ -1324,7 +1324,7 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
       .map((e) => e.store)
       .filter(Boolean),
   );
-  const wave3 = storesWithHits(crossStoreHints3) < 3
+  const wave3 = storesWithHits(crossStoreHints3) === 0
     ? nonFaces.filter((s) => !(byStore[s.store] || []).length && !timedOutStores.has(s.store))
     : [];
   if (wave3.length && crossStoreHints3.length) {
@@ -1333,7 +1333,7 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
     );
   }
 
-  const finalFaceBudget = storesWithHits(Object.values(byStore).flat()) >= 2 ? 2500 : 12_000;
+  const finalFaceBudget = storesWithHits(Object.values(byStore).flat()) >= 1 ? 500 : 5_000;
   if (facesPromise) await Promise.race([facesPromise, sleep(finalFaceBudget)]);
   else if (facesSearcher) await Promise.race([runFaces(), sleep(finalFaceBudget)]);
 
