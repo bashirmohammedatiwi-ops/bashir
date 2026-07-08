@@ -44,10 +44,20 @@
       "brand": "IBRAQ",
       "shadeName": "",
       "matchType": "seed"
+    },
+    "00609332821163": {
+      "store": "miswag",
+      "productId": "1742852736",
+      "name": "كونتور سائل Halo Glow Contour Beauty Wand",
+      "brand": "E.L.F",
+      "shadeName": "",
+      "matchType": "hint",
+      "barcode": "609332821163",
+      "updatedAt": 1783537133212
     }
   },
   "meta": {
-    "updatedAt": 0,
+    "updatedAt": 1783537133212,
     "source": "seed"
   }
 }
