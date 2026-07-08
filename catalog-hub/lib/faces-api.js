@@ -9,7 +9,7 @@ import { averageColorFromImageUrl } from './swatch-color.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FACES_BARCODE_FILE = path.join(__dirname, '..', 'data', 'faces-barcode-index.json');
-const STORE = 'Sites-Faces_AE-Site';
+const BROWSER_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 const LOCALE_AR = 'ar_AE';
 const LOCALE_EN = 'en_AE';
 const CNSTRC_API = 'https://ac.cnstrc.com';
@@ -74,7 +74,7 @@ async function fetchCnstrc(path, params = {}) {
   const key = await getCnstrcKey();
   const qs = new URLSearchParams({ key, ...params });
   const res = await fetch(`${CNSTRC_API}${path}?${qs}`, {
-    headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 (compatible; CatalogHub/1.0)' },
+    headers: { Accept: 'application/json', 'User-Agent': BROWSER_UA },
   });
   if (!res.ok) throw new Error(`Faces Constructor ${res.status}`);
   const json = await res.json();
@@ -94,7 +94,7 @@ async function fetchText(url, { timeoutMs = 28000 } = {}) {
       signal: controller.signal,
       headers: {
         Accept: 'text/html,application/json,*/*',
-        'User-Agent': 'Mozilla/5.0 (compatible; CatalogHub/1.0)',
+        'User-Agent': BROWSER_UA,
       },
       redirect: 'follow',
     });
@@ -874,13 +874,59 @@ async function enrichShadeBarcodes(masterPid, shades = [], locale = LOCALE_AR, {
   return shades;
 }
 
-export async function fetchProductById(pid, { enrichShades = true } = {}) {
+function productFromFacesIndex(pid, barcodeHint = '') {
+  const index = loadFacesBarcodeIndex();
+  const entries = Object.values(index.barcodes || {}).filter((e) => e.pid === pid);
+  if (!entries.length) return null;
+  const pick = entries.find((e) => barcodeHint && gtinEqual(e.ean, barcodeHint)) || entries[0];
+  const thumb = proxyFacesImage(pick.thumb || '');
+  const shades = entries
+    .filter((e) => e.shadeName)
+    .map((e) => ({
+      name: e.shadeName,
+      nameEn: e.shadeName,
+      barcode: e.ean || '',
+      image: proxyFacesImage(e.thumb || pick.thumb || ''),
+      rawImage: e.thumb || pick.thumb || '',
+      price: e.price ? String(e.price) : '',
+      inStock: true,
+    }));
+  const pAr = {
+    id: pid,
+    productName: pick.nameAr || pick.nameEn || '',
+    brand: pick.brandAr || pick.brandEn || '',
+    EAN: pick.ean || barcodeHint || '',
+    price: { sales: { value: pick.price, formatted: pick.price ? `${pick.price} درهم` : '' } },
+    images: thumb ? { large: [{ url: thumb }] } : {},
+    selectedProductUrl: pick.productUrl || '',
+    available: true,
+    sellable: true,
+    _shades: shades,
+    _enProduct: {
+      productName: pick.nameEn || pick.nameAr || '',
+      brand: pick.brandEn || pick.brandAr || '',
+    },
+  };
+  return pAr;
+}
+
+export async function fetchProductById(pid, { enrichShades = true, barcodeHint = '' } = {}) {
   if (!pid) return null;
-  const [pAr, pEn] = await Promise.all([
-    fetchQuickView(pid, LOCALE_AR),
-    fetchQuickView(pid, LOCALE_EN),
-  ]);
-  if (!pAr?.id) return null;
+  let pAr = null;
+  let pEn = null;
+  try {
+    [pAr, pEn] = await Promise.all([
+      fetchQuickView(pid, LOCALE_AR),
+      fetchQuickView(pid, LOCALE_EN),
+    ]);
+  } catch {
+    /* fallback below */
+  }
+  if (!pAr?.id) {
+    pAr = productFromFacesIndex(pid, barcodeHint);
+    if (!pAr) return null;
+    pEn = pAr._enProduct || null;
+  }
 
   let shades = extractShades(pAr, pEn);
   if (shades.length && enrichShades) {

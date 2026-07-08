@@ -386,6 +386,13 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
   const digits = String(barcode || '').replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return [];
 
+  // مسار سريع — بحث مباشر في المتجر بالباركود
+  try {
+    const { items } = await searchProducts(digits, 1, 24);
+    const direct = (items || []).filter((p) => barcodeMatches(p.barcode, digits));
+    if (direct.length) return direct.slice(0, 12);
+  } catch { /* fall through */ }
+
   const results = await scanListingsForBarcode(digits);
   if (results.length) return results.slice(0, 12);
 

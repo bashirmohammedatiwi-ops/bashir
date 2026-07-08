@@ -69,7 +69,6 @@ export type CatalogImportProduct = {
   categoryHintEn?: string | string[];
 };
 
-const CATALOG_STORES = ["niceone", "elryan", "miraaya", "faces", "amazon", "miswag", "orisdi", "beautyway", "vaneersa", "najd"] as const;
 
 function isLikelyAmazonBundle(opt: CatalogImportOption) {
   const t = `${opt.nameAr || ""} ${opt.nameEn || ""}`.toLowerCase();
@@ -154,11 +153,52 @@ export type CatalogStoreSearchStatus = {
 };
 
 export type CatalogSearchStreamEvent =
-  | { type: "start"; barcode: string; cached?: boolean }
+  | { type: "start"; barcode: string; cached?: boolean; stores?: CatalogStoreSearchStatus[] }
   | { type: "store-status"; store: string; status: CatalogStoreSearchStatus["status"]; label?: string; count?: number; message?: string; fromIndex?: boolean }
   | { type: "results"; barcode: string; options: CatalogImportOption[]; byStore?: Record<string, number>; source?: string }
   | { type: "error"; error: string }
   | { type: "done"; barcode: string; options: CatalogImportOption[]; byStore?: Record<string, number>; errors?: { store: string; message: string }[] };
+
+export const CATALOG_STORE_META: Record<string, string> = {
+  niceone: "Nice One",
+  elryan: "الريان Elryan",
+  miraaya: "ميرايا Miraaya",
+  faces: "وجوه FACES",
+  amazon: "Amazon Cosmetics",
+  miswag: "مسواگ Miswag",
+  orisdi: "أورزدي Orisdi",
+  beautyway: "بيوتي وي Beauty Way",
+  vaneersa: "ڤانير Vaneersa",
+  najd: "نجد العذية Najd",
+};
+
+export const CATALOG_STORES = Object.keys(CATALOG_STORE_META);
+
+export function createInitialStoreStatuses(): Record<string, CatalogStoreSearchStatus> {
+  const next: Record<string, CatalogStoreSearchStatus> = {};
+  for (const store of CATALOG_STORES) {
+    next[store] = {
+      store,
+      status: "pending",
+      label: CATALOG_STORE_META[store] || store,
+    };
+  }
+  return next;
+}
+
+function storeStatusesFromByStore(byStore: Record<string, number> = {}): Record<string, CatalogStoreSearchStatus> {
+  const next = createInitialStoreStatuses();
+  for (const store of CATALOG_STORES) {
+    const count = byStore[store] ?? 0;
+    next[store] = {
+      store,
+      status: "done",
+      label: CATALOG_STORE_META[store] || store,
+      count,
+    };
+  }
+  return next;
+}
 
 async function consumeSseStream(
   url: string,
@@ -233,7 +273,7 @@ export async function searchCatalogByBarcodeStream(
   const digits = barcode.replace(/\D/g, "");
   const cached = clientSearchCache.get(digits);
   if (cached && Date.now() - cached.at < CLIENT_SEARCH_CACHE_MS) {
-    onEvent?.({ type: "start", barcode: digits, cached: true });
+    onEvent?.({ type: "start", barcode: digits, cached: true, stores: Object.values(storeStatusesFromByStore(cached.data.byStore)) });
     onEvent?.({ type: "results", barcode: digits, options: cached.data.options, byStore: cached.data.byStore, source: "cache" });
     onEvent?.({ type: "done", barcode: digits, options: cached.data.options, byStore: cached.data.byStore });
     return cached.data;

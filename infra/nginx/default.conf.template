@@ -92,6 +92,32 @@ server {
         default_type application/octet-stream;
     }
 
+    location /catalog-hub/api/import/search/stream {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 300s;
+        proxy_pass http://catalog_hub/api/import/search/stream;
+    }
+
+    location /catalog-hub/api/search/barcode/stream {
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 300s;
+        proxy_pass http://catalog_hub/api/search/barcode/stream;
+    }
+
     location /catalog-hub/ {
         proxy_http_version 1.1;
         proxy_set_header Connection "";

@@ -98,7 +98,8 @@ export async function searchImportByBarcodeStream(rawBarcode, onEvent, { stores 
     }
     if (event.type === 'results' && event.payload) {
       lastPayload = event.payload;
-      emit('results', importPayloadFromSearch(event.payload));
+      const partial = importPayloadFromSearch(event.payload);
+      emit('results', { ...partial, errors: event.payload.errors || partial.errors });
     }
     if (event.type === 'error') {
       emit('error', event);

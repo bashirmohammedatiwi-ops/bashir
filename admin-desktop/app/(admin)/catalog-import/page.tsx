@@ -26,9 +26,11 @@ import { CATALOG_HUB_URL } from "@/lib/config";
 import { matchCategoryFromHints } from "@/lib/catalogCategoryMatch";
 import {
   catalogOptionKey,
+  createInitialStoreStatuses,
   fetchCatalogProduct,
   fetchCatalogSummariesBatch,
   searchCatalogByBarcodeProgressive,
+  CATALOG_STORES,
   type CatalogImportOption,
   type CatalogImportProduct,
   type CatalogImportSummary,
@@ -223,7 +225,7 @@ export default function CatalogImportPage() {
 
     setSearching(true);
     setOptions([]);
-    setStoreStatuses({});
+    setStoreStatuses(createInitialStoreStatuses());
     setSummaries({});
     setSummaryLoadingKeys(new Set());
     setSelected(null);
@@ -271,9 +273,12 @@ export default function CatalogImportPage() {
       setOptions(data.options || []);
       if (gen !== searchGen.current) return;
       if (!data.options?.length) {
+        const failedStores = (data.errors || []).filter((e) => e.message);
         message.info({
           key: "catalog-no-results",
-          content: "لا توجد نتائج في الكتالوج لهذا الباركود",
+          content: failedStores.length
+            ? `لا توجد نتائج — فشل البحث في: ${failedStores.map((e) => e.store).join("، ")}`
+            : "لا توجد نتائج في الكتالوج لهذا الباركود",
         });
       } else {
         setStep(1);
@@ -505,17 +510,20 @@ export default function CatalogImportPage() {
 
       {(searching || Object.keys(storeStatuses).length > 0) && (
         <div className="catalog-import-store-progress">
-          {Object.values(storeStatuses).map((s) => {
+          {CATALOG_STORES.map((storeId) => {
+            const s = storeStatuses[storeId] || { store: storeId, status: "pending" as const };
             const color = STORE_COLORS[s.store] || "#888";
             const label = s.label || s.store;
             let tag = "…";
+            if (s.status === "pending") tag = "انتظار";
             if (s.status === "searching") tag = "جاري";
             if (s.status === "done") tag = s.count ? `${s.count}` : "—";
             if (s.status === "error") tag = "!";
             return (
               <Tag
                 key={s.store}
-                color={s.status === "error" ? "red" : s.status === "done" ? color : "default"}
+                title={s.message}
+                color={s.status === "error" ? "red" : s.status === "done" && s.count ? color : "default"}
                 style={{ opacity: s.status === "pending" ? 0.55 : 1 }}
               >
                 {label} {tag}

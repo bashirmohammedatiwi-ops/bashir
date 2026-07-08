@@ -61,6 +61,7 @@ import {
 } from '../najd-api.js';
 import { lookupUpcByBarcode, lookupBarcodeProductMeta } from '../barcodes.js';
 import { pickBestHitPerStore } from '../core/hit-filter.js';
+import { filterStrictHits } from '../core/match.js';
 
 function barcodeQueryVariants(barcode) {
   const digits = String(barcode).replace(/\D/g, '');
@@ -788,11 +789,29 @@ function buildFacesHintList(hintHits = [], upcData = null, resultHits = []) {
   ];
 }
 
+function buildStoreStatusList(enabled, byStore = {}, errors = []) {
+  const errorByStore = new Map((errors || []).map((e) => [e.store, e.message]));
+  return enabled.map(({ store }) => {
+    const count = (byStore[store] || []).length;
+    const errMsg = errorByStore.get(store);
+    return {
+      id: store,
+      store,
+      ...STORE_META[store],
+      status: errMsg ? 'error' : 'done',
+      count,
+      message: errMsg,
+      fromIndex: false,
+    };
+  });
+}
+
 function finalizeSearchPayload(barcode, byStore, errors, enabled) {
   const storeList = enabled.map(({ store }) => store);
   const uniqueStores = [...new Set(storeList)];
   const rawResults = sortHitsStable(dedupeHits(Object.values(byStore).flat()));
-  const results = pickBestHitPerStore(rawResults);
+  const verified = filterStrictHits(rawResults, barcode);
+  const results = pickBestHitPerStore(verified);
   const filteredByStore = {};
   for (const h of results) {
     if (!filteredByStore[h.store]) filteredByStore[h.store] = [];
@@ -844,17 +863,18 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
 
   const storeKey = stores?.length ? [...stores].sort().join(',') : 'all';
   const cacheKey = `full:${storeKey}:${barcode}`;
+  const enabled = stores?.length
+    ? SEARCHERS.filter((s) => stores.includes(s.store))
+    : SEARCHERS;
+
   const cached = getCachedSearch(cacheKey);
   if (cached) {
-    emit('start', { barcode, cached: true });
+    const cachedStores = buildStoreStatusList(enabled, cached.byStore || {}, cached.errors || []);
+    emit('start', { barcode, cached: true, stores: cachedStores });
     emit('results', { payload: cached, source: 'cache' });
     emit('done', { payload: cached });
     return cached;
   }
-
-  const enabled = stores?.length
-    ? SEARCHERS.filter((s) => stores.includes(s.store))
-    : SEARCHERS;
 
   const localHits = searchUnifiedBarcodeIndex(barcode);
   const byStore = {};
@@ -898,19 +918,10 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
     } else {
       emit('store-status', {
         store,
-        status: 'searching',
+        status: 'pending',
         label: STORE_META[store]?.label || store,
       });
     }
-  }
-
-  const coveredStores = new Set(Object.keys(byStore).filter((s) => (byStore[s] || []).length));
-  const allCovered = enabled.every(({ store }) => coveredStores.has(store));
-  if (allCovered && localHits.length) {
-    const payload = pushPayload('index-only');
-    rememberSearchCache(cacheKey, storeKey, barcode, payload);
-    emit('done', { payload });
-    return payload;
   }
 
   const upcPromise = lookupUpcByBarcode(barcode).catch(() => null);
@@ -926,64 +937,38 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
   const nonFaces = enabled.filter((s) => s.store !== 'faces');
   const facesSearcher = enabled.find((s) => s.store === 'faces');
 
-  let facesStarted = false;
-  let facesPromise = null;
-
-  const runFaces = async () => {
-    if (!facesSearcher || facesStarted) return facesPromise;
-    facesStarted = true;
-    emit('store-status', { store: 'faces', status: 'searching', label: STORE_META.faces?.label || 'faces' });
-
-    facesPromise = (async () => {
-      const localFaces = buildFacesLocalHits(barcode);
-      if (localFaces.length) {
-        byStore.faces = dedupeHits([...(byStore.faces || []), ...localFaces]);
-        pushPayload('faces-index');
-      }
-
-      const upcData = await Promise.race([upcPromise, sleep(2000).then(() => null)]);
-      const combinedHints = buildFacesHintList(hintHits, upcData, Object.values(byStore).flat());
-      const facesTimeout = combinedHints.length > 0
-        ? Math.max(facesSearcher.timeoutMs, 60_000)
-        : facesSearcher.timeoutMs;
-
-      try {
-        const facesLive = await withStoreTimeout(
-          searchFacesByBarcode(barcode, combinedHints),
-          facesTimeout,
-          'faces',
-        );
-        byStore.faces = dedupeHits([...(facesLive || []), ...(byStore.faces || [])]);
-        emit('store-status', {
-          store: 'faces',
-          status: 'done',
-          label: STORE_META.faces?.label || 'faces',
-          count: (byStore.faces || []).length,
-        });
-      } catch (err) {
-        errors.push({ store: 'faces', message: err?.message || 'فشل البحث' });
-        byStore.faces = dedupeHits([...(byStore.faces || [])]);
-        emit('store-status', {
-          store: 'faces',
-          status: 'error',
-          label: STORE_META.faces?.label || 'faces',
-          message: err?.message || 'فشل البحث',
-        });
-      }
-      return pushPayload('faces');
-    })();
-
-    return facesPromise;
+  const mergeStoreHits = (store, local, live) => {
+    const verifiedLive = filterStrictHits(live || [], barcode);
+    if (!verifiedLive.length) return local;
+    if (!local.length) return verifiedLive;
+    return dedupeHits([...local, ...verifiedLive]);
   };
 
-  const nonFacesPromises = nonFaces.map(({ store, fn, timeoutMs }) => {
+  const runStoreSearch = async ({ store, fn, timeoutMs }) => {
     const local = byStore[store] || [];
-    if (!local.length) {
-      emit('store-status', { store, status: 'searching', label: STORE_META[store]?.label || store });
-    }
-    return withStoreTimeout(fn(barcode, { getMeta }), timeoutMs, store)
-      .then((live) => {
-        const merged = !live?.length ? local : !local.length ? live : dedupeHits([...local, ...live]);
+    emit('store-status', {
+      store,
+      status: 'searching',
+      label: STORE_META[store]?.label || store,
+    });
+
+    const attempt = (ms) => withStoreTimeout(fn(barcode, { getMeta }), ms, store);
+
+    try {
+      const live = await attempt(timeoutMs);
+      const merged = mergeStoreHits(store, local, live);
+      byStore[store] = merged;
+      emit('store-status', {
+        store,
+        status: 'done',
+        label: STORE_META[store]?.label || store,
+        count: merged.length,
+      });
+      pushPayload('store');
+    } catch (err) {
+      try {
+        const live = await attempt(Math.round(timeoutMs * 1.5));
+        const merged = mergeStoreHits(store, local, live);
         byStore[store] = merged;
         emit('store-status', {
           store,
@@ -991,29 +976,92 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
           label: STORE_META[store]?.label || store,
           count: merged.length,
         });
-        return pushPayload('store');
-      })
-      .catch((err) => {
-        errors.push({ store, message: err?.message || 'فشل البحث' });
+        pushPayload('store');
+      } catch (retryErr) {
+        const message = retryErr?.message || err?.message || 'فشل البحث';
+        errors.push({ store, message });
         byStore[store] = local;
         emit('store-status', {
           store,
           status: 'error',
           label: STORE_META[store]?.label || store,
-          message: err?.message || 'فشل البحث',
+          message,
+          count: local.length,
         });
-        return pushPayload('store');
+        pushPayload('store');
+      }
+    }
+  };
+
+  const runFaces = async () => {
+    if (!facesSearcher) return;
+
+    const localFaces = buildFacesLocalHits(barcode);
+    if (localFaces.length) {
+      byStore.faces = dedupeHits([...(byStore.faces || []), ...localFaces]);
+      pushPayload('faces-index');
+    }
+
+    emit('store-status', { store: 'faces', status: 'searching', label: STORE_META.faces?.label || 'faces' });
+
+    const upcData = await Promise.race([upcPromise, sleep(2000).then(() => null)]);
+    const combinedHints = buildFacesHintList(hintHits, upcData, Object.values(byStore).flat());
+    const facesTimeout = combinedHints.length > 0
+      ? Math.max(facesSearcher.timeoutMs, 60_000)
+      : facesSearcher.timeoutMs;
+
+    const local = byStore.faces || [];
+    const attemptFaces = (ms) => withStoreTimeout(
+      searchFacesByBarcode(barcode, combinedHints),
+      ms,
+      'faces',
+    );
+
+    try {
+      const facesLive = await attemptFaces(facesTimeout);
+      byStore.faces = mergeStoreHits('faces', local, facesLive);
+      emit('store-status', {
+        store: 'faces',
+        status: 'done',
+        label: STORE_META.faces?.label || 'faces',
+        count: (byStore.faces || []).length,
       });
+    } catch (err) {
+      try {
+        const facesLive = await attemptFaces(Math.round(facesTimeout * 1.4));
+        byStore.faces = mergeStoreHits('faces', local, facesLive);
+        emit('store-status', {
+          store: 'faces',
+          status: 'done',
+          label: STORE_META.faces?.label || 'faces',
+          count: (byStore.faces || []).length,
+        });
+      } catch (retryErr) {
+        const message = retryErr?.message || err?.message || 'فشل البحث';
+        errors.push({ store: 'faces', message });
+        byStore.faces = local;
+        emit('store-status', {
+          store: 'faces',
+          status: 'error',
+          label: STORE_META.faces?.label || 'faces',
+          message,
+          count: local.length,
+        });
+      }
+    }
+    pushPayload('faces');
+  };
+
+  let facesPromise = null;
+  const nonFacesWork = Promise.all(nonFaces.map((searcher) => runStoreSearch(searcher)));
+
+  void Promise.race([nonFacesWork, sleep(3500)]).then(() => {
+    if (facesSearcher) facesPromise = runFaces();
   });
 
-  void Promise.race([
-    Promise.allSettled(nonFacesPromises),
-    sleep(3500),
-  ]).then(() => runFaces());
-
-  await Promise.allSettled(nonFacesPromises);
+  await nonFacesWork;
   if (facesPromise) await facesPromise;
-  else if (facesSearcher && !facesStarted) await runFaces();
+  else if (facesSearcher) await runFaces();
 
   const finalPayload = pushPayload('final');
   rememberSearchCache(cacheKey, storeKey, barcode, finalPayload);

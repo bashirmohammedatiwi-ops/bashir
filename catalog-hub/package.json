@@ -10,6 +10,7 @@
     "enrich-barcodes": "node scripts/enrich-all-barcodes.js",
     "enrich-barcodes:resume": "node scripts/enrich-all-barcodes.js --resume",
     "test:stores": "node scripts/test-all-stores.mjs",
+    "verify:stores": "node scripts/verify-all-stores.mjs",
     "audit:barcode": "node scripts/audit-barcode-import.mjs"
   },
   "engines": {
