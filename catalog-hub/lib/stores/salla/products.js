@@ -307,35 +307,18 @@ export function createSallaProductsApi(client) {
     const digits = String(code || '').replace(/\D/g, '');
     if (digits.length < 8) return [];
 
-    // /products/search يطابق SKU/GTIN — لكن النتيجة مختصرة بلا sku/gtin
-    const { data = [] } = await searchStore(digits, { page: 1, limit: 20 });
+    // نتيجة واحدة كافية — البحث بالباركود في Salla دقيق، ولا نُبطئ بإثراء 8 منتجات
+    const { data = [] } = await searchStore(digits, { page: 1, limit: 5 });
     if (!data.length) return [];
 
-    const hydrated = [];
-    for (const hit of data.slice(0, 8)) {
-      const item = await hydrateSearchHit(hit);
-      hydrated.push({ hit, item });
-    }
+    const first = await hydrateSearchHit(data[0]);
+    const exact = digitsEqual(first.sku, digits) || digitsEqual(first.barcode, digits);
 
-    const exact = hydrated.filter(({ item }) => {
-      return digitsEqual(item.sku, digits) || digitsEqual(item.barcode, digits);
-    });
-
-    const chosen = exact.length
-      ? exact
-      : hydrated.filter(({ item, hit }) => {
-          const hay = `${item.sku || ''} ${item.barcode || ''} ${item.nameAr || ''} ${hit.name || ''}`;
-          return hay.includes(digits) || item.id;
-        }).slice(0, 5);
-
-    // إن وُجدت مطابقة دقيقة استخدمها، وإلا أول نتيجة بحث (البحث بالباركود عادة دقيق)
-    const finalHits = exact.length ? exact : (chosen.length ? chosen.slice(0, 1) : []);
-
-    return finalHits.map(({ item }) => ({
-      ...item,
+    return [{
+      ...first,
       barcode: digits,
-      matchType: exact.some((e) => e.item.id === item.id) ? 'sku' : 'keyword',
-    }));
+      matchType: exact ? 'sku' : 'keyword',
+    }];
   }
 
   function sortProductsClient(items = [], sort = 'default') {

@@ -657,10 +657,146 @@
       "matchType": "v2_scan",
       "barcode": "077802010360",
       "updatedAt": 1783547847156
+    },
+    "03595471026248": {
+      "store": "miswag",
+      "productId": "1756119009",
+      "matchType": "v2_shade",
+      "barcode": "3595471026248",
+      "updatedAt": 1783549051288,
+      "shadeName": ""
+    },
+    "03760004324614": {
+      "store": "miswag",
+      "productId": "1716457978",
+      "matchType": "v2_shade",
+      "barcode": "3760004324614",
+      "updatedAt": 1783549051365,
+      "shadeName": ""
+    },
+    "03760260453127": {
+      "store": "miswag",
+      "productId": "1756218013",
+      "matchType": "v2_shade",
+      "barcode": "3760260453127",
+      "updatedAt": 1783549051310,
+      "shadeName": "Default"
+    },
+    "06294022300314": {
+      "store": "miswag",
+      "productId": "1756165780",
+      "matchType": "v2_shade",
+      "barcode": "6294022300314",
+      "updatedAt": 1783549052005,
+      "shadeName": ""
+    },
+    "09941300025403": {
+      "store": "miswag",
+      "productId": "1637595235",
+      "matchType": "v2_shade",
+      "barcode": "9941300025403",
+      "updatedAt": 1783549051941,
+      "shadeName": ""
+    },
+    "00888066144599": {
+      "store": "miswag",
+      "productId": "1756126905",
+      "matchType": "v2_shade",
+      "barcode": "888066144599",
+      "updatedAt": 1783549051995,
+      "shadeName": ""
+    },
+    "06281123138366": {
+      "store": "miswag",
+      "productId": "1756152668",
+      "matchType": "v2_shade",
+      "barcode": "6281123138366",
+      "updatedAt": 1783549052041,
+      "shadeName": ""
+    },
+    "06292257642063": {
+      "store": "miswag",
+      "productId": "1756147454",
+      "matchType": "v2_shade",
+      "barcode": "6292257642063",
+      "updatedAt": 1783549053060,
+      "shadeName": ""
+    },
+    "08691190487263": {
+      "store": "miswag",
+      "productId": "1756233140",
+      "matchType": "v2_shade",
+      "barcode": "8691190487263",
+      "updatedAt": 1783549052630,
+      "shadeName": ""
+    },
+    "03614274510133": {
+      "store": "miswag",
+      "productId": "1756238488",
+      "matchType": "v2_shade",
+      "barcode": "3614274510133",
+      "updatedAt": 1783549052550,
+      "shadeName": "Default"
+    },
+    "06287042406104": {
+      "store": "miswag",
+      "productId": "1756220134",
+      "matchType": "v2_shade",
+      "barcode": "6287042406104",
+      "updatedAt": 1783549053909,
+      "shadeName": ""
+    },
+    "07640233342466": {
+      "store": "miswag",
+      "productId": "1756127086",
+      "matchType": "v2_shade",
+      "barcode": "7640233342466",
+      "updatedAt": 1783549053627,
+      "shadeName": ""
+    },
+    "05018389036935": {
+      "store": "miswag",
+      "productId": "1756123901",
+      "matchType": "v2_shade",
+      "barcode": "5018389036935",
+      "updatedAt": 1783549053910,
+      "shadeName": ""
+    },
+    "06287020283475": {
+      "store": "miswag",
+      "productId": "1742851855",
+      "matchType": "v2_shade",
+      "barcode": "6287020283475",
+      "updatedAt": 1783549055104,
+      "shadeName": ""
+    },
+    "06281074736208": {
+      "store": "miswag",
+      "productId": "1742850169",
+      "matchType": "v2_shade",
+      "barcode": "6281074736208",
+      "updatedAt": 1783549055485,
+      "shadeName": ""
+    },
+    "08057971182060": {
+      "store": "miswag",
+      "productId": "1756127265",
+      "matchType": "v2_shade",
+      "barcode": "8057971182060",
+      "updatedAt": 1783549054553,
+      "shadeName": ""
+    },
+    "03760004321286": {
+      "store": "miswag",
+      "productId": "1716450143",
+      "matchType": "v2_shade",
+      "barcode": "3760004321286",
+      "updatedAt": 1783549055139,
+      "shadeName": ""
     }
   },
   "meta": {
-    "updatedAt": 1783547872912,
+    "updatedAt": 1783549055506,
     "source": "seed"
   }
 }

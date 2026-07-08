@@ -52,6 +52,7 @@ export function createSallaClient(storeIdentifier, { cachePrefix = 'salla' } = {
         Accept: 'application/json',
         'Store-Identifier': storeId,
       },
+      signal: AbortSignal.timeout(8_000),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data.success === false) {

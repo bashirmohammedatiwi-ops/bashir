@@ -207,12 +207,19 @@ export async function listCategoryProducts(
 
 type StoreSearchStat = { id: string; count: number; error?: string };
 
+/** مهلة لكل متجر — نجد/Salla سريع، مسواگ أبطأ في الباركود */
+function storeSearchTimeoutMs(storeId: string, kind: "text" | "barcode" = "text") {
+  if (storeId === "miswag") return kind === "barcode" ? 35_000 : 20_000;
+  return kind === "barcode" ? 12_000 : 10_000;
+}
+
 async function searchSingleStore(
   storeId: string,
   query: string,
   page: number,
   limit: number,
   categoryId: string,
+  timeoutMs = storeSearchTimeoutMs(storeId, "text"),
 ) {
   const params = new URLSearchParams({
     q: query,
@@ -224,7 +231,7 @@ async function searchSingleStore(
     products: CatalogListProduct[];
     hasMore: boolean;
     total: number;
-  }>(`/api/catalog/${encodeURIComponent(storeId)}/search?${params}`);
+  }>(`/api/catalog/${encodeURIComponent(storeId)}/search?${params}`, timeoutMs);
 }
 
 /** دمج نتائج المتاجر بالتناوب حتى تظهر كل المتاجر في أعلى القائمة */
@@ -239,9 +246,16 @@ function interleaveByStore(lists: CatalogListProduct[][]): CatalogListProduct[] 
   return merged;
 }
 
+export type ProgressiveSearchPartial = {
+  products: CatalogListProduct[];
+  stores: StoreSearchStat[];
+  done: boolean;
+  hasMore: boolean;
+};
+
 /**
  * بحث نصي — متجر واحد أو عدة متاجر بالتوازي.
- * كل متجر يُستدعى عبر مساره الخاص، وفشل متجر واحد لا يمنع نتائج الآخرين.
+ * مع onPartial تظهر نتائج المتجر السريع فوراً دون انتظار الأبطأ.
  */
 export async function searchCatalogProducts(
   storeIds: string | string[],
@@ -249,6 +263,7 @@ export async function searchCatalogProducts(
   page = 1,
   limit = 30,
   categoryId = "",
+  onPartial?: (partial: ProgressiveSearchPartial) => void,
 ) {
   const stores = (Array.isArray(storeIds) ? storeIds : [storeIds]).filter(Boolean);
   if (!stores.length) return { products: [], hasMore: false, total: 0, stores: [] as StoreSearchStat[] };
@@ -256,38 +271,56 @@ export async function searchCatalogProducts(
   if (stores.length === 1) {
     const data = await searchSingleStore(stores[0], query, page, limit, categoryId);
     const products = (data.products || []).map((p) => ({ ...p, store: p.store || stores[0] }));
-    return {
+    const result = {
       products,
       hasMore: data.hasMore,
       total: data.total,
       stores: [{ id: stores[0], count: products.length }] as StoreSearchStat[],
     };
+    onPartial?.({ products, stores: result.stores, done: true, hasMore: result.hasMore });
+    return result;
   }
 
   const perStoreLimit = Math.max(10, Math.ceil(limit / stores.length));
-  const settled = await Promise.allSettled(
-    // categoryId خاص بمتجر واحد — يُتجاهل في البحث متعدد المتاجر
-    stores.map((id) => searchSingleStore(id, query, page, perStoreLimit, "")),
-  );
+  const lists: CatalogListProduct[][] = stores.map(() => []);
+  const stats: StoreSearchStat[] = stores.map((id) => ({ id, count: 0 }));
+  let pending = stores.length;
 
-  const lists: CatalogListProduct[][] = [];
-  const stats: StoreSearchStat[] = [];
-  settled.forEach((entry, i) => {
-    const id = stores[i];
-    if (entry.status === "fulfilled") {
-      const items = (entry.value.products || []).map((p) => ({ ...p, store: p.store || id }));
-      lists.push(items);
-      stats.push({ id, count: items.length });
-    } else {
-      lists.push([]);
-      stats.push({ id, count: 0, error: entry.reason?.message });
-    }
-  });
+  const emit = (done: boolean) => {
+    const products = interleaveByStore(lists).slice(0, limit);
+    onPartial?.({
+      products,
+      stores: stats.map((s) => ({ ...s })),
+      done,
+      hasMore: lists.some((l) => l.length >= perStoreLimit),
+    });
+  };
+
+  await Promise.all(
+    stores.map(async (id, i) => {
+      try {
+        const data = await searchSingleStore(id, query, page, perStoreLimit, "");
+        const items = (data.products || []).map((p) => ({ ...p, store: p.store || id }));
+        lists[i] = items;
+        stats[i] = { id, count: items.length };
+      } catch (err) {
+        lists[i] = [];
+        stats[i] = {
+          id,
+          count: 0,
+          error: err instanceof Error ? err.message : "فشل البحث",
+        };
+      } finally {
+        pending -= 1;
+        emit(pending === 0);
+      }
+    }),
+  );
 
   const products = interleaveByStore(lists).slice(0, limit);
   return {
     products,
-    hasMore: settled.some((e) => e.status === "fulfilled" && e.value.hasMore),
+    hasMore: lists.some((l) => l.length >= perStoreLimit),
     total: products.length,
     stores: stats,
   };
@@ -314,42 +347,60 @@ function mapBarcodeResult(r: Record<string, unknown>, storeId: string): CatalogI
 
 /**
  * بحث بالباركود — كل متجر عبر طلب مستقل بالتوازي.
- * متوافق مع كل نسخ الخادم (يرسل store لكل طلب).
+ * مع onPartial تظهر نتائج نجد فوراً دون انتظار مسواگ.
  */
-export async function searchCatalogByBarcode(barcode: string, storeIds: string | string[] = "miswag") {
+export async function searchCatalogByBarcode(
+  barcode: string,
+  storeIds: string | string[] = "miswag",
+  onPartial?: (partial: {
+    options: CatalogImportOption[];
+    stores: StoreSearchStat[];
+    done: boolean;
+  }) => void,
+) {
   const stores = (Array.isArray(storeIds) ? storeIds : [storeIds]).filter(Boolean);
   const q = encodeURIComponent(barcode.trim());
 
-  const settled = await Promise.allSettled(
-    stores.map((id) =>
-      catalogFetch<{ query: string; results: Array<Record<string, unknown>> }>(
-        `/api/import/search?q=${q}&store=${encodeURIComponent(id)}&stores=${encodeURIComponent(id)}`,
-        90_000,
-      ),
-    ),
-  );
+  const optionsByStore: CatalogImportOption[][] = stores.map(() => []);
+  const stats: StoreSearchStat[] = stores.map((id) => ({ id, count: 0 }));
+  let pending = stores.length;
 
-  const options: CatalogImportOption[] = [];
-  const stats: StoreSearchStat[] = [];
-  settled.forEach((entry, i) => {
-    const id = stores[i];
-    if (entry.status === "fulfilled") {
-      const mapped = (entry.value.results || []).map((r) => mapBarcodeResult(r, id));
-      options.push(...mapped);
-      stats.push({ id, count: mapped.length });
-    } else {
-      stats.push({ id, count: 0, error: entry.reason?.message });
-    }
-  });
-
-  // مطابقات الباركود الدقيقة أولاً ثم النصية
   const rank = (o: CatalogImportOption) => {
     const t = o.matchType || "";
     if (t === "text" || t === "keyword") return 2;
     return 1;
   };
-  options.sort((a, b) => rank(a) - rank(b));
 
+  const emit = (done: boolean) => {
+    const options = optionsByStore.flat().sort((a, b) => rank(a) - rank(b));
+    onPartial?.({ options, stores: stats.map((s) => ({ ...s })), done });
+  };
+
+  await Promise.all(
+    stores.map(async (id, i) => {
+      try {
+        const data = await catalogFetch<{ query: string; results: Array<Record<string, unknown>> }>(
+          `/api/import/search?q=${q}&store=${encodeURIComponent(id)}&stores=${encodeURIComponent(id)}`,
+          storeSearchTimeoutMs(id, "barcode"),
+        );
+        const mapped = (data.results || []).map((r) => mapBarcodeResult(r, id));
+        optionsByStore[i] = mapped;
+        stats[i] = { id, count: mapped.length };
+      } catch (err) {
+        optionsByStore[i] = [];
+        stats[i] = {
+          id,
+          count: 0,
+          error: err instanceof Error ? err.message : "فشل البحث",
+        };
+      } finally {
+        pending -= 1;
+        emit(pending === 0);
+      }
+    }),
+  );
+
+  const options = optionsByStore.flat().sort((a, b) => rank(a) - rank(b));
   return { barcode: barcode.trim(), options, stores: stats };
 }
 

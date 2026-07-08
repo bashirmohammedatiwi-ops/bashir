@@ -257,6 +257,7 @@ export default function CatalogImportPage() {
     if (!q || !activeStores.length) return;
     setSearching(true);
     setOptions([]);
+    setProducts([]);
     try {
       const useMulti = activeStores.length > 1;
       const data = await searchCatalogProducts(
@@ -265,6 +266,21 @@ export default function CatalogImportPage() {
         1,
         30,
         useMulti ? "" : selectedCategory || "",
+        (partial) => {
+          // أظهر نتائج المتجر السريع فوراً (نجد) دون انتظار مسواگ
+          const opts = partial.products.map((p) =>
+            listProductToOption(
+              p,
+              stores.find((s) => s.id === p.store) || storeMeta,
+            ),
+          );
+          setOptions(opts);
+          if (opts.length) {
+            setStep(1);
+            // أوقف دوران الزر بعد أول نتائج — الدمج يستمر في الخلفية
+            if (!partial.done) setSearching(false);
+          }
+        },
       );
       const opts = data.products.map((p) =>
         listProductToOption(
@@ -273,7 +289,6 @@ export default function CatalogImportPage() {
         ),
       );
       setOptions(opts);
-      setProducts([]);
 
       const failed = (data.stores || []).filter((s) => s.error);
       if (failed.length) {
@@ -314,7 +329,13 @@ export default function CatalogImportPage() {
     setSearching(true);
     setOptions([]);
     try {
-      const data = await searchCatalogByBarcode(digits, activeStores);
+      const data = await searchCatalogByBarcode(digits, activeStores, (partial) => {
+        setOptions(partial.options);
+        if (partial.options.length) {
+          setStep(1);
+          if (!partial.done) setSearching(false);
+        }
+      });
       setOptions(data.options);
 
       const failed = (data.stores || []).filter((s) => s.error);
