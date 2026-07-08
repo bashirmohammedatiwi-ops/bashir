@@ -17,6 +17,16 @@ export const STORE_COLORS: Record<string, string> = {
   najdalatheyah: "#511952",
 };
 
+/** لون ثابت تلقائي للمتاجر المستقبلية غير المعرّفة في STORE_COLORS */
+const AUTO_COLORS = ["#0958d9", "#08979c", "#d46b08", "#531dab", "#c41d7f", "#3f6600"];
+
+export function storeColor(storeId: string): string {
+  if (STORE_COLORS[storeId]) return STORE_COLORS[storeId];
+  let hash = 0;
+  for (let i = 0; i < storeId.length; i++) hash = (hash * 31 + storeId.charCodeAt(i)) | 0;
+  return AUTO_COLORS[Math.abs(hash) % AUTO_COLORS.length];
+}
+
 type Props = {
   option: CatalogImportOption;
   selected?: boolean;
@@ -69,7 +79,7 @@ export function CatalogOptionCard({ option, selected, onSelect }: Props) {
 
       <div className="catalog-option-row-main">
         <div className="catalog-option-row-top">
-          <Tag className="catalog-option-row-store" color={STORE_COLORS[option.store] || "default"}>
+          <Tag className="catalog-option-row-store" color={storeColor(option.store)}>
             {option.storeLabel}
           </Tag>
           {(option.matchType === "barcode" || option.matchType === "ean" || option.matchType === "index" || option.matchType === "hint" || option.matchType === "sku") && (

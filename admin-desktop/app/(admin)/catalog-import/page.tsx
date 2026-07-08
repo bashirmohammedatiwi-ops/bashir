@@ -270,6 +270,15 @@ export default function CatalogImportPage() {
       );
       setOptions(opts);
       setProducts([]);
+
+      const failed = (data.stores || []).filter((s) => s.error);
+      if (failed.length) {
+        const names = failed
+          .map((f) => stores.find((s) => s.id === f.id)?.label || f.id)
+          .join("، ");
+        message.warning(`تعذّر البحث في: ${names}`);
+      }
+
       if (!opts.length) message.info("لا توجد نتائج");
       else setStep(1);
     } catch (err) {
@@ -303,6 +312,15 @@ export default function CatalogImportPage() {
     try {
       const data = await searchCatalogByBarcode(digits, activeStores);
       setOptions(data.options);
+
+      const failed = (data.stores || []).filter((s) => s.error);
+      if (failed.length) {
+        const names = failed
+          .map((f) => stores.find((s) => s.id === f.id)?.label || f.id)
+          .join("، ");
+        message.warning(`تعذّر البحث في: ${names}`);
+      }
+
       if (!data.options.length) {
         message.info(isEanBarcode(digits) ? "لا توجد نتائج لهذا الباركود" : "لا توجد نتائج لهذا الرقم");
       } else {
@@ -313,7 +331,7 @@ export default function CatalogImportPage() {
     } finally {
       setSearching(false);
     }
-  }, [barcode, activeStores, includesMiswag, codeLabel]);
+  }, [barcode, activeStores, stores, includesMiswag, codeLabel]);
 
   const loadPreview = useCallback(
     async (opt: CatalogImportOption) => {

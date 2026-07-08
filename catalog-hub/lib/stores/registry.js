@@ -1,13 +1,66 @@
 import { miswagAdapter, MISWAG_META } from './miswag/index.js';
-import { najdalatheyahAdapter, NAJD_META } from './najdalatheyah/index.js';
+import { createSallaAdapter } from './salla/adapter.js';
 
-/** سجل المتاجر */
-const ADAPTERS = {
-  miswag: miswagAdapter,
-  najdalatheyah: najdalatheyahAdapter,
-};
+/**
+ * ═══════════════════════════════════════════════════════════
+ *  سجل المتاجر — لإضافة متجر جديد:
+ *
+ *  1) متجر Salla (مثل نجد العذية): أضف سطراً في SALLA_STORES فقط.
+ *  2) منصة أخرى: أنشئ محولاً في lib/stores/{platform}/ يطبّق العقد:
+ *     { id, label, domain, siteUrl,
+ *       health(), fetchCategoryTree(), listCategoryProducts(),
+ *       searchProducts(), fetchProductDetail(),
+ *       searchBarcode()?, sortProductsClient()? }
+ *     ثم أضفه في CUSTOM_ADAPTERS.
+ * ═══════════════════════════════════════════════════════════
+ */
 
-export const STORE_LIST = [MISWAG_META, NAJD_META];
+/** متاجر Salla — إضافة متجر = سطر واحد */
+const SALLA_STORES = [
+  {
+    id: 'najdalatheyah',
+    label: 'نجد العذية Najd Alatheyah',
+    domain: 'najdalatheyah.com',
+    siteUrl: 'https://najdalatheyah.com',
+    storeIdentifier: 'najdalatheyah.com',
+  },
+  // مثال لمتجر Salla إضافي مستقبلاً:
+  // {
+  //   id: 'storename',
+  //   label: 'اسم المتجر',
+  //   domain: 'storename.com',
+  //   siteUrl: 'https://storename.com',
+  //   storeIdentifier: 'storename.com',
+  // },
+];
+
+/** محولات مخصصة (غير Salla) */
+const CUSTOM_ADAPTERS = [miswagAdapter];
+
+function buildRegistry() {
+  const adapters = {};
+  const metas = [];
+
+  for (const adapter of CUSTOM_ADAPTERS) {
+    adapters[adapter.id] = adapter;
+    metas.push(adapter);
+  }
+
+  for (const meta of SALLA_STORES) {
+    try {
+      adapters[meta.id] = createSallaAdapter(meta);
+      metas.push(meta);
+    } catch (err) {
+      console.error(`تعذّر تهيئة متجر ${meta.id}:`, err.message);
+    }
+  }
+
+  return { adapters, metas };
+}
+
+const { adapters: ADAPTERS, metas } = buildRegistry();
+
+export const STORE_LIST = metas;
 
 export function getStoreAdapter(storeId) {
   return ADAPTERS[storeId] || null;

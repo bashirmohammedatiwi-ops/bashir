@@ -201,7 +201,7 @@ const GULF_PERFUME_BRANDS = [
   'أجمل',
 ];
 
-async function searchByGulfBrandV2Sweep(digits) {
+async function searchByGulfBrandV2Sweep(digits, budgetLeft = () => 60_000) {
   if (!/^(628|629)/.test(digits)) return null;
 
   const priority = ['IBRAQ', 'ابراهيم القرشي', 'Ibraheem Al Qurashi', 'عساف', 'Rasasi', 'رصاصي'];
@@ -209,6 +209,7 @@ async function searchByGulfBrandV2Sweep(digits) {
   const brands = [...priority, ...GULF_PERFUME_BRANDS.filter((b) => !seen.has(b))].slice(0, 8);
 
   for (const brand of brands) {
+    if (budgetLeft() < 3000) return null;
     const hit = await searchByBrandCatalogV2(digits, { brand });
     if (hit) return hit;
   }
@@ -319,6 +320,13 @@ async function resolveProductMeta(digits) {
   return null;
 }
 
+// كاش سلبي — لا يُعاد تشغيل البايبلاين الكامل لباركود فشل مؤخراً
+const missCache = new Map();
+const MISS_TTL_MS = 30 * 60 * 1000;
+
+// ميزانية وقت — البحث يتوقف عند أول مرحلة تتجاوزها بدل الاستمرار لدقيقة
+const TIME_BUDGET_MS = 25_000;
+
 /**
  * بحث بالباركود العالمي (EAN/UPC) — ليس رقم مسواگ الداخلي.
  */
@@ -326,29 +334,42 @@ export async function searchByEan(barcode) {
   const digits = String(barcode || '').replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return [];
 
-  // 1) فهرس محلي (يُبنى تلقائياً بعد أول نجاح)
+  // 1) فهرس محلي (يُبنى تلقائياً بعد أول نجاح) — لا تمنعه ميزانية الوقت
   const indexed = await resolveFromIndex(digits);
   if (indexed) return [indexed];
+
+  const missAt = missCache.get(digits);
+  if (missAt && Date.now() - missAt < MISS_TTL_MS) return [];
+
+  const startedAt = Date.now();
+  const budgetLeft = () => TIME_BUDGET_MS - (Date.now() - startedAt);
 
   const meta = await resolveProductMeta(digits);
 
   // 2) metadata → مرشّحين → مسح v2 (الطريقة الأدق — من أول مرة)
-  if (meta?.brand || meta?.title) {
+  if ((meta?.brand || meta?.title) && budgetLeft() > 0) {
     const hinted = await searchByMetaHints(digits, meta);
     if (hinted.length) return hinted;
   }
 
   // 3) Typesense variations → مسح v2
-  const fromVariations = await searchByTypesenseVariationScan(digits);
-  if (fromVariations) return [fromVariations];
+  if (budgetLeft() > 0) {
+    const fromVariations = await searchByTypesenseVariationScan(digits);
+    if (fromVariations) return [fromVariations];
+  }
 
   // 4) روابط miswag.com من الويب → مسح v2
-  const fromWeb = await searchFromWebLinks(digits);
-  if (fromWeb.length) return fromWeb;
+  if (budgetLeft() > 3000) {
+    const fromWeb = await searchFromWebLinks(digits);
+    if (fromWeb.length) return fromWeb;
+  }
 
   // 5) باركودات خليجية بلا UPC — مسح ماركات عطور محلية عبر v2
-  const gulfHit = await searchByGulfBrandV2Sweep(digits);
-  if (gulfHit) return [gulfHit];
+  if (budgetLeft() > 5000) {
+    const gulfHit = await searchByGulfBrandV2Sweep(digits, budgetLeft);
+    if (gulfHit) return [gulfHit];
+  }
 
+  missCache.set(digits, Date.now());
   return [];
 }

@@ -45,7 +45,7 @@
       "brand": "IBRAQ",
       "shadeName": "",
       "matchType": "v2",
-      "updatedAt": 1783543373877
+      "updatedAt": 1783546233343
     },
     "00609332821163": {
       "store": "miswag",
@@ -140,7 +140,7 @@
     }
   },
   "meta": {
-    "updatedAt": 1783544267446,
+    "updatedAt": 1783546233343,
     "source": "seed"
   }
 }

@@ -205,32 +205,15 @@ export async function listCategoryProducts(
   }>(`/api/catalog/${encodeURIComponent(storeId)}/categories/${encodeURIComponent(categoryId)}/products?${params}`);
 }
 
-export async function searchCatalogProducts(
-  storeIds: string | string[],
+type StoreSearchStat = { id: string; count: number; error?: string };
+
+async function searchSingleStore(
+  storeId: string,
   query: string,
-  page = 1,
-  limit = 30,
-  categoryId = "",
+  page: number,
+  limit: number,
+  categoryId: string,
 ) {
-  const stores = Array.isArray(storeIds) ? storeIds : [storeIds];
-  const useMulti = stores.length > 1 || !categoryId;
-
-  if (useMulti && stores.length > 1) {
-    const params = new URLSearchParams({
-      q: query,
-      page: String(page),
-      limit: String(limit),
-      stores: stores.join(","),
-    });
-    return catalogFetch<{
-      products: CatalogListProduct[];
-      hasMore: boolean;
-      total: number;
-      stores?: Array<{ id: string; label?: string; count: number }>;
-    }>(`/api/catalog/search?${params}`);
-  }
-
-  const storeId = stores[0] || "miswag";
   const params = new URLSearchParams({
     q: query,
     page: String(page),
@@ -244,19 +227,76 @@ export async function searchCatalogProducts(
   }>(`/api/catalog/${encodeURIComponent(storeId)}/search?${params}`);
 }
 
-export async function searchCatalogByBarcode(barcode: string, storeIds: string | string[] = "miswag") {
-  const stores = Array.isArray(storeIds) ? storeIds : [storeIds];
-  const q = encodeURIComponent(barcode.trim());
-  const storeParam = encodeURIComponent(stores.join(","));
-  const data = await catalogFetch<{
-    query: string;
-    results: Array<Record<string, unknown>>;
-    stores?: Array<{ id: string; count: number }>;
-  }>(`/api/import/search?q=${q}&stores=${storeParam}`, 90_000);
+/** دمج نتائج المتاجر بالتناوب حتى تظهر كل المتاجر في أعلى القائمة */
+function interleaveByStore(lists: CatalogListProduct[][]): CatalogListProduct[] {
+  const merged: CatalogListProduct[] = [];
+  const max = Math.max(0, ...lists.map((l) => l.length));
+  for (let i = 0; i < max; i++) {
+    for (const list of lists) {
+      if (list[i]) merged.push(list[i]);
+    }
+  }
+  return merged;
+}
 
-  const options: CatalogImportOption[] = (data.results || []).map((r) => ({
-    store: String(r.store || stores[0] || ""),
-    storeLabel: String(r.storeLabel || r.store || stores[0] || ""),
+/**
+ * بحث نصي — متجر واحد أو عدة متاجر بالتوازي.
+ * كل متجر يُستدعى عبر مساره الخاص، وفشل متجر واحد لا يمنع نتائج الآخرين.
+ */
+export async function searchCatalogProducts(
+  storeIds: string | string[],
+  query: string,
+  page = 1,
+  limit = 30,
+  categoryId = "",
+) {
+  const stores = (Array.isArray(storeIds) ? storeIds : [storeIds]).filter(Boolean);
+  if (!stores.length) return { products: [], hasMore: false, total: 0, stores: [] as StoreSearchStat[] };
+
+  if (stores.length === 1) {
+    const data = await searchSingleStore(stores[0], query, page, limit, categoryId);
+    const products = (data.products || []).map((p) => ({ ...p, store: p.store || stores[0] }));
+    return {
+      products,
+      hasMore: data.hasMore,
+      total: data.total,
+      stores: [{ id: stores[0], count: products.length }] as StoreSearchStat[],
+    };
+  }
+
+  const perStoreLimit = Math.max(10, Math.ceil(limit / stores.length));
+  const settled = await Promise.allSettled(
+    // categoryId خاص بمتجر واحد — يُتجاهل في البحث متعدد المتاجر
+    stores.map((id) => searchSingleStore(id, query, page, perStoreLimit, "")),
+  );
+
+  const lists: CatalogListProduct[][] = [];
+  const stats: StoreSearchStat[] = [];
+  settled.forEach((entry, i) => {
+    const id = stores[i];
+    if (entry.status === "fulfilled") {
+      const items = (entry.value.products || []).map((p) => ({ ...p, store: p.store || id }));
+      lists.push(items);
+      stats.push({ id, count: items.length });
+    } else {
+      lists.push([]);
+      stats.push({ id, count: 0, error: entry.reason?.message });
+    }
+  });
+
+  const products = interleaveByStore(lists).slice(0, limit);
+  return {
+    products,
+    hasMore: settled.some((e) => e.status === "fulfilled" && e.value.hasMore),
+    total: products.length,
+    stores: stats,
+  };
+}
+
+function mapBarcodeResult(r: Record<string, unknown>, storeId: string): CatalogImportOption {
+  return {
+    store: String(r.store || storeId),
+    storeLabel: String(r.storeLabel || r.store || storeId),
     sourceId: String(r.sourceId || r.id || ""),
     nameAr: String(r.nameAr || r.name || ""),
     nameEn: String(r.nameEn || ""),
@@ -269,9 +309,48 @@ export async function searchCatalogByBarcode(barcode: string, storeIds: string |
     price: String(r.price || ""),
     category: String(r.category || ""),
     matchType: String(r.matchType || "barcode"),
-  }));
+  };
+}
 
-  return { barcode: data.query || barcode, options, stores: data.stores || [] };
+/**
+ * بحث بالباركود — كل متجر عبر طلب مستقل بالتوازي.
+ * متوافق مع كل نسخ الخادم (يرسل store لكل طلب).
+ */
+export async function searchCatalogByBarcode(barcode: string, storeIds: string | string[] = "miswag") {
+  const stores = (Array.isArray(storeIds) ? storeIds : [storeIds]).filter(Boolean);
+  const q = encodeURIComponent(barcode.trim());
+
+  const settled = await Promise.allSettled(
+    stores.map((id) =>
+      catalogFetch<{ query: string; results: Array<Record<string, unknown>> }>(
+        `/api/import/search?q=${q}&store=${encodeURIComponent(id)}&stores=${encodeURIComponent(id)}`,
+        90_000,
+      ),
+    ),
+  );
+
+  const options: CatalogImportOption[] = [];
+  const stats: StoreSearchStat[] = [];
+  settled.forEach((entry, i) => {
+    const id = stores[i];
+    if (entry.status === "fulfilled") {
+      const mapped = (entry.value.results || []).map((r) => mapBarcodeResult(r, id));
+      options.push(...mapped);
+      stats.push({ id, count: mapped.length });
+    } else {
+      stats.push({ id, count: 0, error: entry.reason?.message });
+    }
+  });
+
+  // مطابقات الباركود الدقيقة أولاً ثم النصية
+  const rank = (o: CatalogImportOption) => {
+    const t = o.matchType || "";
+    if (t === "text" || t === "keyword") return 2;
+    return 1;
+  };
+  options.sort((a, b) => rank(a) - rank(b));
+
+  return { barcode: barcode.trim(), options, stores: stats };
 }
 
 export async function fetchCatalogProduct(storeId: string, sourceId: string, storeLabel = "") {

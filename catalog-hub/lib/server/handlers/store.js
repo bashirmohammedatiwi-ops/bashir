@@ -44,6 +44,7 @@ function mapBarcodeSearchHit(adapter, item, digits) {
     id: item.id,
     sourceId: item.id,
     name: item.nameAr,
+    nameAr: item.nameAr,
     nameEn: item.nameEn,
     brandAr: item.brandAr,
     manufacturer: item.brandAr,
