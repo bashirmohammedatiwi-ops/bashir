@@ -33,6 +33,7 @@ import {
   fetchCategoryTree,
   isMiswagInternalId,
   isEanBarcode,
+  fetchAmazonCrawlStatus,
   listCategoryProducts,
   searchCatalogByBarcode,
   searchCatalogProducts,
@@ -133,6 +134,7 @@ export default function CatalogImportPage() {
   const [hasMore, setHasMore] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [treeLoading, setTreeLoading] = useState(false);
+  const [amazonCatalogHint, setAmazonCatalogHint] = useState("");
 
   const [searchText, setSearchText] = useState("");
   const [barcode, setBarcode] = useState("");
@@ -233,21 +235,58 @@ export default function CatalogImportPage() {
           ? tree.find((n) => n.id === "3760911") || tree[0]
           : tree.find((n) => /جميع|all/i.test(n.name)) || tree[0];
     if (!preferred?.id) return;
+    // أمازون: ابدأ من جذر Beauty لعرض كل المنتجات المفهرسة (مثل «جميع المنتجات» في باقي المتاجر)
     setSelectedCategory(preferred.id);
     setCategoryPath(preferred.name);
-    // أمازون: افتح قسماً فرعياً (مكياج) إن وُجد — أدق من الجذر وحده
-    const startId =
-      browseStore === "amazon" && preferred.children?.[0]?.id
-        ? preferred.children[0].id
-        : preferred.id;
-    const startPath =
-      browseStore === "amazon" && preferred.children?.[0]
-        ? `${preferred.name} › ${preferred.children[0].name}`
-        : preferred.name;
-    setSelectedCategory(startId);
-    setCategoryPath(startPath);
-    loadCategoryProducts(startId, 1, false);
+    loadCategoryProducts(preferred.id, 1, false);
   }, [browseStore, tree, selectedCategory, loadCategoryProducts]);
+
+  // أمازون: أظهر تقدّم ملء الفهرس المحلي (مثل باقي المتاجر بعد اكتمال الزحف)
+  useEffect(() => {
+    if (browseStore !== "amazon") {
+      setAmazonCatalogHint("");
+      return;
+    }
+    let cancelled = false;
+    let lastCount = 0;
+    const tick = async () => {
+      try {
+        const st = await fetchAmazonCrawlStatus();
+        if (cancelled) return;
+        const n = Number(st.productCount || 0);
+        const count = n.toLocaleString("ar-IQ");
+        if (st.running || st.status === "running") {
+          const done = st.progress?.done || 0;
+          const total = st.progress?.total || 0;
+          setAmazonCatalogHint(`جاري ملء كتالوج أمازون… ${count} منتج${total ? ` · ${done}/${total}` : ""} — اضغط «تحميل المزيد» أو أعد اختيار القسم لرؤية الجديد`);
+        } else if (n > 0) {
+          setAmazonCatalogHint(`${count} منتج مفهرس من Amazon Beauty`);
+        } else {
+          setAmazonCatalogHint("يبدأ ملء كتالوج أمازون تلقائياً عند توفر المفاتيح");
+        }
+        // حدّث الشبكة مرة عند نمو الفهرس بشكل ملحوظ (صفحة 1 فقط)
+        if (
+          selectedCategory
+          && !searching
+          && productPage <= 1
+          && n > lastCount + 40
+        ) {
+          lastCount = n;
+          loadCategoryProducts(selectedCategory, 1, false);
+        } else if (n > lastCount) {
+          lastCount = n;
+        }
+      } catch {
+        if (!cancelled) setAmazonCatalogHint("");
+      }
+    };
+    tick();
+    const id = window.setInterval(tick, 15_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [browseStore, selectedCategory, searching, productPage, loadCategoryProducts]);
 
   const onSelectCategory = useCallback(
     (keys: React.Key[]) => {
@@ -722,7 +761,9 @@ export default function CatalogImportPage() {
               <p>
                 {isSearchMode
                   ? "النتائج تظهر تدريجياً من المتاجر الأسرع"
-                  : "اختر منتجاً لفتح لوحة الاستيراد"}
+                  : amazonCatalogHint && browseStore === "amazon"
+                    ? amazonCatalogHint
+                    : "اختر منتجاً لفتح لوحة الاستيراد"}
               </p>
             </div>
             {isSearchMode ? (

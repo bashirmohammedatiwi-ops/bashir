@@ -95,16 +95,24 @@ export async function fetchCategoryTree() {
   const seeded = seedToTree();
   const creds = amazonCredentials();
 
-  // إن توفرت المفاتيح، أثْرِ الأقسام الرئيسية بأبناء حيّة من Amazon
+  // إن توفرت المفاتيح، أثْرِ الأقسام الرئيسية + أحفادها من Amazon
   if (creds.configured) {
     try {
       const liveChildren = await fetchChildNodes(BEAUTY_ROOT_NODE);
       if (liveChildren.length) {
-        // ادمج الأسماء العربية من البذرة عند التطابق
         const arById = new Map(
           BEAUTY_SEED_TREE[0].children.map((c) => [c.id, c]),
         );
-        for (const child of liveChildren) {
+        const rootName = BEAUTY_SEED_TREE[0].name;
+
+        // اجلب مستوى أعمق بالتوازي (حد أقصى 8 أقسام) لتغطية أوسع في الزحف
+        const deepTargets = liveChildren.slice(0, 8);
+        const grandBatches = await Promise.all(
+          deepTargets.map((c) => fetchChildNodes(c.id).catch(() => [])),
+        );
+
+        for (let i = 0; i < liveChildren.length; i++) {
+          const child = liveChildren[i];
           const seed = arById.get(child.id);
           if (seed) {
             child.name = seed.name;
@@ -112,9 +120,23 @@ export async function fetchCategoryTree() {
           } else {
             child.nameEn = child.name;
           }
-          child.path = `${BEAUTY_SEED_TREE[0].name} › ${child.name}`;
-          child.isLeaf = true;
+          child.path = `${rootName} › ${child.name}`;
           child.level = 3;
+
+          const grands = i < grandBatches.length ? grandBatches[i] : [];
+          if (grands.length) {
+            child.children = grands.map((g) => ({
+              ...g,
+              nameEn: g.name,
+              path: `${child.path} › ${g.name}`,
+              isLeaf: true,
+              level: 4,
+            }));
+            child.isLeaf = false;
+          } else {
+            child.isLeaf = true;
+            child.children = [];
+          }
         }
         seeded.tree[0].children = liveChildren;
         seeded.leaves = collectLeaves(seeded.tree);

@@ -16,4 +16,16 @@ const server = createServer((req, res) => {
 
 server.listen(PORT, HOST, () => {
   console.log(`catalog-hub listening on http://${HOST}:${PORT}`);
+
+  // املأ فهرس Amazon Beauty في الخلفية حتى يعرض الكتالوج كل المنتجات مثل باقي المتاجر
+  if (process.env.AMAZON_AUTO_CRAWL !== '0') {
+    import('./lib/stores/amazon/crawl.js')
+      .then(({ ensureAmazonCatalogWarm }) => {
+        const result = ensureAmazonCatalogWarm();
+        if (result?.started) {
+          console.log('[amazon] بدأ زحف فهرس Beauty في الخلفية');
+        }
+      })
+      .catch(() => {});
+  }
 });

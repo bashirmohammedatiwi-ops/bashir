@@ -1,5 +1,12 @@
 import { fetchCategoryTree } from './categories.js';
 import {
+  getAmazonCrawlStatus,
+  ensureAmazonCatalogWarm,
+  startAmazonBeautyCrawl,
+  stopAmazonBeautyCrawl,
+} from './crawl.js';
+import { getAmazonIndexStats } from './catalog-index.js';
+import {
   fetchProductDetail,
   listCategoryProducts,
   searchBarcode,
@@ -21,27 +28,32 @@ export const amazonAdapter = {
   async health() {
     const creds = amazonCredentials();
     const tree = await fetchCategoryTree();
-    if (!creds.configured) {
-      return {
-        ok: false,
-        configured: false,
-        categories: tree.tree?.[0]?.children?.length || 0,
-        message: 'أضف AMAZON_ACCESS_KEY و AMAZON_SECRET_KEY و AMAZON_PARTNER_TAG لتفعيل جلب المنتجات',
-      };
-    }
+    const catalog = getAmazonCrawlStatus();
+    const mode = creds.configured ? 'paapi' : 'scrape';
+
+    // ابدأ ملء الفهرس تلقائياً (يعمل بدون مفاتيح عبر scrape)
+    ensureAmazonCatalogWarm();
+
     try {
       const sample = await searchProducts('makeup', { page: 1, limit: 1 });
       return {
         ok: true,
-        configured: true,
+        configured: creds.configured,
+        mode,
         categories: tree.leaves?.length || 0,
         sampleProducts: sample.total,
+        catalog,
+        message: creds.configured
+          ? 'PA-API مفعّل'
+          : 'يعمل بدون مفاتيح عبر صفحات Amazon (scrape)',
       };
     } catch (err) {
       return {
-        ok: false,
-        configured: true,
+        ok: catalog.productCount > 0,
+        configured: creds.configured,
+        mode,
         categories: tree.leaves?.length || 0,
+        catalog,
         message: err.message,
       };
     }
@@ -53,4 +65,21 @@ export const amazonAdapter = {
   fetchProductDetail,
   searchBarcode,
   sortProductsClient,
+
+  /** حالة فهرس Beauty المحلي */
+  getCatalogStatus() {
+    return getAmazonCrawlStatus();
+  },
+
+  startCatalogCrawl(opts = {}) {
+    return startAmazonBeautyCrawl(opts);
+  },
+
+  stopCatalogCrawl() {
+    return stopAmazonBeautyCrawl();
+  },
+
+  getIndexStats() {
+    return getAmazonIndexStats();
+  },
 };

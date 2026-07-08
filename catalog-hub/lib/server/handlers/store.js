@@ -150,6 +150,30 @@ export async function handleStoreApi(req, res, url) {
     }
   }
 
+  // أمازون: حالة/تشغيل زحف فهرس Beauty المحلي
+  const crawlMatch = url.pathname.match(/^\/api\/catalog\/([^/]+)\/crawl$/);
+  if (crawlMatch) {
+    const adapter = storeOr404(res, crawlMatch[1]);
+    if (!adapter) return;
+    if (adapter.id !== 'amazon') {
+      return sendJson(res, 400, { error: 'الزحف متاح لمتجر أمازون فقط حالياً' });
+    }
+    try {
+      if (req.method === 'POST') {
+        const force = q.force === '1' || q.force === 'true';
+        const resume = q.resume !== '0' && q.resume !== 'false';
+        const result = adapter.startCatalogCrawl({ force, resume });
+        return sendJson(res, 200, { store: 'amazon', ...result });
+      }
+      if (req.method === 'DELETE') {
+        return sendJson(res, 200, { store: 'amazon', ...adapter.stopCatalogCrawl() });
+      }
+      return sendJson(res, 200, { store: 'amazon', ...adapter.getCatalogStatus() });
+    } catch (err) {
+      return sendJson(res, 502, { error: err.message });
+    }
+  }
+
   const catMatch = url.pathname.match(/^\/api\/catalog\/([^/]+)\/categories$/);
   if (catMatch) {
     const adapter = storeOr404(res, catMatch[1]);

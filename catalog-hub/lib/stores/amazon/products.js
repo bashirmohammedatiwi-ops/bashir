@@ -7,16 +7,22 @@ import {
   amazonCredentials,
   paapiRequest,
 } from './client.js';
+import {
+  findAmazonByBarcode,
+  getAmazonIndexStats,
+  queryAmazonIndex,
+  upsertAmazonProducts,
+} from './catalog-index.js';
+import { ensureAmazonCatalogWarm } from './crawl.js';
 import { mapDetailProduct, mapListProduct } from './map.js';
+import {
+  scrapeBarcode,
+  scrapeProductDetail,
+  scrapeSearchProducts,
+} from './scrape.js';
 
-function assertConfigured() {
-  const creds = amazonCredentials();
-  if (!creds.configured) {
-    throw new Error(
-      'Amazon Beauty يحتاج مفاتيح PA-API: AMAZON_ACCESS_KEY و AMAZON_SECRET_KEY و AMAZON_PARTNER_TAG',
-    );
-  }
-  return creds;
+function usePaapi() {
+  return amazonCredentials().configured;
 }
 
 /** كلمات تصفح لكل قسم Beauty — أدق من «beauty» العامة */
@@ -80,12 +86,11 @@ async function enrichBilingual(enItems = []) {
     .filter(Boolean);
 }
 
-export async function searchProducts(query, { page = 1, limit = 30, categoryId = '' } = {}) {
-  assertConfigured();
+async function liveSearchPaapi(query, { page = 1, limit = 30, categoryId = '' } = {}) {
   const q = String(query || '').trim();
   const node = String(categoryId || BEAUTY_ROOT_NODE);
-  const itemPage = Math.max(1, Math.min(10, page)); // PA-API: max 10 pages
-  const itemCount = Math.max(1, Math.min(10, limit)); // PA-API: max 10 / request
+  const itemPage = Math.max(1, Math.min(10, page));
+  const itemCount = Math.max(1, Math.min(10, limit));
 
   const body = {
     SearchIndex: 'Beauty',
@@ -94,10 +99,8 @@ export async function searchProducts(query, { page = 1, limit = 30, categoryId =
     ItemCount: itemCount,
     Resources: ITEM_RESOURCES,
     LanguagesOfPreference: ['en_US'],
+    Keywords: q || categoryBrowseKeyword(node),
   };
-
-  // SearchItems يتطلب Keywords أو Brand/Title — عند التصفح نستخدم كلمة عامة داخل القسم
-  body.Keywords = q || categoryBrowseKeyword(node);
 
   const data = await paapiRequest('SearchItems', body, {
     ttl: DEFAULT_TTL / 2,
@@ -105,14 +108,99 @@ export async function searchProducts(query, { page = 1, limit = 30, categoryId =
   });
 
   const items = await enrichBilingual(itemsOf(data));
+  upsertAmazonProducts(items, { categoryId: node });
+  if (node !== BEAUTY_ROOT_NODE) {
+    upsertAmazonProducts(items, { categoryId: BEAUTY_ROOT_NODE });
+  }
+
   const total = totalOf(data);
   return {
     items,
     page: itemPage,
     pageSize: itemCount,
     total,
-    hasMore: itemPage * itemCount < Math.min(total, 100), // PA-API يحدّ النتائج بـ ~100
+    hasMore: itemPage * itemCount < Math.min(total, 100),
+    source: 'live',
   };
+}
+
+async function liveSearchScrape(query, { page = 1, limit = 30, categoryId = '' } = {}) {
+  const data = await scrapeSearchProducts(query, { page, limit, categoryId });
+  upsertAmazonProducts(data.items, { categoryId: categoryId || BEAUTY_ROOT_NODE });
+  if (categoryId && categoryId !== BEAUTY_ROOT_NODE) {
+    upsertAmazonProducts(data.items, { categoryId: BEAUTY_ROOT_NODE });
+  }
+  return data;
+}
+
+/**
+ * مثل باقي المتاجر: التصفح/البحث من الفهرس المحلي،
+ * مع جلب حيّ (PA-API إن وُجدت مفاتيح، وإلا scrape HTML).
+ */
+export async function searchProducts(query, { page = 1, limit = 30, categoryId = '' } = {}) {
+  ensureAmazonCatalogWarm();
+
+  const q = String(query || '').trim();
+  const node = String(categoryId || BEAUTY_ROOT_NODE);
+  const stats = getAmazonIndexStats();
+  const pageNum = Math.max(1, Number(page) || 1);
+  const pageSize = Math.max(1, Math.min(60, Number(limit) || 30));
+
+  const indexed = queryAmazonIndex({
+    query: q,
+    categoryId: node,
+    page: pageNum,
+    limit: pageSize,
+  });
+
+  if (indexed.total >= pageNum * pageSize || (indexed.total > 0 && pageNum > 1)) {
+    return indexed;
+  }
+
+  const liveFn = usePaapi() ? liveSearchPaapi : liveSearchScrape;
+
+  if (pageNum === 1) {
+    try {
+      const live = await liveFn(q, { page: 1, limit: Math.min(usePaapi() ? 10 : 30, pageSize), categoryId: node });
+      const merged = queryAmazonIndex({
+        query: q,
+        categoryId: node,
+        page: 1,
+        limit: pageSize,
+      });
+      if (merged.total > 0) {
+        return {
+          ...merged,
+          hasMore: merged.hasMore || stats.status === 'running' || live.hasMore,
+        };
+      }
+      return live;
+    } catch (err) {
+      if (indexed.total > 0) return indexed;
+      throw err;
+    }
+  }
+
+  if (pageNum <= 20) {
+    try {
+      const live = await liveFn(q, {
+        page: pageNum,
+        limit: Math.min(usePaapi() ? 10 : 30, pageSize),
+        categoryId: node,
+      });
+      const merged = queryAmazonIndex({
+        query: q,
+        categoryId: node,
+        page: pageNum,
+        limit: pageSize,
+      });
+      return merged.total >= live.items.length ? merged : live;
+    } catch {
+      return indexed;
+    }
+  }
+
+  return indexed;
 }
 
 export async function listCategoryProducts(categoryId, { page = 1, limit = 30 } = {}) {
@@ -146,9 +234,19 @@ async function fetchVariations(asin) {
 }
 
 export async function fetchProductDetail(id, { light = false } = {}) {
-  assertConfigured();
   const asin = String(id || '').trim().toUpperCase();
   if (!asin) return null;
+
+  if (!usePaapi()) {
+    const detail = await scrapeProductDetail(asin, { light });
+    if (detail) {
+      upsertAmazonProducts([{
+        ...detail,
+        categoryIds: [BEAUTY_ROOT_NODE],
+      }], { categoryId: BEAUTY_ROOT_NODE });
+    }
+    return detail;
+  }
 
   const cacheKey = `amazon:detail:${asin}:${light ? 'light' : 'full'}`;
   const cached = cacheGet(cacheKey, DEFAULT_TTL);
@@ -170,23 +268,27 @@ export async function fetchProductDetail(id, { light = false } = {}) {
   if (!light) {
     const parent = enItem.ParentASIN || asin;
     variations = await fetchVariations(parent);
-    // إن لم تُرجع تدرجات للأب، جرّب ASIN نفسه
     if (!variations.length && parent !== asin) {
       variations = await fetchVariations(asin);
     }
   }
 
   const detail = mapDetailProduct(enItem, arItem, variations);
+  if (detail) {
+    upsertAmazonProducts([{
+      ...detail,
+      categoryIds: [BEAUTY_ROOT_NODE],
+    }], { categoryId: BEAUTY_ROOT_NODE });
+  }
   cacheSet(cacheKey, detail);
   return detail;
 }
 
 export async function searchBarcode(code) {
-  assertConfigured();
+  ensureAmazonCatalogWarm();
   const digits = String(code || '').replace(/\D/g, '');
-  if (digits.length < 8) return [];
+  if (digits.length < 8 && !/^[A-Z0-9]{10}$/i.test(String(code || '').trim())) return [];
 
-  // ASIN مباشر؟
   if (/^[A-Z0-9]{10}$/i.test(String(code || '').trim())) {
     const detail = await fetchProductDetail(String(code).trim().toUpperCase(), { light: true }).catch(() => null);
     return detail ? [{
@@ -195,6 +297,20 @@ export async function searchBarcode(code) {
       matchType: 'asin',
       shadeCount: detail.shadeCount,
     }] : [];
+  }
+
+  const indexed = findAmazonByBarcode(digits);
+  if (indexed) {
+    return [{
+      ...indexed,
+      barcode: digits,
+      matchType: 'index',
+      shadeCount: indexed.shadeCount || 1,
+    }];
+  }
+
+  if (!usePaapi()) {
+    return scrapeBarcode(digits);
   }
 
   const data = await paapiRequest('SearchItems', {
@@ -208,6 +324,7 @@ export async function searchBarcode(code) {
   }, { ttl: DEFAULT_TTL, cacheKey: `amazon:barcode:${digits}` });
 
   const items = await enrichBilingual(itemsOf(data));
+  upsertAmazonProducts(items, { categoryId: BEAUTY_ROOT_NODE });
   const exact = items.filter((p) => p.barcode === digits || p.sku === digits);
   const hits = exact.length ? exact : items.slice(0, 5);
 

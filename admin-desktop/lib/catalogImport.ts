@@ -430,3 +430,15 @@ export async function fetchCatalogPreview(storeId: string, sourceId: string) {
     hasOptions: p.hasOptions === true,
   };
 }
+
+/** حالة فهرس Amazon Beauty المحلي (الزحف الخلفي) */
+export async function fetchAmazonCrawlStatus() {
+  return catalogFetch<{
+    store: string;
+    productCount: number;
+    status: string;
+    running?: boolean;
+    message?: string;
+    progress?: { done?: number; total?: number; added?: number };
+  }>("/api/catalog/amazon/crawl", 8_000);
+}
