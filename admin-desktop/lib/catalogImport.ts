@@ -133,6 +133,7 @@ type CatalogSearchCacheEntry = {
   barcode: string;
   options: CatalogImportOption[];
   byStore: Record<string, number>;
+  errors?: { store: string; message: string }[];
 };
 
 function normalizeSearchResult(result: CatalogSearchResponse): CatalogSearchCacheEntry {
@@ -140,6 +141,7 @@ function normalizeSearchResult(result: CatalogSearchResponse): CatalogSearchCach
     barcode: result.barcode,
     options: result.options,
     byStore: result.byStore ?? {},
+    errors: result.errors,
   };
 }
 
@@ -289,7 +291,7 @@ export async function searchCatalogByBarcodeStream(
   onEvent?: (event: CatalogSearchStreamEvent) => void,
   signal?: AbortSignal,
   options: { refresh?: boolean } = {},
-) {
+): Promise<CatalogSearchResponse> {
   const digits = barcode.replace(/\D/g, "");
   const refresh = options.refresh !== false;
 
@@ -298,8 +300,13 @@ export async function searchCatalogByBarcodeStream(
     if (cached && Date.now() - cached.at < CLIENT_SEARCH_CACHE_MS) {
       onEvent?.({ type: "start", barcode: digits, cached: true, stores: Object.values(storeStatusesFromByStore(cached.data.byStore)) });
       onEvent?.({ type: "results", barcode: digits, options: cached.data.options, byStore: cached.data.byStore, source: "cache" });
-      onEvent?.({ type: "done", barcode: digits, options: cached.data.options, byStore: cached.data.byStore });
-      return cached.data;
+      onEvent?.({ type: "done", barcode: digits, options: cached.data.options, byStore: cached.data.byStore, errors: cached.data.errors });
+      return {
+        barcode: cached.data.barcode,
+        options: cached.data.options,
+        byStore: cached.data.byStore,
+        errors: cached.data.errors,
+      };
     }
   } else {
     clientSearchCache.delete(digits);
@@ -371,7 +378,7 @@ export async function searchCatalogByBarcodeProgressive(
   onEvent?: (event: CatalogSearchStreamEvent) => void,
   signal?: AbortSignal,
   options: { refresh?: boolean } = {},
-) {
+): Promise<CatalogSearchResponse> {
   return searchCatalogByBarcodeStream(
     barcode,
     (event) => {
