@@ -212,9 +212,10 @@ type StoreSearchStat = { id: string; count: number; error?: string };
 /** مهلة لكل متجر — الريان/نجد/أمازون سريعون، مسواگ أبطأ في الباركود */
 function storeSearchTimeoutMs(storeId: string, kind: "text" | "barcode" = "text") {
   // مسواگ: مهلة قصيرة — السيرفر يقطع عند 16ث حتى لا يعلّق الواجهة
-  if (storeId === "miswag") return kind === "barcode" ? 18_000 : 15_000;
+  if (storeId === "miswag") return kind === "barcode" ? 22_000 : 15_000;
   if (storeId === "elryan") return kind === "barcode" ? 8_000 : 8_000;
-  if (storeId === "amazon") return kind === "barcode" ? 12_000 : 12_000;
+  // أمازون: بحث ثنائي اللغة (ae+com) يحتاج مهلة أوسع قليلاً
+  if (storeId === "amazon") return kind === "barcode" ? 18_000 : 16_000;
   return kind === "barcode" ? 12_000 : 10_000;
 }
 
@@ -411,9 +412,11 @@ export async function searchCatalogByBarcode(
 }
 
 export async function fetchCatalogProduct(storeId: string, sourceId: string, storeLabel = "") {
+  // أمازون: إثراء كل التدرجات يحتاج وقتاً أطول
+  const timeout = storeId === "amazon" ? 90_000 : 120_000;
   const data = await catalogFetch<{ product: Record<string, unknown> }>(
     `/api/import/${encodeURIComponent(storeId)}/products/${encodeURIComponent(sourceId)}`,
-    120_000,
+    timeout,
   );
   return mapImportProduct(data.product, storeLabel);
 }

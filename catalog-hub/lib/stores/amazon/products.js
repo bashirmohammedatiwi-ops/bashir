@@ -255,11 +255,23 @@ export async function fetchProductDetail(id, { light = false } = {}) {
   const asin = String(id || '').trim().toUpperCase();
   if (!asin) return null;
 
-  if (!usePaapi()) {
+  // المسار الافتراضي النهائي: scrape ثنائي اللغة + كل التدرجات
+  // PA-API يُستخدم فقط إن وُجدت مفاتيح وطلب صريح عبر AMAZON_FORCE_PAAPI=1
+  if (!usePaapi() || process.env.AMAZON_FORCE_PAAPI !== '1') {
     const detail = await scrapeProductDetail(asin, { light });
     if (detail) {
       upsertAmazonProducts([{
-        ...detail,
+        id: detail.id,
+        nameAr: detail.nameAr,
+        nameEn: detail.nameEn,
+        brandAr: detail.brandAr,
+        brandEn: detail.brandEn,
+        thumb: detail.thumb,
+        price: detail.price,
+        barcode: detail.barcode,
+        sku: detail.sku,
+        category: detail.category,
+        shadeCount: detail.shadeCount,
         categoryIds: [BEAUTY_ROOT_NODE],
       }], { categoryId: BEAUTY_ROOT_NODE });
     }

@@ -11,14 +11,109 @@ const PREFIX_FILE = path.join(__dirname, '..', '..', 'data', 'gs1-prefixes.json'
  */
 const SEED_PREFIXES = {
   '0077802': 'Wet N Wild', // Markwins Beauty Brands
+  '0609332': 'E.L.F',
   // L'Oréal Group / Maybelline (GS1 France 360…)
   '3600531': 'Maybelline',
   '3600522': 'Maybelline',
-  '3600523': 'LOreal',
-  '3600520': 'LOreal',
+  '3600523': 'Loreal Paris',
+  '3600520': 'Loreal Paris',
+  '3600521': 'Loreal Paris',
+  '3600524': 'Garnier',
+  '3600540': 'Garnier',
   '0712493': 'Maybelline', // US Maybelline
-  '0415540': 'LOreal',
+  '0415540': 'Loreal Paris',
+  '0030987': 'NYX',
+  '0800892': 'NYX',
+  '3600530': 'Maybelline',
+  '4005808': 'Nivea',
+  '4005900': 'Nivea',
+  '4250587': 'Essence',
+  '4250232': 'Catrice',
+  '8690604': 'Flormar',
+  '8690605': 'Flormar',
+  '8682532': 'Note',
+  '8680191': 'Golden Rose',
+  '8003510': 'Pupa Milano',
+  '8003515': 'Deborah',
+  '5057566': 'Revolution',
+  '5060422': 'Revolution',
+  '6291106': 'Huda Beauty',
+  '8809647': 'Beauty Of Joseon',
+  '8809416': 'COSRX',
+  '8806182': 'Etude',
+  '3337871': 'La Roche Posay',
+  '3337875': 'CeraVe',
+  '0704626': 'Neutrogena',
+  '3014260': 'Bourjois',
+  '3614225': 'Bourjois',
+  '0854141': 'The Ordinary',
+  '0769661': 'Revlon',
 };
+
+/** ماركات جمال شائعة في مسواگ — مسح موجّه عند غياب metadata */
+export const BEAUTY_BRAND_SWEEP = [
+  'Maybelline',
+  'Loreal Paris',
+  'NYX',
+  'E.L.F',
+  'Wet N Wild',
+  'Essence',
+  'Catrice',
+  'Flormar',
+  'Note',
+  'Golden Rose',
+  'Revolution',
+  'Huda Beauty',
+  'Pupa Milano',
+  'Deborah',
+  'Bourjois',
+  'Garnier',
+  'Nivea',
+  'The Ordinary',
+  'CeraVe',
+  'Beauty Of Joseon',
+  'COSRX',
+  'Etude',
+  'Anastasia Beverly Hills',
+  'CLINIQUE',
+  'Sephora',
+  'Max Factor',
+  'Revlon',
+  'La Roche Posay',
+  'Neutrogena',
+];
+
+/** اختر ماركات محتملة حسب بادئة البلد/الشركة */
+export function guessBrandsByCountryPrefix(barcode = '') {
+  const gtin = toGtin13(barcode);
+  if (!gtin) return [];
+  const cc = gtin.slice(0, 3);
+  if (cc === '360' || cc === '300' || cc === '301' || cc === '333' || cc === '361') {
+    return ['Maybelline', 'Loreal Paris', 'Garnier', 'Bourjois', 'La Roche Posay', 'CeraVe'];
+  }
+  if (cc === '400' || cc === '401' || cc === '402' || cc === '403' || cc === '404' || cc === '425') {
+    return ['Essence', 'Catrice', 'Nivea', 'Max Factor'];
+  }
+  if (cc === '869' || cc === '868') {
+    return ['Flormar', 'Note', 'Golden Rose', 'Deborah'];
+  }
+  if (cc === '880') {
+    return ['Beauty Of Joseon', 'COSRX', 'Etude', 'Missha', 'The Face Shop'];
+  }
+  if (cc === '800' || cc === '801' || cc === '802' || cc === '803') {
+    return ['Pupa Milano', 'Deborah'];
+  }
+  if (cc === '505' || cc === '506') {
+    return ['Revolution'];
+  }
+  if (cc === '629' || cc === '628') {
+    return ['Huda Beauty', 'IBRAQ', 'Lattafa', 'Rasasi'];
+  }
+  if (gtin.startsWith('0')) {
+    return ['Maybelline', 'NYX', 'E.L.F', 'Wet N Wild', 'Revlon', 'The Ordinary', 'Neutrogena'];
+  }
+  return [];
+}
 
 let learnedCache = null;
 let persistTimer = null;

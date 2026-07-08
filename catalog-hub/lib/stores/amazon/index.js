@@ -39,9 +39,7 @@ export const amazonAdapter = {
         categories: tree.leaves?.length || 0,
         sampleProducts: sample.total,
         catalog,
-        message: creds.configured
-          ? 'PA-API مفعّل'
-          : 'يعمل بدون مفاتيح عبر صفحات Amazon (scrape) — الزحف اليدوي عبر POST /api/catalog/amazon/crawl',
+        message: 'بحث ثنائي اللغة (عربي+إنجليزي) مع كل التدرجات عبر صفحات Amazon',
       };
     } catch (err) {
       return {

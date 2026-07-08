@@ -1,11 +1,16 @@
 import { miswagFetch, typesenseMultiSearch } from './client.js';
 import { fetchV2Barcode, fetchV2BarcodesForIds, isValidEan } from './v2-barcode.js';
 import { bulkUpsertBarcodeIndex } from '../../core/barcode-index.js';
+import { barcodeSearchVariants } from '../../core/gtin.js';
 
 function barcodeEquals(a, b) {
   const x = String(a || '').replace(/\D/g, '');
   const y = String(b || '').replace(/\D/g, '');
-  return x.length >= 8 && x === y;
+  if (x.length < 8 || y.length < 8) return false;
+  if (x === y) return true;
+  // طابق أيضاً بدون أصفار بادئة / مع تصحيح رقم التحقق
+  const xv = new Set(barcodeSearchVariants(x));
+  return barcodeSearchVariants(y).some((v) => xv.has(v));
 }
 
 async function listVariationIds(productId) {
@@ -154,21 +159,30 @@ export async function scanMiswagProductsForBarcode(
 
 /** بحث Typesense داخل حقل variations ثم التحقق عبر v2 */
 export async function searchTypesenseByVariationBarcode(digits) {
-  const d = String(digits || '').replace(/\D/g, '');
-  if (!/^\d{8,14}$/.test(d)) return [];
+  const variants = barcodeSearchVariants(digits);
+  if (!variants.length) return [];
 
   try {
-    const [result = {}] = await typesenseMultiSearch([{
+    const queries = variants.slice(0, 3).map((d) => ({
       q: d,
       query_by: 'variations,alias,title_AR,title_EN,brand,keywords,description',
-      per_page: 30,
+      per_page: 20,
       page: 1,
-    }]);
-
-    return (result.hits || []).filter((hit) => {
-      const hay = JSON.stringify(hit.document || {}).replace(/\D/g, '');
-      return hay.includes(d);
-    });
+    }));
+    const results = await typesenseMultiSearch(queries);
+    const seen = new Set();
+    const hits = [];
+    for (const result of results || []) {
+      for (const hit of result?.hits || []) {
+        const id = String(hit.document?.id || '');
+        if (!id || seen.has(id)) continue;
+        const hay = JSON.stringify(hit.document || {}).replace(/\D/g, '');
+        if (!variants.some((d) => hay.includes(d))) continue;
+        seen.add(id);
+        hits.push(hit);
+      }
+    }
+    return hits;
   } catch {
     return [];
   }

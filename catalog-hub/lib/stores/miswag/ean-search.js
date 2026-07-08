@@ -9,6 +9,7 @@ import {
 import {
   buildMetaHintQueries,
   findMiswagIdsFromWeb,
+  isUsableBarcodeMeta,
   lookupBarcodeProductMeta,
   lookupUpcByBarcode,
   normalizeBarcodeMeta,
@@ -21,7 +22,13 @@ import {
   scanParentBarcodesForBarcode,
   searchTypesenseByVariationBarcode,
 } from './barcode-scan.js';
-import { learnPrefixBrand, lookupBrandByPrefix } from '../../core/gs1-prefixes.js';
+import {
+  BEAUTY_BRAND_SWEEP,
+  guessBrandsByCountryPrefix,
+  learnPrefixBrand,
+  lookupBrandByPrefix,
+} from '../../core/gs1-prefixes.js';
+import { barcodeSearchVariants } from '../../core/gtin.js';
 
 function shadeNamesMatch(a = '', b = '') {
   const na = String(a || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, ' ').trim();
@@ -332,6 +339,27 @@ async function searchByGulfBrandV2Sweep(digits, budgetLeft = () => 60_000, deadl
   return null;
 }
 
+/** مسح ماركات الجمال حسب بادئة البلد — عندما لا توجد metadata خارجية */
+async function searchByBeautyBrandSweep(digits, budgetLeft = () => 60_000, deadline = 0) {
+  const guessed = guessBrandsByCountryPrefix(digits);
+  const seen = new Set();
+  const brands = [];
+  for (const b of [...guessed, ...BEAUTY_BRAND_SWEEP]) {
+    const key = b.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    brands.push(b);
+  }
+
+  // حدّ معقول ضمن الميزانية — لا نمسح كل الكتالوج
+  for (const brand of brands.slice(0, 8)) {
+    if (budgetLeft() < 2200) return null;
+    const hit = await searchByBrandCatalogV2(digits, { brand, exactBrand: true }, { deadline });
+    if (hit) return hit;
+  }
+  return null;
+}
+
 async function searchByTypesenseVariationScan(digits, { deadline = 0 } = {}) {
   const hits = await searchTypesenseByVariationBarcode(digits);
   const ids = hits.map((h) => String(h.document?.id || h.document?.product_id || '')).filter(Boolean);
@@ -418,57 +446,85 @@ async function searchFromWebLinks(digits, { deadline = 0 } = {}) {
 }
 
 async function resolveProductMeta(digits) {
-  let meta = await lookupBarcodeProductMeta(digits).catch(() => null);
-  if (meta?.brand || meta?.title) return normalizeBarcodeMeta(meta);
+  for (const variant of barcodeSearchVariants(digits)) {
+    let meta = await lookupBarcodeProductMeta(variant).catch(() => null);
+    meta = meta ? normalizeBarcodeMeta(meta) : null;
+    if (meta && isUsableBarcodeMeta(meta)) return meta;
 
-  const upc = await lookupUpcByBarcode(digits).catch(() => null);
-  if (upc?.brand || upc?.title) return normalizeBarcodeMeta(upc);
+    const upc = await lookupUpcByBarcode(variant).catch(() => null);
+    const upcMeta = upc ? normalizeBarcodeMeta(upc) : null;
+    if (upcMeta && isUsableBarcodeMeta(upcMeta)) return upcMeta;
+  }
   return null;
 }
 
 // كاش سلبي قصير — لا يمنع إعادة المحاولة لساعات
 const missCache = new Map();
-const MISS_TTL_MS = 90 * 1000;
+const MISS_TTL_MS = 45 * 1000;
 
 function clearMiss(digits) {
+  for (const v of barcodeSearchVariants(digits)) missCache.delete(v);
   missCache.delete(String(digits || '').replace(/\D/g, ''));
 }
 
-// ميزانية قصيرة — لا نعلّق الطلب؛ الفهرس يتعلّم من النجاحات اللاحقة
-const TIME_BUDGET_MS = 12_000;
+function isMissCached(digits) {
+  return barcodeSearchVariants(digits).some((v) => {
+    const missAt = missCache.get(v);
+    return missAt && Date.now() - missAt < MISS_TTL_MS;
+  });
+}
+
+function markMiss(digits) {
+  const at = Date.now();
+  for (const v of barcodeSearchVariants(digits)) missCache.set(v, at);
+}
+
+// ميزانية أطول قليلاً للمسار البارد (تصحيح رقم التحقق + مسح ماركات)
+const TIME_BUDGET_MS = 18_000;
 
 /**
  * بحث بالباركود العالمي (EAN/UPC) — مسار سريع أولاً ثم عميق.
  *
  * الترتيب:
- * 1) فهرس محلي (فوري)
+ * 1) فهرس محلي (فوري) — لكل متغيرات GTIN
  * 2) Typesense variations (رخيص)
  * 3) أشقاء GS1 + بادئة معروفة
  * 4) metadata + مسح v2 موجّه
- * 5) ويب / خليجي (احتياطي)
+ * 5) ويب / مسح ماركات جمال / خليجي
  */
 export async function searchByEan(barcode) {
-  const digits = String(barcode || '').replace(/\D/g, '');
-  if (!/^\d{8,14}$/.test(digits)) return [];
+  const variants = barcodeSearchVariants(barcode);
+  if (!variants.length) return [];
+  const digits = variants[0];
 
-  // 1) فهرس محلي — لا تمنعه ميزانية الوقت ولا الكاش السلبي
-  const indexed = await resolveFromIndex(digits);
-  if (indexed) return [indexed];
+  // 1) فهرس محلي — جرّب كل المتغيرات (أصل + مصحّح رقم التحقق)
+  for (const variant of variants) {
+    const indexed = await resolveFromIndex(variant);
+    if (indexed) {
+      // احفظ أيضاً الشكل الذي أدخله المستخدم إن اختلف
+      if (variant !== String(barcode || '').replace(/\D/g, '')) {
+        learnHit(String(barcode || '').replace(/\D/g, ''), indexed, {});
+      }
+      return [indexed];
+    }
+  }
 
-  const missAt = missCache.get(digits);
-  if (missAt && Date.now() - missAt < MISS_TTL_MS) return [];
+  if (isMissCached(digits)) return [];
 
   const startedAt = Date.now();
   const budgetLeft = () => TIME_BUDGET_MS - (Date.now() - startedAt);
   const deadline = startedAt + TIME_BUDGET_MS;
 
-  // 2) Typesense variations أولاً — غالباً أسرع من metadata الخارجية
+  // 2) Typesense variations — يشمل المتغيرات داخل searchTypesenseByVariationBarcode
   if (budgetLeft() > 0) {
-    const fromVariations = await searchByTypesenseVariationScan(digits, { deadline });
-    if (fromVariations) return [fromVariations];
+    for (const variant of variants) {
+      if (deadline && Date.now() > deadline) break;
+      const fromVariations = await searchByTypesenseVariationScan(variant, { deadline });
+      if (fromVariations) return [fromVariations];
+    }
   }
 
-  // 3) أشقاء GS1 + بادئة معروفة — بالتوازي
+  // 3) أشقاء GS1 + بادئة معروفة — بالتوازي على المتغير الأساسي
   if (budgetLeft() > 0) {
     const [siblingHit, prefixHit] = await Promise.all([
       searchBySiblingPrefix(digits, { deadline }),
@@ -476,6 +532,13 @@ export async function searchByEan(barcode) {
     ]);
     if (siblingHit) return [siblingHit];
     if (prefixHit) return [prefixHit];
+
+    // إن فشل الأساسي، جرّب بادئة المتغير المصحّح
+    for (const variant of variants.slice(1)) {
+      if (budgetLeft() < 1500) break;
+      const hit = await searchByKnownPrefix(variant, { deadline });
+      if (hit) return [hit];
+    }
   }
 
   // 4) metadata خارجية + مسح موجّه
@@ -484,23 +547,35 @@ export async function searchByEan(barcode) {
     : null;
 
   if ((meta?.brand || meta?.title) && budgetLeft() > 0) {
-    const hinted = await searchByMetaHints(digits, meta, { deadline });
-    if (hinted.length) return hinted;
+    for (const variant of variants) {
+      if (budgetLeft() < 1500) break;
+      const hinted = await searchByMetaHints(variant, meta, { deadline });
+      if (hinted.length) return hinted;
+    }
   }
 
-  // 5) روابط miswag.com من الويب — فقط إن بقي وقت كافٍ
+  // 5) روابط miswag.com من الويب
+  if (budgetLeft() > 4000) {
+    for (const variant of variants) {
+      if (budgetLeft() < 3500) break;
+      const fromWeb = await searchFromWebLinks(variant, { deadline });
+      if (fromWeb.length) return fromWeb;
+    }
+  }
+
+  // 6) مسح ماركات الجمال حسب بادئة البلد (عندما لا توجد metadata)
+  if (budgetLeft() > 5000 && !(meta?.brand || meta?.title)) {
+    const beautyHit = await searchByBeautyBrandSweep(digits, budgetLeft, deadline);
+    if (beautyHit) return [beautyHit];
+  }
+
+  // 7) باركودات خليجية بلا UPC
   if (budgetLeft() > 5000) {
-    const fromWeb = await searchFromWebLinks(digits, { deadline });
-    if (fromWeb.length) return fromWeb;
-  }
-
-  // 6) باركودات خليجية بلا UPC — اختياري وسريع
-  if (budgetLeft() > 6000) {
     const gulfHit = await searchByGulfBrandV2Sweep(digits, budgetLeft, deadline);
     if (gulfHit) return [gulfHit];
   }
 
-  missCache.set(digits, Date.now());
+  markMiss(digits);
   return [];
 }
 

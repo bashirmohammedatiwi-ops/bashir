@@ -61,6 +61,11 @@ function recall(key) {
     shade: hit.shade || '',
     source: hit.source || 'cache',
   };
+  // تجاهل كاش metadata تالف (مثل "Barcode Lookup")
+  if ((val.brand || val.title) && !isUsableBarcodeMeta(val)) {
+    memoryCache.set(key, '');
+    return '';
+  }
   memoryCache.set(key, val);
   return val;
 }
@@ -75,14 +80,35 @@ function decodeHtmlEntities(text = '') {
     .replace(/&gt;/g, '>');
 }
 
+const JUNK_META_RE = /^(barcode\s*lookup|upc\s*database|go-?upc|ean-?search|barcodelookup|upcitemdb|open\s*beauty\s*facts|gs1|checkdigit|barcode\s*spider)$/i;
+const JUNK_TITLE_RE = /\b(upc|ean|isbn)\s*(search|lookup|database|scanner)?\b|barcode\s*lookup|find\s*upc|product\s*not\s*found/i;
+
+export function isUsableBarcodeMeta(meta = {}) {
+  const brand = String(meta.brand || '').trim();
+  const title = String(meta.title || '').trim();
+  if (!brand && !title) return false;
+  if (brand && JUNK_META_RE.test(brand)) return false;
+  if (title && JUNK_META_RE.test(title)) return false;
+  if (title && JUNK_TITLE_RE.test(title) && (!brand || JUNK_META_RE.test(brand) || brand.length < 2)) {
+    return false;
+  }
+  // عنوان ويب عام بلا ماركة حقيقية
+  if (!brand && title && JUNK_TITLE_RE.test(title)) return false;
+  return true;
+}
+
 export function normalizeBarcodeMeta(meta = {}) {
-  return {
+  const normalized = {
     ean: String(meta.ean || meta.barcode || '').replace(/\D/g, ''),
     brand: String(meta.brand || meta.manufacturer || '').trim(),
     title: String(meta.title || meta.name || '').trim(),
     shade: String(meta.shade || meta.shadeName || '').trim(),
     source: String(meta.source || 'meta').trim(),
   };
+  if (!isUsableBarcodeMeta(normalized)) {
+    return { ean: normalized.ean, brand: '', title: '', shade: '', source: normalized.source };
+  }
+  return normalized;
 }
 
 export function parseBarcodeMetaFields(meta = {}) {
@@ -426,7 +452,9 @@ export async function lookupBarcodeProductMeta(barcode) {
     lookupBarcodeFromWebSearch(digits).catch(() => null),
   ]);
 
-  const candidates = [upc, obf, web].filter((m) => m && (m.brand || m.title));
+  const candidates = [upc, obf, web]
+    .map((m) => (m ? normalizeBarcodeMeta(m) : null))
+    .filter((m) => m && isUsableBarcodeMeta(m));
   const withShade = candidates.find((m) => m.shade);
   const best = withShade || candidates[0] || null;
   remember(key, best || '');
