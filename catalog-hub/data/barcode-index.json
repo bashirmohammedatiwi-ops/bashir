@@ -40,10 +40,11 @@
       "store": "miswag",
       "productId": "1742850145",
       "barcode": "6287020281204",
-      "name": "عطر مسك اللبان 75 مل Musk Luban Perfume 75 ml",
+      "name": "",
       "brand": "IBRAQ",
       "shadeName": "",
-      "matchType": "seed"
+      "matchType": "v2",
+      "updatedAt": 1783538771361
     },
     "00609332821163": {
       "store": "miswag",
@@ -54,10 +55,82 @@
       "matchType": "hint",
       "barcode": "609332821163",
       "updatedAt": 1783537133212
+    },
+    "06291107572659": {
+      "store": "miswag",
+      "productId": "1756118272",
+      "name": "Sugar Biscuit 3.5N",
+      "shadeName": "Sugar Biscuit 3.5N",
+      "matchType": "v2",
+      "barcode": "6291107572659",
+      "updatedAt": 1783538780412
+    },
+    "06291107572666": {
+      "store": "miswag",
+      "productId": "1756118272",
+      "name": "Graham Cracker 4.1",
+      "shadeName": "Graham Cracker 4.1",
+      "matchType": "v2",
+      "barcode": "6291107572666",
+      "updatedAt": 1783538780413
+    },
+    "06291107572635": {
+      "store": "miswag",
+      "productId": "1756118272",
+      "name": "Vanilla Swirl 3.1",
+      "shadeName": "Vanilla Swirl 3.1",
+      "matchType": "v2",
+      "barcode": "6291107572635",
+      "updatedAt": 1783538780413
+    },
+    "06291107572598": {
+      "store": "miswag",
+      "productId": "1756118272",
+      "name": "Meringue 2.1",
+      "shadeName": "Meringue 2.1",
+      "matchType": "v2",
+      "barcode": "6291107572598",
+      "updatedAt": 1783538780414
+    },
+    "06291107572550": {
+      "store": "miswag",
+      "productId": "1756118272",
+      "name": "Royal Icing 1.1N",
+      "shadeName": "Royal Icing 1.1N",
+      "matchType": "v2",
+      "barcode": "6291107572550",
+      "updatedAt": 1783538780414
+    },
+    "06291107572604": {
+      "store": "miswag",
+      "productId": "1756118272",
+      "name": "Cotton Candy 2.3B",
+      "shadeName": "Cotton Candy 2.3B",
+      "matchType": "v2",
+      "barcode": "6291107572604",
+      "updatedAt": 1783538780414
+    },
+    "06291107572567": {
+      "store": "miswag",
+      "productId": "1756118272",
+      "name": "Marshmallow 1.3g",
+      "shadeName": "Marshmallow 1.3g",
+      "matchType": "v2",
+      "barcode": "6291107572567",
+      "updatedAt": 1783538780414
+    },
+    "06291107572628": {
+      "store": "miswag",
+      "productId": "1756118272",
+      "name": "Coconut Flex 2.7",
+      "shadeName": "Coconut Flex 2.7",
+      "matchType": "v2",
+      "barcode": "6291107572628",
+      "updatedAt": 1783538780414
     }
   },
   "meta": {
-    "updatedAt": 1783537133212,
+    "updatedAt": 1783538780414,
     "source": "seed"
   }
 }

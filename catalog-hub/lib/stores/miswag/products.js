@@ -8,12 +8,18 @@ import {
   cacheGet,
   cacheSet,
 } from './client.js';
-import { findBarcodesForProduct } from '../../core/barcode-index.js';
+import { findBarcodesForProduct, upsertBarcodeIndex } from '../../core/barcode-index.js';
+import {
+  fetchV2BarcodesForIds,
+  fetchV2Barcode,
+  isMiswagInternalId,
+  isValidEan,
+} from './v2-barcode.js';
 
 function extractEan(v = {}) {
   for (const key of ['barcode', 'ean', 'upc', 'gtin', 'isbn']) {
     const val = String(v?.[key] || '').replace(/\D/g, '');
-    if (/^\d{8,14}$/.test(val) && !/^17\d{8}$/.test(val)) return val;
+    if (isValidEan(val)) return val;
   }
   return '';
 }
@@ -58,37 +64,39 @@ function mapVariation(v, optionGroup = '') {
   };
 }
 
-/** جلب كل صفحات التدرجات بالتوازي */
+/** جلب كل صفحات التدرجات */
 async function fetchAllVariations(pid) {
   const cacheKey = `miswag:vars:${pid}`;
   const cached = cacheGet(cacheKey, DETAIL_TTL);
   if (cached) return cached;
 
-  const first = await miswagFetch(`/content/v1/items/${encodeURIComponent(pid)}/variations`).catch(() => null);
-  if (!first) return { variations: [], sizes: [], variation_title: 'الألوان', size_title: 'الحجم' };
+  const allVariations = [];
+  const sizeMap = new Map();
+  let varInfo = {};
+  let cursor = null;
+  let pages = 0;
 
-  const info = first.info || first;
-  const allVariations = [...(info.variations || [])];
-  const sizeMap = new Map((info.sizes || []).map((s) => [String(s.id), s]));
-  let cursor = first.pagination?.cursor || null;
-  const cursors = [];
-
-  while (cursor) {
-    cursors.push(cursor);
-    if (cursors.length >= 11) break;
+  do {
     const chunk = await miswagFetch(`/content/v1/items/${encodeURIComponent(pid)}/variations`, {
-      params: { cursor },
+      params: cursor ? { cursor } : {},
     }).catch(() => null);
     if (!chunk) break;
-    const ci = chunk.info || chunk;
-    for (const v of ci.variations || []) allVariations.push(v);
-    for (const s of ci.sizes || []) sizeMap.set(String(s.id), s);
+
+    const info = chunk.info || chunk;
+    varInfo = {
+      ...varInfo,
+      variation_title: info.variation_title || varInfo.variation_title || 'الألوان',
+      size_title: info.size_title || varInfo.size_title || 'الحجم',
+    };
+    for (const v of info.variations || []) allVariations.push(v);
+    for (const s of info.sizes || []) sizeMap.set(String(s.id), s);
     cursor = chunk.pagination?.cursor || null;
-  }
+    pages += 1;
+  } while (cursor && pages < 30);
 
   const out = {
-    variation_title: info.variation_title || 'الألوان',
-    size_title: info.size_title || 'الحجم',
+    variation_title: varInfo.variation_title || 'الألوان',
+    size_title: varInfo.size_title || 'الحجم',
     variations: allVariations,
     sizes: [...sizeMap.values()],
   };
@@ -96,10 +104,15 @@ async function fetchAllVariations(pid) {
   return out;
 }
 
+function shouldKeepVariation(shade = {}) {
+  if (!isDefaultTitle(shade.name)) return true;
+  return !!(shade.hex || shade.image || shade.miswagId);
+}
+
 function buildShadesFromVarInfo(varInfo = {}) {
   const optionGroup = String(varInfo.variation_title || 'الألوان').trim();
   const colors = (varInfo.variations || []).map((v) => mapVariation(v, optionGroup));
-  const realColors = colors.filter((c) => !isDefaultTitle(c.name));
+  const realColors = colors.filter(shouldKeepVariation);
 
   if (realColors.length) return realColors;
 
@@ -171,6 +184,52 @@ function parseTypesenseVariations(doc) {
   } catch {
     return [];
   }
+}
+
+function typesenseImageUrl(filename = '', fallback = '') {
+  const f = String(filename || '').trim();
+  if (!f) return fallback;
+  if (f.startsWith('http')) return absImage(f);
+  return absImage(`https://cdn.miswag.me/images/images/${f}`);
+}
+
+function mapTypesenseVariation(v, optionGroup = '', fallbackImage = '') {
+  const miswagId = String(v.id || v.variation_id || '').trim();
+  const name = String(v.color || v.title || v.name || miswagId).trim();
+  const extra = Array.isArray(v.additional_images) ? v.additional_images[0] : '';
+  return {
+    name,
+    nameAr: name,
+    nameEn: name,
+    sku: miswagId,
+    optionId: miswagId,
+    miswagId,
+    barcode: extractEan(v),
+    ean: extractEan(v),
+    hex: parseColorValue(v.color_code || v.hex || v.color),
+    image: typesenseImageUrl(extra, fallbackImage),
+    price: '',
+    optionGroup,
+    inStock: true,
+  };
+}
+
+/** إضافة تدرجات موجودة في Typesense وغير مُرجعة من API التدرجات */
+function mergeShadesFromTypesense(shades = [], tsVars = [], optionGroup = '', fallbackImage = '') {
+  if (!tsVars.length) return shades;
+
+  const byId = new Map(shades.map((s) => [String(s.sku || s.miswagId || s.optionId || ''), s]));
+  const merged = [...shades];
+
+  for (const v of tsVars) {
+    const id = String(v.id || v.variation_id || '');
+    if (!id || byId.has(id)) continue;
+    const shade = mapTypesenseVariation(v, optionGroup, fallbackImage);
+    byId.set(id, shade);
+    merged.push(shade);
+  }
+
+  return merged;
 }
 
 /** دمج باركود/لون من Typesense عند غيابها في API التفاصيل */
@@ -245,6 +304,43 @@ function applyEanFromIndex(pid, product) {
   return product;
 }
 
+function learnShadeBarcode(productId, shade, barcode) {
+  if (!productId || !shade || !isValidEan(barcode)) return;
+  upsertBarcodeIndex(barcode, {
+    store: 'miswag',
+    productId: String(productId),
+    name: shade.nameAr || shade.name || '',
+    shadeName: shade.nameAr || shade.name || '',
+    matchType: 'v2',
+  });
+}
+
+/** جلب باركود EAN الحقيقي من API v2 (رمز المنتج في تطبيق مسواگ) */
+async function enrichShadesWithV2Barcodes(productId, shades = []) {
+  if (!shades.length) {
+    const barcode = await fetchV2Barcode(productId);
+    return barcode ? { shades, productBarcode: barcode } : { shades, productBarcode: '' };
+  }
+
+  const ids = shades.map((s) => String(s.miswagId || s.sku || s.optionId || '')).filter(Boolean);
+  const barcodeMap = await fetchV2BarcodesForIds([...new Set([productId, ...ids])]);
+
+  const productBarcode = barcodeMap.get(String(productId)) || '';
+  const enriched = shades.map((shade) => {
+    const vid = String(shade.miswagId || shade.sku || shade.optionId || '');
+    const fromV2 = vid ? barcodeMap.get(vid) : '';
+    const barcode = fromV2 || (shades.length === 1 ? productBarcode : '') || shade.barcode;
+    if (!isValidEan(barcode)) {
+      return { ...shade, barcode: '', ean: '' };
+    }
+    learnShadeBarcode(productId, shade, barcode);
+    return { ...shade, barcode, ean: barcode };
+  });
+
+  const fromShade = enriched.find((s) => s.barcode)?.barcode || '';
+  return { shades: enriched, productBarcode: productBarcode || fromShade };
+}
+
 async function fetchTypesenseFallback(pid) {
   try {
     const doc = await fetchTypesenseDoc(pid);
@@ -313,8 +409,25 @@ export async function fetchProductDetail(id, { light = false } = {}) {
     if (main && !images.includes(main)) images.unshift(main);
   }
 
-  const shades = light ? [] : buildShadesFromVarInfo(varInfo);
-  const enrichedShades = light ? [] : await enrichShadesFromTypesense(pid, shades);
+  const thumb = absImage(meta.image_url);
+  let shades = light ? [] : buildShadesFromVarInfo(varInfo);
+
+  if (!light) {
+    const doc = await fetchTypesenseDoc(String(meta.product_id || pid));
+    const tsVars = parseTypesenseVariations(doc);
+    const optionGroup = String(varInfo.variation_title || 'الألوان').trim();
+    shades = mergeShadesFromTypesense(shades, tsVars, optionGroup, thumb);
+    shades = await enrichShadesFromTypesense(pid, shades);
+    const { shades: withBarcodes, productBarcode } = await enrichShadesWithV2Barcodes(
+      String(meta.product_id || pid),
+      shades,
+    );
+    shades = withBarcodes;
+    if (productBarcode) {
+      meta._v2ProductBarcode = productBarcode;
+    }
+  }
+
   const brand = String(meta.brand || '').trim();
   const { ar, en } = parseTitle(meta.name);
 
@@ -330,10 +443,10 @@ export async function fetchProductDetail(id, { light = false } = {}) {
     price: formatPrice({ value: meta.price, original_value: meta.original_price, currency: meta.currency || 'IQD' }),
     thumb: images[0] || absImage(meta.image_url),
     images,
-    shades: enrichedShades,
-    shadeCount: enrichedShades.length,
-    hasOptions: enrichedShades.length > 1 || (varInfo.sizes?.length > 1),
-    barcode: extractEan(meta) || enrichedShades.find((s) => s.barcode)?.barcode || '',
+    shades,
+    shadeCount: shades.length,
+    hasOptions: shades.length > 1 || (varInfo.sizes?.length > 1),
+    barcode: meta._v2ProductBarcode || extractEan(meta) || shades.find((s) => s.barcode)?.barcode || '',
     miswagId: String(meta.product_id || pid),
     productUrl: meta.url || meta.share_link || `https://miswag.com/products/${meta.product_id || pid}`,
     category: String(meta.category || '').trim(),

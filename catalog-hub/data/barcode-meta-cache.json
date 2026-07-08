@@ -22,5 +22,121 @@
     "shade": "",
     "source": "upcitemdb",
     "at": 1783537129287
+  },
+  "obf|6287020281204": {
+    "ean": "",
+    "at": 1783537695200
+  },
+  "upc|6287020281204": {
+    "ean": "",
+    "at": 1783537695343
+  },
+  "web|6287020281204": {
+    "ean": "",
+    "at": 1783537697507
+  },
+  "meta|6287020281204": {
+    "ean": "",
+    "at": 1783537697508
+  },
+  "obf|3337875597180": {
+    "ean": "3337875597180",
+    "brand": "CeraVe",
+    "title": "CeraVe Hydraterende Reinigingscrème",
+    "shade": "",
+    "source": "openbeautyfacts",
+    "at": 1783537697624
+  },
+  "upc|3337875597180": {
+    "ean": "3337875597180",
+    "brand": "CeraVe",
+    "title": "CeraVeHydrating Cleanser For Normal to Dry Skin (With Pump) (Exp. Date 30 April 2026) 236ml/8oz",
+    "shade": "",
+    "source": "upcitemdb",
+    "at": 1783537697800
+  },
+  "web|3337875597180": {
+    "ean": "",
+    "at": 1783537699717
+  },
+  "meta|3337875597180": {
+    "ean": "3337875597180",
+    "brand": "CeraVe",
+    "title": "CeraVeHydrating Cleanser For Normal to Dry Skin (With Pump) (Exp. Date 30 April 2026) 236ml/8oz",
+    "shade": "",
+    "source": "upcitemdb",
+    "at": 1783537699717
+  },
+  "obf|6291106035360": {
+    "ean": "",
+    "at": 1783538143025
+  },
+  "upc|6291106035360": {
+    "ean": "6291106035360",
+    "brand": "HUDA BEAUTY",
+    "title": "HUDA BEAUTY #FauxFilter Luminous Matte Foundation, Size: 1.18Oz, Creme Brulee",
+    "shade": "",
+    "source": "upcitemdb",
+    "at": 1783538143449
+  },
+  "web|6291106035360": {
+    "ean": "",
+    "at": 1783538145037
+  },
+  "meta|6291106035360": {
+    "ean": "6291106035360",
+    "brand": "HUDA BEAUTY",
+    "title": "HUDA BEAUTY #FauxFilter Luminous Matte Foundation, Size: 1.18Oz, Creme Brulee",
+    "shade": "",
+    "source": "upcitemdb",
+    "at": 1783538145038
+  },
+  "obf|3348901571449": {
+    "ean": "",
+    "at": 1783538145251
+  },
+  "upc|3348901571449": {
+    "ean": "3348901571449",
+    "brand": "DIOR",
+    "title": "Miss Dior Eau de Parfum at Nordstrom, Size 1.7 Oz",
+    "shade": "",
+    "source": "upcitemdb",
+    "at": 1783538145375
+  },
+  "web|3348901571449": {
+    "ean": "",
+    "at": 1783538147016
+  },
+  "meta|3348901571449": {
+    "ean": "3348901571449",
+    "brand": "DIOR",
+    "title": "Miss Dior Eau de Parfum at Nordstrom, Size 1.7 Oz",
+    "shade": "",
+    "source": "upcitemdb",
+    "at": 1783538147016
+  },
+  "obf|0800897268985": {
+    "ean": "",
+    "at": 1783538147258
+  },
+  "upc|0800897268985": {
+    "ean": "0800897268985",
+    "brand": "NYX Professional Makeup",
+    "title": "NYX Professional Makeup Buttermelt Powder Highlighter - 40 No 1 Butta - 0.17 oz",
+    "shade": "",
+    "source": "upcitemdb",
+    "at": 1783538147568
+  },
+  "web|0800897268985": {
+    "ean": "",
+    "at": 1783538149240
+  },
+  "meta|0800897268985": {
+    "ean": "0800897268985",
+    "brand": "NYX Professional Makeup",
+    "title": "NYX Professional Makeup Buttermelt Powder Highlighter - 40 No 1 Butta - 0.17 oz",
+    "shade": "",
+    "source": "upcitemdb",
+    "at": 1783538149240
   }
 }
