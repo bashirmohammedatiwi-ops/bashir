@@ -126,6 +126,7 @@ function listProductToOption(p: CatalogListProduct, store: CatalogStore): Catalo
 export default function CatalogImportPage() {
   const [stores, setStores] = useState<CatalogStore[]>([]);
   const [activeStores, setActiveStores] = useState<string[]>(["miswag", "najdalatheyah"]);
+  const [browseStore, setBrowseStore] = useState("miswag");
   const [tree, setTree] = useState<CatalogCategoryNode[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categoryPath, setCategoryPath] = useState("");
@@ -164,7 +165,6 @@ export default function CatalogImportPage() {
     enabled: !!subcategoryId,
   });
 
-  const browseStore = activeStores[0] || "miswag";
   const storeMeta = useMemo(
     () => stores.find((s) => s.id === browseStore) || { id: browseStore, label: browseStore },
     [stores, browseStore],
@@ -183,6 +183,7 @@ export default function CatalogImportPage() {
           if (valid.length) return valid;
           return list.map((s) => s.id);
         });
+        setBrowseStore((prev) => (list.some((s) => s.id === prev) ? prev : list[0]?.id || "miswag"));
       })
       .catch(() => message.error("تعذّر تحميل قائمة المتاجر من الكتالوج"));
   }, []);
@@ -225,15 +226,18 @@ export default function CatalogImportPage() {
     [browseStore],
   );
 
-  // تحميل قسم الجمال تلقائياً لمسواگ
+  // تحميل أول قسم تلقائياً عند فتح المتجر (الجمال لمسواگ، «جميع المنتجات» أو أول جذر لغيره)
   useEffect(() => {
-    if (browseStore !== "miswag" || !tree.length || selectedCategory) return;
-    const beauty = tree.find((n) => n.id === "beauty");
-    if (!beauty) return;
-    setSelectedCategory("beauty");
-    setCategoryPath(beauty.name);
-    loadCategoryProducts("beauty", 1, false);
-  }, [tree, selectedCategory, loadCategoryProducts]);
+    if (!browseStore || !tree.length || selectedCategory) return;
+    const preferred =
+      browseStore === "miswag"
+        ? tree.find((n) => n.id === "beauty") || tree[0]
+        : tree.find((n) => /جميع|all/i.test(n.name)) || tree[0];
+    if (!preferred?.id) return;
+    setSelectedCategory(preferred.id);
+    setCategoryPath(preferred.name);
+    loadCategoryProducts(preferred.id, 1, false);
+  }, [browseStore, tree, selectedCategory, loadCategoryProducts]);
 
   const onSelectCategory = useCallback(
     (keys: React.Key[]) => {
@@ -531,17 +535,33 @@ export default function CatalogImportPage() {
                 : "تصفّح الأقسام أو ابحث بالاسم/الباركود"}
           </p>
         </div>
-        <Select
-          mode="multiple"
-          value={activeStores}
-          onChange={(ids) => {
-            const next = (ids as string[]).filter(Boolean);
-            setActiveStores(next.length ? next : ["miswag"]);
-          }}
-          style={{ minWidth: 280 }}
-          placeholder="اختر متاجر البحث"
-          options={stores.map((s) => ({ value: s.id, label: s.label }))}
-        />
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <Select
+            value={browseStore}
+            onChange={(id) => {
+              const next = String(id || "");
+              if (!next) return;
+              setBrowseStore(next);
+              setActiveStores((prev) => (prev.includes(next) ? prev : [...prev, next]));
+            }}
+            style={{ minWidth: 200 }}
+            placeholder="متجر التصفح"
+            options={stores.map((s) => ({ value: s.id, label: `تصفح: ${s.label}` }))}
+          />
+          <Select
+            mode="multiple"
+            value={activeStores}
+            onChange={(ids) => {
+              const next = (ids as string[]).filter(Boolean);
+              const resolved = next.length ? next : [browseStore || "miswag"];
+              setActiveStores(resolved);
+              if (!resolved.includes(browseStore)) setBrowseStore(resolved[0]);
+            }}
+            style={{ minWidth: 260 }}
+            placeholder="متاجر البحث"
+            options={stores.map((s) => ({ value: s.id, label: s.label }))}
+          />
+        </div>
       </section>
 
       <Row gutter={16}>
@@ -551,6 +571,7 @@ export default function CatalogImportPage() {
               <div className="catalog-import-center"><Spin /></div>
             ) : (
               <Tree
+                key={browseStore}
                 showLine
                 selectable
                 defaultExpandedKeys={isMiswagBrowse ? ["beauty"] : tree[0]?.id ? [tree[0].id] : []}
