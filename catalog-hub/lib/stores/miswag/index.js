@@ -1,6 +1,5 @@
 import { fetchCategoryTree, listCategoryProducts, searchProducts, sortProductsClient } from './categories.js';
 import { fetchProductDetail } from './products.js';
-import { searchByBarcode } from './barcode.js';
 
 export const MISWAG_META = {
   id: 'miswag',
@@ -24,6 +23,21 @@ export const miswagAdapter = {
   fetchProductDetail,
 
   async searchBarcode(barcode) {
-    return searchByBarcode(barcode);
+    const digits = String(barcode || '').replace(/\D/g, '');
+    if (!digits) return [];
+    const { items } = await searchProducts(digits, { page: 1, limit: 10 });
+    const hits = [];
+    for (const item of items) {
+      const detail = await fetchProductDetail(item.id, { light: true }).catch(() => null);
+      if (detail) {
+        hits.push({
+          ...item,
+          ...detail,
+          matchType: 'product',
+          barcode: digits,
+        });
+      }
+    }
+    return hits;
   },
 };

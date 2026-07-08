@@ -153,35 +153,13 @@ export async function handleImportApi(req, res, url) {
           store: adapter.id,
           storeLabel: adapter.label,
           id: item.id,
-          sourceId: item.id,
           name: item.nameAr,
           nameAr: item.nameAr,
           nameEn: item.nameEn,
-          brandAr: item.brandAr,
           manufacturer: item.brandAr,
           thumb: item.thumb,
           price: item.price,
-          shadeCount: item.shadeCount,
-          shadeName: item.shadeName,
-          matchType: item.matchType || 'text',
-        }));
-      } else {
-        results = results.map((item) => ({
-          store: adapter.id,
-          storeLabel: adapter.label,
-          id: item.id,
-          sourceId: item.id,
-          name: item.nameAr,
-          nameAr: item.nameAr,
-          nameEn: item.nameEn,
-          brandAr: item.brandAr,
-          manufacturer: item.brandAr,
-          thumb: item.thumb,
-          price: item.price,
-          shadeCount: item.shadeCount,
-          shadeName: item.shadeName,
-          barcode: digits,
-          matchType: item.matchType || 'barcode',
+          matchType: 'text',
         }));
       }
       return sendJson(res, 200, { query, results, stores: [{ id: adapter.id, count: results.length }] });

@@ -12,11 +12,11 @@ import {
 const TREE_TTL = 30 * 60 * 1000;
 const DIVISION_FIELDS = ['l1_division_alias', 'l2_division_alias', 'l3_division_alias', 'l4_division_alias'];
 
-/** مرشّح Typesense — L1 يستخدم l1 فقط لتجنب نتائج فارغة */
+/** مرشّح Typesense — يدعم أي قسم L1–L4 في كل المتجر */
 export function buildCategoryFilter(alias) {
   const a = String(alias || '').trim().replace(/`/g, '');
   if (!a) return '';
-  return `(l1_division_alias:=\`${a}\` || l2_division_alias:=\`${a}\` || l3_division_alias:=\`${a}\` || l4_division_alias:=\`${a}\`)`;
+  return `(${DIVISION_FIELDS.map((f) => `${f}:=\`${a}\``).join(' || ')})`;
 }
 
 function mapL2Node(l2, l1Alias) {
@@ -158,7 +158,7 @@ const SORT_MAP = {
   newest: 'created_at:desc',
 };
 
-export function mapTypesenseHit(doc = {}) {
+function mapTypesenseHit(doc = {}) {
   const { ar, en } = parseTitle({ AR: doc.title_AR, EN: doc.title_EN });
   const id = String(doc.id || doc.product_id || '');
   let shadeCount = 0;
