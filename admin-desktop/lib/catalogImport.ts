@@ -408,16 +408,24 @@ export async function searchCatalogByBarcodeProgressive(
   );
 }
 
-export async function fetchCatalogProduct(store: string, sourceId: string, barcode = "") {
+export async function fetchCatalogProduct(
+  store: string,
+  sourceId: string,
+  barcode = "",
+  options: { light?: boolean; enrichShades?: boolean } = {},
+) {
   const params = new URLSearchParams({
     store,
     id: sourceId,
     hubOrigin: CATALOG_HUB_ORIGIN,
   });
   if (barcode) params.set("barcode", barcode);
+  if (options.light) params.set("light", "1");
+  if (options.enrichShades === false) params.set("enrichShades", "0");
+  const timeoutMs = options.light ? 25_000 : 120_000;
   const data = await catalogFetch<{ product: CatalogImportProduct }>(
     `/api/import/product?${params}`,
-    120_000,
+    timeoutMs,
   );
   return data.product;
 }

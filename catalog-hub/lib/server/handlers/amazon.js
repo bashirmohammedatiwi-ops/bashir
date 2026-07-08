@@ -4,6 +4,7 @@ import {
   searchProducts as searchAmazonProducts,
   fetchProductByAsin as fetchAmazonProductByAsin,
   normalizeProductSummary as normalizeAmazonProductSummary,
+  normalizeAmazonImageSize,
   sortProductsClient as sortAmazonProductsClient,
 } from '../../amazon-api.js';
 import { sendJson, parseQuery } from '../http.js';
@@ -28,12 +29,15 @@ export async function handleAmazonApi(req, res, url) {
     if (url.pathname === '/api/amazon/img') {
       const raw = q.u || q.url || '';
       let imgUrl = decodeURIComponent(raw).replace(/&amp;/g, '&');
-      if (
-        !imgUrl.startsWith('https://m.media-amazon.com/') &&
-        !imgUrl.startsWith('https://images-na.ssl-images-amazon.com/')
-      ) {
+      const isAmazon =
+        imgUrl.includes('media-amazon.com')
+        || imgUrl.includes('images-amazon.com')
+        || imgUrl.includes('ssl-images-amazon.com');
+      if (!isAmazon || !imgUrl.startsWith('https://')) {
         return sendJson(res, 400, { error: 'Invalid image URL' });
       }
+      const maxSize = Math.min(Math.max(Number(q.w) || 500, 40), 1500);
+      imgUrl = normalizeAmazonImageSize(imgUrl, maxSize);
       const imgRes = await fetch(imgUrl, {
         headers: {
           Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',

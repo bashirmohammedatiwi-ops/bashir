@@ -8,6 +8,7 @@ import {
   upsertBarcodeLookup,
   loadBarcodeLookup,
   lookupBarcodeProductMeta,
+  lookupBarcodeFromWebSearch,
   buildMetaHintQueries,
   buildMetaFromSearchHits,
   scoreStoreHintMatch,
@@ -799,9 +800,7 @@ async function confirmMiswagBarcodeHit(productId, digits, meta = null) {
     };
   }
 
-  const hay = JSON.stringify(detail.raw?.variations || detail).replace(/\D/g, '');
-  const stripped = digits.replace(/^0+/, '');
-  const inRaw = hay.includes(digits) || (stripped.length >= 8 && hay.includes(stripped));
+  const inVariations = miswagProductContainsBarcode(detail, digits);
 
   if (meta?.shade || meta?.title || meta?.brand) {
     const hinted = await resolveMiswagShadeVariationHit(
@@ -819,7 +818,7 @@ async function confirmMiswagBarcodeHit(productId, digits, meta = null) {
 
     const summary = normalizeProductSummary(detail);
     const matchScore = scoreStoreHintMatch(summary, meta) + rankMiswagHintMatch(summary, meta);
-    if (matchScore >= 35) {
+    if (matchScore >= 35 && (inVariations || matchScore >= 42)) {
       return {
         ...summary,
         barcode: digits,
@@ -830,17 +829,39 @@ async function confirmMiswagBarcodeHit(productId, digits, meta = null) {
     }
   }
 
-  if (inRaw) {
+  if (inVariations) {
     return {
       ...normalizeProductSummary(detail),
       barcode: digits,
       matchType: 'product',
-      matchScore: 22,
-      source: 'verified-raw',
+      matchScore: 28,
+      source: 'verified',
     };
   }
 
   return null;
+}
+
+function miswagProductContainsBarcode(detail, digits) {
+  const unified = fromLegacyProduct(detail);
+  if (verifyBarcodeOnProduct(unified, digits).ok) return true;
+
+  const variations = detail.raw?.variations;
+  if (Array.isArray(variations)) {
+    for (const v of variations) {
+      const bc = String(v.barcode || v.ean || v.upc || v.gtin || v.sku || '').replace(/\D/g, '');
+      if (barcodeMatches(bc, digits)) return true;
+    }
+  }
+  if (typeof variations === 'string') {
+    const tokens = variations.match(/\b\d{8,14}\b/g) || [];
+    return tokens.some((t) => barcodeMatches(t, digits));
+  }
+  for (const shade of detail.shades || []) {
+    const bc = String(shade.barcode || shade.ean || '').replace(/\D/g, '');
+    if (barcodeMatches(bc, digits)) return true;
+  }
+  return false;
 }
 
 async function verifyTypesenseBarcodeHits(hits, digits, resolveMeta) {
@@ -1001,14 +1022,23 @@ function pickBestMiswagHintResults(scored, meta, { limit = 12 } = {}) {
 async function searchMiswagByMetaHints(meta, digits, { limit = 12 } = {}) {
   if (!meta?.brand && !meta?.title) return [];
 
-  const queries = buildMetaHintQueries(meta);
+  const queries = buildMiswagSearchQueries(meta);
   const scored = [];
   const seenIds = new Set();
 
-  for (const q of queries) {
-    try {
-      const ts = await typesenseSearch(q, { page: 1, perPage: 20 });
-      for (const hit of ts.hits || []) {
+  // استعلامات متوازية — مثل بحث Google السريع على مسواگ
+  const queryBatches = [];
+  for (let i = 0; i < queries.length; i += 3) {
+    queryBatches.push(queries.slice(i, i + 3));
+  }
+
+  for (const batch of queryBatches) {
+    const batchResults = await Promise.allSettled(
+      batch.map((q) => typesenseSearch(q, { page: 1, perPage: 20 })),
+    );
+    for (const outcome of batchResults) {
+      if (outcome.status !== 'fulfilled') continue;
+      for (const hit of outcome.value.hits || []) {
         const doc = hit.document || hit;
         const mapped = mapTypesenseHit(doc, digits);
         const idKey = String(mapped.id || '');
@@ -1016,10 +1046,11 @@ async function searchMiswagByMetaHints(meta, digits, { limit = 12 } = {}) {
         seenIds.add(idKey);
 
         const score = scoreStoreHintMatch(mapped, meta) + rankMiswagHintMatch(mapped, meta);
-        if (score < 10) continue;
+        if (score < 8) continue;
         scored.push({ mapped, score });
       }
-    } catch { /* next query */ }
+    }
+    if (scored.length >= limit * 2) break;
   }
 
   scored.sort((a, b) => b.score - a.score);
@@ -1041,16 +1072,87 @@ async function searchMiswagByMetaHints(meta, digits, { limit = 12 } = {}) {
   return pickBestMiswagHintResults(scored, meta, { limit });
 }
 
+/** استعلامات نصية موسّعة — تحاكي ما يجده Google على مسواگ */
+function buildMiswagSearchQueries(meta = {}) {
+  const queries = new Set(buildMetaHintQueries(meta));
+  const brand = String(meta.brand || '').trim();
+  const title = String(meta.title || '').trim();
+  const shade = String(meta.shade || '').trim();
+  if (title.length >= 4) queries.add(title);
+  if (brand && title) queries.add(`${brand} ${title}`);
+  if (brand && shade) queries.add(`${brand} ${shade}`);
+  return [...queries].filter((q) => String(q).trim().length >= 3).slice(0, 8);
+}
+
+/** نتيجة Typesense عالية الثقة — بدون جلب تفاصيل بطيء (مسواگ لا يفهرس الباركود) */
+function trustMiswagTextHit(hit, meta, digits, score) {
+  return {
+    ...hit,
+    barcode: digits,
+    matchType: hit.matchType === 'shade' ? 'shade' : 'product',
+    matchScore: Math.max(Number(score) || 0, 40),
+    source: meta?.source ? `typesense:${meta.source}` : 'typesense-text',
+  };
+}
+
+async function resolveMiswagMetaFast(digits, { getMeta, hintHits = [], upcMeta = null, webMeta = null } = {}) {
+  const local = metaFromLocalBarcodeSources(digits, hintHits);
+  if (local?.brand || local?.title) return local;
+
+  const fromHits = buildMetaFromSearchHits(hintHits, upcMeta);
+  if (fromHits?.brand || fromHits?.title) return fromHits;
+
+  if (upcMeta?.brand || upcMeta?.title) {
+    return normalizeBarcodeMeta({
+      ean: digits,
+      brand: upcMeta.brand || '',
+      title: upcMeta.title || '',
+      shade: upcMeta.shade || '',
+      source: upcMeta.source || 'upc',
+    });
+  }
+
+  if (webMeta?.brand || webMeta?.title) return webMeta;
+
+  // بحث ويب سريع — نفس مصدر معلومات Google تقريباً
+  const web = await lookupBarcodeFromWebSearch(digits).catch(() => null);
+  if (web?.brand || web?.title) return web;
+
+  if (getMeta) {
+    const shared = await getMeta().catch(() => null);
+    if (shared?.brand || shared?.title) return shared;
+  }
+
+  return null;
+}
+
+async function searchMiswagByTextPath(meta, digits, seen) {
+  const results = [];
+  const hinted = await searchMiswagByMetaHints(meta, digits, { limit: 4 });
+  for (const hit of hinted) {
+    const score = Number(hit.matchScore) || 0;
+    if (score >= 36) {
+      pushUnique(results, seen, trustMiswagTextHit(hit, meta, digits, score));
+      continue;
+    }
+    try {
+      const confirmed = await confirmMiswagBarcodeHit(hit.id, digits, meta);
+      if (confirmed) pushUnique(results, seen, confirmed);
+    } catch { /* skip */ }
+  }
+  return pickBestMiswagBarcodeResults(results, meta);
+}
+
 async function resolveMiswagLookupHit(manual, digits, metaEarly) {
-  const meta = {
-    ...metaEarly,
+  const confirmMeta = {
+    brand: metaEarly?.brand || '',
+    title: metaEarly?.title || '',
     shade: manual.shadeName || metaEarly?.shade || '',
-    brand: metaEarly?.brand || manual.manufacturer || '',
-    title: metaEarly?.title || manual.name || '',
+    source: metaEarly?.source || 'lookup',
   };
   try {
-    const entry = await confirmMiswagBarcodeHit(manual.productId, digits, meta);
-    if (entry) {
+    const entry = await confirmMiswagBarcodeHit(manual.productId, digits, confirmMeta);
+    if (entry && (Number(entry.matchScore) || 0) >= 22) {
       if (manual.shadeName && !entry.shadeName) entry.shadeName = manual.shadeName;
       return entry;
     }
@@ -1058,19 +1160,31 @@ async function resolveMiswagLookupHit(manual, digits, metaEarly) {
 
   const detail = await fetchProductDetail(String(manual.productId));
   if (!detail?.id) return null;
+  const summary = normalizeProductSummary(detail);
+  const score = miswagMatchScore(summary, confirmMeta);
+  if (score < 22) return null;
+
   return {
-    ...normalizeProductSummary(detail),
+    ...summary,
     barcode: digits,
     shadeName: manual.shadeName || '',
     matchType: 'lookup',
-    matchScore: 28,
+    matchScore: score,
     source: 'barcode-lookup',
   };
 }
 
-function metaFromLocalBarcodeSources(digits) {
+function metaFromLocalBarcodeSources(digits, hintHits = []) {
+  const fromHits = buildMetaFromSearchHits(
+    [
+      ...searchUnifiedBarcodeIndex(digits).filter((h) => h.store !== 'miswag'),
+      ...(hintHits || []).filter((h) => h.store !== 'miswag'),
+    ],
+  );
+  if (fromHits) return fromHits;
+
   const manual = findBarcodeLookup(digits);
-  if (manual?.name || manual?.manufacturer) {
+  if ((manual?.name || manual?.manufacturer) && manual.store && manual.store !== 'miswag') {
     return normalizeBarcodeMeta({
       brand: manual.manufacturer || '',
       title: manual.name || '',
@@ -1078,17 +1192,57 @@ function metaFromLocalBarcodeSources(digits) {
       source: 'barcode-lookup',
     });
   }
-  return buildMetaFromSearchHits(searchUnifiedBarcodeIndex(digits));
+  return null;
 }
 
-export async function searchProductsByBarcode(barcode, { getMeta, hintHits = [], upcMeta = null } = {}) {
+function miswagMatchScore(item, meta = {}) {
+  return scoreStoreHintMatch(item, meta) + rankMiswagHintMatch(item, meta);
+}
+
+function pickBestMiswagBarcodeResults(results = [], meta = null) {
+  if (!results.length) return [];
+  const scored = results.map((h) => ({
+    h,
+    score: Number(h.matchScore) || miswagMatchScore(h, meta),
+  }));
+  scored.sort((a, b) => b.score - a.score);
+  const best = scored[0];
+  if (!best || best.score < 18) return [];
+
+  const parsed = parseBarcodeMetaFields(meta || {});
+  const distinctive = [
+    parsed.brand,
+    parsed.productLine,
+    parsed.shade,
+    ...parsed.productWords,
+  ].filter((w) => String(w || '').trim().length >= 4);
+
+  if (distinctive.length) {
+    const withKeyword = scored.filter(({ h, score }) => {
+      const hay = `${h.name} ${h.nameEn} ${h.manufacturer}`.toLowerCase();
+      return distinctive.some((w) => hay.includes(String(w).toLowerCase())) && score >= 15;
+    });
+    if (withKeyword.length) {
+      withKeyword.sort((a, b) => b.score - a.score);
+      return [withKeyword[0].h];
+    }
+  }
+
+  const second = scored[1];
+  if (second && best.score - second.score < 6 && best.score < 45) {
+    return best.score >= 28 ? [best.h] : [];
+  }
+  return [best.h];
+}
+
+export async function searchProductsByBarcode(barcode, { getMeta, hintHits = [], upcMeta = null, webMeta = null } = {}) {
   const digits = String(barcode || '').replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return [];
 
   loadBarcodeLookup({ force: true });
 
   const resolveMeta = async () => {
-    const local = metaFromLocalBarcodeSources(digits);
+    const local = metaFromLocalBarcodeSources(digits, hintHits);
     if (local?.brand || local?.title) return local;
     if (getMeta) {
       const shared = await getMeta().catch(() => null);
@@ -1119,7 +1273,7 @@ export async function searchProductsByBarcode(barcode, { getMeta, hintHits = [],
         (mt === 'product' || mt === 'shade' || mt === 'lookup')
         && mt !== 'hint'
         && !src.includes('meta-hint')
-        && (Number(h.matchScore) || 0) >= 20
+        && (Number(h.matchScore) || 0) >= 35
       );
     });
     if (top?.id) {
@@ -1136,9 +1290,19 @@ export async function searchProductsByBarcode(barcode, { getMeta, hintHits = [],
     return list;
   };
 
-  const metaEarly = await resolveMeta().catch(() => null);
+  const metaFullPromise = resolveMeta().catch(() => null);
 
-  // (0b) فهرس يدوي محلي — يُقبل عند وجود المنتج حتى بدون باركود في API
+  // (1) بحث نصي سريع — كما يفعل Google على مسواگ (ماركة + اسم عبر Typesense)
+  const metaFast = await resolveMiswagMetaFast(digits, { getMeta, hintHits, upcMeta, webMeta });
+  if (metaFast?.brand || metaFast?.title) {
+    const fromText = await searchMiswagByTextPath(metaFast, digits, seen);
+    for (const hit of fromText) pushUnique(results, seen, hit);
+    if (results.length) return learn(results);
+  }
+
+  const metaEarly = metaFast || await metaFullPromise;
+
+  // (0b) فهرس يدوي محلي — بعد البحث النصي حتى لا يعيق نتائج أسرع
   const manual = findBarcodeLookup(digits);
   if (manual?.productId && (manual.store === 'miswag' || !manual.store)) {
     try {
@@ -1150,18 +1314,24 @@ export async function searchProductsByBarcode(barcode, { getMeta, hintHits = [],
     } catch { /* continue */ }
   }
 
-  // (1) metadata → Typesense (المسار الأسرع لمسواگ — الباركود غالباً غير مفهرس)
-  if (metaEarly?.brand || metaEarly?.title) {
-    const hinted = await searchMiswagByMetaHints(metaEarly, digits);
+  // (1b) إعادة محاولة نصية بعد metadata كامل
+  const metaLate = metaEarly || await metaFullPromise;
+  if (!results.length && metaLate && metaLate !== metaFast) {
+    const fromText = await searchMiswagByTextPath(metaLate, digits, seen);
+    for (const hit of fromText) pushUnique(results, seen, hit);
+    if (results.length) return learn(results);
+  }
+
+  // (1c) metadata → Typesense مع تأكيد كامل
+  if ((metaLate?.brand || metaLate?.title) && !results.length) {
+    const hinted = await searchMiswagByMetaHints(metaLate, digits);
     for (const hit of hinted) {
       try {
-        const confirmed = await confirmMiswagBarcodeHit(hit.id, digits, metaEarly);
-        pushUnique(results, seen, confirmed || hit);
-      } catch {
-        pushUnique(results, seen, hit);
-      }
+        const confirmed = await confirmMiswagBarcodeHit(hit.id, digits, metaLate);
+        if (confirmed) pushUnique(results, seen, confirmed);
+      } catch { /* skip unverified hint */ }
     }
-    if (results.length) return learn(results.slice(0, 12));
+    if (results.length) return learn(pickBestMiswagBarcodeResults(results, metaLate));
   }
 
   // (0a) فهرس باركود موحّد — محاولة واحدة فقط
@@ -1237,7 +1407,12 @@ export async function searchProductsByBarcode(barcode, { getMeta, hintHits = [],
     const meta = metaEarly || await resolveMeta().catch(() => null);
     if (meta?.brand || meta?.title) {
       const hinted = await searchMiswagByMetaHints(meta, digits);
-      for (const hit of hinted) pushUnique(results, seen, hit);
+      for (const hit of hinted) {
+        try {
+          const confirmed = await confirmMiswagBarcodeHit(hit.id, digits, meta);
+          if (confirmed) pushUnique(results, seen, confirmed);
+        } catch { /* skip */ }
+      }
     }
   }
 
@@ -1261,7 +1436,7 @@ export async function searchProductsByBarcode(barcode, { getMeta, hintHits = [],
     } catch { /* optional */ }
   }
 
-  return results.slice(0, 12);
+  return pickBestMiswagBarcodeResults(results, metaEarly);
 }
 
 export function sortProductsClient(products = [], sort = 'default') {

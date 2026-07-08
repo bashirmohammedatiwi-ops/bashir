@@ -71,9 +71,13 @@ export async function handleCrossStoreApi(req, res, url, { port }) {
     try {
       const q = parseQuery(url);
       const hubOrigin = q.hubOrigin || `http://${req.headers.host || `localhost:${port}`}`;
+      const light = q.light === '1' || q.light === 'true';
+      const enrichShades = q.enrichShades !== '0' && q.enrichShades !== 'false';
       const data = await fetchImportProduct(q.store || '', q.id || q.sourceId || '', {
         hubOrigin,
         barcode: q.barcode || '',
+        light,
+        enrichShades,
       });
       if (data.error) return sendJson(res, 404, data);
       return sendJson(res, 200, data);

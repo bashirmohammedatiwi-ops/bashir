@@ -178,6 +178,12 @@
   display: block;
 }
 
+.catalog-option-thumb--amazon {
+  object-fit: contain;
+  padding: 3px;
+  background: #fff;
+}
+
 .catalog-option-thumb-placeholder {
   width: 100%;
   height: 100%;
@@ -325,6 +331,12 @@
   background: #f8f5fb;
 }
 
+.catalog-preview-hero-img--amazon {
+  object-fit: contain;
+  padding: 6px;
+  background: #fff;
+}
+
 .catalog-preview-hero-body {
   flex: 1;
   min-width: 0;
@@ -366,6 +378,12 @@
   object-fit: cover;
   border-radius: 8px;
   border: 1px solid var(--ci-border);
+}
+
+.catalog-preview-gallery img.catalog-preview-gallery-img--amazon {
+  object-fit: contain;
+  padding: 4px;
+  background: #fff;
 }
 
 .catalog-shades-grid {

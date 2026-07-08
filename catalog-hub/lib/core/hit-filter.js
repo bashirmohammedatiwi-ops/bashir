@@ -2,6 +2,7 @@
  * Final hit filtering — one best result per store, drop weak hints.
  */
 import { sortHitsStable, dedupeHits } from './match.js';
+import { filterCrossStoreInconsistentHits } from './cross-store-consistency.js';
 
 const MATCH_RANK = {
   shade: 50,
@@ -25,7 +26,7 @@ function hitScore(hit) {
 
 /** Keep the single best hit per store; drop hints below minHintScore unless nothing else exists. */
 export function pickBestHitPerStore(hits = [], { minHintScore = 18 } = {}) {
-  const ranked = sortHitsStable(dedupeHits(hits));
+  const ranked = sortHitsStable(dedupeHits(filterCrossStoreInconsistentHits(hits)));
   const byStore = new Map();
 
   for (const hit of ranked) {

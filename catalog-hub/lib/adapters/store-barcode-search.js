@@ -25,6 +25,7 @@ import {
   fixProductImageUrl,
   resolveProductByBarcode,
   normalizeProductDetail as normalizeMiraayaDetail,
+  searchProducts as searchMiraayaProducts,
 } from '../miraaya-api.js';
 import {
   searchProductsByBarcode,
@@ -38,6 +39,7 @@ import {
   normalizeProductSummary as normalizeAmazonSummary,
   isUsableAmazonProduct,
   isAmazonBundleListing,
+  proxyAmazonImage,
 } from '../amazon-api.js';
 import {
   searchProductsByBarcode as searchMiswagProductsByBarcode,
@@ -59,7 +61,7 @@ import {
   searchProductsByBarcode as searchNajdProductsByBarcode,
   normalizeProductSummary as normalizeNajdSummary,
 } from '../najd-api.js';
-import { lookupUpcByBarcode, lookupBarcodeProductMeta, buildMetaFromSearchHits, findBarcodeLookup, normalizeBarcodeMeta } from '../barcodes.js';
+import { lookupUpcByBarcode, lookupBarcodeProductMeta, lookupBarcodeFromWebSearch, buildMetaFromSearchHits, findBarcodeLookup, normalizeBarcodeMeta, resolveStoreHintMatches } from '../barcodes.js';
 import { pickBestHitPerStore } from '../core/hit-filter.js';
 import { filterStrictHits } from '../core/match.js';
 
@@ -364,7 +366,7 @@ async function searchNiceOneLiveByBarcode(barcode) {
   return dedupeHits(results.filter(isUsableCatalogHit));
 }
 
-export async function searchNiceOneByBarcode(barcode) {
+export async function searchNiceOneByBarcode(barcode, { getMeta, hintHits = [], upcMeta = null } = {}) {
   const results = [];
 
   const instant = searchRamBarcodeIndex(barcode).filter((h) => (h.store || 'niceone') === 'niceone');
@@ -397,17 +399,45 @@ export async function searchNiceOneByBarcode(barcode) {
     /* optional */
   }
 
-  const merged = dedupeHits(results.filter(isUsableCatalogHit));
+  let merged = dedupeHits(results.filter(isUsableCatalogHit));
   if (merged.length) return merged;
 
   // مسح الكتالوج فقط عند فشل البحث الحي (الأبطأ — يُترك أخيراً)
   const catalog = await searchNiceOneCatalogScan(barcode);
-  results.push(...catalog);
+  merged = dedupeHits([...catalog].filter(isUsableCatalogHit));
+  if (merged.length) return merged;
+
+  const meta = await resolveStoreMeta(barcode, { getMeta, hintHits, upcMeta });
+  if (meta?.brand || meta?.title) {
+    const hinted = await resolveStoreHintMatches({
+      meta,
+      searchFn: async (q) => (await searchProducts(q, 1, 20)).products || [],
+      fetchDetailFn: async (p) => fetchProductDetail(p.id),
+      toShadeHit: async (p, detail, shade) => enrichNiceOneHit(detail || p, {
+        barcode,
+        shadeName: shade.name || shade.nameEn,
+        sku: shade.sku,
+        price: shade.price || detail?.price_formated,
+        thumb: shade.image || detail?.thumb || p.thumb,
+        matchType: 'shade',
+        matchScore: 40,
+        source: meta.source || 'meta-hint',
+      }),
+      toHit: async (p, score) => enrichNiceOneHit(p, {
+        barcode,
+        matchType: 'hint',
+        matchScore: score,
+        source: meta.source || 'meta-hint',
+      }),
+      minScore: 18,
+    });
+    for (const h of hinted) results.push(h);
+  }
 
   return dedupeHits(results.filter(isUsableCatalogHit));
 }
 
-export async function searchElryanByBarcode(barcode) {
+export async function searchElryanByBarcode(barcode, { getMeta, hintHits = [], upcMeta = null } = {}) {
   const unified = searchUnifiedByStore(barcode, 'elryan');
   const beautyIds = await getElryanBeautyIds();
   const data = await elryanAr.searchProducts(barcode, 1, 24, beautyIds);
@@ -445,6 +475,54 @@ export async function searchElryanByBarcode(barcode) {
       }));
     }
   }
+
+  const merged = dedupeElryanHits(dedupeHits(results));
+  if (merged.length) return merged;
+
+  const meta = await resolveStoreMeta(barcode, { getMeta, hintHits, upcMeta });
+  if (meta?.brand || meta?.title) {
+    const hinted = await resolveStoreHintMatches({
+      meta,
+      searchFn: async (q) => (await elryanAr.searchProducts(q, 1, 24, beautyIds)).items || [],
+      toShadeHit: (p, _detail, shade) => {
+        const n = elryanAr.normalizeProductSummary(p, {});
+        return hit('elryan', {
+          id: n.id,
+          name: n.name,
+          nameEn: n.nameEn,
+          manufacturer: n.manufacturer,
+          price: shade.price || n.price,
+          thumb: absImage(shade.image) || n.thumb,
+          barcode,
+          shadeName: shade.name || shade.nameEn,
+          sku: n.sku,
+          variantSku: shade.sku,
+          matchType: 'shade',
+          matchScore: 40,
+          source: meta.source || 'meta-hint',
+        });
+      },
+      toHit: (p, score) => {
+        const n = elryanAr.normalizeProductSummary(p, {});
+        return hit('elryan', {
+          id: n.id,
+          name: n.name,
+          nameEn: n.nameEn,
+          manufacturer: n.manufacturer,
+          price: n.price,
+          thumb: n.thumb,
+          barcode,
+          sku: n.sku,
+          matchType: 'hint',
+          matchScore: score,
+          source: meta.source || 'meta-hint',
+        });
+      },
+      minScore: 18,
+    });
+    results.push(...hinted);
+  }
+
   return dedupeElryanHits(dedupeHits(results));
 }
 
@@ -468,7 +546,7 @@ function dedupeElryanHits(list = []) {
   return [...map.values()];
 }
 
-export async function searchMiraayaByBarcode(barcode) {
+export async function searchMiraayaByBarcode(barcode, { getMeta, hintHits = [], upcMeta = null } = {}) {
   const unifiedFirst = searchUnifiedByStore(barcode, 'miraaya');
   const results = [...unifiedFirst];
 
@@ -497,6 +575,53 @@ export async function searchMiraayaByBarcode(barcode) {
       categoryHintEn: summary.categoryEn || '',
       source: 'live',
     }));
+  }
+
+  const merged = dedupeHits(results.filter(isUsableCatalogHit));
+  if (merged.length) return merged;
+
+  const meta = await resolveStoreMeta(barcode, { getMeta, hintHits, upcMeta });
+  if (meta?.brand || meta?.title) {
+    const hinted = await resolveStoreHintMatches({
+      meta,
+      searchFn: async (q) => (await searchMiraayaProducts(q, 1, 20)).items || [],
+      fetchDetailFn: async (item) => normalizeMiraayaDetail(item),
+      toShadeHit: (item, detail, shade) => {
+        const summary = normalizeMiraayaSummary(item, {});
+        return hit('miraaya', {
+          id: summary.sku || String(item.sku),
+          name: summary.name,
+          nameEn: summary.nameEn,
+          manufacturer: summary.manufacturer,
+          price: shade.price || summary.price,
+          thumb: fixProductImageUrl(shade.image || summary.thumb),
+          barcode,
+          shadeName: shade.name || shade.nameEn,
+          sku: summary.sku,
+          matchType: 'shade',
+          matchScore: 40,
+          source: meta.source || 'meta-hint',
+        });
+      },
+      toHit: (item, score) => {
+        const summary = normalizeMiraayaSummary(item, {});
+        return hit('miraaya', {
+          id: summary.sku || String(item.sku),
+          name: summary.name,
+          nameEn: summary.nameEn,
+          manufacturer: summary.manufacturer,
+          price: summary.price,
+          thumb: summary.thumb,
+          barcode,
+          sku: summary.sku,
+          matchType: 'hint',
+          matchScore: score,
+          source: meta.source || 'meta-hint',
+        });
+      },
+      minScore: 18,
+    });
+    results.push(...hinted);
   }
 
   return dedupeHits(results.filter(isUsableCatalogHit));
@@ -581,8 +706,8 @@ export async function searchFacesByBarcode(barcode, hintHits = []) {
   }
 }
 
-export async function searchMiswagByBarcode(barcode, { getMeta, hintHits = [], upcMeta = null } = {}) {
-  const products = await searchMiswagProductsByBarcode(barcode, { getMeta, hintHits, upcMeta });
+export async function searchMiswagByBarcode(barcode, { getMeta, hintHits = [], upcMeta = null, webMeta = null } = {}) {
+  const products = await searchMiswagProductsByBarcode(barcode, { getMeta, hintHits, upcMeta, webMeta });
   return dedupeHits(
     products.map((p) => {
       const n = normalizeMiswagSummary(p);
@@ -655,7 +780,7 @@ export async function searchAmazonByBarcode(barcode, { getMeta } = {}) {
           manufacturer: n.brandAr || n.manufacturer,
           manufacturerEn: n.brandEn || n.manufacturerEn,
           price: n.price,
-          thumb: n.thumb,
+          thumb: n.thumb || proxyAmazonImage(p.thumb || ''),
           barcode: n.barcode || barcode,
           matchType: p.matchType === 'hint' ? 'hint' : 'product',
           matchScore: p.matchScore,
@@ -759,7 +884,8 @@ const SEARCHERS = [
 ];
 
 const SEARCH_WAVE1 = new Set(['niceone', 'elryan', 'miraaya', 'najd']);
-const SEARCH_WAVE2 = new Set(['orisdi', 'beautyway', 'vaneersa', 'miswag', 'amazon']);
+const SEARCH_WAVE2A = new Set(['orisdi', 'beautyway', 'vaneersa']);
+const SEARCH_WAVE2B = new Set(['miswag', 'amazon']);
 
 export { SEARCHERS };
 
@@ -775,6 +901,16 @@ function withStoreTimeout(promise, ms, store) {
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+async function resolveStoreMeta(barcode, { getMeta, hintHits = [], upcMeta = null } = {}) {
+  const fromHints = buildMetaFromSearchHits(hintHits, upcMeta);
+  if (fromHints?.brand || fromHints?.title) return fromHints;
+  if (getMeta) {
+    const shared = await getMeta().catch(() => null);
+    if (shared?.brand || shared?.title) return shared;
+  }
+  return lookupBarcodeProductMeta(barcode).catch(() => null);
 }
 
 function buildFacesHintList(hintHits = [], upcData = null, resultHits = []) {
@@ -960,11 +1096,12 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
 
   const upcPromise = lookupUpcByBarcode(barcode).catch(() => null);
   const metaPromise = lookupBarcodeProductMeta(barcode).catch(() => null);
+  const webMetaPromise = lookupBarcodeFromWebSearch(barcode).catch(() => null);
   void metaPromise;
 
   const getMeta = async () => {
     const manual = findBarcodeLookup(barcode);
-    if (manual?.name || manual?.manufacturer) {
+    if ((manual?.name || manual?.manufacturer) && manual.store && manual.store !== 'miswag') {
       return normalizeBarcodeMeta({
         brand: manual.manufacturer || '',
         title: manual.name || '',
@@ -972,11 +1109,15 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
         source: 'barcode-lookup',
       });
     }
-    const [meta, upc] = await Promise.all([metaPromise, upcPromise]);
-    if (meta?.brand || meta?.title) return meta;
+    // بحث ويب سريع أولاً — نفس طريقة Google لإيجاد منتجات مسواگ
+    const web = await Promise.race([webMetaPromise, sleep(3000).then(() => null)]);
+    if (web?.brand || web?.title) return web;
+    const upc = await Promise.race([upcPromise, sleep(2500).then(() => null)]);
     if (upc?.brand || upc?.title) {
       return buildMetaFromSearchHits([], upc);
     }
+    const meta = await metaPromise;
+    if (meta?.brand || meta?.title) return meta;
     return null;
   };
 
@@ -991,7 +1132,7 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
     return dedupeHits([...verifiedLive, ...verifiedLocal]);
   };
 
-  const runStoreSearch = async ({ store, fn, timeoutMs }, { hintHits = [], upcMeta = null } = {}) => {
+  const runStoreSearch = async ({ store, fn, timeoutMs }, { hintHits = [], upcMeta = null, webMeta = null } = {}) => {
     const local = byStore[store] || [];
     emit('store-status', {
       store,
@@ -1000,7 +1141,7 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
     });
 
     const attempt = (ms) => withStoreTimeout(
-      fn(barcode, { getMeta, hintHits, upcMeta }),
+      fn(barcode, { getMeta, hintHits, upcMeta, webMeta }),
       ms,
       store,
     );
@@ -1105,7 +1246,8 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
 
   let facesPromise = null;
   const wave1 = nonFaces.filter((s) => SEARCH_WAVE1.has(s.store));
-  const wave2 = nonFaces.filter((s) => SEARCH_WAVE2.has(s.store));
+  const wave2a = nonFaces.filter((s) => SEARCH_WAVE2A.has(s.store));
+  const wave2b = nonFaces.filter((s) => SEARCH_WAVE2B.has(s.store));
 
   const wave1Work = Promise.all(wave1.map((searcher) => runStoreSearch(searcher)));
   void Promise.race([wave1Work, sleep(3500)]).then(() => {
@@ -1117,9 +1259,33 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
   const crossStoreHints = sortHitsStable(dedupeHits(Object.values(byStore).flat()));
   const upcMeta = await Promise.race([upcPromise, sleep(1500).then(() => null)]);
 
-  await Promise.all(
-    wave2.map((searcher) => runStoreSearch(searcher, { hintHits: crossStoreHints, upcMeta })),
+  await Promise.all(wave2a.map((searcher) => runStoreSearch(searcher, { hintHits: crossStoreHints, upcMeta })));
+
+  const crossStoreHints2 = sortHitsStable(dedupeHits(Object.values(byStore).flat()));
+  const amazonSearcher = wave2b.find((s) => s.store === 'amazon');
+  const miswagSearcher = wave2b.find((s) => s.store === 'miswag');
+  const webMetaEarly = await Promise.race([webMetaPromise, sleep(2000).then(() => null)]);
+
+  if (amazonSearcher) {
+    await runStoreSearch(amazonSearcher, { hintHits: crossStoreHints2, upcMeta, webMeta: webMetaEarly });
+  }
+
+  const crossAfterAmazon = sortHitsStable(dedupeHits(Object.values(byStore).flat()));
+  if (miswagSearcher) {
+    await runStoreSearch(miswagSearcher, { hintHits: crossAfterAmazon, upcMeta, webMeta: webMetaEarly });
+  }
+
+  // موجة 3: إعادة محاولة المتاجر التي لم تُرجع نتائج — باستخدام تلميحات من المتاجر الأخرى
+  const crossStoreHints3 = sortHitsStable(dedupeHits(Object.values(byStore).flat()));
+  const wave3 = nonFaces.filter(
+    (s) => SEARCH_WAVE1.has(s.store) && !(byStore[s.store] || []).length,
   );
+  if (wave3.length && crossStoreHints3.length) {
+    await Promise.all(
+      wave3.map((searcher) => runStoreSearch(searcher, { hintHits: crossStoreHints3, upcMeta })),
+    );
+  }
+
   if (facesPromise) await facesPromise;
   else if (facesSearcher) await runFaces();
 

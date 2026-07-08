@@ -319,11 +319,15 @@ export default function CatalogImportPage() {
       setSelected(opt);
       setLoadingPreview(true);
       setPreview(null);
+      const bc = opt.barcode || barcode.replace(/\D/g, "");
       try {
-        const product = await fetchCatalogProduct(opt.store, opt.sourceId, opt.barcode || barcode.replace(/\D/g, ""));
-        setPreview(product);
-        const brandId = matchBrandId(brandsData, product.brandAr, product.brandEn);
+        // مرحلة 1: عرض سريع بدون إثراء باركودات الدرجات
+        const quick = await fetchCatalogProduct(opt.store, opt.sourceId, bc, { light: true });
+        setPreview(quick);
+        setLoadingPreview(false);
+        setStep(2);
 
+        const brandId = matchBrandId(brandsData, quick.brandAr, quick.brandEn);
         const [allSubcategories, allTertiary] = await Promise.all([
           qc.fetchQuery({
             queryKey: ["subcategories", "all"],
@@ -339,8 +343,8 @@ export default function CatalogImportPage() {
           categoriesData,
           allSubcategories || [],
           allTertiary || [],
-          hintToString(product.categoryHint),
-          hintToString(product.categoryHintEn),
+          hintToString(quick.categoryHint),
+          hintToString(quick.categoryHintEn),
         );
 
         form.setFieldsValue({
@@ -349,14 +353,17 @@ export default function CatalogImportPage() {
           subcategoryId: catMatch.subcategoryId,
           tertiaryCategoryId: catMatch.tertiaryCategoryId,
         });
-        setStep(2);
+
+        // مرحلة 2: إثراء باركود كل درجة في الخلفية
+        fetchCatalogProduct(opt.store, opt.sourceId, bc, { enrichShades: true })
+          .then((full) => setPreview(full))
+          .catch(() => { /* المعاينة السريعة كافية */ });
       } catch (err: any) {
         message.error(errorMessage(err, "فشل جلب تفاصيل المنتج"));
-      } finally {
         setLoadingPreview(false);
       }
     },
-    [brandsData, categoriesData, form, qc],
+    [barcode, brandsData, categoriesData, form, qc],
   );
 
   const importProduct = useMutation({
@@ -605,7 +612,7 @@ export default function CatalogImportPage() {
 
       {loadingPreview && (
         <div className="catalog-import-empty">
-          <Spin size="large" tip="جاري جلب تفاصيل المنتج مع كل التدرجات..." />
+          <Spin size="large" tip="جاري تحميل المعاينة..." />
         </div>
       )}
 
@@ -615,7 +622,7 @@ export default function CatalogImportPage() {
             <div className="catalog-preview-hero">
               {preview.images[0]?.url && (
                 <img
-                  className="catalog-preview-hero-img"
+                  className={`catalog-preview-hero-img${selected?.store === "amazon" ? " catalog-preview-hero-img--amazon" : ""}`}
                   src={resolveCatalogImageUrl(preview.images[0].url)}
                   alt={preview.nameAr}
                   referrerPolicy="no-referrer"
@@ -722,6 +729,7 @@ export default function CatalogImportPage() {
               {preview.images.map((img) => (
                 <img
                   key={img.url}
+                  className={selected?.store === "amazon" ? "catalog-preview-gallery-img--amazon" : undefined}
                   src={resolveCatalogImageUrl(img.url)}
                   alt=""
                   referrerPolicy="no-referrer"

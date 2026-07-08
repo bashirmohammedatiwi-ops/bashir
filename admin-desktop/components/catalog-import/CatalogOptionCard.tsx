@@ -33,9 +33,10 @@ type Props = {
   onSelect: (option: CatalogImportOption) => void;
 };
 
-function CatalogThumb({ src, alt }: { src: string; alt: string }) {
+function CatalogThumb({ src, alt, store }: { src: string; alt: string; store?: string }) {
   const [failed, setFailed] = useState(false);
   const resolved = resolveCatalogImageUrl(src);
+  const isAmazon = store === "amazon";
 
   if (!resolved || failed) {
     return (
@@ -47,7 +48,7 @@ function CatalogThumb({ src, alt }: { src: string; alt: string }) {
 
   return (
     <img
-      className="catalog-option-thumb"
+      className={`catalog-option-thumb${isAmazon ? " catalog-option-thumb--amazon" : ""}`}
       src={resolved}
       alt={alt}
       loading="lazy"
@@ -90,7 +91,7 @@ export function CatalogOptionCard({
       }}
     >
       <div className="catalog-option-row-thumb">
-        <CatalogThumb src={thumb} alt={nameAr} />
+        <CatalogThumb src={thumb} alt={nameAr} store={option.store} />
       </div>
 
       <div className="catalog-option-row-main">

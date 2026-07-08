@@ -705,6 +705,8 @@ export function normalizeBarcodeMeta(meta = {}) {
   }
   if (/^wet\s*'?n'?\s*wild$/i.test(brand)) brand = 'Wet n Wild';
   if (/^sheglam$/i.test(brand)) brand = 'SHEGLAM';
+  if (/^bluberry$/i.test(brand)) brand = 'Blueberry';
+  if (/^musk$/i.test(title) && brand) title = `${brand} Musk`;
 
   if (!shade && /,/.test(title)) {
     const comma = title.lastIndexOf(',');
@@ -1255,13 +1257,17 @@ export async function lookupBarcodeProductMeta(barcode) {
 
   const manual = findBarcodeLookup(digits);
   if (manual?.name || manual?.manufacturer) {
-    return finish(normalizeBarcodeMeta({
-      ean: digits,
-      brand: manual.manufacturer || '',
-      title: manual.name || '',
-      shade: manual.shadeName || '',
-      source: 'barcode-lookup',
-    }));
+    if (manual.store === 'miswag') {
+      /* لا تُستخدم نتائج مسواگ المحفوظة وحدها كمصدر metadata — قد تكون خاطئة */
+    } else {
+      return finish(normalizeBarcodeMeta({
+        ean: digits,
+        brand: manual.manufacturer || '',
+        title: manual.name || '',
+        shade: manual.shadeName || '',
+        source: 'barcode-lookup',
+      }));
+    }
   }
 
   return finish(null);

@@ -86,6 +86,17 @@ function createAdapter(storeId, fetchProduct) {
   };
 }
 
+async function withShadeEnrichment(detail, product, { barcodeHint = '', light = false } = {}) {
+  const legacyShades = detail?.shades || [];
+  if (light || !legacyShades.length) return product;
+  const enriched = await enrichShadesForImport(detail, {
+    maxLookups: legacyShades.length,
+    barcodeHint,
+    timeoutMs: 45_000,
+  });
+  return fromLegacyProduct({ ...detail, shades: enriched });
+}
+
 export const ADAPTERS = {
   niceone: createAdapter('niceone', async (id, { barcodeHint = '', light = false } = {}) => {
     const { normalizeProductDetail, extractBarcode } = await import('../api.js');
@@ -103,12 +114,16 @@ export const ADAPTERS = {
     return fromLegacyProduct(normalized);
   }),
 
-  elryan: createAdapter('elryan', async (id) => {
+  elryan: createAdapter('elryan', async (id, { barcodeHint = '', light = false } = {}) => {
     const raw = await fetchProductByIdBilingual(id);
-    return raw?.id ? fromLegacyProduct(raw) : null;
+    if (!raw?.id) return null;
+    let product = fromLegacyProduct(raw);
+    const hint = String(barcodeHint || '').replace(/\D/g, '');
+    if (hint && !product.barcode) product.barcode = hint;
+    return withShadeEnrichment(raw, product, { barcodeHint: hint, light });
   }),
 
-  miraaya: createAdapter('miraaya', async (id, { barcodeHint = '' } = {}) => {
+  miraaya: createAdapter('miraaya', async (id, { barcodeHint = '', light = false } = {}) => {
     const key = String(id || '').trim();
     let raw = null;
     if (barcodeHint) raw = await resolveProductByBarcode(barcodeHint).catch(() => null);
@@ -117,7 +132,10 @@ export const ADAPTERS = {
     if (!raw) raw = await fetchProductBySku(key);
     if (!raw) raw = await resolveProductByBarcode(key).catch(() => null);
     if (!raw?.id && !raw?.sku) return null;
-    return fromLegacyProduct(normalizeMiraayaDetail(raw));
+    let product = fromLegacyProduct(normalizeMiraayaDetail(raw));
+    const hint = String(barcodeHint || '').replace(/\D/g, '');
+    if (hint && !product.barcode) product.barcode = hint;
+    return withShadeEnrichment(normalizeMiraayaDetail(raw), product, { barcodeHint: hint, light });
   }),
 
   faces: createAdapter('faces', async (id, { barcodeHint = '', light = false } = {}) => {
@@ -157,36 +175,40 @@ export const ADAPTERS = {
     return product;
   }),
 
-  orisdi: createAdapter('orisdi', async (id, { barcodeHint = '' } = {}) => {
+  orisdi: createAdapter('orisdi', async (id, { barcodeHint = '', light = false } = {}) => {
     const raw = await fetchOrisdiDetail(id, { barcode: barcodeHint });
     if (!raw?.id) return null;
-    const product = fromLegacyProduct(raw);
-    if (barcodeHint && !product.barcode) product.barcode = barcodeHint;
-    return product;
+    let product = fromLegacyProduct(raw);
+    const hint = String(barcodeHint || '').replace(/\D/g, '');
+    if (hint && !product.barcode) product.barcode = hint;
+    return withShadeEnrichment(raw, product, { barcodeHint: hint, light });
   }),
 
-  beautyway: createAdapter('beautyway', async (id, { barcodeHint = '' } = {}) => {
+  beautyway: createAdapter('beautyway', async (id, { barcodeHint = '', light = false } = {}) => {
     const raw = await fetchBeautywayDetail(id, { slug: '' });
     if (!raw?.id) return null;
-    const product = fromLegacyProduct(raw);
-    if (barcodeHint && !product.barcode) product.barcode = barcodeHint;
-    return product;
+    let product = fromLegacyProduct(raw);
+    const hint = String(barcodeHint || '').replace(/\D/g, '');
+    if (hint && !product.barcode) product.barcode = hint;
+    return withShadeEnrichment(raw, product, { barcodeHint: hint, light });
   }),
 
-  najd: createAdapter('najd', async (id, { barcodeHint = '' } = {}) => {
+  najd: createAdapter('najd', async (id, { barcodeHint = '', light = false } = {}) => {
     const raw = await fetchNajdDetail(id);
     if (!raw?.id) return null;
-    const product = fromLegacyProduct(raw);
-    if (barcodeHint && !product.barcode) product.barcode = barcodeHint;
-    return product;
+    let product = fromLegacyProduct(raw);
+    const hint = String(barcodeHint || '').replace(/\D/g, '');
+    if (hint && !product.barcode) product.barcode = hint;
+    return withShadeEnrichment(raw, product, { barcodeHint: hint, light });
   }),
 
-  vaneersa: createAdapter('vaneersa', async (id, { barcodeHint = '' } = {}) => {
+  vaneersa: createAdapter('vaneersa', async (id, { barcodeHint = '', light = false } = {}) => {
     const raw = await fetchVaneersaDetail(id);
     if (!raw?.id) return null;
-    const product = fromLegacyProduct(raw);
-    if (barcodeHint && !product.barcode) product.barcode = barcodeHint;
-    return product;
+    let product = fromLegacyProduct(raw);
+    const hint = String(barcodeHint || '').replace(/\D/g, '');
+    if (hint && !product.barcode) product.barcode = hint;
+    return withShadeEnrichment(raw, product, { barcodeHint: hint, light });
   }),
 };
 

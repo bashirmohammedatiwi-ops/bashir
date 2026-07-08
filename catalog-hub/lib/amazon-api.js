@@ -46,12 +46,46 @@ function publicPath(p) {
   return HUB_PREFIX ? `${HUB_PREFIX}${path}` : path;
 }
 
-export function proxyAmazonImage(url = '') {
+const AMAZON_THUMB_PX = 500;
+const AMAZON_GALLERY_PX = 1000;
+
+/** يوحّد حجم صور أمازون CDN — يمنع hiRes الضخمة التي تظهر مقصوصة/مكبّرة في الواجهة */
+export function normalizeAmazonImageSize(url = '', maxSize = AMAZON_THUMB_PX) {
+  const u = String(url || '').trim();
+  if (!u) return '';
+  if (
+    !u.includes('media-amazon.com')
+    && !u.includes('images-amazon.com')
+    && !u.includes('ssl-images-amazon.com')
+  ) {
+    return u;
+  }
+
+  const size = Math.max(40, Math.min(Number(maxSize) || AMAZON_THUMB_PX, 1500));
+  const token = `._AC_SL${size}_.`;
+
+  const withToken = u.replace(
+    /(\/images\/I\/[A-Za-z0-9+\-]+)(?:\._[A-Za-z0-9_,]+)?\.(jpe?g|png|webp)(\?.*)?$/i,
+    `$1${token}$2$3`,
+  );
+  if (withToken !== u) return withToken;
+
+  return u.replace(/\.(jpe?g|png|webp)(\?.*)?$/i, `${token}$1$2`);
+}
+
+export function proxyAmazonImage(url = '', { maxSize = AMAZON_THUMB_PX } = {}) {
   const u = String(url || '').trim();
   if (!u) return '';
   if (u.startsWith('/api/amazon/img')) return u;
-  if (!u.includes('media-amazon.com') && !u.includes('images-amazon.com')) return u;
-  return publicPath(`/api/amazon/img?u=${encodeURIComponent(u)}`);
+  if (
+    !u.includes('media-amazon.com')
+    && !u.includes('images-amazon.com')
+    && !u.includes('ssl-images-amazon.com')
+  ) {
+    return u;
+  }
+  const sized = normalizeAmazonImageSize(u, maxSize);
+  return publicPath(`/api/amazon/img?u=${encodeURIComponent(sized)}`);
 }
 
 function acceptLang(locale = 'en') {
@@ -139,14 +173,25 @@ export function parseSearchResults(html) {
     if (!name) continue;
     const thumb =
       block.match(/class="s-image"[^>]*src="([^"]+)"/)?.[1] ||
-      block.match(/src="(https:\/\/m\.media-amazon\.com\/images\/[^"]+)"/)?.[1];
+      block.match(/class="s-image"[^>]*data-src="([^"]+)"/)?.[1] ||
+      block.match(/data-a-dynamic-image[^>]*src="([^"]+)"/)?.[1] ||
+      block.match(/srcset="[^"]*(https:\/\/m\.media-amazon\.com\/images\/I\/[^"]+)"/)?.[1] ||
+      block.match(/src="(https:\/\/m\.media-amazon\.com\/images\/[^"]+)"/)?.[1] ||
+      block.match(/src="(https:\/\/[^"]*images-amazon\.com\/[^"]+)"/)?.[1];
     const price =
       block.match(/class="a-offscreen">\$([^<]+)</)?.[1]?.trim() ||
       block.match(/class="a-offscreen">([^<]{1,20})<\/span>/)?.[1]?.trim() ||
       '';
     const rating = block.match(/a-icon-alt">([0-9.]+) out of/)?.[1];
     const reviews = block.match(/a-size-base s-underline-text">\(?([0-9,.Kk]+)\)?</)?.[1];
-    products.push({ asin, name, thumb, price, rating, reviews });
+    products.push({
+      asin,
+      name,
+      thumb: proxyAmazonImage(thumb),
+      price,
+      rating,
+      reviews,
+    });
   }
   return products;
 }
@@ -226,9 +271,9 @@ function parseVariationImageMap(html = '') {
   return map;
 }
 
-/** ترقية رابط صورة السواتش الصغير إلى نسخة أكبر مناسبة للعرض */
+/** ترقية رابط صورة السواتش الصغير إلى حجم عرض مناسب */
 function upscaleAmazonImage(url = '') {
-  return String(url || '').replace(/\._[A-Z0-9_,]+_\.(jpg|png|webp)/i, '._AC_SL500_.$1');
+  return normalizeAmazonImageSize(url, AMAZON_THUMB_PX);
 }
 
 function parseAmazonVariations(htmlAr, htmlEn) {
@@ -303,7 +348,7 @@ function parseProductDetail(html, asin) {
     html.match(/id="landingImage"[^>]*data-old-hires="([^"]+)"/)?.[1] ||
     html.match(/id="landingImage"[^>]*src="([^"]+)"/)?.[1];
   const landing = landingMatch || '';
-  const thumb = hiRes || large || landing || '';
+  const thumb = large || landing || hiRes || '';
   const descHtml = html.match(/id="productDescription"[^>]*>([\s\S]*?)<\/div>/i)?.[1] || '';
   let desc = descHtml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   const bullets = parseFeatureBullets(html);
@@ -316,8 +361,8 @@ function parseProductDetail(html, asin) {
   const priceFrac = html.match(/class="a-price-fraction">([^<]+)/)?.[1];
   const price = priceWhole ? `${priceWhole}${priceFrac ? `.${priceFrac}` : ''}` : '';
   const barcode = parseAmazonBarcodeFromHtml(html);
-  const images = [...new Set([...html.matchAll(/"hiRes":"(https:\/\/[^"]+)"/g)].map((x) => x[1]))];
-  const finalThumb = hiRes || large || landing || images[0] || '';
+  const images = [...new Set([...html.matchAll(/"(?:hiRes|large)":"(https:\/\/[^"]+)"/g)].map((x) => x[1]))];
+  const finalThumb = thumb || images[0] || '';
   if (!images.length && finalThumb) images.push(finalThumb);
   return {
     asin,
@@ -386,9 +431,11 @@ function productCompletenessScore(detail = {}) {
 
 function buildDetailFromParsed(asin, ar, en, listing = {}, htmlAr = '', htmlEn = '') {
   const { brandAr, brandEn } = resolveBrands(ar, en);
-  const images = [...new Set([...(ar.images || []), ...(en.images || [])])].map(proxyAmazonImage).filter(Boolean);
-  const listThumb = listing.thumb ? proxyAmazonImage(listing.thumb) : '';
-  const thumb = proxyAmazonImage(ar.thumb || en.thumb || listThumb || images[0] || '');
+  const images = [...new Set([...(ar.images || []), ...(en.images || [])])]
+    .map((u) => proxyAmazonImage(u, { maxSize: AMAZON_GALLERY_PX }))
+    .filter(Boolean);
+  const listThumb = listing.thumb ? proxyAmazonImage(listing.thumb, { maxSize: AMAZON_THUMB_PX }) : '';
+  const thumb = proxyAmazonImage(ar.thumb || en.thumb || listThumb || images[0] || '', { maxSize: AMAZON_THUMB_PX });
   if (listThumb && !images.includes(listThumb)) images.unshift(listThumb);
   const shades = parseAmazonVariations(htmlAr, htmlEn);
   return {
@@ -421,7 +468,7 @@ export function normalizeProductSummary(raw, meta = {}) {
   const asin = raw.asin || raw.id;
   const nameAr = raw.nameAr || meta.nameAr || raw.name || '';
   const nameEn = raw.nameEn || meta.nameEn || raw.name || '';
-  const thumb = proxyAmazonImage(raw.thumb || raw.images?.[0] || '');
+  const thumb = proxyAmazonImage(raw.thumb || raw.images?.[0] || '', { maxSize: AMAZON_THUMB_PX });
   return {
     id: asin,
     asin,
@@ -702,7 +749,7 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
     listingByAsin.set(p.asin, {
       nameEn: p.name,
       nameAr: ar?.name || p.name,
-      thumb: p.thumb || ar?.thumb,
+      thumb: proxyAmazonImage(p.thumb || ar?.thumb),
       price: p.price || ar?.price,
     });
   }
@@ -779,7 +826,7 @@ export async function enrichAmazonShadeBarcodes(product, {
 
   const run = async () => {
     if (light) return shades;
-    await enrichAmazonShadeAsinsParallel(shades, 4);
+    await enrichAmazonShadeAsinsParallel(shades, 6);
     return enrichShadesForImport(
       { ...product, shades },
       {

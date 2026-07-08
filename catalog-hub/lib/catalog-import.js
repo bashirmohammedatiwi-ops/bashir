@@ -124,13 +124,13 @@ export async function searchImportByBarcodeStream(rawBarcode, onEvent, { stores 
   return importPayloadFromSearch(lastPayload || { barcode: null, results: [], byStore: {}, errors: [] });
 }
 
-export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barcode = '', light = false } = {}) {
+export async function fetchImportProduct(store, sourceId, { hubOrigin = '', barcode = '', light = false, enrichShades = true } = {}) {
   const id = String(sourceId || '').trim();
   if (!id || !store) return { error: 'المتجر ومعرّف المنتج مطلوبان' };
 
   const product = await fetchStoreProduct(store, id, {
     barcodeHint: barcode,
-    light,
+    light: light || !enrichShades,
   });
 
   if (!product) return { error: 'لم يُعثر على المنتج في الكتالوج' };
