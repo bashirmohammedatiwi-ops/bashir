@@ -71,6 +71,17 @@ ensure_api_ready() {
   return 1
 }
 
+ensure_catalog_hub_ready() {
+  local i
+  for i in $(seq 1 20); do
+    if $COMPOSE exec -T catalog-hub wget -qO- http://127.0.0.1:10000/api/health 2>/dev/null | grep -q '"ok":true'; then
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
+
 echo "==> Alhayaa full update"
 echo "    Domain: ${DOMAIN:-localhost}"
 
@@ -80,8 +91,12 @@ chmod +x scripts/*.sh
 
 render_nginx
 
-echo "==> Rebuild API..."
-$COMPOSE up -d --build api postgres redis
+echo "==> Rebuild API + Catalog Hub..."
+$COMPOSE up -d --build api catalog-hub postgres redis
+
+if ! ensure_catalog_hub_ready; then
+  echo "WARN: catalog-hub not healthy yet — check: docker compose -f docker-compose.prod.yml logs catalog-hub --tail=50"
+fi
 
 echo "==> Apply database migrations..."
 if ! $COMPOSE exec -T api npx prisma migrate deploy; then
@@ -117,5 +132,6 @@ chmod +x scripts/docker-cleanup.sh
 
 echo ""
 echo "Update complete."
-echo "  Admin: http://${DOMAIN:-localhost}/"
-echo "  API:   http://${DOMAIN:-localhost}/api/v1/health"
+echo "  Admin:   http://${DOMAIN:-localhost}/"
+echo "  API:     http://${DOMAIN:-localhost}/api/v1/health"
+echo "  Catalog: http://${DOMAIN:-localhost}/catalog-hub/api/health"
