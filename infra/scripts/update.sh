@@ -52,12 +52,29 @@ sync_repo() {
   echo "==> Pull latest code..."
   git -C "$REPO_ROOT" fetch origin main
 
-  if ! git -C "$REPO_ROOT" diff --quiet -- infra/scripts infra/nginx 2>/dev/null; then
-    echo "    Resetting local infra script changes to match GitHub..."
-    git -C "$REPO_ROOT" checkout -- infra/scripts infra/nginx 2>/dev/null || true
+  # فرض تطابق سكربتات infra مع GitHub (يحل تعارض pull على VPS)
+  if ! git -C "$REPO_ROOT" diff --quiet HEAD origin/main -- infra/scripts infra/nginx 2>/dev/null \
+    || ! git -C "$REPO_ROOT" diff --quiet -- infra/scripts infra/nginx 2>/dev/null; then
+    echo "    Resetting infra/scripts + infra/nginx to origin/main..."
+    git -C "$REPO_ROOT" checkout origin/main -- infra/scripts infra/nginx 2>/dev/null || true
   fi
 
-  git -C "$REPO_ROOT" pull --ff-only origin main
+  if ! git -C "$REPO_ROOT" pull --ff-only origin main; then
+    echo "    Pull blocked — hard reset infra tracking files and retry..."
+    git -C "$REPO_ROOT" checkout origin/main -- infra/scripts infra/nginx 2>/dev/null || true
+    git -C "$REPO_ROOT" pull --ff-only origin main
+  fi
+}
+
+ensure_deploy_scripts() {
+  if [[ ! -f "$ROOT/scripts/sync-catalog-hub-data.sh" ]]; then
+    echo "==> Creating missing sync-catalog-hub-data.sh (v2 no-op)..."
+    cat > "$ROOT/scripts/sync-catalog-hub-data.sh" << 'EOF'
+#!/usr/bin/env bash
+echo "==> catalog-hub v2: no seed data sync required (skipped)"
+EOF
+    chmod +x "$ROOT/scripts/sync-catalog-hub-data.sh"
+  fi
 }
 
 ensure_api_ready() {
@@ -86,6 +103,8 @@ echo "==> Alhayaa full update"
 echo "    Domain: ${DOMAIN:-localhost}"
 
 sync_repo
+
+ensure_deploy_scripts
 
 chmod +x scripts/*.sh
 
