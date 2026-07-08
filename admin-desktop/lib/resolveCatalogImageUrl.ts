@@ -1,4 +1,4 @@
-import { CATALOG_HUB_URL } from "./config";
+import { getCatalogHubUrl } from "./config";
 
 /** يحوّل روابط صور الكتالوج لعرضها في لوحة التحكم */
 export function resolveCatalogImageUrl(url: string): string {
@@ -6,7 +6,7 @@ export function resolveCatalogImageUrl(url: string): string {
   if (!u) return "";
   if (u.startsWith("http://") || u.startsWith("https://")) return u;
 
-  const hub = CATALOG_HUB_URL.replace(/\/$/, "");
+  const hub = getCatalogHubUrl().replace(/\/$/, "");
   if (u.startsWith("/catalog-hub/")) {
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : new URL(hub).origin;

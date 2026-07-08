@@ -52,7 +52,7 @@ function mapL3Node(doc, l2Alias) {
 
 /** شجرة كاملة — كل أقسام miswag.com (12 قسم رئيسي + L2 + L3) */
 export async function fetchCategoryTree() {
-  const cached = cacheGet('miswag:tree', TREE_TTL);
+  const cached = cacheGet('miswag:tree:v2', TREE_TTL);
   if (cached) return cached;
 
   const data = await miswagFetch('/content/v1/l1_categories/tree');
@@ -88,9 +88,9 @@ export async function fetchCategoryTree() {
           q: '*',
           query_by: 'title_AR',
           filter_by: `l1_division_alias:=\`${l1.id}\` && l2_division_alias:=\`${l2.alias}\``,
-          per_page: 1,
+          per_page: 80,
           group_by: 'l3_division_alias',
-          group_limit: 80,
+          group_limit: 1,
           include_fields: 'l2_division_ar,l3_division_alias,l3_division_ar,l3_division_en',
         })),
       );
@@ -147,7 +147,7 @@ export async function fetchCategoryTree() {
   }
 
   const out = { tree, leaves };
-  cacheSet('miswag:tree', out);
+  cacheSet('miswag:tree:v2', out);
   return out;
 }
 
@@ -206,8 +206,15 @@ export async function listCategoryProducts(categoryAlias, { page = 1, limit = 30
   };
 }
 
-export async function searchProducts(query, { page = 1, limit = 30 } = {}) {
-  const { hits, found } = await typesenseSearch(query, { page, perPage: Math.min(limit, 60) });
+export async function searchProducts(query, { page = 1, limit = 30, categoryId = '' } = {}) {
+  let filterBy = '';
+  if (categoryId) filterBy = buildCategoryFilter(categoryId);
+  const { hits, found } = await typesenseSearch(query, {
+    page,
+    perPage: Math.min(limit, 60),
+    filterBy,
+    strict: false,
+  });
   return {
     items: hits.map((h) => mapTypesenseHit(h.document || h)),
     page,

@@ -176,10 +176,11 @@ export async function typesenseSearch(query, {
   const search = { q, per_page: perPage, page, enable_overrides: true };
   if (q === '*') {
     search.query_by = 'title_AR';
-  } else if (cfg.preset && !strict) {
+  } else if (cfg.preset && !strict && !filterBy) {
     search.preset = cfg.preset;
   } else {
-    search.query_by = 'title_AR,title_EN,brand,keywords';
+    search.query_by = 'title_AR,title_EN,brand,keywords,barcode';
+    search.num_typos = 2;
     if (strict) {
       search.num_typos = 1;
       search.drop_tokens_threshold = 0;

@@ -74,15 +74,16 @@ export async function handleStoreApi(req, res, url) {
     if (!query.trim()) return sendJson(res, 400, { error: 'q required' });
     const page = Number(q.page) || 1;
     const limit = Math.min(Number(q.limit) || 30, 60);
+    const categoryId = q.category || q.categoryId || '';
     try {
-      const data = await adapter.searchProducts(query, { page, limit });
+      const data = await adapter.searchProducts(query, { page, limit, categoryId });
       let products = data.items;
       const sort = q.sort || 'default';
       if (sort !== 'default' && adapter.sortProductsClient) {
         products = adapter.sortProductsClient(products, sort);
       }
       return sendJson(res, 200, {
-        meta: { query, page, limit },
+        meta: { query, page, limit, categoryId: categoryId || undefined },
         products,
         page: data.page,
         limit: data.pageSize,

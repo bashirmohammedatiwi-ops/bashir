@@ -27,7 +27,7 @@ import type { DataNode } from "antd/es/tree";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { CatalogOptionCard } from "@/components/catalog-import/CatalogOptionCard";
-import { CATALOG_HUB_URL } from "@/lib/config";
+import { getCatalogHubUrl } from "@/lib/config";
 import { matchCategoryFromHints } from "@/lib/catalogCategoryMatch";
 import {
   catalogOptionKey,
@@ -81,13 +81,28 @@ function toTreeData(nodes: CatalogCategoryNode[] = []): DataNode[] {
       <span>
         {n.name}
         {n.productCount != null && n.productCount > 0 ? (
-          <Tag style={{ marginInlineStart: 6 }}>{n.productCount}</Tag>
+          <Tag style={{ marginInlineStart: 6 }}>{n.productCount.toLocaleString("ar-IQ")}</Tag>
         ) : null}
       </span>
     ),
     isLeaf: n.isLeaf,
     children: n.children?.length ? toTreeData(n.children) : undefined,
-  }));
+    // بيانات خام للاستخدام في onSelect
+    name: n.name,
+    path: n.path,
+  } as DataNode & { name?: string; path?: string }));
+}
+
+function findCategoryLabel(tree: CatalogCategoryNode[], id: string, prefix = ""): string {
+  for (const node of tree) {
+    const path = prefix ? `${prefix} › ${node.name}` : node.name;
+    if (node.id === id) return path;
+    if (node.children?.length) {
+      const hit = findCategoryLabel(node.children, id, path);
+      if (hit) return hit;
+    }
+  }
+  return id;
 }
 
 function listProductToOption(p: CatalogListProduct, store: CatalogStore): CatalogImportOption {
@@ -114,6 +129,7 @@ export default function CatalogImportPage() {
   const [categoryPath, setCategoryPath] = useState("");
   const [products, setProducts] = useState<CatalogListProduct[]>([]);
   const [productPage, setProductPage] = useState(1);
+  const [productTotal, setProductTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [treeLoading, setTreeLoading] = useState(false);
@@ -189,6 +205,7 @@ export default function CatalogImportPage() {
         const data = await listCategoryProducts(activeStore, catId, page);
         setProducts((prev) => (append ? [...prev, ...data.products] : data.products));
         setProductPage(data.page);
+        setProductTotal(data.total || 0);
         setHasMore(data.hasMore);
       } catch (err) {
         message.error(errorMessage(err, "فشل تحميل المنتجات"));
@@ -199,17 +216,27 @@ export default function CatalogImportPage() {
     [activeStore],
   );
 
+  // تحميل قسم الجمال والعناية تلقائياً عند فتح الصفحة
+  useEffect(() => {
+    if (!tree.length || selectedCategory) return;
+    const beauty = tree.find((n) => n.id === "beauty");
+    if (!beauty) return;
+    setSelectedCategory("beauty");
+    setCategoryPath(beauty.name);
+    loadCategoryProducts("beauty", 1, false);
+  }, [tree, selectedCategory, loadCategoryProducts]);
+
   const onSelectCategory = useCallback(
-    (keys: React.Key[], info: { node: DataNode }) => {
+    (keys: React.Key[]) => {
       const id = String(keys[0] || "");
       if (!id) return;
       setSelectedCategory(id);
-      setCategoryPath(String(info.node.title || id));
+      setCategoryPath(findCategoryLabel(tree, id));
       setStep(0);
       setOptions([]);
       loadCategoryProducts(id, 1, false);
     },
-    [loadCategoryProducts],
+    [loadCategoryProducts, tree],
   );
 
   const runTextSearch = useCallback(async () => {
@@ -218,9 +245,10 @@ export default function CatalogImportPage() {
     setSearching(true);
     setOptions([]);
     try {
-      const data = await searchCatalogProducts(activeStore, q, 1, 30);
+      const data = await searchCatalogProducts(activeStore, q, 1, 30, selectedCategory || "");
       const opts = data.products.map((p) => listProductToOption(p, storeMeta));
       setOptions(opts);
+      setProducts([]);
       if (!opts.length) message.info("لا توجد نتائج");
       else setStep(1);
     } catch (err) {
@@ -228,7 +256,7 @@ export default function CatalogImportPage() {
     } finally {
       setSearching(false);
     }
-  }, [searchText, activeStore, storeMeta]);
+  }, [searchText, activeStore, storeMeta, selectedCategory]);
 
   const runBarcodeSearch = useCallback(async () => {
     const digits = barcode.replace(/\D/g, "");
@@ -411,13 +439,13 @@ export default function CatalogImportPage() {
     [products, storeMeta],
   );
 
-  const displayOptions = options.length ? options : step >= 1 ? [] : browseOptions;
+  const displayOptions = options.length > 0 ? options : browseOptions;
 
   return (
     <div className="catalog-import-page">
       <PageHeader
         title="الاستيراد من الكتالوج"
-        subtitle={`تصفّح واستورد من المتاجر الخارجية — ${CATALOG_HUB_URL}`}
+        subtitle={`تصفّح واستورد من المتاجر الخارجية — ${getCatalogHubUrl()}`}
       />
 
       <Steps
@@ -455,6 +483,8 @@ export default function CatalogImportPage() {
               <Tree
                 showLine
                 selectable
+                defaultExpandedKeys={["beauty"]}
+                selectedKeys={selectedCategory ? [selectedCategory] : []}
                 onSelect={onSelectCategory}
                 treeData={toTreeData(tree)}
                 height={420}
@@ -496,11 +526,20 @@ export default function CatalogImportPage() {
               type="info"
               showIcon
               style={{ marginBottom: 12 }}
-              message={`القسم: ${categoryPath}`}
+              message={`القسم: ${categoryPath}${productTotal ? ` — ${productTotal.toLocaleString("ar-IQ")} منتج` : ""}`}
             />
           )}
 
           <div className="catalog-import-results">
+            {displayOptions.length > 0 && (
+              <div className="catalog-import-results-head">
+                <h4>
+                  {options.length > 0
+                    ? `نتائج البحث (${displayOptions.length})`
+                    : `منتجات القسم (${displayOptions.length}${productTotal ? ` / ${productTotal.toLocaleString("ar-IQ")}` : ""})`}
+                </h4>
+              </div>
+            )}
             {loadingProducts && !displayOptions.length ? (
               <div className="catalog-import-center"><Spin size="large" /></div>
             ) : displayOptions.length ? (

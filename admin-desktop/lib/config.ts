@@ -7,9 +7,21 @@ export const VPS_ORIGIN = API_BASE.replace(/\/api\/v1\/?$/, "");
 export const MEDIA_BASE =
   process.env.NEXT_PUBLIC_MEDIA_BASE?.replace(/\/$/, "") ?? VPS_ORIGIN;
 
-/** catalog-hub — نفس أصل لوحة الإدارة مع بادئة /catalog-hub */
-export const CATALOG_HUB_URL =
-  process.env.NEXT_PUBLIC_CATALOG_HUB_URL?.replace(/\/$/, "") ??
-  `${VPS_ORIGIN}/catalog-hub`;
+/** عنوان catalog-hub — يُحسب وقت التشغيل ليتوافق مع نفس أصل لوحة الإدارة */
+export function getCatalogHubUrl(): string {
+  if (typeof window !== "undefined") {
+    const origin = window.location.origin;
+    if (origin && !origin.startsWith("file:")) {
+      return `${origin}/catalog-hub`;
+    }
+  }
+  return (
+    process.env.NEXT_PUBLIC_CATALOG_HUB_URL?.replace(/\/$/, "") ??
+    `${VPS_ORIGIN}/catalog-hub`
+  );
+}
 
-export const CATALOG_HUB_ORIGIN = CATALOG_HUB_URL.replace(/\/catalog-hub\/?$/, "");
+/** @deprecated استخدم getCatalogHubUrl() */
+export const CATALOG_HUB_URL = getCatalogHubUrl();
+
+export const CATALOG_HUB_ORIGIN = getCatalogHubUrl().replace(/\/catalog-hub\/?$/, "");

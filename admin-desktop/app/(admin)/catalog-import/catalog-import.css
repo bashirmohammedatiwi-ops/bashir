@@ -124,7 +124,8 @@
   color: var(--ci-accent);
 }
 
-.catalog-import-rows {
+.catalog-import-rows,
+.catalog-import-options {
   display: flex;
   flex-direction: column;
   gap: 0;

@@ -1,4 +1,4 @@
-import { CATALOG_HUB_URL } from "./config";
+import { getCatalogHubUrl } from "./config";
 
 export type CatalogStore = {
   id: string;
@@ -84,7 +84,7 @@ export function catalogOptionKey(opt: Pick<CatalogImportOption, "store" | "sourc
 }
 
 async function catalogFetch<T>(path: string, timeoutMs = 60_000): Promise<T> {
-  const url = `${CATALOG_HUB_URL}${path}`;
+  const url = `${getCatalogHubUrl()}${path}`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -187,12 +187,19 @@ export async function listCategoryProducts(
   }>(`/api/catalog/${encodeURIComponent(storeId)}/categories/${encodeURIComponent(categoryId)}/products?${params}`);
 }
 
-export async function searchCatalogProducts(storeId: string, query: string, page = 1, limit = 30) {
+export async function searchCatalogProducts(
+  storeId: string,
+  query: string,
+  page = 1,
+  limit = 30,
+  categoryId = "",
+) {
   const params = new URLSearchParams({
     q: query,
     page: String(page),
     limit: String(limit),
   });
+  if (categoryId) params.set("category", categoryId);
   return catalogFetch<{
     products: CatalogListProduct[];
     hasMore: boolean;
