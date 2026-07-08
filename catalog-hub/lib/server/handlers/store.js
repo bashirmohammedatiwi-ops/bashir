@@ -214,11 +214,12 @@ export async function handleStoreApi(req, res, url) {
     }
   }
 
-  const productMatch = url.pathname.match(/^\/api\/catalog\/([^/]+)\/products\/(\d+)$/);
+  // يدعم أرقام مسواگ/نجد و ASIN أمازون (مثل B0XXXX)
+  const productMatch = url.pathname.match(/^\/api\/catalog\/([^/]+)\/products\/([A-Za-z0-9_-]+)$/);
   if (productMatch) {
     const adapter = storeOr404(res, productMatch[1]);
     if (!adapter) return;
-    const id = productMatch[2];
+    const id = decodeURIComponent(productMatch[2]);
     const light = q.light === '1' || q.light === 'true';
     try {
       const raw = await adapter.fetchProductDetail(id, { light });
@@ -236,12 +237,11 @@ export async function handleStoreApi(req, res, url) {
 export async function handleImportApi(req, res, url) {
   const q = parseQuery(url);
 
-  const productMatch = url.pathname.match(/^\/api\/import\/([^/]+)\/products\/(\d+)$/);
+  const productMatch = url.pathname.match(/^\/api\/import\/([^/]+)\/products\/([A-Za-z0-9_-]+)$/);
   if (productMatch) {
     const adapter = getStoreAdapter(productMatch[1]);
     if (!adapter) return sendJson(res, 404, { error: 'متجر غير معروف' });
-    const id = productMatch[2];
-    const light = q.light === '1' || q.light === 'true';
+    const id = decodeURIComponent(productMatch[2]);
     try {
       const raw = await adapter.fetchProductDetail(id, { light: false });
       if (!raw?.id) return sendJson(res, 404, { error: 'لم يُعثر على المنتج' });

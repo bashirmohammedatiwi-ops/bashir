@@ -14,6 +14,7 @@ export const STORE_COLORS: Record<string, string> = {
   miswag: "#df1c24",
   najdalatheyah: "#511952",
   elryan: "#0b6e4f",
+  amazon: "#ff9900",
 };
 
 const AUTO_COLORS = ["#0958d9", "#08979c", "#d46b08", "#531dab", "#c41d7f", "#3f6600"];

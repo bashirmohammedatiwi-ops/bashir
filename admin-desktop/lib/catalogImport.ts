@@ -207,10 +207,10 @@ export async function listCategoryProducts(
 
 type StoreSearchStat = { id: string; count: number; error?: string };
 
-/** مهلة لكل متجر — الريان/نجد سريعان، مسواگ أبطأ في الباركود */
+/** مهلة لكل متجر — الريان/نجد/أمازون سريعون، مسواگ أبطأ في الباركود */
 function storeSearchTimeoutMs(storeId: string, kind: "text" | "barcode" = "text") {
   if (storeId === "miswag") return kind === "barcode" ? 35_000 : 20_000;
-  if (storeId === "elryan") return kind === "barcode" ? 8_000 : 8_000;
+  if (storeId === "elryan" || storeId === "amazon") return kind === "barcode" ? 10_000 : 10_000;
   return kind === "barcode" ? 12_000 : 10_000;
 }
 

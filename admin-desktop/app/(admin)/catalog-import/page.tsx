@@ -122,7 +122,7 @@ function listProductToOption(p: CatalogListProduct, store: CatalogStore): Catalo
 
 export default function CatalogImportPage() {
   const [stores, setStores] = useState<CatalogStore[]>([]);
-  const [activeStores, setActiveStores] = useState<string[]>(["miswag", "najdalatheyah", "elryan"]);
+  const [activeStores, setActiveStores] = useState<string[]>(["miswag", "najdalatheyah", "elryan", "amazon"]);
   const [browseStore, setBrowseStore] = useState("miswag");
   const [tree, setTree] = useState<CatalogCategoryNode[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -223,17 +223,30 @@ export default function CatalogImportPage() {
     [browseStore],
   );
 
-  // تحميل أول قسم تلقائياً عند فتح المتجر (الجمال لمسواگ، «جميع المنتجات» أو أول جذر لغيره)
+  // تحميل أول قسم تلقائياً عند فتح المتجر
   useEffect(() => {
     if (!browseStore || !tree.length || selectedCategory) return;
     const preferred =
       browseStore === "miswag"
         ? tree.find((n) => n.id === "beauty") || tree[0]
-        : tree.find((n) => /جميع|all/i.test(n.name)) || tree[0];
+        : browseStore === "amazon"
+          ? tree.find((n) => n.id === "3760911") || tree[0]
+          : tree.find((n) => /جميع|all/i.test(n.name)) || tree[0];
     if (!preferred?.id) return;
     setSelectedCategory(preferred.id);
     setCategoryPath(preferred.name);
-    loadCategoryProducts(preferred.id, 1, false);
+    // أمازون: افتح قسماً فرعياً (مكياج) إن وُجد — أدق من الجذر وحده
+    const startId =
+      browseStore === "amazon" && preferred.children?.[0]?.id
+        ? preferred.children[0].id
+        : preferred.id;
+    const startPath =
+      browseStore === "amazon" && preferred.children?.[0]
+        ? `${preferred.name} › ${preferred.children[0].name}`
+        : preferred.name;
+    setSelectedCategory(startId);
+    setCategoryPath(startPath);
+    loadCategoryProducts(startId, 1, false);
   }, [browseStore, tree, selectedCategory, loadCategoryProducts]);
 
   const onSelectCategory = useCallback(
