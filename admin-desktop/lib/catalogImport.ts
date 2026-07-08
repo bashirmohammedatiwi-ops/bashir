@@ -40,6 +40,7 @@ export type CatalogImportShade = {
   imageUrl?: string;
   swatchUrl?: string;
   sku?: string;
+  miswagId?: string;
   price?: string;
   optionGroup?: string;
 };
@@ -73,7 +74,9 @@ export type CatalogImportOption = {
   brandAr?: string;
   thumb?: string;
   barcode?: string;
+  miswagId?: string;
   shadeCount?: number;
+  shadeName?: string;
   price?: string;
   category?: string;
   matchType?: string;
@@ -81,6 +84,12 @@ export type CatalogImportOption = {
 
 export function catalogOptionKey(opt: Pick<CatalogImportOption, "store" | "sourceId">) {
   return `${opt.store}:${opt.sourceId}`;
+}
+
+/** رقم مسواگ الداخلي — ليس باركود EAN */
+export function isMiswagInternalId(value = "") {
+  const d = String(value || "").replace(/\D/g, "");
+  return /^17\d{8}$/.test(d) || /^\d{9,10}$/.test(d);
 }
 
 async function catalogFetch<T>(path: string, timeoutMs = 60_000): Promise<T> {
@@ -118,6 +127,7 @@ function mapImportProduct(raw: Record<string, unknown>, storeLabel = ""): Catalo
     nameAr: s.nameAr || s.name || "",
     nameEn: s.nameEn || s.name || "",
     barcode: s.barcode || "",
+    miswagId: s.miswagId || s.sku || "",
     colorHex: s.colorHex || "",
     imageUrl: s.imageUrl || "",
     swatchUrl: s.swatchUrl || s.imageUrl || "",
@@ -217,12 +227,13 @@ export async function searchCatalogByBarcode(barcode: string, storeId = "miswag"
   const options: CatalogImportOption[] = (data.results || []).map((r) => ({
     store: String(r.store || storeId),
     storeLabel: String(r.storeLabel || storeId),
-    sourceId: String(r.id || r.sourceId || ""),
+    sourceId: String(r.sourceId || r.id || ""),
     nameAr: String(r.nameAr || r.name || ""),
     nameEn: String(r.nameEn || ""),
     brandAr: String(r.brandAr || r.manufacturer || ""),
     thumb: String(r.thumb || ""),
-    barcode: String(r.barcode || barcode),
+    miswagId: String(r.miswagId || r.barcode || barcode),
+    barcode: String(r.barcode || ""),
     shadeCount: Number(r.shadeCount || 0),
     price: String(r.price || ""),
     category: String(r.category || ""),

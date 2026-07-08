@@ -179,7 +179,7 @@ export async function typesenseSearch(query, {
   } else if (cfg.preset && !strict && !filterBy) {
     search.preset = cfg.preset;
   } else {
-    search.query_by = 'title_AR,title_EN,brand,keywords,barcode';
+    search.query_by = 'title_AR,title_EN,brand,keywords';
     search.num_typos = 2;
     if (strict) {
       search.num_typos = 1;

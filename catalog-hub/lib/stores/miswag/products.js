@@ -9,14 +9,18 @@ import {
   cacheSet,
 } from './client.js';
 
-function extractVariationBarcode(v = {}) {
+function extractEan(v = {}) {
   for (const key of ['barcode', 'ean', 'upc', 'gtin', 'isbn']) {
     const val = String(v?.[key] || '').replace(/\D/g, '');
-    if (/^\d{8,14}$/.test(val)) return val;
+    if (/^\d{8,14}$/.test(val) && !/^17\d{8}$/.test(val)) return val;
   }
-  const sku = String(v?.sku || v?.alias || v?.id || '').replace(/\D/g, '');
-  if (/^\d{8,14}$/.test(sku)) return sku;
   return '';
+}
+
+/** رقم مسواگ للتدرج = معرّف variation.id (ليس باركود EAN) */
+function extractMiswagShadeId(v = {}) {
+  const id = String(v?.id || v?.variation_id || '').replace(/\D/g, '');
+  return id || '';
 }
 
 function parseColorValue(raw = '') {
@@ -33,16 +37,18 @@ function isDefaultTitle(title = '') {
 }
 
 function mapVariation(v, optionGroup = '') {
-  const bc = extractVariationBarcode(v);
+  const miswagId = extractMiswagShadeId(v);
+  const ean = extractEan(v);
   const hex = parseColorValue(v.color || v.hex);
   return {
     name: String(v.title || '').trim(),
     nameAr: String(v.title || '').trim(),
     nameEn: String(v.title || '').trim(),
-    sku: String(v.id || ''),
-    optionId: String(v.id || ''),
-    barcode: bc,
-    ean: bc,
+    sku: miswagId,
+    optionId: miswagId,
+    miswagId,
+    barcode: ean,
+    ean,
     hex,
     image: absImage(v.image),
     price: formatPrice(v.price),
@@ -103,7 +109,8 @@ function buildShadesFromVarInfo(varInfo = {}) {
       name: String(s.title || s.id || '').trim(),
       nameAr: String(s.title || s.id || '').trim(),
       nameEn: String(s.title || s.id || '').trim(),
-      barcode: extractVariationBarcode(s),
+      barcode: extractEan(s),
+      miswagId: extractMiswagShadeId(s) || base.miswagId,
       image: base.image,
       hex: base.hex,
       sku: String(s.id || ''),
@@ -184,13 +191,16 @@ async function enrichShadesFromTypesense(pid, shades = []) {
       byId.get(String(shade.sku || shade.optionId || '')) ||
       (shade.hex ? byColor.get(shade.hex.toLowerCase()) : null);
     if (!hit) return shade;
-    const bc = extractVariationBarcode(hit) || shade.barcode;
+    const ean = extractEan(hit) || shade.barcode;
+    const miswagId = extractMiswagShadeId(hit) || shade.miswagId || shade.sku;
     const hex = parseColorValue(hit.color || hit.hex) || shade.hex;
     return {
       ...shade,
-      barcode: bc,
-      ean: bc,
-      hex,
+      barcode: ean,
+      miswagId,
+      sku: miswagId || shade.sku,
+      optionId: miswagId || shade.optionId,
+      ean,
       name: shade.name && !/^\d+$/.test(shade.name) ? shade.name : String(hit.title || hit.name || shade.name || '').trim(),
       nameAr: shade.nameAr && !/^\d+$/.test(shade.nameAr) ? shade.nameAr : String(hit.title || hit.name || shade.nameAr || '').trim(),
       nameEn: shade.nameEn && !/^\d+$/.test(shade.nameEn) ? shade.nameEn : String(hit.title || hit.name || shade.nameEn || '').trim(),
@@ -287,7 +297,8 @@ export async function fetchProductDetail(id, { light = false } = {}) {
     shades: enrichedShades,
     shadeCount: enrichedShades.length,
     hasOptions: enrichedShades.length > 1 || (varInfo.sizes?.length > 1),
-    barcode: extractVariationBarcode(meta) || enrichedShades.find((s) => s.barcode)?.barcode || '',
+    barcode: extractEan(meta) || enrichedShades.find((s) => s.barcode)?.barcode || '',
+    miswagId: String(meta.product_id || pid),
     productUrl: meta.url || meta.share_link || `https://miswag.com/products/${meta.product_id || pid}`,
     category: String(meta.category || '').trim(),
     inStock: detail.info?.size?.is_available !== false,

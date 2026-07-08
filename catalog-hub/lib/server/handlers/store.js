@@ -1,6 +1,7 @@
 import { sendJson, parseQuery } from '../http.js';
 import { getStoreAdapter } from '../../stores/registry.js';
 import { normalizeProduct, toImportPayload } from '../../core/product.js';
+import { isMiswagInternalId } from '../../stores/miswag/id-lookup.js';
 
 function storeOr404(res, storeId) {
   const adapter = getStoreAdapter(storeId);
@@ -137,14 +138,17 @@ export async function handleImportApi(req, res, url) {
   if (searchMatch) {
     const query = q.q || q.barcode || '';
     const storeId = q.store || 'miswag';
-    if (!query.trim()) return sendJson(res, 400, { error: 'أدخل باركوداً أو نص بحث' });
+    if (!query.trim()) return sendJson(res, 400, { error: 'أدخل نص بحث أو رقم مسواگ' });
     const adapter = getStoreAdapter(storeId);
     if (!adapter) return sendJson(res, 404, { error: 'متجر غير معروف' });
 
     const digits = query.replace(/\D/g, '');
     try {
       let results = [];
-      if (digits.length >= 8 && adapter.searchBarcode) {
+      const useMiswagId = storeId === 'miswag' && isMiswagInternalId(digits);
+      if (useMiswagId && adapter.searchBarcode) {
+        results = await adapter.searchBarcode(digits);
+      } else if (digits.length >= 8 && adapter.searchBarcode && storeId !== 'miswag') {
         results = await adapter.searchBarcode(digits);
       }
       if (!results.length) {
@@ -153,13 +157,33 @@ export async function handleImportApi(req, res, url) {
           store: adapter.id,
           storeLabel: adapter.label,
           id: item.id,
+          sourceId: item.id,
           name: item.nameAr,
           nameAr: item.nameAr,
           nameEn: item.nameEn,
+          brandAr: item.brandAr,
           manufacturer: item.brandAr,
           thumb: item.thumb,
           price: item.price,
           matchType: 'text',
+        }));
+      } else {
+        results = results.map((item) => ({
+          store: adapter.id,
+          storeLabel: adapter.label,
+          id: item.id,
+          sourceId: item.id,
+          name: item.nameAr,
+          nameEn: item.nameEn,
+          brandAr: item.brandAr,
+          manufacturer: item.brandAr,
+          thumb: item.thumb,
+          price: item.price,
+          shadeCount: item.shadeCount,
+          shadeName: item.shadeName,
+          miswagId: item.miswagId || digits,
+          barcode: item.barcode || digits,
+          matchType: item.matchType || 'miswag_id',
         }));
       }
       return sendJson(res, 200, { query, results, stores: [{ id: adapter.id, count: results.length }] });

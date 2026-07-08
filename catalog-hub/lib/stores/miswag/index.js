@@ -1,5 +1,6 @@
 import { fetchCategoryTree, listCategoryProducts, searchProducts, sortProductsClient } from './categories.js';
 import { fetchProductDetail } from './products.js';
+import { searchByMiswagId } from './id-lookup.js';
 
 export const MISWAG_META = {
   id: 'miswag',
@@ -22,22 +23,8 @@ export const miswagAdapter = {
   sortProductsClient,
   fetchProductDetail,
 
-  async searchBarcode(barcode) {
-    const digits = String(barcode || '').replace(/\D/g, '');
-    if (!digits) return [];
-    const { items } = await searchProducts(digits, { page: 1, limit: 10 });
-    const hits = [];
-    for (const item of items) {
-      const detail = await fetchProductDetail(item.id, { light: true }).catch(() => null);
-      if (detail) {
-        hits.push({
-          ...item,
-          ...detail,
-          matchType: 'product',
-          barcode: digits,
-        });
-      }
-    }
-    return hits;
+  /** بحث برقم مسواگ الداخلي (ليس باركود EAN) */
+  async searchBarcode(code) {
+    return searchByMiswagId(code);
   },
 };

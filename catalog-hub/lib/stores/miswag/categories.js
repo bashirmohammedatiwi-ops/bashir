@@ -158,7 +158,7 @@ const SORT_MAP = {
   newest: 'created_at:desc',
 };
 
-function mapTypesenseHit(doc = {}) {
+export function mapTypesenseHit(doc = {}) {
   const { ar, en } = parseTitle({ AR: doc.title_AR, EN: doc.title_EN });
   const id = String(doc.id || doc.product_id || '');
   let shadeCount = 0;

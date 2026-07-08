@@ -34,6 +34,7 @@ import {
   fetchCatalogProduct,
   fetchCatalogStores,
   fetchCategoryTree,
+  isMiswagInternalId,
   listCategoryProducts,
   searchCatalogByBarcode,
   searchCatalogProducts,
@@ -258,9 +259,17 @@ export default function CatalogImportPage() {
     }
   }, [searchText, activeStore, storeMeta, selectedCategory]);
 
-  const runBarcodeSearch = useCallback(async () => {
+  const isMiswag = activeStore === "miswag";
+  const codeLabel = isMiswag ? "رقم مسواگ" : "باركود";
+
+  const runCodeSearch = useCallback(async () => {
     const digits = barcode.replace(/\D/g, "");
-    if (digits.length < 8) {
+    if (isMiswag) {
+      if (!isMiswagInternalId(digits)) {
+        message.warning("أدخل رقم مسواگ (10 أرقام يبدأ بـ 17)");
+        return;
+      }
+    } else if (digits.length < 8) {
       message.warning("أدخل باركوداً صالحاً (8–14 رقم)");
       return;
     }
@@ -269,14 +278,17 @@ export default function CatalogImportPage() {
     try {
       const data = await searchCatalogByBarcode(digits, activeStore);
       setOptions(data.options);
-      if (!data.options.length) message.info("لا توجد نتائج لهذا الباركود");
-      else setStep(1);
+      if (!data.options.length) {
+        message.info(isMiswag ? "لا توجد نتائج لهذا الرقم" : "لا توجد نتائج لهذا الباركود");
+      } else {
+        setStep(1);
+      }
     } catch (err) {
-      message.error(errorMessage(err, "فشل البحث بالباركود"));
+      message.error(errorMessage(err, `فشل البحث ب${codeLabel}`));
     } finally {
       setSearching(false);
     }
-  }, [barcode, activeStore]);
+  }, [barcode, activeStore, isMiswag, codeLabel]);
 
   const loadPreview = useCallback(
     async (opt: CatalogImportOption) => {
@@ -348,8 +360,9 @@ export default function CatalogImportPage() {
         let originalPrice = 0;
         let discountPercent = 0;
         let stock = 0;
-        if (s.barcode) {
-          const inv = await fetchInventoryByBarcode(s.barcode);
+        const shadeBarcode = s.barcode && !isMiswagInternalId(s.barcode) ? s.barcode : "";
+        if (shadeBarcode) {
+          const inv = await fetchInventoryByBarcode(shadeBarcode);
           if (inv) {
             price = inv.price;
             originalPrice = inv.originalPrice;
@@ -361,7 +374,8 @@ export default function CatalogImportPage() {
         shades.push({
           name: String(s.name || s.nameAr || `درجة ${i + 1}`).trim(),
           colorHex,
-          barcode: s.barcode || "",
+          barcode: shadeBarcode || undefined,
+          sku: s.sku || s.miswagId,
           imageId,
           price,
           originalPrice,
@@ -374,7 +388,9 @@ export default function CatalogImportPage() {
       let originalPrice = 0;
       let discountPercent = 0;
       let stock = 0;
-      const mainBc = preview.barcode || selected?.barcode || barcode.replace(/\D/g, "");
+      const mainBc =
+        (preview.barcode && !isMiswagInternalId(preview.barcode) ? preview.barcode : undefined) ||
+        (selected?.barcode && !isMiswagInternalId(selected.barcode) ? selected.barcode : undefined);
       if (mainBc && !shades.length) {
         const inv = await fetchInventoryByBarcode(mainBc);
         if (inv) {
@@ -452,7 +468,7 @@ export default function CatalogImportPage() {
         className="catalog-import-steps"
         current={step}
         items={[
-          { title: "تصفح / بحث", description: "أقسام المتجر أو باركود" },
+          { title: "تصفح / بحث", description: isMiswag ? "أقسام المتجر أو رقم مسواگ" : "أقسام المتجر أو باركود" },
           { title: "اختيار المنتج", description: "معاينة سريعة" },
           { title: "التصنيف والاستيراد", description: "أقسام المتجر + POS" },
         ]}
@@ -464,7 +480,11 @@ export default function CatalogImportPage() {
             <AppstoreOutlined style={{ marginInlineEnd: 6 }} />
             متجر الكتالوج
           </h3>
-          <p>اختر المتجر ثم تصفّح الأقسام أو ابحث بالاسم/الباركود — البنية جاهزة لإضافة متاجر جديدة</p>
+          <p>
+            {isMiswag
+              ? "رقم مسواگ في التطبيق ليس باركود EAN — هو معرّف داخلي للمنتج أو التدرج"
+              : "اختر المتجر ثم تصفّح الأقسام أو ابحث بالاسم/الباركود"}
+          </p>
         </div>
         <Select
           value={activeStore}
@@ -510,13 +530,13 @@ export default function CatalogImportPage() {
             <div className="catalog-import-search-row">
               <Input
                 prefix={<BarcodeOutlined />}
-                placeholder="باركود (8–14 رقم)"
+                placeholder={isMiswag ? "رقم مسواگ (مثال: 1756163650)" : "باركود (8–14 رقم)"}
                 value={barcode}
                 onChange={(e) => setBarcode(e.target.value)}
-                onPressEnter={runBarcodeSearch}
+                onPressEnter={runCodeSearch}
               />
-              <Button icon={<BarcodeOutlined />} loading={searching} onClick={runBarcodeSearch}>
-                باركود
+              <Button icon={<BarcodeOutlined />} loading={searching} onClick={runCodeSearch}>
+                {codeLabel}
               </Button>
             </div>
           </section>
@@ -614,7 +634,12 @@ export default function CatalogImportPage() {
                           )}
                           <div>
                             <div>{s.name || s.nameAr}</div>
-                            {s.barcode && <small>{s.barcode}</small>}
+                            {(s.miswagId || (s.barcode && isMiswagInternalId(s.barcode))) && (
+                              <small>رقم مسواگ: {s.miswagId || s.barcode}</small>
+                            )}
+                            {s.barcode && !isMiswagInternalId(s.barcode) && (
+                              <small>باركود: {s.barcode}</small>
+                            )}
                             {s.colorHex && <small>{s.colorHex}</small>}
                           </div>
                         </div>
