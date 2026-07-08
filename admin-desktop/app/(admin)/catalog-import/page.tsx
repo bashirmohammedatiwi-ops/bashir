@@ -2,32 +2,29 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Alert,
   Button,
-  Card,
-  Col,
+  Drawer,
   Form,
   Input,
-  Row,
   Select,
   Spin,
-  Steps,
   Tag,
   Tree,
-  Typography,
   message,
 } from "antd";
 import {
   AppstoreOutlined,
   BarcodeOutlined,
+  CheckCircleFilled,
   CloudDownloadOutlined,
+  CloseOutlined,
   SearchOutlined,
+  ShopOutlined,
 } from "@ant-design/icons";
 import type { DataNode } from "antd/es/tree";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { CatalogOptionCard } from "@/components/catalog-import/CatalogOptionCard";
-import { getCatalogHubUrl } from "@/lib/config";
+import { CatalogOptionCard, storeColor } from "@/components/catalog-import/CatalogOptionCard";
 import { matchCategoryFromHints } from "@/lib/catalogCategoryMatch";
 import {
   catalogOptionKey,
@@ -524,72 +521,166 @@ export default function CatalogImportPage() {
   );
 
   const displayOptions = options.length > 0 ? options : browseOptions;
+  const isSearchMode = options.length > 0;
+  const drawerOpen = step === 2 || loadingPreview;
+
+  const toggleSearchStore = useCallback((id: string) => {
+    setActiveStores((prev) => {
+      if (prev.includes(id)) {
+        if (prev.length === 1) return prev;
+        const next = prev.filter((x) => x !== id);
+        if (!next.includes(browseStore)) setBrowseStore(next[0]);
+        return next;
+      }
+      return [...prev, id];
+    });
+  }, [browseStore]);
+
+  const closeImportDrawer = useCallback(() => {
+    setStep(displayOptions.length ? 1 : 0);
+    setSelected(null);
+    setPreview(null);
+  }, [displayOptions.length]);
 
   return (
-    <div className="catalog-import-page">
+    <div className="catalog-import-page alhayaa-page">
       <PageHeader
         title="الاستيراد من الكتالوج"
-        subtitle={`تصفّح واستورد من المتاجر الخارجية — ${getCatalogHubUrl()}`}
+        subtitle="ابحث أو تصفّح من مسواگ ونجد والريان، ثم صنّف المنتج واستورده إلى متجرك بخطوة واحدة."
+        extra={
+          <Tag icon={<ShopOutlined />} color="purple">
+            {stores.length || 3} متاجر متصلة
+          </Tag>
+        }
       />
 
-      <Steps
-        className="catalog-import-steps"
-        current={step}
-        items={[
-          { title: "تصفح / بحث", description: includesMiswag ? "متعدد المتاجر · مسواگ/باركود" : "متعدد المتاجر · اسم/باركود" },
-          { title: "اختيار المنتج", description: "معاينة سريعة" },
-          { title: "التصنيف والاستيراد", description: "أقسام المتجر + POS" },
-        ]}
-      />
+      <div className="ci-progress">
+        {[
+          { title: "اكتشف", desc: "بحث أو تصفح الأقسام" },
+          { title: "اختر", desc: "حدد المنتج المناسب" },
+          { title: "استورد", desc: "التصنيف ثم الحفظ" },
+        ].map((item, index) => {
+          const state = step > index ? "is-done" : step === index ? "is-active" : "";
+          return (
+            <div key={item.title} className={`ci-progress-step ${state}`}>
+              <span className="ci-progress-index">
+                {step > index ? <CheckCircleFilled /> : index + 1}
+              </span>
+              <div className="ci-progress-copy">
+                <strong>{item.title}</strong>
+                <span>{item.desc}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-      <section className="catalog-import-toolbar">
-        <div className="catalog-import-toolbar-text">
-          <h3>
-            <AppstoreOutlined style={{ marginInlineEnd: 6 }} />
-            متجر الكتالوج
-          </h3>
-          <p>
-            {activeStores.length > 1
-              ? `البحث يشمل: ${searchStoreLabels}. التصفح من: ${storeMeta.label}`
-              : includesMiswag
-                ? "رقم مسواگ في التطبيق ليس باركود EAN — هو معرّف داخلي للمنتج أو التدرج"
-                : "تصفّح الأقسام أو ابحث بالاسم/الباركود"}
-          </p>
+      <section className="ci-command">
+        <div className="ci-command-top">
+          <div>
+            <h3 className="ci-command-title">مركز البحث والاستيراد</h3>
+            <p className="ci-command-sub">
+              فعّل المتاجر للبحث المتوازي. غيّر متجر التصفح من قائمة الأقسام لعرض شجرته.
+            </p>
+          </div>
+          <div className="ci-store-chips">
+            {stores.map((store) => {
+              const active = activeStores.includes(store.id);
+              const browsing = browseStore === store.id;
+              const color = storeColor(store.id);
+              return (
+                <button
+                  key={store.id}
+                  type="button"
+                  className={`ci-store-chip${active ? " is-active" : ""}${browsing ? " is-browse" : ""}`}
+                  style={active ? { background: color } : { color }}
+                  onClick={() => toggleSearchStore(store.id)}
+                  title={active ? "إزالة من البحث" : "إضافة إلى البحث"}
+                >
+                  <span className="ci-store-dot" style={active ? undefined : { background: color }} />
+                  {store.label}
+                  {browsing ? " · تصفح" : ""}
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-          <Select
-            value={browseStore}
-            onChange={(id) => {
-              const next = String(id || "");
-              if (!next) return;
-              setBrowseStore(next);
-              setActiveStores((prev) => (prev.includes(next) ? prev : [...prev, next]));
-            }}
-            style={{ minWidth: 200 }}
-            placeholder="متجر التصفح"
-            options={stores.map((s) => ({ value: s.id, label: `تصفح: ${s.label}` }))}
-          />
-          <Select
-            mode="multiple"
-            value={activeStores}
-            onChange={(ids) => {
-              const next = (ids as string[]).filter(Boolean);
-              const resolved = next.length ? next : [browseStore || "miswag"];
-              setActiveStores(resolved);
-              if (!resolved.includes(browseStore)) setBrowseStore(resolved[0]);
-            }}
-            style={{ minWidth: 260 }}
-            placeholder="متاجر البحث"
-            options={stores.map((s) => ({ value: s.id, label: s.label }))}
-          />
+
+        <div className="ci-search-grid">
+          <div className="ci-search-field">
+            <SearchOutlined />
+            <Input
+              placeholder="ابحث بالاسم أو الماركة..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onPressEnter={runTextSearch}
+              allowClear
+            />
+          </div>
+          <div className="ci-search-field">
+            <BarcodeOutlined />
+            <Input
+              placeholder={includesMiswag ? "باركود EAN أو رقم مسواگ" : "باركود المنتج"}
+              value={barcode}
+              onChange={(e) => setBarcode(e.target.value)}
+              onPressEnter={runCodeSearch}
+              allowClear
+            />
+          </div>
+          <div className="ci-search-actions">
+            <Button type="primary" icon={<SearchOutlined />} loading={searching} onClick={runTextSearch}>
+              بحث بالاسم
+            </Button>
+            <Button icon={<BarcodeOutlined />} loading={searching} onClick={runCodeSearch}>
+              {codeLabel}
+            </Button>
+          </div>
+        </div>
+
+        <div className="ci-meta-row">
+          <span className="ci-meta-pill">
+            البحث في: <strong>{searchStoreLabels || "—"}</strong>
+          </span>
+          <span className="ci-meta-pill">
+            التصفح من: <strong>{storeMeta.label}</strong>
+          </span>
+          {selectedCategory ? (
+            <span className="ci-meta-pill">
+              القسم: <strong>{categoryPath}</strong>
+              {productTotal ? ` · ${productTotal.toLocaleString("ar-IQ")} منتج` : ""}
+            </span>
+          ) : null}
+          {isSearchMode ? (
+            <span className="ci-meta-pill">
+              نتائج البحث: <strong>{displayOptions.length}</strong>
+            </span>
+          ) : null}
         </div>
       </section>
 
-      <Row gutter={16}>
-        <Col xs={24} md={8} lg={7}>
-          <Card title={`أقسام ${storeMeta.label}`} size="small" className="catalog-import-tree-card">
+      <div className="ci-workspace">
+        <aside className="ci-sidebar">
+          <div className="ci-panel-head">
+            <div>
+              <h3>أقسام {storeMeta.label}</h3>
+              <p>اختر قسماً لعرض منتجاته</p>
+            </div>
+            <Select
+              className="ci-browse-select"
+              size="small"
+              value={browseStore}
+              onChange={(id) => {
+                const next = String(id || "");
+                if (!next) return;
+                setBrowseStore(next);
+                setActiveStores((prev) => (prev.includes(next) ? prev : [...prev, next]));
+              }}
+              options={stores.map((s) => ({ value: s.id, label: s.label }))}
+            />
+          </div>
+          <div className="ci-tree-wrap">
             {treeLoading ? (
-              <div className="catalog-import-center"><Spin /></div>
+              <div className="ci-center"><Spin /></div>
             ) : (
               <Tree
                 key={browseStore}
@@ -599,234 +690,244 @@ export default function CatalogImportPage() {
                 selectedKeys={selectedCategory ? [selectedCategory] : []}
                 onSelect={onSelectCategory}
                 treeData={toTreeData(tree)}
-                height={420}
+                height={560}
               />
             )}
-          </Card>
-        </Col>
+          </div>
+        </aside>
 
-        <Col xs={24} md={16} lg={17}>
-          <section className="catalog-import-toolbar">
-            <div className="catalog-import-search-row">
-              <Input
-                prefix={<SearchOutlined />}
-                placeholder="بحث بالاسم..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                onPressEnter={runTextSearch}
-              />
-              <Button type="primary" icon={<SearchOutlined />} loading={searching} onClick={runTextSearch}>
-                بحث
-              </Button>
+        <section className="ci-main">
+          <div className="ci-results-head">
+            <div>
+              <h3>
+                {isSearchMode
+                  ? `نتائج البحث (${displayOptions.length})`
+                  : selectedCategory
+                    ? `منتجات القسم (${displayOptions.length}${productTotal ? ` / ${productTotal.toLocaleString("ar-IQ")}` : ""})`
+                    : "المنتجات"}
+              </h3>
+              <p>
+                {isSearchMode
+                  ? "النتائج تظهر تدريجياً من المتاجر الأسرع"
+                  : "اختر منتجاً لفتح لوحة الاستيراد"}
+              </p>
             </div>
-            <div className="catalog-import-search-row">
-              <Input
-                prefix={<BarcodeOutlined />}
-                placeholder={includesMiswag ? "باركود EAN أو رقم مسواگ (مثال: 6287020281204)" : "باركود (8–14 رقم)"}
-                value={barcode}
-                onChange={(e) => setBarcode(e.target.value)}
-                onPressEnter={runCodeSearch}
-              />
-              <Button icon={<BarcodeOutlined />} loading={searching} onClick={runCodeSearch}>
-                {codeLabel}
+            {isSearchMode ? (
+              <Button
+                onClick={() => {
+                  setOptions([]);
+                  setStep(0);
+                  setSelected(null);
+                  setPreview(null);
+                }}
+              >
+                العودة للتصفح
               </Button>
-            </div>
-          </section>
+            ) : null}
+          </div>
 
-          {selectedCategory && (
-            <Alert
-              type="info"
-              showIcon
-              style={{ marginBottom: 12 }}
-              message={`القسم: ${categoryPath}${productTotal ? ` — ${productTotal.toLocaleString("ar-IQ")} منتج` : ""}`}
-            />
-          )}
-
-          <div className="catalog-import-results">
-            {displayOptions.length > 0 && (
-              <div className="catalog-import-results-head">
-                <h4>
-                  {options.length > 0
-                    ? `نتائج البحث (${displayOptions.length})`
-                    : `منتجات القسم (${displayOptions.length}${productTotal ? ` / ${productTotal.toLocaleString("ar-IQ")}` : ""})`}
-                </h4>
-              </div>
-            )}
+          <div className="ci-results-body">
             {loadingProducts && !displayOptions.length ? (
-              <div className="catalog-import-center"><Spin size="large" /></div>
+              <div className="ci-center"><Spin size="large" /></div>
             ) : displayOptions.length ? (
-              <div className="catalog-import-options">
-                {displayOptions.map((opt) => (
-                  <CatalogOptionCard
-                    key={catalogOptionKey(opt)}
-                    option={opt}
-                    selected={selected ? catalogOptionKey(selected) === catalogOptionKey(opt) : false}
-                    onSelect={loadPreview}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="ci-product-grid">
+                  {displayOptions.map((opt) => (
+                    <CatalogOptionCard
+                      key={catalogOptionKey(opt)}
+                      option={opt}
+                      selected={selected ? catalogOptionKey(selected) === catalogOptionKey(opt) : false}
+                      onSelect={loadPreview}
+                    />
+                  ))}
+                </div>
+                {hasMore && selectedCategory && !isSearchMode ? (
+                  <div className="ci-load-more">
+                    <Button
+                      loading={loadingProducts}
+                      onClick={() => loadCategoryProducts(selectedCategory, productPage + 1, true)}
+                    >
+                      تحميل المزيد
+                    </Button>
+                  </div>
+                ) : null}
+              </>
             ) : (
-              <div className="catalog-import-empty">
-                <Typography.Text type="secondary">
-                  اختر قسماً من الشجرة أو ابحث بالاسم/الباركود
-                </Typography.Text>
-              </div>
-            )}
-
-            {hasMore && selectedCategory && (
-              <div className="catalog-import-load-more">
-                <Button
-                  loading={loadingProducts}
-                  onClick={() => loadCategoryProducts(selectedCategory, productPage + 1, true)}
-                >
-                  تحميل المزيد
-                </Button>
+              <div className="ci-empty">
+                <div>
+                  <strong>ابدأ من البحث أو الأقسام</strong>
+                  <span>
+                    اكتب اسم منتج، امسح باركوداً، أو اختر قسماً من الشجرة على اليمين لعرض المنتجات.
+                  </span>
+                </div>
               </div>
             )}
           </div>
-        </Col>
-      </Row>
+        </section>
+      </div>
 
-      {step === 2 && (
-        <Card
-          className="catalog-import-preview-card"
-          title="معاينة الاستيراد"
-          extra={
-            <Button
-              type="primary"
-              icon={<CloudDownloadOutlined />}
-              loading={importProduct.isPending || loadingPreview}
-              onClick={() => importProduct.mutate()}
-            >
-              استيراد المنتج
-            </Button>
-          }
-        >
+      <Drawer
+        className="ci-drawer"
+        open={drawerOpen}
+        onClose={closeImportDrawer}
+        width={560}
+        destroyOnClose={false}
+        title="تجهيز الاستيراد"
+        closeIcon={<CloseOutlined />}
+      >
+        <div className="ci-drawer-content">
           {loadingPreview ? (
-            <div className="catalog-import-center"><Spin /></div>
+            <div className="ci-center"><Spin size="large" /></div>
           ) : preview ? (
-            <Row gutter={24}>
-              <Col xs={24} md={10}>
-                {(preview.images[0]?.url) ? (
-                  <img
-                    className="catalog-preview-hero"
-                    src={resolveCatalogImageUrl(preview.images[0].url)}
-                    alt={preview.nameAr}
-                    referrerPolicy="no-referrer"
-                  />
-                ) : null}
-                {preview.shades.length > 0 && (
-                  <div className="catalog-preview-shades">
-                    <Typography.Text strong>التدرجات ({preview.shades.length})</Typography.Text>
-                    <div className="catalog-preview-shade-grid">
-                      {preview.shades.map((s, i) => (
-                        <div key={i} className="catalog-preview-shade">
-                          {s.colorHex && (
-                            <span className="catalog-preview-swatch" style={{ background: s.colorHex }} />
-                          )}
-                          <div>
-                            <div>{s.nameAr || s.name}</div>
-                            {s.nameEn && s.nameEn !== (s.nameAr || s.name) && (
-                              <div className="alhayaa-ltr-input">{s.nameEn}</div>
-                            )}
-                            {(s.miswagId || (s.barcode && isMiswagInternalId(s.barcode))) && (
-                              <small>رقم مسواگ: {s.miswagId || s.barcode}</small>
-                            )}
-                            {s.barcode && !isMiswagInternalId(s.barcode) && (
-                              <small>باركود: {s.barcode}</small>
-                            )}
-                            {s.colorHex && <small>{s.colorHex}</small>}
-                          </div>
-                        </div>
-                      ))}
+            <>
+              <div className="ci-drawer-hero">
+                <div className="ci-drawer-hero-grid">
+                  {preview.images[0]?.url ? (
+                    <img
+                      className="ci-drawer-image"
+                      src={resolveCatalogImageUrl(preview.images[0].url)}
+                      alt={preview.nameAr}
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="ci-drawer-image-ph"><AppstoreOutlined /></div>
+                  )}
+                  <div>
+                    <h3 className="ci-drawer-title">{preview.nameAr}</h3>
+                    {preview.nameEn && preview.nameEn !== preview.nameAr ? (
+                      <p className="ci-drawer-sub alhayaa-ltr-input">{preview.nameEn}</p>
+                    ) : null}
+                    <div className="ci-drawer-tags">
+                      {preview.storeLabel ? (
+                        <Tag color={storeColor(preview.store || selected?.store || "")}>
+                          {preview.storeLabel}
+                        </Tag>
+                      ) : null}
+                      {preview.brandAr ? <Tag>{preview.brandAr}</Tag> : null}
+                      {preview.brandEn && preview.brandEn !== preview.brandAr ? (
+                        <Tag className="alhayaa-ltr-input">{preview.brandEn}</Tag>
+                      ) : null}
+                      {preview.priceHint ? <Tag color="green">{preview.priceHint}</Tag> : null}
+                      {preview.categoryHint ? <Tag color="purple">{preview.categoryHint}</Tag> : null}
                     </div>
                   </div>
-                )}
-              </Col>
-              <Col xs={24} md={14}>
-                <Typography.Title level={4}>{preview.nameAr}</Typography.Title>
-                {preview.nameEn && preview.nameEn !== preview.nameAr && (
-                  <Typography.Title level={5} type="secondary" className="alhayaa-ltr-input">
-                    {preview.nameEn}
-                  </Typography.Title>
-                )}
-                {preview.brandAr && <Tag>{preview.brandAr}</Tag>}
-                {preview.brandEn && preview.brandEn !== preview.brandAr && (
-                  <Tag className="alhayaa-ltr-input">{preview.brandEn}</Tag>
-                )}
-                {preview.priceHint && <Tag color="green">{preview.priceHint}</Tag>}
-                {preview.categoryHint && (
-                  <p className="catalog-preview-category">{preview.categoryHint}</p>
-                )}
-                {(preview.descriptionAr || preview.descriptionEn) && (
-                  <div className="catalog-preview-descriptions">
-                    {preview.descriptionAr && (
-                      <div>
-                        <Typography.Text strong>الوصف (عربي)</Typography.Text>
-                        <Typography.Paragraph>{preview.descriptionAr}</Typography.Paragraph>
-                      </div>
-                    )}
-                    {preview.descriptionEn && preview.descriptionEn !== preview.descriptionAr && (
-                      <div>
-                        <Typography.Text strong>الوصف (إنجليزي)</Typography.Text>
-                        <Typography.Paragraph className="alhayaa-ltr-input">
-                          {preview.descriptionEn}
-                        </Typography.Paragraph>
-                      </div>
-                    )}
-                  </div>
-                )}
+                </div>
+              </div>
 
-                <Form form={form} layout="vertical" className="catalog-import-form">
-                  <Form.Item name="brandId" label="البراند">
-                    <Select
-                      allowClear
-                      showSearch
-                      optionFilterProp="label"
-                      options={(brandsData || []).map((b: any) => ({
-                        value: b.id,
-                        label: b.nameAr || b.name || b.nameEn,
-                      }))}
-                    />
-                  </Form.Item>
-                  <Form.Item name="categoryId" label="القسم" rules={[{ required: true }]}>
-                    <Select
-                      showSearch
-                      optionFilterProp="label"
-                      options={(categoriesData || []).map((c: any) => ({
-                        value: c.id,
-                        label: c.nameAr || c.name,
-                      }))}
-                    />
-                  </Form.Item>
-                  <Form.Item name="subcategoryId" label="قسم فرعي">
-                    <Select
-                      allowClear
-                      showSearch
-                      optionFilterProp="label"
-                      options={(subcategoriesData || []).map((s: any) => ({
-                        value: s.id,
-                        label: s.nameAr || s.name,
-                      }))}
-                    />
-                  </Form.Item>
-                  <Form.Item name="tertiaryCategoryId" label="قسم ثانوي">
-                    <Select
-                      allowClear
-                      showSearch
-                      optionFilterProp="label"
-                      options={(tertiarySectionsData || []).map((s: any) => ({
-                        value: s.id,
-                        label: s.nameAr || s.name,
-                      }))}
-                    />
-                  </Form.Item>
+              {(preview.descriptionAr || preview.descriptionEn) && (
+                <div className="ci-drawer-section">
+                  <h4>الوصف</h4>
+                  {preview.descriptionAr ? <p className="ci-desc">{preview.descriptionAr}</p> : null}
+                  {preview.descriptionEn && preview.descriptionEn !== preview.descriptionAr ? (
+                    <p className="ci-desc alhayaa-ltr-input" style={{ marginTop: 8 }}>
+                      {preview.descriptionEn}
+                    </p>
+                  ) : null}
+                </div>
+              )}
+
+              {preview.shades.length > 0 && (
+                <div className="ci-drawer-section">
+                  <h4>التدرجات ({preview.shades.length})</h4>
+                  <div className="ci-shade-list">
+                    {preview.shades.map((s, i) => (
+                      <div key={i} className="ci-shade-item">
+                        {s.colorHex ? (
+                          <span className="ci-shade-swatch" style={{ background: s.colorHex }} />
+                        ) : (
+                          <span className="ci-shade-swatch" style={{ background: "#ddd" }} />
+                        )}
+                        <div>
+                          <div>{s.nameAr || s.name}</div>
+                          {s.nameEn && s.nameEn !== (s.nameAr || s.name) ? (
+                            <small className="alhayaa-ltr-input">{s.nameEn}</small>
+                          ) : null}
+                          {s.barcode && !isMiswagInternalId(s.barcode) ? (
+                            <small>باركود: {s.barcode}</small>
+                          ) : null}
+                          {(s.miswagId || (s.barcode && isMiswagInternalId(s.barcode))) ? (
+                            <small>رقم مسواگ: {s.miswagId || s.barcode}</small>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="ci-drawer-section">
+                <h4>تصنيف المنتج في متجرك</h4>
+                <Form form={form} layout="vertical">
+                  <div className="ci-form-grid">
+                    <Form.Item name="brandId" label="البراند">
+                      <Select
+                        allowClear
+                        showSearch
+                        optionFilterProp="label"
+                        options={(brandsData || []).map((b: any) => ({
+                          value: b.id,
+                          label: b.nameAr || b.name || b.nameEn,
+                        }))}
+                      />
+                    </Form.Item>
+                    <Form.Item name="categoryId" label="القسم" rules={[{ required: true }]} className="span-2">
+                      <Select
+                        showSearch
+                        optionFilterProp="label"
+                        options={(categoriesData || []).map((c: any) => ({
+                          value: c.id,
+                          label: c.nameAr || c.name,
+                        }))}
+                      />
+                    </Form.Item>
+                    <Form.Item name="subcategoryId" label="قسم فرعي">
+                      <Select
+                        allowClear
+                        showSearch
+                        optionFilterProp="label"
+                        options={(subcategoriesData || []).map((s: any) => ({
+                          value: s.id,
+                          label: s.nameAr || s.name,
+                        }))}
+                      />
+                    </Form.Item>
+                    <Form.Item name="tertiaryCategoryId" label="قسم ثانوي">
+                      <Select
+                        allowClear
+                        showSearch
+                        optionFilterProp="label"
+                        options={(tertiarySectionsData || []).map((s: any) => ({
+                          value: s.id,
+                          label: s.nameAr || s.name,
+                        }))}
+                      />
+                    </Form.Item>
+                  </div>
                 </Form>
-              </Col>
-            </Row>
-          ) : null}
-        </Card>
-      )}
+              </div>
+
+              <div className="ci-drawer-actions">
+                <Button onClick={closeImportDrawer}>إلغاء</Button>
+                <Button
+                  type="primary"
+                  icon={<CloudDownloadOutlined />}
+                  loading={importProduct.isPending}
+                  onClick={() => importProduct.mutate()}
+                >
+                  استيراد المنتج
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="ci-empty" style={{ margin: 18, minHeight: 240 }}>
+              <div>
+                <strong>لا توجد معاينة</strong>
+                <span>اختر منتجاً من الشبكة لفتح تفاصيل الاستيراد.</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </Drawer>
     </div>
   );
 }

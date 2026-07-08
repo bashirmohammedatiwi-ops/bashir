@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Tag } from "antd";
+import { Tag } from "antd";
 import {
   AppstoreOutlined,
   BgColorsOutlined,
   CheckOutlined,
-  PictureOutlined,
-  RightOutlined,
 } from "@ant-design/icons";
 import type { CatalogImportOption } from "@/lib/catalogImport";
 import { resolveCatalogImageUrl } from "@/lib/resolveCatalogImageUrl";
@@ -18,7 +16,6 @@ export const STORE_COLORS: Record<string, string> = {
   elryan: "#0b6e4f",
 };
 
-/** لون ثابت تلقائي للمتاجر المستقبلية غير المعرّفة في STORE_COLORS */
 const AUTO_COLORS = ["#0958d9", "#08979c", "#d46b08", "#531dab", "#c41d7f", "#3f6600"];
 
 export function storeColor(storeId: string): string {
@@ -40,7 +37,7 @@ function CatalogThumb({ src, alt }: { src: string; alt: string }) {
 
   if (!resolved || failed) {
     return (
-      <div className="catalog-option-thumb-placeholder">
+      <div className="ci-card-placeholder">
         <AppstoreOutlined />
       </div>
     );
@@ -48,7 +45,6 @@ function CatalogThumb({ src, alt }: { src: string; alt: string }) {
 
   return (
     <img
-      className="catalog-option-thumb"
       src={resolved}
       alt={alt}
       loading="lazy"
@@ -58,12 +54,24 @@ function CatalogThumb({ src, alt }: { src: string; alt: string }) {
   );
 }
 
+function matchLabel(matchType?: string) {
+  if (!matchType) return null;
+  if (["barcode", "ean", "index", "hint", "sku", "v2_scan", "v2_shade"].includes(matchType)) {
+    return { color: "blue" as const, text: "باركود" };
+  }
+  if (["miswag_id", "miswag_product", "miswag_shade"].includes(matchType)) {
+    return { color: "orange" as const, text: "رقم مسواگ" };
+  }
+  return null;
+}
+
 export function CatalogOptionCard({ option, selected, onSelect }: Props) {
   const shadeCount = option.shadeCount ?? 0;
+  const match = matchLabel(option.matchType);
 
   return (
     <article
-      className={`catalog-option-row${selected ? " selected" : ""}`}
+      className={`ci-card${selected ? " is-selected" : ""}`}
       onClick={() => onSelect(option)}
       role="button"
       tabIndex={0}
@@ -74,46 +82,39 @@ export function CatalogOptionCard({ option, selected, onSelect }: Props) {
         }
       }}
     >
-      <div className="catalog-option-row-thumb">
+      <div className="ci-card-media">
+        <Tag className="ci-card-store" color={storeColor(option.store)}>
+          {option.storeLabel}
+        </Tag>
+        {selected ? (
+          <span className="ci-card-check">
+            <CheckOutlined />
+          </span>
+        ) : null}
         <CatalogThumb src={option.thumb || ""} alt={option.nameAr} />
       </div>
 
-      <div className="catalog-option-row-main">
-        <div className="catalog-option-row-top">
-          <Tag className="catalog-option-row-store" color={storeColor(option.store)}>
-            {option.storeLabel}
-          </Tag>
-          {(option.matchType === "barcode" || option.matchType === "ean" || option.matchType === "index" || option.matchType === "hint" || option.matchType === "sku") && (
-            <Tag color="blue">باركود EAN</Tag>
-          )}
-          {option.matchType === "miswag_id" || option.matchType === "miswag_product" || option.matchType === "miswag_shade" ? (
-            <Tag color="orange">رقم مسواگ</Tag>
-          ) : null}
-          {shadeCount > 1 && (
+      <div className="ci-card-body">
+        {option.brandAr ? <p className="ci-card-brand">{option.brandAr}</p> : null}
+        <h4 className="ci-card-title">{option.nameAr}</h4>
+        {option.nameEn && option.nameEn !== option.nameAr ? (
+          <p className="ci-card-sub alhayaa-ltr-input">{option.nameEn}</p>
+        ) : null}
+
+        <div className="ci-card-meta">
+          {match ? <Tag color={match.color}>{match.text}</Tag> : null}
+          {shadeCount > 1 ? (
             <Tag icon={<BgColorsOutlined />} color="purple">
               {shadeCount} تدرج
             </Tag>
-          )}
+          ) : null}
+          {option.category ? <Tag>{option.category}</Tag> : null}
         </div>
 
-        <h4 className="catalog-option-row-title">{option.nameAr}</h4>
-        {option.nameEn && option.nameEn !== option.nameAr && (
-          <p className="catalog-option-row-sub">{option.nameEn}</p>
-        )}
-        {option.brandAr && <p className="catalog-option-row-brand">{option.brandAr}</p>}
-        {option.category && <p className="catalog-option-row-category">{option.category}</p>}
-        {option.price && <p className="catalog-option-row-price">{option.price}</p>}
-      </div>
-
-      <div className="catalog-option-row-action">
-        {selected ? (
-          <CheckOutlined className="catalog-option-check" />
-        ) : (
-          <>
-            <PictureOutlined />
-            <RightOutlined />
-          </>
-        )}
+        <div className="ci-card-foot">
+          {option.price ? <p className="ci-card-price">{option.price}</p> : <span />}
+          <span className="ci-card-cta">{selected ? "محدد" : "استيراد"}</span>
+        </div>
       </div>
     </article>
   );
