@@ -871,16 +871,16 @@ export async function searchNajdByBarcode(barcode, { getMeta } = {}) {
 }
 
 const SEARCHERS = [
-  { store: 'niceone', fn: searchNiceOneByBarcode, timeoutMs: 18_000 },
-  { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 12_000 },
-  { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 12_000 },
-  { store: 'najd', fn: searchNajdByBarcode, timeoutMs: 16_000 },
-  { store: 'orisdi', fn: searchOrisdiByBarcode, timeoutMs: 14_000 },
-  { store: 'beautyway', fn: searchBeautywayByBarcode, timeoutMs: 16_000 },
-  { store: 'vaneersa', fn: searchVaneersaByBarcode, timeoutMs: 16_000 },
-  { store: 'miswag', fn: searchMiswagByBarcode, timeoutMs: 50_000 },
-  { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 22_000 },
-  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 12_000 },
+  { store: 'niceone', fn: searchNiceOneByBarcode, timeoutMs: 12_000 },
+  { store: 'elryan', fn: searchElryanByBarcode, timeoutMs: 10_000 },
+  { store: 'miraaya', fn: searchMiraayaByBarcode, timeoutMs: 10_000 },
+  { store: 'najd', fn: searchNajdByBarcode, timeoutMs: 10_000 },
+  { store: 'orisdi', fn: searchOrisdiByBarcode, timeoutMs: 10_000 },
+  { store: 'beautyway', fn: searchBeautywayByBarcode, timeoutMs: 12_000 },
+  { store: 'vaneersa', fn: searchVaneersaByBarcode, timeoutMs: 10_000 },
+  { store: 'miswag', fn: searchMiswagByBarcode, timeoutMs: 18_000 },
+  { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 14_000 },
+  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 8_000 },
 ];
 
 const SEARCH_WAVE1 = new Set(['niceone', 'elryan', 'miraaya', 'najd']);

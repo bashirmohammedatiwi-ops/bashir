@@ -25,7 +25,12 @@ export function buildSearchConsensusMeta(hits = []) {
 
 export function hitAlignsWithConsensus(hit, consensus) {
   if (!consensus?.brand && !consensus?.title) return true;
-  const score = scoreStoreHintMatch(
+  const score = consensusAlignmentScore(hit, consensus);
+  return score >= 10;
+}
+
+function consensusAlignmentScore(hit, consensus) {
+  return scoreStoreHintMatch(
     {
       name: hit.name,
       nameEn: hit.nameEn,
@@ -35,7 +40,6 @@ export function hitAlignsWithConsensus(hit, consensus) {
     },
     consensus,
   );
-  return score >= 10;
 }
 
 const STRICT_STORES = new Set(['miswag']);
@@ -50,12 +54,13 @@ export function filterCrossStoreInconsistentHits(hits = []) {
 
   const anchors = list.filter(isAnchorHit);
   if (anchors.length < 2) {
-    // مع متجر مرجعي واحد فقط — صفِّ المتاجر الضعيفة (مسواگ)
+    // مع متجر مرجعي واحد فقط — لا تسمح بتلميحات ضعيفة من أي متجر.
     return list.filter((hit) => {
-      if (!STRICT_STORES.has(hit.store)) return true;
       const mt = String(hit.matchType || '').toLowerCase();
       const score = Number(hit.matchScore) || 0;
       const src = String(hit.source || '').toLowerCase();
+      if (mt === 'hint') return consensusAlignmentScore(hit, consensus) >= 18 && score >= 18;
+      if (!STRICT_STORES.has(hit.store)) return true;
       if (!hitAlignsWithConsensus(hit, consensus)) return false;
       if (src.includes('verified-raw') || src === 'id') return false;
       if (mt === 'hint' && score < 30) return false;
