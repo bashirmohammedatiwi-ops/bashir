@@ -123,7 +123,8 @@ function listProductToOption(p: CatalogListProduct, store: CatalogStore): Catalo
 
 export default function CatalogImportPage() {
   const [stores, setStores] = useState<CatalogStore[]>([]);
-  const [activeStores, setActiveStores] = useState<string[]>(["miswag", "najdalatheyah", "elryan", "amazon"]);
+  // البحث الافتراضي: مسواگ + نجد + الريان — أمازون اختياري حتى لا يبطّئ الباركود
+  const [activeStores, setActiveStores] = useState<string[]>(["miswag", "najdalatheyah", "elryan"]);
   const [browseStore, setBrowseStore] = useState("miswag");
   const [tree, setTree] = useState<CatalogCategoryNode[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);

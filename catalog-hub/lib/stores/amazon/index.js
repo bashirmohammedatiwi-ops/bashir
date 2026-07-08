@@ -1,7 +1,6 @@
 import { fetchCategoryTree } from './categories.js';
 import {
   getAmazonCrawlStatus,
-  ensureAmazonCatalogWarm,
   startAmazonBeautyCrawl,
   stopAmazonBeautyCrawl,
 } from './crawl.js';
@@ -31,9 +30,6 @@ export const amazonAdapter = {
     const catalog = getAmazonCrawlStatus();
     const mode = creds.configured ? 'paapi' : 'scrape';
 
-    // ابدأ ملء الفهرس تلقائياً (يعمل بدون مفاتيح عبر scrape)
-    ensureAmazonCatalogWarm();
-
     try {
       const sample = await searchProducts('makeup', { page: 1, limit: 1 });
       return {
@@ -45,7 +41,7 @@ export const amazonAdapter = {
         catalog,
         message: creds.configured
           ? 'PA-API مفعّل'
-          : 'يعمل بدون مفاتيح عبر صفحات Amazon (scrape)',
+          : 'يعمل بدون مفاتيح عبر صفحات Amazon (scrape) — الزحف اليدوي عبر POST /api/catalog/amazon/crawl',
       };
     } catch (err) {
       return {

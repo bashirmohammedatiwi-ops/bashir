@@ -238,6 +238,31 @@ export async function handleStoreApi(req, res, url) {
     }
   }
 
+  // مسار باركود لكل متجر على حدة — لا يمر عبر البحث النصي ولا يخلط المتاجر
+  const barcodeMatch = url.pathname.match(/^\/api\/catalog\/([^/]+)\/barcode$/);
+  if (barcodeMatch) {
+    const adapter = storeOr404(res, barcodeMatch[1]);
+    if (!adapter) return;
+    const query = q.q || q.query || q.barcode || '';
+    if (!query.trim()) return sendJson(res, 400, { error: 'q required' });
+    if (!adapter.searchBarcode) {
+      return sendJson(res, 400, { error: `المتجر ${adapter.id} لا يدعم البحث بالباركود` });
+    }
+    try {
+      const digits = String(query).replace(/\D/g, '');
+      const results = await adapter.searchBarcode(query);
+      return sendJson(res, 200, {
+        store: adapter.id,
+        storeLabel: adapter.label,
+        query,
+        results: results.map((item) => mapBarcodeSearchHit(adapter, item, digits)),
+        count: results.length,
+      });
+    } catch (err) {
+      return sendJson(res, 502, { error: err.message });
+    }
+  }
+
   // يدعم أرقام مسواگ/نجد و ASIN أمازون (مثل B0XXXX)
   const productMatch = url.pathname.match(/^\/api\/catalog\/([^/]+)\/products\/([A-Za-z0-9_-]+)$/);
   if (productMatch) {

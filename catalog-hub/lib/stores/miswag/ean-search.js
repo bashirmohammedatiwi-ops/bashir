@@ -57,7 +57,7 @@ function learnHit(digits, hit, meta = {}) {
     shadeName: hit.shadeName || meta.shade || '',
     matchType: hit.matchType || 'ean',
   });
-  // تعلّم بادئة GS1 → الماركة (باسمها الحرفي في Typesense) لباركودات الشركة نفسها لاحقاً
+  clearMiss(digits);
   learnBrandPrefixFromProduct(digits, hit.id).catch(() => {});
 }
 
@@ -73,11 +73,34 @@ async function learnBrandPrefixFromProduct(digits, productId) {
   if (brand) learnPrefixBrand(digits, brand);
 }
 
+/** فهرس محلي سريع — light أولاً ثم تحقق v2 عند الحاجة فقط */
 async function resolveFromIndex(digits) {
   const entry = findBarcodeIndexEntry(digits);
   if (!entry?.productId) return null;
 
-  const detail = await fetchProductDetail(String(entry.productId), { light: false }).catch(() => null);
+  // مسار سريع: Typesense stub + light detail
+  try {
+    const [tsResult = {}] = await typesenseMultiSearch([{
+      q: '*',
+      query_by: 'title_AR',
+      filter_by: `id:=${String(entry.productId)}`,
+      per_page: 1,
+      page: 1,
+    }]);
+    const mapped = mapTypesenseHit(tsResult.hits?.[0]?.document || {});
+    if (mapped?.id) {
+      const shadeStub = entry.shadeName
+        ? { name: entry.shadeName, nameAr: entry.shadeName, image: mapped.thumb }
+        : null;
+      // إن كان الفهرس حديثاً وموثوقاً — أعد فوراً دون v2 كامل
+      const age = Date.now() - Number(entry.updatedAt || 0);
+      if (age < 7 * 24 * 60 * 60 * 1000) {
+        return formatEanHit(mapped, digits, entry.matchType || 'index', shadeStub);
+      }
+    }
+  } catch { /* تابع للتحقق */ }
+
+  const detail = await fetchProductDetail(String(entry.productId), { light: true }).catch(() => null);
   if (detail?.id) {
     let shade = null;
     if (entry.shadeName && detail.shades?.length) {
@@ -86,15 +109,18 @@ async function resolveFromIndex(digits) {
     return formatEanHit(detail, digits, entry.matchType || 'index', shade);
   }
 
-  // الفهرس يعرف المنتج لكن جلب التفاصيل فشل — تحقق مباشرة عبر v2
   const match = await matchBarcodeOnMiswagProduct(String(entry.productId), digits).catch(() => null);
   if (match) return resolveV2Match(digits, match, entry.matchType || 'index');
-
   return null;
 }
 
 async function resolveV2Match(digits, match, matchType = 'v2_scan') {
-  const detail = await fetchProductDetail(match.productId, { light: false }).catch(() => null);
+  // light أولاً للسرعة — يكفي للعرض في نتائج البحث
+  let detail = await fetchProductDetail(match.productId, { light: true }).catch(() => null);
+  if (!detail?.id) {
+    detail = await fetchProductDetail(match.productId, { light: false }).catch(() => null);
+  }
+
   if (detail?.id) {
     let shade = null;
     if (match.shadeId && detail.shades?.length) {
@@ -105,13 +131,16 @@ async function resolveV2Match(digits, match, matchType = 'v2_scan') {
         shade = detail.shades.find((s) => shadeNamesMatch(s.nameAr || s.name, match.shadeName));
       }
     }
+    // إن لم تُحمَّل التدرجات في light — استخدم اسم التدرج من المسح
+    if (!shade && match.shadeName) {
+      shade = { name: match.shadeName, nameAr: match.shadeName, image: detail.thumb };
+    }
 
     const hit = formatEanHit(detail, digits, shade ? 'v2_shade' : matchType, shade);
     learnHit(digits, hit, {});
     return hit;
   }
 
-  // مسواگ API مشغول — أعد النتيجة من Typesense بدل الفشل الصامت
   try {
     const [tsResult = {}] = await typesenseMultiSearch([{
       q: '*',
@@ -134,26 +163,26 @@ async function resolveV2Match(digits, match, matchType = 'v2_scan') {
   }
 }
 
-/** جمع معرّفات منتجات مرشّحة من metadata الباركود */
-async function collectCandidateIdsFromMeta(meta, { perQuery = 15, maxQueries = 6 } = {}) {
+async function collectCandidateIdsFromMeta(meta, { perQuery = 12, maxQueries = 4 } = {}) {
   if (!meta?.brand && !meta?.title) return [];
 
   const queries = buildMetaHintQueries(meta).slice(0, maxQueries);
   const scored = [];
   const seen = new Set();
 
-  for (const q of queries) {
-    try {
-      const { hits } = await typesenseSearch(q, { perPage: perQuery });
-      for (const hit of hits || []) {
-        const mapped = mapTypesenseHit(hit.document || hit);
-        const id = String(mapped.id || '');
-        if (!id || seen.has(id)) continue;
-        seen.add(id);
-        const score = scoreStoreHintMatch(mapped, meta);
-        scored.push({ id, score });
-      }
-    } catch { /* next */ }
+  // استعلامات Typesense بالتوازي بدل التسلسل
+  const batches = await Promise.all(
+    queries.map((q) => typesenseSearch(q, { perPage: perQuery }).catch(() => ({ hits: [] }))),
+  );
+
+  for (const { hits } of batches) {
+    for (const hit of hits || []) {
+      const mapped = mapTypesenseHit(hit.document || hit);
+      const id = String(mapped.id || '');
+      if (!id || seen.has(id)) continue;
+      seen.add(id);
+      scored.push({ id, score: scoreStoreHintMatch(mapped, meta) });
+    }
   }
 
   scored.sort((a, b) => b.score - a.score);
@@ -176,7 +205,6 @@ function brandTokens(value = '') {
   return String(value || '').toLowerCase().split(/[^a-z0-9\u0600-\u06FF]+/).filter((t) => t.length >= 2);
 }
 
-/** حلّ اسم الماركة من metadata خارجية إلى قيمها الحرفية في Typesense (wet n wild → Wet N Wild) */
 async function resolveCanonicalBrands(brand) {
   const value = String(brand || '').trim();
   if (!value) return [];
@@ -209,7 +237,6 @@ async function resolveCanonicalBrands(brand) {
   }
 }
 
-/** مسح v2 لكل منتجات ماركة معيّنة (أدق من التخمين عبر hints فقط) */
 async function searchByBrandCatalogV2(digits, meta, { deadline = 0 } = {}) {
   const rawBrand = String(meta?.brand || '').trim();
   if (!rawBrand) return null;
@@ -232,22 +259,19 @@ async function searchByBrandCatalogV2(digits, meta, { deadline = 0 } = {}) {
         .filter(Boolean);
       if (!ids.length) continue;
 
-      // الأحدث أولاً (المعرّف الأكبر) — يُسرّع إيجاد المنتجات الحديثة
       ids.sort((a, b) => Number(b) - Number(a));
 
-      // تمريرة سريعة: باركود «الأب» لكل منتجات الماركة (طلب واحد لكل منتج)
-      const parentMatch = await scanParentBarcodesForBarcode(ids, digits, { deadline });
+      const parentMatch = await scanParentBarcodesForBarcode(ids, digits, { deadline, concurrency: 20 });
       if (parentMatch) {
         learnPrefixBrand(digits, brand);
         const resolved = await resolveV2Match(digits, parentMatch, 'v2_scan');
         if (resolved) return resolved;
       }
 
-      // تمريرة عميقة: التدرجات أيضاً — لأحدث 40 منتجاً فقط ضمن الميزانية
       const hit = await searchByV2Scan(
         ids,
         digits,
-        { limit: 40, concurrency: 6, deadline },
+        { limit: 30, concurrency: 8, deadline },
       );
       if (hit) {
         learnPrefixBrand(digits, brand);
@@ -259,24 +283,21 @@ async function searchByBrandCatalogV2(digits, meta, { deadline = 0 } = {}) {
   return null;
 }
 
-/** بادئة GS1 معروفة → مسح كتالوج الماركة مباشرة (بدون أي خدمة خارجية) */
 async function searchByKnownPrefix(digits, { deadline = 0 } = {}) {
   const brand = lookupBrandByPrefix(digits);
   if (!brand) return null;
   return searchByBrandCatalogV2(digits, { brand, exactBrand: true }, { deadline });
 }
 
-/** باركودات مفهرسة من نفس شركة GS1 → منتجاتها هي الأقرب احتمالاً للباركود الجديد */
 async function searchBySiblingPrefix(digits, { deadline = 0 } = {}) {
   const siblings = findBarcodeIndexSiblings(digits);
   if (!siblings.length) return null;
 
   const ids = [...new Set(siblings.map((s) => String(s.productId || '')).filter(Boolean))];
   if (!ids.length) return null;
-  return searchByV2Scan(ids, digits, { limit: ids.length, concurrency: 5, deadline });
+  return searchByV2Scan(ids, digits, { limit: ids.length, concurrency: 8, deadline });
 }
 
-/** باركودات خليجية (628/629) بلا metadata خارجية — مسح ماركات عطور محلية شائعة */
 const GULF_PERFUME_BRANDS = [
   'IBRAQ',
   'ابراهيم القرشي',
@@ -301,24 +322,25 @@ async function searchByGulfBrandV2Sweep(digits, budgetLeft = () => 60_000, deadl
 
   const priority = ['IBRAQ', 'ابراهيم القرشي', 'Ibraheem Al Qurashi', 'عساف', 'Rasasi', 'رصاصي'];
   const seen = new Set(priority);
-  const brands = [...priority, ...GULF_PERFUME_BRANDS.filter((b) => !seen.has(b))].slice(0, 8);
+  const brands = [...priority, ...GULF_PERFUME_BRANDS.filter((b) => !seen.has(b))].slice(0, 6);
 
   for (const brand of brands) {
-    if (budgetLeft() < 3000) return null;
+    if (budgetLeft() < 2500) return null;
     const hit = await searchByBrandCatalogV2(digits, { brand }, { deadline });
     if (hit) return hit;
   }
   return null;
 }
 
-async function searchByTypesenseVariationScan(digits) {
+async function searchByTypesenseVariationScan(digits, { deadline = 0 } = {}) {
   const hits = await searchTypesenseByVariationBarcode(digits);
   const ids = hits.map((h) => String(h.document?.id || h.document?.product_id || '')).filter(Boolean);
-  return searchByV2Scan(ids, digits);
+  if (!ids.length) return null;
+  return searchByV2Scan(ids, digits, { limit: 20, concurrency: 8, deadline });
 }
 
 async function confirmHintHit(productId, digits, meta) {
-  const detail = await fetchProductDetail(String(productId), { light: false }).catch(() => null);
+  const detail = await fetchProductDetail(String(productId), { light: true }).catch(() => null);
   if (!detail?.id) return null;
 
   const parsed = parseBarcodeMetaFields(meta);
@@ -341,32 +363,30 @@ async function confirmHintHit(productId, digits, meta) {
 async function searchByMetaHints(digits, meta, { deadline = 0 } = {}) {
   const candidateIds = await collectCandidateIdsFromMeta(meta);
 
-  // التحقق الدقيق عبر v2 — يعمل من أول بحث دون انتظار الفهرس
-  const v2Hit = await searchByV2Scan(candidateIds, digits, { limit: 25, concurrency: 5, deadline });
+  const v2Hit = await searchByV2Scan(candidateIds, digits, { limit: 20, concurrency: 8, deadline });
   if (v2Hit) return [v2Hit];
 
-  // ثم مسح كامل لمنتجات الماركة (للباركودات التي لا تظهر في hints)
   const brandHit = await searchByBrandCatalogV2(digits, meta, { deadline });
   if (brandHit) return [brandHit];
 
-  const queries = buildMetaHintQueries(meta);
+  const queries = buildMetaHintQueries(meta).slice(0, 4);
   const scored = [];
   const seenIds = new Set();
 
-  for (const q of queries) {
-    try {
-      const { hits } = await typesenseSearch(q, { perPage: 20 });
-      for (const hit of hits || []) {
-        const mapped = mapTypesenseHit(hit.document || hit);
-        const idKey = String(mapped.id || '');
-        if (!idKey || seenIds.has(idKey)) continue;
-        seenIds.add(idKey);
+  const batches = await Promise.all(
+    queries.map((q) => typesenseSearch(q, { perPage: 15 }).catch(() => ({ hits: [] }))),
+  );
 
-        const score = scoreStoreHintMatch(mapped, meta);
-        if (score < 14) continue;
-        scored.push({ mapped, score });
-      }
-    } catch { /* next query */ }
+  for (const { hits } of batches) {
+    for (const hit of hits || []) {
+      const mapped = mapTypesenseHit(hit.document || hit);
+      const idKey = String(mapped.id || '');
+      if (!idKey || seenIds.has(idKey)) continue;
+      seenIds.add(idKey);
+      const score = scoreStoreHintMatch(mapped, meta);
+      if (score < 14) continue;
+      scored.push({ mapped, score });
+    }
   }
 
   scored.sort((a, b) => b.score - a.score);
@@ -378,6 +398,7 @@ async function searchByMetaHints(digits, meta, { deadline = 0 } = {}) {
   }
 
   for (const { mapped, score } of scored.slice(0, 3)) {
+    if (deadline && Date.now() > deadline) break;
     const confirmed = await confirmHintHit(mapped.id, digits, meta);
     if (confirmed && score >= 28) {
       confirmed.matchScore = score;
@@ -389,21 +410,11 @@ async function searchByMetaHints(digits, meta, { deadline = 0 } = {}) {
   return [];
 }
 
-async function searchFromWebLinks(digits) {
+async function searchFromWebLinks(digits, { deadline = 0 } = {}) {
   const ids = await findMiswagIdsFromWeb(digits);
-  const v2Hit = await searchByV2Scan(ids, digits);
+  const v2Hit = await searchByV2Scan(ids, digits, { limit: 8, concurrency: 6, deadline });
   if (v2Hit) return [v2Hit];
-
-  const results = [];
-  for (const id of ids.slice(0, 3)) {
-    const detail = await fetchProductDetail(id, { light: false }).catch(() => null);
-    if (detail?.id) {
-      const hit = formatEanHit(detail, digits, 'web_link', null);
-      learnHit(digits, hit, {});
-      results.push(hit);
-    }
-  }
-  return results;
+  return [];
 }
 
 async function resolveProductMeta(digits) {
@@ -415,21 +426,32 @@ async function resolveProductMeta(digits) {
   return null;
 }
 
-// كاش سلبي — لا يُعاد تشغيل البايبلاين الكامل لباركود فشل مؤخراً
+// كاش سلبي قصير — لا يمنع إعادة المحاولة لساعات
 const missCache = new Map();
-const MISS_TTL_MS = 30 * 60 * 1000;
+const MISS_TTL_MS = 90 * 1000;
 
-// ميزانية وقت — البحث يتوقف عند أول مرحلة تتجاوزها بدل الاستمرار لدقيقة
-const TIME_BUDGET_MS = 25_000;
+function clearMiss(digits) {
+  missCache.delete(String(digits || '').replace(/\D/g, ''));
+}
+
+// ميزانية أقصر للمسار السريع — المراحل الثقيلة تُقطع مبكراً
+const TIME_BUDGET_MS = 18_000;
 
 /**
- * بحث بالباركود العالمي (EAN/UPC) — ليس رقم مسواگ الداخلي.
+ * بحث بالباركود العالمي (EAN/UPC) — مسار سريع أولاً ثم عميق.
+ *
+ * الترتيب:
+ * 1) فهرس محلي (فوري)
+ * 2) Typesense variations (رخيص)
+ * 3) أشقاء GS1 + بادئة معروفة
+ * 4) metadata + مسح v2 موجّه
+ * 5) ويب / خليجي (احتياطي)
  */
 export async function searchByEan(barcode) {
   const digits = String(barcode || '').replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return [];
 
-  // 1) فهرس محلي (يُبنى تلقائياً بعد أول نجاح) — لا تمنعه ميزانية الوقت
+  // 1) فهرس محلي — لا تمنعه ميزانية الوقت ولا الكاش السلبي
   const indexed = await resolveFromIndex(digits);
   if (indexed) return [indexed];
 
@@ -440,35 +462,39 @@ export async function searchByEan(barcode) {
   const budgetLeft = () => TIME_BUDGET_MS - (Date.now() - startedAt);
   const deadline = startedAt + TIME_BUDGET_MS;
 
-  // 2) منتجات مفهرسة من نفس شركة GS1 — الباركود الجديد غالباً تدرج شقيق لها
-  const siblingHit = await searchBySiblingPrefix(digits, { deadline });
-  if (siblingHit) return [siblingHit];
+  // 2) Typesense variations أولاً — غالباً أسرع من metadata الخارجية
+  if (budgetLeft() > 0) {
+    const fromVariations = await searchByTypesenseVariationScan(digits, { deadline });
+    if (fromVariations) return [fromVariations];
+  }
 
-  // 3) بادئة GS1 معروفة → مسح كتالوج الماركة مباشرة (لا يعتمد على خدمات خارجية)
-  const prefixHit = await searchByKnownPrefix(digits, { deadline });
-  if (prefixHit) return [prefixHit];
+  // 3) أشقاء GS1 + بادئة معروفة — بالتوازي
+  if (budgetLeft() > 0) {
+    const [siblingHit, prefixHit] = await Promise.all([
+      searchBySiblingPrefix(digits, { deadline }),
+      searchByKnownPrefix(digits, { deadline }),
+    ]);
+    if (siblingHit) return [siblingHit];
+    if (prefixHit) return [prefixHit];
+  }
 
-  const meta = await resolveProductMeta(digits);
+  // 4) metadata خارجية + مسح موجّه
+  const meta = budgetLeft() > 2000
+    ? await resolveProductMeta(digits)
+    : null;
 
-  // 4) metadata → مرشّحين → مسح v2 (الطريقة الأدق — من أول مرة)
   if ((meta?.brand || meta?.title) && budgetLeft() > 0) {
     const hinted = await searchByMetaHints(digits, meta, { deadline });
     if (hinted.length) return hinted;
   }
 
-  // 5) Typesense variations → مسح v2
-  if (budgetLeft() > 0) {
-    const fromVariations = await searchByTypesenseVariationScan(digits);
-    if (fromVariations) return [fromVariations];
-  }
-
-  // 6) روابط miswag.com من الويب → مسح v2
-  if (budgetLeft() > 3000) {
-    const fromWeb = await searchFromWebLinks(digits);
+  // 5) روابط miswag.com من الويب
+  if (budgetLeft() > 4000) {
+    const fromWeb = await searchFromWebLinks(digits, { deadline });
     if (fromWeb.length) return fromWeb;
   }
 
-  // 7) باركودات خليجية بلا UPC — مسح ماركات عطور محلية عبر v2
+  // 6) باركودات خليجية بلا UPC
   if (budgetLeft() > 5000) {
     const gulfHit = await searchByGulfBrandV2Sweep(digits, budgetLeft, deadline);
     if (gulfHit) return [gulfHit];
@@ -476,4 +502,9 @@ export async function searchByEan(barcode) {
 
   missCache.set(digits, Date.now());
   return [];
+}
+
+/** إلغاء الكاش السلبي لباركود (يُستدعى عند فهرسة ناجحة) */
+export function clearEanMissCache(barcode) {
+  clearMiss(barcode);
 }

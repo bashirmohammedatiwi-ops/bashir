@@ -1,12 +1,9 @@
 import { typesenseSearch } from './client.js';
 import { mapTypesenseHit } from './categories.js';
 import { fetchProductDetail } from './products.js';
+import { isMiswagInternalId } from './ids.js';
 
-/** رقم مسواگ الداخلي — ليس EAN عالمي */
-export function isMiswagInternalId(value = '') {
-  const d = String(value || '').replace(/\D/g, '');
-  return /^17\d{8}$/.test(d) || /^\d{9,10}$/.test(d);
-}
+export { isMiswagInternalId };
 
 function formatHit(item, code, matchType, shade = null) {
   return {

@@ -1,17 +1,7 @@
 import { miswagFetch, cacheGet, cacheSet, DETAIL_TTL } from './client.js';
+export { isMiswagInternalId, isValidEan } from './ids.js';
 
 const V2_TTL = DETAIL_TTL;
-
-/** رقم مسواگ الداخلي — ليس باركود EAN */
-export function isMiswagInternalId(value = '') {
-  const d = String(value || '').replace(/\D/g, '');
-  return /^17\d{8}$/.test(d) || (/^\d{9,10}$/.test(d) && !/^\d{13}$/.test(d));
-}
-
-export function isValidEan(value = '') {
-  const d = String(value || '').replace(/\D/g, '');
-  return /^\d{8,14}$/.test(d) && !isMiswagInternalId(d);
-}
 
 /** استخراج باركود EAN من صفحة المنتج v2 (حقل «رمز المنتج» في التطبيق) */
 export function extractBarcodeFromV2Detail(detail) {

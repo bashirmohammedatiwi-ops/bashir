@@ -209,8 +209,10 @@ type StoreSearchStat = { id: string; count: number; error?: string };
 
 /** مهلة لكل متجر — الريان/نجد/أمازون سريعون، مسواگ أبطأ في الباركود */
 function storeSearchTimeoutMs(storeId: string, kind: "text" | "barcode" = "text") {
-  if (storeId === "miswag") return kind === "barcode" ? 35_000 : 20_000;
-  if (storeId === "elryan" || storeId === "amazon") return kind === "barcode" ? 10_000 : 10_000;
+  // مسواگ: مسار باركود محسّن (~18ث داخلياً) — لا ننتظر أمازون
+  if (storeId === "miswag") return kind === "barcode" ? 22_000 : 18_000;
+  if (storeId === "elryan") return kind === "barcode" ? 8_000 : 8_000;
+  if (storeId === "amazon") return kind === "barcode" ? 12_000 : 12_000;
   return kind === "barcode" ? 12_000 : 10_000;
 }
 
@@ -380,11 +382,25 @@ export async function searchCatalogByBarcode(
   await Promise.all(
     stores.map(async (id, i) => {
       try {
-        const data = await catalogFetch<{ query: string; results: Array<Record<string, unknown>> }>(
-          `/api/import/search?q=${q}&store=${encodeURIComponent(id)}&stores=${encodeURIComponent(id)}`,
-          storeSearchTimeoutMs(id, "barcode"),
-        );
-        const mapped = (data.results || []).map((r) => mapBarcodeResult(r, id));
+        // مسار باركود مخصص لكل متجر — لا يخلط مع أمازون ولا البحث النصي
+        let mapped: CatalogImportOption[] = [];
+        try {
+          const data = await catalogFetch<{
+            query: string;
+            results: Array<Record<string, unknown>>;
+          }>(
+            `/api/catalog/${encodeURIComponent(id)}/barcode?q=${q}`,
+            storeSearchTimeoutMs(id, "barcode"),
+          );
+          mapped = (data.results || []).map((r) => mapBarcodeResult(r, id));
+        } catch {
+          // توافق مع نسخ قديمة من catalog-hub
+          const data = await catalogFetch<{ query: string; results: Array<Record<string, unknown>> }>(
+            `/api/import/search?q=${q}&store=${encodeURIComponent(id)}&stores=${encodeURIComponent(id)}`,
+            storeSearchTimeoutMs(id, "barcode"),
+          );
+          mapped = (data.results || []).map((r) => mapBarcodeResult(r, id));
+        }
         optionsByStore[i] = mapped;
         stats[i] = { id, count: mapped.length };
       } catch (err) {

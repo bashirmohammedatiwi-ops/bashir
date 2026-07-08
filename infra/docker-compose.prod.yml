@@ -104,8 +104,9 @@ services:
       AMAZON_MARKETPLACE: ${AMAZON_MARKETPLACE:-www.amazon.com}
       AMAZON_MARKETPLACE_AR: ${AMAZON_MARKETPLACE_AR:-www.amazon.ae}
       AMAZON_PARTNER_TAG_AR: ${AMAZON_PARTNER_TAG_AR:-}
-      AMAZON_AUTO_CRAWL: ${AMAZON_AUTO_CRAWL:-1}
-      AMAZON_CRAWL_DELAY_MS: ${AMAZON_CRAWL_DELAY_MS:-1100}
+      # 0 = لا يزحف أمازون عند الإقلاع (يحمي سرعة مسواگ). 1 = زحف خلفي.
+      AMAZON_AUTO_CRAWL: ${AMAZON_AUTO_CRAWL:-0}
+      AMAZON_CRAWL_DELAY_MS: ${AMAZON_CRAWL_DELAY_MS:-2200}
     expose:
       - "10000"
     networks:

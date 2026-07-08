@@ -102,6 +102,14 @@ export function upsertBarcodeIndex(barcode, fields = {}) {
   return entry;
 }
 
+/** بحث O(1) بالمفتاح المعياري فقط */
+export function hasBarcodeIndexEntry(barcode) {
+  const digits = String(barcode || '').replace(/\D/g, '');
+  if (!digits) return false;
+  const { entries } = loadBarcodeIndex();
+  return Boolean(entries[gtinKey(digits)]);
+}
+
 function applyUpsert(index, barcode, fields = {}) {
   const digits = String(barcode || fields.barcode || '').replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return null;

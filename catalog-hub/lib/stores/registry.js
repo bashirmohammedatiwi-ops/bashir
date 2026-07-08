@@ -5,12 +5,18 @@ import { createSallaAdapter } from './salla/adapter.js';
 
 /**
  * ═══════════════════════════════════════════════════════════
- *  سجل المتاجر — لإضافة متجر جديد:
+ *  سجل المتاجر — كل متجر في مجلد منفصل بالكامل:
  *
- *  1) متجر Salla: أضف سطراً في SALLA_STORES فقط.
- *  2) Vue Storefront / Magento (مثل الريان): انسخ نمط lib/stores/elryan.
- *  3) Amazon Beauty: يحتاج AMAZON_ACCESS_KEY + SECRET + PARTNER_TAG.
- *  4) منصة أخرى: محوّل في lib/stores/{platform}/ ثم CUSTOM_ADAPTERS.
+ *    lib/stores/miswag/   ← مسواگ (Typesense + v2) — مستقل
+ *    lib/stores/elryan/   ← الريان
+ *    lib/stores/amazon/   ← أمازون (لا يشارك منطق مسواگ)
+ *    lib/stores/salla/    ← نجد وغيرها
+ *
+ *  إضافة متجر:
+ *  1) Salla: سطر في SALLA_STORES.
+ *  2) غيره: مجلد lib/stores/{id}/ + تسجيل في CUSTOM_ADAPTERS.
+ *
+ *  مهم: زحف أمازون لا يعمل عند الإقلاع افتراضياً حتى لا يبطّئ مسواگ.
  * ═══════════════════════════════════════════════════════════
  */
 

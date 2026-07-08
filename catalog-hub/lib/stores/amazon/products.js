@@ -13,7 +13,6 @@ import {
   queryAmazonIndex,
   upsertAmazonProducts,
 } from './catalog-index.js';
-import { ensureAmazonCatalogWarm } from './crawl.js';
 import { mapDetailProduct, mapListProduct } from './map.js';
 import {
   scrapeBarcode,
@@ -138,8 +137,7 @@ async function liveSearchScrape(query, { page = 1, limit = 30, categoryId = '' }
  * مع جلب حيّ (PA-API إن وُجدت مفاتيح، وإلا scrape HTML).
  */
 export async function searchProducts(query, { page = 1, limit = 30, categoryId = '' } = {}) {
-  ensureAmazonCatalogWarm();
-
+  // لا تبدأ زحفاً ثقيلاً من كل بحث — فقط عند التصفح الصريح أو POST /crawl
   const q = String(query || '').trim();
   const node = String(categoryId || BEAUTY_ROOT_NODE);
   const stats = getAmazonIndexStats();
@@ -204,6 +202,7 @@ export async function searchProducts(query, { page = 1, limit = 30, categoryId =
 }
 
 export async function listCategoryProducts(categoryId, { page = 1, limit = 30 } = {}) {
+  // تصفح أمازون فقط — لا يبدأ زحفاً خلفياً ثقيلاً (يحمي مسواگ)
   return searchProducts('', { page, limit, categoryId: categoryId || BEAUTY_ROOT_NODE });
 }
 
@@ -285,7 +284,6 @@ export async function fetchProductDetail(id, { light = false } = {}) {
 }
 
 export async function searchBarcode(code) {
-  ensureAmazonCatalogWarm();
   const digits = String(code || '').replace(/\D/g, '');
   if (digits.length < 8 && !/^[A-Z0-9]{10}$/i.test(String(code || '').trim())) return [];
 
