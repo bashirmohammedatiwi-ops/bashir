@@ -71,7 +71,12 @@ export function CatalogOptionCard({ option, selected, onSelect }: Props) {
           <Tag className="catalog-option-row-store" color={STORE_COLORS[option.store] || "default"}>
             {option.storeLabel}
           </Tag>
-          {option.matchType === "barcode" && <Tag color="blue">باركود</Tag>}
+          {(option.matchType === "barcode" || option.matchType === "ean" || option.matchType === "index" || option.matchType === "hint") && (
+            <Tag color="blue">باركود EAN</Tag>
+          )}
+          {option.matchType === "miswag_id" || option.matchType === "miswag_product" || option.matchType === "miswag_shade" ? (
+            <Tag color="orange">رقم مسواگ</Tag>
+          ) : null}
           {shadeCount > 1 && (
             <Tag icon={<BgColorsOutlined />} color="purple">
               {shadeCount} تدرج

@@ -138,17 +138,14 @@ export async function handleImportApi(req, res, url) {
   if (searchMatch) {
     const query = q.q || q.barcode || '';
     const storeId = q.store || 'miswag';
-    if (!query.trim()) return sendJson(res, 400, { error: 'أدخل نص بحث أو رقم مسواگ' });
+    if (!query.trim()) return sendJson(res, 400, { error: 'أدخل باركود EAN أو نص بحث' });
     const adapter = getStoreAdapter(storeId);
     if (!adapter) return sendJson(res, 404, { error: 'متجر غير معروف' });
 
     const digits = query.replace(/\D/g, '');
     try {
       let results = [];
-      const useMiswagId = storeId === 'miswag' && isMiswagInternalId(digits);
-      if (useMiswagId && adapter.searchBarcode) {
-        results = await adapter.searchBarcode(digits);
-      } else if (digits.length >= 8 && adapter.searchBarcode && storeId !== 'miswag') {
+      if (digits.length >= 8 && adapter.searchBarcode) {
         results = await adapter.searchBarcode(digits);
       }
       if (!results.length) {
@@ -181,9 +178,9 @@ export async function handleImportApi(req, res, url) {
           price: item.price,
           shadeCount: item.shadeCount,
           shadeName: item.shadeName,
-          miswagId: item.miswagId || digits,
-          barcode: item.barcode || digits,
-          matchType: item.matchType || 'miswag_id',
+          miswagId: item.miswagId || (isMiswagInternalId(digits) ? digits : ''),
+          barcode: item.barcode || (isMiswagInternalId(digits) ? '' : digits),
+          matchType: item.matchType || (isMiswagInternalId(digits) ? 'miswag_id' : 'ean'),
         }));
       }
       return sendJson(res, 200, { query, results, stores: [{ id: adapter.id, count: results.length }] });

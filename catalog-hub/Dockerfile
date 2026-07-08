@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package.json ./
 COPY server.js ./
 COPY lib ./lib
+COPY data ./data
 ENV NODE_ENV=production
 ENV PORT=10000
 ENV HOST=0.0.0.0

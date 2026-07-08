@@ -92,6 +92,12 @@ export function isMiswagInternalId(value = "") {
   return /^17\d{8}$/.test(d) || /^\d{9,10}$/.test(d);
 }
 
+/** باركود EAN/UPC عالمي (8–14 رقم وليس رقم مسواگ) */
+export function isEanBarcode(value = "") {
+  const d = String(value || "").replace(/\D/g, "");
+  return /^\d{8,14}$/.test(d) && !isMiswagInternalId(d);
+}
+
 async function catalogFetch<T>(path: string, timeoutMs = 60_000): Promise<T> {
   const url = `${getCatalogHubUrl()}${path}`;
   const ctrl = new AbortController();

@@ -1,6 +1,7 @@
 import { fetchCategoryTree, listCategoryProducts, searchProducts, sortProductsClient } from './categories.js';
 import { fetchProductDetail } from './products.js';
-import { searchByMiswagId } from './id-lookup.js';
+import { isMiswagInternalId, searchByMiswagId } from './id-lookup.js';
+import { searchByEan } from './ean-search.js';
 
 export const MISWAG_META = {
   id: 'miswag',
@@ -23,8 +24,12 @@ export const miswagAdapter = {
   sortProductsClient,
   fetchProductDetail,
 
-  /** بحث برقم مسواگ الداخلي (ليس باركود EAN) */
+  /** بحث برقم مسواگ الداخلي أو باركود EAN العالمي */
   async searchBarcode(code) {
-    return searchByMiswagId(code);
+    const digits = String(code || '').replace(/\D/g, '');
+    if (!digits) return [];
+    if (isMiswagInternalId(digits)) return searchByMiswagId(digits);
+    if (/^\d{8,14}$/.test(digits)) return searchByEan(digits);
+    return [];
   },
 };

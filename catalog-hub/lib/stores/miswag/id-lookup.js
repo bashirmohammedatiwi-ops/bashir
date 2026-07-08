@@ -22,8 +22,7 @@ function formatHit(item, code, matchType, shade = null) {
     miswagId: code,
     shadeName: shade?.nameAr || shade?.name || '',
     matchType,
-    // للتوافق مع واجهة الاستيراد
-    barcode: code,
+    barcode: shade?.barcode || '',
   };
 }
 

@@ -8,6 +8,7 @@ import {
   cacheGet,
   cacheSet,
 } from './client.js';
+import { findBarcodesForProduct } from '../../core/barcode-index.js';
 
 function extractEan(v = {}) {
   for (const key of ['barcode', 'ean', 'upc', 'gtin', 'isbn']) {
@@ -209,6 +210,41 @@ async function enrichShadesFromTypesense(pid, shades = []) {
   });
 }
 
+function shadeNamesMatch(a = '', b = '') {
+  const na = String(a || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, ' ').trim();
+  const nb = String(b || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, ' ').trim();
+  if (!na || !nb) return false;
+  return na === nb || na.includes(nb) || nb.includes(na);
+}
+
+/** ربط باركود EAN من الفهرس المحلي عند غيابه في API مسواگ */
+function applyEanFromIndex(pid, product) {
+  const entries = findBarcodesForProduct('miswag', pid);
+  if (!entries.length) return product;
+
+  const productLevel = entries.find((e) => !e.shadeName);
+  if (productLevel?.barcode && !product.barcode) {
+    product.barcode = String(productLevel.barcode).replace(/\D/g, '');
+  }
+
+  if (!product.shades?.length) return product;
+
+  product.shades = product.shades.map((shade) => {
+    if (shade.barcode) return shade;
+    const byShade = entries.find((e) => e.shadeName && shadeNamesMatch(shade.nameAr || shade.name, e.shadeName));
+    const ean = byShade?.barcode || (product.shades.length === 1 ? product.barcode : '');
+    if (!ean) return shade;
+    return { ...shade, barcode: String(ean).replace(/\D/g, ''), ean: String(ean).replace(/\D/g, '') };
+  });
+
+  if (!product.barcode) {
+    const fromShade = product.shades.find((s) => s.barcode)?.barcode;
+    if (fromShade) product.barcode = fromShade;
+  }
+
+  return product;
+}
+
 async function fetchTypesenseFallback(pid) {
   try {
     const doc = await fetchTypesenseDoc(pid);
@@ -304,6 +340,7 @@ export async function fetchProductDetail(id, { light = false } = {}) {
     inStock: detail.info?.size?.is_available !== false,
   };
 
+  applyEanFromIndex(product.id, product);
   cacheSet(cacheKey, product);
   return product;
 }

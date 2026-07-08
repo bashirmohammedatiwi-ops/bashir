@@ -35,6 +35,7 @@ import {
   fetchCatalogStores,
   fetchCategoryTree,
   isMiswagInternalId,
+  isEanBarcode,
   listCategoryProducts,
   searchCatalogByBarcode,
   searchCatalogProducts,
@@ -260,13 +261,17 @@ export default function CatalogImportPage() {
   }, [searchText, activeStore, storeMeta, selectedCategory]);
 
   const isMiswag = activeStore === "miswag";
-  const codeLabel = isMiswag ? "رقم مسواگ" : "باركود";
+  const codeLabel = "بحث بالباركود";
 
   const runCodeSearch = useCallback(async () => {
     const digits = barcode.replace(/\D/g, "");
+    if (!digits) {
+      message.warning("أدخل باركود EAN أو رقم مسواگ");
+      return;
+    }
     if (isMiswag) {
-      if (!isMiswagInternalId(digits)) {
-        message.warning("أدخل رقم مسواگ (10 أرقام يبدأ بـ 17)");
+      if (!isEanBarcode(digits) && !isMiswagInternalId(digits)) {
+        message.warning("أدخل باركود EAN (8–14 رقم) أو رقم مسواگ الداخلي (10 أرقام)");
         return;
       }
     } else if (digits.length < 8) {
@@ -279,7 +284,7 @@ export default function CatalogImportPage() {
       const data = await searchCatalogByBarcode(digits, activeStore);
       setOptions(data.options);
       if (!data.options.length) {
-        message.info(isMiswag ? "لا توجد نتائج لهذا الرقم" : "لا توجد نتائج لهذا الباركود");
+        message.info(isEanBarcode(digits) ? "لا توجد نتائج لهذا الباركود" : "لا توجد نتائج لهذا الرقم");
       } else {
         setStep(1);
       }
@@ -530,7 +535,7 @@ export default function CatalogImportPage() {
             <div className="catalog-import-search-row">
               <Input
                 prefix={<BarcodeOutlined />}
-                placeholder={isMiswag ? "رقم مسواگ (مثال: 1756163650)" : "باركود (8–14 رقم)"}
+                placeholder={isMiswag ? "باركود EAN أو رقم مسواگ (مثال: 6287020281204)" : "باركود (8–14 رقم)"}
                 value={barcode}
                 onChange={(e) => setBarcode(e.target.value)}
                 onPressEnter={runCodeSearch}

@@ -1,0 +1,53 @@
+{
+  "entries": {
+    "06291106035360": {
+      "store": "miswag",
+      "productId": "1756118272",
+      "barcode": "6291106035360",
+      "name": "كونسيلر سائل مطفي Luminous Matte Liquid Concealer",
+      "brand": "",
+      "shadeName": "",
+      "matchType": "hint"
+    },
+    "03337875597180": {
+      "store": "miswag",
+      "productId": "1742909844",
+      "barcode": "3337875597180",
+      "name": "غسول مرطّب للبشرة العادية إلى الجافة مع حمض الهيالورونيك Hydrating Cleanser for Normal to Dry Skin with Hyaluronic Acid",
+      "brand": "",
+      "shadeName": "",
+      "matchType": "hint"
+    },
+    "03348901571449": {
+      "store": "miswag",
+      "productId": "1756238393",
+      "barcode": "3348901571449",
+      "name": "عطر مس ديور Eau de Parfum للنساء 150 مل Miss Dior Eau de Parfum for Women 150 ml",
+      "brand": "",
+      "shadeName": "",
+      "matchType": "product"
+    },
+    "00800897268985": {
+      "store": "miswag",
+      "productId": "1756130306",
+      "barcode": "0800897268985",
+      "name": "هايلايتر بودرة Buttermelt - مقاوم للتلاشي 12 ساعة Buttermelt Powder Highlighter - 12 HR Fade Resistant",
+      "brand": "",
+      "shadeName": "",
+      "matchType": "hint"
+    },
+    "06287020281204": {
+      "store": "miswag",
+      "productId": "1742850145",
+      "barcode": "6287020281204",
+      "name": "عطر مسك اللبان 75 مل Musk Luban Perfume 75 ml",
+      "brand": "IBRAQ",
+      "shadeName": "",
+      "matchType": "seed"
+    }
+  },
+  "meta": {
+    "updatedAt": 0,
+    "source": "seed"
+  }
+}
