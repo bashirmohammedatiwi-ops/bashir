@@ -71,8 +71,12 @@ function withTimeout(promise, ms, label = 'timeout') {
 async function searchAdapter(adapter, query, digits) {
   let results = [];
   const isBarcodeish = digits.length >= 8;
-  // مهلة لكل متجر — مسواگ أطول قليلاً، الباقي قصير حتى لا يعلّق البحث
-  const barcodeBudget = adapter.id === 'miswag' ? 16_000 : 10_000;
+  // مهلة لكل متجر — مسواگ/أمازون يحتاجان وقتاً أطول (scrape + تدرجات)
+  const barcodeBudget = adapter.id === 'miswag'
+    ? 16_000
+    : adapter.id === 'amazon'
+      ? 20_000
+      : 10_000;
 
   if (isBarcodeish && adapter.searchBarcode) {
     try {
@@ -88,9 +92,10 @@ async function searchAdapter(adapter, query, digits) {
 
   const isEanQuery = digits.length >= 8 && isValidEan(digits) && !isMiswagInternalId(digits);
   if (!results.length && !isEanQuery) {
+    const textBudget = adapter.id === 'amazon' ? 18_000 : 12_000;
     const data = await withTimeout(
       adapter.searchProducts(query, { page: 1, limit: 20 }),
-      12_000,
+      textBudget,
       `${adapter.id} search timeout`,
     );
     return {

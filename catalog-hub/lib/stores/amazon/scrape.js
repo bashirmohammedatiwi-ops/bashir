@@ -256,8 +256,12 @@ function parseSearchCards(html = '', marketHost = 'www.amazon.com', lang = 'en')
       || chunk.match(/<h2[^>]*>[\s\S]*?<span[^>]*>([^<]{8,300})<\/span>/)?.[1]
       || chunk.match(/alt="([^"]{8,300})"/)?.[1]
       || '';
-    const title = decodeHtml(titleRaw);
+    const title = decodeHtml(titleRaw)
+      .replace(/^(Sponsored|الإعلان المدعوم|مُموَّل|ممول)\s*[-–—:]?\s*/i, '')
+      .trim();
     if (!title || title.length < 4) continue;
+    // تخطّى بطاقات الإعلان إن بقي وسمها في العنوان
+    if (/^(Sponsored|الإعلان المدعوم)/i.test(titleRaw)) continue;
 
     const img = chunk.match(/src="(https:\/\/m\.media-amazon\.com\/images\/I\/[^"]+)"/)?.[1]
       || chunk.match(/src="(https:\/\/[^"]*images-amazon[^"]+)"/)?.[1]

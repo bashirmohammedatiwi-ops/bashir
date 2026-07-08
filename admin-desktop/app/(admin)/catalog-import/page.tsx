@@ -123,8 +123,8 @@ function listProductToOption(p: CatalogListProduct, store: CatalogStore): Catalo
 
 export default function CatalogImportPage() {
   const [stores, setStores] = useState<CatalogStore[]>([]);
-  // البحث الافتراضي: مسواگ + نجد + الريان — أمازون اختياري حتى لا يبطّئ الباركود
-  const [activeStores, setActiveStores] = useState<string[]>(["miswag", "najdalatheyah", "elryan"]);
+  // البحث الافتراضي يشمل أمازون — النتائج تظهر تدريجياً من المتاجر الأسرع
+  const [activeStores, setActiveStores] = useState<string[]>(["miswag", "najdalatheyah", "elryan", "amazon"]);
   const [browseStore, setBrowseStore] = useState("miswag");
   const [tree, setTree] = useState<CatalogCategoryNode[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -272,7 +272,7 @@ export default function CatalogImportPage() {
         } else if (n > 0) {
           setAmazonCatalogHint(`${count} منتج مفهرس من Amazon Beauty`);
         } else {
-          setAmazonCatalogHint("يبدأ ملء كتالوج أمازون تلقائياً عند توفر المفاتيح");
+          setAmazonCatalogHint("البحث والتصفح يعملان مباشرة من Amazon — الفهرس المحلي يمتلئ تدريجياً");
         }
         // حدّث الشبكة مرة عند نمو الفهرس بشكل ملحوظ (صفحة 1 فقط)
         if (
@@ -641,7 +641,7 @@ export default function CatalogImportPage() {
           <div>
             <h3 className="ci-command-title">مركز البحث والاستيراد</h3>
             <p className="ci-command-sub">
-              فعّل المتاجر للبحث المتوازي. غيّر متجر التصفح من قائمة الأقسام لعرض شجرته.
+              اضغط شريحة المتجر لتفعيله في البحث وتصفح أقسامه. أمازون بيوتي يعمل بالبحث الحي حتى لو كان الفهرس المحلي فارغاً.
             </p>
           </div>
           <div className="ci-store-chips">

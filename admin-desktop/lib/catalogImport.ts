@@ -215,7 +215,7 @@ function storeSearchTimeoutMs(storeId: string, kind: "text" | "barcode" = "text"
   if (storeId === "miswag") return kind === "barcode" ? 22_000 : 15_000;
   if (storeId === "elryan") return kind === "barcode" ? 8_000 : 8_000;
   // أمازون: بحث ثنائي اللغة (ae+com) يحتاج مهلة أوسع قليلاً
-  if (storeId === "amazon") return kind === "barcode" ? 18_000 : 16_000;
+  if (storeId === "amazon") return kind === "barcode" ? 22_000 : 18_000;
   return kind === "barcode" ? 12_000 : 10_000;
 }
 
