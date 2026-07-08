@@ -590,27 +590,37 @@ export async function enrichMiswagShadeBarcodes(product, {
   }
 
   const { enrichShadesForImport } = await import('./barcodes.js');
-  const missing = shades.filter((s) => !s.barcode && !s.ean).length;
-  if (!missing) return shades;
+  const missingShades = shades.filter((s) => !s.barcode && !s.ean);
+  if (!missingShades.length) return shades;
+
+  // درجات مسواك تُسمّى غالباً بأرقام ("1"، "2"..) ولا يوفّر مسواك باركوداً لها.
+  // البحث الخارجي عن درجة برقم فقط لا يُجدي ويبطئ الجلب — نتخطاه ونحصر البحث
+  // على الدرجات ذات الأسماء الوصفية القابلة فعلاً للمطابقة الخارجية.
+  const isMatchableShadeName = (s) => {
+    const label = String(s.name || s.nameEn || s.value || '').trim();
+    if (!label) return false;
+    if (/^[0-9\s#.-]+$/.test(label)) return false; // رقم/رمز فقط
+    return /[A-Za-z\u0621-\u064A]{3,}/.test(label); // فيه كلمة فعلية
+  };
+  const enrichable = missingShades.filter(isMatchableShadeName);
+  if (!enrichable.length) return shades; // لا فائدة من بحث خارجي — أعِد بسرعة
 
   const run = () => enrichShadesForImport(
     { ...product, shades },
     {
-      maxLookups: Math.min(maxLookups, missing, 8),
+      maxLookups: Math.min(maxLookups, enrichable.length, 4),
       barcodeHint: hint,
       light: false,
       skipAmazonAsinLookup: true,
-      timeoutMs: 25_000,
+      timeoutMs: 8_000,
     },
   );
 
-  if (timeoutMs > 0) {
-    return Promise.race([
-      run(),
-      new Promise((resolve) => setTimeout(() => resolve(shades), timeoutMs)),
-    ]);
-  }
-  return run();
+  const budget = timeoutMs > 0 ? Math.min(timeoutMs, 10_000) : 10_000;
+  return Promise.race([
+    run(),
+    new Promise((resolve) => setTimeout(() => resolve(shades), budget)),
+  ]);
 }
 
 export async function fetchProductDetail(id) {

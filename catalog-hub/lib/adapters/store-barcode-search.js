@@ -880,7 +880,7 @@ const SEARCHERS = [
   { store: 'vaneersa', fn: searchVaneersaByBarcode, timeoutMs: 16_000 },
   { store: 'miswag', fn: searchMiswagByBarcode, timeoutMs: 50_000 },
   { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 22_000 },
-  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 50_000 },
+  { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 12_000 },
 ];
 
 const SEARCH_WAVE1 = new Set(['niceone', 'elryan', 'miraaya', 'najd']);
@@ -897,6 +897,10 @@ function withStoreTimeout(promise, ms, store) {
       timer = setTimeout(() => reject(new Error(`انتهت مهلة ${STORE_META[store]?.label || store}`)), ms);
     }),
   ]).finally(() => clearTimeout(timer));
+}
+
+function isStoreTimeoutError(err) {
+  return String(err?.message || '').startsWith('انتهت مهلة ');
 }
 
 function sleep(ms) {
@@ -937,7 +941,11 @@ function buildFacesHintList(hintHits = [], upcData = null, resultHits = []) {
         brand: h.manufacturer,
         store: h.store,
       })),
-  ];
+  ].filter((h) => {
+    const name = String(h.nameEn || h.name || '').trim();
+    const brand = String(h.manufacturerEn || h.manufacturer || h.brand || '').trim();
+    return name.length >= 4 || brand.length >= 3;
+  }).slice(0, 8);
 }
 
 function buildStoreStatusList(enabled, byStore = {}, errors = []) {
@@ -968,11 +976,21 @@ function finalizeSearchPayload(barcode, byStore, errors, enabled) {
     if (!filteredByStore[h.store]) filteredByStore[h.store] = [];
     filteredByStore[h.store].push(h);
   }
+  const hitStores = new Set(results.map((h) => h.store).filter(Boolean));
+  const cleanErrors = [];
+  const seenErrors = new Set();
+  for (const err of errors || []) {
+    if (!err?.store || hitStores.has(err.store)) continue;
+    const key = `${err.store}:${err.message || ''}`;
+    if (seenErrors.has(key)) continue;
+    seenErrors.add(key);
+    cleanErrors.push(err);
+  }
   return {
     barcode,
     results,
     byStore: filteredByStore,
-    errors,
+    errors: cleanErrors,
     stores: uniqueStores.map((store) => ({
       ...STORE_META[store],
       count: (filteredByStore[store] || []).length,
@@ -981,9 +999,8 @@ function finalizeSearchPayload(barcode, byStore, errors, enabled) {
 }
 
 function rememberSearchCache(cacheKey, storeKey, barcode, payload, enabled) {
-  const hadTimeout = payload.errors?.some((e) => e.message?.includes('انتهت مهلة'));
   const hitCount = payload.results?.length || 0;
-  if (!hitCount || hadTimeout) return;
+  if (!hitCount) return;
 
   const prevEntry = searchResultCache.get(cacheKey);
   const prev = prevEntry?.data;
@@ -1158,6 +1175,20 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
       });
       pushPayload('store');
     } catch (err) {
+      if (isStoreTimeoutError(err)) {
+        const message = err?.message || 'فشل البحث';
+        errors.push({ store, message });
+        byStore[store] = local;
+        emit('store-status', {
+          store,
+          status: 'error',
+          label: STORE_META[store]?.label || store,
+          message,
+          count: local.length,
+        });
+        pushPayload('store');
+        return;
+      }
       try {
         const live = await attempt(Math.round(timeoutMs * 1.5));
         const merged = mergeStoreHits(store, local, live);
@@ -1199,7 +1230,7 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
     const upcData = await Promise.race([upcPromise, sleep(2000).then(() => null)]);
     const combinedHints = buildFacesHintList(hintHits, upcData, Object.values(byStore).flat());
     const facesTimeout = combinedHints.length > 0
-      ? Math.max(facesSearcher.timeoutMs, 60_000)
+      ? Math.min(Math.max(facesSearcher.timeoutMs, 18_000), 22_000)
       : facesSearcher.timeoutMs;
 
     const local = byStore.faces || [];
@@ -1219,6 +1250,20 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
         count: (byStore.faces || []).length,
       });
     } catch (err) {
+      if (isStoreTimeoutError(err)) {
+        const message = err?.message || 'فشل البحث';
+        errors.push({ store: 'faces', message });
+        byStore.faces = local;
+        emit('store-status', {
+          store: 'faces',
+          status: 'error',
+          label: STORE_META.faces?.label || 'faces',
+          message,
+          count: local.length,
+        });
+        pushPayload('faces');
+        return;
+      }
       try {
         const facesLive = await attemptFaces(Math.round(facesTimeout * 1.4));
         byStore.faces = mergeStoreHits('faces', local, facesLive);
@@ -1248,46 +1293,49 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
   const wave1 = nonFaces.filter((s) => SEARCH_WAVE1.has(s.store));
   const wave2a = nonFaces.filter((s) => SEARCH_WAVE2A.has(s.store));
   const wave2b = nonFaces.filter((s) => SEARCH_WAVE2B.has(s.store));
+  const amazonSearcher = wave2b.find((s) => s.store === 'amazon');
+  const miswagSearcher = wave2b.find((s) => s.store === 'miswag');
+  const webMetaEarlyPromise = Promise.race([webMetaPromise, sleep(2000).then(() => null)]);
 
   const wave1Work = Promise.all(wave1.map((searcher) => runStoreSearch(searcher)));
-  void Promise.race([wave1Work, sleep(3500)]).then(() => {
+  const wave2aWork = Promise.all(wave2a.map((searcher) => runStoreSearch(searcher)));
+  const wave2bWork = Promise.all([
+    amazonSearcher
+      ? webMetaEarlyPromise.then((webMetaEarly) => runStoreSearch(amazonSearcher, { webMeta: webMetaEarly }))
+      : Promise.resolve(),
+    miswagSearcher
+      ? webMetaEarlyPromise.then((webMetaEarly) => runStoreSearch(miswagSearcher, { webMeta: webMetaEarly }))
+      : Promise.resolve(),
+  ]);
+  const initialWork = Promise.all([wave1Work, wave2aWork, wave2bWork]);
+
+  void Promise.race([initialWork, sleep(3500)]).then(() => {
     if (facesSearcher) facesPromise = runFaces();
   });
 
-  await wave1Work;
-
-  const crossStoreHints = sortHitsStable(dedupeHits(Object.values(byStore).flat()));
+  await initialWork;
   const upcMeta = await Promise.race([upcPromise, sleep(1500).then(() => null)]);
 
-  await Promise.all(wave2a.map((searcher) => runStoreSearch(searcher, { hintHits: crossStoreHints, upcMeta })));
-
-  const crossStoreHints2 = sortHitsStable(dedupeHits(Object.values(byStore).flat()));
-  const amazonSearcher = wave2b.find((s) => s.store === 'amazon');
-  const miswagSearcher = wave2b.find((s) => s.store === 'miswag');
-  const webMetaEarly = await Promise.race([webMetaPromise, sleep(2000).then(() => null)]);
-
-  if (amazonSearcher) {
-    await runStoreSearch(amazonSearcher, { hintHits: crossStoreHints2, upcMeta, webMeta: webMetaEarly });
-  }
-
-  const crossAfterAmazon = sortHitsStable(dedupeHits(Object.values(byStore).flat()));
-  if (miswagSearcher) {
-    await runStoreSearch(miswagSearcher, { hintHits: crossAfterAmazon, upcMeta, webMeta: webMetaEarly });
-  }
-
-  // موجة 3: إعادة محاولة المتاجر التي لم تُرجع نتائج — باستخدام تلميحات من المتاجر الأخرى
+  // موجة 3: إذا كانت النتائج قليلة فقط، أعد محاولة المتاجر المفقودة باستخدام تلميحات المتاجر الأخرى.
   const crossStoreHints3 = sortHitsStable(dedupeHits(Object.values(byStore).flat()));
-  const wave3 = nonFaces.filter(
-    (s) => SEARCH_WAVE1.has(s.store) && !(byStore[s.store] || []).length,
+  const timedOutStores = new Set(
+    (errors || [])
+      .filter((e) => isStoreTimeoutError(e))
+      .map((e) => e.store)
+      .filter(Boolean),
   );
+  const wave3 = storesWithHits(crossStoreHints3) < 3
+    ? nonFaces.filter((s) => !(byStore[s.store] || []).length && !timedOutStores.has(s.store))
+    : [];
   if (wave3.length && crossStoreHints3.length) {
     await Promise.all(
       wave3.map((searcher) => runStoreSearch(searcher, { hintHits: crossStoreHints3, upcMeta })),
     );
   }
 
-  if (facesPromise) await facesPromise;
-  else if (facesSearcher) await runFaces();
+  const finalFaceBudget = storesWithHits(Object.values(byStore).flat()) >= 2 ? 2500 : 12_000;
+  if (facesPromise) await Promise.race([facesPromise, sleep(finalFaceBudget)]);
+  else if (facesSearcher) await Promise.race([runFaces(), sleep(finalFaceBudget)]);
 
   const finalPayload = pushPayload('final');
   rememberSearchCache(cacheKey, storeKey, barcode, finalPayload, enabled);

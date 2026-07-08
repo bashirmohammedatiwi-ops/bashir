@@ -74,7 +74,13 @@ async function fetchCnstrc(path, params = {}) {
   const key = await getCnstrcKey();
   const qs = new URLSearchParams({ key, ...params });
   const res = await fetch(`${CNSTRC_API}${path}?${qs}`, {
-    headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0 (compatible; CatalogHub/1.0)' },
+    headers: {
+      Accept: 'application/json',
+      'Accept-Language': 'ar,en-US;q=0.9,en;q=0.8',
+      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+      Origin: SITE,
+      Referer: `${SITE}/`,
+    },
   });
   if (!res.ok) throw new Error(`Faces Constructor ${res.status}`);
   const json = await res.json();
@@ -93,8 +99,13 @@ async function fetchText(url, { timeoutMs = 28000 } = {}) {
     const res = await fetch(url, {
       signal: controller.signal,
       headers: {
-        Accept: 'text/html,application/json,*/*',
-        'User-Agent': 'Mozilla/5.0 (compatible; CatalogHub/1.0)',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,application/json,*/*;q=0.8',
+        'Accept-Language': 'ar,en-US;q=0.9,en;q=0.8',
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Upgrade-Insecure-Requests': '1',
       },
       redirect: 'follow',
     });

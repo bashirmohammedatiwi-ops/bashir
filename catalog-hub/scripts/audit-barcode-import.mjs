@@ -20,11 +20,12 @@ console.log(`Search: ${search.results?.length || 0} hits from ${Object.keys(sear
 let failed = 0;
 
 for (const hit of search.results || []) {
-  const label = `${hit.store} (${hit.id})`;
+  const sourceId = hit.sku || hit.id;
+  const label = `${hit.store} (${sourceId})`;
   process.stdout.write(`[${label}] `);
   const t1 = Date.now();
   try {
-    const r = await fetchImportProduct(hit.store, hit.id, {
+    const r = await fetchImportProduct(hit.store, sourceId, {
       hubOrigin: HUB,
       barcode: BARCODE,
     });

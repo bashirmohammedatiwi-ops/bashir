@@ -93,9 +93,10 @@ async function withShadeEnrichment(detail, product, { barcodeHint = '', light = 
   const legacyShades = detail?.shades || [];
   if (light || !legacyShades.length) return product;
   const enriched = await enrichShadesForImport(detail, {
-    maxLookups: legacyShades.length,
+    maxLookups: Math.min(legacyShades.length, 8),
     barcodeHint,
-    timeoutMs: 45_000,
+    onlyMatchableExternal: true,
+    timeoutMs: 15_000,
   });
   return fromLegacyProduct({ ...detail, shades: enriched });
 }
@@ -148,7 +149,7 @@ export const ADAPTERS = {
 
   amazon: createAdapter('amazon', async (id, { barcodeHint = '', light = false } = {}) => {
     const asin = String(id || '').trim().toUpperCase();
-    const raw = await withTimeout(fetchProductByAsin(asin), light ? 12_000 : 28_000, null);
+    const raw = await withTimeout(fetchProductByAsin(asin, {}, { light }), light ? 10_000 : 28_000, null);
     if (!raw?.id || isAmazonBundleListing(raw.nameEn, raw.nameAr)) return null;
     const hint = String(barcodeHint || '').replace(/\D/g, '');
     if (hint) raw.barcode = hint;

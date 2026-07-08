@@ -1500,11 +1500,20 @@ function shadeNamesMatch(a = '', b = '') {
 }
 
 /** إثراء باركودات الدرجات عند الاستيراد (مسواگ، Amazon، وغير Nice One) */
+/** هل اسم الدرجة قابل للمطابقة الخارجية؟ (يتخطى الأسماء الرقمية/الرمزية عديمة الفائدة) */
+function isExternallyMatchableShade(shade) {
+  const label = String(shade.nameEn || shade.name || shade.nameAr || shade.value || '').trim();
+  if (!label) return false;
+  if (/^[0-9\s#.\-/]+$/.test(label)) return false;
+  return /[A-Za-z\u0621-\u064A]{3,}/.test(label);
+}
+
 export async function enrichShadesForImport(product, {
   light = false,
   maxLookups = 6,
   barcodeHint = '',
   skipAmazonAsinLookup = false,
+  onlyMatchableExternal = false,
   timeoutMs = 0,
 } = {}) {
   const shades = (product.shades || []).map((s) => ({ ...s }));
@@ -1541,8 +1550,14 @@ export async function enrichShadesForImport(product, {
       applyBarcodeHintToShades(shades, barcodeHint, meta, product.id || product.asin);
     }
 
-    const needLookup = shades.filter((s) => !s.barcode && !s.ean);
+    let needLookup = shades.filter((s) => !s.barcode && !s.ean);
+    // تخطّى الدرجات ذات الأسماء الرقمية/الرمزية التي لا يمكن مطابقتها خارجياً (سرعة أعلى)
+    if (onlyMatchableExternal) {
+      const matchable = needLookup.filter(isExternallyMatchableShade);
+      if (matchable.length || !barcodeHint) needLookup = matchable;
+    }
     const lookupLimit = Math.min(Math.max(1, maxLookups), needLookup.length);
+    if (!lookupLimit) return;
     await Promise.all(needLookup.slice(0, lookupLimit).map(async (shade) => {
       const { ar, en } = shadeNames(shade);
       const shadeLabel = en || ar || shade.nameEn || shade.name || '';

@@ -98,18 +98,61 @@ function acceptLang(locale = 'en') {
   return locale === 'ar' ? 'ar-AE,ar;q=0.9,en;q=0.8' : 'en-US,en;q=0.9';
 }
 
-export async function fetchAmazonHtml(url, locale = 'en') {
-  const res = await fetch(url, {
-    headers: {
-      'User-Agent': UA,
-      'Accept-Language': acceptLang(locale),
-      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Cache-Control': 'no-cache',
-    },
-    redirect: 'follow',
-  });
-  if (!res.ok) throw new Error(`Amazon ${res.status}`);
-  return res.text();
+const AMAZON_UA_POOL = [
+  UA,
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0',
+];
+
+function isBlockedAmazonHtml(html = '') {
+  if (html.length < 12_000 && /captcha|api-services-support|To discuss automated|Robot Check|Sorry, we just need to make sure/i.test(html)) {
+    return true;
+  }
+  return false;
+}
+
+function amazonSleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+export async function fetchAmazonHtml(url, locale = 'en', { retries = 2 } = {}) {
+  let lastErr = null;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: {
+          'User-Agent': AMAZON_UA_POOL[attempt % AMAZON_UA_POOL.length],
+          'Accept-Language': acceptLang(locale),
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Cache-Control': 'no-cache',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none',
+          'Upgrade-Insecure-Requests': '1',
+        },
+        redirect: 'follow',
+      });
+      if (res.status === 503 || res.status === 429) {
+        lastErr = new Error(`Amazon ${res.status}`);
+        if (attempt < retries) { await amazonSleep(400 * (attempt + 1)); continue; }
+        throw lastErr;
+      }
+      if (!res.ok) throw new Error(`Amazon ${res.status}`);
+      const html = await res.text();
+      if (isBlockedAmazonHtml(html)) {
+        lastErr = new Error('Amazon captcha/block');
+        if (attempt < retries) { await amazonSleep(500 * (attempt + 1)); continue; }
+        return html;
+      }
+      return html;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < retries) { await amazonSleep(400 * (attempt + 1)); continue; }
+      throw err;
+    }
+  }
+  throw lastErr || new Error('Amazon fetch failed');
 }
 
 function findCategoryDef(id) {
@@ -573,7 +616,21 @@ export function normalizeProductSummary(raw, meta = {}) {
   };
 }
 
-export async function normalizeProductDetailBilingual(asin, listing = {}) {
+export async function normalizeProductDetailBilingual(asin, listing = {}, { light = false } = {}) {
+  // معاينة سريعة: صفحتان بالتوازي (عربي SA + إنجليزي .com) — اسم + صورة + درجات
+  if (light) {
+    const [htmlAr, htmlCom] = await Promise.all([
+      fetchAmazonHtml(`${AMAZON_SA}/dp/${asin}`, 'ar').catch(() => ''),
+      fetchAmazonHtml(`${AMAZON_COM}/dp/${asin}`, 'en').catch(() => ''),
+    ]);
+    const empty = { asin, title: '', brand: '', thumb: '', images: [], description: '', price: '', barcode: '' };
+    let ar = htmlAr ? parseProductDetail(htmlAr, asin) : { ...empty };
+    const com = htmlCom ? parseProductDetail(htmlCom, asin) : { ...empty };
+    if (!ar.title && com.title) ar = { ...ar, title: com.title };
+    if (!ar.thumb && com.thumb) ar = { ...ar, thumb: com.thumb, images: com.images?.length ? com.images : ar.images };
+    return buildDetailFromParsed(asin, ar, com.title ? com : ar, listing, htmlAr, htmlCom || htmlAr);
+  }
+
   const [htmlAr, htmlEnSa, htmlCom] = await Promise.all([
     fetchAmazonHtml(`${AMAZON_SA}/dp/${asin}`, 'ar').catch(() => ''),
     fetchAmazonHtml(`${AMAZON_SA}/-/en/dp/${asin}`, 'en').catch(() => ''),
@@ -692,19 +749,38 @@ export async function searchProducts(query, page = 1, limit = 30) {
   };
 }
 
-export async function fetchProductByAsin(asin, listing = {}) {
+export async function fetchProductByAsin(asin, listing = {}, { light = false } = {}) {
   const id = String(asin || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(id)) return null;
 
   const cacheKey = `detail:${id}`;
   const cached = productDetailCache.get(cacheKey);
-  if (cached && Date.now() - cached.at < PRODUCT_DETAIL_TTL_MS) return cached.data;
+  // الكاش الكامل يخدم المعاينة السريعة أيضاً، لكن ليس العكس
+  if (cached && Date.now() - cached.at < PRODUCT_DETAIL_TTL_MS && (!light ? cached.full : true)) {
+    return cached.data;
+  }
 
-  const detail = await normalizeProductDetailBilingual(id, listing);
+  let detail = await normalizeProductDetailBilingual(id, listing, { light });
+
+  // احتياطي ضد الحظر المتقطع من أمازون: إن رجع الجلب الكامل ناقصاً (بلا اسم أو بلا درجات)
+  // نعيد المحاولة بمسار المعاينة السريعة الأكثر موثوقية (صفحتان بالتوازي).
+  if (!light && (!detail?.nameAr && !detail?.nameEn || !(detail?.shades?.length))) {
+    const lightDetail = await normalizeProductDetailBilingual(id, listing, { light: true }).catch(() => null);
+    if (lightDetail && isUsableAmazonProduct(lightDetail)) {
+      detail = {
+        ...lightDetail,
+        nameEn: detail?.nameEn || lightDetail.nameEn,
+        descriptionEn: detail?.descriptionEn || lightDetail.descriptionEn,
+        shades: (detail?.shades?.length ? detail.shades : lightDetail.shades) || [],
+      };
+      detail.shadeCount = detail.shades.length;
+    }
+  }
+
   if (isAmazonBundleListing(detail?.nameEn, detail?.nameAr)) return null;
   if (!isUsableAmazonProduct(detail)) return null;
 
-  productDetailCache.set(cacheKey, { at: Date.now(), data: detail });
+  productDetailCache.set(cacheKey, { at: Date.now(), data: detail, full: !light });
   return detail;
 }
 
@@ -717,9 +793,11 @@ export async function lookupAmazonVariantByAsin(asin) {
   if (cached && Date.now() - cached.at < ASIN_BARCODE_TTL_MS) return cached.data;
 
   const urls = [`${AMAZON_COM}/dp/${id}`, `${AMAZON_SA}/dp/${id}`];
+  let sawValidPage = false;
   for (const url of urls) {
     const html = await fetchAmazonHtml(url, 'en').catch(() => '');
-    if (!html) continue;
+    if (!html || isBlockedAmazonHtml(html)) continue;
+    sawValidPage = true;
     const parsed = parseProductDetail(html, id);
     if (parsed.barcode) {
       const result = {
@@ -733,7 +811,8 @@ export async function lookupAmazonVariantByAsin(asin) {
     }
   }
 
-  asinBarcodeCache.set(id, { at: Date.now(), data: null });
+  // خزّن النتيجة السلبية فقط عند رؤية صفحة صالحة — حتى لا يُسمَّم الكاش بحظر مؤقت
+  if (sawValidPage) asinBarcodeCache.set(id, { at: Date.now(), data: null });
   return null;
 }
 
@@ -911,7 +990,7 @@ export async function enrichAmazonShadeBarcodes(product, {
 
   const run = async () => {
     if (light) return shades;
-    await enrichAmazonShadeAsinsParallel(shades, 12);
+    await enrichAmazonShadeAsinsParallel(shades, 8);
     const missing = shades.filter((s) => !s.barcode && !s.ean).length;
     if (!missing) return shades;
     return enrichShadesForImport(

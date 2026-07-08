@@ -495,7 +495,8 @@ export function normalizeProductSummary(p, meta = {}) {
   const nameEn = (en?.name || '').trim();
 
   return {
-    id: String(p.id),
+    // نستخدم sku كمعرّف لأن جلب التفاصيل يعتمد عليه (المعرّف الرقمي الداخلي غير قابل للحل)
+    id: String(p.sku || p.id),
     sku: p.sku || '',
     name: nameAr,
     nameEn,
