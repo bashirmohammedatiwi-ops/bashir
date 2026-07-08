@@ -51,6 +51,12 @@ export default function BrandsPage() {
       message.success("تم الحذف");
       qc.invalidateQueries({ queryKey: ["brands"] });
     },
+    onError: (err: unknown) => {
+      const e = err as { response?: { data?: { message?: string | string[] } }; message?: string };
+      const raw = e?.response?.data?.message;
+      const msg = Array.isArray(raw) ? raw.join(" · ") : raw || e?.message || "تعذّر حذف البراند";
+      message.error(msg);
+    },
   });
 
   const upsertCol = useMutation({
@@ -207,12 +213,31 @@ export default function BrandsPage() {
                         تعديل
                       </Button>
                       <Popconfirm
-                        title="حذف البراند؟"
+                        title={
+                          (r.productCount ?? 0) > 0
+                            ? `لا يمكن الحذف — ${r.productCount} منتج مرتبط`
+                            : "حذف البراند؟"
+                        }
+                        description={
+                          (r.productCount ?? 0) > 0
+                            ? "انقل المنتجات لبراند آخر أو احذفها من صفحة المنتجات أولاً."
+                            : undefined
+                        }
                         okText="حذف"
                         cancelText="إلغاء"
+                        okButtonProps={{ disabled: (r.productCount ?? 0) > 0 }}
                         onConfirm={() => remove.mutate(r.id)}
                       >
-                        <Button size="small" danger>
+                        <Button
+                          size="small"
+                          danger
+                          disabled={(r.productCount ?? 0) > 0}
+                          title={
+                            (r.productCount ?? 0) > 0
+                              ? `مرتبط بـ ${r.productCount} منتج`
+                              : undefined
+                          }
+                        >
                           حذف
                         </Button>
                       </Popconfirm>

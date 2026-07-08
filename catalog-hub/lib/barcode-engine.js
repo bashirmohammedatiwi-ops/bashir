@@ -8,5 +8,6 @@ export {
   normalizeGtinCompare,
   searchBarcodeAllStores,
   searchBarcodeAllStoresStreaming,
+  clearBarcodeSearchCache,
   SEARCHERS,
 } from './adapters/store-barcode-search.js';

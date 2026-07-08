@@ -74,20 +74,21 @@ function importPayloadFromSearch(data) {
   };
 }
 
-export async function searchImportByBarcode(rawBarcode, { fast = false, stores = null, hintHits = [] } = {}) {
-  const data = await searchBarcodeAllStores(rawBarcode, { fast, stores, hintHits });
+export async function searchImportByBarcode(rawBarcode, { fast = false, stores = null, hintHits = [], refresh = false } = {}) {
+  const data = await searchBarcodeAllStores(rawBarcode, { fast, stores, hintHits, refresh });
   if (data.error) {
     return { barcode: null, error: data.error, options: [], errors: [] };
   }
   return importPayloadFromSearch(data);
 }
 
-export async function searchImportByBarcodeStream(rawBarcode, onEvent, { stores = null, hintHits = [] } = {}) {
+export async function searchImportByBarcodeStream(rawBarcode, onEvent, { stores = null, hintHits = [], refresh = false } = {}) {
   const emit = (type, data = {}) => {
     try { onEvent?.({ type, ...data }); } catch { /* client */ }
   };
 
   let lastPayload = null;
+  let lastOptions = [];
 
   await searchBarcodeAllStoresStreaming(rawBarcode, (event) => {
     if (event.type === 'start') {
@@ -99,6 +100,7 @@ export async function searchImportByBarcodeStream(rawBarcode, onEvent, { stores 
     if (event.type === 'results' && event.payload) {
       lastPayload = event.payload;
       const partial = importPayloadFromSearch(event.payload);
+      lastOptions = partial.options || [];
       emit('results', { ...partial, errors: event.payload.errors || partial.errors });
     }
     if (event.type === 'error') {
@@ -109,9 +111,12 @@ export async function searchImportByBarcodeStream(rawBarcode, onEvent, { stores 
       const finalResult = lastPayload?.error
         ? { barcode: null, error: lastPayload.error, options: [], errors: [] }
         : importPayloadFromSearch(lastPayload || { barcode: null, results: [], byStore: {}, errors: [] });
-      emit('done', finalResult);
+      const options = (finalResult.options?.length || 0) >= (lastOptions.length || 0)
+        ? finalResult.options
+        : lastOptions;
+      emit('done', { ...finalResult, options });
     }
-  }, { stores, hintHits });
+  }, { stores, hintHits, refresh });
 
   if (lastPayload?.error) {
     return { barcode: null, error: lastPayload.error, options: [], errors: [] };

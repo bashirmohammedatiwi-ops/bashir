@@ -120,7 +120,7 @@ export const ADAPTERS = {
     return fromLegacyProduct(normalizeMiraayaDetail(raw));
   }),
 
-  faces: createAdapter('faces', async (id, { light = false, barcodeHint = '' } = {}) => {
+  faces: createAdapter('faces', async (id, { barcodeHint = '', light = false } = {}) => {
     const raw = await fetchFacesById(id, { enrichShades: !light, barcodeHint });
     return raw?.id ? fromLegacyProduct(normalizeFacesDetail(raw)) : null;
   }),

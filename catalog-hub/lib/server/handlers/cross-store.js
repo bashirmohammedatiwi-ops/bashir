@@ -39,7 +39,7 @@ export async function handleCrossStoreApi(req, res, url, { port }) {
       startSseResponse(res);
       await searchImportByBarcodeStream(q.q || q.barcode || '', (event) => {
         sendSseEvent(res, event.type, event);
-      }, { stores: parseStoreFilter(q), hintHits: parseHintHits(q) });
+      }, { stores: parseStoreFilter(q), hintHits: parseHintHits(q), refresh: q.refresh === '1' || q.refresh === 'true' });
       res.end();
     } catch (err) {
       console.error('Import search stream error:', err.message);
@@ -57,6 +57,7 @@ export async function handleCrossStoreApi(req, res, url, { port }) {
         fast: q.fast === '1' || q.fast === 'true',
         stores: parseStoreFilter(q),
         hintHits: parseHintHits(q),
+        refresh: q.refresh === '1' || q.refresh === 'true',
       });
       if (data.error) return sendJson(res, 400, data);
       return sendJson(res, 200, data);

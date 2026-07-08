@@ -291,11 +291,13 @@ export async function searchProducts(query, page = 1, limit = 30) {
 
   const html = await fetchHtml('/shop', { keys: q, page });
   let items = parseListingProducts(html, { name: `بحث: ${q}`, nameEn: `Search: ${q}` });
-  const ql = q.toLowerCase();
-  items = items.filter((p) =>
-    `${p.name} ${p.nameEn} ${p.manufacturer} ${p.barcode}`.toLowerCase().includes(ql)
-    || (isEan(q.replace(/\D/g, '')) && barcodeMatches(p.barcode, q)),
-  );
+  const digits = q.replace(/\D/g, '');
+
+  // للباركود: فلترة صارمة — للنص: نثق بنتائج بحث المتجر دون فلترة إضافية
+  if (/^\d{8,14}$/.test(digits)) {
+    items = items.filter((p) => barcodeMatches(p.barcode, digits));
+  }
+
   return {
     items: items.slice(0, limit),
     page,
@@ -386,12 +388,18 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
   const digits = String(barcode || '').replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return [];
 
-  // مسار سريع — بحث مباشر في المتجر بالباركود
-  try {
-    const { items } = await searchProducts(digits, 1, 24);
-    const direct = (items || []).filter((p) => barcodeMatches(p.barcode, digits));
-    if (direct.length) return direct.slice(0, 12);
-  } catch { /* fall through */ }
+  const variants = barcodeQueryVariants(digits);
+
+  // ⚡ مسار سريع: بحث المتجر بالباركود مباشرة
+  for (const q of variants) {
+    try {
+      const data = await searchProducts(q, 1, 24);
+      const hits = (data.items || []).filter((p) =>
+        variants.some((v) => barcodeMatches(p.barcode, v)),
+      );
+      if (hits.length) return hits.slice(0, 12);
+    } catch { /* next variant */ }
+  }
 
   const results = await scanListingsForBarcode(digits);
   if (results.length) return results.slice(0, 12);

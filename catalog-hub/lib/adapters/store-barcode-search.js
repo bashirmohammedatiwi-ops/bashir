@@ -90,7 +90,22 @@ export const STORE_META = {
 let elryanBeautyIdsPromise = null;
 const searchResultCache = new Map();
 const SEARCH_CACHE_MS = 15 * 60 * 1000;
-const SEARCH_NEGATIVE_CACHE_MS = 3 * 60 * 1000;
+const SEARCH_NEGATIVE_CACHE_MS = 45 * 1000;
+
+export function clearBarcodeSearchCache(barcode = null) {
+  if (!barcode) {
+    searchResultCache.clear();
+    return;
+  }
+  const digits = String(barcode).replace(/\D/g, '');
+  for (const key of [...searchResultCache.keys()]) {
+    if (key.includes(digits)) searchResultCache.delete(key);
+  }
+}
+
+function storesWithHits(results = []) {
+  return new Set((results || []).map((h) => h.store).filter(Boolean)).size;
+}
 const STORE_SEARCH_RANK = { niceone: 0, elryan: 1, miraaya: 2, najd: 3, orisdi: 4, beautyway: 5, vaneersa: 6, miswag: 7, amazon: 8, faces: 9 };
 const foundationCache = { products: [], at: 0 };
 const FOUNDATION_CACHE_MS = 10 * 60 * 1000;
@@ -205,12 +220,17 @@ function sortHitsStable(list = []) {
   });
 }
 
-function getCachedSearch(cacheKey) {
+function getCachedSearch(cacheKey, { refresh = false } = {}) {
+  if (refresh) return null;
   const cached = searchResultCache.get(cacheKey);
   if (!cached) return null;
   const age = Date.now() - cached.at;
-  const ttl = cached.data?.results?.length ? SEARCH_CACHE_MS : SEARCH_NEGATIVE_CACHE_MS;
-  return age < ttl ? cached.data : null;
+  const hitCount = cached.data?.results?.length || 0;
+  const ttl = hitCount ? SEARCH_CACHE_MS : SEARCH_NEGATIVE_CACHE_MS;
+  if (age >= ttl) return null;
+  // لا تُعدّ نتيجة فارغة صالحة للإرجاع
+  if (!hitCount) return null;
+  return cached.data;
 }
 
 function catalogThumbPriority(p, barcode) {
@@ -370,10 +390,6 @@ export async function searchNiceOneByBarcode(barcode) {
 
   results.push(...searchUnifiedByStore(barcode, 'niceone').filter(isUsableCatalogHit));
 
-  // ⚡ توقّف فوراً إذا وُجد المنتج في الفهرس المحلي — لا حاجة للبحث الحي ولا مسح الكتالوج
-  const indexedNiceOne = dedupeHits(results.filter(isUsableCatalogHit));
-  if (indexedNiceOne.length) return indexedNiceOne;
-
   try {
     const live = await searchNiceOneLiveByBarcode(barcode);
     results.push(...live);
@@ -381,22 +397,21 @@ export async function searchNiceOneByBarcode(barcode) {
     /* optional */
   }
 
+  const merged = dedupeHits(results.filter(isUsableCatalogHit));
+  if (merged.length) return merged;
+
   // مسح الكتالوج فقط عند فشل البحث الحي (الأبطأ — يُترك أخيراً)
-  if (!results.some(isUsableCatalogHit)) {
-    const catalog = await searchNiceOneCatalogScan(barcode);
-    results.push(...catalog);
-  }
+  const catalog = await searchNiceOneCatalogScan(barcode);
+  results.push(...catalog);
 
   return dedupeHits(results.filter(isUsableCatalogHit));
 }
 
 export async function searchElryanByBarcode(barcode) {
   const unified = searchUnifiedByStore(barcode, 'elryan');
-  if (unified.length) return dedupeHits(unified);
-
   const beautyIds = await getElryanBeautyIds();
   const data = await elryanAr.searchProducts(barcode, 1, 24, beautyIds);
-  const results = [];
+  const results = [...unified];
   for (const p of data.items || []) {
     if (barcodeMatches(p.barcode, barcode)) {
       const n = elryanAr.normalizeProductSummary(p, {});
@@ -454,9 +469,8 @@ function dedupeElryanHits(list = []) {
 }
 
 export async function searchMiraayaByBarcode(barcode) {
-  // ⚡ الفهرس المحلي أولاً — تجنّب طلبات GraphQL/REST للباركودات المعروفة
   const unifiedFirst = searchUnifiedByStore(barcode, 'miraaya');
-  if (unifiedFirst.length) return dedupeHits(unifiedFirst);
+  const results = [...unifiedFirst];
 
   const product = await resolveProductByBarcode(barcode);
   if (product) {
@@ -465,7 +479,7 @@ export async function searchMiraayaByBarcode(barcode) {
     const matchingShade = (detail.shades || []).find(
       (s) => barcodeMatches(s.barcode, barcode) || barcodeMatches(s.sku, barcode),
     );
-    return dedupeHits([hit('miraaya', {
+    results.push(hit('miraaya', {
       id: summary.sku || String(product.sku),
       name: summary.name,
       nameEn: summary.nameEn,
@@ -482,13 +496,10 @@ export async function searchMiraayaByBarcode(barcode) {
       categoryHint: summary.category || '',
       categoryHintEn: summary.categoryEn || '',
       source: 'live',
-    })]);
+    }));
   }
 
-  const unified = searchUnifiedByStore(barcode, 'miraaya');
-  if (unified.length) return dedupeHits(unified);
-
-  return [];
+  return dedupeHits(results.filter(isUsableCatalogHit));
 }
 
 function buildFacesLocalHits(barcode) {
@@ -829,16 +840,33 @@ function finalizeSearchPayload(barcode, byStore, errors, enabled) {
   };
 }
 
-function rememberSearchCache(cacheKey, storeKey, barcode, payload) {
+function rememberSearchCache(cacheKey, storeKey, barcode, payload, enabled) {
   const hadTimeout = payload.errors?.some((e) => e.message?.includes('انتهت مهلة'));
-  if (payload.results?.length) {
-    rememberBarcodeSearchHits(payload.results);
-    searchResultCache.set(cacheKey, { at: Date.now(), data: payload });
-    if (storeKey === 'all') {
-      searchResultCache.set(`fast:all:${barcode}`, { at: Date.now(), data: { ...payload, fast: true } });
+  const hitCount = payload.results?.length || 0;
+  if (!hitCount || hadTimeout) return;
+
+  const prevEntry = searchResultCache.get(cacheKey);
+  const prev = prevEntry?.data;
+  if (prev?.results?.length) {
+    const byStore = {};
+    for (const h of [...prev.results, ...payload.results]) {
+      if (!h?.store) continue;
+      if (!byStore[h.store]) byStore[h.store] = [];
+      byStore[h.store].push(h);
     }
-  } else if (!hadTimeout) {
-    searchResultCache.set(cacheKey, { at: Date.now(), data: payload });
+    const merged = finalizeSearchPayload(barcode, byStore, payload.errors || prev.errors || [], enabled);
+    if (
+      storesWithHits(merged.results) >= storesWithHits(payload.results)
+      || (merged.results?.length || 0) >= hitCount
+    ) {
+      payload = merged;
+    }
+  }
+
+  rememberBarcodeSearchHits(payload.results);
+  searchResultCache.set(cacheKey, { at: Date.now(), data: payload });
+  if (storeKey === 'all') {
+    searchResultCache.set(`fast:all:${barcode}`, { at: Date.now(), data: { ...payload, fast: true } });
   }
 }
 
@@ -846,7 +874,7 @@ function rememberSearchCache(cacheKey, storeKey, barcode, payload) {
  * بحث متدفّق — كل متجر يُرسل نتائجه فور انتهائه دون انتظار الباقي.
  * onEvent({ type, ... }) — start | store-status | results | done | error
  */
-export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { stores = null, hintHits = [] } = {}) {
+export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { stores = null, hintHits = [], refresh = false } = {}) {
   const emit = (type, data = {}) => {
     try {
       onEvent?.({ type, ...data });
@@ -867,7 +895,9 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
     ? SEARCHERS.filter((s) => stores.includes(s.store))
     : SEARCHERS;
 
-  const cached = getCachedSearch(cacheKey);
+  if (refresh) clearBarcodeSearchCache(barcode);
+
+  const cached = getCachedSearch(cacheKey, { refresh });
   if (cached) {
     const cachedStores = buildStoreStatusList(enabled, cached.byStore || {}, cached.errors || []);
     emit('start', { barcode, cached: true, stores: cachedStores });
@@ -1064,12 +1094,12 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
   else if (facesSearcher) await runFaces();
 
   const finalPayload = pushPayload('final');
-  rememberSearchCache(cacheKey, storeKey, barcode, finalPayload);
+  rememberSearchCache(cacheKey, storeKey, barcode, finalPayload, enabled);
   emit('done', { payload: finalPayload });
   return finalPayload;
 }
 
-export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = false, hintHits = [] } = {}) {
+export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = false, hintHits = [], refresh = false } = {}) {
   const barcode = normalizeBarcodeQuery(rawQuery);
   if (!barcode) {
     return { barcode: null, error: 'أدخل باركوداً صالحاً (8–14 رقم)', results: [], byStore: {}, errors: [] };
@@ -1077,7 +1107,8 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
 
   const storeKey = stores?.length ? [...stores].sort().join(',') : 'all';
   const cacheKey = `${fast ? 'fast:' : 'full:'}${storeKey}:${barcode}`;
-  const cached = getCachedSearch(cacheKey);
+  if (refresh) clearBarcodeSearchCache(barcode);
+  const cached = getCachedSearch(cacheKey, { refresh });
   if (cached) return cached;
 
   const localHits = searchUnifiedBarcodeIndex(barcode);
@@ -1107,7 +1138,7 @@ export async function searchBarcodeAllStores(rawQuery, { stores = null, fast = f
   let finalPayload = null;
   await searchBarcodeAllStoresStreaming(rawQuery, (event) => {
     if (event.type === 'done') finalPayload = event.payload;
-  }, { stores, hintHits });
+  }, { stores, hintHits, refresh });
   return finalPayload || {
     barcode,
     results: [],

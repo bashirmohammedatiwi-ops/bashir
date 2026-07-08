@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
 
 function mapBrand(b: any) {
@@ -58,7 +59,25 @@ export class BrandsService {
 
   async remove(id: string) {
     await this.ensureExists(id);
-    await this.prisma.brand.delete({ where: { id } });
+    const productCount = await this.prisma.product.count({ where: { brandId: id } });
+    if (productCount > 0) {
+      throw new BadRequestException(
+        `لا يمكن حذف البراند — مرتبط بـ ${productCount} منتج. انقل المنتجات لبراند آخر أو احذفها أولاً.`,
+      );
+    }
+    try {
+      await this.prisma.brand.delete({ where: { id } });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2003"
+      ) {
+        throw new BadRequestException(
+          "لا يمكن حذف البراند — ما زال مرتبطاً ببيانات أخرى في المتجر.",
+        );
+      }
+      throw error;
+    }
     return { success: true };
   }
 

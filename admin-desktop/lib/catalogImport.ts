@@ -265,39 +265,68 @@ async function consumeSseStream(
   flush();
 }
 
+function mergeCatalogOptions(
+  prev: CatalogImportOption[] = [],
+  next: CatalogImportOption[] = [],
+): CatalogImportOption[] {
+  const map = new Map<string, CatalogImportOption>();
+  for (const opt of [...prev, ...next]) {
+    const key = catalogOptionKey(opt);
+    if (!map.has(key)) {
+      map.set(key, opt);
+      continue;
+    }
+    const cur = map.get(key)!;
+    const score = (o: CatalogImportOption) =>
+      (o.thumb ? 2 : 0) + (o.shadeCount ?? 0) + (o.imageCount ?? 0) + (o.matchType === "shade" ? 1 : 0);
+    map.set(key, score(opt) >= score(cur) ? opt : cur);
+  }
+  return filterCatalogOptions([...map.values()]);
+}
+
 export async function searchCatalogByBarcodeStream(
   barcode: string,
   onEvent?: (event: CatalogSearchStreamEvent) => void,
   signal?: AbortSignal,
-): Promise<CatalogSearchResponse> {
+  options: { refresh?: boolean } = {},
+) {
   const digits = barcode.replace(/\D/g, "");
-  const cached = clientSearchCache.get(digits);
-  if (cached && Date.now() - cached.at < CLIENT_SEARCH_CACHE_MS) {
-    onEvent?.({ type: "start", barcode: digits, cached: true, stores: Object.values(storeStatusesFromByStore(cached.data.byStore)) });
-    onEvent?.({ type: "results", barcode: digits, options: cached.data.options, byStore: cached.data.byStore, source: "cache" });
-    onEvent?.({ type: "done", barcode: digits, options: cached.data.options, byStore: cached.data.byStore });
-    return cached.data;
+  const refresh = options.refresh !== false;
+
+  if (!refresh) {
+    const cached = clientSearchCache.get(digits);
+    if (cached && Date.now() - cached.at < CLIENT_SEARCH_CACHE_MS) {
+      onEvent?.({ type: "start", barcode: digits, cached: true, stores: Object.values(storeStatusesFromByStore(cached.data.byStore)) });
+      onEvent?.({ type: "results", barcode: digits, options: cached.data.options, byStore: cached.data.byStore, source: "cache" });
+      onEvent?.({ type: "done", barcode: digits, options: cached.data.options, byStore: cached.data.byStore });
+      return cached.data;
+    }
+  } else {
+    clientSearchCache.delete(digits);
   }
 
   const q = encodeURIComponent(digits);
+  const refreshParam = refresh ? "&refresh=1" : "";
   let finalResult: CatalogSearchResponse = { barcode: digits, options: [], byStore: {} };
 
   await consumeSseStream(
-    `${CATALOG_HUB_URL}/api/import/search/stream?q=${q}`,
+    `${CATALOG_HUB_URL}/api/import/search/stream?q=${q}${refreshParam}`,
     (event) => {
       onEvent?.(event);
       if (event.type === "results") {
+        const next = filterCatalogOptions(event.options || []);
         finalResult = {
           barcode: event.barcode || digits,
-          options: filterCatalogOptions(event.options || []),
-          byStore: event.byStore ?? {},
+          options: mergeCatalogOptions(finalResult.options, next),
+          byStore: event.byStore ?? finalResult.byStore ?? {},
         };
       }
       if (event.type === "done") {
+        const doneOpts = filterCatalogOptions(event.options || []);
         finalResult = {
           barcode: event.barcode || digits,
-          options: filterCatalogOptions(event.options || []),
-          byStore: event.byStore ?? {},
+          options: mergeCatalogOptions(finalResult.options, doneOpts),
+          byStore: event.byStore ?? finalResult.byStore ?? {},
           errors: event.errors,
         };
       }
@@ -341,6 +370,7 @@ export async function searchCatalogByBarcodeProgressive(
   onPartial?: (options: CatalogImportOption[]) => void,
   onEvent?: (event: CatalogSearchStreamEvent) => void,
   signal?: AbortSignal,
+  options: { refresh?: boolean } = {},
 ) {
   return searchCatalogByBarcodeStream(
     barcode,
@@ -354,6 +384,7 @@ export async function searchCatalogByBarcodeProgressive(
       }
     },
     signal,
+    options,
   );
 }
 

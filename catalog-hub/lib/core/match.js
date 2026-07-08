@@ -13,6 +13,23 @@ export const MATCH = {
 
 const MIN_HINT_SCORE = 18;
 
+function isIndexSourcedHit(hit) {
+  const src = String(hit.source || '').toLowerCase();
+  const mt = String(hit.matchType || '').toLowerCase();
+  return (
+    src.includes('index')
+    || src.includes('lookup')
+    || src.includes('catalog-thumb')
+    || src.includes('catalog-scan')
+    || src.includes('faces-index')
+    || src.includes('unified')
+    || src.includes('local')
+    || src.includes('verified')
+    || mt === 'lookup'
+    || mt === 'shade'
+  );
+}
+
 export function verifyBarcodeOnProduct(product, barcode) {
   const digits = normalizeBarcodeQuery(barcode);
   if (!digits || !product) return { ok: false, shadeName: '', matchType: MATCH.NONE };
@@ -63,6 +80,18 @@ export function acceptSearchHit(hit, barcode, { strict = true } = {}) {
   if (!digits) return false;
 
   const matchType = String(hit.matchType || '').toLowerCase();
+  const src = String(hit.source || '').toLowerCase();
+
+  // نتائج الفهرس مفتاحها الباركود — لا تُرفض لغياب حقل barcode في الـ payload
+  if (isIndexSourcedHit(hit) && (hit.id || hit.sku)) {
+    if (!strict || hitHasBarcodeField(hit, digits) || src.includes('index') || src.includes('lookup')) {
+      return true;
+    }
+  }
+
+  if (matchType === 'live' || matchType === 'live-detail' || src === 'live') {
+    if (hitHasBarcodeField(hit, digits)) return true;
+  }
 
   if (isTrustedMatchType(matchType) && hitHasBarcodeField(hit, digits)) {
     return true;
