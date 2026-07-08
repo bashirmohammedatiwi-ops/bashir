@@ -1441,7 +1441,7 @@ function resolveImportShadeImages(shade = {}) {
   ].filter(Boolean);
 }
 
-function applyBarcodeHintToShades(shades = [], barcodeHint = '', meta = null, productId = '') {
+export function applyBarcodeHintToShades(shades = [], barcodeHint = '', meta = null, productId = '') {
   const digits = String(barcodeHint || '').replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return;
 

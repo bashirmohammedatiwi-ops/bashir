@@ -24,6 +24,9 @@ const API_BASE = 'https://ganesh-lama.miswag.com';
 export const SITE = 'https://miswag.com';
 export const BEAUTY_L1 = 'beauty';
 
+const miswagDetailCache = new Map();
+const MISWAG_DETAIL_TTL_MS = 10 * 60 * 1000;
+
 const CLIENT_ID = process.env.MISWAG_CLIENT_ID || '4';
 const HANDSHAKE_ENV = process.env.MISWAG_HANDSHAKE_ENV || 'prod';
 
@@ -310,13 +313,26 @@ function extractBarcodeFromTypesenseDoc(doc = {}) {
   return [...found];
 }
 
+function extractVariationBarcode(v = {}) {
+  for (const key of ['barcode', 'ean', 'upc', 'gtin', 'isbn']) {
+    const val = String(v?.[key] || '').replace(/\D/g, '');
+    if (/^\d{8,14}$/.test(val)) return val;
+  }
+  const sku = String(v?.sku || v?.alias || '').replace(/\D/g, '');
+  if (/^\d{8,14}$/.test(sku)) return sku;
+  return '';
+}
+
 function mapMiswagColorVariation(v, optionGroup = '') {
+  const bc = extractVariationBarcode(v);
   return {
     name: String(v.title || '').trim(),
     nameEn: String(v.title || '').trim(),
-    barcode: '',
+    barcode: bc,
+    ean: bc,
+    barcodeSource: bc ? 'variation-api' : '',
     image: absImage(v.image),
-    hex: v.color || undefined,
+    hex: v.color || v.hex || undefined,
     sku: String(v.id || ''),
     price: formatMiswagPrice(v.price),
     optionId: String(v.id || ''),
@@ -365,12 +381,17 @@ async function fetchAllVariations(pid) {
     const chunk = await miswagFetch(`/content/v1/items/${encodeURIComponent(pid)}/variations`, { params }).catch(() => null);
     if (!chunk) break;
     const info = chunk.info || chunk;
-    varInfo = { ...varInfo, ...info, variation_title: info.variation_title || varInfo.variation_title, size_title: info.size_title || varInfo.size_title };
+    varInfo = {
+      ...varInfo,
+      ...info,
+      variation_title: info.variation_title || varInfo.variation_title,
+      size_title: info.size_title || varInfo.size_title,
+    };
     for (const v of info.variations || []) allVariations.push(v);
     for (const s of info.sizes || []) sizeMap.set(String(s.id), s);
     cursor = chunk.pagination?.cursor || null;
     pages += 1;
-  } while (cursor && pages < 20);
+  } while (cursor && pages < 12);
 
   return {
     ...varInfo,
@@ -539,14 +560,73 @@ function extractGalleryImages(blocks = []) {
     .filter(Boolean);
 }
 
+export async function enrichMiswagShadeBarcodes(product, {
+  light = false,
+  barcodeHint = '',
+  maxLookups = 24,
+  timeoutMs = 40_000,
+} = {}) {
+  const shades = [...(product.shades || [])];
+  if (!shades.length || light) return shades;
+
+  const hint = String(barcodeHint || product.barcode || '').replace(/\D/g, '');
+  const rawVars = product.raw?.variations?.variations || product.raw?.variations || [];
+
+  if (hint) {
+    const { applyBarcodeHintToShades } = await import('./barcodes.js');
+    applyBarcodeHintToShades(shades, hint, { brand: product.manufacturer, title: product.name }, product.id);
+  }
+
+  for (const shade of shades) {
+    if (shade.barcode || shade.ean) continue;
+    const raw = rawVars.find((v) => String(v.id || v.sku) === String(shade.sku || shade.optionId));
+    if (!raw) continue;
+    const bc = extractVariationBarcode(raw);
+    if (bc) {
+      shade.barcode = bc;
+      shade.ean = bc;
+      shade.barcodeSource = 'variation-api';
+    }
+  }
+
+  const { enrichShadesForImport } = await import('./barcodes.js');
+  const missing = shades.filter((s) => !s.barcode && !s.ean).length;
+  if (!missing) return shades;
+
+  const run = () => enrichShadesForImport(
+    { ...product, shades },
+    {
+      maxLookups: Math.min(maxLookups, missing, 8),
+      barcodeHint: hint,
+      light: false,
+      skipAmazonAsinLookup: true,
+      timeoutMs: 25_000,
+    },
+  );
+
+  if (timeoutMs > 0) {
+    return Promise.race([
+      run(),
+      new Promise((resolve) => setTimeout(() => resolve(shades), timeoutMs)),
+    ]);
+  }
+  return run();
+}
+
 export async function fetchProductDetail(id) {
   const pid = String(id || '').trim();
   if (!pid) return null;
+
+  const cacheKey = `detail:${pid}`;
+  const cached = miswagDetailCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < MISWAG_DETAIL_TTL_MS) return cached.data;
 
   const [detail, varInfo] = await Promise.all([
     miswagFetch(`/content/v1/items/${encodeURIComponent(pid)}`),
     fetchAllVariations(pid).catch(() => ({})),
   ]);
+
+  if (!detail?.info) return null;
 
   const meta = detail?.info?.meta || {};
   const blocks = collectBlocks(detail?.content || []);
@@ -558,7 +638,7 @@ export async function fetchProductDetail(id) {
   const shades = buildShadesFromVarInfo(varInfo);
   const brand = String(meta.brand || '').trim();
 
-  return {
+  const result = {
     id: String(meta.product_id || pid),
     sku: String(meta.product_id || pid),
     name: parseTitle({ AR: meta.name, EN: meta.name }).ar || meta.name || '',
@@ -580,6 +660,9 @@ export async function fetchProductDetail(id) {
     inStock: detail?.info?.size?.is_available !== false,
     raw: { detail, variations: varInfo },
   };
+
+  miswagDetailCache.set(cacheKey, { at: Date.now(), data: result });
+  return result;
 }
 
 export function normalizeProductSummary(product = {}) {

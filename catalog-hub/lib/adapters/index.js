@@ -36,7 +36,10 @@ import {
   enrichAmazonShadeBarcodes,
   isAmazonBundleListing,
 } from '../amazon-api.js';
-import { fetchProductDetail as fetchMiswagDetail } from '../miswag-api.js';
+import {
+  fetchProductDetail as fetchMiswagDetail,
+  enrichMiswagShadeBarcodes,
+} from '../miswag-api.js';
 import { fetchProductDetail as fetchOrisdiDetail } from '../orisdi-api.js';
 import { fetchProductDetail as fetchBeautywayDetail } from '../beautyway-api.js';
 import { fetchProductDetail as fetchNajdDetail } from '../najd-api.js';
@@ -145,7 +148,7 @@ export const ADAPTERS = {
 
   amazon: createAdapter('amazon', async (id, { barcodeHint = '', light = false } = {}) => {
     const asin = String(id || '').trim().toUpperCase();
-    const raw = await withTimeout(fetchProductByAsin(asin), light ? 18_000 : 35_000, null);
+    const raw = await withTimeout(fetchProductByAsin(asin), light ? 12_000 : 28_000, null);
     if (!raw?.id || isAmazonBundleListing(raw.nameEn, raw.nameAr)) return null;
     const hint = String(barcodeHint || '').replace(/\D/g, '');
     if (hint) raw.barcode = hint;
@@ -153,24 +156,24 @@ export const ADAPTERS = {
       raw.shades = await enrichAmazonShadeBarcodes(raw, {
         barcodeHint: hint,
         maxLookups: raw.shades.length,
-        timeoutMs: 60_000,
+        timeoutMs: light ? 0 : 50_000,
       });
     }
     return fromLegacyProduct(raw);
   }),
 
   miswag: createAdapter('miswag', async (id, { barcodeHint = '', light = false } = {}) => {
-    const detail = await withTimeout(fetchMiswagDetail(id), light ? 15_000 : 35_000, null);
+    const detail = await withTimeout(fetchMiswagDetail(id), light ? 10_000 : 22_000, null);
     if (!detail?.id) return null;
-    let product = fromLegacyProduct(detail);
     const hint = String(barcodeHint || '').replace(/\D/g, '');
-    if (!light && product.shades.length) {
-      const enriched = await enrichShadesForImport(
-        { ...detail, shades: product.shades },
-        { maxLookups: product.shades.length, barcodeHint: hint, timeoutMs: 50_000 },
-      );
-      product = fromLegacyProduct({ ...detail, shades: enriched });
+    if (!light && detail.shades?.length) {
+      detail.shades = await enrichMiswagShadeBarcodes(detail, {
+        barcodeHint: hint,
+        maxLookups: detail.shades.length,
+        timeoutMs: 45_000,
+      });
     }
+    let product = fromLegacyProduct(detail);
     if (hint && !product.barcode) product.barcode = hint;
     return product;
   }),

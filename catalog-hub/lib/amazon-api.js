@@ -13,6 +13,12 @@ const HUB_PREFIX = process.env.CATALOG_HUB_PUBLIC_PREFIX || '';
 const browseCache = new Map();
 const BROWSE_CACHE_MS = 15 * 60 * 1000;
 
+/** ذاكرة باركود ASIN — يمنع إعادة جلب 12+ صفحة لكل درجة */
+const asinBarcodeCache = new Map();
+const ASIN_BARCODE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const productDetailCache = new Map();
+const PRODUCT_DETAIL_TTL_MS = 10 * 60 * 1000;
+
 /** شجرة ثنائية اللغة لقسم Makeup على Amazon (node 3760911) */
 const CATEGORY_DEFS = [
   {
@@ -276,6 +282,44 @@ function upscaleAmazonImage(url = '') {
   return normalizeAmazonImageSize(url, AMAZON_THUMB_PX);
 }
 
+function parseAmazonVariationsFromTwister(html = '') {
+  const shades = [];
+  const seen = new Set();
+  const h = String(html || '');
+  const imgMap = parseVariationImageMap(h);
+
+  const patterns = [
+    /<li[^>]*\bid="color_name[^"]*"[^>]*data-asin="(B0[A-Z0-9]{8})"[^>]*(?:title="([^"]+)"|aria-label="([^"]+)")/gi,
+    /<li[^>]*data-asin="(B0[A-Z0-9]{8})"[^>]*\bid="color_name[^"]*"[^>]*(?:title="([^"]+)"|aria-label="([^"]+)")/gi,
+    /data-asin="(B0[A-Z0-9]{8})"[^>]*aria-label="([^"]{2,80})"/gi,
+  ];
+
+  for (const re of patterns) {
+    for (const m of h.matchAll(re)) {
+      const asin = m[1];
+      const name = String(m[2] || m[3] || '').trim();
+      if (!asin || !name || seen.has(asin)) continue;
+      if (/select|اختر|click|image unavailable/i.test(name)) continue;
+      seen.add(asin);
+      const swatchUrl = imgMap[asin] || '';
+      const displayUrl = swatchUrl ? upscaleAmazonImage(swatchUrl) : '';
+      shades.push({
+        optionId: asin,
+        name,
+        nameAr: name,
+        nameEn: name,
+        sku: asin,
+        rawImage: displayUrl,
+        image: displayUrl ? proxyAmazonImage(displayUrl) : '',
+        thumb: displayUrl ? proxyAmazonImage(displayUrl) : '',
+        swatchImage: swatchUrl ? proxyAmazonImage(swatchUrl) : '',
+        colorSourceImage: swatchUrl || displayUrl || '',
+      });
+    }
+  }
+  return shades;
+}
+
 function parseAmazonVariations(htmlAr, htmlEn) {
   const arMap = parseDimensionValuesDisplayData(htmlAr);
   const enMap = parseDimensionValuesDisplayData(htmlEn);
@@ -295,14 +339,16 @@ function parseAmazonVariations(htmlAr, htmlEn) {
       nameAr,
       nameEn,
       sku: asin,
-      // صورة العرض المرتبطة باللون (نسخة أكبر)
       rawImage: displayUrl,
       image: displayUrl ? proxyAmazonImage(displayUrl) : '',
       thumb: displayUrl ? proxyAmazonImage(displayUrl) : '',
-      // صورة السواتش الأصلية (مربّع اللون) — أدقّ لاستخراج قيمة اللون
       swatchImage: swatchUrl ? proxyAmazonImage(swatchUrl) : '',
       colorSourceImage: swatchUrl || displayUrl || '',
     });
+  }
+  if (!shades.length) {
+    const tw = parseAmazonVariationsFromTwister(htmlEn || htmlAr);
+    if (tw.length) return tw.sort((a, b) => (a.nameEn || a.nameAr).localeCompare(b.nameEn || b.nameAr, 'en'));
   }
   return shades.sort((a, b) => (a.nameEn || a.nameAr).localeCompare(b.nameEn || b.nameAr, 'en'));
 }
@@ -318,6 +364,38 @@ export function isAmazonBundleListing(nameEn = '', nameAr = '') {
   if (/\bpack\s+of\s+\d+\b/i.test(t)) return true;
   if (/\band\b/i.test(nameEn) && /\b(wet n wild|maybelline|e\.l\.f|revlon|l'oreal)\b/i.test(t)) return true;
   return false;
+}
+
+function parseAsinBarcodeMapFromHtml(html = '') {
+  const map = {};
+  const h = String(html || '');
+  const patterns = [
+    /"asin"\s*:\s*"(B0[A-Z0-9]{8})"[\s\S]{0,1400}?"(?:gtin|ean|upc)"\s*:\s*"(\d{8,14})"/gi,
+    /"defaultAsin"\s*:\s*"(B0[A-Z0-9]{8})"[\s\S]{0,900}?"(?:gtin|ean|upc)"\s*:\s*"(\d{8,14})"/gi,
+    /"(B0[A-Z0-9]{8})"[\s\S]{0,700}?"(?:gtin|ean|upc)"\s*:\s*"(\d{8,14})"/gi,
+  ];
+  for (const re of patterns) {
+    for (const m of h.matchAll(re)) {
+      const bc = String(m[2] || '').replace(/\D/g, '');
+      if (/^\d{8,14}$/.test(bc) && !map[m[1]]) map[m[1]] = bc;
+    }
+  }
+  return map;
+}
+
+function applyShadeBarcodesFromHtml(shades = [], htmlAr = '', htmlEn = '') {
+  const map = { ...parseAsinBarcodeMapFromHtml(htmlAr), ...parseAsinBarcodeMapFromHtml(htmlEn) };
+  for (const shade of shades) {
+    if (shade.barcode || shade.ean) continue;
+    const asin = String(shade.sku || shade.optionId || '').trim().toUpperCase();
+    const bc = map[asin];
+    if (bc) {
+      shade.barcode = bc;
+      shade.ean = bc;
+      shade.barcodeSource = 'twister-html';
+    }
+  }
+  return shades;
 }
 
 function parseAmazonBarcodeFromHtml(html = '') {
@@ -438,6 +516,7 @@ function buildDetailFromParsed(asin, ar, en, listing = {}, htmlAr = '', htmlEn =
   const thumb = proxyAmazonImage(ar.thumb || en.thumb || listThumb || images[0] || '', { maxSize: AMAZON_THUMB_PX });
   if (listThumb && !images.includes(listThumb)) images.unshift(listThumb);
   const shades = parseAmazonVariations(htmlAr, htmlEn);
+  applyShadeBarcodesFromHtml(shades, htmlAr, htmlEn);
   return {
     id: asin,
     asin,
@@ -495,27 +574,24 @@ export function normalizeProductSummary(raw, meta = {}) {
 }
 
 export async function normalizeProductDetailBilingual(asin, listing = {}) {
-  const [htmlAr, htmlEnSa] = await Promise.all([
+  const [htmlAr, htmlEnSa, htmlCom] = await Promise.all([
     fetchAmazonHtml(`${AMAZON_SA}/dp/${asin}`, 'ar').catch(() => ''),
     fetchAmazonHtml(`${AMAZON_SA}/-/en/dp/${asin}`, 'en').catch(() => ''),
+    fetchAmazonHtml(`${AMAZON_COM}/dp/${asin}`, 'en').catch(() => ''),
   ]);
   let ar = htmlAr ? parseProductDetail(htmlAr, asin) : { asin, title: '', brand: '', thumb: '', images: [], description: '', price: '', barcode: '' };
   let en = htmlEnSa ? parseProductDetail(htmlEnSa, asin) : { asin, title: '', brand: '', thumb: '', images: [], description: '', price: '', barcode: '' };
-  let htmlCom = '';
 
-  const needsComFallback = !(ar.title || en.title) || !(ar.thumb || en.thumb || ar.images?.length || en.images?.length);
-  if (needsComFallback) {
-    htmlCom = await fetchAmazonHtml(`${AMAZON_COM}/dp/${asin}`, 'en').catch(() => '');
-    if (htmlCom) {
-      const com = parseProductDetail(htmlCom, asin);
-      if (!en.title && com.title) en = com;
-      if (!ar.title && com.title) ar = { ...ar, title: com.title };
-      if (!en.thumb && com.thumb) {
-        en = { ...en, thumb: com.thumb, images: com.images?.length ? com.images : en.images };
-      }
-      if (!en.description && com.description) en = { ...en, description: com.description };
-      if (!en.barcode && com.barcode) en = { ...en, barcode: com.barcode };
+  if (htmlCom) {
+    const com = parseProductDetail(htmlCom, asin);
+    if (!en.title && com.title) en = com;
+    if (!ar.title && com.title) ar = { ...ar, title: com.title };
+    if (!en.thumb && com.thumb) {
+      en = { ...en, thumb: com.thumb, images: com.images?.length ? com.images : en.images };
     }
+    if (!en.description && com.description) en = { ...en, description: com.description };
+    if (!en.barcode && com.barcode) en = { ...en, barcode: com.barcode };
+    if (!ar.barcode && com.barcode) ar = { ...ar, barcode: com.barcode };
   }
 
   const htmlEn = htmlEnSa || htmlCom;
@@ -619,40 +695,49 @@ export async function searchProducts(query, page = 1, limit = 30) {
 export async function fetchProductByAsin(asin, listing = {}) {
   const id = String(asin || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(id)) return null;
+
+  const cacheKey = `detail:${id}`;
+  const cached = productDetailCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < PRODUCT_DETAIL_TTL_MS) return cached.data;
+
   const detail = await normalizeProductDetailBilingual(id, listing);
-  if (isAmazonBundleListing(detail.nameEn, detail.nameAr)) {
-    return null;
-  }
-  if (!isUsableAmazonProduct(detail)) {
-    return null;
-  }
+  if (isAmazonBundleListing(detail?.nameEn, detail?.nameAr)) return null;
+  if (!isUsableAmazonProduct(detail)) return null;
+
+  productDetailCache.set(cacheKey, { at: Date.now(), data: detail });
   return detail;
 }
 
-/** بحث باركود ASIN لدرجة معينة */
+/** بحث باركود ASIN لدرجة معينة — مع تخزين مؤقت */
 export async function lookupAmazonVariantByAsin(asin) {
   const id = String(asin || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(id)) return null;
-  const [htmlCom, htmlSa] = await Promise.all([
-    fetchAmazonHtml(`${AMAZON_COM}/dp/${id}`, 'en').catch(() => ''),
-    fetchAmazonHtml(`${AMAZON_SA}/dp/${id}`, 'en').catch(() => ''),
-  ]);
-  for (const html of [htmlCom, htmlSa]) {
+
+  const cached = asinBarcodeCache.get(id);
+  if (cached && Date.now() - cached.at < ASIN_BARCODE_TTL_MS) return cached.data;
+
+  const urls = [`${AMAZON_COM}/dp/${id}`, `${AMAZON_SA}/dp/${id}`];
+  for (const url of urls) {
+    const html = await fetchAmazonHtml(url, 'en').catch(() => '');
     if (!html) continue;
     const parsed = parseProductDetail(html, id);
     if (parsed.barcode) {
-      return {
+      const result = {
         ean: parsed.barcode,
         brand: parsed.brand || '',
         title: parsed.title || '',
         source: `amazon-variant:${id}`,
       };
+      asinBarcodeCache.set(id, { at: Date.now(), data: result });
+      return result;
     }
   }
+
+  asinBarcodeCache.set(id, { at: Date.now(), data: null });
   return null;
 }
 
-async function enrichAmazonShadeAsinsParallel(shades = [], concurrency = 4) {
+async function enrichAmazonShadeAsinsParallel(shades = [], concurrency = 12) {
   const tasks = shades
     .filter((s) => !s.barcode && !s.ean)
     .map((shade) => ({
@@ -757,7 +842,7 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
   // ⚡ جلب تفاصيل أعلى 3 ASIN بالتوازي بدل 5 بالتسلسل
   const asinOrder = enList.map((p) => p.asin).filter(Boolean);
   const settled = await Promise.allSettled(
-    asinOrder.slice(0, 3).map((asin) =>
+    asinOrder.slice(0, 2).map((asin) =>
       normalizeProductDetailBilingual(asin, listingByAsin.get(asin) || {}),
     ),
   );
@@ -826,11 +911,13 @@ export async function enrichAmazonShadeBarcodes(product, {
 
   const run = async () => {
     if (light) return shades;
-    await enrichAmazonShadeAsinsParallel(shades, 6);
+    await enrichAmazonShadeAsinsParallel(shades, 12);
+    const missing = shades.filter((s) => !s.barcode && !s.ean).length;
+    if (!missing) return shades;
     return enrichShadesForImport(
       { ...product, shades },
       {
-        maxLookups: Math.min(maxLookups, shades.length),
+        maxLookups: Math.min(maxLookups, missing),
         barcodeHint: hint,
         light: false,
         skipAmazonAsinLookup: true,
