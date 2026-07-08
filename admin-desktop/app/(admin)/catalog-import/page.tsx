@@ -202,7 +202,7 @@ export default function CatalogImportPage() {
     async (catId: string, page = 1, append = false) => {
       setLoadingProducts(true);
       try {
-        const data = await listCategoryProducts(activeStore, catId, page);
+        const data = await listCategoryProducts(activeStore, catId, page, 60);
         setProducts((prev) => (append ? [...prev, ...data.products] : data.products));
         setProductPage(data.page);
         setProductTotal(data.total || 0);
@@ -245,18 +245,18 @@ export default function CatalogImportPage() {
     setSearching(true);
     setOptions([]);
     try {
-      const data = await searchCatalogProducts(activeStore, q, 1, 30, selectedCategory || "");
+      const data = await searchCatalogProducts(activeStore, q, 1, 60);
       const opts = data.products.map((p) => listProductToOption(p, storeMeta));
       setOptions(opts);
       setProducts([]);
-      if (!opts.length) message.info("لا توجد نتائج");
+      if (!opts.length) message.info("لا توجد نتائج لهذا البحث");
       else setStep(1);
     } catch (err) {
       message.error(errorMessage(err, "فشل البحث"));
     } finally {
       setSearching(false);
     }
-  }, [searchText, activeStore, storeMeta, selectedCategory]);
+  }, [searchText, activeStore, storeMeta]);
 
   const runBarcodeSearch = useCallback(async () => {
     const digits = barcode.replace(/\D/g, "");
@@ -269,7 +269,7 @@ export default function CatalogImportPage() {
     try {
       const data = await searchCatalogByBarcode(digits, activeStore);
       setOptions(data.options);
-      if (!data.options.length) message.info("لا توجد نتائج لهذا الباركود");
+      if (!data.options.length) message.info("لا توجد نتائج لهذا الباركود — جرّب البحث بالاسم");
       else setStep(1);
     } catch (err) {
       message.error(errorMessage(err, "فشل البحث بالباركود"));

@@ -74,6 +74,7 @@ export type CatalogImportOption = {
   thumb?: string;
   barcode?: string;
   shadeCount?: number;
+  shadeName?: string;
   price?: string;
   category?: string;
   matchType?: string;
@@ -217,13 +218,14 @@ export async function searchCatalogByBarcode(barcode: string, storeId = "miswag"
   const options: CatalogImportOption[] = (data.results || []).map((r) => ({
     store: String(r.store || storeId),
     storeLabel: String(r.storeLabel || storeId),
-    sourceId: String(r.id || r.sourceId || ""),
+    sourceId: String(r.sourceId || r.id || ""),
     nameAr: String(r.nameAr || r.name || ""),
     nameEn: String(r.nameEn || ""),
     brandAr: String(r.brandAr || r.manufacturer || ""),
     thumb: String(r.thumb || ""),
     barcode: String(r.barcode || barcode),
     shadeCount: Number(r.shadeCount || 0),
+    shadeName: String(r.shadeName || ""),
     price: String(r.price || ""),
     category: String(r.category || ""),
     matchType: String(r.matchType || "barcode"),

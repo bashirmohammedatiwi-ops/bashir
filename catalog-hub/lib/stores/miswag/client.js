@@ -179,7 +179,7 @@ export async function typesenseSearch(query, {
   } else if (cfg.preset && !strict && !filterBy) {
     search.preset = cfg.preset;
   } else {
-    search.query_by = 'title_AR,title_EN,brand,keywords,barcode';
+    search.query_by = 'title_AR,title_EN,brand,keywords';
     search.num_typos = 2;
     if (strict) {
       search.num_typos = 1;
@@ -191,6 +191,9 @@ export async function typesenseSearch(query, {
   if (sortBy) search.sort_by = sortBy;
 
   const [result = {}] = await typesenseMultiSearch([search]);
+  if (result.error) {
+    throw new Error(result.error);
+  }
   return { hits: result.hits || [], found: result.found || 0, error: result.error };
 }
 
