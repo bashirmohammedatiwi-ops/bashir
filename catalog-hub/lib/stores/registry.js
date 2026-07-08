@@ -1,17 +1,14 @@
-import { miswagAdapter, MISWAG_META } from './miswag/index.js';
+import { miswagAdapter } from './miswag/index.js';
+import { elryanAdapter } from './elryan/index.js';
 import { createSallaAdapter } from './salla/adapter.js';
 
 /**
  * ═══════════════════════════════════════════════════════════
  *  سجل المتاجر — لإضافة متجر جديد:
  *
- *  1) متجر Salla (مثل نجد العذية): أضف سطراً في SALLA_STORES فقط.
- *  2) منصة أخرى: أنشئ محولاً في lib/stores/{platform}/ يطبّق العقد:
- *     { id, label, domain, siteUrl,
- *       health(), fetchCategoryTree(), listCategoryProducts(),
- *       searchProducts(), fetchProductDetail(),
- *       searchBarcode()?, sortProductsClient()? }
- *     ثم أضفه في CUSTOM_ADAPTERS.
+ *  1) متجر Salla: أضف سطراً في SALLA_STORES فقط.
+ *  2) Vue Storefront / Magento (مثل الريان): انسخ نمط lib/stores/elryan.
+ *  3) منصة أخرى: محوّل في lib/stores/{platform}/ يطبّق العقد ثم CUSTOM_ADAPTERS.
  * ═══════════════════════════════════════════════════════════
  */
 
@@ -35,7 +32,7 @@ const SALLA_STORES = [
 ];
 
 /** محولات مخصصة (غير Salla) */
-const CUSTOM_ADAPTERS = [miswagAdapter];
+const CUSTOM_ADAPTERS = [miswagAdapter, elryanAdapter];
 
 function buildRegistry() {
   const adapters = {};

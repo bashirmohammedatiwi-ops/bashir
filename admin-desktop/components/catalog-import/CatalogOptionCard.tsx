@@ -15,6 +15,7 @@ import { resolveCatalogImageUrl } from "@/lib/resolveCatalogImageUrl";
 export const STORE_COLORS: Record<string, string> = {
   miswag: "#df1c24",
   najdalatheyah: "#511952",
+  elryan: "#0b6e4f",
 };
 
 /** لون ثابت تلقائي للمتاجر المستقبلية غير المعرّفة في STORE_COLORS */
