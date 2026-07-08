@@ -14,6 +14,7 @@ import { resolveCatalogImageUrl } from "@/lib/resolveCatalogImageUrl";
 
 export const STORE_COLORS: Record<string, string> = {
   miswag: "#df1c24",
+  najdalatheyah: "#511952",
 };
 
 type Props = {
@@ -71,7 +72,7 @@ export function CatalogOptionCard({ option, selected, onSelect }: Props) {
           <Tag className="catalog-option-row-store" color={STORE_COLORS[option.store] || "default"}>
             {option.storeLabel}
           </Tag>
-          {(option.matchType === "barcode" || option.matchType === "ean" || option.matchType === "index" || option.matchType === "hint") && (
+          {(option.matchType === "barcode" || option.matchType === "ean" || option.matchType === "index" || option.matchType === "hint" || option.matchType === "sku") && (
             <Tag color="blue">باركود EAN</Tag>
           )}
           {option.matchType === "miswag_id" || option.matchType === "miswag_product" || option.matchType === "miswag_shade" ? (

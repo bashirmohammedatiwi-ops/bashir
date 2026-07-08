@@ -1,5 +1,10 @@
 import { sendJson, parseQuery } from '../http.js';
-import { getStoreAdapter } from '../../stores/registry.js';
+import {
+  getStoreAdapter,
+  listStores,
+  parseStoreIds,
+  resolveStoreAdapters,
+} from '../../stores/registry.js';
 import { normalizeProduct, toImportPayload } from '../../core/product.js';
 import { isMiswagInternalId } from '../../stores/miswag/id-lookup.js';
 import { isValidEan } from '../../stores/miswag/v2-barcode.js';
@@ -13,12 +18,123 @@ function storeOr404(res, storeId) {
   return adapter;
 }
 
+function mapTextSearchHit(adapter, item) {
+  return {
+    store: adapter.id,
+    storeLabel: adapter.label,
+    id: item.id,
+    sourceId: item.id,
+    name: item.nameAr,
+    nameAr: item.nameAr,
+    nameEn: item.nameEn,
+    brandAr: item.brandAr,
+    manufacturer: item.brandAr,
+    thumb: item.thumb,
+    price: item.price,
+    category: item.category,
+    shadeCount: item.shadeCount,
+    matchType: 'text',
+  };
+}
+
+function mapBarcodeSearchHit(adapter, item, digits) {
+  return {
+    store: adapter.id,
+    storeLabel: adapter.label,
+    id: item.id,
+    sourceId: item.id,
+    name: item.nameAr,
+    nameEn: item.nameEn,
+    brandAr: item.brandAr,
+    manufacturer: item.brandAr,
+    thumb: item.thumb,
+    price: item.price,
+    shadeCount: item.shadeCount,
+    shadeName: item.shadeName,
+    miswagId: item.miswagId || (isMiswagInternalId(digits) ? digits : ''),
+    barcode: item.barcode || (isMiswagInternalId(digits) ? '' : digits),
+    matchType: item.matchType || (isMiswagInternalId(digits) ? 'miswag_id' : 'ean'),
+  };
+}
+
+async function searchAdapter(adapter, query, digits) {
+  let results = [];
+  if (digits.length >= 8 && adapter.searchBarcode) {
+    results = await adapter.searchBarcode(digits);
+  }
+
+  const isEanQuery = digits.length >= 8 && isValidEan(digits) && !isMiswagInternalId(digits);
+  if (!results.length && !isEanQuery) {
+    const data = await adapter.searchProducts(query, { page: 1, limit: 20 });
+    return {
+      results: data.items.map((item) => mapTextSearchHit(adapter, item)),
+      count: data.items.length,
+    };
+  }
+
+  return {
+    results: results.map((item) => mapBarcodeSearchHit(adapter, item, digits)),
+    count: results.length,
+  };
+}
+
+async function searchAcrossStores(storeIds, query) {
+  const adapters = resolveStoreAdapters(storeIds);
+  if (!adapters.length) {
+    return { results: [], stores: [] };
+  }
+
+  const digits = String(query || '').replace(/\D/g, '');
+  const settled = await Promise.allSettled(
+    adapters.map((adapter) => searchAdapter(adapter, query, digits)),
+  );
+
+  const results = [];
+  const stores = [];
+  settled.forEach((entry, index) => {
+    const adapter = adapters[index];
+    if (entry.status === 'fulfilled') {
+      results.push(...entry.value.results);
+      stores.push({ id: adapter.id, label: adapter.label, count: entry.value.count });
+    } else {
+      stores.push({ id: adapter.id, label: adapter.label, count: 0, error: entry.reason?.message });
+    }
+  });
+
+  return { results, stores };
+}
+
 export async function handleStoreApi(req, res, url) {
   const q = parseQuery(url);
 
   if (url.pathname === '/api/catalog/stores') {
-    const { listStores } = await import('../../stores/registry.js');
     return sendJson(res, 200, { stores: listStores() });
+  }
+
+  const multiSearchMatch = url.pathname === '/api/catalog/search';
+  if (multiSearchMatch) {
+    const query = q.q || q.query || '';
+    if (!query.trim()) return sendJson(res, 400, { error: 'q required' });
+    const storeIds = parseStoreIds(q.stores || q.store, { defaultAll: true });
+    const page = Number(q.page) || 1;
+    const limit = Math.min(Number(q.limit) || 30, 60);
+
+    try {
+      const { results, stores } = await searchAcrossStores(storeIds, query);
+      const start = (page - 1) * limit;
+      const products = results.slice(start, start + limit);
+      return sendJson(res, 200, {
+        meta: { query, page, limit, stores: storeIds },
+        products,
+        page,
+        limit,
+        total: results.length,
+        hasMore: start + limit < results.length,
+        stores,
+      });
+    } catch (err) {
+      return sendJson(res, 502, { error: err.message });
+    }
   }
 
   const storeMatch = url.pathname.match(/^\/api\/catalog\/([^/]+)\/health$/);
@@ -138,54 +254,16 @@ export async function handleImportApi(req, res, url) {
   const searchMatch = url.pathname === '/api/import/search';
   if (searchMatch) {
     const query = q.q || q.barcode || '';
-    const storeId = q.store || 'miswag';
     if (!query.trim()) return sendJson(res, 400, { error: 'أدخل باركود EAN أو نص بحث' });
-    const adapter = getStoreAdapter(storeId);
-    if (!adapter) return sendJson(res, 404, { error: 'متجر غير معروف' });
 
-    const digits = query.replace(/\D/g, '');
+    const storeIds = parseStoreIds(q.stores || q.store, { defaultAll: false });
+    if (!storeIds.length) {
+      return sendJson(res, 400, { error: 'حدد متجراً واحداً على الأقل' });
+    }
+
     try {
-      let results = [];
-      if (digits.length >= 8 && adapter.searchBarcode) {
-        results = await adapter.searchBarcode(digits);
-      }
-      const isEanQuery = digits.length >= 8 && isValidEan(digits) && !isMiswagInternalId(digits);
-      if (!results.length && !isEanQuery) {
-        const data = await adapter.searchProducts(query, { page: 1, limit: 20 });
-        results = data.items.map((item) => ({
-          store: adapter.id,
-          storeLabel: adapter.label,
-          id: item.id,
-          sourceId: item.id,
-          name: item.nameAr,
-          nameAr: item.nameAr,
-          nameEn: item.nameEn,
-          brandAr: item.brandAr,
-          manufacturer: item.brandAr,
-          thumb: item.thumb,
-          price: item.price,
-          matchType: 'text',
-        }));
-      } else {
-        results = results.map((item) => ({
-          store: adapter.id,
-          storeLabel: adapter.label,
-          id: item.id,
-          sourceId: item.id,
-          name: item.nameAr,
-          nameEn: item.nameEn,
-          brandAr: item.brandAr,
-          manufacturer: item.brandAr,
-          thumb: item.thumb,
-          price: item.price,
-          shadeCount: item.shadeCount,
-          shadeName: item.shadeName,
-          miswagId: item.miswagId || (isMiswagInternalId(digits) ? digits : ''),
-          barcode: item.barcode || (isMiswagInternalId(digits) ? '' : digits),
-          matchType: item.matchType || (isMiswagInternalId(digits) ? 'miswag_id' : 'ean'),
-        }));
-      }
-      return sendJson(res, 200, { query, results, stores: [{ id: adapter.id, count: results.length }] });
+      const { results, stores } = await searchAcrossStores(storeIds, query);
+      return sendJson(res, 200, { query, results, stores });
     } catch (err) {
       return sendJson(res, 502, { error: err.message });
     }

@@ -29,6 +29,8 @@ export type CatalogListProduct = {
   shadeCount?: number;
   hasOptions?: boolean;
   category?: string;
+  store?: string;
+  storeLabel?: string;
 };
 
 export type CatalogImportShade = {
@@ -204,12 +206,31 @@ export async function listCategoryProducts(
 }
 
 export async function searchCatalogProducts(
-  storeId: string,
+  storeIds: string | string[],
   query: string,
   page = 1,
   limit = 30,
   categoryId = "",
 ) {
+  const stores = Array.isArray(storeIds) ? storeIds : [storeIds];
+  const useMulti = stores.length > 1 || !categoryId;
+
+  if (useMulti && stores.length > 1) {
+    const params = new URLSearchParams({
+      q: query,
+      page: String(page),
+      limit: String(limit),
+      stores: stores.join(","),
+    });
+    return catalogFetch<{
+      products: CatalogListProduct[];
+      hasMore: boolean;
+      total: number;
+      stores?: Array<{ id: string; label?: string; count: number }>;
+    }>(`/api/catalog/search?${params}`);
+  }
+
+  const storeId = stores[0] || "miswag";
   const params = new URLSearchParams({
     q: query,
     page: String(page),
@@ -223,30 +244,34 @@ export async function searchCatalogProducts(
   }>(`/api/catalog/${encodeURIComponent(storeId)}/search?${params}`);
 }
 
-export async function searchCatalogByBarcode(barcode: string, storeId = "miswag") {
+export async function searchCatalogByBarcode(barcode: string, storeIds: string | string[] = "miswag") {
+  const stores = Array.isArray(storeIds) ? storeIds : [storeIds];
   const q = encodeURIComponent(barcode.trim());
+  const storeParam = encodeURIComponent(stores.join(","));
   const data = await catalogFetch<{
     query: string;
     results: Array<Record<string, unknown>>;
-  }>(`/api/import/search?q=${q}&store=${encodeURIComponent(storeId)}`, 90_000);
+    stores?: Array<{ id: string; count: number }>;
+  }>(`/api/import/search?q=${q}&stores=${storeParam}`, 90_000);
 
   const options: CatalogImportOption[] = (data.results || []).map((r) => ({
-    store: String(r.store || storeId),
-    storeLabel: String(r.storeLabel || storeId),
+    store: String(r.store || stores[0] || ""),
+    storeLabel: String(r.storeLabel || r.store || stores[0] || ""),
     sourceId: String(r.sourceId || r.id || ""),
     nameAr: String(r.nameAr || r.name || ""),
     nameEn: String(r.nameEn || ""),
     brandAr: String(r.brandAr || r.manufacturer || ""),
     thumb: String(r.thumb || ""),
-    miswagId: String(r.miswagId || r.barcode || barcode),
+    miswagId: String(r.miswagId || ""),
     barcode: String(r.barcode || ""),
     shadeCount: Number(r.shadeCount || 0),
+    shadeName: String(r.shadeName || ""),
     price: String(r.price || ""),
     category: String(r.category || ""),
     matchType: String(r.matchType || "barcode"),
   }));
 
-  return { barcode: data.query || barcode, options };
+  return { barcode: data.query || barcode, options, stores: data.stores || [] };
 }
 
 export async function fetchCatalogProduct(storeId: string, sourceId: string, storeLabel = "") {

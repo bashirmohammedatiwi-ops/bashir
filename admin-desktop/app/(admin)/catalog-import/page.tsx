@@ -109,8 +109,8 @@ function findCategoryLabel(tree: CatalogCategoryNode[], id: string, prefix = "")
 
 function listProductToOption(p: CatalogListProduct, store: CatalogStore): CatalogImportOption {
   return {
-    store: store.id,
-    storeLabel: store.label,
+    store: p.store || store.id,
+    storeLabel: p.storeLabel || store.label,
     sourceId: p.id,
     nameAr: p.nameAr,
     nameEn: p.nameEn,
@@ -125,7 +125,7 @@ function listProductToOption(p: CatalogListProduct, store: CatalogStore): Catalo
 
 export default function CatalogImportPage() {
   const [stores, setStores] = useState<CatalogStore[]>([]);
-  const [activeStore, setActiveStore] = useState("miswag");
+  const [activeStores, setActiveStores] = useState<string[]>(["miswag", "najdalatheyah"]);
   const [tree, setTree] = useState<CatalogCategoryNode[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [categoryPath, setCategoryPath] = useState("");
@@ -164,21 +164,28 @@ export default function CatalogImportPage() {
     enabled: !!subcategoryId,
   });
 
+  const browseStore = activeStores[0] || "miswag";
   const storeMeta = useMemo(
-    () => stores.find((s) => s.id === activeStore) || { id: activeStore, label: activeStore },
-    [stores, activeStore],
+    () => stores.find((s) => s.id === browseStore) || { id: browseStore, label: browseStore },
+    [stores, browseStore],
+  );
+  const searchStoreLabels = useMemo(
+    () => activeStores.map((id) => stores.find((s) => s.id === id)?.label || id).join(" · "),
+    [activeStores, stores],
   );
 
   useEffect(() => {
     fetchCatalogStores()
       .then((list) => {
         setStores(list);
-        if (list.length && !list.find((s) => s.id === activeStore)) {
-          setActiveStore(list[0].id);
-        }
+        setActiveStores((prev) => {
+          const valid = prev.filter((id) => list.some((s) => s.id === id));
+          if (valid.length) return valid;
+          return list.map((s) => s.id);
+        });
       })
       .catch(() => message.error("تعذّر تحميل قائمة المتاجر من الكتالوج"));
-  }, [activeStore]);
+  }, []);
 
   const loadTree = useCallback(async (storeId: string) => {
     setTreeLoading(true);
@@ -197,14 +204,14 @@ export default function CatalogImportPage() {
   }, []);
 
   useEffect(() => {
-    if (activeStore) loadTree(activeStore);
-  }, [activeStore, loadTree]);
+    if (browseStore) loadTree(browseStore);
+  }, [browseStore, loadTree]);
 
   const loadCategoryProducts = useCallback(
     async (catId: string, page = 1, append = false) => {
       setLoadingProducts(true);
       try {
-        const data = await listCategoryProducts(activeStore, catId, page);
+        const data = await listCategoryProducts(browseStore, catId, page);
         setProducts((prev) => (append ? [...prev, ...data.products] : data.products));
         setProductPage(data.page);
         setProductTotal(data.total || 0);
@@ -215,12 +222,12 @@ export default function CatalogImportPage() {
         setLoadingProducts(false);
       }
     },
-    [activeStore],
+    [browseStore],
   );
 
-  // تحميل قسم الجمال والعناية تلقائياً عند فتح الصفحة
+  // تحميل قسم الجمال تلقائياً لمسواگ
   useEffect(() => {
-    if (!tree.length || selectedCategory) return;
+    if (browseStore !== "miswag" || !tree.length || selectedCategory) return;
     const beauty = tree.find((n) => n.id === "beauty");
     if (!beauty) return;
     setSelectedCategory("beauty");
@@ -243,12 +250,24 @@ export default function CatalogImportPage() {
 
   const runTextSearch = useCallback(async () => {
     const q = searchText.trim();
-    if (!q) return;
+    if (!q || !activeStores.length) return;
     setSearching(true);
     setOptions([]);
     try {
-      const data = await searchCatalogProducts(activeStore, q, 1, 30, selectedCategory || "");
-      const opts = data.products.map((p) => listProductToOption(p, storeMeta));
+      const useMulti = activeStores.length > 1;
+      const data = await searchCatalogProducts(
+        activeStores,
+        q,
+        1,
+        30,
+        useMulti ? "" : selectedCategory || "",
+      );
+      const opts = data.products.map((p) =>
+        listProductToOption(
+          p,
+          stores.find((s) => s.id === p.store) || storeMeta,
+        ),
+      );
       setOptions(opts);
       setProducts([]);
       if (!opts.length) message.info("لا توجد نتائج");
@@ -258,9 +277,10 @@ export default function CatalogImportPage() {
     } finally {
       setSearching(false);
     }
-  }, [searchText, activeStore, storeMeta, selectedCategory]);
+  }, [searchText, activeStores, stores, storeMeta, selectedCategory]);
 
-  const isMiswag = activeStore === "miswag";
+  const includesMiswag = activeStores.includes("miswag");
+  const isMiswagBrowse = browseStore === "miswag";
   const codeLabel = "بحث بالباركود";
 
   const runCodeSearch = useCallback(async () => {
@@ -269,7 +289,7 @@ export default function CatalogImportPage() {
       message.warning("أدخل باركود EAN أو رقم مسواگ");
       return;
     }
-    if (isMiswag) {
+    if (includesMiswag) {
       if (!isEanBarcode(digits) && !isMiswagInternalId(digits)) {
         message.warning("أدخل باركود EAN (8–14 رقم) أو رقم مسواگ الداخلي (10 أرقام)");
         return;
@@ -281,7 +301,7 @@ export default function CatalogImportPage() {
     setSearching(true);
     setOptions([]);
     try {
-      const data = await searchCatalogByBarcode(digits, activeStore);
+      const data = await searchCatalogByBarcode(digits, activeStores);
       setOptions(data.options);
       if (!data.options.length) {
         message.info(isEanBarcode(digits) ? "لا توجد نتائج لهذا الباركود" : "لا توجد نتائج لهذا الرقم");
@@ -293,7 +313,7 @@ export default function CatalogImportPage() {
     } finally {
       setSearching(false);
     }
-  }, [barcode, activeStore, isMiswag, codeLabel]);
+  }, [barcode, activeStores, includesMiswag, codeLabel]);
 
   const loadPreview = useCallback(
     async (opt: CatalogImportOption) => {
@@ -473,7 +493,7 @@ export default function CatalogImportPage() {
         className="catalog-import-steps"
         current={step}
         items={[
-          { title: "تصفح / بحث", description: isMiswag ? "أقسام المتجر أو رقم مسواگ" : "أقسام المتجر أو باركود" },
+          { title: "تصفح / بحث", description: includesMiswag ? "متعدد المتاجر · مسواگ/باركود" : "متعدد المتاجر · اسم/باركود" },
           { title: "اختيار المنتج", description: "معاينة سريعة" },
           { title: "التصنيف والاستيراد", description: "أقسام المتجر + POS" },
         ]}
@@ -486,29 +506,36 @@ export default function CatalogImportPage() {
             متجر الكتالوج
           </h3>
           <p>
-            {isMiswag
-              ? "رقم مسواگ في التطبيق ليس باركود EAN — هو معرّف داخلي للمنتج أو التدرج"
-              : "اختر المتجر ثم تصفّح الأقسام أو ابحث بالاسم/الباركود"}
+            {activeStores.length > 1
+              ? `البحث يشمل: ${searchStoreLabels}. التصفح من: ${storeMeta.label}`
+              : includesMiswag
+                ? "رقم مسواگ في التطبيق ليس باركود EAN — هو معرّف داخلي للمنتج أو التدرج"
+                : "تصفّح الأقسام أو ابحث بالاسم/الباركود"}
           </p>
         </div>
         <Select
-          value={activeStore}
-          onChange={setActiveStore}
-          style={{ minWidth: 200 }}
+          mode="multiple"
+          value={activeStores}
+          onChange={(ids) => {
+            const next = (ids as string[]).filter(Boolean);
+            setActiveStores(next.length ? next : ["miswag"]);
+          }}
+          style={{ minWidth: 280 }}
+          placeholder="اختر متاجر البحث"
           options={stores.map((s) => ({ value: s.id, label: s.label }))}
         />
       </section>
 
       <Row gutter={16}>
         <Col xs={24} md={8} lg={7}>
-          <Card title="أقسام المتجر" size="small" className="catalog-import-tree-card">
+          <Card title={`أقسام ${storeMeta.label}`} size="small" className="catalog-import-tree-card">
             {treeLoading ? (
               <div className="catalog-import-center"><Spin /></div>
             ) : (
               <Tree
                 showLine
                 selectable
-                defaultExpandedKeys={["beauty"]}
+                defaultExpandedKeys={isMiswagBrowse ? ["beauty"] : tree[0]?.id ? [tree[0].id] : []}
                 selectedKeys={selectedCategory ? [selectedCategory] : []}
                 onSelect={onSelectCategory}
                 treeData={toTreeData(tree)}
@@ -535,7 +562,7 @@ export default function CatalogImportPage() {
             <div className="catalog-import-search-row">
               <Input
                 prefix={<BarcodeOutlined />}
-                placeholder={isMiswag ? "باركود EAN أو رقم مسواگ (مثال: 6287020281204)" : "باركود (8–14 رقم)"}
+                placeholder={includesMiswag ? "باركود EAN أو رقم مسواگ (مثال: 6287020281204)" : "باركود (8–14 رقم)"}
                 value={barcode}
                 onChange={(e) => setBarcode(e.target.value)}
                 onPressEnter={runCodeSearch}
