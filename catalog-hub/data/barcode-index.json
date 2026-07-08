@@ -13,10 +13,11 @@
       "store": "miswag",
       "productId": "1742909844",
       "barcode": "3337875597180",
-      "name": "غسول مرطّب للبشرة العادية إلى الجافة مع حمض الهيالورونيك Hydrating Cleanser for Normal to Dry Skin with Hyaluronic Acid",
+      "name": "",
       "brand": "",
       "shadeName": "",
-      "matchType": "hint"
+      "matchType": "v2",
+      "updatedAt": 1783544267446
     },
     "03348901571449": {
       "store": "miswag",
@@ -44,7 +45,7 @@
       "brand": "IBRAQ",
       "shadeName": "",
       "matchType": "v2",
-      "updatedAt": 1783542068553
+      "updatedAt": 1783543373877
     },
     "00609332821163": {
       "store": "miswag",
@@ -63,7 +64,7 @@
       "shadeName": "Sugar Biscuit 3.5N",
       "matchType": "v2",
       "barcode": "6291107572659",
-      "updatedAt": 1783542282952
+      "updatedAt": 1783543372883
     },
     "06291107572666": {
       "store": "miswag",
@@ -72,7 +73,7 @@
       "shadeName": "Graham Cracker 4.1",
       "matchType": "v2",
       "barcode": "6291107572666",
-      "updatedAt": 1783542282954
+      "updatedAt": 1783543372884
     },
     "06291107572635": {
       "store": "miswag",
@@ -81,7 +82,7 @@
       "shadeName": "Vanilla Swirl 3.1",
       "matchType": "v2",
       "barcode": "6291107572635",
-      "updatedAt": 1783542282954
+      "updatedAt": 1783543372885
     },
     "06291107572598": {
       "store": "miswag",
@@ -90,7 +91,7 @@
       "shadeName": "Meringue 2.1",
       "matchType": "v2",
       "barcode": "6291107572598",
-      "updatedAt": 1783542282954
+      "updatedAt": 1783543372885
     },
     "06291107572550": {
       "store": "miswag",
@@ -99,7 +100,7 @@
       "shadeName": "Royal Icing 1.1N",
       "matchType": "v2",
       "barcode": "6291107572550",
-      "updatedAt": 1783542282954
+      "updatedAt": 1783543372885
     },
     "06291107572604": {
       "store": "miswag",
@@ -108,7 +109,7 @@
       "shadeName": "Cotton Candy 2.3B",
       "matchType": "v2",
       "barcode": "6291107572604",
-      "updatedAt": 1783542282955
+      "updatedAt": 1783543372886
     },
     "06291107572567": {
       "store": "miswag",
@@ -117,7 +118,7 @@
       "shadeName": "Marshmallow 1.3g",
       "matchType": "v2",
       "barcode": "6291107572567",
-      "updatedAt": 1783542282955
+      "updatedAt": 1783543372886
     },
     "06291107572628": {
       "store": "miswag",
@@ -126,7 +127,7 @@
       "shadeName": "Coconut Flex 2.7",
       "matchType": "v2",
       "barcode": "6291107572628",
-      "updatedAt": 1783542282955
+      "updatedAt": 1783543372886
     },
     "03348901581370": {
       "store": "miswag",
@@ -139,7 +140,7 @@
     }
   },
   "meta": {
-    "updatedAt": 1783542282955,
+    "updatedAt": 1783544267446,
     "source": "seed"
   }
 }

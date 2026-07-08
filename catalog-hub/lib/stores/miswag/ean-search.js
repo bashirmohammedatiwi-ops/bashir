@@ -1,4 +1,4 @@
-import { typesenseSearch } from './client.js';
+import { typesenseSearch, typesenseMultiSearch } from './client.js';
 import { mapTypesenseHit } from './categories.js';
 import { fetchProductDetail } from './products.js';
 import {
@@ -15,6 +15,7 @@ import {
   scoreStoreHintMatch,
 } from '../../core/barcode-meta.js';
 import {
+  matchBarcodeOnMiswagProduct,
   scanMiswagProductsForBarcode,
   searchTypesenseByVariationBarcode,
 } from './barcode-scan.js';
@@ -60,33 +61,60 @@ async function resolveFromIndex(digits) {
   if (!entry?.productId) return null;
 
   const detail = await fetchProductDetail(String(entry.productId), { light: false }).catch(() => null);
-  if (!detail?.id) return null;
-
-  let shade = null;
-  if (entry.shadeName && detail.shades?.length) {
-    shade = detail.shades.find((s) => shadeNamesMatch(s.nameAr || s.name, entry.shadeName));
+  if (detail?.id) {
+    let shade = null;
+    if (entry.shadeName && detail.shades?.length) {
+      shade = detail.shades.find((s) => shadeNamesMatch(s.nameAr || s.name, entry.shadeName));
+    }
+    return formatEanHit(detail, digits, entry.matchType || 'index', shade);
   }
 
-  return formatEanHit(detail, digits, entry.matchType || 'index', shade);
+  // الفهرس يعرف المنتج لكن جلب التفاصيل فشل — تحقق مباشرة عبر v2
+  const match = await matchBarcodeOnMiswagProduct(String(entry.productId), digits).catch(() => null);
+  if (match) return resolveV2Match(digits, match, entry.matchType || 'index');
+
+  return null;
 }
 
 async function resolveV2Match(digits, match, matchType = 'v2_scan') {
   const detail = await fetchProductDetail(match.productId, { light: false }).catch(() => null);
-  if (!detail?.id) return null;
-
-  let shade = null;
-  if (match.shadeId && detail.shades?.length) {
-    shade = detail.shades.find(
-      (s) => String(s.miswagId || s.sku || s.optionId) === String(match.shadeId),
-    );
-    if (!shade && match.shadeName) {
-      shade = detail.shades.find((s) => shadeNamesMatch(s.nameAr || s.name, match.shadeName));
+  if (detail?.id) {
+    let shade = null;
+    if (match.shadeId && detail.shades?.length) {
+      shade = detail.shades.find(
+        (s) => String(s.miswagId || s.sku || s.optionId) === String(match.shadeId),
+      );
+      if (!shade && match.shadeName) {
+        shade = detail.shades.find((s) => shadeNamesMatch(s.nameAr || s.name, match.shadeName));
+      }
     }
+
+    const hit = formatEanHit(detail, digits, shade ? 'v2_shade' : matchType, shade);
+    learnHit(digits, hit, {});
+    return hit;
   }
 
-  const hit = formatEanHit(detail, digits, shade ? 'v2_shade' : matchType, shade);
-  learnHit(digits, hit, {});
-  return hit;
+  // مسواگ API مشغول — أعد النتيجة من Typesense بدل الفشل الصامت
+  try {
+    const [tsResult = {}] = await typesenseMultiSearch([{
+      q: '*',
+      query_by: 'title_AR',
+      filter_by: `id:=${String(match.productId)}`,
+      per_page: 1,
+      page: 1,
+    }]);
+    const mapped = mapTypesenseHit(tsResult.hits?.[0]?.document || {});
+    if (!mapped?.id) return null;
+
+    const shadeStub = match.shadeName
+      ? { name: match.shadeName, nameAr: match.shadeName, image: mapped.thumb }
+      : null;
+    const hit = formatEanHit(mapped, digits, shadeStub ? 'v2_shade' : matchType, shadeStub);
+    learnHit(digits, hit, {});
+    return hit;
+  } catch {
+    return null;
+  }
 }
 
 /** جمع معرّفات منتجات مرشّحة من metadata الباركود */
@@ -115,10 +143,76 @@ async function collectCandidateIdsFromMeta(meta, { perQuery = 15, maxQueries = 6
   return scored.map((s) => s.id);
 }
 
-async function searchByV2Scan(productIds, digits) {
-  const match = await scanMiswagProductsForBarcode(productIds, digits);
+async function searchByV2Scan(productIds, digits, scanOpts = {}) {
+  const match = await scanMiswagProductsForBarcode(productIds, digits, scanOpts);
   if (!match) return null;
   return resolveV2Match(digits, match);
+}
+
+function brandTypesenseFilter(brand = '') {
+  const value = String(brand || '').trim().replace(/`/g, '');
+  if (!value) return '';
+  return `brand:=\`${value}\``;
+}
+
+/** مسح v2 لكل منتجات ماركة معيّنة (أدق من التخمين عبر hints فقط) */
+async function searchByBrandCatalogV2(digits, meta) {
+  const brand = String(meta?.brand || '').trim();
+  if (!brand) return null;
+
+  try {
+    const filterBy = brandTypesenseFilter(brand);
+    const [result = {}] = await typesenseMultiSearch([{
+      q: '*',
+      query_by: 'title_AR',
+      filter_by: filterBy,
+      per_page: 100,
+      page: 1,
+    }]);
+    const ids = (result.hits || [])
+      .map((hit) => String(hit.document?.id || ''))
+      .filter(Boolean);
+    if (!ids.length) return null;
+
+    // الأحدث أولاً — يقلّل طلبات API ويُسرّع إيجاد المنتجات الحديثة
+    return searchByV2Scan([...ids].reverse(), digits, { limit: ids.length, concurrency: 5 });
+  } catch {
+    return null;
+  }
+}
+
+/** باركودات خليجية (628/629) بلا metadata خارجية — مسح ماركات عطور محلية شائعة */
+const GULF_PERFUME_BRANDS = [
+  'IBRAQ',
+  'ابراهيم القرشي',
+  'Ibraheem Al Qurashi',
+  'عساف',
+  'العربية للعود',
+  'Rasasi',
+  'رصاصي',
+  'LATTAFA',
+  'لطافة',
+  'Lattafa',
+  'Al Wataniah',
+  'الوطنية',
+  'Nabeel',
+  'نبيل',
+  'Ajmal',
+  'أجمل',
+];
+
+async function searchByGulfBrandV2Sweep(digits) {
+  if (!/^(628|629)/.test(digits)) return null;
+
+  const priority = ['IBRAQ', 'ابراهيم القرشي', 'Ibraheem Al Qurashi', 'عساف', 'Rasasi', 'رصاصي'];
+  const seen = new Set(priority);
+  const brands = [...priority, ...GULF_PERFUME_BRANDS.filter((b) => !seen.has(b))].slice(0, 8);
+
+  for (const brand of brands) {
+    const hit = await searchByBrandCatalogV2(digits, { brand });
+    if (hit) return hit;
+  }
+  return null;
 }
 
 async function searchByTypesenseVariationScan(digits) {
@@ -152,8 +246,12 @@ async function searchByMetaHints(digits, meta) {
   const candidateIds = await collectCandidateIdsFromMeta(meta);
 
   // التحقق الدقيق عبر v2 — يعمل من أول بحث دون انتظار الفهرس
-  const v2Hit = await searchByV2Scan(candidateIds, digits);
+  const v2Hit = await searchByV2Scan(candidateIds, digits, { limit: 25, concurrency: 5 });
   if (v2Hit) return [v2Hit];
+
+  // ثم مسح كامل لمنتجات الماركة (للباركودات التي لا تظهر في hints)
+  const brandHit = await searchByBrandCatalogV2(digits, meta);
+  if (brandHit) return [brandHit];
 
   const queries = buildMetaHintQueries(meta);
   const scored = [];
@@ -247,6 +345,10 @@ export async function searchByEan(barcode) {
   // 4) روابط miswag.com من الويب → مسح v2
   const fromWeb = await searchFromWebLinks(digits);
   if (fromWeb.length) return fromWeb;
+
+  // 5) باركودات خليجية بلا UPC — مسح ماركات عطور محلية عبر v2
+  const gulfHit = await searchByGulfBrandV2Sweep(digits);
+  if (gulfHit) return [gulfHit];
 
   return [];
 }

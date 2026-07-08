@@ -165,5 +165,65 @@
   },
   "miswag_web_ids|8050043463937": {
     "at": 1783543233544
+  },
+  "upc|6291107572550": {
+    "ean": "6291107572550",
+    "brand": "HUDA BEAUTY",
+    "title": "HUDA BEAUTY #FauxFilter Matte Buildable Coverage Waterproof Concealer, Size: 0.3 FL Oz, Royal Icing",
+    "shade": "",
+    "source": "upcitemdb",
+    "at": 1783543327506
+  },
+  "obf|6291107572550": {
+    "ean": "",
+    "at": 1783543357110
+  },
+  "web|6291107572550": {
+    "ean": "",
+    "at": 1783543361136
+  },
+  "meta|6291107572550": {
+    "ean": "6291107572550",
+    "brand": "HUDA BEAUTY",
+    "title": "HUDA BEAUTY #FauxFilter Matte Buildable Coverage Waterproof Concealer, Size: 0.3 FL Oz, Royal Icing",
+    "shade": "",
+    "source": "upcitemdb",
+    "at": 1783543361136
+  },
+  "miswag_web_ids|6287020281204": {
+    "at": 1783543390071
+  },
+  "obf|6291107572659": {
+    "ean": "",
+    "at": 1783543786835
+  },
+  "upc|6291107572659": {
+    "ean": "6291107572659",
+    "brand": "HUDA BEAUTY",
+    "title": "HUDA BEAUTY #FauxFilter Matte Buildable Coverage Waterproof Concealer, Size: 0.3 FL Oz, Sugar Biscuit",
+    "shade": "",
+    "source": "upcitemdb",
+    "at": 1783543787135
+  },
+  "web|6291107572659": {
+    "ean": "",
+    "at": 1783543789635
+  },
+  "meta|6291107572659": {
+    "ean": "6291107572659",
+    "brand": "HUDA BEAUTY",
+    "title": "HUDA BEAUTY #FauxFilter Matte Buildable Coverage Waterproof Concealer, Size: 0.3 FL Oz, Sugar Biscuit",
+    "shade": "",
+    "source": "upcitemdb",
+    "at": 1783543789636
+  },
+  "miswag_web_ids|6291107572659": {
+    "at": 1783544129218
+  },
+  "miswag_web_ids|6291107572550": {
+    "at": 1783544175680
+  },
+  "miswag_web_ids|3337875597180": {
+    "at": 1783544216721
   }
 }

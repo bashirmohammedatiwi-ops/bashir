@@ -139,14 +139,20 @@ export function createSallaProductsApi(client) {
     const digits = String(code || '').replace(/\D/g, '');
     if (digits.length < 8) return [];
 
-    const { data = [] } = await fetchProducts({ keyword: digits, page: 1, per_page: 30 });
+    const { data = [] } = await fetchProducts({ keyword: digits, page: 1, per_page: 40 });
     const exact = data.filter((product) => {
       const sku = String(product.sku || '').replace(/\D/g, '');
       const gtin = String(product.gtin || '').replace(/\D/g, '');
       return sku === digits || gtin === digits;
     });
 
-    const hits = (exact.length ? exact : data.slice(0, 8)).map((product) => {
+    const hits = exact.length ? exact : data.filter((product) => {
+      const sku = String(product.sku || '');
+      const gtin = String(product.gtin || '');
+      return sku.includes(digits) || gtin.includes(digits);
+    }).slice(0, 5);
+
+    return hits.map((product) => {
       const item = mapListProduct(product);
       return {
         ...item,
@@ -154,8 +160,6 @@ export function createSallaProductsApi(client) {
         matchType: exact.includes(product) ? 'sku' : 'keyword',
       };
     });
-
-    return hits;
   }
 
   function sortProductsClient(items = [], sort = 'default') {
