@@ -6,6 +6,7 @@ import crypto from 'crypto';
 import {
   findBarcodeLookup,
   upsertBarcodeLookup,
+  loadBarcodeLookup,
   lookupBarcodeProductMeta,
   buildMetaHintQueries,
   buildMetaFromSearchHits,
@@ -1083,6 +1084,8 @@ function metaFromLocalBarcodeSources(digits) {
 export async function searchProductsByBarcode(barcode, { getMeta, hintHits = [], upcMeta = null } = {}) {
   const digits = String(barcode || '').replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return [];
+
+  loadBarcodeLookup({ force: true });
 
   const resolveMeta = async () => {
     const local = metaFromLocalBarcodeSources(digits);

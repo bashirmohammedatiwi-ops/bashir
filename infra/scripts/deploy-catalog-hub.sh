@@ -74,32 +74,18 @@ fi
 echo "    healthy."
 
 # 4) Merge repo seed lookup into the live data volume -------------------------
-#    (the volume shadows the image's /app/data, so we sync it explicitly)
-if [[ -f "$SEED_LOOKUP" && -f "$MERGE_SCRIPT" ]]; then
-  echo "==> Syncing seed barcode-lookup.json into the data volume..."
-  $COMPOSE cp "$SEED_LOOKUP" "$SERVICE:/tmp/seed-barcode-lookup.json"
-  $COMPOSE cp "$MERGE_SCRIPT" "$SERVICE:/tmp/merge-barcode-lookup.cjs"
-  $COMPOSE exec -T "$SERVICE" node /tmp/merge-barcode-lookup.cjs \
-    /tmp/seed-barcode-lookup.json /app/data/barcode-lookup.json
-
-  # Reload merged data into memory (rebuilds the in-memory barcode index)
-  echo "==> Restarting $SERVICE to reload merged data..."
-  $COMPOSE restart "$SERVICE"
-  for _ in $(seq 1 30); do
-    if $COMPOSE exec -T "$SERVICE" wget -qO- http://127.0.0.1:10000/api/health 2>/dev/null | grep -q '"ok":true'; then
-      break
-    fi
-    sleep 2
-  done
+if [[ -f "$SCRIPT_DIR/sync-catalog-hub-data.sh" ]]; then
+  echo "==> Syncing catalog-hub seed data..."
+  bash "$SCRIPT_DIR/sync-catalog-hub-data.sh"
 else
-  echo "WARN: seed lookup or merge script missing — skipping data sync"
+  echo "WARN: sync-catalog-hub-data.sh missing — skipping data sync"
 fi
 
 # 5) Verify the previously-failing barcodes ----------------------------------
 echo "==> Verifying barcode search inside the container..."
 BASE="http://127.0.0.1:10000/api/search/barcode"
 ALL_OK=1
-for bc in 6979237552832 6975302933346 077802146847 077802163851; do
+for bc in 6979237552832 6975302933346 077802146847 077802163851 6287020281204; do
   body="$($COMPOSE exec -T "$SERVICE" wget -qO- "$BASE?q=$bc" 2>/dev/null || true)"
   if echo "$body" | grep -q '"store":"miswag"'; then
     echo "    OK   $bc -> miswag found"
