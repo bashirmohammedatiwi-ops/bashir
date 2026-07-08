@@ -1,9 +1,9 @@
 import type { ImageItem } from "@/components/ProductImageDropzone";
 import type { CatalogImportProduct } from "./catalogImport";
 import {
-  resolveCatalogImageUrl,
   uploadImageFromUrlWithFallback,
 } from "./uploadFromUrl";
+import { resolveCatalogImageUrl } from "./resolveCatalogImageUrl";
 import { mediaThumb } from "./mediaUrl";
 
 const UPLOAD_CONCURRENCY = 4;

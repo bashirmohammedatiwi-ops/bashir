@@ -35,14 +35,9 @@ fi
 
 API_BASE="${API_BASE:-http://localhost:8080/api/v1}"
 MEDIA_BASE="${MEDIA_BASE:-http://localhost:8080/media}"
-
-CATALOG_HUB_URL="${NEXT_PUBLIC_CATALOG_HUB_URL:-}"
-if [[ -n "${DOMAIN:-}" ]]; then
-  if [[ -z "$CATALOG_HUB_URL" || "$CATALOG_HUB_URL" == *":10000"* ]]; then
-    CATALOG_HUB_URL="http://${DOMAIN}/catalog-hub"
-  fi
-fi
-CATALOG_HUB_URL="${CATALOG_HUB_URL:-http://localhost:8080/catalog-hub}"
+VPS_ORIGIN="${API_BASE%/api/v1}"
+VPS_ORIGIN="${VPS_ORIGIN%/api}"
+CATALOG_HUB_URL="${NEXT_PUBLIC_CATALOG_HUB_URL:-${VPS_ORIGIN}/catalog-hub}"
 
 echo "==> Building admin web panel"
 echo "    API:    $API_BASE"

@@ -1,5 +1,3 @@
-import { resolveCatalogImageUrl } from "./resolveCatalogImageUrl";
-
 function rgbToHex(r: number, g: number, b: number) {
   const h = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
   return `#${h(r)}${h(g)}${h(b)}`;
@@ -18,7 +16,7 @@ function saturationOf(r: number, g: number, b: number) {
  * عبر تجميع البكسلات في صناديق لونية (color buckets).
  */
 export async function averageColorFromImageUrl(url: string): Promise<string | null> {
-  const src = resolveCatalogImageUrl(url);
+  const src = String(url || "").trim();
   if (!src) return null;
 
   return new Promise((resolve) => {

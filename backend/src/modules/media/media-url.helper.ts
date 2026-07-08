@@ -17,31 +17,14 @@ function isPrivateIpv4(ip: string): boolean {
 }
 
 const INTERNAL_FETCH_HOSTS = new Set(
-  (process.env.MEDIA_INTERNAL_FETCH_HOSTS ?? "catalog-hub,nginx,api")
+  (process.env.MEDIA_INTERNAL_FETCH_HOSTS ?? "nginx,api")
     .split(",")
     .map((h) => h.trim().toLowerCase())
     .filter(Boolean),
 );
 
-/** Resolve public catalog-hub URLs to the internal Docker service when applicable. */
 export function resolveRemoteMediaUrl(raw: string): string {
-  const trimmed = String(raw || "").trim();
-  if (!trimmed) return "";
-
-  try {
-    const u = new URL(trimmed);
-    const internalBase = (process.env.CATALOG_HUB_INTERNAL_URL ?? "http://catalog-hub:10000").replace(
-      /\/$/,
-      "",
-    );
-    if (u.pathname.startsWith("/catalog-hub/")) {
-      return `${internalBase}${u.pathname.replace(/^\/catalog-hub/, "")}${u.search}`;
-    }
-  } catch {
-    return trimmed;
-  }
-
-  return trimmed;
+  return String(raw || "").trim();
 }
 
 export function assertSafeRemoteUrl(raw: string): string {

@@ -17,7 +17,6 @@ echo "==> Backfilling product placeholder images..."
 $COMPOSE exec -T api node scripts/backfill-product-images.js
 
 echo "==> Restarting nginx (fixes 502 after API rebuild)..."
-$COMPOSE up -d catalog-hub 2>/dev/null || true
 $COMPOSE restart nginx
 
 echo "==> Docker cleanup..."

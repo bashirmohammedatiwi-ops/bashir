@@ -5,39 +5,45 @@ import {
   Alert,
   Button,
   Card,
+  Col,
   Form,
   Input,
+  Row,
   Select,
   Spin,
   Steps,
   Tag,
+  Tree,
   Typography,
   message,
 } from "antd";
 import {
+  AppstoreOutlined,
   BarcodeOutlined,
   CloudDownloadOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { DataNode } from "antd/es/tree";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { CatalogOptionCard, STORE_COLORS } from "@/components/catalog-import/CatalogOptionCard";
+import { CatalogOptionCard } from "@/components/catalog-import/CatalogOptionCard";
 import { CATALOG_HUB_URL } from "@/lib/config";
 import { matchCategoryFromHints } from "@/lib/catalogCategoryMatch";
 import {
   catalogOptionKey,
-  createInitialStoreStatuses,
   fetchCatalogProduct,
-  fetchCatalogSummariesBatch,
-  searchCatalogByBarcodeProgressive,
-  CATALOG_STORES,
-  CATALOG_STORE_META,
+  fetchCatalogStores,
+  fetchCategoryTree,
+  listCategoryProducts,
+  searchCatalogByBarcode,
+  searchCatalogProducts,
+  type CatalogCategoryNode,
   type CatalogImportOption,
   type CatalogImportProduct,
-  type CatalogImportSummary,
-  type CatalogStoreSearchStatus,
+  type CatalogListProduct,
+  type CatalogStore,
 } from "@/lib/catalogImport";
-import { fetchInventoryByBarcode, type InventorySyncPreview } from "@/lib/inventorySync";
+import { fetchInventoryByBarcode } from "@/lib/inventorySync";
 import { uploadCatalogImportImages } from "@/lib/uploadCatalogImages";
 import { resolveCatalogImageUrl } from "@/lib/resolveCatalogImageUrl";
 import { buildProductPayload } from "@/lib/productPayload";
@@ -48,12 +54,9 @@ import "./catalog-import.css";
 function errorMessage(err: unknown, fallback: string) {
   const e = err as { message?: string; response?: { data?: { error?: unknown; message?: unknown } } };
   const apiErr = e?.response?.data?.error;
-  if (typeof apiErr === "string" && apiErr.trim() && apiErr !== "[object Object]") return apiErr.trim();
-  if (apiErr && typeof apiErr === "object" && typeof (apiErr as { message?: string }).message === "string") {
-    return (apiErr as { message: string }).message;
-  }
+  if (typeof apiErr === "string" && apiErr.trim()) return apiErr.trim();
   if (typeof e?.response?.data?.message === "string") return e.response.data.message;
-  if (typeof e?.message === "string" && e.message.trim() && e.message !== "[object Object]") return e.message;
+  if (typeof e?.message === "string" && e.message.trim()) return e.message;
   return fallback;
 }
 
@@ -67,42 +70,68 @@ function matchBrandId(brands: any[] = [], brandAr = "", brandEn = "") {
   return hit?.id;
 }
 
-function hintToString(v?: string | string[]) {
-  if (!v) return "";
-  return Array.isArray(v) ? v.join(" › ") : v;
-}
-
 function stripHtml(html = "") {
   return String(html).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+function toTreeData(nodes: CatalogCategoryNode[] = []): DataNode[] {
+  return nodes.map((n) => ({
+    key: n.id,
+    title: (
+      <span>
+        {n.name}
+        {n.productCount != null && n.productCount > 0 ? (
+          <Tag style={{ marginInlineStart: 6 }}>{n.productCount}</Tag>
+        ) : null}
+      </span>
+    ),
+    isLeaf: n.isLeaf,
+    children: n.children?.length ? toTreeData(n.children) : undefined,
+  }));
+}
+
+function listProductToOption(p: CatalogListProduct, store: CatalogStore): CatalogImportOption {
+  return {
+    store: store.id,
+    storeLabel: store.label,
+    sourceId: p.id,
+    nameAr: p.nameAr,
+    nameEn: p.nameEn,
+    brandAr: p.brandAr,
+    thumb: p.thumb,
+    shadeCount: p.shadeCount,
+    price: p.price,
+    category: p.category,
+    matchType: "browse",
+  };
+}
+
 export default function CatalogImportPage() {
+  const [stores, setStores] = useState<CatalogStore[]>([]);
+  const [activeStore, setActiveStore] = useState("miswag");
+  const [tree, setTree] = useState<CatalogCategoryNode[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [categoryPath, setCategoryPath] = useState("");
+  const [products, setProducts] = useState<CatalogListProduct[]>([]);
+  const [productPage, setProductPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [treeLoading, setTreeLoading] = useState(false);
+
+  const [searchText, setSearchText] = useState("");
   const [barcode, setBarcode] = useState("");
   const [searching, setSearching] = useState(false);
   const [options, setOptions] = useState<CatalogImportOption[]>([]);
-  const [storeStatuses, setStoreStatuses] = useState<Record<string, CatalogStoreSearchStatus>>({});
-  const searchAbortRef = useRef<AbortController | null>(null);
-  const [summaries, setSummaries] = useState<Record<string, CatalogImportSummary | null>>({});
-  const [summaryLoadingKeys, setSummaryLoadingKeys] = useState<Set<string>>(new Set());
+
   const [selected, setSelected] = useState<CatalogImportOption | null>(null);
   const [preview, setPreview] = useState<CatalogImportProduct | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [step, setStep] = useState(0);
-  const [posLoading, setPosLoading] = useState(false);
-  const [posByBarcode, setPosByBarcode] = useState<Record<string, InventorySyncPreview | null>>({});
   const [form] = Form.useForm();
   const qc = useQueryClient();
-  const enrichGen = useRef(0);
-  const searchGen = useRef(0);
 
-  const { data: categoriesData = [] } = useQuery({
-    queryKey: ["categories"],
-    queryFn: queries.categories,
-  });
-  const { data: brandsData = [] } = useQuery({
-    queryKey: ["brands"],
-    queryFn: queries.brands,
-  });
+  const { data: categoriesData = [] } = useQuery({ queryKey: ["categories"], queryFn: queries.categories });
+  const { data: brandsData = [] } = useQuery({ queryKey: ["brands"], queryFn: queries.brands });
 
   const categoryId = Form.useWatch("categoryId", form);
   const subcategoryId = Form.useWatch("subcategoryId", form);
@@ -117,234 +146,131 @@ export default function CatalogImportPage() {
     enabled: !!subcategoryId,
   });
 
-  const subcategoryOptions = useMemo(
-    () =>
-      (subcategoriesData || []).map((s: any) => ({
-        value: s.id,
-        label: s.nameAr || s.name || s.nameEn,
-      })),
-    [subcategoriesData],
-  );
-  const tertiaryOptions = useMemo(
-    () =>
-      (tertiarySectionsData || []).map((s: any) => ({
-        value: s.id,
-        label: s.nameAr || s.name || s.nameEn,
-      })),
-    [tertiarySectionsData],
+  const storeMeta = useMemo(
+    () => stores.find((s) => s.id === activeStore) || { id: activeStore, label: activeStore },
+    [stores, activeStore],
   );
 
-  const optionsByStore = useMemo(() => {
-    const groups = new Map<string, CatalogImportOption[]>();
-    for (const opt of options) {
-      const list = groups.get(opt.store) || [];
-      list.push(opt);
-      groups.set(opt.store, list);
+  useEffect(() => {
+    fetchCatalogStores()
+      .then((list) => {
+        setStores(list);
+        if (list.length && !list.find((s) => s.id === activeStore)) {
+          setActiveStore(list[0].id);
+        }
+      })
+      .catch(() => message.error("تعذّر تحميل قائمة المتاجر من الكتالوج"));
+  }, [activeStore]);
+
+  const loadTree = useCallback(async (storeId: string) => {
+    setTreeLoading(true);
+    setTree([]);
+    setSelectedCategory(null);
+    setCategoryPath("");
+    setProducts([]);
+    try {
+      const data = await fetchCategoryTree(storeId);
+      setTree(data.tree || []);
+    } catch (err) {
+      message.error(errorMessage(err, "فشل تحميل الأقسام"));
+    } finally {
+      setTreeLoading(false);
     }
-    return [...groups.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [options]);
+  }, []);
 
   useEffect(() => {
-    if (!options.length) {
-      setSummaries({});
-      setSummaryLoadingKeys(new Set());
-      return;
-    }
+    if (activeStore) loadTree(activeStore);
+  }, [activeStore, loadTree]);
 
-    const gen = ++enrichGen.current;
-    const keys = new Set(options.map((o) => catalogOptionKey(o)));
-    setSummaryLoadingKeys(keys);
-
-    fetchCatalogSummariesBatch(options, (key, summary) => {
-      if (gen !== enrichGen.current) return;
-      setSummaries((prev) => ({ ...prev, [key]: summary }));
-      setSummaryLoadingKeys((prev) => {
-        const next = new Set(prev);
-        next.delete(key);
-        return next;
-      });
-    }).then(() => {
-      if (gen !== enrichGen.current) return;
-      setSummaryLoadingKeys(new Set());
-    });
-  }, [options]);
-
-  useEffect(() => {
-    if (!preview) {
-      setPosByBarcode({});
-      return;
-    }
-
-    let cancelled = false;
-    const codes = new Set<string>();
-    const mainBc = preview.barcode || selected?.barcode || barcode.replace(/\D/g, "");
-    if (mainBc) codes.add(mainBc);
-    for (const s of preview.shades || []) {
-      if (s.barcode) codes.add(s.barcode);
-    }
-
-    (async () => {
-      setPosLoading(true);
-      const next: Record<string, InventorySyncPreview | null> = {};
-      for (const code of codes) {
-        if (cancelled) return;
-        next[code] = await fetchInventoryByBarcode(code);
+  const loadCategoryProducts = useCallback(
+    async (catId: string, page = 1, append = false) => {
+      setLoadingProducts(true);
+      try {
+        const data = await listCategoryProducts(activeStore, catId, page);
+        setProducts((prev) => (append ? [...prev, ...data.products] : data.products));
+        setProductPage(data.page);
+        setHasMore(data.hasMore);
+      } catch (err) {
+        message.error(errorMessage(err, "فشل تحميل المنتجات"));
+      } finally {
+        setLoadingProducts(false);
       }
-      if (!cancelled) {
-        setPosByBarcode(next);
-        setPosLoading(false);
-      }
-    })();
+    },
+    [activeStore],
+  );
 
-    return () => {
-      cancelled = true;
-    };
-  }, [preview, selected, barcode]);
+  const onSelectCategory = useCallback(
+    (keys: React.Key[], info: { node: DataNode }) => {
+      const id = String(keys[0] || "");
+      if (!id) return;
+      setSelectedCategory(id);
+      setCategoryPath(String(info.node.title || id));
+      setStep(0);
+      setOptions([]);
+      loadCategoryProducts(id, 1, false);
+    },
+    [loadCategoryProducts],
+  );
 
-  const posSummary = useMemo(() => {
-    const rows = Object.values(posByBarcode).filter(Boolean) as InventorySyncPreview[];
-    if (!rows.length) return null;
-    return {
-      price: rows[0]?.price ?? 0,
-      originalPrice: rows[0]?.originalPrice ?? 0,
-      discountPercent: rows[0]?.discountPercent ?? 0,
-      stock: rows.reduce((sum, r) => sum + Number(r.stock ?? 0), 0),
-      matched: rows.length,
-    };
-  }, [posByBarcode]);
+  const runTextSearch = useCallback(async () => {
+    const q = searchText.trim();
+    if (!q) return;
+    setSearching(true);
+    setOptions([]);
+    try {
+      const data = await searchCatalogProducts(activeStore, q, 1, 30);
+      const opts = data.products.map((p) => listProductToOption(p, storeMeta));
+      setOptions(opts);
+      if (!opts.length) message.info("لا توجد نتائج");
+      else setStep(1);
+    } catch (err) {
+      message.error(errorMessage(err, "فشل البحث"));
+    } finally {
+      setSearching(false);
+    }
+  }, [searchText, activeStore, storeMeta]);
 
-  const runSearch = useCallback(async () => {
-    const q = barcode.replace(/\D/g, "");
-    if (!/^\d{8,14}$/.test(q)) {
+  const runBarcodeSearch = useCallback(async () => {
+    const digits = barcode.replace(/\D/g, "");
+    if (digits.length < 8) {
       message.warning("أدخل باركوداً صالحاً (8–14 رقم)");
       return;
     }
-    searchAbortRef.current?.abort();
-    const controller = new AbortController();
-    searchAbortRef.current = controller;
-    const gen = ++searchGen.current;
-
     setSearching(true);
     setOptions([]);
-    setStoreStatuses(createInitialStoreStatuses());
-    setSummaries({});
-    setSummaryLoadingKeys(new Set());
-    setSelected(null);
-    setPreview(null);
-    setStep(0);
-
     try {
-      const data = await searchCatalogByBarcodeProgressive(
-        q,
-        (partial) => {
-          if (partial.length) {
-            setOptions(partial);
-            setStep(1);
-          }
-        },
-        (event) => {
-          if (event.type === "start") {
-            const stores = (event as { stores?: Array<CatalogStoreSearchStatus & { id?: string }> }).stores;
-            if (stores?.length) {
-              const next: Record<string, CatalogStoreSearchStatus> = {};
-              for (const s of stores) {
-                const key = s.store || s.id || "";
-                if (!key) continue;
-                next[key] = { ...s, store: key };
-              }
-              setStoreStatuses(next);
-            }
-          }
-          if (event.type === "store-status") {
-            setStoreStatuses((prev) => ({
-              ...prev,
-              [event.store]: {
-                store: event.store,
-                status: event.status,
-                label: event.label,
-                count: event.count,
-                message: event.message,
-                fromIndex: event.fromIndex,
-              },
-            }));
-          }
-          if (event.type === "done") {
-            setStoreStatuses((prev) => {
-              const next = { ...prev };
-              for (const storeId of CATALOG_STORES) {
-                const cur = next[storeId];
-                if (!cur || cur.status === "pending" || cur.status === "searching") {
-                  next[storeId] = {
-                    store: storeId,
-                    status: "done",
-                    label: CATALOG_STORE_META[storeId] || storeId,
-                    count: cur?.count ?? 0,
-                    message: cur?.message,
-                  };
-                }
-              }
-              return next;
-            });
-          }
-        },
-        controller.signal,
-      );
-      setOptions(data.options || []);
-      if (gen !== searchGen.current) return;
-      if (!data.options?.length) {
-        const failedStores = (data.errors || []).filter((e) => e.message);
-        message.info({
-          key: "catalog-no-results",
-          content: failedStores.length
-            ? `لا توجد نتائج — فشل البحث في: ${failedStores.map((e) => e.store).join("، ")}`
-            : "لا توجد نتائج في الكتالوج لهذا الباركود",
-        });
-      } else {
-        setStep(1);
-      }
-    } catch (err: any) {
-      if (err?.name !== "AbortError" && gen === searchGen.current) {
-        message.error(errorMessage(err, "فشل البحث"));
-      }
+      const data = await searchCatalogByBarcode(digits, activeStore);
+      setOptions(data.options);
+      if (!data.options.length) message.info("لا توجد نتائج لهذا الباركود");
+      else setStep(1);
+    } catch (err) {
+      message.error(errorMessage(err, "فشل البحث بالباركود"));
     } finally {
-      if (searchAbortRef.current === controller && gen === searchGen.current) {
-        setSearching(false);
-        searchAbortRef.current = null;
-      }
+      setSearching(false);
     }
-  }, [barcode]);
+  }, [barcode, activeStore]);
 
   const loadPreview = useCallback(
     async (opt: CatalogImportOption) => {
       setSelected(opt);
       setLoadingPreview(true);
       setPreview(null);
-      const bc = opt.barcode || barcode.replace(/\D/g, "");
       try {
-        // مرحلة 1: عرض سريع بدون إثراء باركودات الدرجات
-        const quick = await fetchCatalogProduct(opt.store, opt.sourceId, bc, { light: true });
-        setPreview(quick);
-        setLoadingPreview(false);
-        setStep(2);
+        const product = await fetchCatalogProduct(opt.store, opt.sourceId, opt.storeLabel);
+        setPreview(product);
 
-        const brandId = matchBrandId(brandsData, quick.brandAr, quick.brandEn);
+        const brandId = matchBrandId(brandsData, product.brandAr, product.brandEn);
         const [allSubcategories, allTertiary] = await Promise.all([
-          qc.fetchQuery({
-            queryKey: ["subcategories", "all"],
-            queryFn: () => queries.subcategories(),
-          }),
-          qc.fetchQuery({
-            queryKey: ["tertiary-sections", "all"],
-            queryFn: () => queries.tertiarySections(),
-          }),
+          qc.fetchQuery({ queryKey: ["subcategories", "all"], queryFn: () => queries.subcategories() }),
+          qc.fetchQuery({ queryKey: ["tertiary-sections", "all"], queryFn: () => queries.tertiarySections() }),
         ]);
 
         const catMatch = matchCategoryFromHints(
           categoriesData,
           allSubcategories || [],
           allTertiary || [],
-          hintToString(quick.categoryHint),
-          hintToString(quick.categoryHintEn),
+          product.categoryHint || "",
+          "",
         );
 
         form.setFieldsValue({
@@ -353,17 +279,14 @@ export default function CatalogImportPage() {
           subcategoryId: catMatch.subcategoryId,
           tertiaryCategoryId: catMatch.tertiaryCategoryId,
         });
-
-        // مرحلة 2: إثراء باركود كل درجة في الخلفية
-        fetchCatalogProduct(opt.store, opt.sourceId, bc, { enrichShades: true })
-          .then((full) => setPreview(full))
-          .catch(() => { /* المعاينة السريعة كافية */ });
-      } catch (err: any) {
+        setStep(2);
+      } catch (err) {
         message.error(errorMessage(err, "فشل جلب تفاصيل المنتج"));
+      } finally {
         setLoadingPreview(false);
       }
     },
-    [barcode, brandsData, categoriesData, form, qc],
+    [brandsData, categoriesData, form, qc],
   );
 
   const importProduct = useMutation({
@@ -372,21 +295,20 @@ export default function CatalogImportPage() {
       const values = await form.validateFields();
 
       message.loading({ content: "جاري رفع الصور...", key: "import" });
-
-      const { productImages, shadeImageIds, failed: failedImages } =
-        await uploadCatalogImportImages(preview, ({ done, total, failed }) => {
+      const { productImages, shadeImageIds, failed: failedImages } = await uploadCatalogImportImages(
+        preview,
+        ({ done, total, failed }) => {
           message.loading({
             content: `جاري رفع الصور (${done}/${total})${failed ? ` · فشل ${failed}` : ""}...`,
             key: "import",
           });
-        });
+        },
+      );
 
       if (!productImages.length && (preview.images.length > 0 || preview.shades.some((s) => s.imageUrl))) {
-        throw new Error("تعذّر رفع صور المنتج من الكتالوج");
+        throw new Error("تعذّر رفع صور المنتج");
       }
-      if (failedImages > 0) {
-        message.warning(`${failedImages} صورة لم تُرفع — سيتم استيراد الباقي`);
-      }
+      if (failedImages > 0) message.warning(`${failedImages} صورة لم تُرفع`);
 
       const shades: any[] = [];
       for (let i = 0; i < (preview.shades || []).length; i++) {
@@ -408,12 +330,9 @@ export default function CatalogImportPage() {
           }
         }
 
-        const shadeName = String(s.name || s.nameEn || `درجة ${i + 1}`).trim();
         shades.push({
-          name: shadeName,
+          name: String(s.name || s.nameAr || `درجة ${i + 1}`).trim(),
           colorHex,
-          colorHexEnd: s.colorHexEnd,
-          isGradient: !!s.isGradient,
           barcode: s.barcode || "",
           imageId,
           price,
@@ -427,10 +346,8 @@ export default function CatalogImportPage() {
       let originalPrice = 0;
       let discountPercent = 0;
       let stock = 0;
-      const mainBc =
-        preview.barcode ||
-        (preview.shades?.length ? undefined : selected?.barcode || barcode);
-      if (mainBc) {
+      const mainBc = preview.barcode || selected?.barcode || barcode.replace(/\D/g, "");
+      if (mainBc && !shades.length) {
         const inv = await fetchInventoryByBarcode(mainBc);
         if (inv) {
           price = inv.price;
@@ -439,10 +356,8 @@ export default function CatalogImportPage() {
           stock = inv.stock;
         }
       }
-
       if (shades.length) {
-        const withStock = shades.filter((s) => (s.stock ?? 0) > 0 || s.price != null);
-        const lead = withStock[0] || shades[0];
+        const lead = shades.find((s) => s.price != null) || shades[0];
         if (lead?.price != null) price = lead.price;
         if (lead?.originalPrice) originalPrice = lead.originalPrice;
         if (lead?.discountPercent) discountPercent = lead.discountPercent;
@@ -456,7 +371,7 @@ export default function CatalogImportPage() {
           nameEn: preview.nameEn,
           descriptionAr: stripHtml(preview.descriptionAr),
           descriptionEn: stripHtml(preview.descriptionEn),
-          barcode: mainBc,
+          barcode: mainBc || undefined,
           sku: preview.sku || `CAT-${preview.store}-${preview.sourceId}`,
           price,
           originalPrice,
@@ -480,8 +395,8 @@ export default function CatalogImportPage() {
       qc.invalidateQueries({ queryKey: ["products"] });
       setStep(0);
       setBarcode("");
+      setSearchText("");
       setOptions([]);
-      setSummaries({});
       setSelected(null);
       setPreview(null);
       form.resetFields();
@@ -491,352 +406,241 @@ export default function CatalogImportPage() {
     },
   });
 
-  const selectedKey = selected ? catalogOptionKey(selected) : null;
+  const browseOptions = useMemo(
+    () => products.map((p) => listProductToOption(p, storeMeta)),
+    [products, storeMeta],
+  );
+
+  const displayOptions = options.length ? options : step >= 1 ? [] : browseOptions;
 
   return (
     <div className="catalog-import-page">
       <PageHeader
         title="الاستيراد من الكتالوج"
-        subtitle={`البحث في Nice One · الريان · ميرايا · نجد · أورزدي · بيوتي وي · ڤانير · مسواگ · وجوه · Amazon — ${CATALOG_HUB_URL}`}
+        subtitle={`تصفّح واستورد من المتاجر الخارجية — ${CATALOG_HUB_URL}`}
       />
 
       <Steps
         className="catalog-import-steps"
         current={step}
         items={[
-          { title: "مسح الباركود", description: "ابحث في كل المتاجر" },
-          { title: "اختيار النسخة", description: "قارن الصور والتصنيف" },
-          { title: "التصنيف والاستيراد", description: "POS + أقسام المتجر" },
+          { title: "تصفح / بحث", description: "أقسام المتجر أو باركود" },
+          { title: "اختيار المنتج", description: "معاينة سريعة" },
+          { title: "التصنيف والاستيراد", description: "أقسام المتجر + POS" },
         ]}
       />
 
       <section className="catalog-import-toolbar">
         <div className="catalog-import-toolbar-text">
           <h3>
-            <BarcodeOutlined style={{ marginInlineEnd: 6 }} />
-            بحث بالباركود
+            <AppstoreOutlined style={{ marginInlineEnd: 6 }} />
+            متجر الكتالوج
           </h3>
-          <p>ابحث في Nice One · الريان · ميرايا · نجد · أورزدي · بيوتي وي · ڤانير · مسواگ · وجوه · Amazon — تظهر النتائج أفقياً مع الصور والتدرجات</p>
+          <p>اختر المتجر ثم تصفّح الأقسام أو ابحث بالاسم/الباركود — البنية جاهزة لإضافة متاجر جديدة</p>
         </div>
-        <div className="catalog-import-search-row">
-          <Input
-            prefix={<SearchOutlined style={{ color: "#9a8faa" }} />}
-            placeholder="باركود (8–14 رقم)"
-            value={barcode}
-            onChange={(e) => setBarcode(e.target.value)}
-            onPressEnter={runSearch}
-            dir="ltr"
-            maxLength={20}
-          />
-          <Button type="primary" icon={<CloudDownloadOutlined />} loading={searching} onClick={runSearch}>
-            بحث
-          </Button>
-        </div>
+        <Select
+          value={activeStore}
+          onChange={setActiveStore}
+          style={{ minWidth: 200 }}
+          options={stores.map((s) => ({ value: s.id, label: s.label }))}
+        />
       </section>
 
-      {(searching || Object.keys(storeStatuses).length > 0) && (
-        <div className="catalog-import-store-progress">
-          {CATALOG_STORES.map((storeId) => {
-            const s = storeStatuses[storeId] || { store: storeId, status: "pending" as const };
-            const color = STORE_COLORS[s.store] || "#888";
-            const label = s.label || s.store;
-            let tag = "…";
-            if (s.status === "pending") tag = "انتظار";
-            if (s.status === "searching") tag = "جاري";
-            if (s.status === "done") tag = s.count ? `${s.count}` : "—";
-            if (s.status === "error") tag = "!";
-            return (
-              <Tag
-                key={s.store}
-                title={s.message}
-                color={s.status === "error" ? "red" : s.status === "done" && s.count ? color : "default"}
-                style={{ opacity: s.status === "pending" ? 0.55 : 1 }}
-              >
-                {label} {tag}
-              </Tag>
-            );
-          })}
-          {searching && <Spin size="small" />}
-        </div>
-      )}
+      <Row gutter={16}>
+        <Col xs={24} md={8} lg={7}>
+          <Card title="أقسام المتجر" size="small" className="catalog-import-tree-card">
+            {treeLoading ? (
+              <div className="catalog-import-center"><Spin /></div>
+            ) : (
+              <Tree
+                showLine
+                selectable
+                onSelect={onSelectCategory}
+                treeData={toTreeData(tree)}
+                height={420}
+              />
+            )}
+          </Card>
+        </Col>
 
-      {searching && !options.length && (
-        <div className="catalog-import-empty">
-          <Spin size="large" />
-          <p style={{ marginTop: 16 }}>جاري البحث — النتائج تظهر فور وصولها من كل متجر</p>
-        </div>
-      )}
-
-      {!searching && !options.length && Object.keys(storeStatuses).length > 0 && (
-        <div className="catalog-import-empty">
-          <Alert
-            type="info"
-            showIcon
-            message="لا توجد نتائج لهذا الباركود"
-            description="تم البحث في جميع المتاجر المتصلة. قد يكون المنتج غير معروض في الكتالوج، أو يستخدم كوداً داخلياً (وليس باركود EAN) — خصوصاً في أورزدي حيث ~65% من المنتجات لا تحتوي باركود EAN."
-          />
-        </div>
-      )}
-
-      {options.length > 0 && (
-        <section className="catalog-import-results">
-          <div className="catalog-import-results-head">
-            <h4>النسخ المتوفرة في الكتالوج</h4>
-            <Tag color="purple">{options.length} نتيجة{searching ? " · البحث مستمر…" : ""}</Tag>
-          </div>
-          {optionsByStore.map(([store, storeOptions]) => (
-            <div key={store} className="catalog-import-store-block">
-              <div className="catalog-import-store-label">
-                <Tag color={STORE_COLORS[store] || "default"}>{storeOptions[0]?.storeLabel || store}</Tag>
-                <span className="count">{storeOptions.length}</span>
-              </div>
-              <div className="catalog-import-rows">
-                {storeOptions.map((opt) => {
-                  const key = catalogOptionKey(opt);
-                  return (
-                    <CatalogOptionCard
-                      key={`${key}:${opt.barcode || ""}`}
-                      option={opt}
-                      summary={summaries[key]}
-                      summaryLoading={summaryLoadingKeys.has(key)}
-                      selected={selectedKey === key}
-                      onSelect={loadPreview}
-                    />
-                  );
-                })}
-              </div>
+        <Col xs={24} md={16} lg={17}>
+          <section className="catalog-import-toolbar">
+            <div className="catalog-import-search-row">
+              <Input
+                prefix={<SearchOutlined />}
+                placeholder="بحث بالاسم..."
+                value={searchText}
+                onChange={(e) => setSearchText(e.target.value)}
+                onPressEnter={runTextSearch}
+              />
+              <Button type="primary" icon={<SearchOutlined />} loading={searching} onClick={runTextSearch}>
+                بحث
+              </Button>
             </div>
-          ))}
-        </section>
-      )}
+            <div className="catalog-import-search-row">
+              <Input
+                prefix={<BarcodeOutlined />}
+                placeholder="باركود (8–14 رقم)"
+                value={barcode}
+                onChange={(e) => setBarcode(e.target.value)}
+                onPressEnter={runBarcodeSearch}
+              />
+              <Button icon={<BarcodeOutlined />} loading={searching} onClick={runBarcodeSearch}>
+                باركود
+              </Button>
+            </div>
+          </section>
 
-      {loadingPreview && (
-        <div className="catalog-import-empty">
-          <Spin size="large" tip="جاري تحميل المعاينة..." />
-        </div>
-      )}
+          {selectedCategory && (
+            <Alert
+              type="info"
+              showIcon
+              style={{ marginBottom: 12 }}
+              message={`القسم: ${categoryPath}`}
+            />
+          )}
 
-      {preview && !loadingPreview && (
-        <div className="catalog-import-preview-layout">
-          <Card className="catalog-preview-card" title="معاينة من الكتالوج">
-            <div className="catalog-preview-hero">
-              {preview.images[0]?.url && (
-                <img
-                  className={`catalog-preview-hero-img${selected?.store === "amazon" ? " catalog-preview-hero-img--amazon" : ""}`}
-                  src={resolveCatalogImageUrl(preview.images[0].url)}
-                  alt={preview.nameAr}
-                  referrerPolicy="no-referrer"
-                />
-              )}
-              <div className="catalog-preview-hero-body">
-                {selected && <Tag color={STORE_COLORS[selected.store]}>{selected.storeLabel}</Tag>}
-                <Typography.Title level={5} style={{ margin: "8px 0 4px" }}>
-                  {preview.nameAr}
-                </Typography.Title>
-                {preview.nameEn && (
-                  <Typography.Text type="secondary" className="alhayaa-ltr-input">
-                    {preview.nameEn}
-                  </Typography.Text>
-                )}
-                <div className="catalog-preview-stats">
-                  <Tag color="processing">{preview.images.length} صور</Tag>
-                  {preview.hasShades && <Tag color="purple">{preview.shades.length} تدرجات</Tag>}
-                  {preview.priceHint && <Tag dir="ltr">{preview.priceHint}</Tag>}
-                </div>
-                <Typography.Text type="secondary" style={{ fontSize: 12 }} dir="ltr">
-                  {preview.barcode || "—"}
+          <div className="catalog-import-results">
+            {loadingProducts && !displayOptions.length ? (
+              <div className="catalog-import-center"><Spin size="large" /></div>
+            ) : displayOptions.length ? (
+              <div className="catalog-import-options">
+                {displayOptions.map((opt) => (
+                  <CatalogOptionCard
+                    key={catalogOptionKey(opt)}
+                    option={opt}
+                    selected={selected ? catalogOptionKey(selected) === catalogOptionKey(opt) : false}
+                    onSelect={loadPreview}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="catalog-import-empty">
+                <Typography.Text type="secondary">
+                  اختر قسماً من الشجرة أو ابحث بالاسم/الباركود
                 </Typography.Text>
               </div>
-            </div>
-
-            {(preview.categoryHint || preview.categoryHintEn) && (
-              <div className="catalog-preview-category-box">
-                <strong>تصنيف الكتالوج</strong>
-                <span>
-                  {Array.isArray(preview.categoryHint)
-                    ? preview.categoryHint.join(" › ")
-                    : preview.categoryHint}
-                  {preview.categoryHintEn && preview.categoryHint !== preview.categoryHintEn
-                    ? ` · ${Array.isArray(preview.categoryHintEn) ? preview.categoryHintEn.join(" › ") : preview.categoryHintEn}`
-                    : ""}
-                </span>
-              </div>
             )}
 
-            <p style={{ fontSize: 13, margin: "0 0 8px" }}>
-              <strong>العلامة:</strong> {preview.brandAr}
-              {preview.brandEn ? ` / ${preview.brandEn}` : ""}
-            </p>
+            {hasMore && selectedCategory && (
+              <div className="catalog-import-load-more">
+                <Button
+                  loading={loadingProducts}
+                  onClick={() => loadCategoryProducts(selectedCategory, productPage + 1, true)}
+                >
+                  تحميل المزيد
+                </Button>
+              </div>
+            )}
+          </div>
+        </Col>
+      </Row>
 
-            {preview.shades?.length > 0 && (
-              <>
-                <Typography.Text strong>التدرجات اللونية</Typography.Text>
-                <div className="catalog-shades-grid">
-                  {preview.shades.map((s, i) => {
-                    const inv = s.barcode ? posByBarcode[s.barcode] : null;
-                    return (
-                      <div key={`${s.barcode || s.name}-${i}`} className="catalog-shade-chip">
-                        {s.colorHex ? (
-                          <span
-                            className="catalog-shade-swatch"
-                            style={{
-                              background: s.isGradient && s.colorHexEnd
-                                ? `linear-gradient(135deg, ${s.colorHex}, ${s.colorHexEnd})`
-                                : s.colorHex,
-                            }}
-                          />
-                        ) : s.imageUrl ? (
-                          <img
-                            src={resolveCatalogImageUrl(s.imageUrl)}
-                            alt=""
-                            className="catalog-shade-swatch"
-                            style={{ objectFit: "cover" }}
-                            referrerPolicy="no-referrer"
-                          />
-                        ) : null}
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontWeight: 600 }}>{s.name}</div>
-                          {s.barcode && (
-                            <div style={{ fontSize: 10, opacity: 0.7 }} dir="ltr">
-                              {s.barcode}
-                            </div>
+      {step === 2 && (
+        <Card
+          className="catalog-import-preview-card"
+          title="معاينة الاستيراد"
+          extra={
+            <Button
+              type="primary"
+              icon={<CloudDownloadOutlined />}
+              loading={importProduct.isPending || loadingPreview}
+              onClick={() => importProduct.mutate()}
+            >
+              استيراد المنتج
+            </Button>
+          }
+        >
+          {loadingPreview ? (
+            <div className="catalog-import-center"><Spin /></div>
+          ) : preview ? (
+            <Row gutter={24}>
+              <Col xs={24} md={10}>
+                {(preview.images[0]?.url) ? (
+                  <img
+                    className="catalog-preview-hero"
+                    src={resolveCatalogImageUrl(preview.images[0].url)}
+                    alt={preview.nameAr}
+                    referrerPolicy="no-referrer"
+                  />
+                ) : null}
+                {preview.shades.length > 0 && (
+                  <div className="catalog-preview-shades">
+                    <Typography.Text strong>التدرجات ({preview.shades.length})</Typography.Text>
+                    <div className="catalog-preview-shade-grid">
+                      {preview.shades.map((s, i) => (
+                        <div key={i} className="catalog-preview-shade">
+                          {s.colorHex && (
+                            <span className="catalog-preview-swatch" style={{ background: s.colorHex }} />
                           )}
-                          {posLoading ? (
-                            <Spin size="small" />
-                          ) : inv ? (
-                            <div style={{ fontSize: 10, color: "#389e0d" }}>
-                              {inv.price} ر.س · مخزون {inv.stock}
-                            </div>
-                          ) : null}
+                          <div>
+                            <div>{s.name || s.nameAr}</div>
+                            {s.barcode && <small>{s.barcode}</small>}
+                            {s.colorHex && <small>{s.colorHex}</small>}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </>
-            )}
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </Col>
+              <Col xs={24} md={14}>
+                <Typography.Title level={4}>{preview.nameAr}</Typography.Title>
+                {preview.brandAr && <Tag>{preview.brandAr}</Tag>}
+                {preview.priceHint && <Tag color="green">{preview.priceHint}</Tag>}
+                {preview.categoryHint && (
+                  <p className="catalog-preview-category">{preview.categoryHint}</p>
+                )}
 
-            <Typography.Paragraph ellipsis={{ rows: 3 }} style={{ marginTop: 16 }}>
-              <strong>الوصف (عربي):</strong> {stripHtml(preview.descriptionAr).slice(0, 400) || "—"}
-            </Typography.Paragraph>
-            {preview.descriptionEn && (
-              <Typography.Paragraph ellipsis={{ rows: 3 }} className="alhayaa-ltr-input">
-                <strong>الوصف (إنجليزي):</strong> {stripHtml(preview.descriptionEn).slice(0, 400)}
-              </Typography.Paragraph>
-            )}
-
-            <div className="catalog-preview-gallery">
-              {preview.images.map((img) => (
-                <img
-                  key={img.url}
-                  className={selected?.store === "amazon" ? "catalog-preview-gallery-img--amazon" : undefined}
-                  src={resolveCatalogImageUrl(img.url)}
-                  alt=""
-                  referrerPolicy="no-referrer"
-                />
-              ))}
-            </div>
-          </Card>
-
-          <Card className="catalog-preview-card" title="إعدادات الاستيراد + POS">
-            <Alert
-              type="warning"
-              showIcon
-              style={{ marginBottom: 16 }}
-              message="السعر والكمية والتخفيض تُجلب تلقائياً من نظام POS — لا تُستورد من الكتالوج"
-            />
-            {posLoading ? (
-              <div style={{ marginBottom: 16 }}>
-                <Spin size="small" /> جاري جلب بيانات POS...
-              </div>
-            ) : posSummary ? (
-              <Alert
-                type="success"
-                showIcon
-                style={{ marginBottom: 16 }}
-                message={`من POS: السعر ${posSummary.price} ر.س · المخزون ${posSummary.stock} · خصم ${posSummary.discountPercent}% (${posSummary.matched} باركود)`}
-              />
-            ) : (
-              <Alert
-                type="info"
-                showIcon
-                style={{ marginBottom: 16 }}
-                message="لم يُعثر على بيانات POS — سيُنشأ المنتج بسعر/مخزون صفر"
-              />
-            )}
-
-            <Typography.Text type="secondary" style={{ display: "block", marginBottom: 12 }}>
-              القسم · القسم الفرعي · القسم الثانوي · البراند
-            </Typography.Text>
-            <Form form={form} layout="vertical">
-              <Form.Item
-                name="categoryId"
-                label="القسم"
-                rules={[{ required: true, message: "اختر القسم" }]}
-              >
-                <Select
-                  placeholder="اختر القسم"
-                  options={(categoriesData || []).map((c: any) => ({
-                    value: c.id,
-                    label: c.nameAr || c.name,
-                  }))}
-                  showSearch
-                  optionFilterProp="label"
-                  onChange={() => {
-                    form.setFieldValue("subcategoryId", undefined);
-                    form.setFieldValue("tertiaryCategoryId", undefined);
-                  }}
-                />
-              </Form.Item>
-              <Form.Item name="subcategoryId" label="القسم الفرعي">
-                <Select
-                  allowClear
-                  placeholder="اختياري"
-                  options={subcategoryOptions}
-                  disabled={!categoryId}
-                  showSearch
-                  optionFilterProp="label"
-                  onChange={() => form.setFieldValue("tertiaryCategoryId", undefined)}
-                />
-              </Form.Item>
-              <Form.Item name="tertiaryCategoryId" label="القسم الثانوي">
-                <Select
-                  allowClear
-                  placeholder="اختياري"
-                  options={tertiaryOptions}
-                  disabled={!subcategoryId}
-                  showSearch
-                  optionFilterProp="label"
-                />
-              </Form.Item>
-              <Form.Item
-                name="brandId"
-                label="البراند في متجرك"
-                rules={[{ required: true, message: "اختر البراند" }]}
-              >
-                <Select
-                  placeholder="اختر البراند"
-                  options={(brandsData || []).map((b: any) => ({
-                    value: b.id,
-                    label: b.nameAr || b.name || b.nameEn,
-                  }))}
-                  showSearch
-                  optionFilterProp="label"
-                />
-              </Form.Item>
-              <Button
-                type="primary"
-                size="large"
-                block
-                icon={<CloudDownloadOutlined />}
-                loading={importProduct.isPending}
-                onClick={() => importProduct.mutate()}
-              >
-                استيراد المنتج إلى المتجر
-              </Button>
-            </Form>
-          </Card>
-        </div>
+                <Form form={form} layout="vertical" className="catalog-import-form">
+                  <Form.Item name="brandId" label="البراند">
+                    <Select
+                      allowClear
+                      showSearch
+                      optionFilterProp="label"
+                      options={(brandsData || []).map((b: any) => ({
+                        value: b.id,
+                        label: b.nameAr || b.name || b.nameEn,
+                      }))}
+                    />
+                  </Form.Item>
+                  <Form.Item name="categoryId" label="القسم" rules={[{ required: true }]}>
+                    <Select
+                      showSearch
+                      optionFilterProp="label"
+                      options={(categoriesData || []).map((c: any) => ({
+                        value: c.id,
+                        label: c.nameAr || c.name,
+                      }))}
+                    />
+                  </Form.Item>
+                  <Form.Item name="subcategoryId" label="قسم فرعي">
+                    <Select
+                      allowClear
+                      showSearch
+                      optionFilterProp="label"
+                      options={(subcategoriesData || []).map((s: any) => ({
+                        value: s.id,
+                        label: s.nameAr || s.name,
+                      }))}
+                    />
+                  </Form.Item>
+                  <Form.Item name="tertiaryCategoryId" label="قسم ثانوي">
+                    <Select
+                      allowClear
+                      showSearch
+                      optionFilterProp="label"
+                      options={(tertiarySectionsData || []).map((s: any) => ({
+                        value: s.id,
+                        label: s.nameAr || s.name,
+                      }))}
+                    />
+                  </Form.Item>
+                </Form>
+              </Col>
+            </Row>
+          ) : null}
+        </Card>
       )}
     </div>
   );

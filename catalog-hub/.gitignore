@@ -1,12 +1,3 @@
-node_modules/
-.DS_Store
+node_modules
 .env
-.env.local
 *.log
-npm-debug.log*
-
-# صور النسخ الاحتياطي المحلية — غير مستخدمة في التشغيل
-data/images/
-
-# فهرس تغذية أورزدي — يُبنى تلقائياً عند التشغيل
-data/orisdi-feed-index.json

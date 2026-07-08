@@ -32,7 +32,6 @@ echo "==> Backfill images (if needed)..."
 $COMPOSE exec -T api node scripts/backfill-product-images.js 2>/dev/null || true
 
 echo "==> Restart nginx..."
-$COMPOSE up -d catalog-hub 2>/dev/null || true
 $COMPOSE restart nginx
 
 echo "==> Cleanup disk..."

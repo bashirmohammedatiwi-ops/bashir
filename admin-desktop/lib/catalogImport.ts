@@ -1,51 +1,47 @@
-import { CATALOG_HUB_URL, CATALOG_HUB_ORIGIN } from "./config";
+import { CATALOG_HUB_URL } from "./config";
 
-export type CatalogImportOption = {
-  store: string;
-  storeLabel: string;
-  sourceId: string;
+export type CatalogStore = {
+  id: string;
+  label: string;
+  domain?: string;
+  siteUrl?: string;
+};
+
+export type CatalogCategoryNode = {
+  id: string;
+  slug: string;
+  name: string;
+  nameEn?: string;
+  level: number;
+  isLeaf: boolean;
+  productCount?: number | null;
+  children?: CatalogCategoryNode[];
+  path?: string;
+};
+
+export type CatalogListProduct = {
+  id: string;
   nameAr: string;
   nameEn?: string;
   brandAr?: string;
-  brandEn?: string;
   thumb?: string;
-  barcode?: string;
-  shadeName?: string;
-  matchType?: string;
+  price?: string;
   shadeCount?: number;
-  imageCount?: number;
-  categoryHint?: string | string[];
-  categoryHintEn?: string | string[];
+  hasOptions?: boolean;
+  category?: string;
 };
-
-export type CatalogImportSummary = {
-  imageCount: number;
-  shadeCount: number;
-  hasShades: boolean;
-  categoryHint: string;
-  categoryHintEn: string;
-  thumb: string;
-  priceHint: string;
-  brandAr: string;
-  brandEn: string;
-  nameAr: string;
-  nameEn: string;
-};
-
-export function catalogOptionKey(opt: Pick<CatalogImportOption, "store" | "sourceId">) {
-  return `${opt.store}:${opt.sourceId}`;
-}
 
 export type CatalogImportShade = {
   name: string;
+  nameAr?: string;
   nameEn?: string;
   barcode?: string;
   colorHex?: string;
-  colorHexEnd?: string;
-  isGradient?: boolean;
   imageUrl?: string;
   swatchUrl?: string;
   sku?: string;
+  price?: string;
+  optionGroup?: string;
 };
 
 export type CatalogImportProduct = {
@@ -65,37 +61,29 @@ export type CatalogImportProduct = {
   hasShades: boolean;
   sourceUrl?: string;
   priceHint?: string;
-  categoryHint?: string | string[];
-  categoryHintEn?: string | string[];
+  categoryHint?: string;
 };
 
+export type CatalogImportOption = {
+  store: string;
+  storeLabel: string;
+  sourceId: string;
+  nameAr: string;
+  nameEn?: string;
+  brandAr?: string;
+  thumb?: string;
+  barcode?: string;
+  shadeCount?: number;
+  price?: string;
+  category?: string;
+  matchType?: string;
+};
 
-function isLikelyAmazonBundle(opt: CatalogImportOption) {
-  const t = `${opt.nameAr || ""} ${opt.nameEn || ""}`.toLowerCase();
-  return /\b(pack of|عبوة|قطعتين|قطعة\s*2|2\s*قطع|bundle|مجموعة)\b/i.test(t);
+export function catalogOptionKey(opt: Pick<CatalogImportOption, "store" | "sourceId">) {
+  return `${opt.store}:${opt.sourceId}`;
 }
 
-function filterCatalogOptions(options: CatalogImportOption[]) {
-  return options.filter((o) => !(o.store === "amazon" && isLikelyAmazonBundle(o)));
-}
-
-const CLIENT_SEARCH_CACHE_MS = 5 * 60 * 1000;
-const clientSearchCache = new Map<
-  string,
-  { at: number; data: CatalogSearchCacheEntry }
->();
-
-function catalogApiErrorMessage(payload: unknown, fallback: string): string {
-  if (typeof payload === "string" && payload.trim()) return payload.trim();
-  if (payload && typeof payload === "object") {
-    const o = payload as Record<string, unknown>;
-    if (typeof o.message === "string" && o.message.trim()) return o.message.trim();
-    if (typeof o.reason === "string" && o.reason.trim()) return o.reason.trim();
-  }
-  return fallback;
-}
-
-async function catalogFetch<T>(path: string, timeoutMs = 45_000): Promise<T> {
+async function catalogFetch<T>(path: string, timeoutMs = 60_000): Promise<T> {
   const url = `${CATALOG_HUB_URL}${path}`;
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -106,14 +94,17 @@ async function catalogFetch<T>(path: string, timeoutMs = 45_000): Promise<T> {
     });
     const json = await res.json();
     if (!res.ok) {
-      throw new Error(
-        catalogApiErrorMessage(json?.error, res.statusText || "فشل الاتصال بكتالوج المتاجر"),
-      );
+      const msg =
+        (typeof json?.error === "string" && json.error) ||
+        json?.message ||
+        res.statusText ||
+        "فشل الاتصال بكتالوج المتاجر";
+      throw new Error(msg);
     }
     return json as T;
   } catch (err) {
     if (err instanceof Error && err.name === "AbortError") {
-      throw new Error("انتهت مهلة البحث — جرّب مرة أخرى");
+      throw new Error("انتهت مهلة الطلب — جرّب مرة أخرى");
     }
     throw err;
   } finally {
@@ -121,362 +112,141 @@ async function catalogFetch<T>(path: string, timeoutMs = 45_000): Promise<T> {
   }
 }
 
-type CatalogSearchResponse = {
-  barcode: string;
-  options: CatalogImportOption[];
-  errors?: { store: string; message: string }[];
-  byStore?: Record<string, number>;
-  fast?: boolean;
-};
+function mapImportProduct(raw: Record<string, unknown>, storeLabel = ""): CatalogImportProduct {
+  const shades = ((raw.shades as CatalogImportShade[]) || []).map((s) => ({
+    name: s.name || s.nameAr || s.nameEn || "",
+    nameAr: s.nameAr || s.name || "",
+    nameEn: s.nameEn || s.name || "",
+    barcode: s.barcode || "",
+    colorHex: s.colorHex || "",
+    imageUrl: s.imageUrl || "",
+    swatchUrl: s.swatchUrl || s.imageUrl || "",
+    sku: s.sku || "",
+    price: s.price || "",
+    optionGroup: s.optionGroup || "",
+  }));
 
-type CatalogSearchCacheEntry = {
-  barcode: string;
-  options: CatalogImportOption[];
-  byStore: Record<string, number>;
-  errors?: { store: string; message: string }[];
-};
+  const images = ((raw.images as { url: string }[]) || []).map((img, i) => ({
+    url: img.url,
+    isPrimary: i === 0,
+  }));
+  if (!images.length && raw.thumb) {
+    images.push({ url: String(raw.thumb), isPrimary: true });
+  }
 
-function normalizeSearchResult(result: CatalogSearchResponse): CatalogSearchCacheEntry {
   return {
-    barcode: result.barcode,
-    options: result.options,
-    byStore: result.byStore ?? {},
-    errors: result.errors,
+    store: String(raw.sourceStore || raw.store || ""),
+    storeLabel: storeLabel || String(raw.storeLabel || ""),
+    sourceId: String(raw.sourceId || raw.id || ""),
+    nameAr: String(raw.nameAr || ""),
+    nameEn: String(raw.nameEn || ""),
+    brandAr: String(raw.brandAr || ""),
+    brandEn: String(raw.brandEn || ""),
+    descriptionAr: String(raw.descriptionAr || ""),
+    descriptionEn: String(raw.descriptionEn || ""),
+    barcode: String(raw.barcode || ""),
+    sku: String(raw.sourceSku || raw.sku || raw.sourceId || ""),
+    images,
+    shades,
+    hasShades: shades.length > 1 || raw.hasOptions === true,
+    sourceUrl: String(raw.productUrl || raw.sourceUrl || ""),
+    priceHint: String(raw.price || raw.priceHint || ""),
+    categoryHint: String(raw.category || raw.categoryHint || ""),
   };
 }
 
-export type CatalogStoreSearchStatus = {
-  store: string;
-  status: "pending" | "searching" | "done" | "error";
-  label?: string;
-  count?: number;
-  message?: string;
-  fromIndex?: boolean;
-};
-
-export type CatalogSearchStreamEvent =
-  | { type: "start"; barcode: string; cached?: boolean; stores?: CatalogStoreSearchStatus[] }
-  | { type: "store-status"; store: string; status: CatalogStoreSearchStatus["status"]; label?: string; count?: number; message?: string; fromIndex?: boolean }
-  | { type: "results"; barcode: string; options: CatalogImportOption[]; byStore?: Record<string, number>; source?: string }
-  | { type: "error"; error: string }
-  | { type: "done"; barcode: string; options: CatalogImportOption[]; byStore?: Record<string, number>; errors?: { store: string; message: string }[] };
-
-export const CATALOG_STORE_META: Record<string, string> = {
-  niceone: "Nice One",
-  elryan: "الريان Elryan",
-  miraaya: "ميرايا Miraaya",
-  faces: "وجوه FACES",
-  amazon: "Amazon Cosmetics",
-  miswag: "مسواگ Miswag",
-  orisdi: "أورزدي Orisdi",
-  beautyway: "بيوتي وي Beauty Way",
-  vaneersa: "ڤانير Vaneersa",
-  najd: "نجد العذية Najd",
-};
-
-export const CATALOG_STORES = Object.keys(CATALOG_STORE_META);
-
-export function createInitialStoreStatuses(): Record<string, CatalogStoreSearchStatus> {
-  const next: Record<string, CatalogStoreSearchStatus> = {};
-  for (const store of CATALOG_STORES) {
-    next[store] = {
-      store,
-      status: "pending",
-      label: CATALOG_STORE_META[store] || store,
-    };
-  }
-  return next;
+export async function fetchCatalogStores(): Promise<CatalogStore[]> {
+  const data = await catalogFetch<{ stores: CatalogStore[] }>("/api/catalog/stores");
+  return data.stores || [];
 }
 
-function storeStatusesFromByStore(byStore: Record<string, number> = {}): Record<string, CatalogStoreSearchStatus> {
-  const next = createInitialStoreStatuses();
-  for (const store of CATALOG_STORES) {
-    const count = byStore[store] ?? 0;
-    next[store] = {
-      store,
-      status: "done",
-      label: CATALOG_STORE_META[store] || store,
-      count,
-    };
-  }
-  return next;
-}
-
-async function consumeSseStream(
-  url: string,
-  onEvent: (event: CatalogSearchStreamEvent) => void,
-  signal?: AbortSignal,
-  timeoutMs = 120_000,
-) {
-  const timeoutCtrl = new AbortController();
-  const timer = setTimeout(() => timeoutCtrl.abort(), timeoutMs);
-  if (signal) {
-    if (signal.aborted) timeoutCtrl.abort();
-    else signal.addEventListener("abort", () => timeoutCtrl.abort(), { once: true });
-  }
-
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      headers: { Accept: "text/event-stream" },
-      signal: timeoutCtrl.signal,
-    });
-  } finally {
-    clearTimeout(timer);
-  }
-  if (!res.ok) {
-    let message = res.statusText || "فشل الاتصال بكتالوج المتاجر";
-    try {
-      const json = await res.json();
-      message = catalogApiErrorMessage(json?.error, message);
-    } catch {
-      /* SSE error body */
-    }
-    throw new Error(message);
-  }
-  if (!res.body) throw new Error("لا يوجد تدفّق من الخادم");
-
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let eventName = "message";
-  let dataLines: string[] = [];
-
-  const flush = () => {
-    if (!dataLines.length) {
-      eventName = "message";
-      return;
-    }
-    const raw = dataLines.join("\n");
-    dataLines = [];
-    const name = eventName;
-    eventName = "message";
-    if (!raw || raw.startsWith(":")) return;
-    try {
-      const payload = JSON.parse(raw) as Record<string, unknown>;
-      onEvent({ type: name, ...payload } as CatalogSearchStreamEvent);
-    } catch {
-      /* ignore malformed chunk */
-    }
-  };
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split("\n");
-    buffer = lines.pop() || "";
-    for (const line of lines) {
-      if (line.startsWith("event:")) {
-        flush();
-        eventName = line.slice(6).trim();
-      } else if (line.startsWith("data:")) {
-        dataLines.push(line.slice(5).trimStart());
-      } else if (line.trim() === "") {
-        flush();
-      }
-    }
-  }
-  flush();
-}
-
-function mergeCatalogOptions(
-  prev: CatalogImportOption[] = [],
-  next: CatalogImportOption[] = [],
-): CatalogImportOption[] {
-  const map = new Map<string, CatalogImportOption>();
-  for (const opt of [...prev, ...next]) {
-    const key = catalogOptionKey(opt);
-    if (!map.has(key)) {
-      map.set(key, opt);
-      continue;
-    }
-    const cur = map.get(key)!;
-    const score = (o: CatalogImportOption) =>
-      (o.thumb ? 2 : 0) + (o.shadeCount ?? 0) + (o.imageCount ?? 0) + (o.matchType === "shade" ? 1 : 0);
-    map.set(key, score(opt) >= score(cur) ? opt : cur);
-  }
-  return filterCatalogOptions([...map.values()]);
-}
-
-export async function searchCatalogByBarcodeStream(
-  barcode: string,
-  onEvent?: (event: CatalogSearchStreamEvent) => void,
-  signal?: AbortSignal,
-  options: { refresh?: boolean } = {},
-): Promise<CatalogSearchResponse> {
-  const digits = barcode.replace(/\D/g, "");
-  const refresh = options.refresh !== false;
-
-  if (!refresh) {
-    const cached = clientSearchCache.get(digits);
-    if (cached && Date.now() - cached.at < CLIENT_SEARCH_CACHE_MS) {
-      onEvent?.({ type: "start", barcode: digits, cached: true, stores: Object.values(storeStatusesFromByStore(cached.data.byStore)) });
-      onEvent?.({ type: "results", barcode: digits, options: cached.data.options, byStore: cached.data.byStore, source: "cache" });
-      onEvent?.({ type: "done", barcode: digits, options: cached.data.options, byStore: cached.data.byStore, errors: cached.data.errors });
-      return {
-        barcode: cached.data.barcode,
-        options: cached.data.options,
-        byStore: cached.data.byStore,
-        errors: cached.data.errors,
-      };
-    }
-  } else {
-    clientSearchCache.delete(digits);
-  }
-
-  const q = encodeURIComponent(digits);
-  const refreshParam = refresh ? "&refresh=1" : "";
-  let finalResult: CatalogSearchResponse = { barcode: digits, options: [], byStore: {} };
-
-  await consumeSseStream(
-    `${CATALOG_HUB_URL}/api/import/search/stream?q=${q}${refreshParam}`,
-    (event) => {
-      onEvent?.(event);
-      if (event.type === "results") {
-        const next = filterCatalogOptions(event.options || []);
-        finalResult = {
-          barcode: event.barcode || digits,
-          options: mergeCatalogOptions(finalResult.options, next),
-          byStore: event.byStore ?? finalResult.byStore ?? {},
-        };
-      }
-      if (event.type === "done") {
-        const doneOpts = filterCatalogOptions(event.options || []);
-        finalResult = {
-          barcode: event.barcode || digits,
-          options: mergeCatalogOptions(finalResult.options, doneOpts),
-          byStore: event.byStore ?? finalResult.byStore ?? {},
-          errors: event.errors,
-        };
-      }
-    },
-    signal,
+export async function fetchCategoryTree(storeId: string) {
+  return catalogFetch<{ tree: CatalogCategoryNode[]; leaves: CatalogCategoryNode[] }>(
+    `/api/catalog/${encodeURIComponent(storeId)}/categories`,
+    90_000,
   );
-
-  if (finalResult.options.length) {
-    clientSearchCache.set(digits, { at: Date.now(), data: normalizeSearchResult(finalResult) });
-  }
-  return finalResult;
 }
 
-export async function searchCatalogByBarcode(
-  barcode: string,
-  options: { fast?: boolean; store?: string; hints?: CatalogImportOption[] } = {},
+export async function listCategoryProducts(
+  storeId: string,
+  categoryId: string,
+  page = 1,
+  limit = 30,
+  sort = "default",
 ) {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+    sort,
+  });
+  return catalogFetch<{
+    products: CatalogListProduct[];
+    hasMore: boolean;
+    total: number;
+    page: number;
+  }>(`/api/catalog/${encodeURIComponent(storeId)}/categories/${encodeURIComponent(categoryId)}/products?${params}`);
+}
+
+export async function searchCatalogProducts(storeId: string, query: string, page = 1, limit = 30) {
+  const params = new URLSearchParams({
+    q: query,
+    page: String(page),
+    limit: String(limit),
+  });
+  return catalogFetch<{
+    products: CatalogListProduct[];
+    hasMore: boolean;
+    total: number;
+  }>(`/api/catalog/${encodeURIComponent(storeId)}/search?${params}`);
+}
+
+export async function searchCatalogByBarcode(barcode: string, storeId = "miswag") {
   const q = encodeURIComponent(barcode.trim());
-  const params = new URLSearchParams({ q });
-  if (options.fast) params.set("fast", "1");
-  if (options.store) params.set("store", options.store);
-  if (options.hints?.length) {
-    const hints = options.hints.map((h) => ({
-      name: h.nameAr,
-      nameEn: h.nameEn,
-      manufacturer: h.brandAr,
-      manufacturerEn: h.brandEn,
-      brand: h.brandAr,
-    }));
-    params.set("hints", encodeURIComponent(JSON.stringify(hints)));
-  }
-  const timeoutMs = options.fast ? 8_000 : 50_000;
-  return catalogFetch<CatalogSearchResponse>(`/api/import/search?${params}`, timeoutMs);
+  const data = await catalogFetch<{
+    query: string;
+    results: Array<Record<string, unknown>>;
+  }>(`/api/import/search?q=${q}&store=${encodeURIComponent(storeId)}`, 90_000);
+
+  const options: CatalogImportOption[] = (data.results || []).map((r) => ({
+    store: String(r.store || storeId),
+    storeLabel: String(r.storeLabel || storeId),
+    sourceId: String(r.id || r.sourceId || ""),
+    nameAr: String(r.nameAr || r.name || ""),
+    nameEn: String(r.nameEn || ""),
+    brandAr: String(r.brandAr || r.manufacturer || ""),
+    thumb: String(r.thumb || ""),
+    barcode: String(r.barcode || barcode),
+    shadeCount: Number(r.shadeCount || 0),
+    price: String(r.price || ""),
+    category: String(r.category || ""),
+    matchType: String(r.matchType || "barcode"),
+  }));
+
+  return { barcode: data.query || barcode, options };
 }
 
-/**
- * بحث متدفّق — كل متجر يرسل نتائجه فوراً عبر SSE.
- */
-export async function searchCatalogByBarcodeProgressive(
-  barcode: string,
-  onPartial?: (options: CatalogImportOption[]) => void,
-  onEvent?: (event: CatalogSearchStreamEvent) => void,
-  signal?: AbortSignal,
-  options: { refresh?: boolean } = {},
-): Promise<CatalogSearchResponse> {
-  return searchCatalogByBarcodeStream(
-    barcode,
-    (event) => {
-      onEvent?.(event);
-      if (event.type === "results" && event.options?.length) {
-        onPartial?.(filterCatalogOptions(event.options));
-      }
-      if (event.type === "done" && event.options?.length) {
-        onPartial?.(filterCatalogOptions(event.options));
-      }
-    },
-    signal,
-    options,
+export async function fetchCatalogProduct(storeId: string, sourceId: string, storeLabel = "") {
+  const data = await catalogFetch<{ product: Record<string, unknown> }>(
+    `/api/import/${encodeURIComponent(storeId)}/products/${encodeURIComponent(sourceId)}`,
+    120_000,
   );
+  return mapImportProduct(data.product, storeLabel);
 }
 
-export async function fetchCatalogProduct(
-  store: string,
-  sourceId: string,
-  barcode = "",
-  options: { light?: boolean; enrichShades?: boolean } = {},
-) {
-  const params = new URLSearchParams({
-    store,
-    id: sourceId,
-    hubOrigin: CATALOG_HUB_ORIGIN,
-  });
-  if (barcode) params.set("barcode", barcode);
-  if (options.light) params.set("light", "1");
-  if (options.enrichShades === false) params.set("enrichShades", "0");
-  const timeoutMs = options.light ? 25_000 : 120_000;
-  const data = await catalogFetch<{ product: CatalogImportProduct }>(
-    `/api/import/product?${params}`,
-    timeoutMs,
+export async function fetchCatalogPreview(storeId: string, sourceId: string) {
+  const data = await catalogFetch<{ product: Record<string, unknown> }>(
+    `/api/catalog/${encodeURIComponent(storeId)}/products/${encodeURIComponent(sourceId)}?light=1`,
+    30_000,
   );
-  return data.product;
-}
-
-export async function fetchCatalogSummary(store: string, sourceId: string, barcode = "") {
-  const params = new URLSearchParams({
-    store,
-    id: sourceId,
-    hubOrigin: CATALOG_HUB_ORIGIN,
-  });
-  if (barcode) params.set("barcode", barcode);
-  try {
-    const data = await catalogFetch<{ summary: CatalogImportSummary }>(
-      `/api/import/summary?${params}`,
-    );
-    return data.summary;
-  } catch {
-    return null;
-  }
-}
-
-/** جلب ملخصات متوازية مع حد أقصى للتزامن */
-export async function fetchCatalogSummariesBatch(
-  items: Pick<CatalogImportOption, "store" | "sourceId" | "barcode">[],
-  onItem?: (key: string, summary: CatalogImportSummary | null) => void,
-  concurrency = 4,
-) {
-  const unique = new Map<string, Pick<CatalogImportOption, "store" | "sourceId" | "barcode">>();
-  for (const item of items) {
-    const key = catalogOptionKey(item);
-    if (!unique.has(key)) unique.set(key, item);
-  }
-  const queue = [...unique.values()];
-  const results = new Map<string, CatalogImportSummary | null>();
-
-  async function worker() {
-    while (queue.length) {
-      const item = queue.shift();
-      if (!item) break;
-      const key = catalogOptionKey(item);
-      try {
-        const summary = await fetchCatalogSummary(item.store, item.sourceId, item.barcode || "");
-        results.set(key, summary);
-        onItem?.(key, summary);
-      } catch {
-        results.set(key, null);
-        onItem?.(key, null);
-      }
-    }
-  }
-
-  await Promise.all(Array.from({ length: Math.min(concurrency, queue.length || 1) }, () => worker()));
-  return results;
+  const p = data.product || {};
+  return {
+    id: String(p.id || sourceId),
+    nameAr: String(p.nameAr || ""),
+    nameEn: String(p.nameEn || ""),
+    brandAr: String(p.brandAr || ""),
+    thumb: String(p.thumb || ""),
+    price: String(p.price || ""),
+    shadeCount: Number(p.shadeCount || 0),
+    hasOptions: p.hasOptions === true,
+  };
 }

@@ -1,8 +1,6 @@
 import { api } from "./api";
 import { mediaThumb } from "./mediaUrl";
 import { uploadMediaFile } from "./uploadMedia";
-export { resolveCatalogImageUrl } from "./resolveCatalogImageUrl";
-import { resolveCatalogImageUrl } from "./resolveCatalogImageUrl";
 
 function uploadErrorMessage(error: unknown): string {
   const e = error as any;
@@ -14,9 +12,13 @@ function uploadErrorMessage(error: unknown): string {
   );
 }
 
+function normalizeImageUrl(url: string): string {
+  return String(url || "").trim();
+}
+
 /** Server fetch + same optimizeForStorage pipeline as ProductImageDropzone uploads. */
 export async function uploadImageFromUrl(url: string, purpose = "PRODUCT") {
-  const fetchUrl = resolveCatalogImageUrl(url);
+  const fetchUrl = normalizeImageUrl(url);
   if (!fetchUrl) throw new Error("رابط صورة غير صالح");
 
   try {
@@ -30,7 +32,7 @@ export async function uploadImageFromUrl(url: string, purpose = "PRODUCT") {
 
 /** Fallback when API cannot reach the URL (local dev). Still uses /media/upload compression. */
 export async function uploadImageFromUrlClient(url: string, purpose = "PRODUCT") {
-  const fetchUrl = resolveCatalogImageUrl(url);
+  const fetchUrl = normalizeImageUrl(url);
   if (!fetchUrl) throw new Error("رابط صورة غير صالح");
 
   const res = await fetch(fetchUrl);
@@ -42,7 +44,7 @@ export async function uploadImageFromUrlClient(url: string, purpose = "PRODUCT")
     : blob.type?.includes("webp")
       ? "webp"
       : "jpg";
-  const file = new File([blob], `catalog-${Date.now()}.${ext}`, {
+  const file = new File([blob], `image-${Date.now()}.${ext}`, {
     type: blob.type || "image/jpeg",
   });
   return uploadMediaFile(file, purpose);

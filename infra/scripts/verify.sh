@@ -79,27 +79,11 @@ else
   echo "OK  admin-static/products/index.html"
 fi
 
-if [[ -f admin-static/catalog-import/index.html ]]; then
-  echo "OK  admin-static/catalog-import/index.html"
-fi
-
 check_json "API health" "$API_BASE/api/v1/health" '"status":"ok"'
 check_json "API ready" "$API_BASE/api/v1/health/ready" '"ready":true'
 check_http "Admin home" "$ADMIN_BASE/"
 check_http "Admin login" "$ADMIN_BASE/login/"
 check_http "Admin products" "$ADMIN_BASE/products/"
-
-if [[ -f admin-static/catalog-import/index.html ]]; then
-  check_http "Admin catalog import" "$ADMIN_BASE/catalog-import/"
-  check_json "Catalog hub API" "$ADMIN_BASE/catalog-hub/api/health" '"ok":true'
-fi
-
-if $COMPOSE exec -T catalog-hub wget -qO- http://127.0.0.1:10000/api/health 2>/dev/null | grep -q '"ok":true'; then
-  echo "OK  Catalog hub container"
-else
-  echo "FAIL Catalog hub container (direct)"
-  FAILED=1
-fi
 
 if $COMPOSE exec -T api wget -qO- http://127.0.0.1:3000/api/v1/health/ready 2>/dev/null | grep -q '"ready":true'; then
   echo "OK  API container ready"

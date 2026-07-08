@@ -80,11 +80,8 @@ chmod +x scripts/*.sh
 
 render_nginx
 
-echo "==> Rebuild API + Catalog Hub..."
-$COMPOSE up -d --build api catalog-hub postgres redis
-
-echo "==> Sync catalog-hub seed data into volume..."
-./scripts/sync-catalog-hub-data.sh
+echo "==> Rebuild API..."
+$COMPOSE up -d --build api postgres redis
 
 echo "==> Apply database migrations..."
 if ! $COMPOSE exec -T api npx prisma migrate deploy; then

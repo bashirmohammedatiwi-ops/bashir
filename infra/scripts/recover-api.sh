@@ -37,7 +37,6 @@ $COMPOSE exec -T api node scripts/backfill-product-images.js 2>&1 || echo "backf
 
 echo ""
 echo "========== 7) إعادة تشغيل nginx (يحل 502 بعد rebuild) =========="
-$COMPOSE up -d catalog-hub 2>/dev/null || true
 $COMPOSE restart nginx
 sleep 3
 
