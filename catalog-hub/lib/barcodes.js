@@ -717,6 +717,44 @@ export function normalizeBarcodeMeta(meta = {}) {
   return { ...meta, brand, title, shade };
 }
 
+/** بناء metadata من نتائج متاجر أخرى عند فشل UPC — يُستخدم لمسواگ وغيره */
+export function buildMetaFromSearchHits(hits = [], upcData = null) {
+  if (upcData?.brand || upcData?.title) {
+    return normalizeBarcodeMeta({
+      ean: String(upcData.ean || '').replace(/\D/g, '') || undefined,
+      brand: upcData.brand || '',
+      title: upcData.title || '',
+      shade: upcData.shade || '',
+      source: upcData.source || 'upc',
+    });
+  }
+
+  const sorted = [...(hits || [])].sort((a, b) => {
+    const sa = Number(a.matchScore ?? 0);
+    const sb = Number(b.matchScore ?? 0);
+    if (sa !== sb) return sb - sa;
+    const ma = a.matchType === 'shade' ? 1 : 0;
+    const mb = b.matchType === 'shade' ? 1 : 0;
+    return mb - ma;
+  });
+
+  for (const h of sorted) {
+    if (String(h.matchType || '').toLowerCase() === 'hint') continue;
+    const brand = String(h.manufacturer || h.manufacturerEn || h.brand || '').trim();
+    const title = String(h.nameEn || h.name || '').trim();
+    const shade = String(h.shadeName || '').trim();
+    if (brand || title) {
+      return normalizeBarcodeMeta({
+        brand,
+        title,
+        shade,
+        source: `store:${h.store || 'cross'}`,
+      });
+    }
+  }
+  return null;
+}
+
 async function lookupBarcodeFromGoUpc(digits) {
   const key = `go_upc|${digits}`;
   const cached = recall(key);

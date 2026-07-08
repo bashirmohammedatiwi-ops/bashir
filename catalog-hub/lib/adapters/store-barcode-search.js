@@ -59,7 +59,7 @@ import {
   searchProductsByBarcode as searchNajdProductsByBarcode,
   normalizeProductSummary as normalizeNajdSummary,
 } from '../najd-api.js';
-import { lookupUpcByBarcode, lookupBarcodeProductMeta } from '../barcodes.js';
+import { lookupUpcByBarcode, lookupBarcodeProductMeta, buildMetaFromSearchHits } from '../barcodes.js';
 import { pickBestHitPerStore } from '../core/hit-filter.js';
 import { filterStrictHits } from '../core/match.js';
 
@@ -581,15 +581,16 @@ export async function searchFacesByBarcode(barcode, hintHits = []) {
   }
 }
 
-export async function searchMiswagByBarcode(barcode, { getMeta } = {}) {
-  const products = await searchMiswagProductsByBarcode(barcode, { getMeta });
+export async function searchMiswagByBarcode(barcode, { getMeta, hintHits = [], upcMeta = null } = {}) {
+  const products = await searchMiswagProductsByBarcode(barcode, { getMeta, hintHits, upcMeta });
   return dedupeHits(
     products.map((p) => {
       const n = normalizeMiswagSummary(p);
       const src = p.source || 'live';
       const mt = p.matchType === 'shade' ? 'shade'
-        : (src === 'lookup' || src === 'barcode-lookup' || src === 'verified') ? 'lookup'
-        : (p.matchType === 'hint' ? 'hint' : 'product');
+        : (p.matchType === 'hint' ? 'hint'
+          : (src === 'lookup' || src === 'barcode-lookup' || src === 'verified' || src === 'meta-verified') ? 'product'
+          : 'product');
       return hit('miswag', {
         id: n.id,
         name: n.name,
@@ -752,10 +753,13 @@ const SEARCHERS = [
   { store: 'orisdi', fn: searchOrisdiByBarcode, timeoutMs: 14_000 },
   { store: 'beautyway', fn: searchBeautywayByBarcode, timeoutMs: 16_000 },
   { store: 'vaneersa', fn: searchVaneersaByBarcode, timeoutMs: 16_000 },
-  { store: 'miswag', fn: searchMiswagByBarcode, timeoutMs: 35_000 },
+  { store: 'miswag', fn: searchMiswagByBarcode, timeoutMs: 50_000 },
   { store: 'amazon', fn: searchAmazonByBarcode, timeoutMs: 22_000 },
   { store: 'faces', fn: searchFacesByBarcode, timeoutMs: 50_000 },
 ];
+
+const SEARCH_WAVE1 = new Set(['niceone', 'elryan', 'miraaya', 'najd']);
+const SEARCH_WAVE2 = new Set(['orisdi', 'beautyway', 'vaneersa', 'miswag', 'amazon']);
 
 export { SEARCHERS };
 
@@ -955,13 +959,16 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
   }
 
   const upcPromise = lookupUpcByBarcode(barcode).catch(() => null);
+  const metaPromise = lookupBarcodeProductMeta(barcode).catch(() => null);
+  void metaPromise;
 
-  // 🔑 بحث metadata موحّد لمرة واحدة — تُشارَك بين كل المتاجر (تجنّب طلبات go-upc/DDG المكررة)
-  // كسول: لا يُشغَّل إلا عند احتياج أول متجر للبحث بالتلميحات.
-  let metaPromise = null;
-  const getMeta = () => {
-    if (!metaPromise) metaPromise = lookupBarcodeProductMeta(barcode).catch(() => null);
-    return metaPromise;
+  const getMeta = async () => {
+    const [meta, upc] = await Promise.all([metaPromise, upcPromise]);
+    if (meta?.brand || meta?.title) return meta;
+    if (upc?.brand || upc?.title) {
+      return buildMetaFromSearchHits([], upc);
+    }
+    return null;
   };
 
   const nonFaces = enabled.filter((s) => s.store !== 'faces');
@@ -969,12 +976,13 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
 
   const mergeStoreHits = (store, local, live) => {
     const verifiedLive = filterStrictHits(live || [], barcode);
-    if (!verifiedLive.length) return local;
-    if (!local.length) return verifiedLive;
-    return dedupeHits([...local, ...verifiedLive]);
+    const verifiedLocal = filterStrictHits(local || [], barcode);
+    if (!verifiedLive.length) return verifiedLocal;
+    if (!verifiedLocal.length) return verifiedLive;
+    return dedupeHits([...verifiedLive, ...verifiedLocal]);
   };
 
-  const runStoreSearch = async ({ store, fn, timeoutMs }) => {
+  const runStoreSearch = async ({ store, fn, timeoutMs }, { hintHits = [], upcMeta = null } = {}) => {
     const local = byStore[store] || [];
     emit('store-status', {
       store,
@@ -982,7 +990,11 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
       label: STORE_META[store]?.label || store,
     });
 
-    const attempt = (ms) => withStoreTimeout(fn(barcode, { getMeta }), ms, store);
+    const attempt = (ms) => withStoreTimeout(
+      fn(barcode, { getMeta, hintHits, upcMeta }),
+      ms,
+      store,
+    );
 
     try {
       const live = await attempt(timeoutMs);
@@ -1083,13 +1095,22 @@ export async function searchBarcodeAllStoresStreaming(rawQuery, onEvent, { store
   };
 
   let facesPromise = null;
-  const nonFacesWork = Promise.all(nonFaces.map((searcher) => runStoreSearch(searcher)));
+  const wave1 = nonFaces.filter((s) => SEARCH_WAVE1.has(s.store));
+  const wave2 = nonFaces.filter((s) => SEARCH_WAVE2.has(s.store));
 
-  void Promise.race([nonFacesWork, sleep(3500)]).then(() => {
+  const wave1Work = Promise.all(wave1.map((searcher) => runStoreSearch(searcher)));
+  void Promise.race([wave1Work, sleep(3500)]).then(() => {
     if (facesSearcher) facesPromise = runFaces();
   });
 
-  await nonFacesWork;
+  await wave1Work;
+
+  const crossStoreHints = sortHitsStable(dedupeHits(Object.values(byStore).flat()));
+  const upcMeta = await Promise.race([upcPromise, sleep(1500).then(() => null)]);
+
+  await Promise.all(
+    wave2.map((searcher) => runStoreSearch(searcher, { hintHits: crossStoreHints, upcMeta })),
+  );
   if (facesPromise) await facesPromise;
   else if (facesSearcher) await runFaces();
 

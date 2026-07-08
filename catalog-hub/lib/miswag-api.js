@@ -8,9 +8,11 @@ import {
   upsertBarcodeLookup,
   lookupBarcodeProductMeta,
   buildMetaHintQueries,
+  buildMetaFromSearchHits,
   scoreStoreHintMatch,
   parseBarcodeMetaFields,
   productLineConflicts,
+  normalizeBarcodeMeta,
 } from './barcodes.js';
 import { searchUnifiedByStore } from './unified-barcode-index.js';
 import { verifyBarcodeOnProduct } from './core/match.js';
@@ -287,6 +289,25 @@ function isDefaultVariationTitle(title = '') {
   return !s || s === 'default' || s === 'افتراضي';
 }
 
+function extractBarcodeFromTypesenseDoc(doc = {}) {
+  const found = new Set();
+  const tryParse = (vars) => {
+    let arr = vars;
+    if (typeof arr === 'string') {
+      try { arr = JSON.parse(arr); } catch { return; }
+    }
+    if (!Array.isArray(arr)) return;
+    for (const v of arr) {
+      for (const key of ['barcode', 'ean', 'upc', 'gtin', 'sku']) {
+        const val = String(v?.[key] || '').replace(/\D/g, '');
+        if (val.length >= 8 && val.length <= 14) found.add(val);
+      }
+    }
+  };
+  tryParse(doc.variations);
+  return [...found];
+}
+
 function mapMiswagColorVariation(v, optionGroup = '') {
   return {
     name: String(v.title || '').trim(),
@@ -362,6 +383,8 @@ function mapTypesenseHit(doc = {}, matchedBarcode = '') {
   const id = String(doc.id || doc.product_id || doc.item_id || '');
   const ratingCount = Number(doc.rating_count) || 0;
   const variationCount = countVariations(doc.variations);
+  const docBarcodes = extractBarcodeFromTypesenseDoc(doc);
+  const barcode = matchedBarcode || docBarcodes[0] || '';
 
   return {
     id,
@@ -375,7 +398,7 @@ function mapTypesenseHit(doc = {}, matchedBarcode = '') {
       original_value: doc.price_original_value,
       currency: doc.price_currency || 'IQD',
     }),
-    barcode: matchedBarcode || '',
+    barcode,
     sku: String(doc.alias || doc.id || ''),
     productUrl: doc.url || (id ? `${SITE}/products/${id}` : ''),
     category: [
@@ -779,13 +802,31 @@ async function confirmMiswagBarcodeHit(productId, digits, meta = null) {
   const stripped = digits.replace(/^0+/, '');
   const inRaw = hay.includes(digits) || (stripped.length >= 8 && hay.includes(stripped));
 
-  if (meta?.shade || meta?.title) {
+  if (meta?.shade || meta?.title || meta?.brand) {
     const hinted = await resolveMiswagShadeVariationHit(
       { ...normalizeProductSummary(detail), barcode: digits },
       meta,
       digits,
     );
-    if (hinted?.matchType === 'shade') return hinted;
+    if (hinted?.matchType === 'shade') {
+      return {
+        ...hinted,
+        matchScore: Math.max(Number(hinted.matchScore) || 0, 35),
+        source: hinted.source || 'meta-verified',
+      };
+    }
+
+    const summary = normalizeProductSummary(detail);
+    const matchScore = scoreStoreHintMatch(summary, meta) + rankMiswagHintMatch(summary, meta);
+    if (matchScore >= 35) {
+      return {
+        ...summary,
+        barcode: digits,
+        matchType: 'product',
+        matchScore,
+        source: 'meta-verified',
+      };
+    }
   }
 
   if (inRaw) {
@@ -999,18 +1040,43 @@ async function searchMiswagByMetaHints(meta, digits, { limit = 12 } = {}) {
   return pickBestMiswagHintResults(scored, meta, { limit });
 }
 
-export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
+export async function searchProductsByBarcode(barcode, { getMeta, hintHits = [], upcMeta = null } = {}) {
   const digits = String(barcode || '').replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return [];
 
-  const resolveMeta = () => (getMeta ? getMeta() : lookupBarcodeProductMeta(digits));
+  const resolveMeta = async () => {
+    if (getMeta) {
+      const shared = await getMeta().catch(() => null);
+      if (shared?.brand || shared?.title) return shared;
+    }
+    if (upcMeta?.brand || upcMeta?.title) {
+      return normalizeBarcodeMeta({
+        ean: digits,
+        brand: upcMeta.brand || '',
+        title: upcMeta.title || '',
+        shade: upcMeta.shade || '',
+        source: upcMeta.source || 'upc',
+      });
+    }
+    const fromHits = buildMetaFromSearchHits(hintHits);
+    if (fromHits) return fromHits;
+    return lookupBarcodeProductMeta(digits);
+  };
 
   const results = [];
   const seen = new Set();
 
-  // يحفظ نتيجة الحلّ الحي في الفهرس اليدوي ليصبح البحث القادم فورياً ودائماً
   const learn = (list) => {
-    const top = list[0];
+    const top = list.find((h) => {
+      const mt = String(h.matchType || '').toLowerCase();
+      const src = String(h.source || '').toLowerCase();
+      return (
+        (mt === 'product' || mt === 'shade' || mt === 'lookup')
+        && mt !== 'hint'
+        && !src.includes('meta-hint')
+        && (Number(h.matchScore) || 0) >= 20
+      );
+    });
     if (top?.id) {
       try {
         upsertBarcodeLookup(digits, {
@@ -1025,16 +1091,44 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
     return list;
   };
 
-  // (0a) فهرس باركود موحّد — مع التحقق من كل نتيجة
+  const metaEarly = await resolveMeta().catch(() => null);
+
+  // (0b) فهرس يدوي محلي — مع التحقق
+  const manual = findBarcodeLookup(digits);
+  if (manual?.productId && (manual.store === 'miswag' || !manual.store)) {
+    try {
+      const entry = await confirmMiswagBarcodeHit(manual.productId, digits, { ...metaEarly, shade: manual.shadeName });
+      if (entry) {
+        if (manual.shadeName && !entry.shadeName) entry.shadeName = manual.shadeName;
+        pushUnique(results, seen, entry);
+        if (results.length) return learn(results);
+      }
+    } catch { /* continue */ }
+  }
+
+  // (1) metadata → Typesense (المسار الأسرع لمسواگ — الباركود غالباً غير مفهرس)
+  if (metaEarly?.brand || metaEarly?.title) {
+    const hinted = await searchMiswagByMetaHints(metaEarly, digits);
+    for (const hit of hinted) {
+      try {
+        const confirmed = await confirmMiswagBarcodeHit(hit.id, digits, metaEarly);
+        pushUnique(results, seen, confirmed || hit);
+      } catch {
+        pushUnique(results, seen, hit);
+      }
+    }
+    if (results.length) return learn(results.slice(0, 12));
+  }
+
+  // (0a) فهرس باركود موحّد — محاولة واحدة فقط
   const unifiedHits = searchUnifiedByStore(digits, 'miswag');
-  if (unifiedHits.length) {
-    const meta = await resolveMeta().catch(() => null);
-    for (const indexed of unifiedHits.slice(0, 3)) {
+  if (unifiedHits.length && !results.length) {
+    for (const indexed of unifiedHits.slice(0, 1)) {
       try {
         const entry = await confirmMiswagBarcodeHit(
           String(indexed.id || indexed.productId || ''),
           digits,
-          meta,
+          metaEarly,
         );
         if (entry) pushUnique(results, seen, entry);
       } catch { /* skip stale index */ }
@@ -1042,29 +1136,15 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
     if (results.length) return learn(results);
   }
 
-  // (0b) فهرس يدوي محلي — مع التحقق الصارم
-  const manual = findBarcodeLookup(digits);
-  if (manual?.productId && (manual.store === 'miswag' || !manual.store)) {
-    try {
-      const meta = await resolveMeta().catch(() => null);
-      const entry = await confirmMiswagBarcodeHit(manual.productId, digits, { ...meta, shade: manual.shadeName });
-      if (entry) {
-        if (manual.shadeName && !entry.shadeName) entry.shadeName = manual.shadeName;
-        pushUnique(results, seen, entry);
-        if (results.length) return learn(results);
-      }
-    } catch { /* continue to live search */ }
-  }
-
-  // (1) Typesense — يُتحقَّق من كل نتيجة عبر جلب تفاصيل المنتج + التدرجات
+  // (2) Typesense مباشر + تحقق
   try {
-    const ts = await typesenseSearch(digits, { page: 1, perPage: 8 });
+    const ts = await typesenseSearch(digits, { page: 1, perPage: 5 });
     const verified = await verifyTypesenseBarcodeHits(ts.hits || [], digits, resolveMeta);
     for (const entry of verified) pushUnique(results, seen, entry);
     if (results.length) return learn(results);
   } catch { /* continue */ }
 
-  // (1b) بحث موسّع — فقط عند وجود الباركود في بيانات المنتج بعد التحقق
+  // (2b) بحث موسّع في variations
   try {
     const cfg = await getSearchConfig();
     const url = new URL(`https://${cfg.host}/multi_search`);
@@ -1081,7 +1161,7 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
           collection: cfg.index,
           q: digits,
           query_by: 'variations,alias,title_AR,title_EN,brand',
-          per_page: 8,
+          per_page: 5,
           page: 1,
         }],
       }),
@@ -1097,7 +1177,7 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
     if (results.length) return learn(results);
   } catch { /* continue */ }
 
-  // (2) إذا كان الباركود يشبه معرّف منتج مسواگ (10 أرقام)
+  // (3) معرّف منتج مسواگ (10 أرقام)
   if (/^\d{10}$/.test(digits)) {
     try {
       const detail = await fetchProductDetail(digits);
@@ -1108,12 +1188,13 @@ export async function searchProductsByBarcode(barcode, { getMeta } = {}) {
     } catch { /* continue */ }
   }
 
-  // (3) metadata موحّد (UPC + Shopify + OBF + بحث ويب) → Typesense
-  const meta = await resolveMeta().catch(() => null);
-  if (meta?.brand || meta?.title) {
-    const hinted = await searchMiswagByMetaHints(meta, digits);
-    for (const hit of hinted) pushUnique(results, seen, hit);
-    if (results.length) return learn(results.slice(0, 12));
+  // (4) إعادة محاولة التلميحات بعد جلب metadata كامل
+  if (!results.length) {
+    const meta = metaEarly || await resolveMeta().catch(() => null);
+    if (meta?.brand || meta?.title) {
+      const hinted = await searchMiswagByMetaHints(meta, digits);
+      for (const hit of hinted) pushUnique(results, seen, hit);
+    }
   }
 
   return results.slice(0, 12);

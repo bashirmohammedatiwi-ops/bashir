@@ -25,6 +25,7 @@ function isIndexSourcedHit(hit) {
     || src.includes('unified')
     || src.includes('local')
     || src.includes('verified')
+    || src.includes('meta-verified')
     || mt === 'lookup'
     || mt === 'shade'
   );
