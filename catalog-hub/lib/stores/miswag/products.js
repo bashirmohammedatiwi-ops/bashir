@@ -15,6 +15,7 @@ import {
   isMiswagInternalId,
   isValidEan,
 } from './v2-barcode.js';
+import { resolveBilingualDescription, resolveBilingualName, splitBilingualText } from '../../core/bilingual.js';
 
 function extractEan(v = {}) {
   for (const key of ['barcode', 'ean', 'upc', 'gtin', 'isbn']) {
@@ -47,10 +48,12 @@ function mapVariation(v, optionGroup = '') {
   const miswagId = extractMiswagShadeId(v);
   const ean = extractEan(v);
   const hex = parseColorValue(v.color || v.hex);
+  const { ar, en } = splitBilingualText(v.title);
+  const title = String(v.title || '').trim();
   return {
-    name: String(v.title || '').trim(),
-    nameAr: String(v.title || '').trim(),
-    nameEn: String(v.title || '').trim(),
+    name: ar || en || title,
+    nameAr: ar || (/[\u0600-\u06FF]/.test(title) ? title : ''),
+    nameEn: en || (/[A-Za-z]/.test(title) && !/[\u0600-\u06FF]/.test(title) ? title : ''),
     sku: miswagId,
     optionId: miswagId,
     miswagId,
@@ -195,12 +198,14 @@ function typesenseImageUrl(filename = '', fallback = '') {
 
 function mapTypesenseVariation(v, optionGroup = '', fallbackImage = '') {
   const miswagId = String(v.id || v.variation_id || '').trim();
-  const name = String(v.color || v.title || v.name || miswagId).trim();
+  const rawName = String(v.color || v.title || v.name || miswagId).trim();
+  const { ar, en } = splitBilingualText(rawName);
+  const name = ar || en || rawName;
   const extra = Array.isArray(v.additional_images) ? v.additional_images[0] : '';
   return {
     name,
-    nameAr: name,
-    nameEn: name,
+    nameAr: ar || (/[\u0600-\u06FF]/.test(rawName) ? rawName : ''),
+    nameEn: en || (/[A-Za-z]/.test(rawName) && !/[\u0600-\u06FF]/.test(rawName) ? rawName : ''),
     sku: miswagId,
     optionId: miswagId,
     miswagId,
@@ -262,8 +267,12 @@ async function enrichShadesFromTypesense(pid, shades = []) {
       optionId: miswagId || shade.optionId,
       ean,
       name: shade.name && !/^\d+$/.test(shade.name) ? shade.name : String(hit.title || hit.name || shade.name || '').trim(),
-      nameAr: shade.nameAr && !/^\d+$/.test(shade.nameAr) ? shade.nameAr : String(hit.title || hit.name || shade.nameAr || '').trim(),
-      nameEn: shade.nameEn && !/^\d+$/.test(shade.nameEn) ? shade.nameEn : String(hit.title || hit.name || shade.nameEn || '').trim(),
+      nameAr: shade.nameAr && !/^\d+$/.test(shade.nameAr)
+        ? shade.nameAr
+        : splitBilingualText(hit.title || hit.name || shade.nameAr || '').ar,
+      nameEn: shade.nameEn && !/^\d+$/.test(shade.nameEn)
+        ? shade.nameEn
+        : splitBilingualText(hit.title || hit.name || shade.nameEn || '').en,
       image: shade.image || absImage(hit.image),
     };
   });
@@ -345,15 +354,16 @@ async function fetchTypesenseFallback(pid) {
   try {
     const doc = await fetchTypesenseDoc(pid);
     if (!doc) return null;
-    const { ar, en } = parseTitle({ AR: doc.title_AR, EN: doc.title_EN });
+    const names = resolveBilingualName(doc.title_AR, doc.title_EN);
+    const brand = splitBilingualText(doc.brand || '');
     const thumb = absImage(doc.image || doc.image_url);
     return {
       id: String(doc.id || pid),
       sku: String(doc.alias || pid),
-      nameAr: ar || en,
-      nameEn: en || ar,
-      brandAr: String(doc.brand || '').trim(),
-      brandEn: String(doc.brand || '').trim(),
+      nameAr: names.ar || names.en,
+      nameEn: names.en || names.ar,
+      brandAr: brand.ar || String(doc.brand || '').trim(),
+      brandEn: brand.en || String(doc.brand || '').trim(),
       descriptionAr: '',
       descriptionEn: '',
       price: formatPrice({ value: doc.price_numeric_value, currency: doc.price_currency || 'IQD' }),
@@ -411,10 +421,11 @@ export async function fetchProductDetail(id, { light = false } = {}) {
 
   const thumb = absImage(meta.image_url);
   let shades = light ? [] : buildShadesFromVarInfo(varInfo);
+  let tsDoc = null;
 
   if (!light) {
-    const doc = await fetchTypesenseDoc(String(meta.product_id || pid));
-    const tsVars = parseTypesenseVariations(doc);
+    tsDoc = await fetchTypesenseDoc(String(meta.product_id || pid));
+    const tsVars = parseTypesenseVariations(tsDoc);
     const optionGroup = String(varInfo.variation_title || 'الألوان').trim();
     shades = mergeShadesFromTypesense(shades, tsVars, optionGroup, thumb);
     shades = await enrichShadesFromTypesense(pid, shades);
@@ -429,17 +440,19 @@ export async function fetchProductDetail(id, { light = false } = {}) {
   }
 
   const brand = String(meta.brand || '').trim();
-  const { ar, en } = parseTitle(meta.name);
+  const brandNames = splitBilingualText(brand);
+  const names = resolveBilingualName(meta.name, tsDoc?.title_AR, tsDoc?.title_EN);
+  const descriptions = resolveBilingualDescription(meta.description);
 
   const product = {
     id: String(meta.product_id || pid),
     sku: String(meta.product_id || pid),
-    nameAr: ar || meta.name || '',
-    nameEn: en || meta.name || '',
-    brandAr: brand,
-    brandEn: brand,
-    descriptionAr: String(meta.description || '').trim(),
-    descriptionEn: String(meta.description || '').trim(),
+    nameAr: names.ar || names.en,
+    nameEn: names.en || names.ar,
+    brandAr: brandNames.ar || brand,
+    brandEn: brandNames.en || brand,
+    descriptionAr: descriptions.ar,
+    descriptionEn: descriptions.en,
     price: formatPrice({ value: meta.price, original_value: meta.original_price, currency: meta.currency || 'IQD' }),
     thumb: images[0] || absImage(meta.image_url),
     images,

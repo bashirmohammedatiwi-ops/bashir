@@ -8,6 +8,7 @@ import {
   cacheGet,
   cacheSet,
 } from './client.js';
+import { resolveBilingualName, splitBilingualText } from '../../core/bilingual.js';
 
 const TREE_TTL = 30 * 60 * 1000;
 const DIVISION_FIELDS = ['l1_division_alias', 'l2_division_alias', 'l3_division_alias', 'l4_division_alias'];
@@ -159,7 +160,8 @@ const SORT_MAP = {
 };
 
 export function mapTypesenseHit(doc = {}) {
-  const { ar, en } = parseTitle({ AR: doc.title_AR, EN: doc.title_EN });
+  const names = resolveBilingualName(doc.title_AR, doc.title_EN);
+  const brand = splitBilingualText(doc.brand || doc.facet_brand || '');
   const id = String(doc.id || doc.product_id || '');
   let shadeCount = 0;
   try {
@@ -169,10 +171,10 @@ export function mapTypesenseHit(doc = {}) {
 
   return {
     id,
-    nameAr: ar || en,
-    nameEn: en || ar,
-    brandAr: String(doc.brand || doc.facet_brand || '').trim(),
-    brandEn: String(doc.brand || '').trim(),
+    nameAr: names.ar || names.en,
+    nameEn: names.en || names.ar,
+    brandAr: brand.ar || String(doc.brand || doc.facet_brand || '').trim(),
+    brandEn: brand.en || String(doc.brand || '').trim(),
     thumb: absImage(doc.image || doc.image_url),
     price: formatPrice({
       value: doc.price_numeric_value ?? doc.price_value,

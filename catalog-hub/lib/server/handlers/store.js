@@ -2,6 +2,7 @@ import { sendJson, parseQuery } from '../http.js';
 import { getStoreAdapter } from '../../stores/registry.js';
 import { normalizeProduct, toImportPayload } from '../../core/product.js';
 import { isMiswagInternalId } from '../../stores/miswag/id-lookup.js';
+import { isValidEan } from '../../stores/miswag/v2-barcode.js';
 
 function storeOr404(res, storeId) {
   const adapter = getStoreAdapter(storeId);
@@ -148,7 +149,8 @@ export async function handleImportApi(req, res, url) {
       if (digits.length >= 8 && adapter.searchBarcode) {
         results = await adapter.searchBarcode(digits);
       }
-      if (!results.length) {
+      const isEanQuery = digits.length >= 8 && isValidEan(digits) && !isMiswagInternalId(digits);
+      if (!results.length && !isEanQuery) {
         const data = await adapter.searchProducts(query, { page: 1, limit: 20 });
         results = data.items.map((item) => ({
           store: adapter.id,

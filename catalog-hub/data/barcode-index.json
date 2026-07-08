@@ -44,7 +44,7 @@
       "brand": "IBRAQ",
       "shadeName": "",
       "matchType": "v2",
-      "updatedAt": 1783538771361
+      "updatedAt": 1783542068553
     },
     "00609332821163": {
       "store": "miswag",
@@ -63,7 +63,7 @@
       "shadeName": "Sugar Biscuit 3.5N",
       "matchType": "v2",
       "barcode": "6291107572659",
-      "updatedAt": 1783538780412
+      "updatedAt": 1783542282952
     },
     "06291107572666": {
       "store": "miswag",
@@ -72,7 +72,7 @@
       "shadeName": "Graham Cracker 4.1",
       "matchType": "v2",
       "barcode": "6291107572666",
-      "updatedAt": 1783538780413
+      "updatedAt": 1783542282954
     },
     "06291107572635": {
       "store": "miswag",
@@ -81,7 +81,7 @@
       "shadeName": "Vanilla Swirl 3.1",
       "matchType": "v2",
       "barcode": "6291107572635",
-      "updatedAt": 1783538780413
+      "updatedAt": 1783542282954
     },
     "06291107572598": {
       "store": "miswag",
@@ -90,7 +90,7 @@
       "shadeName": "Meringue 2.1",
       "matchType": "v2",
       "barcode": "6291107572598",
-      "updatedAt": 1783538780414
+      "updatedAt": 1783542282954
     },
     "06291107572550": {
       "store": "miswag",
@@ -99,7 +99,7 @@
       "shadeName": "Royal Icing 1.1N",
       "matchType": "v2",
       "barcode": "6291107572550",
-      "updatedAt": 1783538780414
+      "updatedAt": 1783542282954
     },
     "06291107572604": {
       "store": "miswag",
@@ -108,7 +108,7 @@
       "shadeName": "Cotton Candy 2.3B",
       "matchType": "v2",
       "barcode": "6291107572604",
-      "updatedAt": 1783538780414
+      "updatedAt": 1783542282955
     },
     "06291107572567": {
       "store": "miswag",
@@ -117,7 +117,7 @@
       "shadeName": "Marshmallow 1.3g",
       "matchType": "v2",
       "barcode": "6291107572567",
-      "updatedAt": 1783538780414
+      "updatedAt": 1783542282955
     },
     "06291107572628": {
       "store": "miswag",
@@ -126,11 +126,20 @@
       "shadeName": "Coconut Flex 2.7",
       "matchType": "v2",
       "barcode": "6291107572628",
-      "updatedAt": 1783538780414
+      "updatedAt": 1783542282955
+    },
+    "03348901581370": {
+      "store": "miswag",
+      "productId": "1756238393",
+      "name": "Default",
+      "shadeName": "Default",
+      "matchType": "v2",
+      "barcode": "3348901581370",
+      "updatedAt": 1783542071838
     }
   },
   "meta": {
-    "updatedAt": 1783538780414,
+    "updatedAt": 1783542282955,
     "source": "seed"
   }
 }

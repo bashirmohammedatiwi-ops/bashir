@@ -9,10 +9,15 @@ import {
   buildMetaHintQueries,
   findMiswagIdsFromWeb,
   lookupBarcodeProductMeta,
+  lookupUpcByBarcode,
   normalizeBarcodeMeta,
   parseBarcodeMetaFields,
   scoreStoreHintMatch,
 } from '../../core/barcode-meta.js';
+import {
+  scanMiswagProductsForBarcode,
+  searchTypesenseByVariationBarcode,
+} from './barcode-scan.js';
 
 function shadeNamesMatch(a = '', b = '') {
   const na = String(a || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, ' ').trim();
@@ -65,6 +70,63 @@ async function resolveFromIndex(digits) {
   return formatEanHit(detail, digits, entry.matchType || 'index', shade);
 }
 
+async function resolveV2Match(digits, match, matchType = 'v2_scan') {
+  const detail = await fetchProductDetail(match.productId, { light: false }).catch(() => null);
+  if (!detail?.id) return null;
+
+  let shade = null;
+  if (match.shadeId && detail.shades?.length) {
+    shade = detail.shades.find(
+      (s) => String(s.miswagId || s.sku || s.optionId) === String(match.shadeId),
+    );
+    if (!shade && match.shadeName) {
+      shade = detail.shades.find((s) => shadeNamesMatch(s.nameAr || s.name, match.shadeName));
+    }
+  }
+
+  const hit = formatEanHit(detail, digits, shade ? 'v2_shade' : matchType, shade);
+  learnHit(digits, hit, {});
+  return hit;
+}
+
+/** جمع معرّفات منتجات مرشّحة من metadata الباركود */
+async function collectCandidateIdsFromMeta(meta, { perQuery = 15, maxQueries = 6 } = {}) {
+  if (!meta?.brand && !meta?.title) return [];
+
+  const queries = buildMetaHintQueries(meta).slice(0, maxQueries);
+  const scored = [];
+  const seen = new Set();
+
+  for (const q of queries) {
+    try {
+      const { hits } = await typesenseSearch(q, { perPage: perQuery });
+      for (const hit of hits || []) {
+        const mapped = mapTypesenseHit(hit.document || hit);
+        const id = String(mapped.id || '');
+        if (!id || seen.has(id)) continue;
+        seen.add(id);
+        const score = scoreStoreHintMatch(mapped, meta);
+        scored.push({ id, score });
+      }
+    } catch { /* next */ }
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  return scored.map((s) => s.id);
+}
+
+async function searchByV2Scan(productIds, digits) {
+  const match = await scanMiswagProductsForBarcode(productIds, digits);
+  if (!match) return null;
+  return resolveV2Match(digits, match);
+}
+
+async function searchByTypesenseVariationScan(digits) {
+  const hits = await searchTypesenseByVariationBarcode(digits);
+  const ids = hits.map((h) => String(h.document?.id || h.document?.product_id || '')).filter(Boolean);
+  return searchByV2Scan(ids, digits);
+}
+
 async function confirmHintHit(productId, digits, meta) {
   const detail = await fetchProductDetail(String(productId), { light: false }).catch(() => null);
   if (!detail?.id) return null;
@@ -80,14 +142,18 @@ async function confirmHintHit(productId, digits, meta) {
   const words = parsed.productWords.filter((w) => w.length >= 4);
   const wordHits = words.filter((w) => hay.includes(w.toLowerCase())).length;
 
-  if (score >= 20 || (words.length && wordHits >= Math.min(2, words.length))) {
+  if (score >= 28 && wordHits >= 1) {
     return formatEanHit(detail, digits, 'hint', null);
   }
   return null;
 }
 
 async function searchByMetaHints(digits, meta) {
-  if (!meta?.brand && !meta?.title) return [];
+  const candidateIds = await collectCandidateIdsFromMeta(meta);
+
+  // التحقق الدقيق عبر v2 — يعمل من أول بحث دون انتظار الفهرس
+  const v2Hit = await searchByV2Scan(candidateIds, digits);
+  if (v2Hit) return [v2Hit];
 
   const queries = buildMetaHintQueries(meta);
   const scored = [];
@@ -103,37 +169,56 @@ async function searchByMetaHints(digits, meta) {
         seenIds.add(idKey);
 
         const score = scoreStoreHintMatch(mapped, meta);
-        if (score < 10) continue;
+        if (score < 14) continue;
         scored.push({ mapped, score });
       }
     } catch { /* next query */ }
   }
 
   scored.sort((a, b) => b.score - a.score);
-  const results = [];
 
-  for (const { mapped, score } of scored.slice(0, 6)) {
+  if (scored.length >= 2) {
+    const top = scored[0];
+    const second = scored[1];
+    if (top.score - second.score < 12) return [];
+  }
+
+  for (const { mapped, score } of scored.slice(0, 3)) {
     const confirmed = await confirmHintHit(mapped.id, digits, meta);
-    if (confirmed) {
+    if (confirmed && score >= 28) {
       confirmed.matchScore = score;
-      results.push(confirmed);
-      if (score >= 30) break;
+      learnHit(digits, confirmed, meta);
+      return [confirmed];
     }
   }
 
-  return results;
+  return [];
 }
 
 async function searchFromWebLinks(digits) {
   const ids = await findMiswagIdsFromWeb(digits);
+  const v2Hit = await searchByV2Scan(ids, digits);
+  if (v2Hit) return [v2Hit];
+
   const results = [];
   for (const id of ids.slice(0, 3)) {
     const detail = await fetchProductDetail(id, { light: false }).catch(() => null);
     if (detail?.id) {
-      results.push(formatEanHit(detail, digits, 'web_link', null));
+      const hit = formatEanHit(detail, digits, 'web_link', null);
+      learnHit(digits, hit, {});
+      results.push(hit);
     }
   }
   return results;
+}
+
+async function resolveProductMeta(digits) {
+  let meta = await lookupBarcodeProductMeta(digits).catch(() => null);
+  if (meta?.brand || meta?.title) return normalizeBarcodeMeta(meta);
+
+  const upc = await lookupUpcByBarcode(digits).catch(() => null);
+  if (upc?.brand || upc?.title) return normalizeBarcodeMeta(upc);
+  return null;
 }
 
 /**
@@ -143,26 +228,25 @@ export async function searchByEan(barcode) {
   const digits = String(barcode || '').replace(/\D/g, '');
   if (!/^\d{8,14}$/.test(digits)) return [];
 
-  // 1) فهرس محلي
+  // 1) فهرس محلي (يُبنى تلقائياً بعد أول نجاح)
   const indexed = await resolveFromIndex(digits);
   if (indexed) return [indexed];
 
-  // 2) metadata → بحث تلميحات في Typesense
-  const meta = await lookupBarcodeProductMeta(digits).catch(() => null);
+  const meta = await resolveProductMeta(digits);
+
+  // 2) metadata → مرشّحين → مسح v2 (الطريقة الأدق — من أول مرة)
   if (meta?.brand || meta?.title) {
-    const hinted = await searchByMetaHints(digits, normalizeBarcodeMeta(meta));
-    if (hinted.length) {
-      learnHit(digits, hinted[0], meta);
-      return hinted;
-    }
+    const hinted = await searchByMetaHints(digits, meta);
+    if (hinted.length) return hinted;
   }
 
-  // 3) روابط miswag.com من نتائج الويب
+  // 3) Typesense variations → مسح v2
+  const fromVariations = await searchByTypesenseVariationScan(digits);
+  if (fromVariations) return [fromVariations];
+
+  // 4) روابط miswag.com من الويب → مسح v2
   const fromWeb = await searchFromWebLinks(digits);
-  if (fromWeb.length) {
-    learnHit(digits, fromWeb[0], meta || {});
-    return fromWeb;
-  }
+  if (fromWeb.length) return fromWeb;
 
   return [];
 }

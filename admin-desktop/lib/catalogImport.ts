@@ -129,9 +129,9 @@ async function catalogFetch<T>(path: string, timeoutMs = 60_000): Promise<T> {
 
 function mapImportProduct(raw: Record<string, unknown>, storeLabel = ""): CatalogImportProduct {
   const shades = ((raw.shades as CatalogImportShade[]) || []).map((s) => ({
-    name: s.name || s.nameAr || s.nameEn || "",
-    nameAr: s.nameAr || s.name || "",
-    nameEn: s.nameEn || s.name || "",
+    name: s.nameAr || s.nameEn || s.name || "",
+    nameAr: s.nameAr || "",
+    nameEn: s.nameEn || "",
     barcode: s.barcode || "",
     miswagId: s.miswagId || s.sku || "",
     colorHex: s.colorHex || "",

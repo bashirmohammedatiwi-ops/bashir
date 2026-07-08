@@ -377,7 +377,7 @@ export default function CatalogImportPage() {
         }
 
         shades.push({
-          name: String(s.name || s.nameAr || `درجة ${i + 1}`).trim(),
+          name: String(s.nameAr || s.nameEn || s.name || `درجة ${i + 1}`).trim(),
           colorHex,
           barcode: shadeBarcode || undefined,
           sku: s.sku || s.miswagId,
@@ -638,7 +638,10 @@ export default function CatalogImportPage() {
                             <span className="catalog-preview-swatch" style={{ background: s.colorHex }} />
                           )}
                           <div>
-                            <div>{s.name || s.nameAr}</div>
+                            <div>{s.nameAr || s.name}</div>
+                            {s.nameEn && s.nameEn !== (s.nameAr || s.name) && (
+                              <div className="alhayaa-ltr-input">{s.nameEn}</div>
+                            )}
                             {(s.miswagId || (s.barcode && isMiswagInternalId(s.barcode))) && (
                               <small>رقم مسواگ: {s.miswagId || s.barcode}</small>
                             )}
@@ -655,10 +658,36 @@ export default function CatalogImportPage() {
               </Col>
               <Col xs={24} md={14}>
                 <Typography.Title level={4}>{preview.nameAr}</Typography.Title>
+                {preview.nameEn && preview.nameEn !== preview.nameAr && (
+                  <Typography.Title level={5} type="secondary" className="alhayaa-ltr-input">
+                    {preview.nameEn}
+                  </Typography.Title>
+                )}
                 {preview.brandAr && <Tag>{preview.brandAr}</Tag>}
+                {preview.brandEn && preview.brandEn !== preview.brandAr && (
+                  <Tag className="alhayaa-ltr-input">{preview.brandEn}</Tag>
+                )}
                 {preview.priceHint && <Tag color="green">{preview.priceHint}</Tag>}
                 {preview.categoryHint && (
                   <p className="catalog-preview-category">{preview.categoryHint}</p>
+                )}
+                {(preview.descriptionAr || preview.descriptionEn) && (
+                  <div className="catalog-preview-descriptions">
+                    {preview.descriptionAr && (
+                      <div>
+                        <Typography.Text strong>الوصف (عربي)</Typography.Text>
+                        <Typography.Paragraph>{preview.descriptionAr}</Typography.Paragraph>
+                      </div>
+                    )}
+                    {preview.descriptionEn && preview.descriptionEn !== preview.descriptionAr && (
+                      <div>
+                        <Typography.Text strong>الوصف (إنجليزي)</Typography.Text>
+                        <Typography.Paragraph className="alhayaa-ltr-input">
+                          {preview.descriptionEn}
+                        </Typography.Paragraph>
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 <Form form={form} layout="vertical" className="catalog-import-form">
