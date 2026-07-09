@@ -17,6 +17,14 @@ const server = createServer((req, res) => {
 server.listen(PORT, HOST, () => {
   console.log(`catalog-hub listening on http://${HOST}:${PORT}`);
 
+  import('./lib/stores/miswag/catalog-index.js')
+    .then(({ enrichMiswagCatalogFromBarcodeIndex, isMiswagCatalogWarm }) => {
+      if (!isMiswagCatalogWarm(30)) return;
+      const n = enrichMiswagCatalogFromBarcodeIndex();
+      if (n) console.log(`[miswag] enriched ${n} products with barcode-index`);
+    })
+    .catch(() => {});
+
   // أمازون: الزحف التلقائي معطّل افتراضياً حتى لا يبطّئ مسواگ وباقي المتاجر.
   // فعّله يدوياً: AMAZON_AUTO_CRAWL=1 أو POST /api/catalog/amazon/crawl
   if (process.env.AMAZON_AUTO_CRAWL === '1') {

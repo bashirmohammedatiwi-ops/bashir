@@ -154,6 +154,9 @@ export default function CatalogImportPage() {
   const [barcode, setBarcode] = useState("");
   const [searching, setSearching] = useState(false);
   const [options, setOptions] = useState<CatalogImportOption[]>([]);
+  const [searchStoreStats, setSearchStoreStats] = useState<
+    { id: string; count: number; error?: string }[]
+  >([]);
 
   const [selected, setSelected] = useState<CatalogImportOption | null>(null);
   const [preview, setPreview] = useState<CatalogImportProduct | null>(null);
@@ -408,15 +411,27 @@ export default function CatalogImportPage() {
       setSearching(true);
       setOptions([]);
       setProducts([]);
+      setSearchStoreStats([]);
       try {
         const data = await searchCatalogByBarcode(digitsOnly, activeStores, (partial) => {
           setOptions(partial.options);
+          setSearchStoreStats(partial.stores || []);
           if (partial.options.length) {
             setStep(1);
             if (!partial.done) setSearching(false);
           }
         });
         setOptions(data.options);
+        setSearchStoreStats(data.stores || []);
+
+        const failed = (data.stores || []).filter((s) => s.error);
+        if (failed.length) {
+          const names = failed
+            .map((f) => stores.find((s) => s.id === f.id)?.label || f.id)
+            .join("، ");
+          message.warning(`تعذّر البحث في: ${names}`);
+        }
+
         if (!data.options.length) message.info("لا توجد نتائج لهذا الباركود");
         else setStep(1);
       } catch (err) {
@@ -430,6 +445,7 @@ export default function CatalogImportPage() {
     setSearching(true);
     setOptions([]);
     setProducts([]);
+    setSearchStoreStats([]);
     try {
       // بحث عام دائماً — لا نقيّد بقسم التصفح حتى لا تُخفى منتجات موجودة
       const data = await searchCatalogProducts(
@@ -439,6 +455,7 @@ export default function CatalogImportPage() {
         40,
         "",
         (partial) => {
+          setSearchStoreStats(partial.stores || []);
           // أظهر نتائج المتجر السريع فوراً (نجد) دون انتظار مسواگ
           const opts = partial.products.map((p) =>
             listProductToOption(
@@ -461,6 +478,7 @@ export default function CatalogImportPage() {
         ),
       );
       setOptions(opts);
+      setSearchStoreStats(data.stores || []);
 
       const failed = (data.stores || []).filter((s) => s.error);
       if (failed.length) {
@@ -500,15 +518,18 @@ export default function CatalogImportPage() {
     }
     setSearching(true);
     setOptions([]);
+    setSearchStoreStats([]);
     try {
       const data = await searchCatalogByBarcode(digits, activeStores, (partial) => {
         setOptions(partial.options);
+        setSearchStoreStats(partial.stores || []);
         if (partial.options.length) {
           setStep(1);
           if (!partial.done) setSearching(false);
         }
       });
       setOptions(data.options);
+      setSearchStoreStats(data.stores || []);
 
       const failed = (data.stores || []).filter((s) => s.error);
       if (failed.length) {
@@ -936,6 +957,16 @@ export default function CatalogImportPage() {
           {isSearchMode ? (
             <span className="ci-meta-pill">
               نتائج البحث: <strong>{displayOptions.length}</strong>
+            </span>
+          ) : null}
+          {isSearchMode && searchStoreStats.length ? (
+            <span className="ci-meta-pill">
+              حسب المتجر:{" "}
+              {searchStoreStats.map((s) => {
+                const label = stores.find((st) => st.id === s.id)?.label || s.id;
+                const text = s.error ? `${label}: خطأ` : `${label}: ${s.count}`;
+                return <strong key={s.id} style={{ marginInlineStart: 8 }}>{text}</strong>;
+              })}
             </span>
           ) : null}
         </div>

@@ -74,6 +74,15 @@ export const miswagAdapter = {
     if (local.isWarm()) {
       const hits = local.searchBarcode(digits);
       if (hits.length) return hits;
+      // باركود غير موجود في الفهرس — محاولة حية محدودة (بدون حجب المسار السريع)
+      if (/^\d{8,14}$/.test(digits)) {
+        try {
+          const live = await withHardTimeout(searchByEan(digits), 12_000, []);
+          if (live.length) return live;
+        } catch {
+          /* ignore */
+        }
+      }
       return [];
     }
 

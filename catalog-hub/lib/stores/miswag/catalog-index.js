@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { findBarcodesForProduct, findBarcodeIndexEntry, gtinEqual } from '../../core/barcode-index.js';
+import { findBarcodesForProduct, findBarcodeIndexEntry, gtinEqual, loadBarcodeIndex } from '../../core/barcode-index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const INDEX_FILE = path.join(__dirname, '..', '..', '..', 'data', 'miswag-catalog-index.json');
@@ -187,6 +187,48 @@ export function upsertMiswagProducts(items = [], { categoryId = '' } = {}) {
 
 const DIVISION_FIELDS = ['l1_alias', 'l2_alias', 'l3_alias', 'l4_alias'];
 
+/** توحيد أشكال الحروف العربية + مرادفات ماركات شائعة */
+const BRAND_QUERY_ALIASES = {
+  مايبلين: 'maybelline',
+  ميبيلين: 'maybelline',
+  مايبيلين: 'maybelline',
+  لوريال: 'loreal',
+  لوريا: 'loreal',
+  نيكس: 'nyx',
+  ريفولون: 'revlon',
+  ماكسفاكتور: 'max factor',
+  ماكس: 'max factor',
+};
+
+function normalizeArabicSearch(text = '') {
+  return String(text)
+    .toLowerCase()
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .replace(/ؤ/g, 'و')
+    .replace(/ئ/g, 'ي')
+    .replace(/ڤ/g, 'ف')
+    .replace(/گ/g, 'ك')
+    .replace(/[^\w\u0600-\u06FF\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function expandSearchTokens(query = '') {
+  const raw = String(query || '').trim().toLowerCase();
+  const norm = normalizeArabicSearch(raw);
+  const tokens = new Set();
+  for (const part of [raw, norm]) {
+    for (const token of part.split(/\s+/).filter((t) => t.length >= 2)) {
+      tokens.add(token);
+      const alias = BRAND_QUERY_ALIASES[token] || BRAND_QUERY_ALIASES[normalizeArabicSearch(token)];
+      if (alias) tokens.add(alias);
+    }
+  }
+  return [...tokens];
+}
+
 function inCategory(product, categoryId = '') {
   const cat = String(categoryId || '').trim();
   if (!cat) return true;
@@ -195,9 +237,9 @@ function inCategory(product, categoryId = '') {
 }
 
 function matchesQuery(product, query = '') {
-  const q = String(query || '').trim().toLowerCase();
+  const q = String(query || '').trim();
   if (!q) return true;
-  const hay = [
+  const hay = normalizeArabicSearch([
     product.nameAr,
     product.nameEn,
     product.brandAr,
@@ -206,11 +248,22 @@ function matchesQuery(product, query = '') {
     product.sku,
     product.id,
     ...(product.barcodes || []),
+  ].join(' '));
+  const hayLatin = [
+    product.nameEn,
+    product.brandEn,
+    product.brandAr,
+    product.sku,
   ].join(' ').toLowerCase();
-  const tokens = q.split(/\s+/).filter((t) => t.length >= 2);
-  if (!tokens.length) return hay.includes(q);
-  // أي كلمة تطابق تكفي (أوسع من AND الصارم)
-  return tokens.some((token) => hay.includes(token));
+  const tokens = expandSearchTokens(q);
+  if (!tokens.length) {
+    const needle = normalizeArabicSearch(q);
+    return hay.includes(needle) || hayLatin.includes(q.toLowerCase());
+  }
+  return tokens.some((token) => {
+    const norm = normalizeArabicSearch(token);
+    return hay.includes(norm) || hayLatin.includes(token);
+  });
 }
 
 export function queryMiswagIndex({
@@ -284,6 +337,69 @@ export function findMiswagById(id) {
   return getMiswagProduct(id);
 }
 
+function stubFromBarcodeEntry(entry, digits = '') {
+  const id = String(entry?.productId || '').trim();
+  if (!id) return null;
+  const code = String(digits || entry?.barcode || '').replace(/\D/g, '');
+  return {
+    id,
+    nameAr: entry.name || entry.nameAr || '',
+    nameEn: entry.nameEn || '',
+    brandAr: entry.brand || entry.brandAr || '',
+    brandEn: entry.brandEn || entry.brand || '',
+    thumb: entry.thumb || '',
+    price: entry.price || '',
+    sku: id,
+    productUrl: `https://miswag.com/products/${id}`,
+    category: entry.category || '',
+    shadeCount: Number(entry.shadeCount || 0),
+    hasOptions: false,
+    inStock: true,
+    barcodes: code ? [code] : [],
+    barcode: code,
+    updatedAt: Date.now(),
+  };
+}
+
+/** دمج باركودات barcode-index.json في منتجات الفهرس المحلي */
+export function enrichMiswagCatalogFromBarcodeIndex() {
+  const index = loadMiswagIndex();
+  const { entries = {} } = loadBarcodeIndex();
+  let touched = 0;
+
+  for (const row of Object.values(entries)) {
+    if (row?.store !== 'miswag') continue;
+    const productId = String(row.productId || '').trim();
+    const code = String(row.barcode || '').replace(/\D/g, '');
+    if (!productId || code.length < 8) continue;
+
+    const prev = index.products[productId];
+    if (!prev) continue;
+
+    const barcodes = mergeBarcodes(productId, [
+      ...(prev.barcodes || []),
+      prev.barcode,
+      code,
+    ].filter(Boolean));
+
+    if (barcodes.length === (prev.barcodes || []).length && prev.barcode === barcodes[0]) continue;
+
+    index.products[productId] = {
+      ...prev,
+      barcodes,
+      barcode: barcodes[0] || prev.barcode || '',
+      updatedAt: Date.now(),
+    };
+    touched += 1;
+  }
+
+  if (touched) {
+    indexDirty = true;
+    persistMiswagIndex();
+  }
+  return touched;
+}
+
 export function findMiswagByBarcode(digits = '') {
   const code = String(digits || '').replace(/\D/g, '');
   if (code.length < 8) return null;
@@ -297,10 +413,11 @@ export function findMiswagByBarcode(digits = '') {
     if (pool.some((b) => gtinEqual(b, code))) return product;
   }
 
-  // ربط بفهرس الباركود العالمي
   const entry = findBarcodeIndexEntry(code);
-  if (entry?.productId && index.products[String(entry.productId)]) {
-    return index.products[String(entry.productId)];
+  if (entry?.productId) {
+    const hit = index.products[String(entry.productId)];
+    if (hit) return hit;
+    return stubFromBarcodeEntry(entry, code);
   }
 
   return null;

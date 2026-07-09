@@ -132,6 +132,9 @@ if ! ensure_catalog_hub_ready; then
   echo "WARN: catalog-hub not healthy yet — check: docker compose -f docker-compose.prod.yml logs catalog-hub --tail=50"
 fi
 
+echo "==> Sync catalog-hub seed data into live volume..."
+./scripts/sync-catalog-hub-data.sh || true
+
 echo "==> Apply database migrations..."
 if ! $COMPOSE exec -T api npx prisma migrate deploy; then
   echo "==> Migration failed — syncing PostgreSQL password and retrying..."

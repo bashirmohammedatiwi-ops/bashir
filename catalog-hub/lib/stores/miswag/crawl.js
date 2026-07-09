@@ -1,6 +1,7 @@
 import { fetchCategoryTree, mapTypesenseHit } from './categories.js';
 import { typesenseSearch } from './client.js';
 import {
+  enrichMiswagCatalogFromBarcodeIndex,
   getMiswagCrawlCursor,
   getMiswagIndexStats,
   setMiswagCrawlCursor,
@@ -143,10 +144,12 @@ async function runCrawlLoop({ resume = true } = {}) {
     await sleep(delayMs);
   }
 
+  const enriched = enrichMiswagCatalogFromBarcodeIndex();
+
   setMiswagCrawlMeta({
     status: 'done',
     crawledAt: Date.now(),
-    message: `اكتمل — ${getMiswagIndexStats().productCount.toLocaleString('ar-IQ')} منتج محفوظ محلياً`,
+    message: `اكتمل — ${getMiswagIndexStats().productCount.toLocaleString('ar-IQ')} منتج محفوظ محلياً${enriched ? ` · ${enriched} باركود` : ''}`,
     progress: {
       done: jobs.length,
       total: jobs.length,
