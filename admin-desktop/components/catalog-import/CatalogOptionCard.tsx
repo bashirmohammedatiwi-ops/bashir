@@ -8,6 +8,7 @@ import {
   CheckOutlined,
 } from "@ant-design/icons";
 import type { CatalogImportOption } from "@/lib/catalogImport";
+import { isMiswagInternalId } from "@/lib/catalogImport";
 import { resolveCatalogImageUrl } from "@/lib/resolveCatalogImageUrl";
 
 export const STORE_COLORS: Record<string, string> = {
@@ -101,6 +102,10 @@ export function CatalogOptionCard({ option, selected, onSelect }: Props) {
         {option.nameEn && option.nameEn !== option.nameAr ? (
           <p className="ci-card-sub alhayaa-ltr-input">{option.nameEn}</p>
         ) : null}
+
+          {option.barcode && !isMiswagInternalId(option.barcode) ? (
+            <p className="ci-card-sub alhayaa-ltr-input">باركود: {option.barcode}</p>
+          ) : null}
 
         <div className="ci-card-meta">
           {match ? <Tag color={match.color}>{match.text}</Tag> : null}

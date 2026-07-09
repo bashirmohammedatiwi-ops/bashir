@@ -37,7 +37,9 @@ import {
   isEanBarcode,
   fetchAmazonCrawlStatus,
   fetchMiswagCrawlStatus,
+  fetchMiswagBarcodeHarvestStatus,
   startMiswagCatalogSync,
+  startMiswagBarcodeHarvest,
   listCategoryProducts,
   searchCatalogByBarcode,
   searchCatalogProducts,
@@ -125,6 +127,7 @@ function listProductToOption(p: CatalogListProduct, store: CatalogStore): Catalo
     nameEn: p.nameEn,
     brandAr: p.brandAr,
     thumb: p.thumb,
+    barcode: p.barcode,
     shadeCount: p.shadeCount,
     price: p.price,
     category: p.category,
@@ -148,7 +151,9 @@ export default function CatalogImportPage() {
   const [treeLoading, setTreeLoading] = useState(false);
   const [amazonCatalogHint, setAmazonCatalogHint] = useState("");
   const [miswagCatalogHint, setMiswagCatalogHint] = useState("");
+  const [miswagBarcodeHint, setMiswagBarcodeHint] = useState("");
   const [miswagSyncing, setMiswagSyncing] = useState(false);
+  const [miswagBarcodeSyncing, setMiswagBarcodeSyncing] = useState(false);
 
   const [searchText, setSearchText] = useState("");
   const [barcode, setBarcode] = useState("");
@@ -367,6 +372,48 @@ export default function CatalogImportPage() {
     };
   }, [stores, browseStore, selectedCategory, searching, productPage, loadCategoryProducts]);
 
+  // مسواگ: حصاد الباركودات من v2
+  useEffect(() => {
+    const hasMiswag = stores.some((s) => s.id === "miswag");
+    if (!hasMiswag) {
+      setMiswagBarcodeHint("");
+      return;
+    }
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const st = await fetchMiswagBarcodeHarvestStatus();
+        if (cancelled) return;
+        const indexed = Number(st.indexedBarcodes || 0).toLocaleString("ar-IQ");
+        if (st.running || st.status === "running") {
+          const done = st.done || 0;
+          const total = st.total || 0;
+          setMiswagBarcodeHint(
+            `جاري حصاد الباركودات… ${indexed} مفهرس${total ? ` · ${done}/${total}` : ""}`,
+          );
+          setMiswagBarcodeSyncing(true);
+        } else if (st.status === "done" && Number(st.indexedBarcodes || 0) > 0) {
+          setMiswagBarcodeHint(`${indexed} باركود EAN مفهرس — البحث بالباركود فوري`);
+          setMiswagBarcodeSyncing(false);
+        } else if (Number(st.indexedBarcodes || 0) > 0) {
+          setMiswagBarcodeHint(`${indexed} باركود مفهرس جزئياً — اضغط «حصاد الباركودات» لإكمال الجمال`);
+          setMiswagBarcodeSyncing(false);
+        } else {
+          setMiswagBarcodeHint("بعد تحميل الكتالوج — اضغط «حصاد الباركودات» لربط EAN بكل منتج");
+          setMiswagBarcodeSyncing(false);
+        }
+      } catch {
+        if (!cancelled) setMiswagBarcodeHint("");
+      }
+    };
+    tick();
+    const id = window.setInterval(tick, 10_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [stores]);
+
   const handleMiswagSync = useCallback(async () => {
     try {
       setMiswagSyncing(true);
@@ -383,6 +430,25 @@ export default function CatalogImportPage() {
     } catch (err) {
       message.error(err instanceof Error ? err.message : "فشل بدء التحميل");
       setMiswagSyncing(false);
+    }
+  }, []);
+
+  const handleMiswagBarcodeHarvest = useCallback(async () => {
+    try {
+      setMiswagBarcodeSyncing(true);
+      const st = await fetchMiswagBarcodeHarvestStatus();
+      const force = st.status === "done" && Number(st.indexedBarcodes || 0) > 0;
+      const result = await startMiswagBarcodeHarvest(force, "beauty");
+      if (result.started === false && result.reason === "already_running") {
+        message.info("حصاد الباركود جارٍ بالفعل");
+      } else if (result.started) {
+        message.success("بدأ حصاد باركودات مسواگ (قسم الجمال)");
+      } else {
+        message.info(result.message || "لا منتجات بحاجة للحصاد حالياً");
+      }
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : "فشل بدء حصاد الباركود");
+      setMiswagBarcodeSyncing(false);
     }
   }, []);
 
@@ -600,6 +666,17 @@ export default function CatalogImportPage() {
           }
         }
         setPreview(product);
+
+        if (
+          product.store === "miswag"
+          && !product.barcode
+          && !(product.shades || []).some((s) => s.barcode && !isMiswagInternalId(s.barcode))
+        ) {
+          message.warning(
+            "لم يُعثر على باركود EAN — شغّل «حصاد باركودات الجمال» أو انتظر اكتمال الحصاد التلقائي",
+            8,
+          );
+        }
 
         const brandId = await ensureBrandId(brandsData, product.brandAr, product.brandEn);
         if (brandId) {
@@ -845,16 +922,32 @@ export default function CatalogImportPage() {
               {miswagCatalogHint
                 || "حمّل بيانات منتجات مسواگ (بدون صور) على السيرفر مرة واحدة — بعدها البحث فوري والصور تُجلب من مسواگ عند الاستيراد."}
             </p>
+            {miswagBarcodeHint ? (
+              <p style={{ marginTop: 8, opacity: 0.92 }}>
+                <BarcodeOutlined /> {miswagBarcodeHint}
+              </p>
+            ) : null}
           </div>
-          <Button
-            type="primary"
-            size="large"
-            icon={<CloudDownloadOutlined />}
-            loading={miswagSyncing}
-            onClick={handleMiswagSync}
-          >
-            {miswagSyncLabel}
-          </Button>
+          <Space direction="vertical" size="small">
+            <Button
+              type="primary"
+              size="large"
+              icon={<CloudDownloadOutlined />}
+              loading={miswagSyncing}
+              onClick={handleMiswagSync}
+            >
+              {miswagSyncLabel}
+            </Button>
+            <Button
+              size="large"
+              icon={<BarcodeOutlined />}
+              loading={miswagBarcodeSyncing}
+              disabled={!miswagHasData && !miswagCatalogHint.includes("منتج")}
+              onClick={handleMiswagBarcodeHarvest}
+            >
+              {miswagBarcodeSyncing ? "جاري حصاد الباركود…" : "حصاد باركودات الجمال (EAN)"}
+            </Button>
+          </Space>
         </section>
       ) : null}
 
@@ -1139,6 +1232,9 @@ export default function CatalogImportPage() {
                         <Tag className="alhayaa-ltr-input">{preview.brandEn}</Tag>
                       ) : null}
                       {preview.priceHint ? <Tag color="green">{preview.priceHint}</Tag> : null}
+                      {preview.barcode && !isMiswagInternalId(preview.barcode) ? (
+                        <Tag color="blue" className="alhayaa-ltr-input">EAN: {preview.barcode}</Tag>
+                      ) : null}
                       {preview.categoryHint ? <Tag color="purple">{preview.categoryHint}</Tag> : null}
                     </div>
                   </div>

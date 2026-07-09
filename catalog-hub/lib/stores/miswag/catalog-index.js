@@ -29,6 +29,7 @@ function emptyIndex() {
     },
     products: {},
     crawlCursor: 0,
+    barcodeHarvestCursor: 0,
   };
 }
 
@@ -42,6 +43,7 @@ export function loadMiswagIndex({ force = false } = {}) {
       meta: { ...emptyIndex().meta, ...(raw.meta || {}) },
       products: raw.products || {},
       crawlCursor: Number(raw.crawlCursor || 0),
+      barcodeHarvestCursor: Number(raw.barcodeHarvestCursor || 0),
     };
   } catch {
     indexCache = emptyIndex();
@@ -100,6 +102,10 @@ export function setMiswagCrawlMeta(patch = {}) {
     ...index.meta,
     ...patch,
     progress: { ...index.meta.progress, ...(patch.progress || {}) },
+    barcodeHarvest: {
+      ...(index.meta.barcodeHarvest || {}),
+      ...(patch.barcodeHarvest || {}),
+    },
   };
   indexDirty = true;
   persistMiswagIndex();
@@ -293,6 +299,12 @@ export function queryMiswagIndex({
 }
 
 export function stubToListItem(p = {}) {
+  const barcodes = [
+    p.barcode,
+    ...(p.barcodes || []),
+    ...findBarcodesForProduct('miswag', p.id).map((r) => r.barcode),
+  ].map((b) => String(b || '').replace(/\D/g, '')).filter((b) => b.length >= 8);
+  const barcode = barcodes[0] || '';
   return {
     id: p.id,
     nameAr: p.nameAr || '',
@@ -304,6 +316,7 @@ export function stubToListItem(p = {}) {
     sku: p.sku || p.id,
     productUrl: p.productUrl || '',
     category: p.category || '',
+    barcode,
     shadeCount: p.shadeCount || 0,
     hasOptions: p.hasOptions === true,
     inStock: p.inStock !== false,

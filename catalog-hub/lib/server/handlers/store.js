@@ -217,6 +217,31 @@ export async function handleStoreApi(req, res, url) {
     }
   }
 
+  const barcodeHarvestMatch = url.pathname.match(/^\/api\/catalog\/([^/]+)\/barcodes$/);
+  if (barcodeHarvestMatch) {
+    const adapter = storeOr404(res, barcodeHarvestMatch[1]);
+    if (!adapter) return;
+    if (!adapter.startBarcodeHarvest) {
+      return sendJson(res, 400, { error: 'حصاد الباركود غير متاح لهذا المتجر' });
+    }
+    try {
+      if (req.method === 'POST') {
+        const force = q.force === '1' || q.force === 'true';
+        const resume = q.resume !== '0' && q.resume !== 'false';
+        const parentsOnly = q.parentsOnly === '1' || q.parentsOnly === 'true';
+        const category = q.category || 'beauty';
+        const result = adapter.startBarcodeHarvest({ force, resume, parentsOnly, category });
+        return sendJson(res, 200, { store: adapter.id, ...result });
+      }
+      if (req.method === 'DELETE') {
+        return sendJson(res, 200, { store: adapter.id, ...adapter.stopBarcodeHarvest() });
+      }
+      return sendJson(res, 200, { store: adapter.id, ...adapter.getBarcodeHarvestStatus() });
+    } catch (err) {
+      return sendJson(res, 502, { error: err.message });
+    }
+  }
+
   const catMatch = url.pathname.match(/^\/api\/catalog\/([^/]+)\/categories$/);
   if (catMatch) {
     const adapter = storeOr404(res, catMatch[1]);

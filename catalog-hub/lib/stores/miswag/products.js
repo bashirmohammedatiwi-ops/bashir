@@ -450,6 +450,17 @@ export async function fetchProductDetail(id, { light = false } = {}) {
   const thumb = absImage(meta.image_url);
   let shades = light ? [] : buildShadesFromVarInfo(varInfo);
   let tsDoc = null;
+  let productBarcode = '';
+
+  if (light) {
+    try {
+      productBarcode = await fetchV2Barcode(String(meta.product_id || pid));
+    } catch { /* optional */ }
+    if (!productBarcode) {
+      const entries = findBarcodesForProduct('miswag', String(meta.product_id || pid));
+      productBarcode = String(entries[0]?.barcode || '').replace(/\D/g, '');
+    }
+  }
 
   if (!light) {
     tsDoc = await fetchTypesenseDoc(String(meta.product_id || pid));
@@ -487,7 +498,7 @@ export async function fetchProductDetail(id, { light = false } = {}) {
     shades,
     shadeCount: shades.length,
     hasOptions: shades.length > 1 || (varInfo.sizes?.length > 1),
-    barcode: meta._v2ProductBarcode || extractEan(meta) || shades.find((s) => s.barcode)?.barcode || '',
+    barcode: productBarcode || meta._v2ProductBarcode || extractEan(meta) || shades.find((s) => s.barcode)?.barcode || '',
     miswagId: String(meta.product_id || pid),
     productUrl: meta.url || meta.share_link || `https://miswag.com/products/${meta.product_id || pid}`,
     category: String(meta.category || '').trim(),

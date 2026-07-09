@@ -14,6 +14,11 @@ import {
   startMiswagCatalogCrawl,
   stopMiswagCatalogCrawl,
 } from './crawl.js';
+import {
+  getMiswagBarcodeHarvestStatus,
+  startMiswagBarcodeHarvest,
+  stopMiswagBarcodeHarvest,
+} from './barcode-harvest.js';
 import { getMiswagIndexStats, isMiswagCatalogWarm } from './catalog-index.js';
 
 export const MISWAG_META = {
@@ -112,6 +117,18 @@ export const miswagAdapter = {
 
   stopCatalogCrawl() {
     return stopMiswagCatalogCrawl();
+  },
+
+  getBarcodeHarvestStatus() {
+    return getMiswagBarcodeHarvestStatus();
+  },
+
+  startBarcodeHarvest(opts = {}) {
+    return startMiswagBarcodeHarvest(opts);
+  },
+
+  stopBarcodeHarvest() {
+    return stopMiswagBarcodeHarvest();
   },
 
   getIndexStats() {

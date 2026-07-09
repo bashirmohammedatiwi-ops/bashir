@@ -8,6 +8,7 @@ import {
   setMiswagCrawlMeta,
   upsertMiswagProducts,
 } from './catalog-index.js';
+import { ensureMiswagBarcodeHarvestAfterCatalog } from './barcode-harvest.js';
 
 let crawlPromise = null;
 let stopRequested = false;
@@ -158,6 +159,7 @@ async function runCrawlLoop({ resume = true } = {}) {
     },
   });
   setMiswagCrawlCursor(0);
+  ensureMiswagBarcodeHarvestAfterCatalog();
   return getMiswagIndexStats();
 }
 

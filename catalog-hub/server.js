@@ -25,6 +25,13 @@ server.listen(PORT, HOST, () => {
     })
     .catch(() => {});
 
+  import('./lib/stores/miswag/barcode-harvest.js')
+    .then(({ ensureMiswagBarcodeHarvestAfterCatalog }) => {
+      const r = ensureMiswagBarcodeHarvestAfterCatalog();
+      if (r?.started) console.log('[miswag] auto-started barcode harvest for beauty');
+    })
+    .catch(() => {});
+
   // أمازون: الزحف التلقائي معطّل افتراضياً حتى لا يبطّئ مسواگ وباقي المتاجر.
   // فعّله يدوياً: AMAZON_AUTO_CRAWL=1 أو POST /api/catalog/amazon/crawl
   if (process.env.AMAZON_AUTO_CRAWL === '1') {

@@ -26,6 +26,7 @@ export type CatalogListProduct = {
   brandAr?: string;
   thumb?: string;
   price?: string;
+  barcode?: string;
   shadeCount?: number;
   hasOptions?: boolean;
   category?: string;
@@ -454,42 +455,9 @@ export async function fetchCatalogProductSmart(
   storeLabel = "",
   onPartial?: (product: CatalogImportProduct) => void,
 ) {
-  // مسواگ: light أولاً (Typesense احتياطي سريع) ثم full (تدرجات + باركودات)
+  // مسواگ: تفاصيل كاملة دائماً — الباركود من v2 ضروري للاستيراد
   if (storeId === "miswag") {
-    let lightProduct: CatalogImportProduct | null = null;
-    try {
-      const light = await catalogFetch<{ product: Record<string, unknown> }>(
-        `/api/catalog/${encodeURIComponent(storeId)}/products/${encodeURIComponent(sourceId)}?light=1`,
-        35_000,
-      );
-      lightProduct = mapImportProduct(light.product || {}, storeLabel);
-      if (lightProduct?.sourceId || lightProduct?.nameAr) onPartial?.(lightProduct);
-    } catch {
-      lightProduct = null;
-    }
-
-    try {
-      const full = await fetchCatalogProduct(storeId, sourceId, storeLabel);
-      if (lightProduct && (lightProduct.shades?.length || 0) > (full.shades?.length || 0)) {
-        return {
-          ...full,
-          shades: lightProduct.shades.map((s) => {
-            const hit = full.shades.find(
-              (f) =>
-                (f.sku && f.sku === s.sku) ||
-                (f.miswagId && f.miswagId === s.miswagId) ||
-                (f.nameAr && f.nameAr === s.nameAr),
-            );
-            return hit ? { ...s, ...hit, barcode: hit.barcode || s.barcode } : s;
-          }),
-          hasShades: true,
-        };
-      }
-      return full;
-    } catch (err) {
-      if (lightProduct?.sourceId || lightProduct?.nameAr) return lightProduct;
-      throw err;
-    }
+    return fetchCatalogProduct(storeId, sourceId, storeLabel);
   }
 
   if (storeId !== "amazon") {
@@ -606,6 +574,35 @@ async function catalogMutate<T>(
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** بدء أو استئناف حصاد باركودات مسواگ (v2) */
+export async function startMiswagBarcodeHarvest(force = false, category = "beauty") {
+  const q = force ? `?force=1&resume=0&category=${encodeURIComponent(category)}` : `?resume=1&category=${encodeURIComponent(category)}`;
+  return catalogMutate<{
+    store: string;
+    started: boolean;
+    status: string;
+    reason?: string;
+    message?: string;
+    indexedBarcodes?: number;
+    done?: number;
+    total?: number;
+  }>(`/api/catalog/miswag/barcodes${q}`, "POST", 30_000);
+}
+
+export async function fetchMiswagBarcodeHarvestStatus() {
+  return catalogFetch<{
+    store?: string;
+    status: string;
+    running?: boolean;
+    message?: string;
+    indexedBarcodes?: number;
+    done?: number;
+    total?: number;
+    added?: number;
+    errors?: number;
+  }>("/api/catalog/miswag/barcodes", 8_000);
 }
 
 /** حالة فهرس مسواگ المحلي */
