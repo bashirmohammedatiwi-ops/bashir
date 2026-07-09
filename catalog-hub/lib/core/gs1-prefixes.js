@@ -48,6 +48,7 @@ const SEED_PREFIXES = {
   '3614225': 'Bourjois',
   '0854141': 'The Ordinary',
   '0769661': 'Revlon',
+  '0761318': 'Revlon',
 };
 
 /** ماركات جمال شائعة في مسواگ — مسح موجّه عند غياب metadata */

@@ -80,12 +80,31 @@ async function learnBrandPrefixFromProduct(digits, productId) {
   if (brand) learnPrefixBrand(digits, brand);
 }
 
-/** فهرس محلي سريع — light أولاً ثم تحقق v2 عند الحاجة فقط */
+/** فهرس محلي سريع — يُرجع من بيانات الفهرس مباشرة دون طلبات API */
 async function resolveFromIndex(digits) {
   const entry = findBarcodeIndexEntry(digits);
   if (!entry?.productId) return null;
 
-  // مسار سريع: Typesense stub + light detail
+  // مسار فوري: الفهرس يحمل الاسم/الماركة/التدرج — كافٍ لعرض نتائج البحث
+  if (entry.name || entry.brand) {
+    const stub = {
+      id: entry.productId,
+      nameAr: entry.name || '',
+      nameEn: entry.name || '',
+      brandAr: entry.brand || '',
+      brandEn: entry.brand || '',
+      thumb: '',
+      price: '',
+      shadeCount: entry.shadeName ? 1 : 0,
+      hasOptions: Boolean(entry.shadeName),
+    };
+    const shadeStub = entry.shadeName
+      ? { name: entry.shadeName, nameAr: entry.shadeName, image: '' }
+      : null;
+    return formatEanHit(stub, digits, entry.matchType || 'index', shadeStub);
+  }
+
+  // مسار Typesense stub + light detail للسجلات القديمة بلا اسم
   try {
     const [tsResult = {}] = await typesenseMultiSearch([{
       q: '*',
@@ -268,7 +287,7 @@ async function searchByBrandCatalogV2(digits, meta, { deadline = 0 } = {}) {
 
       ids.sort((a, b) => Number(b) - Number(a));
 
-      const parentMatch = await scanParentBarcodesForBarcode(ids, digits, { deadline, concurrency: 20 });
+      const parentMatch = await scanParentBarcodesForBarcode(ids, digits, { deadline, concurrency: 8 });
       if (parentMatch) {
         learnPrefixBrand(digits, brand);
         const resolved = await resolveV2Match(digits, parentMatch, 'v2_scan');
@@ -278,7 +297,7 @@ async function searchByBrandCatalogV2(digits, meta, { deadline = 0 } = {}) {
       const hit = await searchByV2Scan(
         ids,
         digits,
-        { limit: Math.min(ids.length, 120), concurrency: 12, deadline },
+        { limit: Math.min(ids.length, 60), concurrency: 4, deadline },
       );
       if (hit) {
         learnPrefixBrand(digits, brand);
@@ -519,16 +538,7 @@ export async function searchByEan(barcode) {
   const budgetLeft = () => TIME_BUDGET_MS - (Date.now() - startedAt);
   const deadline = startedAt + TIME_BUDGET_MS;
 
-  // 2) Typesense variations — يشمل المتغيرات داخل searchTypesenseByVariationBarcode
-  if (budgetLeft() > 0) {
-    for (const variant of variants) {
-      if (deadline && Date.now() > deadline) break;
-      const fromVariations = await searchByTypesenseVariationScan(variant, { deadline });
-      if (fromVariations) return [fromVariations];
-    }
-  }
-
-  // 3) أشقاء GS1 + بادئة معروفة — بالتوازي على المتغير الأساسي
+  // 2) بادئة GS1 معروفة + أشقاء — أسرع من مسح Typesense/v2
   if (budgetLeft() > 0) {
     const [siblingHit, prefixHit] = await Promise.all([
       searchBySiblingPrefix(digits, { deadline }),
@@ -537,11 +547,19 @@ export async function searchByEan(barcode) {
     if (siblingHit) return [siblingHit];
     if (prefixHit) return [prefixHit];
 
-    // إن فشل الأساسي، جرّب بادئة المتغير المصحّح
     for (const variant of variants.slice(1)) {
       if (budgetLeft() < 1500) break;
       const hit = await searchByKnownPrefix(variant, { deadline });
       if (hit) return [hit];
+    }
+  }
+
+  // 3) Typesense variations ثم التحقق v2
+  if (budgetLeft() > 0) {
+    for (const variant of variants) {
+      if (deadline && Date.now() > deadline) break;
+      const fromVariations = await searchByTypesenseVariationScan(variant, { deadline });
+      if (fromVariations) return [fromVariations];
     }
   }
 

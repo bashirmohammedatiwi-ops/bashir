@@ -12,7 +12,7 @@
  *   node scripts/harvest-miswag-barcodes.js                 # كل ماركات الجمال
  *   node scripts/harvest-miswag-barcodes.js "NYX" "Essence" # ماركات محددة
  *   FORCE=1 node scripts/harvest-miswag-barcodes.js         # أعد حصاد المنتجات المفهرسة أيضاً
- *   RATE_MS=250 CONCURRENCY=2 node scripts/harvest-miswag-barcodes.js
+ *   PARENTS_ONLY=1 node scripts/harvest-miswag-barcodes.js  # باركود الأب فقط (سريع ~5 دقائق)
  *
  * قابل للاستئناف: يتخطى المنتجات التي سبق تسجيل باركوداتها ما لم يُضبط FORCE=1.
  */
@@ -27,6 +27,7 @@ import {
 } from '../lib/core/barcode-index.js';
 
 const FORCE = process.env.FORCE === '1' || process.env.FORCE === 'true';
+const PARENTS_ONLY = process.env.PARENTS_ONLY === '1' || process.env.PARENTS_ONLY === 'true';
 const CONCURRENCY = Number(process.env.CONCURRENCY || 2);
 const RATE_MS = Number(process.env.RATE_MS || 200);
 const argBrands = process.argv.slice(2).filter(Boolean);
@@ -87,9 +88,9 @@ async function pacedV2Barcode(id) {
   });
 }
 
-/** كل معرّفات منتجات ماركة من Typesense (مع ترقيم الصفحات) */
-async function fetchBrandProductIds(brand) {
-  const ids = [];
+/** كل منتجات ماركة من Typesense (مع ترقيم الصفحات) */
+async function fetchBrandProducts(brand) {
+  const rows = [];
   for (let page = 1; page <= 20; page += 1) {
     const [result = {}] = await typesenseMultiSearch([{
       q: '*',
@@ -100,37 +101,56 @@ async function fetchBrandProductIds(brand) {
     }]).catch(() => [{}]);
     const hits = result.hits || [];
     for (const hit of hits) {
-      const id = String(hit.document?.id || '').trim();
-      if (id) ids.push(id);
+      const doc = hit.document || {};
+      const id = String(doc.id || '').trim();
+      if (!id) continue;
+      rows.push({
+        id,
+        name: String(doc.title_AR || doc.title_EN || '').trim(),
+        brand: String(doc.brand || brand).trim(),
+      });
     }
     if (hits.length < 250) break;
   }
-  return [...new Set(ids)];
+  const seen = new Set();
+  return rows.filter((r) => {
+    if (seen.has(r.id)) return false;
+    seen.add(r.id);
+    return true;
+  });
 }
 
-/** احصد باركود الأب + كل التدرجات لمنتج واحد وأدرجها في الفهرس */
-async function harvestProduct(productId) {
-  const pid = String(productId || '').trim();
+/** احصد باركود الأب + (اختياري) كل التدرجات لمنتج واحد */
+async function harvestProduct(product, { parentsOnly = false } = {}) {
+  const pid = String(product?.id || product || '').trim();
   if (!pid) return { added: 0 };
+  const meta = typeof product === 'object' ? product : { id: pid, name: '', brand: '' };
 
   const rows = [];
+  const base = {
+    store: 'miswag',
+    productId: pid,
+    name: meta.name || '',
+    brand: meta.brand || '',
+  };
 
   const parentBc = await pacedV2Barcode(pid);
   if (isValidEan(parentBc)) {
-    rows.push({ barcode: parentBc, store: 'miswag', productId: pid, matchType: 'v2_scan' });
+    rows.push({ ...base, barcode: parentBc, matchType: 'v2_scan' });
   }
 
-  const variations = await listVariationIds(pid).catch(() => []);
-  for (const variation of variations) {
-    const bc = await pacedV2Barcode(variation.id).catch(() => '');
-    if (!isValidEan(bc)) continue;
-    rows.push({
-      barcode: bc,
-      store: 'miswag',
-      productId: pid,
-      shadeName: variation.name || '',
-      matchType: 'v2_shade',
-    });
+  if (!parentsOnly) {
+    const variations = await listVariationIds(pid).catch(() => []);
+    for (const variation of variations) {
+      const bc = await pacedV2Barcode(variation.id).catch(() => '');
+      if (!isValidEan(bc)) continue;
+      rows.push({
+        ...base,
+        barcode: bc,
+        shadeName: variation.name || '',
+        matchType: 'v2_shade',
+      });
+    }
   }
 
   if (rows.length) bulkUpsertBarcodeIndex(rows);
@@ -157,29 +177,29 @@ async function runPool(items, worker, concurrency) {
 }
 
 async function main() {
-  log(`==> حصاد باركودات مسواگ — ${brands.length} ماركة (FORCE=${FORCE ? 'on' : 'off'}, concurrency=${CONCURRENCY}, rate=${RATE_MS}ms)`);
+  log(`==> حصاد باركودات مسواگ — ${brands.length} ماركة (FORCE=${FORCE ? 'on' : 'off'}, parentsOnly=${PARENTS_ONLY ? 'on' : 'off'}, concurrency=${CONCURRENCY}, rate=${RATE_MS}ms)`);
   loadBarcodeIndex({ force: true });
 
   let grandBarcodes = 0;
   let grandProducts = 0;
 
   for (const brand of brands) {
-    const ids = await fetchBrandProductIds(brand);
-    if (!ids.length) {
+    const products = await fetchBrandProducts(brand);
+    if (!products.length) {
       log(`  - ${brand}: لا منتجات`);
       continue;
     }
 
     const pending = FORCE
-      ? ids
-      : ids.filter((id) => findBarcodesForProduct('miswag', id).length === 0);
+      ? products
+      : products.filter((p) => findBarcodesForProduct('miswag', p.id).length === 0);
 
-    log(`  - ${brand}: ${ids.length} منتج (${pending.length} بحاجة للحصاد)`);
+    log(`  - ${brand}: ${products.length} منتج (${pending.length} بحاجة للحصاد)`);
     if (!pending.length) continue;
 
     let brandBarcodes = 0;
-    await runPool(pending, async (id) => {
-      const { added } = await harvestProduct(id).catch(() => ({ added: 0 }));
+    await runPool(pending, async (product) => {
+      const { added } = await harvestProduct(product, { parentsOnly: PARENTS_ONLY }).catch(() => ({ added: 0 }));
       brandBarcodes += added;
     }, CONCURRENCY);
 
