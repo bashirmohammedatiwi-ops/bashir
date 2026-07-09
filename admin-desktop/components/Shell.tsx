@@ -24,7 +24,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     title: "المنتجات",
     items: [
       { href: "/products", label: "المنتجات", short: "م" },
-      { href: "/catalog-import", label: "الاستيراد من الكتالوج", short: "كت" },
+      { href: "/catalog-import", label: "استيراد الكتالوج", short: "كت" },
       { href: "/skin-concerns", label: "دليل البشرة", short: "ب" },
       { href: "/skin-routines", label: "روتين البشرة", short: "ر" },
       { href: "/inventory", label: "المخزون و POS", short: "مخ" },

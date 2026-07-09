@@ -17,6 +17,36 @@
   max-width: 720px;
 }
 
+/* ── مسواگ: شريط تحميل الفهرس المحلي ── */
+.ci-miswag-sync-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+  padding: 16px 18px;
+  border: 1px solid #d4b8e8;
+  border-radius: var(--ci-radius);
+  background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
+  box-shadow: var(--ci-shadow);
+}
+
+.ci-miswag-sync-copy strong {
+  display: block;
+  font-size: 15px;
+  margin-bottom: 4px;
+  color: var(--ci-accent);
+}
+
+.ci-miswag-sync-copy p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ci-muted);
+  max-width: 680px;
+  line-height: 1.5;
+}
+
 /* ── Progress ── */
 .ci-progress {
   display: grid;
@@ -273,6 +303,13 @@
   margin: 3px 0 0;
   font-size: 11px;
   color: var(--ci-muted);
+}
+
+.ci-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .ci-browse-select {

@@ -3,6 +3,8 @@
 import dynamic from "next/dynamic";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Card, Form, Input, Popconfirm, Select, Space, Switch, Table, Tag, message } from "antd";
+import { CloudDownloadOutlined } from "@ant-design/icons";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ImageItem } from "@/components/ProductImageDropzone";
 import { PageHeader } from "@/components/PageHeader";
@@ -339,9 +341,16 @@ export default function ProductsPage() {
         title="المنتجات"
         subtitle={`${total.toLocaleString()} منتج${isFetching && !isLoading ? " — جاري التحديث..." : ""}`}
         extra={
-          <Button type="primary" size="large" onClick={openCreate}>
-            + منتج جديد
-          </Button>
+          <Space wrap>
+            <Link href="/catalog-import">
+              <Button size="large" icon={<CloudDownloadOutlined />}>
+                استيراد من الكتالوج
+              </Button>
+            </Link>
+            <Button type="primary" size="large" onClick={openCreate}>
+              + منتج جديد
+            </Button>
+          </Space>
         }
       />
 

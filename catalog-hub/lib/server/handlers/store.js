@@ -193,25 +193,25 @@ export async function handleStoreApi(req, res, url) {
     }
   }
 
-  // أمازون: حالة/تشغيل زحف فهرس Beauty المحلي
+  // زحف/تحميل الفهرس المحلي (أمازون + مسواگ)
   const crawlMatch = url.pathname.match(/^\/api\/catalog\/([^/]+)\/crawl$/);
   if (crawlMatch) {
     const adapter = storeOr404(res, crawlMatch[1]);
     if (!adapter) return;
-    if (adapter.id !== 'amazon') {
-      return sendJson(res, 400, { error: 'الزحف متاح لمتجر أمازون فقط حالياً' });
+    if (!adapter.startCatalogCrawl) {
+      return sendJson(res, 400, { error: 'التحميل المحلي غير متاح لهذا المتجر' });
     }
     try {
       if (req.method === 'POST') {
         const force = q.force === '1' || q.force === 'true';
         const resume = q.resume !== '0' && q.resume !== 'false';
         const result = adapter.startCatalogCrawl({ force, resume });
-        return sendJson(res, 200, { store: 'amazon', ...result });
+        return sendJson(res, 200, { store: adapter.id, ...result });
       }
       if (req.method === 'DELETE') {
-        return sendJson(res, 200, { store: 'amazon', ...adapter.stopCatalogCrawl() });
+        return sendJson(res, 200, { store: adapter.id, ...adapter.stopCatalogCrawl() });
       }
-      return sendJson(res, 200, { store: 'amazon', ...adapter.getCatalogStatus() });
+      return sendJson(res, 200, { store: adapter.id, ...adapter.getCatalogStatus() });
     } catch (err) {
       return sendJson(res, 502, { error: err.message });
     }

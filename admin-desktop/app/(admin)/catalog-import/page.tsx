@@ -7,6 +7,7 @@ import {
   Form,
   Input,
   Select,
+  Space,
   Spin,
   Tag,
   Tree,
@@ -35,6 +36,8 @@ import {
   isMiswagInternalId,
   isEanBarcode,
   fetchAmazonCrawlStatus,
+  fetchMiswagCrawlStatus,
+  startMiswagCatalogSync,
   listCategoryProducts,
   searchCatalogByBarcode,
   searchCatalogProducts,
@@ -144,6 +147,8 @@ export default function CatalogImportPage() {
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [treeLoading, setTreeLoading] = useState(false);
   const [amazonCatalogHint, setAmazonCatalogHint] = useState("");
+  const [miswagCatalogHint, setMiswagCatalogHint] = useState("");
+  const [miswagSyncing, setMiswagSyncing] = useState(false);
 
   const [searchText, setSearchText] = useState("");
   const [barcode, setBarcode] = useState("");
@@ -305,6 +310,78 @@ export default function CatalogImportPage() {
       window.clearInterval(id);
     };
   }, [browseStore, selectedCategory, searching, productPage, loadCategoryProducts]);
+
+  // مسواگ: حالة الفهرس المحلي — يعمل دائماً طالما مسواگ متصل
+  useEffect(() => {
+    const hasMiswag = stores.some((s) => s.id === "miswag");
+    if (!hasMiswag) {
+      setMiswagCatalogHint("");
+      return;
+    }
+    let cancelled = false;
+    let lastCount = 0;
+    const tick = async () => {
+      try {
+        const st = await fetchMiswagCrawlStatus();
+        if (cancelled) return;
+        const n = Number(st.productCount || 0);
+        const count = n.toLocaleString("ar-IQ");
+        if (st.running || st.status === "running") {
+          const done = st.progress?.done || 0;
+          const total = st.progress?.total || 0;
+          const cat = st.progress?.category ? ` · ${st.progress.category}` : "";
+          setMiswagCatalogHint(
+            `جاري تحميل بيانات مسواگ… ${count} منتج${total ? ` · ${done}/${total}` : ""}${cat}`,
+          );
+          setMiswagSyncing(true);
+        } else if (n > 0) {
+          setMiswagCatalogHint(`${count} منتج محفوظ محلياً — البحث فوري، الصور من مسواگ مباشرة`);
+          setMiswagSyncing(false);
+        } else {
+          setMiswagCatalogHint("اضغط «تحميل بيانات مسواگ» لحفظ الكتالوج على السيرفر");
+          setMiswagSyncing(false);
+        }
+        if (
+          selectedCategory
+          && !searching
+          && productPage <= 1
+          && n > lastCount + 40
+        ) {
+          lastCount = n;
+          loadCategoryProducts(selectedCategory, 1, false);
+        } else if (n > lastCount) {
+          lastCount = n;
+        }
+      } catch {
+        if (!cancelled) setMiswagCatalogHint("");
+      }
+    };
+    tick();
+    const id = window.setInterval(tick, 8_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [stores, browseStore, selectedCategory, searching, productPage, loadCategoryProducts]);
+
+  const handleMiswagSync = useCallback(async () => {
+    try {
+      setMiswagSyncing(true);
+      const st = await fetchMiswagCrawlStatus();
+      const force = Number(st.productCount || 0) > 0;
+      const result = await startMiswagCatalogSync(force);
+      if (result.started === false && result.reason === "already_running") {
+        message.info("التحميل جارٍ بالفعل");
+      } else if (force) {
+        message.success("بدأ تحديث بيانات مسواگ من المتجر");
+      } else {
+        message.success("بدأ تحميل بيانات مسواگ على السيرفر");
+      }
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : "فشل بدء التحميل");
+      setMiswagSyncing(false);
+    }
+  }, []);
 
   const onSelectCategory = useCallback(
     (keys: React.Key[]) => {
@@ -707,17 +784,58 @@ export default function CatalogImportPage() {
     setPreview(null);
   }, [displayOptions.length]);
 
+  const miswagHasData = miswagCatalogHint.includes("محفوظ");
+  const miswagSyncLabel = miswagSyncing
+    ? "جاري التحميل..."
+    : miswagHasData
+      ? "تحديث بيانات مسواگ على السيرفر"
+      : "تحميل بيانات مسواگ على السيرفر";
+
   return (
     <div className="catalog-import-page alhayaa-page">
       <PageHeader
         title="الاستيراد من الكتالوج"
         subtitle="ابحث أو تصفّح من مسواگ ونجد والريان، ثم صنّف المنتج واستورده إلى متجرك بخطوة واحدة."
         extra={
-          <Tag icon={<ShopOutlined />} color="purple">
-            {stores.length || 3} متاجر متصلة
-          </Tag>
+          <Space wrap>
+            {stores.some((s) => s.id === "miswag") ? (
+              <Button
+                type="primary"
+                size="large"
+                icon={<CloudDownloadOutlined />}
+                loading={miswagSyncing}
+                onClick={handleMiswagSync}
+              >
+                {miswagSyncLabel}
+              </Button>
+            ) : null}
+            <Tag icon={<ShopOutlined />} color="purple">
+              {stores.length || 3} متاجر متصلة
+            </Tag>
+          </Space>
         }
       />
+
+      {stores.some((s) => s.id === "miswag") ? (
+        <section className="ci-miswag-sync-banner">
+          <div className="ci-miswag-sync-copy">
+            <strong>فهرس مسواگ المحلي على السيرفر</strong>
+            <p>
+              {miswagCatalogHint
+                || "حمّل بيانات منتجات مسواگ (بدون صور) على السيرفر مرة واحدة — بعدها البحث فوري والصور تُجلب من مسواگ عند الاستيراد."}
+            </p>
+          </div>
+          <Button
+            type="primary"
+            size="large"
+            icon={<CloudDownloadOutlined />}
+            loading={miswagSyncing}
+            onClick={handleMiswagSync}
+          >
+            {miswagSyncLabel}
+          </Button>
+        </section>
+      ) : null}
 
       <div className="ci-progress">
         {[
@@ -830,18 +948,31 @@ export default function CatalogImportPage() {
               <h3>أقسام {storeMeta.label}</h3>
               <p>اختر قسماً لعرض منتجاته</p>
             </div>
-            <Select
-              className="ci-browse-select"
-              size="small"
-              value={browseStore}
-              onChange={(id) => {
-                const next = String(id || "");
-                if (!next) return;
-                setBrowseStore(next);
-                setActiveStores((prev) => (prev.includes(next) ? prev : [...prev, next]));
-              }}
-              options={stores.map((s) => ({ value: s.id, label: s.label }))}
-            />
+            <div className="ci-panel-actions">
+              {isMiswagBrowse ? (
+                <Button
+                  size="small"
+                  type="default"
+                  icon={<CloudDownloadOutlined />}
+                  loading={miswagSyncing}
+                  onClick={handleMiswagSync}
+                >
+                  {miswagCatalogHint.includes("محفوظ") ? "تحديث مسواگ" : "تحميل مسواگ"}
+                </Button>
+              ) : null}
+              <Select
+                className="ci-browse-select"
+                size="small"
+                value={browseStore}
+                onChange={(id) => {
+                  const next = String(id || "");
+                  if (!next) return;
+                  setBrowseStore(next);
+                  setActiveStores((prev) => (prev.includes(next) ? prev : [...prev, next]));
+                }}
+                options={stores.map((s) => ({ value: s.id, label: s.label }))}
+              />
+            </div>
           </div>
           <div className="ci-tree-wrap">
             {treeLoading ? (
@@ -874,9 +1005,11 @@ export default function CatalogImportPage() {
               <p>
                 {isSearchMode
                   ? "النتائج تظهر تدريجياً من المتاجر الأسرع"
-                  : amazonCatalogHint && browseStore === "amazon"
-                    ? amazonCatalogHint
-                    : "اختر منتجاً لفتح لوحة الاستيراد"}
+                  : miswagCatalogHint && browseStore === "miswag"
+                    ? miswagCatalogHint
+                    : amazonCatalogHint && browseStore === "amazon"
+                      ? amazonCatalogHint
+                      : "اختر منتجاً لفتح لوحة الاستيراد"}
               </p>
             </div>
             {isSearchMode ? (

@@ -573,3 +573,62 @@ export async function fetchAmazonCrawlStatus() {
     progress?: { done?: number; total?: number; added?: number };
   }>("/api/catalog/amazon/crawl", 8_000);
 }
+
+async function catalogMutate<T>(
+  path: string,
+  method: "POST" | "DELETE" = "POST",
+  timeoutMs = 20_000,
+): Promise<T> {
+  const url = `${getCatalogHubUrl()}${path}`;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: { Accept: "application/json" },
+      signal: ctrl.signal,
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(
+        (typeof json?.error === "string" && json.error) ||
+          json?.message ||
+          res.statusText ||
+          "فشل الطلب",
+      );
+    }
+    return json as T;
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error("انتهت مهلة الطلب");
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** حالة فهرس مسواگ المحلي */
+export async function fetchMiswagCrawlStatus() {
+  return catalogFetch<{
+    store: string;
+    productCount: number;
+    status: string;
+    running?: boolean;
+    message?: string;
+    progress?: { done?: number; total?: number; added?: number; category?: string };
+  }>("/api/catalog/miswag/crawl", 8_000);
+}
+
+/** تحميل أو تحديث بيانات مسواگ على السيرفر (بدون صور) */
+export async function startMiswagCatalogSync(force = false) {
+  const q = force ? "?force=1&resume=0" : "?resume=1";
+  return catalogMutate<{
+    store: string;
+    started: boolean;
+    productCount: number;
+    status: string;
+    reason?: string;
+    message?: string;
+  }>(`/api/catalog/miswag/crawl${q}`, "POST", 30_000);
+}

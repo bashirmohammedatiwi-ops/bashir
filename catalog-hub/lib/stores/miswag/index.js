@@ -1,7 +1,20 @@
-import { fetchCategoryTree, listCategoryProducts, searchProducts, sortProductsClient } from './categories.js';
+import {
+  fetchCategoryTree,
+  listCategoryProducts as listCategoryProductsLive,
+  searchProducts as searchProductsLive,
+  sortProductsClient,
+} from './categories.js';
 import { fetchProductDetail } from './products.js';
-import { isMiswagInternalId, searchByMiswagId } from './id-lookup.js';
+import { searchByMiswagId } from './id-lookup.js';
 import { searchByEan } from './ean-search.js';
+import { isMiswagInternalId } from './ids.js';
+import * as local from './local.js';
+import {
+  getMiswagCrawlStatus,
+  startMiswagCatalogCrawl,
+  stopMiswagCatalogCrawl,
+} from './crawl.js';
+import { getMiswagIndexStats, isMiswagCatalogWarm } from './catalog-index.js';
 
 export const MISWAG_META = {
   id: 'miswag',
@@ -25,22 +38,46 @@ export const miswagAdapter = {
 
   async health() {
     const { tree } = await fetchCategoryTree();
-    return { ok: true, categories: tree.length };
+    const catalog = getMiswagCrawlStatus();
+    return {
+      ok: true,
+      categories: tree.length,
+      catalog,
+      localProducts: catalog.productCount || 0,
+    };
   },
 
   fetchCategoryTree,
-  listCategoryProducts,
-  searchProducts,
   sortProductsClient,
   fetchProductDetail,
 
-  /** بحث برقم مسواگ الداخلي أو باركود EAN العالمي — مهلة صارمة حتى لا يعلّق الواجهة */
+  /** بحث نصي — من الفهرس المحلي إن وُجد، وإلا Typesense مباشرة */
+  async searchProducts(query, opts = {}) {
+    if (local.isWarm()) return local.searchProducts(query, opts);
+    return searchProductsLive(query, opts);
+  },
+
+  /** تصفح قسم — من الفهرس المحلي إن وُجد */
+  async listCategoryProducts(categoryAlias, opts = {}) {
+    if (local.isWarm()) return local.listCategoryProducts(categoryAlias, opts);
+    return listCategoryProductsLive(categoryAlias, opts);
+  },
+
+  /**
+   * بحث بالباركود — الفهرس المحلي أولاً (فوري).
+   * إن لم يُحمَّل الفهرس بعد، يُستخدم المسار الحي القديم.
+   */
   async searchBarcode(code) {
     const digits = String(code || '').replace(/\D/g, '');
     if (!digits) return [];
 
+    if (local.isWarm()) {
+      const hits = local.searchBarcode(digits);
+      if (hits.length) return hits;
+      return [];
+    }
+
     const run = async () => {
-      // معرّف مسواگ (17…) أولاً؛ وإلا باركود EAN/UPC
       if (isMiswagInternalId(digits)) {
         const byId = await searchByMiswagId(digits);
         if (byId.length) return byId;
@@ -50,10 +87,29 @@ export const miswagAdapter = {
     };
 
     try {
-      // 22ث — يتوافق مع مهلة الواجهة ومسار beauty/gulf sweeps
       return await withHardTimeout(run(), 22_000, []);
     } catch {
       return [];
     }
+  },
+
+  getCatalogStatus() {
+    return getMiswagCrawlStatus();
+  },
+
+  startCatalogCrawl(opts = {}) {
+    return startMiswagCatalogCrawl(opts);
+  },
+
+  stopCatalogCrawl() {
+    return stopMiswagCatalogCrawl();
+  },
+
+  getIndexStats() {
+    return getMiswagIndexStats();
+  },
+
+  isCatalogWarm() {
+    return isMiswagCatalogWarm(30);
   },
 };
