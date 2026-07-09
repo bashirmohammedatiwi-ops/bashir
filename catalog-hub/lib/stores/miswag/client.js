@@ -76,8 +76,7 @@ async function getAuthToken() {
   return token;
 }
 
-export async function miswagFetch(path, { params = {}, retries = 1, timeoutMs = 8_000 } = {}) {
-  const token = await getAuthToken();
+export async function miswagFetch(path, { params = {}, retries = 2, timeoutMs = 12_000 } = {}) {
   const url = new URL(`${API_BASE}${path.startsWith('/') ? path : `/${path}`}`);
   for (const [k, v] of Object.entries(params)) {
     if (v != null && v !== '') url.searchParams.set(k, String(v));
@@ -85,24 +84,27 @@ export async function miswagFetch(path, { params = {}, retries = 1, timeoutMs = 
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
+      const token = await getAuthToken();
       const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Client-Id': CLIENT_ID,
           'Accept-Language': 'ar',
           Accept: 'application/json',
+          'User-Agent': 'Mozilla/5.0 (compatible; CatalogHub/2.0)',
+          Origin: SITE,
+          Referer: `${SITE}/`,
         },
         signal: AbortSignal.timeout(timeoutMs),
       });
       if (res.status === 401 && attempt < retries) {
         authToken = null;
-        await getAuthToken();
         continue;
       }
       const data = await res.json().catch(() => ({}));
       if (!res.ok || data.success === false) {
-        if (attempt < retries && res.status >= 500) {
-          await sleep(250 * (attempt + 1));
+        if (attempt < retries && (res.status >= 500 || res.status === 429 || res.status === 403)) {
+          await sleep(300 * (attempt + 1));
           continue;
         }
         throw new Error(data.message || data.error || `Miswag ${res.status}`);
@@ -111,8 +113,8 @@ export async function miswagFetch(path, { params = {}, retries = 1, timeoutMs = 
     } catch (err) {
       const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError'
         || /aborted|timeout/i.test(String(err?.message || ''));
-      if (timedOut && attempt < retries) {
-        await sleep(200);
+      if ((timedOut || /Miswag (429|403|5)/.test(String(err?.message || ''))) && attempt < retries) {
+        await sleep(250 * (attempt + 1));
         continue;
       }
       if (timedOut) throw new Error('Miswag timeout');
@@ -184,13 +186,17 @@ export async function typesenseSearch(query, {
   filterBy = '',
   sortBy = '',
   strict = false,
+  /** true = استخدم preset مسواگ (قد يخلط نتائج غير ذات صلة) */
+  usePreset = false,
 } = {}) {
   const q = String(query || '').trim() || '*';
   const cfg = await getSearchConfig();
   const search = { q, per_page: perPage, page, enable_overrides: true };
+  const wantPreset = usePreset && cfg.preset && !strict && !filterBy && q !== '*';
+
   if (q === '*') {
     search.query_by = 'title_AR';
-  } else if (cfg.preset && !strict && !filterBy) {
+  } else if (wantPreset) {
     search.preset = cfg.preset;
   } else {
     search.query_by = 'title_AR,title_EN,brand,keywords,alias,description,variations';

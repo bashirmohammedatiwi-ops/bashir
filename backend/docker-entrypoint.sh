@@ -25,7 +25,8 @@ SQL
 fi
 
 if [ "$RUN_SEED" = "1" ]; then
-  echo "[entrypoint] Seeding database..."
+  # افتراضياً: أدمن فقط. البيانات التجريبية تحتاج SEED_DEMO=1 صراحةً
+  echo "[entrypoint] Seeding admin (SEED_DEMO=${SEED_DEMO:-0})..."
   npx tsx prisma/seed.ts || echo "[entrypoint] Seed skipped"
 fi
 

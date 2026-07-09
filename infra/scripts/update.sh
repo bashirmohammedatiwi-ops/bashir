@@ -102,6 +102,21 @@ ensure_catalog_hub_ready() {
 echo "==> Alhayaa full update"
 echo "    Domain: ${DOMAIN:-localhost}"
 
+# منع إعادة بيانات الاختبار عند إعادة البناء
+if [[ -f .env ]]; then
+  if grep -q '^SEED_DEMO=1' .env 2>/dev/null; then
+    sed -i 's/^SEED_DEMO=1/SEED_DEMO=0/' .env
+    echo "==> Forced SEED_DEMO=0 (demo brands/products disabled)"
+  fi
+  if ! grep -q '^SEED_DEMO=' .env 2>/dev/null; then
+    echo 'SEED_DEMO=0' >> .env
+  fi
+  if grep -q '^RUN_SEED=1' .env 2>/dev/null; then
+    echo "==> NOTE: RUN_SEED=1 is set — will only ensure admin user (no demo data)."
+    echo "    Set RUN_SEED=0 in infra/.env after first boot if you prefer."
+  fi
+fi
+
 sync_repo
 
 ensure_deploy_scripts

@@ -454,6 +454,44 @@ export async function fetchCatalogProductSmart(
   storeLabel = "",
   onPartial?: (product: CatalogImportProduct) => void,
 ) {
+  // مسواگ: light أولاً (Typesense احتياطي سريع) ثم full (تدرجات + باركودات)
+  if (storeId === "miswag") {
+    let lightProduct: CatalogImportProduct | null = null;
+    try {
+      const light = await catalogFetch<{ product: Record<string, unknown> }>(
+        `/api/catalog/${encodeURIComponent(storeId)}/products/${encodeURIComponent(sourceId)}?light=1`,
+        35_000,
+      );
+      lightProduct = mapImportProduct(light.product || {}, storeLabel);
+      if (lightProduct?.sourceId || lightProduct?.nameAr) onPartial?.(lightProduct);
+    } catch {
+      lightProduct = null;
+    }
+
+    try {
+      const full = await fetchCatalogProduct(storeId, sourceId, storeLabel);
+      if (lightProduct && (lightProduct.shades?.length || 0) > (full.shades?.length || 0)) {
+        return {
+          ...full,
+          shades: lightProduct.shades.map((s) => {
+            const hit = full.shades.find(
+              (f) =>
+                (f.sku && f.sku === s.sku) ||
+                (f.miswagId && f.miswagId === s.miswagId) ||
+                (f.nameAr && f.nameAr === s.nameAr),
+            );
+            return hit ? { ...s, ...hit, barcode: hit.barcode || s.barcode } : s;
+          }),
+          hasShades: true,
+        };
+      }
+      return full;
+    } catch (err) {
+      if (lightProduct?.sourceId || lightProduct?.nameAr) return lightProduct;
+      throw err;
+    }
+  }
+
   if (storeId !== "amazon") {
     return fetchCatalogProduct(storeId, sourceId, storeLabel);
   }

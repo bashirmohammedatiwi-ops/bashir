@@ -28,7 +28,8 @@ chmod +x scripts/deploy.sh
 | `CERTBOT_EMAIL` | بريد Let's Encrypt |
 | `POSTGRES_PASSWORD` | كلمة مرور PostgreSQL |
 | `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | أسرار عشوائية طويلة |
-| `RUN_SEED=1` | أول تشغيل فقط — ينشئ الأدمن والبيانات التجريبية |
+| `RUN_SEED=1` | أول تشغيل فقط — ينشئ/يحدّث حساب الأدمن (بدون بيانات تجريبية) |
+| `SEED_DEMO=1` | اختياري للتطوير فقط — يضيف براندات/منتجات تجريبية (لا تستخدمه على الإنتاج) |
 | `MEDIA_*` | ضغط الصور قبل التخزين |
 
 ## البنية

@@ -18,7 +18,7 @@ set +a
 : "${ADMIN_EMAIL:?Set ADMIN_EMAIL in .env}"
 : "${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}"
 
-echo "Updating admin credentials from .env via seed..."
+echo "Updating admin credentials from .env (admin only — no demo data)..."
 echo "  Email: $ADMIN_EMAIL"
 
 docker compose -f docker-compose.prod.yml up -d api
@@ -26,6 +26,7 @@ docker compose -f docker-compose.prod.yml up -d api
 docker compose -f docker-compose.prod.yml exec -T \
   -e ADMIN_EMAIL="$ADMIN_EMAIL" \
   -e ADMIN_PASSWORD="$ADMIN_PASSWORD" \
+  -e SEED_DEMO=0 \
   api npx tsx prisma/seed.ts
 
 echo "Done. Log in with ADMIN_EMAIL and ADMIN_PASSWORD from infra/.env"

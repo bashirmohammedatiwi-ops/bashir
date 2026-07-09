@@ -884,19 +884,21 @@
     },
     "03600531712624": {
       "store": "miswag",
-      "productId": "1756292631",
-      "matchType": "v2_shade",
+      "productId": "1756292632",
+      "matchType": "v2",
       "barcode": "3600531712624",
-      "updatedAt": 1783553891166,
-      "shadeName": "30"
+      "updatedAt": 1783608397153,
+      "shadeName": "30",
+      "name": "30"
     },
     "03600531712587": {
       "store": "miswag",
-      "productId": "1756292631",
-      "matchType": "v2_shade",
+      "productId": "1756292632",
+      "matchType": "v2",
       "barcode": "3600531712587",
-      "updatedAt": 1783553891166,
-      "shadeName": "05"
+      "updatedAt": 1783608397153,
+      "shadeName": "05",
+      "name": "05"
     },
     "03600531702212": {
       "store": "miswag",
@@ -2560,7 +2562,7 @@
     }
   },
   "meta": {
-    "updatedAt": 1783553957375,
+    "updatedAt": 1783608397154,
     "source": "seed"
   }
 }

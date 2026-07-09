@@ -71,7 +71,8 @@ $COMPOSE --profile certbot up -d certbot 2>/dev/null || true
 
 if [[ "${RUN_SEED:-0}" == "1" ]]; then
   echo ""
-  echo "NOTE: RUN_SEED=1 was used. Set RUN_SEED=0 in .env for future restarts."
+  echo "NOTE: RUN_SEED=1 creates/updates admin only. Set RUN_SEED=0 after first boot."
+  echo "      Demo brands/products require SEED_DEMO=1 (keep it 0 on production)."
 fi
 
 echo ""

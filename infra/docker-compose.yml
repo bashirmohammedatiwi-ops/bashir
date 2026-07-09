@@ -58,7 +58,8 @@ services:
       MEDIA_MAX_ORIGINAL_WIDTH: 1920
       MEDIA_WEBP_QUALITY: 80
       MEDIA_JPEG_QUALITY: 82
-      RUN_SEED: ${RUN_SEED:-1}
+      RUN_SEED: ${RUN_SEED:-0}
+      SEED_DEMO: ${SEED_DEMO:-0}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@alhayaa.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@12345}
     volumes:

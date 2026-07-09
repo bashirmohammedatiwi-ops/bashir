@@ -168,10 +168,12 @@ function extractGalleryImages(blocks = []) {
 
 async function fetchTypesenseDoc(pid) {
   try {
-    const safeId = String(pid).replace(/`/g, '');
+    const safeId = String(pid || '').replace(/`/g, '').trim();
+    if (!safeId) return null;
+    // الحقل product_id غير موجود في مخطط Typesense — استخدامه يكسر الفلتر بالكامل
     const { hits } = await typesenseSearch('*', {
       perPage: 1,
-      filterBy: `id:=\`${safeId}\` || product_id:=\`${safeId}\``,
+      filterBy: `id:=\`${safeId}\``,
     });
     return hits[0]?.document || null;
   } catch {
@@ -350,13 +352,17 @@ async function enrichShadesWithV2Barcodes(productId, shades = []) {
   return { shades: enriched, productBarcode: productBarcode || fromShade };
 }
 
-async function fetchTypesenseFallback(pid) {
+async function fetchTypesenseFallback(pid, { withShades = true } = {}) {
   try {
     const doc = await fetchTypesenseDoc(pid);
     if (!doc) return null;
     const names = resolveBilingualName(doc.title_AR, doc.title_EN);
     const brand = splitBilingualText(doc.brand || '');
     const thumb = absImage(doc.image || doc.image_url);
+    const tsVars = withShades ? parseTypesenseVariations(doc) : [];
+    const shades = tsVars
+      .map((v) => mapTypesenseVariation(v, 'الألوان', thumb))
+      .filter(shouldKeepVariation);
     return {
       id: String(doc.id || pid),
       sku: String(doc.alias || pid),
@@ -366,16 +372,21 @@ async function fetchTypesenseFallback(pid) {
       brandEn: brand.en || String(doc.brand || '').trim(),
       descriptionAr: '',
       descriptionEn: '',
-      price: formatPrice({ value: doc.price_numeric_value, currency: doc.price_currency || 'IQD' }),
+      price: formatPrice({
+        value: doc.price_numeric_value ?? doc.price_value,
+        original_value: doc.price_original_value,
+        currency: doc.price_currency || 'IQD',
+      }),
       thumb,
       images: thumb ? [thumb] : [],
-      shades: [],
-      shadeCount: 0,
-      hasOptions: false,
+      shades,
+      shadeCount: shades.length,
+      hasOptions: shades.length > 1,
       barcode: '',
+      miswagId: String(doc.id || pid),
       productUrl: doc.url || `https://miswag.com/products/${pid}`,
       category: [doc.l1_division_ar, doc.l2_division_ar, doc.l3_division_ar].filter(Boolean).join(' › '),
-      inStock: true,
+      inStock: doc.availability !== false,
     };
   } catch {
     return null;
@@ -393,6 +404,7 @@ export async function fetchProductDetail(id, { light = false } = {}) {
 
   let detail;
   let varInfo = { variations: [], sizes: [] };
+  let apiFailed = false;
 
   try {
     [detail, varInfo] = await Promise.all([
@@ -400,15 +412,31 @@ export async function fetchProductDetail(id, { light = false } = {}) {
       light ? Promise.resolve({ variations: [], sizes: [] }) : fetchAllVariations(pid),
     ]);
   } catch {
-    const fallback = await fetchTypesenseFallback(pid);
-    if (fallback) return fallback;
-    return null;
+    apiFailed = true;
+    detail = null;
   }
 
-  if (!detail?.info) {
-    const fallback = await fetchTypesenseFallback(pid);
-    if (fallback) return fallback;
-    return null;
+  if (apiFailed || !detail?.info) {
+    // احتياطي Typesense — يعمل حتى لو حُظر ganesh-lama من السيرفر
+    const fallback = await fetchTypesenseFallback(pid, { withShades: true });
+    if (!fallback) return null;
+
+    if (!light && fallback.shades?.length) {
+      try {
+        const { shades: withBarcodes, productBarcode } = await enrichShadesWithV2Barcodes(
+          fallback.id,
+          fallback.shades,
+        );
+        fallback.shades = withBarcodes;
+        fallback.shadeCount = withBarcodes.length;
+        fallback.hasOptions = withBarcodes.length > 1;
+        if (productBarcode) fallback.barcode = productBarcode;
+      } catch { /* v2 اختياري */ }
+    }
+
+    applyEanFromIndex(fallback.id, fallback);
+    cacheSet(cacheKey, fallback);
+    return fallback;
   }
 
   const meta = detail.info?.meta || {};

@@ -208,27 +208,154 @@ export async function listCategoryProducts(categoryAlias, { page = 1, limit = 30
   };
 }
 
+function searchTokens(query = '') {
+  return String(query || '')
+    .toLowerCase()
+    .split(/[^a-z0-9\u0600-\u06FF]+/)
+    .filter((t) => t.length >= 2);
+}
+
+function looksLikeBeautyQuery(query = '') {
+  // لا تُدخل «mac» وحدها — في مسواگ غالباً أجهزة وليست مستحضرات
+  return /جمال|مكياج|عطر|عناية|بشرة|شفاه|أحمر|فاونديشن|ماسكارا|كونسيلر|سيروم|كريم|lipstick|mascara|foundation|serum|perfume|makeup|skincare|maybelline|loreal|l'?oreal|dior|chanel|nyx|clinique|nars|revlon|\belf\b|hudabeauty|ibraq|lattafa|ميبيلين|لوريال|ديور|شانيل/i.test(
+    String(query || ''),
+  );
+}
+
+function scoreSearchHit(doc = {}, tokens = []) {
+  if (!tokens.length) return 1;
+  const brand = String(doc.brand || '').toLowerCase();
+  const title = `${doc.title_AR || ''} ${doc.title_EN || ''}`.toLowerCase();
+  const hay = `${brand} ${title} ${doc.keywords || ''}`.toLowerCase();
+  let score = 0;
+  let matched = 0;
+  for (const t of tokens) {
+    let hit = false;
+    if (brand === t || brand.includes(t)) {
+      score += 40;
+      hit = true;
+    } else if (title.includes(t)) {
+      score += 18;
+      hit = true;
+    } else if (hay.includes(t)) {
+      score += 8;
+      hit = true;
+    }
+    if (hit) matched += 1;
+  }
+  // كل الكلمات مهمة — منتج يطابق كلمة واحدة فقط يتراجع بقوة
+  if (tokens.length >= 2) {
+    score += matched * 25;
+    if (matched < tokens.length) score -= (tokens.length - matched) * 35;
+  }
+  if (String(doc.l1_division_alias || '') === 'beauty') score += 10;
+  return score;
+}
+
 export async function searchProducts(query, { page = 1, limit = 30, categoryId = '' } = {}) {
   const q = String(query || '').trim();
   let filterBy = '';
   if (categoryId) filterBy = buildCategoryFilter(categoryId);
 
   const perPage = Math.min(Math.max(limit, 30), 60);
-  let { hits, found } = await typesenseSearch(q, {
+  const tokens = searchTokens(q);
+  const beautyBias = !categoryId && looksLikeBeautyQuery(q);
+
+  // بحث صريح بالحقول — أدق من preset مسواگ الذي يخلط «MAC» مع أجهزة/إلكترونيات
+  const explicit = typesenseSearch(q, {
+    page,
+    perPage,
+    filterBy: filterBy || (beautyBias ? 'l1_division_alias:=`beauty`' : ''),
+    strict: false,
+    usePreset: false,
+  });
+
+  // preset كاحتياط فقط (نتائج أوسع لكن أقل دقة)
+  const preset = typesenseSearch(q, {
     page,
     perPage,
     filterBy,
     strict: false,
+    usePreset: true,
   });
 
-  // إن ضيّق القسم النتائج إلى صفر — أعد البحث على كل الكتالوج
-  if (!hits.length && filterBy) {
-    ({ hits, found } = await typesenseSearch(q, {
+  const beautyExtra = beautyBias && !filterBy
+    ? typesenseSearch(q, {
+        page: 1,
+        perPage,
+        filterBy: 'l1_division_alias:=`beauty`',
+        strict: false,
+        usePreset: false,
+      })
+    : Promise.resolve({ hits: [], found: 0 });
+
+  let [explicitRes, presetRes, beautyRes] = await Promise.all([explicit, preset, beautyExtra]);
+
+  // إن ضيّق فلتر الجمال النتائج إلى صفر — أعد بدون فلتر
+  if (beautyBias && !filterBy && !(explicitRes.hits || []).length) {
+    explicitRes = await typesenseSearch(q, {
       page,
       perPage,
       filterBy: '',
       strict: false,
-    }));
+      usePreset: false,
+    });
+  }
+
+  // إن ضيّق القسم النتائج إلى صفر — أعد البحث على كل الكتالوج
+  if (!(explicitRes.hits || []).length && !(presetRes.hits || []).length && filterBy) {
+    explicitRes = await typesenseSearch(q, {
+      page,
+      perPage,
+      filterBy: '',
+      strict: false,
+      usePreset: false,
+    });
+    presetRes = { hits: [], found: 0 };
+  }
+
+  const seen = new Set();
+  const scored = [];
+  for (const pack of [beautyRes, explicitRes, presetRes]) {
+    for (const hit of pack.hits || []) {
+      const doc = hit.document || hit;
+      const id = String(doc.id || '');
+      if (!id || seen.has(id)) continue;
+      // استعلامات التجميل: لا تخلط أجهزة منزلية/إلكترونيات من الـ preset
+      if (beautyBias && String(doc.l1_division_alias || '') !== 'beauty') continue;
+      seen.add(id);
+      const score = scoreSearchHit(doc, tokens);
+      scored.push({ hit, score });
+    }
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+  // أسقط النتائج الضعيفة جداً إن وُجدت نتائج جيدة
+  const best = scored[0]?.score ?? 0;
+  const filtered = scored.filter((s) => {
+    if (tokens.length < 2) return true;
+    if (best >= 50) return s.score >= Math.max(20, best * 0.35);
+    return s.score >= 8;
+  });
+  let hits = (filtered.length ? filtered : scored).slice(0, perPage).map((s) => s.hit);
+  let found = Math.max(
+    explicitRes.found || 0,
+    beautyRes.found || 0,
+    presetRes.found || 0,
+    hits.length,
+  );
+
+  // إن لم يبقَ شيء بعد فلتر الجمال — أعد نتائج البحث الصريح بدون فلتر قسم
+  if (!hits.length && beautyBias) {
+    const open = await typesenseSearch(q, {
+      page,
+      perPage,
+      filterBy: filterBy || '',
+      strict: false,
+      usePreset: false,
+    });
+    hits = open.hits || [];
+    found = Math.max(found, open.found || 0, hits.length);
   }
 
   return {
@@ -236,7 +363,7 @@ export async function searchProducts(query, { page = 1, limit = 30, categoryId =
     page,
     pageSize: limit,
     total: found,
-    hasMore: hits.length >= limit,
+    hasMore: hits.length >= limit || found > page * perPage,
   };
 }
 
