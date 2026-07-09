@@ -28,7 +28,7 @@ import { CatalogOptionCard, storeColor } from "@/components/catalog-import/Catal
 import { matchCategoryFromHints } from "@/lib/catalogCategoryMatch";
 import {
   catalogOptionKey,
-  fetchCatalogProduct,
+  fetchCatalogProductSmart,
   fetchCatalogStores,
   fetchCategoryTree,
   isMiswagInternalId,
@@ -423,13 +423,25 @@ export default function CatalogImportPage() {
       setLoadingPreview(true);
       setPreview(null);
       try {
-        let product;
+        let product: CatalogImportProduct;
         try {
-          product = await fetchCatalogProduct(opt.store, opt.sourceId, opt.storeLabel);
+          // أمازون: light أولاً (التدرجات تظهر فوراً) ثم full (الباركودات)
+          product = await fetchCatalogProductSmart(
+            opt.store,
+            opt.sourceId,
+            opt.storeLabel,
+            (partial) => {
+              if (partial.shades?.length) {
+                setPreview(partial);
+                setStep(2);
+                setLoadingPreview(false);
+              }
+            },
+          );
         } catch (err) {
           // أمازون: البطاقة ظاهرة من البحث — ابنِ معاينة مؤقتة بدل «لم يُعثر»
           if (opt.store === "amazon" && opt.sourceId) {
-            message.warning("تعذّر تحميل كامل تفاصيل أمازون — يمكنك إعادة المحاولة أو الاستيراد بالبيانات المتوفرة");
+            message.warning("تعذّر تحميل كامل تفاصيل أمازون — أعد النقر بعد لحظات");
             product = {
               store: opt.store,
               storeLabel: opt.storeLabel,
@@ -476,6 +488,17 @@ export default function CatalogImportPage() {
           tertiaryCategoryId: catMatch.tertiaryCategoryId,
         });
         setStep(2);
+
+        if (opt.store === "amazon" && product.shades?.length) {
+          // استخرج ألوان السواتش من الصور في الخلفية
+          const withHex = await Promise.all(
+            product.shades.map(async (s) => ({
+              ...s,
+              colorHex: s.colorHex || (await resolveShadeColorHex(s)) || "",
+            })),
+          );
+          setPreview((prev) => (prev ? { ...prev, shades: withHex } : prev));
+        }
       } catch (err) {
         message.error(errorMessage(err, "فشل جلب تفاصيل المنتج"));
       } finally {
@@ -928,27 +951,37 @@ export default function CatalogImportPage() {
                 <div className="ci-drawer-section">
                   <h4>التدرجات ({preview.shades.length})</h4>
                   <div className="ci-shade-list">
-                    {preview.shades.map((s, i) => (
-                      <div key={i} className="ci-shade-item">
-                        {s.colorHex ? (
-                          <span className="ci-shade-swatch" style={{ background: s.colorHex }} />
-                        ) : (
-                          <span className="ci-shade-swatch" style={{ background: "#ddd" }} />
-                        )}
-                        <div>
-                          <div>{s.nameAr || s.name}</div>
-                          {s.nameEn && s.nameEn !== (s.nameAr || s.name) ? (
-                            <small className="alhayaa-ltr-input">{s.nameEn}</small>
-                          ) : null}
-                          {s.barcode && !isMiswagInternalId(s.barcode) ? (
-                            <small>باركود: {s.barcode}</small>
-                          ) : null}
-                          {(s.miswagId || (s.barcode && isMiswagInternalId(s.barcode))) ? (
-                            <small>رقم مسواگ: {s.miswagId || s.barcode}</small>
-                          ) : null}
+                    {preview.shades.map((s, i) => {
+                      const swatch = resolveCatalogImageUrl(s.swatchUrl || s.imageUrl || "");
+                      return (
+                        <div key={i} className="ci-shade-item">
+                          {swatch ? (
+                            <img
+                              className="ci-shade-swatch-img"
+                              src={swatch}
+                              alt={s.nameAr || s.name || ""}
+                              referrerPolicy="no-referrer"
+                            />
+                          ) : s.colorHex ? (
+                            <span className="ci-shade-swatch" style={{ background: s.colorHex }} />
+                          ) : (
+                            <span className="ci-shade-swatch" style={{ background: "#ddd" }} />
+                          )}
+                          <div>
+                            <div>{s.nameAr || s.name}</div>
+                            {s.nameEn && s.nameEn !== (s.nameAr || s.name) ? (
+                              <small className="alhayaa-ltr-input">{s.nameEn}</small>
+                            ) : null}
+                            {s.barcode && !isMiswagInternalId(s.barcode) ? (
+                              <small>باركود: {s.barcode}</small>
+                            ) : null}
+                            {s.sku && !/^\d{8,14}$/.test(s.sku) ? (
+                              <small className="alhayaa-ltr-input">ASIN: {s.sku}</small>
+                            ) : null}
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

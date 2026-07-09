@@ -133,6 +133,13 @@ export function upsertAmazonProducts(items = [], { categoryId = '' } = {}) {
       ...(cat ? [cat] : []),
     ].filter(Boolean));
 
+    const barcodes = [...new Set([
+      ...(prev?.barcodes || []),
+      ...(item.barcodes || []),
+      item.barcode,
+      prev?.barcode,
+    ].map((b) => String(b || '').replace(/\D/g, '')).filter((b) => b.length >= 8 && b.length <= 14))];
+
     const next = {
       id,
       nameAr: item.nameAr || prev?.nameAr || item.nameEn || '',
@@ -141,7 +148,8 @@ export function upsertAmazonProducts(items = [], { categoryId = '' } = {}) {
       brandEn: item.brandEn || prev?.brandEn || item.brandAr || '',
       thumb: item.thumb || prev?.thumb || '',
       price: item.price || prev?.price || '',
-      barcode: item.barcode || prev?.barcode || '',
+      barcode: item.barcode || prev?.barcode || barcodes[0] || '',
+      barcodes,
       sku: item.sku || prev?.sku || id,
       category: item.category || prev?.category || '',
       categoryIds: [...categoryIds],
@@ -211,9 +219,21 @@ export function queryAmazonIndex({
 export function findAmazonByBarcode(digits = '') {
   const code = String(digits || '').replace(/\D/g, '');
   if (code.length < 8) return null;
+  const variants = new Set([
+    code,
+    code.replace(/^0+/, '') || code,
+    code.length === 12 ? `0${code}` : '',
+    code.length === 13 && code.startsWith('0') ? code.slice(1) : '',
+  ].filter(Boolean));
+
   const index = loadAmazonIndex();
   for (const product of Object.values(index.products)) {
-    if (product.barcode === code || product.sku === code) return product;
+    const pool = [
+      product.barcode,
+      product.sku,
+      ...(product.barcodes || []),
+    ].map((b) => String(b || '').replace(/\D/g, '')).filter(Boolean);
+    if (pool.some((b) => variants.has(b))) return product;
   }
   return null;
 }

@@ -320,13 +320,48 @@ function hasLatin(text = '') {
   return /[A-Za-z]/.test(String(text || ''));
 }
 
-function pickBestBarcode(candidates = []) {
-  const uniq = [...new Set(candidates.map((d) => String(d || '').replace(/\D/g, '')).filter((d) => d.length >= 8 && d.length <= 14))];
-  // فضّل UPC-12 / EAN-13 على الأرقام القصيرة
-  return uniq.sort((a, b) => b.length - a.length)[0] || '';
+function uniqBarcodes(candidates = []) {
+  const out = new Set();
+  for (const raw of candidates) {
+    const text = String(raw || '');
+    // خلية أمازون قد تحتوي عدة UPC مفصولة بمسافة: "883542158732 020714952976"
+    const parts = text.match(/\d{8,14}/g) || [];
+    const list = parts.length
+      ? parts
+      : (() => {
+        const digits = text.replace(/\D/g, '');
+        return digits.length >= 8 && digits.length <= 14 ? [digits] : [];
+      })();
+
+    for (const d of list) {
+      if (d.length < 8 || d.length > 14) continue;
+      // تجاهل أرقام غير قياسية (11 رقم) إلا إن كانت جزءاً من UPC معروف
+      if (d.length === 9 || d.length === 10 || d.length === 11) continue;
+      out.add(d);
+      // أضف أيضاً الشكل المعياري UPC-12 من GTIN-14 المبطّن
+      if (d.length === 14 && d.startsWith('00')) out.add(d.slice(2));
+      if (d.length === 13 && d.startsWith('0')) out.add(d.slice(1));
+    }
+  }
+  return [...out];
 }
 
-function extractBarcodeFromDetailHtml(html = '') {
+function pickBestBarcode(candidates = []) {
+  const uniq = uniqBarcodes(candidates);
+  if (!uniq.length) return '';
+  // فضّل UPC-12 ثم EAN-13، وتجنّب GTIN-14 المبطّن بأصفار إن وُجد الأصل
+  const score = (d) => {
+    if (d.length === 12) return 300;
+    if (d.length === 13) return 280;
+    if (d.length === 14 && d.startsWith('0')) return 100;
+    if (d.length === 8) return 80;
+    return 50 + d.length;
+  };
+  return [...uniq].sort((a, b) => score(b) - score(a) || a.localeCompare(b))[0];
+}
+
+/** كل الباركودات الظاهرة في صفحة المنتج (قد يكون أكثر من UPC) */
+export function extractAllBarcodesFromDetailHtml(html = '') {
   const found = [];
 
   for (const re of [
@@ -341,28 +376,57 @@ function extractBarcodeFromDetailHtml(html = '') {
   const rows = [...html.matchAll(/<th[^>]*>([\s\S]*?)<\/th>[\s\S]*?<td[^>]*>([\s\S]*?)<\/td>/gi)];
   for (const m of rows) {
     const key = decodeHtml(m[1].replace(/<[^>]+>/g, ''));
-    const digits = String(m[2].replace(/<[^>]+>/g, '')).replace(/\D/g, '');
-    if (/upc|ean|gtin|isbn|باركود|الباركود/i.test(key) && digits.length >= 8 && digits.length <= 14) {
-      found.push(digits);
+    const cell = decodeHtml(m[2].replace(/<[^>]+>/g, ''));
+    if (/upc|ean|gtin|isbn|باركود|الباركود/i.test(key)) {
+      found.push(cell); // قد يحتوي عدة أرقام
     }
   }
 
-  // detail bullets / product facts
   for (const m of html.matchAll(
-    /(?:EAN|UPC|GTIN|ISBN|باركود)\s*[:：]?\s*<\/?(?:span|td|th|li|b)?[^>]*>\s*(\d{8,14})/gi,
+    /(?:EAN|UPC|GTIN|ISBN|باركود)\s*[:：]?\s*<\/?(?:span|td|th|li|b)?[^>]*>\s*([^<]{8,80})/gi,
   )) {
     found.push(m[1]);
   }
-  for (const m of html.matchAll(/>\s*(?:EAN|UPC|GTIN|ISBN)\s*<[\s\S]{0,160}?>(\d{8,14})</gi)) {
+  for (const m of html.matchAll(/>\s*(?:EAN|UPC|GTIN|ISBN)\s*<[\s\S]{0,200}?>([^<]{8,80})</gi)) {
+    found.push(m[1]);
+  }
+  for (const m of html.matchAll(/\b(?:UPC|EAN|GTIN)\b[^0-9]{0,40}([\d\s]{8,40})/gi)) {
     found.push(m[1]);
   }
 
-  // أحياناً يظهر في نص المواصفات بدون وسم واضح
-  for (const m of html.matchAll(/\b(?:UPC|EAN|GTIN)\b[^0-9]{0,24}(\d{8,14})/gi)) {
+  // صفوف product details بقيم متعددة
+  for (const m of html.matchAll(
+    /(?:prodDetAttrValue|voyager-ns-desktop-table-value)[^>]*>\s*([\d\s]{8,40})\s*</gi,
+  )) {
     found.push(m[1]);
   }
 
-  return pickBestBarcode(found);
+  return uniqBarcodes(found);
+}
+
+function extractBarcodeFromDetailHtml(html = '') {
+  return pickBestBarcode(extractAllBarcodesFromDetailHtml(html));
+}
+
+function barcodeMatches(target = '', candidates = []) {
+  const wanted = new Set();
+  const push = (v) => {
+    const d = String(v || '').replace(/\D/g, '');
+    if (d.length < 8) return;
+    wanted.add(d);
+    wanted.add(d.replace(/^0+/, '') || d);
+    if (d.length === 12) wanted.add(`0${d}`);
+    if (d.length === 13 && d.startsWith('0')) wanted.add(d.slice(1));
+  };
+  push(target);
+  for (const c of candidates) {
+    const d = String(c || '').replace(/\D/g, '');
+    if (!d) continue;
+    if (wanted.has(d) || wanted.has(d.replace(/^0+/, '') || d)) return true;
+    if (d.length === 12 && wanted.has(`0${d}`)) return true;
+    if (d.length === 13 && d.startsWith('0') && wanted.has(d.slice(1))) return true;
+  }
+  return false;
 }
 
 function parseSearchCards(html = '', marketHost = 'www.amazon.com', lang = 'en') {
@@ -474,58 +538,99 @@ function mergeListLocales(arItems = [], enItems = []) {
   return [...both, ...only];
 }
 
+function putShade(byAsin, asin, patch = {}) {
+  const id = String(asin || '').toUpperCase();
+  if (!/^[A-Z0-9]{10}$/.test(id)) return;
+  const prev = byAsin.get(id) || {
+    id,
+    nameAr: '',
+    nameEn: '',
+    sku: id,
+    barcode: '',
+    image: '',
+    price: '',
+    inStock: true,
+    colorHex: '',
+    optionGroup: 'التدرج',
+  };
+  const name = cleanShadeLabel(patch.nameEn || patch.nameAr || '');
+  byAsin.set(id, {
+    ...prev,
+    ...patch,
+    id,
+    sku: id,
+    nameEn: (name && hasLatin(name) ? name : '') || prev.nameEn || name,
+    nameAr: (name && hasArabic(name) ? name : '') || prev.nameAr || name || prev.nameEn,
+    image: normalizeAmazonImageUrl(patch.image || prev.image || '', 500),
+    colorHex: patch.colorHex || prev.colorHex || '',
+    optionGroup: patch.optionGroup || prev.optionGroup || 'التدرج',
+  });
+}
+
 function parseShadesFromHtml(html = '') {
   const colorToAsin = extractJsonObject(html, '"colorToAsin":') || {};
   const colorImages = extractJsonObject(html, '"colorImages":') || {};
   const dims = extractJsonObject(html, '"dimensionValuesDisplayData":') || {};
+  const dimToAsin = extractJsonObject(html, '"dimensionToAsinMap":') || {};
+  const variationValues = extractJsonObject(html, '"variationValues":') || {};
+  const asinVariationValues = extractJsonObject(html, '"asinVariationValues":') || {};
 
   const byAsin = new Map();
 
   for (const [label, info] of Object.entries(colorToAsin)) {
     const asin = String(info?.asin || info || '').toUpperCase();
-    if (!/^[A-Z0-9]{10}$/.test(asin)) continue;
     const imgs = colorImages[label] || [];
     const image = imgs[0]?.hiRes || imgs[0]?.large || imgs[0]?.thumb || imgs[0]?.main?.['500'] || '';
     const clean = cleanShadeLabel(label);
-    // لا تضع hex مُخمَّناً إن وُجدت صورة — الواجهة تستخرج اللون من الصورة
-    const guessed = colorHexGuess(clean);
-    byAsin.set(asin, {
-      id: asin,
-      nameAr: clean,
+    putShade(byAsin, asin, {
       nameEn: clean,
-      sku: asin,
-      barcode: '',
-      image: normalizeAmazonImageUrl(image, 500),
-      price: '',
-      inStock: true,
-      colorHex: image ? '' : guessed,
+      nameAr: clean,
+      image,
+      colorHex: image ? '' : colorHexGuess(clean),
       optionGroup: 'التدرج',
     });
   }
 
   for (const [asin, dimsArr] of Object.entries(dims)) {
-    if (!/^[A-Z0-9]{10}$/.test(asin)) continue;
-    const label = Array.isArray(dimsArr) ? cleanShadeLabel(dimsArr.filter(Boolean).join(' / ')) : cleanShadeLabel(dimsArr);
-    const prev = byAsin.get(asin);
-    if (prev) {
-      if (label && label.length > 1) {
-        prev.nameEn = label;
-        if (!/[\u0600-\u06FF]/.test(prev.nameAr)) prev.nameAr = label;
-      }
-    } else {
-      byAsin.set(asin, {
-        id: asin,
-        nameAr: label,
+    const label = Array.isArray(dimsArr)
+      ? cleanShadeLabel(dimsArr.filter(Boolean).join(' / '))
+      : cleanShadeLabel(dimsArr);
+    putShade(byAsin, asin, {
+      nameEn: label,
+      nameAr: label,
+      colorHex: colorHexGuess(label),
+    });
+  }
+
+  // dimensionToAsinMap: "0_1" -> ASIN مع variationValues.color_name
+  const colorNames = variationValues.color_name || variationValues.color || [];
+  if (Array.isArray(colorNames) && Object.keys(dimToAsin).length) {
+    for (const [key, asin] of Object.entries(dimToAsin)) {
+      const parts = String(key).split('_').map((n) => Number(n));
+      const colorIdx = parts[0];
+      const label = cleanShadeLabel(colorNames[colorIdx] || '');
+      if (!label && !asin) continue;
+      putShade(byAsin, asin, {
         nameEn: label,
-        sku: asin,
-        barcode: '',
-        image: '',
-        price: '',
-        inStock: true,
+        nameAr: label,
         colorHex: colorHexGuess(label),
-        optionGroup: 'التدرج',
       });
     }
+  }
+
+  // asinVariationValues: ASIN -> { color_name / dimensions }
+  for (const [asin, info] of Object.entries(asinVariationValues)) {
+    const label = cleanShadeLabel(
+      info?.color_name
+      || info?.Color
+      || (Array.isArray(info?.dimensions) ? info.dimensions.join(' / ') : '')
+      || '',
+    );
+    putShade(byAsin, asin, {
+      nameEn: label,
+      nameAr: label,
+      colorHex: colorHexGuess(label),
+    });
   }
 
   // fallback color_name map
@@ -533,19 +638,41 @@ function parseShadesFromHtml(html = '') {
     const colorName = extractJsonObject(html, '"color_name":') || {};
     for (const [label, path] of Object.entries(colorName)) {
       const asin = String(path).match(/\/dp\/([A-Z0-9]{10})/)?.[1];
-      if (!asin) continue;
       const clean = cleanShadeLabel(label);
-      byAsin.set(asin, {
-        id: asin,
-        nameAr: clean,
+      putShade(byAsin, asin, {
         nameEn: clean,
-        sku: asin,
-        barcode: '',
-        image: '',
-        price: '',
-        inStock: true,
+        nameAr: clean,
         colorHex: colorHexGuess(clean),
         optionGroup: 'اللون',
+      });
+    }
+  }
+
+  // HTML twister swatches (عندما لا يوجد JSON)
+  if (byAsin.size < 2) {
+    for (const m of html.matchAll(
+      /data-asin="([A-Z0-9]{10})"[^>]{0,400}?(?:title|aria-label|alt)="([^"]{1,80})"/gi,
+    )) {
+      const asin = m[1];
+      const label = cleanShadeLabel(m[2]);
+      if (!isUsableShadeName(label)) continue;
+      if (/click to select|اختر|select/i.test(label)) continue;
+      putShade(byAsin, asin, {
+        nameEn: label,
+        nameAr: label,
+        colorHex: colorHexGuess(label),
+      });
+    }
+    for (const m of html.matchAll(
+      /(?:title|aria-label)="([^"]{1,80})"[^>]{0,400}?data-asin="([A-Z0-9]{10})"/gi,
+    )) {
+      const label = cleanShadeLabel(m[1]);
+      const asin = m[2];
+      if (!isUsableShadeName(label)) continue;
+      putShade(byAsin, asin, {
+        nameEn: label,
+        nameAr: label,
+        colorHex: colorHexGuess(label),
       });
     }
   }
@@ -733,7 +860,8 @@ function parseDetailCore(html = '', asin = '', marketHost = 'www.amazon.com') {
   const isAr = hasArabic(title) || /amazon\.(ae|sa)/i.test(marketHost);
   const description = buildLocaleDescription(html, { arabic: isAr });
 
-  const barcode = extractBarcodeFromDetailHtml(html);
+  const barcodes = extractAllBarcodesFromDetailHtml(html);
+  const barcode = pickBestBarcode(barcodes);
   const shades = parseShadesFromHtml(html);
 
   return {
@@ -741,6 +869,7 @@ function parseDetailCore(html = '', asin = '', marketHost = 'www.amazon.com') {
     parentAsin: asin,
     sku: asin,
     barcode,
+    barcodes,
     nameAr: isAr ? title : '',
     nameEn: isAr ? '' : title,
     brandAr: brand,
@@ -990,7 +1119,7 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
   const asin = String(id || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(asin)) return null;
 
-  const cacheKey = `amazon:detail:v8:${asin}:${light ? 'l' : 'f'}`;
+  const cacheKey = `amazon:detail:v12:${asin}:${light ? 'l' : 'f'}`;
   const cached = cacheGet(cacheKey, DETAIL_TTL);
   if (cached) return cached;
 
@@ -1047,15 +1176,21 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
   }
 
   // إثراء التدرجات: باركود + اسم اللون + سعر (عند الاستيراد الكامل)
+  // مهم: إن فشل الإثراء نُبقي قائمة التدرجات كما هي (أسماء/صور) بدل إسقاطها
   if (!light && shades.length > 1) {
-    // مهلة أطول للمنتجات كثيرة التدرجات (مثل أحمر شفاه 70+)
-    const budgetMs = shades.length > 40 ? 55_000 : shades.length > 15 ? 35_000 : 22_000;
-    const deadline = Date.now() + budgetMs;
-    shades = await enrichShadeDetails(shades, {
-      deadline,
-      concurrency: shades.length > 40 ? 12 : 10,
-      max: shades.length,
-    });
+    const before = shades;
+    try {
+      const budgetMs = shades.length > 40 ? 45_000 : shades.length > 15 ? 28_000 : 18_000;
+      const deadline = Date.now() + budgetMs;
+      shades = await enrichShadeDetails(shades, {
+        deadline,
+        concurrency: shades.length > 40 ? 12 : 10,
+        max: shades.length,
+      });
+      if (!shades?.length) shades = before;
+    } catch {
+      shades = before;
+    }
   } else if (shades.length === 1) {
     shades[0].barcode = shades[0].barcode || primary.barcode || ae?.barcode || '';
     shades[0].price = shades[0].price || primary.price || ae?.price || '';
@@ -1106,11 +1241,22 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
     sa?.descriptionAr || '',
   );
 
+  const barcodes = uniqBarcodes([
+    ...(en?.barcodes || []),
+    ...(ae?.barcodes || []),
+    ...(sa?.barcodes || []),
+    en?.barcode,
+    ae?.barcode,
+    sa?.barcode,
+    ...shades.map((s) => s.barcode),
+  ]);
+
   const detail = {
     id: asin,
     parentAsin: asin,
     sku: asin,
-    barcode: primary.barcode || ae?.barcode || sa?.barcode || shades.find((s) => s.barcode)?.barcode || '',
+    barcode: pickBestBarcode(barcodes) || primary.barcode || ae?.barcode || sa?.barcode || shades.find((s) => s.barcode)?.barcode || '',
+    barcodes,
     nameAr,
     nameEn,
     brandAr: ae?.brandAr || sa?.brandAr || en?.brandAr || '',
@@ -1140,41 +1286,70 @@ export async function scrapeBarcode(code) {
   const digits = String(code || '').replace(/\D/g, '');
   if (digits.length < 8) return [];
 
-  const data = await scrapeSearchProducts(digits, { page: 1, limit: 12, categoryId: BEAUTY_ROOT_NODE });
-  if (data.softBlocked || !data.items?.length) return [];
+  // جرّب المتغيرات (مع/بدون صفر بادئ)
+  const queries = [...new Set([
+    digits,
+    digits.length === 12 ? `0${digits}` : '',
+    digits.length === 13 && digits.startsWith('0') ? digits.slice(1) : '',
+  ].filter(Boolean))];
+
+  let items = [];
+  let softBlocked = false;
+  for (const q of queries) {
+    const data = await scrapeSearchProducts(q, { page: 1, limit: 12, categoryId: BEAUTY_ROOT_NODE });
+    if (data.softBlocked) softBlocked = true;
+    if (data.items?.length) {
+      items = data.items;
+      break;
+    }
+  }
+  if (!items.length) {
+    return softBlocked ? [] : [];
+  }
 
   const hits = [];
-  for (const item of data.items.slice(0, 6)) {
+  // light فقط أثناء البحث — أسرع ولا يتجاوز مهلة الواجهة؛ التدرجات تُثري عند فتح المنتج
+  for (const item of items.slice(0, 5)) {
     try {
-      const detail = await scrapeProductDetail(item.id, { light: false });
+      const detail = await scrapeProductDetail(item.id, { light: true });
       if (!detail) {
         hits.push({ ...item, barcode: digits, matchType: 'keyword' });
         continue;
       }
-      const shadeHit = detail.shades?.find((s) => s.barcode === digits);
-      if (detail.barcode === digits || shadeHit) {
+
+      const candidates = [
+        ...(detail.barcodes || []),
+        detail.barcode,
+        ...(detail.shades || []).map((s) => s.barcode),
+      ];
+      const shadeHit = (detail.shades || []).find((s) => barcodeMatches(digits, [s.barcode]));
+      const exact = barcodeMatches(digits, candidates) || Boolean(shadeHit);
+
+      if (exact) {
         hits.push({
           ...detail,
           barcode: digits,
+          barcodes: uniqBarcodes([...candidates, digits]),
           shadeName: shadeHit?.nameAr || shadeHit?.nameEn || '',
           matchType: 'ean',
           shadeCount: detail.shadeCount,
         });
-      } else {
-        hits.push({
-          id: detail.id,
-          nameAr: detail.nameAr,
-          nameEn: detail.nameEn,
-          brandAr: detail.brandAr,
-          thumb: detail.thumb,
-          price: detail.price,
-          barcode: digits,
-          matchType: 'keyword',
-          shadeCount: detail.shadeCount,
-        });
+        break; // مطابقة دقيقة — كافية للبحث
       }
-      if (hits.some((h) => h.matchType === 'ean')) break;
-      await sleep(200);
+
+      hits.push({
+        id: detail.id,
+        nameAr: detail.nameAr,
+        nameEn: detail.nameEn,
+        brandAr: detail.brandAr,
+        thumb: detail.thumb,
+        price: detail.price,
+        barcode: digits,
+        barcodes: uniqBarcodes(candidates),
+        matchType: 'keyword',
+        shadeCount: detail.shadeCount,
+      });
+      await sleep(120);
     } catch {
       hits.push({ ...item, barcode: digits, matchType: 'keyword' });
     }
@@ -1182,7 +1357,6 @@ export async function scrapeBarcode(code) {
 
   const exact = hits.filter((h) => h.matchType === 'ean');
   const out = exact.length ? exact : hits.slice(0, 3);
-  // وحّد الصور قبل الإرجاع حتى لا تظهر مقصوصة في بطاقة البحث
   return out.map((h) => ({
     ...h,
     thumb: normalizeAmazonImageUrl(h.thumb || '', 500),

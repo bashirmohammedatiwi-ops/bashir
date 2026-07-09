@@ -75,7 +75,7 @@ async function searchAdapter(adapter, query, digits) {
   const barcodeBudget = adapter.id === 'miswag'
     ? 16_000
     : adapter.id === 'amazon'
-      ? 20_000
+      ? 28_000
       : 10_000;
 
   if (isBarcodeish && adapter.searchBarcode) {

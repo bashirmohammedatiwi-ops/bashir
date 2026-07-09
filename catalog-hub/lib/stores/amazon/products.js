@@ -294,6 +294,38 @@ async function fetchVariations(asin) {
   return all;
 }
 
+function normalizeDetailImages(detail) {
+  if (!detail) return detail;
+  detail.thumb = normalizeAmazonImageUrl(detail.thumb || '', 500);
+  detail.images = (detail.images || []).map((u) => normalizeAmazonImageUrl(u, 1000)).filter(Boolean);
+  if (Array.isArray(detail.shades)) {
+    detail.shades = detail.shades.map((s) => ({
+      ...s,
+      image: normalizeAmazonImageUrl(s.image || '', 500),
+    }));
+  }
+  return detail;
+}
+
+function rememberAmazonDetail(detail) {
+  if (!detail?.id) return;
+  upsertAmazonProducts([{
+    id: detail.id,
+    nameAr: detail.nameAr,
+    nameEn: detail.nameEn,
+    brandAr: detail.brandAr,
+    brandEn: detail.brandEn,
+    thumb: normalizeAmazonImageUrl(detail.thumb || '', 500),
+    price: detail.price,
+    barcode: detail.barcode,
+    barcodes: detail.barcodes || [],
+    sku: detail.sku,
+    category: detail.category,
+    shadeCount: detail.shadeCount || detail.shades?.length || 1,
+    categoryIds: [BEAUTY_ROOT_NODE],
+  }], { categoryId: BEAUTY_ROOT_NODE });
+}
+
 export async function fetchProductDetail(id, { light = false } = {}) {
   const asin = String(id || '').trim().toUpperCase();
   if (!asin) return null;
@@ -301,39 +333,66 @@ export async function fetchProductDetail(id, { light = false } = {}) {
   // المسار الافتراضي النهائي: scrape ثنائي اللغة + كل التدرجات
   // PA-API يُستخدم فقط إن وُجدت مفاتيح وطلب صريح عبر AMAZON_FORCE_PAAPI=1
   if (!usePaapi() || process.env.AMAZON_FORCE_PAAPI !== '1') {
-    let detail = null;
+    // 1) دائماً اجلب light أولاً — فيه قائمة التدرجات (أسماء/صور) بسرعة
+    let base = null;
     try {
-      detail = await scrapeProductDetail(asin, { light });
+      base = await scrapeProductDetail(asin, { light: true });
     } catch {
-      detail = null;
+      base = null;
     }
+
+    let detail = base;
+
+    // 2) للاستيراد الكامل: أثْرِ الباركودات دون خسارة قائمة التدرجات إن فشل الإثراء
+    if (!light) {
+      try {
+        const full = await scrapeProductDetail(asin, { light: false });
+        if (full) {
+          const fullShades = full.shades?.length || 0;
+          const baseShades = base?.shades?.length || 0;
+          // إن أعاد full تدرجات أقل (فشل جزئي) — ادمج أسماء/صور light مع باركودات full
+          if (base && baseShades > fullShades) {
+            const byId = new Map((full.shades || []).map((s) => [s.id, s]));
+            detail = {
+              ...full,
+              ...base,
+              descriptionAr: full.descriptionAr || base.descriptionAr,
+              descriptionEn: full.descriptionEn || base.descriptionEn,
+              barcode: full.barcode || base.barcode,
+              barcodes: [...new Set([...(full.barcodes || []), ...(base.barcodes || [])])],
+              shades: (base.shades || []).map((s) => {
+                const enriched = byId.get(s.id);
+                return enriched ? {
+                  ...s,
+                  ...enriched,
+                  nameAr: s.nameAr || enriched.nameAr,
+                  nameEn: s.nameEn || enriched.nameEn,
+                  image: enriched.image || s.image,
+                  barcode: enriched.barcode || s.barcode,
+                  colorHex: enriched.colorHex || s.colorHex,
+                } : s;
+              }),
+              shadeCount: baseShades,
+              hasOptions: baseShades > 1,
+            };
+          } else {
+            detail = full;
+          }
+        }
+      } catch {
+        // أبقِ light — أفضل من درجة واحدة فارغة
+        detail = base;
+      }
+    }
+
     if (!detail) {
       // البطاقة ظهرت من البحث — لا تُرجع 404؛ أعرض بيانات الفهرس/البحث
       detail = detailFromIndex(asin);
     }
+
     if (detail) {
-      upsertAmazonProducts([{
-        id: detail.id,
-        nameAr: detail.nameAr,
-        nameEn: detail.nameEn,
-        brandAr: detail.brandAr,
-        brandEn: detail.brandEn,
-        thumb: normalizeAmazonImageUrl(detail.thumb || '', 500),
-        price: detail.price,
-        barcode: detail.barcode,
-        sku: detail.sku,
-        category: detail.category,
-        shadeCount: detail.shadeCount,
-        categoryIds: [BEAUTY_ROOT_NODE],
-      }], { categoryId: BEAUTY_ROOT_NODE });
-      detail.thumb = normalizeAmazonImageUrl(detail.thumb || '', 500);
-      detail.images = (detail.images || []).map((u) => normalizeAmazonImageUrl(u, 1000)).filter(Boolean);
-      if (Array.isArray(detail.shades)) {
-        detail.shades = detail.shades.map((s) => ({
-          ...s,
-          image: normalizeAmazonImageUrl(s.image || '', 500),
-        }));
-      }
+      normalizeDetailImages(detail);
+      rememberAmazonDetail(detail);
     }
     return detail;
   }
@@ -393,6 +452,8 @@ export async function searchBarcode(code) {
     return [{
       ...indexed,
       barcode: digits,
+      barcodes: [...new Set([...(indexed.barcodes || []), indexed.barcode, digits].filter(Boolean))],
+      thumb: normalizeAmazonImageUrl(indexed.thumb || '', 500),
       matchType: 'index',
       shadeCount: indexed.shadeCount || 1,
     }];
@@ -405,6 +466,8 @@ export async function searchBarcode(code) {
       upsertAmazonProducts(
         hits.map((h) => ({
           ...h,
+          barcode: h.barcode || digits,
+          barcodes: [...new Set([...(h.barcodes || []), h.barcode, digits].filter(Boolean))],
           thumb: normalizeAmazonImageUrl(h.thumb || '', 500),
           categoryIds: [BEAUTY_ROOT_NODE],
         })),

@@ -215,7 +215,7 @@ function storeSearchTimeoutMs(storeId: string, kind: "text" | "barcode" = "text"
   if (storeId === "miswag") return kind === "barcode" ? 22_000 : 15_000;
   if (storeId === "elryan") return kind === "barcode" ? 8_000 : 8_000;
   // أمازون: بحث ثنائي اللغة (ae+com) يحتاج مهلة أوسع قليلاً
-  if (storeId === "amazon") return kind === "barcode" ? 22_000 : 18_000;
+  if (storeId === "amazon") return kind === "barcode" ? 30_000 : 18_000;
   return kind === "barcode" ? 12_000 : 10_000;
 }
 
@@ -419,6 +419,68 @@ export async function fetchCatalogProduct(storeId: string, sourceId: string, sto
     timeout,
   );
   return mapImportProduct(data.product, storeLabel);
+}
+
+/**
+ * أمازون: اجلب light أولاً (قائمة التدرجات سريعاً) ثم full (باركودات).
+ * إن فشل full نُبقي light بدل درجة واحدة فارغة.
+ */
+export async function fetchCatalogProductSmart(
+  storeId: string,
+  sourceId: string,
+  storeLabel = "",
+  onPartial?: (product: CatalogImportProduct) => void,
+) {
+  if (storeId !== "amazon") {
+    return fetchCatalogProduct(storeId, sourceId, storeLabel);
+  }
+
+  let lightProduct: CatalogImportProduct | null = null;
+  try {
+    const light = await catalogFetch<{ product: Record<string, unknown> }>(
+      `/api/catalog/${encodeURIComponent(storeId)}/products/${encodeURIComponent(sourceId)}?light=1`,
+      35_000,
+    );
+    lightProduct = mapImportProduct(light.product || {}, storeLabel);
+    if (lightProduct.shades?.length) onPartial?.(lightProduct);
+  } catch {
+    lightProduct = null;
+  }
+
+  try {
+    const full = await fetchCatalogProduct(storeId, sourceId, storeLabel);
+    // إن أعاد full تدرجات أقل من light — ادمج
+    if (lightProduct && (lightProduct.shades?.length || 0) > (full.shades?.length || 0)) {
+      const bySku = new Map(full.shades.map((s) => [s.sku || s.miswagId || s.nameEn || s.nameAr, s]));
+      const mergedShades = lightProduct.shades.map((s) => {
+        const key = s.sku || s.miswagId || s.nameEn || s.nameAr;
+        const enriched = bySku.get(key);
+        return enriched
+          ? {
+              ...s,
+              ...enriched,
+              nameAr: s.nameAr || enriched.nameAr,
+              nameEn: s.nameEn || enriched.nameEn,
+              imageUrl: enriched.imageUrl || s.imageUrl,
+              swatchUrl: enriched.swatchUrl || s.swatchUrl,
+              barcode: enriched.barcode || s.barcode,
+              colorHex: enriched.colorHex || s.colorHex,
+            }
+          : s;
+      });
+      return {
+        ...full,
+        descriptionAr: full.descriptionAr || lightProduct.descriptionAr,
+        descriptionEn: full.descriptionEn || lightProduct.descriptionEn,
+        shades: mergedShades,
+        hasShades: mergedShades.length > 1,
+      };
+    }
+    return full;
+  } catch (err) {
+    if (lightProduct) return lightProduct;
+    throw err;
+  }
 }
 
 export async function fetchCatalogPreview(storeId: string, sourceId: string) {
