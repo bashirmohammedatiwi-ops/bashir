@@ -21,6 +21,54 @@ function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/**
+ * محدّد معدّل + قاطع دائرة عالمي لواجهة مسواگ.
+ *
+ * مسواگ يحجب الـ IP بـ403 عند كثرة الطلبات المتوازية (مسح الباركود مثلاً).
+ * إن حُجب السيرفر تتعطّل كل ميزات مسواگ (بحث/تفاصيل/باركود). لذا:
+ *  - حدّ أقصى للطلبات المتزامنة (سيمافور).
+ *  - عند تتابع 403/429 نفتح القاطع فتفشل الطلبات فوراً لفترة تهدئة
+ *    بدل مواصلة الطرق وإطالة الحظر.
+ */
+const MISWAG_MAX_CONCURRENCY = Number(process.env.MISWAG_MAX_CONCURRENCY || 6);
+const MISWAG_BREAKER_THRESHOLD = Number(process.env.MISWAG_BREAKER_THRESHOLD || 4);
+const MISWAG_BREAKER_COOLDOWN_MS = Number(process.env.MISWAG_BREAKER_COOLDOWN_MS || 60_000);
+
+const rateGate = {
+  active: 0,
+  waiters: [],
+  consecutive403: 0,
+  openUntil: 0,
+  acquire() {
+    if (this.active < MISWAG_MAX_CONCURRENCY) {
+      this.active += 1;
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => this.waiters.push(resolve));
+  },
+  release() {
+    this.active = Math.max(0, this.active - 1);
+    const next = this.waiters.shift();
+    if (next) {
+      this.active += 1;
+      next();
+    }
+  },
+  isOpen() {
+    return Date.now() < this.openUntil;
+  },
+  note403() {
+    this.consecutive403 += 1;
+    if (this.consecutive403 >= MISWAG_BREAKER_THRESHOLD) {
+      this.openUntil = Date.now() + MISWAG_BREAKER_COOLDOWN_MS;
+    }
+  },
+  noteOk() {
+    this.consecutive403 = 0;
+    this.openUntil = 0;
+  },
+};
+
 export function parseTitle(title) {
   if (!title) return { ar: '', en: '' };
   if (typeof title === 'string') return { ar: title.trim(), en: title.trim() };
@@ -82,46 +130,66 @@ export async function miswagFetch(path, { params = {}, retries = 2, timeoutMs = 
     if (v != null && v !== '') url.searchParams.set(k, String(v));
   }
 
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const token = await getAuthToken();
-      const res = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Client-Id': CLIENT_ID,
-          'Accept-Language': 'ar',
-          Accept: 'application/json',
-          'User-Agent': 'Mozilla/5.0 (compatible; CatalogHub/2.0)',
-          Origin: SITE,
-          Referer: `${SITE}/`,
-        },
-        signal: AbortSignal.timeout(timeoutMs),
-      });
-      if (res.status === 401 && attempt < retries) {
-        authToken = null;
-        continue;
-      }
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || data.success === false) {
-        if (attempt < retries && (res.status >= 500 || res.status === 429 || res.status === 403)) {
-          await sleep(300 * (attempt + 1));
+  // قاطع الدائرة مفتوح — لا تطرق الواجهة حتى تنتهي فترة التهدئة
+  if (rateGate.isOpen()) throw new Error('Miswag 403 cooldown');
+
+  await rateGate.acquire();
+  try {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const token = await getAuthToken();
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Client-Id': CLIENT_ID,
+            'Accept-Language': 'ar',
+            Accept: 'application/json',
+            'User-Agent': 'Mozilla/5.0 (compatible; CatalogHub/2.0)',
+            Origin: SITE,
+            Referer: `${SITE}/`,
+          },
+          signal: AbortSignal.timeout(timeoutMs),
+        });
+        if (res.status === 401 && attempt < retries) {
+          authToken = null;
           continue;
         }
-        throw new Error(data.message || data.error || `Miswag ${res.status}`);
+        // 403/429 = تقييد معدّل — تراجع تدريجي وسجّل في القاطع (لا تطرق بقوة)
+        if (res.status === 403 || res.status === 429) {
+          rateGate.note403();
+          if (attempt < retries && !rateGate.isOpen()) {
+            await sleep(800 * (attempt + 1));
+            continue;
+          }
+          throw new Error(`Miswag ${res.status}`);
+        }
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.success === false) {
+          if (attempt < retries && res.status >= 500) {
+            await sleep(300 * (attempt + 1));
+            continue;
+          }
+          throw new Error(data.message || data.error || `Miswag ${res.status}`);
+        }
+        rateGate.noteOk();
+        return data.data ?? data;
+      } catch (err) {
+        const msg = String(err?.message || '');
+        const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError'
+          || /aborted|timeout/i.test(msg);
+        if (/Miswag (403|429)/.test(msg)) throw err;
+        if ((timedOut || /Miswag 5/.test(msg)) && attempt < retries) {
+          await sleep(250 * (attempt + 1));
+          continue;
+        }
+        if (timedOut) throw new Error('Miswag timeout');
+        throw err;
       }
-      return data.data ?? data;
-    } catch (err) {
-      const timedOut = err?.name === 'TimeoutError' || err?.name === 'AbortError'
-        || /aborted|timeout/i.test(String(err?.message || ''));
-      if ((timedOut || /Miswag (429|403|5)/.test(String(err?.message || ''))) && attempt < retries) {
-        await sleep(250 * (attempt + 1));
-        continue;
-      }
-      if (timedOut) throw new Error('Miswag timeout');
-      throw err;
     }
+    throw new Error('Miswag request failed');
+  } finally {
+    rateGate.release();
   }
-  throw new Error('Miswag request failed');
 }
 
 async function getSearchConfig() {

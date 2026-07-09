@@ -13,7 +13,7 @@ function barcodeEquals(a, b) {
   return barcodeSearchVariants(y).some((v) => xv.has(v));
 }
 
-async function listVariationIds(productId) {
+export async function listVariationIds(productId) {
   const pid = String(productId || '').trim();
   if (!pid) return [];
 

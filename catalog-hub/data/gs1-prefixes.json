@@ -3,6 +3,10 @@
     "brand": "CeraVe",
     "updatedAt": 1783553514329
   },
+  "3600524": {
+    "brand": "Loreal Paris",
+    "updatedAt": 1783609200898
+  },
   "6291106": {
     "brand": "Huda Beauty",
     "updatedAt": 1783553513735
@@ -10,6 +14,10 @@
   "33378755": {
     "brand": "CeraVe",
     "updatedAt": 1783553514329
+  },
+  "36005240": {
+    "brand": "Loreal Paris",
+    "updatedAt": 1783609200898
   },
   "62911060": {
     "brand": "Huda Beauty",
@@ -22,5 +30,13 @@
   "00778020": {
     "brand": "Wet N Wild",
     "updatedAt": 1783547848675
+  },
+  "0800897": {
+    "brand": "NYX",
+    "updatedAt": 1783609213026
+  },
+  "08008971": {
+    "brand": "NYX",
+    "updatedAt": 1783609213026
   }
 }
