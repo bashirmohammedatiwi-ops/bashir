@@ -41,6 +41,40 @@ export class BrandsController {
     return this.service.create(data);
   }
 
+  /** مطابقة براند أو إنشاؤه إن لم يوجد (لاستيراد الكتالوج) */
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Post("resolve")
+  resolve(
+    @Body()
+    body: {
+      brandAr?: string;
+      brandEn?: string;
+      name?: string;
+      logoUrl?: string;
+      createIfMissing?: boolean;
+    },
+  ) {
+    return this.service.resolve(body);
+  }
+
+  /** مزامنة براندات الكتالوج (المتاجر الأربعة) مع إزالة التكرار */
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Post("sync-from-catalog")
+  syncFromCatalog(
+    @Body()
+    body: {
+      brands?: Array<{
+        name?: string;
+        nameAr?: string;
+        nameEn?: string;
+        logoUrl?: string;
+      }>;
+      attachLogos?: boolean;
+    },
+  ) {
+    return this.service.syncFromCatalog(body);
+  }
+
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Post(":idOrSlug/collections")
   createCollection(@Param("idOrSlug") idOrSlug: string, @Body() data: any) {

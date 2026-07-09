@@ -8,9 +8,10 @@ import { CategoriesService } from "./categories.service";
 import { BrandsController } from "./brands.controller";
 import { BrandsService } from "./brands.service";
 import { SyncModule } from "../sync/sync.module";
+import { MediaModule } from "../media/media.module";
 
 @Module({
-  imports: [SyncModule],
+  imports: [SyncModule, MediaModule],
   controllers: [ProductsController, CategoriesController, SubcategoriesController, TertiarySectionsController, BrandsController],
   providers: [ProductsService, CategoriesService, BrandsService],
   exports: [ProductsService, CategoriesService, BrandsService],

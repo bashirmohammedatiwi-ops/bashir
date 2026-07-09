@@ -178,6 +178,28 @@ export async function fetchCatalogStores(): Promise<CatalogStore[]> {
   return data.stores || [];
 }
 
+export type CatalogBrandRow = {
+  key: string;
+  name: string;
+  nameAr?: string;
+  nameEn?: string;
+  logoUrl?: string;
+  logoIsProductImage?: boolean;
+  productCount?: number;
+  stores?: string[];
+};
+
+/** براندات موحّدة من المتاجر الأربعة (بدون تكرار) */
+export async function fetchCatalogBrands(force = false): Promise<{
+  total: number;
+  withLogo: number;
+  brands: CatalogBrandRow[];
+  updatedAt?: number;
+}> {
+  const q = force ? "?force=1" : "";
+  return catalogFetch(`/api/catalog/brands${q}`, 180_000);
+}
+
 export async function fetchCategoryTree(storeId: string) {
   return catalogFetch<{ tree: CatalogCategoryNode[]; leaves: CatalogCategoryNode[] }>(
     `/api/catalog/${encodeURIComponent(storeId)}/categories`,

@@ -1,6 +1,7 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Avatar,
   Button,
   Card,
   Form,
@@ -8,16 +9,22 @@ import {
   InputNumber,
   Modal,
   Popconfirm,
+  Progress,
   Space,
   Switch,
   Table,
   Tag,
   message,
 } from "antd";
+import { CloudSyncOutlined } from "@ant-design/icons";
 import { useMemo, useState } from "react";
 import { MediaPicker } from "@/components/MediaPicker";
+import { fetchCatalogBrands } from "@/lib/catalogImport";
+import { mediaThumb } from "@/lib/mediaUrl";
 import { mutations, queries } from "@/lib/queries";
 import { slugify } from "@/lib/slugify";
+
+const SYNC_BATCH = 40;
 
 export default function BrandsPage() {
   const { data, isLoading } = useQuery({
@@ -30,6 +37,7 @@ export default function BrandsPage() {
   const [editing, setEditing] = useState<any | null>(null);
   const [editingCol, setEditingCol] = useState<any | null>(null);
   const [brandForCol, setBrandForCol] = useState<any | null>(null);
+  const [syncProgress, setSyncProgress] = useState<{ done: number; total: number } | null>(null);
   const [form] = Form.useForm();
   const [colForm] = Form.useForm();
 
@@ -56,6 +64,57 @@ export default function BrandsPage() {
       const raw = e?.response?.data?.message;
       const msg = Array.isArray(raw) ? raw.join(" · ") : raw || e?.message || "تعذّر حذف البراند";
       message.error(msg);
+    },
+  });
+
+  const syncFromCatalog = useMutation({
+    mutationFn: async () => {
+      message.loading({ content: "جاري جلب براندات المتاجر الأربعة...", key: "brand-sync" });
+      const catalog = await fetchCatalogBrands(true);
+      const rows = (catalog.brands || []).map((b) => ({
+        name: b.name,
+        nameAr: b.nameAr,
+        nameEn: b.nameEn,
+        // شعار حقيقي فقط — لا نرفع صورة منتج كشعار براند
+        logoUrl: b.logoUrl && !b.logoIsProductImage ? b.logoUrl : undefined,
+      }));
+      if (!rows.length) throw new Error("لم يُعثر على براندات في الكتالوج");
+
+      let created = 0;
+      let matched = 0;
+      let logosAttached = 0;
+      setSyncProgress({ done: 0, total: rows.length });
+
+      for (let i = 0; i < rows.length; i += SYNC_BATCH) {
+        const chunk = rows.slice(i, i + SYNC_BATCH);
+        const result = await mutations.syncBrandsFromCatalog({
+          brands: chunk,
+          attachLogos: true,
+        });
+        created += Number(result?.created || 0);
+        matched += Number(result?.matched || 0);
+        logosAttached += Number(result?.logosAttached || 0);
+        setSyncProgress({ done: Math.min(i + chunk.length, rows.length), total: rows.length });
+      }
+
+      return { created, matched, logosAttached, total: rows.length, withLogo: catalog.withLogo };
+    },
+    onSuccess: (stats) => {
+      setSyncProgress(null);
+      message.success({
+        content: `تمت المزامنة: ${stats.created} جديد · ${stats.matched} موجود · ${stats.logosAttached} شعار · من ${stats.total} براند`,
+        key: "brand-sync",
+        duration: 6,
+      });
+      qc.invalidateQueries({ queryKey: ["brands"] });
+    },
+    onError: (err: unknown) => {
+      setSyncProgress(null);
+      const e = err as { message?: string; response?: { data?: { message?: string } } };
+      message.error({
+        content: e?.response?.data?.message || e?.message || "فشلت مزامنة البراندات",
+        key: "brand-sync",
+      });
     },
   });
 
@@ -142,12 +201,32 @@ export default function BrandsPage() {
   return (
      <>
       <Space direction="vertical" size={12} style={{ width: "100%" }}>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <h2 style={{ margin: 0 }}>البراندات وخطوط المنتجات</h2>
-          <Button type="primary" onClick={openCreateBrand}>
-            + براند جديد
-          </Button>
+          <Space wrap>
+            <Button
+              icon={<CloudSyncOutlined />}
+              loading={syncFromCatalog.isPending}
+              onClick={() => syncFromCatalog.mutate()}
+            >
+              مزامنة من الكتالوج
+            </Button>
+            <Button type="primary" onClick={openCreateBrand}>
+              + براند جديد
+            </Button>
+          </Space>
         </div>
+        {syncProgress ? (
+          <Card size="small">
+            <div style={{ marginBottom: 8 }}>
+              جاري المزامنة ({syncProgress.done}/{syncProgress.total}) — بدون تكرار، مع الشعارات عند توفرها
+            </div>
+            <Progress
+              percent={syncProgress.total ? Math.round((syncProgress.done / syncProgress.total) * 100) : 0}
+              status="active"
+            />
+          </Card>
+        ) : null}
         <Card styles={{ body: { padding: 0 } }}>
           <Table
             rowKey={(r) => (r.rowType === "collection" ? `col-${r.id}` : r.id)}
@@ -155,6 +234,21 @@ export default function BrandsPage() {
             dataSource={tableData}
             pagination={false}
             columns={[
+              {
+                title: "الشعار",
+                width: 64,
+                render: (_: any, r: any) => {
+                  if (r.rowType !== "brand") return null;
+                  const src = mediaThumb(r.logo);
+                  return src ? (
+                    <Avatar shape="square" size={40} src={src} style={{ background: r.bgColorHex || "#f5f5f5" }} />
+                  ) : (
+                    <Avatar shape="square" size={40} style={{ background: r.bgColorHex || "#eee", color: "#555" }}>
+                      {r.initial || (r.name || "?").charAt(0)}
+                    </Avatar>
+                  );
+                },
+              },
               {
                 title: "الاسم",
                 dataIndex: "name",

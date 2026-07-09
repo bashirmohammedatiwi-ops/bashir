@@ -26,6 +26,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { CatalogOptionCard, storeColor } from "@/components/catalog-import/CatalogOptionCard";
 import { matchCategoryFromHints } from "@/lib/catalogCategoryMatch";
+import { matchBrandIdLocal } from "@/lib/catalogBrandMatch";
 import {
   catalogOptionKey,
   fetchCatalogProductSmart,
@@ -60,14 +61,21 @@ function errorMessage(err: unknown, fallback: string) {
   return fallback;
 }
 
-function matchBrandId(brands: any[] = [], brandAr = "", brandEn = "") {
-  const keys = [brandAr, brandEn].map((s) => String(s || "").trim().toLowerCase()).filter(Boolean);
-  if (!keys.length) return undefined;
-  const hit = brands.find((b) => {
-    const names = [b.name, b.nameAr, b.nameEn].map((n) => String(n || "").trim().toLowerCase());
-    return keys.some((k) => names.some((n) => n === k || n.includes(k) || k.includes(n)));
+/** اختيار براند محلياً أو إنشاؤه عبر الـ API إن لم يوجد */
+async function ensureBrandId(
+  brands: any[] = [],
+  brandAr = "",
+  brandEn = "",
+): Promise<string | undefined> {
+  const local = matchBrandIdLocal(brands, brandAr, brandEn);
+  if (local) return local;
+  if (!String(brandAr || "").trim() && !String(brandEn || "").trim()) return undefined;
+  const result = await mutations.resolveBrand({
+    brandAr,
+    brandEn,
+    createIfMissing: true,
   });
-  return hit?.id;
+  return result?.brand?.id || result?.id;
 }
 
 function stripHtml(html = "") {
@@ -467,7 +475,11 @@ export default function CatalogImportPage() {
         }
         setPreview(product);
 
-        const brandId = matchBrandId(brandsData, product.brandAr, product.brandEn);
+        const brandId = await ensureBrandId(brandsData, product.brandAr, product.brandEn);
+        if (brandId) {
+          await qc.fetchQuery({ queryKey: ["brands"], queryFn: queries.brands });
+        }
+
         const [allSubcategories, allTertiary] = await Promise.all([
           qc.fetchQuery({ queryKey: ["subcategories", "all"], queryFn: () => queries.subcategories() }),
           qc.fetchQuery({ queryKey: ["tertiary-sections", "all"], queryFn: () => queries.tertiarySections() }),
@@ -512,6 +524,17 @@ export default function CatalogImportPage() {
     mutationFn: async () => {
       if (!preview) throw new Error("لا يوجد منتج للاستيراد");
       const values = await form.validateFields();
+
+      // تأكيد البراند قبل الإنشاء — إنشاء تلقائي إن لم يكن موجوداً
+      let brandId = values.brandId as string | undefined;
+      if (!brandId && (preview.brandAr || preview.brandEn)) {
+        brandId = await ensureBrandId(brandsData, preview.brandAr, preview.brandEn);
+        if (brandId) {
+          await qc.fetchQuery({ queryKey: ["brands"], queryFn: queries.brands });
+          form.setFieldsValue({ brandId });
+        }
+      }
+      if (!brandId) throw new Error("تعذّر تحديد البراند — أضفه يدوياً أو اختر برانداً من القائمة");
 
       message.loading({ content: "جاري رفع الصور...", key: "import" });
       const { productImages, shadeImageIds, failed: failedImages } = await uploadCatalogImportImages(
@@ -590,6 +613,7 @@ export default function CatalogImportPage() {
       const payload = buildProductPayload(
         {
           ...values,
+          brandId,
           nameAr: preview.nameAr,
           nameEn: preview.nameEn,
           descriptionAr: stripHtml(preview.descriptionAr),
@@ -990,7 +1014,12 @@ export default function CatalogImportPage() {
                 <h4>تصنيف المنتج في متجرك</h4>
                 <Form form={form} layout="vertical">
                   <div className="ci-form-grid">
-                    <Form.Item name="brandId" label="البراند">
+                    <Form.Item
+                      name="brandId"
+                      label="البراند"
+                      rules={[{ required: true, message: "البراند مطلوب" }]}
+                      extra="يُختار تلقائياً من الكتالوج ويُنشأ إن لم يكن موجوداً"
+                    >
                       <Select
                         allowClear
                         showSearch

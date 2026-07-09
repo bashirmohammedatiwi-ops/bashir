@@ -1,6 +1,6 @@
 import { URL } from 'node:url';
 import { sendJson } from './http.js';
-import { handleHealth, handleStores } from './handlers/catalog.js';
+import { handleHealth, handleStores, handleCatalogBrands } from './handlers/catalog.js';
 import { handleStoreApi } from './handlers/store.js';
 import { handleImportApi } from './handlers/store.js';
 
@@ -30,6 +30,7 @@ export async function handleRequest(req, res) {
   try {
     if (url.pathname === '/api/health') return handleHealth(req, res);
     if (url.pathname === '/api/catalog/stores') return handleStores(req, res);
+    if (url.pathname === '/api/catalog/brands') return handleCatalogBrands(req, res, url);
 
     const storeHandled = await handleStoreApi(req, res, url);
     if (storeHandled !== false) return;

@@ -86,6 +86,21 @@ export const mutations = {
     api.patch(`/brands/${id}`, data).then((r) => r.data?.data ?? r.data),
   deleteBrand: (id: string) => api.delete(`/brands/${id}`).then((r) => r.data),
 
+  /** مطابقة براند أو إنشاؤه من اسم الكتالوج */
+  resolveBrand: (data: {
+    brandAr?: string;
+    brandEn?: string;
+    name?: string;
+    logoUrl?: string;
+    createIfMissing?: boolean;
+  }) => api.post("/brands/resolve", data).then((r) => r.data?.data ?? r.data),
+
+  /** مزامنة براندات المتاجر الأربعة */
+  syncBrandsFromCatalog: (data: {
+    brands: Array<{ name?: string; nameAr?: string; nameEn?: string; logoUrl?: string }>;
+    attachLogos?: boolean;
+  }) => api.post("/brands/sync-from-catalog", data).then((r) => r.data?.data ?? r.data),
+
   createBrandCollection: (brandId: string, data: any) =>
     api.post(`/brands/${brandId}/collections`, data).then((r) => r.data?.data ?? r.data),
   updateBrandCollection: (collectionId: string, data: any) =>
