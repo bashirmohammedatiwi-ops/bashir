@@ -10,15 +10,58 @@ import {
 import {
   findAmazonByBarcode,
   getAmazonIndexStats,
+  loadAmazonIndex,
   queryAmazonIndex,
   upsertAmazonProducts,
 } from './catalog-index.js';
 import { mapDetailProduct, mapListProduct } from './map.js';
 import {
+  normalizeAmazonImageUrl,
   scrapeBarcode,
   scrapeProductDetail,
   scrapeSearchProducts,
 } from './scrape.js';
+
+/** احتياطي من الفهرس المحلي عندما يفشل scrape (كابتشا/حظر) */
+function detailFromIndex(asin) {
+  const row = loadAmazonIndex().products?.[String(asin || '').toUpperCase()];
+  if (!row?.id) return null;
+  const thumb = normalizeAmazonImageUrl(row.thumb || '', 500);
+  return {
+    id: row.id,
+    parentAsin: row.id,
+    sku: row.sku || row.id,
+    barcode: row.barcode || '',
+    nameAr: row.nameAr || row.nameEn || '',
+    nameEn: row.nameEn || row.nameAr || '',
+    brandAr: row.brandAr || '',
+    brandEn: row.brandEn || row.brandAr || '',
+    descriptionAr: '',
+    descriptionEn: '',
+    thumb,
+    images: thumb ? [normalizeAmazonImageUrl(thumb, 1000)] : [],
+    price: row.price || '',
+    category: row.category || 'Beauty',
+    productUrl: row.url || `https://www.amazon.com/dp/${row.id}`,
+    inStock: true,
+    shades: [{
+      id: row.id,
+      nameAr: row.nameAr || row.nameEn || '',
+      nameEn: row.nameEn || row.nameAr || '',
+      sku: row.id,
+      barcode: row.barcode || '',
+      image: thumb,
+      price: row.price || '',
+      inStock: true,
+      colorHex: '',
+      optionGroup: '',
+    }],
+    shadeCount: Number(row.shadeCount || 1),
+    hasOptions: Number(row.shadeCount || 1) > 1,
+    source: 'index',
+    softDetail: true,
+  };
+}
 
 function usePaapi() {
   return amazonCredentials().configured;
@@ -258,7 +301,16 @@ export async function fetchProductDetail(id, { light = false } = {}) {
   // المسار الافتراضي النهائي: scrape ثنائي اللغة + كل التدرجات
   // PA-API يُستخدم فقط إن وُجدت مفاتيح وطلب صريح عبر AMAZON_FORCE_PAAPI=1
   if (!usePaapi() || process.env.AMAZON_FORCE_PAAPI !== '1') {
-    const detail = await scrapeProductDetail(asin, { light });
+    let detail = null;
+    try {
+      detail = await scrapeProductDetail(asin, { light });
+    } catch {
+      detail = null;
+    }
+    if (!detail) {
+      // البطاقة ظهرت من البحث — لا تُرجع 404؛ أعرض بيانات الفهرس/البحث
+      detail = detailFromIndex(asin);
+    }
     if (detail) {
       upsertAmazonProducts([{
         id: detail.id,
@@ -266,7 +318,7 @@ export async function fetchProductDetail(id, { light = false } = {}) {
         nameEn: detail.nameEn,
         brandAr: detail.brandAr,
         brandEn: detail.brandEn,
-        thumb: detail.thumb,
+        thumb: normalizeAmazonImageUrl(detail.thumb || '', 500),
         price: detail.price,
         barcode: detail.barcode,
         sku: detail.sku,
@@ -274,6 +326,14 @@ export async function fetchProductDetail(id, { light = false } = {}) {
         shadeCount: detail.shadeCount,
         categoryIds: [BEAUTY_ROOT_NODE],
       }], { categoryId: BEAUTY_ROOT_NODE });
+      detail.thumb = normalizeAmazonImageUrl(detail.thumb || '', 500);
+      detail.images = (detail.images || []).map((u) => normalizeAmazonImageUrl(u, 1000)).filter(Boolean);
+      if (Array.isArray(detail.shades)) {
+        detail.shades = detail.shades.map((s) => ({
+          ...s,
+          image: normalizeAmazonImageUrl(s.image || '', 500),
+        }));
+      }
     }
     return detail;
   }
@@ -339,7 +399,22 @@ export async function searchBarcode(code) {
   }
 
   if (!usePaapi()) {
-    return scrapeBarcode(digits);
+    const hits = await scrapeBarcode(digits);
+    // احفظ في الفهرس حتى لا يفشل فتح التفاصيل لاحقاً عند الكابتشا
+    if (hits.length) {
+      upsertAmazonProducts(
+        hits.map((h) => ({
+          ...h,
+          thumb: normalizeAmazonImageUrl(h.thumb || '', 500),
+          categoryIds: [BEAUTY_ROOT_NODE],
+        })),
+        { categoryId: BEAUTY_ROOT_NODE },
+      );
+    }
+    return hits.map((h) => ({
+      ...h,
+      thumb: normalizeAmazonImageUrl(h.thumb || '', 500),
+    }));
   }
 
   const data = await paapiRequest('SearchItems', {

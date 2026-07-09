@@ -127,24 +127,31 @@ export async function resolveShadeColorHex(shade: {
   swatchUrl?: string;
 }): Promise<string | undefined> {
   const existing = String(shade.colorHex || "").trim();
-  if (existing) return existing;
-
   const swatch = String(shade.swatchUrl || "").trim();
   const full = String(shade.imageUrl || "").trim();
-  if (!swatch && !full) return undefined;
 
-  // جرّب السواتش وصورة المنتج، واختر الأكثر تشبّعاً (الأوضح كلون)
-  const candidates = [...new Set([swatch, full].filter(Boolean))];
-  const sampled = await Promise.all(candidates.map((u) => averageColorFromImageUrl(u)));
-  let best: string | undefined;
-  let bestSat = -1;
-  for (const hex of sampled) {
-    if (!hex) continue;
-    const sat = hexSaturation(hex);
-    if (sat > bestSat) {
-      bestSat = sat;
-      best = hex;
+  // إن وُجدت صورة: استخرج اللون منها (أدق من تخمين الاسم)
+  // وأبقِ القيمة الموجودة فقط إن فشل الاستخراج أو لم توجد صورة
+  if (swatch || full) {
+    const candidates = [...new Set([swatch, full].filter(Boolean))];
+    const sampled = await Promise.all(candidates.map((u) => averageColorFromImageUrl(u)));
+    let best: string | undefined;
+    let bestSat = -1;
+    for (const hex of sampled) {
+      if (!hex) continue;
+      const sat = hexSaturation(hex);
+      if (sat > bestSat) {
+        bestSat = sat;
+        best = hex;
+      }
+    }
+    if (best) {
+      // فضّل لون الصورة إن كان أوضح من التخمين الموجود
+      if (!existing || hexSaturation(existing) < 0.15 || bestSat >= hexSaturation(existing)) {
+        return best;
+      }
     }
   }
-  return best || undefined;
+
+  return existing || undefined;
 }

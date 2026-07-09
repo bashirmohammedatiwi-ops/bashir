@@ -102,7 +102,8 @@ export function mergeAmazonLocales(enItem = null, arItem = null) {
 
   const brand = brandOf(enItem || {}) || brandOf(arItem || {});
   const descEn = featuresText(enItem || {}, 'en');
-  const descAr = featuresText(arItem || {}, 'ar') || descEn;
+  // لا تملأ الوصف العربي بالإنجليزي — أبقِه فارغاً إن لم يتوفر عربي
+  const descAr = featuresText(arItem || {}, 'ar');
 
   return {
     id: String(primary.ASIN),

@@ -423,7 +423,36 @@ export default function CatalogImportPage() {
       setLoadingPreview(true);
       setPreview(null);
       try {
-        const product = await fetchCatalogProduct(opt.store, opt.sourceId, opt.storeLabel);
+        let product;
+        try {
+          product = await fetchCatalogProduct(opt.store, opt.sourceId, opt.storeLabel);
+        } catch (err) {
+          // أمازون: البطاقة ظاهرة من البحث — ابنِ معاينة مؤقتة بدل «لم يُعثر»
+          if (opt.store === "amazon" && opt.sourceId) {
+            message.warning("تعذّر تحميل كامل تفاصيل أمازون — يمكنك إعادة المحاولة أو الاستيراد بالبيانات المتوفرة");
+            product = {
+              store: opt.store,
+              storeLabel: opt.storeLabel,
+              sourceId: opt.sourceId,
+              nameAr: opt.nameAr || "",
+              nameEn: opt.nameEn || "",
+              brandAr: opt.brandAr || "",
+              brandEn: "",
+              descriptionAr: "",
+              descriptionEn: "",
+              barcode: opt.barcode || "",
+              sku: opt.sourceId,
+              images: opt.thumb ? [{ url: opt.thumb, isPrimary: true }] : [],
+              shades: [],
+              hasShades: (opt.shadeCount || 0) > 1,
+              sourceUrl: "",
+              priceHint: opt.price || "",
+              categoryHint: opt.category || "",
+            };
+          } else {
+            throw err;
+          }
+        }
         setPreview(product);
 
         const brandId = matchBrandId(brandsData, product.brandAr, product.brandEn);
@@ -880,11 +909,17 @@ export default function CatalogImportPage() {
               {(preview.descriptionAr || preview.descriptionEn) && (
                 <div className="ci-drawer-section">
                   <h4>الوصف</h4>
-                  {preview.descriptionAr ? <p className="ci-desc">{preview.descriptionAr}</p> : null}
+                  {preview.descriptionAr ? (
+                    <div style={{ marginBottom: preview.descriptionEn ? 10 : 0 }}>
+                      <Tag color="blue" style={{ marginBottom: 6 }}>عربي</Tag>
+                      <p className="ci-desc">{preview.descriptionAr}</p>
+                    </div>
+                  ) : null}
                   {preview.descriptionEn && preview.descriptionEn !== preview.descriptionAr ? (
-                    <p className="ci-desc alhayaa-ltr-input" style={{ marginTop: 8 }}>
-                      {preview.descriptionEn}
-                    </p>
+                    <div>
+                      <Tag color="geekblue" style={{ marginBottom: 6 }}>English</Tag>
+                      <p className="ci-desc alhayaa-ltr-input">{preview.descriptionEn}</p>
+                    </div>
                   ) : null}
                 </div>
               )}

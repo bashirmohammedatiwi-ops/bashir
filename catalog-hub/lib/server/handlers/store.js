@@ -339,11 +339,20 @@ export async function handleImportApi(req, res, url) {
     const id = decodeURIComponent(productMatch[2]);
     try {
       const raw = await adapter.fetchProductDetail(id, { light: false });
-      if (!raw?.id) return sendJson(res, 404, { error: 'لم يُعثر على المنتج' });
+      if (!raw?.id) {
+        // أمازون: البطاقة قد تظهر من البحث بينما التفاصيل تفشل مؤقتاً (كابتشا)
+        const softMsg = adapter.id === 'amazon'
+          ? 'تعذّر تحميل تفاصيل أمازون مؤقتاً — أعد المحاولة بعد لحظات'
+          : 'لم يُعثر على المنتج';
+        return sendJson(res, 404, { error: softMsg });
+      }
       const product = toImportPayload({ ...raw, store: adapter.id, storeLabel: adapter.label });
       return sendJson(res, 200, { product });
     } catch (err) {
-      return sendJson(res, 502, { error: err.message });
+      const softMsg = adapter.id === 'amazon'
+        ? `تعذّر تحميل تفاصيل أمازون: ${err.message || 'خطأ مؤقت'}`
+        : err.message;
+      return sendJson(res, 502, { error: softMsg });
     }
   }
 
