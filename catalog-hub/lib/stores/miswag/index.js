@@ -40,14 +40,18 @@ export const miswagAdapter = {
     if (!digits) return [];
 
     const run = async () => {
-      if (isMiswagInternalId(digits)) return searchByMiswagId(digits);
+      // معرّف مسواگ (17…) أولاً؛ وإلا باركود EAN/UPC
+      if (isMiswagInternalId(digits)) {
+        const byId = await searchByMiswagId(digits);
+        if (byId.length) return byId;
+      }
       if (/^\d{8,14}$/.test(digits)) return searchByEan(digits);
       return [];
     };
 
     try {
-      // 16ث أقصى — الواجهة تنتظر 22ث؛ نترك هامشاً للاستجابة
-      return await withHardTimeout(run(), 16_000, []);
+      // 22ث — يتوافق مع مهلة الواجهة ومسار beauty/gulf sweeps
+      return await withHardTimeout(run(), 22_000, []);
     } catch {
       return [];
     }

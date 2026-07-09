@@ -322,17 +322,45 @@ export default function CatalogImportPage() {
   const runTextSearch = useCallback(async () => {
     const q = searchText.trim();
     if (!q || !activeStores.length) return;
+
+    // إن لصق المستخدم باركوداً في خانة النص — وجّهه لمسار الباركود الأدق
+    const digitsOnly = q.replace(/\D/g, "");
+    if (digitsOnly.length >= 8 && digitsOnly === q.replace(/[\s-]/g, "")) {
+      setBarcode(digitsOnly);
+      // استخدم مسار الباركود مباشرة
+      setSearching(true);
+      setOptions([]);
+      setProducts([]);
+      try {
+        const data = await searchCatalogByBarcode(digitsOnly, activeStores, (partial) => {
+          setOptions(partial.options);
+          if (partial.options.length) {
+            setStep(1);
+            if (!partial.done) setSearching(false);
+          }
+        });
+        setOptions(data.options);
+        if (!data.options.length) message.info("لا توجد نتائج لهذا الباركود");
+        else setStep(1);
+      } catch (err) {
+        message.error(errorMessage(err, "فشل البحث بالباركود"));
+      } finally {
+        setSearching(false);
+      }
+      return;
+    }
+
     setSearching(true);
     setOptions([]);
     setProducts([]);
     try {
-      const useMulti = activeStores.length > 1;
+      // بحث عام دائماً — لا نقيّد بقسم التصفح حتى لا تُخفى منتجات موجودة
       const data = await searchCatalogProducts(
         activeStores,
         q,
         1,
-        30,
-        useMulti ? "" : selectedCategory || "",
+        40,
+        "",
         (partial) => {
           // أظهر نتائج المتجر السريع فوراً (نجد) دون انتظار مسواگ
           const opts = partial.products.map((p) =>
@@ -372,7 +400,7 @@ export default function CatalogImportPage() {
     } finally {
       setSearching(false);
     }
-  }, [searchText, activeStores, stores, storeMeta, selectedCategory]);
+  }, [searchText, activeStores, stores, storeMeta]);
 
   const includesMiswag = activeStores.includes("miswag");
   const isMiswagBrowse = browseStore === "miswag";
@@ -386,7 +414,7 @@ export default function CatalogImportPage() {
     }
     if (includesMiswag) {
       if (!isEanBarcode(digits) && !isMiswagInternalId(digits)) {
-        message.warning("أدخل باركود EAN (8–14 رقم) أو رقم مسواگ الداخلي (10 أرقام)");
+        message.warning("أدخل باركود EAN (8–14 رقم) أو رقم مسواگ (يبدأ بـ 17)");
         return;
       }
     } else if (digits.length < 8) {

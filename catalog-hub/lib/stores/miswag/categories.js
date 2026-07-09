@@ -209,14 +209,28 @@ export async function listCategoryProducts(categoryAlias, { page = 1, limit = 30
 }
 
 export async function searchProducts(query, { page = 1, limit = 30, categoryId = '' } = {}) {
+  const q = String(query || '').trim();
   let filterBy = '';
   if (categoryId) filterBy = buildCategoryFilter(categoryId);
-  const { hits, found } = await typesenseSearch(query, {
+
+  const perPage = Math.min(Math.max(limit, 30), 60);
+  let { hits, found } = await typesenseSearch(q, {
     page,
-    perPage: Math.min(limit, 60),
+    perPage,
     filterBy,
     strict: false,
   });
+
+  // إن ضيّق القسم النتائج إلى صفر — أعد البحث على كل الكتالوج
+  if (!hits.length && filterBy) {
+    ({ hits, found } = await typesenseSearch(q, {
+      page,
+      perPage,
+      filterBy: '',
+      strict: false,
+    }));
+  }
+
   return {
     items: hits.map((h) => mapTypesenseHit(h.document || h)),
     page,

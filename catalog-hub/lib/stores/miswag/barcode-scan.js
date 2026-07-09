@@ -37,7 +37,7 @@ async function listVariationIds(productId) {
 
     cursor = chunk.pagination?.cursor || null;
     pages += 1;
-  } while (cursor && pages < 12); // حد أدنى كافٍ — لا نمسح 30 صفحة في بحث باركود
+  } while (cursor && pages < 30); // نفس حد fetchAllVariations — لا نفقد تدرجات متأخرة
 
   return ids;
 }
@@ -139,7 +139,7 @@ export async function scanParentBarcodesForBarcode(
 export async function scanMiswagProductsForBarcode(
   productIds = [],
   digits,
-  { limit = 25, concurrency = 6, deadline = 0 } = {},
+  { limit = 80, concurrency = 10, deadline = 0 } = {},
 ) {
   const unique = [...new Set(productIds.map((id) => String(id || '').trim()).filter(Boolean))];
   const batch = unique.slice(0, limit);
@@ -163,26 +163,32 @@ export async function searchTypesenseByVariationBarcode(digits) {
   if (!variants.length) return [];
 
   try {
-    const queries = variants.slice(0, 3).map((d) => ({
+    // كل متغيرات GTIN — لا نقتصر على 3 فقط
+    const queries = variants.map((d) => ({
       q: d,
       query_by: 'variations,alias,title_AR,title_EN,brand,keywords,description',
-      per_page: 20,
+      per_page: 30,
       page: 1,
+      num_typos: 0,
+      drop_tokens_threshold: 0,
     }));
     const results = await typesenseMultiSearch(queries);
     const seen = new Set();
-    const hits = [];
+    const strong = [];
+    const weak = [];
     for (const result of results || []) {
       for (const hit of result?.hits || []) {
-        const id = String(hit.document?.id || '');
+        const id = String(hit.document?.id || hit.document?.product_id || '');
         if (!id || seen.has(id)) continue;
-        const hay = JSON.stringify(hit.document || {}).replace(/\D/g, '');
-        if (!variants.some((d) => hay.includes(d))) continue;
         seen.add(id);
-        hits.push(hit);
+        const hay = JSON.stringify(hit.document || {}).replace(/\D/g, '');
+        // تطابق رقمي قوي أولاً؛ وإلا مرشّح ضعيف للتحقق عبر v2
+        if (variants.some((d) => hay.includes(d))) strong.push(hit);
+        else weak.push(hit);
       }
     }
-    return hits;
+    // حدّ معقول للتحقق v2 — القوي أولاً
+    return [...strong, ...weak].slice(0, 60);
   } catch {
     return [];
   }

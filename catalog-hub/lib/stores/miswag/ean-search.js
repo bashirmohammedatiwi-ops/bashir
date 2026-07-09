@@ -278,7 +278,7 @@ async function searchByBrandCatalogV2(digits, meta, { deadline = 0 } = {}) {
       const hit = await searchByV2Scan(
         ids,
         digits,
-        { limit: 30, concurrency: 8, deadline },
+        { limit: Math.min(ids.length, 120), concurrency: 12, deadline },
       );
       if (hit) {
         learnPrefixBrand(digits, brand);
@@ -339,7 +339,7 @@ async function searchByGulfBrandV2Sweep(digits, budgetLeft = () => 60_000, deadl
   return null;
 }
 
-/** مسح ماركات الجمال حسب بادئة البلد — عندما لا توجد metadata خارجية */
+/** مسح ماركات الجمال حسب بادئة البلد — مع حل الاسم الكانوني في Typesense */
 async function searchByBeautyBrandSweep(digits, budgetLeft = () => 60_000, deadline = 0) {
   const guessed = guessBrandsByCountryPrefix(digits);
   const seen = new Set();
@@ -351,10 +351,10 @@ async function searchByBeautyBrandSweep(digits, budgetLeft = () => 60_000, deadl
     brands.push(b);
   }
 
-  // حدّ معقول ضمن الميزانية — لا نمسح كل الكتالوج
-  for (const brand of brands.slice(0, 8)) {
+  // بدون exactBrand — resolveCanonicalBrands يطابق L'Oréal / e.l.f. إلخ
+  for (const brand of brands.slice(0, 10)) {
     if (budgetLeft() < 2200) return null;
-    const hit = await searchByBrandCatalogV2(digits, { brand, exactBrand: true }, { deadline });
+    const hit = await searchByBrandCatalogV2(digits, { brand }, { deadline });
     if (hit) return hit;
   }
   return null;
@@ -364,7 +364,7 @@ async function searchByTypesenseVariationScan(digits, { deadline = 0 } = {}) {
   const hits = await searchTypesenseByVariationBarcode(digits);
   const ids = hits.map((h) => String(h.document?.id || h.document?.product_id || '')).filter(Boolean);
   if (!ids.length) return null;
-  return searchByV2Scan(ids, digits, { limit: 20, concurrency: 8, deadline });
+  return searchByV2Scan(ids, digits, { limit: Math.min(ids.length, 60), concurrency: 10, deadline });
 }
 
 async function confirmHintHit(productId, digits, meta) {
@@ -391,7 +391,11 @@ async function confirmHintHit(productId, digits, meta) {
 async function searchByMetaHints(digits, meta, { deadline = 0 } = {}) {
   const candidateIds = await collectCandidateIdsFromMeta(meta);
 
-  const v2Hit = await searchByV2Scan(candidateIds, digits, { limit: 20, concurrency: 8, deadline });
+  const v2Hit = await searchByV2Scan(candidateIds, digits, {
+    limit: Math.min(candidateIds.length || 40, 60),
+    concurrency: 10,
+    deadline,
+  });
   if (v2Hit) return [v2Hit];
 
   const brandHit = await searchByBrandCatalogV2(digits, meta, { deadline });
@@ -460,7 +464,7 @@ async function resolveProductMeta(digits) {
 
 // كاش سلبي قصير — لا يمنع إعادة المحاولة لساعات
 const missCache = new Map();
-const MISS_TTL_MS = 45 * 1000;
+const MISS_TTL_MS = 20 * 1000;
 
 function clearMiss(digits) {
   for (const v of barcodeSearchVariants(digits)) missCache.delete(v);
@@ -479,8 +483,8 @@ function markMiss(digits) {
   for (const v of barcodeSearchVariants(digits)) missCache.set(v, at);
 }
 
-// ميزانية أطول قليلاً للمسار البارد (تصحيح رقم التحقق + مسح ماركات)
-const TIME_BUDGET_MS = 18_000;
+// ميزانية المسار البارد — تتوافق مع مهلة الـ adapter (22ث)
+const TIME_BUDGET_MS = 20_000;
 
 /**
  * بحث بالباركود العالمي (EAN/UPC) — مسار سريع أولاً ثم عميق.
@@ -546,11 +550,15 @@ export async function searchByEan(barcode) {
     ? await resolveProductMeta(digits)
     : null;
 
+  let metaFound = false;
   if ((meta?.brand || meta?.title) && budgetLeft() > 0) {
     for (const variant of variants) {
       if (budgetLeft() < 1500) break;
       const hinted = await searchByMetaHints(variant, meta, { deadline });
-      if (hinted.length) return hinted;
+      if (hinted.length) {
+        metaFound = true;
+        return hinted;
+      }
     }
   }
 
@@ -563,14 +571,14 @@ export async function searchByEan(barcode) {
     }
   }
 
-  // 6) مسح ماركات الجمال حسب بادئة البلد (عندما لا توجد metadata)
-  if (budgetLeft() > 5000 && !(meta?.brand || meta?.title)) {
+  // 6) مسح ماركات الجمال — حتى لو وُجدت metadata ضعيفة فشلت في المطابقة
+  if (budgetLeft() > 3500 && !metaFound) {
     const beautyHit = await searchByBeautyBrandSweep(digits, budgetLeft, deadline);
     if (beautyHit) return [beautyHit];
   }
 
   // 7) باركودات خليجية بلا UPC
-  if (budgetLeft() > 5000) {
+  if (budgetLeft() > 3500) {
     const gulfHit = await searchByGulfBrandV2Sweep(digits, budgetLeft, deadline);
     if (gulfHit) return [gulfHit];
   }

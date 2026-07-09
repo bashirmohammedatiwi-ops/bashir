@@ -7,7 +7,6 @@ import {
 } from '../../stores/registry.js';
 import { normalizeProduct, toImportPayload } from '../../core/product.js';
 import { isMiswagInternalId } from '../../stores/miswag/id-lookup.js';
-import { isValidEan } from '../../stores/miswag/v2-barcode.js';
 
 function storeOr404(res, storeId) {
   const adapter = getStoreAdapter(storeId);
@@ -71,13 +70,14 @@ function withTimeout(promise, ms, label = 'timeout') {
 async function searchAdapter(adapter, query, digits) {
   let results = [];
   const isBarcodeish = digits.length >= 8;
-  // مهلة لكل متجر — مسواگ/أمازون يحتاجان وقتاً أطول (scrape + تدرجات)
+  // مهلة لكل متجر — مسواگ يحتاج وقتاً أطول (v2 + sweeps)
   const barcodeBudget = adapter.id === 'miswag'
-    ? 16_000
+    ? 22_000
     : adapter.id === 'amazon'
       ? 28_000
       : 10_000;
 
+  const startedAt = Date.now();
   if (isBarcodeish && adapter.searchBarcode) {
     try {
       results = await withTimeout(
@@ -90,18 +90,30 @@ async function searchAdapter(adapter, query, digits) {
     }
   }
 
-  const isEanQuery = digits.length >= 8 && isValidEan(digits) && !isMiswagInternalId(digits);
-  if (!results.length && !isEanQuery) {
-    const textBudget = adapter.id === 'amazon' ? 18_000 : 12_000;
-    const data = await withTimeout(
-      adapter.searchProducts(query, { page: 1, limit: 20 }),
-      textBudget,
-      `${adapter.id} search timeout`,
-    );
-    return {
-      results: data.items.map((item) => mapTextSearchHit(adapter, item)),
-      count: data.items.length,
-    };
+  // إن فشل الباركود — بحث نصي سريع (Typesense قد يفهرس الرقم/الاسم)
+  if (!results.length) {
+    const elapsed = Date.now() - startedAt;
+    // لا تتجاوز ~28ث إجمالي حتى لا تقطع الواجهة الطلب
+    const textBudget = isBarcodeish
+      ? Math.max(2_500, Math.min(adapter.id === 'miswag' ? 6_000 : 8_000, 28_000 - elapsed))
+      : (adapter.id === 'amazon' ? 18_000 : adapter.id === 'miswag' ? 14_000 : 12_000);
+    if (textBudget >= 2_000) {
+      try {
+        const data = await withTimeout(
+          adapter.searchProducts(query, { page: 1, limit: 20 }),
+          textBudget,
+          `${adapter.id} search timeout`,
+        );
+        if (data?.items?.length) {
+          return {
+            results: data.items.map((item) => mapTextSearchHit(adapter, item)),
+            count: data.items.length,
+          };
+        }
+      } catch {
+        /* لا نتائج نصية */
+      }
+    }
   }
 
   return {

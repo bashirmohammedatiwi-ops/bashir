@@ -88,10 +88,10 @@ export function catalogOptionKey(opt: Pick<CatalogImportOption, "store" | "sourc
   return `${opt.store}:${opt.sourceId}`;
 }
 
-/** رقم مسواگ الداخلي — ليس باركود EAN */
+/** رقم مسواگ الداخلي — بادئة 17 فقط (ليس أي 9–10 أرقام) */
 export function isMiswagInternalId(value = "") {
   const d = String(value || "").replace(/\D/g, "");
-  return /^17\d{8}$/.test(d) || /^\d{9,10}$/.test(d);
+  return /^17\d{8}$/.test(d);
 }
 
 /** باركود EAN/UPC عالمي (8–14 رقم وليس رقم مسواگ) */
@@ -233,8 +233,8 @@ type StoreSearchStat = { id: string; count: number; error?: string };
 
 /** مهلة لكل متجر — الريان/نجد/أمازون سريعون، مسواگ أبطأ في الباركود */
 function storeSearchTimeoutMs(storeId: string, kind: "text" | "barcode" = "text") {
-  // مسواگ: مهلة قصيرة — السيرفر يقطع عند 16ث حتى لا يعلّق الواجهة
-  if (storeId === "miswag") return kind === "barcode" ? 22_000 : 15_000;
+  // مسواگ: يتوافق مع مهلة السيرفر (22ث باركود)
+  if (storeId === "miswag") return kind === "barcode" ? 28_000 : 18_000;
   if (storeId === "elryan") return kind === "barcode" ? 8_000 : 8_000;
   // أمازون: بحث ثنائي اللغة (ae+com) يحتاج مهلة أوسع قليلاً
   if (storeId === "amazon") return kind === "barcode" ? 30_000 : 18_000;
@@ -309,7 +309,8 @@ export async function searchCatalogProducts(
     return result;
   }
 
-  const perStoreLimit = Math.max(10, Math.ceil(limit / stores.length));
+  // لكل متجر حد كافٍ — لا نقلّص مسواگ إلى 8 نتائج فقط
+  const perStoreLimit = Math.max(20, Math.ceil(limit / Math.min(stores.length, 2)));
   const lists: CatalogListProduct[][] = stores.map(() => []);
   const stats: StoreSearchStat[] = stores.map((id) => ({ id, count: 0 }));
   let pending = stores.length;

@@ -249,14 +249,27 @@ export class BrandsService {
     return media;
   }
 
-  async remove(id: string) {
+  async remove(id: string, opts?: { reassignToBrandId?: string }) {
     await this.ensureExists(id);
     const productCount = await this.prisma.product.count({ where: { brandId: id } });
+    const reassignTo = String(opts?.reassignToBrandId || "").trim();
+
     if (productCount > 0) {
-      throw new BadRequestException(
-        `لا يمكن حذف البراند — مرتبط بـ ${productCount} منتج. انقل المنتجات لبراند آخر أو احذفها أولاً.`,
-      );
+      if (!reassignTo) {
+        throw new BadRequestException(
+          `لا يمكن حذف البراند — مرتبط بـ ${productCount} منتج. اختر برانداً لنقل المنتجات إليه.`,
+        );
+      }
+      if (reassignTo === id) {
+        throw new BadRequestException("اختر برانداً مختلفاً لنقل المنتجات إليه");
+      }
+      await this.ensureExists(reassignTo);
+      await this.prisma.product.updateMany({
+        where: { brandId: id },
+        data: { brandId: reassignTo },
+      });
     }
+
     try {
       await this.prisma.brand.delete({ where: { id } });
     } catch (error) {
@@ -270,7 +283,11 @@ export class BrandsService {
       }
       throw error;
     }
-    return { success: true };
+    return {
+      success: true,
+      reassignedProducts: productCount > 0 ? productCount : 0,
+      reassignToBrandId: productCount > 0 ? reassignTo : undefined,
+    };
   }
 
   async listCollectionsBySlugOrId(idOrSlug: string, all = false) {

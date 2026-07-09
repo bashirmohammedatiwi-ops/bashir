@@ -10,6 +10,7 @@ import {
   Modal,
   Popconfirm,
   Progress,
+  Select,
   Space,
   Switch,
   Table,
@@ -37,6 +38,8 @@ export default function BrandsPage() {
   const [editing, setEditing] = useState<any | null>(null);
   const [editingCol, setEditingCol] = useState<any | null>(null);
   const [brandForCol, setBrandForCol] = useState<any | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [reassignTo, setReassignTo] = useState<string | undefined>();
   const [syncProgress, setSyncProgress] = useState<{ done: number; total: number } | null>(null);
   const [form] = Form.useForm();
   const [colForm] = Form.useForm();
@@ -54,10 +57,15 @@ export default function BrandsPage() {
   });
 
   const remove = useMutation({
-    mutationFn: mutations.deleteBrand,
-    onSuccess: () => {
-      message.success("تم الحذف");
+    mutationFn: ({ id, reassignTo: to }: { id: string; reassignTo?: string }) =>
+      mutations.deleteBrand(id, to ? { reassignTo: to } : undefined),
+    onSuccess: (res: any) => {
+      const moved = Number(res?.reassignedProducts || res?.data?.reassignedProducts || 0);
+      message.success(moved > 0 ? `تم الحذف ونقل ${moved} منتج` : "تم الحذف");
+      setDeleteTarget(null);
+      setReassignTo(undefined);
       qc.invalidateQueries({ queryKey: ["brands"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
     },
     onError: (err: unknown) => {
       const e = err as { response?: { data?: { message?: string | string[] } }; message?: string };
@@ -306,35 +314,29 @@ export default function BrandsPage() {
                       <Button size="small" onClick={() => openEditBrand(r)}>
                         تعديل
                       </Button>
-                      <Popconfirm
-                        title={
-                          (r.productCount ?? 0) > 0
-                            ? `لا يمكن الحذف — ${r.productCount} منتج مرتبط`
-                            : "حذف البراند؟"
-                        }
-                        description={
-                          (r.productCount ?? 0) > 0
-                            ? "انقل المنتجات لبراند آخر أو احذفها من صفحة المنتجات أولاً."
-                            : undefined
-                        }
-                        okText="حذف"
-                        cancelText="إلغاء"
-                        okButtonProps={{ disabled: (r.productCount ?? 0) > 0 }}
-                        onConfirm={() => remove.mutate(r.id)}
-                      >
+                      {(r.productCount ?? 0) > 0 ? (
                         <Button
                           size="small"
                           danger
-                          disabled={(r.productCount ?? 0) > 0}
-                          title={
-                            (r.productCount ?? 0) > 0
-                              ? `مرتبط بـ ${r.productCount} منتج`
-                              : undefined
-                          }
+                          onClick={() => {
+                            setDeleteTarget(r);
+                            setReassignTo(undefined);
+                          }}
                         >
                           حذف
                         </Button>
-                      </Popconfirm>
+                      ) : (
+                        <Popconfirm
+                          title="حذف البراند؟"
+                          okText="حذف"
+                          cancelText="إلغاء"
+                          onConfirm={() => remove.mutate({ id: r.id })}
+                        >
+                          <Button size="small" danger loading={remove.isPending}>
+                            حذف
+                          </Button>
+                        </Popconfirm>
+                      )}
                     </Space>
                   ) : (
                     <Space>
@@ -358,6 +360,47 @@ export default function BrandsPage() {
           />
         </Card>
       </Space>
+
+      <Modal
+        title={`حذف البراند: ${deleteTarget?.name || ""}`}
+        open={Boolean(deleteTarget)}
+        onCancel={() => {
+          setDeleteTarget(null);
+          setReassignTo(undefined);
+        }}
+        onOk={() => {
+          if (!deleteTarget?.id) return;
+          if (!reassignTo) {
+            message.warning("اختر برانداً لنقل المنتجات إليه");
+            return;
+          }
+          remove.mutate({ id: deleteTarget.id, reassignTo });
+        }}
+        confirmLoading={remove.isPending}
+        okText="نقل وحذف"
+        okButtonProps={{ danger: true }}
+        cancelText="إلغاء"
+        destroyOnHidden
+      >
+        <p style={{ marginBottom: 12 }}>
+          هذا البراند مرتبط بـ <strong>{deleteTarget?.productCount ?? 0}</strong> منتج.
+          اختر برانداً لنقل المنتجات إليه ثم احذف البراند.
+        </p>
+        <Select
+          style={{ width: "100%" }}
+          showSearch
+          optionFilterProp="label"
+          placeholder="انقل المنتجات إلى..."
+          value={reassignTo}
+          onChange={setReassignTo}
+          options={(data || [])
+            .filter((b: any) => b.id !== deleteTarget?.id)
+            .map((b: any) => ({
+              value: b.id,
+              label: `${b.name}${b.productCount != null ? ` (${b.productCount})` : ""}`,
+            }))}
+        />
+      </Modal>
 
       <Modal
         title={editing ? "تعديل البراند" : "براند جديد"}

@@ -99,7 +99,8 @@ export class BrandsController {
   }
 
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  @Delete(":id") remove(@Param("id") id: string) {
-    return this.service.remove(id);
+  @Delete(":id")
+  remove(@Param("id") id: string, @Query("reassignTo") reassignTo?: string) {
+    return this.service.remove(id, { reassignToBrandId: reassignTo });
   }
 }

@@ -171,7 +171,7 @@ export async function typesenseMultiSearch(searches = []) {
     body: JSON.stringify({
       searches: searches.map((s) => ({ collection: cfg.index, ...s })),
     }),
-    signal: AbortSignal.timeout(8_000),
+    signal: AbortSignal.timeout(12_000),
   });
   if (!res.ok) throw new Error(`Typesense ${res.status}`);
   const data = await res.json();
@@ -193,19 +193,41 @@ export async function typesenseSearch(query, {
   } else if (cfg.preset && !strict && !filterBy) {
     search.preset = cfg.preset;
   } else {
-    search.query_by = 'title_AR,title_EN,brand,keywords';
-    search.num_typos = 2;
+    search.query_by = 'title_AR,title_EN,brand,keywords,alias,description,variations';
+    search.num_typos = strict ? 1 : 2;
+    search.prefix = true;
+    search.prioritize_exact_match = true;
     if (strict) {
-      search.num_typos = 1;
       search.drop_tokens_threshold = 0;
-      search.prioritize_exact_match = true;
     }
   }
   if (filterBy) search.filter_by = filterBy;
   if (sortBy) search.sort_by = sortBy;
 
-  const [result = {}] = await typesenseMultiSearch([search]);
-  return { hits: result.hits || [], found: result.found || 0, error: result.error };
+  let [result = {}] = await typesenseMultiSearch([search]);
+  let hits = result.hits || [];
+  let found = result.found || 0;
+
+  // إن فشل الـ preset أو أعاد صفراً — أعد البحث بحقول صريحة
+  if (q !== '*' && !hits.length && search.preset) {
+    const fallback = {
+      q,
+      per_page: perPage,
+      page,
+      query_by: 'title_AR,title_EN,brand,keywords,alias,description,variations',
+      num_typos: 2,
+      prefix: true,
+      prioritize_exact_match: true,
+      enable_overrides: true,
+    };
+    if (filterBy) fallback.filter_by = filterBy;
+    if (sortBy) fallback.sort_by = sortBy;
+    [result = {}] = await typesenseMultiSearch([fallback]);
+    hits = result.hits || [];
+    found = result.found || 0;
+  }
+
+  return { hits, found, error: result.error };
 }
 
 export { DETAIL_TTL, cacheGet, cacheSet };

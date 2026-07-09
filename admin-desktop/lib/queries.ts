@@ -84,7 +84,12 @@ export const mutations = {
   createBrand: (data: any) => api.post("/brands", data).then((r) => r.data?.data ?? r.data),
   updateBrand: (id: string, data: any) =>
     api.patch(`/brands/${id}`, data).then((r) => r.data?.data ?? r.data),
-  deleteBrand: (id: string) => api.delete(`/brands/${id}`).then((r) => r.data),
+  deleteBrand: (id: string, opts?: { reassignTo?: string }) =>
+    api
+      .delete(`/brands/${id}`, {
+        params: opts?.reassignTo ? { reassignTo: opts.reassignTo } : undefined,
+      })
+      .then((r) => r.data),
 
   /** مطابقة براند أو إنشاؤه من اسم الكتالوج */
   resolveBrand: (data: {
