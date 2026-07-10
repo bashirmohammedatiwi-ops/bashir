@@ -5,8 +5,7 @@ export { isMiswagInternalId, isValidEan };
 
 const V2_TTL = DETAIL_TTL;
 
-/** استخراج باركود EAN من صفحة المنتج v2 (حقل «رمز المنتج» في التطبيق) */
-export function extractBarcodeFromV2Detail(detail) {
+function collectBarcodesFromV2Detail(detail) {
   const found = new Set();
 
   const consider = (raw) => {
@@ -36,7 +35,17 @@ export function extractBarcodeFromV2Detail(detail) {
   }
 
   walk(detail?.content || []);
-  return [...found][0] || '';
+  return [...found];
+}
+
+/** استخراج باركود EAN من صفحة المنتج v2 (حقل «رمز المنتج» في التطبيق) */
+export function extractBarcodeFromV2Detail(detail) {
+  return collectBarcodesFromV2Detail(detail)[0] || '';
+}
+
+/** كل باركودات EAN في صفحة v2 — للمنتج + درجات اللون */
+export function extractAllBarcodesFromV2Detail(detail) {
+  return collectBarcodesFromV2Detail(detail);
 }
 
 export async function fetchV2Detail(id) {
