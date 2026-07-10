@@ -99,6 +99,23 @@ ensure_catalog_hub_ready() {
   return 1
 }
 
+# يحل: container name already in use (حاوية قديمة من compose سابق)
+resolve_stale_compose_containers() {
+  echo "==> Resolve stale Docker containers..."
+  local svc name cid managed
+  for svc in catalog-hub api postgres redis nginx; do
+    name="infra-${svc}-1"
+    cid=$(docker ps -aq -f "name=^/${name}$" 2>/dev/null | head -1 || true)
+    [[ -z "$cid" ]] && continue
+    managed=$($COMPOSE ps -q "$svc" 2>/dev/null | head -1 || true)
+    if [[ -z "$managed" || "$cid" != "$managed" ]]; then
+      echo "    Removing stale ${name} (${cid:0:12})"
+      docker rm -f "$cid" 2>/dev/null || true
+    fi
+  done
+  $COMPOSE rm -sf catalog-hub api 2>/dev/null || true
+}
+
 echo "==> Alhayaa full update"
 echo "    Domain: ${DOMAIN:-localhost}"
 
@@ -125,8 +142,10 @@ chmod +x scripts/*.sh
 
 render_nginx
 
+resolve_stale_compose_containers
+
 echo "==> Rebuild API + Catalog Hub..."
-$COMPOSE up -d --build api catalog-hub postgres redis
+$COMPOSE up -d --build --remove-orphans api catalog-hub postgres redis
 
 if ! ensure_catalog_hub_ready; then
   echo "WARN: catalog-hub not healthy yet — check: docker compose -f docker-compose.prod.yml logs catalog-hub --tail=50"
@@ -157,7 +176,8 @@ chmod -R a+rX admin-static
 
 echo "==> Reload Nginx..."
 render_nginx
-$COMPOSE up -d --force-recreate nginx
+resolve_stale_compose_containers
+$COMPOSE up -d --force-recreate --remove-orphans nginx
 
 echo "==> Verify..."
 sleep 2
