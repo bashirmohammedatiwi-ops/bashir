@@ -18,6 +18,8 @@ import { searchByMiswagId } from './id-lookup.js';
 import { mapTypesenseHit } from './categories.js';
 import { gtinEqual } from '../../core/barcode-index.js';
 import { resolveBilingualDescription, resolveBilingualName, splitBilingualText } from '../../core/bilingual.js';
+import { isUsableBarcodeMeta, buildMetaHintQueries, lookupBarcodeProductMeta } from '../../core/barcode-meta.js';
+import { guessBrandsByCountryPrefix, learnPrefixBrand, lookupBrandByPrefix, BEAUTY_BRAND_SWEEP } from '../../core/gs1-prefixes.js';
 
 function extractEan(v = {}) {
   for (const key of ['barcode', 'ean', 'upc', 'gtin', 'isbn']) {
@@ -477,7 +479,77 @@ function toBarcodeHit(item, digits, matchType, extra = {}) {
   };
 }
 
-/** بحث بالباركود — مباشر من Typesense + تحقق v2 (بدون أرشيف محلي) */
+function withDeadline(promise, ms, fallback) {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(fallback), ms);
+    promise.then(
+      (v) => { clearTimeout(timer); resolve(v); },
+      () => { clearTimeout(timer); resolve(fallback); },
+    );
+  });
+}
+
+async function typesenseBeautySearch(q, perPage = 20) {
+  const { hits = [] } = await typesenseSearch(q, {
+    perPage,
+    filterBy: 'l1_division_alias:=`beauty`',
+    strict: false,
+    usePreset: false,
+  }).catch(() => ({ hits: [] }));
+  return hits.map((h) => mapTypesenseHit(h.document || h)).filter((p) => p.id);
+}
+
+/**
+ * تجميع مرشّحين محتملين للباركود — بلا أرشيف محلي:
+ * 1) بادئة GS1 (شركة الباركود) → اسم ماركة معروف/متعلَّم → بحث Typesense فوري.
+ * 2) استعلام metadata خارجي (UPC/OpenBeautyFacts/ويب) بالتوازي — يعطي اسم/ماركة المنتج الحقيقي.
+ * كلاهما يعملان بالتوازي، فلا يُبطئ أحدهما الآخر.
+ */
+async function collectBarcodeCandidates(digits) {
+  const seen = new Map();
+  const addAll = (items) => {
+    for (const item of items) if (item?.id) seen.set(item.id, item);
+  };
+
+  const knownBrand = lookupBrandByPrefix(digits);
+  const guessedBrands = knownBrand ? [knownBrand] : guessBrandsByCountryPrefix(digits);
+
+  const brandSearch = Promise.all(
+    guessedBrands.slice(0, 4).map((brand) => typesenseBeautySearch(brand, 20)),
+  ).then((lists) => lists.flat());
+
+  // مهلة قصوى لبحث الميتاداتا الخارجي — لا يعطّل السرعة الإجمالية إن تأخرت مصادره
+  const metaPromise = withDeadline(lookupBarcodeProductMeta(digits).catch(() => null), 7_000, null);
+
+  const [brandHits, meta] = await Promise.all([brandSearch, metaPromise]);
+  addAll(brandHits);
+
+  if (meta && isUsableBarcodeMeta(meta)) {
+    const queries = buildMetaHintQueries(meta).slice(0, 3);
+    const metaHits = (await Promise.all(queries.map((q) => typesenseBeautySearch(q, 15)))).flat();
+    addAll(metaHits);
+  }
+
+  // احتياط أخير — قد يظهر الباركود حرفياً في نص المنتج (نادر لكن رخيص)
+  if (!seen.size) {
+    addAll(await typesenseBeautySearch(digits, 8));
+  }
+
+  // لا بادئة معروفة ولا metadata مفيدة — مسح موجّه لأشهر ماركات الجمال (محدود بمهلة)
+  if (!seen.size && !guessedBrands.length) {
+    const sweepHits = await withDeadline(
+      Promise.all(BEAUTY_BRAND_SWEEP.map((brand) => typesenseBeautySearch(brand, 12))).then((l) => l.flat()),
+      9_000,
+      [],
+    );
+    addAll(sweepHits);
+  }
+
+  // سقف أمان — يمنع مهلة تحقّق v2 من الانفجار عند مسح ماركات واسع
+  return { candidates: [...seen.values()].slice(0, 60), meta };
+}
+
+/** بحث بالباركود — مرشّحون بالتوازي + تحقق v2 حقيقي بالتوازي (سريع، بدون أرشيف محلي) */
 export async function searchBarcode(code) {
   const digits = String(code || '').replace(/\D/g, '');
   if (!digits) return [];
@@ -488,30 +560,34 @@ export async function searchBarcode(code) {
 
   if (!isValidEan(digits)) return [];
 
-  const { hits = [] } = await typesenseSearch(digits, {
-    perPage: 8,
-    filterBy: 'l1_division_alias:=`beauty`',
-    strict: false,
-    usePreset: false,
-  }).catch(() => ({ hits: [] }));
+  const { candidates } = await collectBarcodeCandidates(digits);
+  if (!candidates.length) return [];
 
-  const candidates = hits.map((h) => mapTypesenseHit(h.document || h)).filter((p) => p.id);
-
-  for (const item of candidates.slice(0, 5)) {
-    const parentBc = await fetchV2Barcode(item.id).catch(() => '');
-    if (gtinEqual(parentBc, digits)) {
+  // 1) تحقّق باركود المنتج الأب لكل المرشحين بالتوازي — أسرع مسار
+  const parentMap = await fetchV2BarcodesForIds(candidates.map((c) => c.id), { concurrency: 10 });
+  for (const item of candidates) {
+    const bc = parentMap.get(String(item.id));
+    if (bc && gtinEqual(bc, digits)) {
+      learnPrefixBrand(digits, item.brandAr || item.brandEn);
       return [toBarcodeHit(item, digits, 'ean')];
     }
+  }
 
-    const detail = await fetchProductDetail(item.id, { light: false }).catch(() => null);
+  // 2) لم يُطابق مستوى المنتج — فحص التدرجات لأفضل المرشحين بالتوازي (تفاصيل كاملة)
+  const top = candidates.slice(0, 6);
+  const details = await Promise.all(
+    top.map((item) => fetchProductDetail(item.id, { light: false }).catch(() => null)),
+  );
+
+  for (const detail of details) {
     if (!detail) continue;
-
     if (detail.barcode && gtinEqual(detail.barcode, digits)) {
+      learnPrefixBrand(digits, detail.brandAr || detail.brandEn);
       return [toBarcodeHit(detail, digits, 'ean')];
     }
-
     const shade = (detail.shades || []).find((s) => s.barcode && gtinEqual(s.barcode, digits));
     if (shade) {
+      learnPrefixBrand(digits, detail.brandAr || detail.brandEn);
       return [toBarcodeHit(detail, digits, 'ean', { shadeName: shade.nameAr || shade.name })];
     }
   }

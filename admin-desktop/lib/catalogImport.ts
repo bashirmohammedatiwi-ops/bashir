@@ -236,6 +236,8 @@ type StoreSearchStat = { id: string; count: number; error?: string };
 function storeSearchTimeoutMs(storeId: string, kind: "text" | "barcode" = "text") {
   if (storeId === "elryan") return kind === "barcode" ? 8_000 : 8_000;
   if (storeId === "amazon") return kind === "barcode" ? 30_000 : 18_000;
+  // مسواگ: بحث الباركود يستعلم مصادر ميتاداتا خارجية بالتوازي مع v2 — يحتاج مهلة أطول قليلاً
+  if (storeId === "miswag") return kind === "barcode" ? 22_000 : 10_000;
   return kind === "barcode" ? 12_000 : 10_000;
 }
 

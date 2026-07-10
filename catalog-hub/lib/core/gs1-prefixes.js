@@ -84,34 +84,50 @@ export const BEAUTY_BRAND_SWEEP = [
   'Neutrogena',
 ];
 
-/** اختر ماركات محتملة حسب بادئة البلد/الشركة */
+/**
+ * اختر ماركات محتملة حسب بادئة البلد/الشركة GS1 — نطاقات كاملة (وليس أرقاماً فردية)
+ * حتى نغطي كل بادئات الشركات ضمن بلد معيّن (كل بلد GS1 يملك مئات البادئات).
+ */
 export function guessBrandsByCountryPrefix(barcode = '') {
   const gtin = toGtin13(barcode);
   if (!gtin) return [];
-  const cc = gtin.slice(0, 3);
-  if (cc === '360' || cc === '300' || cc === '301' || cc === '333' || cc === '361') {
-    return ['Maybelline', 'Loreal Paris', 'Garnier', 'Bourjois', 'La Roche Posay', 'CeraVe'];
+  const cc = Number(gtin.slice(0, 3));
+
+  // فرنسا 300–379 (لوريال، مايبيلين، غارنييه، بورجوا...)
+  if (cc >= 300 && cc <= 379) {
+    return ['Loreal Paris', 'Maybelline', 'Garnier', 'Bourjois', 'La Roche Posay', 'CeraVe', 'Vichy'];
   }
-  if (cc === '400' || cc === '401' || cc === '402' || cc === '403' || cc === '404' || cc === '425') {
-    return ['Essence', 'Catrice', 'Nivea', 'Max Factor'];
+  // ألمانيا 400–440 (إيسنس، كاتريس، نيفيا، ماكس فاكتور...)
+  if (cc >= 400 && cc <= 440) {
+    return ['Essence', 'Catrice', 'Nivea', 'Max Factor', 'Beiersdorf'];
   }
-  if (cc === '869' || cc === '868') {
+  // تركيا 868–869 (فلورمار، نوت، غولدن روز...)
+  if (cc >= 868 && cc <= 869) {
     return ['Flormar', 'Note', 'Golden Rose', 'Deborah'];
   }
-  if (cc === '880') {
+  // كوريا الجنوبية 880 (بيوتي أوف جوسون، كوسركس، إيتود...)
+  if (cc === 880) {
     return ['Beauty Of Joseon', 'COSRX', 'Etude', 'Missha', 'The Face Shop'];
   }
-  if (cc === '800' || cc === '801' || cc === '802' || cc === '803') {
+  // إيطاليا 800–839 (بوبا ميلانو، ديبورا...)
+  if (cc >= 800 && cc <= 839) {
     return ['Pupa Milano', 'Deborah'];
   }
-  if (cc === '505' || cc === '506') {
-    return ['Revolution'];
+  // بريطانيا 500–509 (ريفوليوشن...)
+  if (cc >= 500 && cc <= 509) {
+    return ['Revolution', 'Rimmel'];
   }
-  if (cc === '629' || cc === '628') {
-    return ['Huda Beauty', 'IBRAQ', 'Lattafa', 'Rasasi'];
+  // الإمارات/الخليج 629 و 868 المحلية (هدى بيوتي، لطافة، رصاصي...)
+  if (cc === 629) {
+    return ['Huda Beauty', 'IBRAQ', 'Lattafa', 'Rasasi', 'Ard Al Zaafaran'];
   }
-  if (gtin.startsWith('0')) {
-    return ['Maybelline', 'NYX', 'E.L.F', 'Wet N Wild', 'Revlon', 'The Ordinary', 'Neutrogena'];
+  // الصين 690–699
+  if (cc >= 690 && cc <= 699) {
+    return [];
+  }
+  // أمريكا الشمالية (UPC-A) 000–139
+  if (cc <= 139) {
+    return ['Maybelline', 'NYX', 'E.L.F', 'Wet N Wild', 'Revlon', 'The Ordinary', 'Neutrogena', 'Clinique'];
   }
   return [];
 }
