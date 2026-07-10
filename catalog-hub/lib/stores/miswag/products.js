@@ -561,7 +561,10 @@ async function collectBarcodeCandidates(digits) {
   return { candidates: [...seen.values()].slice(0, 120), meta };
 }
 
-/** بحث بالباركود — مرشّحون بالتوازي + تحقق v2 حقيقي بالتوازي (سريع، بدون أرشيف محلي) */
+/**
+ * بحث بالباركود — خروج مبكر عند أول تطابق (لا ننتظر كل المرشحين).
+ * دُفعات متتالية من 12 مرشحاً بالتوازي: الكسب الأول يُوقف البحث فوراً.
+ */
 export async function searchBarcode(code) {
   const digits = String(code || '').replace(/\D/g, '');
   if (!digits) return [];
@@ -570,23 +573,32 @@ export async function searchBarcode(code) {
     return searchByMiswagId(digits);
   }
 
-  if (!isValidEan(digits)) return [];
+  if (!isValidEan(digits)) {
+    console.log(`[miswag/barcode] rejected digits="${digits}" — failed isValidEan`);
+    return [];
+  }
 
   const { candidates } = await collectBarcodeCandidates(digits);
+  console.log(`[miswag/barcode] digits="${digits}" candidates=${candidates.length}`);
   if (!candidates.length) return [];
 
-  // 1) تحقّق باركود المنتج الأب لكل المرشحين بالتوازي — أسرع مسار
-  const parentMap = await fetchV2BarcodesForIds(candidates.map((c) => c.id), { concurrency: 15 });
-  for (const item of candidates) {
-    const bc = parentMap.get(String(item.id));
-    if (bc && gtinEqual(bc, digits)) {
-      learnPrefixBrand(digits, item.brandAr || item.brandEn);
-      return [toBarcodeHit(item, digits, 'ean')];
+  // 1) فحص المستوى الأول (الأب) — دُفعات 12 مع خروج مبكر
+  const BATCH = 12;
+  for (let i = 0; i < candidates.length; i += BATCH) {
+    const batch = candidates.slice(i, i + BATCH);
+    const barcodeMap = await fetchV2BarcodesForIds(batch.map((c) => c.id), { concurrency: BATCH });
+    for (const item of batch) {
+      const bc = barcodeMap.get(String(item.id));
+      if (bc && gtinEqual(bc, digits)) {
+        learnPrefixBrand(digits, item.brandAr || item.brandEn);
+        console.log(`[miswag/barcode] ✓ parent match id=${item.id} barcode=${bc}`);
+        return [toBarcodeHit(item, digits, 'ean')];
+      }
     }
   }
 
-  // 2) لم يُطابق مستوى المنتج — فحص التدرجات لأفضل المرشحين بالتوازي (تفاصيل كاملة)
-  const top = candidates.slice(0, 6);
+  // 2) لم يُطابق مستوى الأب — فحص التدرجات لأفضل 8 مرشحين
+  const top = candidates.slice(0, 8);
   const details = await Promise.all(
     top.map((item) => fetchProductDetail(item.id, { light: false }).catch(() => null)),
   );
@@ -604,5 +616,6 @@ export async function searchBarcode(code) {
     }
   }
 
+  console.log(`[miswag/barcode] ✗ no match for digits="${digits}"`);
   return [];
 }
