@@ -85,10 +85,26 @@ export const BEAUTY_BRAND_SWEEP = [
 ];
 
 /**
- * اختر ماركات محتملة حسب بادئة البلد/الشركة GS1 — نطاقات كاملة (وليس أرقاماً فردية)
- * حتى نغطي كل بادئات الشركات ضمن بلد معيّن (كل بلد GS1 يملك مئات البادئات).
+ * اختر ماركات محتملة حسب بادئة البلد/الشركة GS1 — نطاقات كاملة.
+ * يدعم EAN-13 / UPC-A (12–14 أرقام) وEAN-8 (8 أرقام).
  */
 export function guessBrandsByCountryPrefix(barcode = '') {
+  const d = String(barcode || '').replace(/\D/g, '');
+
+  // EAN-8: 8 أرقام — أول رقمين كبادئة بلد تقريبية
+  if (d.length === 8) {
+    const p2 = Number(d.slice(0, 2));
+    if (p2 <= 13) return ['Maybelline', 'NYX', 'E.L.F', 'Wet N Wild', 'Revlon', 'The Ordinary', 'Neutrogena'];
+    if (p2 >= 30 && p2 <= 37) return ['Loreal Paris', 'Maybelline', 'Garnier', 'Bourjois', 'La Roche Posay'];
+    if (p2 >= 40 && p2 <= 44) return ['Essence', 'Catrice', 'Nivea'];
+    if (p2 >= 50 && p2 <= 50) return ['Revolution', 'Rimmel'];
+    if (p2 >= 62 && p2 <= 63) return ['Huda Beauty', 'IBRAQ', 'Lattafa'];
+    if (p2 >= 86 && p2 <= 87) return ['Flormar', 'Note', 'Golden Rose'];
+    if (p2 === 88) return ['Beauty Of Joseon', 'COSRX', 'Etude'];
+    // بادئة غير معروفة — جرّب أشهر الماركات الأمريكية والأوروبية
+    return ['Maybelline', 'Loreal Paris', 'NYX', 'Essence', 'Catrice'];
+  }
+
   const gtin = toGtin13(barcode);
   if (!gtin) return [];
   const cc = Number(gtin.slice(0, 3));
@@ -99,33 +115,29 @@ export function guessBrandsByCountryPrefix(barcode = '') {
   }
   // ألمانيا 400–440 (إيسنس، كاتريس، نيفيا، ماكس فاكتور...)
   if (cc >= 400 && cc <= 440) {
-    return ['Essence', 'Catrice', 'Nivea', 'Max Factor', 'Beiersdorf'];
+    return ['Essence', 'Catrice', 'Nivea', 'Max Factor'];
   }
   // تركيا 868–869 (فلورمار، نوت، غولدن روز...)
   if (cc >= 868 && cc <= 869) {
     return ['Flormar', 'Note', 'Golden Rose', 'Deborah'];
   }
-  // كوريا الجنوبية 880 (بيوتي أوف جوسون، كوسركس، إيتود...)
+  // كوريا الجنوبية 880
   if (cc === 880) {
     return ['Beauty Of Joseon', 'COSRX', 'Etude', 'Missha', 'The Face Shop'];
   }
-  // إيطاليا 800–839 (بوبا ميلانو، ديبورا...)
+  // إيطاليا 800–839
   if (cc >= 800 && cc <= 839) {
     return ['Pupa Milano', 'Deborah'];
   }
-  // بريطانيا 500–509 (ريفوليوشن...)
+  // بريطانيا 500–509
   if (cc >= 500 && cc <= 509) {
     return ['Revolution', 'Rimmel'];
   }
-  // الإمارات/الخليج 629 و 868 المحلية (هدى بيوتي، لطافة، رصاصي...)
+  // الخليج 629
   if (cc === 629) {
     return ['Huda Beauty', 'IBRAQ', 'Lattafa', 'Rasasi', 'Ard Al Zaafaran'];
   }
-  // الصين 690–699
-  if (cc >= 690 && cc <= 699) {
-    return [];
-  }
-  // أمريكا الشمالية (UPC-A) 000–139
+  // أمريكا الشمالية 000–139
   if (cc <= 139) {
     return ['Maybelline', 'NYX', 'E.L.F', 'Wet N Wild', 'Revlon', 'The Ordinary', 'Neutrogena', 'Clinique'];
   }

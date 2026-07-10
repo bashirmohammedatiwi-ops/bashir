@@ -505,6 +505,17 @@ async function typesenseBeautySearch(q, perPage = 20) {
  * 2) استعلام metadata خارجي (UPC/OpenBeautyFacts/ويب) بالتوازي — يعطي اسم/ماركة المنتج الحقيقي.
  * كلاهما يعملان بالتوازي، فلا يُبطئ أحدهما الآخر.
  */
+/**
+ * كم نتيجة نجلب لكل ماركة — نرفع الحد كلّما قلّ عدد الماركات المستهدفة
+ * حتى نغطي المنتجات ذات التقييم المنخفض التي لا تظهر في أعلى النتائج.
+ */
+function perBrandLimit(brandsCount) {
+  if (brandsCount <= 1) return 100;
+  if (brandsCount <= 2) return 60;
+  if (brandsCount <= 4) return 30;
+  return 15;
+}
+
 async function collectBarcodeCandidates(digits) {
   const seen = new Map();
   const addAll = (items) => {
@@ -513,9 +524,10 @@ async function collectBarcodeCandidates(digits) {
 
   const knownBrand = lookupBrandByPrefix(digits);
   const guessedBrands = knownBrand ? [knownBrand] : guessBrandsByCountryPrefix(digits);
+  const limit = perBrandLimit(guessedBrands.length);
 
   const brandSearch = Promise.all(
-    guessedBrands.slice(0, 4).map((brand) => typesenseBeautySearch(brand, 20)),
+    guessedBrands.slice(0, 4).map((brand) => typesenseBeautySearch(brand, limit)),
   ).then((lists) => lists.flat());
 
   // مهلة قصوى لبحث الميتاداتا الخارجي — لا يعطّل السرعة الإجمالية إن تأخرت مصادره
@@ -526,7 +538,7 @@ async function collectBarcodeCandidates(digits) {
 
   if (meta && isUsableBarcodeMeta(meta)) {
     const queries = buildMetaHintQueries(meta).slice(0, 3);
-    const metaHits = (await Promise.all(queries.map((q) => typesenseBeautySearch(q, 15)))).flat();
+    const metaHits = (await Promise.all(queries.map((q) => typesenseBeautySearch(q, 20)))).flat();
     addAll(metaHits);
   }
 
@@ -538,7 +550,7 @@ async function collectBarcodeCandidates(digits) {
   // لا بادئة معروفة ولا metadata مفيدة — مسح موجّه لأشهر ماركات الجمال (محدود بمهلة)
   if (!seen.size && !guessedBrands.length) {
     const sweepHits = await withDeadline(
-      Promise.all(BEAUTY_BRAND_SWEEP.map((brand) => typesenseBeautySearch(brand, 12))).then((l) => l.flat()),
+      Promise.all(BEAUTY_BRAND_SWEEP.map((brand) => typesenseBeautySearch(brand, 15))).then((l) => l.flat()),
       9_000,
       [],
     );
@@ -546,7 +558,7 @@ async function collectBarcodeCandidates(digits) {
   }
 
   // سقف أمان — يمنع مهلة تحقّق v2 من الانفجار عند مسح ماركات واسع
-  return { candidates: [...seen.values()].slice(0, 60), meta };
+  return { candidates: [...seen.values()].slice(0, 120), meta };
 }
 
 /** بحث بالباركود — مرشّحون بالتوازي + تحقق v2 حقيقي بالتوازي (سريع، بدون أرشيف محلي) */
@@ -564,7 +576,7 @@ export async function searchBarcode(code) {
   if (!candidates.length) return [];
 
   // 1) تحقّق باركود المنتج الأب لكل المرشحين بالتوازي — أسرع مسار
-  const parentMap = await fetchV2BarcodesForIds(candidates.map((c) => c.id), { concurrency: 10 });
+  const parentMap = await fetchV2BarcodesForIds(candidates.map((c) => c.id), { concurrency: 15 });
   for (const item of candidates) {
     const bc = parentMap.get(String(item.id));
     if (bc && gtinEqual(bc, digits)) {
