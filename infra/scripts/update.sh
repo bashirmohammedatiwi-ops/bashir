@@ -99,9 +99,9 @@ ensure_catalog_hub_ready() {
   return 1
 }
 
-# يحل: container name already in use (حاوية قديمة من compose سابق فقط —
-# لا تلمس حاويات تعمل بشكل طبيعي تحت compose الحالي، لتجنّب إعادة تشغيل
-# api/catalog-hub بلا داعٍ في كل مرة تُستدعى فيها هذه الدالة).
+# يحل: container name already in use (حاوية قديمة من compose سابق).
+# تُزيل الحاوية فقط إن لم يكن compose الحالي يعرفها (empty managed) —
+# لا تقارن معرّفات لأن docker ps يُرجع short-ID بينما compose يُرجع full-ID.
 resolve_stale_compose_containers() {
   echo "==> Resolve stale Docker containers..."
   local svc name cid managed
@@ -110,7 +110,7 @@ resolve_stale_compose_containers() {
     cid=$(docker ps -aq -f "name=^/${name}$" 2>/dev/null | head -1 || true)
     [[ -z "$cid" ]] && continue
     managed=$($COMPOSE ps -q "$svc" 2>/dev/null | head -1 || true)
-    if [[ -z "$managed" || "$cid" != "$managed" ]]; then
+    if [[ -z "$managed" ]]; then
       echo "    Removing stale ${name} (${cid:0:12})"
       docker rm -f "$cid" 2>/dev/null || true
     fi
@@ -177,16 +177,11 @@ chmod -R a+rX admin-static
 
 echo "==> Reload Nginx..."
 render_nginx
-resolve_stale_compose_containers
 $COMPOSE up -d --force-recreate --remove-orphans nginx
 
-# رفع nginx قد يشغّل api/catalog-hub من جديد إن كانا متوقفين (تبعيات nginx) —
-# تأكد من جهوزيتهما فعلياً قبل verify بدل انتظار ثابت قد لا يكفي.
-ensure_api_ready || true
-ensure_catalog_hub_ready || true
-
 echo "==> Verify..."
-sleep 2
+# انتظر جهوزية API الفعلية بدل sleep ثابت
+ensure_api_ready || true
 ./scripts/verify.sh
 
 echo "==> Free disk space (Docker cleanup)..."
