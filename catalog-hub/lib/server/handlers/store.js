@@ -7,6 +7,7 @@ import {
 } from '../../stores/registry.js';
 import { normalizeProduct, toImportPayload } from '../../core/product.js';
 import { isMiswagInternalId } from '../../stores/miswag/ids.js';
+import { runBarcodeScan, abortScan, scanState } from '../../stores/miswag/barcode-scan.js';
 
 function storeOr404(res, storeId) {
   const adapter = getStoreAdapter(storeId);
@@ -380,6 +381,34 @@ export async function handleImportApi(req, res, url) {
     } catch (err) {
       return sendJson(res, 502, { error: err.message });
     }
+  }
+
+  return false;
+}
+
+/**
+ * POST /api/stores/miswag/scan-barcodes       — ابدأ المسح في الخلفية
+ * DELETE /api/stores/miswag/scan-barcodes     — أوقف المسح
+ * GET    /api/stores/miswag/scan-barcodes     — حالة المسح
+ */
+export async function handleMiswagScan(req, res, url) {
+  if (!url.pathname.startsWith('/api/stores/miswag/scan-barcodes')) return false;
+
+  if (req.method === 'GET') {
+    return sendJson(res, 200, { scan: scanState });
+  }
+
+  if (req.method === 'DELETE') {
+    abortScan();
+    return sendJson(res, 200, { message: 'طلب إيقاف المسح أُرسل' });
+  }
+
+  if (req.method === 'POST') {
+    if (scanState.running) {
+      return sendJson(res, 200, { message: 'المسح يعمل بالفعل', scan: scanState });
+    }
+    runBarcodeScan().catch(() => {});
+    return sendJson(res, 202, { message: 'بدأ المسح في الخلفية', scan: scanState });
   }
 
   return false;

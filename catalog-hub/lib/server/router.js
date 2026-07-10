@@ -1,8 +1,7 @@
 import { URL } from 'node:url';
 import { sendJson } from './http.js';
 import { handleHealth, handleStores, handleCatalogBrands } from './handlers/catalog.js';
-import { handleStoreApi } from './handlers/store.js';
-import { handleImportApi } from './handlers/store.js';
+import { handleStoreApi, handleImportApi, handleMiswagScan } from './handlers/store.js';
 
 const PREFIX = (process.env.CATALOG_HUB_PUBLIC_PREFIX || '').replace(/\/$/, '');
 
@@ -37,6 +36,9 @@ export async function handleRequest(req, res) {
 
     const importHandled = await handleImportApi(req, res, url);
     if (importHandled !== false) return;
+
+    const scanHandled = await handleMiswagScan(req, res, url);
+    if (scanHandled !== false) return;
 
     return sendJson(res, 404, { error: 'Not found', path: url.pathname });
   } catch (err) {
