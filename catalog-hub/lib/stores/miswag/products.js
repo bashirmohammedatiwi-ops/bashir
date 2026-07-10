@@ -16,10 +16,11 @@ import {
 import { isMiswagInternalId } from './ids.js';
 import { searchByMiswagId } from './id-lookup.js';
 import { mapTypesenseHit } from './categories.js';
-import { gtinEqual, findBarcodeIndexEntry, upsertBarcodeIndex } from '../../core/barcode-index.js';
+import { gtinEqual, findBarcodeIndexEntry } from '../../core/barcode-index.js';
 import { resolveBilingualDescription, resolveBilingualName, splitBilingualText } from '../../core/bilingual.js';
 import { isUsableBarcodeMeta, buildMetaHintQueries, lookupBarcodeProductMeta } from '../../core/barcode-meta.js';
 import { guessBrandsByCountryPrefix, learnPrefixBrand, lookupBrandByPrefix, BEAUTY_BRAND_SWEEP } from '../../core/gs1-prefixes.js';
+import { harvestMiswagProductBarcodes } from './barcode-harvest.js';
 
 function extractEan(v = {}) {
   for (const key of ['barcode', 'ean', 'upc', 'gtin', 'isbn']) {
@@ -460,21 +461,9 @@ export async function fetchProductDetail(id, { light = false } = {}) {
 
   cacheSet(cacheKey, product);
 
-  // حفظ الباركودات تلقائياً في الكاش المحلي — بحث الباركود يصبح فورياً في المرات القادمة
+  // حفظ كل باركودات EAN المعروفة (أب + درجات) في الفهرس المحلي
   if (!light) {
-    const pid = product.id;
-    if (product.barcode) {
-      upsertBarcodeIndex(product.barcode, { store: 'miswag', productId: pid });
-    }
-    for (const shade of product.shades || []) {
-      if (shade.barcode) {
-        upsertBarcodeIndex(shade.barcode, {
-          store: 'miswag',
-          productId: pid,
-          shadeName: shade.nameAr || shade.name || '',
-        });
-      }
-    }
+    harvestMiswagProductBarcodes(product.id, { persist: true }).catch(() => {});
   }
 
   return product;

@@ -136,3 +136,34 @@ export function bulkUpsertBarcodeIndex(rows = []) {
   persistBarcodeIndex();
   return count;
 }
+
+/** إصدار حصاد مسواگ — يُرفع عند تحسين منطق الجمع */
+export const MISWAG_HARVEST_VERSION = 2;
+
+export function isMiswagBarcodeHarvestDone(productId) {
+  const pid = String(productId || '').trim();
+  if (!pid) return false;
+  const { meta } = loadBarcodeIndex();
+  const row = meta?.miswagHarvest?.[pid];
+  return Boolean(row && row.version >= MISWAG_HARVEST_VERSION);
+}
+
+export function markMiswagBarcodeHarvestDone(productId, { barcodeCount = 0 } = {}) {
+  const pid = String(productId || '').trim();
+  if (!pid) return;
+  const index = loadBarcodeIndex();
+  if (!index.meta) index.meta = {};
+  if (!index.meta.miswagHarvest) index.meta.miswagHarvest = {};
+  index.meta.miswagHarvest[pid] = {
+    version: MISWAG_HARVEST_VERSION,
+    at: Date.now(),
+    barcodeCount,
+  };
+  indexDirty = true;
+  persistBarcodeIndex();
+}
+
+export function countMiswagBarcodeIndexEntries() {
+  const { entries } = loadBarcodeIndex();
+  return Object.values(entries).filter((r) => String(r?.store || '') === 'miswag').length;
+}

@@ -407,8 +407,12 @@ export async function handleMiswagScan(req, res, url) {
     if (scanState.running) {
       return sendJson(res, 200, { message: 'المسح يعمل بالفعل', scan: scanState });
     }
-    runBarcodeScan().catch(() => {});
-    return sendJson(res, 202, { message: 'بدأ المسح في الخلفية', scan: scanState });
+    const force = url.searchParams.get('force') === '1' || url.searchParams.get('force') === 'true';
+    runBarcodeScan({ force }).catch(() => {});
+    return sendJson(res, 202, {
+      message: force ? 'بدأ إعادة الحصاد الشامل' : 'بدأ المسح في الخلفية',
+      scan: scanState,
+    });
   }
 
   return false;
