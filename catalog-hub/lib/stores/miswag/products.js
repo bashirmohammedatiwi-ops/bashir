@@ -16,7 +16,7 @@ import {
 import { isMiswagInternalId } from './ids.js';
 import { searchByMiswagId } from './id-lookup.js';
 import { mapTypesenseHit } from './categories.js';
-import { gtinEqual } from '../../core/barcode-index.js';
+import { gtinEqual, findBarcodeIndexEntry, upsertBarcodeIndex } from '../../core/barcode-index.js';
 import { resolveBilingualDescription, resolveBilingualName, splitBilingualText } from '../../core/bilingual.js';
 import { isUsableBarcodeMeta, buildMetaHintQueries, lookupBarcodeProductMeta } from '../../core/barcode-meta.js';
 import { guessBrandsByCountryPrefix, learnPrefixBrand, lookupBrandByPrefix, BEAUTY_BRAND_SWEEP } from '../../core/gs1-prefixes.js';
@@ -459,6 +459,24 @@ export async function fetchProductDetail(id, { light = false } = {}) {
   };
 
   cacheSet(cacheKey, product);
+
+  // حفظ الباركودات تلقائياً في الكاش المحلي — بحث الباركود يصبح فورياً في المرات القادمة
+  if (!light) {
+    const pid = product.id;
+    if (product.barcode) {
+      upsertBarcodeIndex(product.barcode, { store: 'miswag', productId: pid });
+    }
+    for (const shade of product.shades || []) {
+      if (shade.barcode) {
+        upsertBarcodeIndex(shade.barcode, {
+          store: 'miswag',
+          productId: pid,
+          shadeName: shade.nameAr || shade.name || '',
+        });
+      }
+    }
+  }
+
   return product;
 }
 
@@ -489,10 +507,13 @@ function withDeadline(promise, ms, fallback) {
   });
 }
 
-async function typesenseBeautySearch(q, perPage = 20) {
+/**
+ * بحث Typesense بلا قيد قسم — للباركود نبحث في كل كتالوج مسواگ
+ * (المستحضرات في "beauty"، العطور في "perfumes"، العناية في "personal-care"...).
+ */
+async function typesenseBroadSearch(q, perPage = 20) {
   const { hits = [] } = await typesenseSearch(q, {
     perPage,
-    filterBy: 'l1_division_alias:=`beauty`',
     strict: false,
     usePreset: false,
   }).catch(() => ({ hits: [] }));
@@ -512,8 +533,9 @@ async function typesenseBeautySearch(q, perPage = 20) {
 function perBrandLimit(brandsCount) {
   if (brandsCount <= 1) return 100;
   if (brandsCount <= 2) return 60;
-  if (brandsCount <= 4) return 30;
-  return 15;
+  if (brandsCount <= 4) return 40;
+  if (brandsCount <= 8) return 30;
+  return 20;
 }
 
 async function collectBarcodeCandidates(digits) {
@@ -527,7 +549,7 @@ async function collectBarcodeCandidates(digits) {
   const limit = perBrandLimit(guessedBrands.length);
 
   const brandSearch = Promise.all(
-    guessedBrands.slice(0, 4).map((brand) => typesenseBeautySearch(brand, limit)),
+    guessedBrands.map((brand) => typesenseBroadSearch(brand, limit)),
   ).then((lists) => lists.flat());
 
   // مهلة قصوى لبحث الميتاداتا الخارجي — لا يعطّل السرعة الإجمالية إن تأخرت مصادره
@@ -538,19 +560,19 @@ async function collectBarcodeCandidates(digits) {
 
   if (meta && isUsableBarcodeMeta(meta)) {
     const queries = buildMetaHintQueries(meta).slice(0, 3);
-    const metaHits = (await Promise.all(queries.map((q) => typesenseBeautySearch(q, 20)))).flat();
+    const metaHits = (await Promise.all(queries.map((q) => typesenseBroadSearch(q, 20)))).flat();
     addAll(metaHits);
   }
 
   // احتياط أخير — قد يظهر الباركود حرفياً في نص المنتج (نادر لكن رخيص)
   if (!seen.size) {
-    addAll(await typesenseBeautySearch(digits, 8));
+    addAll(await typesenseBroadSearch(digits, 8));
   }
 
-  // لا بادئة معروفة ولا metadata مفيدة — مسح موجّه لأشهر ماركات الجمال (محدود بمهلة)
+  // لا بادئة معروفة ولا metadata مفيدة — مسح موجّه لأشهر الماركات (محدود بمهلة)
   if (!seen.size && !guessedBrands.length) {
     const sweepHits = await withDeadline(
-      Promise.all(BEAUTY_BRAND_SWEEP.map((brand) => typesenseBeautySearch(brand, 15))).then((l) => l.flat()),
+      Promise.all(BEAUTY_BRAND_SWEEP.map((brand) => typesenseBroadSearch(brand, 15))).then((l) => l.flat()),
       9_000,
       [],
     );
@@ -558,7 +580,7 @@ async function collectBarcodeCandidates(digits) {
   }
 
   // سقف أمان — يمنع مهلة تحقّق v2 من الانفجار عند مسح ماركات واسع
-  return { candidates: [...seen.values()].slice(0, 120), meta };
+  return { candidates: [...seen.values()].slice(0, 200), meta };
 }
 
 /**
@@ -576,6 +598,24 @@ export async function searchBarcode(code) {
   if (!isValidEan(digits)) {
     console.log(`[miswag/barcode] rejected digits="${digits}" — failed isValidEan`);
     return [];
+  }
+
+  // ── كاش محلي: O(1) — كل منتج تُفتح تفاصيله يُحفظ باركوده تلقائياً ──
+  const cached = findBarcodeIndexEntry(digits);
+  if (cached?.store === 'miswag' && cached.productId) {
+    console.log(`[miswag/barcode] cache hit productId=${cached.productId}`);
+    const item = await fetchProductDetail(cached.productId, { light: false }).catch(() => null);
+    if (item) {
+      if (item.barcode && gtinEqual(item.barcode, digits)) {
+        learnPrefixBrand(digits, item.brandAr || item.brandEn);
+        return [toBarcodeHit(item, digits, 'ean')];
+      }
+      const shade = (item.shades || []).find((s) => s.barcode && gtinEqual(s.barcode, digits));
+      if (shade) {
+        learnPrefixBrand(digits, item.brandAr || item.brandEn);
+        return [toBarcodeHit(item, digits, 'ean', { shadeName: shade.nameAr || shade.name })];
+      }
+    }
   }
 
   const { candidates } = await collectBarcodeCandidates(digits);

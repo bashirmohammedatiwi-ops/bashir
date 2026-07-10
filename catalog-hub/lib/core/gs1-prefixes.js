@@ -51,8 +51,9 @@ const SEED_PREFIXES = {
   '0761318': 'Revlon',
 };
 
-/** ماركات جمال شائعة في مسواگ — مسح موجّه عند غياب metadata */
+/** ماركات شائعة في مسواگ (تجميل + عطور + عناية) — مسح موجّه عند غياب metadata */
 export const BEAUTY_BRAND_SWEEP = [
+  // تجميل عالمي
   'Maybelline',
   'Loreal Paris',
   'NYX',
@@ -82,6 +83,16 @@ export const BEAUTY_BRAND_SWEEP = [
   'Revlon',
   'La Roche Posay',
   'Neutrogena',
+  // عطور وعناية خليجية
+  'Rasasi',
+  'Lattafa',
+  'Ard Al Zaafaran',
+  'Ajmal',
+  'Al-Rehab',
+  'Swiss Arabian',
+  'IBRAQ',
+  'Nabeel',
+  'Armaf',
 ];
 
 /**
@@ -133,9 +144,10 @@ export function guessBrandsByCountryPrefix(barcode = '') {
   if (cc >= 500 && cc <= 509) {
     return ['Revolution', 'Rimmel'];
   }
-  // الخليج 629
-  if (cc === 629) {
-    return ['Huda Beauty', 'IBRAQ', 'Lattafa', 'Rasasi', 'Ard Al Zaafaran'];
+  // الدول العربية 621–629 (السعودية 628، الإمارات 629، الكويت 626، لبنان 625...)
+  // عطور وتجميل خليجية: رصاصي، لطافة، أرض الزعفران، أجمل، الرحاب، هدى بيوتي...
+  if (cc >= 621 && cc <= 629) {
+    return ['Rasasi', 'Lattafa', 'Ard Al Zaafaran', 'Ajmal', 'Al-Rehab', 'Huda Beauty', 'IBRAQ', 'Swiss Arabian'];
   }
   // أمريكا الشمالية 000–139
   if (cc <= 139) {
