@@ -58,7 +58,9 @@ export async function fetchV2Detail(id) {
     const detail = await miswagFetch(`/content/v2/items/${encodeURIComponent(pid)}`);
     cacheSet(cacheKey, detail);
     return detail;
-  } catch {
+  } catch (err) {
+    // لا تُخفِ حظر المعدّل — وإلا يُعلَّم المنتج «بلا باركود» خطأً
+    if (/Miswag 403 cooldown/.test(String(err?.message || ''))) throw err;
     return null;
   }
 }

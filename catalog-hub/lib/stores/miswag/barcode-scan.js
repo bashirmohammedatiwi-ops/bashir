@@ -8,9 +8,9 @@ import { harvestMiswagProductBarcodes } from './barcode-harvest.js';
 import { countMiswagBarcodeIndexEntries } from '../../core/barcode-index.js';
 
 const PAGE_SIZE = 100;
-const CONCURRENCY = 2;
-const BATCH_SIZE = 8;
-const BATCH_PAUSE_MS = 1000;
+const CONCURRENCY = 1;
+const BATCH_SIZE = 6;
+const BATCH_PAUSE_MS = 1500;
 const BREAKER_WAIT_MS = 65_000;
 
 const BEAUTY_L1 = ['beauty', 'perfumes', 'personal-care', 'fragrances'];
@@ -26,6 +26,7 @@ export const scanState = {
   scanned: 0,
   cached: 0,
   skipped: 0,
+  incomplete: 0,
   errors: 0,
   indexTotal: 0,
   aborted: false,
@@ -54,6 +55,7 @@ async function harvestHit(hit, { force = false } = {}) {
       force,
     });
     if (result.skipped) return { added: 0, skipped: true };
+    if (result.incomplete) scanState.incomplete += 1;
     scanState.scanned += 1;
     return { added: result.count || 0, skipped: false };
   } catch (err) {
@@ -103,6 +105,7 @@ export async function runBarcodeScan({ force = false } = {}) {
     scanned: 0,
     cached: 0,
     skipped: 0,
+    incomplete: 0,
     errors: 0,
     indexTotal: countMiswagBarcodeIndexEntries(),
     aborted: false,

@@ -101,28 +101,49 @@ export async function harvestMiswagProductBarcodes(productId, {
   const v1Vars = await fetchV1Variations(id);
   for (const v of v1Vars) registerVariation(v);
 
-  // v1 تفاصيل المنتج — أحياناً يحمل باركوداً في meta
+  let v1MetaOk = false;
   try {
     const v1 = await miswagFetch(`/content/v1/items/${encodeURIComponent(id)}`);
+    v1MetaOk = Boolean(v1?.info);
     const meta = v1?.info?.meta || {};
     const fromMeta = extractEan(meta);
     if (fromMeta) add(fromMeta);
-  } catch { /* اختياري */ }
+  } catch (err) {
+    if (/Miswag 403 cooldown/.test(String(err?.message || ''))) throw err;
+  }
 
-  // v2 لكل معرّف (أب + درجات) — استخراج كل الباركودات من الشجرة
+  let parentV2Ok = false;
+  try {
+    const parentDetail = await fetchV2Detail(id);
+    if (parentDetail) {
+      parentV2Ok = true;
+      for (const bc of extractAllBarcodesFromV2Detail(parentDetail)) add(bc, '');
+    }
+  } catch (err) {
+    if (/Miswag 403 cooldown/.test(String(err?.message || ''))) throw err;
+  }
+
   for (const sid of shadeIds) {
-    const detail = await fetchV2Detail(sid);
-    if (!detail) continue;
-    const label = shadeNames.get(sid) || (sid === id ? '' : sid);
-    for (const bc of extractAllBarcodesFromV2Detail(detail)) {
-      add(bc, label);
+    if (sid === id) continue;
+    try {
+      const detail = await fetchV2Detail(sid);
+      if (!detail) continue;
+      const label = shadeNames.get(sid) || sid;
+      for (const bc of extractAllBarcodesFromV2Detail(detail)) add(bc, label);
+    } catch (err) {
+      if (/Miswag 403 cooldown/.test(String(err?.message || ''))) throw err;
     }
   }
 
+  // لا تُعلّم «مكتمل» إذا فشلت كل مصادر v2/v1 ولم يُعثر على باركود — يُعاد لاحقاً
+  const confirmed = rows.length > 0 || parentV2Ok || v1MetaOk || v1Vars.length > 0;
+
   if (persist) {
     if (rows.length) bulkUpsertBarcodeIndex(rows);
-    markMiswagBarcodeHarvestDone(id, { barcodeCount: rows.length });
+    if (confirmed) {
+      markMiswagBarcodeHarvestDone(id, { barcodeCount: rows.length });
+    }
   }
 
-  return { rows, count: rows.length };
+  return { rows, count: rows.length, incomplete: !confirmed };
 }
