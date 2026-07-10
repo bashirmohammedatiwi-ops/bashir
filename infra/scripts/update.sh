@@ -99,7 +99,9 @@ ensure_catalog_hub_ready() {
   return 1
 }
 
-# يحل: container name already in use (حاوية قديمة من compose سابق)
+# يحل: container name already in use (حاوية قديمة من compose سابق فقط —
+# لا تلمس حاويات تعمل بشكل طبيعي تحت compose الحالي، لتجنّب إعادة تشغيل
+# api/catalog-hub بلا داعٍ في كل مرة تُستدعى فيها هذه الدالة).
 resolve_stale_compose_containers() {
   echo "==> Resolve stale Docker containers..."
   local svc name cid managed
@@ -113,7 +115,6 @@ resolve_stale_compose_containers() {
       docker rm -f "$cid" 2>/dev/null || true
     fi
   done
-  $COMPOSE rm -sf catalog-hub api 2>/dev/null || true
 }
 
 echo "==> Alhayaa full update"
@@ -178,6 +179,11 @@ echo "==> Reload Nginx..."
 render_nginx
 resolve_stale_compose_containers
 $COMPOSE up -d --force-recreate --remove-orphans nginx
+
+# رفع nginx قد يشغّل api/catalog-hub من جديد إن كانا متوقفين (تبعيات nginx) —
+# تأكد من جهوزيتهما فعلياً قبل verify بدل انتظار ثابت قد لا يكفي.
+ensure_api_ready || true
+ensure_catalog_hub_ready || true
 
 echo "==> Verify..."
 sleep 2
