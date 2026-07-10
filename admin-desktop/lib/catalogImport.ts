@@ -232,12 +232,9 @@ export async function listCategoryProducts(
 
 type StoreSearchStat = { id: string; count: number; error?: string };
 
-/** مهلة لكل متجر — الريان/نجد/أمازون سريعون، مسواگ أبطأ في الباركود */
+/** مهلة لكل متجر */
 function storeSearchTimeoutMs(storeId: string, kind: "text" | "barcode" = "text") {
-  // مسواگ: يتوافق مع مهلة السيرفر (22ث باركود)
-  if (storeId === "miswag") return kind === "barcode" ? 28_000 : 18_000;
   if (storeId === "elryan") return kind === "barcode" ? 8_000 : 8_000;
-  // أمازون: بحث ثنائي اللغة (ae+com) يحتاج مهلة أوسع قليلاً
   if (storeId === "amazon") return kind === "barcode" ? 30_000 : 18_000;
   return kind === "barcode" ? 12_000 : 10_000;
 }
@@ -310,7 +307,7 @@ export async function searchCatalogProducts(
     return result;
   }
 
-  // لكل متجر حد كافٍ — لا نقلّص مسواگ إلى 8 نتائج فقط
+  // لكل متجر حد كافٍ
   const perStoreLimit = Math.max(20, Math.ceil(limit / Math.min(stores.length, 2)));
   const lists: CatalogListProduct[][] = stores.map(() => []);
   const stats: StoreSearchStat[] = stores.map((id) => ({ id, count: 0 }));
@@ -455,11 +452,6 @@ export async function fetchCatalogProductSmart(
   storeLabel = "",
   onPartial?: (product: CatalogImportProduct) => void,
 ) {
-  // مسواگ: تفاصيل كاملة دائماً — الباركود من v2 ضروري للاستيراد
-  if (storeId === "miswag") {
-    return fetchCatalogProduct(storeId, sourceId, storeLabel);
-  }
-
   if (storeId !== "amazon") {
     return fetchCatalogProduct(storeId, sourceId, storeLabel);
   }
@@ -574,58 +566,4 @@ async function catalogMutate<T>(
   } finally {
     clearTimeout(timer);
   }
-}
-
-/** بدء أو استئناف حصاد باركودات مسواگ (v2) */
-export async function startMiswagBarcodeHarvest(force = false, category = "beauty") {
-  const q = force ? `?force=1&resume=0&category=${encodeURIComponent(category)}` : `?resume=1&category=${encodeURIComponent(category)}`;
-  return catalogMutate<{
-    store: string;
-    started: boolean;
-    status: string;
-    reason?: string;
-    message?: string;
-    indexedBarcodes?: number;
-    done?: number;
-    total?: number;
-  }>(`/api/catalog/miswag/barcodes${q}`, "POST", 30_000);
-}
-
-export async function fetchMiswagBarcodeHarvestStatus() {
-  return catalogFetch<{
-    store?: string;
-    status: string;
-    running?: boolean;
-    message?: string;
-    indexedBarcodes?: number;
-    done?: number;
-    total?: number;
-    added?: number;
-    errors?: number;
-  }>("/api/catalog/miswag/barcodes", 8_000);
-}
-
-/** حالة فهرس مسواگ المحلي */
-export async function fetchMiswagCrawlStatus() {
-  return catalogFetch<{
-    store: string;
-    productCount: number;
-    status: string;
-    running?: boolean;
-    message?: string;
-    progress?: { done?: number; total?: number; added?: number; category?: string };
-  }>("/api/catalog/miswag/crawl", 8_000);
-}
-
-/** تحميل أو تحديث بيانات مسواگ على السيرفر (بدون صور) */
-export async function startMiswagCatalogSync(force = false) {
-  const q = force ? "?force=1&resume=0" : "?resume=1";
-  return catalogMutate<{
-    store: string;
-    started: boolean;
-    productCount: number;
-    status: string;
-    reason?: string;
-    message?: string;
-  }>(`/api/catalog/miswag/crawl${q}`, "POST", 30_000);
 }

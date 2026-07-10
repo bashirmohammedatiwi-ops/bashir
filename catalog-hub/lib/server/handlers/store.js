@@ -6,7 +6,7 @@ import {
   resolveStoreAdapters,
 } from '../../stores/registry.js';
 import { normalizeProduct, toImportPayload } from '../../core/product.js';
-import { isMiswagInternalId } from '../../stores/miswag/id-lookup.js';
+import { isMiswagInternalId } from '../../stores/miswag/ids.js';
 
 function storeOr404(res, storeId) {
   const adapter = getStoreAdapter(storeId);
@@ -71,11 +71,7 @@ async function searchAdapter(adapter, query, digits) {
   let results = [];
   const isBarcodeish = digits.length >= 8;
   // مهلة لكل متجر — مسواگ يحتاج وقتاً أطول (v2 + sweeps)
-  const barcodeBudget = adapter.id === 'miswag'
-    ? 22_000
-    : adapter.id === 'amazon'
-      ? 28_000
-      : 10_000;
+  const barcodeBudget = adapter.id === 'amazon' ? 28_000 : 12_000;
 
   const startedAt = Date.now();
   if (isBarcodeish && adapter.searchBarcode) {
@@ -95,8 +91,8 @@ async function searchAdapter(adapter, query, digits) {
     const elapsed = Date.now() - startedAt;
     // لا تتجاوز ~28ث إجمالي حتى لا تقطع الواجهة الطلب
     const textBudget = isBarcodeish
-      ? Math.max(2_500, Math.min(adapter.id === 'miswag' ? 6_000 : 8_000, 28_000 - elapsed))
-      : (adapter.id === 'amazon' ? 18_000 : adapter.id === 'miswag' ? 14_000 : 12_000);
+      ? Math.max(2_500, Math.min(8_000, 28_000 - elapsed))
+      : (adapter.id === 'amazon' ? 18_000 : 12_000);
     if (textBudget >= 2_000) {
       try {
         const data = await withTimeout(
@@ -193,7 +189,7 @@ export async function handleStoreApi(req, res, url) {
     }
   }
 
-  // زحف/تحميل الفهرس المحلي (أمازون + مسواگ)
+  // زحف/تحميل الفهرس المحلي (أمازون فقط)
   const crawlMatch = url.pathname.match(/^\/api\/catalog\/([^/]+)\/crawl$/);
   if (crawlMatch) {
     const adapter = storeOr404(res, crawlMatch[1]);
@@ -212,31 +208,6 @@ export async function handleStoreApi(req, res, url) {
         return sendJson(res, 200, { store: adapter.id, ...adapter.stopCatalogCrawl() });
       }
       return sendJson(res, 200, { store: adapter.id, ...adapter.getCatalogStatus() });
-    } catch (err) {
-      return sendJson(res, 502, { error: err.message });
-    }
-  }
-
-  const barcodeHarvestMatch = url.pathname.match(/^\/api\/catalog\/([^/]+)\/barcodes$/);
-  if (barcodeHarvestMatch) {
-    const adapter = storeOr404(res, barcodeHarvestMatch[1]);
-    if (!adapter) return;
-    if (!adapter.startBarcodeHarvest) {
-      return sendJson(res, 400, { error: 'حصاد الباركود غير متاح لهذا المتجر' });
-    }
-    try {
-      if (req.method === 'POST') {
-        const force = q.force === '1' || q.force === 'true';
-        const resume = q.resume !== '0' && q.resume !== 'false';
-        const parentsOnly = q.parentsOnly === '1' || q.parentsOnly === 'true';
-        const category = q.category || 'beauty';
-        const result = adapter.startBarcodeHarvest({ force, resume, parentsOnly, category });
-        return sendJson(res, 200, { store: adapter.id, ...result });
-      }
-      if (req.method === 'DELETE') {
-        return sendJson(res, 200, { store: adapter.id, ...adapter.stopBarcodeHarvest() });
-      }
-      return sendJson(res, 200, { store: adapter.id, ...adapter.getBarcodeHarvestStatus() });
     } catch (err) {
       return sendJson(res, 502, { error: err.message });
     }

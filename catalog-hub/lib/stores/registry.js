@@ -7,7 +7,7 @@ import { createSallaAdapter } from './salla/adapter.js';
  * ═══════════════════════════════════════════════════════════
  *  سجل المتاجر — كل متجر في مجلد منفصل بالكامل:
  *
- *    lib/stores/miswag/   ← مسواگ (Typesense + v2) — مستقل
+ *    lib/stores/miswag/   ← مسواگ (Typesense + v2 مباشر)
  *    lib/stores/elryan/   ← الريان
  *    lib/stores/amazon/   ← أمازون (لا يشارك منطق مسواگ)
  *    lib/stores/salla/    ← نجد وغيرها
@@ -16,7 +16,7 @@ import { createSallaAdapter } from './salla/adapter.js';
  *  1) Salla: سطر في SALLA_STORES.
  *  2) غيره: مجلد lib/stores/{id}/ + تسجيل في CUSTOM_ADAPTERS.
  *
- *  مهم: زحف أمازون لا يعمل عند الإقلاع افتراضياً حتى لا يبطّئ مسواگ.
+ *  مهم: زحف أمازون لا يعمل عند الإقلاع افتراضياً.
  * ═══════════════════════════════════════════════════════════
  */
 

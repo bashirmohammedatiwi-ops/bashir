@@ -17,23 +17,6 @@ const server = createServer((req, res) => {
 server.listen(PORT, HOST, () => {
   console.log(`catalog-hub listening on http://${HOST}:${PORT}`);
 
-  import('./lib/stores/miswag/catalog-index.js')
-    .then(({ enrichMiswagCatalogFromBarcodeIndex, isMiswagCatalogWarm }) => {
-      if (!isMiswagCatalogWarm(30)) return;
-      const n = enrichMiswagCatalogFromBarcodeIndex();
-      if (n) console.log(`[miswag] enriched ${n} products with barcode-index`);
-    })
-    .catch(() => {});
-
-  import('./lib/stores/miswag/barcode-harvest.js')
-    .then(({ ensureMiswagBarcodeHarvestAfterCatalog }) => {
-      const r = ensureMiswagBarcodeHarvestAfterCatalog();
-      if (r?.started) console.log('[miswag] auto-started barcode harvest for beauty');
-    })
-    .catch(() => {});
-
-  // أمازون: الزحف التلقائي معطّل افتراضياً حتى لا يبطّئ مسواگ وباقي المتاجر.
-  // فعّله يدوياً: AMAZON_AUTO_CRAWL=1 أو POST /api/catalog/amazon/crawl
   if (process.env.AMAZON_AUTO_CRAWL === '1') {
     import('./lib/stores/amazon/crawl.js')
       .then(({ ensureAmazonCatalogWarm }) => {

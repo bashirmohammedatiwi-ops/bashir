@@ -2,4 +2,3 @@ node_modules
 .env
 *.log
 data/amazon-beauty-index.json
-data/miswag-catalog-index.json

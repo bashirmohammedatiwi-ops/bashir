@@ -8,13 +8,15 @@ import {
   cacheGet,
   cacheSet,
 } from './client.js';
-import { findBarcodesForProduct, upsertBarcodeIndex } from '../../core/barcode-index.js';
 import {
   fetchV2BarcodesForIds,
   fetchV2Barcode,
-  isMiswagInternalId,
   isValidEan,
 } from './v2-barcode.js';
+import { isMiswagInternalId } from './ids.js';
+import { searchByMiswagId } from './id-lookup.js';
+import { mapTypesenseHit } from './categories.js';
+import { gtinEqual } from '../../core/barcode-index.js';
 import { resolveBilingualDescription, resolveBilingualName, splitBilingualText } from '../../core/bilingual.js';
 
 function extractEan(v = {}) {
@@ -280,51 +282,6 @@ async function enrichShadesFromTypesense(pid, shades = []) {
   });
 }
 
-function shadeNamesMatch(a = '', b = '') {
-  const na = String(a || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, ' ').trim();
-  const nb = String(b || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF]+/g, ' ').trim();
-  if (!na || !nb) return false;
-  return na === nb || na.includes(nb) || nb.includes(na);
-}
-
-/** ربط باركود EAN من الفهرس المحلي عند غيابه في API مسواگ */
-function applyEanFromIndex(pid, product) {
-  const entries = findBarcodesForProduct('miswag', pid);
-  if (!entries.length) return product;
-
-  const productLevel = entries.find((e) => !e.shadeName);
-  if (productLevel?.barcode && !product.barcode) {
-    product.barcode = String(productLevel.barcode).replace(/\D/g, '');
-  }
-
-  if (!product.shades?.length) return product;
-
-  product.shades = product.shades.map((shade) => {
-    if (shade.barcode) return shade;
-    const byShade = entries.find((e) => e.shadeName && shadeNamesMatch(shade.nameAr || shade.name, e.shadeName));
-    const ean = byShade?.barcode || (product.shades.length === 1 ? product.barcode : '');
-    if (!ean) return shade;
-    return { ...shade, barcode: String(ean).replace(/\D/g, ''), ean: String(ean).replace(/\D/g, '') };
-  });
-
-  if (!product.barcode) {
-    const fromShade = product.shades.find((s) => s.barcode)?.barcode;
-    if (fromShade) product.barcode = fromShade;
-  }
-
-  return product;
-}
-
-function learnShadeBarcode(productId, shade, barcode) {
-  if (!productId || !shade || !isValidEan(barcode)) return;
-  upsertBarcodeIndex(barcode, {
-    store: 'miswag',
-    productId: String(productId),
-    name: shade.nameAr || shade.name || '',
-    shadeName: shade.nameAr || shade.name || '',
-    matchType: 'v2',
-  });
-}
 
 /** جلب باركود EAN الحقيقي من API v2 (رمز المنتج في تطبيق مسواگ) */
 async function enrichShadesWithV2Barcodes(productId, shades = []) {
@@ -344,7 +301,6 @@ async function enrichShadesWithV2Barcodes(productId, shades = []) {
     if (!isValidEan(barcode)) {
       return { ...shade, barcode: '', ean: '' };
     }
-    learnShadeBarcode(productId, shade, barcode);
     return { ...shade, barcode, ean: barcode };
   });
 
@@ -434,7 +390,6 @@ export async function fetchProductDetail(id, { light = false } = {}) {
       } catch { /* v2 اختياري */ }
     }
 
-    applyEanFromIndex(fallback.id, fallback);
     cacheSet(cacheKey, fallback);
     return fallback;
   }
@@ -456,10 +411,6 @@ export async function fetchProductDetail(id, { light = false } = {}) {
     try {
       productBarcode = await fetchV2Barcode(String(meta.product_id || pid));
     } catch { /* optional */ }
-    if (!productBarcode) {
-      const entries = findBarcodesForProduct('miswag', String(meta.product_id || pid));
-      productBarcode = String(entries[0]?.barcode || '').replace(/\D/g, '');
-    }
   }
 
   if (!light) {
@@ -505,7 +456,65 @@ export async function fetchProductDetail(id, { light = false } = {}) {
     inStock: detail.info?.size?.is_available !== false,
   };
 
-  applyEanFromIndex(product.id, product);
   cacheSet(cacheKey, product);
   return product;
+}
+
+function toBarcodeHit(item, digits, matchType, extra = {}) {
+  return {
+    id: item.id,
+    nameAr: item.nameAr,
+    nameEn: item.nameEn,
+    brandAr: item.brandAr,
+    brandEn: item.brandEn,
+    thumb: item.thumb,
+    price: item.price,
+    shadeCount: item.shadeCount,
+    hasOptions: item.hasOptions,
+    shadeName: extra.shadeName || '',
+    barcode: digits,
+    matchType,
+  };
+}
+
+/** بحث بالباركود — مباشر من Typesense + تحقق v2 (بدون أرشيف محلي) */
+export async function searchBarcode(code) {
+  const digits = String(code || '').replace(/\D/g, '');
+  if (!digits) return [];
+
+  if (isMiswagInternalId(digits)) {
+    return searchByMiswagId(digits);
+  }
+
+  if (!isValidEan(digits)) return [];
+
+  const { hits = [] } = await typesenseSearch(digits, {
+    perPage: 8,
+    filterBy: 'l1_division_alias:=`beauty`',
+    strict: false,
+    usePreset: false,
+  }).catch(() => ({ hits: [] }));
+
+  const candidates = hits.map((h) => mapTypesenseHit(h.document || h)).filter((p) => p.id);
+
+  for (const item of candidates.slice(0, 5)) {
+    const parentBc = await fetchV2Barcode(item.id).catch(() => '');
+    if (gtinEqual(parentBc, digits)) {
+      return [toBarcodeHit(item, digits, 'ean')];
+    }
+
+    const detail = await fetchProductDetail(item.id, { light: false }).catch(() => null);
+    if (!detail) continue;
+
+    if (detail.barcode && gtinEqual(detail.barcode, digits)) {
+      return [toBarcodeHit(detail, digits, 'ean')];
+    }
+
+    const shade = (detail.shades || []).find((s) => s.barcode && gtinEqual(s.barcode, digits));
+    if (shade) {
+      return [toBarcodeHit(detail, digits, 'ean', { shadeName: shade.nameAr || shade.name })];
+    }
+  }
+
+  return [];
 }

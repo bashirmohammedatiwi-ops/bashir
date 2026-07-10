@@ -5,9 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js",
-    "harvest-barcodes": "node scripts/harvest-miswag-barcodes.js",
-    "harvest-barcodes:fast": "PARENTS_ONLY=1 RATE_MS=60 CONCURRENCY=5 node scripts/harvest-miswag-barcodes.js"
+    "dev": "node --watch server.js"
   },
   "engines": {
     "node": ">=20"
