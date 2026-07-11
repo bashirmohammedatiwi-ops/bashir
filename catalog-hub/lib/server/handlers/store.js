@@ -87,8 +87,10 @@ async function searchAdapter(adapter, query, digits) {
     }
   }
 
-  // إن فشل الباركود — بحث نصي سريع (Typesense قد يفهرس الرقم/الاسم)
-  if (!results.length) {
+  // إن فشل الباركود — بحث نصي احتياطي فقط للمتاجر التي تفعّله صراحةً
+  // (بيوتي وي/ميرايا/غيرها: البحث النصي بالأرقام يُرجع نتائج خاطئة)
+  const allowTextFallback = adapter.barcodeTextFallback === true;
+  if (!results.length && allowTextFallback) {
     const elapsed = Date.now() - startedAt;
     // لا تتجاوز ~28ث إجمالي حتى لا تقطع الواجهة الطلب
     const textBudget = isBarcodeish

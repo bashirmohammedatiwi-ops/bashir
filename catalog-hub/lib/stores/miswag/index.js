@@ -15,6 +15,7 @@ export const MISWAG_META = {
 
 export const miswagAdapter = {
   ...MISWAG_META,
+  barcodeTextFallback: true,
 
   async health() {
     const { tree } = await fetchCategoryTree();
