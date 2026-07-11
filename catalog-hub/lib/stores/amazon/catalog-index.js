@@ -153,7 +153,11 @@ export function upsertAmazonProducts(items = [], { categoryId = '' } = {}) {
       sku: item.sku || prev?.sku || id,
       category: item.category || prev?.category || '',
       categoryIds: [...categoryIds],
-      shadeCount: item.shadeCount ?? prev?.shadeCount ?? null,
+      shadeCount: (() => {
+        const next = Math.max(Number(item.shadeCount || 0), Number(prev?.shadeCount || 0));
+        if (next > 0) return next;
+        return item.shadeCount ?? prev?.shadeCount ?? null;
+      })(),
       url: item.url || prev?.url || `https://www.amazon.com/dp/${id}`,
       updatedAt: now,
     };

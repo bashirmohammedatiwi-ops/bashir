@@ -661,6 +661,120 @@ function decodeDataAState(raw = '') {
   }
 }
 
+/** استخراج كائن JSON متداخل من موضع يبدأ بـ { */
+function extractBraceObject(source = '', fromIdx = 0) {
+  let i = Math.max(0, Number(fromIdx) || 0);
+  while (i < source.length && source[i] !== '{') i += 1;
+  if (i >= source.length) return null;
+
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  const from = i;
+  for (; i < source.length; i += 1) {
+    const ch = source[i];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === '\\') esc = true;
+      else if (ch === '"') inStr = false;
+      continue;
+    }
+    if (ch === '"') inStr = true;
+    else if (ch === '{') depth += 1;
+    else if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        try {
+          return JSON.parse(source.slice(from, i + 1));
+        } catch {
+          return null;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/** كل كتل data-a-state — مع دعم JSON كبير وعلامات اقتباس مُهَرَّبة */
+function extractAllDataAState(html = '') {
+  const results = [];
+  let pos = 0;
+  while (pos < html.length) {
+    const idx = html.indexOf('data-a-state="', pos);
+    if (idx < 0) break;
+    let i = idx + 'data-a-state="'.length;
+    let raw = '';
+    while (i < html.length) {
+      const ch = html[i];
+      if (ch === '\\') {
+        raw += html[i + 1] || '';
+        i += 2;
+        continue;
+      }
+      if (ch === '"') break;
+      raw += ch;
+      i += 1;
+    }
+    const parsed = decodeDataAState(raw);
+    if (parsed && typeof parsed === 'object') results.push(parsed);
+    pos = i + 1;
+  }
+  return results;
+}
+
+/** حمولة twister-js-init-dpx-data (كل التدرجات لمنتجات كثيرة الألوان) */
+function extractTwisterInitPayload(html = '') {
+  const markers = ['twister-js-init-dpx-data', 'twister-js-init-meta-data'];
+  for (const marker of markers) {
+    let pos = 0;
+    while (pos < html.length) {
+      const idx = html.indexOf(marker, pos);
+      if (idx < 0) break;
+      const window = html.slice(idx, idx + 900_000);
+      for (const dm of ['dataToReturn =', 'dataToReturn=', 'var dataToReturn=']) {
+        const di = window.indexOf(dm);
+        if (di < 0) continue;
+        const obj = extractBraceObject(window, di + dm.length);
+        if (obj && typeof obj === 'object') return obj;
+      }
+      pos = idx + marker.length;
+    }
+  }
+  return null;
+}
+
+function extractVariationCount(html = '') {
+  let max = 0;
+  for (const re of [
+    /"num_total_variations"\s*:\s*(\d+)/gi,
+    /"totalVariationCount"\s*:\s*(\d+)/gi,
+    /"variationCount"\s*:\s*(\d+)/gi,
+    /"num_colors"\s*:\s*(\d+)/gi,
+  ]) {
+    for (const m of html.matchAll(re)) {
+      max = Math.max(max, Number(m[1]) || 0);
+    }
+  }
+  const vals = extractJsonObject(html, '"variationValues":');
+  if (vals && typeof vals === 'object') {
+    for (const list of Object.values(vals)) {
+      if (Array.isArray(list)) max = Math.max(max, list.length);
+    }
+  }
+  const init = extractTwisterInitPayload(html);
+  if (init?.variationValues && typeof init.variationValues === 'object') {
+    for (const list of Object.values(init.variationValues)) {
+      if (Array.isArray(list)) max = Math.max(max, list.length);
+    }
+  }
+  const colorToAsin = extractJsonObject(html, '"colorToAsin":')
+    || extractJsonObject(html, '"colorToAsinMap":');
+  if (colorToAsin && typeof colorToAsin === 'object') {
+    max = Math.max(max, Object.keys(colorToAsin).length);
+  }
+  return max;
+}
+
 function mergeEmbeddedTwisterJson(html = '') {
   const colorToAsin = {};
   const colorImages = {};
@@ -676,37 +790,60 @@ function mergeEmbeddedTwisterJson(html = '') {
   };
 
   const absorb = (obj = {}) => {
-    mergeObj(colorToAsin, obj.colorToAsin);
+    if (!obj || typeof obj !== 'object') return;
+    mergeObj(colorToAsin, obj.colorToAsin || obj.colorToAsinMap);
     mergeObj(colorImages, obj.colorImages);
     mergeObj(variationValues, obj.variationValues);
-    mergeObj(dimToAsin, obj.dimensionToAsinMap);
+    if (obj.sortedDimValuesForAllDims && typeof obj.sortedDimValuesForAllDims === 'object') {
+      for (const [key, vals] of Object.entries(obj.sortedDimValuesForAllDims)) {
+        if (Array.isArray(vals) && vals.length && !variationValues[key]) {
+          variationValues[key] = vals;
+        }
+      }
+    }
+    mergeObj(dimToAsin, obj.dimensionToAsinMap || obj.dimToAsinMap);
     mergeObj(dims, obj.dimensionValuesDisplayData);
     mergeObj(asinVariationValues, obj.asinVariationValues);
     mergeObj(displayLabels, obj.variationDisplayLabels);
   };
 
   absorb({ colorToAsin: extractJsonObject(html, '"colorToAsin":') });
+  absorb({ colorToAsin: extractJsonObject(html, '"colorToAsinMap":') });
   absorb({ colorImages: extractJsonObject(html, '"colorImages":') });
   absorb({ variationValues: extractJsonObject(html, '"variationValues":') });
   absorb({ dimensionToAsinMap: extractJsonObject(html, '"dimensionToAsinMap":') });
   absorb({ dimensionValuesDisplayData: extractJsonObject(html, '"dimensionValuesDisplayData":') });
   absorb({ asinVariationValues: extractJsonObject(html, '"asinVariationValues":') });
   absorb({ variationDisplayLabels: extractJsonObject(html, '"variationDisplayLabels":') });
+  absorb(extractTwisterInitPayload(html));
 
-  for (const m of html.matchAll(/data-a-state="([^"]+)"/g)) {
-    absorb(decodeDataAState(m[1]));
+  for (const state of extractAllDataAState(html)) {
+    absorb(state);
   }
 
   // كتل JSON إضافية داخل السكربت
-  for (const marker of ['"colorToAsin":', '"colorImages":', '"variationValues":']) {
+  for (const marker of [
+    '"colorToAsin":',
+    '"colorToAsinMap":',
+    '"colorImages":',
+    '"variationValues":',
+    '"dimensionToAsinMap":',
+    '"asinVariationValues":',
+  ]) {
     let pos = 0;
     while (pos < html.length) {
       const idx = html.indexOf(marker, pos);
       if (idx < 0) break;
       const obj = extractJsonObject(html.slice(idx), marker);
+      if (!obj) {
+        pos = idx + marker.length;
+        continue;
+      }
       if (marker.includes('colorToAsin')) mergeObj(colorToAsin, obj);
       else if (marker.includes('colorImages')) mergeObj(colorImages, obj);
       else if (marker.includes('variationValues')) mergeObj(variationValues, obj);
+      else if (marker.includes('dimensionToAsinMap')) mergeObj(dimToAsin, obj);
+      else if (marker.includes('asinVariationValues')) mergeObj(asinVariationValues, obj);
       pos = idx + marker.length;
     }
   }
@@ -745,12 +882,20 @@ function colorImageForLabel(colorImages = {}, label = '') {
   return '';
 }
 
+function extractTwisterHtmlBlock(html = '', pattern) {
+  const m = html.match(pattern);
+  if (!m?.[0]) return '';
+  // منتجات كثيرة التدرجات — لا تقصّ الـ twister مبكراً
+  return m[0].length > 220_000 ? m[0].slice(0, 220_000) : m[0];
+}
+
 function parseTwisterHtmlSwatches(html = '', byAsin) {
   const blocks = [
-    html.match(/id="variation_color_name"[\s\S]{0,25000}?<\/ul>/i)?.[0] || '',
-    html.match(/id="inline-twister-dim-values-container"[\s\S]{0,25000}?<\/ul>/i)?.[0] || '',
-    html.match(/id="tp-inline-twister-dim-values-container"[\s\S]{0,25000}?<\/ul>/i)?.[0] || '',
-    html.match(/class="[^"]*twister[^"]*"[\s\S]{0,25000}/i)?.[0] || '',
+    extractTwisterHtmlBlock(html, /id="variation_color_name"[\s\S]*?<\/ul>/i),
+    extractTwisterHtmlBlock(html, /id="inline-twister-dim-values-container"[\s\S]*?<\/ul>/i),
+    extractTwisterHtmlBlock(html, /id="tp-inline-twister-dim-values-container"[\s\S]*?<\/ul>/i),
+    extractTwisterHtmlBlock(html, /id="softlines-twister"[\s\S]*?<\/ul>/i),
+    extractTwisterHtmlBlock(html, /class="[^"]*twister[^"]*"[\s\S]{0,120000}/i),
   ].filter(Boolean);
 
   const seen = new Set();
@@ -1371,7 +1516,7 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
   const asin = String(id || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(asin)) return null;
 
-  const cacheKey = `amazon:detail:v14:${asin}:${light ? 'l' : 'f'}`;
+  const cacheKey = `amazon:detail:v15:${asin}:${light ? 'l' : 'f'}`;
   const cached = cacheGet(cacheKey, DETAIL_TTL);
   if (cached) return cached;
 
@@ -1381,14 +1526,24 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
       ttl: DETAIL_TTL,
       cacheKey: `amazon:dp:ae:${asin}`,
     }),
-    fetchMarketHtml('com', `https://${MARKETS.com.host}/dp/${asin}`, {
+    fetchMarketHtml('com', `https://${MARKETS.com.host}/dp/${asin}?th=1&psc=1`, {
       ttl: DETAIL_TTL,
-      cacheKey: `amazon:dp:com:${asin}`,
+      cacheKey: `amazon:dp:com:${asin}:desk`,
     }),
   ]);
 
-  const aeHtml = settled[0].status === 'fulfilled' ? settled[0].value : '';
-  const comHtml = settled[1].status === 'fulfilled' ? settled[1].value : '';
+  let aeHtml = settled[0].status === 'fulfilled' ? settled[0].value : '';
+  let comHtml = settled[1].status === 'fulfilled' ? settled[1].value : '';
+
+  // احتياطي: صفحة com عادية إن فشلت نسخة سطح المكتب
+  if (!comHtml) {
+    try {
+      comHtml = await fetchMarketHtml('com', `https://${MARKETS.com.host}/dp/${asin}`, {
+        ttl: DETAIL_TTL,
+        cacheKey: `amazon:dp:com:${asin}`,
+      });
+    } catch { /* optional */ }
+  }
 
   let saHtml = '';
   const aeTitleAr = hasArabic(aeHtml.match(/id="productTitle"[^>]*>([^<]+)/)?.[1] || '');
@@ -1414,8 +1569,21 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
   let shades = mergeShadeLocales(en?.shades || [], [...(ae?.shades || []), ...(sa?.shades || [])]);
   shades = filterUsableShades(shades);
 
+  const primaryHtml = comHtml || aeHtml || saHtml;
+  const expectedVariations = extractVariationCount(primaryHtml);
+  if (shades.length < 2 && expectedVariations > 1) {
+    const rescueHtmls = [comHtml, aeHtml, saHtml].filter(Boolean);
+    for (const chunk of rescueHtmls) {
+      const rescued = filterUsableShades(parseShadesFromHtml(chunk));
+      if (rescued.length > shades.length) {
+        shades = mergeShadeLocales(rescued, shades);
+        shades = filterUsableShades(shades);
+      }
+    }
+  }
+
   const parentAsin = extractParentAsin(comHtml || aeHtml || saHtml, asin);
-  if (shades.length < 2 && parentAsin && parentAsin !== asin) {
+  if ((shades.length < 2 || shades.length < expectedVariations) && parentAsin && parentAsin !== asin) {
     try {
       const parentHtml = comHtml && extractParentAsin(comHtml, asin) === parentAsin
         ? comHtml
