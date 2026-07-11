@@ -68,12 +68,46 @@ function resolveProductId(product = {}) {
   return raw;
 }
 
+/** معرّف جلب التفاصيل — slug سلا (مثل RAyVNQX) وليس الرقم من URL فقط */
+function resolveFetchId(product = {}) {
+  const slug = String(product.id || '').trim();
+  const numericId = resolveProductId(product);
+  if (slug && !/^\d{5,}$/.test(slug)) return slug;
+  return numericId || slug;
+}
+
+function rememberSlugMapping(product = {}, cachePrefix = '') {
+  const slug = String(product.id || '').trim();
+  const numericId = resolveProductId(product);
+  if (!slug || !numericId || slug === numericId) return;
+  if (/^\d{5,}$/.test(slug)) return;
+  cacheSet(`${cachePrefix}:num2slug:${numericId}`, slug, DEFAULT_TTL * 6);
+  cacheSet(`${cachePrefix}:slug2num:${slug}`, numericId, DEFAULT_TTL * 6);
+}
+
+function productMatchesRequestedId(product = {}, requestedId = '', cachePrefix = '') {
+  const wanted = String(requestedId || '').trim();
+  if (!wanted) return false;
+  const slug = String(product.id || '').trim();
+  const numeric = resolveProductId(product);
+  if (slug === wanted || numeric === wanted) return true;
+  if (String(product.sku || '') === wanted) return true;
+  if (cachePrefix) {
+    const cachedNum = cacheGet(`${cachePrefix}:slug2num:${wanted}`, DEFAULT_TTL * 6);
+    if (cachedNum && (numeric === cachedNum || slug === cachedNum)) return true;
+    const cachedSlug = cacheGet(`${cachePrefix}:num2slug:${wanted}`, DEFAULT_TTL * 6);
+    if (cachedSlug && (slug === cachedSlug || numeric === wanted)) return true;
+  }
+  return false;
+}
+
 function mapListProduct(product = {}) {
   const { ar, en } = splitBilingualText(product.name, { mode: 'name' });
   const brand = String(product.brand?.name || '').trim();
   const sku = String(product.sku || '').trim();
   const barcode = String(product.gtin || sku || '').replace(/\D/g, '');
-  const id = resolveProductId(product);
+  const numericId = resolveProductId(product);
+  const fetchId = resolveFetchId(product);
 
   // نتائج /products/search تعيد price كنص رقمي بدون عملة
   let price = formatSallaPrice(product);
@@ -85,8 +119,9 @@ function mapListProduct(product = {}) {
   }
 
   return {
-    id,
-    slug: String(product.id || id),
+    id: fetchId,
+    numericId,
+    slug: String(product.id || fetchId),
     nameAr: ar || en || String(product.name || '').trim(),
     nameEn: en,
     brandAr: brand,
@@ -232,11 +267,12 @@ export function createSallaProductsApi(client) {
 
   /** إثراء نتيجة بحث مختصرة بتفاصيل المنتج الكاملة عند الحاجة */
   async function hydrateSearchHit(hit) {
+    rememberSlugMapping(hit, cachePrefix);
     const mapped = mapListProduct(hit);
     if (mapped.sku || mapped.brandAr) return mapped;
 
     const slug = String(hit.id || '').trim();
-    const numericId = mapped.id;
+    const numericId = mapped.numericId || resolveProductId(hit);
 
     try {
       if (slug && !/^\d+$/.test(slug)) {
@@ -305,38 +341,73 @@ export function createSallaProductsApi(client) {
     const pid = String(id || '').trim();
     if (!pid) return null;
 
-    const cacheKey = `${cachePrefix}:product:${pid}:${light ? 'light' : 'full'}`;
+    const cacheKey = `${cachePrefix}:product:v2:${pid}:${light ? 'light' : 'full'}`;
     const cached = cacheGet(cacheKey, DEFAULT_TTL);
     if (cached) return cached;
 
-    // slug نصي → /products/{slug}/details
-    if (pid && !/^\d+$/.test(pid)) {
+    const tryMapAndCache = (raw, { strict = true } = {}) => {
+      if (!raw?.id && !raw?.name) return null;
+      if (strict && !productMatchesRequestedId(raw, pid, cachePrefix)) return null;
+      const mapped = mapDetailProduct(raw, { light });
+      rememberSlugMapping(raw, cachePrefix);
+      cacheSet(cacheKey, mapped);
+      return mapped;
+    };
+
+    // slug سلا → /products/{slug}/details (المسار الموثوق)
+    const slugCandidates = new Set();
+    if (pid && !/^\d+$/.test(pid)) slugCandidates.add(pid);
+    const slugFromCache = cacheGet(`${cachePrefix}:num2slug:${pid}`, DEFAULT_TTL * 6);
+    if (slugFromCache) slugCandidates.add(String(slugFromCache));
+
+    for (const slug of slugCandidates) {
       try {
-        const { data } = await sallaFetch(`/products/${encodeURIComponent(pid)}/details`);
-        if (data?.id || data?.name) {
-          const mapped = mapDetailProduct(data, { light });
-          cacheSet(cacheKey, mapped);
-          return mapped;
+        const { data } = await sallaFetch(`/products/${encodeURIComponent(slug)}/details`);
+        const mapped = tryMapAndCache(data, { strict: false });
+        if (mapped) return mapped;
+      } catch { /* next */ }
+    }
+
+    // ids[] — فقط عند تطابق صارم (لا data[0] أبداً)
+    try {
+      const { data = [] } = await sallaFetch('/products', { params: { 'ids[]': pid } });
+      const product = data.find((item) => productMatchesRequestedId(item, pid, cachePrefix));
+      if (product?.id) {
+        const slug = String(product.id || '').trim();
+        if (slug && !/^\d+$/.test(slug)) {
+          try {
+            const { data: full } = await sallaFetch(`/products/${encodeURIComponent(slug)}/details`);
+            const mapped = tryMapAndCache(full);
+            if (mapped) return mapped;
+          } catch { /* ids hit */ }
         }
-      } catch { /* جرّب ids[] */ }
-    }
+        const mapped = tryMapAndCache(product);
+        if (mapped) return mapped;
+      }
+    } catch { /* optional */ }
 
-    const { data = [] } = await sallaFetch('/products', { params: { 'ids[]': pid } });
-    let product = data.find((item) => String(item.id) === pid) || data[0];
-    if (!product?.id) return null;
-
-    // تفاصيل كاملة غالباً تحتوي معرض صور أوسع
-    if (!light) {
+    // بحث بالباركود/sku عندما يُمرَّر رقم URL قديم
+    if (/^\d{5,}$/.test(pid)) {
       try {
-        const slug = String(product.id || pid);
-        const { data: full } = await sallaFetch(`/products/${encodeURIComponent(slug)}/details`);
-        if (full?.id || full?.name) product = { ...product, ...full };
-      } catch { /* ids[] كافٍ */ }
+        const { data = [] } = await sallaFetch('/products/search', {
+          params: { query: pid, per_page: 20 },
+        });
+        const hit = (data || []).find((item) => productMatchesRequestedId(item, pid, cachePrefix));
+        if (hit?.id) {
+          rememberSlugMapping(hit, cachePrefix);
+          const slug = String(hit.id || '').trim();
+          if (slug && !/^\d+$/.test(slug)) {
+            const { data: full } = await sallaFetch(`/products/${encodeURIComponent(slug)}/details`);
+            const mapped = tryMapAndCache(full);
+            if (mapped) return mapped;
+          }
+          const mapped = tryMapAndCache(hit);
+          if (mapped) return mapped;
+        }
+      } catch { /* optional */ }
     }
 
-    const mapped = mapDetailProduct(product, { light });
-    cacheSet(cacheKey, mapped);
-    return mapped;
+    return null;
   }
 
   async function searchBarcode(code) {
@@ -347,11 +418,14 @@ export function createSallaProductsApi(client) {
     const { data = [] } = await searchStore(digits, { page: 1, limit: 5 });
     if (!data.length) return [];
 
+    rememberSlugMapping(data[0], cachePrefix);
+    const listRow = mapListProduct(data[0]);
     const first = await hydrateSearchHit(data[0]);
     const exact = digitsEqual(first.sku, digits) || digitsEqual(first.barcode, digits);
 
     return [{
       ...first,
+      id: listRow.id || first.id,
       barcode: digits,
       matchType: exact ? 'sku' : 'keyword',
     }];

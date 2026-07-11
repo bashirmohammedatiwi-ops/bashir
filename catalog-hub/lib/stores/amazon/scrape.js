@@ -369,6 +369,7 @@ export function extractAllBarcodesFromDetailHtml(html = '') {
     /"upc"\s*:\s*"?(\d{8,14})"?/gi,
     /"gtin(?:13|12|14)?"\s*:\s*"?(\d{8,14})"?/gi,
     /"isbn"\s*:\s*"?(\d{8,14})"?/gi,
+    /"external_product_id"\s*:\s*\[\s*\{\s*"value"\s*:\s*"(\d{8,14})"/gi,
   ]) {
     for (const m of html.matchAll(re)) found.push(m[1]);
   }
@@ -406,6 +407,172 @@ export function extractAllBarcodesFromDetailHtml(html = '') {
 
 function extractBarcodeFromDetailHtml(html = '') {
   return pickBestBarcode(extractAllBarcodesFromDetailHtml(html));
+}
+
+function normalizeHex(value = '') {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (/^#[0-9a-fA-F]{6}$/.test(raw)) return raw;
+  if (/^#[0-9a-fA-F]{3}$/.test(raw)) {
+    const h = raw.slice(1);
+    return `#${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`;
+  }
+  if (/^#[0-9a-fA-F]{8}$/.test(raw)) return raw.slice(0, 7);
+  return raw;
+}
+
+/** باركود قريب من ASIN داخل HTML الصفحة (غالباً في JSON مضمّن) */
+function extractBarcodeNearAsin(html = '', asin = '') {
+  const id = String(asin || '').toUpperCase();
+  if (!id || !html) return '';
+
+  const chunks = [];
+  let pos = 0;
+  while (pos < html.length && chunks.length < 8) {
+    const idx = html.indexOf(id, pos);
+    if (idx < 0) break;
+    chunks.push(html.slice(Math.max(0, idx - 400), idx + 1600));
+    pos = idx + id.length;
+  }
+
+  for (const chunk of chunks) {
+    const direct = pickBestBarcode(extractAllBarcodesFromDetailHtml(chunk));
+    if (direct) return direct;
+    const paired = chunk.match(
+      /"(?:upc|ean|gtin|UPC|EAN|GTIN)"\s*:\s*"?(\d{8,14})"?/i,
+    )?.[1];
+    if (paired) return pickBestBarcode([paired]);
+  }
+  return '';
+}
+
+function barcodeFromVariationInfo(info = {}) {
+  const values = [
+    info?.upc,
+    info?.UPC,
+    info?.ean,
+    info?.EAN,
+    info?.gtin,
+    info?.GTIN,
+    info?.barcode,
+    info?.external_product_id,
+    info?.externalProductId,
+  ];
+  if (Array.isArray(info?.external_product_id)) {
+    for (const row of info.external_product_id) values.push(row?.value);
+  }
+  return pickBestBarcode(values);
+}
+
+/** فهرس باركود لكل ASIN من صفحة المنتج الأب */
+function buildShadeBarcodeIndex(html = '') {
+  const byAsin = new Map();
+  if (!html) return byAsin;
+
+  const { asinVariationValues } = mergeEmbeddedTwisterJson(html);
+  for (const [asin, info] of Object.entries(asinVariationValues || {})) {
+    const id = String(asin).toUpperCase();
+    if (!/^[A-Z0-9]{10}$/.test(id)) continue;
+    const bc = barcodeFromVariationInfo(info);
+    if (bc) byAsin.set(id, bc);
+  }
+
+  const init = extractTwisterInitPayload(html);
+  if (init?.asinVariationValues) {
+    for (const [asin, info] of Object.entries(init.asinVariationValues)) {
+      const id = String(asin).toUpperCase();
+      if (!/^[A-Z0-9]{10}$/.test(id)) continue;
+      const bc = barcodeFromVariationInfo(info);
+      if (bc) byAsin.set(id, bc);
+    }
+  }
+
+  for (const m of html.matchAll(
+    /"asin"\s*:\s*"([A-Z0-9]{10})"[\s\S]{0,1800}?"(?:upc|ean|gtin|UPC|EAN|GTIN)"\s*:\s*"?(\d{8,14})"?/gi,
+  )) {
+    const bc = pickBestBarcode([m[2]]);
+    if (bc) byAsin.set(String(m[1]).toUpperCase(), bc);
+  }
+
+  for (const m of html.matchAll(
+    /"([A-Z0-9]{10})"\s*:\s*\{[\s\S]{0,900}?"(?:upc|ean|gtin)"\s*:\s*"?(\d{8,14})"?/gi,
+  )) {
+    const bc = pickBestBarcode([m[2]]);
+    if (bc) byAsin.set(String(m[1]).toUpperCase(), bc);
+  }
+
+  return byAsin;
+}
+
+/** فهرس لون (#hex) لكل ASIN من سواتشات twister */
+function buildShadeHexIndex(html = '') {
+  const byAsin = new Map();
+  if (!html) return byAsin;
+
+  for (const m of html.matchAll(
+    /data-asin="([A-Z0-9]{10})"[^>]*style="[^"]*background(?:-color)?\s*:\s*(#[0-9a-fA-F]{3,8})/gi,
+  )) {
+    byAsin.set(String(m[1]).toUpperCase(), normalizeHex(m[2]));
+  }
+
+  for (const m of html.matchAll(
+    /data-asin="([A-Z0-9]{10})"[\s\S]{0,500}?background(?:-color)?\s*:\s*(#[0-9a-fA-F]{3,8})/gi,
+  )) {
+    const id = String(m[1]).toUpperCase();
+    if (!byAsin.has(id)) byAsin.set(id, normalizeHex(m[2]));
+  }
+
+  for (const m of html.matchAll(
+    /(?:title|aria-label|alt)="([^"]{1,80})"[^>]{0,500}?style="[^"]*background(?:-color)?\s*:\s*(#[0-9a-fA-F]{3,8})/gi,
+  )) {
+    const label = cleanShadeLabel(m[1]);
+    const hex = normalizeHex(m[2]);
+    if (label && hex) byAsin.set(`label:${label.toLowerCase()}`, hex);
+  }
+
+  return byAsin;
+}
+
+/** إثراء سريع من HTML الصفحة الأب — باركود + لون لكل تدرج دون طلبات إضافية */
+function enrichShadesFromParentHtml(shades = [], htmlSources = []) {
+  const sources = (htmlSources || []).filter(Boolean);
+  if (!sources.length || !shades?.length) return shades;
+
+  const barcodeIdx = new Map();
+  const hexByAsin = new Map();
+  const hexByLabel = new Map();
+  const mergedHtml = sources.join('\n');
+
+  for (const chunk of sources) {
+    for (const [asin, bc] of buildShadeBarcodeIndex(chunk)) {
+      if (!barcodeIdx.has(asin)) barcodeIdx.set(asin, bc);
+    }
+    for (const [key, hex] of buildShadeHexIndex(chunk)) {
+      if (key.startsWith('label:')) hexByLabel.set(key.slice(6), hex);
+      else if (!hexByAsin.has(key)) hexByAsin.set(key, hex);
+    }
+  }
+
+  return shades.map((s) => {
+    const id = String(s.id || '').toUpperCase();
+    const label = cleanShadeLabel(s.nameEn || s.nameAr || '');
+    const barcode = s.barcode
+      || barcodeIdx.get(id)
+      || extractBarcodeNearAsin(mergedHtml, id)
+      || '';
+    let colorHex = s.colorHex || hexByAsin.get(id) || '';
+    if (!colorHex && label) {
+      colorHex = hexByLabel.get(label.toLowerCase())
+        || extractSwatchHexFromHtml(mergedHtml, label)
+        || colorHexGuess(label)
+        || '';
+    }
+    return {
+      ...s,
+      barcode,
+      colorHex: normalizeHex(colorHex) || colorHex,
+    };
+  });
 }
 
 function barcodeMatches(target = '', candidates = []) {
@@ -913,12 +1080,15 @@ function parseTwisterHtmlSwatches(html = '', byAsin) {
       const img = inner.match(/src="(https:\/\/m\.media-amazon\.com\/images\/I\/[^"]+)"/i)?.[1]
         || inner.match(/src="(https:\/\/[^"]*images-amazon[^"]+)"/i)?.[1]
         || '';
-      if (!isUsableShadeName(label) && !img) continue;
+      const swatchHex = normalizeHex(
+        inner.match(/background(?:-color)?\s*:\s*(#[0-9a-fA-F]{3,8})/i)?.[1] || '',
+      );
+      if (!isUsableShadeName(label) && !img && !swatchHex) continue;
       putShade(byAsin, asin, {
         nameEn: label,
         nameAr: label,
         image: img,
-        colorHex: img ? '' : colorHexGuess(label),
+        colorHex: swatchHex || (img ? '' : colorHexGuess(label)),
       });
     }
 
@@ -1212,16 +1382,29 @@ function buildLocaleDescription(html = '', { arabic = false } = {}) {
 
 function pickBilingualDescription(aeDesc = '', enDesc = '', saDesc = '') {
   const arCandidates = [aeDesc, saDesc].filter((d) => d && hasArabic(d));
-  const enCandidates = [enDesc].filter((d) => d && hasLatin(d));
+  const enCandidates = [enDesc, aeDesc].filter((d) => d && hasLatin(d) && !hasArabic(d));
 
-  // أفضل وصف عربي = الأطول غير المواصفاتي
   const descriptionAr = arCandidates.sort((a, b) => b.length - a.length)[0] || '';
   const descriptionEn = enCandidates.sort((a, b) => b.length - a.length)[0] || '';
 
+  return { descriptionAr, descriptionEn };
+}
+
+function pickBilingualDescriptionFromHtml(aeHtml = '', comHtml = '', saHtml = '') {
+  const arCandidates = [
+    aeHtml ? buildLocaleDescription(aeHtml, { arabic: true }) : '',
+    saHtml ? buildLocaleDescription(saHtml, { arabic: true }) : '',
+  ].filter((d) => d && hasArabic(d));
+
+  const enCandidates = [
+    comHtml ? buildLocaleDescription(comHtml, { arabic: false }) : '',
+    aeHtml ? buildLocaleDescription(aeHtml, { arabic: false }) : '',
+    saHtml ? buildLocaleDescription(saHtml, { arabic: false }) : '',
+  ].filter((d) => d && hasLatin(d));
+
   return {
-    descriptionAr,
-    descriptionEn,
-    // لا تملأ العربي بالإنجليزي — أبقِ الحقل فارغاً إن لم يتوفر عربي حقيقي
+    descriptionAr: arCandidates.sort((a, b) => b.length - a.length)[0] || '',
+    descriptionEn: enCandidates.sort((a, b) => b.length - a.length)[0] || '',
   };
 }
 
@@ -1336,14 +1519,17 @@ function mergeShadeLocales(enShades = [], arShades = []) {
 }
 
 async function enrichShadeDetails(shades = [], { deadline = 0, concurrency = 10, max = 120 } = {}) {
-  // أبقِ كل التدرجات — أثْرِ باركود/اسم لون/سعر لكل درجة ضمن المهلة
   const out = shades.map((s) => ({ ...s }));
   const limit = Math.min(out.length, max);
 
-  // فضّل الدرجات بلا باركود أولاً
   const order = out
-    .map((s, index) => ({ index, missing: !s.barcode }))
-    .sort((a, b) => Number(b.missing) - Number(a.missing))
+    .map((s, index) => ({
+      index,
+      missing: !s.barcode || !s.colorHex,
+      missingBarcode: !s.barcode,
+    }))
+    .sort((a, b) => Number(b.missingBarcode) - Number(a.missingBarcode)
+      || Number(b.missing) - Number(a.missing))
     .map((x) => x.index)
     .slice(0, limit);
 
@@ -1352,14 +1538,15 @@ async function enrichShadeDetails(shades = [], { deadline = 0, concurrency = 10,
     const chunkIdx = order.slice(i, i + concurrency);
     const parts = await Promise.all(chunkIdx.map(async (index) => {
       const shade = out[index];
-      const cacheKey = `amazon:shade:v5:${shade.id}`;
+      const cacheKey = `amazon:shade:v6:${shade.id}`;
       const cached = cacheGet(cacheKey, DETAIL_TTL);
       if (cached) return { index, ...cached };
 
       try {
         let html = '';
+        let htmlAr = '';
         const marketsToTry = ['ae', 'com', 'sa'];
-        let barcode = '';
+        let barcode = shade.barcode || '';
 
         for (const mid of marketsToTry) {
           try {
@@ -1368,13 +1555,13 @@ async function enrichShadeDetails(shades = [], { deadline = 0, concurrency = 10,
               cacheKey: `amazon:dp:${mid}:${shade.id}`,
             });
             if (!html) html = pageHtml;
+            if (mid === 'ae' || mid === 'sa') htmlAr = pageHtml;
             const found = extractBarcodeFromDetailHtml(pageHtml);
             if (found) {
               barcode = found;
               html = pageHtml;
               break;
             }
-            // احتفظ بأول HTML صالح لاستخراج الاسم/السعر حتى لو بلا باركود
           } catch {
             continue;
           }
@@ -1387,13 +1574,19 @@ async function enrichShadeDetails(shades = [], { deadline = 0, concurrency = 10,
         const thumb = html.match(/"hiRes"\s*:\s*"(https:[^"]+)"/)?.[1]
           || html.match(/"large"\s*:\s*"(https:[^"]+)"/)?.[1]
           || '';
-        const colorName = extractSelectedColorName(html);
-        const existingName = shade.nameEn || shade.nameAr || '';
-        // لا تستبدل اسماً جيداً من twister بقيمة ضعيفة/فارغة
-        const keepExisting = isUsableShadeName(existingName) && !/^\d+$/.test(existingName);
-        const nextName = (!keepExisting && colorName) ? colorName : '';
-        const swatchHex = extractSwatchHexFromHtml(html, colorName || existingName);
-        const guessed = colorHexGuess(colorName || existingName);
+        const colorNameEn = extractSelectedColorName(html);
+        const colorNameAr = htmlAr ? extractSelectedColorName(htmlAr) : '';
+        const existingNameEn = shade.nameEn || '';
+        const existingNameAr = shade.nameAr || '';
+        const keepExistingEn = isUsableShadeName(existingNameEn) && !/^\d+$/.test(existingNameEn);
+        const keepExistingAr = isUsableShadeName(existingNameAr) && !/^\d+$/.test(existingNameAr);
+        const swatchHex = normalizeHex(
+          extractSwatchHexFromHtml(html, colorNameEn || existingNameEn)
+          || extractSwatchHexFromHtml(htmlAr, colorNameAr || existingNameAr)
+          || buildShadeHexIndex(html).get(String(shade.id || '').toUpperCase())
+          || '',
+        );
+        const guessed = colorHexGuess(colorNameEn || colorNameAr || existingNameEn || existingNameAr);
         const image = normalizeAmazonImageUrl(shade.image || thumb || '', 500);
 
         const patch = {
@@ -1401,8 +1594,15 @@ async function enrichShadeDetails(shades = [], { deadline = 0, concurrency = 10,
           price: price || shade.price || '',
           image,
           colorHex: swatchHex || shade.colorHex || (!image ? guessed : '') || '',
-          nameEn: (nextName && hasLatin(nextName) ? nextName : '') || shade.nameEn || '',
-          nameAr: (nextName && hasArabic(nextName) ? nextName : '') || shade.nameAr || '',
+          nameEn: (keepExistingEn ? existingNameEn : '')
+            || (colorNameEn && hasLatin(colorNameEn) ? colorNameEn : '')
+            || existingNameEn
+            || (colorNameAr && hasLatin(colorNameAr) ? colorNameAr : ''),
+          nameAr: (keepExistingAr ? existingNameAr : '')
+            || (colorNameAr && hasArabic(colorNameAr) ? colorNameAr : '')
+            || (colorNameEn && hasArabic(colorNameEn) ? colorNameEn : '')
+            || existingNameAr
+            || existingNameEn,
         };
         if (!patch.nameEn && patch.nameAr && hasLatin(patch.nameAr)) patch.nameEn = patch.nameAr;
         if (!patch.nameAr && patch.nameEn) patch.nameAr = patch.nameEn;
@@ -1516,7 +1716,7 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
   const asin = String(id || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(asin)) return null;
 
-  const cacheKey = `amazon:detail:v15:${asin}:${light ? 'l' : 'f'}`;
+  const cacheKey = `amazon:detail:v16:${asin}:${light ? 'l' : 'f'}`;
   const cached = cacheGet(cacheKey, DETAIL_TTL);
   if (cached) return cached;
 
@@ -1548,7 +1748,11 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
   let saHtml = '';
   const aeTitleAr = hasArabic(aeHtml.match(/id="productTitle"[^>]*>([^<]+)/)?.[1] || '');
   const aeDescPreview = aeHtml ? buildLocaleDescription(aeHtml, { arabic: true }) : '';
-  const needSa = !aeHtml || !aeTitleAr || !hasArabic(aeDescPreview) || aeDescPreview.length < 80;
+  const needSa = !light
+    || !aeHtml
+    || !aeTitleAr
+    || !hasArabic(aeDescPreview)
+    || aeDescPreview.length < 80;
   if (needSa) {
     try {
       saHtml = await fetchMarketHtml('sa', `https://${MARKETS.sa.host}/dp/${asin}`, {
@@ -1583,9 +1787,10 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
   }
 
   const parentAsin = extractParentAsin(comHtml || aeHtml || saHtml, asin);
+  let parentHtml = '';
   if ((shades.length < 2 || shades.length < expectedVariations) && parentAsin && parentAsin !== asin) {
     try {
-      const parentHtml = comHtml && extractParentAsin(comHtml, asin) === parentAsin
+      parentHtml = comHtml && extractParentAsin(comHtml, asin) === parentAsin
         ? comHtml
         : await fetchMarketHtml('com', `https://${MARKETS.com.host}/dp/${parentAsin}`, {
           ttl: DETAIL_TTL,
@@ -1599,6 +1804,9 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
       }
     } catch { /* optional */ }
   }
+
+  const parentHtmlSources = [comHtml, aeHtml, saHtml, parentHtml].filter(Boolean);
+  shades = enrichShadesFromParentHtml(shades, parentHtmlSources);
 
   if (shades.length > 1) {
     const children = shades.filter((s) => String(s.id) !== asin);
@@ -1619,20 +1827,18 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
     }];
   }
 
-  // إثراء التدرجات: باركود + اسم اللون + سعر (عند الاستيراد الكامل)
-  // مهم: إن فشل الإثراء نُبقي قائمة التدرجات كما هي (أسماء/صور) بدل إسقاطها
+  // إثراء التدرجات: باركود + لون + سعر لكل درجة
   if (!light && shades.length > 1) {
     const before = shades;
     try {
-      const budgetMs = shades.length > 40 ? 60_000 : shades.length > 15 ? 40_000 : 28_000;
+      const budgetMs = shades.length > 40 ? 75_000 : shades.length > 15 ? 50_000 : 35_000;
       const deadline = Date.now() + budgetMs;
       shades = await enrichShadeDetails(shades, {
         deadline,
         concurrency: shades.length > 40 ? 12 : 10,
         max: shades.length,
       });
-      // جولة ثانية للتدرجات التي بقيت بلا باركود
-      const stillMissing = shades.filter((s) => !s.barcode).length;
+      let stillMissing = shades.filter((s) => !s.barcode || !s.colorHex).length;
       if (stillMissing > 0 && Date.now() < deadline) {
         shades = await enrichShadeDetails(shades, {
           deadline,
@@ -1640,13 +1846,33 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
           max: shades.length,
         });
       }
+      stillMissing = shades.filter((s) => !s.barcode).length;
+      if (stillMissing > 0 && Date.now() < deadline) {
+        shades = await enrichShadeDetails(shades, {
+          deadline,
+          concurrency: 4,
+          max: shades.length,
+        });
+      }
       if (!shades?.length) shades = before;
     } catch {
       shades = before;
     }
+  } else if (light && shades.length > 1) {
+    const missingBarcode = shades.filter((s) => !s.barcode).length;
+    if (missingBarcode > 0 && missingBarcode <= 12) {
+      try {
+        shades = await enrichShadeDetails(shades, {
+          deadline: Date.now() + 14_000,
+          concurrency: 6,
+          max: Math.min(shades.length, 12),
+        });
+      } catch { /* optional */ }
+    }
   } else if (shades.length === 1) {
-    shades[0].barcode = shades[0].barcode || primary.barcode || ae?.barcode || '';
-    shades[0].price = shades[0].price || primary.price || ae?.price || '';
+    shades = enrichShadesFromParentHtml(shades, parentHtmlSources);
+    shades[0].barcode = shades[0].barcode || primary.barcode || ae?.barcode || sa?.barcode || '';
+    shades[0].price = shades[0].price || primary.price || ae?.price || sa?.price || '';
     if (!shades[0].colorHex) {
       shades[0].colorHex = colorHexGuess(shades[0].nameEn || shades[0].nameAr) || '';
     }
@@ -1675,7 +1901,7 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
       ...s,
       nameEn: finalEn,
       nameAr: finalAr,
-      colorHex: s.colorHex || '',
+      colorHex: normalizeHex(s.colorHex) || s.colorHex || colorHexGuess(finalEn || finalAr) || '',
     };
   });
   shades = filterUsableShades(shades);
@@ -1703,11 +1929,7 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
     || (hasArabic(sa?.brandAr) ? sa.brandAr : '')
     || brandEn;
 
-  const { descriptionAr, descriptionEn } = pickBilingualDescription(
-    ae?.descriptionAr || '',
-    en?.descriptionEn || '',
-    sa?.descriptionAr || '',
-  );
+  const { descriptionAr, descriptionEn } = pickBilingualDescriptionFromHtml(aeHtml, comHtml, saHtml);
 
   const barcodes = uniqBarcodes([
     ...(en?.barcodes || []),
