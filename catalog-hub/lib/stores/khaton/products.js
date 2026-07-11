@@ -29,11 +29,15 @@ async function fetchProductPage({ page = 1, limit = 30, categoryId = '', search 
   const cached = cacheGet(cacheKey, DEFAULT_TTL);
   if (cached) return cached;
 
-  const data = await khatonFetch('/products', { params, ttl: DEFAULT_TTL, cacheKey });
+  const [arData, enData] = await Promise.all([
+    khatonFetch('/products', { params, ttl: DEFAULT_TTL, cacheKey: `${cacheKey}:ar`, lang: 'ar' }),
+    khatonFetch('/products', { params, ttl: DEFAULT_TTL, cacheKey: `${cacheKey}:en`, lang: 'en' }),
+  ]);
+  const enById = new Map((enData.data || []).map((p) => [String(p.id), p]));
   const out = {
-    items: (data.data || []).map(mapListProduct),
-    total: Number(data.meta?.total || data.data?.length || 0),
-    page: Number(data.meta?.current_page || page),
+    items: (arData.data || []).map((p) => mapListProduct(p, enById.get(String(p.id)))),
+    total: Number(arData.meta?.total || arData.data?.length || 0),
+    page: Number(arData.meta?.current_page || page),
     pageSize: perPage,
   };
   cacheSet(cacheKey, out, DEFAULT_TTL);
@@ -64,14 +68,24 @@ export async function fetchProductDetail(id, { light = false } = {}) {
   const cached = cacheGet(cacheKey, DETAIL_TTL);
   if (cached) return cached;
 
-  const data = await khatonFetch(`/products/${encodeURIComponent(pid)}`, {
-    ttl: DETAIL_TTL,
-    cacheKey: `khaton:raw:detail:${pid}`,
-  });
-  const product = data.data;
+  const [arData, enData] = await Promise.all([
+    khatonFetch(`/products/${encodeURIComponent(pid)}`, {
+      ttl: DETAIL_TTL,
+      cacheKey: `khaton:raw:detail:${pid}:ar`,
+      lang: 'ar',
+    }),
+    light
+      ? null
+      : khatonFetch(`/products/${encodeURIComponent(pid)}`, {
+        ttl: DETAIL_TTL,
+        cacheKey: `khaton:raw:detail:${pid}:en`,
+        lang: 'en',
+      }),
+  ]);
+  const product = arData.data;
   if (!product?.id) return null;
 
-  const mapped = mapDetailProduct(product, { light });
+  const mapped = mapDetailProduct(product, { rawEn: enData?.data, light });
   cacheSet(cacheKey, mapped, DETAIL_TTL);
   return mapped;
 }

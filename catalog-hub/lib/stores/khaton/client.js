@@ -40,8 +40,9 @@ export function productUrl(id = '') {
   return pid ? `${SITE}/product/${pid}` : '';
 }
 
-export async function khatonFetch(path, { params = {}, ttl = 0, cacheKey = '' } = {}) {
-  const key = cacheKey || (ttl > 0 ? `khaton:${path}:${JSON.stringify(params)}` : '');
+export async function khatonFetch(path, { params = {}, ttl = 0, cacheKey = '', lang = '' } = {}) {
+  const langTag = lang ? `:lang=${lang}` : '';
+  const key = cacheKey || (ttl > 0 ? `khaton:${path}:${JSON.stringify(params)}${langTag}` : '');
   if (key) {
     const cached = cacheGet(key, ttl);
     if (cached) return cached;
@@ -53,8 +54,11 @@ export async function khatonFetch(path, { params = {}, ttl = 0, cacheKey = '' } 
     url.searchParams.set(k, String(v));
   }
 
+  const headers = { Accept: 'application/json', 'User-Agent': UA };
+  if (lang) headers.lang = lang;
+
   const res = await fetch(url, {
-    headers: { Accept: 'application/json', 'User-Agent': UA },
+    headers,
     signal: AbortSignal.timeout(12_000),
   });
   const data = await res.json().catch(() => ({}));
