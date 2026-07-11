@@ -35,6 +35,7 @@ export type CatalogListProduct = {
 };
 
 export type CatalogImportShade = {
+  id?: string;
   name: string;
   nameAr?: string;
   nameEn?: string;
@@ -132,6 +133,7 @@ async function catalogFetch<T>(path: string, timeoutMs = 60_000): Promise<T> {
 
 function mapImportProduct(raw: Record<string, unknown>, storeLabel = ""): CatalogImportProduct {
   const shades = ((raw.shades as CatalogImportShade[]) || []).map((s) => ({
+    id: s.id || s.sku || "",
     name: s.nameAr || s.nameEn || s.name || "",
     nameAr: s.nameAr || "",
     nameEn: s.nameEn || "",
