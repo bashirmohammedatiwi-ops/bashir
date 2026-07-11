@@ -49,10 +49,17 @@
       "shadeName": "100 BROWN SUGAR",
       "barcode": "9941300029012",
       "updatedAt": 1783768044172
+    },
+    "04260194178749": {
+      "store": "beautyway",
+      "productId": "3570",
+      "brand": "Original Bell",
+      "barcode": "4260194178749",
+      "updatedAt": 1783769446987
     }
   },
   "meta": {
-    "updatedAt": 1783768044172,
+    "updatedAt": 1783769446988,
     "miswagHarvest": {
       "1689856203": {
         "version": 3,

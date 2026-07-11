@@ -144,11 +144,12 @@ export async function algoliaSearch(query = '', {
   lang = 'ar',
   page = 0,
   limit = 30,
+  categoryId = '',
   ttl = LIST_TTL,
 } = {}) {
   const q = String(query || '').trim();
   const index = ALGOLIA_INDEX[lang] || ALGOLIA_INDEX.ar;
-  const cacheKey = `miraaya:algolia:${lang}:${q}:${page}:${limit}`;
+  const cacheKey = `miraaya:algolia:${lang}:${q}:${categoryId}:${page}:${limit}`;
   const cached = cacheGet(cacheKey, ttl);
   if (cached) return cached;
 
@@ -157,6 +158,9 @@ export async function algoliaSearch(query = '', {
     hitsPerPage: String(Math.min(limit, 48)),
     page: String(Math.max(0, page)),
   });
+  if (categoryId) {
+    params.set('filters', `categoryIds:${categoryId}`);
+  }
 
   const res = await fetch(`https://${ALGOLIA_APP}-dsn.algolia.net/1/indexes/${index}/query`, {
     method: 'POST',

@@ -7,7 +7,21 @@ import {
 } from './client.js';
 import { splitBilingualText } from '../../core/bilingual.js';
 
+export const BEAUTYWAY_PER_PAGE = 12;
+
 const PRODUCT_ITEM_RE = /<div class="product_item[\s\S]*?<\/figure>\s*<\/div>/gi;
+
+function slugFromHref(href = '') {
+  const path = String(href || '').replace(/^https?:\/\/[^/]+/i, '').replace(/^\/(ar|en)\//, '/').replace(/^\/+/, '');
+  if (!path || path.startsWith('shop') || path.startsWith('node/')) return '';
+  return path.split('?')[0].replace(/\/$/, '');
+}
+
+function barcodeFromImageUrl(url = '') {
+  const file = String(url || '').split('/').pop()?.split('?')[0] || '';
+  const m = file.match(/^(\d{8,14})\./);
+  return m ? extractBarcode(m[1]) : '';
+}
 
 function splitTitleParts(raw = '') {
   const text = decodeHtml(String(raw || '').replace(/<br\s*\/?>/gi, '\n'));
@@ -34,9 +48,12 @@ function parseListingItem(chunk = '') {
     || '',
   );
   const thumb = absUrl(chunk.match(/<img[^>]+src="([^"]+)"/i)?.[1] || '');
-  const id = String(chunk.match(/product_id="(\d+)"/i)?.[1] || '').trim();
-  const barcode = extractBarcode(chunk.match(/product_barcode="([^"]+)"/i)?.[1] || '');
-  if (!id) return null;
+  const nodeId = String(chunk.match(/product_id="(\d+)"/i)?.[1] || '').trim();
+  const slug = slugFromHref(href);
+  const id = nodeId || slug;
+  const barcode = extractBarcode(chunk.match(/product_barcode="([^"]+)"/i)?.[1] || '')
+    || barcodeFromImageUrl(thumb);
+  if (!id || !href) return null;
 
   return {
     id,
@@ -66,13 +83,14 @@ export function parseListingHtml(html = '') {
 
 export function parseListingTotal(html = '') {
   const text = String(html || '');
+  const parsed = parseListingHtml(text).length;
   const last = text.match(/pager-last[\s\S]*?page=(\d+)/i)?.[1];
   if (last != null) {
     const pages = Number(last) + 1;
-    const countOnPage = (text.match(PRODUCT_ITEM_RE) || []).length || 12;
+    const countOnPage = parsed || BEAUTYWAY_PER_PAGE;
     return pages * countOnPage;
   }
-  return parseListingHtml(text).length;
+  return parsed;
 }
 
 function parseDetailTitle(html = '') {

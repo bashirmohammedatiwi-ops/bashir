@@ -2,6 +2,7 @@ import { cacheGet, cacheSet } from '../../core/cache.js';
 import {
   DEFAULT_TTL,
   DETAIL_TTL,
+  algoliaPrimarySku,
   algoliaSearch,
   extractBarcode,
   fetchProductRest,
@@ -9,7 +10,6 @@ import {
   normalizeSku,
 } from './client.js';
 import { mapDetailProduct, mapListFromAlgolia, mapListFromGraphql, toBarcodeHit } from './map.js';
-import { mergeListingLocales } from './merge.js';
 
 const DETAIL_QUERY = `
   query ProductDetail($sku: String!) {
@@ -88,6 +88,36 @@ function pageResult(items, { page, limit, total = 0 } = {}) {
   };
 }
 
+async function fetchAlgoliaListing({ query = '', categoryId = '', page = 1, limit = 30 } = {}) {
+  const cacheKey = `miraaya:browse:${query}:${categoryId}:${page}:${limit}`;
+  const cached = cacheGet(cacheKey, DEFAULT_TTL);
+  if (cached) return cached;
+
+  const pageIndex = Math.max(0, page - 1);
+  const [arRes, enRes] = await Promise.all([
+    algoliaSearch(query, { lang: 'ar', page: pageIndex, limit, categoryId }),
+    algoliaSearch(query, { lang: 'en', page: pageIndex, limit, categoryId }),
+  ]);
+
+  const enBySku = new Map(
+    (enRes.hits || []).map((hit) => [String(algoliaPrimarySku(hit) || hit.objectID || ''), hit]),
+  );
+
+  const items = (arRes.hits || []).map((hit) => {
+    const sku = algoliaPrimarySku(hit);
+    const enHit = enBySku.get(String(sku || '')) || null;
+    return mapListFromAlgolia(hit, enHit);
+  }).filter(Boolean);
+
+  const out = pageResult(items, {
+    page,
+    limit,
+    total: Math.max(arRes.total, enRes.total),
+  });
+  cacheSet(cacheKey, out);
+  return out;
+}
+
 async function fetchDetailBilingual(sku, { highlightSku = '' } = {}) {
   const id = normalizeSku(sku);
   if (!id) return null;
@@ -141,32 +171,19 @@ async function resolveParentSkuForVariant(sku) {
 
 export async function searchProducts(query, { page = 1, limit = 30 } = {}) {
   const q = String(query || '').trim();
-  if (!q) return pageResult([], { page, limit, total: 0 });
-
-  const cacheKey = `miraaya:search:${q}:${page}:${limit}`;
-  const cached = cacheGet(cacheKey, DEFAULT_TTL);
-  if (cached) return cached;
-
-  const pageIndex = Math.max(0, page - 1);
-  const [arRes, enRes] = await Promise.all([
-    algoliaSearch(q, { lang: 'ar', page: pageIndex, limit }),
-    algoliaSearch(q, { lang: 'en', page: pageIndex, limit }),
-  ]);
-
-  const items = mergeListingLocales(
-    (arRes.hits || []).map((h) => mapListFromAlgolia(h, null)).filter(Boolean),
-    (enRes.hits || []).map((h) => mapListFromAlgolia(null, h)).filter(Boolean),
-  );
-
-  const out = pageResult(items, { page, limit, total: Math.max(arRes.total, enRes.total) });
-  cacheSet(cacheKey, out);
-  return out;
+  return fetchAlgoliaListing({ query: q, page, limit });
 }
 
 export async function listCategoryProducts(categoryId, { page = 1, limit = 30 } = {}) {
   const cgid = String(categoryId || '').trim();
   if (!cgid || cgid === 'root') {
-    return searchProducts('', { page, limit });
+    return fetchAlgoliaListing({ page, limit });
+  }
+
+  try {
+    return await fetchAlgoliaListing({ categoryId: cgid, page, limit });
+  } catch (err) {
+    console.warn('miraaya algolia category browse:', err.message);
   }
 
   const cacheKey = `miraaya:cat:${cgid}:${page}:${limit}`;
@@ -193,24 +210,8 @@ export async function listCategoryProducts(categoryId, { page = 1, limit = 30 } 
   const enItems = enData?.products?.items || [];
   const enBySku = new Map(enItems.map((i) => [String(i.sku), i]));
 
-  const brandCache = new Map();
-  async function brandFor(sku) {
-    if (brandCache.has(sku)) return brandCache.get(sku);
-    const rest = await fetchProductRest(sku).catch(() => null);
-    const row = {
-      ar: rest?.custom_attributes?.find((a) => a.attribute_code === 'brand')?.value || '',
-      en: rest?.custom_attributes?.find((a) => a.attribute_code === 'brand')?.value || '',
-    };
-    brandCache.set(sku, row);
-    return row;
-  }
-
-  const mapped = await Promise.all(arItems.map(async (arItem) => {
-    const sku = String(arItem.sku || '');
-    const brand = await brandFor(sku);
-    return mapListFromGraphql(arItem, enBySku.get(sku), brand);
-  }));
-  const items = mapped.filter(Boolean);
+  const items = arItems.map((arItem) => mapListFromGraphql(arItem, enBySku.get(String(arItem.sku)), {}))
+    .filter(Boolean);
 
   const total = Number(arData?.products?.total_count || enData?.products?.total_count || items.length);
   const out = pageResult(items, { page, limit, total });
