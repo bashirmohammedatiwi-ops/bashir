@@ -16,7 +16,7 @@ import {
 import { isMiswagInternalId } from './ids.js';
 import { searchByMiswagId } from './id-lookup.js';
 import { mapTypesenseHit } from './categories.js';
-import { gtinEqual, findBarcodeIndexEntry } from '../../core/barcode-index.js';
+import { gtinEqual, findBarcodeIndexEntry, upsertBarcodeIndex } from '../../core/barcode-index.js';
 import { resolveBilingualDescription, resolveBilingualName, splitBilingualText } from '../../core/bilingual.js';
 import { isUsableBarcodeMeta, buildMetaHintQueries, lookupBarcodeProductMeta } from '../../core/barcode-meta.js';
 import { guessBrandsByCountryPrefix, learnPrefixBrand, lookupBrandByPrefix, BEAUTY_BRAND_SWEEP } from '../../core/gs1-prefixes.js';
@@ -469,6 +469,15 @@ export async function fetchProductDetail(id, { light = false } = {}) {
   return product;
 }
 
+function rememberBarcodeMatch(digits, item, { shadeName = '' } = {}) {
+  upsertBarcodeIndex(digits, {
+    store: 'miswag',
+    productId: String(item.id || ''),
+    shadeName: shadeName || '',
+    brand: item.brandAr || item.brandEn || '',
+  });
+}
+
 function toBarcodeHit(item, digits, matchType, extra = {}) {
   return {
     id: item.id,
@@ -527,12 +536,9 @@ function perBrandLimit(brandsCount) {
   return 20;
 }
 
-async function collectBarcodeCandidates(digits) {
-  const seen = new Map();
-  const addAll = (items) => {
-    for (const item of items) if (item?.id) seen.set(item.id, item);
-  };
+const MAX_BARCODE_CANDIDATES = 200;
 
+async function collectBarcodeCandidates(digits) {
   const knownBrand = lookupBrandByPrefix(digits);
   const guessedBrands = knownBrand ? [knownBrand] : guessBrandsByCountryPrefix(digits);
   const limit = perBrandLimit(guessedBrands.length);
@@ -545,31 +551,46 @@ async function collectBarcodeCandidates(digits) {
   const metaPromise = withDeadline(lookupBarcodeProductMeta(digits).catch(() => null), 7_000, null);
 
   const [brandHits, meta] = await Promise.all([brandSearch, metaPromise]);
-  addAll(brandHits);
 
+  const priority = [];
+  const seen = new Set();
+  const pushUnique = (items) => {
+    for (const item of items) {
+      if (!item?.id || seen.has(item.id)) continue;
+      seen.add(item.id);
+      priority.push(item);
+    }
+  };
+
+  // metadata أولاً — استعلامات محددة قبل مسح ماركات البادئة الواسع
   if (meta && isUsableBarcodeMeta(meta)) {
-    const queries = buildMetaHintQueries(meta).slice(0, 3);
-    const metaHits = (await Promise.all(queries.map((q) => typesenseBroadSearch(q, 20)))).flat();
-    addAll(metaHits);
+    const queries = buildMetaHintQueries(meta);
+    for (const q of queries.slice(0, 5)) {
+      const hits = await typesenseBroadSearch(q, 20);
+      pushUnique(hits);
+      if (hits.length > 0 && hits.length <= 8) break;
+    }
   }
 
+  pushUnique(brandHits);
+
   // احتياط أخير — قد يظهر الباركود حرفياً في نص المنتج (نادر لكن رخيص)
-  if (!seen.size) {
-    addAll(await typesenseBroadSearch(digits, 8));
+  if (!priority.length) {
+    pushUnique(await typesenseBroadSearch(digits, 8));
   }
 
   // لا بادئة معروفة ولا metadata مفيدة — مسح موجّه لأشهر الماركات (محدود بمهلة)
-  if (!seen.size && !guessedBrands.length) {
+  if (!priority.length && !guessedBrands.length) {
     const sweepHits = await withDeadline(
       Promise.all(BEAUTY_BRAND_SWEEP.map((brand) => typesenseBroadSearch(brand, 15))).then((l) => l.flat()),
       9_000,
       [],
     );
-    addAll(sweepHits);
+    pushUnique(sweepHits);
   }
 
-  // سقف أمان — يمنع مهلة تحقّق v2 من الانفجار عند مسح ماركات واسع
-  return { candidates: [...seen.values()].slice(0, 200), meta };
+  // سقف أمان — مرشّحو metadata يبقون في المقدمة ولا يُقصّون بسبب مسح الماركات
+  return { candidates: priority.slice(0, MAX_BARCODE_CANDIDATES), meta };
 }
 
 /**
@@ -620,6 +641,7 @@ export async function searchBarcode(code) {
       const bc = barcodeMap.get(String(item.id));
       if (bc && gtinEqual(bc, digits)) {
         learnPrefixBrand(digits, item.brandAr || item.brandEn);
+        rememberBarcodeMatch(digits, item);
         console.log(`[miswag/barcode] ✓ parent match id=${item.id} barcode=${bc}`);
         return [toBarcodeHit(item, digits, 'ean')];
       }
@@ -636,11 +658,13 @@ export async function searchBarcode(code) {
     if (!detail) continue;
     if (detail.barcode && gtinEqual(detail.barcode, digits)) {
       learnPrefixBrand(digits, detail.brandAr || detail.brandEn);
+      rememberBarcodeMatch(digits, detail);
       return [toBarcodeHit(detail, digits, 'ean')];
     }
     const shade = (detail.shades || []).find((s) => s.barcode && gtinEqual(s.barcode, digits));
     if (shade) {
       learnPrefixBrand(digits, detail.brandAr || detail.brandEn);
+      rememberBarcodeMatch(digits, detail, { shadeName: shade.nameAr || shade.name });
       return [toBarcodeHit(detail, digits, 'ean', { shadeName: shade.nameAr || shade.name })];
     }
   }

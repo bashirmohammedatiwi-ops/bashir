@@ -111,10 +111,33 @@ export function normalizeBarcodeMeta(meta = {}) {
   return normalized;
 }
 
+function looksLikeProductName(text = '') {
+  const s = String(text || '').trim();
+  if (!s) return false;
+  return (
+    /\b(parfum|parfum|extait|extrait|eau de|edp|edt|spray|fragrance|perfume)\b/i.test(s)
+    || /\d+\s*ml\b/i.test(s)
+    || s.split(/\s+/).length >= 5
+  );
+}
+
+function looksLikeRetailerName(text = '') {
+  const s = String(text || '').trim().toLowerCase();
+  return /\b(market|store|shop|boutique|trading|general)\b/i.test(s);
+}
+
 export function parseBarcodeMetaFields(meta = {}) {
   let brand = String(meta.brand || '').trim();
   let title = String(meta.title || '').trim();
   let shade = String(meta.shade || '').trim();
+
+  // بعض مصادر الويب تضع اسم المنتج في brand والمتجر في title
+  if (looksLikeProductName(brand) && (!title || looksLikeRetailerName(title))) {
+    const productLine = brand;
+    const tokens = productLine.split(/\s+/).filter(Boolean);
+    brand = tokens.slice(0, Math.min(2, tokens.length)).join(' ');
+    title = productLine;
+  }
 
   if (!shade && /[-–—]/.test(title)) {
     const parts = title.split(/[-–—]/).map((p) => p.trim()).filter(Boolean);
