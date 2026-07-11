@@ -40,6 +40,7 @@ import {
   listCategoryProducts,
   searchCatalogByBarcode,
   searchCatalogProducts,
+  type CatalogBrandRow,
   type CatalogCategoryNode,
   type CatalogImportOption,
   type CatalogImportProduct,
@@ -68,7 +69,7 @@ async function ensureBrandId(
   brands: any[] = [],
   brandAr = "",
   brandEn = "",
-  catalogBrands: { brands?: Array<{ name?: string; nameAr?: string; nameEn?: string; key?: string; logoUrl?: string; logoIsProductImage?: boolean }> } = {},
+  catalogBrands: { brands?: CatalogBrandRow[] } = {},
 ): Promise<string | undefined> {
   const local = matchBrandIdLocal(brands, brandAr, brandEn);
   if (local) return local;
