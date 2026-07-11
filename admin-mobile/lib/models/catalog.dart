@@ -1,5 +1,47 @@
 import '../core/utils/json.dart';
 
+class CatalogStore {
+  const CatalogStore({required this.id, required this.label});
+
+  final String id;
+  final String label;
+
+  factory CatalogStore.fromJson(Map<String, dynamic> json) {
+    return CatalogStore(
+      id: asString(json['id']),
+      label: asString(json['label'], asString(json['id'])),
+    );
+  }
+}
+
+class StoreSearchStat {
+  const StoreSearchStat({
+    required this.storeId,
+    required this.storeLabel,
+    this.count = 0,
+    this.error,
+    this.done = false,
+  });
+
+  final String storeId;
+  final String storeLabel;
+  final int count;
+  final String? error;
+  final bool done;
+
+  bool get ok => error == null;
+}
+
+class CatalogBarcodeSearchResult {
+  const CatalogBarcodeSearchResult({
+    required this.options,
+    required this.stats,
+  });
+
+  final List<CatalogImportOption> options;
+  final List<StoreSearchStat> stats;
+}
+
 class CatalogImportOption {
   const CatalogImportOption({
     required this.store,
@@ -184,13 +226,19 @@ class CatalogImportProduct {
     );
   }
 
-  CatalogImportProduct copyWith({List<CatalogImportShade>? shades, bool? hasShades}) {
+  CatalogImportProduct copyWith({
+    List<CatalogImportShade>? shades,
+    bool? hasShades,
+    String? nameAr,
+    String? nameEn,
+    String? priceHint,
+  }) {
     return CatalogImportProduct(
       store: store,
       storeLabel: storeLabel,
       sourceId: sourceId,
-      nameAr: nameAr,
-      nameEn: nameEn,
+      nameAr: nameAr ?? this.nameAr,
+      nameEn: nameEn ?? this.nameEn,
       brandAr: brandAr,
       brandEn: brandEn,
       descriptionAr: descriptionAr,
@@ -201,7 +249,7 @@ class CatalogImportProduct {
       shades: shades ?? this.shades,
       hasShades: hasShades ?? this.hasShades,
       sourceUrl: sourceUrl,
-      priceHint: priceHint,
+      priceHint: priceHint ?? this.priceHint,
       categoryHint: categoryHint,
     );
   }

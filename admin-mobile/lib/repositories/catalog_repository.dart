@@ -31,15 +31,54 @@ class CatalogRepository {
     }
   }
 
+  int _textTimeoutMs(String storeId) {
+    if (storeId == 'faces') return 25000;
+    if (storeId == 'amazon') return 18000;
+    if (storeId == 'miraaya') return 20000;
+    return 12000;
+  }
+
+  Future<List<CatalogStore>> fetchCatalogStores() async {
+    try {
+      final resp = await _dio.get('/api/catalog/stores');
+      final data = asMap(resp.data);
+      final rows = (data['stores'] as List?) ?? [];
+      if (rows.isNotEmpty) {
+        return rows.map((r) => CatalogStore.fromJson(asMap(r))).toList();
+      }
+    } catch (_) {}
+    return AppConfig.catalogStores
+        .map((id) => CatalogStore(id: id, label: id))
+        .toList();
+  }
+
   Future<List<CatalogImportOption>> searchByBarcode(
     String barcode, {
     List<String>? stores,
     void Function(List<CatalogImportOption> partial)? onPartial,
   }) async {
+    final result = await searchByBarcodeDetailed(
+      barcode,
+      stores: stores,
+      onPartial: onPartial == null
+          ? null
+          : (partial) => onPartial(partial.options),
+    );
+    return result.options;
+  }
+
+  Future<CatalogBarcodeSearchResult> searchByBarcodeDetailed(
+    String barcode, {
+    List<String>? stores,
+    void Function(CatalogBarcodeSearchResult partial)? onPartial,
+  }) async {
     final storeIds = stores ?? AppConfig.catalogStores;
     final results = <CatalogImportOption>[];
+    final stats = <StoreSearchStat>[];
 
     await Future.wait(storeIds.map((id) async {
+      var count = 0;
+      String? error;
       try {
         final resp = await _dio.get(
           '/api/import/search',
@@ -50,13 +89,58 @@ class CatalogRepository {
         final items = ((data['results'] as List?) ?? [])
             .map((r) => CatalogImportOption.fromJson(asMap(r), id))
             .toList();
+        count = items.length;
+        results.addAll(items);
+      } catch (e) {
+        error = e is DioException ? 'انتهت المهلة' : 'خطأ';
+      } finally {
+        stats.add(StoreSearchStat(
+          storeId: id,
+          storeLabel: id,
+          count: count,
+          error: error,
+          done: true,
+        ));
+        onPartial?.call(CatalogBarcodeSearchResult(
+          options: _rankOptions([...results]),
+          stats: [...stats],
+        ));
+      }
+    }));
+
+    return CatalogBarcodeSearchResult(
+      options: _rankOptions(results),
+      stats: stats,
+    );
+  }
+
+  Future<List<CatalogImportOption>> searchByText(
+    String query, {
+    List<String>? stores,
+    void Function(List<CatalogImportOption> partial)? onPartial,
+  }) async {
+    final q = query.trim();
+    if (q.isEmpty) return [];
+
+    final storeIds = stores ?? AppConfig.catalogStores;
+    final results = <CatalogImportOption>[];
+
+    await Future.wait(storeIds.map((id) async {
+      try {
+        final resp = await _dio.get(
+          '/api/catalog/${Uri.encodeComponent(id)}/search',
+          queryParameters: {'q': q, 'limit': 8},
+          options: Options(receiveTimeout: Duration(milliseconds: _textTimeoutMs(id))),
+        );
+        final data = asMap(resp.data);
+        final items = ((data['products'] as List?) ?? (data['items'] as List?) ?? [])
+            .map((r) => CatalogImportOption.fromJson(asMap(r), id))
+            .toList();
         results.addAll(items);
       } catch (_) {
-        // ignore per-store failures
+        // optional per-store
       } finally {
-        if (onPartial != null) {
-          onPartial(_rankOptions([...results]));
-        }
+        onPartial?.call(_rankOptions([...results]));
       }
     }));
 
@@ -66,6 +150,7 @@ class CatalogRepository {
   List<CatalogImportOption> _rankOptions(List<CatalogImportOption> options) {
     int rank(CatalogImportOption o) {
       final t = o.matchType ?? '';
+      if (t == 'ean' || t == 'sku') return 0;
       if (t == 'text' || t == 'keyword') return 2;
       return 1;
     }
