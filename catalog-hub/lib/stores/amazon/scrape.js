@@ -567,21 +567,202 @@ function putShade(byAsin, asin, patch = {}) {
   });
 }
 
+function decodeDataAState(raw = '') {
+  try {
+    const text = String(raw || '')
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, '&')
+      .replace(/&#39;/g, "'");
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+function mergeEmbeddedTwisterJson(html = '') {
+  const colorToAsin = {};
+  const colorImages = {};
+  const variationValues = {};
+  const dimToAsin = {};
+  const dims = {};
+  const asinVariationValues = {};
+  const displayLabels = {};
+
+  const mergeObj = (target, src) => {
+    if (!src || typeof src !== 'object') return;
+    Object.assign(target, src);
+  };
+
+  const absorb = (obj = {}) => {
+    mergeObj(colorToAsin, obj.colorToAsin);
+    mergeObj(colorImages, obj.colorImages);
+    mergeObj(variationValues, obj.variationValues);
+    mergeObj(dimToAsin, obj.dimensionToAsinMap);
+    mergeObj(dims, obj.dimensionValuesDisplayData);
+    mergeObj(asinVariationValues, obj.asinVariationValues);
+    mergeObj(displayLabels, obj.variationDisplayLabels);
+  };
+
+  absorb({ colorToAsin: extractJsonObject(html, '"colorToAsin":') });
+  absorb({ colorImages: extractJsonObject(html, '"colorImages":') });
+  absorb({ variationValues: extractJsonObject(html, '"variationValues":') });
+  absorb({ dimensionToAsinMap: extractJsonObject(html, '"dimensionToAsinMap":') });
+  absorb({ dimensionValuesDisplayData: extractJsonObject(html, '"dimensionValuesDisplayData":') });
+  absorb({ asinVariationValues: extractJsonObject(html, '"asinVariationValues":') });
+  absorb({ variationDisplayLabels: extractJsonObject(html, '"variationDisplayLabels":') });
+
+  for (const m of html.matchAll(/data-a-state="([^"]+)"/g)) {
+    absorb(decodeDataAState(m[1]));
+  }
+
+  // كتل JSON إضافية داخل السكربت
+  for (const marker of ['"colorToAsin":', '"colorImages":', '"variationValues":']) {
+    let pos = 0;
+    while (pos < html.length) {
+      const idx = html.indexOf(marker, pos);
+      if (idx < 0) break;
+      const obj = extractJsonObject(html.slice(idx), marker);
+      if (marker.includes('colorToAsin')) mergeObj(colorToAsin, obj);
+      else if (marker.includes('colorImages')) mergeObj(colorImages, obj);
+      else if (marker.includes('variationValues')) mergeObj(variationValues, obj);
+      pos = idx + marker.length;
+    }
+  }
+
+  return { colorToAsin, colorImages, variationValues, dimToAsin, dims, asinVariationValues, displayLabels };
+}
+
+function detectColorDimensionKey(variationValues = {}, displayLabels = {}) {
+  const keys = Object.keys(variationValues);
+  for (const key of keys) {
+    const label = String(displayLabels[key] || key).toLowerCase();
+    if (/color|colour|shade|لون/i.test(label) || /color_name|colour_name/i.test(key)) {
+      return key;
+    }
+  }
+  for (const key of keys) {
+    if (/size|scent|style|pattern|count|quantity/i.test(key)) continue;
+    const vals = variationValues[key];
+    if (Array.isArray(vals) && vals.length > 1) return key;
+  }
+  return keys.find((k) => Array.isArray(variationValues[k]) && variationValues[k].length > 1) || keys[0] || 'color_name';
+}
+
+function colorImageForLabel(colorImages = {}, label = '') {
+  const clean = cleanShadeLabel(label);
+  const direct = colorImages[label] || colorImages[clean];
+  const pick = (entry) => {
+    const imgs = Array.isArray(entry) ? entry : (entry ? [entry] : []);
+    const first = imgs[0] || {};
+    return first.hiRes || first.large || first.thumb || first.main?.['500'] || first.main || '';
+  };
+  if (direct) return pick(direct);
+  for (const [key, entry] of Object.entries(colorImages)) {
+    if (cleanShadeLabel(key) === clean) return pick(entry);
+  }
+  return '';
+}
+
+function parseTwisterHtmlSwatches(html = '', byAsin) {
+  const blocks = [
+    html.match(/id="variation_color_name"[\s\S]{0,25000}?<\/ul>/i)?.[0] || '',
+    html.match(/id="inline-twister-dim-values-container"[\s\S]{0,25000}?<\/ul>/i)?.[0] || '',
+    html.match(/id="tp-inline-twister-dim-values-container"[\s\S]{0,25000}?<\/ul>/i)?.[0] || '',
+    html.match(/class="[^"]*twister[^"]*"[\s\S]{0,25000}/i)?.[0] || '',
+  ].filter(Boolean);
+
+  const seen = new Set();
+  for (const block of blocks) {
+    for (const m of block.matchAll(/<li\b[^>]*data-asin="([A-Z0-9]{10})"[^>]*>([\s\S]*?)<\/li>/gi)) {
+      const asin = m[1];
+      const inner = m[2];
+      if (seen.has(asin)) continue;
+      seen.add(asin);
+      const label = cleanShadeLabel(
+        inner.match(/(?:title|aria-label|alt)="([^"]{1,80})"/i)?.[1]
+        || inner.match(/class="[^"]*swatch-title[^"]*"[^>]*>\s*([^<]{1,80})/i)?.[1]
+        || '',
+      );
+      const img = inner.match(/src="(https:\/\/m\.media-amazon\.com\/images\/I\/[^"]+)"/i)?.[1]
+        || inner.match(/src="(https:\/\/[^"]*images-amazon[^"]+)"/i)?.[1]
+        || '';
+      if (!isUsableShadeName(label) && !img) continue;
+      putShade(byAsin, asin, {
+        nameEn: label,
+        nameAr: label,
+        image: img,
+        colorHex: img ? '' : colorHexGuess(label),
+      });
+    }
+
+    for (const m of block.matchAll(/data-asin="([A-Z0-9]{10})"[^>]{0,500}?(?:title|aria-label|alt)="([^"]{1,80})"/gi)) {
+      const label = cleanShadeLabel(m[2]);
+      if (!isUsableShadeName(label)) continue;
+      if (/click to select|اختر|select/i.test(label)) continue;
+      putShade(byAsin, m[1], {
+        nameEn: label,
+        nameAr: label,
+        colorHex: colorHexGuess(label),
+      });
+    }
+    for (const m of block.matchAll(/(?:title|aria-label|alt)="([^"]{1,80})"[^>]{0,500}?data-asin="([A-Z0-9]{10})"/gi)) {
+      const label = cleanShadeLabel(m[1]);
+      if (!isUsableShadeName(label)) continue;
+      putShade(byAsin, m[2], {
+        nameEn: label,
+        nameAr: label,
+        colorHex: colorHexGuess(label),
+      });
+    }
+  }
+}
+
 function parseShadesFromHtml(html = '') {
-  const colorToAsin = extractJsonObject(html, '"colorToAsin":') || {};
-  const colorImages = extractJsonObject(html, '"colorImages":') || {};
-  const dims = extractJsonObject(html, '"dimensionValuesDisplayData":') || {};
-  const dimToAsin = extractJsonObject(html, '"dimensionToAsinMap":') || {};
-  const variationValues = extractJsonObject(html, '"variationValues":') || {};
-  const asinVariationValues = extractJsonObject(html, '"asinVariationValues":') || {};
+  const {
+    colorToAsin,
+    colorImages,
+    variationValues,
+    dimToAsin,
+    dims,
+    asinVariationValues,
+    displayLabels,
+  } = mergeEmbeddedTwisterJson(html);
 
   const byAsin = new Map();
+  const colorKey = detectColorDimensionKey(variationValues, displayLabels);
+  const colorNames = variationValues[colorKey] || variationValues.color_name || variationValues.color || [];
+  const colorDimIndex = Math.max(0, Object.keys(variationValues).indexOf(colorKey));
 
   for (const [label, info] of Object.entries(colorToAsin)) {
     const asin = String(info?.asin || info || '').toUpperCase();
-    const imgs = colorImages[label] || [];
-    const image = imgs[0]?.hiRes || imgs[0]?.large || imgs[0]?.thumb || imgs[0]?.main?.['500'] || '';
     const clean = cleanShadeLabel(label);
+    const image = colorImageForLabel(colorImages, label);
+    putShade(byAsin, asin, {
+      nameEn: clean,
+      nameAr: clean,
+      image,
+      colorHex: image ? '' : colorHexGuess(clean),
+      optionGroup: 'التدرج',
+    });
+  }
+
+  for (const [label, entry] of Object.entries(colorImages)) {
+    const clean = cleanShadeLabel(label);
+    if (!clean) continue;
+    let asin = String(colorToAsin[label]?.asin || colorToAsin[label] || '').toUpperCase();
+    if (!asin) {
+      for (const [candidateAsin, dimsArr] of Object.entries(dims)) {
+        const dimsLabel = Array.isArray(dimsArr)
+          ? cleanShadeLabel(dimsArr.filter(Boolean).join(' / '))
+          : cleanShadeLabel(dimsArr);
+        if (dimsLabel === clean || dimsLabel.endsWith(` / ${clean}`) || dimsLabel.startsWith(`${clean} /`)) {
+          asin = String(candidateAsin).toUpperCase();
+          break;
+        }
+      }
+    }
+    if (!asin) continue;
+    const image = colorImageForLabel(colorImages, label);
     putShade(byAsin, asin, {
       nameEn: clean,
       nameAr: clean,
@@ -595,45 +776,53 @@ function parseShadesFromHtml(html = '') {
     const label = Array.isArray(dimsArr)
       ? cleanShadeLabel(dimsArr.filter(Boolean).join(' / '))
       : cleanShadeLabel(dimsArr);
+    const image = colorImageForLabel(colorImages, label);
     putShade(byAsin, asin, {
       nameEn: label,
       nameAr: label,
-      colorHex: colorHexGuess(label),
+      image,
+      colorHex: image ? '' : colorHexGuess(label),
     });
   }
 
-  // dimensionToAsinMap: "0_1" -> ASIN مع variationValues.color_name
-  const colorNames = variationValues.color_name || variationValues.color || [];
-  if (Array.isArray(colorNames) && Object.keys(dimToAsin).length) {
+  if (Array.isArray(colorNames) && colorNames.length && Object.keys(dimToAsin).length) {
+    const seenColors = new Set();
     for (const [key, asin] of Object.entries(dimToAsin)) {
       const parts = String(key).split('_').map((n) => Number(n));
-      const colorIdx = parts[0];
+      const colorIdx = parts[colorDimIndex];
+      if (!Number.isFinite(colorIdx)) continue;
       const label = cleanShadeLabel(colorNames[colorIdx] || '');
-      if (!label && !asin) continue;
+      if (!label) continue;
+      const dedupeKey = label.toLowerCase();
+      if (seenColors.has(dedupeKey)) continue;
+      seenColors.add(dedupeKey);
+      const image = colorImageForLabel(colorImages, label);
       putShade(byAsin, asin, {
         nameEn: label,
         nameAr: label,
-        colorHex: colorHexGuess(label),
+        image,
+        colorHex: image ? '' : colorHexGuess(label),
       });
     }
   }
 
-  // asinVariationValues: ASIN -> { color_name / dimensions }
   for (const [asin, info] of Object.entries(asinVariationValues)) {
     const label = cleanShadeLabel(
       info?.color_name
       || info?.Color
+      || info?.[colorKey]
       || (Array.isArray(info?.dimensions) ? info.dimensions.join(' / ') : '')
       || '',
     );
+    const image = colorImageForLabel(colorImages, label);
     putShade(byAsin, asin, {
       nameEn: label,
       nameAr: label,
-      colorHex: colorHexGuess(label),
+      image,
+      colorHex: image ? '' : colorHexGuess(label),
     });
   }
 
-  // fallback color_name map
   if (!byAsin.size) {
     const colorName = extractJsonObject(html, '"color_name":') || {};
     for (const [label, path] of Object.entries(colorName)) {
@@ -648,33 +837,20 @@ function parseShadesFromHtml(html = '') {
     }
   }
 
-  // HTML twister swatches (عندما لا يوجد JSON)
-  if (byAsin.size < 2) {
-    for (const m of html.matchAll(
-      /data-asin="([A-Z0-9]{10})"[^>]{0,400}?(?:title|aria-label|alt)="([^"]{1,80})"/gi,
-    )) {
-      const asin = m[1];
-      const label = cleanShadeLabel(m[2]);
-      if (!isUsableShadeName(label)) continue;
-      if (/click to select|اختر|select/i.test(label)) continue;
-      putShade(byAsin, asin, {
-        nameEn: label,
-        nameAr: label,
-        colorHex: colorHexGuess(label),
-      });
-    }
-    for (const m of html.matchAll(
-      /(?:title|aria-label)="([^"]{1,80})"[^>]{0,400}?data-asin="([A-Z0-9]{10})"/gi,
-    )) {
-      const label = cleanShadeLabel(m[1]);
-      const asin = m[2];
-      if (!isUsableShadeName(label)) continue;
-      putShade(byAsin, asin, {
-        nameEn: label,
-        nameAr: label,
-        colorHex: colorHexGuess(label),
-      });
-    }
+  // HTML twister — دائماً كمصدر إضافي (ليس فقط عند غياب JSON)
+  parseTwisterHtmlSwatches(html, byAsin);
+
+  for (const m of html.matchAll(
+    /data-asin="([A-Z0-9]{10})"[^>]{0,400}?(?:title|aria-label|alt)="([^"]{1,80})"/gi,
+  )) {
+    const label = cleanShadeLabel(m[2]);
+    if (!isUsableShadeName(label)) continue;
+    if (/click to select|اختر|select/i.test(label)) continue;
+    putShade(byAsin, m[1], {
+      nameEn: label,
+      nameAr: label,
+      colorHex: colorHexGuess(label),
+    });
   }
 
   return [...byAsin.values()];
@@ -954,7 +1130,7 @@ async function enrichShadeDetails(shades = [], { deadline = 0, concurrency = 10,
     const chunkIdx = order.slice(i, i + concurrency);
     const parts = await Promise.all(chunkIdx.map(async (index) => {
       const shade = out[index];
-      const cacheKey = `amazon:shade:v4:${shade.id}`;
+      const cacheKey = `amazon:shade:v5:${shade.id}`;
       const cached = cacheGet(cacheKey, DETAIL_TTL);
       if (cached) return { index, ...cached };
 
@@ -1002,8 +1178,7 @@ async function enrichShadeDetails(shades = [], { deadline = 0, concurrency = 10,
           barcode,
           price: price || shade.price || '',
           image,
-          // hex من السواتش فقط هنا؛ التخمين فقط إن لم توجد صورة
-          colorHex: swatchHex || (!image ? guessed : '') || '',
+          colorHex: swatchHex || shade.colorHex || (!image ? guessed : '') || '',
           nameEn: (nextName && hasLatin(nextName) ? nextName : '') || shade.nameEn || '',
           nameAr: (nextName && hasArabic(nextName) ? nextName : '') || shade.nameAr || '',
         };
@@ -1119,7 +1294,7 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
   const asin = String(id || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(asin)) return null;
 
-  const cacheKey = `amazon:detail:v12:${asin}:${light ? 'l' : 'f'}`;
+  const cacheKey = `amazon:detail:v13:${asin}:${light ? 'l' : 'f'}`;
   const cached = cacheGet(cacheKey, DETAIL_TTL);
   if (cached) return cached;
 
@@ -1160,6 +1335,10 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
   if (!primary) return null;
 
   let shades = mergeShadeLocales(en?.shades || [], [...(ae?.shades || []), ...(sa?.shades || [])]);
+  if (shades.length > 1) {
+    const children = shades.filter((s) => String(s.id) !== asin);
+    if (children.length) shades = children;
+  }
   if (!shades.length) {
     shades = [{
       id: asin,
@@ -1180,13 +1359,22 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
   if (!light && shades.length > 1) {
     const before = shades;
     try {
-      const budgetMs = shades.length > 40 ? 45_000 : shades.length > 15 ? 28_000 : 18_000;
+      const budgetMs = shades.length > 40 ? 60_000 : shades.length > 15 ? 40_000 : 28_000;
       const deadline = Date.now() + budgetMs;
       shades = await enrichShadeDetails(shades, {
         deadline,
         concurrency: shades.length > 40 ? 12 : 10,
         max: shades.length,
       });
+      // جولة ثانية للتدرجات التي بقيت بلا باركود
+      const stillMissing = shades.filter((s) => !s.barcode).length;
+      if (stillMissing > 0 && Date.now() < deadline) {
+        shades = await enrichShadeDetails(shades, {
+          deadline,
+          concurrency: 6,
+          max: shades.length,
+        });
+      }
       if (!shades?.length) shades = before;
     } catch {
       shades = before;

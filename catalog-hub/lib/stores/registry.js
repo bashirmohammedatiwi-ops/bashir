@@ -1,6 +1,8 @@
 import { miswagAdapter } from './miswag/index.js';
 import { elryanAdapter } from './elryan/index.js';
 import { amazonAdapter } from './amazon/index.js';
+import { facesAdapter } from './faces/index.js';
+import { miraayaAdapter } from './miraaya/index.js';
 import { createSallaAdapter } from './salla/adapter.js';
 
 /**
@@ -40,7 +42,7 @@ const SALLA_STORES = [
 ];
 
 /** محولات مخصصة (غير Salla) */
-const CUSTOM_ADAPTERS = [miswagAdapter, elryanAdapter, amazonAdapter];
+const CUSTOM_ADAPTERS = [miswagAdapter, elryanAdapter, amazonAdapter, facesAdapter, miraayaAdapter];
 
 function buildRegistry() {
   const adapters = {};

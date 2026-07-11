@@ -27,9 +27,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { CatalogOptionCard, storeColor } from "@/components/catalog-import/CatalogOptionCard";
 import { matchCategoryFromHints } from "@/lib/catalogCategoryMatch";
-import { matchBrandIdLocal } from "@/lib/catalogBrandMatch";
+import { matchBrandIdLocal, matchCatalogBrandRow, catalogBrandLogoUrl } from "@/lib/catalogBrandMatch";
 import {
   catalogOptionKey,
+  fetchCatalogBrands,
   fetchCatalogProductSmart,
   fetchCatalogStores,
   fetchCategoryTree,
@@ -67,13 +68,20 @@ async function ensureBrandId(
   brands: any[] = [],
   brandAr = "",
   brandEn = "",
+  catalogBrands: { brands?: Array<{ name?: string; nameAr?: string; nameEn?: string; key?: string; logoUrl?: string; logoIsProductImage?: boolean }> } = {},
 ): Promise<string | undefined> {
   const local = matchBrandIdLocal(brands, brandAr, brandEn);
   if (local) return local;
   if (!String(brandAr || "").trim() && !String(brandEn || "").trim()) return undefined;
+
+  const catalogHit = matchCatalogBrandRow(catalogBrands.brands || [], brandAr, brandEn);
+  const logoUrl = catalogBrandLogoUrl(catalogHit);
+
   const result = await mutations.resolveBrand({
     brandAr,
     brandEn,
+    logoUrl,
+    logoIsProductImage: catalogHit?.logoIsProductImage,
     createIfMissing: true,
   });
   return result?.brand?.id || result?.id;
@@ -134,7 +142,7 @@ function listProductToOption(p: CatalogListProduct, store: CatalogStore): Catalo
 export default function CatalogImportPage() {
   const [stores, setStores] = useState<CatalogStore[]>([]);
   // البحث الافتراضي يشمل أمازون — النتائج تظهر تدريجياً من المتاجر الأسرع
-  const [activeStores, setActiveStores] = useState<string[]>(["miswag", "najdalatheyah", "elryan", "amazon"]);
+  const [activeStores, setActiveStores] = useState<string[]>(["miswag", "najdalatheyah", "elryan", "faces", "miraaya", "amazon"]);
   const [browseStore, setBrowseStore] = useState("miswag");
   const [tree, setTree] = useState<CatalogCategoryNode[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -164,6 +172,11 @@ export default function CatalogImportPage() {
 
   const { data: categoriesData = [] } = useQuery({ queryKey: ["categories"], queryFn: queries.categories });
   const { data: brandsData = [] } = useQuery({ queryKey: ["brands"], queryFn: queries.brands });
+  const { data: catalogBrandsData = { brands: [] } } = useQuery({
+    queryKey: ["catalog-brands"],
+    queryFn: () => fetchCatalogBrands(false),
+    staleTime: 15 * 60 * 1000,
+  });
 
   const categoryId = Form.useWatch("categoryId", form);
   const subcategoryId = Form.useWatch("subcategoryId", form);
@@ -526,7 +539,7 @@ export default function CatalogImportPage() {
         }
         setPreview(product);
 
-        const brandId = await ensureBrandId(brandsData, product.brandAr, product.brandEn);
+        const brandId = await ensureBrandId(brandsData, product.brandAr, product.brandEn, catalogBrandsData);
         if (brandId) {
           await qc.fetchQuery({ queryKey: ["brands"], queryFn: queries.brands });
         }
@@ -568,7 +581,7 @@ export default function CatalogImportPage() {
         setLoadingPreview(false);
       }
     },
-    [brandsData, categoriesData, form, qc],
+    [brandsData, catalogBrandsData, categoriesData, form, qc],
   );
 
   const importProduct = useMutation({
@@ -579,7 +592,7 @@ export default function CatalogImportPage() {
       // تأكيد البراند قبل الإنشاء — إنشاء تلقائي إن لم يكن موجوداً
       let brandId = values.brandId as string | undefined;
       if (!brandId && (preview.brandAr || preview.brandEn)) {
-        brandId = await ensureBrandId(brandsData, preview.brandAr, preview.brandEn);
+        brandId = await ensureBrandId(brandsData, preview.brandAr, preview.brandEn, catalogBrandsData);
         if (brandId) {
           await qc.fetchQuery({ queryKey: ["brands"], queryFn: queries.brands });
           form.setFieldsValue({ brandId });

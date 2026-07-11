@@ -186,14 +186,16 @@ export type CatalogBrandRow = {
   nameEn?: string;
   logoUrl?: string;
   logoIsProductImage?: boolean;
+  productImageUrl?: string;
   productCount?: number;
   stores?: string[];
 };
 
-/** براندات موحّدة من المتاجر الأربعة (بدون تكرار) */
+/** براندات موحّدة من المتاجر (بدون تكرار) */
 export async function fetchCatalogBrands(force = false): Promise<{
   total: number;
   withLogo: number;
+  withRealLogo?: number;
   brands: CatalogBrandRow[];
   updatedAt?: number;
 }> {
@@ -235,6 +237,8 @@ type StoreSearchStat = { id: string; count: number; error?: string };
 /** مهلة لكل متجر */
 function storeSearchTimeoutMs(storeId: string, kind: "text" | "barcode" = "text") {
   if (storeId === "elryan") return kind === "barcode" ? 8_000 : 8_000;
+  if (storeId === "faces") return kind === "barcode" ? 45_000 : 25_000;
+  if (storeId === "miraaya") return kind === "barcode" ? 30_000 : 20_000;
   if (storeId === "amazon") return kind === "barcode" ? 30_000 : 18_000;
   // مسواگ: بحث الباركود يستعلم مصادر ميتاداتا خارجية بالتوازي مع v2 — يحتاج مهلة أطول قليلاً
   if (storeId === "miswag") return kind === "barcode" ? 22_000 : 10_000;
@@ -474,10 +478,12 @@ export async function fetchCatalogProductSmart(
     const full = await fetchCatalogProduct(storeId, sourceId, storeLabel);
     // إن أعاد full تدرجات أقل من light — ادمج
     if (lightProduct && (lightProduct.shades?.length || 0) > (full.shades?.length || 0)) {
-      const bySku = new Map(full.shades.map((s) => [s.sku || s.miswagId || s.nameEn || s.nameAr, s]));
+      const byAsin = new Map(
+        full.shades.map((s) => [String(s.sku || s.id || "").toUpperCase(), s]),
+      );
       const mergedShades = lightProduct.shades.map((s) => {
-        const key = s.sku || s.miswagId || s.nameEn || s.nameAr;
-        const enriched = bySku.get(key);
+        const key = String(s.sku || s.id || "").toUpperCase();
+        const enriched = byAsin.get(key);
         return enriched
           ? {
               ...s,
@@ -488,9 +494,15 @@ export async function fetchCatalogProductSmart(
               swatchUrl: enriched.swatchUrl || s.swatchUrl,
               barcode: enriched.barcode || s.barcode,
               colorHex: enriched.colorHex || s.colorHex,
+              price: enriched.price || s.price,
             }
           : s;
       });
+      const seen = new Set(mergedShades.map((s) => String(s.sku || s.id || "").toUpperCase()));
+      for (const s of full.shades) {
+        const key = String(s.sku || s.id || "").toUpperCase();
+        if (key && !seen.has(key)) mergedShades.push(s);
+      }
       return {
         ...full,
         descriptionAr: full.descriptionAr || lightProduct.descriptionAr,

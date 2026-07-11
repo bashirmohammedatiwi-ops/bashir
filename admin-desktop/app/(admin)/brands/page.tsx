@@ -77,14 +77,15 @@ export default function BrandsPage() {
 
   const syncFromCatalog = useMutation({
     mutationFn: async () => {
-      message.loading({ content: "جاري جلب براندات المتاجر الأربعة...", key: "brand-sync" });
+      message.loading({ content: "جاري جلب براندات المتاجر...", key: "brand-sync" });
       const catalog = await fetchCatalogBrands(true);
       const rows = (catalog.brands || []).map((b) => ({
         name: b.name,
         nameAr: b.nameAr,
         nameEn: b.nameEn,
-        // شعار حقيقي فقط — لا نرفع صورة منتج كشعار براند
-        logoUrl: b.logoUrl && !b.logoIsProductImage ? b.logoUrl : undefined,
+        // شعار حقيقي أولاً، وإلا صورة منتج عيّنة من أي متجر
+        logoUrl: b.logoUrl || undefined,
+        logoIsProductImage: Boolean(b.logoIsProductImage && b.logoUrl),
       }));
       if (!rows.length) throw new Error("لم يُعثر على براندات في الكتالوج");
 
@@ -105,7 +106,7 @@ export default function BrandsPage() {
         setSyncProgress({ done: Math.min(i + chunk.length, rows.length), total: rows.length });
       }
 
-      return { created, matched, logosAttached, total: rows.length, withLogo: catalog.withLogo };
+      return { created, matched, logosAttached, total: rows.length, withLogo: catalog.withLogo, withRealLogo: catalog.withRealLogo };
     },
     onSuccess: (stats) => {
       setSyncProgress(null);
@@ -227,7 +228,7 @@ export default function BrandsPage() {
         {syncProgress ? (
           <Card size="small">
             <div style={{ marginBottom: 8 }}>
-              جاري المزامنة ({syncProgress.done}/{syncProgress.total}) — بدون تكرار، مع الشعارات عند توفرها
+              جاري المزامنة ({syncProgress.done}/{syncProgress.total}) — دمج الشعارات من كل المتاجر بدون تكرار
             </div>
             <Progress
               percent={syncProgress.total ? Math.round((syncProgress.done / syncProgress.total) * 100) : 0}

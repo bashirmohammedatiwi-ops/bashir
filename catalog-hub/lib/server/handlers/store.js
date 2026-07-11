@@ -72,7 +72,7 @@ async function searchAdapter(adapter, query, digits) {
   let results = [];
   const isBarcodeish = digits.length >= 8;
   // مهلة لكل متجر — مسواگ يستعلم مصادر ميتاداتا خارجية بالتوازي مع v2، يحتاج وقتاً أطول قليلاً
-  const barcodeBudget = adapter.id === 'amazon' ? 28_000 : adapter.id === 'miswag' ? 20_000 : 12_000;
+  const barcodeBudget = adapter.id === 'amazon' ? 28_000 : adapter.id === 'miswag' ? 20_000 : adapter.id === 'miraaya' ? 25_000 : 12_000;
 
   const startedAt = Date.now();
   if (isBarcodeish && adapter.searchBarcode) {
