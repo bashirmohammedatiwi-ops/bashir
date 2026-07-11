@@ -1,9 +1,10 @@
 import {
-  absMediaUrl,
   algoliaPrimarySku,
   algoliaSkus,
   extractBarcode,
+  filterImageUrls,
   formatIqdPrice,
+  normalizeMiraayaImageUrl,
   priceFromRange,
   productPageUrl,
   restBrand,
@@ -61,7 +62,7 @@ export function mapListFromAlgolia(arHit = null, enHit = null) {
     nameEn: nameEn || nameAr,
     brandAr: brandAr || brandEn,
     brandEn: brandEn || brandAr,
-    thumb: primary.image_url || primary.thumbnail_url || '',
+    thumb: normalizeMiraayaImageUrl(primary.image_url || primary.thumbnail_url || ''),
     price,
     shadeCount: primary.type_id === 'configurable' ? Math.max(algoliaSkus(primary).length - 1, 1) : 1,
     hasOptions: primary.type_id === 'configurable',
@@ -87,7 +88,7 @@ export function mapListFromGraphql(arItem = null, enItem = null, brand = {}) {
     nameEn: nameEn || nameAr,
     brandAr: brand.ar || brand.en || '',
     brandEn: brand.en || brand.ar || '',
-    thumb: primary.image?.url || '',
+    thumb: normalizeMiraayaImageUrl(primary.image?.url || ''),
     price: priceFromRange(primary.price_range),
     shadeCount: primary.__typename === 'ConfigurableProduct' ? null : 1,
     hasOptions: primary.__typename === 'ConfigurableProduct',
@@ -113,14 +114,14 @@ export function mapDetailProduct(arItem = null, enItem = null, {
   const brandAr = restBrand(restAr || {}) || String(arItem?.name || '').split(' ')[0];
   const brandEn = restBrand(restEn || {}) || restBrand(restAr || {}) || brandAr;
 
-  const images = [
+  const images = filterImageUrls([
     ...(arItem?.media_gallery || []).map((g) => g.url),
     ...(enItem?.media_gallery || []).map((g) => g.url),
     arItem?.image?.url,
     enItem?.image?.url,
     ...restGallery(restAr || {}),
     ...restGallery(restEn || {}),
-  ].filter(Boolean);
+  ]);
 
   const thumb = images[0] || '';
   const price = priceFromRange(arItem?.price_range || enItem?.price_range);
@@ -147,8 +148,8 @@ export function mapDetailProduct(arItem = null, enItem = null, {
         nameEn: labelEn || labelAr,
         sku: varSku,
         barcode: extractBarcode(varSku),
-        image: product.image?.url || thumb,
-        swatchImage: product.image?.url || '',
+        image: normalizeMiraayaImageUrl(product.image?.url || thumb),
+        swatchImage: normalizeMiraayaImageUrl(product.image?.url || ''),
         price: priceFromRange(product.price_range) || price,
         inStock: product.stock_status === 'IN_STOCK',
         colorHex: swatchFromOptions(options, arVar.attributes),
@@ -173,11 +174,11 @@ export function mapDetailProduct(arItem = null, enItem = null, {
   }
 
   const highlight = highlightSku || sku;
-  const allImages = [...new Set([
+  const allImages = filterImageUrls([
     ...images,
-    ...shades.map((s) => s.image).filter(Boolean),
-    ...shades.map((s) => s.swatchImage).filter(Boolean),
-  ])];
+    ...shades.map((s) => s.image),
+    ...shades.map((s) => s.swatchImage),
+  ]);
 
   return {
     id: sku,
@@ -211,7 +212,7 @@ export function toBarcodeHit(detail, digits, shade) {
     nameEn: detail.nameEn,
     brandAr: detail.brandAr,
     brandEn: detail.brandEn,
-    thumb: shade?.image || detail.thumb,
+    thumb: normalizeMiraayaImageUrl(shade?.image || detail.thumb),
     price: shade?.price || detail.price,
     barcode: shade?.barcode || detail.barcode || digits,
     shadeName: shade?.nameAr || shade?.nameEn || '',

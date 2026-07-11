@@ -22,6 +22,11 @@ const AR_BRAND_ALIASES: Record<string, string> = {
   "توم فورد": "tom ford",
   "بوبي براون": "bobbi brown",
   "شارلوت تيلبري": "charlotte tilbury",
+  "غولدن روز": "golden rose",
+  "جولدن روز": "golden rose",
+  لوريال: "loreal",
+  مايبيلين: "maybelline",
+  ميبيلين: "maybelline",
 };
 
 const EN_BRAND_ALIASES: Record<string, string> = {
@@ -35,6 +40,8 @@ const EN_BRAND_ALIASES: Record<string, string> = {
   "l oreal": "loreal",
   "l'oreal": "loreal",
   "loreal paris": "loreal",
+  "golden rose": "golden rose",
+  maybelline: "maybelline",
 };
 
 export function normalizeBrandKey(name = "") {
@@ -129,5 +136,5 @@ export function matchCatalogBrandRow(
 
 export function catalogBrandLogoUrl(row?: CatalogBrandRow) {
   if (!row) return undefined;
-  return row.logoUrl || undefined;
+  return row.logoUrl || row.productImageUrl || undefined;
 }

@@ -15,6 +15,7 @@ import {
 import {
   BulkInventorySyncDto,
   InventorySyncItemDto,
+  LookupBarcodesDto,
 } from "./dto/inventory-sync.dto";
 import { InventoryAdminService } from "./inventory-admin.service";
 import { InventorySyncService } from "./inventory-sync.service";
@@ -79,6 +80,14 @@ export class InventorySyncController {
   @Get("by-barcode/:barcode")
   findByBarcode(@Param("barcode") barcode: string) {
     return this.sync.findByBarcode(barcode);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
+  @Post("lookup-barcodes")
+  lookupBarcodes(@Body() dto: LookupBarcodesDto) {
+    return this.sync.lookupBarcodes(dto.barcodes);
   }
 
   @Public()

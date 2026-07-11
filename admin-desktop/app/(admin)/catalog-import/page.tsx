@@ -47,7 +47,7 @@ import {
   type CatalogListProduct,
   type CatalogStore,
 } from "@/lib/catalogImport";
-import { fetchInventoryByBarcode } from "@/lib/inventorySync";
+import { fetchInventoryByBarcode, lookupInventoryBarcodes, resolveBarcodeLookup, type BarcodeInventoryLookup } from "@/lib/inventorySync";
 import { uploadCatalogImportImages } from "@/lib/uploadCatalogImages";
 import { resolveCatalogImageUrl } from "@/lib/resolveCatalogImageUrl";
 import { buildProductPayload } from "@/lib/productPayload";
@@ -90,6 +90,43 @@ async function ensureBrandId(
 
 function stripHtml(html = "") {
   return String(html).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function formatIqd(n: number) {
+  return `${Number(n || 0).toLocaleString("ar-IQ")} د.ع`;
+}
+
+function BarcodeInventoryMeta({
+  lookup,
+  compact = false,
+}: {
+  lookup: BarcodeInventoryLookup | null;
+  compact?: boolean;
+}) {
+  if (!lookup) return null;
+
+  return (
+    <div className={`ci-inv-meta${compact ? " is-compact" : ""}`}>
+      {lookup.pos ? (
+        <>
+          <Tag color="gold">POS: {formatIqd(lookup.pos.price)}</Tag>
+          <Tag color="cyan">المخزون: {lookup.pos.stock.toLocaleString("ar-IQ")}</Tag>
+          {lookup.pos.discountPercent > 0 ? (
+            <Tag color="orange">خصم {lookup.pos.discountPercent}%</Tag>
+          ) : null}
+        </>
+      ) : (
+        <Tag>غير موجود في POS</Tag>
+      )}
+      {lookup.inApp ? (
+        <Tag color="success" icon={<CheckCircleFilled />}>
+          موجود في التطبيق{lookup.inApp.name ? `: ${lookup.inApp.name}` : ""}
+        </Tag>
+      ) : (
+        <Tag color="default">غير مضاف للتطبيق</Tag>
+      )}
+    </div>
+  );
 }
 
 function toTreeData(nodes: CatalogCategoryNode[] = []): DataNode[] {
@@ -167,6 +204,7 @@ export default function CatalogImportPage() {
   const [selected, setSelected] = useState<CatalogImportOption | null>(null);
   const [preview, setPreview] = useState<CatalogImportProduct | null>(null);
   const [previewImageIdx, setPreviewImageIdx] = useState(0);
+  const [barcodeLookup, setBarcodeLookup] = useState<Record<string, BarcodeInventoryLookup>>({});
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [step, setStep] = useState(0);
   const [form] = Form.useForm();
@@ -192,6 +230,52 @@ export default function CatalogImportPage() {
     queryFn: () => queries.tertiarySections({ parentId: subcategoryId }),
     enabled: !!subcategoryId,
   });
+
+  useEffect(() => {
+    if (!preview) {
+      setBarcodeLookup({});
+      return;
+    }
+
+    const codes: string[] = [];
+    const add = (bc?: string) => {
+      if (bc && !isMiswagInternalId(bc)) codes.push(bc);
+    };
+    add(preview.barcode);
+    add(selected?.barcode);
+    for (const shade of preview.shades || []) add(shade.barcode);
+
+    if (!codes.length) {
+      setBarcodeLookup({});
+      return;
+    }
+
+    let cancelled = false;
+    lookupInventoryBarcodes(codes)
+      .then((items) => {
+        if (!cancelled) setBarcodeLookup(items);
+      })
+      .catch(() => {
+        if (!cancelled) setBarcodeLookup({});
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [preview, selected?.barcode]);
+
+  const previewMainBarcode = useMemo(() => {
+    if (!preview) return "";
+    return (
+      (preview.barcode && !isMiswagInternalId(preview.barcode) ? preview.barcode : "") ||
+      (selected?.barcode && !isMiswagInternalId(selected.barcode) ? selected.barcode : "")
+    );
+  }, [preview, selected?.barcode]);
+
+  const previewMainLookup = useMemo(
+    () => (previewMainBarcode ? resolveBarcodeLookup(previewMainBarcode, barcodeLookup) : null),
+    [previewMainBarcode, barcodeLookup],
+  );
 
   const storeMeta = useMemo(
     () => stores.find((s) => s.id === browseStore) || { id: browseStore, label: browseStore },
@@ -716,6 +800,7 @@ export default function CatalogImportPage() {
       setOptions([]);
       setSelected(null);
       setPreview(null);
+      setBarcodeLookup({});
       form.resetFields();
     },
     onError: (err: unknown) => {
@@ -747,6 +832,7 @@ export default function CatalogImportPage() {
     setStep(displayOptions.length ? 1 : 0);
     setSelected(null);
     setPreview(null);
+    setBarcodeLookup({});
   }, [displayOptions.length]);
 
   return (
@@ -1038,6 +1124,9 @@ export default function CatalogImportPage() {
                       ) : null}
                       {preview.categoryHint ? <Tag color="purple">{preview.categoryHint}</Tag> : null}
                     </div>
+                    {previewMainBarcode ? (
+                      <BarcodeInventoryMeta lookup={previewMainLookup} />
+                    ) : null}
                   </div>
                 </div>
                 {(preview.images || []).filter((img) => img?.url).length > 1 ? (
@@ -1085,6 +1174,10 @@ export default function CatalogImportPage() {
                   <div className="ci-shade-list">
                     {preview.shades.map((s, i) => {
                       const swatch = resolveCatalogImageUrl(s.swatchUrl || s.imageUrl || "");
+                      const shadeBarcode = s.barcode && !isMiswagInternalId(s.barcode) ? s.barcode : "";
+                      const shadeLookup = shadeBarcode
+                        ? resolveBarcodeLookup(shadeBarcode, barcodeLookup)
+                        : null;
                       return (
                         <div key={i} className="ci-shade-item">
                           {swatch ? (
@@ -1107,6 +1200,7 @@ export default function CatalogImportPage() {
                             {s.barcode && !isMiswagInternalId(s.barcode) ? (
                               <small>باركود: {s.barcode}</small>
                             ) : null}
+                            {shadeBarcode ? <BarcodeInventoryMeta lookup={shadeLookup} compact /> : null}
                             {s.sku && !/^\d{8,14}$/.test(s.sku) ? (
                               <small className="alhayaa-ltr-input">ASIN: {s.sku}</small>
                             ) : null}

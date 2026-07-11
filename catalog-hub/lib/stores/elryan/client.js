@@ -31,6 +31,13 @@ export function absImage(path = '') {
   return `${IMG_BASE}${p.startsWith('/') ? p : `/${p}`}`;
 }
 
+export function elryanBrandLogoUrl(file = '') {
+  const f = String(file || '').trim();
+  if (!f) return '';
+  if (f.startsWith('http')) return f;
+  return `https://www.elryan.com/img/75/75/resize/amasty/shopby/option_images/slider/${f.replace(/^\//, '')}`;
+}
+
 export function productUrl(urlPath = '', lang = 'ar') {
   const path = String(urlPath || '').replace(/^\//, '');
   if (!path) return `${SITE}/${lang}/`;

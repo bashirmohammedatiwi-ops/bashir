@@ -67,35 +67,104 @@ export class InventorySyncService {
   ) {}
 
   async findByBarcode(barcode: string) {
-    const candidates = barcodeLookupCandidates(barcode);
-    if (!candidates.length) throw new NotFoundException("Barcode is required");
+    const hit = await this.lookupBarcode(barcode);
+    if (!hit.pos && !hit.inApp) {
+      throw new NotFoundException("No synced inventory for this barcode");
+    }
+    return {
+      ...(hit.pos || {
+        barcode: hit.barcode,
+        price: 0,
+        originalPrice: 0,
+        discountPercent: 0,
+        stock: 0,
+        name: null,
+        productCode: null,
+        productNum: null,
+        offerName: null,
+      }),
+      productId: hit.inApp?.id ?? null,
+      productName: hit.inApp?.name ?? null,
+    };
+  }
 
-    let snapshot: Awaited<
-      ReturnType<typeof this.prisma.inventorySyncSnapshot.findUnique>
-    > = null;
+  async lookupBarcodes(rawBarcodes: string[]) {
+    const keys = [
+      ...new Set(
+        rawBarcodes
+          .flatMap((b) => barcodeLookupCandidates(b))
+          .filter(Boolean),
+      ),
+    ].slice(0, 120);
 
-    for (const code of candidates) {
-      snapshot = await this.prisma.inventorySyncSnapshot.findUnique({
-        where: { barcode: code },
-      });
-      if (snapshot) break;
+    if (!keys.length) return { items: {} };
 
-      snapshot = await this.prisma.inventorySyncSnapshot.findFirst({
-        where: { productNum: code },
-      });
-      if (snapshot) break;
+    const snapshots = await this.prisma.inventorySyncSnapshot.findMany({
+      where: {
+        OR: [{ barcode: { in: keys } }, { productNum: { in: keys } }],
+      },
+    });
+
+    const snapshotByCode = new Map<string, (typeof snapshots)[number]>();
+    for (const row of snapshots) {
+      snapshotByCode.set(row.barcode, row);
+      if (row.productNum) snapshotByCode.set(row.productNum, row);
     }
 
-    if (!snapshot) throw new NotFoundException("No synced inventory for this barcode");
+    const productMap = await this.buildProductBarcodeMap(keys);
 
-    const fixed = fixSnapshotText(snapshot);
-    const product = await this.findProductByBarcode(fixed.barcode);
+    const items: Record<string, {
+      barcode: string;
+      pos: {
+        price: number;
+        originalPrice: number;
+        discountPercent: number;
+        stock: number;
+        name: string | null;
+        offerName: string | null;
+        syncedAt: Date;
+      } | null;
+      inApp: { id: string; name: string | null } | null;
+    }> = {};
 
-    return {
-      ...fixed,
-      productId: product?.id ?? null,
-      productName: product?.name ?? null,
-    };
+    for (const code of keys) {
+      const snapshot = snapshotByCode.get(code);
+      const fixed = snapshot ? fixSnapshotText(snapshot) : null;
+      const inApp = productMap.get(code) ?? null;
+      items[code] = {
+        barcode: fixed?.barcode || code,
+        pos: fixed
+          ? {
+              price: fixed.price,
+              originalPrice: fixed.originalPrice,
+              discountPercent: fixed.discountPercent,
+              stock: fixed.stock,
+              name: fixed.name ?? null,
+              offerName: fixed.offerName ?? null,
+              syncedAt: fixed.syncedAt,
+            }
+          : null,
+        inApp: inApp ? { id: inApp.id, name: inApp.name } : null,
+      };
+    }
+
+    return { items };
+  }
+
+  async lookupBarcode(barcode: string) {
+    const candidates = barcodeLookupCandidates(barcode);
+    const primary = candidates[0] || normalizeBarcode(barcode);
+    if (!primary) {
+      return { barcode: "", pos: null, inApp: null };
+    }
+
+    const bulk = await this.lookupBarcodes(candidates.length ? candidates : [primary]);
+    for (const code of candidates) {
+      const hit = bulk.items[code];
+      if (hit?.pos || hit?.inApp) return { ...hit, barcode: hit.barcode || code };
+    }
+
+    return bulk.items[primary] || { barcode: primary, pos: null, inApp: null };
   }
 
   async getSnapshotForBarcodes(barcodes: string[]) {

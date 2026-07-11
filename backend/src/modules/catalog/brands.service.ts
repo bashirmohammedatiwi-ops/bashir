@@ -45,6 +45,11 @@ function normalizeBrandKey(name = "") {
     "توم فورد": "tom ford",
     "بوبي براون": "bobbi brown",
     "شارلوت تيلبري": "charlotte tilbury",
+    "غولدن روز": "golden rose",
+    "جولدن روز": "golden rose",
+    لوريال: "loreal",
+    مايبيلين: "maybelline",
+    ميبيلين: "maybelline",
   };
   const enAliases: Record<string, string> = {
     "m a c": "mac",
@@ -57,6 +62,8 @@ function normalizeBrandKey(name = "") {
     "l oreal": "loreal",
     "l'oreal": "loreal",
     "loreal paris": "loreal",
+    "golden rose": "golden rose",
+    maybelline: "maybelline",
   };
 
   if (arAliases[key]) return arAliases[key];

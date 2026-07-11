@@ -670,5 +670,33 @@
   },
   "miswag_web_ids|6295155694004": {
     "at": 1783765564837
+  },
+  "obf|6293708001484": {
+    "ean": "",
+    "at": 1783772567704
+  },
+  "upc|6293708001484": {
+    "ean": "6293708001484",
+    "brand": "Ajmal",
+    "title": "Ajmal Eau De Parfum Spray 3.4 oz, 542164",
+    "shade": "",
+    "source": "upcitemdb",
+    "at": 1783772568273
+  },
+  "web|6293708001484": {
+    "ean": "6293708001484",
+    "brand": "Ajmal Perfumes Neutron For Him Eau De Parfum 100ML",
+    "title": "",
+    "shade": "",
+    "source": "web",
+    "at": 1783772568501
+  },
+  "meta|6293708001484": {
+    "ean": "6293708001484",
+    "brand": "Ajmal",
+    "title": "Ajmal Eau De Parfum Spray 3.4 oz, 542164",
+    "shade": "",
+    "source": "upcitemdb",
+    "at": 1783772568502
   }
 }

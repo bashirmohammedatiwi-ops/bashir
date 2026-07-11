@@ -36,6 +36,35 @@ export function absMediaUrl(path = '') {
   return `${MAGENTO}/media/catalog/product${p.startsWith('/') ? p : `/${p}`}`;
 }
 
+const VIDEO_EXT = /\.(mp4|webm|mov|m4v|avi)(\?|$)/i;
+const IMAGE_EXT = /\.(jpe?g|png|gif|webp|avif|bmp|svg)(\?|$)/i;
+
+export function isImageMediaUrl(url = '') {
+  const u = String(url || '').trim();
+  if (!u) return false;
+  if (VIDEO_EXT.test(u)) return false;
+  if (IMAGE_EXT.test(u)) return true;
+  return u.includes('/media/catalog/product/');
+}
+
+/** روابط Magento المُعاد تحجيمها (hash) كثيراً تُرجع 404 — حوّلها لنسخة webp أو المسار الأصلي */
+export function normalizeMiraayaImageUrl(path = '') {
+  let u = absMediaUrl(path);
+  if (!u || !isImageMediaUrl(u)) return '';
+
+  const brokenCache = u.match(/\/media\/catalog\/product\/cache\/(?!optimized\/webp\/)[^/]+\/(.+)$/i);
+  if (brokenCache) {
+    const sub = brokenCache[1].replace(/\.(jpe?g|png)$/i, '');
+    return `${MAGENTO}/media/catalog/product/cache/optimized/webp/${sub}.webp`;
+  }
+
+  return u;
+}
+
+export function filterImageUrls(urls = []) {
+  return [...new Set(urls.map(normalizeMiraayaImageUrl).filter(Boolean))];
+}
+
 export function productPageUrl(urlKey = '', lang = 'ar') {
   const key = String(urlKey || '').trim();
   if (!key) return `${SITE}/${lang}/`;
@@ -134,10 +163,11 @@ export function restUrlKey(product = {}) {
 export function restGallery(product = {}) {
   const urls = (product.media_gallery_entries || [])
     .sort((a, b) => Number(a.position || 0) - Number(b.position || 0))
-    .map((e) => absMediaUrl(e.file))
+    .filter((e) => isImageMediaUrl(e.file))
+    .map((e) => normalizeMiraayaImageUrl(e.file))
     .filter(Boolean);
-  const main = absMediaUrl(product.media_gallery_entries?.[0]?.file || '');
-  return [...new Set([main, ...urls].filter(Boolean))];
+  const main = normalizeMiraayaImageUrl(product.media_gallery_entries?.[0]?.file || '');
+  return filterImageUrls([main, ...urls]);
 }
 
 export async function algoliaSearch(query = '', {
@@ -145,11 +175,12 @@ export async function algoliaSearch(query = '', {
   page = 0,
   limit = 30,
   categoryId = '',
+  filters = '',
   ttl = LIST_TTL,
 } = {}) {
   const q = String(query || '').trim();
   const index = ALGOLIA_INDEX[lang] || ALGOLIA_INDEX.ar;
-  const cacheKey = `miraaya:algolia:${lang}:${q}:${categoryId}:${page}:${limit}`;
+  const cacheKey = `miraaya:algolia:${lang}:${q}:${categoryId}:${filters}:${page}:${limit}`;
   const cached = cacheGet(cacheKey, ttl);
   if (cached) return cached;
 
@@ -160,6 +191,8 @@ export async function algoliaSearch(query = '', {
   });
   if (categoryId) {
     params.set('filters', `categoryIds:${categoryId}`);
+  } else if (filters) {
+    params.set('filters', filters);
   }
 
   const res = await fetch(`https://${ALGOLIA_APP}-dsn.algolia.net/1/indexes/${index}/query`, {
@@ -199,6 +232,45 @@ export function algoliaPrimarySku(hit = {}) {
     return skus.find((s) => !extractBarcode(s)) || skus[0] || '';
   }
   return skus.find((s) => extractBarcode(s)) || skus[0] || '';
+}
+
+export async function algoliaBrandFacets({ lang = 'ar', ttl = LIST_TTL } = {}) {
+  const index = ALGOLIA_INDEX[lang] || ALGOLIA_INDEX.ar;
+  const cacheKey = `miraaya:algolia:brand-facets:${lang}`;
+  const cached = cacheGet(cacheKey, ttl);
+  if (cached) return cached;
+
+  const params = new URLSearchParams({
+    query: '',
+    hitsPerPage: '0',
+    page: '0',
+    facets: JSON.stringify(['brand']),
+    maxValuesPerFacet: '1000',
+  });
+
+  const res = await fetch(`https://${ALGOLIA_APP}-dsn.algolia.net/1/indexes/${index}/query`, {
+    method: 'POST',
+    headers: {
+      'X-Algolia-Application-Id': ALGOLIA_APP,
+      'X-Algolia-API-Key': ALGOLIA_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ params: params.toString() }),
+    signal: AbortSignal.timeout(20_000),
+  });
+
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(`Miraaya Algolia facets ${res.status}`);
+
+  const facets = json.facets?.brand || {};
+  cacheSet(cacheKey, facets);
+  return facets;
+}
+
+export function algoliaBrandFilter(brandName = '') {
+  const name = String(brandName || '').trim().replace(/"/g, '\\"');
+  if (!name) return '';
+  return `brand:"${name}"`;
 }
 
 export {

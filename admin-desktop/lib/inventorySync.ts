@@ -16,6 +16,48 @@ export type InventorySyncPreview = {
   productName?: string | null;
 };
 
+export type BarcodePosSnapshot = {
+  price: number;
+  originalPrice: number;
+  discountPercent: number;
+  stock: number;
+  name: string | null;
+  offerName: string | null;
+  syncedAt?: string;
+};
+
+export type BarcodeInventoryLookup = {
+  barcode: string;
+  pos: BarcodePosSnapshot | null;
+  inApp: { id: string; name: string | null } | null;
+};
+
+export async function lookupInventoryBarcodes(
+  barcodes: string[],
+): Promise<Record<string, BarcodeInventoryLookup>> {
+  const normalized = [...new Set(barcodes.map(normalizeBarcode).filter(Boolean))];
+  if (!normalized.length) return {};
+
+  const { data } = await api.post("/sync/inventory/lookup-barcodes", {
+    barcodes: normalized,
+  });
+  const body = (data?.data ?? data) as { items?: Record<string, BarcodeInventoryLookup> };
+  return body?.items ?? {};
+}
+
+export function resolveBarcodeLookup(
+  raw: string,
+  map: Record<string, BarcodeInventoryLookup>,
+): BarcodeInventoryLookup | null {
+  const candidates = barcodeLookupCandidates(raw);
+  for (const code of candidates) {
+    const hit = map[code];
+    if (hit?.pos || hit?.inApp) return hit;
+  }
+  const primary = candidates[0] || normalizeBarcode(raw);
+  return primary ? map[primary] ?? null : null;
+}
+
 export async function fetchInventoryByBarcode(
   barcode: string,
 ): Promise<InventorySyncPreview | null> {

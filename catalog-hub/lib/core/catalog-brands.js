@@ -5,17 +5,19 @@
 
 import { typesenseMultiSearch } from '../stores/miswag/client.js';
 import { createSallaClient, absImage as sallaAbs } from '../stores/salla/client.js';
-import { searchIndex, absImage as elryanAbs } from '../stores/elryan/client.js';
+import { searchIndex, absImage as elryanAbs, elryanBrandLogoUrl } from '../stores/elryan/client.js';
 import { loadAmazonIndex } from '../stores/amazon/catalog-index.js';
 import { normalizeAmazonImageUrl } from '../stores/amazon/scrape.js';
 import { fetchListingHtml } from '../stores/faces/client.js';
-import { parseListingHtml } from '../stores/faces/parse.js';
-import { algoliaSearch } from '../stores/miraaya/client.js';
-import { getStoreAdapter } from '../stores/registry.js';
+import { parseListingHtml as parseFacesListingHtml } from '../stores/faces/parse.js';
+import { algoliaSearch, algoliaBrandFacets, algoliaBrandFilter, normalizeMiraayaImageUrl } from '../stores/miraaya/client.js';
+import { fetchShopHtml } from '../stores/beautyway/client.js';
+import { parseListingHtml as parseBeautywayListingHtml } from '../stores/beautyway/parse.js';
+import { getStoreAdapter, listStores } from '../stores/registry.js';
 import { cacheGet, cacheSet } from './cache.js';
 import { brandMatchKeys, normalizeBrandKey, preferBrandDisplayName } from './brand-normalize.js';
 
-const CACHE_KEY = 'catalog:brands:v2';
+const CACHE_KEY = 'catalog:brands:v3';
 const CACHE_TTL = 30 * 60 * 1000;
 
 const FACES_BRAND_CATEGORIES = ['makeup', 'perfume', 'skincare', 'haircare', 'body-care', 'men-beauty-products'];
@@ -194,36 +196,58 @@ async function collectSallaBrands(map, storeId = 'najdalatheyah') {
 
 async function collectElryanBrands(map) {
   try {
-    const es = await searchIndex('ar', 'product', {
-      size: 0,
-      aggs: {
-        brands: {
-          terms: { field: 'brand', size: 500 },
-          aggs: {
-            sample: {
-              top_hits: {
-                size: 1,
-                _source: ['brand_details', 'image', 'name'],
-              },
-            },
-          },
-        },
-      },
-    }, { ttl: 10 * 60 * 1000, cacheKey: 'elryan:brand-aggs:v2' });
+    const pageSize = 500;
+    let from = 0;
+    let guard = 0;
 
-    for (const bucket of es.aggregations?.brands?.buckets || []) {
-      const src = bucket.sample?.hits?.hits?.[0]?._source || {};
-      const title = String(src.brand_details?.title || '').trim();
-      if (!title || /^no\s*brand$/i.test(title)) continue;
-      mergeBrand(map, {
-        name: title,
-        nameEn: title,
-        nameAr: title,
-        productImageUrl: elryanAbs(src.image || ''),
-        logoIsProductImage: true,
-        productCount: Number(bucket.doc_count || 0),
-        stores: ['elryan'],
-      });
+    while (guard < 15) {
+      const [arRes, enRes] = await Promise.all([
+        searchIndex('ar', 'brand', {
+          from,
+          size: pageSize,
+          query: { match_all: {} },
+          _source: ['title', 'image', 'slider_image', 'url_alias', 'value'],
+        }, { ttl: 10 * 60 * 1000, cacheKey: `elryan:brands:ar:${from}` }),
+        searchIndex('en', 'brand', {
+          from,
+          size: pageSize,
+          query: { match_all: {} },
+          _source: ['title', 'image', 'slider_image', 'url_alias', 'value'],
+        }, { ttl: 10 * 60 * 1000, cacheKey: `elryan:brands:en:${from}` }).catch(() => ({ hits: { hits: [] } })),
+      ]);
+
+      const enByValue = new Map();
+      for (const hit of enRes.hits?.hits || []) {
+        const src = hit._source || {};
+        enByValue.set(String(src.value || src.url_alias || ''), src);
+      }
+
+      const hits = arRes.hits?.hits || [];
+      for (const hit of hits) {
+        const src = hit._source || {};
+        const titleAr = String(src.title || '').trim();
+        const en = enByValue.get(String(src.value || src.url_alias || '')) || {};
+        const titleEn = String(en.title || titleAr).trim();
+        if (!titleAr || /^no\s*brand$/i.test(titleAr)) continue;
+
+        const logoFile = String(src.slider_image || src.image || en.slider_image || en.image || '').trim();
+        mergeBrand(map, {
+          name: titleEn || titleAr,
+          nameAr: titleAr,
+          nameEn: titleEn,
+          logoUrl: elryanBrandLogoUrl(logoFile),
+          logoIsProductImage: false,
+          productCount: 0,
+          stores: ['elryan'],
+        });
+      }
+
+      from += hits.length;
+      const total = typeof arRes.hits?.total === 'number'
+        ? arRes.hits.total
+        : arRes.hits?.total?.value || 0;
+      if (!hits.length || from >= total) break;
+      guard += 1;
     }
   } catch (err) {
     console.warn('elryan brands:', err.message);
@@ -269,7 +293,7 @@ async function collectFacesBrands(map) {
     for (const cgid of FACES_BRAND_CATEGORIES) {
       for (let page = 1; page <= 4; page += 1) {
         const html = await fetchListingHtml({ lang: 'ar', cgid, page, limit: 48 }).catch(() => '');
-        const items = parseListingHtml(html, { lang: 'ar' });
+        const items = parseFacesListingHtml(html, { lang: 'ar' });
         if (!items.length) break;
         for (const item of items) {
           const nameAr = String(item.brandAr || '').trim();
@@ -311,43 +335,118 @@ async function collectFacesBrands(map) {
 
 async function collectMiraayaBrands(map) {
   try {
-    const byKey = new Map();
-    for (const q of ['a', 'b', 'c', 'd', 'e', 'g', 'l', 'm', 'n', 's', 't']) {
-      const res = await algoliaSearch(q, { lang: 'ar', page: 0, limit: 100, ttl: 15 * 60 * 1000 });
-      for (const hit of res.hits || []) {
-        const nameAr = String(hit.arabic_brand || hit.brand || '').trim();
-        const nameEn = String(hit.brand || hit.arabic_brand || '').trim();
-        const keys = brandMatchKeys(nameEn, nameAr);
-        if (!keys.length) continue;
-        const key = keys[0];
-        const prev = byKey.get(key) || {
-          nameAr,
-          nameEn,
-          name: nameEn || nameAr,
-          count: 0,
-          thumb: '',
-        };
-        prev.count += 1;
-        if (!prev.thumb && (hit.image_url || hit.thumbnail_url)) {
-          prev.thumb = hit.image_url || hit.thumbnail_url;
-        }
-        byKey.set(key, prev);
-      }
-    }
+    const facets = await algoliaBrandFacets({ lang: 'ar' });
+    const ranked = Object.entries(facets)
+      .map(([name, count]) => ({ name: String(name).trim(), count: Number(count || 0) }))
+      .filter((row) => row.name && row.name !== 'No Brand')
+      .sort((a, b) => b.count - a.count);
 
-    for (const row of byKey.values()) {
-      mergeBrand(map, {
-        name: row.name,
-        nameAr: row.nameAr,
-        nameEn: row.nameEn,
-        productImageUrl: row.thumb,
-        logoIsProductImage: true,
-        productCount: row.count,
-        stores: ['miraaya'],
-      });
+    for (let i = 0; i < ranked.length; i += 15) {
+      const chunk = ranked.slice(i, i + 15);
+      const samples = await Promise.all(
+        chunk.map(async (row) => {
+          try {
+            const res = await algoliaSearch('', {
+              lang: 'ar',
+              page: 0,
+              limit: 1,
+              filters: algoliaBrandFilter(row.name),
+              ttl: 15 * 60 * 1000,
+            });
+            const hit = res.hits?.[0];
+            const facetName = row.name;
+            const nameAr = /[\u0600-\u06FF]/.test(facetName)
+              ? facetName
+              : String(hit?.arabic_brand || facetName).trim();
+            const nameEn = /[A-Za-z]/.test(facetName) && !/[\u0600-\u06FF]/.test(facetName)
+              ? facetName
+              : String(hit?.brand || '').trim();
+            const thumb = normalizeMiraayaImageUrl(hit?.image_url || hit?.thumbnail_url || '');
+            return {
+              name: preferBrandDisplayName(nameAr, nameEn) || facetName,
+              nameAr: nameAr || facetName,
+              nameEn: nameEn || nameAr || facetName,
+              productImageUrl: thumb,
+              logoIsProductImage: true,
+              productCount: row.count,
+              stores: ['miraaya'],
+            };
+          } catch {
+            return {
+              name: row.name,
+              nameAr: row.name,
+              nameEn: row.name,
+              productCount: row.count,
+              stores: ['miraaya'],
+            };
+          }
+        }),
+      );
+      for (const row of samples.filter(Boolean)) mergeBrand(map, row);
     }
   } catch (err) {
     console.warn('miraaya brands:', err.message);
+  }
+}
+
+function parseBeautywayBrandLinks(html = '', lang = 'ar') {
+  const rows = new Map();
+  for (const m of String(html || '').matchAll(/shop\?[^"']*brand=(\d+)[^"']*"[^>]*>([\s\S]*?)<\/a>/gi)) {
+    const id = String(m[1] || '').trim();
+    const name = String(m[2] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!id || id === '0' || !name || /^(all|الكل)$/i.test(name)) continue;
+    const prev = rows.get(id) || { id, nameAr: '', nameEn: '' };
+    if (lang === 'en') prev.nameEn = preferName(prev.nameEn, name);
+    else prev.nameAr = preferName(prev.nameAr, name);
+    rows.set(id, prev);
+  }
+  return rows;
+}
+
+async function collectBeautywayBrands(map) {
+  try {
+    const [arHtml, enHtml] = await Promise.all([
+      fetchShopHtml({ lang: 'ar', page: 1 }),
+      fetchShopHtml({ lang: 'en', page: 1 }).catch(() => ''),
+    ]);
+
+    const brands = parseBeautywayBrandLinks(arHtml, 'ar');
+    for (const [id, row] of parseBeautywayBrandLinks(enHtml, 'en')) {
+      const prev = brands.get(id) || { id, nameAr: '', nameEn: '' };
+      prev.nameEn = preferName(prev.nameEn, row.nameEn);
+      if (!prev.nameAr) prev.nameAr = row.nameAr;
+      brands.set(id, prev);
+    }
+
+    const list = [...brands.values()];
+    for (let i = 0; i < list.length; i += 12) {
+      const chunk = list.slice(i, i + 12);
+      await Promise.all(chunk.map(async (row) => {
+        try {
+          const html = await fetchShopHtml({ lang: 'ar', brand: row.id, page: 1 });
+          row.thumb = parseBeautywayListingHtml(html)[0]?.thumb || '';
+        } catch {
+          /* skip */
+        }
+      }));
+    }
+
+    for (const row of list) {
+      const nameAr = row.nameAr || row.nameEn;
+      const nameEn = row.nameEn || row.nameAr;
+      if (!nameAr && !nameEn) continue;
+      mergeBrand(map, {
+        name: nameEn || nameAr,
+        nameAr,
+        nameEn,
+        productImageUrl: String(row.thumb || '').trim(),
+        logoIsProductImage: true,
+        productCount: 0,
+        stores: ['beautyway'],
+      });
+    }
+  } catch (err) {
+    console.warn('beautyway brands:', err.message);
   }
 }
 
@@ -366,22 +465,38 @@ export async function collectCatalogBrands({ force = false } = {}) {
     collectAmazonBrands(map),
     collectFacesBrands(map),
     collectMiraayaBrands(map),
+    collectBeautywayBrands(map),
   ]);
 
-  const unique = new Set();
+  const seenObjects = new Set();
+  const uniqueKeys = new Set();
   const brands = [];
   for (const b of map.values()) {
-    const key = normalizeBrandKey(b.name || b.nameEn || b.nameAr);
-    if (!key || unique.has(key)) continue;
-    unique.add(key);
+    if (seenObjects.has(b)) continue;
+
+    const keys = [...(b.keys || new Set())];
+    const canonical = keys[0] || normalizeBrandKey(b.name || b.nameEn || b.nameAr);
+    if (!canonical) continue;
+    if (keys.some((k) => uniqueKeys.has(k)) || uniqueKeys.has(canonical)) continue;
+
+    keys.forEach((k) => uniqueKeys.add(k));
+    uniqueKeys.add(canonical);
+    seenObjects.add(b);
+
+    const realLogo = String(b.logoUrl || '').trim();
+    const productImage = String(b.productImageUrl || '').trim();
+    const effectiveLogo = realLogo || productImage;
+
     brands.push({
-      key,
+      key: canonical,
       name: b.name || preferBrandDisplayName(b.nameAr, b.nameEn),
       nameAr: b.nameAr || b.name,
       nameEn: b.nameEn || b.name,
-      logoUrl: b.logoUrl || '',
-      logoIsProductImage: Boolean(b.logoIsProductImage && b.logoUrl),
-      productImageUrl: b.productImageUrl || '',
+      logoUrl: effectiveLogo,
+      logoIsProductImage: realLogo
+        ? Boolean(b.logoIsProductImage)
+        : Boolean(productImage),
+      productImageUrl: productImage,
       productCount: b.productCount || 0,
       stores: b.stores || [],
     });
@@ -393,6 +508,7 @@ export async function collectCatalogBrands({ force = false } = {}) {
     total: brands.length,
     withLogo: brands.filter((b) => b.logoUrl).length,
     withRealLogo: brands.filter((b) => b.logoUrl && !b.logoIsProductImage).length,
+    stores: listStores().map((s) => s.id),
     brands,
     updatedAt: Date.now(),
   };
