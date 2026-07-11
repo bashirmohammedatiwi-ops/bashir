@@ -57,7 +57,14 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
 
   Future<void> _openResults(String raw) async {
     final digits = normalizeBarcode(raw);
-    if (digits.isEmpty) return;
+    if (digits.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('باركود غير صالح')),
+        );
+      }
+      return;
+    }
     await _scannerKey.currentState?.pause();
     if (!mounted) return;
     await context.push('/results?barcode=${Uri.encodeComponent(digits)}');
@@ -87,6 +94,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
       appBar: AppBar(
         title: const Text('مسح الباركود'),
         actions: [
+          IconButton(
+            tooltip: 'بحث بالاسم',
+            icon: const Icon(Icons.text_fields),
+            onPressed: () => context.push('/search'),
+          ),
           IconButton(
             tooltip: 'إدخال يدوي',
             icon: Icon(_showManual ? Icons.camera_alt : Icons.keyboard),

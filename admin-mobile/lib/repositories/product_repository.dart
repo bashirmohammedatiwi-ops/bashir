@@ -194,6 +194,9 @@ class ProductRepository {
     String? categoryId,
     String? subcategoryId,
     String? tertiaryCategoryId,
+    List<CatalogImportShade>? shadesOverride,
+    int? priceOverride,
+    int? stockOverride,
     void Function(String stage, int done, int total)? onProgress,
   }) async {
     if (brandId.isEmpty) {
@@ -250,9 +253,10 @@ class ProductRepository {
     }
     final invMap = await lookupBarcodes(barcodesToLookup);
 
+    final activeShades = shadesOverride ?? preview.shades;
     final shades = <Map<String, dynamic>>[];
-    for (var i = 0; i < preview.shades.length; i++) {
-      final s = preview.shades[i];
+    for (var i = 0; i < activeShades.length; i++) {
+      final s = activeShades[i];
       final shadeBc = _validBarcode(s.barcode);
       final inv = shadeBc != null ? _resolveInv(shadeBc, invMap) : null;
       shades.add(_shadePayload(s, i, urlToId, inv));
@@ -272,6 +276,8 @@ class ProductRepository {
         stock = toIntPrice(inv.stock);
       }
     }
+    if (priceOverride != null && priceOverride > 0) price = priceOverride;
+    if (stockOverride != null && stockOverride >= 0) stock = stockOverride;
     if (shades.isNotEmpty) {
       final lead = shades.firstWhere((s) => s['price'] != null, orElse: () => shades.first);
       price = (lead['price'] as int?) ?? 0;

@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' hide TextDirection;
@@ -59,11 +60,23 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
   int _progressDone = 0;
   int _progressTotal = 0;
   int _loadGen = 0;
+  String _loadStage = 'جاري تحميل المنتج...';
+  final Set<int> _selectedShadeIndices = {};
+  final _priceController = TextEditingController();
+  final _stockController = TextEditingController();
+  bool _allowDuplicateImport = false;
 
   @override
   void initState() {
     super.initState();
     _load();
+  }
+
+  @override
+  void dispose() {
+    _priceController.dispose();
+    _stockController.dispose();
+    super.dispose();
   }
 
   @override
@@ -94,6 +107,11 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
       _loading = true;
       _error = null;
       _importing = false;
+      _loadStage = 'جاري تحميل المنتج...';
+      _selectedShadeIndices.clear();
+      _priceController.clear();
+      _stockController.clear();
+      _allowDuplicateImport = false;
     });
   }
 
@@ -105,6 +123,7 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _loadStage = 'جاري تحميل التصنيفات...';
     });
     try {
       final catalog = ref.read(catalogRepositoryProvider);
@@ -127,7 +146,14 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
         shadeCountHint: widget.shadeCountHint,
         onPartial: (partial) {
           if (!_isCurrentLoad(gen, store, sourceId)) return;
-          if (mounted) setState(() => _product = partial);
+          if (mounted) {
+            setState(() {
+              _product = partial;
+              _loadStage = partial.shades.length > 1
+                  ? 'جاري جلب ${partial.shades.length} تدرج...'
+                  : 'جاري إكمال التفاصيل...';
+            });
+          }
         },
       );
       if (!_isCurrentLoad(gen, store, sourceId)) return;
@@ -139,7 +165,7 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
         subcategories,
         tertiary,
         product.categoryHint ?? '',
-        product.categoryHint ?? '',
+        product.nameEn.isNotEmpty ? product.nameEn : (product.categoryHint ?? ''),
       );
 
       final barcodes = _collectBarcodes(product);
@@ -171,23 +197,38 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
 
       if (!_isCurrentLoad(gen, store, sourceId)) return;
 
+      final loadedProduct = product;
+      if (loadedProduct == null) {
+        if (mounted) setState(() => _error = 'لم يُعثر على المنتج');
+        return;
+      }
+
+      final selectedShades = <int>{};
+      for (var i = 0; i < loadedProduct.shades.length; i++) {
+        selectedShades.add(i);
+      }
+
       if (mounted) {
         setState(() {
-          _product = product;
+          _product = loadedProduct;
           _categories = categories;
           _brands = brands;
           _subcategories = subs;
           _tertiarySections = tert;
           _brandId = brandId;
-          _categoryId = catId ?? (categories.isNotEmpty ? categories.first.id : null);
+          _categoryId = match.categoryId;
           _subcategoryId = match.subcategoryId;
           _tertiaryCategoryId = match.tertiaryCategoryId;
           _inv = inv;
+          _selectedShadeIndices
+            ..clear()
+            ..addAll(selectedShades);
+          _prefillPriceStock(loadedProduct, inv);
         });
       }
     } catch (e) {
       if (!_isCurrentLoad(gen, store, sourceId)) return;
-      if (mounted) setState(() => _error = 'فشل جلب تفاصيل المنتج');
+      if (mounted) setState(() => _error = 'فشل جلب تفاصيل المنتج: ${e.toString().replaceFirst('Exception: ', '')}');
     } finally {
       if (_isCurrentLoad(gen, store, sourceId) && mounted) {
         setState(() => _loading = false);
@@ -214,6 +255,71 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
     if (raw == null || isMiswagInternalId(raw)) return null;
     final n = normalizeBarcode(raw);
     return n.isNotEmpty ? n : null;
+  }
+
+  void _prefillPriceStock(CatalogImportProduct product, Map<String, BarcodeInventoryLookup> inv) {
+    final mainLookup = lookupBarcode(inv, product.barcode ?? widget.barcode);
+    if (mainLookup?.pos != null && mainLookup!.pos!.price > 0) {
+      _priceController.text = mainLookup.pos!.price.toInt().toString();
+      _stockController.text = mainLookup.pos!.stock.toString();
+      return;
+    }
+    final hint = int.tryParse((product.priceHint ?? '').replaceAll(RegExp(r'[^\d]'), ''));
+    if (hint != null && hint > 0) {
+      _priceController.text = hint.toString();
+    }
+  }
+
+  List<CatalogImportShade> _activeShades(CatalogImportProduct product) {
+    if (product.shades.isEmpty) return product.shades;
+    if (_selectedShadeIndices.isEmpty) return product.shades;
+    return [
+      for (var i = 0; i < product.shades.length; i++)
+        if (_selectedShadeIndices.contains(i)) product.shades[i],
+    ];
+  }
+
+  bool get _duplicateExists {
+    final product = _product;
+    if (product == null) return false;
+    final mainLookup = lookupBarcode(_inv, product.barcode ?? widget.barcode);
+    return mainLookup?.existsInApp == true;
+  }
+
+  Future<void> _showImportSuccess() async {
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.check_circle, color: Colors.green.shade600, size: 56),
+              const SizedBox(height: 12),
+              const Text('تم استيراد المنتج بنجاح', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  context.go('/scan');
+                },
+                icon: const Icon(Icons.qr_code_scanner),
+                label: const Text('مسح منتج التالي'),
+                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('البقاء في المعاينة'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   BrandEntity? get _selectedBrand {
@@ -342,6 +448,17 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
       _snack('اختر القسم الرئيسي');
       return;
     }
+    if (_duplicateExists && !_allowDuplicateImport) {
+      _snack('المنتج موجود في التطبيق — فعّل الاستيراد رغم التكرار أو تحقق من المخزون');
+      return;
+    }
+
+    final activeShades = _activeShades(product);
+    if (product.shades.isNotEmpty && activeShades.isEmpty) {
+      _snack('اختر تدرجاً واحداً على الأقل');
+      return;
+    }
+
     var brandId = _brandId;
     if (brandId == null || brandId.isEmpty) {
       brandId = await ref.read(productRepositoryProvider).resolveBrand(
@@ -353,6 +470,9 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
         return;
       }
     }
+
+    final priceOverride = int.tryParse(_priceController.text.trim());
+    final stockOverride = int.tryParse(_stockController.text.trim());
 
     setState(() {
       _importing = true;
@@ -366,6 +486,9 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
             categoryId: _categoryId,
             subcategoryId: _subcategoryId,
             tertiaryCategoryId: _tertiaryCategoryId,
+            shadesOverride: activeShades.isNotEmpty ? activeShades : null,
+            priceOverride: priceOverride,
+            stockOverride: stockOverride,
             onProgress: (stage, done, total) {
               if (mounted) {
                 setState(() {
@@ -377,8 +500,7 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
             },
           );
       if (!mounted) return;
-      _snack('تم استيراد المنتج بنجاح', success: true);
-      context.go('/scan');
+      await _showImportSuccess();
     } catch (e) {
       if (mounted) {
         final msg = e.toString().replaceFirst('Exception: ', '');
@@ -422,10 +544,10 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
         ],
       ),
       body: _loading
-          ? const Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('جاري تحميل المنتج والتصنيفات...'),
+          ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 16),
+              Text(_loadStage),
             ]))
           : _error != null
               ? Center(
@@ -460,9 +582,64 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
                                   Chip(avatar: const Icon(Icons.sell_outlined, size: 16), label: Text('${product.priceHint} د.ع')),
                                 if (product.shades.isNotEmpty)
                                   Chip(avatar: const Icon(Icons.palette, size: 16), label: Text('${product.shades.length} تدرج')),
+                                if (product.sourceUrl != null && product.sourceUrl!.isNotEmpty)
+                                  ActionChip(
+                                    avatar: const Icon(Icons.link, size: 16),
+                                    label: const Text('رابط المصدر'),
+                                    onPressed: () {
+                                      Clipboard.setData(ClipboardData(text: product.sourceUrl!));
+                                      _snack('تم نسخ رابط المتجر الأصلي');
+                                    },
+                                  ),
                               ],
                             ),
+                            if (_duplicateExists) ...[
+                              const SizedBox(height: 12),
+                              MaterialBanner(
+                                backgroundColor: Colors.orange.shade50,
+                                content: Text(
+                                  'هذا المنتج موجود في التطبيق${mainLookup?.inApp?.name != null ? ': ${mainLookup!.inApp!.name}' : ''}',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => setState(() => _allowDuplicateImport = !_allowDuplicateImport),
+                                    child: Text(_allowDuplicateImport ? 'إلغاء التجاوز' : 'استيراد رغم التكرار'),
+                                  ),
+                                ],
+                              ),
+                            ],
                             const SizedBox(height: 12),
+                            SectionCard(
+                              title: 'السعر والمخزون',
+                              icon: Icons.payments_outlined,
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _priceController,
+                                      keyboardType: TextInputType.number,
+                                      enabled: !_importing,
+                                      decoration: const InputDecoration(
+                                        labelText: 'السعر (د.ع)',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _stockController,
+                                      keyboardType: TextInputType.number,
+                                      enabled: !_importing,
+                                      decoration: const InputDecoration(
+                                        labelText: 'المخزون',
+                                        border: OutlineInputBorder(),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                             SectionCard(
                               title: 'معلومات المخزون',
                               icon: Icons.point_of_sale,
@@ -521,13 +698,28 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
                               SectionCard(
                                 title: 'التدرجات',
                                 icon: Icons.palette_outlined,
-                                trailing: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.primaryContainer,
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text('${product.shades.length}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    TextButton(
+                                      onPressed: _importing
+                                          ? null
+                                          : () => setState(() {
+                                                _selectedShadeIndices
+                                                  ..clear()
+                                                  ..addAll(List.generate(product.shades.length, (i) => i));
+                                              }),
+                                      child: const Text('الكل'),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.primaryContainer,
+                                        borderRadius: BorderRadius.circular(20),
+                                      ),
+                                      child: Text('${_selectedShadeIndices.length}/${product.shades.length}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                    ),
+                                  ],
                                 ),
                                 child: Column(
                                   children: [
@@ -538,6 +730,14 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
                                         lookup: lookupBarcode(_inv, product.shades[i].barcode),
                                         formatIqd: _formatIqd,
                                         expanded: _expandedShade == i,
+                                        selected: _selectedShadeIndices.contains(i),
+                                        onSelected: (v) => setState(() {
+                                          if (v) {
+                                            _selectedShadeIndices.add(i);
+                                          } else {
+                                            _selectedShadeIndices.remove(i);
+                                          }
+                                        }),
                                         onToggle: () => setState(() => _expandedShade = _expandedShade == i ? null : i),
                                       ),
                                   ],

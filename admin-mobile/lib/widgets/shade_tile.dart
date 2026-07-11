@@ -15,6 +15,8 @@ class ShadeTile extends StatelessWidget {
     required this.formatIqd,
     this.expanded = false,
     this.onToggle,
+    this.selected,
+    this.onSelected,
   });
 
   final CatalogImportShade shade;
@@ -23,6 +25,8 @@ class ShadeTile extends StatelessWidget {
   final String Function(num) formatIqd;
   final bool expanded;
   final VoidCallback? onToggle;
+  final bool? selected;
+  final ValueChanged<bool>? onSelected;
 
   Color get _swatchColor {
     final hex = shade.colorHex?.replaceAll('#', '');
@@ -49,6 +53,12 @@ class ShadeTile extends StatelessWidget {
             children: [
               Row(
                 children: [
+                  if (onSelected != null)
+                    Checkbox(
+                      value: selected ?? true,
+                      onChanged: (v) => onSelected?.call(v ?? false),
+                      visualDensity: VisualDensity.compact,
+                    ),
                   Container(
                     width: 28,
                     height: 28,
