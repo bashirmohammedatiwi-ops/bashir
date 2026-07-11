@@ -20,10 +20,37 @@ function productImage(product = {}) {
 }
 
 function productImages(product = {}) {
-  const images = [
-    productImage(product),
-    absImage(product.original_image),
-  ].filter(Boolean);
+  const images = [];
+
+  const push = (raw) => {
+    if (!raw) return;
+    if (typeof raw === 'string') {
+      const url = absImage(raw);
+      if (url) images.push(url);
+      return;
+    }
+    if (typeof raw === 'object') {
+      const url = absImage(raw.url || raw.image || raw.original || raw.src);
+      if (url) images.push(url);
+    }
+  };
+
+  push(product.image);
+  push(product.image_url);
+  push(product.original_image);
+  push(product.thumbnail);
+
+  for (const row of product.images || product.media || product.media_gallery || []) {
+    push(row);
+  }
+
+  for (const row of product.options || []) {
+    for (const val of row.values || []) {
+      push(val.image);
+      push(val.display_type === 'image' ? val.value : '');
+    }
+  }
+
   return [...new Set(images)];
 }
 
@@ -295,8 +322,17 @@ export function createSallaProductsApi(client) {
     }
 
     const { data = [] } = await sallaFetch('/products', { params: { 'ids[]': pid } });
-    const product = data.find((item) => String(item.id) === pid) || data[0];
+    let product = data.find((item) => String(item.id) === pid) || data[0];
     if (!product?.id) return null;
+
+    // تفاصيل كاملة غالباً تحتوي معرض صور أوسع
+    if (!light) {
+      try {
+        const slug = String(product.id || pid);
+        const { data: full } = await sallaFetch(`/products/${encodeURIComponent(slug)}/details`);
+        if (full?.id || full?.name) product = { ...product, ...full };
+      } catch { /* ids[] كافٍ */ }
+    }
 
     const mapped = mapDetailProduct(product, { light });
     cacheSet(cacheKey, mapped);

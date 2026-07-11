@@ -1031,7 +1031,7 @@ function parseDetailCore(html = '', asin = '', marketHost = 'www.amazon.com') {
     ...[...html.matchAll(/"large"\s*:\s*"(https:[^"]+)"/g)].map((m) => m[1]),
     ...[...html.matchAll(/"hiRes"\s*:\s*"(https:[^"]+)"/g)].map((m) => m[1]),
   ].filter(Boolean);
-  const uniqImages = [...new Set(images.map((u) => normalizeAmazonImageUrl(u, 1000)).filter(Boolean))].slice(0, 12);
+  const uniqImages = [...new Set(images.map((u) => normalizeAmazonImageUrl(u, 1000)).filter(Boolean))].slice(0, 24);
 
   const isAr = hasArabic(title) || /amazon\.(ae|sa)/i.test(marketHost);
   const description = buildLocaleDescription(html, { arabic: isAr });
@@ -1452,7 +1452,7 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
     descriptionAr,
     descriptionEn,
     thumb: en?.thumb || ae?.thumb || sa?.thumb || '',
-    images: [...new Set([...(en?.images || []), ...(ae?.images || []), ...(sa?.images || [])])].slice(0, 12),
+    images: [...new Set([...(en?.images || []), ...(ae?.images || []), ...(sa?.images || [])])].slice(0, 24),
     price: en?.price || ae?.price || sa?.price || '',
     category: 'Beauty',
     productUrl: `https://www.amazon.com/dp/${asin}`,

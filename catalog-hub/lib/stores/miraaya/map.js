@@ -173,6 +173,11 @@ export function mapDetailProduct(arItem = null, enItem = null, {
   }
 
   const highlight = highlightSku || sku;
+  const allImages = [...new Set([
+    ...images,
+    ...shades.map((s) => s.image).filter(Boolean),
+    ...shades.map((s) => s.swatchImage).filter(Boolean),
+  ])];
 
   return {
     id: sku,
@@ -184,8 +189,8 @@ export function mapDetailProduct(arItem = null, enItem = null, {
     brandEn,
     descriptionAr,
     descriptionEn,
-    thumb,
-    images: [...new Set(images)],
+    thumb: allImages[0] || thumb,
+    images: allImages,
     price,
     category: primary.categories?.[0]?.name || '',
     productUrl: productPageUrl(primary.url_key || restUrlKey(restAr || {}), 'ar'),

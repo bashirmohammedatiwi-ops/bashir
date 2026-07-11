@@ -50,6 +50,11 @@ export function mergeBilingualSources(arSrc = null, enSrc = null) {
   const brandAr = brandOf(arSrc || {});
   const brandEn = brandOf(enSrc || {}) || brandAr;
 
+  const images = [...new Set([
+    ...galleryImages(arSrc || primary),
+    ...galleryImages(enSrc || {}),
+  ].filter(Boolean))];
+
   return {
     id: String(primary.id),
     sku: String(primary.sku || ''),
@@ -60,8 +65,8 @@ export function mergeBilingualSources(arSrc = null, enSrc = null) {
     brandEn: brandEn || brandAr,
     descriptionAr: descAr,
     descriptionEn: descEn,
-    thumb: primaryImage(arSrc || primary) || primaryImage(enSrc || {}),
-    images: galleryImages(arSrc || primary),
+    thumb: images[0] || primaryImage(arSrc || primary) || primaryImage(enSrc || {}),
+    images,
     price: formatIqdPrice(primary),
     category: categoryLabel(arSrc || primary),
     productUrl: productUrl(primary.url_path, arSrc ? 'ar' : 'en'),
@@ -117,21 +122,28 @@ export function mapDetailProduct(arSrc = null, enSrc = null) {
 
   const children = arSrc?.configurable_children || enSrc?.configurable_children || [];
   if (children.length) {
+    const shades = children.map((child, i) => ({
+      id: String(child.id || i),
+      nameAr: String(child.name || child.sku || `خيار ${i + 1}`).trim(),
+      nameEn: String(child.name || '').trim(),
+      sku: String(child.sku || ''),
+      barcode: extractBarcodeFromSku(child.sku),
+      image: absImage(child.image || child.thumbnail) || merged.thumb,
+      price: formatIqdPrice(child) || merged.price,
+      inStock: child.stock?.is_in_stock !== false,
+      optionGroup: '',
+    }));
+    const images = [...new Set([
+      ...merged.images,
+      ...shades.map((s) => s.image).filter(Boolean),
+    ])];
     return {
       ...merged,
       nameAr,
       nameEn,
-      shades: children.map((child, i) => ({
-        id: String(child.id || i),
-        nameAr: String(child.name || child.sku || `خيار ${i + 1}`).trim(),
-        nameEn: String(child.name || '').trim(),
-        sku: String(child.sku || ''),
-        barcode: extractBarcodeFromSku(child.sku),
-        image: absImage(child.image || child.thumbnail) || merged.thumb,
-        price: formatIqdPrice(child) || merged.price,
-        inStock: child.stock?.is_in_stock !== false,
-        optionGroup: '',
-      })),
+      thumb: images[0] || merged.thumb,
+      images,
+      shades,
       shadeCount: children.length,
       hasOptions: true,
       manufacturer: merged.brandAr,

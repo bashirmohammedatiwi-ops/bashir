@@ -13,9 +13,7 @@ fi
 echo "==> Removing legacy Miswag archive files from catalog-hub volume..."
 $COMPOSE exec -T catalog-hub sh -c '
   rm -f /app/data/miswag-catalog-index.json
-  rm -f /app/data/barcode-index.json
-  rm -f /app/data/barcode-meta-cache.json
-  echo "    removed miswag-catalog-index.json, barcode-index.json, barcode-meta-cache.json"
+  echo "    removed miswag-catalog-index.json (barcode index preserved)"
 ' || true
 
 echo "==> catalog-hub data cleanup complete"

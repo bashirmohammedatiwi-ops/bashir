@@ -1,0 +1,201 @@
+import {
+  fetchShopHtml,
+  fetchProductHtml,
+  isValidEan,
+  extractBarcode,
+} from './client.js';
+import {
+  parseListingHtml,
+  parseListingTotal,
+  parseProductDetailHtml,
+} from './parse.js';
+import { mapListItem, mapDetailProduct, toBarcodeHit } from './map.js';
+import { collectImageUrls } from '../../core/images.js';
+import {
+  findBarcodeIndexEntry,
+  gtinEqual,
+  upsertBarcodeIndex,
+} from '../../core/barcode-index.js';
+import { lookupBarcodeProductMeta, buildMetaHintQueries, isUsableBarcodeMeta } from '../../core/barcode-meta.js';
+
+function pageResult(items, { page, limit, total = 0 } = {}) {
+  const safeTotal = total || items.length;
+  return {
+    items: items.slice(0, limit),
+    page,
+    pageSize: limit,
+    total: safeTotal,
+    hasMore: page * limit < safeTotal,
+  };
+}
+
+async function fetchListingMerged({ category = '', search = '', page = 1, limit = 30 } = {}) {
+  const [arHtml, enHtml] = await Promise.all([
+    fetchShopHtml({ lang: 'ar', category, search, page }),
+    fetchShopHtml({ lang: 'en', category, search, page }).catch(() => ''),
+  ]);
+
+  const arItems = parseListingHtml(arHtml);
+  const enItems = parseListingHtml(enHtml);
+  const enById = new Map(enItems.map((i) => [i.id, i]));
+
+  const merged = arItems.map((item) => {
+    const en = enById.get(item.id);
+    return mapListItem({
+      ...item,
+      nameEn: en?.nameEn || item.nameEn,
+      brandEn: en?.brandEn || item.brandEn,
+      href: item.href || en?.href,
+    });
+  });
+
+  const total = Math.max(
+    parseListingTotal(arHtml),
+    parseListingTotal(enHtml),
+    merged.length,
+  );
+
+  return pageResult(merged, { page, limit, total });
+}
+
+export async function listCategoryProducts(categoryId, { page = 1, limit = 30 } = {}) {
+  const category = String(categoryId || '').trim();
+  if (!category || category === 'root') {
+    return fetchListingMerged({ page, limit });
+  }
+  return fetchListingMerged({ category, page, limit });
+}
+
+export async function searchProducts(query, { page = 1, limit = 30 } = {}) {
+  const q = String(query || '').trim();
+  if (!q) return pageResult([], { page, limit, total: 0 });
+  return fetchListingMerged({ search: q, page, limit });
+}
+
+async function loadDetailBilingual(idOrSlug, { light = false } = {}) {
+  const [arHtml, enHtml] = await Promise.all([
+    fetchProductHtml(idOrSlug, { lang: 'ar' }),
+    light ? Promise.resolve('') : fetchProductHtml(idOrSlug, { lang: 'en' }).catch(() => ''),
+  ]);
+
+  const ar = parseProductDetailHtml(arHtml, { lang: 'ar', fallbackId: idOrSlug });
+  const en = enHtml ? parseProductDetailHtml(enHtml, { lang: 'en', fallbackId: ar.id || idOrSlug }) : null;
+  const images = collectImageUrls(ar.images, en?.images);
+
+  const detail = mapDetailProduct({
+    ...ar,
+    nameEn: en?.nameEn || ar.nameEn,
+    brandEn: en?.brandEn || ar.brandEn,
+    descriptionEn: en?.descriptionEn || '',
+    productUrlEn: en?.productUrl || undefined,
+    thumb: images[0] || ar.thumb,
+    images,
+  });
+
+  if (detail.barcode) {
+    upsertBarcodeIndex(detail.barcode, {
+      store: 'beautyway',
+      productId: detail.id,
+      brand: detail.brandAr || detail.brandEn,
+    });
+  }
+
+  return detail;
+}
+
+export async function fetchProductDetail(id, { light = false } = {}) {
+  const pid = String(id || '').trim();
+  if (!pid) return null;
+  try {
+    return await loadDetailBilingual(pid, { light });
+  } catch {
+    return null;
+  }
+}
+
+function rememberBarcodeMatch(digits, item) {
+  upsertBarcodeIndex(digits, {
+    store: 'beautyway',
+    productId: String(item.id || ''),
+    brand: item.brandAr || item.brandEn || '',
+  });
+}
+
+async function searchBarcodeViaShop(digits) {
+  const { items = [] } = await fetchListingMerged({ search: digits, page: 1, limit: 48 });
+  const exact = items.filter((item) => item.barcode && gtinEqual(item.barcode, digits));
+  if (!exact.length) return [];
+
+  const hits = [];
+  for (const item of exact.slice(0, 3)) {
+    const detail = await fetchProductDetail(item.id, { light: false }).catch(() => null);
+    if (detail) {
+      rememberBarcodeMatch(digits, detail);
+      hits.push(toBarcodeHit(detail, digits));
+      continue;
+    }
+    rememberBarcodeMatch(digits, item);
+    hits.push({
+      id: item.id,
+      nameAr: item.nameAr,
+      nameEn: item.nameEn,
+      brandAr: item.brandAr,
+      brandEn: item.brandEn,
+      thumb: item.thumb,
+      price: item.price,
+      barcode: digits,
+      shadeName: '',
+      matchType: 'ean',
+    });
+  }
+  return hits;
+}
+
+async function searchBarcodeViaMeta(digits) {
+  const meta = await lookupBarcodeProductMeta(digits).catch(() => null);
+  if (!meta || !isUsableBarcodeMeta(meta)) return [];
+
+  const queries = buildMetaHintQueries(meta).slice(0, 3);
+  for (const q of queries) {
+    const { items = [] } = await searchProducts(q, { page: 1, limit: 20 });
+    for (const item of items) {
+      const detail = await fetchProductDetail(item.id, { light: false }).catch(() => null);
+      if (!detail?.barcode || !gtinEqual(detail.barcode, digits)) continue;
+      rememberBarcodeMatch(digits, detail);
+      return [toBarcodeHit(detail, digits)];
+    }
+  }
+  return [];
+}
+
+export async function searchBarcode(code) {
+  const digits = String(code || '').replace(/\D/g, '');
+  if (!digits || !isValidEan(digits)) return [];
+
+  const cached = findBarcodeIndexEntry(digits);
+  if (cached?.store === 'beautyway' && cached.productId) {
+    const detail = await fetchProductDetail(cached.productId, { light: false }).catch(() => null);
+    if (detail?.barcode && gtinEqual(detail.barcode, digits)) {
+      return [toBarcodeHit(detail, digits)];
+    }
+  }
+
+  const shopHits = await searchBarcodeViaShop(digits);
+  if (shopHits.length) return shopHits;
+
+  return searchBarcodeViaMeta(digits);
+}
+
+export function sortProductsClient(items = [], sort = '') {
+  const list = [...items];
+  switch (sort) {
+    case 'price_asc':
+      return list.sort((a, b) => Number(String(a.price).replace(/\D/g, '')) - Number(String(b.price).replace(/\D/g, '')));
+    case 'price_desc':
+      return list.sort((a, b) => Number(String(b.price).replace(/\D/g, '')) - Number(String(a.price).replace(/\D/g, '')));
+    case 'name':
+      return list.sort((a, b) => String(a.nameAr || a.nameEn).localeCompare(String(b.nameAr || b.nameEn), 'ar'));
+    default:
+      return list;
+  }
+}

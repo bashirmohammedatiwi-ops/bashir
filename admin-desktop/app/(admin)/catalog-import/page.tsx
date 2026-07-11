@@ -143,7 +143,7 @@ function listProductToOption(p: CatalogListProduct, store: CatalogStore): Catalo
 export default function CatalogImportPage() {
   const [stores, setStores] = useState<CatalogStore[]>([]);
   // البحث الافتراضي يشمل أمازون — النتائج تظهر تدريجياً من المتاجر الأسرع
-  const [activeStores, setActiveStores] = useState<string[]>(["miswag", "najdalatheyah", "elryan", "faces", "miraaya", "amazon"]);
+  const [activeStores, setActiveStores] = useState<string[]>(["miswag", "najdalatheyah", "elryan", "faces", "miraaya", "beautyway", "amazon"]);
   const [browseStore, setBrowseStore] = useState("miswag");
   const [tree, setTree] = useState<CatalogCategoryNode[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -166,6 +166,7 @@ export default function CatalogImportPage() {
 
   const [selected, setSelected] = useState<CatalogImportOption | null>(null);
   const [preview, setPreview] = useState<CatalogImportProduct | null>(null);
+  const [previewImageIdx, setPreviewImageIdx] = useState(0);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [step, setStep] = useState(0);
   const [form] = Form.useForm();
@@ -277,6 +278,10 @@ export default function CatalogImportPage() {
     setCategoryPath(preferred.name);
     loadCategoryProducts(preferred.id, 1, false);
   }, [browseStore, tree, selectedCategory, loadCategoryProducts]);
+
+  useEffect(() => {
+    setPreviewImageIdx(0);
+  }, [preview?.sourceId, preview?.store]);
 
   // أمازون: أظهر تقدّم ملء الفهرس المحلي (مثل باقي المتاجر بعد اكتمال الزحف)
   useEffect(() => {
@@ -998,16 +1003,20 @@ export default function CatalogImportPage() {
             <>
               <div className="ci-drawer-hero">
                 <div className="ci-drawer-hero-grid">
-                  {preview.images[0]?.url ? (
-                    <img
-                      className="ci-drawer-image"
-                      src={resolveCatalogImageUrl(preview.images[0].url)}
-                      alt={preview.nameAr}
-                      referrerPolicy="no-referrer"
-                    />
-                  ) : (
-                    <div className="ci-drawer-image-ph"><AppstoreOutlined /></div>
-                  )}
+                  {(() => {
+                    const gallery = (preview.images || []).filter((img) => img?.url);
+                    const heroUrl = gallery[previewImageIdx]?.url || gallery[0]?.url;
+                    return heroUrl ? (
+                      <img
+                        className="ci-drawer-image"
+                        src={resolveCatalogImageUrl(heroUrl)}
+                        alt={preview.nameAr}
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="ci-drawer-image-ph"><AppstoreOutlined /></div>
+                    );
+                  })()}
                   <div>
                     <h3 className="ci-drawer-title">{preview.nameAr}</h3>
                     {preview.nameEn && preview.nameEn !== preview.nameAr ? (
@@ -1031,6 +1040,25 @@ export default function CatalogImportPage() {
                     </div>
                   </div>
                 </div>
+                {(preview.images || []).filter((img) => img?.url).length > 1 ? (
+                  <div className="ci-drawer-gallery">
+                    {(preview.images || []).filter((img) => img?.url).map((img, i) => (
+                      <button
+                        key={`${img.url}-${i}`}
+                        type="button"
+                        className={`ci-drawer-gallery-thumb${i === previewImageIdx ? " is-active" : ""}`}
+                        onClick={() => setPreviewImageIdx(i)}
+                        aria-label={`صورة ${i + 1}`}
+                      >
+                        <img
+                          src={resolveCatalogImageUrl(img.url)}
+                          alt=""
+                          referrerPolicy="no-referrer"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
 
               {(preview.descriptionAr || preview.descriptionEn) && (
