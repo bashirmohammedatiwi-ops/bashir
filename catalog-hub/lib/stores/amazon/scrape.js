@@ -247,11 +247,11 @@ function cleanShadeLabel(label = '') {
     .trim();
 }
 
-const JUNK_SHADE_NAMES = /^(square|round|oval|rectangle|default|select|choose|n\/a|none|null|undefined|color|colour|shade|size|style)$/i;
+const JUNK_SHADE_NAMES = /^(square|round|oval|rectangle|default|select|choose|n\/a|none|null|undefined|color|colour|shade|size|style|free)$/i;
 
 function isUsableShadeName(value = '') {
   const v = cleanShadeLabel(value);
-  if (!v || v.length < 2 || v.length > 60) return false;
+  if (!v || v.length < 2 || v.length > 120) return false;
   if (JUNK_SHADE_NAMES.test(v)) return false;
   if (/^[A-Z0-9]{10}$/.test(v)) return false; // ASIN
   return true;
@@ -466,13 +466,14 @@ function parseSearchCards(html = '', marketHost = 'www.amazon.com', lang = 'en')
     if (!price && whole) price = `${symbol || ''}${whole}${frac ? `.${frac}` : ''}`.trim();
 
     const isAr = lang === 'ar' || /[\u0600-\u06FF]/.test(title);
+    const brand = extractBrandFromHtml(chunk) || inferBrandFromTitle(title);
     items.push({
       id: asin,
       asin,
       nameAr: isAr ? title : '',
       nameEn: isAr ? '' : title,
-      brandAr: '',
-      brandEn: '',
+      brandAr: brand,
+      brandEn: brand,
       thumb: normalizeAmazonImageUrl(img, 500),
       price,
       sku: asin,
@@ -554,17 +555,98 @@ function putShade(byAsin, asin, patch = {}) {
     optionGroup: 'التدرج',
   };
   const name = cleanShadeLabel(patch.nameEn || patch.nameAr || '');
+  const usable = isUsableShadeName(name);
+  const nextEn = (usable && name && hasLatin(name) ? name : '') || prev.nameEn;
+  const nextAr = (usable && name && hasArabic(name) ? name : '') || prev.nameAr;
   byAsin.set(id, {
     ...prev,
     ...patch,
     id,
     sku: id,
-    nameEn: (name && hasLatin(name) ? name : '') || prev.nameEn || name,
-    nameAr: (name && hasArabic(name) ? name : '') || prev.nameAr || name || prev.nameEn,
+    nameEn: nextEn || nextAr,
+    nameAr: nextAr || nextEn,
     image: normalizeAmazonImageUrl(patch.image || prev.image || '', 500),
     colorHex: patch.colorHex || prev.colorHex || '',
     optionGroup: patch.optionGroup || prev.optionGroup || 'التدرج',
   });
+}
+
+function extractBrandFromHtml(html = '') {
+  const text = String(html || '');
+  const candidates = [];
+
+  const visit = text.match(/Visit the\s+([^<]+?)\s+Store/i)?.[1];
+  if (visit) candidates.push(decodeHtml(visit));
+
+  const bylineLink = text.match(/(?:id="bylineInfo"|BylineInfo_feature_div)[\s\S]{0,400}?<a[^>]*>([^<]+)<\/a>/i)?.[1];
+  if (bylineLink) {
+    candidates.push(
+      decodeHtml(bylineLink)
+        .replace(/^Visit the\s+/i, '')
+        .replace(/\s+Store$/i, '')
+        .replace(/^Brand:\s*/i, '')
+        .replace(/^العلامة التجارية:\s*/i, '')
+        .trim(),
+    );
+  }
+
+  const brandJson = text.match(/"brand"\s*:\s*"([^"]{2,60})"/i)?.[1];
+  if (brandJson) candidates.push(decodeHtml(brandJson));
+
+  for (const m of text.matchAll(/(?:Brand|العلامة التجارية)\s*[:：]\s*<\/[^>]+>\s*<[^>]+>([^<]{2,60})</gi)) {
+    candidates.push(decodeHtml(m[1]));
+  }
+  const arInline = text.match(/العلامة التجارية\s*[:：]\s*([^<]{2,40})/i)?.[1];
+  if (arInline) candidates.push(decodeHtml(arInline));
+
+  for (const raw of candidates) {
+    const brand = String(raw || '').trim();
+    if (!brand || brand.length < 2 || brand.length > 60) continue;
+    if (/^(store|shop|brand)$/i.test(brand)) continue;
+    return brand;
+  }
+  return '';
+}
+
+function inferBrandFromTitle(title = '') {
+  const t = String(title || '').trim();
+  if (!t) return '';
+
+  const byMatch = t.match(/\bby\s+([A-Za-z][A-Za-z0-9 &'./-]{1,35})(?:\s+for\b|,|\s+[-–]|$)/i);
+  if (byMatch) return byMatch[1].trim();
+
+  const fromAr = t.match(/(?:من|بواسطة)\s+([\u0600-\u06FF][\u0600-\u06FF\s]{1,25})/);
+  if (fromAr) return fromAr[1].trim();
+
+  const lead = t.match(/^([A-Za-z][A-Za-z0-9 &'-]{1,25})\s+/);
+  if (lead && !/^(the|new|best|top|amazon)$/i.test(lead[1])) return lead[1].trim();
+
+  return '';
+}
+
+function extractParentAsin(html = '', fallbackAsin = '') {
+  return String(
+    html.match(/"parentAsin"\s*:\s*"([A-Z0-9]{10})"/i)?.[1]
+    || html.match(/"parent_asin"\s*:\s*"([A-Z0-9]{10})"/i)?.[1]
+    || '',
+  ).toUpperCase() || String(fallbackAsin || '').toUpperCase();
+}
+
+function filterUsableShades(shades = []) {
+  return shades.filter((s) => isUsableShadeName(s.nameEn || s.nameAr) || Boolean(s.image));
+}
+
+function buildColorLabelIndex(html = '') {
+  const { colorToAsin } = mergeEmbeddedTwisterJson(html);
+  const byAsin = new Map();
+  for (const [label, info] of Object.entries(colorToAsin || {})) {
+    const id = String(info?.asin || info || '').toUpperCase();
+    const clean = cleanShadeLabel(label);
+    if (/^[A-Z0-9]{10}$/.test(id) && isUsableShadeName(clean)) {
+      byAsin.set(id, clean);
+    }
+  }
+  return byAsin;
 }
 
 function decodeDataAState(raw = '') {
@@ -853,7 +935,7 @@ function parseShadesFromHtml(html = '') {
     });
   }
 
-  return [...byAsin.values()];
+  return filterUsableShades([...byAsin.values()]);
 }
 
 const JUNK_DESC_LINE_RE = /^(الشركة المصنعة|العلامة التجارية(?: للمنتج)?|وزن المنتج|فئة المنتج|رقم الموديل|ASIN|Manufacturer|Brand|Item Weight|Product Dimensions|Best Sellers Rank|Date First Available|Is Discontinued|Customer Reviews)\b/i;
@@ -1006,12 +1088,7 @@ function parseDetailCore(html = '', asin = '', marketHost = 'www.amazon.com') {
   );
   if (!title) return null;
 
-  const brand = decodeHtml(
-    html.match(/id="bylineInfo"[^>]*>([^<]+)/)?.[1]
-    || html.match(/"brand"\s*:\s*"([^"]+)"/)?.[1]
-    || '',
-  ).replace(/^Visit the\s+/i, '').replace(/\s+Store$/i, '').replace(/^Brand:\s*/i, '')
-    .replace(/^العلامة التجارية:\s*/i, '');
+  const brand = extractBrandFromHtml(html) || inferBrandFromTitle(title);
 
   const price = decodeHtml(
     html.match(/class="a-price[^"]*"[^>]*>[\s\S]*?a-offscreen">([^<]+)/)?.[1]
@@ -1294,7 +1371,7 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
   const asin = String(id || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(asin)) return null;
 
-  const cacheKey = `amazon:detail:v13:${asin}:${light ? 'l' : 'f'}`;
+  const cacheKey = `amazon:detail:v14:${asin}:${light ? 'l' : 'f'}`;
   const cached = cacheGet(cacheKey, DETAIL_TTL);
   if (cached) return cached;
 
@@ -1335,6 +1412,26 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
   if (!primary) return null;
 
   let shades = mergeShadeLocales(en?.shades || [], [...(ae?.shades || []), ...(sa?.shades || [])]);
+  shades = filterUsableShades(shades);
+
+  const parentAsin = extractParentAsin(comHtml || aeHtml || saHtml, asin);
+  if (shades.length < 2 && parentAsin && parentAsin !== asin) {
+    try {
+      const parentHtml = comHtml && extractParentAsin(comHtml, asin) === parentAsin
+        ? comHtml
+        : await fetchMarketHtml('com', `https://${MARKETS.com.host}/dp/${parentAsin}`, {
+          ttl: DETAIL_TTL,
+          cacheKey: `amazon:dp:com:${parentAsin}`,
+        });
+      const parentEn = parentHtml ? parseDetailCore(parentHtml, parentAsin, MARKETS.com.host) : null;
+      const parentShades = filterUsableShades(parentEn?.shades || []);
+      if (parentShades.length > shades.length) {
+        shades = mergeShadeLocales(parentShades, shades);
+        shades = filterUsableShades(shades);
+      }
+    } catch { /* optional */ }
+  }
+
   if (shades.length > 1) {
     const children = shades.filter((s) => String(s.id) !== asin);
     if (children.length) shades = children;
@@ -1387,28 +1484,33 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
     }
   }
 
-  // نظّف أسماء التدرجات التالفة (مثل SQUARE) واملأ الناقص من العنوان إن أمكن
+  // نظّف أسماء التدرجات التالفة (مثل SQUARE) واملأ الناقص من colorToAsin إن أمكن
+  const colorLabels = buildColorLabelIndex(comHtml || aeHtml || saHtml);
   shades = shades.map((s) => {
     let nameEn = cleanShadeLabel(s.nameEn || '');
     let nameAr = cleanShadeLabel(s.nameAr || '');
     if (!isUsableShadeName(nameEn)) nameEn = '';
     if (!isUsableShadeName(nameAr)) nameAr = '';
     if (!nameEn && !nameAr) {
+      const fromIndex = colorLabels.get(String(s.id || '').toUpperCase());
+      if (fromIndex) nameEn = fromIndex;
+    }
+    if (!nameEn && !nameAr) {
       const fromTitle = String(primary.nameEn || primary.nameAr || '').match(
         /(?:-|–|—|:)\s*([A-Za-z0-9][A-Za-z0-9 /-]{1,40})$/,
       )?.[1];
       if (fromTitle && isUsableShadeName(fromTitle)) nameEn = cleanShadeLabel(fromTitle);
     }
-    const finalEn = nameEn || nameAr || s.id;
-    const finalAr = nameAr || nameEn || s.id;
+    const finalEn = nameEn || nameAr || '';
+    const finalAr = nameAr || nameEn || '';
     return {
       ...s,
       nameEn: finalEn,
       nameAr: finalAr,
-      // لا تُبقِ hex مُخمَّناً ضعيفاً إن وُجدت صورة — الواجهة تستخرج اللون الحقيقي
       colorHex: s.colorHex || '',
     };
   });
+  shades = filterUsableShades(shades);
 
   const nameAr = (ae?.nameAr && hasArabic(ae.nameAr) ? ae.nameAr : '')
     || (sa?.nameAr && hasArabic(sa.nameAr) ? sa.nameAr : '')
@@ -1422,6 +1524,16 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
     || en?.nameEn
     || primary.nameEn
     || nameAr;
+
+  const brandEn = en?.brandEn || ae?.brandEn || sa?.brandEn
+    || extractBrandFromHtml(comHtml)
+    || inferBrandFromTitle(nameEn)
+    || inferBrandFromTitle(nameAr);
+  const brandAr = (ae?.brandAr && hasArabic(ae.brandAr) ? ae.brandAr : '')
+    || (sa?.brandAr && hasArabic(sa.brandAr) ? sa.brandAr : '')
+    || (hasArabic(ae?.brandAr) ? ae.brandAr : '')
+    || (hasArabic(sa?.brandAr) ? sa.brandAr : '')
+    || brandEn;
 
   const { descriptionAr, descriptionEn } = pickBilingualDescription(
     ae?.descriptionAr || '',
@@ -1441,14 +1553,14 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
 
   const detail = {
     id: asin,
-    parentAsin: asin,
+    parentAsin: parentAsin || asin,
     sku: asin,
     barcode: pickBestBarcode(barcodes) || primary.barcode || ae?.barcode || sa?.barcode || shades.find((s) => s.barcode)?.barcode || '',
     barcodes,
     nameAr,
     nameEn,
-    brandAr: ae?.brandAr || sa?.brandAr || en?.brandAr || '',
-    brandEn: en?.brandEn || ae?.brandEn || sa?.brandEn || '',
+    brandAr,
+    brandEn,
     descriptionAr,
     descriptionEn,
     thumb: en?.thumb || ae?.thumb || sa?.thumb || '',
@@ -1461,8 +1573,8 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
     shades,
     shadeCount: shades.length,
     hasOptions: shades.length > 1,
-    manufacturer: ae?.brandAr || sa?.brandAr || en?.brandAr || '',
-    manufacturerEn: en?.brandEn || ae?.brandEn || sa?.brandEn || '',
+    manufacturer: brandAr || brandEn,
+    manufacturerEn: brandEn || brandAr,
     source: 'scrape',
   };
 

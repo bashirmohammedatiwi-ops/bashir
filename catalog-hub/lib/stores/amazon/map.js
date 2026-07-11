@@ -40,6 +40,16 @@ function brandOf(item = {}) {
     || '';
 }
 
+function inferBrandFromTitle(title = '') {
+  const t = String(title || '').trim();
+  if (!t) return '';
+  const byMatch = t.match(/\bby\s+([A-Za-z][A-Za-z0-9 &'./-]{1,35})(?:\s+for\b|,|\s+[-–]|$)/i);
+  if (byMatch) return byMatch[1].trim();
+  const lead = t.match(/^([A-Za-z][A-Za-z0-9 &'-]{1,25})\s+/);
+  if (lead && !/^(the|new|best|top|amazon)$/i.test(lead[1])) return lead[1].trim();
+  return '';
+}
+
 function barcodeOf(item = {}) {
   const ids = item.ItemInfo?.ExternalIds || {};
   for (const key of ['EANs', 'UPCs', 'ISBNs']) {
@@ -100,7 +110,8 @@ export function mergeAmazonLocales(enItem = null, arItem = null) {
   const titleAr = textOf(arItem?.ItemInfo?.Title);
   const split = (!titleAr || !titleEn) ? splitBilingualText(titleEn || titleAr, { mode: 'name' }) : null;
 
-  const brand = brandOf(enItem || {}) || brandOf(arItem || {});
+  const brand = brandOf(enItem || {}) || brandOf(arItem || {})
+    || inferBrandFromTitle(titleEn || titleAr);
   const descEn = featuresText(enItem || {}, 'en');
   // لا تملأ الوصف العربي بالإنجليزي — أبقِه فارغاً إن لم يتوفر عربي
   const descAr = featuresText(arItem || {}, 'ar');
