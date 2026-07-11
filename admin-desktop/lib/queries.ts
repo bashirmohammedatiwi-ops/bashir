@@ -97,12 +97,19 @@ export const mutations = {
     brandEn?: string;
     name?: string;
     logoUrl?: string;
+    logoIsProductImage?: boolean;
     createIfMissing?: boolean;
   }) => api.post("/brands/resolve", data).then((r) => r.data?.data ?? r.data),
 
-  /** مزامنة براندات المتاجر الأربعة */
+  /** مزامنة براندات المتاجر مع إزالة التكرار */
   syncBrandsFromCatalog: (data: {
-    brands: Array<{ name?: string; nameAr?: string; nameEn?: string; logoUrl?: string }>;
+    brands: Array<{
+      name?: string;
+      nameAr?: string;
+      nameEn?: string;
+      logoUrl?: string;
+      logoIsProductImage?: boolean;
+    }>;
     attachLogos?: boolean;
   }) => api.post("/brands/sync-from-catalog", data).then((r) => r.data?.data ?? r.data),
 

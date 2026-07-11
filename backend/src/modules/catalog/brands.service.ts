@@ -12,13 +12,73 @@ function mapBrand(b: any) {
 }
 
 function normalizeBrandKey(name = "") {
-  return String(name || "")
+  let key = String(name || "")
     .toLowerCase()
     .normalize("NFKD")
     .replace(/[\u064B-\u065F\u0670]/g, "")
+    .replace(/[''`´]/g, "")
+    .replace(/[.&]/g, " ")
+    .replace(/\b(the|and|co|company|ltd|inc|llc|gmbh|paris|london|uae|ae)\b/g, " ")
     .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+  if (!key) return "";
+
+  const arAliases: Record<string, string> = {
+    شانيل: "chanel",
+    ديور: "dior",
+    "إيف سان لوران": "yves saint laurent",
+    "ايف سان لوران": "yves saint laurent",
+    لانكوم: "lancome",
+    ماك: "mac",
+    نارس: "nars",
+    كلينيك: "clinique",
+    جيفنشي: "givenchy",
+    غوتشي: "gucci",
+    برادا: "prada",
+    هيرميس: "hermes",
+    فالنتينو: "valentino",
+    بربري: "burberry",
+    ارماني: "armani",
+    أرماني: "armani",
+    "توم فورد": "tom ford",
+    "بوبي براون": "bobbi brown",
+    "شارلوت تيلبري": "charlotte tilbury",
+  };
+  const enAliases: Record<string, string> = {
+    "m a c": "mac",
+    "m.a.c": "mac",
+    "mac cosmetics": "mac",
+    ysl: "yves saint laurent",
+    "yves saint laurent beaute": "yves saint laurent",
+    "estée lauder": "estee lauder",
+    "makeup forever": "make up for ever",
+    "l oreal": "loreal",
+    "l'oreal": "loreal",
+    "loreal paris": "loreal",
+  };
+
+  if (arAliases[key]) return arAliases[key];
+  if (enAliases[key]) return enAliases[key];
+
+  key = key
+    .replace(/\b(beauty|cosmetics|makeup|skincare|fragrance|perfume|parfum)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return enAliases[key] || key;
+}
+
+function brandHintKeys(input: { name?: string; brandAr?: string; brandEn?: string }) {
+  const keys = new Set<string>();
+  for (const hint of [input.name, input.brandEn, input.brandAr]) {
+    const key = normalizeBrandKey(String(hint || ""));
+    if (key && key !== "no brand" && key !== "nobrand" && key !== "unknown") {
+      keys.add(key);
+    }
+  }
+  return [...keys];
 }
 
 function slugifyBrand(name = "") {
@@ -42,12 +102,15 @@ function scoreBrandMatch(hints: string[], brand: { name?: string | null; slug?: 
     for (const c of candidates) {
       if (!c) continue;
       if (h === c) best = Math.max(best, 100);
-      else if (h.includes(c) || c.includes(h)) best = Math.max(best, 75);
+      else if (h.includes(c) || c.includes(h)) best = Math.max(best, 82);
       else {
-        const hWords = h.split(" ").filter((w) => w.length > 2);
-        const cWords = c.split(" ").filter((w) => w.length > 2);
-        const overlap = hWords.filter((w) => cWords.some((cw) => cw === w || cw.includes(w) || w.includes(cw))).length;
-        if (overlap) best = Math.max(best, 40 + overlap * 15);
+        const hWords = h.split(" ").filter((w) => w.length > 1);
+        const cWords = c.split(" ").filter((w) => w.length > 1);
+        const overlap = hWords.filter((w) =>
+          cWords.some((cw) => cw === w || cw.includes(w) || w.includes(cw)),
+        ).length;
+        if (overlap >= 2) best = Math.max(best, 88);
+        else if (overlap === 1) best = Math.max(best, 55 + overlap * 15);
       }
     }
   }
@@ -107,6 +170,7 @@ export class BrandsService {
     brandEn?: string;
     name?: string;
     logoUrl?: string;
+    logoIsProductImage?: boolean;
     createIfMissing?: boolean;
   }) {
     const hints = [input.name, input.brandEn, input.brandAr]
@@ -129,16 +193,18 @@ export class BrandsService {
     }
 
     if (best) {
-      // إن وُجدت صورة ولم يكن للبراند شعار — حدّث الشعار
-      if (input.logoUrl && !best.logoId) {
-        await this.attachLogoFromUrl(best.id, input.logoUrl).catch(() => null);
-      }
+      const attached = await this.attachLogoIfNeeded(
+        best.id,
+        input.logoUrl,
+        Boolean(input.logoIsProductImage),
+        Boolean(best.logoId),
+      );
       const brand = await this.findOne(best.id);
-      return { brand, created: false, matched: true };
+      return { brand, created: false, matched: true, logoAttached: attached };
     }
 
     if (input.createIfMissing === false) {
-      return { brand: null, created: false, matched: false };
+      return { brand: null, created: false, matched: false, logoAttached: false };
     }
 
     const name = pickBrandDisplayName(input.brandAr || "", input.brandEn || "") || hints[0];
@@ -155,12 +221,12 @@ export class BrandsService {
       },
     });
 
-    if (input.logoUrl) {
-      await this.attachLogoFromUrl(created.id, input.logoUrl).catch(() => null);
-    }
+    const attached = input.logoUrl
+      ? await this.attachLogoIfNeeded(created.id, input.logoUrl, Boolean(input.logoIsProductImage), false)
+      : false;
 
     const brand = await this.findOne(created.id);
-    return { brand, created: true, matched: false };
+    return { brand, created: true, matched: false, logoAttached: attached };
   }
 
   /** مزامنة براندات من catalog-hub مع إزالة التكرار */
@@ -170,6 +236,7 @@ export class BrandsService {
       nameAr?: string;
       nameEn?: string;
       logoUrl?: string;
+      logoIsProductImage?: boolean;
     }>;
     attachLogos?: boolean;
   }) {
@@ -185,22 +252,25 @@ export class BrandsService {
     const seen = new Set<string>();
 
     for (const row of rows) {
+      const keys = brandHintKeys(row);
+      if (!keys.length || keys.some((k) => seen.has(k))) continue;
+      keys.forEach((k) => seen.add(k));
+
       const name = pickBrandDisplayName(row.nameAr || "", row.nameEn || "") || String(row.name || "").trim();
-      const key = normalizeBrandKey(name);
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
+      const logoUrl = attachLogos ? row.logoUrl : undefined;
 
       const result = await this.resolve({
         name,
         brandAr: row.nameAr,
         brandEn: row.nameEn,
-        logoUrl: attachLogos ? row.logoUrl : undefined,
+        logoUrl,
+        logoIsProductImage: row.logoIsProductImage,
         createIfMissing: true,
       });
 
       if (result.created) created += 1;
       else if (result.matched) matched += 1;
-      if (attachLogos && row.logoUrl && (result.brand as any)?.logo) logosAttached += 1;
+      if (result.logoAttached) logosAttached += 1;
     }
 
     return {
@@ -238,6 +308,24 @@ export class BrandsService {
       i += 1;
     }
     return slug;
+  }
+
+  private async attachLogoIfNeeded(
+    brandId: string,
+    url?: string,
+    logoIsProductImage = false,
+    hasLogo = false,
+  ) {
+    const clean = String(url || "").trim();
+    if (!clean) return false;
+    // بدون شعار: أي صورة. مع شعار موجود: نرفع فقط شعاراً حقيقياً (ليس صورة منتج).
+    if (hasLogo && logoIsProductImage) return false;
+    try {
+      await this.attachLogoFromUrl(brandId, clean);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private async attachLogoFromUrl(brandId: string, url: string) {

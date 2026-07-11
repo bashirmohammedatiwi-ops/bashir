@@ -15,6 +15,8 @@ export const STORE_COLORS: Record<string, string> = {
   miswag: "#df1c24",
   najdalatheyah: "#511952",
   elryan: "#0b6e4f",
+  faces: "#c41e6b",
+  miraaya: "#7b2d8e",
   amazon: "#ff9900",
 };
 

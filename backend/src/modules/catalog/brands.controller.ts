@@ -51,6 +51,7 @@ export class BrandsController {
       brandEn?: string;
       name?: string;
       logoUrl?: string;
+      logoIsProductImage?: boolean;
       createIfMissing?: boolean;
     },
   ) {
@@ -68,6 +69,7 @@ export class BrandsController {
         nameAr?: string;
         nameEn?: string;
         logoUrl?: string;
+        logoIsProductImage?: boolean;
       }>;
       attachLogos?: boolean;
     },
