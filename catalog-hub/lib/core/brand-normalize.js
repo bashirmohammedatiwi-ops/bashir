@@ -26,7 +26,16 @@ const AR_BRAND_ALIASES = {
   بربري: 'burberry',
   ارماني: 'armani',
   'أرماني': 'armani',
-  'كارولينا هيريرا': 'carolina herrera',
+  'لوريال': 'loreal',
+  'غولدن روز': 'golden rose',
+  'جولدن روز': 'golden rose',
+  'كيكو': 'kiko milano',
+  'كيكو ميلانو': 'kiko milano',
+  'مايبيلين': 'maybelline',
+  'ميبيلين': 'maybelline',
+  'ريفلون': 'revlon',
+  'فلورمار': 'flormar',
+  'براش ووركس': 'brushworks',
 };
 
 const EN_BRAND_ALIASES = {
@@ -44,7 +53,15 @@ const EN_BRAND_ALIASES = {
   'la roche posay': 'la roche posay',
   'l oreal': 'loreal',
   "l'oreal": 'loreal',
+  'maybelline new york': 'maybelline',
   'loreal paris': 'loreal',
+  'golden rose': 'golden rose',
+  'kiko milano': 'kiko milano',
+  'maybelline new york': 'maybelline',
+  'maybelline': 'maybelline',
+  'revlon': 'revlon',
+  'flormar': 'flormar',
+  'brushworks': 'brushworks',
 };
 
 export function normalizeBrandKey(name = '') {

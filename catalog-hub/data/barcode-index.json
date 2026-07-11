@@ -13,7 +13,7 @@
       "productId": "13567",
       "brand": "Riggs",
       "barcode": "5060340399283",
-      "updatedAt": 1783767403381
+      "updatedAt": 1783772662874
     },
     "06287020284892": {
       "store": "miswag",
@@ -56,10 +56,143 @@
       "brand": "Original Bell",
       "barcode": "4260194178749",
       "updatedAt": 1783769446987
+    },
+    "05060340399504": {
+      "store": "beautyway",
+      "productId": "13564",
+      "brand": "Riggs",
+      "barcode": "5060340399504",
+      "updatedAt": 1783772662864
+    },
+    "05060340399535": {
+      "store": "beautyway",
+      "productId": "13563",
+      "brand": "Riggs",
+      "barcode": "5060340399535",
+      "updatedAt": 1783772662864
+    },
+    "05060340399528": {
+      "store": "beautyway",
+      "productId": "13562",
+      "brand": "Riggs",
+      "barcode": "5060340399528",
+      "updatedAt": 1783772662865
+    },
+    "05060340399498": {
+      "store": "beautyway",
+      "productId": "13561",
+      "brand": "Riggs",
+      "barcode": "5060340399498",
+      "updatedAt": 1783772662865
+    },
+    "05060340399511": {
+      "store": "beautyway",
+      "productId": "13560",
+      "brand": "Riggs",
+      "barcode": "5060340399511",
+      "updatedAt": 1783772662866
+    },
+    "05060340399481": {
+      "store": "beautyway",
+      "productId": "13559",
+      "brand": "Riggs",
+      "barcode": "5060340399481",
+      "updatedAt": 1783772662867
+    },
+    "05060340399771": {
+      "store": "beautyway",
+      "productId": "13558",
+      "brand": "Riggs",
+      "barcode": "5060340399771",
+      "updatedAt": 1783772662867
+    },
+    "05060340399788": {
+      "store": "beautyway",
+      "productId": "13557",
+      "brand": "Riggs",
+      "barcode": "5060340399788",
+      "updatedAt": 1783772662868
+    },
+    "04260194177148": {
+      "store": "beautyway",
+      "productId": "13507",
+      "brand": "Original Bell",
+      "barcode": "4260194177148",
+      "updatedAt": 1783772662868
+    },
+    "03386460101035": {
+      "store": "beautyway",
+      "productId": "11503",
+      "brand": "Branded Perfumes",
+      "barcode": "3386460101035",
+      "updatedAt": 1783772662869
+    },
+    "03386460121514": {
+      "store": "beautyway",
+      "productId": "11502",
+      "brand": "Branded Perfumes",
+      "barcode": "3386460121514",
+      "updatedAt": 1783772662869
+    },
+    "08057971183739": {
+      "store": "beautyway",
+      "productId": "11501",
+      "brand": "Branded Perfumes",
+      "barcode": "8057971183739",
+      "updatedAt": 1783772662870
+    },
+    "08057971188727": {
+      "store": "beautyway",
+      "productId": "11500",
+      "brand": "Branded Perfumes",
+      "barcode": "8057971188727",
+      "updatedAt": 1783772662870
+    },
+    "08057971181544": {
+      "store": "beautyway",
+      "productId": "11497",
+      "brand": "Branded Perfumes",
+      "barcode": "8057971181544",
+      "updatedAt": 1783772662870
+    },
+    "08057971180493": {
+      "store": "beautyway",
+      "productId": "11495",
+      "brand": "Branded Perfumes",
+      "barcode": "8057971180493",
+      "updatedAt": 1783772662871
+    },
+    "03595471024800": {
+      "store": "beautyway",
+      "productId": "11494",
+      "brand": "Branded Perfumes",
+      "barcode": "3595471024800",
+      "updatedAt": 1783772662871
+    },
+    "03595471061096": {
+      "store": "beautyway",
+      "productId": "11493",
+      "brand": "Branded Perfumes",
+      "barcode": "3595471061096",
+      "updatedAt": 1783772662872
+    },
+    "07640177360106": {
+      "store": "beautyway",
+      "productId": "11491",
+      "brand": "Branded Perfumes",
+      "barcode": "7640177360106",
+      "updatedAt": 1783772662872
+    },
+    "07640233340721": {
+      "store": "beautyway",
+      "productId": "11489",
+      "brand": "Branded Perfumes",
+      "barcode": "7640233340721",
+      "updatedAt": 1783772662873
     }
   },
   "meta": {
-    "updatedAt": 1783769446988,
+    "updatedAt": 1783772662874,
     "miswagHarvest": {
       "1689856203": {
         "version": 3,

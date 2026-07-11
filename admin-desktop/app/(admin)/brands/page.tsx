@@ -79,14 +79,17 @@ export default function BrandsPage() {
     mutationFn: async () => {
       message.loading({ content: "جاري جلب براندات المتاجر...", key: "brand-sync" });
       const catalog = await fetchCatalogBrands(true);
-      const rows = (catalog.brands || []).map((b) => ({
-        name: b.name,
-        nameAr: b.nameAr,
-        nameEn: b.nameEn,
-        // شعار حقيقي أولاً، وإلا صورة منتج عيّنة من أي متجر
-        logoUrl: b.logoUrl || undefined,
-        logoIsProductImage: Boolean(b.logoIsProductImage && b.logoUrl),
-      }));
+      const rows = (catalog.brands || []).map((b) => {
+        const logoUrl = b.logoUrl || b.productImageUrl || undefined;
+        const fromProduct = Boolean(!b.logoUrl && b.productImageUrl) || Boolean(b.logoIsProductImage);
+        return {
+          name: b.name,
+          nameAr: b.nameAr,
+          nameEn: b.nameEn,
+          logoUrl,
+          logoIsProductImage: fromProduct,
+        };
+      });
       if (!rows.length) throw new Error("لم يُعثر على براندات في الكتالوج");
 
       let created = 0;

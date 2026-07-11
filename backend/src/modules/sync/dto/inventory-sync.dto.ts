@@ -69,3 +69,10 @@ export class BulkInventorySyncDto {
   @Type(() => InventorySyncItemDto)
   items!: InventorySyncItemDto[];
 }
+
+export class LookupBarcodesDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
+  barcodes!: string[];
+}

@@ -698,6 +698,22 @@
   font-size: 10px;
 }
 
+.ci-inv-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.ci-inv-meta.is-compact {
+  margin-top: 6px;
+}
+
+.ci-inv-meta .ant-tag {
+  margin: 0;
+  font-size: 11px;
+}
+
 .ci-form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
