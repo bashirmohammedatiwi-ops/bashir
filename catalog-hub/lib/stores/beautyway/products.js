@@ -8,6 +8,7 @@ import {
   parseListingHtml,
   parseListingTotal,
   parseProductDetailHtml,
+  BEAUTYWAY_PER_PAGE,
 } from './parse.js';
 import { mapListItem, mapDetailProduct, toBarcodeHit } from './map.js';
 import { collectImageUrls } from '../../core/images.js';
@@ -29,33 +30,63 @@ function pageResult(items, { page, limit, total = 0 } = {}) {
   };
 }
 
+function drupalPagesForWindow({ page = 1, limit = 30 } = {}) {
+  const globalOffset = (Math.max(1, page) - 1) * limit;
+  const firstDrupalPage = Math.floor(globalOffset / BEAUTYWAY_PER_PAGE) + 1;
+  const skipInFirst = globalOffset % BEAUTYWAY_PER_PAGE;
+  const needed = skipInFirst + limit;
+  const drupalPageCount = Math.ceil(needed / BEAUTYWAY_PER_PAGE);
+  return { firstDrupalPage, skipInFirst, drupalPageCount };
+}
+
+async function fetchShopPagesMerged({ category = '', search = '', firstDrupalPage = 1, drupalPageCount = 1 } = {}) {
+  const pageNums = Array.from({ length: drupalPageCount }, (_, i) => firstDrupalPage + i);
+  const htmlPages = await Promise.all(pageNums.map(async (drupalPage) => {
+    const [arHtml, enHtml] = await Promise.all([
+      fetchShopHtml({ lang: 'ar', category, search, page: drupalPage }),
+      fetchShopHtml({ lang: 'en', category, search, page: drupalPage }).catch(() => ''),
+    ]);
+    return { drupalPage, arHtml, enHtml };
+  }));
+
+  const seen = new Set();
+  const merged = [];
+  let total = 0;
+
+  for (const { arHtml, enHtml } of htmlPages) {
+    total = Math.max(total, parseListingTotal(arHtml), parseListingTotal(enHtml));
+    const arItems = parseListingHtml(arHtml);
+    const enItems = parseListingHtml(enHtml);
+    const enByKey = new Map(enItems.map((i) => [i.id, i]));
+
+    for (const item of arItems) {
+      if (seen.has(item.id)) continue;
+      seen.add(item.id);
+      const en = enByKey.get(item.id);
+      merged.push(mapListItem({
+        ...item,
+        nameEn: en?.nameEn || item.nameEn,
+        brandEn: en?.brandEn || item.brandEn,
+        href: item.href || en?.href,
+        barcode: item.barcode || en?.barcode || '',
+      }));
+    }
+  }
+
+  return { merged, total };
+}
+
 async function fetchListingMerged({ category = '', search = '', page = 1, limit = 30 } = {}) {
-  const [arHtml, enHtml] = await Promise.all([
-    fetchShopHtml({ lang: 'ar', category, search, page }),
-    fetchShopHtml({ lang: 'en', category, search, page }).catch(() => ''),
-  ]);
-
-  const arItems = parseListingHtml(arHtml);
-  const enItems = parseListingHtml(enHtml);
-  const enById = new Map(enItems.map((i) => [i.id, i]));
-
-  const merged = arItems.map((item) => {
-    const en = enById.get(item.id);
-    return mapListItem({
-      ...item,
-      nameEn: en?.nameEn || item.nameEn,
-      brandEn: en?.brandEn || item.brandEn,
-      href: item.href || en?.href,
-    });
+  const { firstDrupalPage, skipInFirst, drupalPageCount } = drupalPagesForWindow({ page, limit });
+  const { merged, total } = await fetchShopPagesMerged({
+    category,
+    search,
+    firstDrupalPage,
+    drupalPageCount,
   });
 
-  const total = Math.max(
-    parseListingTotal(arHtml),
-    parseListingTotal(enHtml),
-    merged.length,
-  );
-
-  return pageResult(merged, { page, limit, total });
+  const items = merged.slice(skipInFirst, skipInFirst + limit);
+  return pageResult(items, { page, limit, total });
 }
 
 export async function listCategoryProducts(categoryId, { page = 1, limit = 30 } = {}) {
