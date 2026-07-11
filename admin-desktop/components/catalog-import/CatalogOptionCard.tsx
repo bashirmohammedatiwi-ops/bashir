@@ -18,6 +18,8 @@ export const STORE_COLORS: Record<string, string> = {
   faces: "#c41e6b",
   miraaya: "#7b2d8e",
   beautyway: "#e91e8c",
+  khaton: "#8b5a2b",
+  orisdi: "#1a5f4a",
   amazon: "#ff9900",
 };
 

@@ -29,6 +29,8 @@ class AppConfig {
     'faces',
     'miraaya',
     'beautyway',
+    'khaton',
+    'orisdi',
     'amazon',
   ];
 

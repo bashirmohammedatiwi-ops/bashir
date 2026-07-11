@@ -23,6 +23,8 @@ class CatalogRepository {
       case 'miswag':
         return 22000;
       case 'elryan':
+      case 'khaton':
+      case 'orisdi':
         return 8000;
       default:
         return 12000;

@@ -242,6 +242,8 @@ function storeSearchTimeoutMs(storeId: string, kind: "text" | "barcode" = "text"
   if (storeId === "faces") return kind === "barcode" ? 45_000 : 25_000;
   if (storeId === "miraaya") return kind === "barcode" ? 30_000 : 20_000;
   if (storeId === "beautyway") return kind === "barcode" ? 20_000 : 15_000;
+  if (storeId === "khaton") return kind === "barcode" ? 8_000 : 10_000;
+  if (storeId === "orisdi") return kind === "barcode" ? 15_000 : 12_000;
   if (storeId === "amazon") return kind === "barcode" ? 30_000 : 18_000;
   // مسواگ: بحث الباركود يستعلم مصادر ميتاداتا خارجية بالتوازي مع v2 — يحتاج مهلة أطول قليلاً
   if (storeId === "miswag") return kind === "barcode" ? 22_000 : 10_000;
