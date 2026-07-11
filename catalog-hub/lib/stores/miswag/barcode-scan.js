@@ -12,6 +12,7 @@ const CONCURRENCY = 1;
 const BATCH_SIZE = 6;
 const BATCH_PAUSE_MS = 1500;
 const BREAKER_WAIT_MS = 65_000;
+const MAX_RETRY_PASSES = 6;
 
 const BEAUTY_L1 = ['beauty', 'perfumes', 'personal-care', 'fragrances'];
 const BEAUTY_FILTER = `(${BEAUTY_L1.map((a) => `l1_division_alias:=\`${a}\``).join(' || ')})`;
@@ -28,6 +29,7 @@ export const scanState = {
   skipped: 0,
   incomplete: 0,
   errors: 0,
+  retried: 0,
   indexTotal: 0,
   aborted: false,
   finishedAt: null,
@@ -60,32 +62,66 @@ async function harvestHit(hit, { force = false } = {}) {
     return { added: result.count || 0, skipped: false };
   } catch (err) {
     const msg = String(err?.message || '');
-    if (msg.includes('403 cooldown')) throw new Error('__breaker__');
+    if (msg.includes('403 cooldown')) {
+      return { added: 0, skipped: false, breaker: true, hit };
+    }
     scanState.errors += 1;
     return { added: 0, skipped: false };
   }
 }
 
-async function processBatch(hits, { force = false } = {}) {
+/**
+ * @returns {{ added: number, skipped: number, retryHits: Array, breaker: boolean }}
+ */
+async function processBatch(hits, { force = false, startAt = 0 } = {}) {
   let added = 0;
   let skipped = 0;
+  const retryHits = [];
 
-  for (let i = 0; i < hits.length; i += CONCURRENCY) {
+  for (let i = startAt; i < hits.length; i += CONCURRENCY) {
     if (abortFlag) break;
     const group = hits.slice(i, i + CONCURRENCY);
-    try {
-      const results = await Promise.all(group.map((h) => harvestHit(h, { force })));
-      for (const r of results) {
-        added += r.added;
-        if (r.skipped) skipped += 1;
+    const results = await Promise.all(group.map((h) => harvestHit(h, { force })));
+
+    for (let j = 0; j < results.length; j++) {
+      const r = results[j];
+      if (r.breaker) {
+        retryHits.push(group[j], ...hits.slice(i + j + 1));
+        scanState.retried += retryHits.length;
+        return { added, skipped, retryHits, breaker: true };
       }
-    } catch (err) {
-      if (String(err?.message).includes('__breaker__')) throw err;
+      added += r.added;
+      if (r.skipped) skipped += 1;
     }
   }
 
-  scanState.skipped += skipped;
-  return added;
+  return { added, skipped, retryHits, breaker: false };
+}
+
+async function drainRetryQueue(queue, { force = false } = {}) {
+  let passes = 0;
+
+  while (queue.length && passes < MAX_RETRY_PASSES && !abortFlag) {
+    passes += 1;
+    const pending = [...queue];
+    queue.length = 0;
+
+    for (let i = 0; i < pending.length; i += BATCH_SIZE) {
+      if (abortFlag) break;
+      const batch = pending.slice(i, i + BATCH_SIZE);
+      const { added, skipped, retryHits, breaker } = await processBatch(batch, { force });
+      scanState.cached += added;
+      scanState.skipped += skipped;
+      scanState.indexTotal = countMiswagBarcodeIndexEntries();
+
+      if (breaker) {
+        queue.push(...retryHits);
+        await pause(BREAKER_WAIT_MS);
+        break;
+      }
+      await pause(BATCH_PAUSE_MS);
+    }
+  }
 }
 
 /**
@@ -95,6 +131,8 @@ export async function runBarcodeScan({ force = false } = {}) {
   if (scanState.running) return { status: 'already_running' };
 
   abortFlag = false;
+  const retryQueue = [];
+
   Object.assign(scanState, {
     running: true,
     scope: 'beauty',
@@ -107,6 +145,7 @@ export async function runBarcodeScan({ force = false } = {}) {
     skipped: 0,
     incomplete: 0,
     errors: 0,
+    retried: 0,
     indexTotal: countMiswagBarcodeIndexEntries(),
     aborted: false,
     finishedAt: null,
@@ -134,19 +173,23 @@ export async function runBarcodeScan({ force = false } = {}) {
       for (let i = 0; i < hits.length; i += BATCH_SIZE) {
         if (abortFlag) { scanState.aborted = true; break; }
         const batch = hits.slice(i, i + BATCH_SIZE);
-        try {
-          const batchAdded = await processBatch(batch, { force });
-          scanState.cached += batchAdded;
-          scanState.indexTotal = countMiswagBarcodeIndexEntries();
-        } catch (err) {
-          if (String(err?.message).includes('__breaker__')) {
-            await pause(BREAKER_WAIT_MS);
-          }
+        const { added, skipped, retryHits, breaker } = await processBatch(batch, { force });
+        scanState.cached += added;
+        scanState.skipped += skipped;
+        scanState.indexTotal = countMiswagBarcodeIndexEntries();
+
+        if (breaker) {
+          retryQueue.push(...retryHits);
+          await pause(BREAKER_WAIT_MS);
         }
         await pause(BATCH_PAUSE_MS);
       }
 
       scanState.pagesDone = page;
+    }
+
+    if (retryQueue.length && !abortFlag) {
+      await drainRetryQueue(retryQueue, { force });
     }
   } catch {
     scanState.errors += 1;

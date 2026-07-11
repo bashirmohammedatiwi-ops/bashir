@@ -71,7 +71,66 @@ export async function fetchV2Barcode(id) {
   return extractBarcodeFromV2Detail(detail);
 }
 
-/** جلب باركودات v2 لعدة تدرجات بالتوازي */
+/** استخراج معرّفات التدرجات/الأحجام من صفحة v2 */
+export function extractShadeIdsFromV2Detail(detail) {
+  const ids = new Set();
+
+  function consider(raw) {
+    const id = String(raw || '').trim();
+    if (!id || id.length < 6) return;
+    if (/^17\d{8}$/.test(id) || /^\d{9,12}$/.test(id)) ids.add(id);
+  }
+
+  function walk(blocks = []) {
+    for (const block of blocks) {
+      if (block?.product_id) consider(block.product_id);
+      if (Array.isArray(block.content)) {
+        for (const node of block.content) {
+          if (node?.product_id) consider(node.product_id);
+          if (node?.action?.id) consider(node.action.id);
+        }
+        walk(block.content);
+      }
+      if (Array.isArray(block.items)) {
+        for (const item of block.items) {
+          if (item?.product_id) consider(item.product_id);
+          if (item?.action?.id) consider(item.action.id);
+        }
+      }
+    }
+  }
+
+  walk(detail?.content || []);
+  return [...ids];
+}
+
+/** جلب كل باركودات v2 لعدة تدرجات بالتوازي */
+export async function fetchV2AllBarcodesForIds(ids = [], { concurrency = 8 } = {}) {
+  const unique = [...new Set(ids.map((id) => String(id || '').trim()).filter(Boolean))];
+  const map = new Map();
+
+  for (let i = 0; i < unique.length; i += concurrency) {
+    const chunk = unique.slice(i, i + concurrency);
+    const parts = await Promise.all(
+      chunk.map(async (id) => {
+        try {
+          const detail = await fetchV2Detail(id);
+          return [id, detail ? extractAllBarcodesFromV2Detail(detail) : []];
+        } catch (err) {
+          if (/Miswag 403 cooldown/.test(String(err?.message || ''))) throw err;
+          return [id, []];
+        }
+      }),
+    );
+    for (const [id, barcodes] of parts) {
+      map.set(id, barcodes || []);
+    }
+  }
+
+  return map;
+}
+
+/** جلب باركود v2 واحد لكل معرّف — للبحث السريع */
 export async function fetchV2BarcodesForIds(ids = [], { concurrency = 10 } = {}) {
   const unique = [...new Set(ids.map((id) => String(id || '').trim()).filter(Boolean))];
   const map = new Map();

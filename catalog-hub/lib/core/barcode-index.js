@@ -138,7 +138,7 @@ export function bulkUpsertBarcodeIndex(rows = []) {
 }
 
 /** إصدار حصاد مسواگ — يُرفع عند تحسين منطق الجمع */
-export const MISWAG_HARVEST_VERSION = 2;
+export const MISWAG_HARVEST_VERSION = 3;
 
 export function isMiswagBarcodeHarvestDone(productId) {
   const pid = String(productId || '').trim();

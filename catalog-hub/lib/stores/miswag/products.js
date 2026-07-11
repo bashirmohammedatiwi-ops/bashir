@@ -18,8 +18,9 @@ import { searchByMiswagId } from './id-lookup.js';
 import { mapTypesenseHit } from './categories.js';
 import { gtinEqual, findBarcodeIndexEntry, upsertBarcodeIndex } from '../../core/barcode-index.js';
 import { resolveBilingualDescription, resolveBilingualName, splitBilingualText } from '../../core/bilingual.js';
-import { isUsableBarcodeMeta, buildMetaHintQueries, lookupBarcodeProductMeta } from '../../core/barcode-meta.js';
+import { isUsableBarcodeMeta, buildMetaHintQueries, lookupBarcodeProductMeta, findMiswagIdsFromWeb } from '../../core/barcode-meta.js';
 import { guessBrandsByCountryPrefix, learnPrefixBrand, lookupBrandByPrefix, BEAUTY_BRAND_SWEEP } from '../../core/gs1-prefixes.js';
+import { barcodeFromIndex, enrichItemsWithBarcodes } from './barcode-enrich.js';
 import { harvestMiswagProductBarcodes } from './barcode-harvest.js';
 
 function extractEan(v = {}) {
@@ -156,19 +157,52 @@ function collectBlocks(content = []) {
 
 function extractGalleryImages(blocks = []) {
   const urls = [];
-  for (const b of blocks) {
-    if (b.type === 'gallery' && Array.isArray(b.items)) {
-      for (const it of b.items) {
-        const u = absImage(it.url || it.image || it.src);
+
+  const consider = (node = {}) => {
+    const u = absImage(node.url || node.image || node.src || node.cover);
+    if (u && !/\/images\/images\/9fb78d25-b862/i.test(u)) urls.push(u);
+  };
+
+  function walk(nodes = []) {
+    for (const b of nodes) {
+      if (!b) continue;
+      if (b.type === 'gallery') {
+        for (const it of b.items || b.content || []) consider(it);
+      }
+      if (b.type === 'image' || b.type === 'photo') consider(b);
+      if (Array.isArray(b.content)) walk(b.content);
+      if (Array.isArray(b.items)) walk(b.items);
+    }
+  }
+
+  walk(blocks);
+  return [...new Set(urls)];
+}
+
+function galleryFromTypesenseDoc(doc = {}, thumb = '') {
+  const urls = [];
+  if (thumb) urls.push(thumb);
+  const main = absImage(doc.image || doc.image_url);
+  if (main) urls.push(main);
+
+  let vars = [];
+  try {
+    const raw = typeof doc.variations === 'string' ? JSON.parse(doc.variations) : doc.variations;
+    vars = Array.isArray(raw) ? raw : [];
+  } catch { /* ignore */ }
+
+  for (const v of vars) {
+    if (Array.isArray(v.additional_images)) {
+      for (const img of v.additional_images) {
+        const u = typesenseImageUrl(img, thumb);
         if (u) urls.push(u);
       }
     }
-    if (b.type === 'image') {
-      const u = absImage(b.url || b.image);
-      if (u) urls.push(u);
-    }
+    const vImg = typesenseImageUrl(v.image || v.image_url, thumb);
+    if (vImg) urls.push(vImg);
   }
-  return [...new Set(urls)];
+
+  return [...new Set(urls.filter(Boolean))];
 }
 
 async function fetchTypesenseDoc(pid) {
@@ -322,6 +356,7 @@ async function fetchTypesenseFallback(pid, { withShades = true } = {}) {
     const shades = tsVars
       .map((v) => mapTypesenseVariation(v, 'الألوان', thumb))
       .filter(shouldKeepVariation);
+    const images = galleryFromTypesenseDoc(doc, thumb);
     return {
       id: String(doc.id || pid),
       sku: String(doc.alias || pid),
@@ -336,8 +371,8 @@ async function fetchTypesenseFallback(pid, { withShades = true } = {}) {
         original_value: doc.price_original_value,
         currency: doc.price_currency || 'IQD',
       }),
-      thumb,
-      images: thumb ? [thumb] : [],
+      thumb: images[0] || thumb,
+      images,
       shades,
       shadeCount: shades.length,
       hasOptions: shades.length > 1,
@@ -380,17 +415,27 @@ export async function fetchProductDetail(id, { light = false } = {}) {
     const fallback = await fetchTypesenseFallback(pid, { withShades: true });
     if (!fallback) return null;
 
-    if (!light && fallback.shades?.length) {
+    if (!light) {
       try {
-        const { shades: withBarcodes, productBarcode } = await enrichShadesWithV2Barcodes(
-          fallback.id,
-          fallback.shades,
-        );
-        fallback.shades = withBarcodes;
-        fallback.shadeCount = withBarcodes.length;
-        fallback.hasOptions = withBarcodes.length > 1;
-        if (productBarcode) fallback.barcode = productBarcode;
+        if (fallback.shades?.length) {
+          const { shades: withBarcodes, productBarcode } = await enrichShadesWithV2Barcodes(
+            fallback.id,
+            fallback.shades,
+          );
+          fallback.shades = withBarcodes;
+          fallback.shadeCount = withBarcodes.length;
+          fallback.hasOptions = withBarcodes.length > 1;
+          if (productBarcode) fallback.barcode = productBarcode;
+        } else {
+          const productBarcode = await fetchV2Barcode(fallback.id);
+          if (productBarcode) fallback.barcode = productBarcode;
+        }
       } catch { /* v2 اختياري */ }
+    } else if (!fallback.barcode) {
+      try {
+        const productBarcode = await fetchV2Barcode(fallback.id);
+        if (productBarcode) fallback.barcode = productBarcode;
+      } catch { /* optional */ }
     }
 
     cacheSet(cacheKey, fallback);
@@ -448,22 +493,32 @@ export async function fetchProductDetail(id, { light = false } = {}) {
     descriptionEn: descriptions.en,
     price: formatPrice({ value: meta.price, original_value: meta.original_price, currency: meta.currency || 'IQD' }),
     thumb: images[0] || absImage(meta.image_url),
-    images,
+    images: [...new Set([
+      ...images,
+      ...shades.map((s) => s.image).filter(Boolean),
+    ])],
     shades,
     shadeCount: shades.length,
     hasOptions: shades.length > 1 || (varInfo.sizes?.length > 1),
-    barcode: productBarcode || meta._v2ProductBarcode || extractEan(meta) || shades.find((s) => s.barcode)?.barcode || '',
+    barcode: productBarcode || meta._v2ProductBarcode || extractEan(meta) || shades.find((s) => s.barcode)?.barcode || barcodeFromIndex(String(meta.product_id || pid)) || '',
     miswagId: String(meta.product_id || pid),
     productUrl: meta.url || meta.share_link || `https://miswag.com/products/${meta.product_id || pid}`,
     category: String(meta.category || '').trim(),
     inStock: detail.info?.size?.is_available !== false,
   };
 
+  if (!product.barcode && !light) {
+    try {
+      const bc = await fetchV2Barcode(String(meta.product_id || pid));
+      if (bc) product.barcode = bc;
+    } catch { /* optional */ }
+  }
+
   cacheSet(cacheKey, product);
 
   // حفظ كل باركودات EAN المعروفة (أب + درجات) في الفهرس المحلي
   if (!light) {
-    harvestMiswagProductBarcodes(product.id, { persist: true }).catch(() => {});
+    harvestMiswagProductBarcodes(product.id, { persist: true, typesenseDoc: tsDoc }).catch(() => {});
   }
 
   return product;
@@ -547,10 +602,12 @@ async function collectBarcodeCandidates(digits) {
     guessedBrands.map((brand) => typesenseBroadSearch(brand, limit)),
   ).then((lists) => lists.flat());
 
+  const webIdsPromise = withDeadline(findMiswagIdsFromWeb(digits).catch(() => []), 8_000, []);
+
   // مهلة قصوى لبحث الميتاداتا الخارجي — لا يعطّل السرعة الإجمالية إن تأخرت مصادره
   const metaPromise = withDeadline(lookupBarcodeProductMeta(digits).catch(() => null), 7_000, null);
 
-  const [brandHits, meta] = await Promise.all([brandSearch, metaPromise]);
+  const [brandHits, meta, webIds] = await Promise.all([brandSearch, metaPromise, webIdsPromise]);
 
   const priority = [];
   const seen = new Set();
@@ -561,6 +618,17 @@ async function collectBarcodeCandidates(digits) {
       priority.push(item);
     }
   };
+
+  // معرّفات مسواگ من بحث الويب — أولوية قصوى
+  if (webIds?.length) {
+    const webHits = await Promise.all(
+      webIds.slice(0, 8).map(async (wid) => {
+        const doc = await fetchTypesenseDoc(wid);
+        return doc ? mapTypesenseHit(doc) : { id: String(wid) };
+      }),
+    );
+    pushUnique(webHits);
+  }
 
   // metadata أولاً — استعلامات محددة قبل مسح ماركات البادئة الواسع
   if (meta && isUsableBarcodeMeta(meta)) {
@@ -648,8 +716,9 @@ export async function searchBarcode(code) {
     }
   }
 
-  // 2) لم يُطابق مستوى الأب — فحص التدرجات لأفضل 8 مرشحين
-  const top = candidates.slice(0, 8);
+  // 2) لم يُطابق مستوى الأب — فحص التدرجات لأفضل 24 مرشحاً
+  const SHADE_CANDIDATE_LIMIT = 24;
+  const top = candidates.slice(0, SHADE_CANDIDATE_LIMIT);
   const details = await Promise.all(
     top.map((item) => fetchProductDetail(item.id, { light: false }).catch(() => null)),
   );

@@ -1,0 +1,69 @@
+{
+  "entries": {
+    "06295155694004": {
+      "store": "miswag",
+      "productId": "1756158705",
+      "shadeName": "",
+      "brand": "Nafas",
+      "barcode": "6295155694004",
+      "updatedAt": 1783765566220
+    },
+    "05060340399283": {
+      "store": "beautyway",
+      "productId": "13567",
+      "brand": "Riggs",
+      "barcode": "5060340399283",
+      "updatedAt": 1783767403381
+    },
+    "06287020284892": {
+      "store": "miswag",
+      "productId": "1756220203",
+      "shadeName": "",
+      "barcode": "6287020284892",
+      "updatedAt": 1783767585598
+    },
+    "09941300028992": {
+      "store": "miswag",
+      "productId": "1689856203",
+      "shadeName": "",
+      "barcode": "9941300028992",
+      "updatedAt": 1783768044172
+    },
+    "09941300029005": {
+      "store": "miswag",
+      "productId": "1689856203",
+      "shadeName": "95 SPICES",
+      "barcode": "9941300029005",
+      "updatedAt": 1783768044172
+    },
+    "09941300029029": {
+      "store": "miswag",
+      "productId": "1689856203",
+      "shadeName": "105 TEA BISCUIT",
+      "barcode": "9941300029029",
+      "updatedAt": 1783768044172
+    },
+    "09941300029012": {
+      "store": "miswag",
+      "productId": "1689856203",
+      "shadeName": "100 BROWN SUGAR",
+      "barcode": "9941300029012",
+      "updatedAt": 1783768044172
+    }
+  },
+  "meta": {
+    "updatedAt": 1783768044172,
+    "miswagHarvest": {
+      "1689856203": {
+        "version": 3,
+        "at": 1783768044172,
+        "barcodeCount": 4
+      },
+      "1756220203": {
+        "version": 3,
+        "at": 1783767585598,
+        "barcodeCount": 1
+      }
+    }
+  }
+}

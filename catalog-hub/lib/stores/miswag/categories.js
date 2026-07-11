@@ -9,6 +9,7 @@ import {
   cacheSet,
 } from './client.js';
 import { resolveBilingualName, splitBilingualText } from '../../core/bilingual.js';
+import { barcodeFromIndex, enrichItemsWithBarcodes } from './barcode-enrich.js';
 
 const TREE_TTL = 30 * 60 * 1000;
 const DIVISION_FIELDS = ['l1_division_alias', 'l2_division_alias', 'l3_division_alias', 'l4_division_alias'];
@@ -187,6 +188,7 @@ export function mapTypesenseHit(doc = {}) {
     shadeCount,
     hasOptions: shadeCount > 1,
     inStock: doc.availability !== false,
+    barcode: barcodeFromIndex(id),
   };
 }
 
@@ -200,7 +202,10 @@ export async function listCategoryProducts(categoryAlias, { page = 1, limit = 30
     sortBy: SORT_MAP[sort] || SORT_MAP.default,
   });
   return {
-    items: hits.map((h) => mapTypesenseHit(h.document || h)),
+    items: await enrichItemsWithBarcodes(
+      hits.map((h) => mapTypesenseHit(h.document || h)),
+      { maxV2: 24 },
+    ),
     page,
     pageSize: limit,
     total: found,
@@ -359,7 +364,10 @@ export async function searchProducts(query, { page = 1, limit = 30, categoryId =
   }
 
   return {
-    items: hits.map((h) => mapTypesenseHit(h.document || h)),
+    items: await enrichItemsWithBarcodes(
+      hits.map((h) => mapTypesenseHit(h.document || h)),
+      { maxV2: 24 },
+    ),
     page,
     pageSize: limit,
     total: found,

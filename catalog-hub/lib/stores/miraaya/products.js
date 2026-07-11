@@ -227,11 +227,14 @@ export async function fetchProductDetail(id, { light = false } = {}) {
     const hit = search.hits?.[0];
     if (hit) {
       const list = mapListFromAlgolia(hit, hit);
+      const gallery = rest ? restGallery(rest) : [];
+      const images = gallery.length ? gallery : (list.thumb ? [list.thumb] : []);
       return {
         ...list,
         descriptionAr: '',
         descriptionEn: '',
-        images: list.thumb ? [list.thumb] : [],
+        thumb: images[0] || list.thumb,
+        images,
         shades: [{
           id: list.sku,
           nameAr: list.nameAr,

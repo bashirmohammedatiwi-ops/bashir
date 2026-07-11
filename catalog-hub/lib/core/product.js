@@ -2,6 +2,8 @@
  * نموذج منتج موحّد — كل المتاجر تُحوَّل إليه قبل الاستيراد.
  */
 
+import { collectImageUrls } from './images.js';
+
 export function emptyShade(i = 0) {
   return {
     id: String(i),
@@ -39,11 +41,12 @@ export function normalizeShade(raw = {}, index = 0) {
 
 export function normalizeProduct(raw = {}) {
   const shades = (raw.shades || []).map((s, i) => normalizeShade(s, i));
-  const images = [...new Set([
+  const images = collectImageUrls(
     raw.thumb,
-    ...(raw.images || []),
-    ...shades.map((s) => s.image).filter(Boolean),
-  ].filter(Boolean))];
+    raw.images,
+    ...shades.map((s) => s.image),
+    ...shades.map((s) => s.swatchImage),
+  );
 
   return {
     store: raw.store || '',
