@@ -153,32 +153,31 @@ function rememberBarcodeMatch(digits, item) {
 }
 
 async function searchBarcodeViaShop(digits) {
-  const { items = [] } = await fetchListingMerged({ search: digits, page: 1, limit: 48 });
-  const exact = items.filter((item) => item.barcode && gtinEqual(item.barcode, digits));
-  if (!exact.length) return [];
+  const { items = [] } = await fetchListingMerged({ search: digits, page: 1, limit: 24 });
+  if (!items.length) return [];
+
+  const prioritized = [
+    ...items.filter((item) => item.barcode && gtinEqual(item.barcode, digits)),
+    ...items.filter((item) => !item.barcode || !gtinEqual(item.barcode, digits)),
+  ];
 
   const hits = [];
-  for (const item of exact.slice(0, 3)) {
+  const seen = new Set();
+  let attempts = 0;
+
+  for (const item of prioritized) {
+    if (hits.length >= 3 || attempts >= 8) break;
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    attempts += 1;
+
     const detail = await fetchProductDetail(item.id, { light: false }).catch(() => null);
-    if (detail) {
-      rememberBarcodeMatch(digits, detail);
-      hits.push(toBarcodeHit(detail, digits));
-      continue;
-    }
-    rememberBarcodeMatch(digits, item);
-    hits.push({
-      id: item.id,
-      nameAr: item.nameAr,
-      nameEn: item.nameEn,
-      brandAr: item.brandAr,
-      brandEn: item.brandEn,
-      thumb: item.thumb,
-      price: item.price,
-      barcode: digits,
-      shadeName: '',
-      matchType: 'ean',
-    });
+    if (!detail?.barcode || !gtinEqual(detail.barcode, digits)) continue;
+
+    rememberBarcodeMatch(digits, detail);
+    hits.push(toBarcodeHit(detail, digits));
   }
+
   return hits;
 }
 

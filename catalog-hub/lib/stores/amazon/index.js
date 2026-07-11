@@ -23,6 +23,7 @@ export const AMAZON_META = {
 
 export const amazonAdapter = {
   ...AMAZON_META,
+  barcodeTextFallback: true,
 
   async health() {
     const creds = amazonCredentials();
