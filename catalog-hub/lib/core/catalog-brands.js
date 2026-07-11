@@ -13,6 +13,8 @@ import { parseListingHtml as parseFacesListingHtml } from '../stores/faces/parse
 import { algoliaSearch, algoliaBrandFacets, algoliaBrandFilter, normalizeMiraayaImageUrl } from '../stores/miraaya/client.js';
 import { fetchShopHtml } from '../stores/beautyway/client.js';
 import { parseListingHtml as parseBeautywayListingHtml } from '../stores/beautyway/parse.js';
+import { khatonFetch, absImage as khatonAbs } from '../stores/khaton/client.js';
+import { shopifyFetch } from '../stores/orisdi/client.js';
 import { getStoreAdapter, listStores } from '../stores/registry.js';
 import { cacheGet, cacheSet } from './cache.js';
 import { brandMatchKeys, normalizeBrandKey, preferBrandDisplayName } from './brand-normalize.js';
@@ -450,6 +452,75 @@ async function collectBeautywayBrands(map) {
   }
 }
 
+async function collectOrisdiBrands(map) {
+  try {
+    const vendors = new Map();
+    for (let page = 1; page <= 12; page += 1) {
+      const data = await shopifyFetch('/products.json', {
+        params: { limit: 250, page },
+        ttl: 15 * 60 * 1000,
+        cacheKey: `orisdi:brands-scan:${page}`,
+      });
+      const products = data.products || [];
+      if (!products.length) break;
+      for (const p of products) {
+        const name = String(p.vendor || '').trim();
+        if (!name || name.toLowerCase() === 'orisdi') continue;
+        const prev = vendors.get(name) || { name, thumb: '', count: 0 };
+        prev.count += 1;
+        if (!prev.thumb) prev.thumb = String(p.images?.[0]?.src || '').trim();
+        vendors.set(name, prev);
+      }
+      if (products.length < 250) break;
+    }
+
+    for (const row of vendors.values()) {
+      mergeBrand(map, {
+        name: row.name,
+        nameEn: row.name,
+        nameAr: row.name,
+        logoUrl: '',
+        productImageUrl: row.thumb,
+        logoIsProductImage: Boolean(row.thumb),
+        productCount: row.count,
+        stores: ['orisdi'],
+      });
+    }
+  } catch (err) {
+    console.warn('orisdi brands:', err.message);
+  }
+}
+
+async function collectKhatonBrands(map) {
+  try {
+    let page = 1;
+    while (page <= 50) {
+      const data = await khatonFetch('/brands', {
+        params: { page, per_page: 60 },
+        ttl: 10 * 60 * 1000,
+        cacheKey: `khaton:brands:${page}`,
+      });
+      const rows = data.data || [];
+      for (const b of rows) {
+        const name = String(b.name || '').trim();
+        mergeBrand(map, {
+          name,
+          nameEn: name,
+          nameAr: name,
+          logoUrl: khatonAbs(b.logo || ''),
+          logoIsProductImage: false,
+          productCount: Number(b.products_count || 0),
+          stores: ['khaton'],
+        });
+      }
+      if (rows.length < 60) break;
+      page += 1;
+    }
+  } catch (err) {
+    console.warn('khaton brands:', err.message);
+  }
+}
+
 /** قائمة براندات موحّدة من كل المتاجر */
 export async function collectCatalogBrands({ force = false } = {}) {
   if (!force) {
@@ -466,6 +537,8 @@ export async function collectCatalogBrands({ force = false } = {}) {
     collectFacesBrands(map),
     collectMiraayaBrands(map),
     collectBeautywayBrands(map),
+    collectKhatonBrands(map),
+    collectOrisdiBrands(map),
   ]);
 
   const seenObjects = new Set();
