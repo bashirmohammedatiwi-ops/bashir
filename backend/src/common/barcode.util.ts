@@ -17,6 +17,18 @@ export function isLikelyBarcode(code: string): boolean {
   return BARCODE_PATTERN.test(code);
 }
 
+function addEanVariants(candidates: Set<string>, value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return;
+
+  candidates.add(digits);
+  if (digits.length === 13 && digits.startsWith("0")) {
+    candidates.add(digits.slice(1));
+  } else if (digits.length === 12) {
+    candidates.add(`0${digits}`);
+  }
+}
+
 export function barcodeLookupCandidates(raw: string | null | undefined): string[] {
   const normalized = normalizeBarcode(raw);
   if (!normalized) return [];
@@ -26,5 +38,17 @@ export function barcodeLookupCandidates(raw: string | null | undefined): string[
   if (isLikelyBarcode(normalized)) {
     candidates.add(normalized.toUpperCase());
   }
+  addEanVariants(candidates, normalized);
   return [...candidates];
+}
+
+export function resolveBarcodeMapKey<T>(
+  map: Map<string, T>,
+  raw: string | null | undefined,
+): T | null {
+  for (const key of barcodeLookupCandidates(raw)) {
+    const hit = map.get(key);
+    if (hit) return hit;
+  }
+  return null;
 }

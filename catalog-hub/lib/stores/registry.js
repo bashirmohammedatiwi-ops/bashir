@@ -35,14 +35,13 @@ const SALLA_STORES = [
     siteUrl: 'https://najdalatheyah.com',
     storeIdentifier: 'najdalatheyah.com',
   },
-  // مثال لمتجر Salla إضافي مستقبلاً:
-  // {
-  //   id: 'storename',
-  //   label: 'اسم المتجر',
-  //   domain: 'storename.com',
-  //   siteUrl: 'https://storename.com',
-  //   storeIdentifier: 'storename.com',
-  // },
+  {
+    id: 'alkhabeer',
+    label: 'خبير العطور Alkhabeer',
+    domain: 'alkhabeershop.com',
+    siteUrl: 'https://alkhabeershop.com',
+    storeIdentifier: 'alkhabeershop.com',
+  },
 ];
 
 /** محولات مخصصة (غير Salla) */

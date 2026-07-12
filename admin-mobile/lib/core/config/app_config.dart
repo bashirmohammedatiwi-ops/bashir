@@ -25,6 +25,7 @@ class AppConfig {
   static const List<String> catalogStores = [
     'miswag',
     'najdalatheyah',
+    'alkhabeer',
     'elryan',
     'faces',
     'miraaya',

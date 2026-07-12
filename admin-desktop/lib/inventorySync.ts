@@ -35,7 +35,9 @@ export type BarcodeInventoryLookup = {
 export async function lookupInventoryBarcodes(
   barcodes: string[],
 ): Promise<Record<string, BarcodeInventoryLookup>> {
-  const normalized = [...new Set(barcodes.map(normalizeBarcode).filter(Boolean))];
+  const normalized = [
+    ...new Set(barcodes.flatMap((b) => barcodeLookupCandidates(b)).filter(Boolean)),
+  ];
   if (!normalized.length) return {};
 
   const { data } = await api.post("/sync/inventory/lookup-barcodes", {

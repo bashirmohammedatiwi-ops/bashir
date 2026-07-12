@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { barcodeLookupCandidates, normalizeBarcode } from "../../common/barcode.util";
+import { barcodeLookupCandidates, normalizeBarcode, resolveBarcodeMapKey } from "../../common/barcode.util";
 import { fixPosArabicText } from "../../common/pos-text-encoding.util";
 import { PrismaService } from "../../common/prisma.service";
 import { InventorySyncItemDto } from "./dto/inventory-sync.dto";
@@ -58,6 +58,7 @@ export type InventorySnapshotPricing = {
 
 const SNAPSHOT_CHUNK = 300;
 const PRODUCT_UPDATE_CHUNK = 150;
+const LOOKUP_BATCH = 200;
 
 @Injectable()
 export class InventorySyncService {
@@ -95,20 +96,32 @@ export class InventorySyncService {
           .flatMap((b) => barcodeLookupCandidates(b))
           .filter(Boolean),
       ),
-    ].slice(0, 120);
+    ];
 
     if (!keys.length) return { items: {} };
 
-    const snapshots = await this.prisma.inventorySyncSnapshot.findMany({
-      where: {
-        OR: [{ barcode: { in: keys } }, { productNum: { in: keys } }],
-      },
-    });
+    const snapshotByCode = new Map<string, Awaited<
+      ReturnType<typeof this.prisma.inventorySyncSnapshot.findMany>
+    >[number]>();
 
-    const snapshotByCode = new Map<string, (typeof snapshots)[number]>();
-    for (const row of snapshots) {
-      snapshotByCode.set(row.barcode, row);
-      if (row.productNum) snapshotByCode.set(row.productNum, row);
+    for (let i = 0; i < keys.length; i += LOOKUP_BATCH) {
+      const chunk = keys.slice(i, i + LOOKUP_BATCH);
+      const snapshots = await this.prisma.inventorySyncSnapshot.findMany({
+        where: {
+          OR: [{ barcode: { in: chunk } }, { productNum: { in: chunk } }],
+        },
+      });
+
+      for (const row of snapshots) {
+        for (const key of barcodeLookupCandidates(row.barcode)) {
+          snapshotByCode.set(key, row);
+        }
+        if (row.productNum) {
+          for (const key of barcodeLookupCandidates(row.productNum)) {
+            snapshotByCode.set(key, row);
+          }
+        }
+      }
     }
 
     const productMap = await this.buildProductBarcodeMap(keys);
@@ -130,7 +143,7 @@ export class InventorySyncService {
     for (const code of keys) {
       const snapshot = snapshotByCode.get(code);
       const fixed = snapshot ? fixSnapshotText(snapshot) : null;
-      const inApp = productMap.get(code) ?? null;
+      const inApp = resolveBarcodeMapKey(productMap, code);
       items[code] = {
         barcode: fixed?.barcode || code,
         pos: fixed
@@ -234,7 +247,7 @@ export class InventorySyncService {
     const updatedBarcodes = await this.bulkUpdateProducts(sanitized, productMap);
 
     const alertItems = sanitized.map((item) => {
-      const product = productMap.get(item.barcode);
+      const product = resolveBarcodeMapKey(productMap, item.barcode);
       return {
         barcode: item.barcode,
         name: item.name,
@@ -254,7 +267,7 @@ export class InventorySyncService {
 
     for (const item of sanitized) {
       const error = snapshotErrors.get(item.barcode);
-      const product = productMap.get(item.barcode);
+      const product = resolveBarcodeMapKey(productMap, item.barcode);
       const shadeUpdated = updatedShadeBarcodes.has(item.barcode);
       const productUpdated = updatedBarcodes.has(item.barcode);
       results.push({
@@ -280,29 +293,46 @@ export class InventorySyncService {
     const map = new Map<string, { id: string; name: string | null }>();
     if (!barcodes.length) return map;
 
-    const [products, shades] = await Promise.all([
+    const expanded = [
+      ...new Set(barcodes.flatMap((code) => barcodeLookupCandidates(code))),
+    ];
+
+    const [products, shades, bySku] = await Promise.all([
       this.prisma.product.findMany({
-        where: { barcode: { in: barcodes } },
-        select: { id: true, name: true, barcode: true },
+        where: { barcode: { in: expanded } },
+        select: { id: true, name: true, barcode: true, sku: true },
       }),
       this.prisma.productShade.findMany({
-        where: { barcode: { in: barcodes } },
+        where: { barcode: { in: expanded } },
         select: {
           barcode: true,
           product: { select: { id: true, name: true } },
         },
       }),
+      this.prisma.product.findMany({
+        where: { sku: { in: expanded } },
+        select: { id: true, name: true, barcode: true, sku: true },
+      }),
     ]);
 
-    for (const product of products) {
-      if (product.barcode) {
-        map.set(product.barcode, { id: product.id, name: product.name });
+    const register = (
+      code: string | null | undefined,
+      entry: { id: string; name: string | null },
+    ) => {
+      if (!code) return;
+      for (const key of barcodeLookupCandidates(code)) {
+        if (!map.has(key)) map.set(key, entry);
       }
+    };
+
+    for (const product of [...products, ...bySku]) {
+      register(product.barcode, { id: product.id, name: product.name });
+      register(product.sku, { id: product.id, name: product.name });
     }
 
     for (const shade of shades) {
-      if (shade.barcode && !map.has(shade.barcode)) {
-        map.set(shade.barcode, { id: shade.product.id, name: shade.product.name });
+      if (shade.barcode) {
+        register(shade.barcode, { id: shade.product.id, name: shade.product.name });
       }
     }
 
@@ -398,17 +428,25 @@ export class InventorySyncService {
     if (!barcodes.length) return updated;
 
     const shades = await this.prisma.productShade.findMany({
-      where: { barcode: { in: barcodes } },
+      where: {
+        barcode: {
+          in: [...new Set(items.flatMap((item) => barcodeLookupCandidates(item.barcode)))],
+        },
+      },
       select: { id: true, barcode: true },
     });
     if (!shades.length) return updated;
 
-    const shadeByBarcode = new Map(
-      shades.filter((shade) => shade.barcode).map((shade) => [shade.barcode!, shade.id]),
-    );
+    const shadeByBarcode = new Map<string, string>();
+    for (const shade of shades) {
+      if (!shade.barcode) continue;
+      for (const key of barcodeLookupCandidates(shade.barcode)) {
+        shadeByBarcode.set(key, shade.id);
+      }
+    }
 
     for (const item of items) {
-      const shadeId = shadeByBarcode.get(item.barcode);
+      const shadeId = resolveBarcodeMapKey(shadeByBarcode, item.barcode);
       if (!shadeId) continue;
       try {
         await this.prisma.productShade.update({
@@ -440,7 +478,7 @@ export class InventorySyncService {
     >();
 
     for (const item of items) {
-      const product = productMap.get(item.barcode);
+      const product = resolveBarcodeMapKey(productMap, item.barcode);
       if (product) {
         byProductId.set(product.id, {
           productId: product.id,
@@ -453,18 +491,21 @@ export class InventorySyncService {
     const updates = [...byProductId.values()];
     if (!updates.length) return updated;
 
-    const productBarcodes = new Set(
+    const expanded = [
+      ...new Set(items.flatMap((item) => barcodeLookupCandidates(item.barcode))),
+    ];
+    const productBarcodeKeys = new Set(
       (
         await this.prisma.product.findMany({
-          where: { barcode: { in: items.map((item) => item.barcode) } },
+          where: { barcode: { in: expanded } },
           select: { barcode: true },
         })
-      )
-        .map((row) => row.barcode)
-        .filter((code): code is string => Boolean(code)),
+      ).flatMap((row) => (row.barcode ? barcodeLookupCandidates(row.barcode) : [])),
     );
 
-    const productOnlyUpdates = updates.filter((entry) => productBarcodes.has(entry.barcode));
+    const productOnlyUpdates = updates.filter((entry) =>
+      barcodeLookupCandidates(entry.barcode).some((key) => productBarcodeKeys.has(key)),
+    );
     if (!productOnlyUpdates.length) return updated;
 
     for (let i = 0; i < productOnlyUpdates.length; i += PRODUCT_UPDATE_CHUNK) {
@@ -546,25 +587,26 @@ export class InventorySyncService {
   }
 
   private async findProductByBarcode(barcode: string) {
-    const code = normalizeBarcode(barcode);
-    if (!code) return null;
+    for (const code of barcodeLookupCandidates(barcode)) {
+      const byProduct = await this.prisma.product.findFirst({
+        where: { barcode: code },
+        select: { id: true, name: true, barcode: true },
+      });
+      if (byProduct) return byProduct;
 
-    const byProduct = await this.prisma.product.findFirst({
-      where: { barcode: code },
-      select: { id: true, name: true, barcode: true },
-    });
-    if (byProduct) return byProduct;
+      const bySku = await this.prisma.product.findFirst({
+        where: { sku: code },
+        select: { id: true, name: true, barcode: true },
+      });
+      if (bySku) return bySku;
 
-    const bySku = await this.prisma.product.findFirst({
-      where: { sku: code },
-      select: { id: true, name: true, barcode: true },
-    });
-    if (bySku) return bySku;
+      const shade = await this.prisma.productShade.findFirst({
+        where: { barcode: code },
+        select: { product: { select: { id: true, name: true, barcode: true } } },
+      });
+      if (shade?.product) return shade.product;
+    }
 
-    const shade = await this.prisma.productShade.findFirst({
-      where: { barcode: code },
-      select: { product: { select: { id: true, name: true, barcode: true } } },
-    });
-    return shade?.product ?? null;
+    return null;
   }
 }

@@ -14,6 +14,7 @@ import { resolveCatalogImageUrl } from "@/lib/resolveCatalogImageUrl";
 export const STORE_COLORS: Record<string, string> = {
   miswag: "#df1c24",
   najdalatheyah: "#511952",
+  alkhabeer: "#1a4d6d",
   elryan: "#0b6e4f",
   faces: "#c41e6b",
   miraaya: "#7b2d8e",

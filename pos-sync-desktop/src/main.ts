@@ -120,13 +120,15 @@ async function runSync(manual = false): Promise<{
     const uniqueItems = dedupeSyncItems(items);
     const previousState = loadSyncState(app.getPath("userData"));
     const knownCount = countSyncState(previousState);
-    const toSend = filterChangedItems(uniqueItems, previousState);
-    const skipped = uniqueItems.length - toSend.length;
+    const toSend = manual ? uniqueItems : filterChangedItems(uniqueItems, previousState);
+    const skipped = manual ? 0 : uniqueItems.length - toSend.length;
 
     if (toSend.length === 0) {
       log(
-        `لا توجد تغييرات — ${uniqueItems.length} منتج محدّث (${knownCount} في الذاكرة المحلية)`,
-        "success",
+        manual
+          ? `لا توجد منتجات بسعر في قاعدة البيانات`
+          : `لا توجد تغييرات — ${uniqueItems.length} منتج محدّث (${knownCount} في الذاكرة المحلية)`,
+        manual ? "error" : "success",
       );
       result = { ok: true, synced: 0, total: uniqueItems.length, changed: 0, skipped, failed: 0 };
       return result;
@@ -134,7 +136,7 @@ async function runSync(manual = false): Promise<{
 
     log(
       manual
-        ? `مزامنة ${toSend.length} منتج متغيّر — ${skipped} بدون تغيير`
+        ? `مزامنة كاملة — رفع ${toSend.length} منتج من ${uniqueItems.length}`
         : `تحديث ${toSend.length} متغيّر — ${skipped} بدون تغيير من ${uniqueItems.length}`,
     );
 

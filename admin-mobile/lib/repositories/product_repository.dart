@@ -64,7 +64,11 @@ class ProductRepository {
   }
 
   Future<Map<String, BarcodeInventoryLookup>> lookupBarcodes(List<String> barcodes) async {
-    final normalized = barcodes.map(normalizeBarcode).where((b) => b.isNotEmpty).toSet().toList();
+    final keys = <String>{};
+    for (final raw in barcodes) {
+      keys.addAll(posBarcodeLookupKeys(raw));
+    }
+    final normalized = keys.where((b) => b.isNotEmpty).toList();
     if (normalized.isEmpty) return {};
 
     final resp = await _dio.post('/sync/inventory/lookup-barcodes', data: {'barcodes': normalized});
@@ -412,7 +416,7 @@ class ProductRepository {
   }
 
   BarcodePosSnapshot? _resolveInv(String barcode, Map<String, BarcodeInventoryLookup> map) {
-    for (final c in barcodeLookupCandidates(barcode)) {
+    for (final c in posBarcodeLookupKeys(barcode)) {
       final hit = map[c];
       if (hit?.pos != null && (hit!.pos!.price > 0 || hit.pos!.stock > 0)) return hit.pos;
     }
