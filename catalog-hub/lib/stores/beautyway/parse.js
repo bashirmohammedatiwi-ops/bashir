@@ -47,7 +47,12 @@ function parseListingItem(chunk = '') {
     || chunk.match(/product_shop_p[\s\S]*?<span[^>]*>([\d,]+)<\/span>/i)?.[1]
     || '',
   );
-  const thumb = absUrl(chunk.match(/<img[^>]+src="([^"]+)"/i)?.[1] || '');
+  const thumb = absUrl(
+    chunk.match(/data-src="([^"]+)"/i)?.[1]
+    || chunk.match(/data-lazy-src="([^"]+)"/i)?.[1]
+    || chunk.match(/<img[^>]+src="([^"]+)"/i)?.[1]
+    || '',
+  );
   const nodeId = String(chunk.match(/product_id="(\d+)"/i)?.[1] || '').trim();
   const slug = slugFromHref(href);
   const id = nodeId || slug;
@@ -135,11 +140,11 @@ export function parseProductDetailHtml(html = '', { lang = 'ar', fallbackId = ''
   const productSection = text.split(/منتجات مشابهة|Similar products|related products/i)[0] || text;
   const images = [];
   if (ogImage) images.push(ogImage);
-  for (const src of productSection.matchAll(/<img[^>]+src="(https:\/\/www\.beautyway-iq\.com\/files\/[^"?]+)/gi)) {
+  for (const src of productSection.matchAll(/<img[^>]+(?:data-src|src)="(https:\/\/www\.beautyway-iq\.com\/files\/[^"?]+)/gi)) {
     const url = absUrl(src[1]);
     if (url && !/\/flag_|beautyway\.png|favicon/i.test(url)) images.push(url);
   }
-  const uniqueImages = [...new Set(images)];
+  const uniqueImages = [...new Set(images.map((u) => absUrl(u)))];
 
   return {
     id: String(nodeId || '').trim(),

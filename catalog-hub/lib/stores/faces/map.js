@@ -216,19 +216,21 @@ export function mapDetailFromRows(rows = [], { arBase = null, enBase = null } = 
 function shadesFromVariationAttributes(ar = {}, en = {}) {
   const attrs = ar.variationAttributes || en.variationAttributes || [];
   const shades = [];
+  const productImg = imageFromProduct(ar) || imageFromProduct(en);
   const colorAttr = attrs.find((a) => a.id === 'color') || attrs.find((a) => (a.values || []).length > 1);
   if (!colorAttr) return shades;
 
   for (const val of colorAttr.values || []) {
     if (val.selectable === false) continue;
     const swatch = swatchImage(val);
+    const image = productImg || swatch;
     shades.push({
       id: String(val.id || val.value || val.displayValue || shades.length),
       nameAr: stripHtml(val.displayValue || ''),
       nameEn: stripHtml(val.displayValue || ''),
       sku: '',
       barcode: '',
-      image: swatch,
+      image,
       swatchImage: swatch,
       price: formatAedPrice(ar) || formatAedPrice(en),
       inStock: val.isAvailable !== false,

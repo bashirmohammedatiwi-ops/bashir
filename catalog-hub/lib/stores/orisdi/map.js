@@ -11,13 +11,30 @@ import { collectImageUrls } from '../../core/images.js';
 
 const HEX_RE = /^#?[0-9a-f]{3,8}$/i;
 
+function pickLargestShopifySrc(images = [], variantId = 0) {
+  const vid = Number(variantId);
+  const matched = images.filter((img) => (img.variant_ids || []).includes(vid));
+  const pool = matched.length ? matched : images;
+  let best = '';
+  let bestScore = 0;
+  for (const img of pool) {
+    const src = String(img.src || '').trim();
+    if (!src) continue;
+    const w = Number(src.match(/[?&]width=(\d+)/i)?.[1] || src.match(/_(\d+)x(\d+)\./i)?.[1] || 0);
+    const score = w || src.length;
+    if (score >= bestScore) {
+      bestScore = score;
+      best = src;
+    }
+  }
+  return absImage(best);
+}
+
 function variantImage(variant = {}, images = []) {
   const fi = variant.featured_image;
   if (typeof fi === 'string' && fi) return absImage(fi);
   if (fi && typeof fi === 'object' && fi.src) return absImage(fi.src);
-  const vid = Number(variant.id);
-  const matched = images.find((img) => (img.variant_ids || []).includes(vid));
-  return absImage(matched?.src || '');
+  return pickLargestShopifySrc(images, variant.id);
 }
 
 function optionHex(value = '') {
@@ -78,7 +95,7 @@ export function mapListProduct(product = {}) {
   const primary = variants[0] || {};
   const barcode = variantBarcode(primary);
   const images = product.images || [];
-  const thumb = absImage(images[0]?.src || product.image?.src || product.featured_image);
+  const thumb = pickLargestShopifySrc(images) || absImage(images[0]?.src || product.image?.src || product.featured_image);
 
   return {
     id,

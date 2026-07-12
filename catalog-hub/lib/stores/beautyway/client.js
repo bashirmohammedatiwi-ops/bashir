@@ -1,4 +1,5 @@
 import { cacheGet, cacheSet } from '../../core/cache.js';
+import { upgradeImageUrl } from '../../core/images.js';
 
 export const SITE = 'https://www.beautyway-iq.com';
 export const DEFAULT_TTL = 10 * 60 * 1000;
@@ -26,8 +27,8 @@ export function stripHtml(html = '') {
 export function absUrl(path = '') {
   const p = String(path || '').trim();
   if (!p) return '';
-  if (p.startsWith('http')) return p;
-  return `${SITE}${p.startsWith('/') ? p : `/${p}`}`;
+  if (p.startsWith('http')) return upgradeImageUrl(p);
+  return upgradeImageUrl(`${SITE}${p.startsWith('/') ? p : `/${p}`}`);
 }
 
 export function langPrefix(lang = 'ar') {

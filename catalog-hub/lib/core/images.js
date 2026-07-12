@@ -135,6 +135,27 @@ function upgradeElryan(url = '') {
   return u;
 }
 
+function upgradeMiraaya(url = '') {
+  let u = String(url || '').trim();
+  if (!/miraaya\.com|magadmin\.miraaya/i.test(u)) return u;
+
+  const webpCache = u.match(/^(https?:\/\/[^/]+)\/media\/catalog\/product\/cache\/optimized\/webp\/(.+)\.webp$/i);
+  if (webpCache) {
+    return `${webpCache[1]}/media/catalog/product/${webpCache[2]}.jpg`;
+  }
+
+  const brokenCache = u.match(/^(https?:\/\/[^/]+)\/media\/catalog\/product\/cache\/(?!optimized\/webp\/)[^/]+\/(.+)$/i);
+  if (brokenCache) {
+    const sub = brokenCache[2];
+    if (/\.(jpe?g|png|webp|gif|avif)$/i.test(sub)) {
+      return `${brokenCache[1]}/media/catalog/product/${sub}`;
+    }
+    return `${brokenCache[1]}/media/catalog/product/${sub.replace(/\.(jpe?g|png)$/i, '')}.jpg`;
+  }
+
+  return u;
+}
+
 function upgradeMagento(url = '') {
   let u = String(url || '').trim();
   if (!u) return u;
@@ -156,6 +177,22 @@ function upgradeMagento(url = '') {
     }
   }
 
+  return u;
+}
+
+function upgradeBeautyway(url = '') {
+  let u = String(url || '').trim();
+  if (!/beautyway-iq\.com/i.test(u)) return u;
+  u = u.replace(/-(\d+)x(\d+)(@2x)?(?=\.(jpe?g|png|webp|gif)(\?|#|$))/i, '');
+  u = u.replace(/\/styles\/[^/]+\/public\//i, '/files/');
+  return u;
+}
+
+function upgradeKhaton(url = '') {
+  let u = String(url || '').trim();
+  if (!/khaton\.beauty/i.test(u)) return u;
+  u = upgradeWooCommerce(u);
+  u = stripQueryParams(u, ['w', 'h', 'width', 'height', 'fit']);
   return u;
 }
 
@@ -201,11 +238,12 @@ export function upgradeImageUrl(url = '', { size = IMPORT_SIZE } = {}) {
   if (/waheteter\.com|woocommerce/i.test(u)) u = upgradeWooCommerce(u);
   if (/cdn\.shopify\.com|orisdi\.com/i.test(u)) u = upgradeShopify(u);
   if (/elryan\.com/i.test(u)) return upgradeElryan(u);
-  if (/miraaya\.com|magadmin\.miraaya/i.test(u)) u = upgradeMagento(u);
+  if (/miraaya\.com|magadmin\.miraaya/i.test(u)) return upgradeMiraaya(u);
   if (/cdn\.miswag\.me/i.test(u)) u = upgradeMiswag(u);
   if (/cdn\.salla\.sa|salla\.sa/i.test(u)) u = upgradeSalla(u);
   if (/demandware\.net|faces\.com/i.test(u)) u = upgradeFaces(u);
-  if (/khaton\.beauty/i.test(u)) u = upgradeWooCommerce(u);
+  if (/beautyway-iq\.com/i.test(u)) u = upgradeBeautyway(u);
+  if (/khaton\.beauty/i.test(u)) u = upgradeKhaton(u);
 
   return u;
 }

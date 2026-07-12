@@ -61,20 +61,21 @@ function khatonImageUrl(value = '') {
 function collectKhatonImages(raw = {}) {
   const variant = raw.selected_variant || {};
   return collectImageUrls(
-    raw.thumbnail_image,
     raw.image,
     raw.main_image,
     raw.images,
     raw.media,
     raw.gallery,
-    variant.thumbnail_image,
     variant.image,
     variant.images,
+    variant.main_image,
+    raw.thumbnail_image,
+    variant.thumbnail_image,
     ...(raw.variants || []).flatMap((v) => [
-      v.thumbnail_image,
       v.image,
       v.images,
       v.main_image,
+      v.thumbnail_image,
     ]),
   );
 }

@@ -48,21 +48,10 @@ export function isImageMediaUrl(url = '') {
   return u.includes('/media/catalog/product/');
 }
 
-/** روابط Magento المُعاد تحجيمها (hash) كثيراً تُرجع 404 — حوّلها لنسخة webp أو المسار الأصلي */
+/** روابط Magento — تُحوَّل لنسخة JPEG كاملة عبر upgradeMiraaya */
 export function normalizeMiraayaImageUrl(path = '') {
-  let u = absMediaUrl(path);
+  const u = absMediaUrl(path);
   if (!u || !isImageMediaUrl(u)) return '';
-
-  const brokenCache = u.match(/\/media\/catalog\/product\/cache\/(?!optimized\/webp\/)[^/]+\/(.+)$/i);
-  if (brokenCache) {
-    const sub = brokenCache[1];
-    if (/\.(jpe?g|png|webp|gif|avif)$/i.test(sub)) {
-      u = `${MAGENTO}/media/catalog/product/${sub}`;
-    } else {
-      u = `${MAGENTO}/media/catalog/product/cache/optimized/webp/${sub.replace(/\.(jpe?g|png)$/i, '')}.webp`;
-    }
-  }
-
   return upgradeImageUrl(u);
 }
 
