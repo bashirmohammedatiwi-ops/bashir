@@ -5,7 +5,7 @@ String normalizeBarcode(String raw) {
 
 /// تنظيف باركود POS (ASCII) — للمطابقة مع لقطات المزامنة.
 String asciiNormalizeBarcode(String raw) {
-  const bidi = RegExp(r'[\u064B-\u065F\u0670\u06D6-\u06ED\u200E\u200F\u202A-\u202E\uFEFF]');
+  final bidi = RegExp(r'[\u064B-\u065F\u0670\u06D6-\u06ED\u200E\u200F\u202A-\u202E\uFEFF]');
   return raw
       .replaceAll('\u00A0', ' ')
       .replaceAll(bidi, '')
