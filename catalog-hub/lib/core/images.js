@@ -127,7 +127,7 @@ function upgradeElryan(url = '') {
   const resize = u.match(/^(https?:\/\/[^/]+)\/img\/(\d+)\/(\d+)\/resize\/(.+)$/i);
   if (resize) {
     const [, origin, w, h, rest] = resize;
-    if (Number(w) > 0 && Number(h) > 0 && (Number(w) < 800 || Number(h) < 800)) {
+    if (!(Number(w) === 0 && Number(h) === 0)) {
       return `${origin}/img/0/0/resize/${rest}`;
     }
   }
@@ -168,11 +168,16 @@ function upgradeMiswag(url = '') {
 function upgradeSalla(url = '') {
   let u = String(url || '').trim();
   if (!u) return u;
-  u = upgradeWooCommerce(u);
-  if (/cdn\.salla\.sa|salla\.sa\/cdn/i.test(u)) {
+
+  if (/cdn\.salla\.sa/i.test(u)) {
+    const resized = u.match(/^((?:https?:)?\/\/cdn\.salla\.sa\/[^/]+\/)[^/]*?-\d+x\d+-([^/?#]+\.(?:png|jpe?g|webp|gif|avif))(?:\?.*)?$/i);
+    if (resized) {
+      u = `${resized[1]}${resized[2]}`;
+    }
     u = stripQueryParams(u, ['w', 'h', 'width', 'height']);
   }
-  return u;
+
+  return upgradeWooCommerce(u);
 }
 
 function upgradeFaces(url = '') {
