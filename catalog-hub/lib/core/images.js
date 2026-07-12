@@ -2,8 +2,6 @@
  * تجميع وترقية روابط الصور — دقة أعلى عند الجلب والاستيراد.
  */
 
-const SIZE_SUFFIX_RE = /-(\d+)x(\d+)(@2x)?(?=\.(jpe?g|png|webp|gif|avif|bmp)(\?|#|$))/i;
-const SHOPIFY_SIZE_RE = /_(?:pico|icon|thumb|small|compact|medium|large|grande|original|\d+x\d+|\d+x)(@2x)?(?=\.(jpe?g|png|webp|gif)(\?|#|$))/i;
 const AMAZON_HOST_RE = /media-amazon\.com|images-amazon\.com/i;
 const IMPORT_SIZE = 1500;
 const THUMB_SIZE = 800;
@@ -117,6 +115,26 @@ function upgradeShopify(url = '') {
   return u;
 }
 
+function upgradeElryan(url = '') {
+  let u = String(url || '').trim();
+  if (!/elryan\.com/i.test(u)) return u;
+
+  const media = u.match(/^(https?:\/\/[^/]+)\/media\/catalog\/product\/(.+)$/i);
+  if (media) {
+    return `${media[1]}/img/0/0/resize/catalog/product/${media[2].replace(/^\//, '')}`;
+  }
+
+  const resize = u.match(/^(https?:\/\/[^/]+)\/img\/(\d+)\/(\d+)\/resize\/(.+)$/i);
+  if (resize) {
+    const [, origin, w, h, rest] = resize;
+    if (Number(w) > 0 && Number(h) > 0 && (Number(w) < 800 || Number(h) < 800)) {
+      return `${origin}/img/0/0/resize/${rest}`;
+    }
+  }
+
+  return u;
+}
+
 function upgradeMagento(url = '') {
   let u = String(url || '').trim();
   if (!u) return u;
@@ -177,7 +195,8 @@ export function upgradeImageUrl(url = '', { size = IMPORT_SIZE } = {}) {
   if (AMAZON_HOST_RE.test(u)) return normalizeAmazonImageUrl(u, size);
   if (/waheteter\.com|woocommerce/i.test(u)) u = upgradeWooCommerce(u);
   if (/cdn\.shopify\.com|orisdi\.com/i.test(u)) u = upgradeShopify(u);
-  if (/elryan\.com|miraaya\.com|magadmin\.miraaya/i.test(u)) u = upgradeMagento(u);
+  if (/elryan\.com/i.test(u)) return upgradeElryan(u);
+  if (/miraaya\.com|magadmin\.miraaya/i.test(u)) u = upgradeMagento(u);
   if (/cdn\.miswag\.me/i.test(u)) u = upgradeMiswag(u);
   if (/cdn\.salla\.sa|salla\.sa/i.test(u)) u = upgradeSalla(u);
   if (/demandware\.net|faces\.com/i.test(u)) u = upgradeFaces(u);
