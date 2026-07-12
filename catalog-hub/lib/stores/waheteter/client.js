@@ -5,11 +5,12 @@ export const API_BASE = `${SITE}/wp-json/wc/store/v1`;
 export const DEFAULT_TTL = 10 * 60 * 1000;
 export const DETAIL_TTL = 20 * 60 * 1000;
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-const DEFAULT_HEADERS = {
-  Accept: 'application/json, text/plain, */*',
+const BROWSER_HEADERS = {
+  Accept: 'application/json, text/html, */*',
   'Accept-Language': 'ar,en;q=0.9',
   Referer: `${SITE}/`,
   Origin: SITE,
+  'User-Agent': UA,
 };
 
 export function absImage(url = '') {
@@ -63,6 +64,64 @@ export function variantBarcode(row = {}) {
   return /^\d{8,14}$/.test(sku) ? sku : '';
 }
 
+function buildApiUrls(path, params = {}) {
+  const apiPath = path.startsWith('/') ? path : `/${path}`;
+  const urls = [];
+
+  const jsonUrl = new URL(`${API_BASE}${apiPath}`);
+  for (const [k, v] of Object.entries(params)) {
+    if (v == null || v === '') continue;
+    jsonUrl.searchParams.set(k, String(v));
+  }
+  urls.push(jsonUrl);
+
+  for (const base of [`${SITE}/`, `${SITE}/index.php`]) {
+    const restUrl = new URL(base);
+    const restParams = new URLSearchParams(restUrl.search);
+    restParams.set('rest_route', `/wc/store/v1${apiPath}`);
+    for (const [k, v] of Object.entries(params)) {
+      if (v == null || v === '') continue;
+      restParams.set(k, String(v));
+    }
+    restUrl.search = restParams.toString();
+    urls.push(restUrl);
+  }
+
+  return urls;
+}
+
+async function fetchJsonUrl(url) {
+  const res = await fetch(url, {
+    headers: BROWSER_HEADERS,
+    signal: AbortSignal.timeout(15_000),
+    redirect: 'follow',
+  });
+  const data = await res.json().catch(() => ({}));
+  return { res, data };
+}
+
+export async function fetchHtml(pathOrUrl, { ttl = 0, cacheKey = '' } = {}) {
+  const key = cacheKey || (ttl > 0 ? `waheteter:html:${pathOrUrl}` : '');
+  if (key) {
+    const cached = cacheGet(key, ttl);
+    if (cached) return cached;
+  }
+
+  const url = String(pathOrUrl || '').startsWith('http')
+    ? String(pathOrUrl)
+    : new URL(pathOrUrl, SITE).toString();
+
+  const res = await fetch(url, {
+    headers: { ...BROWSER_HEADERS, Accept: 'text/html,application/xhtml+xml, */*' },
+    signal: AbortSignal.timeout(15_000),
+    redirect: 'follow',
+  });
+  const html = await res.text();
+  if (!res.ok) throw new Error(`Waheteter HTML ${res.status}`);
+  if (key) cacheSet(key, html, ttl);
+  return html;
+}
+
 export async function waheteterFetch(path, { params = {}, ttl = 0, cacheKey = '' } = {}) {
   const key = cacheKey || (ttl > 0 ? `waheteter:${path}:${JSON.stringify(params)}` : '');
   if (key) {
@@ -70,29 +129,40 @@ export async function waheteterFetch(path, { params = {}, ttl = 0, cacheKey = ''
     if (cached) return cached;
   }
 
-  const url = new URL(`${API_BASE}${path.startsWith('/') ? path : `/${path}`}`);
-  for (const [k, v] of Object.entries(params)) {
-    if (v == null || v === '') continue;
-    url.searchParams.set(k, String(v));
+  let lastError = null;
+  for (const url of buildApiUrls(path, params)) {
+    try {
+      const { res, data } = await fetchJsonUrl(url);
+      if (res.status === 403 || res.status === 401) {
+        lastError = new Error(`Waheteter API ${res.status}`);
+        continue;
+      }
+      if (!res.ok) {
+        const msg = data?.message || `Waheteter API ${res.status}`;
+        throw new Error(msg);
+      }
+
+      const out = {
+        data,
+        meta: {
+          total: Number(res.headers.get('x-wp-total') || 0),
+          totalPages: Number(res.headers.get('x-wp-totalpages') || 0),
+        },
+      };
+      if (key) cacheSet(key, out, ttl);
+      return out;
+    } catch (err) {
+      lastError = err;
+    }
   }
 
-  const res = await fetch(url, {
-    headers: { ...DEFAULT_HEADERS, 'User-Agent': UA },
-    signal: AbortSignal.timeout(15_000),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const msg = data?.message || `Waheteter API ${res.status}`;
-    throw new Error(msg);
-  }
+  throw lastError || new Error('Waheteter API failed');
+}
 
-  const out = {
-    data,
-    meta: {
-      total: Number(res.headers.get('x-wp-total') || 0),
-      totalPages: Number(res.headers.get('x-wp-totalpages') || 0),
-    },
-  };
-  if (key) cacheSet(key, out, ttl);
-  return out;
+export function searchHtmlUrl(query = '') {
+  const q = String(query || '').trim();
+  const url = new URL(SITE);
+  url.searchParams.set('post_type', 'product');
+  url.searchParams.set('s', q);
+  return url.toString();
 }
