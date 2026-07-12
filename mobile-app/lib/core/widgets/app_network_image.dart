@@ -14,6 +14,8 @@ class AppNetworkImage extends StatelessWidget {
   final BoxFit fit;
   final BorderRadius? radius;
   final String? fallbackAsset;
+  final Color? placeholderColor;
+  final Color? fallbackColor;
 
   const AppNetworkImage({
     super.key,
@@ -23,6 +25,8 @@ class AppNetworkImage extends StatelessWidget {
     this.fit = BoxFit.cover,
     this.radius,
     this.fallbackAsset,
+    this.placeholderColor,
+    this.fallbackColor,
   });
 
   @override
@@ -49,7 +53,7 @@ class AppNetworkImage extends StatelessWidget {
         maxWidthDiskCache: pixelW,
         maxHeightDiskCache: pixelH,
         filterQuality: FilterQuality.medium,
-        placeholder: (_, __) => Container(color: AppColors.shimmerBase),
+        placeholder: (_, __) => Container(color: placeholderColor ?? AppColors.shimmerBase),
         errorWidget: (_, __, ___) => _fallback(),
       );
     }
@@ -64,7 +68,7 @@ class AppNetworkImage extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      color: const Color(0xFFF7F7F7),
+      color: fallbackColor ?? const Color(0xFFF7F7F7),
       alignment: Alignment.center,
       child: Image.asset(
         asset,
@@ -92,6 +96,12 @@ class ProductCoverImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppNetworkImage(url: url, width: width, fit: fit);
+    return AppNetworkImage(
+      url: url,
+      width: width,
+      fit: fit,
+      placeholderColor: AppColors.surface,
+      fallbackColor: AppColors.surface,
+    );
   }
 }
