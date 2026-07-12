@@ -1,19 +1,23 @@
-import { DEFAULT_TTL, waheteterFetch } from './client.js';
+import { waheteterFetch } from './client.js';
 
 const CATEGORY_TTL = 30 * 60 * 1000;
 
 async function fetchAllCategories() {
   const all = [];
   for (let page = 1; page <= 40; page += 1) {
-    const { data } = await waheteterFetch('/products/categories', {
-      params: { per_page: 100, page },
-      ttl: CATEGORY_TTL,
-      cacheKey: `waheteter:categories:page:${page}`,
-    });
-    const rows = Array.isArray(data) ? data : [];
-    if (!rows.length) break;
-    all.push(...rows);
-    if (rows.length < 100) break;
+    try {
+      const { data } = await waheteterFetch('/products/categories', {
+        params: { per_page: 100, page },
+        ttl: CATEGORY_TTL,
+        cacheKey: `waheteter:categories:page:${page}`,
+      });
+      const rows = Array.isArray(data) ? data : [];
+      if (!rows.length) break;
+      all.push(...rows);
+      if (rows.length < 100) break;
+    } catch {
+      break;
+    }
   }
   return all;
 }
