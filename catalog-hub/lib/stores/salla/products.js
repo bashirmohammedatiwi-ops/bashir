@@ -15,29 +15,33 @@ function normalizeArabic(text = '') {
 }
 
 function productImage(product = {}) {
-  if (product.image && typeof product.image === 'object') return absImage(product.image.url);
-  return absImage(product.image || product.image_url || product.original_image || product.thumbnail);
+  if (product.original_image) return absImage(product.original_image);
+  if (product.image && typeof product.image === 'object') {
+    return absImage(product.image.original || product.image.url || product.image.src);
+  }
+  return absImage(product.image || product.image_url || product.thumbnail);
 }
 
 function productImages(product = {}) {
   const images = [];
+  const seen = new Set();
 
-  const push = (raw) => {
+  const push = (raw, { prefer = false } = {}) => {
     if (!raw) return;
-    if (typeof raw === 'string') {
-      const url = absImage(raw);
-      if (url) images.push(url);
-      return;
+    let url = '';
+    if (typeof raw === 'string') url = absImage(raw);
+    else if (typeof raw === 'object') {
+      url = absImage(raw.original || raw.url || raw.image || raw.src);
     }
-    if (typeof raw === 'object') {
-      const url = absImage(raw.url || raw.image || raw.original || raw.src);
-      if (url) images.push(url);
-    }
+    if (!url || seen.has(url)) return;
+    if (prefer) images.unshift(url);
+    else images.push(url);
+    seen.add(url);
   };
 
+  push(product.original_image, { prefer: true });
   push(product.image);
   push(product.image_url);
-  push(product.original_image);
   push(product.thumbnail);
 
   for (const row of product.images || product.media || product.media_gallery || []) {

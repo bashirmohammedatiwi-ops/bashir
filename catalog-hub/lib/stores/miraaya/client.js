@@ -1,4 +1,5 @@
 import { cacheGet, cacheSet } from '../../core/cache.js';
+import { upgradeImageUrl } from '../../core/images.js';
 
 const MAGENTO = 'https://magadmin.miraaya.com';
 const GRAPHQL = `${MAGENTO}/graphql`;
@@ -54,11 +55,15 @@ export function normalizeMiraayaImageUrl(path = '') {
 
   const brokenCache = u.match(/\/media\/catalog\/product\/cache\/(?!optimized\/webp\/)[^/]+\/(.+)$/i);
   if (brokenCache) {
-    const sub = brokenCache[1].replace(/\.(jpe?g|png)$/i, '');
-    return `${MAGENTO}/media/catalog/product/cache/optimized/webp/${sub}.webp`;
+    const sub = brokenCache[1];
+    if (/\.(jpe?g|png|webp|gif|avif)$/i.test(sub)) {
+      u = `${MAGENTO}/media/catalog/product/${sub}`;
+    } else {
+      u = `${MAGENTO}/media/catalog/product/cache/optimized/webp/${sub.replace(/\.(jpe?g|png)$/i, '')}.webp`;
+    }
   }
 
-  return u;
+  return upgradeImageUrl(u);
 }
 
 export function filterImageUrls(urls = []) {

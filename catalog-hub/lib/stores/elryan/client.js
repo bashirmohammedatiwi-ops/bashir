@@ -1,4 +1,5 @@
 import { cacheGet, cacheSet } from '../../core/cache.js';
+import { THUMB_SIZE, upgradeImageUrl } from '../../core/images.js';
 
 const API_BASE = 'https://www.elryan.com/api/catalog';
 const IMG_BASE = 'https://www.elryan.com/img/500/500/resize/catalog/product';
@@ -24,11 +25,14 @@ const DETAIL_SOURCE = [
   'description', 'short_description', 'media_gallery', 'attributes_metadata',
 ];
 
-export function absImage(path = '') {
+export function absImage(path = '', { full = false } = {}) {
   const p = String(path || '').trim();
   if (!p) return '';
-  if (p.startsWith('http')) return p;
-  return `${IMG_BASE}${p.startsWith('/') ? p : `/${p}`}`;
+  if (p.startsWith('http')) return upgradeImageUrl(p, { size: full ? undefined : THUMB_SIZE });
+  const base = full
+    ? 'https://www.elryan.com/media/catalog/product'
+    : IMG_BASE;
+  return upgradeImageUrl(`${base}${p.startsWith('/') ? p : `/${p}`}`, { size: full ? undefined : THUMB_SIZE });
 }
 
 export function elryanBrandLogoUrl(file = '') {

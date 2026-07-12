@@ -22,15 +22,15 @@ function categoryLabel(src = {}) {
   return String(sorted[0]?.name || '').trim();
 }
 
-function primaryImage(src = {}) {
-  return absImage(src.image || src.thumbnail || src.small_image || src.media_gallery?.[0]?.image);
+function primaryImage(src = {}, { full = false } = {}) {
+  return absImage(src.image || src.thumbnail || src.small_image || src.media_gallery?.[0]?.image, { full });
 }
 
 function galleryImages(src = {}) {
   const fromGallery = (src.media_gallery || [])
-    .map((g) => absImage(g.image || g.file))
+    .map((g) => absImage(g.image || g.file, { full: true }))
     .filter(Boolean);
-  const primary = primaryImage(src);
+  const primary = primaryImage(src, { full: true });
   return [...new Set([primary, ...fromGallery].filter(Boolean))];
 }
 
@@ -65,7 +65,7 @@ export function mergeBilingualSources(arSrc = null, enSrc = null) {
     brandEn: brandEn || brandAr,
     descriptionAr: descAr,
     descriptionEn: descEn,
-    thumb: images[0] || primaryImage(arSrc || primary) || primaryImage(enSrc || {}),
+    thumb: images[0] || primaryImage(arSrc || primary, { full: false }) || primaryImage(enSrc || {}, { full: false }),
     images,
     price: formatIqdPrice(primary),
     category: categoryLabel(arSrc || primary),
@@ -128,7 +128,7 @@ export function mapDetailProduct(arSrc = null, enSrc = null) {
       nameEn: String(child.name || '').trim(),
       sku: String(child.sku || ''),
       barcode: extractBarcodeFromSku(child.sku),
-      image: absImage(child.image || child.thumbnail) || merged.thumb,
+      image: absImage(child.image || child.thumbnail, { full: true }) || merged.thumb,
       price: formatIqdPrice(child) || merged.price,
       inStock: child.stock?.is_in_stock !== false,
       optionGroup: '',

@@ -40,20 +40,42 @@ function mapVariantShade(variantAr = {}, variantEn = null, index = 0, { productT
     nameEn: shadeLabelEn,
     sku,
     barcode,
-    image: absImage(variantAr.thumbnail_image || variantEn?.thumbnail_image),
+    image: khatonImageUrl(variantAr.image || variantAr.thumbnail_image || variantEn?.image || variantEn?.thumbnail_image),
     price: variantPrice(variantAr),
     inStock: Number(variantAr.total_quantity || 0) > 0,
     optionGroup: String(attrsAr[0]?.attribute?.name || attrsEn[0]?.attribute?.name || '').trim(),
   };
 }
 
+function khatonImageUrl(value = '') {
+  if (!value) return '';
+  if (typeof value === 'string') return absImage(value);
+  if (typeof value === 'object') {
+    return absImage(
+      value.url || value.src || value.image || value.thumbnail_image || value.thumbnail || value.original,
+    );
+  }
+  return '';
+}
+
 function collectKhatonImages(raw = {}) {
   const variant = raw.selected_variant || {};
   return collectImageUrls(
     raw.thumbnail_image,
+    raw.image,
+    raw.main_image,
     raw.images,
+    raw.media,
+    raw.gallery,
     variant.thumbnail_image,
-    ...(raw.variants || []).map((v) => v.thumbnail_image),
+    variant.image,
+    variant.images,
+    ...(raw.variants || []).flatMap((v) => [
+      v.thumbnail_image,
+      v.image,
+      v.images,
+      v.main_image,
+    ]),
   );
 }
 

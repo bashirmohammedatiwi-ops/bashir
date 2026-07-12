@@ -13,13 +13,17 @@ const BROWSER_HEADERS = {
   'User-Agent': UA,
 };
 
+import { upgradeImageUrl } from '../../core/images.js';
+
 export function absImage(url = '') {
   const u = String(url || '').trim();
   if (!u) return '';
-  if (u.startsWith('http')) return u;
-  if (u.startsWith('//')) return `https:${u}`;
-  if (u.startsWith('/')) return `${SITE}${u}`;
-  return u;
+  let out = u;
+  if (!out.startsWith('http')) {
+    if (out.startsWith('//')) out = `https:${out}`;
+    else if (out.startsWith('/')) out = `${SITE}${out}`;
+  }
+  return upgradeImageUrl(out);
 }
 
 export function stripHtml(html = '') {

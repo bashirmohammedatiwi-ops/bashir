@@ -11,8 +11,8 @@ function textOf(node) {
 function firstImage(item = {}) {
   return (
     item.Images?.Primary?.Large?.URL ||
-    item.Images?.Primary?.Medium?.URL ||
     item.Images?.Variants?.[0]?.Large?.URL ||
+    item.Images?.Primary?.Medium?.URL ||
     ''
   );
 }
@@ -20,7 +20,7 @@ function firstImage(item = {}) {
 function allImages(item = {}) {
   const urls = [
     firstImage(item),
-    ...(item.Images?.Variants || []).map((v) => v?.Large?.URL || v?.Medium?.URL || ''),
+    ...(item.Images?.Variants || []).map((v) => v?.Large?.URL || ''),
   ].filter(Boolean);
   return [...new Set(urls)];
 }

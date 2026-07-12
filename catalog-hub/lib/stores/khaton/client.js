@@ -1,4 +1,5 @@
 import { cacheGet, cacheSet } from '../../core/cache.js';
+import { upgradeImageUrl } from '../../core/images.js';
 
 export const API_BASE = 'https://khaton.beauty/api/v1';
 export const SITE = 'https://khaton.beauty';
@@ -9,10 +10,12 @@ const UA = 'catalog-hub/2.0 (khaton)';
 export function absImage(url = '') {
   const u = String(url || '').trim();
   if (!u) return '';
-  if (u.startsWith('http')) return u;
-  if (u.startsWith('//')) return `https:${u}`;
-  if (u.startsWith('/')) return `${SITE}${u}`;
-  return u;
+  let out = u;
+  if (!out.startsWith('http')) {
+    if (out.startsWith('//')) out = `https:${out}`;
+    else if (out.startsWith('/')) out = `${SITE}${out}`;
+  }
+  return upgradeImageUrl(out);
 }
 
 /** الأسعار بالهللة (÷100 = ر.س) */

@@ -243,6 +243,7 @@ function mapTypesenseVariation(v, optionGroup = '', fallbackImage = '') {
   const { ar, en } = splitBilingualText(rawName);
   const name = ar || en || rawName;
   const extra = Array.isArray(v.additional_images) ? v.additional_images[0] : '';
+  const primary = v.image || v.image_url || extra;
   return {
     name,
     nameAr: ar || (/[\u0600-\u06FF]/.test(rawName) ? rawName : ''),
@@ -253,7 +254,7 @@ function mapTypesenseVariation(v, optionGroup = '', fallbackImage = '') {
     barcode: extractEan(v),
     ean: extractEan(v),
     hex: parseColorValue(v.color_code || v.hex || v.color),
-    image: typesenseImageUrl(extra, fallbackImage),
+    image: typesenseImageUrl(primary, fallbackImage),
     price: '',
     optionGroup,
     inStock: true,
