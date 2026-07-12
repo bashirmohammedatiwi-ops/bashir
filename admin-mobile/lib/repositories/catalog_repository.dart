@@ -28,6 +28,9 @@ class CatalogRepository {
         return 8000;
       case 'orisdi':
         return 28000;
+      case 'alkhabeer':
+      case 'najdalatheyah':
+        return 12000;
       default:
         return 12000;
     }
@@ -95,8 +98,17 @@ class CatalogRepository {
         count = items.length;
         results.addAll(items);
       } catch (e) {
-        if (e is DioException && e.type == DioExceptionType.receiveTimeout) {
-          error = 'بطيء';
+        if (e is DioException) {
+          final status = e.response?.statusCode;
+          if (e.type == DioExceptionType.receiveTimeout) {
+            error = 'بطيء';
+          } else if (status == 502 || status == 503 || status == 504) {
+            error = 'السيرفر';
+          } else if (status == 404) {
+            error = null;
+          } else {
+            error = 'خطأ';
+          }
         } else {
           error = 'خطأ';
         }

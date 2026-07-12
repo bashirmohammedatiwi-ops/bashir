@@ -17,7 +17,6 @@ import {
 } from './catalog-index.js';
 import { mapDetailProduct, mapListProduct } from './map.js';
 import {
-  normalizeAmazonImageUrl,
   scrapeBarcode,
   scrapeProductDetail,
   scrapeSearchProducts,
