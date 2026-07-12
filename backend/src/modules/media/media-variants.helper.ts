@@ -2,13 +2,20 @@ import sharp from "sharp";
 import * as path from "path";
 import { PrismaService } from "../../common/prisma.service";
 import { IMAGE_VARIANTS, VariantsRecord } from "./media.constants";
-import { COMPRESS } from "./media-optimize.helper";
+import { COMPRESS, JPEG_VARIANT_NAMES } from "./media-optimize.helper";
 
 export interface GenerateVariantsInput {
   mediaId: string;
   originalPath: string;
   absDir: string;
   baseName: string;
+}
+
+function webpQualityForWidth(width: number): number {
+  if (width <= 240) return 76;
+  if (width <= 480) return 80;
+  if (width <= 800) return 82;
+  return COMPRESS.webp.quality;
 }
 
 export async function generateMediaVariants(
@@ -33,22 +40,26 @@ export async function generateMediaVariants(
       fit: "inside",
     });
     const webpPath = path.join(absDir, `${baseName}_${v.name}.webp`);
-    const jpgPath = path.join(absDir, `${baseName}_${v.name}.jpg`);
+    const webpQ = webpQualityForWidth(v.width);
 
-    // WebP first (smaller) — mobile/admin prefer this
     await resized
       .clone()
-      .webp({ ...COMPRESS.webp, quality: Math.min(COMPRESS.webp.quality, v.width <= 200 ? 72 : 78) })
+      .webp({ ...COMPRESS.webp, quality: webpQ })
       .toFile(webpPath);
 
-    await resized.clone().jpeg({ ...COMPRESS.jpeg, quality: v.width <= 200 ? 78 : 82 }).toFile(jpgPath);
+    const formats: Record<string, string> = {
+      webp: `${media.publicUrlBase}/${baseName}_${v.name}.webp`,
+    };
+
+    if (JPEG_VARIANT_NAMES.has(v.name)) {
+      const jpgPath = path.join(absDir, `${baseName}_${v.name}.jpg`);
+      await resized.clone().jpeg(COMPRESS.jpeg).toFile(jpgPath);
+      formats.jpg = `${media.publicUrlBase}/${baseName}_${v.name}.jpg`;
+    }
 
     variants[v.name] = {
       width: v.width,
-      formats: {
-        webp: `${media.publicUrlBase}/${baseName}_${v.name}.webp`,
-        jpg: `${media.publicUrlBase}/${baseName}_${v.name}.jpg`,
-      },
+      formats,
     };
   }
 

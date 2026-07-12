@@ -40,7 +40,7 @@ class AppBanner {
       );
 
   String get imageUrl {
-    if (image?.full.isNotEmpty == true) return image!.full;
+    if (image?.hero.isNotEmpty == true) return image!.hero;
     // بانر بدون صورة — نعرض بطاقة نصية ملونة
     return '';
   }

@@ -91,6 +91,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final gallery = product.galleryUrls.isNotEmpty ? product.galleryUrls : [''];
     final price = _shade?.price ?? product.price;
     final wished = ref.watch(wishlistProvider).ids.contains(product.id);
+    final galleryWidth = MediaQuery.sizeOf(context).width;
 
     return CustomScrollView(
       slivers: [
@@ -120,7 +121,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     onPageChanged: (i) => setState(() => _imageIndex = i),
                     itemBuilder: (_, i) => Container(
                       color: Colors.white,
-                      child: AppNetworkImage(url: gallery[i], fit: BoxFit.contain),
+                      child: AppNetworkImage(
+                        url: gallery[i],
+                        width: galleryWidth,
+                        fit: BoxFit.contain,
+                        placeholderColor: AppColors.surface,
+                        fallbackColor: AppColors.surface,
+                      ),
                     ),
                   ),
                 ),

@@ -1,8 +1,8 @@
 export const IMAGE_VARIANTS = [
-  { name: "thumb", width: 200 },
+  { name: "thumb", width: 240 },
   { name: "small", width: 480 },
-  { name: "medium", width: 900 },
-  { name: "large", width: 1400 },
+  { name: "medium", width: 800 },
+  { name: "large", width: 1200 },
 ] as const;
 
 export type ImageVariantName = (typeof IMAGE_VARIANTS)[number]["name"];
