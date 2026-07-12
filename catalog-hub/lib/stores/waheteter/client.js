@@ -4,7 +4,13 @@ export const SITE = 'https://waheteter.com';
 export const API_BASE = `${SITE}/wp-json/wc/store/v1`;
 export const DEFAULT_TTL = 10 * 60 * 1000;
 export const DETAIL_TTL = 20 * 60 * 1000;
-const UA = 'catalog-hub/2.0 (waheteter)';
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+const DEFAULT_HEADERS = {
+  Accept: 'application/json, text/plain, */*',
+  'Accept-Language': 'ar,en;q=0.9',
+  Referer: `${SITE}/`,
+  Origin: SITE,
+};
 
 export function absImage(url = '') {
   const u = String(url || '').trim();
@@ -71,7 +77,7 @@ export async function waheteterFetch(path, { params = {}, ttl = 0, cacheKey = ''
   }
 
   const res = await fetch(url, {
-    headers: { Accept: 'application/json', 'User-Agent': UA },
+    headers: { ...DEFAULT_HEADERS, 'User-Agent': UA },
     signal: AbortSignal.timeout(15_000),
   });
   const data = await res.json().catch(() => ({}));
