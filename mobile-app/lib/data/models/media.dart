@@ -16,6 +16,14 @@ class AppMedia {
     this.filename = '',
   });
 
+  /// أبعاد المتغيرات على السيرفر — يجب أن تطابق backend/media.constants.ts
+  static const variantWidths = <String, int>{
+    'thumb': 240,
+    'small': 480,
+    'medium': 800,
+    'large': 1200,
+  };
+
   factory AppMedia.fromJson(Map<String, dynamic> json) => AppMedia(
         id: asString(json['id']),
         alt: json['alt']?.toString(),
@@ -40,21 +48,45 @@ class AppMedia {
     return null;
   }
 
-  /// رابط مناسب لبطاقات المنتجات.
-  String get thumb {
-    final rel = _variantPath('medium') ?? _variantPath('thumb') ?? _variantPath('small') ?? _anyVariantUrl();
-    if (rel != null) return resolveMediaUrl(rel);
+  String? _originalUrl() {
     if (publicUrlBase.isNotEmpty && filename.isNotEmpty) {
       if (publicUrlBase.contains('.')) return resolveMediaUrl(publicUrlBase);
       return resolveMediaUrl('$publicUrlBase/$filename.webp');
     }
-    return '';
+    return null;
   }
 
-  /// رابط عالي الجودة لصفحة التفاصيل.
-  String get full {
-    final rel = _variantPath('large') ?? _variantPath('medium') ?? _variantPath('thumb');
-    if (rel != null) return resolveMediaUrl(rel);
-    return thumb;
+  /// يختار أصغر متغيّر يلبي عرض البكسل المطلوب (يوفر بيانات الجوال).
+  String urlForTargetPixels(int targetPx) {
+    String? bestPath;
+    var bestWidth = 99999;
+
+    for (final entry in variantWidths.entries) {
+      final path = _variantPath(entry.key);
+      if (path == null) continue;
+      final w = entry.value;
+      if (w >= targetPx && w < bestWidth) {
+        bestWidth = w;
+        bestPath = path;
+      }
+    }
+
+    if (bestPath != null) return resolveMediaUrl(bestPath);
+
+    for (final name in ['large', 'medium', 'small', 'thumb']) {
+      final p = _variantPath(name);
+      if (p != null) return resolveMediaUrl(p);
+    }
+
+    return _originalUrl() ?? '';
   }
+
+  /// رابط مناسب لبطاقات المنتجات والقوائم (~160–180pt عرض).
+  String get thumb => urlForTargetPixels(480);
+
+  /// رابط مناسب لصفحة التفاصيل (معرض الصور).
+  String get full => urlForTargetPixels(960);
+
+  /// بانرات وصور كبيرة.
+  String get hero => urlForTargetPixels(1400);
 }

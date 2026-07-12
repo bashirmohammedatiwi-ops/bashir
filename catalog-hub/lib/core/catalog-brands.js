@@ -566,6 +566,7 @@ export async function collectCatalogBrands({ force = false } = {}) {
   await Promise.all([
     collectMiswagBrands(map),
     collectSallaBrands(map, 'najdalatheyah'),
+    collectSallaBrands(map, 'alkhabeer'),
     collectElryanBrands(map),
     collectAmazonBrands(map),
     collectFacesBrands(map),

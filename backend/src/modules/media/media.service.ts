@@ -14,6 +14,7 @@ import { MediaPurpose, Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
 import { paginate, PaginationDto } from "../../common/dto/pagination.dto";
 import { IMAGE_VARIANTS, VariantsRecord } from "./media.constants";
+import { JPEG_VARIANT_NAMES } from "./media-optimize.helper";
 import { generateMediaVariants } from "./media-variants.helper";
 import { optimizeForStorage } from "./media-optimize.helper";
 import { assertSafeRemoteUrl } from "./media-url.helper";
@@ -69,6 +70,11 @@ export class MediaService {
 
   async upload(input: UploadInput) {
     try {
+      const maxMb = Number(process.env.MEDIA_MAX_FILE_SIZE_MB ?? 15);
+      if (input.buffer.byteLength > maxMb * 1024 * 1024) {
+        throw new BadRequestException(`حجم الملف كبير جداً (الحد ${maxMb}MB)`);
+      }
+
       let optimized;
       try {
         optimized = await optimizeForStorage(input.buffer);
@@ -80,11 +86,6 @@ export class MediaService {
           throw new BadRequestException("ملف الصورة تالف أو غير مدعوم");
         }
         throw new BadRequestException("تعذر معالجة الصورة. جرّب حفظها كـ JPG أو PNG");
-      }
-
-      const maxMb = Number(process.env.MEDIA_MAX_FILE_SIZE_MB ?? 15);
-      if (input.buffer.byteLength > maxMb * 1024 * 1024) {
-        throw new BadRequestException(`حجم الملف كبير جداً (الحد ${maxMb}MB)`);
       }
 
       const hash = crypto
@@ -116,12 +117,15 @@ export class MediaService {
       const publicUrlBase = `${this.publicBaseUrl}/${subdir.replace(/\\/g, "/")}`;
       const initialVariants: Partial<VariantsRecord> = {};
       for (const v of IMAGE_VARIANTS) {
+        const formats: Record<string, string> = {
+          webp: `${publicUrlBase}/${baseName}_${v.name}.webp`,
+        };
+        if (JPEG_VARIANT_NAMES.has(v.name)) {
+          formats.jpg = `${publicUrlBase}/${baseName}_${v.name}.jpg`;
+        }
         initialVariants[v.name] = {
           width: v.width,
-          formats: {
-            webp: `${publicUrlBase}/${baseName}_${v.name}.webp`,
-            jpg: `${publicUrlBase}/${baseName}_${v.name}.jpg`,
-          },
+          formats,
         };
       }
 

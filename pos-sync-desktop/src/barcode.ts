@@ -39,6 +39,18 @@ export function resolveProductBarcode(fields: {
 }
 
 /** يجرب أكثر من صيغة للبحث (مثل AV_018_2025 بدل ِ{_018_2025) */
+function addEanVariants(candidates: Set<string>, value: string) {
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return;
+
+  candidates.add(digits);
+  if (digits.length === 13 && digits.startsWith("0")) {
+    candidates.add(digits.slice(1));
+  } else if (digits.length === 12) {
+    candidates.add(`0${digits}`);
+  }
+}
+
 export function barcodeLookupCandidates(raw: string | null | undefined): string[] {
   const normalized = normalizeBarcode(raw);
   if (!normalized) return [];
@@ -49,6 +61,7 @@ export function barcodeLookupCandidates(raw: string | null | undefined): string[
   if (isLikelyBarcode(normalized)) {
     candidates.add(normalized.toUpperCase());
   }
+  addEanVariants(candidates, normalized);
 
   return [...candidates];
 }

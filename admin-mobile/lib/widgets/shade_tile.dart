@@ -149,7 +149,7 @@ class ShadeTile extends StatelessWidget {
 
 BarcodeInventoryLookup? lookupBarcode(Map<String, BarcodeInventoryLookup> map, String? raw) {
   if (raw == null || isMiswagInternalId(raw)) return null;
-  for (final c in barcodeLookupCandidates(raw)) {
+  for (final c in posBarcodeLookupKeys(raw)) {
     final hit = map[c];
     if (hit != null) return hit;
   }

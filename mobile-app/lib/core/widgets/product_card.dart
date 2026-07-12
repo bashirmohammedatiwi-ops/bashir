@@ -41,12 +41,12 @@ class ProductCard extends ConsumerWidget {
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: AppColors.border.withValues(alpha: 0.85)),
             boxShadow: [
               BoxShadow(
-                color: AppColors.textPrimary.withValues(alpha: 0.05),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+                color: AppColors.textPrimary.withValues(alpha: 0.04),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
@@ -95,14 +95,20 @@ class _ImageSection extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.md - 1)),
-          child: ColoredBox(
-            color: AppColors.divider,
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              color: AppColors.surface,
+              border: Border(bottom: BorderSide(color: AppColors.border, width: 0.5)),
+            ),
             child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.sm),
-              child: Center(
-                child: ProductCoverImage(
-                  url: product.coverUrl,
-                  fit: BoxFit.contain,
+              padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
+              child: LayoutBuilder(
+                builder: (context, constraints) => Center(
+                  child: ProductCoverImage(
+                    url: product.coverUrl,
+                    width: constraints.maxWidth,
+                    fit: BoxFit.contain,
+                  ),
                 ),
               ),
             ),
@@ -186,16 +192,9 @@ class _ShadeIndicator extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
       decoration: BoxDecoration(
-        color: AppColors.surface.withValues(alpha: 0.94),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.pill),
         border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textPrimary.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -297,7 +296,7 @@ class _InfoSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 8, 8, 10),
+      padding: const EdgeInsets.fromLTRB(10, 9, 8, 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -307,26 +306,27 @@ class _InfoSection extends ConsumerWidget {
               product.brandName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: AppColors.textMuted,
+              style: TextStyle(
+                color: AppColors.primary.withValues(alpha: 0.82),
                 fontSize: 10,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.2,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.15,
                 height: 1.1,
               ),
             ),
-          if (product.brandName.isNotEmpty) const SizedBox(height: 3),
+          if (product.brandName.isNotEmpty) const SizedBox(height: 4),
           Text(
             product.name,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: AppTypography.body.copyWith(
-              fontSize: 12,
+              fontSize: 12.5,
               fontWeight: FontWeight.w700,
-              height: 1.25,
+              height: 1.3,
+              color: AppColors.textPrimary,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 7),
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -483,10 +483,9 @@ class _WishButton extends ConsumerWidget {
     final wished = ref.watch(wishlistProvider.select((s) => s.ids.contains(product.id)));
 
     return Material(
-      color: AppColors.surface.withValues(alpha: 0.94),
-      shape: const CircleBorder(),
-      elevation: 2,
-      shadowColor: AppColors.textPrimary.withValues(alpha: 0.1),
+      color: AppColors.surface,
+      shape: const CircleBorder(side: BorderSide(color: AppColors.border, width: 0.8)),
+      elevation: 0,
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: () async {

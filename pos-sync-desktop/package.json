@@ -1,6 +1,6 @@
 {
   "name": "alhayaa-pos-sync",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Alhayaa POS inventory sync — SQL Server to VPS",
   "main": "dist/main.js",
   "author": "Alhayaa",

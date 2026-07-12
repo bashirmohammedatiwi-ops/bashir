@@ -1,12 +1,19 @@
 import sharp from "sharp";
 
-/** Max width/height for stored originals — keeps VPS storage lean. */
-export const MAX_ORIGINAL_DIMENSION = Number(process.env.MEDIA_MAX_ORIGINAL_WIDTH ?? 1920);
+/** Max width/height for stored originals — enough for mobile detail, lean on disk. */
+export const MAX_ORIGINAL_DIMENSION = Number(process.env.MEDIA_MAX_ORIGINAL_WIDTH ?? 1600);
 
 export const COMPRESS = {
-  webp: { quality: Number(process.env.MEDIA_WEBP_QUALITY ?? 80), effort: 4 },
-  jpeg: { quality: Number(process.env.MEDIA_JPEG_QUALITY ?? 82), mozjpeg: true },
+  webp: {
+    quality: Number(process.env.MEDIA_WEBP_QUALITY ?? 84),
+    effort: 5,
+    smartSubsample: true,
+  },
+  jpeg: { quality: Number(process.env.MEDIA_JPEG_QUALITY ?? 85), mozjpeg: true },
 } as const;
+
+/** WebP-only variants save ~40% disk; JPEG kept for large + originals (fallback). */
+export const JPEG_VARIANT_NAMES = new Set(["large"]);
 
 function sharpInput(buffer: Buffer) {
   return sharp(buffer, { failOn: "none", unlimited: true, sequentialRead: true });

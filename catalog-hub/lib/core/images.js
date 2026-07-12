@@ -3,8 +3,8 @@
  */
 
 const AMAZON_HOST_RE = /media-amazon\.com|images-amazon\.com/i;
-const IMPORT_SIZE = 1500;
-const THUMB_SIZE = 800;
+const IMPORT_SIZE = 1200;
+const THUMB_SIZE = 640;
 
 function stripQueryParams(url = '', keys = []) {
   try {
