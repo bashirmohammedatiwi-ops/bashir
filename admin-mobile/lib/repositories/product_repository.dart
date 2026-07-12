@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -72,12 +74,86 @@ class ProductRepository {
   }
 
   Future<String?> uploadImageFromUrl(String url, {String purpose = 'PRODUCT'}) async {
+    try {
+      return await _uploadImageFromUrlServer(url, purpose: purpose);
+    } catch (_) {
+      return _uploadImageFromUrlClient(url, purpose: purpose);
+    }
+  }
+
+  Future<String?> _uploadImageFromUrlServer(String url, {String purpose = 'PRODUCT'}) async {
     final resp = await _dio.post(
       '/media/upload-from-url',
       data: {'url': url.trim(), 'purpose': purpose},
       options: Options(receiveTimeout: const Duration(seconds: 120)),
     );
     final data = asMap(resp.data['data'] ?? resp.data);
+    return data['id']?.toString();
+  }
+
+  /// يحمّل الصورة من جهاز الموظف (عندما السيرفر لا يصل للمصدر — مثل واحة عطر).
+  Future<String?> _uploadImageFromUrlClient(String url, {String purpose = 'PRODUCT'}) async {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) return null;
+
+    final headers = <String, String>{
+      'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+      'User-Agent':
+          'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+    };
+    if (trimmed.contains('waheteter.com')) {
+      headers['Referer'] = 'https://waheteter.com/';
+    }
+
+    final fetcher = Dio(
+      BaseOptions(
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 90),
+        responseType: ResponseType.bytes,
+        followRedirects: true,
+        headers: headers,
+      ),
+    );
+
+    late final Response<dynamic> resp;
+    try {
+      resp = await fetcher.get<dynamic>(trimmed);
+    } catch (_) {
+      return null;
+    }
+
+    if (resp.statusCode != 200 || resp.data == null) return null;
+    final raw = resp.data;
+    final bytes = raw is Uint8List ? raw : Uint8List.fromList(List<int>.from(raw as List));
+    if (bytes.length < 64) return null;
+
+    final contentType = resp.headers.value('content-type')?.split(';').first.trim() ?? 'image/jpeg';
+    final ext = contentType.contains('png')
+        ? 'png'
+        : contentType.contains('webp')
+            ? 'webp'
+            : contentType.contains('gif')
+                ? 'gif'
+                : 'jpg';
+
+    final formData = FormData.fromMap({
+      'file': MultipartFile.fromBytes(
+        bytes,
+        filename: 'import-${DateTime.now().millisecondsSinceEpoch}.$ext',
+        contentType: DioMediaType.parse(contentType),
+      ),
+      'purpose': purpose,
+    });
+
+    final uploadResp = await _dio.post(
+      '/media/upload',
+      data: formData,
+      options: Options(
+        receiveTimeout: const Duration(seconds: 120),
+        contentType: 'multipart/form-data',
+      ),
+    );
+    final data = asMap(uploadResp.data['data'] ?? uploadResp.data);
     return data['id']?.toString();
   }
 
