@@ -109,6 +109,7 @@ export function mapDetailProduct(arProduct = {}, enProduct = null, { light = fal
 
   const images = collectImageUrls(
     ...(arProduct.images || []).map((img) => img.src),
+    ...(enProduct?.images || []).map((img) => img.src),
     enProduct?.featured_image,
     arProduct.featured_image,
   );

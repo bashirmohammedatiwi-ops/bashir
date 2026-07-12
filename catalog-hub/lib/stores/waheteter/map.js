@@ -28,12 +28,18 @@ function variationLabel(row = {}) {
   return String(row.variation || '').trim();
 }
 
+function wooImage(img = {}) {
+  if (!img) return '';
+  if (typeof img === 'string') return absImage(img);
+  return absImage(img.src || img.full_src || img.fullSrc || img.url || img.thumbnail);
+}
+
 function mapVariationShade(row = {}, index = 0, { productTitle = '', optionGroup = '' } = {}) {
   const label = variationLabel(row) || productTitle;
   const { ar, en } = resolveBilingualName(label);
   const sku = String(row.sku || row.id || index).trim();
   const images = row.images || [];
-  const image = absImage(images[0]?.src || images[0]?.thumbnail || row.image?.src || row.image?.url);
+  const image = wooImage(images[0] || row.image);
 
   return {
     id: String(row.id || index),
@@ -54,7 +60,7 @@ export function mapListProduct(product = {}) {
   const names = resolveBilingualName(product.name, stripHtml(product.short_description));
   const brand = extractBrand(product);
   const images = product.images || [];
-  const thumb = absImage(images[0]?.src || images[0]?.thumbnail);
+  const thumb = wooImage(images[0]);
   const variations = product.variations || [];
   const price = formatWaheteterPrice(product.prices);
   const parentId = Number(product.parent || 0);
@@ -86,8 +92,8 @@ export function mapDetailProduct(product = {}, variationRows = [], { light = fal
   const descriptions = resolveBilingualDescription(descAr, descEn);
 
   const images = collectImageUrls(
-    ...(product.images || []).map((img) => img.src || img.thumbnail),
-    ...variationRows.map((v) => (v.images || []).map((img) => img.src || img.thumbnail)),
+    ...(product.images || []).map((img) => wooImage(img)),
+    ...variationRows.flatMap((v) => (v.images || []).map((img) => wooImage(img))),
   );
 
   const sizeAttr = (product.attributes || []).find((a) => a.taxonomy === 'pa_size' || String(a.name || '').includes('حجم'));

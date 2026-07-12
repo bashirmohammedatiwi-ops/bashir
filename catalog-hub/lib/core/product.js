@@ -2,7 +2,7 @@
  * نموذج منتج موحّد — كل المتاجر تُحوَّل إليه قبل الاستيراد.
  */
 
-import { collectImageUrls } from './images.js';
+import { collectImageUrls, upgradeImageUrl, THUMB_SIZE } from './images.js';
 
 export function emptyShade(i = 0) {
   return {
@@ -31,8 +31,8 @@ export function normalizeShade(raw = {}, index = 0) {
     barcode,
     miswagId: String(raw.miswagId || raw.sku || raw.optionId || '').trim(),
     hex: hex.startsWith('#') ? hex : (hex ? `#${hex.replace(/^#/, '')}` : ''),
-    image: String(raw.image || raw.thumb || '').trim(),
-    swatchImage: String(raw.swatchImage || '').trim(),
+    image: upgradeImageUrl(String(raw.image || raw.thumb || '').trim()),
+    swatchImage: upgradeImageUrl(String(raw.swatchImage || '').trim()),
     price: String(raw.price || '').trim(),
     inStock: raw.inStock !== false,
     optionGroup: String(raw.optionGroup || '').trim(),
@@ -47,6 +47,7 @@ export function normalizeProduct(raw = {}) {
     ...shades.map((s) => s.image),
     ...shades.map((s) => s.swatchImage),
   );
+  const thumb = images[0] || upgradeImageUrl(String(raw.thumb || '').trim(), { size: THUMB_SIZE });
 
   return {
     store: raw.store || '',
@@ -60,8 +61,8 @@ export function normalizeProduct(raw = {}) {
     descriptionAr: String(raw.descriptionAr || raw.description || '').trim(),
     descriptionEn: String(raw.descriptionEn || '').trim(),
     price: String(raw.price || '').trim(),
-    thumb: images[0] || '',
-    images,
+    thumb: thumb || '',
+    images: images.length ? images : (thumb ? [thumb] : []),
     barcode: String(raw.barcode || '').replace(/\D/g, ''),
     category: String(raw.category || '').trim(),
     categoryEn: String(raw.categoryEn || '').trim(),

@@ -1,4 +1,5 @@
 import { cacheGet, cacheSet } from '../../core/cache.js';
+import { upgradeImageUrl } from '../../core/images.js';
 
 const API_BASE = 'https://api.salla.dev/store/v1';
 const DEFAULT_TTL = 10 * 60 * 1000;
@@ -6,9 +7,11 @@ const DEFAULT_TTL = 10 * 60 * 1000;
 export function absImage(url = '') {
   const u = String(url || '').trim();
   if (!u) return '';
-  if (u.startsWith('http')) return u;
-  if (u.startsWith('//')) return `https:${u}`;
-  return u;
+  let out = u;
+  if (!out.startsWith('http')) {
+    if (out.startsWith('//')) out = `https:${out}`;
+  }
+  return upgradeImageUrl(out);
 }
 
 export function formatSallaPrice(product = {}) {

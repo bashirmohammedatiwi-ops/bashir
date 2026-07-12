@@ -1,5 +1,6 @@
 import { cacheGet, cacheSet } from '../../core/cache.js';
 import { splitBilingualText } from '../../core/bilingual.js';
+import { IMPORT_SIZE, THUMB_SIZE, normalizeAmazonImageUrl } from '../../core/images.js';
 import { BEAUTY_ROOT_NODE } from './client.js';
 
 const DEFAULT_TTL = 12 * 60 * 1000;
@@ -52,22 +53,7 @@ function decodeHtml(s = '') {
  * توحيد صور أمازون — يزيل قصّ CR/SS الصغير الذي يظهر مكبراً بشكل غريب،
  * ويعيد رابط عرض كامل بخلفية بيضاء (_AC_SL).
  */
-export function normalizeAmazonImageUrl(url = '', size = 500) {
-  const raw = String(url || '').trim();
-  if (!raw) return '';
-  const dim = Math.max(200, Math.min(1500, Number(size) || 500));
-
-  const id = raw.match(/\/images\/I\/([A-Za-z0-9%+-]+)/i)?.[1]
-    || raw.match(/\/I\/([A-Za-z0-9%+-]+)\./i)?.[1];
-  if (id) {
-    const cleanId = id.replace(/\._[^.]+$/, '');
-    return `https://m.media-amazon.com/images/I/${cleanId}._AC_SL${dim}_.jpg`;
-  }
-
-  return raw
-    .replace(/\._(?:AC_)?(?:US|SS|SX|SY|UX|UY|CR|UL|SL)\d+(?:,\d+)*(?:_CR[,\d]+)?_/gi, `._AC_SL${dim}_`)
-    .replace(/\._SL\d+_/g, `._AC_SL${dim}_`);
-}
+export { normalizeAmazonImageUrl };
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -641,7 +627,7 @@ function parseSearchCards(html = '', marketHost = 'www.amazon.com', lang = 'en')
       nameEn: isAr ? '' : title,
       brandAr: brand,
       brandEn: brand,
-      thumb: normalizeAmazonImageUrl(img, 500),
+      thumb: normalizeAmazonImageUrl(img, THUMB_SIZE),
       price,
       sku: asin,
       barcode: '',
@@ -732,7 +718,7 @@ function putShade(byAsin, asin, patch = {}) {
     sku: id,
     nameEn: nextEn || nextAr,
     nameAr: nextAr || nextEn,
-    image: normalizeAmazonImageUrl(patch.image || prev.image || '', 500),
+    image: normalizeAmazonImageUrl(patch.image || prev.image || '', IMPORT_SIZE),
     colorHex: patch.colorHex || prev.colorHex || '',
     optionGroup: patch.optionGroup || prev.optionGroup || 'التدرج',
   });
@@ -1436,7 +1422,7 @@ function parseDetailCore(html = '', asin = '', marketHost = 'www.amazon.com') {
     ...[...html.matchAll(/"large"\s*:\s*"(https:[^"]+)"/g)].map((m) => m[1]),
     ...[...html.matchAll(/"hiRes"\s*:\s*"(https:[^"]+)"/g)].map((m) => m[1]),
   ].filter(Boolean);
-  const uniqImages = [...new Set(images.map((u) => normalizeAmazonImageUrl(u, 1000)).filter(Boolean))].slice(0, 24);
+  const uniqImages = [...new Set(images.map((u) => normalizeAmazonImageUrl(u, IMPORT_SIZE)).filter(Boolean))].slice(0, 24);
 
   const isAr = hasArabic(title) || /amazon\.(ae|sa)/i.test(marketHost);
   const description = buildLocaleDescription(html, { arabic: isAr });
@@ -1457,7 +1443,7 @@ function parseDetailCore(html = '', asin = '', marketHost = 'www.amazon.com') {
     brandEn: brand,
     descriptionAr: isAr ? description : '',
     descriptionEn: isAr ? '' : description,
-    thumb: normalizeAmazonImageUrl(uniqImages[0] || '', 500),
+    thumb: normalizeAmazonImageUrl(uniqImages[0] || '', THUMB_SIZE),
     images: uniqImages,
     price,
     category: 'Beauty',
@@ -1587,7 +1573,7 @@ async function enrichShadeDetails(shades = [], { deadline = 0, concurrency = 10,
           || '',
         );
         const guessed = colorHexGuess(colorNameEn || colorNameAr || existingNameEn || existingNameAr);
-        const image = normalizeAmazonImageUrl(shade.image || thumb || '', 500);
+        const image = normalizeAmazonImageUrl(shade.image || thumb || '', IMPORT_SIZE);
 
         const patch = {
           barcode,
@@ -2049,8 +2035,8 @@ export async function scrapeBarcode(code) {
   const out = exact.length ? exact : hits.slice(0, 3);
   return out.map((h) => ({
     ...h,
-    thumb: normalizeAmazonImageUrl(h.thumb || '', 500),
-    images: (h.images || []).map((u) => normalizeAmazonImageUrl(u, 1000)).filter(Boolean),
+    thumb: normalizeAmazonImageUrl(h.thumb || '', THUMB_SIZE),
+    images: (h.images || []).map((u) => normalizeAmazonImageUrl(u, IMPORT_SIZE)).filter(Boolean),
   }));
 }
 

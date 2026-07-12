@@ -1,4 +1,5 @@
 import { cacheGet, cacheSet } from '../../core/cache.js';
+import { upgradeImageUrl } from '../../core/images.js';
 
 const SITE = 'https://www.faces.ae';
 const STORE = 'Sites-Faces_AE-Site';
@@ -40,8 +41,8 @@ function stripHtml(html = '') {
 export function absUrl(path = '') {
   const p = String(path || '').trim();
   if (!p) return '';
-  if (p.startsWith('http')) return p;
-  return `${SITE}${p.startsWith('/') ? p : `/${p}`}`;
+  if (p.startsWith('http')) return upgradeImageUrl(p);
+  return upgradeImageUrl(`${SITE}${p.startsWith('/') ? p : `/${p}`}`);
 }
 
 export function productPageUrl(path = '', lang = 'ar') {
@@ -265,7 +266,7 @@ export function imageFromProduct(product = {}) {
 export function galleryFromProduct(product = {}) {
   const images = product?.images || {};
   const urls = [];
-  for (const key of ['large', 'hi-res', 'small']) {
+  for (const key of ['large', 'hi-res']) {
     const entry = images[key];
     if (Array.isArray(entry)) {
       for (const item of entry) urls.push(absUrl(item?.url || item?.absUrl || ''));
@@ -273,6 +274,8 @@ export function galleryFromProduct(product = {}) {
       urls.push(absUrl(entry.url || entry.absUrl || entry));
     }
   }
+  const primary = imageFromProduct(product);
+  if (primary) urls.unshift(primary);
   return [...new Set(urls.filter(Boolean))];
 }
 

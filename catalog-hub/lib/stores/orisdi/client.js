@@ -5,13 +5,18 @@ export const DEFAULT_TTL = 10 * 60 * 1000;
 export const DETAIL_TTL = 30 * 60 * 1000;
 const UA = 'catalog-hub/2.0 (orisdi)';
 
+import { upgradeImageUrl } from '../../core/images.js';
+
 export function absImage(url = '') {
   const u = String(url || '').trim();
   if (!u) return '';
-  if (u.startsWith('http')) return u;
-  if (u.startsWith('//')) return `https:${u}`;
-  if (u.startsWith('/')) return `${SITE}${u}`;
-  return u;
+  let out = u;
+  if (!out.startsWith('http')) {
+    if (out.startsWith('//')) out = `https:${out}`;
+    else if (out.startsWith('/')) out = `${SITE}${out}`;
+    else out = u;
+  }
+  return upgradeImageUrl(out);
 }
 
 export function stripHtml(html = '') {

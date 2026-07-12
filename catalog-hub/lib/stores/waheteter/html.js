@@ -16,7 +16,10 @@ function parseSearchCard(chunk = '', id = '') {
   const name = chunk.match(/aria-label="([^"]+)"/i)?.[1]
     || chunk.match(/class="[^"]*wd-entities-title[^"]*"[^>]*>\s*<a[^>]*>([^<]+)/i)?.[1]
     || '';
-  const thumb = chunk.match(/<img[^>]+src="([^"]+uploads[^"]+)"/i)?.[1] || '';
+  const thumb = chunk.match(/data-large_image="([^"]+)"/i)?.[1]
+    || chunk.match(/data-src="([^"]+uploads[^"]+)"/i)?.[1]
+    || chunk.match(/<img[^>]+src="([^"]+uploads[^"]+)"/i)?.[1]
+    || '';
   const price = parsePriceFromHtml(chunk);
   const names = resolveBilingualName(stripHtml(name));
   if (!id) return null;

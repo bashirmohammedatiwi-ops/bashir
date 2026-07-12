@@ -8,7 +8,7 @@ function normalizeAmazonImageUrl(url: string): string {
     || raw.match(/\/I\/([A-Za-z0-9%+-]+)\./i)?.[1];
   if (!id) return raw;
   const cleanId = id.replace(/\._[^.]+$/, "");
-  return `https://m.media-amazon.com/images/I/${cleanId}._AC_SL500_.jpg`;
+  return `https://m.media-amazon.com/images/I/${cleanId}._AC_SL1500_.jpg`;
 }
 
 /** يحوّل روابط صور الكتالوج لعرضها في لوحة التحكم */
