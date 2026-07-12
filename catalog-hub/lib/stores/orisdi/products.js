@@ -217,6 +217,8 @@ export async function searchBarcode(code) {
   const digits = String(code || '').replace(/\D/g, '');
   if (digits.length < 8) return [];
 
+  const indexStats = orisdiBarcodeIndexStats();
+
   if (!isOrisdiIndexFresh()) {
     buildBarcodeIndex().catch(() => {});
   }
@@ -238,8 +240,13 @@ export async function searchBarcode(code) {
   }
 
   if (!hit?.handle && !hit?.productId) {
-    await buildBarcodeIndex().catch(() => {});
-    hit = findOrisdiBarcode(digits);
+    // لا ننتظر إعادة بناء الفهرس الكامل إذا كان موجوداً — يمنع مهلة 30+ ثانية على الهاتف
+    if ((indexStats.barcodes || 0) < 500) {
+      await buildBarcodeIndex().catch(() => {});
+      hit = findOrisdiBarcode(digits);
+    } else {
+      buildBarcodeIndex().catch(() => {});
+    }
   }
 
   if (!hit) return [];

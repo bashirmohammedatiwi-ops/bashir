@@ -24,8 +24,10 @@ class CatalogRepository {
         return 22000;
       case 'elryan':
       case 'khaton':
-      case 'orisdi':
+      case 'waheteter':
         return 8000;
+      case 'orisdi':
+        return 28000;
       default:
         return 12000;
     }
@@ -35,6 +37,7 @@ class CatalogRepository {
     if (storeId == 'faces') return 25000;
     if (storeId == 'amazon') return 18000;
     if (storeId == 'miraaya') return 20000;
+    if (storeId == 'orisdi') return 18000;
     return 12000;
   }
 
@@ -92,7 +95,11 @@ class CatalogRepository {
         count = items.length;
         results.addAll(items);
       } catch (e) {
-        error = e is DioException ? 'انتهت المهلة' : 'خطأ';
+        if (e is DioException && e.type == DioExceptionType.receiveTimeout) {
+          error = 'بطيء';
+        } else {
+          error = 'خطأ';
+        }
       } finally {
         stats.add(StoreSearchStat(
           storeId: id,

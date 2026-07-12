@@ -180,7 +180,7 @@ function listProductToOption(p: CatalogListProduct, store: CatalogStore): Catalo
 export default function CatalogImportPage() {
   const [stores, setStores] = useState<CatalogStore[]>([]);
   // البحث الافتراضي يشمل أمازون — النتائج تظهر تدريجياً من المتاجر الأسرع
-  const [activeStores, setActiveStores] = useState<string[]>(["miswag", "najdalatheyah", "elryan", "faces", "miraaya", "beautyway", "khaton", "orisdi", "amazon"]);
+  const [activeStores, setActiveStores] = useState<string[]>(["miswag", "najdalatheyah", "elryan", "faces", "miraaya", "beautyway", "khaton", "orisdi", "waheteter", "amazon"]);
   const [browseStore, setBrowseStore] = useState("miswag");
   const [tree, setTree] = useState<CatalogCategoryNode[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);

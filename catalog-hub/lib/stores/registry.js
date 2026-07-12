@@ -6,6 +6,7 @@ import { miraayaAdapter } from './miraaya/index.js';
 import { beautywayAdapter } from './beautyway/index.js';
 import { khatonAdapter } from './khaton/index.js';
 import { orisdiAdapter } from './orisdi/index.js';
+import { waheteterAdapter } from './waheteter/index.js';
 import { createSallaAdapter } from './salla/adapter.js';
 
 /**
@@ -45,7 +46,7 @@ const SALLA_STORES = [
 ];
 
 /** محولات مخصصة (غير Salla) */
-const CUSTOM_ADAPTERS = [miswagAdapter, elryanAdapter, amazonAdapter, facesAdapter, miraayaAdapter, beautywayAdapter, khatonAdapter, orisdiAdapter];
+const CUSTOM_ADAPTERS = [miswagAdapter, elryanAdapter, amazonAdapter, facesAdapter, miraayaAdapter, beautywayAdapter, khatonAdapter, orisdiAdapter, waheteterAdapter];
 
 function buildRegistry() {
   const adapters = {};

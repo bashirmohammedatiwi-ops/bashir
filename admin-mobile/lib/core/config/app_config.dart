@@ -31,6 +31,7 @@ class AppConfig {
     'beautyway',
     'khaton',
     'orisdi',
+    'waheteter',
     'amazon',
   ];
 
