@@ -31,7 +31,7 @@ function variationLabel(row = {}) {
 function wooImage(img = {}) {
   if (!img) return '';
   if (typeof img === 'string') return absImage(img);
-  return absImage(img.src || img.full_src || img.fullSrc || img.url || img.thumbnail);
+  return absImage(img.full_src || img.fullSrc || img.src || img.url || img.thumbnail);
 }
 
 function mapVariationShade(row = {}, index = 0, { productTitle = '', optionGroup = '' } = {}) {

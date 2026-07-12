@@ -1,4 +1,5 @@
 import { splitBilingualText } from '../../core/bilingual.js';
+import { IMPORT_SIZE, normalizeAmazonImageUrl } from '../../core/images.js';
 
 function textOf(node) {
   if (node == null) return '';
@@ -9,20 +10,21 @@ function textOf(node) {
 }
 
 function firstImage(item = {}) {
-  return (
+  const raw = (
     item.Images?.Primary?.Large?.URL ||
     item.Images?.Variants?.[0]?.Large?.URL ||
     item.Images?.Primary?.Medium?.URL ||
     ''
   );
+  return normalizeAmazonImageUrl(raw, IMPORT_SIZE);
 }
 
 function allImages(item = {}) {
   const urls = [
-    firstImage(item),
+    item.Images?.Primary?.Large?.URL || '',
     ...(item.Images?.Variants || []).map((v) => v?.Large?.URL || ''),
   ].filter(Boolean);
-  return [...new Set(urls)];
+  return [...new Set(urls.map((u) => normalizeAmazonImageUrl(u, IMPORT_SIZE)).filter(Boolean))];
 }
 
 function priceOf(item = {}) {

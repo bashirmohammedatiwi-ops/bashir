@@ -47,7 +47,10 @@ export function parseListingHtml(html = '', { lang = 'ar' } = {}) {
       || '';
     const img = absUrl(
       decodeHtml(
-        chunk.match(/src="(https:\/\/[^"]+media-amazon[^"]+|https:\/\/www\.faces\.ae\/dw\/image[^"]+)"/i)?.[1]
+        chunk.match(/data-src="([^"]+)"/i)?.[1]
+        || chunk.match(/data-srcset="([^"]+)"/i)?.[1]?.split(',')?.map((s) => s.trim().split(/\s+/)[0])?.pop()
+        || chunk.match(/src="(https:\/\/[^"]+demandware\.static[^"]+)"/i)?.[1]
+        || chunk.match(/src="(https:\/\/[^"]+media-amazon[^"]+|https:\/\/www\.faces\.ae\/dw\/image[^"]+)"/i)?.[1]
         || chunk.match(/src="(\/on\/demandware\.static[^"]+)"/i)?.[1]
         || '',
       ),

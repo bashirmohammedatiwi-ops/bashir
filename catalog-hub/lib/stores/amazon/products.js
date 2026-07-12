@@ -1,5 +1,5 @@
 import { cacheGet, cacheSet } from '../../core/cache.js';
-import { IMPORT_SIZE, THUMB_SIZE } from '../../core/images.js';
+import { IMPORT_SIZE, normalizeAmazonImageUrl } from '../../core/images.js';
 import {
   BEAUTY_ROOT_NODE,
   DEFAULT_TTL,
@@ -27,7 +27,7 @@ import {
 function detailFromIndex(asin) {
   const row = loadAmazonIndex().products?.[String(asin || '').toUpperCase()];
   if (!row?.id) return null;
-  const thumb = normalizeAmazonImageUrl(row.thumb || '', THUMB_SIZE);
+  const thumb = normalizeAmazonImageUrl(row.thumb || '', IMPORT_SIZE);
   return {
     id: row.id,
     parentAsin: row.id,
@@ -297,7 +297,7 @@ async function fetchVariations(asin) {
 
 function normalizeDetailImages(detail) {
   if (!detail) return detail;
-  detail.thumb = normalizeAmazonImageUrl(detail.thumb || '', THUMB_SIZE);
+  detail.thumb = normalizeAmazonImageUrl(detail.thumb || '', IMPORT_SIZE);
   detail.images = (detail.images || []).map((u) => normalizeAmazonImageUrl(u, IMPORT_SIZE)).filter(Boolean);
   if (Array.isArray(detail.shades)) {
     detail.shades = detail.shades.map((s) => ({
@@ -316,7 +316,7 @@ function rememberAmazonDetail(detail) {
     nameEn: detail.nameEn,
     brandAr: detail.brandAr,
     brandEn: detail.brandEn,
-    thumb: normalizeAmazonImageUrl(detail.thumb || '', THUMB_SIZE),
+    thumb: normalizeAmazonImageUrl(detail.thumb || '', IMPORT_SIZE),
     price: detail.price,
     barcode: detail.barcode,
     barcodes: detail.barcodes || [],
@@ -454,7 +454,7 @@ export async function searchBarcode(code) {
       ...indexed,
       barcode: digits,
       barcodes: [...new Set([...(indexed.barcodes || []), indexed.barcode, digits].filter(Boolean))],
-      thumb: normalizeAmazonImageUrl(indexed.thumb || '', THUMB_SIZE),
+      thumb: normalizeAmazonImageUrl(indexed.thumb || '', IMPORT_SIZE),
       matchType: 'index',
       shadeCount: indexed.shadeCount || 1,
     }];
@@ -469,7 +469,7 @@ export async function searchBarcode(code) {
           ...h,
           barcode: h.barcode || digits,
           barcodes: [...new Set([...(h.barcodes || []), h.barcode, digits].filter(Boolean))],
-          thumb: normalizeAmazonImageUrl(h.thumb || '', THUMB_SIZE),
+          thumb: normalizeAmazonImageUrl(h.thumb || '', IMPORT_SIZE),
           categoryIds: [BEAUTY_ROOT_NODE],
         })),
         { categoryId: BEAUTY_ROOT_NODE },
@@ -477,7 +477,7 @@ export async function searchBarcode(code) {
     }
     return hits.map((h) => ({
       ...h,
-      thumb: normalizeAmazonImageUrl(h.thumb || '', THUMB_SIZE),
+      thumb: normalizeAmazonImageUrl(h.thumb || '', IMPORT_SIZE),
     }));
   }
 
