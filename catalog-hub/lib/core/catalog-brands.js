@@ -15,6 +15,7 @@ import { fetchShopHtml } from '../stores/beautyway/client.js';
 import { parseListingHtml as parseBeautywayListingHtml } from '../stores/beautyway/parse.js';
 import { khatonFetch, absImage as khatonAbs } from '../stores/khaton/client.js';
 import { shopifyFetch } from '../stores/orisdi/client.js';
+import { waheteterFetch } from '../stores/waheteter/client.js';
 import { getStoreAdapter, listStores } from '../stores/registry.js';
 import { cacheGet, cacheSet } from './cache.js';
 import { brandMatchKeys, normalizeBrandKey, preferBrandDisplayName } from './brand-normalize.js';
@@ -521,6 +522,39 @@ async function collectKhatonBrands(map) {
   }
 }
 
+async function collectWaheteterBrands(map) {
+  try {
+    const seen = new Set();
+    for (let page = 1; page <= 30; page += 1) {
+      const { data } = await waheteterFetch('/products', {
+        params: { page, per_page: 100 },
+        ttl: 10 * 60 * 1000,
+        cacheKey: `waheteter:brands-scan:${page}`,
+      });
+      const rows = Array.isArray(data) ? data : [];
+      if (!rows.length) break;
+      for (const product of rows) {
+        const brandAttr = (product.attributes || []).find((a) => a.taxonomy === 'pa_brand');
+        const name = String(brandAttr?.terms?.[0]?.name || '').trim();
+        if (!name || seen.has(name.toLowerCase())) continue;
+        seen.add(name.toLowerCase());
+        mergeBrand(map, {
+          name,
+          nameEn: name,
+          nameAr: name,
+          logoUrl: '',
+          logoIsProductImage: false,
+          productCount: 1,
+          stores: ['waheteter'],
+        });
+      }
+      if (rows.length < 100) break;
+    }
+  } catch (err) {
+    console.warn('waheteter brands:', err.message);
+  }
+}
+
 /** قائمة براندات موحّدة من كل المتاجر */
 export async function collectCatalogBrands({ force = false } = {}) {
   if (!force) {
@@ -539,6 +573,7 @@ export async function collectCatalogBrands({ force = false } = {}) {
     collectBeautywayBrands(map),
     collectKhatonBrands(map),
     collectOrisdiBrands(map),
+    collectWaheteterBrands(map),
   ]);
 
   const seenObjects = new Set();

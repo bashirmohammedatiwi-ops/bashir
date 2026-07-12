@@ -169,7 +169,7 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                       ? Colors.red.shade100
                       : (s.count > 0 ? Colors.green.shade100 : Colors.grey.shade200);
                   final text = s.error != null
-                      ? '${s.storeLabel}: خطأ'
+                      ? '${s.storeLabel}: ${s.error}'
                       : '${s.storeLabel}: ${s.count}';
                   return Chip(
                     label: Text(text, style: const TextStyle(fontSize: 11)),

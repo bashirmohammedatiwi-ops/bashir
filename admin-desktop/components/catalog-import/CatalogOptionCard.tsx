@@ -20,6 +20,7 @@ export const STORE_COLORS: Record<string, string> = {
   beautyway: "#e91e8c",
   khaton: "#8b5a2b",
   orisdi: "#1a5f4a",
+  waheteter: "#6b2d5c",
   amazon: "#ff9900",
 };
 
