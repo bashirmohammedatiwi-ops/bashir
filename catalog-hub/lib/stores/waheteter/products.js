@@ -6,6 +6,15 @@ import {
   searchHtmlUrl,
   waheteterFetch,
 } from './client.js';
+import {
+  findWaheteterBarcode,
+  getWaheteterProductSnapshot,
+  isWaheteterIndexFresh,
+  rememberWaheteterDetail,
+  searchWaheteterProducts,
+  upsertWaheteterProduct,
+  waheteterBarcodeIndexStats,
+} from './barcode-index.js';
 import { htmlSearchHasBarcode, parseProductPageHtml, parseSearchHtml } from './html.js';
 import { mapDetailProduct, mapListProduct, toBarcodeHit } from './map.js';
 
@@ -23,6 +32,16 @@ function pageResult(items, { page, limit, total = 0 } = {}) {
 function parsePrice(price = '') {
   const n = Number(String(price).replace(/[^\d.]/g, ''));
   return Number.isFinite(n) ? n : 0;
+}
+
+function decodeSlug(slug = '') {
+  const raw = String(slug || '').trim();
+  if (!raw) return '';
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
 }
 
 function mapHtmlListItem(item = {}) {
@@ -49,8 +68,8 @@ function mapHtmlDetail(item = {}) {
     id: String(item.id || ''),
     nameAr: item.nameAr || '',
     nameEn: item.nameEn || '',
-    brandAr: '',
-    brandEn: '',
+    brandAr: item.brandAr || '',
+    brandEn: item.brandEn || '',
     descriptionAr: item.descriptionAr || '',
     descriptionEn: item.descriptionEn || '',
     thumb: item.thumb || '',
@@ -62,9 +81,20 @@ function mapHtmlDetail(item = {}) {
     hasOptions: item.hasOptions || false,
     productUrl: item.productUrl || '',
     inStock: item.inStock !== false,
-    category: '',
+    category: item.category || '',
     sku: String(item.id || ''),
+    manufacturer: item.brandAr || '',
+    manufacturerEn: item.brandEn || '',
   };
+}
+
+function barcodeHitFromIndex(digits, hit) {
+  const detail = getWaheteterProductSnapshot(hit.productId);
+  if (!detail) return null;
+  const shade = (detail.shades || []).find((s) => String(s.barcode || '') === digits);
+  return toBarcodeHit(detail, digits, {
+    shadeName: shade?.nameAr || shade?.nameEn || hit.shadeName || '',
+  });
 }
 
 async function searchHtmlProducts(query, { page = 1, limit = 30 } = {}) {
@@ -79,12 +109,7 @@ async function searchHtmlProducts(query, { page = 1, limit = 30 } = {}) {
     cacheKey: `waheteter:html:${q}:${page}`,
   });
   const rows = parseSearchHtml(html).map(mapHtmlListItem);
-  const out = {
-    items: rows,
-    total: rows.length,
-    page,
-    pageSize: limit,
-  };
+  const out = { items: rows, total: rows.length, page, pageSize: limit };
   cacheSet(cacheKey, out, DEFAULT_TTL);
   return out;
 }
@@ -117,37 +142,65 @@ async function fetchProductPage({ page = 1, limit = 30, categoryId = '', search 
     return out;
   } catch {
     if (sku) {
-      const hit = await searchBarcode(sku);
-      const out = {
-        items: hit.map((h) => ({
-          id: h.id,
-          nameAr: h.nameAr,
-          nameEn: h.nameEn,
-          brandAr: h.brandAr,
-          brandEn: h.brandEn,
-          thumb: h.thumb,
-          price: h.price,
-          shadeCount: h.shadeCount,
-          hasOptions: h.hasOptions,
-          category: '',
-          sku,
-          barcode: sku,
-          productUrl: '',
-          inStock: true,
-        })),
-        total: hit.length,
-        page: 1,
-        pageSize: perPage,
-      };
+      const hit = findWaheteterBarcode(sku);
+      if (hit) {
+        const mapped = barcodeHitFromIndex(sku, hit);
+        const out = {
+          items: mapped ? [{
+            id: mapped.id,
+            nameAr: mapped.nameAr,
+            nameEn: mapped.nameEn,
+            brandAr: mapped.brandAr,
+            brandEn: mapped.brandEn,
+            thumb: mapped.thumb,
+            price: mapped.price,
+            shadeCount: mapped.shadeCount,
+            hasOptions: mapped.hasOptions,
+            category: '',
+            sku,
+            barcode: sku,
+            productUrl: '',
+            inStock: true,
+          }] : [],
+          total: mapped ? 1 : 0,
+          page: 1,
+          pageSize: perPage,
+        };
+        cacheSet(cacheKey, out, DEFAULT_TTL);
+        return out;
+      }
+    }
+    if (search && isWaheteterIndexFresh()) {
+      const rows = searchWaheteterProducts(search, { limit: perPage }).map((p) => ({
+        id: p.id,
+        nameAr: p.nameAr,
+        nameEn: p.nameEn,
+        brandAr: p.brandAr,
+        brandEn: p.brandEn,
+        thumb: p.thumb,
+        price: p.price,
+        shadeCount: p.shadeCount,
+        hasOptions: p.hasOptions,
+        category: p.category,
+        sku: p.sku,
+        barcode: p.barcode,
+        productUrl: p.productUrl,
+        inStock: p.inStock !== false,
+      }));
+      const out = { items: rows, total: rows.length, page, pageSize: perPage };
       cacheSet(cacheKey, out, DEFAULT_TTL);
       return out;
     }
     if (search) {
-      const htmlOut = await searchHtmlProducts(search, { page, limit: perPage });
-      cacheSet(cacheKey, htmlOut, DEFAULT_TTL);
-      return htmlOut;
+      try {
+        const htmlOut = await searchHtmlProducts(search, { page, limit: perPage });
+        cacheSet(cacheKey, htmlOut, DEFAULT_TTL);
+        return htmlOut;
+      } catch {
+        return { items: [], total: 0, page, pageSize: perPage };
+      }
     }
-    throw new Error('Waheteter API unavailable');
+    return { items: [], total: 0, page, pageSize: perPage };
   }
 }
 
@@ -173,7 +226,7 @@ async function fetchVariationRows(product = {}) {
 
 async function fetchProductDetailHtml(id, { slug = '' } = {}) {
   const pid = String(id || '').trim();
-  const productSlug = String(slug || '').trim();
+  const productSlug = decodeSlug(slug);
   const path = productSlug
     ? `/product/${encodeURIComponent(productSlug)}/`
     : (pid ? `/?p=${encodeURIComponent(pid)}` : '');
@@ -211,6 +264,12 @@ export async function fetchProductDetail(id, { light = false, slug = '' } = {}) 
   const cached = cacheGet(cacheKey, DETAIL_TTL);
   if (cached) return cached;
 
+  const indexed = getWaheteterProductSnapshot(pid);
+  if (indexed) {
+    cacheSet(cacheKey, indexed, DETAIL_TTL);
+    return indexed;
+  }
+
   let product;
   try {
     const { data } = await waheteterFetch(`/products/${encodeURIComponent(pid)}`, {
@@ -219,8 +278,9 @@ export async function fetchProductDetail(id, { light = false, slug = '' } = {}) 
     });
     product = data;
   } catch {
-    const htmlDetail = await fetchProductDetailHtml(pid, { slug });
+    const htmlDetail = await fetchProductDetailHtml(pid, { slug }).catch(() => null);
     if (htmlDetail) {
+      upsertWaheteterProduct(pid, htmlDetail);
       cacheSet(cacheKey, htmlDetail, DETAIL_TTL);
       return htmlDetail;
     }
@@ -234,6 +294,7 @@ export async function fetchProductDetail(id, { light = false, slug = '' } = {}) 
 
   const variationRows = light ? [] : await fetchVariationRows(product);
   const mapped = mapDetailProduct(product, variationRows, { light });
+  rememberWaheteterDetail(mapped);
   cacheSet(cacheKey, mapped, DETAIL_TTL);
   return mapped;
 }
@@ -241,6 +302,12 @@ export async function fetchProductDetail(id, { light = false, slug = '' } = {}) 
 export async function searchBarcode(code) {
   const digits = String(code || '').replace(/\D/g, '');
   if (digits.length < 8) return [];
+
+  const indexHit = findWaheteterBarcode(digits);
+  if (indexHit) {
+    const hit = barcodeHitFromIndex(digits, indexHit);
+    if (hit) return [hit];
+  }
 
   let rows = [];
   try {
@@ -255,23 +322,30 @@ export async function searchBarcode(code) {
   }
 
   if (!rows.length) {
-    const html = await fetchHtml(searchHtmlUrl(digits), {
-      ttl: DEFAULT_TTL,
-      cacheKey: `waheteter:html-barcode:${digits}`,
-    });
-    if (!htmlSearchHasBarcode(html, digits)) return [];
-    const cards = parseSearchHtml(html);
-    for (const card of cards.slice(0, 5)) {
-      const detailHtml = await fetchHtml(`/product/${encodeURIComponent(card.slug)}/`, {
-        ttl: DETAIL_TTL,
-        cacheKey: `waheteter:html-product:${card.slug}`,
+    try {
+      const html = await fetchHtml(searchHtmlUrl(digits), {
+        ttl: DEFAULT_TTL,
+        cacheKey: `waheteter:html-barcode:${digits}`,
       });
-      const parsed = parseProductPageHtml(detailHtml, { slug: card.slug, id: card.id });
-      const shade = (parsed.shades || []).find((s) => String(s.barcode || '') === digits);
-      if (shade) {
-        const detail = mapHtmlDetail(parsed);
-        return [toBarcodeHit(detail, digits, { shadeName: shade.nameAr || shade.nameEn || '' })];
+      if (htmlSearchHasBarcode(html, digits)) {
+        const cards = parseSearchHtml(html);
+        for (const card of cards.slice(0, 5)) {
+          const slug = decodeSlug(card.slug);
+          const detailHtml = await fetchHtml(`/product/${encodeURIComponent(slug)}/`, {
+            ttl: DETAIL_TTL,
+            cacheKey: `waheteter:html-product:${slug}`,
+          });
+          const parsed = parseProductPageHtml(detailHtml, { slug, id: card.id });
+          const shade = (parsed.shades || []).find((s) => String(s.barcode || '') === digits);
+          if (shade) {
+            const detail = mapHtmlDetail(parsed);
+            rememberWaheteterDetail(detail);
+            return [toBarcodeHit(detail, digits, { shadeName: shade.nameAr || shade.nameEn || '' })];
+          }
+        }
       }
+    } catch {
+      // VPS may block HTML — rely on local index
     }
     return [];
   }
@@ -298,6 +372,9 @@ function variationLabel(row = {}) {
 }
 
 export async function countProducts() {
+  const stats = waheteterBarcodeIndexStats();
+  if (stats.products > 0) return stats.productCount || stats.products;
+
   try {
     const { meta } = await waheteterFetch('/products', {
       params: { per_page: 1, page: 1 },
@@ -306,15 +383,18 @@ export async function countProducts() {
     });
     if (meta.total) return meta.total;
   } catch {
-    // HTML fallback below
+    // fall through
   }
 
-  const html = await fetchHtml('/shop/', {
-    ttl: DEFAULT_TTL,
-    cacheKey: 'waheteter:html-shop',
-  });
-  const cards = parseSearchHtml(html);
-  return cards.length || 2684;
+  try {
+    const html = await fetchHtml('/shop/', { ttl: DEFAULT_TTL, cacheKey: 'waheteter:html-shop' });
+    const cards = parseSearchHtml(html);
+    if (cards.length) return cards.length;
+  } catch {
+    // blocked
+  }
+
+  return stats.barcodes || 0;
 }
 
 export function sortProductsClient(items = [], sort = 'default') {
@@ -328,3 +408,5 @@ export function sortProductsClient(items = [], sort = 'default') {
   }
   return list;
 }
+
+export { waheteterBarcodeIndexStats };
