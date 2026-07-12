@@ -2,9 +2,9 @@ import { cacheGet, cacheSet } from '../../core/cache.js';
 import { upgradeImageUrl } from '../../core/images.js';
 
 const API_BASE = 'https://www.elryan.com/api/catalog';
-const IMG_THUMB_BASE = 'https://www.elryan.com/img/800/800/resize/catalog/product';
 const IMG_FULL_BASE = 'https://www.elryan.com/img/0/0/resize/catalog/product';
-const IMG_BASE = IMG_THUMB_BASE;
+const IMG_THUMB_BASE = IMG_FULL_BASE;
+const IMG_BASE = IMG_FULL_BASE;
 const SITE = 'https://www.elryan.com';
 
 export const ELRYAN_INDEX = {

@@ -17,7 +17,12 @@ function normalizeArabic(text = '') {
 function productImage(product = {}) {
   if (product.original_image) return absImage(product.original_image);
   if (product.image && typeof product.image === 'object') {
-    return absImage(product.image.original || product.image.url || product.image.src);
+    const original = product.image.original
+      || product.image.original_url
+      || product.image.full
+      || product.image.full_size;
+    if (original) return absImage(original);
+    return absImage(product.image.url || product.image.src);
   }
   return absImage(product.image || product.image_url || product.thumbnail);
 }
@@ -31,7 +36,10 @@ function productImages(product = {}) {
     let url = '';
     if (typeof raw === 'string') url = absImage(raw);
     else if (typeof raw === 'object') {
-      url = absImage(raw.original || raw.url || raw.image || raw.src);
+      url = absImage(
+        raw.original || raw.original_url || raw.full || raw.full_size
+          || raw.url || raw.image || raw.src,
+      );
     }
     if (!url || seen.has(url)) return;
     if (prefer) images.unshift(url);
@@ -40,7 +48,7 @@ function productImages(product = {}) {
   };
 
   push(product.original_image, { prefer: true });
-  push(product.image);
+  push(product.image, { prefer: true });
   push(product.image_url);
   push(product.thumbnail);
 
@@ -55,7 +63,7 @@ function productImages(product = {}) {
     }
   }
 
-  return [...new Set(images)];
+  return images;
 }
 
 /** استخراج المعرّف الرقمي من رابط المنتج (.../p1082984279) */

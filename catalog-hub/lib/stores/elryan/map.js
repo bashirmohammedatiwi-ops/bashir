@@ -22,15 +22,15 @@ function categoryLabel(src = {}) {
   return String(sorted[0]?.name || '').trim();
 }
 
-function primaryImage(src = {}, { full = false } = {}) {
-  return absImage(src.image || src.thumbnail || src.small_image || src.media_gallery?.[0]?.image, { full });
+function primaryImage(src = {}) {
+  return absImage(src.image || src.thumbnail || src.small_image || src.media_gallery?.[0]?.image, { full: true });
 }
 
 function galleryImages(src = {}) {
   const fromGallery = (src.media_gallery || [])
     .map((g) => absImage(g.image || g.file, { full: true }))
     .filter(Boolean);
-  const primary = primaryImage(src, { full: true });
+  const primary = primaryImage(src);
   return [...new Set([primary, ...fromGallery].filter(Boolean))];
 }
 
@@ -65,7 +65,7 @@ export function mergeBilingualSources(arSrc = null, enSrc = null) {
     brandEn: brandEn || brandAr,
     descriptionAr: descAr,
     descriptionEn: descEn,
-    thumb: images[0] || primaryImage(arSrc || primary, { full: false }) || primaryImage(enSrc || {}, { full: false }),
+    thumb: images[0] || primaryImage(arSrc || primary) || primaryImage(enSrc || {}),
     images,
     price: formatIqdPrice(primary),
     category: categoryLabel(arSrc || primary),

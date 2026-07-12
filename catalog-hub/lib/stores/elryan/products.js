@@ -11,6 +11,7 @@ import {
 } from './client.js';
 import { mapDetailProduct, mapListProduct } from './map.js';
 
+const IMAGE_SOURCE = [...new Set([...LIST_SOURCE, 'media_gallery'])];
 const VISIBLE = [2, 3, 4];
 
 function activeFilters(extra = []) {
@@ -250,7 +251,7 @@ export async function fetchProductDetail(id, { light = false } = {}) {
   const body = {
     size: 1,
     query: { term: { id: Number(pid) || pid } },
-    _source: light ? LIST_SOURCE : DETAIL_SOURCE,
+    _source: light ? IMAGE_SOURCE : DETAIL_SOURCE,
   };
 
   const { ar, en } = await searchBoth('product', body, { ttl: DEFAULT_TTL });
@@ -281,7 +282,7 @@ export async function searchBarcode(code) {
         filter: activeFilters(),
       },
     },
-    _source: LIST_SOURCE,
+    _source: IMAGE_SOURCE,
   };
 
   const { ar, en } = await searchBoth('product', body, { ttl: DEFAULT_TTL });
