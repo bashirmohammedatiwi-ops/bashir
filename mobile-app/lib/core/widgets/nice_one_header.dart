@@ -23,7 +23,7 @@ class NiceOneHeader extends ConsumerWidget {
     final light = scrollProgress > 0.35;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
       child: Row(
         children: [
           Expanded(
@@ -109,11 +109,25 @@ class _GlassSurface extends StatelessWidget {
       return ClipRRect(borderRadius: borderRadius, child: decorated);
     }
 
-    return ClipRRect(
-      borderRadius: borderRadius,
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-        child: decorated,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: borderRadius,
+        gradient: LinearGradient(
+          colors: [
+            Colors.white.withValues(alpha: 0.35),
+            Colors.white.withValues(alpha: 0.12),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      padding: const EdgeInsets.all(1.2),
+      child: ClipRRect(
+        borderRadius: borderRadius,
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+          child: decorated,
+        ),
       ),
     );
   }
@@ -138,11 +152,11 @@ class _SearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _GlassSurface(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(16),
       scrollProgress: scrollProgress,
       light: light,
       child: SizedBox(
-        height: 44,
+        height: 46,
         child: Row(
           children: [
             Expanded(

@@ -26,6 +26,8 @@ class CatalogRepository {
       case 'khaton':
       case 'waheteter':
         return 8000;
+      case 'niceone':
+        return 20000;
       case 'orisdi':
         return 28000;
       case 'alkhabeer':
@@ -41,6 +43,7 @@ class CatalogRepository {
     if (storeId == 'amazon') return 18000;
     if (storeId == 'miraaya') return 20000;
     if (storeId == 'orisdi') return 18000;
+    if (storeId == 'niceone') return 22000;
     return 12000;
   }
 

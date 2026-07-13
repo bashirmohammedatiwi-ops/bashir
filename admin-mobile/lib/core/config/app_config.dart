@@ -33,6 +33,7 @@ class AppConfig {
     'khaton',
     'orisdi',
     'waheteter',
+    'niceone',
     'amazon',
   ];
 

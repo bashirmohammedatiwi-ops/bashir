@@ -10,6 +10,7 @@ import '../../core/theme/app_typography.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/app_network_image.dart';
+import '../../core/widgets/fullscreen_image_viewer.dart';
 import '../../core/widgets/product_detail_skeleton.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/product.dart';
@@ -89,6 +90,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
   Widget _buildContent(Product product) {
     final gallery = product.galleryUrls.isNotEmpty ? product.galleryUrls : [''];
+    final zoomableUrls = gallery.where((u) => u.trim().isNotEmpty).toList();
     final price = _shade?.price ?? product.price;
     final wished = ref.watch(wishlistProvider).ids.contains(product.id);
     final galleryWidth = MediaQuery.sizeOf(context).width;
@@ -119,14 +121,58 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   child: PageView.builder(
                     itemCount: gallery.length,
                     onPageChanged: (i) => setState(() => _imageIndex = i),
-                    itemBuilder: (_, i) => Container(
-                      color: Colors.white,
-                      child: AppNetworkImage(
-                        url: gallery[i],
-                        width: galleryWidth,
-                        fit: BoxFit.contain,
-                        placeholderColor: AppColors.surface,
-                        fallbackColor: AppColors.surface,
+                    itemBuilder: (_, i) => GestureDetector(
+                      onTap: zoomableUrls.isEmpty
+                          ? null
+                          : () => FullScreenImageViewer.show(
+                                context,
+                                urls: zoomableUrls,
+                                initialIndex: zoomableUrls.indexOf(gallery[i]).clamp(
+                                      0,
+                                      zoomableUrls.length - 1,
+                                    ),
+                              ),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          Container(
+                            color: Colors.white,
+                            child: AppNetworkImage(
+                              url: gallery[i],
+                              width: galleryWidth,
+                              fit: BoxFit.contain,
+                              placeholderColor: AppColors.surface,
+                              fallbackColor: AppColors.surface,
+                            ),
+                          ),
+                          if (zoomableUrls.isNotEmpty)
+                            PositionedDirectional(
+                              start: 12,
+                              bottom: 12,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.38),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.zoom_out_map_rounded, color: Colors.white, size: 16),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      'تكبير',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),

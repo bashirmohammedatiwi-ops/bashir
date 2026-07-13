@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/card_sizes.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/horizontal_product_list.dart';
@@ -74,32 +75,50 @@ class _FlashSaleHomeSectionState extends State<FlashSaleHomeSection> {
   Widget build(BuildContext context) {
     if (widget.section.products.isEmpty) return const SizedBox.shrink();
 
-    return HomeSectionShell(
-      section: widget.section,
-      compactTop: widget.compactTop,
-      actionLabel: widget.section.showViewAll ? 'عرض الكل' : null,
-      onAction: widget.section.showViewAll
-          ? () => context.push('/products?${widget.section.viewAllQuery ?? 'isPromo=1'}')
-          : null,
-      headerTrailing: widget.section.endsAt != null
-          ? ValueListenableBuilder<Duration>(
-              valueListenable: _remaining,
-              builder: (_, remaining, __) {
-                if (remaining <= Duration.zero) return const SizedBox.shrink();
-                final h = remaining.inHours.toString().padLeft(2, '0');
-                final m = (remaining.inMinutes % 60).toString().padLeft(2, '0');
-                final s = (remaining.inSeconds % 60).toString().padLeft(2, '0');
-                return _FlashCountdownChip(label: '$h:$m:$s');
-              },
-            )
-          : null,
-      child: HorizontalProductList(
-        products: widget.section.products,
-        showRating: true,
-        showPromoBadge: true,
-        itemWidth: cardSizeSpec(
-          widget.section.productCardSize ?? widget.section.cardSize,
-        ).productWidth,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: AppColors.flashSaleGradient,
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primary.withValues(alpha: 0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: HomeSectionShell(
+          section: widget.section,
+          compactTop: widget.compactTop,
+          elevated: false,
+          actionLabel: widget.section.showViewAll ? 'عرض الكل' : null,
+          onAction: widget.section.showViewAll
+              ? () => context.push('/products?${widget.section.viewAllQuery ?? 'isPromo=1'}')
+              : null,
+          headerTrailing: widget.section.endsAt != null
+              ? ValueListenableBuilder<Duration>(
+                  valueListenable: _remaining,
+                  builder: (_, remaining, __) {
+                    if (remaining <= Duration.zero) return const SizedBox.shrink();
+                    final h = remaining.inHours.toString().padLeft(2, '0');
+                    final m = (remaining.inMinutes % 60).toString().padLeft(2, '0');
+                    final s = (remaining.inSeconds % 60).toString().padLeft(2, '0');
+                    return _FlashCountdownChip(label: '$h:$m:$s');
+                  },
+                )
+              : null,
+          child: HorizontalProductList(
+            products: widget.section.products,
+            showRating: true,
+            showPromoBadge: true,
+            itemWidth: cardSizeSpec(
+              widget.section.productCardSize ?? widget.section.cardSize,
+            ).productWidth,
+          ),
+        ),
       ),
     );
   }
@@ -112,23 +131,29 @@ class _FlashCountdownChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.25),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.timer_outlined, size: 14, color: AppColors.primary),
-          const SizedBox(width: 4),
+          const Icon(Icons.timer_outlined, size: 14, color: Colors.white),
+          const SizedBox(width: 5),
           Text(
             label,
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
-              color: AppColors.primary,
+              color: Colors.white,
               fontFeatures: [FontFeature.tabularFigures()],
             ),
           ),
@@ -168,14 +193,14 @@ class PackagesHomeSection extends StatelessWidget {
                 child: Container(
                   width: 210,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    border: Border.all(color: AppColors.border.withValues(alpha: 0.8)),
                     color: AppColors.surface,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.textPrimary.withValues(alpha: 0.04),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                        color: AppColors.primary.withValues(alpha: 0.06),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),

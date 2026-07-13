@@ -33,6 +33,30 @@ class AppColors {
   static const Color border = Color(0xFFECECF1);
   static const Color divider = Color(0xFFF0F0F4);
 
+  // الصفحة الرئيسية
+  static const Color homeGradientTop = Color(0xFFFFF7FA);
+  static const Color homeGradientMid = Color(0xFFFDF8FB);
+  static const Color homeSurface = Color(0xFFFFFFFF);
+
+  static const LinearGradient primaryGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [primary, primaryDark],
+  );
+
+  static const LinearGradient homeBackgroundGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [homeGradientTop, homeGradientMid, scaffold],
+    stops: [0.0, 0.35, 1.0],
+  );
+
+  static const LinearGradient flashSaleGradient = LinearGradient(
+    begin: Alignment.topRight,
+    end: Alignment.bottomLeft,
+    colors: [Color(0xFFFFF0F4), Color(0xFFFFFBFD)],
+  );
+
   static const Color shimmerBase = Color(0xFFEDEDF2);
   static const Color shimmerHighlight = Color(0xFFF8F8FB);
 }

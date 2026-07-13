@@ -66,10 +66,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       child: Scaffold(
         backgroundColor: AppColors.scaffold,
-        body: Stack(
-          fit: StackFit.expand,
-          children: [
-            feed.when(
+        body: DecoratedBox(
+          decoration: const BoxDecoration(gradient: AppColors.homeBackgroundGradient),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              feed.when(
               loading: () => const HomeLoadingSkeleton(),
               error: (e, _) => ErrorView(
                 message: friendlyError(e),
@@ -105,6 +107,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     slivers: [
                       for (final section in sections)
                         SliverToBoxAdapter(child: section),
+                      const SliverToBoxAdapter(child: SizedBox(height: 24)),
                     ],
                   ),
                 );
@@ -122,6 +125,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 }

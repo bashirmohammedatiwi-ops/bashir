@@ -94,34 +94,58 @@ class HomeLoadingSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: EdgeInsets.zero,
-      physics: const NeverScrollableScrollPhysics(),
-      children: [
-        const ShimmerBox(height: 360, radius: 0),
-        const SizedBox(height: 12),
+    final heroH = MediaQuery.sizeOf(context).height * 0.38;
+    return DecoratedBox(
+      decoration: const BoxDecoration(gradient: AppColors.homeBackgroundGradient),
+      child: ListView(
+        padding: EdgeInsets.zero,
+        physics: const NeverScrollableScrollPhysics(),
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+            child: ShimmerBox(height: heroH, radius: 0),
+          ),
+        const SizedBox(height: 16),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: List.generate(
               5,
               (_) => const Padding(
-                padding: EdgeInsets.only(left: 10),
-                child: ShimmerBox(width: 56, height: 56, radius: 28),
+                padding: EdgeInsets.only(left: 12),
+                child: ShimmerBox(width: 60, height: 60, radius: 30),
               ),
             ),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 24),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ShimmerBox(height: 20, width: 160, radius: 8),
+                  SizedBox(height: 16),
+                  HorizontalProductsSkeleton(),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 16),
-          child: ShimmerBox(height: 18, width: 140),
+          child: HorizontalProductsSkeleton(),
         ),
-        const SizedBox(height: 12),
-        const HorizontalProductsSkeleton(),
-        const SizedBox(height: 8),
-        const HorizontalProductsSkeleton(),
       ],
+      ),
     );
   }
 }

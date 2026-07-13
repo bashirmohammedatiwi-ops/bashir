@@ -16,6 +16,7 @@ import { parseListingHtml as parseBeautywayListingHtml } from '../stores/beautyw
 import { khatonFetch, absImage as khatonAbs } from '../stores/khaton/client.js';
 import { shopifyFetch } from '../stores/orisdi/client.js';
 import { waheteterFetch } from '../stores/waheteter/client.js';
+import { fetchPageHtml, parseNuxtPayload, revivePayloadNode, findCategoriesArrayIndex } from '../stores/niceone/client.js';
 import { getStoreAdapter, listStores } from '../stores/registry.js';
 import { cacheGet, cacheSet } from './cache.js';
 import { brandMatchKeys, normalizeBrandKey, preferBrandDisplayName } from './brand-normalize.js';
@@ -522,6 +523,45 @@ async function collectKhatonBrands(map) {
   }
 }
 
+async function collectNiceoneBrands(map) {
+  try {
+    const html = await fetchPageHtml('', { lang: 'ar', ttl: 15 * 60 * 1000, cacheKey: 'niceone:brands:home' });
+    const payload = parseNuxtPayload(html);
+    const catsIndex = findCategoriesArrayIndex(payload);
+    if (catsIndex < 0) return;
+    const categories = revivePayloadNode(payload, catsIndex) || [];
+    const vendors = new Map();
+    for (const cat of categories) {
+      for (const brand of cat.recommended_manufacturers || []) {
+        const nameEn = String(brand.name || '').trim();
+        const nameAr = String(brand.ar_name || brand.name || '').trim();
+        if (!nameEn && !nameAr) continue;
+        const key = (nameEn || nameAr).toLowerCase();
+        if (vendors.has(key)) continue;
+        vendors.set(key, {
+          name: nameEn || nameAr,
+          nameAr,
+          nameEn,
+          logoUrl: String(brand.image || '').trim(),
+        });
+      }
+    }
+    for (const row of vendors.values()) {
+      mergeBrand(map, {
+        name: row.name,
+        nameAr: row.nameAr,
+        nameEn: row.nameEn,
+        logoUrl: row.logoUrl,
+        logoIsProductImage: false,
+        productCount: 0,
+        stores: ['niceone'],
+      });
+    }
+  } catch (err) {
+    console.warn('niceone brands:', err.message);
+  }
+}
+
 async function collectWaheteterBrands(map) {
   try {
     const seen = new Set();
@@ -575,6 +615,7 @@ export async function collectCatalogBrands({ force = false } = {}) {
     collectKhatonBrands(map),
     collectOrisdiBrands(map),
     collectWaheteterBrands(map),
+    collectNiceoneBrands(map),
   ]);
 
   const seenObjects = new Set();

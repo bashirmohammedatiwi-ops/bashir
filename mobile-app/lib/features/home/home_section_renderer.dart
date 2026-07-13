@@ -60,9 +60,9 @@ class HomeSectionWidget extends ConsumerWidget {
           padding: EdgeInsets.only(
             top: sectionPadding(
               section.paddingTop?.toDouble(),
-              isFirstAfterHero ? AppSpacing.xs : AppSpacing.sm,
+              isFirstAfterHero ? AppSpacing.sm : AppSpacing.md,
             ),
-            bottom: sectionPadding(section.paddingBottom?.toDouble(), AppSpacing.xs),
+            bottom: sectionPadding(section.paddingBottom?.toDouble(), AppSpacing.sm),
           ),
           child: child,
         ),
@@ -74,9 +74,9 @@ class HomeSectionWidget extends ConsumerWidget {
         padding: EdgeInsets.only(
           top: sectionPadding(
             section.paddingTop?.toDouble(),
-            isFirstAfterHero ? AppSpacing.sm : AppSpacing.sectionV,
+            isFirstAfterHero ? AppSpacing.md : AppSpacing.lg,
           ),
-          bottom: sectionPadding(section.paddingBottom?.toDouble(), AppSpacing.xs),
+          bottom: sectionPadding(section.paddingBottom?.toDouble(), AppSpacing.sm),
         ),
         child: child,
       ),

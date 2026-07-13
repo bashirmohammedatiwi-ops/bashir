@@ -25,7 +25,7 @@ class HorizontalProductList extends StatelessWidget {
       height: AppSpacing.productRowHeight,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.lg),
         cacheExtent: 320,
         itemCount: products.length,
         separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.cardGap),

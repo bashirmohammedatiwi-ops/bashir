@@ -27,21 +27,31 @@ class SectionHeader extends StatelessWidget {
       return Padding(
         padding: EdgeInsets.fromLTRB(
           AppSpacing.screenH,
-          compact ? AppSpacing.xs : AppSpacing.md,
+          compact ? AppSpacing.sm : AppSpacing.lg,
           AppSpacing.screenH,
           AppSpacing.sm,
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            Container(
+              width: 4,
+              height: 24,
+              decoration: BoxDecoration(
+                gradient: AppColors.primaryGradient,
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+            const SizedBox(width: 10),
             Expanded(
               child: Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 18,
+                  fontSize: 19,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
-                  letterSpacing: -0.3,
-                  height: 1.2,
+                  letterSpacing: -0.4,
+                  height: 1.15,
                 ),
               ),
             ),
@@ -50,27 +60,7 @@ class SectionHeader extends StatelessWidget {
               if (actionLabel != null) const SizedBox(width: AppSpacing.sm),
             ],
             if (actionLabel != null && onAction != null)
-              GestureDetector(
-                onTap: onAction,
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        actionLabel!,
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const Icon(Icons.chevron_left, size: 18, color: AppColors.textMuted),
-                    ],
-                  ),
-                ),
-              ),
+              _NiceViewAll(label: actionLabel!, onTap: onAction!),
           ],
         ),
       );
@@ -108,6 +98,42 @@ class SectionHeader extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _NiceViewAll extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _NiceViewAll({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.primaryLight.withValues(alpha: 0.55),
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const Icon(Icons.chevron_left, size: 16, color: AppColors.primary),
+            ],
+          ),
+        ),
       ),
     );
   }

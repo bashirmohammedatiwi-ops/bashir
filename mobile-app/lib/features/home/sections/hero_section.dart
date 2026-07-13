@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/banner.dart';
 import '../../../data/models/category.dart';
@@ -12,11 +13,11 @@ import '../../../data/models/home_section.dart';
 import '../../shell/main_shell.dart';
 import '../home_link.dart';
 
-const _kBannerHeightFactor = 0.36;
-const _kCategoryOverlap = 48.0;
+const _kBannerHeightFactor = 0.38;
+const _kCategoryOverlap = 52.0;
 
-/// ارتفاع صف الفئات: دائرة 56 + نص + مسافات
-const _kCategoryRowH = 88.0;
+/// ارتفاع صف الفئات: دائرة 60 + نص + مسافات
+const _kCategoryRowH = 96.0;
 
 class HeroHomeSection extends ConsumerStatefulWidget {
   final HomeSection section;
@@ -53,14 +54,17 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
               left: 0,
               right: 0,
               height: bannerH,
-              child: banners.isNotEmpty
-                  ? _BannerStack(
-                      banners: banners,
-                      height: bannerH,
-                      index: _index,
-                      onChanged: (i) => setState(() => _index = i),
-                    )
-                  : _DefaultBanner(height: bannerH),
+              child: ClipRRect(
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+                child: banners.isNotEmpty
+                    ? _BannerStack(
+                        banners: banners,
+                        height: bannerH,
+                        index: _index,
+                        onChanged: (i) => setState(() => _index = i),
+                      )
+                    : _DefaultBanner(height: bannerH),
+              ),
             ),
             Positioned(
               left: 0,
@@ -75,9 +79,9 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
                     stops: const [0.0, 0.35, 0.7, 1.0],
                     colors: [
                       Colors.white.withValues(alpha: 0),
-                      Colors.white.withValues(alpha: 0.55),
-                      Colors.white.withValues(alpha: 0.96),
-                      Colors.white,
+                      AppColors.homeGradientTop.withValues(alpha: 0.55),
+                      AppColors.homeGradientMid.withValues(alpha: 0.96),
+                      AppColors.homeGradientMid,
                     ],
                   ),
                 ),
@@ -91,14 +95,6 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
                 height: gridH,
                 child: QuickCategoryGrid(categories: cats),
               ),
-            // امتداد أبيض أسفل الفئات لانتقال نظيف
-            Positioned(
-              left: 0,
-              right: 0,
-              top: bannerH + gridH - _kCategoryOverlap,
-              bottom: 0,
-              child: const ColoredBox(color: Colors.white),
-            ),
           ],
         ),
       ),
@@ -175,7 +171,7 @@ class _BannerStack extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Colors.transparent, Colors.white.withValues(alpha: 0.5), Colors.white],
+                colors: [Colors.transparent, AppColors.homeGradientTop.withValues(alpha: 0.45), AppColors.homeGradientMid],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -184,7 +180,7 @@ class _BannerStack extends StatelessWidget {
         ),
         if (banners.length > 1)
           Positioned(
-            bottom: 56,
+            bottom: 64,
             left: 0,
             right: 0,
             child: Center(
@@ -192,12 +188,12 @@ class _BannerStack extends StatelessWidget {
                 activeIndex: index,
                 count: banners.length,
                 effect: ExpandingDotsEffect(
-                  dotHeight: 6,
-                  dotWidth: 6,
-                  expansionFactor: 3.5,
-                  spacing: 5,
-                  activeDotColor: const Color(0xFF555555),
-                  dotColor: Colors.white.withValues(alpha: 0.55),
+                  dotHeight: 7,
+                  dotWidth: 7,
+                  expansionFactor: 3.2,
+                  spacing: 6,
+                  activeDotColor: AppColors.primary,
+                  dotColor: Colors.white.withValues(alpha: 0.65),
                 ),
               ),
             ),
@@ -228,11 +224,11 @@ class _BannerTile extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            parseHexColor(banner.backgroundColor) ?? const Color(0xFF7EC8E3),
-            const Color(0xFF5BB5E5),
+            parseHexColor(banner.backgroundColor) ?? AppColors.primary,
+            AppColors.primaryDark,
           ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
       ),
     );
@@ -245,13 +241,7 @@ class _DefaultBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF7EC8E3), Color(0xFF90EE90)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-      ),
+      decoration: BoxDecoration(gradient: AppColors.primaryGradient),
     );
   }
 }
@@ -308,7 +298,7 @@ class _QuickCat extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 76,
+      width: 80,
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
@@ -316,29 +306,35 @@ class _QuickCat extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 56,
-              height: 56,
+              width: 60,
+              height: 60,
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
+                border: Border.all(color: AppColors.primaryLight, width: 2),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 3),
+                    color: AppColors.primary.withValues(alpha: 0.12),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
               clipBehavior: Clip.antiAlias,
               child: _CategoryAvatar(category: category),
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 6),
             Text(
               category.name,
               maxLines: 2,
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, height: 1.15),
+              style: const TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                height: 1.15,
+                color: AppColors.textPrimary,
+              ),
             ),
           ],
         ),
@@ -354,7 +350,7 @@ class _SeeAllCategory extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 76,
+      width: 80,
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
@@ -362,22 +358,33 @@ class _SeeAllCategory extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 56,
-              height: 56,
+              width: 60,
+              height: 60,
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F8),
+                gradient: AppColors.primaryGradient,
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFE8E8EE)),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.28),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               alignment: Alignment.center,
-              child: const Icon(Icons.grid_view_rounded, color: Color(0xFF888888), size: 22),
+              child: const Icon(Icons.grid_view_rounded, color: Colors.white, size: 24),
             ),
-            const SizedBox(height: 5),
+            const SizedBox(height: 6),
             const Text(
               'الكل',
               maxLines: 1,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, height: 1.15),
+              style: TextStyle(
+                fontSize: 10.5,
+                fontWeight: FontWeight.w700,
+                height: 1.15,
+                color: AppColors.textPrimary,
+              ),
             ),
           ],
         ),
@@ -415,12 +422,9 @@ class CategoryGridSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final cats = _normalizeCategories(section.categories);
     if (cats.isEmpty) return const SizedBox.shrink();
-    return ColoredBox(
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(0, 8, 0, 4),
-        child: QuickCategoryGrid(categories: cats),
-      ),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 4, 0, 0),
+      child: QuickCategoryGrid(categories: cats),
     );
   }
 }

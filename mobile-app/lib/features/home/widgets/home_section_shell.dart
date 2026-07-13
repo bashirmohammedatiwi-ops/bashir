@@ -5,11 +5,12 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/section_header.dart';
 import '../../../data/models/home_section.dart';
 import '../home_link.dart';
+import 'home_surface_card.dart';
 
 /// عرض العنوان — يُتحكم به من لوحة التحكم (حقل showTitle).
 bool homeSectionShowsTitle(HomeSection section) => section.showTitle;
 
-/// غلاف موحّد لأقسام الرئيسية — عناوين خفيفة، إجراء «عرض الكل» فقط عند الحاجة.
+/// غلاف موحّد لأقسام الرئيسية — بطاقة عائمة وعناوين أنيقة.
 class HomeSectionShell extends StatelessWidget {
   final HomeSection section;
   final bool compactTop;
@@ -17,6 +18,7 @@ class HomeSectionShell extends StatelessWidget {
   final VoidCallback? onAction;
   final Widget? headerTrailing;
   final bool? showTitle;
+  final bool elevated;
   final Widget child;
 
   const HomeSectionShell({
@@ -28,101 +30,110 @@ class HomeSectionShell extends StatelessWidget {
     this.onAction,
     this.headerTrailing,
     this.showTitle,
+    this.elevated = true,
   });
 
   bool get _showTitle => showTitle ?? homeSectionShowsTitle(section);
 
   @override
   Widget build(BuildContext context) {
-    final bg = parseHexColor(section.backgroundColor) ?? AppColors.scaffold;
-    final hasAction = actionLabel != null && onAction != null;
+    final cmsBg = parseHexColor(section.backgroundColor);
+    final surfaceColor = cmsBg ?? AppColors.homeSurface;
 
-    return ColoredBox(
-      color: bg,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (_showTitle)
-            SectionHeader(
-              title: section.title ?? '',
-              actionLabel: actionLabel,
-              onAction: onAction,
-              style: SectionHeaderStyle.niceOne,
-              compact: compactTop,
-              trailing: headerTrailing,
-            )
-          else if (hasAction || headerTrailing != null)
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.screenH,
-                compactTop ? AppSpacing.xs : AppSpacing.sm,
-                AppSpacing.screenH,
-                AppSpacing.xs,
-              ),
-              child: Row(
-                children: [
-                  if (headerTrailing != null) ...[
-                    headerTrailing!,
-                    const Spacer(),
-                  ] else
-                    const Spacer(),
-                  if (hasAction)
-                    _ViewAllLink(label: actionLabel!, onTap: onAction!),
-                ],
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (_showTitle)
+          SectionHeader(
+            title: section.title ?? '',
+            actionLabel: actionLabel,
+            onAction: onAction,
+            style: SectionHeaderStyle.niceOne,
+            compact: compactTop,
+            trailing: headerTrailing,
+          )
+        else if ((actionLabel != null && onAction != null) || headerTrailing != null)
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              AppSpacing.screenH,
+              compactTop ? AppSpacing.xs : AppSpacing.sm,
+              AppSpacing.screenH,
+              AppSpacing.xs,
+            ),
+            child: Row(
+              children: [
+                if (headerTrailing != null) ...[
+                  headerTrailing!,
+                  const Spacer(),
+                ] else
+                  const Spacer(),
+                if (actionLabel != null && onAction != null)
+                  _ViewAllPill(label: actionLabel!, onTap: onAction!),
+              ],
+            ),
+          ),
+        if (section.subtitle != null && section.subtitle!.isNotEmpty && _showTitle)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.screenH,
+              0,
+              AppSpacing.screenH,
+              AppSpacing.sm,
+            ),
+            child: Text(
+              section.subtitle!,
+              style: TextStyle(
+                color: AppColors.textSecondary.withValues(alpha: 0.9),
+                fontSize: 13,
+                height: 1.4,
               ),
             ),
-          if (section.subtitle != null &&
-              section.subtitle!.isNotEmpty &&
-              _showTitle)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.screenH,
-                0,
-                AppSpacing.screenH,
-                AppSpacing.sm,
-              ),
-              child: Text(
-                section.subtitle!,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 13,
-                  height: 1.35,
-                ),
-              ),
-            ),
-          child,
-        ],
-      ),
+          ),
+        child,
+      ],
+    );
+
+    if (!elevated) {
+      return ColoredBox(color: surfaceColor, child: content);
+    }
+
+    return HomeSurfaceCard(
+      color: surfaceColor,
+      child: content,
     );
   }
 }
 
-class _ViewAllLink extends StatelessWidget {
+class _ViewAllPill extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _ViewAllLink({required this.label, required this.onTap});
+  const _ViewAllPill({required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 4),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+    return Material(
+      color: AppColors.primaryLight.withValues(alpha: 0.55),
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
-            ),
-            const Icon(Icons.chevron_left, size: 16, color: AppColors.textMuted),
-          ],
+              const Icon(Icons.chevron_left, size: 16, color: AppColors.primary),
+            ],
+          ),
         ),
       ),
     );

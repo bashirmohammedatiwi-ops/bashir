@@ -11,7 +11,7 @@ abstract final class AppSpacing {
   static const double sectionV = 8;
   static const double cardGap = 10;
   static const double productCardWidth = 158;
-  static const double productRowHeight = 260;
+  static const double productRowHeight = 268;
 }
 
 abstract final class AppRadius {
