@@ -82,6 +82,7 @@ fi
 check_json "API health" "$API_BASE/api/v1/health" '"status":"ok"'
 check_json "API ready" "$API_BASE/api/v1/health/ready" '"ready":true'
 check_json "Catalog hub" "$API_BASE/catalog-hub/api/health" '"ok":true'
+check_json "Catalog import" "$API_BASE/catalog-hub/api/import/niceone/products/31510" '"sourceStore":"niceone"'
 check_http "Admin home" "$ADMIN_BASE/"
 check_http "Admin login" "$ADMIN_BASE/login/"
 check_http "Admin products" "$ADMIN_BASE/products/"
