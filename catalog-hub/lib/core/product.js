@@ -100,7 +100,7 @@ export function toImportPayload(product) {
       sku: s.sku || s.miswagId,
       miswagId: s.miswagId || s.sku,
       barcode: s.barcode,
-      colorHex: normalizeHex(s.hex) || s.hex || '',
+      colorHex: s.hex || '',
       imageUrl: s.image,
       swatchUrl: s.swatchImage || s.image,
       price: s.price,
