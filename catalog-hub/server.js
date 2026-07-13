@@ -22,7 +22,7 @@ server.listen(PORT, HOST, () => {
       .then(({ ensureAmazonCatalogWarm }) => {
         const result = ensureAmazonCatalogWarm();
         if (result?.started) {
-          console.log('[amazon] بدأ زحف فهرس Beauty في الخلفية');
+          console.log('[amazon] بدأ زحف فهرس أمازون في الخلفية');
         }
       })
       .catch(() => {});

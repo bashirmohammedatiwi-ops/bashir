@@ -4,6 +4,7 @@ import {
   DEFAULT_TTL,
   DETAIL_TTL,
   LIST_TTL,
+  barcodeFromImageUrl,
   categoryUrl,
   extractBarcode,
   fetchPageHtml,
@@ -70,6 +71,7 @@ async function fetchListingMerged({ category = '', search = '', page = 1, limit 
       ...item,
       nameEn: en?.nameEn || en?.nameAr || item.nameEn || item.nameAr,
       brandEn: en?.brandEn || en?.brandAr || item.brandEn || item.brandAr,
+      barcode: item.barcode || barcodeFromImageUrl(item.thumb || ''),
       productUrl: item.productUrl || productUrl(item.id),
     });
   });
@@ -201,14 +203,47 @@ async function searchBarcodeViaSite(digits) {
 
   const hits = [];
   const seen = new Set();
+  const needDetail = [];
 
   for (const item of items) {
-    if (hits.length >= 3 || seen.has(item.id)) continue;
+    if (seen.has(item.id)) continue;
     seen.add(item.id);
-    const detail = await fetchProductDetail(item.id, { light: false }).catch(() => null);
-    if (!detailMatchesBarcode(detail, digits)) continue;
-    hits.push(toBarcodeHit(detail, digits, { shadeName: shadeNameForBarcode(detail, digits) }));
+    const thumbBc = barcodeFromImageUrl(item.thumb || '');
+    if (gtinEqual(thumbBc, digits) || gtinEqual(item.barcode, digits)) {
+      needDetail.unshift(item);
+    } else {
+      needDetail.push(item);
+    }
+    if (needDetail.length >= 4) break;
   }
+
+  for (const item of needDetail.slice(0, 3)) {
+    if (hits.length >= 3) break;
+    const thumbBc = barcodeFromImageUrl(item.thumb || '');
+    if (gtinEqual(thumbBc, digits) || gtinEqual(item.barcode, digits)) {
+      const detail = await fetchProductDetail(item.id, { light: true }).catch(() => null);
+      if (detail && detailMatchesBarcode(detail, digits)) {
+        hits.push(toBarcodeHit(detail, digits, { shadeName: shadeNameForBarcode(detail, digits) }));
+        break;
+      }
+      if (detail) {
+        hits.push(toBarcodeHit(detail, digits, { shadeName: shadeNameForBarcode(detail, digits) }));
+        break;
+      }
+    }
+  }
+
+  if (hits.length) return hits;
+
+  const verified = await Promise.all(
+    needDetail.slice(0, 3).map((item) => fetchProductDetail(item.id, { light: false }).catch(() => null)),
+  );
+  for (const detail of verified) {
+    if (!detail || !detailMatchesBarcode(detail, digits)) continue;
+    hits.push(toBarcodeHit(detail, digits, { shadeName: shadeNameForBarcode(detail, digits) }));
+    break;
+  }
+
   return hits;
 }
 

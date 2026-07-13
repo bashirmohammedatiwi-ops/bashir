@@ -12,13 +12,13 @@ import {
   searchProducts,
   sortProductsClient,
 } from './products.js';
-import { amazonCredentials, BEAUTY_ROOT_NODE } from './client.js';
+import { amazonCredentials } from './client.js';
 
 export const AMAZON_META = {
   id: 'amazon',
-  label: 'أمازون بيوتي Amazon Beauty',
+  label: 'أمازون Amazon',
   domain: 'amazon.com',
-  siteUrl: `https://www.amazon.com/b?node=${BEAUTY_ROOT_NODE}`,
+  siteUrl: 'https://www.amazon.com/',
 };
 
 export const amazonAdapter = {
@@ -61,7 +61,7 @@ export const amazonAdapter = {
   searchBarcode,
   sortProductsClient,
 
-  /** حالة فهرس Beauty المحلي */
+  /** حالة فهرس أمازون المحلي */
   getCatalogStatus() {
     return getAmazonCrawlStatus();
   },

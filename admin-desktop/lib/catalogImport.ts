@@ -245,7 +245,7 @@ function storeSearchTimeoutMs(storeId: string, kind: "text" | "barcode" = "text"
   if (storeId === "khaton") return kind === "barcode" ? 8_000 : 10_000;
   if (storeId === "orisdi") return kind === "barcode" ? 15_000 : 12_000;
   if (storeId === "waheteter") return kind === "barcode" ? 8_000 : 10_000;
-  if (storeId === "niceone") return kind === "barcode" ? 22_000 : 18_000;
+  if (storeId === "niceone") return kind === "barcode" ? 35_000 : 22_000;
   if (storeId === "amazon") return kind === "barcode" ? 30_000 : 18_000;
   // مسواگ: بحث الباركود يستعلم مصادر ميتاداتا خارجية بالتوازي مع v2 — يحتاج مهلة أطول قليلاً
   if (storeId === "miswag") return kind === "barcode" ? 22_000 : 10_000;
@@ -543,7 +543,7 @@ export async function fetchCatalogPreview(storeId: string, sourceId: string) {
   };
 }
 
-/** حالة فهرس Amazon Beauty المحلي (الزحف الخلفي) */
+/** حالة فهرس أمازون المحلي (الزحف الخلفي) */
 export async function fetchAmazonCrawlStatus() {
   return catalogFetch<{
     store: string;

@@ -1,7 +1,7 @@
 import { cacheGet, cacheSet } from '../../core/cache.js';
 import { splitBilingualText } from '../../core/bilingual.js';
 import { IMPORT_SIZE, THUMB_SIZE, normalizeAmazonImageUrl } from '../../core/images.js';
-import { BEAUTY_ROOT_NODE } from './client.js';
+import { AMAZON_ALL_CATEGORY } from './client.js';
 
 const DEFAULT_TTL = 12 * 60 * 1000;
 const DETAIL_TTL = 20 * 60 * 1000;
@@ -169,6 +169,7 @@ async function fetchMarketHtml(marketId, url, { ttl = DEFAULT_TTL / 2, cacheKey 
 
 function categoryBrowseKeyword(categoryId = '') {
   const map = {
+    all: 'best sellers',
     '3760911': 'beauty',
     '11058281': 'makeup',
     '11060451': 'skincare',
@@ -182,18 +183,42 @@ function categoryBrowseKeyword(categoryId = '') {
     '11058331': 'eyeshadow',
     '11058691': 'lipstick',
     '11059831': 'foundation',
+    '172282': 'electronics',
+    '2335752011': 'smartphone',
+    '541966': 'laptop computer',
+    '1055398': 'home kitchen',
+    '7141123011': 'clothing fashion',
+    '3375251': 'sports outdoors',
+    '165793011': 'toys games',
+    '283155': 'books',
+    '16310101': 'grocery food',
+    '3760901': 'health household',
+    '2619533011': 'pet supplies',
+    '15690151': 'automotive',
+    '228013': 'tools home improvement',
+    '1064954': 'office supplies',
+    '165796011': 'baby products',
+    '468642': 'video games',
+    '11091801': 'musical instruments',
+    '2972638011': 'patio garden',
+    '16310091': 'industrial scientific',
   };
-  return map[String(categoryId)] || 'beauty';
+  return map[String(categoryId)] || 'best sellers';
+}
+
+function isAllAmazonCategory(categoryId = '') {
+  const cat = String(categoryId || '').trim();
+  return !cat || cat === AMAZON_ALL_CATEGORY;
 }
 
 function searchUrl(market, { query, categoryId, page = 1 }) {
   const q = encodeURIComponent(query || categoryBrowseKeyword(categoryId));
   const p = Math.max(1, Math.min(20, Number(page) || 1));
-  if (market.id === 'com') {
-    const node = encodeURIComponent(String(categoryId || BEAUTY_ROOT_NODE));
-    return `https://${market.host}/s?k=${q}&i=beauty&rh=n%3A${node}&page=${p}`;
+  if (isAllAmazonCategory(categoryId)) {
+    return `https://${market.host}/s?k=${q}&page=${p}`;
   }
-  return `https://${market.host}/s?k=${q}&page=${p}`;
+  const node = encodeURIComponent(String(categoryId));
+  return `https://${market.host}/s?k=${q}&rh=n%3A${node}&page=${p}`;
 }
 
 /** تخمين لون فقط عندما يكون الاسم لوناً بسيطاً واضحاً — لا تُخمّن أسماء التدرجات التسويقية */
@@ -631,7 +656,7 @@ function parseSearchCards(html = '', marketHost = 'www.amazon.com', lang = 'en')
       price,
       sku: asin,
       barcode: '',
-      category: 'Beauty',
+      category: '',
       shadeCount: null,
       hasOptions: false,
       productUrl: `https://${marketHost}/dp/${asin}`,
@@ -1446,7 +1471,7 @@ function parseDetailCore(html = '', asin = '', marketHost = 'www.amazon.com') {
     thumb: normalizeAmazonImageUrl(uniqImages[0] || '', THUMB_SIZE),
     images: uniqImages,
     price,
-    category: 'Beauty',
+    category: '',
     productUrl: `https://${marketHost}/dp/${asin}`,
     inStock: true,
     shades,
@@ -1633,7 +1658,7 @@ async function searchOneMarket(marketId, query, { page = 1, limit = 30, category
 /** بحث ثنائي اللغة سريع: ae/sa (عربي) + com (إنجليزي) بالتوازي */
 export async function scrapeSearchProducts(query, { page = 1, limit = 30, categoryId = '' } = {}) {
   const q = String(query || '').trim() || categoryBrowseKeyword(categoryId);
-  const node = String(categoryId || BEAUTY_ROOT_NODE);
+  const node = String(categoryId || AMAZON_ALL_CATEGORY);
   const pageNum = Math.max(1, Math.min(20, Number(page) || 1));
   const pageSize = Math.max(1, Math.min(48, Number(limit) || 30));
 
@@ -1942,7 +1967,7 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
     thumb: en?.thumb || ae?.thumb || sa?.thumb || '',
     images: [...new Set([...(en?.images || []), ...(ae?.images || []), ...(sa?.images || [])])].slice(0, 24),
     price: en?.price || ae?.price || sa?.price || '',
-    category: 'Beauty',
+    category: '',
     productUrl: `https://www.amazon.com/dp/${asin}`,
     productUrlAr: `https://www.amazon.ae/dp/${asin}`,
     inStock: true,
@@ -1972,7 +1997,7 @@ export async function scrapeBarcode(code) {
   let items = [];
   let softBlocked = false;
   for (const q of queries) {
-    const data = await scrapeSearchProducts(q, { page: 1, limit: 12, categoryId: BEAUTY_ROOT_NODE });
+    const data = await scrapeSearchProducts(q, { page: 1, limit: 12, categoryId: AMAZON_ALL_CATEGORY });
     if (data.softBlocked) softBlocked = true;
     if (data.items?.length) {
       items = data.items;

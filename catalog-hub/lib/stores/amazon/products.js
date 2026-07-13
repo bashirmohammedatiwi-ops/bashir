@@ -1,11 +1,12 @@
 import { cacheGet, cacheSet } from '../../core/cache.js';
 import { IMPORT_SIZE, normalizeAmazonImageUrl } from '../../core/images.js';
 import {
-  BEAUTY_ROOT_NODE,
+  AMAZON_ALL_CATEGORY,
   DEFAULT_TTL,
   ITEM_RESOURCES,
   VARIATION_RESOURCES,
   amazonCredentials,
+  amazonSearchParams,
   paapiRequest,
 } from './client.js';
 import {
@@ -41,7 +42,7 @@ function detailFromIndex(asin) {
     thumb,
     images: thumb ? [normalizeAmazonImageUrl(thumb, IMPORT_SIZE)] : [],
     price: row.price || '',
-    category: row.category || 'Beauty',
+    category: row.category || 'Amazon',
     productUrl: row.url || `https://www.amazon.com/dp/${row.id}`,
     inStock: true,
     shades: [{
@@ -67,9 +68,10 @@ function usePaapi() {
   return amazonCredentials().configured;
 }
 
-/** كلمات تصفح لكل قسم Beauty — أدق من «beauty» العامة */
+/** كلمات تصفح لكل قسم — أدق من كلمة عامة */
 function categoryBrowseKeyword(categoryId = '') {
   const map = {
+    all: 'best sellers',
     '3760911': 'beauty',
     '11058281': 'makeup',
     '11060451': 'skincare',
@@ -83,8 +85,27 @@ function categoryBrowseKeyword(categoryId = '') {
     '11058331': 'eyeshadow',
     '11058691': 'lipstick',
     '11059831': 'foundation',
+    '172282': 'electronics',
+    '2335752011': 'smartphone',
+    '541966': 'laptop computer',
+    '1055398': 'home kitchen',
+    '7141123011': 'clothing fashion',
+    '3375251': 'sports outdoors',
+    '165793011': 'toys games',
+    '283155': 'books',
+    '16310101': 'grocery food',
+    '3760901': 'health household',
+    '2619533011': 'pet supplies',
+    '15690151': 'automotive',
+    '228013': 'tools home improvement',
+    '1064954': 'office supplies',
+    '165796011': 'baby products',
+    '468642': 'video games',
+    '11091801': 'musical instruments',
+    '2972638011': 'patio garden',
+    '16310091': 'industrial scientific',
   };
-  return map[String(categoryId)] || 'beauty';
+  return map[String(categoryId)] || 'best sellers';
 }
 
 function itemsOf(result) {
@@ -130,13 +151,12 @@ async function enrichBilingual(enItems = []) {
 
 async function liveSearchPaapi(query, { page = 1, limit = 30, categoryId = '' } = {}) {
   const q = String(query || '').trim();
-  const node = String(categoryId || BEAUTY_ROOT_NODE);
+  const node = String(categoryId || AMAZON_ALL_CATEGORY);
   const itemPage = Math.max(1, Math.min(10, page));
   const itemCount = Math.max(1, Math.min(10, limit));
 
   const body = {
-    SearchIndex: 'Beauty',
-    BrowseNodeId: node,
+    ...amazonSearchParams(node),
     ItemPage: itemPage,
     ItemCount: itemCount,
     Resources: ITEM_RESOURCES,
@@ -151,8 +171,8 @@ async function liveSearchPaapi(query, { page = 1, limit = 30, categoryId = '' } 
 
   const items = await enrichBilingual(itemsOf(data));
   upsertAmazonProducts(items, { categoryId: node });
-  if (node !== BEAUTY_ROOT_NODE) {
-    upsertAmazonProducts(items, { categoryId: BEAUTY_ROOT_NODE });
+  if (node !== AMAZON_ALL_CATEGORY) {
+    upsertAmazonProducts(items, { categoryId: AMAZON_ALL_CATEGORY });
   }
 
   const total = totalOf(data);
@@ -169,9 +189,10 @@ async function liveSearchPaapi(query, { page = 1, limit = 30, categoryId = '' } 
 async function liveSearchScrape(query, { page = 1, limit = 30, categoryId = '' } = {}) {
   const data = await scrapeSearchProducts(query, { page, limit, categoryId });
   if (!data.softBlocked && data.items?.length) {
-    upsertAmazonProducts(data.items, { categoryId: categoryId || BEAUTY_ROOT_NODE });
-    if (categoryId && categoryId !== BEAUTY_ROOT_NODE) {
-      upsertAmazonProducts(data.items, { categoryId: BEAUTY_ROOT_NODE });
+    const node = categoryId || AMAZON_ALL_CATEGORY;
+    upsertAmazonProducts(data.items, { categoryId: node });
+    if (node !== AMAZON_ALL_CATEGORY) {
+      upsertAmazonProducts(data.items, { categoryId: AMAZON_ALL_CATEGORY });
     }
   }
   return data;
@@ -184,7 +205,7 @@ async function liveSearchScrape(query, { page = 1, limit = 30, categoryId = '' }
 export async function searchProducts(query, { page = 1, limit = 30, categoryId = '' } = {}) {
   // لا تبدأ زحفاً ثقيلاً من كل بحث — فقط عند التصفح الصريح أو POST /crawl
   const q = String(query || '').trim();
-  const node = String(categoryId || BEAUTY_ROOT_NODE);
+  const node = String(categoryId || AMAZON_ALL_CATEGORY);
   const stats = getAmazonIndexStats();
   const pageNum = Math.max(1, Number(page) || 1);
   const pageSize = Math.max(1, Math.min(60, Number(limit) || 30));
@@ -264,8 +285,7 @@ export async function searchProducts(query, { page = 1, limit = 30, categoryId =
 }
 
 export async function listCategoryProducts(categoryId, { page = 1, limit = 30 } = {}) {
-  // تصفح أمازون فقط — لا يبدأ زحفاً خلفياً ثقيلاً (يحمي مسواگ)
-  return searchProducts('', { page, limit, categoryId: categoryId || BEAUTY_ROOT_NODE });
+  return searchProducts('', { page, limit, categoryId: categoryId || AMAZON_ALL_CATEGORY });
 }
 
 async function fetchVariations(asin) {
@@ -322,8 +342,8 @@ function rememberAmazonDetail(detail) {
     sku: detail.sku,
     category: detail.category,
     shadeCount: detail.shadeCount || detail.shades?.length || 1,
-    categoryIds: [BEAUTY_ROOT_NODE],
-  }], { categoryId: BEAUTY_ROOT_NODE });
+    categoryIds: [AMAZON_ALL_CATEGORY],
+  }], { categoryId: AMAZON_ALL_CATEGORY });
 }
 
 export async function fetchProductDetail(id, { light = false } = {}) {
@@ -426,8 +446,8 @@ export async function fetchProductDetail(id, { light = false } = {}) {
   if (detail) {
     upsertAmazonProducts([{
       ...detail,
-      categoryIds: [BEAUTY_ROOT_NODE],
-    }], { categoryId: BEAUTY_ROOT_NODE });
+      categoryIds: [AMAZON_ALL_CATEGORY],
+    }], { categoryId: AMAZON_ALL_CATEGORY });
   }
   cacheSet(cacheKey, detail);
   return detail;
@@ -469,9 +489,9 @@ export async function searchBarcode(code) {
           barcode: h.barcode || digits,
           barcodes: [...new Set([...(h.barcodes || []), h.barcode, digits].filter(Boolean))],
           thumb: normalizeAmazonImageUrl(h.thumb || '', IMPORT_SIZE),
-          categoryIds: [BEAUTY_ROOT_NODE],
+          categoryIds: [AMAZON_ALL_CATEGORY],
         })),
-        { categoryId: BEAUTY_ROOT_NODE },
+        { categoryId: AMAZON_ALL_CATEGORY },
       );
     }
     return hits.map((h) => ({
@@ -481,8 +501,7 @@ export async function searchBarcode(code) {
   }
 
   const data = await paapiRequest('SearchItems', {
-    SearchIndex: 'Beauty',
-    BrowseNodeId: BEAUTY_ROOT_NODE,
+    ...amazonSearchParams(AMAZON_ALL_CATEGORY),
     Keywords: digits,
     ItemCount: 10,
     ItemPage: 1,
@@ -491,7 +510,7 @@ export async function searchBarcode(code) {
   }, { ttl: DEFAULT_TTL, cacheKey: `amazon:barcode:${digits}` });
 
   const items = await enrichBilingual(itemsOf(data));
-  upsertAmazonProducts(items, { categoryId: BEAUTY_ROOT_NODE });
+  upsertAmazonProducts(items, { categoryId: AMAZON_ALL_CATEGORY });
   const exact = items.filter((p) => p.barcode === digits || p.sku === digits);
   const hits = exact.length ? exact : items.slice(0, 5);
 

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/app_config.dart';
 import '../core/network/api_client.dart';
 import '../core/utils/json.dart';
+import '../core/utils/store_labels.dart';
 import '../models/catalog.dart';
 
 class CatalogRepository {
@@ -27,7 +28,7 @@ class CatalogRepository {
       case 'waheteter':
         return 8000;
       case 'niceone':
-        return 20000;
+        return 35000;
       case 'orisdi':
         return 28000;
       case 'alkhabeer':
@@ -57,7 +58,7 @@ class CatalogRepository {
       }
     } catch (_) {}
     return AppConfig.catalogStores
-        .map((id) => CatalogStore(id: id, label: id))
+        .map((id) => CatalogStore(id: id, label: catalogStoreLabel(id)))
         .toList();
   }
 
@@ -118,7 +119,7 @@ class CatalogRepository {
       } finally {
         stats.add(StoreSearchStat(
           storeId: id,
-          storeLabel: id,
+          storeLabel: catalogStoreLabel(id),
           count: count,
           error: error,
           done: true,

@@ -108,6 +108,11 @@ class ProductRepository {
     if (trimmed.contains('waheteter.com')) {
       headers['Referer'] = 'https://waheteter.com/';
     }
+    if (trimmed.contains('niceonesa.com') ||
+        trimmed.contains('d1aq4ubbxe020v.cloudfront.net') ||
+        trimmed.contains('d3e7ardzpaj3y4.cloudfront.net')) {
+      headers['Referer'] = 'https://niceonesa.com/ar/';
+    }
 
     final fetcher = Dio(
       BaseOptions(

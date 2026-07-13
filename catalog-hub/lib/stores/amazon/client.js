@@ -6,7 +6,56 @@ const HOST = 'webservices.amazon.com';
 const REGION = 'us-east-1';
 const SERVICE = 'ProductAdvertisingAPI';
 
+export const AMAZON_ALL_CATEGORY = 'all';
 export const BEAUTY_ROOT_NODE = '3760911';
+
+/** ربط Browse Node بـ SearchIndex في PA-API */
+export const BROWSE_NODE_SEARCH_INDEX = {
+  all: 'All',
+  '3760911': 'Beauty',
+  '11058281': 'Beauty',
+  '11060451': 'Beauty',
+  '11057241': 'Beauty',
+  '11056381': 'Beauty',
+  '3777891': 'Beauty',
+  '3778591': 'Beauty',
+  '11062741': 'Beauty',
+  '10677469011': 'Beauty',
+  '3777331': 'Beauty',
+  '11058331': 'Beauty',
+  '11058691': 'Beauty',
+  '11059831': 'Beauty',
+  '172282': 'Electronics',
+  '2335752011': 'Electronics',
+  '541966': 'Computers',
+  '1055398': 'HomeAndKitchen',
+  '7141123011': 'Fashion',
+  '3375251': 'SportsAndOutdoors',
+  '165793011': 'ToysAndGames',
+  '283155': 'Books',
+  '16310101': 'GroceryAndGourmetFood',
+  '3760901': 'HealthPersonalCare',
+  '2619533011': 'PetSupplies',
+  '15690151': 'Automotive',
+  '228013': 'ToolsAndHomeImprovement',
+  '1064954': 'OfficeProducts',
+  '165796011': 'Baby',
+  '468642': 'VideoGames',
+  '11091801': 'MusicalInstruments',
+  '16310091': 'Industrial',
+  '2972638011': 'GardenAndOutdoor',
+};
+
+export function amazonSearchParams(categoryId = '') {
+  const cat = String(categoryId || '').trim();
+  if (!cat || cat === AMAZON_ALL_CATEGORY) {
+    return { SearchIndex: 'All' };
+  }
+  return {
+    SearchIndex: BROWSE_NODE_SEARCH_INDEX[cat] || 'All',
+    BrowseNodeId: cat,
+  };
+}
 
 export function amazonCredentials() {
   const accessKey = String(process.env.AMAZON_ACCESS_KEY || process.env.AWS_ACCESS_KEY_ID || '').trim();

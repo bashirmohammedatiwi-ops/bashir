@@ -19,6 +19,7 @@ export const NICEONE_META = {
 
 export const niceoneAdapter = {
   ...NICEONE_META,
+  barcodeTextFallback: true,
 
   async health() {
     const [products, categories] = await Promise.all([

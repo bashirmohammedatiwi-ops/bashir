@@ -354,10 +354,10 @@ export default function CatalogImportPage() {
       browseStore === "miswag"
         ? tree.find((n) => n.id === "beauty") || tree[0]
         : browseStore === "amazon"
-          ? tree.find((n) => n.id === "3760911") || tree[0]
+          ? tree.find((n) => n.id === "all") || tree.find((n) => /جميع|all/i.test(n.name)) || tree[0]
           : tree.find((n) => /جميع|all/i.test(n.name)) || tree[0];
     if (!preferred?.id) return;
-    // أمازون: ابدأ من جذر Beauty لعرض كل المنتجات المفهرسة (مثل «جميع المنتجات» في باقي المتاجر)
+    // أمازون: ابدأ من جميع الأقسام لعرض كل المنتجات المفهرسة
     setSelectedCategory(preferred.id);
     setCategoryPath(preferred.name);
     loadCategoryProducts(preferred.id, 1, false);
@@ -386,7 +386,7 @@ export default function CatalogImportPage() {
           const total = st.progress?.total || 0;
           setAmazonCatalogHint(`جاري ملء كتالوج أمازون… ${count} منتج${total ? ` · ${done}/${total}` : ""} — اضغط «تحميل المزيد» أو أعد اختيار القسم لرؤية الجديد`);
         } else if (n > 0) {
-          setAmazonCatalogHint(`${count} منتج مفهرس من Amazon Beauty`);
+          setAmazonCatalogHint(`${count} منتج مفهرس من أمازون`);
         } else {
           setAmazonCatalogHint("البحث والتصفح يعملان مباشرة من Amazon — الفهرس المحلي يمتلئ تدريجياً");
         }
@@ -873,7 +873,7 @@ export default function CatalogImportPage() {
           <div>
             <h3 className="ci-command-title">مركز البحث والاستيراد</h3>
             <p className="ci-command-sub">
-              اضغط شريحة المتجر لتفعيله في البحث وتصفح أقسامه. أمازون بيوتي يعمل بالبحث الحي حتى لو كان الفهرس المحلي فارغاً.
+              اضغط شريحة المتجر لتفعيله في البحث وتصفح أقسامه. أمازون يعمل بالبحث الحي في كل الأقسام حتى لو كان الفهرس المحلي فارغاً.
             </p>
           </div>
           <div className="ci-store-chips">

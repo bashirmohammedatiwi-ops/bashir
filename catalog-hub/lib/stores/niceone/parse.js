@@ -31,12 +31,14 @@ export function parseItemListJsonLd(html = '') {
           const url = product.url || product.offers?.url || entry.url || '';
           const slug = slugFromUrl(url);
           const idMatch = slug.match(/-n(\d+)$/i);
+          const thumb = absImage(Array.isArray(product.image) ? product.image[0] : product.image);
           return {
             id: idMatch?.[1] || slug,
             slug,
             name: String(product.name || '').trim(),
             brand: String(product.brand?.name || product.manufacturer || '').trim(),
-            thumb: absImage(Array.isArray(product.image) ? product.image[0] : product.image),
+            thumb,
+            barcode: barcodeFromImageUrl(thumb) || extractBarcode(product.gtin13 || product.gtin || product.sku || ''),
             price: formatSarPrice(product.offers?.price || product.price || ''),
             productUrl: url,
             inStock: !/OutOfStock/i.test(String(product.offers?.availability || product.availability || '')),

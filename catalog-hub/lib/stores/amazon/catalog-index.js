@@ -190,7 +190,7 @@ function matchesQuery(product, query = '') {
 
 function inCategory(product, categoryId = '') {
   const cat = String(categoryId || '').trim();
-  if (!cat || cat === '3760911') return true;
+  if (!cat || cat === 'all') return true;
   return (product.categoryIds || []).includes(cat);
 }
 
