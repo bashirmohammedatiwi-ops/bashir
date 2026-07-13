@@ -76,7 +76,7 @@ async function searchAdapter(adapter, query, digits) {
     amazon: 28_000,
     miswag: 20_000,
     miraaya: 25_000,
-    niceone: 32_000,
+    niceone: 40_000,
     orisdi: 28_000,
     waheteter: 20_000,
   }[adapter.id] ?? 12_000;

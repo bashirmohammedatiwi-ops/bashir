@@ -96,7 +96,14 @@ function mapShadeValue(shade = {}, { groupAr = '', groupEn = '' } = {}) {
     shade.image,
     ...(Array.isArray(shade.additional_images) ? shade.additional_images : []),
   ].map((u) => absImage(u)).filter(Boolean);
-  const barcode = resolveBarcode(shade.isbn, shade.barcode, ...images);
+  const barcode = resolveBarcode(
+    shade.isbn,
+    shade.barcode,
+    shade.ean,
+    shade.upc,
+    shade.gtin,
+    ...images,
+  );
 
   return {
     id: String(shade.product_option_variant_id || shade.product_option_value_id || ''),
@@ -107,7 +114,7 @@ function mapShadeValue(shade = {}, { groupAr = '', groupEn = '' } = {}) {
     image: images[0] || '',
     price: formatSarPrice(shade.price_formated || shade.event_price || shade.price || ''),
     inStock: shade.has_stock !== false,
-    hexColor: String(shade.hex_color || '').trim(),
+    hexColor: String(shade.hex_color || shade.hexColor || '').trim(),
     optionGroupAr: groupAr,
     optionGroupEn: groupEn,
   };

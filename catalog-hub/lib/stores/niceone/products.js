@@ -1,5 +1,6 @@
 import { cacheGet, cacheSet } from '../../core/cache.js';
 import { findBarcodeIndexEntry, gtinEqual, upsertBarcodeIndex } from '../../core/barcode-index.js';
+import { lookupBarcodeProductMeta } from '../../core/barcode-meta.js';
 import {
   DEFAULT_TTL,
   DETAIL_TTL,
@@ -40,7 +41,16 @@ async function fetchListingPage({ category = '', search = '', page = 1, lang = '
   const cached = cacheGet(cacheKey, LIST_TTL);
   if (cached) return cached;
 
-  const html = await fetchPageHtml(url, { lang, ttl: LIST_TTL, cacheKey: `niceone:raw:${cacheKey}` });
+  let html = '';
+  try {
+    html = await fetchPageHtml(url, { lang, ttl: LIST_TTL, cacheKey: `niceone:raw:${cacheKey}` });
+  } catch (err) {
+    if (/NiceOne 404/.test(String(err?.message || ''))) {
+      return { items: [], total: 0, page, pageSize: 0 };
+    }
+    throw err;
+  }
+
   const { total, items } = parseItemListJsonLd(html);
   const out = {
     items: items.map((item) => mapListItem({
@@ -98,16 +108,18 @@ export async function searchProducts(query, { page = 1, limit = 30 } = {}) {
 }
 
 function rememberBarcodes(detail) {
-  if (detail?.barcode) {
-    upsertBarcodeIndex(detail.barcode, {
+  const main = extractBarcode(detail?.barcode || '');
+  if (main) {
+    upsertBarcodeIndex(main, {
       store: 'niceone',
       productId: detail.id,
       brand: detail.brandAr || detail.brandEn || '',
     });
   }
   for (const shade of detail?.shades || []) {
-    if (!shade.barcode) continue;
-    upsertBarcodeIndex(shade.barcode, {
+    const bc = extractBarcode(shade.barcode || '');
+    if (!bc) continue;
+    upsertBarcodeIndex(bc, {
       store: 'niceone',
       productId: detail.id,
       brand: detail.brandAr || detail.brandEn || '',
@@ -197,54 +209,67 @@ function shadeNameForBarcode(detail, digits) {
   return shade?.nameAr || shade?.nameEn || '';
 }
 
-async function searchBarcodeViaSite(digits) {
-  const { items } = await fetchListingMerged({ search: digits, page: 1, limit: 12 });
+function metaSearchQueries(meta = {}) {
+  const brand = String(meta.brand || '').trim();
+  const title = String(meta.title || '').trim();
+  const shortTitle = title.split(/[*|,]/)[0].trim();
+  const queries = [
+    [brand, shortTitle].filter(Boolean).join(' '),
+    [brand, title].filter(Boolean).join(' ').slice(0, 80),
+    brand,
+    shortTitle.slice(0, 60),
+  ].map((q) => q.trim()).filter((q) => q.length >= 3);
+  return [...new Set(queries)];
+}
+
+async function searchBarcodeViaListing(query, digits) {
+  const { items } = await fetchListingMerged({ search: query, page: 1, limit: 12 });
   if (!items.length) return [];
 
-  const hits = [];
+  const candidates = [];
   const seen = new Set();
-  const needDetail = [];
-
   for (const item of items) {
     if (seen.has(item.id)) continue;
     seen.add(item.id);
     const thumbBc = barcodeFromImageUrl(item.thumb || '');
-    if (gtinEqual(thumbBc, digits) || gtinEqual(item.barcode, digits)) {
-      needDetail.unshift(item);
-    } else {
-      needDetail.push(item);
-    }
-    if (needDetail.length >= 4) break;
+    const priority = (gtinEqual(thumbBc, digits) || gtinEqual(item.barcode, digits)) ? 0 : 1;
+    candidates.push({ item, priority });
+    if (candidates.length >= 8) break;
   }
+  candidates.sort((a, b) => a.priority - b.priority);
 
-  for (const item of needDetail.slice(0, 3)) {
-    if (hits.length >= 3) break;
-    const thumbBc = barcodeFromImageUrl(item.thumb || '');
-    if (gtinEqual(thumbBc, digits) || gtinEqual(item.barcode, digits)) {
-      const detail = await fetchProductDetail(item.id, { light: true }).catch(() => null);
-      if (detail && detailMatchesBarcode(detail, digits)) {
-        hits.push(toBarcodeHit(detail, digits, { shadeName: shadeNameForBarcode(detail, digits) }));
-        break;
-      }
-      if (detail) {
-        hits.push(toBarcodeHit(detail, digits, { shadeName: shadeNameForBarcode(detail, digits) }));
-        break;
-      }
-    }
-  }
-
-  if (hits.length) return hits;
-
-  const verified = await Promise.all(
-    needDetail.slice(0, 3).map((item) => fetchProductDetail(item.id, { light: false }).catch(() => null)),
+  const details = await Promise.all(
+    candidates.slice(0, 5).map(({ item }) => fetchProductDetail(item.id, { light: false }).catch(() => null)),
   );
-  for (const detail of verified) {
+  for (const detail of details) {
     if (!detail || !detailMatchesBarcode(detail, digits)) continue;
-    hits.push(toBarcodeHit(detail, digits, { shadeName: shadeNameForBarcode(detail, digits) }));
-    break;
+    return [toBarcodeHit(detail, digits, { shadeName: shadeNameForBarcode(detail, digits) })];
+  }
+  return [];
+}
+
+async function searchBarcodeViaSite(digits) {
+  const queries = [digits];
+  if (digits.length === 13 && digits.startsWith('0')) {
+    queries.push(digits.slice(1));
+  }
+  if (digits.length === 12) {
+    queries.push(`0${digits}`);
   }
 
-  return hits;
+  for (const query of queries) {
+    const hits = await searchBarcodeViaListing(query, digits);
+    if (hits.length) return hits;
+  }
+
+  const meta = await lookupBarcodeProductMeta(digits).catch(() => null);
+  if (!meta?.brand && !meta?.title) return [];
+
+  for (const query of metaSearchQueries(meta)) {
+    const hits = await searchBarcodeViaListing(query, digits);
+    if (hits.length) return hits;
+  }
+  return [];
 }
 
 export async function searchBarcode(code) {

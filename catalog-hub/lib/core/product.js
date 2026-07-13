@@ -21,7 +21,7 @@ export function emptyShade(i = 0) {
 }
 
 export function normalizeShade(raw = {}, index = 0) {
-  const hex = String(raw.hex || raw.colorHex || raw.color || '').trim();
+  const hex = String(raw.hex || raw.colorHex || raw.hexColor || raw.color || '').trim();
   const barcode = String(raw.barcode || raw.ean || '').replace(/\D/g, '');
   return {
     id: String(raw.id || raw.sku || raw.optionId || index),
@@ -100,7 +100,7 @@ export function toImportPayload(product) {
       sku: s.sku || s.miswagId,
       miswagId: s.miswagId || s.sku,
       barcode: s.barcode,
-      colorHex: s.hex,
+      colorHex: normalizeHex(s.hex) || s.hex || '',
       imageUrl: s.image,
       swatchUrl: s.swatchImage || s.image,
       price: s.price,

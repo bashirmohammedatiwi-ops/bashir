@@ -28,7 +28,7 @@ class CatalogRepository {
       case 'waheteter':
         return 8000;
       case 'niceone':
-        return 35000;
+        return 45000;
       case 'orisdi':
         return 28000;
       case 'alkhabeer':

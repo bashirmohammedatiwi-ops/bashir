@@ -63,7 +63,8 @@ export function categoryUrl(categoryPath = '', { lang = 'ar', page = 1 } = {}) {
 
 export function searchUrl(query = '', { lang = 'ar' } = {}) {
   const q = String(query || '').trim();
-  return `${SITE}${langPath(lang)}/search/?q=${encodeURIComponent(q)}`;
+  // بدون شرطة قبل ? — /search/?q= يعيد 301 وأحياناً 404 للباركود
+  return `${SITE}${langPath(lang)}/search?q=${encodeURIComponent(q)}`;
 }
 
 export function formatSarPrice(value = '', { original = null } = {}) {
@@ -87,26 +88,39 @@ export function isValidEan(digits = '') {
   return /^\d{8,14}$/.test(d);
 }
 
-export function extractBarcode(raw = '') {
-  const d = String(raw || '').replace(/\D/g, '');
-  return isValidEan(d) ? d : '';
+/** تحقق رقم تحقق GTIN (EAN-8 / UPC-A / EAN-13) */
+export function isValidGtinChecksum(digits = '') {
+  const d = String(digits || '').replace(/\D/g, '');
+  if (!/^\d{8}$|^\d{12}$|^\d{13}$/.test(d)) return false;
+  const body = d.slice(0, -1);
+  const check = Number(d.slice(-1));
+  let sum = 0;
+  for (let i = body.length - 1, pos = 0; i >= 0; i -= 1, pos += 1) {
+    sum += Number(body[i]) * (pos % 2 === 0 ? 3 : 1);
+  }
+  return ((10 - (sum % 10)) % 10) === check;
 }
 
+export function extractBarcode(raw = '') {
+  const d = String(raw || '').replace(/\D/g, '');
+  if (!isValidEan(d)) return '';
+  if ((d.length === 12 || d.length === 13 || d.length === 8) && !isValidGtinChecksum(d)) return '';
+  return d;
+}
+
+/**
+ * باركود من اسم ملف صورة نايس ون — فقط الجزء الأخير بعد _ إن كان EAN/UPC صالحاً.
+ * لا نأخذ أرقاماً عشوائية من الهاش أو معرف المنتج داخل الاسم.
+ */
 export function barcodeFromImageUrl(url = '') {
   const file = String(url || '').split('/').pop()?.split('?')[0] || '';
-  const matches = file.match(/\d{8,14}/g) || [];
-  if (!matches.length) return '';
-
-  const ean13 = matches.filter((m) => m.length === 13);
-  if (ean13.length) return ean13[ean13.length - 1];
-
-  const ean12 = matches.filter((m) => m.length === 12);
-  if (ean12.length) return ean12[ean12.length - 1];
-
-  for (const m of [...matches].reverse()) {
-    if (!isValidEan(m)) continue;
-    if (m.length === 10 && /^1[67]\d{8}$/.test(m)) continue;
-    return m;
+  const base = file.replace(/\.[a-z0-9]+$/i, '');
+  const parts = base.split('_');
+  for (let i = parts.length - 1; i >= 0; i -= 1) {
+    const seg = String(parts[i] || '').replace(/\D/g, '');
+    if ((seg.length === 12 || seg.length === 13) && isValidGtinChecksum(seg)) {
+      return seg;
+    }
   }
   return '';
 }
