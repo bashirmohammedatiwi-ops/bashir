@@ -11,6 +11,7 @@ import {
 import { isValidEan } from './ids.js';
 import {
   bulkUpsertBarcodeIndex,
+  findBarcodesForProduct,
   isMiswagBarcodeHarvestDone,
   markMiswagBarcodeHarvestDone,
 } from '../../core/barcode-index.js';

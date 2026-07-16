@@ -210,7 +210,12 @@ async function getSearchConfig() {
     return cacheSet('miswag:typesense:cfg', cfg);
   }
 
-  for (const pageUrl of [`${SITE}/`, `${SITE}/l1-categories/beauty`, `${SITE}/search?q=test`]) {
+  for (const pageUrl of [
+    `${SITE}/search?q=maybelline`,
+    `${SITE}/`,
+    `${SITE}/l1-categories/beauty`,
+    `${SITE}/search?q=test`,
+  ]) {
     try {
       const res = await fetch(pageUrl, {
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CatalogHub/2.0)', Accept: 'text/html' },

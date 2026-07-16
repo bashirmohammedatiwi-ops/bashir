@@ -8,6 +8,7 @@ import {
   cacheGet,
   cacheSet,
 } from './client.js';
+import { miswagWebSearchItems } from './search-api.js';
 import {
   fetchV2BarcodesForIds,
   fetchV2Barcode,
@@ -562,16 +563,20 @@ function withDeadline(promise, ms, fallback) {
 }
 
 /**
- * بحث Typesense بلا قيد قسم — للباركود نبحث في كل كتالوج مسواگ
- * (المستحضرات في "beauty"، العطور في "perfumes"، العناية في "personal-care"...).
+ * بحث واسع في كتالوج مسواگ — عبر واجهة الموقع الجديدة (Typesense اختياري فقط).
  */
-async function typesenseBroadSearch(q, perPage = 20) {
-  const { hits = [] } = await typesenseSearch(q, {
-    perPage,
-    strict: false,
-    usePreset: false,
-  }).catch(() => ({ hits: [] }));
-  return hits.map((h) => mapTypesenseHit(h.document || h)).filter((p) => p.id);
+async function miswagBroadSearch(q, perPage = 20) {
+  try {
+    const { items } = await miswagWebSearchItems(q, { perPage });
+    return items;
+  } catch {
+    const { hits = [] } = await typesenseSearch(q, {
+      perPage,
+      strict: false,
+      usePreset: false,
+    }).catch(() => ({ hits: [] }));
+    return hits.map((h) => mapTypesenseHit(h.document || h)).filter((p) => p.id);
+  }
 }
 
 /**
@@ -600,7 +605,7 @@ async function collectBarcodeCandidates(digits) {
   const limit = perBrandLimit(guessedBrands.length);
 
   const brandSearch = Promise.all(
-    guessedBrands.map((brand) => typesenseBroadSearch(brand, limit)),
+    guessedBrands.map((brand) => miswagBroadSearch(brand, limit)),
   ).then((lists) => lists.flat());
 
   const webIdsPromise = withDeadline(findMiswagIdsFromWeb(digits).catch(() => []), 8_000, []);
@@ -624,6 +629,21 @@ async function collectBarcodeCandidates(digits) {
   if (webIds?.length) {
     const webHits = await Promise.all(
       webIds.slice(0, 8).map(async (wid) => {
+        const item = await fetchProductDetail(String(wid), { light: true }).catch(() => null);
+        if (item) {
+          return {
+            id: item.id,
+            nameAr: item.nameAr,
+            nameEn: item.nameEn,
+            brandAr: item.brandAr,
+            brandEn: item.brandEn,
+            thumb: item.thumb,
+            price: item.price,
+            shadeCount: item.shadeCount,
+            hasOptions: item.hasOptions,
+            barcode: item.barcode,
+          };
+        }
         const doc = await fetchTypesenseDoc(wid);
         return doc ? mapTypesenseHit(doc) : { id: String(wid) };
       }),
@@ -635,7 +655,7 @@ async function collectBarcodeCandidates(digits) {
   if (meta && isUsableBarcodeMeta(meta)) {
     const queries = buildMetaHintQueries(meta);
     for (const q of queries.slice(0, 5)) {
-      const hits = await typesenseBroadSearch(q, 20);
+      const hits = await miswagBroadSearch(q, 20);
       pushUnique(hits);
       if (hits.length > 0 && hits.length <= 8) break;
     }
@@ -645,13 +665,13 @@ async function collectBarcodeCandidates(digits) {
 
   // احتياط أخير — قد يظهر الباركود حرفياً في نص المنتج (نادر لكن رخيص)
   if (!priority.length) {
-    pushUnique(await typesenseBroadSearch(digits, 8));
+    pushUnique(await miswagBroadSearch(digits, 8));
   }
 
   // لا بادئة معروفة ولا metadata مفيدة — مسح موجّه لأشهر الماركات (محدود بمهلة)
   if (!priority.length && !guessedBrands.length) {
     const sweepHits = await withDeadline(
-      Promise.all(BEAUTY_BRAND_SWEEP.map((brand) => typesenseBroadSearch(brand, 15))).then((l) => l.flat()),
+      Promise.all(BEAUTY_BRAND_SWEEP.map((brand) => miswagBroadSearch(brand, 15))).then((l) => l.flat()),
       9_000,
       [],
     );
