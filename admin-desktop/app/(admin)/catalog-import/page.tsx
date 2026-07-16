@@ -23,7 +23,7 @@ import {
   ShopOutlined,
 } from "@ant-design/icons";
 import type { DataNode } from "antd/es/tree";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { CatalogOptionCard, storeColor } from "@/components/catalog-import/CatalogOptionCard";
 import { matchCategoryFromHints } from "@/lib/catalogCategoryMatch";
@@ -56,10 +56,19 @@ import { mutations, queries } from "@/lib/queries";
 import "./catalog-import.css";
 
 function errorMessage(err: unknown, fallback: string) {
-  const e = err as { message?: string; response?: { data?: { error?: unknown; message?: unknown } } };
+  const e = err as {
+    message?: string;
+    response?: { status?: number; data?: { error?: unknown; message?: unknown } };
+  };
   const apiErr = e?.response?.data?.error;
   if (typeof apiErr === "string" && apiErr.trim()) return apiErr.trim();
   if (typeof e?.response?.data?.message === "string") return e.response.data.message;
+  if (e?.response?.status === 409) {
+    return "تعارض في البيانات — قد يكون المنتج أو البراند أو الباركود مستخدماً مسبقاً";
+  }
+  if (typeof e?.message === "string" && e.message.includes("status code 409")) {
+    return "تعارض في البيانات — قد يكون المنتج أو البراند أو الباركود مستخدماً مسبقاً";
+  }
   if (typeof e?.message === "string" && e.message.trim()) return e.message;
   return fallback;
 }
@@ -78,14 +87,24 @@ async function ensureBrandId(
   const catalogHit = matchCatalogBrandRow(catalogBrands.brands || [], brandAr, brandEn);
   const logoUrl = catalogBrandLogoUrl(catalogHit);
 
-  const result = await mutations.resolveBrand({
-    brandAr,
-    brandEn,
-    logoUrl,
-    logoIsProductImage: catalogHit?.logoIsProductImage,
-    createIfMissing: true,
-  });
-  return result?.brand?.id || result?.id;
+  try {
+    const result = await mutations.resolveBrand({
+      brandAr,
+      brandEn,
+      logoUrl,
+      logoIsProductImage: catalogHit?.logoIsProductImage,
+      createIfMissing: true,
+    });
+    return result?.brand?.id || result?.id;
+  } catch (err) {
+    const status = (err as { response?: { status?: number } })?.response?.status;
+    if (status === 409 || status === 500) {
+      const fresh = await queries.brands().catch(() => brands);
+      const retry = matchBrandIdLocal(fresh, brandAr, brandEn);
+      if (retry) return retry;
+    }
+    throw err;
+  }
 }
 
 function stripHtml(html = "") {
@@ -209,6 +228,7 @@ export default function CatalogImportPage() {
   const [step, setStep] = useState(0);
   const [form] = Form.useForm();
   const qc = useQueryClient();
+  const previewLoadIdRef = useRef(0);
 
   const { data: categoriesData = [] } = useQuery({ queryKey: ["categories"], queryFn: queries.categories });
   const { data: brandsData = [] } = useQuery({ queryKey: ["brands"], queryFn: queries.brands });
@@ -581,9 +601,19 @@ export default function CatalogImportPage() {
 
   const loadPreview = useCallback(
     async (opt: CatalogImportOption) => {
+      const loadId = ++previewLoadIdRef.current;
+      const isStale = () => loadId !== previewLoadIdRef.current;
+
       setSelected(opt);
       setLoadingPreview(true);
-      setPreview(null);
+      setStep(2);
+
+      const sameProduct =
+        selected?.store === opt.store && String(selected?.sourceId) === String(opt.sourceId);
+      if (!sameProduct) {
+        setPreview(null);
+      }
+
       try {
         let product: CatalogImportProduct;
         try {
@@ -593,10 +623,9 @@ export default function CatalogImportPage() {
             opt.sourceId,
             opt.storeLabel,
             (partial) => {
-              if (partial.shades?.length) {
+              if (isStale()) return;
+              if (partial.shades?.length || partial.nameAr) {
                 setPreview(partial);
-                setStep(2);
-                setLoadingPreview(false);
               }
             },
           );
@@ -627,17 +656,16 @@ export default function CatalogImportPage() {
             throw err;
           }
         }
-        setPreview(product);
 
-        const brandId = await ensureBrandId(brandsData, product.brandAr, product.brandEn, catalogBrandsData);
-        if (brandId) {
-          await qc.fetchQuery({ queryKey: ["brands"], queryFn: queries.brands });
-        }
+        if (isStale()) return;
+        setPreview(product);
 
         const [allSubcategories, allTertiary] = await Promise.all([
           qc.fetchQuery({ queryKey: ["subcategories", "all"], queryFn: () => queries.subcategories() }),
           qc.fetchQuery({ queryKey: ["tertiary-sections", "all"], queryFn: () => queries.tertiarySections() }),
         ]);
+
+        if (isStale()) return;
 
         const catMatch = matchCategoryFromHints(
           categoriesData,
@@ -647,13 +675,27 @@ export default function CatalogImportPage() {
           "",
         );
 
+        let brandId: string | undefined;
+        try {
+          brandId = await ensureBrandId(brandsData, product.brandAr, product.brandEn, catalogBrandsData);
+          if (brandId) {
+            void qc.fetchQuery({ queryKey: ["brands"], queryFn: queries.brands });
+          }
+        } catch (brandErr) {
+          if (!isStale()) {
+            message.warning(
+              errorMessage(brandErr, "تعذّر مطابقة البراند تلقائياً — اختره يدوياً من القائمة"),
+            );
+          }
+        }
+
+        if (isStale()) return;
         form.setFieldsValue({
           brandId,
           categoryId: catMatch.categoryId,
           subcategoryId: catMatch.subcategoryId,
           tertiaryCategoryId: catMatch.tertiaryCategoryId,
         });
-        setStep(2);
 
         if (opt.store === "amazon" && product.shades?.length) {
           // استخرج ألوان السواتش من الصور في الخلفية
@@ -663,15 +705,22 @@ export default function CatalogImportPage() {
               colorHex: s.colorHex || (await resolveShadeColorHex(s)) || "",
             })),
           );
-          setPreview((prev) => (prev ? { ...prev, shades: withHex } : prev));
+          if (!isStale()) {
+            setPreview((prev) => (prev ? { ...prev, shades: withHex } : prev));
+          }
         }
       } catch (err) {
-        message.error(errorMessage(err, "فشل جلب تفاصيل المنتج"));
+        if (!isStale()) {
+          message.error(errorMessage(err, "فشل جلب تفاصيل المنتج"));
+          setStep(options.length > 0 || products.length > 0 ? 1 : 0);
+          setPreview(null);
+          setSelected(null);
+        }
       } finally {
-        setLoadingPreview(false);
+        if (!isStale()) setLoadingPreview(false);
       }
     },
-    [brandsData, catalogBrandsData, categoriesData, form, qc],
+    [brandsData, catalogBrandsData, categoriesData, form, options.length, products.length, qc, selected],
   );
 
   const importProduct = useMutation({
@@ -815,7 +864,7 @@ export default function CatalogImportPage() {
 
   const displayOptions = options.length > 0 ? options : browseOptions;
   const isSearchMode = options.length > 0;
-  const drawerOpen = step === 2 || loadingPreview;
+  const drawerOpen = step >= 2 || loadingPreview || Boolean(preview);
 
   const selectStoreForBrowse = useCallback((id: string) => {
     setActiveStores((prev) => (prev.includes(id) ? prev : [...prev, id]));
@@ -829,9 +878,11 @@ export default function CatalogImportPage() {
   }, [browseStore]);
 
   const closeImportDrawer = useCallback(() => {
+    previewLoadIdRef.current += 1;
     setStep(displayOptions.length ? 1 : 0);
     setSelected(null);
     setPreview(null);
+    setLoadingPreview(false);
     setBarcodeLookup({});
   }, [displayOptions.length]);
 

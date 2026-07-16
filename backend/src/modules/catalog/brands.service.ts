@@ -217,16 +217,41 @@ export class BrandsService {
     const name = pickBrandDisplayName(input.brandAr || "", input.brandEn || "") || hints[0];
     const slug = await this.uniqueSlug(slugifyBrand(name));
     const initial = name.trim().charAt(0).toUpperCase() || null;
-    const created = await this.prisma.brand.create({
-      data: {
-        name,
-        slug,
-        initial,
-        isActive: true,
-        isFeatured: false,
-        position: 0,
-      },
-    });
+    let created;
+    try {
+      created = await this.prisma.brand.create({
+        data: {
+          name,
+          slug,
+          initial,
+          isActive: true,
+          isFeatured: false,
+          position: 0,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        const raced = await this.prisma.brand.findFirst({
+          where: { OR: [{ slug }, { name }] },
+        });
+        if (raced) {
+          const attached = input.logoUrl
+            ? await this.attachLogoIfNeeded(
+                raced.id,
+                input.logoUrl,
+                Boolean(input.logoIsProductImage),
+                Boolean(raced.logoId),
+              )
+            : false;
+          const brand = await this.findOne(raced.id);
+          return { brand, created: false, matched: true, logoAttached: attached };
+        }
+      }
+      throw error;
+    }
 
     const attached = input.logoUrl
       ? await this.attachLogoIfNeeded(created.id, input.logoUrl, Boolean(input.logoIsProductImage), false)

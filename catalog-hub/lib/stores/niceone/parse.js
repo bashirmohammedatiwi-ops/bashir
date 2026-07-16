@@ -1,6 +1,5 @@
 import {
   absImage,
-  barcodeFromImageUrl,
   extractBarcode,
   formatSarPrice,
   parseNuxtPayload,
@@ -8,6 +7,11 @@ import {
   findProductNodeIndex,
   slugFromUrl,
 } from './client.js';
+import {
+  barcodeFromImageUrl,
+  collectBarcodeFromSources,
+  pickProductBarcode,
+} from './barcodes.js';
 
 function parseJsonLdBlocks(html = '') {
   const blocks = [];
@@ -77,33 +81,20 @@ export function parseProductJsonLd(html = '', { lang = 'ar' } = {}) {
   return null;
 }
 
-function resolveBarcode(...sources) {
-  for (const src of sources) {
-    const fromText = extractBarcode(src);
-    if (fromText) return fromText;
-    const fromImg = barcodeFromImageUrl(src);
-    if (fromImg && fromImg.length >= 12) return fromImg;
-  }
-  for (const src of sources) {
-    const fromImg = barcodeFromImageUrl(src);
-    if (fromImg) return fromImg;
-  }
-  return '';
-}
-
 function mapShadeValue(shade = {}, { groupAr = '', groupEn = '' } = {}) {
   const images = [
     shade.image,
     ...(Array.isArray(shade.additional_images) ? shade.additional_images : []),
   ].map((u) => absImage(u)).filter(Boolean);
-  const barcode = resolveBarcode(
-    shade.isbn,
-    shade.barcode,
-    shade.ean,
-    shade.upc,
-    shade.gtin,
-    ...images,
-  );
+  const barcode = collectBarcodeFromSources({
+    isbn: shade.isbn,
+    barcode: shade.barcode,
+    ean: shade.ean,
+    upc: shade.upc,
+    gtin: shade.gtin,
+    sku: shade.sku,
+    images,
+  });
 
   return {
     id: String(shade.product_option_variant_id || shade.product_option_value_id || ''),
@@ -145,10 +136,11 @@ export function parseNuxtProduct(html = '', productId = '') {
     }
   }
 
-  const barcode = extractBarcode(product.isbn || product.sku || '')
-    || barcodeFromImageUrl(images[0] || '')
-    || shades.find((s) => s.barcode)?.barcode
-    || '';
+  const barcode = pickProductBarcode({
+    barcode: extractBarcode(product.isbn || product.sku || ''),
+    images,
+    shades,
+  });
 
   return {
     id: String(product.id || productId),

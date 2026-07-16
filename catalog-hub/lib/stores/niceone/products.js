@@ -5,7 +5,6 @@ import {
   DEFAULT_TTL,
   DETAIL_TTL,
   LIST_TTL,
-  barcodeFromImageUrl,
   categoryUrl,
   extractBarcode,
   fetchPageHtml,
@@ -14,6 +13,11 @@ import {
   productUrl,
   searchUrl,
 } from './client.js';
+import {
+  barcodeFromImageUrl,
+  enrichShadesWithBarcodes,
+  pickProductBarcode,
+} from './barcodes.js';
 import { mapDetailProduct, mapListItem, toBarcodeHit } from './map.js';
 import { parseItemListJsonLd, parseProductPage } from './parse.js';
 
@@ -146,14 +150,28 @@ async function loadDetailBilingual(idOrSlug, { light = false } = {}) {
   const en = enHtml ? parseProductPage(enHtml, { lang: 'en', productId }) : null;
   if (!ar && !en) return null;
 
-  const shades = (ar?.shades || []).map((shade, index) => {
-    const enShade = en?.shades?.[index];
-    return {
-      ...shade,
-      nameEn: enShade?.nameEn || enShade?.nameAr || shade.nameEn || shade.nameAr,
-      optionGroupEn: enShade?.optionGroupEn || enShade?.optionGroupAr || shade.optionGroupEn || shade.optionGroupAr,
-    };
-  });
+  let shades = enrichShadesWithBarcodes(ar?.shades || [], { html: arHtml });
+  if (enHtml && (en?.shades || []).length) {
+    const enEnriched = enrichShadesWithBarcodes(en.shades, { html: enHtml });
+    shades = shades.map((shade, index) => {
+      const enShade = enEnriched[index];
+      return {
+        ...shade,
+        barcode: shade.barcode || enShade?.barcode || '',
+        nameEn: enShade?.nameEn || enShade?.nameAr || shade.nameEn || shade.nameAr,
+        optionGroupEn: enShade?.optionGroupEn || enShade?.optionGroupAr || shade.optionGroupEn || shade.optionGroupAr,
+      };
+    });
+  } else {
+    shades = shades.map((shade, index) => {
+      const enShade = en?.shades?.[index];
+      return {
+        ...shade,
+        nameEn: enShade?.nameEn || enShade?.nameAr || shade.nameEn || shade.nameAr,
+        optionGroupEn: enShade?.optionGroupEn || enShade?.optionGroupAr || shade.optionGroupEn || shade.optionGroupAr,
+      };
+    });
+  }
 
   const images = [...new Set([...(ar?.images || []), ...(en?.images || [])])];
   const detail = mapDetailProduct({
@@ -166,7 +184,11 @@ async function loadDetailBilingual(idOrSlug, { light = false } = {}) {
     descriptionAr: ar?.descriptionAr || '',
     descriptionEn: en?.descriptionEn || '',
     sku: ar?.sku || en?.sku || '',
-    barcode: extractBarcode(ar?.barcode || en?.barcode || ''),
+    barcode: pickProductBarcode({
+      barcode: extractBarcode(ar?.barcode || en?.barcode || ''),
+      images,
+      shades,
+    }),
     thumb: images[0] || ar?.thumb || en?.thumb || '',
     images,
     price: ar?.price || en?.price || '',
@@ -204,6 +226,20 @@ function detailMatchesBarcode(detail, digits) {
   return (detail.shades || []).some((shade) => shade.barcode && gtinEqual(shade.barcode, digits));
 }
 
+function barcodeLookupVariants(digits) {
+  const queries = [digits];
+  if (digits.length === 13 && digits.startsWith('0')) {
+    queries.push(digits.slice(1));
+  }
+  if (digits.length === 12) {
+    queries.push(`0${digits}`);
+  }
+  if (digits.length === 8) {
+    queries.push(`0${digits}`, `00${digits}`, `000${digits}`);
+  }
+  return [...new Set(queries)];
+}
+
 function shadeNameForBarcode(detail, digits) {
   const shade = (detail?.shades || []).find((s) => s.barcode && gtinEqual(s.barcode, digits));
   return shade?.nameAr || shade?.nameEn || '';
@@ -223,7 +259,7 @@ function metaSearchQueries(meta = {}) {
 }
 
 async function searchBarcodeViaListing(query, digits) {
-  const { items } = await fetchListingMerged({ search: query, page: 1, limit: 12 });
+  const { items } = await fetchListingMerged({ search: query, page: 1, limit: 16 });
   if (!items.length) return [];
 
   const candidates = [];
@@ -234,12 +270,12 @@ async function searchBarcodeViaListing(query, digits) {
     const thumbBc = barcodeFromImageUrl(item.thumb || '');
     const priority = (gtinEqual(thumbBc, digits) || gtinEqual(item.barcode, digits)) ? 0 : 1;
     candidates.push({ item, priority });
-    if (candidates.length >= 8) break;
+    if (candidates.length >= 12) break;
   }
   candidates.sort((a, b) => a.priority - b.priority);
 
   const details = await Promise.all(
-    candidates.slice(0, 5).map(({ item }) => fetchProductDetail(item.id, { light: false }).catch(() => null)),
+    candidates.slice(0, 8).map(({ item }) => fetchProductDetail(item.id, { light: false }).catch(() => null)),
   );
   for (const detail of details) {
     if (!detail || !detailMatchesBarcode(detail, digits)) continue;
@@ -249,15 +285,7 @@ async function searchBarcodeViaListing(query, digits) {
 }
 
 async function searchBarcodeViaSite(digits) {
-  const queries = [digits];
-  if (digits.length === 13 && digits.startsWith('0')) {
-    queries.push(digits.slice(1));
-  }
-  if (digits.length === 12) {
-    queries.push(`0${digits}`);
-  }
-
-  for (const query of queries) {
+  for (const query of barcodeLookupVariants(digits)) {
     const hits = await searchBarcodeViaListing(query, digits);
     if (hits.length) return hits;
   }

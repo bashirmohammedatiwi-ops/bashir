@@ -108,22 +108,7 @@ export function extractBarcode(raw = '') {
   return d;
 }
 
-/**
- * باركود من اسم ملف صورة نايس ون — فقط الجزء الأخير بعد _ إن كان EAN/UPC صالحاً.
- * لا نأخذ أرقاماً عشوائية من الهاش أو معرف المنتج داخل الاسم.
- */
-export function barcodeFromImageUrl(url = '') {
-  const file = String(url || '').split('/').pop()?.split('?')[0] || '';
-  const base = file.replace(/\.[a-z0-9]+$/i, '');
-  const parts = base.split('_');
-  for (let i = parts.length - 1; i >= 0; i -= 1) {
-    const seg = String(parts[i] || '').replace(/\D/g, '');
-    if ((seg.length === 12 || seg.length === 13) && isValidGtinChecksum(seg)) {
-      return seg;
-    }
-  }
-  return '';
-}
+export { barcodeFromImageUrl } from './barcodes.js';
 
 export async function niceoneFetch(url, { ttl = DEFAULT_TTL, cacheKey = '' } = {}) {
   const key = cacheKey || (ttl > 0 ? `niceone:${url}` : '');
