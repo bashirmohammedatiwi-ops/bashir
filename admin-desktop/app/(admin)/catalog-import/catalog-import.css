@@ -545,6 +545,17 @@
   min-height: 100%;
 }
 
+.ci-drawer-loading-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  font-size: 12px;
+  color: #6b5a7a;
+  background: #f3eef8;
+  border-bottom: 1px solid var(--ci-line);
+}
+
 .ci-drawer-hero {
   padding: 18px 18px 8px;
   background:

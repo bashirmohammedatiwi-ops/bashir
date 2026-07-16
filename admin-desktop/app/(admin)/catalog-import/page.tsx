@@ -196,6 +196,16 @@ function listProductToOption(p: CatalogListProduct, store: CatalogStore): Catalo
   };
 }
 
+function mergeSearchOptions(
+  prev: CatalogImportOption[],
+  next: CatalogImportOption[],
+): CatalogImportOption[] {
+  const map = new Map<string, CatalogImportOption>();
+  for (const opt of prev) map.set(catalogOptionKey(opt), opt);
+  for (const opt of next) map.set(catalogOptionKey(opt), opt);
+  return Array.from(map.values());
+}
+
 export default function CatalogImportPage() {
   const [stores, setStores] = useState<CatalogStore[]>([]);
   // البحث الافتراضي يشمل أمازون — النتائج تظهر تدريجياً من المتاجر الأسرع
@@ -229,6 +239,12 @@ export default function CatalogImportPage() {
   const [form] = Form.useForm();
   const qc = useQueryClient();
   const previewLoadIdRef = useRef(0);
+  /** يمنع إعادة الخطوة إلى «اختر» أثناء فتح تفاصيل منتج (نتائج بحث متدفقة) */
+  const previewLockedRef = useRef(false);
+
+  const bumpChooseStep = useCallback(() => {
+    if (!previewLockedRef.current) setStep(1);
+  }, []);
 
   const { data: categoriesData = [] } = useQuery({ queryKey: ["categories"], queryFn: queries.categories });
   const { data: brandsData = [] } = useQuery({ queryKey: ["brands"], queryFn: queries.brands });
@@ -462,10 +478,10 @@ export default function CatalogImportPage() {
       setSearchStoreStats([]);
       try {
         const data = await searchCatalogByBarcode(digitsOnly, activeStores, (partial) => {
-          setOptions(partial.options);
+          setOptions((prev) => mergeSearchOptions(prev, partial.options));
           setSearchStoreStats(partial.stores || []);
           if (partial.options.length) {
-            setStep(1);
+            bumpChooseStep();
             if (!partial.done) setSearching(false);
           }
         });
@@ -481,7 +497,7 @@ export default function CatalogImportPage() {
         }
 
         if (!data.options.length) message.info("لا توجد نتائج لهذا الباركود");
-        else setStep(1);
+        else bumpChooseStep();
       } catch (err) {
         message.error(errorMessage(err, "فشل البحث بالباركود"));
       } finally {
@@ -504,16 +520,15 @@ export default function CatalogImportPage() {
         "",
         (partial) => {
           setSearchStoreStats(partial.stores || []);
-          // أظهر نتائج المتجر السريع فوراً (نجد) دون انتظار مسواگ
           const opts = partial.products.map((p) =>
             listProductToOption(
               p,
               stores.find((s) => s.id === p.store) || storeMeta,
             ),
           );
-          setOptions(opts);
+          setOptions((prev) => mergeSearchOptions(prev, opts));
           if (opts.length) {
-            setStep(1);
+            bumpChooseStep();
             // أوقف دوران الزر بعد أول نتائج — الدمج يستمر في الخلفية
             if (!partial.done) setSearching(false);
           }
@@ -537,13 +552,13 @@ export default function CatalogImportPage() {
       }
 
       if (!opts.length) message.info("لا توجد نتائج");
-      else setStep(1);
+      else bumpChooseStep();
     } catch (err) {
       message.error(errorMessage(err, "فشل البحث"));
     } finally {
       setSearching(false);
     }
-  }, [searchText, activeStores, stores, storeMeta]);
+  }, [searchText, activeStores, stores, storeMeta, bumpChooseStep]);
 
   const includesMiswag = activeStores.includes("miswag");
   const isMiswagBrowse = browseStore === "miswag";
@@ -569,10 +584,10 @@ export default function CatalogImportPage() {
     setSearchStoreStats([]);
     try {
       const data = await searchCatalogByBarcode(digits, activeStores, (partial) => {
-        setOptions(partial.options);
+        setOptions((prev) => mergeSearchOptions(prev, partial.options));
         setSearchStoreStats(partial.stores || []);
         if (partial.options.length) {
-          setStep(1);
+          bumpChooseStep();
           if (!partial.done) setSearching(false);
         }
       });
@@ -590,20 +605,21 @@ export default function CatalogImportPage() {
       if (!data.options.length) {
         message.info(isEanBarcode(digits) ? "لا توجد نتائج لهذا الباركود" : "لا توجد نتائج لهذا الرقم");
       } else {
-        setStep(1);
+        bumpChooseStep();
       }
     } catch (err) {
       message.error(errorMessage(err, `فشل البحث ب${codeLabel}`));
     } finally {
       setSearching(false);
     }
-  }, [barcode, activeStores, stores, includesMiswag, codeLabel]);
+  }, [barcode, activeStores, stores, includesMiswag, codeLabel, bumpChooseStep]);
 
   const loadPreview = useCallback(
     async (opt: CatalogImportOption) => {
       const loadId = ++previewLoadIdRef.current;
       const isStale = () => loadId !== previewLoadIdRef.current;
 
+      previewLockedRef.current = true;
       setSelected(opt);
       setLoadingPreview(true);
       setStep(2);
@@ -712,6 +728,7 @@ export default function CatalogImportPage() {
       } catch (err) {
         if (!isStale()) {
           message.error(errorMessage(err, "فشل جلب تفاصيل المنتج"));
+          previewLockedRef.current = false;
           setStep(options.length > 0 || products.length > 0 ? 1 : 0);
           setPreview(null);
           setSelected(null);
@@ -843,6 +860,7 @@ export default function CatalogImportPage() {
     onSuccess: () => {
       message.success({ content: "تم استيراد المنتج بنجاح", key: "import" });
       qc.invalidateQueries({ queryKey: ["products"] });
+      previewLockedRef.current = false;
       setStep(0);
       setBarcode("");
       setSearchText("");
@@ -879,6 +897,7 @@ export default function CatalogImportPage() {
 
   const closeImportDrawer = useCallback(() => {
     previewLoadIdRef.current += 1;
+    previewLockedRef.current = false;
     setStep(displayOptions.length ? 1 : 0);
     setSelected(null);
     setPreview(null);
@@ -1073,6 +1092,7 @@ export default function CatalogImportPage() {
             {isSearchMode ? (
               <Button
                 onClick={() => {
+                  previewLockedRef.current = false;
                   setOptions([]);
                   setStep(0);
                   setSelected(null);
@@ -1134,10 +1154,15 @@ export default function CatalogImportPage() {
         closeIcon={<CloseOutlined />}
       >
         <div className="ci-drawer-content">
-          {loadingPreview ? (
+          {loadingPreview && !preview ? (
             <div className="ci-center"><Spin size="large" /></div>
           ) : preview ? (
             <>
+              {loadingPreview ? (
+                <div className="ci-drawer-loading-hint">
+                  <Spin size="small" /> جاري تحديث التفاصيل...
+                </div>
+              ) : null}
               <div className="ci-drawer-hero">
                 <div className="ci-drawer-hero-grid">
                   {(() => {
