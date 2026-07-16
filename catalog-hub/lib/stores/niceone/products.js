@@ -73,10 +73,23 @@ async function fetchListingPage({ category = '', search = '', page = 1, lang = '
 }
 
 async function fetchListingMerged({ category = '', search = '', page = 1, limit = 30 } = {}) {
-  const [arData, enData] = await Promise.all([
-    fetchListingPage({ category, search, page, lang: 'ar' }),
-    fetchListingPage({ category, search, page, lang: 'en' }).catch(() => ({ items: [], total: 0 })),
-  ]);
+  const arData = await fetchListingPage({ category, search, page, lang: 'ar' });
+
+  // بحث نصي: صفحة عربية فقط (أسرع) — التفاصيل ثنائية اللغة عند فتح المنتج
+  if (search) {
+    const merged = arData.items.map((item) => mapListItem({
+      ...item,
+      barcode: item.barcode || barcodeFromImageUrl(item.thumb || ''),
+      productUrl: item.productUrl || productUrl(item.id),
+    }));
+    return pageResult(merged, {
+      page,
+      limit,
+      total: arData.total,
+    });
+  }
+
+  const enData = await fetchListingPage({ category, search, page, lang: 'en' }).catch(() => ({ items: [], total: 0 }));
 
   const enById = new Map(enData.items.map((item) => [String(item.id), item]));
   const merged = arData.items.map((item) => {
@@ -258,9 +271,28 @@ function metaSearchQueries(meta = {}) {
   return [...new Set(queries)];
 }
 
+function isDigitsOnlyQuery(query = '') {
+  const digits = String(query || '').replace(/\D/g, '');
+  return digits.length >= 8 && digits === String(query || '').trim().replace(/\s/g, '');
+}
+
 async function searchBarcodeViaListing(query, digits) {
-  const { items } = await fetchListingMerged({ search: query, page: 1, limit: 16 });
+  if (isDigitsOnlyQuery(query)) return [];
+
+  const { items } = await fetchListingMerged({ search: query, page: 1, limit: 12 });
   if (!items.length) return [];
+
+  const thumbMatches = items.filter((item) => {
+    const bc = item.barcode || barcodeFromImageUrl(item.thumb || '');
+    return bc && gtinEqual(bc, digits);
+  });
+
+  for (const item of thumbMatches.slice(0, 2)) {
+    const detail = await fetchProductDetail(item.id, { light: false }).catch(() => null);
+    if (detailMatchesBarcode(detail, digits)) {
+      return [toBarcodeHit(detail, digits, { shadeName: shadeNameForBarcode(detail, digits) })];
+    }
+  }
 
   const candidates = [];
   const seen = new Set();
@@ -270,12 +302,12 @@ async function searchBarcodeViaListing(query, digits) {
     const thumbBc = barcodeFromImageUrl(item.thumb || '');
     const priority = (gtinEqual(thumbBc, digits) || gtinEqual(item.barcode, digits)) ? 0 : 1;
     candidates.push({ item, priority });
-    if (candidates.length >= 12) break;
+    if (candidates.length >= 6) break;
   }
   candidates.sort((a, b) => a.priority - b.priority);
 
   const details = await Promise.all(
-    candidates.slice(0, 8).map(({ item }) => fetchProductDetail(item.id, { light: false }).catch(() => null)),
+    candidates.slice(0, 3).map(({ item }) => fetchProductDetail(item.id, { light: false }).catch(() => null)),
   );
   for (const detail of details) {
     if (!detail || !detailMatchesBarcode(detail, digits)) continue;
@@ -285,15 +317,15 @@ async function searchBarcodeViaListing(query, digits) {
 }
 
 async function searchBarcodeViaSite(digits) {
-  for (const query of barcodeLookupVariants(digits)) {
-    const hits = await searchBarcodeViaListing(query, digits);
-    if (hits.length) return hits;
+  const meta = await lookupBarcodeProductMeta(digits).catch(() => null);
+  if (meta?.brand || meta?.title) {
+    for (const query of metaSearchQueries(meta)) {
+      const hits = await searchBarcodeViaListing(query, digits);
+      if (hits.length) return hits;
+    }
   }
 
-  const meta = await lookupBarcodeProductMeta(digits).catch(() => null);
-  if (!meta?.brand && !meta?.title) return [];
-
-  for (const query of metaSearchQueries(meta)) {
+  for (const query of barcodeLookupVariants(digits).slice(1)) {
     const hits = await searchBarcodeViaListing(query, digits);
     if (hits.length) return hits;
   }

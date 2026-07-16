@@ -81,6 +81,34 @@ export function parseProductJsonLd(html = '', { lang = 'ar' } = {}) {
   return null;
 }
 
+function stripHtml(html = '') {
+  return String(html || '')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isPlaceholderDescription(text = '') {
+  const t = String(text || '').trim();
+  return !t || t === '-' || t === '—' || t.length < 2;
+}
+
+function descriptionsFromNuxt(product = {}, { lang = 'ar' } = {}) {
+  const rows = Array.isArray(product?.descriptions) ? product.descriptions : [];
+  const preferred = lang === 'en'
+    ? [/description/i]
+    : [/الوصف/i, /وصف/i];
+  const hit = rows.find((r) => preferred.some((re) => re.test(String(r?.title || '')))) || rows[0];
+  const text = stripHtml(hit?.description || '');
+  return isPlaceholderDescription(text) ? '' : text;
+}
+
 function mapShadeValue(shade = {}, { groupAr = '', groupEn = '' } = {}) {
   const images = [
     shade.image,
@@ -111,7 +139,7 @@ function mapShadeValue(shade = {}, { groupAr = '', groupEn = '' } = {}) {
   };
 }
 
-export function parseNuxtProduct(html = '', productId = '') {
+export function parseNuxtProduct(html = '', productId = '', { lang = 'ar' } = {}) {
   const payload = parseNuxtPayload(html);
   if (!payload) return null;
   const index = findProductNodeIndex(payload, productId);
@@ -142,6 +170,10 @@ export function parseNuxtProduct(html = '', productId = '') {
     shades,
   });
 
+  const descFromBlocks = descriptionsFromNuxt(product, { lang });
+  const plainDesc = String(product.description || product.meta_description || '').trim();
+  const plainEnDesc = String(product.en_description || '').trim();
+
   return {
     id: String(product.id || productId),
     slug: slugFromUrl(product.seo_url || product.href || ''),
@@ -149,8 +181,12 @@ export function parseNuxtProduct(html = '', productId = '') {
     nameEn: String(product.en_name || product.name || '').trim(),
     brandAr: String(product.manufacturer_ar || product.manufacturer || '').trim(),
     brandEn: String(product.manufacturer || product.manufacturer_en || '').trim(),
-    descriptionAr: String(product.description || product.meta_description || '').trim(),
-    descriptionEn: String(product.en_description || '').trim(),
+    descriptionAr: lang === 'ar'
+      ? (descFromBlocks || (!isPlaceholderDescription(plainDesc) ? plainDesc : ''))
+      : '',
+    descriptionEn: lang === 'en'
+      ? (descFromBlocks || (!isPlaceholderDescription(plainEnDesc) ? plainEnDesc : ''))
+      : (!isPlaceholderDescription(plainEnDesc) ? plainEnDesc : ''),
     sku: String(product.sku || '').trim(),
     barcode,
     thumb: images[0] || '',
@@ -168,9 +204,17 @@ export function parseNuxtProduct(html = '', productId = '') {
   };
 }
 
+function pickDescription(...candidates) {
+  for (const text of candidates) {
+    const t = String(text || '').trim();
+    if (!isPlaceholderDescription(t)) return t;
+  }
+  return '';
+}
+
 export function parseProductPage(html = '', { lang = 'ar', productId = '' } = {}) {
   const jsonLd = parseProductJsonLd(html, { lang });
-  const nuxt = parseNuxtProduct(html, productId);
+  const nuxt = parseNuxtProduct(html, productId, { lang });
   if (!jsonLd && !nuxt) return null;
 
   const isAr = lang === 'ar';
@@ -181,8 +225,16 @@ export function parseProductPage(html = '', { lang = 'ar', productId = '' } = {}
     nameEn: !isAr ? (nuxt?.nameEn || jsonLd?.name || '') : (nuxt?.nameEn || ''),
     brandAr: isAr ? (nuxt?.brandAr || jsonLd?.brand || '') : (nuxt?.brandAr || ''),
     brandEn: !isAr ? (nuxt?.brandEn || jsonLd?.brand || '') : (nuxt?.brandEn || ''),
-    descriptionAr: isAr ? (nuxt?.descriptionAr || jsonLd?.description || '') : (nuxt?.descriptionAr || ''),
-    descriptionEn: !isAr ? (nuxt?.descriptionEn || jsonLd?.description || '') : (nuxt?.descriptionEn || ''),
+    descriptionAr: pickDescription(
+      isAr ? nuxt?.descriptionAr : '',
+      isAr ? jsonLd?.description : '',
+      nuxt?.descriptionAr,
+    ),
+    descriptionEn: pickDescription(
+      !isAr ? nuxt?.descriptionEn : '',
+      !isAr ? jsonLd?.description : '',
+      nuxt?.descriptionEn,
+    ),
     sku: nuxt?.sku || jsonLd?.sku || '',
     barcode: extractBarcode(jsonLd?.barcode || '') || extractBarcode(nuxt?.barcode || ''),
     thumb: nuxt?.thumb || jsonLd?.thumb || '',
