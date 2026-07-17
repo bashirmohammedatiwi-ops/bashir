@@ -9,7 +9,10 @@ import {
 } from "class-validator";
 
 export class CreateCategoryDto {
-  @IsString() @IsNotEmpty() name: string;
+  /** Display name (Arabic preferred). Optional if nameAr is set. */
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsString() nameAr?: string;
+  @IsOptional() @IsString() nameEn?: string;
   @IsString() @IsNotEmpty() slug: string;
   @IsOptional() @IsString() icon?: string;
   @IsOptional() @IsString() description?: string;
@@ -18,10 +21,22 @@ export class CreateCategoryDto {
   @IsOptional() @IsBoolean() isActive?: boolean;
 }
 
-export class UpdateCategoryDto extends CreateCategoryDto {}
+export class UpdateCategoryDto {
+  @IsOptional() @IsString() @IsNotEmpty() name?: string;
+  @IsOptional() @IsString() nameAr?: string;
+  @IsOptional() @IsString() nameEn?: string;
+  @IsOptional() @IsString() @IsNotEmpty() slug?: string;
+  @IsOptional() @IsString() icon?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() imageId?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) position?: number;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}
 
 export class CreateSubcategoryDto {
-  @IsString() @IsNotEmpty() name: string;
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsString() nameAr?: string;
+  @IsOptional() @IsString() nameEn?: string;
   @IsString() @IsNotEmpty() slug: string;
   @IsString() @IsNotEmpty() parentId: string;
   @IsOptional() @IsString() description?: string;
@@ -30,10 +45,22 @@ export class CreateSubcategoryDto {
   @IsOptional() @IsBoolean() isActive?: boolean;
 }
 
-export class UpdateSubcategoryDto extends CreateSubcategoryDto {}
+export class UpdateSubcategoryDto {
+  @IsOptional() @IsString() @IsNotEmpty() name?: string;
+  @IsOptional() @IsString() nameAr?: string;
+  @IsOptional() @IsString() nameEn?: string;
+  @IsOptional() @IsString() @IsNotEmpty() slug?: string;
+  @IsOptional() @IsString() parentId?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() imageId?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) position?: number;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}
 
 export class CreateTertiarySectionDto {
-  @IsString() @IsNotEmpty() name: string;
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsString() nameAr?: string;
+  @IsOptional() @IsString() nameEn?: string;
   @IsString() @IsNotEmpty() slug: string;
   @IsString() @IsNotEmpty() parentId: string;
   @IsOptional() @IsString() description?: string;
@@ -42,4 +69,14 @@ export class CreateTertiarySectionDto {
   @IsOptional() @IsBoolean() isActive?: boolean;
 }
 
-export class UpdateTertiarySectionDto extends CreateTertiarySectionDto {}
+export class UpdateTertiarySectionDto {
+  @IsOptional() @IsString() @IsNotEmpty() name?: string;
+  @IsOptional() @IsString() nameAr?: string;
+  @IsOptional() @IsString() nameEn?: string;
+  @IsOptional() @IsString() @IsNotEmpty() slug?: string;
+  @IsOptional() @IsString() parentId?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() imageId?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) position?: number;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}

@@ -1308,10 +1308,12 @@ export default function CatalogImportPage() {
                         }))}
                       />
                     </Form.Item>
-                    <Form.Item name="categoryId" label="القسم" rules={[{ required: true }]} className="span-2">
+                    <Form.Item name="categoryId" label="القسم" className="span-2">
                       <Select
+                        allowClear
                         showSearch
                         optionFilterProp="label"
+                        placeholder="بدون تصنيف (اختياري)"
                         options={(categoriesData || []).map((c: any) => ({
                           value: c.id,
                           label: c.nameAr || c.name,

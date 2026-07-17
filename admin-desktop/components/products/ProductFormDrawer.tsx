@@ -220,10 +220,10 @@ export function ProductFormDrawer({
                 name="categoryId"
                 label="القسم"
                 className="alhayaa-form-col"
-                rules={[{ required: true }]}
               >
                 <Select
-                  placeholder="اختر القسم"
+                  allowClear
+                  placeholder="بدون تصنيف (اختياري)"
                   options={(categoriesData ?? []).map((c: any) => ({ value: c.id, label: c.name }))}
                   onChange={() => {
                     form.setFieldValue("subcategoryId", undefined);
@@ -236,10 +236,10 @@ export function ProductFormDrawer({
                   name="subcategoryId"
                   label="القسم الفرعي"
                   className="alhayaa-form-col"
-                  rules={[{ required: true, message: "اختر القسم الفرعي" }]}
                 >
                   <Select
-                    placeholder="اختر القسم الفرعي"
+                    allowClear
+                    placeholder="اختر القسم الفرعي (اختياري)"
                     options={subcategoryOptions}
                     onChange={() => form.setFieldValue("tertiaryCategoryId", undefined)}
                   />

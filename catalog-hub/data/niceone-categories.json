@@ -1,0 +1,1693 @@
+{
+  "source": "niceone",
+  "fetchedAt": "2026-07-17T15:44:27.926Z",
+  "stats": {
+    "l1": 10,
+    "l2": 62,
+    "l3": 111,
+    "other": 0
+  },
+  "tree": [
+    {
+      "niceoneId": "makeup",
+      "slug": "makeup",
+      "nameAr": "المكياج",
+      "nameEn": "Makeup",
+      "depth": 0,
+      "position": 0,
+      "children": [
+        {
+          "niceoneId": "makeup/face",
+          "slug": "makeup-face",
+          "nameAr": "الوجه",
+          "nameEn": "Face",
+          "depth": 1,
+          "position": 0,
+          "children": [
+            {
+              "niceoneId": "makeup/face/foundation",
+              "slug": "makeup-face-foundation",
+              "nameAr": "فاونديشن",
+              "nameEn": "Foundation",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/face/concealers-and-correctors",
+              "slug": "makeup-face-concealers-and-correctors",
+              "nameAr": "كونسيلر",
+              "nameEn": "Concealers and Correctors",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/face/powder",
+              "slug": "makeup-face-powder",
+              "nameAr": "بودرة",
+              "nameEn": "Powder",
+              "depth": 2,
+              "position": 2,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/face/face-primer",
+              "slug": "makeup-face-face-primer",
+              "nameAr": "برايمر",
+              "nameEn": "Face Primer",
+              "depth": 2,
+              "position": 3,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/face/makeup-spray",
+              "slug": "makeup-face-makeup-spray",
+              "nameAr": "مثبت مكياج",
+              "nameEn": "Makeup Spray",
+              "depth": 2,
+              "position": 4,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/face/bb--cc-cream",
+              "slug": "makeup-face-bb-cc-cream",
+              "nameAr": "بي بي وسي سي كريم",
+              "nameEn": "BB & CC Cream",
+              "depth": 2,
+              "position": 5,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/face/face-sets",
+              "slug": "makeup-face-face-sets",
+              "nameAr": "مجموعات المكياج",
+              "nameEn": "Makeup Sets",
+              "depth": 2,
+              "position": 6,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/face/makeup-removers",
+              "slug": "makeup-face-makeup-removers",
+              "nameAr": "مزيل مكياج",
+              "nameEn": "Makeup Removers",
+              "depth": 2,
+              "position": 7,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "makeup/korean-makeup-1",
+          "slug": "makeup-korean-makeup-1",
+          "nameAr": "المكياج الكوري",
+          "nameEn": "Korean Makeup",
+          "depth": 1,
+          "position": 1,
+          "children": []
+        },
+        {
+          "niceoneId": "makeup/lips",
+          "slug": "makeup-lips",
+          "nameAr": "الشفاه",
+          "nameEn": "Lips",
+          "depth": 1,
+          "position": 2,
+          "children": [
+            {
+              "niceoneId": "makeup/lips/lip-tint",
+              "slug": "makeup-lips-lip-tint",
+              "nameAr": "تنت شفايف",
+              "nameEn": "Lip Tint",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/lips/lipstick",
+              "slug": "makeup-lips-lipstick",
+              "nameAr": "روج",
+              "nameEn": "Lipstick",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/lips/liquid-lipstick",
+              "slug": "makeup-lips-liquid-lipstick",
+              "nameAr": "روج سائل",
+              "nameEn": "Liquid Lipstick",
+              "depth": 2,
+              "position": 2,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/lips/lip-gloss",
+              "slug": "makeup-lips-lip-gloss",
+              "nameAr": "ملمع الشفاه",
+              "nameEn": "Lip Gloss",
+              "depth": 2,
+              "position": 3,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/lips/lip-liner",
+              "slug": "makeup-lips-lip-liner",
+              "nameAr": "محدد الشفايف",
+              "nameEn": "Lip Liner",
+              "depth": 2,
+              "position": 4,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/lips/lip-sets",
+              "slug": "makeup-lips-lip-sets",
+              "nameAr": "مجموعة أحمر شفاه",
+              "nameEn": "Lip Sets",
+              "depth": 2,
+              "position": 5,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "makeup/eyes",
+          "slug": "makeup-eyes",
+          "nameAr": "العيون",
+          "nameEn": "Eyes",
+          "depth": 1,
+          "position": 3,
+          "children": [
+            {
+              "niceoneId": "makeup/eyes/mascara",
+              "slug": "makeup-eyes-mascara",
+              "nameAr": "ماسكرا",
+              "nameEn": "Mascara",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/eyes/eyeliner",
+              "slug": "makeup-eyes-eyeliner",
+              "nameAr": "كحل",
+              "nameEn": "Eyeliner",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/eyes/eyeshadow",
+              "slug": "makeup-eyes-eyeshadow",
+              "nameAr": "ايشادو",
+              "nameEn": "Eyeshadow",
+              "depth": 2,
+              "position": 2,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/eyes/eye-primer",
+              "slug": "makeup-eyes-eye-primer",
+              "nameAr": "برايمر عيون",
+              "nameEn": "Eye Primer",
+              "depth": 2,
+              "position": 3,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "makeup/eyebrow",
+          "slug": "makeup-eyebrow",
+          "nameAr": "الحواجب",
+          "nameEn": "Eyebrow",
+          "depth": 1,
+          "position": 4,
+          "children": [
+            {
+              "niceoneId": "makeup/eyebrow/eyebrow-gel",
+              "slug": "makeup-eyebrow-eyebrow-gel",
+              "nameAr": "جل وبودرة حواجب",
+              "nameEn": "Eyebrow gel",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/eyebrow/eyebrow-pencil",
+              "slug": "makeup-eyebrow-eyebrow-pencil",
+              "nameAr": "أقلام الحواجب",
+              "nameEn": "Eyebrow Pencil",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/eyebrow/eyebrow-mascara",
+              "slug": "makeup-eyebrow-eyebrow-mascara",
+              "nameAr": "ماسكارا الحواجب",
+              "nameEn": "Eyebrow Mascara",
+              "depth": 2,
+              "position": 2,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/eyebrow/eyebrow-sets",
+              "slug": "makeup-eyebrow-eyebrow-sets",
+              "nameAr": "مجموعة حواجب",
+              "nameEn": "Eyebrow Kits",
+              "depth": 2,
+              "position": 3,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "makeup/cheek",
+          "slug": "makeup-cheek",
+          "nameAr": "الخدود",
+          "nameEn": "Cheek",
+          "depth": 1,
+          "position": 5,
+          "children": [
+            {
+              "niceoneId": "makeup/cheek/blush",
+              "slug": "makeup-cheek-blush",
+              "nameAr": "بلاشر",
+              "nameEn": "Blush",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/cheek/contour",
+              "slug": "makeup-cheek-contour",
+              "nameAr": "كونتور",
+              "nameEn": "Contour",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/cheek/bronzer",
+              "slug": "makeup-cheek-bronzer",
+              "nameAr": "برونزر",
+              "nameEn": "Bronzer",
+              "depth": 2,
+              "position": 2,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "makeup/highlighter",
+          "slug": "makeup-highlighter",
+          "nameAr": "الهايلايتر",
+          "nameEn": "Highlighter",
+          "depth": 1,
+          "position": 6,
+          "children": [
+            {
+              "niceoneId": "makeup/highlighter/powder-highlighter",
+              "slug": "makeup-highlighter-powder-highlighter",
+              "nameAr": "هايلايتر بودرة",
+              "nameEn": "Powder Highlighter",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/highlighter/liquid-highlighter",
+              "slug": "makeup-highlighter-liquid-highlighter",
+              "nameAr": "هايلايتر سائل",
+              "nameEn": "Liquid Highlighter",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/highlighter/palette--set",
+              "slug": "makeup-highlighter-palette-set",
+              "nameAr": "باليت مكياج",
+              "nameEn": "Palette & Set",
+              "depth": 2,
+              "position": 2,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "makeup/brushes--tools",
+          "slug": "makeup-brushes-tools",
+          "nameAr": "أدوات وفرش مكياج",
+          "nameEn": "Brushes & Tools",
+          "depth": 1,
+          "position": 7,
+          "children": [
+            {
+              "niceoneId": "makeup/brushes--tools/face-brushes",
+              "slug": "makeup-brushes-tools-face-brushes",
+              "nameAr": "فرش وجه",
+              "nameEn": "Face Brushes",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/brushes--tools/eye-brushes",
+              "slug": "makeup-brushes-tools-eye-brushes",
+              "nameAr": "فرش عيون",
+              "nameEn": "Eye Brushes",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/brushes--tools/eyebrow-brushes",
+              "slug": "makeup-brushes-tools-eyebrow-brushes",
+              "nameAr": "فرش حواجب",
+              "nameEn": "Eyebrow Brushes",
+              "depth": 2,
+              "position": 2,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/brushes--tools/lip-brushes",
+              "slug": "makeup-brushes-tools-lip-brushes",
+              "nameAr": "فرش الشفايف",
+              "nameEn": "Lip Brushes",
+              "depth": 2,
+              "position": 3,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/brushes--tools/sponges",
+              "slug": "makeup-brushes-tools-sponges",
+              "nameAr": "اسفنج مكياج",
+              "nameEn": "Makeup Sponges",
+              "depth": 2,
+              "position": 4,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/brushes--tools/brush-sets",
+              "slug": "makeup-brushes-tools-brush-sets",
+              "nameAr": "مجموعة فرش مكياج",
+              "nameEn": "Brush Sets",
+              "depth": 2,
+              "position": 5,
+              "children": []
+            },
+            {
+              "niceoneId": "makeup/brushes--tools/makeup-tools",
+              "slug": "makeup-brushes-tools-makeup-tools",
+              "nameAr": "أدوات مكياج",
+              "nameEn": "Makeup Tools",
+              "depth": 2,
+              "position": 6,
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "niceoneId": "perfume",
+      "slug": "perfume",
+      "nameAr": "العطور",
+      "nameEn": "Perfumes",
+      "depth": 0,
+      "position": 1,
+      "children": [
+        {
+          "niceoneId": "perfume/travel-size-set",
+          "slug": "perfume-travel-size-set",
+          "nameAr": "عطور ميني",
+          "nameEn": "Mini Perfume Sets",
+          "depth": 1,
+          "position": 0,
+          "children": []
+        },
+        {
+          "niceoneId": "perfume/gift-set",
+          "slug": "perfume-gift-set",
+          "nameAr": "أطقم العطور",
+          "nameEn": "Gift Set",
+          "depth": 1,
+          "position": 1,
+          "children": []
+        },
+        {
+          "niceoneId": "perfume/oud-perfume",
+          "slug": "perfume-oud-perfume",
+          "nameAr": "عطور عود",
+          "nameEn": "Oud perfume",
+          "depth": 1,
+          "position": 2,
+          "children": []
+        },
+        {
+          "niceoneId": "perfume/musk",
+          "slug": "perfume-musk",
+          "nameAr": "عطور مسك",
+          "nameEn": "Musk Perfumes",
+          "depth": 1,
+          "position": 3,
+          "children": []
+        },
+        {
+          "niceoneId": "perfume/niche-perfumes",
+          "slug": "perfume-niche-perfumes",
+          "nameAr": "عطور نيش",
+          "nameEn": "Niche Perfumes",
+          "depth": 1,
+          "position": 4,
+          "children": []
+        },
+        {
+          "niceoneId": "perfume/body-perfumes",
+          "slug": "perfume-body-perfumes",
+          "nameAr": "عطور جسم",
+          "nameEn": "Body Perfumes",
+          "depth": 1,
+          "position": 5,
+          "children": []
+        },
+        {
+          "niceoneId": "perfume/hair-mist",
+          "slug": "perfume-hair-mist",
+          "nameAr": "عطور شعر",
+          "nameEn": "Hair Mists",
+          "depth": 1,
+          "position": 6,
+          "children": []
+        },
+        {
+          "niceoneId": "perfume/children-perfumes",
+          "slug": "perfume-children-perfumes",
+          "nameAr": "عطور أطفال",
+          "nameEn": "Children Perfumes",
+          "depth": 1,
+          "position": 7,
+          "children": []
+        },
+        {
+          "niceoneId": "perfume/unisex-perfumes",
+          "slug": "perfume-unisex-perfumes",
+          "nameAr": "عطور للجنسين",
+          "nameEn": "Unisex Perfumes",
+          "depth": 1,
+          "position": 8,
+          "children": []
+        },
+        {
+          "niceoneId": "perfume/women-perfumes",
+          "slug": "perfume-women-perfumes",
+          "nameAr": "عطور نسائية",
+          "nameEn": "Women Perfumes",
+          "depth": 1,
+          "position": 9,
+          "children": []
+        },
+        {
+          "niceoneId": "perfume/men-perfumes",
+          "slug": "perfume-men-perfumes",
+          "nameAr": "عطور رجالية",
+          "nameEn": "Men Perfumes",
+          "depth": 1,
+          "position": 10,
+          "children": []
+        },
+        {
+          "niceoneId": "perfume/new-perfume",
+          "slug": "perfume-new-perfume",
+          "nameAr": "جديد العطور",
+          "nameEn": "New perfume",
+          "depth": 1,
+          "position": 11,
+          "children": []
+        }
+      ]
+    },
+    {
+      "niceoneId": "vitamins-supplements",
+      "slug": "vitamins-supplements",
+      "nameAr": "الصحة والتغذية",
+      "nameEn": "Health & Nutrition",
+      "depth": 0,
+      "position": 2,
+      "children": [
+        {
+          "niceoneId": "vitamins-supplements/nutraceuticals",
+          "slug": "vitamins-supplements-nutraceuticals",
+          "nameAr": "المكملات الغذائية",
+          "nameEn": "Nutraceuticals",
+          "depth": 1,
+          "position": 0,
+          "children": [
+            {
+              "niceoneId": "vitamins-supplements/nutraceuticals/hair,-skin-nails",
+              "slug": "vitamins-supplements-nutraceuticals-hair-skin-nails",
+              "nameAr": "صحة البشرة والشعر والاظافر",
+              "nameEn": "Hair, Skin & Nails",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/nutraceuticals/weight-control",
+              "slug": "vitamins-supplements-nutraceuticals-weight-control",
+              "nameAr": "التحكم بالوزن",
+              "nameEn": "Weight Control",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/nutraceuticals/women-health-0",
+              "slug": "vitamins-supplements-nutraceuticals-women-health-0",
+              "nameAr": "الصحة النسائية",
+              "nameEn": "Women health",
+              "depth": 2,
+              "position": 2,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/nutraceuticals/kids-health-1",
+              "slug": "vitamins-supplements-nutraceuticals-kids-health-1",
+              "nameAr": "صحة الطفل",
+              "nameEn": "Kids Health",
+              "depth": 2,
+              "position": 3,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/nutraceuticals/sleep-aids-5",
+              "slug": "vitamins-supplements-nutraceuticals-sleep-aids-5",
+              "nameAr": "مساعدات النوم",
+              "nameEn": "Sleep Aids",
+              "depth": 2,
+              "position": 4,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/nutraceuticals/stress-relief-7",
+              "slug": "vitamins-supplements-nutraceuticals-stress-relief-7",
+              "nameAr": "تخفيف التوتر",
+              "nameEn": "Stress Relief",
+              "depth": 2,
+              "position": 5,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/nutraceuticals/diabetes-care-1",
+              "slug": "vitamins-supplements-nutraceuticals-diabetes-care-1",
+              "nameAr": "العناية بمرضى السكري",
+              "nameEn": "Diabetes Care",
+              "depth": 2,
+              "position": 6,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/nutraceuticals/energy-boosters-8",
+              "slug": "vitamins-supplements-nutraceuticals-energy-boosters-8",
+              "nameAr": "النشاط والطاقه",
+              "nameEn": "Energy Boosters",
+              "depth": 2,
+              "position": 7,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/nutraceuticals/immune-support-9",
+              "slug": "vitamins-supplements-nutraceuticals-immune-support-9",
+              "nameAr": "دعم المناعة",
+              "nameEn": "Immune Support",
+              "depth": 2,
+              "position": 8,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/nutraceuticals/heart-health-2",
+              "slug": "vitamins-supplements-nutraceuticals-heart-health-2",
+              "nameAr": "فيتامينات لصحة القلب",
+              "nameEn": "Heart Health",
+              "depth": 2,
+              "position": 9,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/nutraceuticals/digestive-support-8",
+              "slug": "vitamins-supplements-nutraceuticals-digestive-support-8",
+              "nameAr": "دعم الجهاز الهضمي",
+              "nameEn": "Digestive Support",
+              "depth": 2,
+              "position": 10,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/nutraceuticals/bone,-joint-muscles",
+              "slug": "vitamins-supplements-nutraceuticals-bone-joint-muscles",
+              "nameAr": "صحة العظام والمفاصل والعضلات",
+              "nameEn": "Bone, Joint & Muscles",
+              "depth": 2,
+              "position": 11,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/nutraceuticals/sexual-health",
+              "slug": "vitamins-supplements-nutraceuticals-sexual-health",
+              "nameAr": "الصحة الجنسية",
+              "nameEn": "Sexual Health",
+              "depth": 2,
+              "position": 12,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "vitamins-supplements/health-devices",
+          "slug": "vitamins-supplements-health-devices",
+          "nameAr": "أجهزة صحية",
+          "nameEn": "Health Devices",
+          "depth": 1,
+          "position": 1,
+          "children": [
+            {
+              "niceoneId": "vitamins-supplements/health-devices/blood-pressure-mentor",
+              "slug": "vitamins-supplements-health-devices-blood-pressure-mentor",
+              "nameAr": "قياس ضغط الدم",
+              "nameEn": "Blood Pressure Mentor",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/health-devices/thermometer",
+              "slug": "vitamins-supplements-health-devices-thermometer",
+              "nameAr": "مقياس الحرارة",
+              "nameEn": "Thermometer",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "vitamins-supplements/fitness-and-relaxation",
+          "slug": "vitamins-supplements-fitness-and-relaxation",
+          "nameAr": "الرياضة والاسترخاء",
+          "nameEn": "Fitness and Relaxation",
+          "depth": 1,
+          "position": 2,
+          "children": [
+            {
+              "niceoneId": "vitamins-supplements/fitness-and-relaxation/weight-scales",
+              "slug": "vitamins-supplements-fitness-and-relaxation-weight-scales",
+              "nameAr": "أجهزة قياس الوزن",
+              "nameEn": "Weight Scales",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/fitness-and-relaxation/massager",
+              "slug": "vitamins-supplements-fitness-and-relaxation-massager",
+              "nameAr": "أجهزة تدليك",
+              "nameEn": "Massagers",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/fitness-and-relaxation/sauna",
+              "slug": "vitamins-supplements-fitness-and-relaxation-sauna",
+              "nameAr": "ساونا",
+              "nameEn": "Sauna",
+              "depth": 2,
+              "position": 2,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/fitness-and-relaxation/heating-pads",
+              "slug": "vitamins-supplements-fitness-and-relaxation-heating-pads",
+              "nameAr": "كمادات دافئة",
+              "nameEn": "Heating Pads",
+              "depth": 2,
+              "position": 3,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/fitness-and-relaxation/comfort-aids",
+              "slug": "vitamins-supplements-fitness-and-relaxation-comfort-aids",
+              "nameAr": "مساعدات الراحة",
+              "nameEn": "Comfort Aids",
+              "depth": 2,
+              "position": 4,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "vitamins-supplements/healthcare-essentials",
+          "slug": "vitamins-supplements-healthcare-essentials",
+          "nameAr": "منتجات العناية الصحية",
+          "nameEn": "Healthcare Essentials",
+          "depth": 1,
+          "position": 3,
+          "children": [
+            {
+              "niceoneId": "vitamins-supplements/healthcare-essentials/cough-cold-treatments",
+              "slug": "vitamins-supplements-healthcare-essentials-cough-cold-treatments",
+              "nameAr": "تخفيف السعال والزكام",
+              "nameEn": "Cough & Cold Treatments",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/healthcare-essentials/dermacare-essentials",
+              "slug": "vitamins-supplements-healthcare-essentials-dermacare-essentials",
+              "nameAr": "صحة البشرة",
+              "nameEn": "Dermacare Essentials",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/healthcare-essentials/hair-scalp-care",
+              "slug": "vitamins-supplements-healthcare-essentials-hair-scalp-care",
+              "nameAr": "العناية بالشعر وفروة الرأس",
+              "nameEn": "Hair & Scalp Care",
+              "depth": 2,
+              "position": 2,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/healthcare-essentials/oral-health-essentials",
+              "slug": "vitamins-supplements-healthcare-essentials-oral-health-essentials",
+              "nameAr": "العناية بصحة الفم",
+              "nameEn": "Oral Health Essentials",
+              "depth": 2,
+              "position": 3,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "vitamins-supplements/sports-nutrition",
+          "slug": "vitamins-supplements-sports-nutrition",
+          "nameAr": "تغذية رياضية",
+          "nameEn": "Sports Nutrition",
+          "depth": 1,
+          "position": 4,
+          "children": [
+            {
+              "niceoneId": "vitamins-supplements/sports-nutrition/whey-protein",
+              "slug": "vitamins-supplements-sports-nutrition-whey-protein",
+              "nameAr": "واي بروتين",
+              "nameEn": "Whey Protein",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/sports-nutrition/creatine",
+              "slug": "vitamins-supplements-sports-nutrition-creatine",
+              "nameAr": "كرياتين",
+              "nameEn": "Creatine",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/sports-nutrition/glutamine",
+              "slug": "vitamins-supplements-sports-nutrition-glutamine",
+              "nameAr": "جلوتامين",
+              "nameEn": "Glutamine",
+              "depth": 2,
+              "position": 2,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/sports-nutrition/bcaa",
+              "slug": "vitamins-supplements-sports-nutrition-bcaa",
+              "nameAr": "أحماض أمينية",
+              "nameEn": "BCAA",
+              "depth": 2,
+              "position": 3,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/sports-nutrition/pre-workout",
+              "slug": "vitamins-supplements-sports-nutrition-pre-workout",
+              "nameAr": "مكملات قبل التمرين",
+              "nameEn": "Pre-Workout",
+              "depth": 2,
+              "position": 4,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/sports-nutrition/post-workout",
+              "slug": "vitamins-supplements-sports-nutrition-post-workout",
+              "nameAr": "مكملات بعد التمرين",
+              "nameEn": "Post-Workout",
+              "depth": 2,
+              "position": 5,
+              "children": []
+            },
+            {
+              "niceoneId": "vitamins-supplements/sports-nutrition/protein-snacks",
+              "slug": "vitamins-supplements-sports-nutrition-protein-snacks",
+              "nameAr": "سناكات البروتين",
+              "nameEn": "Protein Snacks",
+              "depth": 2,
+              "position": 6,
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "niceoneId": "care",
+      "slug": "care",
+      "nameAr": "العناية",
+      "nameEn": "Care",
+      "depth": 0,
+      "position": 3,
+      "children": [
+        {
+          "niceoneId": "care/derma-hub",
+          "slug": "care-derma-hub",
+          "nameAr": "العناية الطبية",
+          "nameEn": "DERMA HUB",
+          "depth": 1,
+          "position": 0,
+          "children": []
+        },
+        {
+          "niceoneId": "care/korean-skincare-6",
+          "slug": "care-korean-skincare-6",
+          "nameAr": "العناية الكورية",
+          "nameEn": "Korean Care",
+          "depth": 1,
+          "position": 1,
+          "children": [
+            {
+              "niceoneId": "care/korean-skincare-6/skin-care",
+              "slug": "care-korean-skincare-6-skin-care",
+              "nameAr": "العناية بالبشرة",
+              "nameEn": "Skin Care",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "care/mouth--teeth-care",
+          "slug": "care-mouth-teeth-care",
+          "nameAr": "عناية الفم والأسنان",
+          "nameEn": "Oral Care",
+          "depth": 1,
+          "position": 2,
+          "children": [
+            {
+              "niceoneId": "care/mouth--teeth-care/toothpaste",
+              "slug": "care-mouth-teeth-care-toothpaste",
+              "nameAr": "معجون الأسنان",
+              "nameEn": "Toothpaste",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "care/mouth--teeth-care/toothbrush",
+              "slug": "care-mouth-teeth-care-toothbrush",
+              "nameAr": "فرش أسنان",
+              "nameEn": "Toothbrushes",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            },
+            {
+              "niceoneId": "care/mouth--teeth-care/teeth-whitening",
+              "slug": "care-mouth-teeth-care-teeth-whitening",
+              "nameAr": "تبييض الأسنان",
+              "nameEn": "Teeth whitening",
+              "depth": 2,
+              "position": 2,
+              "children": []
+            },
+            {
+              "niceoneId": "care/mouth--teeth-care/flossing-essentials",
+              "slug": "care-mouth-teeth-care-flossing-essentials",
+              "nameAr": "تنظيف الأسنان",
+              "nameEn": "Flossing Essentials",
+              "depth": 2,
+              "position": 3,
+              "children": []
+            },
+            {
+              "niceoneId": "care/mouth--teeth-care/mouthwash",
+              "slug": "care-mouth-teeth-care-mouthwash",
+              "nameAr": "غسول الفم",
+              "nameEn": "Mouthwash",
+              "depth": 2,
+              "position": 4,
+              "children": []
+            },
+            {
+              "niceoneId": "care/mouth--teeth-care/mouth-fresheners",
+              "slug": "care-mouth-teeth-care-mouth-fresheners",
+              "nameAr": "معطرات الفم",
+              "nameEn": "Mouth Fresheners",
+              "depth": 2,
+              "position": 5,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "care/skin-and-body-care",
+          "slug": "care-skin-and-body-care",
+          "nameAr": "العناية بالجسم",
+          "nameEn": "Body Care",
+          "depth": 1,
+          "position": 3,
+          "children": [
+            {
+              "niceoneId": "care/skin-and-body-care/shapewear",
+              "slug": "care-skin-and-body-care-shapewear",
+              "nameAr": "منتجات التنحيف",
+              "nameEn": "Skin Tightening Serums",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "care/skin-and-body-care/deodorant",
+              "slug": "care-skin-and-body-care-deodorant",
+              "nameAr": "مزيل العرق",
+              "nameEn": "Deodorant",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            },
+            {
+              "niceoneId": "care/skin-and-body-care/body-scrub",
+              "slug": "care-skin-and-body-care-body-scrub",
+              "nameAr": "مقشر الجسم",
+              "nameEn": "Body Scrub",
+              "depth": 2,
+              "position": 2,
+              "children": []
+            },
+            {
+              "niceoneId": "care/skin-and-body-care/body-whitening",
+              "slug": "care-skin-and-body-care-body-whitening",
+              "nameAr": "تفتيح الجسم",
+              "nameEn": "Body Whitening",
+              "depth": 2,
+              "position": 3,
+              "children": []
+            },
+            {
+              "niceoneId": "care/skin-and-body-care/body-oil",
+              "slug": "care-skin-and-body-care-body-oil",
+              "nameAr": "زيوت الجسم",
+              "nameEn": "Body Oil",
+              "depth": 2,
+              "position": 4,
+              "children": []
+            },
+            {
+              "niceoneId": "care/skin-and-body-care/body-moisturizer",
+              "slug": "care-skin-and-body-care-body-moisturizer",
+              "nameAr": "مرطبات الجسم",
+              "nameEn": "Body Moisturizer",
+              "depth": 2,
+              "position": 5,
+              "children": []
+            },
+            {
+              "niceoneId": "care/skin-and-body-care/body-cleansers",
+              "slug": "care-skin-and-body-care-body-cleansers",
+              "nameAr": "غسول الجسم",
+              "nameEn": "Body Cleansers",
+              "depth": 2,
+              "position": 6,
+              "children": []
+            },
+            {
+              "niceoneId": "care/skin-and-body-care/body-powder",
+              "slug": "care-skin-and-body-care-body-powder",
+              "nameAr": "بودرة الجسم",
+              "nameEn": "Body Powder",
+              "depth": 2,
+              "position": 7,
+              "children": []
+            },
+            {
+              "niceoneId": "care/skin-and-body-care/shower-essentials",
+              "slug": "care-skin-and-body-care-shower-essentials",
+              "nameAr": "أدوات الاستحمام",
+              "nameEn": "Shower Essentials",
+              "depth": 2,
+              "position": 8,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "care/hair-care",
+          "slug": "care-hair-care",
+          "nameAr": "العناية بالشعر",
+          "nameEn": "Hair Care",
+          "depth": 1,
+          "position": 4,
+          "children": [
+            {
+              "niceoneId": "care/hair-care/hair-treatment",
+              "slug": "care-hair-care-hair-treatment",
+              "nameAr": "معالجات الشعر",
+              "nameEn": "Hair treatment",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "care/hair-care/hair-brushes-accessories",
+              "slug": "care-hair-care-hair-brushes-accessories",
+              "nameAr": "مصففات الشعر",
+              "nameEn": "Hair Brushes & Accessories",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            },
+            {
+              "niceoneId": "care/hair-care/hair-coloring",
+              "slug": "care-hair-care-hair-coloring",
+              "nameAr": "صبغات الشعر",
+              "nameEn": "Hair Coloring",
+              "depth": 2,
+              "position": 2,
+              "children": []
+            },
+            {
+              "niceoneId": "care/hair-care/oil--masks",
+              "slug": "care-hair-care-oil-masks",
+              "nameAr": "الزيوت و ماسك الشعر",
+              "nameEn": "Oil & Masks",
+              "depth": 2,
+              "position": 3,
+              "children": []
+            },
+            {
+              "niceoneId": "care/hair-care/shampoo-conditioners",
+              "slug": "care-hair-care-shampoo-conditioners",
+              "nameAr": "الشامبو و البلسم",
+              "nameEn": "Shampoo & Conditioners",
+              "depth": 2,
+              "position": 4,
+              "children": []
+            },
+            {
+              "niceoneId": "care/hair-care/hair-styling",
+              "slug": "care-hair-care-hair-styling",
+              "nameAr": "Hair styling",
+              "nameEn": "Hair styling",
+              "depth": 2,
+              "position": 5,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "care/face-care",
+          "slug": "care-face-care",
+          "nameAr": "العناية بالوجه",
+          "nameEn": "Face Care",
+          "depth": 1,
+          "position": 5,
+          "children": [
+            {
+              "niceoneId": "care/face-care/cleansers--toners",
+              "slug": "care-face-care-cleansers-toners",
+              "nameAr": "غسولات الوجه",
+              "nameEn": "Cleansers & Toners",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "care/face-care/face-moisturizer",
+              "slug": "care-face-care-face-moisturizer",
+              "nameAr": "ترطيب الوجه",
+              "nameEn": "Face Moisturizer",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            },
+            {
+              "niceoneId": "care/face-care/eye-care",
+              "slug": "care-face-care-eye-care",
+              "nameAr": "العناية بالعين",
+              "nameEn": "Eye care",
+              "depth": 2,
+              "position": 2,
+              "children": []
+            },
+            {
+              "niceoneId": "care/face-care/face-masks",
+              "slug": "care-face-care-face-masks",
+              "nameAr": "ماسكات وجه",
+              "nameEn": "Face Masks",
+              "depth": 2,
+              "position": 3,
+              "children": []
+            },
+            {
+              "niceoneId": "care/face-care/face-scrubs",
+              "slug": "care-face-care-face-scrubs",
+              "nameAr": "مقشر الوجه",
+              "nameEn": "Face Scrubs",
+              "depth": 2,
+              "position": 4,
+              "children": []
+            },
+            {
+              "niceoneId": "care/face-care/face-tools",
+              "slug": "care-face-care-face-tools",
+              "nameAr": "مستلزمات العناية بالوجه",
+              "nameEn": "Face Tools",
+              "depth": 2,
+              "position": 5,
+              "children": []
+            },
+            {
+              "niceoneId": "care/face-care/lip-care",
+              "slug": "care-face-care-lip-care",
+              "nameAr": "العناية بالشفايف",
+              "nameEn": "Lip care",
+              "depth": 2,
+              "position": 6,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "care/hand-care",
+          "slug": "care-hand-care",
+          "nameAr": "العناية باليدين",
+          "nameEn": "Hand Care",
+          "depth": 1,
+          "position": 6,
+          "children": [
+            {
+              "niceoneId": "care/hand-care/hand-soaps",
+              "slug": "care-hand-care-hand-soaps",
+              "nameAr": "صابون لليدين",
+              "nameEn": "Hand Wash",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "care/hand-care/hand-moisturizer",
+              "slug": "care-hand-care-hand-moisturizer",
+              "nameAr": "مرطبات اليدين",
+              "nameEn": "Hand Cream",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            },
+            {
+              "niceoneId": "care/hand-care/hand-tools",
+              "slug": "care-hand-care-hand-tools",
+              "nameAr": "مستلزمات العناية باليدين",
+              "nameEn": "Hand Tools",
+              "depth": 2,
+              "position": 2,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "care/foot-care",
+          "slug": "care-foot-care",
+          "nameAr": "العناية بالقدم",
+          "nameEn": "Foot Care",
+          "depth": 1,
+          "position": 7,
+          "children": [
+            {
+              "niceoneId": "care/foot-care/foot-tools",
+              "slug": "care-foot-care-foot-tools",
+              "nameAr": "مستلزمات العناية بالقدمين",
+              "nameEn": "Foot Tools",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "care/foot-care/foot-cream",
+              "slug": "care-foot-care-foot-cream",
+              "nameAr": "ترطيب القدمين",
+              "nameEn": "Foot Cream",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "care/sun-care",
+          "slug": "care-sun-care",
+          "nameAr": "الوقاية من الشمس",
+          "nameEn": "Sun Care",
+          "depth": 1,
+          "position": 8,
+          "children": [
+            {
+              "niceoneId": "care/sun-care/sunscreen",
+              "slug": "care-sun-care-sunscreen",
+              "nameAr": "واقي الشمس",
+              "nameEn": "Sunscreen",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "care/sun-care/tanning-oils-lotions",
+              "slug": "care-sun-care-tanning-oils-lotions",
+              "nameAr": "تان",
+              "nameEn": "Tanning Oils & Lotions",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "care/women-care",
+          "slug": "care-women-care",
+          "nameAr": "عناية المرأة",
+          "nameEn": "Feminine Care",
+          "depth": 1,
+          "position": 9,
+          "children": [
+            {
+              "niceoneId": "care/women-care/pantyliner",
+              "slug": "care-women-care-pantyliner",
+              "nameAr": "فوط صحية",
+              "nameEn": "Pantyliner",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "care/women-care/women-hair-removal",
+              "slug": "care-women-care-women-hair-removal",
+              "nameAr": "ازالة الشعر",
+              "nameEn": "Women Hair Removal",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "care/mom--baby",
+          "slug": "care-mom-baby",
+          "nameAr": "الأم و الطفل",
+          "nameEn": "Mom & Baby",
+          "depth": 1,
+          "position": 10,
+          "children": [
+            {
+              "niceoneId": "care/mom--baby/mommy-care",
+              "slug": "care-mom-baby-mommy-care",
+              "nameAr": "عناية الأم",
+              "nameEn": "Mommy care",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "care/mom--baby/baby-care",
+              "slug": "care-mom-baby-baby-care",
+              "nameAr": "عناية الطفل",
+              "nameEn": "Baby Care",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "care/men-care",
+          "slug": "care-men-care",
+          "nameAr": "عناية الرجل",
+          "nameEn": "Men care",
+          "depth": 1,
+          "position": 11,
+          "children": [
+            {
+              "niceoneId": "care/men-care/beard-care",
+              "slug": "care-men-care-beard-care",
+              "nameAr": "منتجات العناية باللحية",
+              "nameEn": "Beard Care",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "care/men-care/shaving-grooming",
+              "slug": "care-men-care-shaving-grooming",
+              "nameAr": "مستلزمات الحلاقة",
+              "nameEn": "Shaving & Grooming",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            },
+            {
+              "niceoneId": "care/men-care/shaving-machines",
+              "slug": "care-men-care-shaving-machines",
+              "nameAr": "ماكينات حلاقة",
+              "nameEn": "Shaving Machines",
+              "depth": 2,
+              "position": 2,
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "niceoneId": "devices",
+      "slug": "devices",
+      "nameAr": "الأجهزة",
+      "nameEn": "Devices",
+      "depth": 0,
+      "position": 4,
+      "children": [
+        {
+          "niceoneId": "devices/hair-devices",
+          "slug": "devices-hair-devices",
+          "nameAr": "أجهزة الشعر",
+          "nameEn": "Hair Devices",
+          "depth": 1,
+          "position": 0,
+          "children": []
+        },
+        {
+          "niceoneId": "devices/facial-devices",
+          "slug": "devices-facial-devices",
+          "nameAr": "أجهزة الوجه",
+          "nameEn": "Facial Devices",
+          "depth": 1,
+          "position": 1,
+          "children": []
+        },
+        {
+          "niceoneId": "devices/body-devices",
+          "slug": "devices-body-devices",
+          "nameAr": "أجهزة الجسم",
+          "nameEn": "Body Devices",
+          "depth": 1,
+          "position": 2,
+          "children": []
+        },
+        {
+          "niceoneId": "devices/female-devices",
+          "slug": "devices-female-devices",
+          "nameAr": "أجهزة نسائية",
+          "nameEn": "Female Devices",
+          "depth": 1,
+          "position": 3,
+          "children": []
+        }
+      ]
+    },
+    {
+      "niceoneId": "premium",
+      "slug": "premium",
+      "nameAr": "بريميوم",
+      "nameEn": "Premium",
+      "depth": 0,
+      "position": 5,
+      "children": [
+        {
+          "niceoneId": "premium/luxury-makeup",
+          "slug": "premium-luxury-makeup",
+          "nameAr": "مكياج فاخر",
+          "nameEn": "Luxury Makeup",
+          "depth": 1,
+          "position": 0,
+          "children": []
+        },
+        {
+          "niceoneId": "premium/luxury-perfumes",
+          "slug": "premium-luxury-perfumes",
+          "nameAr": "عطور فاخرة",
+          "nameEn": "Luxury Perfumes",
+          "depth": 1,
+          "position": 1,
+          "children": []
+        },
+        {
+          "niceoneId": "premium/luxury-care",
+          "slug": "premium-luxury-care",
+          "nameAr": "منتجات العناية الفاخرة",
+          "nameEn": "Luxury Care",
+          "depth": 1,
+          "position": 2,
+          "children": []
+        }
+      ]
+    },
+    {
+      "niceoneId": "nails",
+      "slug": "nails",
+      "nameAr": "الأظافر",
+      "nameEn": "Nails",
+      "depth": 0,
+      "position": 6,
+      "children": [
+        {
+          "niceoneId": "nails/nails-polish",
+          "slug": "nails-nails-polish",
+          "nameAr": "طلاء الأظافر",
+          "nameEn": "Nail Polish",
+          "depth": 1,
+          "position": 0,
+          "children": []
+        },
+        {
+          "niceoneId": "nails/nails-care",
+          "slug": "nails-nails-care",
+          "nameAr": "العناية بالأظافر",
+          "nameEn": "Nails Care",
+          "depth": 1,
+          "position": 1,
+          "children": []
+        },
+        {
+          "niceoneId": "nails/nails-polish-remover",
+          "slug": "nails-nails-polish-remover",
+          "nameAr": "مزيل طلاء الأظافر",
+          "nameEn": "Nails Polish Remover",
+          "depth": 1,
+          "position": 2,
+          "children": []
+        },
+        {
+          "niceoneId": "nails/nail-tools",
+          "slug": "nails-nail-tools",
+          "nameAr": "أدوات الأظافر",
+          "nameEn": "Nail Tools",
+          "depth": 1,
+          "position": 3,
+          "children": []
+        },
+        {
+          "niceoneId": "nails/nails-set",
+          "slug": "nails-nails-set",
+          "nameAr": "الأظافر الصناعية",
+          "nameEn": "Fake Nails",
+          "depth": 1,
+          "position": 4,
+          "children": []
+        }
+      ]
+    },
+    {
+      "niceoneId": "gifts",
+      "slug": "gifts",
+      "nameAr": "الهدايا",
+      "nameEn": "Gifts",
+      "depth": 0,
+      "position": 7,
+      "children": [
+        {
+          "niceoneId": "gifts/women-gifts-sets",
+          "slug": "gifts-women-gifts-sets",
+          "nameAr": "مجموعة هدايا نسائية",
+          "nameEn": "Women Gift Sets",
+          "depth": 1,
+          "position": 0,
+          "children": []
+        },
+        {
+          "niceoneId": "gifts/men-gift-sets",
+          "slug": "gifts-men-gift-sets",
+          "nameAr": "مجموعة هدايا رجالية",
+          "nameEn": "Men Gift sets",
+          "depth": 1,
+          "position": 1,
+          "children": []
+        }
+      ]
+    },
+    {
+      "niceoneId": "lenses",
+      "slug": "lenses",
+      "nameAr": "عدسات",
+      "nameEn": "Lenses",
+      "depth": 0,
+      "position": 8,
+      "children": [
+        {
+          "niceoneId": "lenses/contact-lesnses-solution",
+          "slug": "lenses-contact-lesnses-solution",
+          "nameAr": "محاليل عدسات لاصقة",
+          "nameEn": "Contact Lenses Solution",
+          "depth": 1,
+          "position": 0,
+          "children": []
+        },
+        {
+          "niceoneId": "lenses/afle-lenses",
+          "slug": "lenses-afle-lenses",
+          "nameAr": "عدسات أفل",
+          "nameEn": "Afle Lenses",
+          "depth": 1,
+          "position": 1,
+          "children": []
+        },
+        {
+          "niceoneId": "lenses/diva-lenses",
+          "slug": "lenses-diva-lenses",
+          "nameAr": "عدسات ديفا",
+          "nameEn": "Diva Lenses",
+          "depth": 1,
+          "position": 2,
+          "children": []
+        },
+        {
+          "niceoneId": "lenses/new-lens-lenses",
+          "slug": "lenses-new-lens-lenses",
+          "nameAr": "عدسات نيو لنس",
+          "nameEn": "New Lens Lenses",
+          "depth": 1,
+          "position": 3,
+          "children": []
+        },
+        {
+          "niceoneId": "lenses/lens-me-lenses",
+          "slug": "lenses-lens-me-lenses",
+          "nameAr": "عدسات لنس مي",
+          "nameEn": "Lens Me Lenses",
+          "depth": 1,
+          "position": 4,
+          "children": []
+        },
+        {
+          "niceoneId": "lenses/beauteous-prescription-contact-lenses",
+          "slug": "lenses-beauteous-prescription-contact-lenses",
+          "nameAr": "عدسات بيوتيس طبية",
+          "nameEn": "Beauteous Prescription Contact Lenses",
+          "depth": 1,
+          "position": 5,
+          "children": []
+        },
+        {
+          "niceoneId": "lenses/beauteous-cosmetic-contact-lenses",
+          "slug": "lenses-beauteous-cosmetic-contact-lenses",
+          "nameAr": "عدسات بيوتيس التجميلية",
+          "nameEn": "Beauteous Cosmetic Contact Lenses",
+          "depth": 1,
+          "position": 6,
+          "children": []
+        }
+      ]
+    },
+    {
+      "niceoneId": "home-scents",
+      "slug": "home-scents",
+      "nameAr": "معطرات المنزل",
+      "nameEn": "Home Scents",
+      "depth": 0,
+      "position": 9,
+      "children": [
+        {
+          "niceoneId": "home-scents/oud--bakhoor",
+          "slug": "home-scents-oud-bakhoor",
+          "nameAr": "العود والبخور",
+          "nameEn": "Oud & Bakhoor",
+          "depth": 1,
+          "position": 0,
+          "children": []
+        },
+        {
+          "niceoneId": "home-scents/censers",
+          "slug": "home-scents-censers",
+          "nameAr": "مباخر",
+          "nameEn": "Incense Burner",
+          "depth": 1,
+          "position": 1,
+          "children": [
+            {
+              "niceoneId": "home-scents/censers/electronic-censers",
+              "slug": "home-scents-censers-electronic-censers",
+              "nameAr": "مباخر الكترونية",
+              "nameEn": "Electric Incense Burner",
+              "depth": 2,
+              "position": 0,
+              "children": []
+            },
+            {
+              "niceoneId": "home-scents/censers/classic-censers",
+              "slug": "home-scents-censers-classic-censers",
+              "nameAr": "مباخر كلاسيكية",
+              "nameEn": "Classic Incense Burner",
+              "depth": 2,
+              "position": 1,
+              "children": []
+            }
+          ]
+        },
+        {
+          "niceoneId": "home-scents/candle--diffuser",
+          "slug": "home-scents-candle-diffuser",
+          "nameAr": "شموع وعيدان معطرة",
+          "nameEn": "Candle & Diffuser",
+          "depth": 1,
+          "position": 2,
+          "children": []
+        },
+        {
+          "niceoneId": "home-scents/home-fragrances",
+          "slug": "home-scents-home-fragrances",
+          "nameAr": "معطرات الجو",
+          "nameEn": "Air fresheners",
+          "depth": 1,
+          "position": 3,
+          "children": []
+        }
+      ]
+    }
+  ]
+}

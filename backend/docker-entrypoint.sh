@@ -24,6 +24,15 @@ SQL
   fi
 fi
 
+echo "[entrypoint] Ensuring Nice One categories..."
+set +e
+npx tsx prisma/import-niceone-categories.ts
+IMPORT_CATS=$?
+set -e
+if [ "$IMPORT_CATS" -ne 0 ]; then
+  echo "[entrypoint] Nice One category import skipped (exit $IMPORT_CATS)"
+fi
+
 if [ "$RUN_SEED" = "1" ]; then
   # افتراضياً: أدمن فقط. البيانات التجريبية تحتاج SEED_DEMO=1 صراحةً
   echo "[entrypoint] Seeding admin (SEED_DEMO=${SEED_DEMO:-0})..."

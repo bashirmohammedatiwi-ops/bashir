@@ -194,7 +194,7 @@ export class ProductsService {
           isBogo: dto.isBogo ?? false,
           isActive: dto.isActive ?? true,
           brandId: dto.brandId,
-          categoryId: dto.categoryId,
+          categoryId: dto.categoryId || null,
           subcategoryId,
           tertiaryCategoryId,
           tags: JSON.stringify(dto.tags ?? []),

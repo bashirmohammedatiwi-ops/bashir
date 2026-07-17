@@ -61,9 +61,13 @@ export default function SubcategoriesPage() {
 
   const upsert = useMutation({
     mutationFn: async (values: any) => {
+      const nameAr = (values.nameAr || values.name || "").trim();
       const payload = {
         ...values,
-        slug: values.slug?.trim() || slugify(values.name, "section"),
+        name: nameAr,
+        nameAr,
+        nameEn: values.nameEn?.trim() || undefined,
+        slug: values.slug?.trim() || slugify(nameAr || values.nameEn, "section"),
       };
       return editing?.id
         ? mutations.updateSubcategory(editing.id, payload)
@@ -104,7 +108,9 @@ export default function SubcategoriesPage() {
   function openEdit(row: any) {
     setEditing(row);
     form.setFieldsValue({
-      name: row.name,
+      name: row.nameAr || row.name,
+      nameAr: row.nameAr || row.name,
+      nameEn: row.nameEn || undefined,
       slug: row.slug,
       description: row.description,
       parentId: row.parentId ?? row.parent?.id,
@@ -277,8 +283,11 @@ export default function SubcategoriesPage() {
           >
             <Select options={parentOptions} placeholder="اختر القسم" />
           </Form.Item>
-          <Form.Item name="name" label="اسم القسم" rules={[{ required: true }]}>
+          <Form.Item name="nameAr" label="الاسم (عربي)" rules={[{ required: true, message: "الاسم مطلوب" }]}>
             <Input placeholder="أحمر الشفاه" />
+          </Form.Item>
+          <Form.Item name="nameEn" label="الاسم (EN)">
+            <Input placeholder="Lipstick" />
           </Form.Item>
           <Form.Item name="slug" label="Slug">
             <Input placeholder="يُولَّد تلقائياً" />

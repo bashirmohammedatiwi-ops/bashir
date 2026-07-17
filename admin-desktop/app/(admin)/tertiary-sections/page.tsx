@@ -62,9 +62,13 @@ export default function TertiarySectionsPage() {
 
   const upsert = useMutation({
     mutationFn: async (values: any) => {
+      const nameAr = (values.nameAr || values.name || "").trim();
       const payload = {
         ...values,
-        slug: values.slug?.trim() || slugify(values.name, "section"),
+        name: nameAr,
+        nameAr,
+        nameEn: values.nameEn?.trim() || undefined,
+        slug: values.slug?.trim() || slugify(nameAr || values.nameEn, "section"),
       };
       return editing?.id
         ? mutations.updateTertiarySection(editing.id, payload)
@@ -106,7 +110,9 @@ export default function TertiarySectionsPage() {
   function openEdit(row: any) {
     setEditing(row);
     form.setFieldsValue({
-      name: row.name,
+      name: row.nameAr || row.name,
+      nameAr: row.nameAr || row.name,
+      nameEn: row.nameEn || undefined,
       slug: row.slug,
       description: row.description,
       parentId: row.parentId ?? row.parent?.id,
@@ -261,8 +267,11 @@ export default function TertiarySectionsPage() {
           >
             <Select options={parentOptions} placeholder="اختر القسم الفرعي" />
           </Form.Item>
-          <Form.Item name="name" label="اسم القسم الثانوي" rules={[{ required: true }]}>
+          <Form.Item name="nameAr" label="الاسم (عربي)" rules={[{ required: true, message: "الاسم مطلوب" }]}>
             <Input placeholder="مثال: أحمر شفاه مات" />
+          </Form.Item>
+          <Form.Item name="nameEn" label="الاسم (EN)">
+            <Input placeholder="Matte Lipstick" />
           </Form.Item>
           <Form.Item name="slug" label="Slug">
             <Input placeholder="يُولَّد تلقائياً" />

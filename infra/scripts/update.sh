@@ -162,6 +162,11 @@ if ! $COMPOSE exec -T api npx prisma migrate deploy; then
   $COMPOSE exec -T api npx prisma migrate deploy
 fi
 
+echo "==> Ensure Nice One category tree..."
+$COMPOSE exec -T api npx tsx prisma/import-niceone-categories.ts || {
+  echo "WARN: Nice One category import failed — check: docker compose logs api --tail=80"
+}
+
 if ! ensure_api_ready; then
   echo "==> API not healthy — syncing PostgreSQL password..."
   ./scripts/sync-postgres-password.sh

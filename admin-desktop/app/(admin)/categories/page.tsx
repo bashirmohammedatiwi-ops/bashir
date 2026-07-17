@@ -66,7 +66,9 @@ export default function CategoriesPage() {
   function openEdit(row: any) {
     setEditing(row);
     form.setFieldsValue({
-      name: row.name,
+      name: row.nameAr || row.name,
+      nameAr: row.nameAr || row.name,
+      nameEn: row.nameEn || undefined,
       slug: row.slug,
       icon: row.icon,
       position: row.position,
@@ -81,7 +83,7 @@ export default function CategoriesPage() {
     <div className="alhayaa-page">
       <PageHeader
         title="الأقسام"
-        subtitle="المستوى الأول — الأقسام الفرعية والثانوية من صفحاتها"
+        subtitle="تقسيمة نايس ون — أقسام رئيسية / فرعية / ثانوية (عربي + إنجليزي)"
         extra={
           <Space>
             <Link href="/subcategories">
@@ -129,6 +131,12 @@ export default function CategoriesPage() {
                 },
               },
               { title: "الاسم", dataIndex: "name" },
+              {
+                title: "EN",
+                dataIndex: "nameEn",
+                width: 140,
+                render: (v: string) => v || "—",
+              },
               { title: "Slug", dataIndex: "slug", width: 160 },
               {
                 title: "أقسام فرعية",
@@ -198,14 +206,21 @@ export default function CategoriesPage() {
           layout="vertical"
           form={form}
           onFinish={(v) => {
+            const nameAr = (v.nameAr || v.name || "").trim();
             upsert.mutate({
               ...v,
-              slug: v.slug?.trim() || slugify(v.name, "cat"),
+              name: nameAr,
+              nameAr,
+              nameEn: v.nameEn?.trim() || undefined,
+              slug: v.slug?.trim() || slugify(nameAr || v.nameEn, "cat"),
             });
           }}
         >
-          <Form.Item name="name" label="الاسم" rules={[{ required: true }]}>
+          <Form.Item name="nameAr" label="الاسم (عربي)" rules={[{ required: true, message: "الاسم مطلوب" }]}>
             <Input />
+          </Form.Item>
+          <Form.Item name="nameEn" label="الاسم (EN)">
+            <Input placeholder="Makeup" />
           </Form.Item>
           <Form.Item name="slug" label="Slug">
             <Input placeholder="يُولَّد تلقائياً من الاسم" />

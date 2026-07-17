@@ -42,7 +42,7 @@ export class CreateProductDto {
   @IsOptional() @IsString() nameEn?: string;
   @IsString() @IsNotEmpty() slug: string;
   @IsString() @IsNotEmpty() brandId: string;
-  @IsString() @IsNotEmpty() categoryId: string;
+  @IsOptional() @IsString() categoryId?: string;
 
   @IsOptional() @IsString() subcategoryId?: string;
   @IsOptional() @IsString() tertiaryCategoryId?: string;

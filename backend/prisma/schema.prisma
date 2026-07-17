@@ -175,6 +175,8 @@ model Session {
 model Category {
   id              String         @id @default(uuid())
   name            String
+  nameAr          String?
+  nameEn          String?
   slug            String         @unique
   icon            String?
   description     String?
@@ -267,16 +269,16 @@ model Product {
   tags            String          @default("[]")
   skinType        String          @default("[]")
   brandId         String
-  categoryId      String
+  categoryId      String?
   subcategoryId   String?
   tertiaryCategoryId String?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
   brand           Brand           @relation(fields: [brandId], references: [id])
-  category        Category        @relation("ProductCategory", fields: [categoryId], references: [id])
-  subcategory     Category?       @relation("ProductSubcategory", fields: [subcategoryId], references: [id])
-  tertiaryCategory Category?      @relation("ProductTertiaryCategory", fields: [tertiaryCategoryId], references: [id])
+  category        Category?       @relation("ProductCategory", fields: [categoryId], references: [id], onDelete: SetNull)
+  subcategory     Category?       @relation("ProductSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
+  tertiaryCategory Category?      @relation("ProductTertiaryCategory", fields: [tertiaryCategoryId], references: [id], onDelete: SetNull)
   variants        ProductVariant[]
   shades          ProductShade[]
   images          ProductImage[]
