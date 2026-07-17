@@ -6,5 +6,6 @@ export function productCoverUrl(product?: {
   const first = product?.images?.[0];
   if (!first) return null;
   const media = (first as { media?: unknown }).media as Parameters<typeof mediaThumb>[0];
-  return mediaThumb(media, "thumb") ?? mediaPreviewUrl(media);
+  // Grid cards ~160–300px CSS — use 480px small, not 240px thumb (looks soft when stretched)
+  return mediaThumb(media, "small") ?? mediaPreviewUrl(media);
 }

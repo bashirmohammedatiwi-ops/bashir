@@ -2,28 +2,27 @@ import sharp from "sharp";
 
 /**
  * Max side for stored originals.
- * 1800px is enough for mobile zoom / detail while keeping disk lean.
+ * 2400px keeps product detail sharp on mobile / admin zoom.
  */
-export const MAX_ORIGINAL_DIMENSION = Number(process.env.MEDIA_MAX_ORIGINAL_WIDTH ?? 1800);
+export const MAX_ORIGINAL_DIMENSION = Number(process.env.MEDIA_MAX_ORIGINAL_WIDTH ?? 2400);
 
 /**
- * Compression tuned for high perceived quality at low bytes.
- * AVIF for delivery sizes; WebP + JPEG originals for universal fallback.
+ * Compression tuned for product photography (sharp edges, text on packaging).
  */
 export const COMPRESS = {
   webp: {
-    quality: Number(process.env.MEDIA_WEBP_QUALITY ?? 82),
-    effort: 6,
-    smartSubsample: true,
+    quality: Number(process.env.MEDIA_WEBP_QUALITY ?? 90),
+    effort: 5,
+    smartSubsample: false,
   },
-  /** AVIF: ~30–50% smaller than WebP at similar visual quality */
+  /** AVIF: slightly higher quality — packaging photos suffer at very low q */
   avif: {
-    quality: Number(process.env.MEDIA_AVIF_QUALITY ?? 52),
+    quality: Number(process.env.MEDIA_AVIF_QUALITY ?? 62),
     effort: 4,
     chromaSubsampling: "4:2:0" as const,
   },
   jpeg: {
-    quality: Number(process.env.MEDIA_JPEG_QUALITY ?? 84),
+    quality: Number(process.env.MEDIA_JPEG_QUALITY ?? 90),
     mozjpeg: true,
   },
 } as const;
@@ -102,7 +101,7 @@ export async function optimizeForStorage(buffer: Buffer): Promise<OptimizedImage
   }
 
   const thumbPipeline = pipeline.clone().resize({
-    width: 240,
+    width: 320,
     withoutEnlargement: true,
     fit: "inside",
     kernel: sharp.kernel.lanczos3,
@@ -111,8 +110,8 @@ export async function optimizeForStorage(buffer: Buffer): Promise<OptimizedImage
   const [webpBuffer, jpegBuffer, thumbWebpBuffer, thumbAvifBuffer, outMeta] = await Promise.all([
     pipeline.clone().webp(COMPRESS.webp).toBuffer(),
     pipeline.clone().jpeg(COMPRESS.jpeg).toBuffer(),
-    thumbPipeline.clone().webp({ ...COMPRESS.webp, quality: 78 }).toBuffer(),
-    thumbPipeline.clone().avif({ ...COMPRESS.avif, quality: 48 }).toBuffer().catch(() => Buffer.alloc(0)),
+    thumbPipeline.clone().webp({ ...COMPRESS.webp, quality: 85 }).toBuffer(),
+    thumbPipeline.clone().avif({ ...COMPRESS.avif, quality: 55 }).toBuffer().catch(() => Buffer.alloc(0)),
     pipeline.clone().webp(COMPRESS.webp).metadata(),
   ]);
 

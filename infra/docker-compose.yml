@@ -55,9 +55,10 @@ services:
       MEDIA_ROOT: /data/uploads
       MEDIA_PUBLIC_PREFIX: /media
       MEDIA_PUBLIC_BASE_URL: http://localhost/media
-      MEDIA_MAX_ORIGINAL_WIDTH: 1920
-      MEDIA_WEBP_QUALITY: 80
-      MEDIA_JPEG_QUALITY: 82
+      MEDIA_MAX_ORIGINAL_WIDTH: 2400
+      MEDIA_WEBP_QUALITY: 90
+      MEDIA_JPEG_QUALITY: 90
+      MEDIA_AVIF_QUALITY: 62
       RUN_SEED: ${RUN_SEED:-0}
       SEED_DEMO: ${SEED_DEMO:-0}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@alhayaa.com}

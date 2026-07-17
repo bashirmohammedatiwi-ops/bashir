@@ -99,7 +99,13 @@ export class MediaService {
         .digest("hex");
 
       const existing = await this.prisma.media.findUnique({ where: { hash } });
-      if (existing) return existing;
+      if (existing) {
+        return {
+          ...existing,
+          originalUrl: `${existing.publicUrlBase}/${existing.filename}.webp`,
+          originalUrlJpg: `${existing.publicUrlBase}/${existing.filename}.jpg`,
+        };
+      }
 
       const now = new Date();
       const yyyy = now.getFullYear().toString();
@@ -135,7 +141,7 @@ export class MediaService {
         thumbFormats.avif = `${publicUrlBase}/${baseName}_thumb.avif`;
       }
       const initialVariants: Partial<VariantsRecord> = {
-        thumb: { width: 240, formats: thumbFormats },
+        thumb: { width: 320, formats: thumbFormats },
       };
 
       const savedBytes =
@@ -166,7 +172,8 @@ export class MediaService {
 
       const variantJob = {
         mediaId: media.id,
-        originalPath: webpPath,
+        // Generate variants from JPEG to avoid WebP→WebP double compression
+        originalPath: jpgPath,
         absDir,
         baseName,
         skipThumb: true,

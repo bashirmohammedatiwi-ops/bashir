@@ -64,9 +64,16 @@ export function mediaThumb(
   return null;
 }
 
-/** Cover / gallery preview that never points at a missing async variant. */
+/** Cover / gallery preview — prefer full original, never the tiny 240px thumb. */
 export function mediaPreviewUrl(item?: MediaLike): string | null {
   if (!item) return null;
   if (item.originalUrl) return mediaUrl(item.originalUrl);
-  return mediaThumb(item, "thumb") ?? mediaThumb(item, "original");
+  if (item.originalUrlJpg) return mediaUrl(item.originalUrlJpg);
+  if (item.publicUrlBase && item.filename) {
+    return (
+      mediaUrl(`${item.publicUrlBase}/${item.filename}.webp`) ??
+      mediaUrl(`${item.publicUrlBase}/${item.filename}.jpg`)
+    );
+  }
+  return mediaThumb(item, "medium") ?? mediaThumb(item, "large") ?? mediaThumb(item, "small");
 }

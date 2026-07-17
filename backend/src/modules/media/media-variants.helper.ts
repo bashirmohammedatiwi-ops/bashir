@@ -18,16 +18,16 @@ export interface GenerateVariantsInput {
 }
 
 function webpQualityForWidth(width: number): number {
-  if (width <= 240) return 78;
-  if (width <= 480) return 80;
-  if (width <= 800) return 82;
+  if (width <= 320) return 85;
+  if (width <= 640) return 87;
+  if (width <= 1000) return 88;
   return COMPRESS.webp.quality;
 }
 
 function avifQualityForWidth(width: number): number {
-  if (width <= 240) return 48;
-  if (width <= 480) return 50;
-  if (width <= 800) return 52;
+  if (width <= 320) return 55;
+  if (width <= 640) return 58;
+  if (width <= 1000) return 60;
   return COMPRESS.avif.quality;
 }
 

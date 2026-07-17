@@ -29,7 +29,7 @@ async function uploadOne(file: File, purpose: string): Promise<ImageItem> {
   const media = await uploadMediaFile(file, purpose);
   return {
     id: media.id,
-    url: media.previewUrl ?? mediaPreviewUrl(media) ?? mediaThumb(media, "thumb"),
+    url: media.previewUrl ?? mediaPreviewUrl(media) ?? mediaThumb(media, "medium"),
   };
 }
 

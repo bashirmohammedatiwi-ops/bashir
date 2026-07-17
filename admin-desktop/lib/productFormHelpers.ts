@@ -7,8 +7,8 @@ export function imagesFromProduct(full: any): ImageItem[] {
       id: img.mediaId ?? img.media?.id,
       url:
         mediaPreviewUrl(img.media) ??
-        mediaThumb(img.media, "thumb") ??
-        mediaThumb(img.media, "medium"),
+        mediaThumb(img.media, "medium") ??
+        mediaThumb(img.media, "original"),
     }))
     .filter((i: ImageItem) => i.id);
 }
