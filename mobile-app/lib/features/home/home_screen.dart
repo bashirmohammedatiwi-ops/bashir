@@ -23,8 +23,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final _scroll = ScrollController();
+  final _headerProgress = ValueNotifier<double>(0);
   String? _precachedFor;
-  double _headerProgress = 0;
 
   static const _headerFadeDistance = 140.0;
   static const _headerBarHeight = 50.0;
@@ -36,16 +36,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _onScroll() {
-    if (!_scroll.hasClients || !mounted) return;
+    if (!_scroll.hasClients) return;
     final progress = (_scroll.offset / _headerFadeDistance).clamp(0.0, 1.0);
-    if ((progress - _headerProgress).abs() < 0.015) return;
-    setState(() => _headerProgress = progress);
+    if ((progress - _headerProgress.value).abs() < 0.02) return;
+    _headerProgress.value = progress;
   }
 
   @override
   void dispose() {
     _scroll.removeListener(_onScroll);
     _scroll.dispose();
+    _headerProgress.dispose();
     super.dispose();
   }
 
@@ -54,15 +55,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final feed = ref.watch(homeFeedProvider);
     final topPad = MediaQuery.paddingOf(context).top;
     final headerH = topPad + _headerBarHeight;
-    final statusBrightness =
-        _headerProgress > 0.42 ? Brightness.dark : Brightness.light;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(
+      value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: statusBrightness,
-        statusBarBrightness:
-            statusBrightness == Brightness.dark ? Brightness.light : Brightness.dark,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
       ),
       child: Scaffold(
         backgroundColor: AppColors.scaffold,
@@ -72,60 +70,63 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             fit: StackFit.expand,
             children: [
               feed.when(
-              loading: () => const HomeLoadingSkeleton(),
-              error: (e, _) => ErrorView(
-                message: friendlyError(e),
-                onRetry: () async {
-                  await ref.read(apiCacheProvider).remove('home_v1');
-                  ref.invalidate(homeFeedProvider);
-                },
-              ),
-              data: (data) {
-                if (_precachedFor != data.hashCode.toString()) {
-                  _precachedFor = data.hashCode.toString();
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    if (mounted) precacheHomeFeedImages(context, data);
-                  });
-                }
-                final sections = buildHomeSections(data);
-                return RefreshIndicator(
-                  color: AppColors.primary,
-                  backgroundColor: AppColors.surface,
-                  edgeOffset: headerH,
-                  onRefresh: () async {
-                    HapticFeedback.mediumImpact();
+                loading: () => const HomeLoadingSkeleton(),
+                error: (e, _) => ErrorView(
+                  message: friendlyError(e),
+                  onRetry: () async {
                     await ref.read(apiCacheProvider).remove('home_v1');
                     ref.invalidate(homeFeedProvider);
-                    await ref.read(homeFeedProvider.future);
                   },
-                  child: CustomScrollView(
-                    controller: _scroll,
-                    cacheExtent: 1200,
-                    physics: const AlwaysScrollableScrollPhysics(
-                      parent: BouncingScrollPhysics(),
+                ),
+                data: (data) {
+                  if (_precachedFor != data.hashCode.toString()) {
+                    _precachedFor = data.hashCode.toString();
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) precacheHomeFeedImages(context, data);
+                    });
+                  }
+                  final sections = buildHomeSections(data);
+                  return RefreshIndicator(
+                    color: AppColors.primary,
+                    backgroundColor: AppColors.surface,
+                    edgeOffset: headerH,
+                    onRefresh: () async {
+                      HapticFeedback.mediumImpact();
+                      await ref.read(apiCacheProvider).remove('home_v1');
+                      ref.invalidate(homeFeedProvider);
+                      await ref.read(homeFeedProvider.future);
+                    },
+                    child: CustomScrollView(
+                      controller: _scroll,
+                      cacheExtent: 900,
+                      physics: const AlwaysScrollableScrollPhysics(
+                        parent: BouncingScrollPhysics(),
+                      ),
+                      slivers: [
+                        for (final section in sections)
+                          SliverToBoxAdapter(child: section),
+                        const SliverToBoxAdapter(child: SizedBox(height: 28)),
+                      ],
                     ),
-                    slivers: [
-                      for (final section in sections)
-                        SliverToBoxAdapter(child: section),
-                      const SliverToBoxAdapter(child: SizedBox(height: 24)),
-                    ],
-                  ),
-                );
-              },
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: _FloatingHeader(
-                topPad: topPad,
-                progress: _headerProgress,
+                  );
+                },
               ),
-            ),
-          ],
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: ValueListenableBuilder<double>(
+                  valueListenable: _headerProgress,
+                  builder: (_, progress, __) => _FloatingHeader(
+                    topPad: topPad,
+                    progress: progress,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 }
@@ -141,40 +142,46 @@ class _FloatingHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bgOpacity = (progress * 0.94).clamp(0.0, 0.94);
-    final blur = lerpDouble(0, 16, progress)!;
-    final shadowOpacity = (progress * 0.08).clamp(0.0, 0.08);
+    final bgOpacity = (progress * 0.96).clamp(0.0, 0.96);
+    final useBlur = progress > 0.08 && progress < 0.95;
+    final blur = useBlur ? lerpDouble(0, 12, progress)! : 0.0;
 
-    return ClipRect(
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
-          curve: Curves.easeOut,
-          decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: bgOpacity),
-            border: Border(
-              bottom: BorderSide(
-                color: AppColors.border.withValues(alpha: progress * 0.5),
-                width: progress > 0.85 ? 0.5 : 0,
-              ),
-            ),
-            boxShadow: shadowOpacity > 0.01
-                ? [
-                    BoxShadow(
-                      color: AppColors.textPrimary.withValues(alpha: shadowOpacity),
-                      blurRadius: 12 * progress,
-                      offset: Offset(0, 3 * progress),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Padding(
-            padding: EdgeInsets.only(top: topPad),
-            child: NiceOneHeader(scrollProgress: progress),
+    Widget content = AnimatedContainer(
+      duration: const Duration(milliseconds: 80),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: bgOpacity),
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.border.withValues(alpha: progress * 0.55),
+            width: progress > 0.85 ? 0.5 : 0,
           ),
         ),
+        boxShadow: progress > 0.2
+            ? [
+                BoxShadow(
+                  color: AppColors.ink.withValues(alpha: 0.06 * progress),
+                  blurRadius: 10 * progress,
+                  offset: Offset(0, 3 * progress),
+                ),
+              ]
+            : null,
+      ),
+      child: Padding(
+        padding: EdgeInsets.only(top: topPad),
+        child: NiceOneHeader(scrollProgress: progress),
       ),
     );
+
+    if (useBlur && blur > 1) {
+      content = ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+          child: content,
+        ),
+      );
+    }
+
+    return content;
   }
 }

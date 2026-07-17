@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,35 +13,44 @@ import '../profile/account_screen.dart';
 
 final navIndexProvider = StateProvider<int>((ref) => 0);
 
-class MainShell extends ConsumerWidget {
+class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends ConsumerState<MainShell> {
+  final _visited = <int>{0};
+
+  @override
+  Widget build(BuildContext context) {
     final index = ref.watch(navIndexProvider);
     final cartCount = ref.watch(cartProvider.select((c) => c.count));
-
-    const tabs = [
-      HomeScreen(),
-      CategoriesScreen(),
-      OffersScreen(),
-      CartScreen(),
-      AccountScreen(),
-    ];
+    _visited.add(index);
 
     return Scaffold(
       backgroundColor: AppColors.scaffold,
       extendBody: true,
-      body: IndexedStack(index: index, children: tabs),
+      body: IndexedStack(
+        index: index,
+        children: [
+          const HomeScreen(),
+          _visited.contains(1) ? const CategoriesScreen() : const SizedBox.shrink(),
+          _visited.contains(2) ? const OffersScreen() : const SizedBox.shrink(),
+          _visited.contains(3) ? const CartScreen() : const SizedBox.shrink(),
+          _visited.contains(4) ? const AccountScreen() : const SizedBox.shrink(),
+        ],
+      ),
       bottomNavigationBar: _LuxuryBottomNav(
         currentIndex: index,
         cartCount: cartCount,
-        onSelect: (i) => _selectTab(ref, i),
+        onSelect: _selectTab,
       ),
     );
   }
 
-  void _selectTab(WidgetRef ref, int i) {
+  void _selectTab(int i) {
     if (ref.read(navIndexProvider) != i) {
       HapticFeedback.selectionClick();
     }
@@ -85,80 +92,64 @@ class _LuxuryBottomNav extends StatelessWidget {
               height: _barHeight,
               child: ClipPath(
                 clipper: _NotchedBarClipper(notchRadius: _notchRadius),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppColors.surface.withValues(alpha: 0.97),
-                          const Color(0xFFFFF8FA).withValues(alpha: 0.94),
-                        ],
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: AppColors.surface.withValues(alpha: 0.97),
+                    border: Border.all(
+                      color: AppColors.border.withValues(alpha: 0.75),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.ink.withValues(alpha: 0.08),
+                        blurRadius: 28,
+                        offset: const Offset(0, 10),
                       ),
-                      border: Border.all(
-                        color: AppColors.border.withValues(alpha: 0.7),
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.textPrimary.withValues(alpha: 0.09),
-                          blurRadius: 32,
-                          offset: const Offset(0, 12),
-                        ),
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.07),
-                          blurRadius: 24,
-                          spreadRadius: -4,
-                          offset: const Offset(0, -4),
+                    ],
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(6, 10, 6, 8),
+                    child: Stack(
+                      children: [
+                        _SlidingIndicator(currentIndex: currentIndex),
+                        Row(
+                          children: [
+                            _NavSlot(
+                              index: 0,
+                              current: currentIndex,
+                              icon: Icons.home_outlined,
+                              activeIcon: Icons.home_rounded,
+                              label: 'الرئيسية',
+                              onTap: onSelect,
+                            ),
+                            _NavSlot(
+                              index: 1,
+                              current: currentIndex,
+                              icon: Icons.grid_view_outlined,
+                              activeIcon: Icons.grid_view_rounded,
+                              label: 'الأقسام',
+                              onTap: onSelect,
+                            ),
+                            SizedBox(width: _notchRadius * 2 + 4),
+                            _NavSlot(
+                              index: 3,
+                              current: currentIndex,
+                              icon: Icons.shopping_bag_outlined,
+                              activeIcon: Icons.shopping_bag_rounded,
+                              label: 'السلة',
+                              badge: cartCount,
+                              onTap: onSelect,
+                            ),
+                            _NavSlot(
+                              index: 4,
+                              current: currentIndex,
+                              icon: Icons.person_outline_rounded,
+                              activeIcon: Icons.person_rounded,
+                              label: 'حسابي',
+                              onTap: onSelect,
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(6, 10, 6, 8),
-                      child: Stack(
-                        children: [
-                          _SlidingIndicator(currentIndex: currentIndex),
-                          Row(
-                            children: [
-                              _NavSlot(
-                                index: 0,
-                                current: currentIndex,
-                                icon: Icons.home_outlined,
-                                activeIcon: Icons.home_rounded,
-                                label: 'الرئيسية',
-                                onTap: onSelect,
-                              ),
-                              _NavSlot(
-                                index: 1,
-                                current: currentIndex,
-                                icon: Icons.grid_view_outlined,
-                                activeIcon: Icons.grid_view_rounded,
-                                label: 'الأقسام',
-                                onTap: onSelect,
-                              ),
-                              SizedBox(width: _notchRadius * 2 + 4),
-                              _NavSlot(
-                                index: 3,
-                                current: currentIndex,
-                                icon: Icons.shopping_bag_outlined,
-                                activeIcon: Icons.shopping_bag_rounded,
-                                label: 'السلة',
-                                badge: cartCount,
-                                onTap: onSelect,
-                              ),
-                              _NavSlot(
-                                index: 4,
-                                current: currentIndex,
-                                icon: Icons.person_outline_rounded,
-                                activeIcon: Icons.person_rounded,
-                                label: 'حسابي',
-                                onTap: onSelect,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                 ),
