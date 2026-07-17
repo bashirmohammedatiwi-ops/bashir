@@ -241,8 +241,14 @@ export class ProductsService {
     const existing = await this.prisma.product.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException("Product not found");
 
-    const names = resolveProductNames(dto);
-    const descriptions = resolveProductDescriptions(dto);
+    const hasNamePatch =
+      dto.name !== undefined || dto.nameAr !== undefined || dto.nameEn !== undefined;
+    const hasDescPatch =
+      dto.description !== undefined ||
+      dto.descriptionAr !== undefined ||
+      dto.descriptionEn !== undefined;
+    const names = hasNamePatch ? resolveProductNames(dto) : null;
+    const descriptions = hasDescPatch ? resolveProductDescriptions(dto) : null;
     const categoryId = dto.categoryId ?? existing.categoryId;
     let subcategoryId: string | null | undefined = dto.subcategoryId;
     let tertiaryCategoryId: string | null | undefined = dto.tertiaryCategoryId;
@@ -273,13 +279,13 @@ export class ProductsService {
         data: {
           sku: dto.sku,
           barcode: dto.barcode !== undefined ? dto.barcode?.trim() || null : undefined,
-          name: names.name,
-          nameAr: names.nameAr,
-          nameEn: names.nameEn,
+          name: names?.name,
+          nameAr: names ? names.nameAr : undefined,
+          nameEn: names ? names.nameEn : undefined,
           slug: dto.slug,
-          description: descriptions.description,
-          descriptionAr: descriptions.descriptionAr,
-          descriptionEn: descriptions.descriptionEn,
+          description: descriptions?.description,
+          descriptionAr: descriptions ? descriptions.descriptionAr : undefined,
+          descriptionEn: descriptions ? descriptions.descriptionEn : undefined,
           ingredients: dto.ingredients,
           howToUse: dto.howToUse,
           price: dto.price,
@@ -379,7 +385,7 @@ export class ProductsService {
     return error;
   }
 
-  private collectBarcodes(dto: CreateProductDto): string[] {
+  private collectBarcodes(dto: { barcode?: string; shades?: CreateProductDto["shades"] }): string[] {
     const codes = new Set<string>();
     if (dto.barcode?.trim()) codes.add(dto.barcode.trim());
     for (const shade of dto.shades ?? []) {
@@ -403,7 +409,7 @@ export class ProductsService {
     }));
   }
 
-  private applyShadeAggregates<T extends CreateProductDto>(dto: T): T {
+  private applyShadeAggregates<T extends { shades?: CreateProductDto["shades"]; stock?: number; price?: number; originalPrice?: number; discountPercent?: number; isPromo?: boolean }>(dto: T): T {
     if (!dto.shades?.length) return dto;
 
     const totalStock = dto.shades.reduce((sum, shade) => sum + (shade.stock ?? 0), 0);
@@ -420,7 +426,7 @@ export class ProductsService {
     };
   }
 
-  private async applySyncedPricing<T extends CreateProductDto>(dto: T): Promise<T> {
+  private async applySyncedPricing<T extends { barcode?: string; shades?: CreateProductDto["shades"]; price?: number; originalPrice?: number; discountPercent?: number; stock?: number; isPromo?: boolean }>(dto: T): Promise<T> {
     const snapshot = await this.inventorySync.getSnapshotForBarcodes(this.collectBarcodes(dto));
     if (!snapshot) return dto;
 

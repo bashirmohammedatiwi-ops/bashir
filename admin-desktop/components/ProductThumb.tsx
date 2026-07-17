@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState } from "react";
 import { productCoverUrl } from "@/lib/productCover";
 import { displayProductName } from "@/lib/productName";
 
@@ -19,6 +19,7 @@ export const ProductThumb = memo(function ProductThumb({
   className?: string;
 }) {
   const url = productCoverUrl(product);
+  const [failed, setFailed] = useState(false);
   const initial = (displayProductName(product ?? {}).trim()?.[0] ?? "م").toUpperCase();
 
   return (
@@ -27,8 +28,15 @@ export const ProductThumb = memo(function ProductThumb({
       style={{ width: size, height: size }}
       aria-hidden
     >
-      {url ? (
-        <img src={url} alt="" loading="lazy" decoding="async" />
+      {url && !failed ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={url}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          onError={() => setFailed(true)}
+        />
       ) : (
         <span className="alhayaa-product-thumb-fallback">{initial}</span>
       )}

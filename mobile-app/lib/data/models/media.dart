@@ -35,7 +35,9 @@ class AppMedia {
   String? _variantPath(String size) {
     final node = asMap(variants[size]);
     final formats = asMap(node['formats']);
-    final direct = (formats['webp'] ?? formats['jpg'] ?? formats['avif'] ?? node['url'])?.toString();
+    // AVIF أولاً — أصغر حجماً بنفس الجودة تقريباً، ثم WebP ثم JPG
+    final direct =
+        (formats['avif'] ?? formats['webp'] ?? formats['jpg'] ?? node['url'])?.toString();
     if (direct != null && direct.isNotEmpty) return direct;
     return null;
   }
@@ -51,12 +53,14 @@ class AppMedia {
   String? _originalUrl() {
     if (publicUrlBase.isNotEmpty && filename.isNotEmpty) {
       if (publicUrlBase.contains('.')) return resolveMediaUrl(publicUrlBase);
+      // Prefer webp original; client will error-fallback via CachedNetworkImage if needed
       return resolveMediaUrl('$publicUrlBase/$filename.webp');
     }
     return null;
   }
 
   /// يختار أصغر متغيّر يلبي عرض البكسل المطلوب (يوفر بيانات الجوال).
+  /// الترتيب: thumb → small → medium → large، مع تفضيل AVIF.
   String urlForTargetPixels(int targetPx) {
     String? bestPath;
     var bestWidth = 99999;
@@ -73,12 +77,16 @@ class AppMedia {
 
     if (bestPath != null) return resolveMediaUrl(bestPath);
 
+    // إن لم تكتمل المتغيرات بعد — استخدم الأصلي فوراً
+    final original = _originalUrl();
+    if (original != null && original.isNotEmpty) return original;
+
     for (final name in ['large', 'medium', 'small', 'thumb']) {
       final p = _variantPath(name);
       if (p != null) return resolveMediaUrl(p);
     }
 
-    return _originalUrl() ?? '';
+    return '';
   }
 
   /// رابط مناسب لبطاقات المنتجات والقوائم (~160–180pt عرض).

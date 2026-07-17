@@ -2,8 +2,28 @@
 
 import dynamic from "next/dynamic";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Card, Form, Input, Popconfirm, Select, Space, Switch, Table, Tag, message } from "antd";
-import { CloudDownloadOutlined } from "@ant-design/icons";
+import {
+  AppstoreOutlined,
+  CloudDownloadOutlined,
+  PlusOutlined,
+  SearchOutlined,
+  UnorderedListOutlined,
+} from "@ant-design/icons";
+import {
+  Button,
+  Empty,
+  Form,
+  Input,
+  Popconfirm,
+  Select,
+  Segmented,
+  Space,
+  Switch,
+  Table,
+  Tag,
+  Tooltip,
+  message,
+} from "antd";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ImageItem } from "@/components/ProductImageDropzone";
@@ -15,6 +35,7 @@ import { buildProductPayload } from "@/lib/productPayload";
 import { displayProductName } from "@/lib/productName";
 import { mutations, queries } from "@/lib/queries";
 import { useBarcodeInventorySync } from "@/hooks/useBarcodeInventorySync";
+import "./products-page.css";
 
 const ProductFormDrawer = dynamic(
   () =>
@@ -24,13 +45,21 @@ const ProductFormDrawer = dynamic(
   { ssr: false },
 );
 
+type ViewMode = "table" | "grid";
+type ActiveFilter = "all" | "active" | "inactive";
+
 export default function ProductsPage() {
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(24);
   const [search, setSearch] = useState("");
+  const [searchDraft, setSearchDraft] = useState("");
   const [filterCategoryId, setFilterCategoryId] = useState<string | undefined>();
   const [filterSubcategoryId, setFilterSubcategoryId] = useState<string | undefined>();
   const [filterTertiaryCategoryId, setFilterTertiaryCategoryId] = useState<string | undefined>();
   const [filterConcernId, setFilterConcernId] = useState<string | undefined>();
+  const [filterBrandId, setFilterBrandId] = useState<string | undefined>();
+  const [activeFilter, setActiveFilter] = useState<ActiveFilter>("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [editing, setEditing] = useState<any | null>(null);
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
@@ -50,16 +79,27 @@ export default function ProductsPage() {
   } = useBarcodeInventorySync(form);
 
   const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["products", page, search, filterCategoryId, filterSubcategoryId, filterTertiaryCategoryId, filterConcernId],
+    queryKey: [
+      "products",
+      page,
+      pageSize,
+      search,
+      filterCategoryId,
+      filterSubcategoryId,
+      filterTertiaryCategoryId,
+      filterConcernId,
+      filterBrandId,
+    ],
     queryFn: () =>
       queries.products({
         page,
-        limit: 15,
+        limit: pageSize,
         search,
         categoryId: filterCategoryId,
         subcategoryId: filterSubcategoryId,
         tertiaryCategoryId: filterTertiaryCategoryId,
         concernId: filterConcernId,
+        brandId: filterBrandId,
       }),
     staleTime: 3 * 60_000,
   });
@@ -86,6 +126,15 @@ export default function ProductsPage() {
       message.success("تم الحذف");
       qc.invalidateQueries({ queryKey: ["products"] });
     },
+  });
+
+  const toggleActive = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
+      mutations.updateProduct(id, { isActive }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: () => message.error("تعذّر تحديث حالة المنتج"),
   });
 
   const upsert = useMutation({
@@ -197,8 +246,20 @@ export default function ProductsPage() {
     }
   }, [open, form]);
 
-  const items = data?.data ?? [];
+  const rawItems = data?.data ?? [];
   const total = data?.meta?.total ?? 0;
+
+  const items = useMemo(() => {
+    if (activeFilter === "all") return rawItems;
+    if (activeFilter === "active") return rawItems.filter((p: any) => p.isActive);
+    return rawItems.filter((p: any) => !p.isActive);
+  }, [rawItems, activeFilter]);
+
+  const stats = useMemo(() => {
+    const active = rawItems.filter((p: any) => p.isActive).length;
+    const lowStock = rawItems.filter((p: any) => Number(p.stock ?? 0) <= 5).length;
+    return { active, lowStock, pageCount: rawItems.length };
+  }, [rawItems]);
 
   const { data: filterSubcategories } = useQuery({
     queryKey: ["subcategories", filterCategoryId],
@@ -233,6 +294,18 @@ export default function ProductsPage() {
     [formTertiarySections],
   );
 
+  const resetFilters = () => {
+    setPage(1);
+    setSearch("");
+    setSearchDraft("");
+    setFilterCategoryId(undefined);
+    setFilterSubcategoryId(undefined);
+    setFilterTertiaryCategoryId(undefined);
+    setFilterConcernId(undefined);
+    setFilterBrandId(undefined);
+    setActiveFilter("all");
+  };
+
   const columns = useMemo(
     () => [
       {
@@ -240,12 +313,12 @@ export default function ProductsPage() {
         key: "product",
         render: (_: unknown, r: any) => (
           <div className="alhayaa-product-cell">
-            <ProductThumb product={r} size={48} />
+            <ProductThumb product={r} size={56} />
             <div className="alhayaa-product-cell-text">
               <button type="button" className="alhayaa-product-name" onClick={() => openEdit(r)}>
                 {displayProductName(r)}
               </button>
-              {(r.nameAr && r.nameEn) ? (
+              {r.nameAr && r.nameEn ? (
                 <span className="alhayaa-product-sku alhayaa-ltr-input">{r.nameEn}</span>
               ) : null}
               <span className="alhayaa-product-sku">{r.sku ?? "—"}</span>
@@ -262,7 +335,7 @@ export default function ProductsPage() {
       },
       {
         title: "القسم",
-        width: 150,
+        width: 160,
         render: (_: unknown, r: any) => (
           <div className="alhayaa-tags-stack">
             <Tag>{r.category?.name ?? "—"}</Tag>
@@ -274,10 +347,10 @@ export default function ProductsPage() {
       {
         title: "السعر",
         dataIndex: "price",
-        width: 110,
+        width: 120,
         render: (v: number, r: any) => (
           <div className="alhayaa-price-cell">
-            <strong>{v?.toLocaleString()} د.ع</strong>
+            <strong>{Number(v || 0).toLocaleString("ar-IQ")} د.ع</strong>
             {r.discountPercent > 0 ? (
               <Tag color="red" className="alhayaa-tag-mini">
                 -{r.discountPercent}%
@@ -295,16 +368,21 @@ export default function ProductsPage() {
         ),
       },
       {
-        title: "الألوان",
+        title: "ألوان",
         width: 70,
         render: (_: unknown, r: any) => r._count?.shades ?? r.shades?.length ?? 0,
       },
       {
         title: "نشط",
         dataIndex: "isActive",
-        width: 70,
-        render: (v: boolean) => (
-          <Switch checked={v} disabled size="small" className="alhayaa-switch-readonly" />
+        width: 80,
+        render: (v: boolean, r: any) => (
+          <Switch
+            checked={v}
+            size="small"
+            loading={toggleActive.isPending}
+            onChange={(checked) => toggleActive.mutate({ id: r.id, isActive: checked })}
+          />
         ),
       },
       {
@@ -332,14 +410,14 @@ export default function ProductsPage() {
         ),
       },
     ],
-    [openEdit, remove],
+    [openEdit, remove, toggleActive],
   );
 
   return (
-    <div className="alhayaa-page">
+    <div className="alhayaa-page products-page">
       <PageHeader
         title="المنتجات"
-        subtitle={`${total.toLocaleString()} منتج${isFetching && !isLoading ? " — جاري التحديث..." : ""}`}
+        subtitle={`${total.toLocaleString("ar-IQ")} منتج${isFetching && !isLoading ? " — جاري التحديث..." : ""}`}
         extra={
           <Space wrap>
             <Link href="/catalog-import">
@@ -347,28 +425,79 @@ export default function ProductsPage() {
                 استيراد من الكتالوج
               </Button>
             </Link>
-            <Button type="primary" size="large" onClick={openCreate}>
-              + منتج جديد
+            <Button type="primary" size="large" icon={<PlusOutlined />} onClick={openCreate}>
+              منتج جديد
             </Button>
           </Space>
         }
       />
 
-      <Card className="alhayaa-filter-card" bordered={false}>
-        <div className="alhayaa-filter-bar">
-          <Input.Search
-            placeholder="بحث بالاسم أو SKU..."
+      <div className="pp-stats">
+        <div className="pp-stat">
+          <strong>{total.toLocaleString("ar-IQ")}</strong>
+          <span>إجمالي المنتجات</span>
+        </div>
+        <div className="pp-stat">
+          <strong>{stats.active}</strong>
+          <span>نشط في الصفحة</span>
+        </div>
+        <div className={`pp-stat${stats.lowStock ? " is-warn" : ""}`}>
+          <strong>{stats.lowStock}</strong>
+          <span>مخزون منخفض ≤5</span>
+        </div>
+        <div className="pp-stat">
+          <strong>{(brandsData ?? []).length}</strong>
+          <span>براندات</span>
+        </div>
+      </div>
+
+      <section className="pp-toolbar">
+        <div className="pp-toolbar-search">
+          <Input
+            size="large"
             allowClear
-            className="alhayaa-filter-search"
-            onSearch={(v) => {
+            prefix={<SearchOutlined />}
+            placeholder="ابحث بالاسم أو SKU أو الباركود..."
+            value={searchDraft}
+            onChange={(e) => setSearchDraft(e.target.value)}
+            onPressEnter={() => {
               setPage(1);
-              setSearch(v);
+              setSearch(searchDraft.trim());
+            }}
+          />
+          <Button
+            type="primary"
+            size="large"
+            onClick={() => {
+              setPage(1);
+              setSearch(searchDraft.trim());
+            }}
+          >
+            بحث
+          </Button>
+        </div>
+
+        <div className="pp-toolbar-filters">
+          <Select
+            allowClear
+            placeholder="البراند"
+            className="pp-filter"
+            value={filterBrandId}
+            options={(brandsData ?? []).map((b: any) => ({
+              value: b.id,
+              label: b.nameAr || b.name || b.nameEn,
+            }))}
+            showSearch
+            optionFilterProp="label"
+            onChange={(v) => {
+              setPage(1);
+              setFilterBrandId(v);
             }}
           />
           <Select
             allowClear
             placeholder="القسم"
-            className="alhayaa-filter-select"
+            className="pp-filter"
             value={filterCategoryId}
             options={(categoriesData ?? []).map((c: any) => ({ value: c.id, label: c.name }))}
             onChange={(v) => {
@@ -381,7 +510,7 @@ export default function ProductsPage() {
           <Select
             allowClear
             placeholder="قسم فرعي"
-            className="alhayaa-filter-select"
+            className="pp-filter"
             value={filterSubcategoryId}
             disabled={!filterCategoryId}
             options={(filterSubcategories ?? []).map((s: any) => ({
@@ -397,7 +526,7 @@ export default function ProductsPage() {
           <Select
             allowClear
             placeholder="قسم ثانوي"
-            className="alhayaa-filter-select"
+            className="pp-filter"
             value={filterTertiaryCategoryId}
             disabled={!filterSubcategoryId}
             options={(filterTertiarySections ?? []).map((s: any) => ({
@@ -412,7 +541,7 @@ export default function ProductsPage() {
           <Select
             allowClear
             placeholder="مشكلة البشرة"
-            className="alhayaa-filter-select"
+            className="pp-filter"
             value={filterConcernId}
             options={(skinConcernsData ?? []).map((c: any) => ({ value: c.id, label: c.name }))}
             onChange={(v) => {
@@ -420,27 +549,160 @@ export default function ProductsPage() {
               setFilterConcernId(v);
             }}
           />
+          <Segmented
+            value={activeFilter}
+            onChange={(v) => setActiveFilter(v as ActiveFilter)}
+            options={[
+              { label: "الكل", value: "all" },
+              { label: "نشط", value: "active" },
+              { label: "متوقف", value: "inactive" },
+            ]}
+          />
+          <Button type="link" onClick={resetFilters}>
+            مسح الفلاتر
+          </Button>
         </div>
-      </Card>
 
-      <Card className="alhayaa-table-card" bordered={false} styles={{ body: { padding: 0 } }}>
-        <Table
-          rowKey="id"
-          loading={isLoading}
-          dataSource={items}
-          columns={columns}
-          scroll={{ x: 980 }}
-          rowClassName={() => "alhayaa-table-row"}
-          pagination={{
-            current: page,
-            total,
-            pageSize: 15,
-            showSizeChanger: false,
-            showTotal: (t) => `${t} منتج`,
-            onChange: setPage,
+        <div className="pp-toolbar-view">
+          <Segmented
+            value={viewMode}
+            onChange={(v) => setViewMode(v as ViewMode)}
+            options={[
+              { value: "grid", icon: <AppstoreOutlined />, label: "بطاقات" },
+              { value: "table", icon: <UnorderedListOutlined />, label: "جدول" },
+            ]}
+          />
+        </div>
+      </section>
+
+      {viewMode === "grid" ? (
+        <div className={`pp-grid${isLoading ? " is-loading" : ""}`}>
+          {!isLoading && !items.length ? (
+            <div className="pp-empty">
+              <Empty
+                description="لا توجد منتجات مطابقة"
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+              >
+                <Space>
+                  <Button onClick={resetFilters}>مسح الفلاتر</Button>
+                  <Button type="primary" onClick={openCreate}>
+                    إضافة منتج
+                  </Button>
+                </Space>
+              </Empty>
+            </div>
+          ) : (
+            items.map((r: any) => {
+              const shades = r._count?.shades ?? r.shades?.length ?? 0;
+              const stock = Number(r.stock ?? 0);
+              return (
+                <article
+                  key={r.id}
+                  className={`pp-card${!r.isActive ? " is-inactive" : ""}${stock <= 5 ? " is-low" : ""}`}
+                >
+                  <button type="button" className="pp-card-media" onClick={() => openEdit(r)}>
+                    <ProductThumb product={r} size={160} className="pp-card-thumb" />
+                    {!r.isActive ? <span className="pp-badge is-off">متوقف</span> : null}
+                    {r.discountPercent > 0 ? (
+                      <span className="pp-badge is-sale">-{r.discountPercent}%</span>
+                    ) : null}
+                  </button>
+                  <div className="pp-card-body">
+                    {r.brand?.name ? <p className="pp-card-brand">{r.brand.name}</p> : null}
+                    <h3 className="pp-card-title">
+                      <button type="button" onClick={() => openEdit(r)}>
+                        {displayProductName(r)}
+                      </button>
+                    </h3>
+                    <p className="pp-card-meta">
+                      <span className="alhayaa-ltr-input">{r.sku || "—"}</span>
+                      {r.category?.name ? <span>· {r.category.name}</span> : null}
+                    </p>
+                    <div className="pp-card-price-row">
+                      <strong>{Number(r.price || 0).toLocaleString("ar-IQ")} د.ع</strong>
+                      <span className={`pp-stock${stock <= 5 ? " low" : ""}`}>
+                        مخزون {stock}
+                      </span>
+                    </div>
+                    <div className="pp-card-foot">
+                      <Tooltip title={r.isActive ? "تعطيل" : "تفعيل"}>
+                        <Switch
+                          size="small"
+                          checked={!!r.isActive}
+                          loading={toggleActive.isPending}
+                          onChange={(checked) =>
+                            toggleActive.mutate({ id: r.id, isActive: checked })
+                          }
+                        />
+                      </Tooltip>
+                      {shades > 0 ? <Tag color="purple">{shades} تدرج</Tag> : <span />}
+                      <Space size={4}>
+                        <Button size="small" type="link" onClick={() => openEdit(r)}>
+                          تعديل
+                        </Button>
+                        <Popconfirm
+                          title="حذف المنتج؟"
+                          onConfirm={() => remove.mutate(r.id)}
+                          okText="حذف"
+                          cancelText="إلغاء"
+                        >
+                          <Button size="small" type="link" danger>
+                            حذف
+                          </Button>
+                        </Popconfirm>
+                      </Space>
+                    </div>
+                  </div>
+                </article>
+              );
+            })
+          )}
+        </div>
+      ) : (
+        <div className="pp-table-wrap">
+          <Table
+            rowKey="id"
+            loading={isLoading}
+            dataSource={items}
+            columns={columns}
+            scroll={{ x: 1040 }}
+            locale={{ emptyText: <Empty description="لا توجد منتجات" /> }}
+            rowClassName={(r) =>
+              `alhayaa-table-row${!r.isActive ? " is-inactive" : ""}`
+            }
+            pagination={false}
+          />
+        </div>
+      )}
+
+      <div className="pp-pager">
+        <Select
+          value={pageSize}
+          options={[
+            { value: 12, label: "12 / صفحة" },
+            { value: 24, label: "24 / صفحة" },
+            { value: 48, label: "48 / صفحة" },
+          ]}
+          onChange={(v) => {
+            setPage(1);
+            setPageSize(v);
           }}
         />
-      </Card>
+        <Space>
+          <Button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+            السابق
+          </Button>
+          <span className="pp-page-label">
+            صفحة {page} · {total.toLocaleString("ar-IQ")} منتج
+          </span>
+          <Button
+            disabled={page * pageSize >= total}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            التالي
+          </Button>
+        </Space>
+      </div>
 
       <ProductFormDrawer
         open={open}

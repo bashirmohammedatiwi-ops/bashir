@@ -13,8 +13,8 @@ import * as crypto from "crypto";
 import { MediaPurpose, Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
 import { paginate, PaginationDto } from "../../common/dto/pagination.dto";
-import { IMAGE_VARIANTS, VariantsRecord } from "./media.constants";
-import { JPEG_VARIANT_NAMES } from "./media-optimize.helper";
+import { VariantsRecord } from "./media.constants";
+import { AVIF_VARIANT_NAMES } from "./media-optimize.helper";
 import { generateMediaVariants } from "./media-variants.helper";
 import { optimizeForStorage } from "./media-optimize.helper";
 import { assertSafeRemoteUrl } from "./media-url.helper";
@@ -80,12 +80,16 @@ export class MediaService {
         optimized = await optimizeForStorage(input.buffer);
       } catch (e: any) {
         if (e?.message === "UNREADABLE") {
-          throw new BadRequestException("تعذر قراءة ملف الصورة");
+          throw new BadRequestException(
+            "تعذر قراءة ملف الصورة. الصيغ المدعومة: JPG, PNG, WebP, AVIF, HEIC",
+          );
         }
         if (e?.message === "CORRUPT") {
           throw new BadRequestException("ملف الصورة تالف أو غير مدعوم");
         }
-        throw new BadRequestException("تعذر معالجة الصورة. جرّب حفظها كـ JPG أو PNG");
+        throw new BadRequestException(
+          "تعذر معالجة الصورة. جرّب حفظها كـ JPG أو PNG (صور iPhone بصيغة HEIC مدعومة إن أمكن)",
+        );
       }
 
       const hash = crypto
@@ -108,28 +112,37 @@ export class MediaService {
       const baseName = hash.slice(0, 16);
       const webpPath = path.join(absDir, `${baseName}.webp`);
       const jpgPath = path.join(absDir, `${baseName}.jpg`);
+      const thumbWebpPath = path.join(absDir, `${baseName}_thumb.webp`);
+      const thumbAvifPath = path.join(absDir, `${baseName}_thumb.avif`);
 
-      await Promise.all([
+      // Write originals + thumb immediately so admin/mobile never hit missing URLs
+      const writes: Promise<void>[] = [
         fs.writeFile(webpPath, optimized.webpBuffer),
         fs.writeFile(jpgPath, optimized.jpegBuffer),
-      ]);
+        fs.writeFile(thumbWebpPath, optimized.thumbWebpBuffer),
+      ];
+      if (optimized.thumbAvifBuffer.byteLength > 0) {
+        writes.push(fs.writeFile(thumbAvifPath, optimized.thumbAvifBuffer));
+      }
+      await Promise.all(writes);
 
       const publicUrlBase = `${this.publicBaseUrl}/${subdir.replace(/\\/g, "/")}`;
-      const initialVariants: Partial<VariantsRecord> = {};
-      for (const v of IMAGE_VARIANTS) {
-        const formats: Record<string, string> = {
-          webp: `${publicUrlBase}/${baseName}_${v.name}.webp`,
-        };
-        if (JPEG_VARIANT_NAMES.has(v.name)) {
-          formats.jpg = `${publicUrlBase}/${baseName}_${v.name}.jpg`;
-        }
-        initialVariants[v.name] = {
-          width: v.width,
-          formats,
-        };
+      // Only advertise variants that already exist on disk (thumb). Rest filled async.
+      const thumbFormats: Record<string, string> = {
+        webp: `${publicUrlBase}/${baseName}_thumb.webp`,
+      };
+      if (optimized.thumbAvifBuffer.byteLength > 0 && AVIF_VARIANT_NAMES.has("thumb")) {
+        thumbFormats.avif = `${publicUrlBase}/${baseName}_thumb.avif`;
       }
+      const initialVariants: Partial<VariantsRecord> = {
+        thumb: { width: 240, formats: thumbFormats },
+      };
 
-      const savedBytes = optimized.webpBuffer.byteLength + optimized.jpegBuffer.byteLength;
+      const savedBytes =
+        optimized.webpBuffer.byteLength +
+        optimized.jpegBuffer.byteLength +
+        optimized.thumbWebpBuffer.byteLength +
+        optimized.thumbAvifBuffer.byteLength;
       this.logger.log(
         `Compressed ${input.filename}: ${(input.buffer.byteLength / 1024).toFixed(0)}KB → ${(savedBytes / 1024).toFixed(0)}KB`,
       );
@@ -156,6 +169,7 @@ export class MediaService {
         originalPath: webpPath,
         absDir,
         baseName,
+        skipThumb: true,
       };
 
       if (process.env.REDIS_DISABLED === "1") {

@@ -11,22 +11,50 @@ export function mediaUrl(path?: string | null): string | null {
   return `${base}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-export function mediaThumb(item?: {
+type MediaLike = {
   variants?: Record<string, { formats?: Record<string, string> }>;
   publicUrlBase?: string;
   originalUrl?: string;
+  originalUrlJpg?: string;
   filename?: string;
   mime?: string;
-} | null): string | null {
+} | null;
+
+function pickFormat(formats?: Record<string, string> | null): string | null {
+  if (!formats) return null;
+  // Prefer formats that browsers/Electron always decode; AVIF optional in admin
+  return formats.webp ?? formats.jpg ?? formats.avif ?? null;
+}
+
+/**
+ * @param preferred — preferred variant size for the UI context
+ * Prefer originals when listing immediately after upload (variants may still be generating).
+ */
+export function mediaThumb(
+  item?: MediaLike,
+  preferred: "thumb" | "small" | "medium" | "large" | "original" = "thumb",
+): string | null {
   if (!item) return null;
-  const rel =
-    item.variants?.medium?.formats?.webp ??
-    item.variants?.medium?.formats?.jpg ??
-    item.variants?.thumb?.formats?.webp ??
-    item.variants?.thumb?.formats?.jpg ??
-    null;
-  if (rel) return mediaUrl(rel);
+
+  const order =
+    preferred === "original"
+      ? ([] as const)
+      : preferred === "thumb"
+        ? (["thumb", "small", "medium", "large"] as const)
+        : preferred === "small"
+          ? (["small", "thumb", "medium", "large"] as const)
+          : preferred === "large"
+            ? (["large", "medium", "small", "thumb"] as const)
+            : (["medium", "small", "large", "thumb"] as const);
+
+  for (const key of order) {
+    const rel = pickFormat(item.variants?.[key]?.formats);
+    if (rel) return mediaUrl(rel);
+  }
+
   if (item.originalUrl) return mediaUrl(item.originalUrl);
+  if (item.originalUrlJpg) return mediaUrl(item.originalUrlJpg);
+
   if (item.publicUrlBase && item.filename) {
     return (
       mediaUrl(`${item.publicUrlBase}/${item.filename}.webp`) ??
@@ -34,4 +62,11 @@ export function mediaThumb(item?: {
     );
   }
   return null;
+}
+
+/** Cover / gallery preview that never points at a missing async variant. */
+export function mediaPreviewUrl(item?: MediaLike): string | null {
+  if (!item) return null;
+  if (item.originalUrl) return mediaUrl(item.originalUrl);
+  return mediaThumb(item, "thumb") ?? mediaThumb(item, "original");
 }

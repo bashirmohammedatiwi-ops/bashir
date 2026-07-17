@@ -85,7 +85,56 @@ export class CreateProductDto {
   variants?: ProductVariantDto[];
 }
 
-export class UpdateProductDto extends CreateProductDto {}
+export class UpdateProductDto {
+  @IsOptional() @IsString() sku?: string;
+  @IsOptional() @IsString() barcode?: string;
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsString() nameAr?: string;
+  @IsOptional() @IsString() nameEn?: string;
+  @IsOptional() @IsString() slug?: string;
+  @IsOptional() @IsString() brandId?: string;
+  @IsOptional() @IsString() categoryId?: string;
+
+  @IsOptional() @IsString() subcategoryId?: string;
+  @IsOptional() @IsString() tertiaryCategoryId?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() descriptionAr?: string;
+  @IsOptional() @IsString() descriptionEn?: string;
+  @IsOptional() @IsString() ingredients?: string;
+  @IsOptional() @IsString() howToUse?: string;
+
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) price?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) originalPrice?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) discountPercent?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) stock?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) pointsEarned?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(5) rating?: number;
+
+  @IsOptional() @IsBoolean() isNew?: boolean;
+  @IsOptional() @IsBoolean() isBestSeller?: boolean;
+  @IsOptional() @IsBoolean() isFeatured?: boolean;
+  @IsOptional() @IsBoolean() isPromo?: boolean;
+  @IsOptional() @IsBoolean() isBogo?: boolean;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+
+  @IsOptional() @IsArray() @IsString({ each: true }) tags?: string[];
+  @IsOptional() @IsArray() @IsString({ each: true }) skinType?: string[];
+  @IsOptional() @IsArray() @IsString({ each: true }) concernIds?: string[];
+
+  @IsOptional() @IsArray() @IsString({ each: true }) imageIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductShadeDto)
+  shades?: ProductShadeDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProductVariantDto)
+  variants?: ProductVariantDto[];
+}
 
 export class QueryProductsDto extends PaginationDto {
   @IsOptional() @IsString() categoryId?: string;

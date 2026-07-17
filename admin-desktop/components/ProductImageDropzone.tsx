@@ -1,7 +1,7 @@
 "use client";
 import { Spin, message } from "antd";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { mediaThumb } from "@/lib/mediaUrl";
+import { mediaPreviewUrl, mediaThumb } from "@/lib/mediaUrl";
 import { uploadMediaFile } from "@/lib/uploadMedia";
 
 export type ImageItem = { id: string; url: string | null };
@@ -15,9 +15,40 @@ type Props = {
   label?: string;
 };
 
+const IMAGE_EXT = /\.(png|jpe?g|webp|avif|heic|heif|gif|bmp)$/i;
+const ACCEPT =
+  "image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,image/gif,.jpg,.jpeg,.png,.webp,.avif,.heic,.heif";
+
+function isImageFile(f: File) {
+  if (f.type.startsWith("image/")) return true;
+  if (!f.type && IMAGE_EXT.test(f.name)) return true; // iOS sometimes sends empty MIME
+  return IMAGE_EXT.test(f.name);
+}
+
 async function uploadOne(file: File, purpose: string): Promise<ImageItem> {
   const media = await uploadMediaFile(file, purpose);
-  return { id: media.id, url: media.previewUrl ?? mediaThumb(media) };
+  return {
+    id: media.id,
+    url: media.previewUrl ?? mediaPreviewUrl(media) ?? mediaThumb(media, "thumb"),
+  };
+}
+
+function PreviewImg({ src, alt }: { src: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed || !src) {
+    return <div className="ci-img-ph" aria-hidden />;
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      onError={() => setFailed(true)}
+      style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 8 }}
+    />
+  );
 }
 
 export function ProductImageDropzone({
@@ -35,11 +66,9 @@ export function ProductImageDropzone({
 
   const uploadFiles = useCallback(
     async (files: FileList | File[]) => {
-      const list = Array.from(files).filter(
-        (f) => f.type.startsWith("image/") || /\.(png|jpe?g|webp|avif)$/i.test(f.name),
-      );
+      const list = Array.from(files).filter(isImageFile);
       if (!list.length) {
-        message.warning("يرجى اختيار ملفات صور فقط");
+        message.warning("يرجى اختيار صور (JPG / PNG / WebP / AVIF / HEIC)");
         return;
       }
       const remaining = max - items.length;
@@ -49,9 +78,7 @@ export function ProductImageDropzone({
       }
       const batch = list.slice(0, remaining);
       setUploading(batch.length);
-      const results = await Promise.allSettled(
-        batch.map((file) => uploadOne(file, purpose)),
-      );
+      const results = await Promise.allSettled(batch.map((file) => uploadOne(file, purpose)));
       const added: ImageItem[] = [];
       results.forEach((result, i) => {
         if (result.status === "fulfilled") added.push(result.value);
@@ -77,7 +104,9 @@ export function ProductImageDropzone({
       const active = document.activeElement;
       const inForm =
         active instanceof HTMLElement &&
-        (zone.contains(active) || active.tagName === "BODY" || active.closest(".ant-modal, .ant-drawer"));
+        (zone.contains(active) ||
+          active.tagName === "BODY" ||
+          active.closest(".ant-modal, .ant-drawer"));
       if (!inForm) return;
       const files = e.clipboardData?.files;
       if (files?.length) {
@@ -91,6 +120,14 @@ export function ProductImageDropzone({
 
   function remove(id: string) {
     onChange(items.filter((i) => i.id !== id));
+  }
+
+  function move(from: number, to: number) {
+    if (to < 0 || to >= items.length) return;
+    const next = [...items];
+    const [item] = next.splice(from, 1);
+    next.splice(to, 0, item);
+    onChange(next);
   }
 
   const zoneHeight = compact ? 72 : 140;
@@ -142,7 +179,7 @@ export function ProductImageDropzone({
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept={ACCEPT}
           multiple
           hidden
           onChange={(e) => {
@@ -151,7 +188,7 @@ export function ProductImageDropzone({
           }}
         />
         {uploading > 0 ? (
-          <Spin size="small" />
+          <Spin size="small" tip={`جاري رفع ${uploading}...`} />
         ) : (
           <>
             <div style={{ fontSize: compact ? 20 : 28 }}>📷</div>
@@ -159,7 +196,7 @@ export function ProductImageDropzone({
               <>
                 <div style={{ fontWeight: 500 }}>اسحب الصور هنا أو انقر للاختيار</div>
                 <div style={{ fontSize: 12, color: "#888" }}>
-                  يمكنك أيضاً لصق صورة من الحافظة (Ctrl+V)
+                  JPG · PNG · WebP · AVIF · HEIC — أو الصق من الحافظة (Ctrl+V)
                 </div>
               </>
             )}
@@ -188,11 +225,12 @@ export function ProductImageDropzone({
                   height: compact ? 56 : 100,
                   borderRadius: 8,
                   border: idx === 0 ? "2px solid #1677ff" : "1px solid #eee",
-                  background: item.url
-                    ? `center/cover url(${item.url})`
-                    : "linear-gradient(135deg, #f0f0f5, #e8e8ee)",
+                  overflow: "hidden",
+                  background: "linear-gradient(135deg, #f0f0f5, #e8e8ee)",
                 }}
-              />
+              >
+                {item.url ? <PreviewImg src={item.url} alt={`صورة ${idx + 1}`} /> : null}
+              </div>
               {idx === 0 && !compact && (
                 <span
                   style={{
@@ -209,6 +247,62 @@ export function ProductImageDropzone({
                   رئيسية
                 </span>
               )}
+              {!compact && items.length > 1 ? (
+                <div
+                  style={{
+                    position: "absolute",
+                    bottom: 4,
+                    insetInlineStart: 4,
+                    display: "flex",
+                    gap: 2,
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      move(idx, idx - 1);
+                    }}
+                    disabled={idx === 0}
+                    style={{
+                      width: 22,
+                      height: 22,
+                      border: "none",
+                      borderRadius: 4,
+                      background: "rgba(0,0,0,0.5)",
+                      color: "#fff",
+                      cursor: idx === 0 ? "default" : "pointer",
+                      opacity: idx === 0 ? 0.4 : 1,
+                      fontSize: 11,
+                    }}
+                    aria-label="تحريك لليسار"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      move(idx, idx + 1);
+                    }}
+                    disabled={idx === items.length - 1}
+                    style={{
+                      width: 22,
+                      height: 22,
+                      border: "none",
+                      borderRadius: 4,
+                      background: "rgba(0,0,0,0.5)",
+                      color: "#fff",
+                      cursor: idx === items.length - 1 ? "default" : "pointer",
+                      opacity: idx === items.length - 1 ? 0.4 : 1,
+                      fontSize: 11,
+                    }}
+                    aria-label="تحريك لليمين"
+                  >
+                    ›
+                  </button>
+                </div>
+              ) : null}
               <button
                 type="button"
                 onClick={(e) => {

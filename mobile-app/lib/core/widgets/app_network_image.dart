@@ -52,7 +52,7 @@ class AppNetworkImage extends StatelessWidget {
         memCacheHeight: pixelH,
         maxWidthDiskCache: pixelW,
         maxHeightDiskCache: pixelH,
-        filterQuality: FilterQuality.medium,
+        filterQuality: FilterQuality.high,
         placeholder: (_, __) => Container(color: placeholderColor ?? AppColors.shimmerBase),
         errorWidget: (_, __, ___) => _fallback(),
       );

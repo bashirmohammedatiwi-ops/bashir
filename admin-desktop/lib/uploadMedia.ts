@@ -1,5 +1,5 @@
 import { api } from "./api";
-import { mediaThumb } from "./mediaUrl";
+import { mediaPreviewUrl, mediaThumb } from "./mediaUrl";
 
 function uploadErrorMessage(error: unknown): string {
   const e = error as any;
@@ -23,7 +23,9 @@ export async function uploadMediaFile(file: File, purpose = "GENERAL") {
     });
 
     const media = res.data?.data ?? res.data;
-    return { ...media, previewUrl: mediaThumb(media) };
+    const previewUrl =
+      mediaPreviewUrl(media) ?? mediaThumb(media, "thumb") ?? mediaThumb(media, "original");
+    return { ...media, previewUrl };
   } catch (error: unknown) {
     throw new Error(uploadErrorMessage(error));
   }
