@@ -8,7 +8,6 @@ import 'core/config/app_config.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/auth_provider.dart';
-import 'features/auth/screens/welcome_screen.dart';
 
 class AlhayaaApp extends ConsumerStatefulWidget {
   const AlhayaaApp({super.key});
@@ -18,7 +17,6 @@ class AlhayaaApp extends ConsumerStatefulWidget {
 }
 
 class _AlhayaaAppState extends ConsumerState<AlhayaaApp> {
-  bool _animationDone = false;
   bool _warmedUp = false;
   bool _pushInited = false;
 
@@ -42,9 +40,8 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> {
       WidgetsBinding.instance.addPostFrameCallback((_) => PushService.init(ref));
     }
 
-    final showSplash = authStatus == AuthStatus.unknown || !_animationDone;
-
-    if (showSplash) {
+    // انتظار جاهزية الجلسة فقط — بدون شاشة ترحيب
+    if (authStatus == AuthStatus.unknown) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
@@ -55,10 +52,15 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> {
           textDirection: TextDirection.rtl,
           child: child ?? const SizedBox.shrink(),
         ),
-        home: WelcomeScreen(
-          onAnimationComplete: () {
-            if (mounted) setState(() => _animationDone = true);
-          },
+        home: const Scaffold(
+          backgroundColor: Colors.white,
+          body: Center(
+            child: SizedBox(
+              width: 28,
+              height: 28,
+              child: CircularProgressIndicator(strokeWidth: 2.4),
+            ),
+          ),
         ),
       );
     }

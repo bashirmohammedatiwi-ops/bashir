@@ -13,6 +13,7 @@ import '../../core/widgets/states.dart';
 import '../../data/models/category.dart';
 import '../catalog/catalog_providers.dart';
 
+/// صفحة الأقسام — تكوين بصري واحد: شريط أقسام رئيسي + مساحة استكشاف واسعة.
 class CategoriesScreen extends ConsumerStatefulWidget {
   const CategoriesScreen({super.key});
 
@@ -22,32 +23,34 @@ class CategoriesScreen extends ConsumerStatefulWidget {
 
 class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
   int _selected = 0;
-  final _railScroll = ScrollController();
+  bool _didForceRefresh = false;
 
   @override
-  void dispose() {
-    _railScroll.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    // إجبار جلب الأقسام من السيرفر مرة عند فتح التبويب بعد تحديث الشجرة
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (_didForceRefresh || !mounted) return;
+      _didForceRefresh = true;
+      try {
+        await refreshCategories(ref);
+      } catch (_) {}
+    });
   }
 
-  void _selectParent(int index, List<Category> parents) {
+  Future<void> _onRefresh() async {
+    HapticFeedback.mediumImpact();
+    try {
+      await refreshCategories(ref);
+    } catch (_) {
+      ref.invalidate(categoriesProvider);
+    }
+  }
+
+  void _selectParent(int index) {
     if (index == _selected) return;
     HapticFeedback.selectionClick();
     setState(() => _selected = index);
-    _scrollRailTo(index);
-  }
-
-  void _scrollRailTo(int index) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_railScroll.hasClients) return;
-      const itemHeight = 88.0;
-      final offset = (index * itemHeight) - 80;
-      _railScroll.animateTo(
-        offset.clamp(0.0, _railScroll.position.maxScrollExtent),
-        duration: const Duration(milliseconds: 280),
-        curve: Curves.easeOutCubic,
-      );
-    });
   }
 
   @override
@@ -55,201 +58,65 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
     final cats = ref.watch(categoriesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.scaffold,
-      body: SafeArea(
-        child: cats.when(
-          loading: () => const _CategoriesLoading(),
-          error: (e, _) => ErrorView(
+      backgroundColor: const Color(0xFFFAF7F8),
+      body: cats.when(
+        loading: () => const _CategoriesLoading(),
+        error: (e, _) => SafeArea(
+          child: ErrorView(
             message: friendlyError(e),
-            onRetry: () => ref.invalidate(categoriesProvider),
+            onRetry: () => refreshCategories(ref),
           ),
-          data: (list) {
-            final parents = list.where((c) => c.parentId == null).toList();
-            if (parents.isEmpty) {
-              return const EmptyState(icon: Icons.grid_view_rounded, title: 'لا توجد أقسام');
-            }
-
-            final safeIndex = _selected.clamp(0, parents.length - 1);
-            final selected = parents[safeIndex];
-
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _CategoriesHeader(onSearch: () => context.push('/search')),
-                Expanded(
-                  child: Row(
-                    textDirection: TextDirection.rtl,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _ParentRail(
-                        controller: _railScroll,
-                        parents: parents,
-                        selected: safeIndex,
-                        onTap: (i) => _selectParent(i, parents),
-                      ),
-                      Expanded(
-                        child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 220),
-                          switchInCurve: Curves.easeOutCubic,
-                          switchOutCurve: Curves.easeInCubic,
-                          child: _SubcategoryPane(
-                            key: ValueKey(selected.id),
-                            parent: selected,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
         ),
-      ),
-    );
-  }
-}
+        data: (list) {
+          final parents = list.where((c) => c.parentId == null).toList();
+          if (parents.isEmpty) {
+            return const SafeArea(
+              child: EmptyState(icon: Icons.grid_view_rounded, title: 'لا توجد أقسام'),
+            );
+          }
 
-class _CategoriesHeader extends StatelessWidget {
-  final VoidCallback onSearch;
+          final safeIndex = _selected.clamp(0, parents.length - 1);
+          final selected = parents[safeIndex];
 
-  const _CategoriesHeader({required this.onSearch});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('الأقسام', style: AppTypography.sectionTitle.copyWith(fontSize: 22)),
-          const SizedBox(height: AppSpacing.md),
-          Material(
-            color: AppColors.surface,
-            elevation: 0,
-            shadowColor: AppColors.textPrimary.withValues(alpha: 0.06),
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            child: InkWell(
-              onTap: onSearch,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              child: Ink(
-                height: 48,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  border: Border.all(color: AppColors.border),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.textPrimary.withValues(alpha: 0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 34,
-                      height: 34,
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLight,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(Icons.search_rounded, color: AppColors.primary, size: 20),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Text(
-                      'ابحث عن منتج أو قسم…',
-                      style: AppTypography.caption.copyWith(color: AppColors.textMuted, fontSize: 13),
-                    ),
-                  ],
-                ),
+          return RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: _onRefresh,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics(),
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ParentRail extends StatelessWidget {
-  final ScrollController controller;
-  final List<Category> parents;
-  final int selected;
-  final ValueChanged<int> onTap;
-
-  const _ParentRail({
-    required this.controller,
-    required this.parents,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 96,
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(left: BorderSide(color: AppColors.border, width: 0.5)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 12,
-            offset: Offset(-2, 0),
-          ),
-        ],
-      ),
-      child: ListView.builder(
-        controller: controller,
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-        itemCount: parents.length,
-        itemBuilder: (_, i) {
-          final active = i == selected;
-          final cat = parents[i];
-
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-            child: Material(
-              color: active ? AppColors.primaryLight.withValues(alpha: 0.45) : Colors.transparent,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              child: InkWell(
-                onTap: () => onTap(i),
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border(
-                      left: BorderSide(
-                        color: active ? AppColors.primary : Colors.transparent,
-                        width: 3,
-                      ),
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _CategoryThumb(category: cat, size: 44, active: active),
-                      const SizedBox(height: 6),
-                      Text(
-                        cat.name,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-                          color: active ? AppColors.primary : AppColors.textSecondary,
-                          height: 1.25,
-                        ),
-                      ),
-                    ],
+              slivers: [
+                SliverToBoxAdapter(
+                  child: _CategoriesTop(
+                    onSearch: () => context.push('/search'),
+                    parents: parents,
+                    selected: safeIndex,
+                    onSelect: _selectParent,
                   ),
                 ),
-              ),
+                SliverToBoxAdapter(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 280),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, anim) => FadeTransition(
+                      opacity: anim,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0.04, 0),
+                          end: Offset.zero,
+                        ).animate(anim),
+                        child: child,
+                      ),
+                    ),
+                    child: _ExplorePane(
+                      key: ValueKey(selected.id),
+                      parent: selected,
+                    ),
+                  ),
+                ),
+                const SliverToBoxAdapter(child: SizedBox(height: 48)),
+              ],
             ),
           );
         },
@@ -258,13 +125,196 @@ class _ParentRail extends StatelessWidget {
   }
 }
 
-class _SubcategoryPane extends StatelessWidget {
+class _CategoriesTop extends StatelessWidget {
+  final VoidCallback onSearch;
+  final List<Category> parents;
+  final int selected;
+  final ValueChanged<int> onSelect;
+
+  const _CategoriesTop({
+    required this.onSearch,
+    required this.parents,
+    required this.selected,
+    required this.onSelect,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final top = MediaQuery.paddingOf(context).top;
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFFFFF0F4),
+            Color(0xFFFAF7F8),
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(height: top + 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'الأقسام',
+                        style: AppTypography.sectionTitle.copyWith(
+                          fontSize: 28,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -0.5,
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'اكتشفِ مجموعتنا كاملة',
+                        style: AppTypography.caption.copyWith(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Material(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  child: InkWell(
+                    onTap: onSearch,
+                    borderRadius: BorderRadius.circular(14),
+                    child: const SizedBox(
+                      width: 46,
+                      height: 46,
+                      child: Icon(Icons.search_rounded, color: AppColors.textPrimary),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          SizedBox(
+            height: 108,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              itemCount: parents.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, i) {
+                final active = i == selected;
+                final cat = parents[i];
+                return _ParentChip(
+                  category: cat,
+                  active: active,
+                  onTap: () => onSelect(i),
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+        ],
+      ),
+    );
+  }
+}
+
+class _ParentChip extends StatelessWidget {
+  final Category category;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _ParentChip({
+    required this.category,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        width: 78,
+        padding: const EdgeInsets.fromLTRB(6, 6, 6, 8),
+        decoration: BoxDecoration(
+          color: active ? AppColors.primary : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: active ? AppColors.primary : const Color(0xFFE8E4E6),
+            width: 1,
+          ),
+          boxShadow: active
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.28),
+                    blurRadius: 16,
+                    offset: const Offset(0, 6),
+                  ),
+                ]
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: ColoredBox(
+                  color: active ? Colors.white.withValues(alpha: 0.18) : const Color(0xFFF3F0F2),
+                  child: category.imageUrl.isNotEmpty
+                      ? AppNetworkImage(url: category.imageUrl, fit: BoxFit.cover)
+                      : Center(
+                          child: Text(
+                            category.icon ?? category.name.characters.first,
+                            style: TextStyle(
+                              fontSize: 22,
+                              color: active ? Colors.white : AppColors.primary,
+                            ),
+                          ),
+                        ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              category.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: active ? Colors.white : AppColors.textPrimary,
+                height: 1.1,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ExplorePane extends StatelessWidget {
   final Category parent;
 
-  const _SubcategoryPane({
-    super.key,
-    required this.parent,
-  });
+  const _ExplorePane({super.key, required this.parent});
 
   void _openAll(BuildContext context) {
     context.push('/products?categoryId=${parent.id}&title=${Uri.encodeComponent(parent.name)}');
@@ -274,325 +324,386 @@ class _SubcategoryPane extends StatelessWidget {
   Widget build(BuildContext context) {
     final children = parent.children;
 
-    return ColoredBox(
-      color: AppColors.scaffold,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.md, AppSpacing.xxl),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 4, AppSpacing.lg, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _ParentHeroBanner(parent: parent, onTap: () => _openAll(context)),
-          const SizedBox(height: AppSpacing.lg),
+          _HeroBanner(parent: parent, onTap: () => _openAll(context)),
+          const SizedBox(height: AppSpacing.xl),
           Row(
             children: [
               Expanded(
                 child: Text(
-                  'تصفّح ${parent.name}',
-                  style: AppTypography.screenTitle.copyWith(fontSize: 16),
+                  parent.name,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.3,
+                  ),
                 ),
               ),
-              TextButton.icon(
+              TextButton(
                 onPressed: () => _openAll(context),
-                icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 14),
-                label: const Text('الكل'),
                 style: TextButton.styleFrom(
                   foregroundColor: AppColors.primary,
-                  textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          if (children.isEmpty)
-            _EmptyCategoryCTA(parent: parent)
-          else ...[
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.92,
-                crossAxisSpacing: AppSpacing.md,
-                mainAxisSpacing: AppSpacing.md,
-              ),
-              itemCount: children.length,
-              itemBuilder: (_, i) => _SubcategoryCard(category: children[i]),
-            ),
-            ...children.where((c) => c.children.isNotEmpty).map(
-                  (sub) => _TertiarySection(category: sub),
-                ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _ParentHeroBanner extends StatelessWidget {
-  final Category parent;
-  final VoidCallback onTap;
-
-  const _ParentHeroBanner({required this.parent, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        child: Ink(
-          height: 112,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            gradient: const LinearGradient(
-              begin: Alignment.topRight,
-              end: Alignment.bottomLeft,
-              colors: [Color(0xFFFCE4EC), Color(0xFFF3E8FF), Color(0xFFE8F4FC)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.08),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              if (parent.imageUrl.isNotEmpty)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                  child: AppNetworkImage(
-                    url: parent.imageUrl,
-                    fit: BoxFit.cover,
-                    height: 112,
-                  ),
-                ),
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                  gradient: LinearGradient(
-                    begin: Alignment.centerRight,
-                    end: Alignment.centerLeft,
-                    colors: [
-                      Colors.black.withValues(alpha: parent.imageUrl.isNotEmpty ? 0.15 : 0),
-                      Colors.black.withValues(alpha: parent.imageUrl.isNotEmpty ? 0.55 : 0),
-                    ],
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Row(
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            parent.name,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
-                              color: parent.imageUrl.isNotEmpty ? Colors.white : AppColors.textPrimary,
-                              height: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${parent.children.length} قسم فرعي',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: parent.imageUrl.isNotEmpty
-                                  ? Colors.white.withValues(alpha: 0.88)
-                                  : AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: parent.imageUrl.isNotEmpty
-                            ? Colors.white.withValues(alpha: 0.2)
-                            : AppColors.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadius.pill),
-                        border: Border.all(
-                          color: parent.imageUrl.isNotEmpty
-                              ? Colors.white.withValues(alpha: 0.35)
-                              : AppColors.primary.withValues(alpha: 0.25),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'استكشف',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              color: parent.imageUrl.isNotEmpty ? Colors.white : AppColors.primary,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.arrow_back_ios_new_rounded,
-                            size: 12,
-                            color: parent.imageUrl.isNotEmpty ? Colors.white : AppColors.primary,
-                          ),
-                        ],
-                      ),
-                    ),
+                    Text('كل المنتجات', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                    SizedBox(width: 4),
+                    Icon(Icons.arrow_back_ios_new_rounded, size: 13),
                   ],
                 ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SubcategoryCard extends StatelessWidget {
-  final Category category;
-
-  const _SubcategoryCard({required this.category});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface,
-      elevation: 0,
-      shadowColor: AppColors.textPrimary.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      child: InkWell(
-        onTap: () => context.push(
-          '/products?subcategoryId=${category.id}&title=${Uri.encodeComponent(category.name)}',
-        ),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.textPrimary.withValues(alpha: 0.04),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg - 1)),
-                  child: ColoredBox(
-                    color: AppColors.divider,
-                    child: category.imageUrl.isNotEmpty
-                        ? AppNetworkImage(url: category.imageUrl, fit: BoxFit.cover)
-                        : Center(child: _CategoryThumb(category: category, size: 52)),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-                child: Text(
-                  category.name,
-                  maxLines: 2,
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    height: 1.25,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TertiarySection extends StatelessWidget {
-  final Category category;
-
-  const _TertiarySection({required this.category});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: AppSpacing.xl),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 4,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  category.name,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: category.children.map((t) => _TertiaryChip(category: t)).toList(),
-          ),
+          if (children.isEmpty) ...[
+            const SizedBox(height: AppSpacing.lg),
+            _EmptyCategoryCTA(parent: parent),
+          ] else ...[
+            const SizedBox(height: AppSpacing.md),
+            ..._buildSections(context, children),
+          ],
         ],
       ),
     );
   }
+
+  List<Widget> _buildSections(BuildContext context, List<Category> children) {
+    final widgets = <Widget>[];
+
+    // شبكة الأقسام الفرعية
+    widgets.add(
+      GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: children.length,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 0.78,
+        ),
+        itemBuilder: (_, i) => _SubcategoryTile(category: children[i]),
+      ),
+    );
+
+    // أقسام ثانوية تحت كل فرعي يحتوي أبناء
+    for (final sub in children.where((c) => c.children.isNotEmpty)) {
+      widgets.add(const SizedBox(height: AppSpacing.xxl));
+      widgets.add(_TertiaryBlock(category: sub));
+    }
+
+    return widgets;
+  }
 }
 
-class _TertiaryChip extends StatelessWidget {
-  final Category category;
+class _HeroBanner extends StatelessWidget {
+  final Category parent;
+  final VoidCallback onTap;
 
-  const _TertiaryChip({required this.category});
+  const _HeroBanner({required this.parent, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
+    final hasImage = parent.imageUrl.isNotEmpty;
+
     return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(AppRadius.pill),
+      color: Colors.transparent,
       child: InkWell(
-        onTap: () => context.push(
-          '/products?tertiaryCategoryId=${category.id}&title=${Uri.encodeComponent(category.name)}',
-        ),
-        borderRadius: BorderRadius.circular(AppRadius.pill),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
         child: Ink(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          height: 168,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(22),
+            gradient: const LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: [
+                Color(0xFFFFE4EC),
+                Color(0xFFFFF5F8),
+                Color(0xFFFFE8D6),
+              ],
+            ),
           ),
-          child: Text(
-            category.name,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(22),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                if (hasImage)
+                  AppNetworkImage(url: parent.imageUrl, fit: BoxFit.cover),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerRight,
+                      end: Alignment.centerLeft,
+                      colors: [
+                        Colors.black.withValues(alpha: hasImage ? 0.05 : 0),
+                        Colors.black.withValues(alpha: hasImage ? 0.55 : 0),
+                      ],
+                    ),
+                  ),
+                ),
+                // زخرفة دائرية خفيفة
+                Positioned(
+                  left: -30,
+                  top: -40,
+                  child: Container(
+                    width: 140,
+                    height: 140,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: hasImage ? 0.08 : 0.35),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        parent.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w900,
+                          height: 1.15,
+                          color: hasImage ? Colors.white : AppColors.textPrimary,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        parent.children.isEmpty
+                            ? 'تصفّح كل المنتجات'
+                            : '${parent.children.length} قسم فرعي',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: hasImage
+                              ? Colors.white.withValues(alpha: 0.9)
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                        decoration: BoxDecoration(
+                          color: hasImage ? Colors.white : AppColors.primary,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'استكشف القسم',
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w800,
+                                color: hasImage ? AppColors.primary : Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(
+                              Icons.arrow_back_rounded,
+                              size: 16,
+                              color: hasImage ? AppColors.primary : Colors.white,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SubcategoryTile extends StatelessWidget {
+  final Category category;
+
+  const _SubcategoryTile({required this.category});
+
+  @override
+  Widget build(BuildContext context) {
+    final tertiaryCount = category.children.length;
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => context.push(
+          '/products?subcategoryId=${category.id}&title=${Uri.encodeComponent(category.name)}',
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              flex: 5,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ColoredBox(
+                    color: const Color(0xFFF4F1F3),
+                    child: category.imageUrl.isNotEmpty
+                        ? AppNetworkImage(url: category.imageUrl, fit: BoxFit.cover)
+                        : Center(
+                            child: Text(
+                              category.icon ?? category.name.characters.first,
+                              style: const TextStyle(fontSize: 36, color: AppColors.primary),
+                            ),
+                          ),
+                  ),
+                  if (tertiaryCount > 0)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.45),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '$tertiaryCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Expanded(
+              flex: 2,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      category.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w800,
+                        height: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TertiaryBlock extends StatelessWidget {
+  final Category category;
+
+  const _TertiaryBlock({required this.category});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 3,
+              height: 18,
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                category.name,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+              ),
+            ),
+            TextButton(
+              onPressed: () => context.push(
+                '/products?subcategoryId=${category.id}&title=${Uri.encodeComponent(category.name)}',
+              ),
+              child: const Text('الكل', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        ...category.children.asMap().entries.map((entry) {
+          final i = entry.key;
+          final t = entry.value;
+          final isLast = i == category.children.length - 1;
+          return Column(
+            children: [
+              Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  onTap: () => context.push(
+                    '/products?tertiaryCategoryId=${t.id}&title=${Uri.encodeComponent(t.name)}',
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF7F2F4),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: t.imageUrl.isNotEmpty
+                              ? AppNetworkImage(url: t.imageUrl, fit: BoxFit.cover)
+                              : const Icon(Icons.spa_outlined, color: AppColors.primary, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            t.name,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        const Icon(Icons.chevron_left_rounded, color: AppColors.textMuted),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              if (!isLast) const SizedBox(height: 8),
+            ],
+          );
+        }),
+      ],
     );
   }
 }
@@ -605,17 +716,14 @@ class _EmptyCategoryCTA extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(top: AppSpacing.xl),
       padding: const EdgeInsets.all(AppSpacing.xxl),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        border: Border.all(color: AppColors.border),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFEDE8EA)),
       ),
       child: Column(
         children: [
-          _CategoryThumb(category: parent, size: 64),
-          const SizedBox(height: AppSpacing.lg),
           Text(
             'تصفّح منتجات ${parent.name}',
             textAlign: TextAlign.center,
@@ -643,131 +751,37 @@ class _EmptyCategoryCTA extends StatelessWidget {
   }
 }
 
-class _CategoryThumb extends StatelessWidget {
-  final Category category;
-  final double size;
-  final bool active;
-
-  const _CategoryThumb({
-    required this.category,
-    this.size = 40,
-    this.active = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final radius = size > 48 ? AppRadius.lg : AppRadius.md;
-
-    if (category.imageUrl.isNotEmpty) {
-      return Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(radius),
-          border: Border.all(
-            color: active ? AppColors.primary.withValues(alpha: 0.5) : AppColors.border,
-            width: active ? 1.5 : 1,
-          ),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: AppNetworkImage(url: category.imageUrl, fit: BoxFit.cover),
-      );
-    }
-
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(radius),
-        gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: active
-              ? [AppColors.primaryLight, const Color(0xFFF3E8FF)]
-              : [AppColors.divider, AppColors.shimmerBase],
-        ),
-        border: Border.all(
-          color: active ? AppColors.primary.withValues(alpha: 0.35) : AppColors.border,
-        ),
-      ),
-      alignment: Alignment.center,
-      child: Text(
-        category.icon ?? category.name.characters.first,
-        style: TextStyle(
-          fontSize: size * 0.38,
-          fontWeight: FontWeight.w700,
-          color: active ? AppColors.primary : AppColors.textSecondary,
-        ),
-      ),
-    );
-  }
-}
-
 class _CategoriesLoading extends StatelessWidget {
   const _CategoriesLoading();
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final top = MediaQuery.paddingOf(context).top;
+    return ListView(
+      padding: EdgeInsets.fromLTRB(AppSpacing.lg, top + 8, AppSpacing.lg, 24),
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, AppSpacing.md),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              ShimmerBox(height: 26, width: 90, radius: 8),
-              SizedBox(height: AppSpacing.md),
-              ShimmerBox(height: 48, radius: AppRadius.lg),
-            ],
+        const ShimmerBox(height: 28, width: 120, radius: 8),
+        const SizedBox(height: 8),
+        const ShimmerBox(height: 14, width: 180, radius: 6),
+        const SizedBox(height: 20),
+        SizedBox(
+          height: 108,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: 6,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, __) => const ShimmerBox(width: 78, height: 108, radius: 18),
           ),
         ),
-        Expanded(
-          child: Row(
-            textDirection: TextDirection.rtl,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(
-                width: 96,
-                color: AppColors.surface,
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: 6),
-                child: Column(
-                  children: List.generate(
-                    7,
-                    (_) => const Padding(
-                      padding: EdgeInsets.only(bottom: 10),
-                      child: ShimmerBox(height: 72, radius: AppRadius.md),
-                    ),
-                  ),
-                ),
-              ),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(AppSpacing.lg),
-                  children: const [
-                    ShimmerBox(height: 112, radius: AppRadius.xl),
-                    SizedBox(height: AppSpacing.lg),
-                    ShimmerBox(height: 20, width: 140, radius: 6),
-                    SizedBox(height: AppSpacing.md),
-                    Row(
-                      children: [
-                        Expanded(child: ShimmerBox(height: 150, radius: AppRadius.lg)),
-                        SizedBox(width: AppSpacing.md),
-                        Expanded(child: ShimmerBox(height: 150, radius: AppRadius.lg)),
-                      ],
-                    ),
-                    SizedBox(height: AppSpacing.md),
-                    Row(
-                      children: [
-                        Expanded(child: ShimmerBox(height: 150, radius: AppRadius.lg)),
-                        SizedBox(width: AppSpacing.md),
-                        Expanded(child: ShimmerBox(height: 150, radius: AppRadius.lg)),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+        const SizedBox(height: 16),
+        const ShimmerBox(height: 168, radius: 22),
+        const SizedBox(height: 20),
+        const Row(
+          children: [
+            Expanded(child: ShimmerBox(height: 190, radius: 18)),
+            SizedBox(width: 12),
+            Expanded(child: ShimmerBox(height: 190, radius: 18)),
+          ],
         ),
       ],
     );

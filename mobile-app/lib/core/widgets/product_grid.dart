@@ -36,7 +36,7 @@ class ProductGrid extends StatelessWidget {
     return GridView.builder(
       controller: controller,
       padding: padding,
-      cacheExtent: 600,
+      cacheExtent: 900,
       addAutomaticKeepAlives: true,
       gridDelegate: gridDelegate,
       itemCount: products.length + extraSlots,

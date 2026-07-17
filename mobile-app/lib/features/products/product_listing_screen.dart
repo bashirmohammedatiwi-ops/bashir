@@ -5,6 +5,7 @@ import '../../core/config/app_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/friendly_error.dart';
+import '../../core/cache/image_cache.dart';
 import '../../core/widgets/listing_toolbar.dart';
 import '../../core/widgets/product_grid.dart';
 import '../../core/widgets/shimmer_box.dart';
@@ -124,6 +125,16 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
         _page++;
         _firstLoad = false;
       });
+      if (mounted && result.items.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          precacheProductCovers(
+            context,
+            result.items.map((p) => p.coverUrl),
+            limit: 12,
+          );
+        });
+      }
     } catch (e) {
       setState(() => _error = friendlyError(e));
     } finally {

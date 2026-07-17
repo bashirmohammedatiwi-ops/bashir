@@ -81,7 +81,7 @@ class ApiService {
   Future<List<Category>> getCategories({bool forceRefresh = false}) async {
     try {
       final raw = await _cache.getOrFetch<List<dynamic>>(
-        key: 'categories_all_v1',
+        key: 'categories_all_v2',
         ttl: AppConfig.catalogCacheTtl,
         forceRefresh: forceRefresh,
         fetch: () async {
@@ -225,7 +225,7 @@ class ApiService {
     if (page != 1) return null;
     if (search != null && search.isNotEmpty) return null;
     final parts = <String>[
-      'products_v1',
+      'products_v2',
       'l$limit',
       if (categoryId != null) 'c$categoryId',
       if (subcategoryId != null) 'sc$subcategoryId',
@@ -244,7 +244,7 @@ class ApiService {
   Future<Product> getProduct(String idOrSlug, {bool forceRefresh = false}) async {
     try {
       final raw = await _cache.getOrFetch<Map<String, dynamic>>(
-        key: 'product_v1_$idOrSlug',
+        key: 'product_v2_$idOrSlug',
         ttl: AppConfig.productCacheTtl,
         forceRefresh: forceRefresh,
         fetch: () async {

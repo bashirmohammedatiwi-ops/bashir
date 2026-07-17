@@ -40,7 +40,8 @@ class AppConfig {
 
   /// مدة كاش البيانات العامة.
   static const Duration homeCacheTtl = Duration(minutes: 5);
-  static const Duration catalogCacheTtl = Duration(hours: 1);
-  static const Duration productCacheTtl = Duration(minutes: 15);
-  static const Duration listingCacheTtl = Duration(minutes: 3);
+  /// أقسام الكتالوج تتغيّر أحياناً — كاش قصير + مفتاح إصدار في الـ API.
+  static const Duration catalogCacheTtl = Duration(minutes: 10);
+  static const Duration productCacheTtl = Duration(minutes: 5);
+  static const Duration listingCacheTtl = Duration(minutes: 2);
 }
