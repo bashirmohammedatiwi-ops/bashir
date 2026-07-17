@@ -27,12 +27,15 @@ const categoryInclude = {
   _count: { select: { products: true, children: true } },
 };
 
-function normalizeCategoryWrite(data: Record<string, any>, { partial = false } = {}) {
+function normalizeCategoryWrite(
+  data: Record<string, any>,
+  { partial = false } = {},
+): Prisma.CategoryUncheckedCreateInput | Prisma.CategoryUncheckedUpdateInput {
   const hasNameField =
     data.name !== undefined || data.nameAr !== undefined || data.nameEn !== undefined;
   if (partial && !hasNameField) {
-    const { name: _n, nameAr: _a, nameEn: _e, ...rest } = data;
-    return rest;
+    const { name: _n, nameAr: _a, nameEn: _e, parentId: _p, ...rest } = data;
+    return rest as Prisma.CategoryUncheckedUpdateInput;
   }
   const nameAr = String(data.nameAr ?? data.name ?? "").trim() || null;
   const nameEn = String(data.nameEn ?? "").trim() || null;
@@ -40,12 +43,13 @@ function normalizeCategoryWrite(data: Record<string, any>, { partial = false } =
   if (!name) {
     throw new BadRequestException("Category name is required");
   }
+  const { parentId: _parentId, ...rest } = data;
   return {
-    ...data,
+    ...rest,
     name,
     nameAr: nameAr || name,
     nameEn,
-  };
+  } as Prisma.CategoryUncheckedCreateInput;
 }
 
 function mapTertiarySection(c: any) {
@@ -301,7 +305,9 @@ export class CategoriesService {
     if (data.parentId) {
       throw new BadRequestException("Use POST /subcategories to create sub-sections");
     }
-    const row = await this.prisma.category.create({ data: normalizeCategoryWrite(data) });
+    const row = await this.prisma.category.create({
+      data: normalizeCategoryWrite(data) as Prisma.CategoryUncheckedCreateInput,
+    });
     return this.findOne(row.id);
   }
 
@@ -310,7 +316,10 @@ export class CategoriesService {
     if (!parent) throw new BadRequestException("Parent section not found");
     if (parent.parentId) throw new BadRequestException("Parent must be a top-level section");
     const row = await this.prisma.category.create({
-      data: { ...normalizeCategoryWrite(data), parentId: data.parentId },
+      data: {
+        ...(normalizeCategoryWrite(data) as Prisma.CategoryUncheckedCreateInput),
+        parentId: data.parentId,
+      },
     });
     return this.findSubcategory(row.id);
   }
@@ -327,7 +336,10 @@ export class CategoriesService {
       throw new BadRequestException("Cannot nest more than three category levels");
     }
     const row = await this.prisma.category.create({
-      data: { ...normalizeCategoryWrite(data), parentId: data.parentId },
+      data: {
+        ...(normalizeCategoryWrite(data) as Prisma.CategoryUncheckedCreateInput),
+        parentId: data.parentId,
+      },
     });
     return this.findTertiarySection(row.id);
   }
@@ -339,7 +351,7 @@ export class CategoriesService {
     }
     await this.prisma.category.update({
       where: { id },
-      data: normalizeCategoryWrite(data, { partial: true }),
+      data: normalizeCategoryWrite(data, { partial: true }) as Prisma.CategoryUncheckedUpdateInput,
     });
     return this.findOne(id);
   }
@@ -359,7 +371,10 @@ export class CategoriesService {
     }
     await this.prisma.category.update({
       where: { id },
-      data: { ...normalizeCategoryWrite(data, { partial: true }), parentId },
+      data: {
+        ...(normalizeCategoryWrite(data, { partial: true }) as Prisma.CategoryUncheckedUpdateInput),
+        parentId,
+      },
     });
     return this.findSubcategory(id);
   }
@@ -382,7 +397,10 @@ export class CategoriesService {
     }
     await this.prisma.category.update({
       where: { id },
-      data: { ...normalizeCategoryWrite(data, { partial: true }), parentId },
+      data: {
+        ...(normalizeCategoryWrite(data, { partial: true }) as Prisma.CategoryUncheckedUpdateInput),
+        parentId,
+      },
     });
     return this.findTertiarySection(id);
   }
