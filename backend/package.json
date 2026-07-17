@@ -12,7 +12,6 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "seed": "npx tsx prisma/seed.ts",
-    "import:niceone-categories": "npx tsx prisma/import-niceone-categories.ts",
     "backfill:images": "node scripts/backfill-product-images.js"
   },
   "prisma": {
