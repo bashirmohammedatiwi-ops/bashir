@@ -45,3 +45,12 @@ final productReviewsProvider =
     FutureProvider.family.autoDispose<List<Review>, String>((ref, productId) async {
   return ref.read(apiServiceProvider).getProductReviews(productId);
 });
+
+/// منتجات مشابهة من نفس القسم (يستثني المنتج الحالي).
+final similarProductsProvider = FutureProvider.autoDispose
+    .family<List<Product>, ({String categoryId, String excludeId})>((ref, args) async {
+  final page = await ref
+      .read(apiServiceProvider)
+      .getProducts(categoryId: args.categoryId, limit: 10);
+  return page.items.where((p) => p.id != args.excludeId).take(8).toList();
+});

@@ -41,10 +41,10 @@ class ProductCard extends ConsumerWidget {
         child: Ink(
           width: width,
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: AppColors.hairline),
-            boxShadow: AppColors.cardShadow,
+            border: Border.all(color: AppColors.hairline, width: 0.7),
+            boxShadow: AppColors.softShadow,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -90,9 +90,10 @@ class _ImageSection extends StatelessWidget {
         ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg - 0.5)),
           child: ColoredBox(
-            color: const Color(0xFFFBF8F9),
+            // خلفية الصورة بيضاء نقية دائماً
+            color: Colors.white,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 14, 12, 10),
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
               child: LayoutBuilder(
                 builder: (context, constraints) => Center(
                   child: ProductCoverImage(
@@ -104,6 +105,13 @@ class _ImageSection extends StatelessWidget {
               ),
             ),
           ),
+        ),
+        // فاصل رقيق بين الصورة والمعلومات
+        const Positioned(
+          left: 12,
+          right: 12,
+          bottom: 0,
+          child: Divider(height: 1, thickness: 0.7, color: AppColors.divider),
         ),
         Positioned(
           top: 10,
@@ -120,16 +128,16 @@ class _ImageSection extends StatelessWidget {
             ),
           )
         else if (product.isNew)
-          Positioned(
+          const Positioned(
             top: 10,
             right: 10,
-            child: const _Badge(label: 'جديد', color: AppColors.ink),
+            child: _Badge(label: 'جديد', color: AppColors.ink),
           )
         else if (showPromoBadge && product.isPromo)
-          Positioned(
+          const Positioned(
             top: 10,
             right: 10,
-            child: const _Badge(label: 'عرض', color: AppColors.primary),
+            child: _Badge(label: 'عرض', color: AppColors.primary),
           ),
         if (_hasShades)
           Positioned(
@@ -302,7 +310,13 @@ class _InfoSection extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(formatPrice(product.price), style: AppTypography.price.copyWith(fontSize: 14)),
+                    Text(
+                      formatPrice(product.price),
+                      style: AppTypography.price.copyWith(
+                        fontSize: 14,
+                        color: product.hasDiscount ? AppColors.sale : AppColors.textPrimary,
+                      ),
+                    ),
                     if (product.hasDiscount)
                       Text(
                         formatPrice(product.originalPrice),
@@ -332,10 +346,17 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: color,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Text(
         label,
@@ -358,26 +379,40 @@ class _AddButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final enabled = product.inStock;
     return Material(
-      color: enabled ? AppColors.ink : AppColors.divider,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: enabled
-            ? () {
-                HapticFeedback.lightImpact();
-                if (product.shades.isNotEmpty) {
-                  context.push(
-                    '/product/${product.slug.isNotEmpty ? product.slug : product.id}',
-                  );
-                  return;
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      child: Ink(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: enabled ? AppColors.primaryGradient : null,
+          color: enabled ? null : AppColors.divider,
+          boxShadow: enabled
+              ? [
+                  BoxShadow(
+                    color: AppColors.primary.withValues(alpha: 0.28),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : null,
+        ),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: enabled
+              ? () {
+                  HapticFeedback.lightImpact();
+                  if (product.shades.isNotEmpty) {
+                    context.push(
+                      '/product/${product.slug.isNotEmpty ? product.slug : product.id}',
+                    );
+                    return;
+                  }
+                  ref.read(cartProvider.notifier).add(product);
+                  AppSnackbar.success(context, 'أُضيف إلى السلة');
                 }
-                ref.read(cartProvider.notifier).add(product);
-                AppSnackbar.success(context, 'أُضيف إلى السلة');
-              }
-            : null,
-        child: SizedBox(
-          width: 36,
-          height: 36,
+              : null,
           child: Icon(
             Icons.add_rounded,
             color: enabled ? Colors.white : AppColors.textMuted,
@@ -397,9 +432,10 @@ class _WishButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final wished = ref.watch(wishlistProvider.select((s) => s.ids.contains(product.id)));
     return Material(
-      color: Colors.white.withValues(alpha: 0.95),
-      shape: const CircleBorder(),
+      color: Colors.white,
+      shape: CircleBorder(side: BorderSide(color: AppColors.hairline.withValues(alpha: 0.8), width: 0.7)),
       elevation: 0,
+      shadowColor: Colors.transparent,
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: () async {
