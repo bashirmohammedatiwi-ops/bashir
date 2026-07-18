@@ -14,6 +14,8 @@ const productRelationsFull = {
   category: { select: { id: true, name: true, slug: true } },
   subcategory: { select: { id: true, name: true, slug: true, parentId: true } },
   tertiaryCategory: { select: { id: true, name: true, slug: true, parentId: true } },
+  subcategories: { select: { id: true, name: true, slug: true, parentId: true } },
+  tertiaryCategories: { select: { id: true, name: true, slug: true, parentId: true } },
   images: {
     orderBy: { position: "asc" as const },
     include: { media: true },
@@ -118,6 +120,8 @@ export class ProductsService {
         category: true,
         subcategory: { select: { id: true, name: true, slug: true, parentId: true } },
         tertiaryCategory: { select: { id: true, name: true, slug: true, parentId: true } },
+        subcategories: { select: { id: true, name: true, slug: true, parentId: true } },
+        tertiaryCategories: { select: { id: true, name: true, slug: true, parentId: true } },
         images: { orderBy: { position: "asc" }, include: { media: true } },
         shades: { orderBy: { position: "asc" }, include: { image: true } },
         variants: { orderBy: { position: "asc" } },
@@ -148,6 +152,12 @@ export class ProductsService {
       tags,
       concernIds: product.skinConcerns?.map((sc: any) => sc.concernId) ?? [],
       skinConcerns: product.skinConcerns?.map((sc: any) => sc.concern) ?? [],
+      subcategoryIds:
+        product.subcategories?.map((s: any) => s.id) ??
+        (product.subcategoryId ? [product.subcategoryId] : []),
+      tertiaryCategoryIds:
+        product.tertiaryCategories?.map((t: any) => t.id) ??
+        (product.tertiaryCategoryId ? [product.tertiaryCategoryId] : []),
     };
   }
 
@@ -156,15 +166,18 @@ export class ProductsService {
     dto = this.applyShadeAggregates(dto);
     const names = resolveProductNames(dto);
     const descriptions = resolveProductDescriptions(dto);
-    const subcategoryId = await this.categories.validateSubcategoryForCategory(
-      dto.subcategoryId,
+    const subcategoryIds = await this.categories.validateSubcategoriesForCategory(
+      this.mergeCategoryIds(dto.subcategoryIds, dto.subcategoryId),
       dto.categoryId,
     );
-    const tertiaryCategoryId = await this.categories.validateTertiaryForProduct(
-      dto.tertiaryCategoryId,
-      subcategoryId,
+    const tertiaryCategoryIds = await this.categories.validateTertiariesForProduct(
+      this.mergeCategoryIds(dto.tertiaryCategoryIds, dto.tertiaryCategoryId),
+      subcategoryIds,
       dto.categoryId,
     );
+    // الحقلان المفردان يبقيان للتوافق (أول عنصر من كل قائمة)
+    const subcategoryId = subcategoryIds[0] ?? null;
+    const tertiaryCategoryId = tertiaryCategoryIds[0] ?? null;
     const imageIds = this.uniqueImageIds(dto.imageIds);
 
     try {
@@ -197,6 +210,12 @@ export class ProductsService {
           categoryId: dto.categoryId || null,
           subcategoryId,
           tertiaryCategoryId,
+          subcategories: subcategoryIds.length
+            ? { connect: subcategoryIds.map((cid) => ({ id: cid })) }
+            : undefined,
+          tertiaryCategories: tertiaryCategoryIds.length
+            ? { connect: tertiaryCategoryIds.map((cid) => ({ id: cid })) }
+            : undefined,
           tags: JSON.stringify(dto.tags ?? []),
           skinType: JSON.stringify(dto.skinType ?? []),
           images: imageIds.length
@@ -250,18 +269,29 @@ export class ProductsService {
     const names = hasNamePatch ? resolveProductNames(dto) : null;
     const descriptions = hasDescPatch ? resolveProductDescriptions(dto) : null;
     const categoryId = dto.categoryId ?? existing.categoryId;
-    let subcategoryId: string | null | undefined = dto.subcategoryId;
-    let tertiaryCategoryId: string | null | undefined = dto.tertiaryCategoryId;
-    if (dto.subcategoryId !== undefined || dto.categoryId !== undefined || dto.tertiaryCategoryId !== undefined) {
-      subcategoryId = await this.categories.validateSubcategoryForCategory(
-        dto.subcategoryId ?? null,
+    const touchesCategories =
+      dto.categoryId !== undefined ||
+      dto.subcategoryId !== undefined ||
+      dto.tertiaryCategoryId !== undefined ||
+      dto.subcategoryIds !== undefined ||
+      dto.tertiaryCategoryIds !== undefined;
+
+    let subcategoryId: string | null | undefined;
+    let tertiaryCategoryId: string | null | undefined;
+    let subcategoryIds: string[] | undefined;
+    let tertiaryCategoryIds: string[] | undefined;
+    if (touchesCategories) {
+      subcategoryIds = await this.categories.validateSubcategoriesForCategory(
+        this.mergeCategoryIds(dto.subcategoryIds, dto.subcategoryId),
         categoryId,
       );
-      tertiaryCategoryId = await this.categories.validateTertiaryForProduct(
-        dto.tertiaryCategoryId ?? null,
-        subcategoryId,
+      tertiaryCategoryIds = await this.categories.validateTertiariesForProduct(
+        this.mergeCategoryIds(dto.tertiaryCategoryIds, dto.tertiaryCategoryId),
+        subcategoryIds,
         categoryId,
       );
+      subcategoryId = subcategoryIds[0] ?? null;
+      tertiaryCategoryId = tertiaryCategoryIds[0] ?? null;
     }
     if (dto.imageIds) {
       await this.prisma.productImage.deleteMany({ where: { productId: id } });
@@ -304,6 +334,12 @@ export class ProductsService {
           categoryId: dto.categoryId,
           subcategoryId: subcategoryId !== undefined ? subcategoryId : undefined,
           tertiaryCategoryId: tertiaryCategoryId !== undefined ? tertiaryCategoryId : undefined,
+          subcategories: subcategoryIds
+            ? { set: subcategoryIds.map((cid) => ({ id: cid })) }
+            : undefined,
+          tertiaryCategories: tertiaryCategoryIds
+            ? { set: tertiaryCategoryIds.map((cid) => ({ id: cid })) }
+            : undefined,
           tags: dto.tags ? JSON.stringify(dto.tags) : undefined,
           skinType: dto.skinType ? JSON.stringify(dto.skinType) : undefined,
           images: imageIds?.length
@@ -441,15 +477,29 @@ export class ProductsService {
     };
   }
 
+  /// دمج القائمة الجديدة مع الحقل المفرد القديم (توافق مع الواجهات القديمة).
+  private mergeCategoryIds(ids?: string[] | null, single?: string | null): string[] {
+    const merged = [...(ids ?? [])];
+    if (single && !merged.includes(single)) merged.unshift(single);
+    return merged.filter(Boolean);
+  }
+
   private buildCategoryFilter(q: QueryProductsDto): Prisma.ProductWhereInput | null {
     if (q.tertiaryCategoryId) {
-      return { tertiaryCategoryId: q.tertiaryCategoryId };
+      return {
+        OR: [
+          { tertiaryCategoryId: q.tertiaryCategoryId },
+          { tertiaryCategories: { some: { id: q.tertiaryCategoryId } } },
+        ],
+      };
     }
     if (q.subcategoryId) {
       return {
         OR: [
           { subcategoryId: q.subcategoryId },
+          { subcategories: { some: { id: q.subcategoryId } } },
           { tertiaryCategory: { parentId: q.subcategoryId } },
+          { tertiaryCategories: { some: { parentId: q.subcategoryId } } },
         ],
       };
     }
@@ -458,7 +508,9 @@ export class ProductsService {
         OR: [
           { categoryId: q.categoryId },
           { subcategory: { parentId: q.categoryId } },
+          { subcategories: { some: { parentId: q.categoryId } } },
           { tertiaryCategory: { parent: { parentId: q.categoryId } } },
+          { tertiaryCategories: { some: { parent: { parentId: q.categoryId } } } },
         ],
       };
     }

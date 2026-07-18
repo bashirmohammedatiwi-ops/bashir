@@ -39,8 +39,16 @@ export function buildProductPayload(
     slug: values.slug?.trim() || slugify(slugSourceName(values), "product"),
     brandId: values.brandId,
     categoryId: values.categoryId || null,
-    subcategoryId: values.subcategoryId || null,
-    tertiaryCategoryId: values.tertiaryCategoryId || null,
+    subcategoryIds: Array.isArray(values.subcategoryIds)
+      ? values.subcategoryIds.filter(Boolean)
+      : values.subcategoryId
+        ? [values.subcategoryId]
+        : [],
+    tertiaryCategoryIds: Array.isArray(values.tertiaryCategoryIds)
+      ? values.tertiaryCategoryIds.filter(Boolean)
+      : values.tertiaryCategoryId
+        ? [values.tertiaryCategoryId]
+        : [],
     description: values.descriptionAr?.trim() || values.descriptionEn?.trim() || values.description?.trim() || "",
     descriptionAr: values.descriptionAr?.trim() || undefined,
     descriptionEn: values.descriptionEn?.trim() || undefined,

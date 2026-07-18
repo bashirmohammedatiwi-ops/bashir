@@ -46,6 +46,8 @@ export class CreateProductDto {
 
   @IsOptional() @IsString() subcategoryId?: string;
   @IsOptional() @IsString() tertiaryCategoryId?: string;
+  @IsOptional() @IsArray() @IsString({ each: true }) subcategoryIds?: string[];
+  @IsOptional() @IsArray() @IsString({ each: true }) tertiaryCategoryIds?: string[];
   @IsOptional() @IsString() description?: string;
   @IsOptional() @IsString() descriptionAr?: string;
   @IsOptional() @IsString() descriptionEn?: string;
@@ -97,6 +99,8 @@ export class UpdateProductDto {
 
   @IsOptional() @IsString() subcategoryId?: string;
   @IsOptional() @IsString() tertiaryCategoryId?: string;
+  @IsOptional() @IsArray() @IsString({ each: true }) subcategoryIds?: string[];
+  @IsOptional() @IsArray() @IsString({ each: true }) tertiaryCategoryIds?: string[];
   @IsOptional() @IsString() description?: string;
   @IsOptional() @IsString() descriptionAr?: string;
   @IsOptional() @IsString() descriptionEn?: string;

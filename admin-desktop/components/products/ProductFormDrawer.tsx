@@ -82,7 +82,7 @@ type ProductFormDrawerProps = {
   brandsData: any[];
   skinConcernsData?: any[];
   subcategoryOptions: { value: string; label: string }[];
-  tertiaryCategoryOptions?: { value: string; label: string }[];
+  tertiaryCategoryOptions?: { label: string; options: { value: string; label: string }[] }[];
   hasSyncData?: boolean;
   syncLoading?: boolean;
   syncMeta?: { offerName?: string; syncedAt?: string } | null;
@@ -159,7 +159,7 @@ export function ProductFormDrawer({
         className="alhayaa-product-form"
         onFinishFailed={(info) => {
           const field = String(info.errorFields[0]?.name?.[0] ?? "");
-          if (["nameAr", "nameEn", "sku", "slug", "brandId", "categoryId", "subcategoryId", "tags", "skinType"].includes(field)) {
+          if (["nameAr", "nameEn", "sku", "slug", "brandId", "categoryId", "subcategoryIds", "tertiaryCategoryIds", "tags", "skinType"].includes(field)) {
             setActiveTab("basic");
           } else if (["price", "stock", "originalPrice", "discountPercent", "pointsEarned", "rating"].includes(field)) {
             setActiveTab("pricing");
@@ -215,43 +215,48 @@ export function ProductFormDrawer({
                 options={(brandsData ?? []).map((b: any) => ({ value: b.id, label: b.name }))}
               />
             </Form.Item>
-            <div className="alhayaa-form-row">
+            <Form.Item name="categoryId" label="القسم">
+              <Select
+                allowClear
+                showSearch
+                optionFilterProp="label"
+                placeholder="بدون تصنيف (اختياري)"
+                options={(categoriesData ?? []).map((c: any) => ({ value: c.id, label: c.name }))}
+                onChange={() => {
+                  form.setFieldValue("subcategoryIds", []);
+                  form.setFieldValue("tertiaryCategoryIds", []);
+                }}
+              />
+            </Form.Item>
+            {subcategoryOptions.length > 0 && (
               <Form.Item
-                name="categoryId"
-                label="القسم"
-                className="alhayaa-form-col"
+                name="subcategoryIds"
+                label="الأقسام الفرعية (يمكن اختيار أكثر من قسم)"
               >
                 <Select
+                  mode="multiple"
                   allowClear
-                  placeholder="بدون تصنيف (اختياري)"
-                  options={(categoriesData ?? []).map((c: any) => ({ value: c.id, label: c.name }))}
-                  onChange={() => {
-                    form.setFieldValue("subcategoryId", undefined);
-                    form.setFieldValue("tertiaryCategoryId", undefined);
-                  }}
+                  showSearch
+                  optionFilterProp="label"
+                  placeholder="اختر قسماً فرعياً أو أكثر (اختياري)"
+                  options={subcategoryOptions}
+                  maxTagCount="responsive"
                 />
               </Form.Item>
-              {subcategoryOptions.length > 0 && (
-                <Form.Item
-                  name="subcategoryId"
-                  label="القسم الفرعي"
-                  className="alhayaa-form-col"
-                >
-                  <Select
-                    allowClear
-                    placeholder="اختر القسم الفرعي (اختياري)"
-                    options={subcategoryOptions}
-                    onChange={() => form.setFieldValue("tertiaryCategoryId", undefined)}
-                  />
-                </Form.Item>
-              )}
-            </div>
+            )}
             {tertiaryCategoryOptions.length > 0 && (
-              <Form.Item name="tertiaryCategoryId" label="القسم الثانوي (اختياري)">
+              <Form.Item
+                name="tertiaryCategoryIds"
+                label="الأقسام الثانوية (يمكن اختيار أكثر من قسم)"
+              >
                 <Select
+                  mode="multiple"
                   allowClear
-                  placeholder="اختر القسم الثانوي"
+                  showSearch
+                  optionFilterProp="label"
+                  placeholder="اختر قسماً ثانوياً أو أكثر (اختياري)"
                   options={tertiaryCategoryOptions}
+                  maxTagCount="responsive"
                 />
               </Form.Item>
             )}

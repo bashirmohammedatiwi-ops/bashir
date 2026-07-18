@@ -486,6 +486,79 @@ export class CategoriesService {
     return tertiaryCategoryId;
   }
 
+  /// التحقق من قائمة أقسام فرعية — كلها يجب أن تتبع القسم الرئيسي المحدد.
+  async validateSubcategoriesForCategory(
+    subcategoryIds: string[] | undefined | null,
+    categoryId: string | undefined | null,
+  ): Promise<string[]> {
+    const ids = [...new Set((subcategoryIds ?? []).filter(Boolean))];
+    if (!ids.length) return [];
+    if (!categoryId) {
+      throw new BadRequestException("اختر القسم الرئيسي قبل الأقسام الفرعية");
+    }
+    const subs = await this.prisma.category.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, name: true, parentId: true, isActive: true },
+    });
+    const found = new Map(subs.map((s) => [s.id, s]));
+    for (const id of ids) {
+      const sub = found.get(id);
+      if (!sub || !sub.parentId) {
+        throw new BadRequestException("قسم فرعي غير صالح");
+      }
+      if (sub.parentId !== categoryId) {
+        throw new BadRequestException(`القسم الفرعي "${sub.name}" لا يتبع القسم الرئيسي المحدد`);
+      }
+      if (!sub.isActive) {
+        throw new BadRequestException(`القسم الفرعي "${sub.name}" غير نشط`);
+      }
+    }
+    return ids;
+  }
+
+  /// التحقق من قائمة أقسام ثانوية — كل قسم ثانوي يجب أن يتبع أحد الأقسام الفرعية المحددة.
+  async validateTertiariesForProduct(
+    tertiaryCategoryIds: string[] | undefined | null,
+    subcategoryIds: string[],
+    categoryId: string | undefined | null,
+  ): Promise<string[]> {
+    const ids = [...new Set((tertiaryCategoryIds ?? []).filter(Boolean))];
+    if (!ids.length) return [];
+    if (!subcategoryIds.length) {
+      throw new BadRequestException("اختر قسماً فرعياً قبل الأقسام الثانوية");
+    }
+    const tertiaries = await this.prisma.category.findMany({
+      where: { id: { in: ids } },
+      select: {
+        id: true,
+        name: true,
+        parentId: true,
+        isActive: true,
+        parent: { select: { parentId: true } },
+      },
+    });
+    const found = new Map(tertiaries.map((t) => [t.id, t]));
+    const allowedParents = new Set(subcategoryIds);
+    for (const id of ids) {
+      const t = found.get(id);
+      if (!t || !t.parentId || !t.parent?.parentId) {
+        throw new BadRequestException("قسم ثانوي غير صالح");
+      }
+      if (!allowedParents.has(t.parentId)) {
+        throw new BadRequestException(
+          `القسم الثانوي "${t.name}" لا يتبع أياً من الأقسام الفرعية المحددة`,
+        );
+      }
+      if (categoryId && t.parent.parentId !== categoryId) {
+        throw new BadRequestException(`القسم الثانوي "${t.name}" لا يتبع القسم الرئيسي المحدد`);
+      }
+      if (!t.isActive) {
+        throw new BadRequestException(`القسم الثانوي "${t.name}" غير نشط`);
+      }
+    }
+    return ids;
+  }
+
   private async ensureRootSection(id: string) {
     const c = await this.prisma.category.findUnique({ where: { id } });
     if (!c) throw new NotFoundException("Category not found");

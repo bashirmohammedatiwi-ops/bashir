@@ -170,6 +170,8 @@ export default function ProductsPage() {
       variants: [],
       skinType: [],
       concernIds: [],
+      subcategoryIds: [],
+      tertiaryCategoryIds: [],
     });
     setOpen(true);
   }, [form, resetSync]);
@@ -193,10 +195,18 @@ export default function ProductsPage() {
         nameEn: full?.nameEn ?? "",
         descriptionAr: full?.descriptionAr ?? full?.description ?? "",
         descriptionEn: full?.descriptionEn ?? "",
-        tertiaryCategoryId: full?.tertiaryCategoryId ?? full?.tertiaryCategory?.id,
         brandId: full?.brand?.id ?? full?.brandId,
         categoryId: full?.category?.id ?? full?.categoryId,
-        subcategoryId: full?.subcategory?.id ?? full?.subcategoryId,
+        subcategoryIds: Array.isArray(full?.subcategoryIds) && full.subcategoryIds.length
+          ? full.subcategoryIds
+          : (full?.subcategory?.id ?? full?.subcategoryId)
+            ? [full?.subcategory?.id ?? full?.subcategoryId]
+            : [],
+        tertiaryCategoryIds: Array.isArray(full?.tertiaryCategoryIds) && full.tertiaryCategoryIds.length
+          ? full.tertiaryCategoryIds
+          : (full?.tertiaryCategory?.id ?? full?.tertiaryCategoryId)
+            ? [full?.tertiaryCategory?.id ?? full?.tertiaryCategoryId]
+            : [],
         tags: Array.isArray(full?.tags)
           ? full.tags.join(", ")
           : typeof full?.tags === "string"
@@ -273,26 +283,62 @@ export default function ProductsPage() {
   });
 
   const selectedCategoryId = Form.useWatch("categoryId", form);
-  const selectedSubcategoryId = Form.useWatch("subcategoryId", form);
+  const watchedSubcategoryIds = Form.useWatch("subcategoryIds", form);
+  const selectedSubcategoryIds = useMemo<string[]>(
+    () => (Array.isArray(watchedSubcategoryIds) ? watchedSubcategoryIds.filter(Boolean) : []),
+    [watchedSubcategoryIds],
+  );
   const { data: formSubcategories } = useQuery({
     queryKey: ["subcategories", selectedCategoryId],
     queryFn: () => queries.subcategories({ parentId: selectedCategoryId }),
     enabled: !!selectedCategoryId,
   });
-  const { data: formTertiarySections } = useQuery({
-    queryKey: ["tertiary-sections", selectedSubcategoryId],
-    queryFn: () => queries.tertiarySections({ parentId: selectedSubcategoryId }),
-    enabled: !!selectedSubcategoryId,
+  // أقسام ثانوية لكل قسم فرعي مختار (مجموعات)
+  const subIdsKey = useMemo(() => [...selectedSubcategoryIds].sort().join(","), [selectedSubcategoryIds]);
+  const { data: formTertiaryGroups } = useQuery({
+    queryKey: ["tertiary-sections-multi", subIdsKey],
+    queryFn: async () =>
+      Promise.all(
+        selectedSubcategoryIds.map(async (id) => ({
+          id,
+          items: (await queries.tertiarySections({ parentId: id })) ?? [],
+        })),
+      ),
+    enabled: selectedSubcategoryIds.length > 0,
   });
 
   const subcategoryOptions = useMemo(
     () => (formSubcategories ?? []).map((s: any) => ({ value: s.id, label: s.name })),
     [formSubcategories],
   );
-  const tertiaryCategoryOptions = useMemo(
-    () => (formTertiarySections ?? []).map((s: any) => ({ value: s.id, label: s.name })),
-    [formTertiarySections],
-  );
+  const tertiaryCategoryOptions = useMemo(() => {
+    const nameById = new Map((formSubcategories ?? []).map((s: any) => [s.id, s.name]));
+    return (formTertiaryGroups ?? [])
+      .filter((g: any) => g.items.length > 0)
+      .map((g: any) => ({
+        label: String(nameById.get(g.id) ?? "قسم فرعي"),
+        options: g.items.map((t: any) => ({ value: t.id, label: t.name })),
+      }));
+  }, [formTertiaryGroups, formSubcategories]);
+
+  // إزالة الأقسام الثانوية التي لم يعد قسمها الفرعي مختاراً
+  useEffect(() => {
+    if (!open) return;
+    const current: string[] = form.getFieldValue("tertiaryCategoryIds") ?? [];
+    if (!current.length) return;
+    if (selectedSubcategoryIds.length === 0) {
+      form.setFieldValue("tertiaryCategoryIds", []);
+      return;
+    }
+    if (!formTertiaryGroups) return; // لا نحذف أثناء التحميل
+    const valid = new Set(
+      formTertiaryGroups.flatMap((g: any) => g.items.map((t: any) => t.id)),
+    );
+    const pruned = current.filter((id) => valid.has(id));
+    if (pruned.length !== current.length) {
+      form.setFieldValue("tertiaryCategoryIds", pruned);
+    }
+  }, [open, form, formTertiaryGroups, selectedSubcategoryIds]);
 
   const resetFilters = () => {
     setPage(1);

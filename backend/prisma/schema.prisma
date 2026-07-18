@@ -192,6 +192,8 @@ model Category {
   products        Product[]      @relation("ProductCategory")
   subcategoryProducts Product[]  @relation("ProductSubcategory")
   tertiaryCategoryProducts Product[] @relation("ProductTertiaryCategory")
+  multiSubcategoryProducts Product[] @relation("ProductSubcategories")
+  multiTertiaryProducts Product[] @relation("ProductTertiaryCategories")
   image           Media?         @relation("CategoryImage", fields: [imageId], references: [id])
 
   @@index([isActive])
@@ -279,6 +281,8 @@ model Product {
   category        Category?       @relation("ProductCategory", fields: [categoryId], references: [id], onDelete: SetNull)
   subcategory     Category?       @relation("ProductSubcategory", fields: [subcategoryId], references: [id], onDelete: SetNull)
   tertiaryCategory Category?      @relation("ProductTertiaryCategory", fields: [tertiaryCategoryId], references: [id], onDelete: SetNull)
+  subcategories   Category[]      @relation("ProductSubcategories")
+  tertiaryCategories Category[]   @relation("ProductTertiaryCategories")
   variants        ProductVariant[]
   shades          ProductShade[]
   images          ProductImage[]
