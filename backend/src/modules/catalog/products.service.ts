@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
 import { resolveProductNames } from "../../common/product-names.util";
 import { resolveProductDescriptions } from "../../common/product-descriptions.util";
+import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { paginate } from "../../common/dto/pagination.dto";
 import { CategoriesService } from "./categories.service";
 import { CreateProductDto, QueryProductsDto, UpdateProductDto } from "./dto/product.dto";
@@ -46,6 +47,7 @@ export class ProductsService {
     private readonly categories: CategoriesService,
     private readonly inventorySync: InventorySyncService,
     private readonly settings: SettingsService,
+    private readonly homeFeedCache: HomeFeedCacheService,
   ) {}
 
   async list(q: QueryProductsDto, storefront = false) {
@@ -260,6 +262,7 @@ export class ProductsService {
       if (dto.concernIds?.length) {
         await this.syncSkinConcerns(product.id, dto.concernIds);
       }
+      await this.homeFeedCache.invalidateAll();
       return this.findOne(product.id);
     } catch (error) {
       throw this.mapProductWriteError(error);
@@ -378,6 +381,7 @@ export class ProductsService {
     if (dto.concernIds) {
       await this.syncSkinConcerns(id, dto.concernIds);
     }
+    await this.homeFeedCache.invalidateAll();
     return this.findOne(id);
   }
 
@@ -426,6 +430,7 @@ export class ProductsService {
   async remove(id: string) {
     await this.ensureExists(id);
     await this.prisma.product.delete({ where: { id } });
+    await this.homeFeedCache.invalidateAll();
     return { success: true };
   }
 

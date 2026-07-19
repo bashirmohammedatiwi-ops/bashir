@@ -74,7 +74,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 error: (e, _) => ErrorView(
                   message: friendlyError(e),
                   onRetry: () async {
-                    await ref.read(apiCacheProvider).remove('home_v1');
+                    await ref.read(apiCacheProvider).remove('home_v2');
                     ref.invalidate(homeFeedProvider);
                   },
                 ),
@@ -92,7 +92,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     edgeOffset: headerH,
                     onRefresh: () async {
                       HapticFeedback.mediumImpact();
-                      await ref.read(apiCacheProvider).remove('home_v1');
+                      await ref.read(apiCacheProvider).remove('home_v2');
                       ref.invalidate(homeFeedProvider);
                       await ref.read(homeFeedProvider.future);
                     },

@@ -1,5 +1,6 @@
-import { Controller, Get } from "@nestjs/common";
+import { Controller, Get, Req } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
+import { isAdminViewRequest } from "../../common/admin-view.util";
 import { Public } from "../../common/decorators/public.decorator";
 import { HomeService } from "./home.service";
 
@@ -10,7 +11,7 @@ export class HomeController {
 
   @Public()
   @Get()
-  feed() {
-    return this.home.feed();
+  feed(@Req() req: { headers?: Record<string, unknown> }) {
+    return this.home.feed({ skipCache: isAdminViewRequest(req) });
   }
 }

@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
-import { PrismaService } from "../../common/prisma.service";
+import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { getCached, setCached } from "../../common/memory-cache.util";
+import { PrismaService } from "../../common/prisma.service";
 
 export const DEFAULT_STORE_SETTINGS = {
   storeName: "الحياة",
@@ -41,7 +42,10 @@ const SETTINGS_CACHE_MS = 60_000;
 
 @Injectable()
 export class SettingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly homeFeedCache: HomeFeedCacheService,
+  ) {}
 
   async getAll() {
     const cached = getCached<typeof DEFAULT_STORE_SETTINGS & Record<string, unknown>>(
@@ -64,6 +68,7 @@ export class SettingsService {
       update: { value: merged },
     });
     setCached("settings:store", merged, SETTINGS_CACHE_MS);
+    await this.homeFeedCache.invalidateAll();
     return merged;
   }
 

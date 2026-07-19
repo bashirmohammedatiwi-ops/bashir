@@ -1,5 +1,7 @@
 import { Controller, Get } from "@nestjs/common";
 import { SkipThrottle } from "@nestjs/throttler";
+import { statfs } from "fs/promises";
+import * as path from "path";
 import Redis from "ioredis";
 import { Public } from "../../common/decorators/public.decorator";
 import { PrismaService } from "../../common/prisma.service";
@@ -31,11 +33,15 @@ export class HealthController {
       };
     }
 
+    const disk = await this.mediaDiskUsage();
+    const diskWarn = disk.usedPercent >= Number(process.env.DISK_WARN_PERCENT ?? 85);
+
     if (process.env.REDIS_DISABLED === "1") {
       return {
-        ready: true,
+        ready: !diskWarn,
         db: "ok",
         redis: "disabled",
+        disk,
         timestamp: new Date().toISOString(),
       };
     }
@@ -53,9 +59,10 @@ export class HealthController {
       await redis.connect();
       await redis.ping();
       return {
-        ready: true,
+        ready: !diskWarn,
         db: "ok",
         redis: "ok",
+        disk,
         timestamp: new Date().toISOString(),
       };
     } catch {
@@ -63,10 +70,41 @@ export class HealthController {
         ready: false,
         db: "ok",
         redis: "error",
+        disk,
         timestamp: new Date().toISOString(),
       };
     } finally {
       redis.disconnect();
+    }
+  }
+
+  private async mediaDiskUsage() {
+    const mediaRoot = path.resolve(process.env.MEDIA_ROOT ?? "./uploads");
+    const warnPercent = Number(process.env.DISK_WARN_PERCENT ?? 85);
+    try {
+      const stats = await statfs(mediaRoot);
+      const totalBytes = stats.bsize * stats.blocks;
+      const freeBytes = stats.bsize * stats.bavail;
+      const usedBytes = totalBytes - freeBytes;
+      const usedPercent = totalBytes > 0 ? Math.round((usedBytes / totalBytes) * 1000) / 10 : 0;
+      return {
+        path: mediaRoot,
+        totalBytes,
+        freeBytes,
+        usedBytes,
+        usedPercent,
+        warn: usedPercent >= warnPercent,
+      };
+    } catch {
+      return {
+        path: mediaRoot,
+        totalBytes: 0,
+        freeBytes: 0,
+        usedBytes: 0,
+        usedPercent: 0,
+        warn: false,
+        error: "unavailable",
+      };
     }
   }
 }

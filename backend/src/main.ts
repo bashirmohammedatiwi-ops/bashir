@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import { ValidationPipe, Logger } from "@nestjs/common";
 import { NestFactory } from "@nestjs/core";
+import * as Sentry from "@sentry/node";
 import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import helmet from "@fastify/helmet";
@@ -13,6 +14,16 @@ import { AllExceptionsFilter } from "./common/filters/http-exception.filter";
 import { TransformInterceptor } from "./common/interceptors/transform.interceptor";
 
 async function bootstrap() {
+  const sentryDsn = process.env.SENTRY_DSN?.trim();
+  if (sentryDsn) {
+    Sentry.init({
+      dsn: sentryDsn,
+      environment: process.env.NODE_ENV ?? "development",
+      tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? 0.1),
+    });
+    Logger.log("Sentry enabled", "Bootstrap");
+  }
+
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({

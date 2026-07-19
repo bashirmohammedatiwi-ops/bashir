@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Example cron — daily backup at 03:00, keep last 7 days.
+# Install on VPS:
+#   crontab -e
+# Paste the line below (adjust path to your infra directory):
+#
+# 0 3 * * * cd /home/YOUR_USER/alhayaa/infra && ./scripts/backup.sh /home/YOUR_USER/alhayaa/backups >> /var/log/alhayaa-backup.log 2>&1
+#
+# Optional: prune backups older than 7 days (run after backup):
+# 0 4 * * * find /home/YOUR_USER/alhayaa/backups -type f -mtime +7 -delete
+
+echo "Add one of the cron lines above to crontab -e on the server."

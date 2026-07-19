@@ -61,7 +61,7 @@ class ApiService {
   Future<HomeFeed> getHome({bool forceRefresh = false}) async {
     try {
       final raw = await _cache.getOrFetch<Map<String, dynamic>>(
-        key: 'home_v1',
+        key: 'home_v2',
         ttl: AppConfig.homeCacheTtl,
         forceRefresh: forceRefresh,
         fetch: () async {

@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
+import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { PrismaService } from "../../common/prisma.service";
-import { SettingsService } from "../settings/settings.service";
 import { withPlaceholderImages } from "../../common/product-placeholder.util";
+import { SettingsService } from "../settings/settings.service";
 import { HomeSectionResolver } from "./home-section.resolver";
 
 const productInclude = {
@@ -29,12 +30,27 @@ export class HomeService {
     private readonly prisma: PrismaService,
     private readonly settings: SettingsService,
     private readonly sectionResolver: HomeSectionResolver,
+    private readonly homeFeedCache: HomeFeedCacheService,
   ) {}
 
-  async feed() {
+  async feed(options?: { skipCache?: boolean }) {
     const settings = await this.settings.getAll();
+    const cacheKey = this.homeFeedCache.buildKey(settings as Record<string, unknown>);
+
+    if (!options?.skipCache) {
+      const cached = await this.homeFeedCache.get<Record<string, unknown>>(cacheKey);
+      if (cached) return cached;
+    }
+
+    const payload = await this.buildFeed(settings);
+    if (!options?.skipCache) {
+      await this.homeFeedCache.set(cacheKey, payload);
+    }
+    return payload;
+  }
+
+  private async buildFeed(settings: Record<string, unknown>) {
     const flashEndsAt = (settings as any).flashSaleEndsAt ?? null;
-    // فلاتر ظهور واجهة المتجر
     const s = settings as Record<string, unknown>;
     const productVisibility = {
       ...(s.hideOutOfStock ? { stock: { gt: 0 } } : {}),
