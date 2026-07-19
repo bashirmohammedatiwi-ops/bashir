@@ -34,6 +34,12 @@ export class HomeService {
   async feed() {
     const settings = await this.settings.getAll();
     const flashEndsAt = (settings as any).flashSaleEndsAt ?? null;
+    // فلاتر ظهور واجهة المتجر
+    const s = settings as Record<string, unknown>;
+    const productVisibility = {
+      ...(s.hideOutOfStock ? { stock: { gt: 0 } } : {}),
+      ...(s.hideProductsWithoutImages ? { images: { some: {} } } : {}),
+    };
 
     const [
       banners,
@@ -83,25 +89,25 @@ export class HomeService {
         orderBy: { position: "asc" },
       }),
       this.prisma.product.findMany({
-        where: { isActive: true, isNew: true },
+        where: { isActive: true, isNew: true, ...productVisibility },
         orderBy: { createdAt: "desc" },
         take: 20,
         include: productInclude,
       }),
       this.prisma.product.findMany({
-        where: { isActive: true, isBestSeller: true },
+        where: { isActive: true, isBestSeller: true, ...productVisibility },
         orderBy: { soldCount: "desc" },
         take: 20,
         include: productInclude,
       }),
       this.prisma.product.findMany({
-        where: { isActive: true, isFeatured: true },
+        where: { isActive: true, isFeatured: true, ...productVisibility },
         orderBy: { createdAt: "desc" },
         take: 20,
         include: productInclude,
       }),
       this.prisma.product.findMany({
-        where: { isActive: true, isPromo: true },
+        where: { isActive: true, isPromo: true, ...productVisibility },
         orderBy: { createdAt: "desc" },
         take: 20,
         include: productInclude,

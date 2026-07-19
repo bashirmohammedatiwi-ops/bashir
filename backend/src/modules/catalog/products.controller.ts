@@ -7,10 +7,12 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Role } from "@prisma/client";
+import { isAdminViewRequest } from "../../common/admin-view.util";
 import { Public } from "../../common/decorators/public.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -25,8 +27,8 @@ export class ProductsController {
 
   @Public()
   @Get()
-  list(@Query() q: QueryProductsDto) {
-    return this.products.list(q);
+  list(@Req() req: any, @Query() q: QueryProductsDto) {
+    return this.products.list(q, !isAdminViewRequest(req));
   }
 
   // فحص وجود منتج بنفس الباركود (للوحة التحكم) — يجب أن يسبق مسار :idOrSlug

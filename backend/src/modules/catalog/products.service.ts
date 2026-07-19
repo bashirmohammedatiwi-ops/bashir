@@ -7,6 +7,7 @@ import { paginate } from "../../common/dto/pagination.dto";
 import { CategoriesService } from "./categories.service";
 import { CreateProductDto, QueryProductsDto, UpdateProductDto } from "./dto/product.dto";
 import { InventorySyncService } from "../sync/inventory-sync.service";
+import { SettingsService } from "../settings/settings.service";
 import { withPlaceholderImages } from "../../common/product-placeholder.util";
 
 const productRelationsFull = {
@@ -44,9 +45,10 @@ export class ProductsService {
     private readonly prisma: PrismaService,
     private readonly categories: CategoriesService,
     private readonly inventorySync: InventorySyncService,
+    private readonly settings: SettingsService,
   ) {}
 
-  async list(q: QueryProductsDto) {
+  async list(q: QueryProductsDto, storefront = false) {
     const andFilters: Prisma.ProductWhereInput[] = [
       {
         isActive: q.status === "all" ? undefined : true,
@@ -76,6 +78,17 @@ export class ProductsService {
 
     const categoryFilter = this.buildCategoryFilter(q);
     if (categoryFilter) andFilters.push(categoryFilter);
+
+    // فلاتر ظهور واجهة المتجر (لا تُطبَّق على لوحة التحكم)
+    if (storefront) {
+      const s = (await this.settings.getAll()) as Record<string, unknown>;
+      if (s.hideOutOfStock) {
+        andFilters.push({ stock: { gt: 0 } });
+      }
+      if (s.hideProductsWithoutImages) {
+        andFilters.push({ images: { some: {} } });
+      }
+    }
 
     if (q.search) {
       andFilters.push({

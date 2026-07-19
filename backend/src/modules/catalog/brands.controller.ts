@@ -7,10 +7,12 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Role } from "@prisma/client";
+import { isAdminViewRequest } from "../../common/admin-view.util";
 import { Public } from "../../common/decorators/public.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -22,8 +24,16 @@ import { BrandsService } from "./brands.service";
 export class BrandsController {
   constructor(private readonly service: BrandsService) {}
 
-  @Public() @Get() list(@Query("featured") featured?: string, @Query("all") all?: string) {
-    return this.service.list({ featuredOnly: featured === "1", all: all === "1" });
+  @Public() @Get() list(
+    @Req() req: any,
+    @Query("featured") featured?: string,
+    @Query("all") all?: string,
+  ) {
+    return this.service.list({
+      featuredOnly: featured === "1",
+      all: all === "1",
+      storefront: !isAdminViewRequest(req),
+    });
   }
 
   @Public() @Get(":idOrSlug/collections")

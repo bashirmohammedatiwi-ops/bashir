@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { HomeBlock, HomeBlockType } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
+import { SettingsService } from "../settings/settings.service";
 
 import { buildAppLink } from "../../common/link-target.util";
 import { withPlaceholderImages } from "../../common/product-placeholder.util";
@@ -51,7 +52,19 @@ export interface ResolvedHomeSection {
 
 @Injectable()
 export class HomeSectionResolver {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settings: SettingsService,
+  ) {}
+
+  /// فلاتر ظهور المنتجات في واجهة المتجر (مخزون/صور) حسب الإعدادات.
+  private async productVisibilityWhere(): Promise<Record<string, unknown>> {
+    const s = (await this.settings.getAll()) as Record<string, unknown>;
+    return {
+      ...(s.hideOutOfStock ? { stock: { gt: 0 } } : {}),
+      ...(s.hideProductsWithoutImages ? { images: { some: {} } } : {}),
+    };
+  }
 
   async resolve(
     blocks: HomeBlock[],
@@ -481,6 +494,7 @@ export class HomeSectionResolver {
 
     const where: Record<string, unknown> = {
       isActive: true,
+      ...(await this.productVisibilityWhere()),
       ...(categoryId ? { categoryId } : {}),
       ...(subcategoryId ? { subcategoryId } : {}),
       ...(tertiaryCategoryId ? { tertiaryCategoryId } : {}),

@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { MediaPurpose, Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
 import { MediaService } from "../media/media.service";
+import { SettingsService } from "../settings/settings.service";
 
 function mapBrand(b: any) {
   return {
@@ -137,13 +138,29 @@ export class BrandsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly media: MediaService,
+    private readonly settings: SettingsService,
   ) {}
 
-  async list(opts?: { featuredOnly?: boolean; all?: boolean }) {
+  async list(opts?: { featuredOnly?: boolean; all?: boolean; storefront?: boolean }) {
+    // واجهة المتجر: إخفاء البراندات الفارغة إذا فُعّل الخيار من الإعدادات
+    let productsFilter: Prisma.BrandWhereInput["products"];
+    if (opts?.storefront) {
+      const s = (await this.settings.getAll()) as Record<string, unknown>;
+      if (s.hideEmptyBrands) {
+        productsFilter = {
+          some: {
+            isActive: true,
+            ...(s.hideOutOfStock ? { stock: { gt: 0 } } : {}),
+          },
+        };
+      }
+    }
+
     const rows = await this.prisma.brand.findMany({
       where: {
         isActive: opts?.all ? undefined : true,
         isFeatured: opts?.featuredOnly ? true : undefined,
+        products: productsFilter,
       },
       orderBy: [{ position: "asc" }, { name: "asc" }],
       include: {

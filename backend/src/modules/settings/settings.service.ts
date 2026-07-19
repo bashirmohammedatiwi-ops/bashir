@@ -27,6 +27,13 @@ export const DEFAULT_STORE_SETTINGS = {
   pickupEnabled: true,
   pickupAddress: "فرع الكرادة — شارع أبو نؤاس، بغداد",
   pickupHours: "10:00 – 22:00 يومياً",
+  // إعدادات ظهور واجهة المتجر (تطبيق الهاتف)
+  hideEmptyBrands: false,
+  hideEmptyCategories: false,
+  hideEmptySubcategories: false,
+  hideEmptyTertiary: false,
+  hideOutOfStock: false,
+  hideProductsWithoutImages: false,
 };
 
 const SETTINGS_KEY = "store";

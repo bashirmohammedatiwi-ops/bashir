@@ -26,6 +26,12 @@ interface Settings {
   lowStockThreshold?: number;
   stockAlertPushEnabled?: boolean;
   stockAlertCooldownHours?: number;
+  hideEmptyBrands?: boolean;
+  hideEmptyCategories?: boolean;
+  hideEmptySubcategories?: boolean;
+  hideEmptyTertiary?: boolean;
+  hideOutOfStock?: boolean;
+  hideProductsWithoutImages?: boolean;
 }
 
 export default function SettingsPage() {
@@ -134,6 +140,64 @@ export default function SettingsPage() {
                       <Form.Item
                         name="stockAlertPushEnabled"
                         label="إرسال Push تلقائي عند تغيّر المخزون"
+                        valuePropName="checked"
+                      >
+                        <Switch />
+                      </Form.Item>
+                    </>
+                  ),
+                },
+                {
+                  key: "storefront",
+                  label: "واجهة المتجر",
+                  children: (
+                    <>
+                      <p style={{ color: "#888", marginBottom: 16 }}>
+                        هذه الخيارات تتحكم بما يظهر للزبائن في تطبيق الهاتف فقط — لوحة التحكم
+                        تعرض كل شيء دائماً. قد يستغرق ظهور التغيير دقائق بسبب الكاش.
+                      </p>
+                      <Form.Item
+                        name="hideEmptyBrands"
+                        label="إظهار البراندات التي تحتوي منتجات فقط"
+                        tooltip="يخفي أي براند لا يملك منتجات نشطة من التطبيق"
+                        valuePropName="checked"
+                      >
+                        <Switch />
+                      </Form.Item>
+                      <Form.Item
+                        name="hideEmptyCategories"
+                        label="إظهار الأقسام الرئيسية التي تحتوي منتجات فقط"
+                        tooltip="يخفي القسم الرئيسي إن لم يكن فيه أي منتج (هو أو فروعه)"
+                        valuePropName="checked"
+                      >
+                        <Switch />
+                      </Form.Item>
+                      <Form.Item
+                        name="hideEmptySubcategories"
+                        label="إظهار الأقسام الفرعية التي تحتوي منتجات فقط"
+                        valuePropName="checked"
+                      >
+                        <Switch />
+                      </Form.Item>
+                      <Form.Item
+                        name="hideEmptyTertiary"
+                        label="إظهار الأقسام الثانوية التي تحتوي منتجات فقط"
+                        valuePropName="checked"
+                      >
+                        <Switch />
+                      </Form.Item>
+                      <Form.Item
+                        name="hideOutOfStock"
+                        label="إخفاء المنتجات التي مخزونها 0"
+                        tooltip="المنتجات النافدة تختفي من التطبيق وتعود تلقائياً عند توفر المخزون"
+                        valuePropName="checked"
+                      >
+                        <Switch />
+                      </Form.Item>
+                      <Form.Item
+                        name="hideProductsWithoutImages"
+                        label="إخفاء المنتجات بدون صور"
+                        tooltip="يخفي المنتجات التي لم تُرفع لها أي صورة بعد"
                         valuePropName="checked"
                       >
                         <Switch />

@@ -1,6 +1,7 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Role } from "@prisma/client";
+import { isAdminViewRequest } from "../../common/admin-view.util";
 import { Public } from "../../common/decorators/public.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -13,8 +14,12 @@ import { CreateCategoryDto, UpdateCategoryDto } from "./dto/category.dto";
 export class CategoriesController {
   constructor(private readonly service: CategoriesService) {}
 
-  @Public() @Get() list(@Query("all") all?: string, @Query("minimal") minimal?: string) {
-    return this.service.list(all === "1", minimal === "1");
+  @Public() @Get() list(
+    @Req() req: any,
+    @Query("all") all?: string,
+    @Query("minimal") minimal?: string,
+  ) {
+    return this.service.list(all === "1", minimal === "1", !isAdminViewRequest(req));
   }
 
   @Public() @Get(":idOrSlug/subcategories")

@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
+import { SettingsService } from "../settings/settings.service";
 import {
   CreateSubcategoryDto,
   CreateTertiarySectionDto,
@@ -92,7 +93,101 @@ function mapCategory(c: any) {
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settings: SettingsService,
+  ) {}
+
+  /// إعدادات إخفاء الأقسام الفارغة في واجهة المتجر.
+  private async storefrontHideConfig() {
+    const s = (await this.settings.getAll()) as Record<string, unknown>;
+    return {
+      hideEmptyCategories: !!s.hideEmptyCategories,
+      hideEmptySubcategories: !!s.hideEmptySubcategories,
+      hideEmptyTertiary: !!s.hideEmptyTertiary,
+      hideOutOfStock: !!s.hideOutOfStock,
+      any: !!s.hideEmptyCategories || !!s.hideEmptySubcategories || !!s.hideEmptyTertiary,
+    };
+  }
+
+  /// خريطة: هل يحتوي القسم (أو أي من أبنائه) على منتجات ظاهرة؟
+  private async deepProductPresence(hideOutOfStock: boolean): Promise<Map<string, boolean>> {
+    const productWhere: Prisma.ProductWhereInput = {
+      isActive: true,
+      ...(hideOutOfStock ? { stock: { gt: 0 } } : {}),
+    };
+    const cats = await this.prisma.category.findMany({
+      select: {
+        id: true,
+        parentId: true,
+        _count: {
+          select: {
+            products: { where: productWhere },
+            subcategoryProducts: { where: productWhere },
+            tertiaryCategoryProducts: { where: productWhere },
+            multiSubcategoryProducts: { where: productWhere },
+            multiTertiaryProducts: { where: productWhere },
+          },
+        },
+      },
+    });
+
+    const direct = new Map<string, boolean>();
+    const childrenOf = new Map<string, string[]>();
+    for (const c of cats) {
+      const n = c._count;
+      direct.set(
+        c.id,
+        n.products +
+          n.subcategoryProducts +
+          n.tertiaryCategoryProducts +
+          n.multiSubcategoryProducts +
+          n.multiTertiaryProducts >
+          0,
+      );
+      if (c.parentId) {
+        const list = childrenOf.get(c.parentId) ?? [];
+        list.push(c.id);
+        childrenOf.set(c.parentId, list);
+      }
+    }
+
+    const deep = new Map<string, boolean>();
+    const resolve = (id: string): boolean => {
+      const memo = deep.get(id);
+      if (memo !== undefined) return memo;
+      deep.set(id, false); // حماية من الحلقات
+      const value =
+        direct.get(id) === true || (childrenOf.get(id) ?? []).some((child) => resolve(child));
+      deep.set(id, value);
+      return value;
+    };
+    for (const c of cats) resolve(c.id);
+    return deep;
+  }
+
+  /// تقليم شجرة الأقسام حسب إعدادات الإخفاء.
+  private pruneEmpty(
+    roots: any[],
+    has: Map<string, boolean>,
+    cfg: { hideEmptyCategories: boolean; hideEmptySubcategories: boolean; hideEmptyTertiary: boolean },
+  ) {
+    let result = roots.map((root) => ({
+      ...root,
+      children: (root.children ?? [])
+        .map((sub: any) => ({
+          ...sub,
+          children: cfg.hideEmptyTertiary
+            ? (sub.children ?? []).filter((t: any) => has.get(t.id) === true)
+            : sub.children,
+        }))
+        .filter((sub: any) => (cfg.hideEmptySubcategories ? has.get(sub.id) === true : true)),
+    }));
+    if (cfg.hideEmptyCategories) {
+      result = result.filter((root) => has.get(root.id) === true);
+    }
+    return result;
+  }
 
   private subcategoryWhere(parentId?: string, all?: boolean): Prisma.CategoryWhereInput {
     return {
@@ -110,7 +205,12 @@ export class CategoriesService {
     };
   }
 
-  async list(all = false, minimal = false) {
+  async list(all = false, minimal = false, storefront = false) {
+    const hideCfg = storefront ? await this.storefrontHideConfig() : null;
+    const presence = hideCfg?.any
+      ? await this.deepProductPresence(hideCfg.hideOutOfStock)
+      : null;
+
     if (minimal) {
       const rows = await this.prisma.category.findMany({
         where: { isActive: all ? undefined : true, parentId: null },
@@ -120,7 +220,7 @@ export class CategoriesService {
           _count: { select: { children: true } },
         },
       });
-      return rows.map((c) => ({
+      let mapped = rows.map((c) => ({
         id: c.id,
         name: c.nameAr || c.name,
         nameAr: c.nameAr || c.name,
@@ -132,6 +232,10 @@ export class CategoriesService {
         image: c.image,
         children: [],
       }));
+      if (hideCfg?.hideEmptyCategories && presence) {
+        mapped = mapped.filter((c) => presence.get(c.id) === true);
+      }
+      return mapped;
     }
     const rows = await this.prisma.category.findMany({
       where: { isActive: all ? undefined : true, parentId: null },
@@ -156,7 +260,11 @@ export class CategoriesService {
         },
       },
     });
-    return rows.map(mapCategory);
+    let mapped = rows.map(mapCategory);
+    if (hideCfg?.any && presence) {
+      mapped = this.pruneEmpty(mapped, presence, hideCfg);
+    }
+    return mapped;
   }
 
   async listSecondarySections(opts: {
