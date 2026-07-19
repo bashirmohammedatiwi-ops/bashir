@@ -66,14 +66,14 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
 
   /// تمرير عنصر الشريط المختار إلى منتصف الشاشة إن كان بعيداً.
   void _revealRailItem(int index) {
-    if (!_railScroll.hasClients) return;
+      if (!_railScroll.hasClients) return;
     final viewport = _railScroll.position.viewportDimension;
     final target = (index * _kRailItemHeight) - (viewport - _kRailItemHeight) / 2;
-    _railScroll.animateTo(
+      _railScroll.animateTo(
       target.clamp(0.0, _railScroll.position.maxScrollExtent),
       duration: const Duration(milliseconds: 320),
-      curve: Curves.easeOutCubic,
-    );
+        curve: Curves.easeOutCubic,
+      );
   }
 
   @override
@@ -162,9 +162,9 @@ class _Header extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
                 Text(
                   'الأقسام',
                   style: AppTypography.sectionTitle.copyWith(
@@ -238,7 +238,7 @@ class _ParentRail extends StatelessWidget {
         itemBuilder: (_, i) => _RailItem(
           category: parents[i],
           active: i == selected,
-          onTap: () => onTap(i),
+                onTap: () => onTap(i),
         ),
       ),
     );
@@ -280,7 +280,7 @@ class _RailItem extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: active ? AppColors.primarySoft : const Color(0xFFF4F1F3),
                     border: Border.all(
-                      color: active ? AppColors.primary : Colors.transparent,
+                        color: active ? AppColors.primary : Colors.transparent,
                       width: 1.6,
                     ),
                     boxShadow: active
@@ -306,23 +306,23 @@ class _RailItem extends StatelessWidget {
                           ),
                         ),
                 ),
-                const SizedBox(height: 6),
+                      const SizedBox(height: 6),
                 Expanded(
                   child: Text(
                     category.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 10.5,
+                        style: TextStyle(
+                          fontSize: 10.5,
                       height: 1.25,
                       fontWeight: active ? FontWeight.w900 : FontWeight.w600,
-                      color: active ? AppColors.primary : AppColors.textSecondary,
+                          color: active ? AppColors.primary : AppColors.textSecondary,
                     ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
           // مؤشر جانبي متحرك
           PositionedDirectional(
@@ -376,7 +376,7 @@ class _ContentPane extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 36),
               child: Column(
-                children: [
+            children: [
                   Container(
                     width: 64,
                     height: 64,
@@ -391,9 +391,9 @@ class _ContentPane extends StatelessWidget {
                     'كل منتجات ${parent.name} في مكان واحد',
                     textAlign: TextAlign.center,
                     style: AppTypography.caption.copyWith(fontSize: 13),
-                  ),
-                ],
               ),
+            ],
+          ),
             )
           else ...[
             _SubcategoryGrid(children: children),
@@ -432,47 +432,47 @@ class _CategoryHeroCard extends StatelessWidget {
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        parent.name,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            parent.name,
                         maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                            overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 16,
-                          fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w900,
                           letterSpacing: -0.2,
-                        ),
-                      ),
+                            ),
+                          ),
                       const SizedBox(height: 3),
-                      Text(
+                          Text(
                         subCount > 0 ? 'تسوّقي كل المنتجات · $subCount قسم فرعي' : 'تسوّقي كل المنتجات',
-                        style: TextStyle(
+                            style: TextStyle(
                           color: Colors.white.withValues(alpha: 0.85),
                           fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                        ),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                Container(
+                    ),
+                    Container(
                   width: 36,
                   height: 36,
-                  decoration: BoxDecoration(
+                      decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.18),
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
                   ),
                   child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 18),
+                    ),
+                  ],
                 ),
-              ],
-            ),
           ),
         ),
       ),
@@ -527,7 +527,7 @@ class _SubcategoryGrid extends StatelessWidget {
                             cat.icon ?? cat.name.characters.first,
                             style: const TextStyle(fontSize: 22, color: AppColors.primary),
                           ),
-                        ),
+                  ),
                 ),
               ),
               const SizedBox(height: 7),
@@ -589,19 +589,19 @@ class _TertiaryGroup extends StatelessWidget {
                 ),
               ),
               child: Row(
-                children: [
-                  Container(
+            children: [
+              Container(
                     width: 3.5,
                     height: 16,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
                       borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
+                ),
+              ),
                   const SizedBox(width: 9),
-                  Expanded(
-                    child: Text(
-                      category.name,
+              Expanded(
+                child: Text(
+                  category.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w900),
@@ -657,21 +657,21 @@ class _TertiaryRow extends StatelessWidget {
             Container(
               width: 40,
               height: 40,
-              decoration: BoxDecoration(
+          decoration: BoxDecoration(
                 color: const Color(0xFFF6F3F5),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: AppColors.hairline, width: 0.6),
-              ),
+          ),
               clipBehavior: Clip.antiAlias,
               child: category.imageUrl.isNotEmpty
                   ? AppNetworkImage(url: category.imageUrl, fit: BoxFit.cover)
                   : Center(
-                      child: Text(
+          child: Text(
                         category.icon ?? category.name.characters.first,
                         style: const TextStyle(fontSize: 15, color: AppColors.primary),
-                      ),
-                    ),
-            ),
+          ),
+        ),
+      ),
             const SizedBox(width: 11),
             Expanded(
               child: Text(
@@ -732,7 +732,7 @@ class _CategoriesLoading extends StatelessWidget {
                     const SizedBox(height: 22),
                     for (var r = 0; r < 3; r++) ...[
                       const Row(
-                        children: [
+                      children: [
                           Expanded(child: ShimmerBox(height: 110, radius: 14)),
                           SizedBox(width: 10),
                           Expanded(child: ShimmerBox(height: 110, radius: 14)),

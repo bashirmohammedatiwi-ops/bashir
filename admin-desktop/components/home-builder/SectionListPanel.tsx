@@ -135,6 +135,12 @@ export function SectionListPanel({
 
                 <span className="hb-list-order">{idx + 1}</span>
 
+                <span
+                  className="hb-list-accent"
+                  style={{ background: meta?.color ?? "#1677ff" }}
+                  title={labelForType(block.type)}
+                />
+
                 <span className="hb-list-icon">{meta?.icon ?? "📦"}</span>
 
                 <div className="hb-list-body">

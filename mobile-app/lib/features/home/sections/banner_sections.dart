@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/card_sizes.dart';
 import '../../../core/widgets/app_network_image.dart';
@@ -34,11 +35,23 @@ class BannerFullSection extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
         child: GestureDetector(
           onTap: () => openBannerLink(context, b),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            child: AspectRatio(
-              aspectRatio: _bannerAspect(b, section),
-              child: _BannerContent(banner: b),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.lg + 2),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.lg + 2),
+              child: AspectRatio(
+                aspectRatio: _bannerAspect(b, section),
+                child: _BannerContent(banner: b),
+              ),
             ),
           ),
         ),

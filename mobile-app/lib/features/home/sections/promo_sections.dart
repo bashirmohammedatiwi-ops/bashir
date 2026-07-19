@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_spacing.dart';
 import '../../../data/models/home_section.dart';
 import '../home_link.dart';
 import '../widgets/home_surface_card.dart';
@@ -18,10 +19,12 @@ class PromoStripSection extends StatelessWidget {
     return HomeSurfaceCard(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       showShadow: true,
-      child: Material(
-        color: bg,
-        child: InkWell(
-          onTap: strip.link != null && strip.link!.isNotEmpty || strip.hasLink
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        child: Material(
+          color: bg,
+          child: InkWell(
+            onTap: strip.link != null && strip.link!.isNotEmpty || strip.hasLink
               ? () => openSectionLink(
                     context,
                     linkType: strip.linkType,
@@ -30,15 +33,22 @@ class PromoStripSection extends StatelessWidget {
                   )
               : null,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Row(
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     gradient: AppColors.primaryGradient,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
                   ),
                   alignment: Alignment.center,
                   child: const Icon(Icons.local_offer_rounded, color: Colors.white, size: 20),
@@ -61,6 +71,7 @@ class PromoStripSection extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

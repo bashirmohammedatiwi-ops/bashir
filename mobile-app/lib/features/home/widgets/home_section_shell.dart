@@ -75,7 +75,7 @@ class HomeSectionShell extends StatelessWidget {
         if (section.subtitle != null && section.subtitle!.isNotEmpty && _showTitle)
           Padding(
             padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screenH,
+              AppSpacing.screenH + 14,
               0,
               AppSpacing.screenH,
               AppSpacing.sm,
@@ -83,9 +83,10 @@ class HomeSectionShell extends StatelessWidget {
             child: Text(
               section.subtitle!,
               style: TextStyle(
-                color: AppColors.textSecondary.withValues(alpha: 0.9),
+                color: AppColors.textSecondary.withValues(alpha: 0.85),
                 fontSize: 13,
-                height: 1.4,
+                height: 1.45,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),

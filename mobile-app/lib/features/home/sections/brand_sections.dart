@@ -66,12 +66,16 @@ class BrandHomeSection extends StatelessWidget {
                         : null,
                     color: isCards ? null : Colors.white,
                     borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(
+                      color: isCards
+                          ? AppColors.primary.withValues(alpha: 0.15)
+                          : AppColors.border.withValues(alpha: 0.7),
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.textPrimary.withValues(alpha: 0.04),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
+                        color: AppColors.primary.withValues(alpha: isCards ? 0.08 : 0.04),
+                        blurRadius: isCards ? 14 : 8,
+                        offset: Offset(0, isCards ? 4 : 2),
                       ),
                     ],
                   ),

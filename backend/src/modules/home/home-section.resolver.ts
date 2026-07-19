@@ -492,12 +492,27 @@ export class HomeSectionResolver {
     const brandId = payload.brandId as string | undefined;
     if (!categoryId && !subcategoryId && !tertiaryCategoryId && !brandId) return [];
 
+    // نطابق الحقل المفرد القديم وعلاقات التصنيفات المتعددة الجديدة معاً
+    const scopeAnd: Record<string, unknown>[] = [];
+    if (subcategoryId) {
+      scopeAnd.push({
+        OR: [{ subcategoryId }, { subcategories: { some: { id: subcategoryId } } }],
+      });
+    }
+    if (tertiaryCategoryId) {
+      scopeAnd.push({
+        OR: [
+          { tertiaryCategoryId },
+          { tertiaryCategories: { some: { id: tertiaryCategoryId } } },
+        ],
+      });
+    }
+
     const where: Record<string, unknown> = {
       isActive: true,
       ...(await this.productVisibilityWhere()),
       ...(categoryId ? { categoryId } : {}),
-      ...(subcategoryId ? { subcategoryId } : {}),
-      ...(tertiaryCategoryId ? { tertiaryCategoryId } : {}),
+      ...(scopeAnd.length ? { AND: scopeAnd } : {}),
       ...(brandId ? { brandId } : {}),
     };
     if (filter === "promo") where.isPromo = true;

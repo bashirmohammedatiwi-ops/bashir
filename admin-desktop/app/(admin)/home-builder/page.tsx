@@ -3,7 +3,9 @@
 import {
   CloudDownloadOutlined,
   CloudUploadOutlined,
+  EyeOutlined,
   LayoutOutlined,
+  MobileOutlined,
   PlusOutlined,
   ReloadOutlined,
 } from "@ant-design/icons";
@@ -26,9 +28,11 @@ import {
 import type { MenuProps } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
+import { HomePhonePreview } from "@/components/home-builder/HomePhonePreview";
 import { SectionEditorPanel } from "@/components/home-builder/SectionEditorPanel";
 import { SectionListPanel } from "@/components/home-builder/SectionListPanel";
 import { SectionTypeModal } from "@/components/home-builder/SectionTypeModal";
+import { resolveBlockPreview } from "@/components/home-builder/preview-resolver";
 import { PAGE_TEMPLATES } from "@/components/home-builder/section-templates";
 import {
   SECTION_TYPES,
@@ -40,6 +44,8 @@ import { mutations, queries } from "@/lib/queries";
 import "@/components/home-builder/home-builder.css";
 
 const { Title, Text } = Typography;
+
+const DRAFT_SECTION_ID = "__draft__";
 
 function cleanPayload(type: SectionType, payload: Record<string, unknown>) {
   const p = normalizePayload(type, { ...payload });
@@ -61,7 +67,9 @@ export default function HomeBuilderPage() {
   const [isNew, setIsNew] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editorTab, setEditorTab] = useState("content");
+  const [previewOpen, setPreviewOpen] = useState(true);
   const [form] = Form.useForm();
+  const draftValues = Form.useWatch([], form);
 
   const { data: blocks, isLoading, refetch } = useQuery({
     queryKey: ["home-blocks"],
@@ -75,6 +83,15 @@ export default function HomeBuilderPage() {
   const { data: packages } = useQuery({ queryKey: ["packages"], queryFn: queries.packages });
   const { data: products } = useQuery({ queryKey: ["products-lite"], queryFn: () => queries.products({ limit: 300 }) });
   const { data: skinConcerns } = useQuery({ queryKey: ["skin-concerns"], queryFn: () => queries.skinConcerns(true) });
+  const {
+    data: liveFeed,
+    isFetching: previewLoading,
+    refetch: refetchPreview,
+  } = useQuery({
+    queryKey: ["home-preview"],
+    queryFn: queries.homePreview,
+    staleTime: 15_000,
+  });
 
   const editorEntities = useMemo(
     () => ({
@@ -97,6 +114,63 @@ export default function HomeBuilderPage() {
 
   const activeCount = sorted.filter((b) => b.isActive !== false).length;
   const { errors: errorCount, warns: warnCount } = useMemo(() => countWarnings(sorted), [sorted]);
+
+  const previewBlocks = useMemo(() => {
+    if (!isNew || !draftValues?.type) return sorted;
+    const draft = {
+      id: DRAFT_SECTION_ID,
+      type: draftValues.type as string,
+      title: draftValues.title,
+      subtitle: draftValues.subtitle,
+      isActive: true,
+      position: insertAt ?? sorted.length,
+      payload: (draftValues.payload ?? {}) as Record<string, unknown>,
+    };
+    const copy = [...sorted];
+    const at = Math.min(insertAt ?? sorted.length, copy.length);
+    copy.splice(at, 0, draft);
+    return copy;
+  }, [sorted, isNew, draftValues, insertAt]);
+
+  const previewSections = useMemo(() => {
+    const apiSections: any[] = liveFeed?.sections ?? [];
+    const apiMap = new Map(apiSections.map((s) => [s.id, s]));
+
+    return previewBlocks.map((block) => {
+      const apiSec = block.id === DRAFT_SECTION_ID ? null : apiMap.get(block.id);
+      const isDraftTarget =
+        block.id === DRAFT_SECTION_ID ||
+        (editing?.id && editing.id === block.id) ||
+        (isNew && selectedId === block.id);
+      const draftBlock = isDraftTarget && draftValues
+        ? {
+            ...block,
+            type: draftValues.type ?? block.type,
+            title: draftValues.title ?? block.title,
+            subtitle: draftValues.subtitle ?? block.subtitle,
+            payload: { ...block.payload, ...(draftValues.payload ?? {}) },
+          }
+        : block;
+      const local = resolveBlockPreview(draftBlock, editorEntities, apiSec);
+      if (apiSec && !isDraftTarget) return apiSec;
+      return {
+        id: block.id,
+        type: draftBlock.type,
+        title: draftBlock.title,
+        subtitle: draftBlock.subtitle,
+        ...local,
+        promoStrip:
+          draftBlock.type === "PROMO_STRIP"
+            ? {
+                text: (draftBlock.payload?.text as string) ?? "",
+                backgroundColor: draftBlock.payload?.backgroundColor,
+                linkType: draftBlock.payload?.linkType,
+                linkValue: draftBlock.payload?.linkValue,
+              }
+            : apiSec?.promoStrip,
+      };
+    });
+  }, [previewBlocks, liveFeed, editorEntities, editing, isNew, selectedId, draftValues]);
 
   const upsert = useMutation({
     mutationFn: async () => {
@@ -136,6 +210,7 @@ export default function HomeBuilderPage() {
       }
       setIsNew(false);
       await qc.invalidateQueries({ queryKey: ["home-blocks"] });
+      await qc.invalidateQueries({ queryKey: ["home-preview"] });
     },
     onError: () => message.error("تعذر الحفظ"),
   });
@@ -148,18 +223,25 @@ export default function HomeBuilderPage() {
       setEditing(null);
       setIsNew(false);
       qc.invalidateQueries({ queryKey: ["home-blocks"] });
+      qc.invalidateQueries({ queryKey: ["home-preview"] });
     },
   });
 
   const reorder = useMutation({
     mutationFn: mutations.reorderHomeBlocks,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["home-blocks"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["home-blocks"] });
+      qc.invalidateQueries({ queryKey: ["home-preview"] });
+    },
   });
 
   const toggle = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
       mutations.updateHomeBlock(id, { isActive }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["home-blocks"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["home-blocks"] });
+      qc.invalidateQueries({ queryKey: ["home-preview"] });
+    },
   });
 
   const duplicate = useMutation({
@@ -177,13 +259,20 @@ export default function HomeBuilderPage() {
     onSuccess: () => {
       message.success("تم النسخ — القسم الجديد مخفي حتى تفعّله");
       qc.invalidateQueries({ queryKey: ["home-blocks"] });
+      qc.invalidateQueries({ queryKey: ["home-preview"] });
     },
   });
 
   const applyTemplate = useMutation({
-    mutationFn: async (templateId: string) => {
+    mutationFn: async ({ templateId, replace }: { templateId: string; replace?: boolean }) => {
       const tpl = PAGE_TEMPLATES.find((t) => t.id === templateId);
       if (!tpl) throw new Error("template not found");
+      if (replace) {
+        for (const block of sorted) {
+          await mutations.deleteHomeBlock(block.id);
+        }
+      }
+      const basePos = replace ? 0 : sorted.length;
       for (let i = 0; i < tpl.sections.length; i++) {
         const s = tpl.sections[i];
         const def = SECTION_TYPES.find((t) => t.value === s.type)!;
@@ -191,15 +280,19 @@ export default function HomeBuilderPage() {
           type: s.type,
           title: s.title,
           subtitle: s.subtitle,
-          position: sorted.length + i,
+          position: basePos + i,
           isActive: true,
           payload: { ...def.defaultPayload, ...s.payload },
         });
       }
     },
-    onSuccess: () => {
-      message.success("تم تطبيق القالب");
+    onSuccess: (_, { replace }) => {
+      message.success(replace ? "تم استبدال الصفحة بالقالب" : "تم تطبيق القالب");
+      setSelectedId(null);
+      setEditing(null);
+      setIsNew(false);
       qc.invalidateQueries({ queryKey: ["home-blocks"] });
+      qc.invalidateQueries({ queryKey: ["home-preview"] });
     },
     onError: () => message.error("تعذر تطبيق القالب"),
   });
@@ -229,6 +322,7 @@ export default function HomeBuilderPage() {
       setImportOpen(false);
       setImportJson("");
       qc.invalidateQueries({ queryKey: ["home-blocks"] });
+      qc.invalidateQueries({ queryKey: ["home-preview"] });
     },
     onError: () => message.error("JSON غير صالح"),
   });
@@ -242,7 +336,9 @@ export default function HomeBuilderPage() {
     const def = SECTION_TYPES.find((t) => t.value === type)!;
     setEditing(null);
     setIsNew(true);
+    setSelectedId(DRAFT_SECTION_ID);
     setEditorTab("content");
+    setTypeModalOpen(false);
     form.resetFields();
     form.setFieldsValue({
       type,
@@ -308,11 +404,22 @@ export default function HomeBuilderPage() {
           <Title level={4} style={{ margin: 0 }}>
             بناء الصفحة الرئيسية
           </Title>
-          <Text type="secondary">رتّب الأقسام وحرّر محتواها — يظهر في التطبيق بالترتيب من الأعلى للأسفل</Text>
+          <Text type="secondary">
+            رتّب الأقسام وحرّر محتواها — المعاينة على اليمين تعكس ما يراه العميل في التطبيق
+          </Text>
         </div>
         <Space wrap>
-          <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
+          <Button icon={<ReloadOutlined />} onClick={() => { refetch(); refetchPreview(); }}>
             تحديث
+          </Button>
+          <Button
+            icon={<EyeOutlined />}
+            type={previewOpen ? "primary" : "default"}
+            ghost={previewOpen}
+            onClick={() => setPreviewOpen((v) => !v)}
+            className="hb-preview-toggle"
+          >
+            المعاينة
           </Button>
           <Dropdown menu={toolsMenu}>
             <Button>أدوات</Button>
@@ -348,7 +455,7 @@ export default function HomeBuilderPage() {
       </Row>
 
       <Row gutter={16} className="hb-workspace">
-        <Col xs={24} lg={10} xl={9}>
+        <Col xs={24} xl={previewOpen ? 7 : 9}>
           <Card title="ترتيب الأقسام" className="hb-list-card" styles={{ body: { padding: 0 } }}>
             <SectionListPanel
               blocks={sorted}
@@ -370,7 +477,7 @@ export default function HomeBuilderPage() {
           </Card>
         </Col>
 
-        <Col xs={24} lg={14} xl={15}>
+        <Col xs={24} xl={previewOpen ? 10 : 15}>
           <SectionEditorPanel
             editing={editing}
             isNew={isNew}
@@ -382,6 +489,46 @@ export default function HomeBuilderPage() {
             editorEntities={editorEntities}
           />
         </Col>
+
+        {previewOpen && (
+          <Col xs={24} xl={7}>
+            <Card
+              className="hb-preview-card"
+              title={
+                <Space>
+                  <MobileOutlined />
+                  <span>معاينة التطبيق</span>
+                </Space>
+              }
+              extra={
+                <Button
+                  size="small"
+                  type="text"
+                  loading={previewLoading}
+                  onClick={() => refetchPreview()}
+                >
+                  تحديث
+                </Button>
+              }
+            >
+              <HomePhonePreview
+                blocks={previewBlocks}
+                previewSections={previewSections}
+                selectedId={selectedId}
+                draftId={DRAFT_SECTION_ID}
+                onSelectSection={(id) => {
+                  setSelectedId(id);
+                  if (id === DRAFT_SECTION_ID) return;
+                  const b = sorted.find((x) => x.id === id);
+                  if (b) openEdit(b);
+                }}
+              />
+              <Text type="secondary" className="hb-preview-hint">
+                انقر على قسم في المعاينة للتحرير — التغييرات غير المحفوظة تظهر فوراً للقسم المحدد
+              </Text>
+            </Card>
+          </Col>
+        )}
       </Row>
 
       <SectionTypeModal
@@ -391,7 +538,7 @@ export default function HomeBuilderPage() {
           setInsertAt(null);
         }}
         onPickSection={(type) => startCreate(type)}
-        onApplyTemplate={(id) => applyTemplate.mutate(id)}
+        onApplyTemplate={(id, replace) => applyTemplate.mutate({ templateId: id, replace })}
         hasExistingSections={sorted.length > 0}
       />
 

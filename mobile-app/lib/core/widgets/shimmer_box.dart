@@ -102,7 +102,7 @@ class HomeLoadingSkeleton extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         children: [
           ClipRRect(
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
             child: ShimmerBox(height: heroH, radius: 0),
           ),
         const SizedBox(height: 16),
@@ -124,7 +124,14 @@ class HomeLoadingSkeleton extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.04),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
             child: const Padding(
               padding: EdgeInsets.all(16),

@@ -231,7 +231,7 @@ class _GalleryAppBar extends ConsumerWidget {
     final hasThumbs = gallery.length > 1;
 
     return SliverAppBar(
-      pinned: true,
+          pinned: true,
       expandedHeight: hasThumbs ? 448 : 396,
       backgroundColor: Colors.white,
       surfaceTintColor: Colors.transparent,
@@ -239,32 +239,32 @@ class _GalleryAppBar extends ConsumerWidget {
         icon: Icons.arrow_forward_rounded,
         onTap: () => context.pop(),
       ),
-      actions: [
+          actions: [
         _CircleAction(
           icon: wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
           color: wished ? AppColors.sale : AppColors.textPrimary,
           onTap: () async {
             HapticFeedback.selectionClick();
-            if (!ref.read(authProvider).isAuthenticated) {
-              context.push('/login');
-              return;
-            }
-            await ref.read(wishlistProvider.notifier).toggle(product);
-          },
-        ),
+                if (!ref.read(authProvider).isAuthenticated) {
+                  context.push('/login');
+                  return;
+                }
+                await ref.read(wishlistProvider.notifier).toggle(product);
+              },
+            ),
         const SizedBox(width: 8),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
+          ],
+          flexibleSpace: FlexibleSpaceBar(
         background: ColoredBox(
           color: Colors.white,
           child: Column(
-            children: [
-              Expanded(
+              children: [
+                Expanded(
                 child: Stack(
                   children: [
                     PageView.builder(
                       controller: pageCtrl,
-                      itemCount: gallery.length,
+                    itemCount: gallery.length,
                       onPageChanged: onPageChanged,
                       itemBuilder: (_, i) => GestureDetector(
                         onTap: zoomableUrls.isEmpty
@@ -345,7 +345,7 @@ class _GalleryAppBar extends ConsumerWidget {
                           duration: const Duration(milliseconds: 200),
                           width: 54,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                      color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
                               color: active ? AppColors.primary : AppColors.hairline,
@@ -369,23 +369,23 @@ class _GalleryAppBar extends ConsumerWidget {
                 ),
                 const SizedBox(height: 10),
               ] else if (gallery.length > 1)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8, top: 4),
-                  child: AnimatedSmoothIndicator(
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8, top: 4),
+                    child: AnimatedSmoothIndicator(
                     activeIndex: imageIndex,
-                    count: gallery.length,
-                    effect: const WormEffect(
-                      dotHeight: 7,
-                      dotWidth: 7,
-                      activeDotColor: AppColors.primary,
-                      dotColor: AppColors.border,
+                      count: gallery.length,
+                      effect: const WormEffect(
+                        dotHeight: 7,
+                        dotWidth: 7,
+                        activeDotColor: AppColors.primary,
+                        dotColor: AppColors.border,
+                      ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
     );
   }
 }
@@ -491,10 +491,10 @@ class _MainInfo extends StatelessWidget {
     final price = shade?.price ?? product.price;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
             if (product.brandName.isNotEmpty)
               Expanded(
                 child: Text(
@@ -508,8 +508,8 @@ class _MainInfo extends StatelessWidget {
                 ),
               )
             else
-              const Spacer(),
-            if (product.soldCount > 0)
+                    const Spacer(),
+                    if (product.soldCount > 0)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
@@ -565,39 +565,39 @@ class _MainInfo extends StatelessWidget {
         const SizedBox(height: 12),
         const Divider(height: 1, thickness: 0.6, color: AppColors.divider),
         const SizedBox(height: 12),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
             Text(
               formatPrice(price),
               style: AppTypography.priceLarge.copyWith(
                 color: product.hasDiscount ? AppColors.sale : AppColors.textPrimary,
               ),
             ),
-            const SizedBox(width: 10),
+                    const SizedBox(width: 10),
             if (product.hasDiscount) ...[
-              Padding(
-                padding: const EdgeInsets.only(bottom: 3),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 3),
                 child: Text(
                   formatPrice(product.originalPrice),
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
+                            style: const TextStyle(
+                                color: AppColors.textMuted,
                     decoration: TextDecoration.lineThrough,
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
+                      ),
+                    const SizedBox(width: 8),
               Padding(
                 padding: const EdgeInsets.only(bottom: 2),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
                     color: AppColors.sale,
                     borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
                   child: Text(
                     'وفّري ${product.discountPercent}%',
-                    style: const TextStyle(
+                            style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
@@ -691,31 +691,31 @@ class _ShadeBlock extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            for (final s in shades)
-              GestureDetector(
+      spacing: 10,
+      runSpacing: 10,
+      children: [
+        for (final s in shades)
+          GestureDetector(
                 onTap: s.inStock
                     ? () {
                         HapticFeedback.selectionClick();
                         onSelect(s);
                       }
                     : null,
-                child: Opacity(
+            child: Opacity(
                   opacity: s.inStock ? 1 : 0.35,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
                     width: 44,
                     height: 44,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(colors: [
-                        _color(s.colorHex),
-                        _color(s.colorHexEnd ?? s.colorHex),
-                      ]),
-                      border: Border.all(
-                        color: selected?.id == s.id ? AppColors.primary : AppColors.border,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(colors: [
+                    _color(s.colorHex),
+                    _color(s.colorHexEnd ?? s.colorHex),
+                  ]),
+                  border: Border.all(
+                    color: selected?.id == s.id ? AppColors.primary : AppColors.border,
                         width: selected?.id == s.id ? 2.5 : 1,
                       ),
                       boxShadow: selected?.id == s.id
@@ -727,15 +727,15 @@ class _ShadeBlock extends StatelessWidget {
                               ),
                             ]
                           : null,
-                    ),
-                    child: selected?.id == s.id
-                        ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
-                        : null,
-                  ),
                 ),
+                child: selected?.id == s.id
+                        ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
+                    : null,
+              ),
+            ),
               ),
           ],
-        ),
+          ),
       ],
     );
   }
@@ -844,21 +844,21 @@ class _TrustItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Column(
-        children: [
+              children: [
           Icon(icon, color: AppColors.primary, size: 21),
           const SizedBox(height: 6),
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+                        style: const TextStyle(
               fontSize: 10.5,
               fontWeight: FontWeight.w700,
               height: 1.3,
               color: AppColors.textSecondary,
             ),
-          ),
-        ],
-      ),
+                  ),
+              ],
+            ),
     );
   }
 }
@@ -1066,7 +1066,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
               ),
             ),
-            TextButton.icon(
+              TextButton.icon(
               onPressed: () {
                 if (!authed) {
                   context.push('/login');
@@ -1083,7 +1083,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                 _showForm ? 'إلغاء' : 'أضيفي تقييماً',
                 style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
               ),
-            ),
+              ),
           ],
         ),
         if (product.rating > 0) ...[
@@ -1137,16 +1137,16 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
           const SizedBox(height: 14),
           Center(
             child: RatingBar.builder(
-              initialRating: _rating,
-              minRating: 1,
-              direction: Axis.horizontal,
-              allowHalfRating: true,
-              itemCount: 5,
+            initialRating: _rating,
+            minRating: 1,
+            direction: Axis.horizontal,
+            allowHalfRating: true,
+            itemCount: 5,
               itemSize: 32,
-              unratedColor: AppColors.border,
-              itemBuilder: (_, __) => const Icon(Icons.star_rounded, color: AppColors.star),
-              onRatingUpdate: (v) => setState(() => _rating = v),
-            ),
+            unratedColor: AppColors.border,
+            itemBuilder: (_, __) => const Icon(Icons.star_rounded, color: AppColors.star),
+            onRatingUpdate: (v) => setState(() => _rating = v),
+          ),
           ),
           const SizedBox(height: 12),
           TextField(
@@ -1247,7 +1247,7 @@ class _ReviewTile extends StatelessWidget {
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
+                children: [
                     const Icon(Icons.star_rounded, color: AppColors.star, size: 14),
                     const SizedBox(width: 2),
                     Text(
@@ -1373,7 +1373,7 @@ class _BottomBar extends StatelessWidget {
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: SizedBox(
+        child: SizedBox(
                 height: 50,
                 child: Material(
                   color: Colors.transparent,

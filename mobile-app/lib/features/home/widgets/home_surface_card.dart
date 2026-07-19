@@ -28,13 +28,18 @@ class HomeSurfaceCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: color ?? AppColors.homeSurface,
           borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.65)),
+          border: Border.all(color: AppColors.border.withValues(alpha: 0.45)),
           boxShadow: showShadow
               ? [
                   BoxShadow(
-                    color: AppColors.textPrimary.withValues(alpha: 0.05),
-                    blurRadius: 18,
-                    offset: const Offset(0, 6),
+                    color: AppColors.primary.withValues(alpha: 0.04),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
+                  ),
+                  BoxShadow(
+                    color: AppColors.textPrimary.withValues(alpha: 0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
                   ),
                 ]
               : null,

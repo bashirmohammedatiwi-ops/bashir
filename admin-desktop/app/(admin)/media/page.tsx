@@ -12,6 +12,7 @@ import {
   message,
 } from "antd";
 import { useState } from "react";
+import { MediaStatsPanel } from "@/components/MediaStatsPanel";
 import { mediaThumb } from "@/lib/mediaUrl";
 import { mutations, queries } from "@/lib/queries";
 
@@ -37,12 +38,18 @@ export default function MediaPage() {
         ...(purpose ? { purpose } : {}),
       }),
   });
+  const { data: mediaStats, isLoading: statsLoading } = useQuery({
+    queryKey: ["media-stats"],
+    queryFn: queries.mediaStats,
+    staleTime: 60_000,
+  });
 
   const upload = useMutation({
     mutationFn: (file: File) => mutations.uploadMediaBase64(file, "GENERAL"),
     onSuccess: () => {
       message.success("تم الرفع");
       qc.invalidateQueries({ queryKey: ["media"] });
+      qc.invalidateQueries({ queryKey: ["media-stats"] });
     },
     onError: () => message.error("تعذر رفع الصورة"),
   });
@@ -52,6 +59,7 @@ export default function MediaPage() {
     onSuccess: () => {
       message.success("تم الحذف");
       qc.invalidateQueries({ queryKey: ["media"] });
+      qc.invalidateQueries({ queryKey: ["media-stats"] });
     },
     onError: () => message.error("تعذر الحذف"),
   });
@@ -95,6 +103,8 @@ export default function MediaPage() {
             </Upload>
           </Space>
         </div>
+
+        <MediaStatsPanel stats={mediaStats} loading={statsLoading} />
 
         {isLoading ? (
           <Card loading />

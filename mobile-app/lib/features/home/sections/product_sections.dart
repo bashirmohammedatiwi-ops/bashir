@@ -80,13 +80,13 @@ class _FlashSaleHomeSectionState extends State<FlashSaleHomeSection> {
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: AppColors.flashSaleGradient,
-          borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+          borderRadius: BorderRadius.circular(AppRadius.xl + 2),
+          border: Border.all(color: AppColors.primary.withValues(alpha: 0.12)),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.08),
-              blurRadius: 16,
-              offset: const Offset(0, 5),
+              color: AppColors.primary.withValues(alpha: 0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
             ),
           ],
         ),

@@ -34,6 +34,7 @@ import { imagesFromProduct } from "@/lib/productFormHelpers";
 import { buildProductPayload } from "@/lib/productPayload";
 import { displayProductName } from "@/lib/productName";
 import { mutations, queries } from "@/lib/queries";
+import { formatBytes } from "@/lib/formatBytes";
 import { useBarcodeInventorySync } from "@/hooks/useBarcodeInventorySync";
 import "./products-page.css";
 
@@ -114,6 +115,11 @@ export default function ProductsPage() {
     queryFn: queries.brands,
     staleTime: 5 * 60_000,
   });
+  const { data: mediaStats } = useQuery({
+    queryKey: ["media-stats"],
+    queryFn: queries.mediaStats,
+    staleTime: 60_000,
+  });
   const { data: skinConcernsData } = useQuery({
     queryKey: ["skin-concerns"],
     queryFn: () => queries.skinConcerns(true),
@@ -148,6 +154,7 @@ export default function ProductsPage() {
       setOpen(false);
       setEditing(null);
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["media-stats"] });
     },
   });
 
@@ -499,6 +506,14 @@ export default function ProductsPage() {
         <div className="pp-stat">
           <strong>{(brandsData ?? []).length}</strong>
           <span>براندات</span>
+        </div>
+        <div className="pp-stat">
+          <strong>{(mediaStats?.products?.totalImageCount ?? 0).toLocaleString("ar-IQ")}</strong>
+          <span>صور المنتجات</span>
+        </div>
+        <div className="pp-stat">
+          <strong>{mediaStats ? formatBytes(mediaStats.products.storageBytes) : "—"}</strong>
+          <span>حجم صور المنتجات</span>
         </div>
       </div>
 

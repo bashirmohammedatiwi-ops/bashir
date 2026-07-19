@@ -34,6 +34,7 @@ export const queries = {
   coupons: () => api.get("/coupons").then((r) => r.data?.data ?? r.data),
   homeBlocks: () => api.get("/home-blocks?active=0").then((r) => r.data?.data ?? r.data),
   media: (params?: any) => api.get("/media", { params }).then((r) => r.data),
+  mediaStats: () => api.get("/media/stats").then((r) => r.data?.data ?? r.data),
   users: (params?: any) => api.get("/users", { params }).then((r) => r.data),
   user: (id: string) => api.get(`/users/${id}`).then((r) => r.data?.data ?? r.data),
   reviews: (params?: any) => api.get("/reviews", { params }).then((r) => r.data),

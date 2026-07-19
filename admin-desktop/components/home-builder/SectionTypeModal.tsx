@@ -1,7 +1,7 @@
 "use client";
 
-import { Input, Modal, Typography } from "antd";
-import { useMemo, useState } from "react";
+import { Checkbox, Input, Modal, Typography } from "antd";
+import { useMemo, useRef, useState } from "react";
 import { PAGE_TEMPLATES } from "./section-templates";
 import { SECTION_TYPES, SectionType } from "./section-types";
 
@@ -11,7 +11,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onPickSection: (type: SectionType) => void;
-  onApplyTemplate: (templateId: string) => void;
+  onApplyTemplate: (templateId: string, replace?: boolean) => void;
   hasExistingSections: boolean;
 };
 
@@ -24,6 +24,7 @@ export function SectionTypeModal({
 }: Props) {
   const [tab, setTab] = useState<"sections" | "templates">("sections");
   const [search, setSearch] = useState("");
+  const replaceRef = useRef(false);
 
   const groups = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -54,18 +55,28 @@ export function SectionTypeModal({
 
   function applyTemplate(id: string) {
     if (hasExistingSections) {
+      replaceRef.current = false;
       Modal.confirm({
         title: "تطبيق القالب؟",
-        content: "سيتم إضافة أقسام القالب في نهاية الصفحة الحالية دون حذف الموجود.",
+        content: (
+          <div>
+            <Paragraph style={{ marginBottom: 12 }}>
+              يمكنك إضافة أقسام القالب في نهاية الصفحة، أو استبدال كل الأقسام الحالية.
+            </Paragraph>
+            <Checkbox onChange={(e) => { replaceRef.current = e.target.checked; }}>
+              استبدال الأقسام الحالية (حذف الكل ثم تطبيق القالب)
+            </Checkbox>
+          </div>
+        ),
         okText: "تطبيق",
         cancelText: "إلغاء",
         onOk: () => {
-          onApplyTemplate(id);
+          onApplyTemplate(id, replaceRef.current);
           onClose();
         },
       });
     } else {
-      onApplyTemplate(id);
+      onApplyTemplate(id, false);
       onClose();
     }
   }

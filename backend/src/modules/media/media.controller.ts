@@ -41,6 +41,11 @@ export class MediaController {
     return this.media.list(q, purpose);
   }
 
+  @Get("stats")
+  stats() {
+    return this.media.stats();
+  }
+
   @Get(":id")
   one(@Param("id") id: string) {
     return this.media.findOne(id);

@@ -3,6 +3,7 @@
 import {
   Button,
   Card,
+  DatePicker,
   Divider,
   Form,
   Input,
@@ -13,6 +14,7 @@ import {
   Typography,
 } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 import { MediaPicker } from "@/components/MediaPicker";
 import { EntityMultiPicker } from "./EntityMultiPicker";
 import { LinkTargetPicker, ProductScopeFields } from "./LinkTargetPicker";
@@ -270,8 +272,19 @@ export function SectionPayloadEditor(props: Props) {
               )
             }
           </Form.Item>
-          <Form.Item name={["payload", "endsAt"]} label="وقت انتهاء العرض (ISO)">
-            <Input placeholder="2026-12-31T23:59:59.000Z — فارغ = من الإعدادات" />
+          <Form.Item
+            name={["payload", "endsAt"]}
+            label="وقت انتهاء العرض"
+            getValueFromEvent={(d) => (d ? (d as dayjs.Dayjs).toISOString() : undefined)}
+            getValueProps={(v) => ({ value: v ? dayjs(v as string) : null })}
+          >
+            <DatePicker
+              showTime={{ format: "HH:mm" }}
+              format="YYYY-MM-DD HH:mm"
+              style={{ width: "100%" }}
+              placeholder="فارغ = من إعدادات المتجر"
+              allowClear
+            />
           </Form.Item>
           <Form.Item name={["payload", "showViewAll"]} label="عرض الكل" valuePropName="checked" initialValue>
             <Switch />

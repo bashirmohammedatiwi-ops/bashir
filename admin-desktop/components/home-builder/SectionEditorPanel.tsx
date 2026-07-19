@@ -61,16 +61,24 @@ export function SectionEditorPanel({
   if (!editing && !isNew) {
     return (
       <Card className="hb-editor-card hb-editor-empty">
-        <Title level={5} style={{ marginTop: 0 }}>
+        <div className="hb-editor-empty-visual">
+          <div className="hb-editor-empty-phone">
+            <div className="hb-editor-empty-phone-bar" />
+            <div className="hb-editor-empty-phone-block hero" />
+            <div className="hb-editor-empty-phone-block" />
+            <div className="hb-editor-empty-phone-block short" />
+          </div>
+        </div>
+        <Title level={5} style={{ marginTop: 16 }}>
           تحرير القسم
         </Title>
         <Text type="secondary">
-          اختر قسماً من القائمة على اليسار لتعديل محتواه، أو أضف قسماً جديداً.
+          اختر قسماً من القائمة أو المعاينة، أو أضف قسماً جديداً من القوالب الجاهزة.
         </Text>
         <ul className="hb-editor-hints">
           <li>الترتيب من الأعلى للأسفل = ترتيب الظهور في التطبيق</li>
-          <li>الأقسام المخفية لا تظهر للعملاء</li>
-          <li>استخدم القوالب الجاهزة للبدء السريع</li>
+          <li>المعاينة على اليمين تعكس التطبيق مباشرة</li>
+          <li>التغييرات غير المحفوظة تظهر فوراً في المعاينة</li>
         </ul>
       </Card>
     );

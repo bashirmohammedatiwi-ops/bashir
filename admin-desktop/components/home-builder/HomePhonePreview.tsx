@@ -20,6 +20,7 @@ type Props = {
   blocks: Block[];
   previewSections?: any[];
   selectedId?: string | null;
+  draftId?: string;
   onSelectSection?: (id: string) => void;
 };
 
@@ -34,7 +35,7 @@ function productCover(p: any): string | null {
   return null;
 }
 
-export function HomePhonePreview({ blocks, previewSections, selectedId, onSelectSection }: Props) {
+export function HomePhonePreview({ blocks, previewSections, selectedId, draftId, onSelectSection }: Props) {
   const sorted = [...blocks].sort((a, b) => {
     const heroA = a.type === "HERO_BANNER";
     const heroB = b.type === "HERO_BANNER";
@@ -51,6 +52,10 @@ export function HomePhonePreview({ blocks, previewSections, selectedId, onSelect
           <div className="hb-phone-notch-bar" />
         </div>
         <div className="hb-phone-scroll">
+          <div className="hb-phone-status-bar">
+            <span>الحياة</span>
+            <span className="hb-phone-status-icons">🔍 🛒</span>
+          </div>
           {active.length === 0 ? (
             <Empty description="لا أقسام نشطة" style={{ marginTop: 80 }} />
           ) : (
@@ -58,6 +63,7 @@ export function HomePhonePreview({ blocks, previewSections, selectedId, onSelect
               const meta = metaForType(block.type);
               const resolved = previewSections?.find((s) => s.id === block.id);
               const selected = selectedId === block.id;
+              const isDraft = draftId != null && block.id === draftId;
               return (
                 <div
                   key={block.id}
@@ -67,12 +73,16 @@ export function HomePhonePreview({ blocks, previewSections, selectedId, onSelect
                   onKeyDown={(e) => {
                     if (e.key === "Enter") onSelectSection?.(block.id);
                   }}
+                  className={`hb-preview-section${selected ? " selected" : ""}${isDraft ? " draft" : ""}`}
                   style={{
                     outline: selected ? "2px solid #E1306C" : "none",
                     outlineOffset: -2,
                     cursor: onSelectSection ? "pointer" : "default",
                   }}
                 >
+                  {isDraft && (
+                    <div className="hb-preview-draft-badge">غير محفوظ</div>
+                  )}
                   <PhoneSectionBlock index={idx} block={block} meta={meta} resolved={resolved} />
                 </div>
               );

@@ -68,6 +68,90 @@ export class MediaService {
     return m;
   }
 
+  /** إحصائيات صور المنتجات — العدد وحجم التخزين على القرص */
+  async stats() {
+    const productPurpose = MediaPurpose.PRODUCT;
+    const [
+      uniqueMediaCount,
+      productImageCount,
+      shadeImageCount,
+      bytesRecordedAgg,
+      byPurpose,
+    ] = await Promise.all([
+      this.prisma.media.count({ where: { purpose: productPurpose } }),
+      this.prisma.productImage.count(),
+      this.prisma.productShade.count({ where: { imageId: { not: null } } }),
+      this.prisma.media.aggregate({
+        where: { purpose: productPurpose },
+        _sum: { bytes: true },
+      }),
+      this.prisma.media.groupBy({
+        by: ["purpose"],
+        _count: { _all: true },
+        _sum: { bytes: true },
+      }),
+    ]);
+
+    const [productDisk, allDisk] = await Promise.all([
+      this.diskUsageForFolder(path.join(this.mediaRoot, "product")),
+      this.diskUsageForFolder(this.mediaRoot),
+    ]);
+
+    return {
+      products: {
+        uniqueMediaCount,
+        productImageCount,
+        shadeImageCount,
+        totalImageCount: productImageCount + shadeImageCount,
+        storageBytes: productDisk.bytes,
+        diskFileCount: productDisk.files,
+        bytesRecorded: bytesRecordedAgg._sum.bytes ?? 0,
+      },
+      all: {
+        mediaCount: byPurpose.reduce((n, row) => n + row._count._all, 0),
+        storageBytes: allDisk.bytes,
+        diskFileCount: allDisk.files,
+        bytesRecorded: byPurpose.reduce((n, row) => n + (row._sum.bytes ?? 0), 0),
+      },
+      byPurpose: byPurpose.map((row) => ({
+        purpose: row.purpose,
+        count: row._count._all,
+        bytesRecorded: row._sum.bytes ?? 0,
+      })),
+    };
+  }
+
+  private async diskUsageForFolder(absDir: string): Promise<{ files: number; bytes: number }> {
+    let files = 0;
+    let bytes = 0;
+
+    const walk = async (dir: string) => {
+      let entries;
+      try {
+        entries = await fs.readdir(dir, { withFileTypes: true });
+      } catch {
+        return;
+      }
+      for (const entry of entries) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) {
+          await walk(full);
+        } else if (entry.isFile()) {
+          try {
+            const stat = await fs.stat(full);
+            files += 1;
+            bytes += stat.size;
+          } catch {
+            /* skip */
+          }
+        }
+      }
+    };
+
+    await walk(absDir);
+    return { files, bytes };
+  }
+
   async upload(input: UploadInput) {
     try {
       const maxMb = Number(process.env.MEDIA_MAX_FILE_SIZE_MB ?? 15);

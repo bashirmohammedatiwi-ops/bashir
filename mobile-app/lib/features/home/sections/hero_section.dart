@@ -55,7 +55,7 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
               right: 0,
               height: bannerH,
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
                 child: banners.isNotEmpty
                     ? _BannerStack(
                         banners: banners,
