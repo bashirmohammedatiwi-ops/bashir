@@ -324,6 +324,8 @@ export default function ProductsPage() {
   // إزالة الأقسام الثانوية التي لم يعد قسمها الفرعي مختاراً
   useEffect(() => {
     if (!open) return;
+    // لا ننظّف قبل اتصال الحقول بالنموذج (عند فتح التعديل تكون القيمة undefined للحظة)
+    if (!Array.isArray(watchedSubcategoryIds)) return;
     const current: string[] = form.getFieldValue("tertiaryCategoryIds") ?? [];
     if (!current.length) return;
     if (selectedSubcategoryIds.length === 0) {
@@ -331,6 +333,9 @@ export default function ProductsPage() {
       return;
     }
     if (!formTertiaryGroups) return; // لا نحذف أثناء التحميل
+    // نتأكد أن المجموعات المحمّلة تطابق الأقسام الفرعية المختارة حالياً
+    const loadedFor = new Set(formTertiaryGroups.map((g: any) => g.id));
+    if (!selectedSubcategoryIds.every((id) => loadedFor.has(id))) return;
     const valid = new Set(
       formTertiaryGroups.flatMap((g: any) => g.items.map((t: any) => t.id)),
     );
@@ -338,7 +343,7 @@ export default function ProductsPage() {
     if (pruned.length !== current.length) {
       form.setFieldValue("tertiaryCategoryIds", pruned);
     }
-  }, [open, form, formTertiaryGroups, selectedSubcategoryIds]);
+  }, [open, form, formTertiaryGroups, selectedSubcategoryIds, watchedSubcategoryIds]);
 
   const resetFilters = () => {
     setPage(1);
