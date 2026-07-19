@@ -11,6 +11,7 @@ import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/horizontal_product_list.dart';
 import '../../../data/models/home_section.dart';
 import '../widgets/home_section_shell.dart';
+import '../widgets/home_animations.dart';
 
 class ProductCarouselSection extends StatelessWidget {
   final HomeSection section;
@@ -77,20 +78,14 @@ class _FlashSaleHomeSectionState extends State<FlashSaleHomeSection> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: AppColors.flashSaleGradient,
-          borderRadius: BorderRadius.circular(AppRadius.xl + 2),
-          border: Border.all(color: AppColors.primary.withValues(alpha: 0.12)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.12),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: HomeSectionShell(
+      child: HomeShimmerBorder(
+        borderRadius: BorderRadius.circular(AppRadius.xl + 2),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: AppColors.flashSaleGradient,
+            borderRadius: BorderRadius.circular(AppRadius.xl + 1),
+          ),
+          child: HomeSectionShell(
           section: widget.section,
           compactTop: widget.compactTop,
           elevated: false,
@@ -106,7 +101,7 @@ class _FlashSaleHomeSectionState extends State<FlashSaleHomeSection> {
                     final h = remaining.inHours.toString().padLeft(2, '0');
                     final m = (remaining.inMinutes % 60).toString().padLeft(2, '0');
                     final s = (remaining.inSeconds % 60).toString().padLeft(2, '0');
-                    return _FlashCountdownChip(label: '$h:$m:$s');
+                    return PulseBadge(child: _FlashCountdownChip(label: '$h:$m:$s'));
                   },
                 )
               : null,
@@ -118,6 +113,7 @@ class _FlashSaleHomeSectionState extends State<FlashSaleHomeSection> {
               widget.section.productCardSize ?? widget.section.cardSize,
             ).productWidth,
           ),
+        ),
         ),
       ),
     );
@@ -177,7 +173,7 @@ class PackagesHomeSection extends StatelessWidget {
       actionLabel: 'عرض الكل',
       onAction: () => context.push('/products?isPromo=1&title=الباقات'),
       child: SizedBox(
-        height: 192,
+        height: cardSizeSpec(section.cardSize).height.clamp(168, 210).toDouble(),
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
@@ -187,11 +183,18 @@ class PackagesHomeSection extends StatelessWidget {
           itemBuilder: (_, i) {
             final p = section.packages[i];
             final hasDiscount = p.originalPrice != null && p.originalPrice! > p.price;
+            final cardW = cardSizeSpec(p.cardSize ?? section.cardSize).width.clamp(180, 230).toDouble();
             return RepaintBoundary(
               child: GestureDetector(
-                onTap: () => context.push('/package/${p.slug.isNotEmpty ? p.slug : p.id}'),
+                onTap: () {
+                  if (p.link != null && p.link!.isNotEmpty) {
+                    context.push(p.link!);
+                  } else {
+                    context.push('/package/${p.slug.isNotEmpty ? p.slug : p.id}');
+                  }
+                },
                 child: Container(
-                  width: 210,
+                  width: cardW,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(AppRadius.lg),
                     border: Border.all(color: AppColors.border.withValues(alpha: 0.8)),

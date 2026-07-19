@@ -4,6 +4,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/card_sizes.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../home_link.dart';
+import '../widgets/circle_tile.dart';
 import '../widgets/home_section_shell.dart';
 import '../../../data/models/home_section.dart';
 
@@ -17,8 +18,29 @@ class ImageTilesSection extends StatelessWidget {
     if (items.isEmpty) return const SizedBox.shrink();
 
     final layout = section.sectionLayout ?? section.layout ?? 'grid2';
-    final cols = layout == 'grid3' ? 3 : 2;
-    final useMosaic = layout == 'mosaic' && items.length >= 3;
+    final shape = section.shape ?? 'rect';
+    final cols = _columnsFor(section, layout);
+    final useMosaic = shape == 'rect' && layout == 'mosaic' && items.length >= 3;
+
+    if (shape == 'circle') {
+      return HomeSectionShell(
+        section: section,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
+          child: Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              for (var i = 0; i < items.length; i++)
+                SizedBox(
+                  width: (MediaQuery.sizeOf(context).width - AppSpacing.screenH * 2 - AppSpacing.sm * (cols - 1)) / cols,
+                  child: _CircleImageTile(data: items[i]),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return HomeSectionShell(
       section: section,
@@ -32,6 +54,15 @@ class ImageTilesSection extends StatelessWidget {
   }
 }
 
+int _columnsFor(HomeSection section, String layout) {
+  if (layout == 'grid3') return 3;
+  if (layout.startsWith('grid')) {
+    final n = int.tryParse(layout.replaceAll('grid', ''));
+    if (n != null && n > 0) return n;
+  }
+  return 2;
+}
+
 double _tileHeight(Map<String, dynamic> m, HomeSection section, int index) {
   final cardSize = m['cardSize']?.toString();
   return resolveItemCardSize(
@@ -42,7 +73,29 @@ double _tileHeight(Map<String, dynamic> m, HomeSection section, int index) {
   ).height;
 }
 
-/// تخطيط فسيفساء: بانر عريض + عمود جانبي + صف سفلي.
+class _CircleImageTile extends StatelessWidget {
+  final dynamic data;
+  const _CircleImageTile({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    if (data is! Map) return const SizedBox.shrink();
+    final m = Map<String, dynamic>.from(data);
+    return CircleTile(
+      title: m['title']?.toString() ?? '',
+      subtitle: m['subtitle']?.toString(),
+      imageUrl: m['imageUrl']?.toString(),
+      cardSize: m['cardSize']?.toString(),
+      onTap: () => openSectionLink(
+        context,
+        linkType: m['linkType']?.toString(),
+        linkValue: m['linkValue']?.toString(),
+        legacyLink: m['link']?.toString(),
+      ),
+    );
+  }
+}
+
 class _MosaicLayout extends StatelessWidget {
   final List<dynamic> items;
   final HomeSection section;
@@ -150,6 +203,8 @@ class _ImageTile extends StatelessWidget {
     if (data is! Map) return const SizedBox.shrink();
     final m = Map<String, dynamic>.from(data);
     final imageUrl = m['imageUrl']?.toString() ?? '';
+    final title = m['title']?.toString() ?? '';
+    final subtitle = m['subtitle']?.toString() ?? '';
     final link = m['link']?.toString();
     final linkType = m['linkType']?.toString();
     final linkValue = m['linkValue']?.toString();
@@ -165,10 +220,61 @@ class _ImageTile extends StatelessWidget {
           linkValue: linkValue,
           legacyLink: link,
         ),
-        child: AppNetworkImage(
-          url: imageUrl,
-          fit: BoxFit.cover,
-          radius: BorderRadius.zero,
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            AppNetworkImage(
+              url: imageUrl,
+              fit: BoxFit.cover,
+              radius: BorderRadius.zero,
+            ),
+            if (title.isNotEmpty || subtitle.isNotEmpty)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(10, 16, 10, 8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.65),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (title.isNotEmpty)
+                        Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 12,
+                          ),
+                        ),
+                      if (subtitle.isNotEmpty)
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 10,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

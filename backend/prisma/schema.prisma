@@ -121,6 +121,9 @@ enum HomeBlockType {
   BRAND_SHOWCASE
   SKIN_CONCERNS
   IMAGE_TILES
+  CIRCLE_TILES
+  ROUTINE_CAROUSEL
+  CARE_HUB
 }
 
 // ---------------------- USERS / AUTH ----------------------
@@ -418,6 +421,7 @@ model Media {
   shadeImages     ProductShade[] @relation("ShadeImage")
   banners         Banner[]       @relation("BannerImage")
   packages        Package[]      @relation("PackageCover")
+  skinConcerns    SkinConcern[]  @relation("SkinConcernImage")
 
   @@index([purpose])
   @@index([createdAt])
@@ -578,11 +582,13 @@ model SkinConcern {
   name            String
   description     String               @default("")
   icon            String?
+  imageId         String?
   position        Int                  @default(0)
   isActive        Boolean              @default(true)
   createdAt       DateTime             @default(now())
   updatedAt       DateTime             @updatedAt
 
+  image           Media?               @relation("SkinConcernImage", fields: [imageId], references: [id], onDelete: SetNull)
   products        ProductSkinConcern[]
 
   @@index([isActive])

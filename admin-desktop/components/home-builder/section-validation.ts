@@ -47,6 +47,22 @@ export function validateSection(block: {
     case "IMAGE_TILES":
       if (!asArray(p.items).length) warnings.push({ level: "error", message: "أضف بطاقة صورة واحدة على الأقل" });
       break;
+    case "CIRCLE_TILES":
+      if (!asArray(p.items).length) warnings.push({ level: "error", message: "أضف دائرة واحدة على الأقل" });
+      break;
+    case "ROUTINE_CAROUSEL":
+      if (!p.kind) warnings.push({ level: "warn", message: "لم يُحدَّد نوع الروتين" });
+      break;
+    case "CARE_HUB":
+      if (!asArray(p.concernIds).length && !asArray(p.categoryIds).length) {
+        warnings.push({ level: "warn", message: "أضف مشاكل بشرة أو فئات عناية" });
+      }
+      break;
+    case "SKIN_CONCERNS":
+      if (p.display === "circles") {
+        warnings.push({ level: "info", message: "تأكد من رفع صور لمشاكل البشرة من صفحة دليل البشرة" });
+      }
+      break;
     case "PACKAGES":
       if (!asArray(p.packageIds).length) warnings.push({ level: "warn", message: "لم تُحدَّد باقات — ستُعرض كل الباقات" });
       break;

@@ -15,7 +15,10 @@ export type SectionType =
   | "PROMO_STRIP"
   | "CUSTOM_BANNER"
   | "SKIN_CONCERNS"
-  | "IMAGE_TILES";
+  | "IMAGE_TILES"
+  | "CIRCLE_TILES"
+  | "ROUTINE_CAROUSEL"
+  | "CARE_HUB";
 
 export const SECTION_TYPES: {
   value: SectionType;
@@ -47,10 +50,10 @@ export const SECTION_TYPES: {
     value: "PROMO_STRIP",
     label: "شريط ترويجي",
     group: "أعلى الصفحة",
-    description: "شريط ملون — شحن مجاني، عروض، إلخ — مع رابط ذكي",
+    description: "شريط ملون — شحن مجاني، عروض — مع نص متحرك ورابط ذكي",
     icon: "📢",
     color: "#FCE4EC",
-    defaultPayload: { text: "", backgroundColor: "#FCE4EC", linkType: "", linkValue: "", link: "" },
+    defaultPayload: { text: "", backgroundColor: "#FCE4EC", linkType: "", linkValue: "", link: "", marquee: true, icon: "🎁" },
   },
   {
     value: "SKIN_CONCERNS",
@@ -59,7 +62,7 @@ export const SECTION_TYPES: {
     description: "شرائح أفقية — حب الشباب، تصبغات، جفاف…",
     icon: "✨",
     color: "#FFF3E0",
-    defaultPayload: { concernIds: [], maxItems: 10, showTitle: false },
+    defaultPayload: { concernIds: [], maxItems: 10, display: "chips", showTitle: false },
   },
   {
     value: "FLASH_SALE",
@@ -114,7 +117,7 @@ export const SECTION_TYPES: {
     description: "باقات ومجموعات العناية",
     icon: "🎁",
     color: "#F3E5F5",
-    defaultPayload: { packageIds: [], cardSize: "md", cardSizes: {}, sectionLayout: "carousel", showTitle: false },
+    defaultPayload: { packageIds: [], kind: "all", cardSize: "md", cardSizes: {}, sectionLayout: "carousel", showTitle: false },
   },
   {
     value: "BANNER_FULL",
@@ -270,11 +273,64 @@ export const SECTION_TYPES: {
     color: "#FFF3E0",
     defaultPayload: {
       columns: 2,
+      shape: "rect",
       items: [],
       cardSize: "md",
       cardSizes: {},
       sectionLayout: "mosaic",
       showTitle: false,
+    },
+  },
+  {
+    value: "CIRCLE_TILES",
+    label: "دوائر مخصصة",
+    group: "فئات",
+    description: "صف أو شبكة دوائر بصور وروابط حرة",
+    icon: "⭕",
+    color: "#F3E5F5",
+    defaultPayload: {
+      items: [],
+      maxItems: 12,
+      cardSize: "md",
+      cardSizes: {},
+      sectionLayout: "row",
+      showTitle: false,
+    },
+  },
+  {
+    value: "ROUTINE_CAROUSEL",
+    label: "روتين البشرة",
+    group: "منتجات",
+    description: "باقات روتين صباحي / مسائي",
+    icon: "🌅",
+    color: "#E8F5E9",
+    defaultPayload: {
+      kind: "ROUTINE_MORNING",
+      packageIds: [],
+      limit: 8,
+      cardSize: "md",
+      sectionLayout: "carousel",
+      showViewAll: true,
+      showTitle: true,
+    },
+  },
+  {
+    value: "CARE_HUB",
+    label: "مركز العناية",
+    group: "فئات",
+    description: "مشاكل بشرة + روتين + فئات عناية + منتجات",
+    icon: "💆",
+    color: "#E0F2F1",
+    defaultPayload: {
+      concernIds: [],
+      routineKinds: ["ROUTINE_MORNING", "ROUTINE_EVENING"],
+      categoryIds: [],
+      morningPackageIds: [],
+      eveningPackageIds: [],
+      productFilter: "featured",
+      productLimit: 8,
+      layout: "stacked",
+      showTitle: true,
     },
   },
 ];

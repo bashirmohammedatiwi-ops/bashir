@@ -77,6 +77,12 @@ export function PhoneCanvasSection({ block, resolved, meta }: Props) {
       return <SkinConcernsSection title={title} concerns={resolved?.skinConcerns} />;
     case "IMAGE_TILES":
       return <ImageTilesSection title={title} items={resolved?.items} columns={(block.payload?.columns as number) ?? 2} />;
+    case "CIRCLE_TILES":
+      return <CircleTilesPreview title={title} items={resolved?.items} />;
+    case "ROUTINE_CAROUSEL":
+      return <ProductRowSection title={title} products={resolved?.packages} isPackage />;
+    case "CARE_HUB":
+      return <CareHubPreview title={title} resolved={resolved} />;
     case "BANNER_FULL":
     case "CUSTOM_BANNER":
       return <BannerFull banners={resolved?.banners} />;
@@ -313,6 +319,41 @@ function BannerCarousel({ banners }: { banners?: any[] }) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function CircleTilesPreview({ title, items }: { title: string; items?: any[] }) {
+  const list = items?.length ? items : [null, null, null];
+  return (
+    <div className="pcs-circle-tiles">
+      {title && <SectionHead title={title} action="" />}
+      <div className="pcs-circle-row">
+        {list.slice(0, 6).map((item, i) => (
+          <div key={i} className="pcs-circle-item">
+            <div className="pcs-circle-img" style={{ backgroundImage: item?.imageUrl ? `url(${item.imageUrl})` : undefined }} />
+            {item?.title && <Text ellipsis className="pcs-circle-label">{item.title}</Text>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CareHubPreview({ title, resolved }: { title: string; resolved?: any }) {
+  const concerns = resolved?.skinConcerns ?? [];
+  return (
+    <div className="pcs-care-hub">
+      <SectionHead title={title || "مركز العناية"} action="" />
+      <div className="pcs-circle-row" style={{ marginBottom: 8 }}>
+        {(concerns.length ? concerns : [{ name: "جفاف" }]).slice(0, 4).map((c: any, i: number) => (
+          <div key={i} className="pcs-circle-item">
+            <div className="pcs-circle-img" />
+            <Text ellipsis className="pcs-circle-label">{c.name}</Text>
+          </div>
+        ))}
+      </div>
+      <ProductRowSection title="" products={resolved?.products} />
     </div>
   );
 }

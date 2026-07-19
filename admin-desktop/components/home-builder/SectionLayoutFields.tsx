@@ -29,6 +29,8 @@ function cardContextForType(type: SectionType): CardSizeContext {
   if (type.includes("BRAND")) return "brand";
   if (type.includes("BANNER") || type === "CUSTOM_BANNER") return "banner";
   if (type === "IMAGE_TILES") return "image";
+  if (type === "CIRCLE_TILES") return "category";
+  if (type === "ROUTINE_CAROUSEL") return "package";
   if (type === "PRODUCT_LIST" || type === "FLASH_SALE") return "product";
   if (type === "PACKAGES") return "package";
   return "category";
@@ -74,9 +76,13 @@ const LAYOUT_SECTION_TYPES: SectionType[] = [
   "BANNER_GRID_3",
   "BANNER_CAROUSEL",
   "IMAGE_TILES",
+  "CIRCLE_TILES",
   "PRODUCT_LIST",
   "FLASH_SALE",
   "PACKAGES",
+  "ROUTINE_CAROUSEL",
+  "SKIN_CONCERNS",
+  "CARE_HUB",
   "BANNER_FULL",
   "CUSTOM_BANNER",
 ];

@@ -17,6 +17,7 @@ import {
 } from "antd";
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
+import { MediaPicker } from "@/components/MediaPicker";
 import { mutations, queries } from "@/lib/queries";
 import { slugify } from "@/lib/slugify";
 
@@ -149,6 +150,9 @@ export default function SkinConcernsPage() {
           </Form.Item>
           <Form.Item name="icon" label="أيقونة">
             <Input placeholder="🔴" />
+          </Form.Item>
+          <Form.Item name="imageId" label="صورة (للدوائر والبطاقات)">
+            <MediaPicker label="اختر صورة المشكلة" />
           </Form.Item>
           <Form.Item name="position" label="الترتيب">
             <InputNumber style={{ width: "100%" }} min={0} />

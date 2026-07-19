@@ -148,9 +148,17 @@ function PhoneSectionBlock({
   if (block.type === "PROMO_STRIP") {
     const bg = (block.payload?.backgroundColor as string) ?? color;
     const text = (block.payload?.text as string) || label;
+    const marquee = block.payload?.marquee !== false;
+    const icon = (block.payload?.icon as string) || "🎁";
     return (
-      <div style={{ margin: "6px 10px", padding: "8px 10px", borderRadius: 8, background: bg, fontSize: 10, fontWeight: 700, textAlign: "center" }}>
-        {text || "شريط ترويجي"}
+      <div className="hb-preview-promo-wrap">
+        <div className="hb-preview-promo" style={{ background: bg }}>
+          <span className="hb-preview-promo-icon">{icon}</span>
+          <div className={`hb-preview-promo-text${marquee ? " marquee" : ""}`}>
+            <span>{text || "شريط ترويجي"}</span>
+            {marquee && <span aria-hidden>{text || "شريط ترويجي"}</span>}
+          </div>
+        </div>
       </div>
     );
   }
@@ -267,6 +275,21 @@ function PhoneSectionBlock({
 
   if (block.type === "SKIN_CONCERNS") {
     const concerns = resolved?.skinConcerns ?? [];
+    const display = (block.payload?.display as string) ?? "chips";
+    if (display === "circles") {
+      return (
+        <MiniSection title={label}>
+          <div style={{ display: "flex", gap: 8, padding: "0 10px 8px" }}>
+            {(concerns.length ? concerns : [{ name: "حب الشباب" }, { name: "تصبغات" }]).slice(0, 5).map((c: any, i: number) => (
+              <div key={i} style={{ width: 48, textAlign: "center" }}>
+                <div className="hb-preview-img" style={{ width: 44, height: 44, borderRadius: "50%", margin: "0 auto", background: c.image?.url ? `center/cover url(${c.image.url})` : color }} />
+                <Text style={{ fontSize: 7, display: "block", marginTop: 2 }} ellipsis>{c.name}</Text>
+              </div>
+            ))}
+          </div>
+        </MiniSection>
+      );
+    }
     return (
       <MiniSection title={label}>
         <div style={{ display: "flex", gap: 4, padding: "0 10px 8px", overflow: "hidden" }}>
@@ -275,6 +298,48 @@ function PhoneSectionBlock({
               {c.icon ?? "✨"} {c.name}
             </span>
           ))}
+        </div>
+      </MiniSection>
+    );
+  }
+
+  if (block.type === "CIRCLE_TILES") {
+    const items = resolved?.items ?? [];
+    return (
+      <MiniSection title={label} subtitle={block.subtitle}>
+        <div style={{ display: "flex", gap: 8, padding: "0 10px 8px", overflow: "hidden" }}>
+          {(items.length ? items : [1, 2, 3, 4]).slice(0, 6).map((item: any, i: number) => (
+            <div key={i} style={{ width: 48, textAlign: "center", flexShrink: 0 }}>
+              <div className="hb-preview-circle" style={{ width: 44, height: 44, borderRadius: "50%", margin: "0 auto", background: item.imageUrl ? `center/cover url(${item.imageUrl})` : color }} />
+              {item.title && <Text style={{ fontSize: 7, display: "block", marginTop: 2 }} ellipsis>{item.title}</Text>}
+            </div>
+          ))}
+        </div>
+      </MiniSection>
+    );
+  }
+
+  if (block.type === "ROUTINE_CAROUSEL") {
+    const pkgs = resolved?.packages ?? [];
+    return (
+      <MiniSection title={label} showViewAll>
+        <ProductRow products={pkgs} isPackage />
+      </MiniSection>
+    );
+  }
+
+  if (block.type === "CARE_HUB") {
+    const concerns = resolved?.skinConcerns ?? [];
+    return (
+      <MiniSection title={label}>
+        <div style={{ padding: "0 10px 8px" }}>
+          <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+            {(concerns.length ? concerns : [{ name: "جفاف" }]).slice(0, 3).map((c: any, i: number) => (
+              <div key={i} className="hb-preview-circle" style={{ width: 36, height: 36, borderRadius: "50%", background: color }} />
+            ))}
+          </div>
+          <div className="hb-preview-img" style={{ height: 48, borderRadius: 8, background: color, marginBottom: 4 }} />
+          <ProductRow products={(resolved?.products ?? []).slice(0, 3)} />
         </div>
       </MiniSection>
     );

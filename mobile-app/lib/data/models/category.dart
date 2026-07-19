@@ -8,6 +8,11 @@ class Category {
   final String? icon;
   final String? parentId;
   final String? cardSize;
+  final String? link;
+  final String? linkType;
+  final String? linkValue;
+  final String? description;
+  final String? rawImageUrl;
   final AppMedia? image;
   final List<Category> children;
 
@@ -18,6 +23,11 @@ class Category {
     this.icon,
     this.parentId,
     this.cardSize,
+    this.link,
+    this.linkType,
+    this.linkValue,
+    this.description,
+    this.rawImageUrl,
     this.image,
     this.children = const [],
   });
@@ -29,9 +39,17 @@ class Category {
         icon: json['icon']?.toString(),
         parentId: json['parentId']?.toString(),
         cardSize: json['cardSize']?.toString(),
+        link: json['link']?.toString(),
+        linkType: json['linkType']?.toString(),
+        linkValue: json['linkValue']?.toString(),
+        description: json['description']?.toString(),
+        rawImageUrl: json['imageUrl']?.toString(),
         image: json['image'] is Map ? AppMedia.fromJson(asMap(json['image'])) : null,
         children: asList(json['children']).map(Category.fromJson).toList(),
       );
 
-  String get imageUrl => image?.thumb ?? '';
+  String get imageUrl {
+    if (rawImageUrl != null && rawImageUrl!.isNotEmpty) return rawImageUrl!;
+    return image?.thumb ?? '';
+  }
 }

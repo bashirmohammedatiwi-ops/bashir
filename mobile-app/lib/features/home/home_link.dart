@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../data/models/banner.dart';
+import '../shell/main_shell.dart';
 
 void openSectionLink(
   BuildContext context, {
@@ -33,12 +35,24 @@ void openSectionLink(
     context.push('/products?brandId=$value');
     return;
   }
+  if (type == 'package' && value.isNotEmpty) {
+    context.push('/package/$value');
+    return;
+  }
+  if (type == 'skinConcern' && value.isNotEmpty) {
+    context.push('/products?concernSlug=${Uri.encodeComponent(value)}');
+    return;
+  }
   if (type == 'search' && value.isNotEmpty) {
     context.push('/search?q=${Uri.encodeComponent(value)}');
     return;
   }
   if (type == 'offers') {
     context.push('/products?isPromo=1&title=العروض');
+    return;
+  }
+  if (type == 'categoriesTab') {
+    ProviderScope.containerOf(context, listen: false).read(navIndexProvider.notifier).state = 1;
     return;
   }
   if (type == 'products' && value.isNotEmpty) {
@@ -51,6 +65,10 @@ void openSectionLink(
     return;
   }
   if (legacy.isNotEmpty) {
+    if (legacy == '/categories-tab') {
+      ProviderScope.containerOf(context, listen: false).read(navIndexProvider.notifier).state = 1;
+      return;
+    }
     context.push(legacy);
     return;
   }
@@ -64,7 +82,7 @@ void openBannerLink(BuildContext context, AppBanner banner) {
     context,
     linkType: banner.linkType,
     linkValue: banner.linkValue,
-    legacyLink: banner.linkValue,
+    legacyLink: banner.link ?? banner.linkValue,
   );
 }
 

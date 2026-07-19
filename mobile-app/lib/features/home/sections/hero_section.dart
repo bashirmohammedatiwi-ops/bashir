@@ -2,7 +2,6 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -12,6 +11,7 @@ import '../../../data/models/category.dart';
 import '../../../data/models/home_section.dart';
 import '../../shell/main_shell.dart';
 import '../home_link.dart';
+import '../widgets/home_animations.dart';
 
 const _kBannerHeightFactor = 0.38;
 const _kCategoryOverlap = 52.0;
@@ -108,7 +108,7 @@ List<Category> _normalizeCategories(List<Category> raw) {
   for (final c in raw) {
     if (seen.add(c.id)) out.add(c);
   }
-  return out.take(8).toList();
+  return out;
 }
 
 double categoryGridHeight(int count) {
@@ -138,6 +138,8 @@ class _BannerStack extends StatelessWidget {
             height: height,
             viewportFraction: 1,
             autoPlay: banners.length > 1,
+            autoPlayInterval: const Duration(seconds: 5),
+            autoPlayAnimationDuration: const Duration(milliseconds: 900),
             onPageChanged: (i, _) => onChanged(i),
           ),
           items: [
@@ -212,11 +214,13 @@ class _BannerTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final screenW = MediaQuery.sizeOf(context).width;
     if (banner.hasImage) {
-      return AppNetworkImage(
-        url: banner.imageUrl,
-        width: screenW,
-        height: height,
-        fit: BoxFit.cover,
+      return KenBurnsImage(
+        child: AppNetworkImage(
+          url: banner.imageUrl,
+          width: screenW,
+          height: height,
+          fit: BoxFit.cover,
+        ),
       );
     }
     return Container(
@@ -271,8 +275,11 @@ class QuickCategoryGrid extends ConsumerWidget {
           final c = categories[i];
           return _QuickCat(
             category: c,
-            onTap: () => context.push(
-              '/products?categoryId=${c.id}&title=${Uri.encodeComponent(c.name)}',
+            onTap: () => openSectionLink(
+              context,
+              linkType: c.linkType,
+              linkValue: c.linkValue,
+              legacyLink: c.link ?? '/products?categoryId=${c.id}&title=${Uri.encodeComponent(c.name)}',
             ),
           );
         },
@@ -290,53 +297,67 @@ IconData _categoryFallbackIcon(String slug) {
   return Icons.category_outlined;
 }
 
-class _QuickCat extends StatelessWidget {
+class _QuickCat extends StatefulWidget {
   final Category category;
   final VoidCallback onTap;
   const _QuickCat({required this.category, required this.onTap});
+
+  @override
+  State<_QuickCat> createState() => _QuickCatState();
+}
+
+class _QuickCatState extends State<_QuickCat> {
+  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       width: 80,
       child: GestureDetector(
-        onTap: onTap,
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
+        onTap: widget.onTap,
         behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.primaryLight, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+        child: AnimatedScale(
+          scale: _pressed ? 0.92 : 1,
+          duration: const Duration(milliseconds: 120),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 62,
+                height: 62,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.primaryLight, width: 2.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.16),
+                      blurRadius: 16,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: _CategoryAvatar(category: widget.category),
               ),
-              clipBehavior: Clip.antiAlias,
-              child: _CategoryAvatar(category: category),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              category.name,
-              maxLines: 2,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-                height: 1.15,
-                color: AppColors.textPrimary,
+              const SizedBox(height: 6),
+              Text(
+                widget.category.name,
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                  height: 1.15,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

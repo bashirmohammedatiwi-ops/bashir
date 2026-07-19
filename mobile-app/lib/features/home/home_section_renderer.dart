@@ -11,8 +11,12 @@ import 'sections/category_sections.dart';
 import 'sections/hero_section.dart';
 import 'sections/product_sections.dart';
 import 'sections/image_tiles_section.dart';
+import 'sections/circle_tiles_section.dart';
+import 'sections/care_hub_section.dart';
+import 'sections/routine_carousel_section.dart';
 import 'sections/promo_sections.dart';
 import 'sections/skin_concerns_strip.dart';
+import 'widgets/home_animations.dart';
 
 export 'sections/hero_section.dart' show HeroHomeSection;
 
@@ -46,10 +50,15 @@ class HomeSectionWidget extends ConsumerWidget {
       'PACKAGES' => PackagesHomeSection(section: section, compactTop: isFirstAfterHero),
       'PROMO_STRIP' => PromoStripSection(section: section),
       'IMAGE_TILES' => ImageTilesSection(section: section),
+      'CIRCLE_TILES' => CircleTilesSection(section: section),
+      'ROUTINE_CAROUSEL' => RoutineCarouselSection(section: section, compactTop: isFirstAfterHero),
+      'CARE_HUB' => CareHubSection(section: section, compactTop: isFirstAfterHero),
       'SKIN_CONCERNS' => SkinConcernsStrip(
           concerns: section.skinConcerns,
           title: section.title,
           subtitle: section.subtitle,
+          display: section.display ?? section.layout ?? 'chips',
+          showTitle: section.showTitle,
         ),
       _ => const SizedBox.shrink(),
     };
@@ -100,13 +109,17 @@ List<Widget> buildHomeSections(HomeFeed feed) {
   var firstAfterHero = true;
   var skipExtraCategories = false;
 
+  var index = 0;
   for (final s in _orderedSections(feed.sections)) {
     if (s.type == 'HERO_BANNER') {
       heroHasCategories = s.categories.isNotEmpty;
       if (heroHasCategories) skipExtraCategories = true;
       seenHero = true;
       firstAfterHero = false;
-      widgets.add(HomeSectionWidget(section: s));
+      widgets.add(HomeSectionEntrance(
+        index: index++,
+        child: HomeSectionWidget(section: s),
+      ));
       continue;
     }
 
@@ -116,9 +129,12 @@ List<Widget> buildHomeSections(HomeFeed feed) {
       continue;
     }
 
-    widgets.add(HomeSectionWidget(
-      section: s,
-      isFirstAfterHero: seenHero && firstAfterHero,
+    widgets.add(HomeSectionEntrance(
+      index: index++,
+      child: HomeSectionWidget(
+        section: s,
+        isFirstAfterHero: seenHero && firstAfterHero,
+      ),
     ));
     if (seenHero) firstAfterHero = false;
   }
@@ -134,20 +150,22 @@ bool _isCategorySectionType(String type) {
 }
 
 List<Widget> _legacySections(HomeFeed feed) {
+  var i = 0;
+  Widget wrap(Widget w) => HomeSectionEntrance(index: i++, child: w);
   return [
     if (feed.banners.isNotEmpty || feed.categories.isNotEmpty)
-      HeroHomeSection(
+      wrap(HeroHomeSection(
         section: HomeSection(
           id: 'legacy-hero',
           type: 'HERO_BANNER',
           banners: feed.banners,
           categories: feed.categories,
         ),
-      ),
+      )),
     if (feed.skinConcerns.isNotEmpty)
-      SkinConcernsStrip(concerns: feed.skinConcerns),
+      wrap(SkinConcernsStrip(concerns: feed.skinConcerns)),
     if (feed.flashSale.products.isNotEmpty)
-      Padding(
+      wrap(Padding(
         padding: const EdgeInsets.only(top: 4),
         child: FlashSaleHomeSection(
           section: HomeSection(
@@ -161,9 +179,9 @@ List<Widget> _legacySections(HomeFeed feed) {
           ),
           compactTop: true,
         ),
-      ),
+      )),
     if (feed.bestSellers.isNotEmpty)
-      ProductCarouselSection(
+      wrap(ProductCarouselSection(
         section: HomeSection(
           id: 'legacy-best',
           type: 'PRODUCT_LIST',
@@ -171,18 +189,18 @@ List<Widget> _legacySections(HomeFeed feed) {
           products: feed.bestSellers,
           viewAllQuery: 'isBestSeller=1&title=الأكثر مبيعاً',
         ),
-      ),
+      )),
     if (feed.brands.isNotEmpty)
-      BrandHomeSection(
+      wrap(BrandHomeSection(
         section: HomeSection(
           id: 'legacy-brands',
           type: 'FEATURED_BRANDS',
           title: 'العلامات التجارية',
           brands: feed.brands,
         ),
-      ),
+      )),
     if (feed.newArrivals.isNotEmpty)
-      ProductCarouselSection(
+      wrap(ProductCarouselSection(
         section: HomeSection(
           id: 'legacy-new',
           type: 'PRODUCT_LIST',
@@ -190,9 +208,9 @@ List<Widget> _legacySections(HomeFeed feed) {
           products: feed.newArrivals,
           viewAllQuery: 'isNew=1&title=وصل حديثاً',
         ),
-      ),
+      )),
     if (feed.featured.isNotEmpty)
-      ProductCarouselSection(
+      wrap(ProductCarouselSection(
         section: HomeSection(
           id: 'legacy-featured',
           type: 'PRODUCT_LIST',
@@ -200,7 +218,7 @@ List<Widget> _legacySections(HomeFeed feed) {
           products: feed.featured,
           viewAllQuery: 'isFeatured=1&title=منتجات مختارة',
         ),
-      ),
+      )),
     const SizedBox(height: 20),
   ];
 }

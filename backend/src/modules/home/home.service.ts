@@ -99,6 +99,7 @@ export class HomeService {
       this.prisma.skinConcern.findMany({
         where: { isActive: true },
         orderBy: { position: "asc" },
+        include: { image: true },
       }),
       this.prisma.homeBlock.findMany({
         where: { isActive: true },

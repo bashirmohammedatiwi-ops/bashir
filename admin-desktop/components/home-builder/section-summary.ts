@@ -20,8 +20,16 @@ export function sectionSummary(block: {
     case "FLASH_SALE":
       if (arr("productIds")) return `${arr("productIds")} منتج (يدوي)`;
       return `فلتر: ${filterLabel(String(p.filter ?? ""))}`;
+    case "IMAGE_TILES":
+      return `${arr("items")} بطاقة · ${p.columns ?? 2} أعمدة · ${p.shape ?? "rect"}${layout}${size}`;
+    case "CIRCLE_TILES":
+      return `${arr("items")} دائرة${layout}${size}`;
+    case "ROUTINE_CAROUSEL":
+      return `روتين: ${p.kind ?? "ROUTINE_MORNING"}`;
+    case "CARE_HUB":
+      return `مشاكل ${arr("concernIds") || "الكل"} · فئات ${arr("categoryIds") || "—"}`;
     case "PACKAGES":
-      return arr("packageIds") ? `${arr("packageIds")} باقة` : "كل الباقات";
+      return arr("packageIds") ? `${arr("packageIds")} باقة` : `كل الباقات · ${p.kind ?? "all"}`;
     case "FEATURED_BRANDS":
     case "BRAND_SHOWCASE":
       return arr("brandIds") ? `${arr("brandIds")} براند` : "كل البراندات";
@@ -38,8 +46,6 @@ export function sectionSummary(block: {
     case "BANNER_GRID_3":
     case "BANNER_CAROUSEL":
       return arr("bannerIds") ? `${arr("bannerIds")} بنر` : "كل البنرات";
-    case "IMAGE_TILES":
-      return `${arr("items")} بطاقة · ${p.columns ?? 2} أعمدة${layout}${size}`;
     default:
       return `${labelForType(block.type)}${layout}${size}`;
   }

@@ -10,6 +10,7 @@ export class SkinConcernsService {
     const items = await this.prisma.skinConcern.findMany({
       where: activeOnly ? { isActive: true } : undefined,
       orderBy: { position: "asc" },
+      include: { image: true },
     });
 
     if (!withCounts) return items;
@@ -62,6 +63,7 @@ export class SkinConcernsService {
     name: string;
     description?: string;
     icon?: string;
+    imageId?: string;
     position?: number;
     isActive?: boolean;
   }) {
@@ -71,6 +73,7 @@ export class SkinConcernsService {
         name: data.name.trim(),
         description: data.description ?? "",
         icon: data.icon ?? null,
+        imageId: data.imageId ?? null,
         position: data.position ?? 0,
         isActive: data.isActive ?? true,
       },
@@ -84,6 +87,7 @@ export class SkinConcernsService {
       name?: string;
       description?: string;
       icon?: string;
+      imageId?: string | null;
       position?: number;
       isActive?: boolean;
     },

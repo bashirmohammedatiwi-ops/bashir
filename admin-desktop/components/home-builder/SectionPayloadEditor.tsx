@@ -48,6 +48,8 @@ function entityLists(props: EditorEntities) {
     subcategories: props.subcategories ?? [],
     tertiary: props.tertiary ?? [],
     brands: props.brands ?? [],
+    packages: props.packages ?? [],
+    skinConcerns: props.skinConcerns ?? [],
   };
 }
 
@@ -71,7 +73,37 @@ export function SectionPayloadEditor(props: Props) {
         </>
       );
     }
-    return <Text type="secondary">لا توجد إعدادات ربط لهذا النوع — اربط من البنرات أو بطاقات الصور</Text>;
+    if (
+      type === "CATEGORY_GRID" ||
+      type === "CATEGORY_TILES" ||
+      type === "MAKEUP_CATEGORIES" ||
+      type === "HERO_BANNER"
+    ) {
+      return (
+        <Text type="secondary">
+          لكل فئة رابط افتراضي لقسمها. لتخصيص رابط فئة، أضف في payload حقل categoryItems: [{"{"} categoryId, linkType, linkValue {"}"}]
+        </Text>
+      );
+    }
+    if (type === "FEATURED_BRANDS" || type === "BRAND_SHOWCASE") {
+      return <Text type="secondary">كل براند يفتح صفحة منتجات البراند تلقائياً</Text>;
+    }
+    if (type === "PACKAGES" || type === "ROUTINE_CAROUSEL") {
+      return <Text type="secondary">كل باقة تفتح صفحة الباقة تلقائياً (/package/slug)</Text>;
+    }
+    if (type === "SKIN_CONCERNS") {
+      return <Text type="secondary">كل مشكلة تفتح منتجات المشكلة عبر concernSlug</Text>;
+    }
+    if (type === "BANNER_FULL" || type === "CUSTOM_BANNER" || type.startsWith("BANNER_")) {
+      return <Text type="secondary">اربط البنرات من صفحة البنرات — يُحل الرابط تلقائياً في API</Text>;
+    }
+    if (type === "IMAGE_TILES" || type === "CIRCLE_TILES") {
+      return <Text type="secondary">اربط كل بطاقة من تبويب المحتوى — حقل الرابط داخل كل عنصر</Text>;
+    }
+    if (type === "CARE_HUB") {
+      return <Text type="secondary">الروابط تُبنى تلقائياً من مشاكل البشرة والفئات والباقات المختارة</Text>;
+    }
+    return <Text type="secondary">لا توجد إعدادات ربط إضافية لهذا النوع</Text>;
   }
 
   switch (type) {
@@ -130,6 +162,15 @@ export function SectionPayloadEditor(props: Props) {
                 label: `${c.icon ?? "✨"} ${c.name ?? c.slug ?? c.id}`,
               }))}
               placeholder="فارغ = الكل النشط"
+            />
+          </Form.Item>
+          <Form.Item name={["payload", "display"]} label="طريقة العرض" initialValue="chips">
+            <Select
+              options={[
+                { value: "chips", label: "شرائح نصية" },
+                { value: "circles", label: "دوائر بصور" },
+                { value: "cards", label: "بطاقات" },
+              ]}
             />
           </Form.Item>
           <Form.Item name={["payload", "maxItems"]} label="الحد الأقصى" initialValue={10}>
@@ -316,9 +357,22 @@ export function SectionPayloadEditor(props: Props) {
 
     case "PACKAGES":
       return (
-        <Form.Item name={["payload", "packageIds"]} label="الباقات">
-          <EntityMultiPicker items={props.packages ?? []} placeholder="فارغ = كل الباقات" />
-        </Form.Item>
+        <>
+          <Form.Item name={["payload", "kind"]} label="نوع الباقة" initialValue="all">
+            <Select
+              options={[
+                { value: "all", label: "كل الأنواع" },
+                { value: "GENERAL", label: "عامة" },
+                { value: "ROUTINE_MORNING", label: "روتين صباحي" },
+                { value: "ROUTINE_EVENING", label: "روتين مسائي" },
+                { value: "BRIDAL_KIT", label: "باقة عروس" },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item name={["payload", "packageIds"]} label="الباقات">
+            <EntityMultiPicker items={props.packages ?? []} placeholder="فارغ = كل الباقات" />
+          </Form.Item>
+        </>
       );
 
     case "PROMO_STRIP":
@@ -326,6 +380,12 @@ export function SectionPayloadEditor(props: Props) {
         <>
           <Form.Item name={["payload", "text"]} label="نص الشريط" rules={[{ required: true }]}>
             <Input.TextArea rows={3} placeholder="شحن مجاني للطلبات فوق 50,000 د.ع" />
+          </Form.Item>
+          <Form.Item name={["payload", "icon"]} label="أيقونة (إيموجي)" initialValue="🎁">
+            <Input placeholder="🎁" maxLength={4} />
+          </Form.Item>
+          <Form.Item name={["payload", "marquee"]} label="نص متحرك" valuePropName="checked" initialValue={true}>
+            <Switch checkedChildren="متحرك" unCheckedChildren="ثابت" />
           </Form.Item>
           <Form.Item name={["payload", "backgroundColor"]} label="لون الخلفية" initialValue="#FCE4EC">
             <Input placeholder="#FCE4EC" />
@@ -340,6 +400,14 @@ export function SectionPayloadEditor(props: Props) {
     case "IMAGE_TILES":
       return (
         <>
+          <Form.Item name={["payload", "shape"]} label="شكل البطاقة" initialValue="rect">
+            <Select
+              options={[
+                { value: "rect", label: "مستطيل" },
+                { value: "circle", label: "دائرة" },
+              ]}
+            />
+          </Form.Item>
           <Form.Item name={["payload", "columns"]} label="عدد الأعمدة" initialValue={2}>
             <Select
               options={[
@@ -387,6 +455,126 @@ export function SectionPayloadEditor(props: Props) {
               </>
             )}
           </Form.List>
+        </>
+      );
+
+    case "CIRCLE_TILES":
+      return (
+        <>
+          <Form.Item name={["payload", "sectionLayout"]} label="التخطيط" initialValue="row">
+            <Select
+              options={[
+                { value: "row", label: "صف أفقي" },
+                { value: "grid3", label: "شبكة 3 أعمدة" },
+                { value: "grid", label: "شبكة 4 أعمدة" },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item name={["payload", "maxItems"]} label="الحد الأقصى" initialValue={12}>
+            <InputNumber min={3} max={16} style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.List name={["payload", "items"]}>
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...rest }) => (
+                  <Card
+                    key={key}
+                    size="small"
+                    title={`دائرة ${name + 1}`}
+                    style={{ marginBottom: 10 }}
+                    extra={
+                      <Button danger type="link" icon={<MinusCircleOutlined />} onClick={() => remove(name)}>
+                        حذف
+                      </Button>
+                    }
+                  >
+                    <Form.Item {...rest} name={[name, "imageId"]} label="الصورة" rules={[{ required: true }]}>
+                      <MediaPicker label="اختر صورة" />
+                    </Form.Item>
+                    <Form.Item {...rest} name={[name, "title"]} label="العنوان">
+                      <Input placeholder="عنوان الدائرة" />
+                    </Form.Item>
+                    <Form.Item {...rest} name={[name, "subtitle"]} label="وصف قصير">
+                      <Input placeholder="نص ثانوي" />
+                    </Form.Item>
+                    <Text strong style={{ display: "block", marginBottom: 8 }}>
+                      الرابط
+                    </Text>
+                    <LinkTargetPicker prefix={["payload", "items", name]} entities={entities} />
+                    <Form.Item {...rest} name={[name, "cardSize"]} label="حجم الدائرة" initialValue="md">
+                      <CardSizePicker context="category" compact />
+                    </Form.Item>
+                  </Card>
+                ))}
+                <Button type="dashed" onClick={() => add({})} block icon={<PlusOutlined />}>
+                  + دائرة جديدة
+                </Button>
+              </>
+            )}
+          </Form.List>
+        </>
+      );
+
+    case "ROUTINE_CAROUSEL":
+      return (
+        <>
+          <Form.Item name={["payload", "kind"]} label="نوع الروتين" initialValue="ROUTINE_MORNING">
+            <Select
+              options={[
+                { value: "ROUTINE_MORNING", label: "روتين صباحي" },
+                { value: "ROUTINE_EVENING", label: "روتين مسائي" },
+                { value: "both", label: "صباحي + مسائي" },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item name={["payload", "packageIds"]} label="باقات محددة (اختياري)">
+            <EntityMultiPicker items={props.packages ?? []} placeholder="فارغ = تلقائي حسب النوع" />
+          </Form.Item>
+          <Form.Item name={["payload", "limit"]} label="عدد الباقات" initialValue={8}>
+            <InputNumber min={2} max={16} style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item name={["payload", "showViewAll"]} label="عرض الكل" valuePropName="checked" initialValue>
+            <Switch />
+          </Form.Item>
+        </>
+      );
+
+    case "CARE_HUB":
+      return (
+        <>
+          <Form.Item name={["payload", "layout"]} label="التخطيط" initialValue="stacked">
+            <Select
+              options={[
+                { value: "stacked", label: "أقسام مكدسة" },
+                { value: "tabs", label: "تبويبات" },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item name={["payload", "concernIds"]} label="مشاكل البشرة">
+            <Select
+              mode="multiple"
+              options={(props.skinConcerns ?? []).map((c) => ({
+                value: c.id,
+                label: `${c.icon ?? "✨"} ${c.name ?? c.slug ?? c.id}`,
+              }))}
+              placeholder="فارغ = الكل"
+            />
+          </Form.Item>
+          <Form.Item name={["payload", "categoryIds"]} label="فئات العناية">
+            <EntityMultiPicker items={props.categories ?? []} max={8} />
+          </Form.Item>
+          <Form.Item name={["payload", "morningPackageIds"]} label="باقات روتين صباحي">
+            <EntityMultiPicker items={props.packages ?? []} max={6} />
+          </Form.Item>
+          <Form.Item name={["payload", "eveningPackageIds"]} label="باقات روتين مسائي">
+            <EntityMultiPicker items={props.packages ?? []} max={6} />
+          </Form.Item>
+          <Form.Item name={["payload", "productFilter"]} label="منتجات العناية" initialValue="featured">
+            <Select options={PRODUCT_FILTERS} />
+          </Form.Item>
+          <Form.Item name={["payload", "productLimit"]} label="عدد المنتجات" initialValue={8}>
+            <InputNumber min={4} max={16} style={{ width: "100%" }} />
+          </Form.Item>
         </>
       );
 

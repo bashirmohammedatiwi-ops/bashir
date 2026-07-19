@@ -201,6 +201,30 @@ async function seedDemoData() {
     },
   });
 
+  const existingCare = await prisma.homeBlock.count({
+    where: { title: "تسوّق حسب مشكلتك" },
+  });
+  if (existingCare === 0) {
+    await prisma.homeBlock.createMany({
+      data: [
+        {
+          type: "SKIN_CONCERNS",
+          title: "تسوّق حسب مشكلتك",
+          position: 20,
+          isActive: true,
+          payload: { display: "circles", maxItems: 10, showTitle: true },
+        },
+        {
+          type: "ROUTINE_CAROUSEL",
+          title: "روتينك اليومي",
+          position: 21,
+          isActive: true,
+          payload: { kind: "both", limit: 8, showViewAll: true, showTitle: true },
+        },
+      ],
+    });
+  }
+
   console.log("Demo seed completed:", {
     customers: customers.length,
     brands: brands.length,

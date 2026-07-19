@@ -32,9 +32,9 @@ class HomeSurfaceCard extends StatelessWidget {
           boxShadow: showShadow
               ? [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.04),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
+                    color: AppColors.primary.withValues(alpha: 0.06),
+                    blurRadius: 28,
+                    offset: const Offset(0, 10),
                   ),
                   BoxShadow(
                     color: AppColors.textPrimary.withValues(alpha: 0.04),

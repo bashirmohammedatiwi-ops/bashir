@@ -3,7 +3,7 @@ import { HomeBlock, HomeBlockType } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
 import { SettingsService } from "../settings/settings.service";
 
-import { buildAppLink } from "../../common/link-target.util";
+import { buildAppLink, withResolvedLink } from "../../common/link-target.util";
 import { withPlaceholderImages } from "../../common/product-placeholder.util";
 import { resolveCardSize, sectionStyleFromPayload, withCardSize } from "./card-sizes.util";
 
@@ -45,9 +45,14 @@ export interface ResolvedHomeSection {
     linkType?: string;
     linkValue?: string;
     backgroundColor?: string;
+    marquee?: boolean;
+    icon?: string;
   };
   items?: unknown[];
   skinConcerns?: unknown[];
+  display?: string;
+  shape?: string;
+  kind?: string;
 }
 
 @Injectable()
@@ -240,7 +245,12 @@ export class HomeSectionResolver {
 
       case HomeBlockType.PACKAGES: {
         const packages = await this.resolvePackages(payload, ctx.defaultPackages);
-        return { ...base, layout: "carousel", packages };
+        return {
+          ...base,
+          layout: (payload.sectionLayout as string) ?? "carousel",
+          kind: (payload.kind as string) ?? undefined,
+          packages,
+        };
       }
 
       case HomeBlockType.PROMO_STRIP: {
@@ -256,6 +266,8 @@ export class HomeSectionResolver {
             linkValue,
             link: buildAppLink(linkType, linkValue, legacyLink),
             backgroundColor: (payload.backgroundColor as string) ?? "#FCE4EC",
+            marquee: payload.marquee !== false,
+            icon: (payload.icon as string) ?? "",
           },
         };
       }
@@ -268,6 +280,7 @@ export class HomeSectionResolver {
           ...base,
           layout: sectionLayout === "mosaic" ? "mosaic" : `grid${cols}`,
           sectionLayout,
+          shape: (payload.shape as string) ?? "rect",
           items,
         };
       }
@@ -276,8 +289,63 @@ export class HomeSectionResolver {
         const concerns = await this.resolveSkinConcerns(payload, ctx.skinConcerns);
         return {
           ...base,
-          layout: "chips",
+          layout: (payload.display as string) ?? "chips",
+          display: (payload.display as string) ?? "chips",
           skinConcerns: concerns,
+        };
+      }
+
+      case HomeBlockType.CIRCLE_TILES: {
+        const items = await this.resolveCircleTiles(payload);
+        return {
+          ...base,
+          layout: (payload.sectionLayout as string) ?? "row",
+          sectionLayout: (payload.sectionLayout as string) ?? "row",
+          items,
+        };
+      }
+
+      case HomeBlockType.ROUTINE_CAROUSEL: {
+        const packages = await this.resolveRoutinePackages(payload, ctx.defaultPackages);
+        const kind = (payload.kind as string) ?? "ROUTINE_MORNING";
+        return {
+          ...base,
+          layout: "carousel",
+          kind,
+          packages,
+          viewAllQuery: kind === "both" ? "isPromo=1&title=روتين البشرة" : undefined,
+        };
+      }
+
+      case HomeBlockType.CARE_HUB: {
+        const concerns = await this.resolveSkinConcerns(
+          { concernIds: payload.concernIds as string[], maxItems: payload.maxItems as number },
+          ctx.skinConcerns,
+        );
+        const categories = await this.resolveCategories(
+          { categoryIds: payload.categoryIds as string[], maxItems: 8 },
+          ctx.defaultCategories,
+        );
+        const routineKinds = (payload.routineKinds as string[]) ?? ["ROUTINE_MORNING", "ROUTINE_EVENING"];
+        const morningPkgs = await this.resolveRoutinePackages(
+          { kind: "ROUTINE_MORNING", limit: 6, packageIds: payload.morningPackageIds as string[] },
+          ctx.defaultPackages,
+        );
+        const eveningPkgs = await this.resolveRoutinePackages(
+          { kind: "ROUTINE_EVENING", limit: 6, packageIds: payload.eveningPackageIds as string[] },
+          ctx.defaultPackages,
+        );
+        const productFilter = (payload.productFilter as string) ?? "featured";
+        const products = await this.resolveProducts(payload, productFilter, ctx.productBuckets);
+        return {
+          ...base,
+          layout: (payload.layout as string) ?? "stacked",
+          display: (payload.layout as string) ?? "stacked",
+          skinConcerns: concerns,
+          categories,
+          packages: [...morningPkgs, ...eveningPkgs],
+          products: products.slice(0, (payload.productLimit as number) ?? 8),
+          items: routineKinds.map((k) => ({ kind: k })),
         };
       }
 
@@ -287,9 +355,15 @@ export class HomeSectionResolver {
   }
 
   private pickBanners(all: unknown[], ids?: string[]): unknown[] {
-    if (!ids?.length) return all;
-    const map = new Map((all as { id: string }[]).map((b) => [b.id, b]));
-    return ids.map((id) => map.get(id)).filter(Boolean);
+    const picked = !ids?.length
+      ? all
+      : ids.map((id) => (all as { id: string }[]).find((b) => b.id === id)).filter(Boolean);
+    return (picked as Record<string, unknown>[]).map((b) =>
+      withResolvedLink({
+        ...b,
+        link: buildAppLink(b.linkType as string, b.linkValue as string, b.link as string),
+      }),
+    );
   }
 
   private sizeBanners(banners: unknown[], payload: Payload): unknown[] {
@@ -326,18 +400,29 @@ export class HomeSectionResolver {
     return this.sizeBanners(this.pickBanners(all, ids).slice(0, max), payload);
   }
 
+  private categoryDefaultLink(cat: { id: string; parentId?: string | null }) {
+    if (!cat.parentId) return buildAppLink("category", cat.id);
+    return buildAppLink("subcategory", cat.id);
+  }
+
   private async resolveCategories(payload: Payload, fallback: unknown[]) {
     const ids = payload.categoryIds as string[] | undefined;
-    const max = (payload.maxItems as number) ?? 8;
+    const overrides = (payload.categoryItems as { categoryId: string; linkType?: string; linkValue?: string }[]) ?? [];
+    const overrideMap = new Map(overrides.map((o) => [o.categoryId, o]));
+    const max = (payload.maxItems as number) ?? 16;
     if (!ids?.length) {
-      return (fallback as { id: string }[])
+      return (fallback as { id: string; parentId?: string | null }[])
         .slice(0, max)
-        .map((c, i) =>
-          withCardSize(
-            c as Record<string, unknown>,
+        .map((c, i) => {
+          const ov = overrideMap.get(c.id);
+          const link = ov?.linkType
+            ? buildAppLink(ov.linkType, ov.linkValue)
+            : this.categoryDefaultLink(c);
+          return withCardSize(
+            { ...c, linkType: ov?.linkType, linkValue: ov?.linkValue, link } as Record<string, unknown>,
             resolveCardSize(payload, c.id, i),
-          ),
-        );
+          );
+        });
     }
     const cats = await this.prisma.category.findMany({
       where: { id: { in: ids }, isActive: true },
@@ -348,16 +433,28 @@ export class HomeSectionResolver {
       .map((id, i) => {
         const cat = map.get(id);
         if (!cat) return null;
-        return withCardSize(cat as Record<string, unknown>, resolveCardSize(payload, id, i));
+        const ov = overrideMap.get(id);
+        const link = ov?.linkType
+          ? buildAppLink(ov.linkType, ov.linkValue)
+          : this.categoryDefaultLink(cat);
+        return withCardSize(
+          { ...cat, linkType: ov?.linkType, linkValue: ov?.linkValue, link } as Record<string, unknown>,
+          resolveCardSize(payload, id, i),
+        );
       })
       .filter(Boolean);
   }
 
   private async resolveBrands(payload: Payload, fallback: unknown[]) {
     const ids = payload.brandIds as string[] | undefined;
+    const enrich = (b: Record<string, unknown>, id: string) =>
+      withCardSize(
+        { ...b, link: buildAppLink("brand", id) },
+        resolveCardSize(payload, id, ids?.indexOf(id) ?? 0),
+      );
     if (!ids?.length) {
       return (fallback as { id: string }[]).map((b, i) =>
-        withCardSize(b as Record<string, unknown>, resolveCardSize(payload, b.id, i)),
+        enrich(b as Record<string, unknown>, b.id),
       );
     }
     const brands = await this.prisma.brand.findMany({
@@ -369,20 +466,32 @@ export class HomeSectionResolver {
       .map((id, i) => {
         const brand = map.get(id);
         if (!brand) return null;
-        return withCardSize(brand as Record<string, unknown>, resolveCardSize(payload, id, i));
+        return enrich(brand as Record<string, unknown>, id);
       })
       .filter(Boolean);
   }
 
   private async resolvePackages(payload: Payload, fallback: unknown[]) {
     const ids = payload.packageIds as string[] | undefined;
-    if (!ids?.length) {
-      return (fallback as { id: string }[]).map((p, i) =>
-        withCardSize(p as Record<string, unknown>, resolveCardSize(payload, p.id, i)),
+    const kind = payload.kind as string | undefined;
+    const enrich = (p: Record<string, unknown>) => {
+      const slug = (p.slug as string) || (p.id as string);
+      return withCardSize(
+        { ...p, link: buildAppLink("package", slug) },
+        resolveCardSize(payload, p.id as string, 0),
       );
+    };
+    if (!ids?.length) {
+      let list = fallback as Record<string, unknown>[];
+      if (kind && kind !== "all") {
+        list = list.filter((p) => p.kind === kind);
+      }
+      return list.map((p) => enrich(p));
     }
+    const where: Record<string, unknown> = { id: { in: ids }, isActive: true };
+    if (kind && kind !== "all") where.kind = kind;
     const packages = await this.prisma.package.findMany({
-      where: { id: { in: ids }, isActive: true },
+      where,
       include: { coverImage: true, items: { include: { product: true } } },
     });
     const map = new Map(packages.map((p) => [p.id, p]));
@@ -390,20 +499,88 @@ export class HomeSectionResolver {
       .map((id, i) => {
         const pkg = map.get(id);
         if (!pkg) return null;
-        return withCardSize(pkg as Record<string, unknown>, resolveCardSize(payload, id, i));
+        return withCardSize(
+          { ...pkg, link: buildAppLink("package", pkg.slug || pkg.id) } as Record<string, unknown>,
+          resolveCardSize(payload, id, i),
+        );
       })
       .filter(Boolean);
+  }
+
+  private async resolveRoutinePackages(payload: Payload, fallback: unknown[]) {
+    const kind = (payload.kind as string) ?? "ROUTINE_MORNING";
+    const limit = (payload.limit as number) ?? 8;
+    if (kind === "both") {
+      const morning = await this.resolveRoutinePackages({ ...payload, kind: "ROUTINE_MORNING", limit }, fallback);
+      const evening = await this.resolveRoutinePackages({ ...payload, kind: "ROUTINE_EVENING", limit }, fallback);
+      return [...morning, ...evening];
+    }
+    return this.resolvePackages({ ...payload, kind, packageIds: payload.packageIds as string[] }, fallback).then(
+      (pkgs) => pkgs.slice(0, limit),
+    );
   }
 
   private async resolveSkinConcerns(payload: Payload, fallback: unknown[]) {
     const ids = payload.concernIds as string[] | undefined;
     const max = (payload.maxItems as number) ?? 12;
-    if (!ids?.length) return (fallback as unknown[]).slice(0, max);
+    const enrich = (c: Record<string, unknown>) => ({
+      ...c,
+      link: buildAppLink("skinConcern", c.slug as string),
+      imageUrl: this.concernImageUrl(c),
+    });
+    if (!ids?.length) {
+      return (fallback as Record<string, unknown>[]).slice(0, max).map(enrich);
+    }
     const concerns = await this.prisma.skinConcern.findMany({
       where: { id: { in: ids }, isActive: true },
+      include: { image: true },
     });
     const map = new Map(concerns.map((c) => [c.id, c]));
-    return ids.map((id) => map.get(id)).filter(Boolean);
+    return ids.map((id) => map.get(id)).filter(Boolean).map((c) => enrich(c as Record<string, unknown>));
+  }
+
+  private concernImageUrl(c: Record<string, unknown>): string | null {
+    const image = c.image as { variants?: unknown; publicUrlBase?: string; filename?: string } | null | undefined;
+    if (image) return this.mediaPublicUrl(image);
+    return null;
+  }
+
+  private async resolveCircleTiles(payload: Payload) {
+    const raw = (payload.items as {
+      imageId?: string;
+      title?: string;
+      subtitle?: string;
+      linkType?: string;
+      linkValue?: string;
+      cardSize?: string;
+    }[]) ?? [];
+    if (!raw.length) return [];
+
+    const mediaIds = raw.map((i) => i.imageId).filter(Boolean) as string[];
+    const mediaList = mediaIds.length
+      ? await this.prisma.media.findMany({ where: { id: { in: mediaIds } } })
+      : [];
+    const mediaMap = new Map(mediaList.map((m) => [m.id, m]));
+    const max = (payload.maxItems as number) ?? 12;
+
+    return raw.slice(0, max).map((item, idx) => {
+      const media = item.imageId ? mediaMap.get(item.imageId) : null;
+      const imageUrl = media ? this.mediaPublicUrl(media) : null;
+      const size = resolveCardSize(payload, `circle-${idx}`, idx, item.cardSize);
+      return withCardSize(
+        withResolvedLink({
+          id: `circle-${idx}`,
+          title: item.title ?? "",
+          subtitle: item.subtitle ?? "",
+          imageUrl,
+          image: media,
+          linkType: item.linkType,
+          linkValue: item.linkValue,
+          link: buildAppLink(item.linkType, item.linkValue),
+        }),
+        size,
+      );
+    });
   }
 
   private async resolveImageTiles(payload: Payload) {

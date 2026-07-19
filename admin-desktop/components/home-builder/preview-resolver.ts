@@ -62,6 +62,17 @@ export function resolveBlockPreview(
       return { banners: pickByIds(entities.banners ?? [], p.bannerIds) };
     case "IMAGE_TILES":
       return { items: Array.isArray(p.items) ? p.items : [] };
+    case "CIRCLE_TILES":
+      return { items: Array.isArray(p.items) ? p.items : [] };
+    case "ROUTINE_CAROUSEL":
+      return { packages: pickByIds(entities.packages ?? [], p.packageIds).slice(0, Number(p.limit) || 4) };
+    case "CARE_HUB":
+      return {
+        skinConcerns: pickByIds(entities.skinConcerns ?? [], p.concernIds).slice(0, 6),
+        categories: pickByIds(entities.categories ?? [], p.categoryIds).slice(0, 4),
+        packages: (entities.packages ?? []).slice(0, 4),
+        products: (entities.products ?? []).slice(0, Number(p.productLimit) || 4),
+      };
     default:
       return undefined;
   }

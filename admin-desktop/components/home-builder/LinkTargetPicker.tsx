@@ -9,6 +9,8 @@ type EntityLists = {
   subcategories?: any[];
   tertiary?: any[];
   brands?: any[];
+  packages?: any[];
+  skinConcerns?: any[];
 };
 
 type Props = {
@@ -55,6 +57,14 @@ export function LinkTargetPicker({
             return (
               <Typography.Text type="secondary" style={{ display: "block", marginBottom: 12 }}>
                 يفتح صفحة العروض والتخفيضات
+              </Typography.Text>
+            );
+          }
+
+          if (linkType === "categoriesTab") {
+            return (
+              <Typography.Text type="secondary" style={{ display: "block", marginBottom: 12 }}>
+                يفتح تبويب الأقسام في شريط التنقل السفلي
               </Typography.Text>
             );
           }
@@ -128,6 +138,36 @@ export function LinkTargetPicker({
                   options={(entities.brands ?? []).map((b) => ({
                     value: b.id,
                     label: b.name ?? b.id,
+                  }))}
+                />
+              </Form.Item>
+            );
+          }
+
+          if (linkType === "package") {
+            return (
+              <Form.Item name={namePath(prefix, "linkValue")} label="الباقة / الروتين" rules={[{ required: true }]}>
+                <Select
+                  showSearch
+                  optionFilterProp="label"
+                  options={(entities.packages ?? []).map((p) => ({
+                    value: p.slug || p.id,
+                    label: p.name ?? p.slug ?? p.id,
+                  }))}
+                />
+              </Form.Item>
+            );
+          }
+
+          if (linkType === "skinConcern") {
+            return (
+              <Form.Item name={namePath(prefix, "linkValue")} label="مشكلة البشرة" rules={[{ required: true }]}>
+                <Select
+                  showSearch
+                  optionFilterProp="label"
+                  options={(entities.skinConcerns ?? []).map((c) => ({
+                    value: c.slug || c.id,
+                    label: `${c.icon ?? "✨"} ${c.name ?? c.slug ?? c.id}`,
                   }))}
                 />
               </Form.Item>

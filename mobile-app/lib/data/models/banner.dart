@@ -8,6 +8,7 @@ class AppBanner {
   final String? tag;
   final String? linkType;
   final String? linkValue;
+  final String? link;
   final String? discountText;
   final String? backgroundColor;
   final String? cardSize;
@@ -20,6 +21,7 @@ class AppBanner {
     this.tag,
     this.linkType,
     this.linkValue,
+    this.link,
     this.discountText,
     this.backgroundColor,
     this.cardSize,
@@ -32,7 +34,8 @@ class AppBanner {
         subtitle: json['subtitle']?.toString(),
         tag: json['tag']?.toString(),
         linkType: json['linkType']?.toString(),
-        linkValue: (json['linkValue'] ?? json['link'] ?? json['target'])?.toString(),
+        linkValue: (json['linkValue'] ?? json['target'])?.toString(),
+        link: json['link']?.toString(),
         discountText: json['discountText']?.toString(),
         backgroundColor: json['backgroundColor']?.toString(),
         cardSize: json['cardSize']?.toString(),

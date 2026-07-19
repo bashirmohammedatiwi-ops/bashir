@@ -13,6 +13,7 @@ import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../catalog/catalog_providers.dart';
 import 'home_section_renderer.dart';
+import 'widgets/home_animations.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -50,6 +51,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
+  List<String> _promoMessages(dynamic data) {
+    final out = <String>[];
+    for (final s in data.sections) {
+      if (s.type == 'PROMO_STRIP' && s.promoStrip != null) {
+        final t = s.promoStrip!.text.trim();
+        if (t.isNotEmpty) out.add(t);
+      }
+    }
+    return out;
+  }
+
   @override
   Widget build(BuildContext context) {
     final feed = ref.watch(homeFeedProvider);
@@ -69,12 +81,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Stack(
             fit: StackFit.expand,
             children: [
+              const HomeAmbientBackground(),
               feed.when(
                 loading: () => const HomeLoadingSkeleton(),
                 error: (e, _) => ErrorView(
                   message: friendlyError(e),
                   onRetry: () async {
-                    await ref.read(apiCacheProvider).remove('home_v2');
+                    await ref.read(apiCacheProvider).remove('home_v3');
                     ref.invalidate(homeFeedProvider);
                   },
                 ),
@@ -86,26 +99,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     });
                   }
                   final sections = buildHomeSections(data);
+                  final promos = _promoMessages(data);
+
                   return RefreshIndicator(
                     color: AppColors.primary,
                     backgroundColor: AppColors.surface,
-                    edgeOffset: headerH,
+                    edgeOffset: headerH + (promos.isNotEmpty ? 34 : 0),
                     onRefresh: () async {
                       HapticFeedback.mediumImpact();
-                      await ref.read(apiCacheProvider).remove('home_v2');
+                      await ref.read(apiCacheProvider).remove('home_v3');
                       ref.invalidate(homeFeedProvider);
                       await ref.read(homeFeedProvider.future);
                     },
                     child: CustomScrollView(
                       controller: _scroll,
-                      cacheExtent: 900,
+                      cacheExtent: 1000,
                       physics: const AlwaysScrollableScrollPhysics(
                         parent: BouncingScrollPhysics(),
                       ),
                       slivers: [
                         for (final section in sections)
                           SliverToBoxAdapter(child: section),
-                        const SliverToBoxAdapter(child: SizedBox(height: 28)),
+                        const SliverToBoxAdapter(child: SizedBox(height: 32)),
                       ],
                     ),
                   );
@@ -117,9 +132,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 right: 0,
                 child: ValueListenableBuilder<double>(
                   valueListenable: _headerProgress,
-                  builder: (_, progress, __) => _FloatingHeader(
-                    topPad: topPad,
-                    progress: progress,
+                  builder: (_, progress, __) => Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _FloatingHeader(topPad: topPad, progress: progress),
+                      feed.maybeWhen(
+                        data: (data) {
+                          final promos = _promoMessages(data);
+                          if (promos.isEmpty) return const SizedBox.shrink();
+                          return AnimatedOpacity(
+                            opacity: progress > 0.12 ? 1 : 0,
+                            duration: const Duration(milliseconds: 200),
+                            child: HomePromoTicker(messages: promos),
+                          );
+                        },
+                        orElse: () => const SizedBox.shrink(),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -135,16 +164,13 @@ class _FloatingHeader extends StatelessWidget {
   final double topPad;
   final double progress;
 
-  const _FloatingHeader({
-    required this.topPad,
-    required this.progress,
-  });
+  const _FloatingHeader({required this.topPad, required this.progress});
 
   @override
   Widget build(BuildContext context) {
     final bgOpacity = (progress * 0.96).clamp(0.0, 0.96);
     final useBlur = progress > 0.08 && progress < 0.95;
-    final blur = useBlur ? lerpDouble(0, 12, progress)! : 0.0;
+    final blur = useBlur ? lerpDouble(0, 14, progress)! : 0.0;
 
     Widget content = AnimatedContainer(
       duration: const Duration(milliseconds: 80),
@@ -160,9 +186,9 @@ class _FloatingHeader extends StatelessWidget {
         boxShadow: progress > 0.2
             ? [
                 BoxShadow(
-                  color: AppColors.ink.withValues(alpha: 0.06 * progress),
-                  blurRadius: 10 * progress,
-                  offset: Offset(0, 3 * progress),
+                  color: AppColors.ink.withValues(alpha: 0.07 * progress),
+                  blurRadius: 14 * progress,
+                  offset: Offset(0, 4 * progress),
                 ),
               ]
             : null,

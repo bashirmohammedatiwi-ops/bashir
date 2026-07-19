@@ -10,12 +10,16 @@ class PromoStrip {
   final String? linkType;
   final String? linkValue;
   final String? backgroundColor;
+  final bool marquee;
+  final String? icon;
   const PromoStrip({
     required this.text,
     this.link,
     this.linkType,
     this.linkValue,
     this.backgroundColor,
+    this.marquee = true,
+    this.icon,
   });
 
   bool get hasLink =>
@@ -30,6 +34,8 @@ class PromoStrip {
       linkType: json['linkType']?.toString(),
       linkValue: json['linkValue']?.toString(),
       backgroundColor: json['backgroundColor']?.toString(),
+      marquee: json['marquee'] != false,
+      icon: json['icon']?.toString(),
     );
   }
 }
@@ -41,6 +47,8 @@ class HomePackage {
   final int price;
   final int? originalPrice;
   final String? coverUrl;
+  final String? link;
+  final String? cardSize;
   const HomePackage({
     required this.id,
     required this.name,
@@ -48,6 +56,8 @@ class HomePackage {
     required this.price,
     this.originalPrice,
     this.coverUrl,
+    this.link,
+    this.cardSize,
   });
 
   factory HomePackage.fromJson(Map<String, dynamic> json) {
@@ -74,7 +84,9 @@ class HomePackage {
       slug: asString(json['slug']),
       price: asInt(json['price']),
       originalPrice: json['originalPrice'] != null ? asInt(json['originalPrice']) : null,
-      coverUrl: url,
+      coverUrl: url.isNotEmpty ? url : null,
+      link: json['link']?.toString(),
+      cardSize: json['cardSize']?.toString(),
     );
   }
 }
@@ -104,6 +116,9 @@ class HomeSection {
   final List<dynamic> items;
   final List<Category> skinConcerns;
   final PromoStrip? promoStrip;
+  final String? display;
+  final String? shape;
+  final String? kind;
 
   const HomeSection({
     required this.id,
@@ -130,6 +145,9 @@ class HomeSection {
     this.items = const [],
     this.skinConcerns = const [],
     this.promoStrip,
+    this.display,
+    this.shape,
+    this.kind,
   });
 
   factory HomeSection.fromJson(Map<String, dynamic> json) => HomeSection(
@@ -159,5 +177,8 @@ class HomeSection {
         promoStrip: json['promoStrip'] != null
             ? PromoStrip.fromJson(asMap(json['promoStrip']))
             : null,
+        display: json['display']?.toString(),
+        shape: json['shape']?.toString(),
+        kind: json['kind']?.toString(),
       );
 }
