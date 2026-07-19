@@ -377,6 +377,39 @@ export class ProductsService {
     });
   }
 
+  /// فحص وجود منتج بنفس الباركود (المنتج نفسه أو أحد درجاته).
+  async checkBarcode(barcode?: string) {
+    const code = barcode?.trim();
+    if (!code) return { exists: false, product: null, matchedShadeName: null };
+
+    const productSelect = {
+      id: true,
+      name: true,
+      nameAr: true,
+      sku: true,
+      barcode: true,
+      isActive: true,
+    } as const;
+
+    const byProduct = await this.prisma.product.findUnique({
+      where: { barcode: code },
+      select: productSelect,
+    });
+    if (byProduct) {
+      return { exists: true, product: byProduct, matchedShadeName: null };
+    }
+
+    const byShade = await this.prisma.productShade.findFirst({
+      where: { barcode: code },
+      select: { name: true, product: { select: productSelect } },
+    });
+    if (byShade?.product) {
+      return { exists: true, product: byShade.product, matchedShadeName: byShade.name };
+    }
+
+    return { exists: false, product: null, matchedShadeName: null };
+  }
+
   async remove(id: string) {
     await this.ensureExists(id);
     await this.prisma.product.delete({ where: { id } });

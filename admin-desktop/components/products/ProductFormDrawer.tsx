@@ -1,7 +1,9 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 import {
+  Alert,
   Button,
   Divider,
   Drawer,
@@ -17,7 +19,9 @@ import type { ImageItem } from "@/components/ProductImageDropzone";
 import { ProductShadesEditor } from "@/components/ProductShadesEditor";
 import { WizardTabs, type WizardTabItem } from "@/components/WizardTabs";
 import { useFormWizard } from "@/hooks/useFormWizard";
+import { normalizeBarcode } from "@/lib/barcode";
 import { displayProductName, productNameValidator } from "@/lib/productName";
+import { queries } from "@/lib/queries";
 
 const ProductImageDropzone = dynamic(
   () => import("@/components/ProductImageDropzone").then((m) => ({ default: m.ProductImageDropzone })),
@@ -124,6 +128,43 @@ export function ProductFormDrawer({
     onClose,
   });
 
+  // فحص فوري: هل الباركود مستخدم في منتج موجود مسبقاً؟
+  const barcodeValue = Form.useWatch("barcode", form);
+  const [duplicate, setDuplicate] = useState<{
+    product: any;
+    matchedShadeName: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!open) {
+      setDuplicate(null);
+      return;
+    }
+    const code = normalizeBarcode(barcodeValue) || String(barcodeValue ?? "").trim();
+    if (!code) {
+      setDuplicate(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      try {
+        const res = await queries.productBarcodeCheck(code);
+        if (cancelled) return;
+        if (res?.exists && res.product?.id && res.product.id !== editing?.id) {
+          setDuplicate({ product: res.product, matchedShadeName: res.matchedShadeName ?? null });
+        } else {
+          setDuplicate(null);
+        }
+      } catch {
+        if (!cancelled) setDuplicate(null);
+      }
+    }, 450);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [open, barcodeValue, editing?.id]);
+
   const tabsWithCounts = PRODUCT_WIZARD_TABS.map((t) =>
     t.key === "images" ? { ...t, label: `الصور (${productImages.length})` } : t,
   );
@@ -207,6 +248,22 @@ export function ProductFormDrawer({
                 }}
               />
             </Form.Item>
+            {duplicate && (
+              <Alert
+                type="warning"
+                showIcon
+                style={{ marginTop: -12, marginBottom: 16 }}
+                message={<strong>هذا المنتج موجود مسبقاً في المتجر!</strong>}
+                description={
+                  <>
+                    الباركود مستخدم في المنتج: <strong>{displayProductName(duplicate.product)}</strong>
+                    {duplicate.matchedShadeName ? ` — درجة: ${duplicate.matchedShadeName}` : ""}
+                    {duplicate.product?.sku ? ` — SKU: ${duplicate.product.sku}` : ""}
+                    {duplicate.product?.isActive === false ? " (غير نشط)" : ""}
+                  </>
+                }
+              />
+            )}
             <Form.Item name="brandId" label="البراند" rules={[{ required: true }]}>
               <Select
                 showSearch

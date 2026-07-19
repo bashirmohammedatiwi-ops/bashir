@@ -8,6 +8,10 @@ export const queries = {
       .get("/products", { params: { status: "all", lite: 1, ...params } })
       .then((r) => r.data),
   product: (id: string) => api.get(`/products/${id}`).then((r) => r.data?.data ?? r.data),
+  productBarcodeCheck: (barcode: string) =>
+    api
+      .get("/products/barcode-check", { params: { barcode } })
+      .then((r) => r.data?.data ?? r.data),
   categories: () =>
     api.get("/categories", { params: { all: 1, minimal: 1 } }).then((r) => r.data?.data ?? r.data),
   categoriesFull: () =>

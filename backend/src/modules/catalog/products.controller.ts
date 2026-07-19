@@ -29,6 +29,15 @@ export class ProductsController {
     return this.products.list(q);
   }
 
+  // فحص وجود منتج بنفس الباركود (للوحة التحكم) — يجب أن يسبق مسار :idOrSlug
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
+  @Get("barcode-check")
+  barcodeCheck(@Query("barcode") barcode: string) {
+    return this.products.checkBarcode(barcode);
+  }
+
   @Public()
   @Get(":idOrSlug")
   findOne(@Param("idOrSlug") idOrSlug: string) {
