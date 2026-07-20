@@ -77,12 +77,13 @@ _verify_build() {
     echo "Warning: home-builder static output not found under admin-static/"
     return 0
   fi
-  if grep -rq "بناء الصفحة الرئيسية" "$static_dir" 2>/dev/null; then
-    echo "==> Build verify: OK (new home builder UI detected)"
-  elif grep -rq "استوديو الصفحة الرئيسية" "$static_dir" 2>/dev/null; then
-    echo "Warning: old studio UI still in build — check git commit / admin-desktop source"
+  if grep -rq "hb-canvas-wrap" "$static_dir" 2>/dev/null \
+    && grep -rq "استوديو تحرير" "$static_dir" 2>/dev/null; then
+    echo "==> Build verify: OK (WYSIWYG home builder + canvas CSS)"
+  elif grep -rq "WYSIWYG" "$static_dir" 2>/dev/null; then
+    echo "Warning: home builder JS updated but canvas CSS may be missing — check home-builder.css"
   else
-    echo "==> Build verify: admin-static updated ($(date +%Y-%m-%d\ %H:%M))"
+    echo "Warning: home builder may be an old build — check git commit / admin-desktop source"
   fi
 }
 

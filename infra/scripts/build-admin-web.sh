@@ -39,7 +39,11 @@ VPS_ORIGIN="${API_BASE%/api/v1}"
 VPS_ORIGIN="${VPS_ORIGIN%/api}"
 CATALOG_HUB_URL="${NEXT_PUBLIC_CATALOG_HUB_URL:-${VPS_ORIGIN}/catalog-hub}"
 
+GIT_SHA="$(git -C "$ADMIN_ROOT/.." rev-parse --short HEAD 2>/dev/null || echo "unknown")"
+BUILD_TIME="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
 echo "==> Building admin web panel"
+echo "    Commit: $GIT_SHA @ $BUILD_TIME"
 echo "    API:    $API_BASE"
 echo "    Media:  $MEDIA_BASE"
 echo "    Catalog: $CATALOG_HUB_URL"
@@ -55,6 +59,8 @@ fi
 NEXT_PUBLIC_API_BASE="$API_BASE" \
 NEXT_PUBLIC_MEDIA_BASE="$MEDIA_BASE" \
 NEXT_PUBLIC_CATALOG_HUB_URL="$CATALOG_HUB_URL" \
+NEXT_PUBLIC_BUILD_SHA="$GIT_SHA" \
+NEXT_PUBLIC_BUILD_TIME="$BUILD_TIME" \
 npm run build:web
 
 rm -rf "$STAGING_DIR"

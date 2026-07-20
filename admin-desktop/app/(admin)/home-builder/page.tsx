@@ -573,6 +573,11 @@ export default function HomeBuilderPage() {
           </Title>
           <Text type="secondary">
             رتّب الأقسام وحرّر محتواها — المعاينة تعكس واجهة التطبيق (cream + sage)
+            {process.env.NEXT_PUBLIC_BUILD_SHA ? (
+              <span style={{ marginInlineStart: 8, fontSize: 11, opacity: 0.65 }}>
+                · build {process.env.NEXT_PUBLIC_BUILD_SHA}
+              </span>
+            ) : null}
           </Text>
         </div>
         <Space wrap>
