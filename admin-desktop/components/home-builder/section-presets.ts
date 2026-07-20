@@ -15,15 +15,6 @@ export type SectionPreset = {
 /** قوالب قسم واحد — سريعة ومطابقة لواجهة التطبيق الحالية */
 export const SECTION_PRESETS: SectionPreset[] = [
   {
-    id: "hero-dock",
-    label: "هيرو + دوائر",
-    description: "سلايدر علوي مع اختصارات الفئات",
-    icon: "🏠",
-    accent: "#5C6B52",
-    type: "HERO_BANNER",
-    title: "مرحباً بكم",
-  },
-  {
     id: "promo-news",
     label: "نشرة عاجلة",
     description: "شريط ترويجي متحرك — sage & cream",

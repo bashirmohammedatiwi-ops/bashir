@@ -80,7 +80,8 @@ export function SectionEditorPanel({
         </Text>
         <ul className="hb-editor-hints">
           <li>اسحب الأقسام للترتيب — أو أدرج بين أي قسمين عبر زر +</li>
-          <li>المعاينة على اليمين = شكل التطبيق الفعلي (cream + sage)</li>
+          <li>الرأس والبنرات ثابتة — أضف الأقسام أسفلها فقط</li>
+          <li>المعاينة = شكل التطبيق (cream + sage)</li>
           <li>5 تبويبات: أساسيات · محتوى · روابط · تصميم · JSON</li>
           <li>⌘S حفظ · ↑↓ التنقل · معاينة WYSIWYG مع عدّاد فلاش</li>
         </ul>

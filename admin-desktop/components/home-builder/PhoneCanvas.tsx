@@ -14,7 +14,9 @@ import {
 import { Button, Empty, Tooltip } from "antd";
 import { useCallback, useState } from "react";
 import { labelForType, metaForType } from "./section-types";
+import { FixedHomeChrome } from "./FixedHomeChrome";
 import { PhoneCanvasSection } from "./PhoneCanvasSection";
+import type { EditorEntities } from "./SectionPayloadEditor";
 import type { DeviceSize } from "./StudioToolbar";
 
 export type CanvasBlock = {
@@ -30,6 +32,7 @@ export type CanvasBlock = {
 type Props = {
   blocks: CanvasBlock[];
   previewSections?: any[];
+  editorEntities: EditorEntities;
   selectedId?: string | null;
   zoom?: number;
   deviceSize?: DeviceSize;
@@ -48,6 +51,7 @@ const DEVICE_WIDTH: Record<DeviceSize, number> = { "375": 375, "390": 390, "414"
 export function PhoneCanvas({
   blocks,
   previewSections,
+  editorEntities,
   selectedId,
   zoom = 1,
   deviceSize = "375",
@@ -98,21 +102,13 @@ export function PhoneCanvas({
             <span className="hb-canvas-status-icons">▮▮▮ WiFi 🔋</span>
           </div>
 
-          <div className="hb-canvas-app-header">
-            <div className="hb-canvas-delivery">📍 التوصيل إلى: بغداد</div>
-            <div className="hb-canvas-search">
-              <span className="hb-canvas-search-icon">🔍</span>
-              <span>ابحث عن منتج، براند...</span>
-              <span className="hb-canvas-qr">▣</span>
-            </div>
-          </div>
-
           <div className="hb-canvas-scroll">
+            <FixedHomeChrome entities={editorEntities} />
             {sorted.length === 0 ? (
-              <div className="hb-canvas-empty">
-                <Empty description="الصفحة فارغة — ابدأ بقالب أو أضف قسماً" />
+              <div className="hb-canvas-empty hb-canvas-empty-below">
+                <Empty description="لا أقسام بعد — أضف أول قسم أسفل الرأس الثابت" />
                 <Button type="primary" icon={<PlusOutlined />} onClick={() => onAddAt(0)}>
-                  أضف أول قسم
+                  أضف قسم
                 </Button>
               </div>
             ) : (

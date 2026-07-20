@@ -98,113 +98,68 @@ bool _isDuplicateCategorySection(String type) =>
     type == 'CATEGORY_TILES' ||
     type == 'MAKEUP_CATEGORIES';
 
-List<Widget> buildHomeSections(HomeFeed feed) {
-  if (feed.sections.isEmpty) return _legacySections(feed);
-
-  final widgets = <Widget>[];
-  var heroHasCategories = false;
-  var seenHero = false;
-  var firstAfterHero = true;
-
-  var index = 0;
+HomeSection _fixedHeroSection(HomeFeed feed) {
+  HomeSection? cmsHero;
   for (final s in _orderedSections(feed.sections)) {
     if (s.type == 'HERO_BANNER') {
-      heroHasCategories = s.categories.isNotEmpty;
-      seenHero = true;
-      firstAfterHero = false;
-      widgets.add(HomeSectionEntrance(
-        index: index++,
-        child: HomeSectionWidget(section: s),
-      ));
-      continue;
+      cmsHero = s;
+      break;
     }
+  }
 
-    // تجنّب تكرار شبكة الفئات إذا ظهرت أسفل البنر
+  final banners = cmsHero?.banners.isNotEmpty == true
+      ? cmsHero!.banners
+      : feed.banners;
+  final categories = cmsHero?.categories.isNotEmpty == true
+      ? cmsHero!.categories
+      : feed.categories;
+
+  return HomeSection(
+    id: cmsHero?.id ?? 'fixed-hero',
+    type: 'HERO_BANNER',
+    position: -1,
+    banners: banners,
+    categories: categories,
+  );
+}
+
+List<HomeSection> _cmsSections(HomeFeed feed) {
+  return _orderedSections(feed.sections)
+      .where((s) => s.type != 'HERO_BANNER')
+      .toList();
+}
+
+List<Widget> buildHomeSections(HomeFeed feed) {
+  final widgets = <Widget>[];
+  var index = 0;
+
+  // الرأس + البنرات + الاختصارات + أيقونات الفئات — ثابتة دائماً
+  final fixedHero = _fixedHeroSection(feed);
+  final heroHasCategories = fixedHero.categories.isNotEmpty;
+  widgets.add(HomeSectionEntrance(
+    index: index++,
+    child: HeroHomeSection(section: fixedHero),
+  ));
+
+  final cms = _cmsSections(feed);
+  if (cms.isEmpty) {
+    return widgets;
+  }
+
+  var firstAfterHero = true;
+  for (final s in cms) {
+    // تجنّب تكرار شبكة الفئات إذا الهيرو يعرض فئات
     if (heroHasCategories && _isDuplicateCategorySection(s.type)) continue;
 
     widgets.add(HomeSectionEntrance(
       index: index++,
       child: HomeSectionWidget(
         section: s,
-        isFirstAfterHero: seenHero && firstAfterHero,
+        isFirstAfterHero: firstAfterHero,
       ),
     ));
-    if (seenHero) firstAfterHero = false;
+    firstAfterHero = false;
   }
 
   return widgets;
-}
-
-List<Widget> _legacySections(HomeFeed feed) {
-  var i = 0;
-  Widget wrap(Widget w) => HomeSectionEntrance(index: i++, child: w);
-  return [
-    if (feed.banners.isNotEmpty || feed.categories.isNotEmpty)
-      wrap(HeroHomeSection(
-        section: HomeSection(
-          id: 'legacy-hero',
-          type: 'HERO_BANNER',
-          banners: feed.banners,
-          categories: feed.categories,
-        ),
-      )),
-    if (feed.skinConcerns.isNotEmpty)
-      wrap(SkinConcernsStrip(concerns: feed.skinConcerns, title: 'دليل البشرة', showTitle: true)),
-    if (feed.flashSale.products.isNotEmpty)
-      wrap(FlashSaleHomeSection(
-        section: HomeSection(
-          id: 'legacy-flash',
-          type: 'FLASH_SALE',
-          title: 'أقوى العروض',
-          showTitle: true,
-          products: feed.flashSale.products,
-          endsAt: feed.flashSale.endsAt,
-          viewAllQuery: 'isPromo=1&title=أقوى العروض',
-        ),
-        compactTop: true,
-      )),
-    if (feed.bestSellers.isNotEmpty)
-      wrap(ProductCarouselSection(
-        section: HomeSection(
-          id: 'legacy-best',
-          type: 'PRODUCT_LIST',
-          title: 'الأكثر مبيعاً',
-          showTitle: true,
-          products: feed.bestSellers,
-          viewAllQuery: 'isBestSeller=1&title=الأكثر مبيعاً',
-        ),
-      )),
-    if (feed.brands.isNotEmpty)
-      wrap(BrandHomeSection(
-        section: HomeSection(
-          id: 'legacy-brands',
-          type: 'FEATURED_BRANDS',
-          title: 'العلامات التجارية',
-          showTitle: true,
-          brands: feed.brands,
-        ),
-      )),
-    if (feed.newArrivals.isNotEmpty)
-      wrap(ProductCarouselSection(
-        section: HomeSection(
-          id: 'legacy-new',
-          type: 'PRODUCT_LIST',
-          title: 'وصل حديثاً',
-          showTitle: true,
-          products: feed.newArrivals,
-          viewAllQuery: 'isNew=1&title=وصل حديثاً',
-        ),
-      )),
-    if (feed.featured.isNotEmpty)
-      wrap(ProductCarouselSection(
-        section: HomeSection(
-          id: 'legacy-featured',
-          type: 'PRODUCT_LIST',
-          title: 'منتجات مختارة',
-          showTitle: true,
-          products: feed.featured,
-          viewAllQuery: 'isFeatured=1&title=منتجات مختارة',
-        ),
-      )),
-  ];
 }

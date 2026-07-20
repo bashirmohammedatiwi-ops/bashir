@@ -4,7 +4,7 @@ import { Checkbox, Input, Modal, Typography } from "antd";
 import { useMemo, useRef, useState } from "react";
 import { SECTION_PRESETS } from "./section-presets";
 import { PAGE_TEMPLATES } from "./section-templates";
-import { SECTION_TYPES, SectionType } from "./section-types";
+import { BUILDER_SECTION_TYPES, SECTION_TYPES, SectionType } from "./section-types";
 
 const { Text, Paragraph } = Typography;
 
@@ -31,7 +31,7 @@ export function SectionTypeModal({
 
   const groups = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const filtered = SECTION_TYPES.filter(
+    const filtered = BUILDER_SECTION_TYPES.filter(
       (t) =>
         !q ||
         t.label.toLowerCase().includes(q) ||
@@ -129,7 +129,7 @@ export function SectionTypeModal({
             className={`hb-type-tab${tab === "sections" ? " active" : ""}`}
             onClick={() => setTab("sections")}
           >
-            أقسام ({SECTION_TYPES.length})
+            أقسام ({BUILDER_SECTION_TYPES.length})
           </button>
           <button
             type="button"

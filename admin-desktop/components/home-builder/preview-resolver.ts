@@ -1,5 +1,6 @@
 import { mediaThumb } from "@/lib/mediaUrl";
 import type { EditorEntities } from "./SectionPayloadEditor";
+import { filterBuilderBlocks, pickHeroCategories } from "./fixed-hero";
 
 type Block = {
   id: string;
@@ -165,20 +166,18 @@ export function formatCountdown(endsAt?: string | null): string | undefined {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-/** أقسام الفئات تُخفى في التطبيق إذا كان الهيرو يعرض فئات */
+/** أقسام الفئات تُخفى في التطبيق إذا كان الهيرو الثابت يعرض فئات */
 export function filterPreviewBlocks<T extends { type: string; isActive?: boolean; payload?: Record<string, unknown> }>(
   blocks: T[],
-  options?: { showInactive?: boolean; hideHeroDupCategories?: boolean },
+  options?: { showInactive?: boolean; hideHeroDupCategories?: boolean; heroCategoryCount?: number },
 ): T[] {
   const sorted = [...blocks].sort((a, b) => ((a as any).position ?? 0) - ((b as any).position ?? 0));
-  const activeOnly = options?.showInactive ? sorted : sorted.filter((b) => b.isActive !== false);
+  const withoutFixed = filterBuilderBlocks(sorted);
+  const activeOnly = options?.showInactive ? withoutFixed : withoutFixed.filter((b) => b.isActive !== false);
 
   if (options?.hideHeroDupCategories === false) return activeOnly;
 
-  const hero = activeOnly.find((b) => b.type === "HERO_BANNER");
-  const heroHasCats =
-    hero &&
-    (Array.isArray(hero.payload?.categoryIds) ? (hero.payload!.categoryIds as unknown[]).length : 0) > 0;
+  const heroHasCats = (options?.heroCategoryCount ?? 0) > 0;
 
   if (!heroHasCats) return activeOnly;
 

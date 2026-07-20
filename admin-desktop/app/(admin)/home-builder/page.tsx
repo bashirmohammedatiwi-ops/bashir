@@ -28,6 +28,7 @@ import {
   Switch,
   Tabs,
   Typography,
+  Alert,
   message,
 } from "antd";
 import type { MenuProps } from "antd";
@@ -39,12 +40,14 @@ import { SectionListPanel } from "@/components/home-builder/SectionListPanel";
 import { SectionTypeModal } from "@/components/home-builder/SectionTypeModal";
 import type { DeviceSize } from "@/components/home-builder/StudioToolbar";
 import { filterPreviewBlocks, resolveBlockPreview } from "@/components/home-builder/preview-resolver";
+import { filterBuilderBlocks, pickHeroCategories } from "@/components/home-builder/fixed-hero";
 import { PAGE_TEMPLATES } from "@/components/home-builder/section-templates";
 import { SECTION_PRESETS } from "@/components/home-builder/section-presets";
 import {
   SECTION_TYPES,
   SectionType,
   normalizePayload,
+  isFixedTopSection,
 } from "@/components/home-builder/section-types";
 import { countWarnings, sectionHasErrors } from "@/components/home-builder/section-validation";
 import { mutations, queries } from "@/lib/queries";
@@ -126,25 +129,28 @@ export default function HomeBuilderPage() {
     [blocks],
   );
 
-  const activeCount = sorted.filter((b) => b.isActive !== false).length;
-  const { errors: errorCount, warns: warnCount } = useMemo(() => countWarnings(sorted), [sorted]);
+  const builderBlocks = useMemo(() => filterBuilderBlocks(sorted), [sorted]);
+  const heroCategoryCount = pickHeroCategories(editorEntities).length;
+
+  const activeCount = builderBlocks.filter((b) => b.isActive !== false).length;
+  const { errors: errorCount, warns: warnCount } = useMemo(() => countWarnings(builderBlocks), [builderBlocks]);
 
   const previewBlocks = useMemo(() => {
-    if (!isNew || !draftValues?.type) return sorted;
+    if (!isNew || !draftValues?.type) return builderBlocks;
     const draft = {
       id: DRAFT_SECTION_ID,
       type: draftValues.type as string,
       title: draftValues.title,
       subtitle: draftValues.subtitle,
       isActive: true,
-      position: insertAt ?? sorted.length,
+      position: insertAt ?? builderBlocks.length,
       payload: (draftValues.payload ?? {}) as Record<string, unknown>,
     };
-    const copy = [...sorted];
-    const at = Math.min(insertAt ?? sorted.length, copy.length);
+    const copy = [...builderBlocks];
+    const at = Math.min(insertAt ?? builderBlocks.length, copy.length);
     copy.splice(at, 0, draft);
     return copy;
-  }, [sorted, isNew, draftValues, insertAt]);
+  }, [builderBlocks, isNew, draftValues, insertAt]);
 
   const previewSections = useMemo(() => {
     const apiSections: any[] = liveFeed?.sections ?? [];
@@ -187,12 +193,16 @@ export default function HomeBuilderPage() {
   }, [previewBlocks, liveFeed, editorEntities, editing, isNew, selectedId, draftValues]);
 
   const canvasBlocks = useMemo(
-    () => filterPreviewBlocks(previewBlocks, { showInactive: showInactivePreview }),
-    [previewBlocks, showInactivePreview],
+    () =>
+      filterPreviewBlocks(previewBlocks, {
+        showInactive: showInactivePreview,
+        heroCategoryCount,
+      }),
+    [previewBlocks, showInactivePreview, heroCategoryCount],
   );
 
   function pushUndo() {
-    if (sorted.length) undoStack.current = [...undoStack.current.slice(-9), sorted.map((b) => ({ ...b }))];
+    if (builderBlocks.length) undoStack.current = [...undoStack.current.slice(-9), builderBlocks.map((b) => ({ ...b }))];
   }
 
   function handleUndo() {
@@ -239,22 +249,22 @@ export default function HomeBuilderPage() {
         else if (dupModal) setDupModal(null);
       }
       if (!selectedId || isNew) return;
-      const idx = sorted.findIndex((b) => b.id === selectedId);
+      const idx = builderBlocks.findIndex((b) => b.id === selectedId);
       if (idx < 0) return;
       if (e.key === "ArrowUp" && idx > 0) {
         e.preventDefault();
-        const b = sorted[idx - 1];
+        const b = builderBlocks[idx - 1];
         guardUnsaved(() => openEdit(b));
       }
-      if (e.key === "ArrowDown" && idx < sorted.length - 1) {
+      if (e.key === "ArrowDown" && idx < builderBlocks.length - 1) {
         e.preventDefault();
-        const b = sorted[idx + 1];
+        const b = builderBlocks[idx + 1];
         guardUnsaved(() => openEdit(b));
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [selectedId, isNew, sorted, typeModalOpen, dupModal, editing]);
+  }, [selectedId, isNew, builderBlocks, typeModalOpen, dupModal, editing]);
 
   const upsert = useMutation({
     mutationFn: async () => {
@@ -265,7 +275,7 @@ export default function HomeBuilderPage() {
         type,
         title: values.title,
         subtitle: values.subtitle,
-        position: values.position ?? sorted.length,
+        position: values.position ?? builderBlocks.length,
         isActive: values.isActive ?? true,
         payload,
       };
@@ -276,7 +286,7 @@ export default function HomeBuilderPage() {
       message.success(editing?.id ? "تم الحفظ" : "تمت الإضافة");
       const newId = result?.id ?? result?.data?.id;
       if (isNew && insertAt != null && newId) {
-        const ids = sorted.map((b) => b.id);
+        const ids = builderBlocks.map((b) => b.id);
         ids.splice(insertAt, 0, newId);
         await mutations.reorderHomeBlocks(ids);
       }
@@ -336,15 +346,15 @@ export default function HomeBuilderPage() {
         type: block.type,
         title: block.title ? `${block.title} (نسخة)` : undefined,
         subtitle: block.subtitle,
-        position: sorted.length,
+        position: builderBlocks.length,
         isActive: false,
         payload,
       });
       const newId = result?.id ?? result?.data?.id;
       if (newId && mode === "after") {
-        const idx = sorted.findIndex((b) => b.id === block.id);
+        const idx = builderBlocks.findIndex((b) => b.id === block.id);
         if (idx >= 0) {
-          const ids = sorted.map((b) => b.id);
+          const ids = builderBlocks.map((b) => b.id);
           ids.splice(idx + 1, 0, newId);
           await mutations.reorderHomeBlocks(ids);
         }
@@ -368,9 +378,10 @@ export default function HomeBuilderPage() {
           await mutations.deleteHomeBlock(block.id);
         }
       }
-      const basePos = replace ? 0 : sorted.length;
-      for (let i = 0; i < tpl.sections.length; i++) {
-        const s = tpl.sections[i];
+      const basePos = replace ? 0 : builderBlocks.length;
+      const cmsSections = tpl.sections.filter((s) => s.type !== "HERO_BANNER");
+      for (let i = 0; i < cmsSections.length; i++) {
+        const s = cmsSections[i];
         const def = SECTION_TYPES.find((t) => t.value === s.type)!;
         await mutations.createHomeBlock({
           type: s.type,
@@ -401,13 +412,14 @@ export default function HomeBuilderPage() {
       for (let i = 0; i < list.length; i++) {
         const item = list[i];
         const type = item.type as SectionType;
+        if (isFixedTopSection(type)) continue;
         const def = SECTION_TYPES.find((t) => t.value === type);
         if (!def) continue;
         await mutations.createHomeBlock({
           type,
           title: item.title,
           subtitle: item.subtitle,
-          position: sorted.length + i,
+          position: builderBlocks.length + i,
           isActive: item.isActive ?? true,
           payload: cleanPayload(type, { ...def.defaultPayload, ...(item.payload ?? {}) }),
         });
@@ -424,9 +436,9 @@ export default function HomeBuilderPage() {
   });
 
   const openAdd = useCallback(() => {
-    setInsertAt(sorted.length);
+    setInsertAt(builderBlocks.length);
     setTypeModalOpen(true);
-  }, [sorted.length]);
+  }, [builderBlocks.length]);
 
   const openInsertAt = useCallback((index: number) => {
     setInsertAt(index);
@@ -456,6 +468,10 @@ export default function HomeBuilderPage() {
   }
 
   function startCreate(type: SectionType, preset?: { title?: string; subtitle?: string; payload?: Record<string, unknown> }) {
+    if (isFixedTopSection(type)) {
+      message.info("الرأس والبنرات ثابتة — عدّلها من صفحات البنرات والفئات");
+      return;
+    }
     const def = SECTION_TYPES.find((t) => t.value === type)!;
     setEditing(null);
     setIsNew(true);
@@ -468,7 +484,7 @@ export default function HomeBuilderPage() {
       title: preset?.title,
       subtitle: preset?.subtitle,
       isActive: true,
-      position: insertAt ?? sorted.length,
+      position: insertAt ?? builderBlocks.length,
       payload: { ...def.defaultPayload, ...preset?.payload },
     });
   }
@@ -510,16 +526,16 @@ export default function HomeBuilderPage() {
 
   function moveBlock(id: string, dir: -1 | 1) {
     pushUndo();
-    const idx = sorted.findIndex((b) => b.id === id);
+    const idx = builderBlocks.findIndex((b) => b.id === id);
     const next = idx + dir;
-    if (next < 0 || next >= sorted.length) return;
-    const ids = sorted.map((b) => b.id);
+    if (next < 0 || next >= builderBlocks.length) return;
+    const ids = builderBlocks.map((b) => b.id);
     [ids[idx], ids[next]] = [ids[next], ids[idx]];
     reorder.mutate(ids);
   }
 
   function exportSelectedJson() {
-    const data = sorted.filter((b) => bulkSelected.includes(b.id));
+    const data = builderBlocks.filter((b) => bulkSelected.includes(b.id));
     if (!data.length) return;
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -543,7 +559,7 @@ export default function HomeBuilderPage() {
   }
 
   function exportJson() {
-    const data = sorted.map(({ id, type, title, subtitle, position, isActive, payload }) => ({
+    const data = builderBlocks.map(({ id, type, title, subtitle, position, isActive, payload }) => ({
       id, type, title, subtitle, position, isActive, payload,
     }));
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
@@ -572,7 +588,7 @@ export default function HomeBuilderPage() {
             بناء الصفحة الرئيسية
           </Title>
           <Text type="secondary">
-            رتّب الأقسام وحرّر محتواها — المعاينة تعكس واجهة التطبيق (cream + sage)
+            الرأس والبنرات وأيقونات الفئات ثابتة — أضف ورتّب الأقسام أسفلها فقط
             {process.env.NEXT_PUBLIC_BUILD_SHA ? (
               <span style={{ marginInlineStart: 8, fontSize: 11, opacity: 0.65 }}>
                 · build {process.env.NEXT_PUBLIC_BUILD_SHA}
@@ -608,15 +624,23 @@ export default function HomeBuilderPage() {
         </Space>
       </div>
 
+      <Alert
+        type="info"
+        showIcon
+        className="hb-fixed-info"
+        message="الجزء العلوي ثابت في التطبيق"
+        description="البحث، البنرات، الاختصارات الأربعة، وأيقونات الفئات تُدار من صفحات البنرات والفئات — لا تُضاف من هنا."
+      />
+
       <Row gutter={[12, 12]} className="hb-stats-row">
         <Col xs={12} sm={6}>
-          <Card size="small"><Statistic title="إجمالي الأقسام" value={sorted.length} /></Card>
+          <Card size="small"><Statistic title="أقسام قابلة للتحرير" value={builderBlocks.length} /></Card>
         </Col>
         <Col xs={12} sm={6}>
           <Card size="small"><Statistic title="نشط" value={activeCount} valueStyle={{ color: "#52c41a" }} /></Card>
         </Col>
         <Col xs={12} sm={6}>
-          <Card size="small"><Statistic title="مخفي" value={sorted.length - activeCount} /></Card>
+          <Card size="small"><Statistic title="مخفي" value={builderBlocks.length - activeCount} /></Card>
         </Col>
         <Col xs={12} sm={6}>
           <Card size="small">
@@ -631,15 +655,15 @@ export default function HomeBuilderPage() {
 
       <Row gutter={16} className="hb-workspace">
         <Col xs={24} xl={previewOpen ? 7 : 9}>
-          <Card title="ترتيب الأقسام" className="hb-list-card" styles={{ body: { padding: 0 } }}>
+          <Card title="ترتيب الأقسام (أسفل الرأس)" className="hb-list-card" styles={{ body: { padding: 0 } }}>
             <SectionListPanel
-              blocks={sorted}
+              blocks={builderBlocks}
               selectedId={selectedId}
               loading={isLoading}
               onSelect={(id) => {
                 guardUnsaved(() => {
                   setSelectedId(id);
-                  const b = sorted.find((x) => x.id === id);
+                  const b = builderBlocks.find((x) => x.id === id);
                   if (b) openEdit(b);
                 });
               }}
@@ -716,6 +740,7 @@ export default function HomeBuilderPage() {
               <PhoneCanvas
                 blocks={canvasBlocks}
                 previewSections={previewSections}
+                editorEntities={editorEntities}
                 selectedId={selectedId}
                 zoom={previewZoom}
                 deviceSize={previewDevice}
@@ -723,7 +748,7 @@ export default function HomeBuilderPage() {
                   guardUnsaved(() => {
                     setSelectedId(id);
                     if (id === DRAFT_SECTION_ID) return;
-                    const b = sorted.find((x) => x.id === id);
+                    const b = builderBlocks.find((x) => x.id === id);
                     if (b) openEdit(b);
                   });
                 }}
@@ -758,7 +783,7 @@ export default function HomeBuilderPage() {
         onPickSection={(type) => startCreate(type)}
         onPickPreset={startCreatePreset}
         onApplyTemplate={(id, replace) => applyTemplate.mutate({ templateId: id, replace })}
-        hasExistingSections={sorted.length > 0}
+        hasExistingSections={builderBlocks.length > 0}
       />
 
       <Modal
@@ -786,8 +811,8 @@ export default function HomeBuilderPage() {
           items={[
             {
               key: "blocks",
-              label: `الأقسام (${sorted.length})`,
-              children: <pre className="hb-json-pre">{JSON.stringify(sorted, null, 2)}</pre>,
+              label: `الأقسام (${builderBlocks.length})`,
+              children: <pre className="hb-json-pre">{JSON.stringify(builderBlocks, null, 2)}</pre>,
             },
           ]}
         />

@@ -138,7 +138,8 @@ export class HomeService {
       promo: promoProducts.map((p) => withPlaceholderImages(p)),
     };
 
-    const sections = await this.sectionResolver.resolve(homeBlocks, {
+    const cmsBlocks = homeBlocks.filter((b) => b.type !== "HERO_BANNER");
+    const sections = await this.sectionResolver.resolve(cmsBlocks, {
       flashEndsAt,
       defaultCategories: categories,
       defaultBrands: brands,

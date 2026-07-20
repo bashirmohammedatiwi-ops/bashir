@@ -1,3 +1,10 @@
+/** ثابت في أعلى التطبيق — يُدار من صفحات البنرات والفئات */
+export const FIXED_TOP_SECTION_TYPES = ["HERO_BANNER"] as const;
+
+export function isFixedTopSection(type: string) {
+  return (FIXED_TOP_SECTION_TYPES as readonly string[]).includes(type);
+}
+
 export type SectionType =
   | "HERO_BANNER"
   | "CATEGORY_GRID"
@@ -424,3 +431,6 @@ export function normalizePayload(type: SectionType, payload: Record<string, unkn
   }
   return copy;
 }
+
+/** أنواع يمكن إضافتها من بناء الصفحة — بدون الرأس الثابت */
+export const BUILDER_SECTION_TYPES = SECTION_TYPES.filter((t) => !isFixedTopSection(t.value));
