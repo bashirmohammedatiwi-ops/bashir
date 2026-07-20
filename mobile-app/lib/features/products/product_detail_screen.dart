@@ -278,12 +278,10 @@ class _GalleryAppBar extends ConsumerWidget {
                                 ),
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(20, 56, 20, 8),
-                          child: AppNetworkImage(
+                          child: ProductCoverImage(
                             url: gallery[i],
                             width: galleryWidth,
                             fit: BoxFit.contain,
-                            placeholderColor: Colors.white,
-                            fallbackColor: Colors.white,
                           ),
                         ),
                       ),
@@ -355,11 +353,9 @@ class _GalleryAppBar extends ConsumerWidget {
                           clipBehavior: Clip.antiAlias,
                           child: Padding(
                             padding: const EdgeInsets.all(4),
-                            child: AppNetworkImage(
+                            child: ProductCoverImage(
                               url: gallery[i],
                               fit: BoxFit.contain,
-                              placeholderColor: Colors.white,
-                              fallbackColor: Colors.white,
                             ),
                           ),
                         ),

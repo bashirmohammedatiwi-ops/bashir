@@ -280,11 +280,16 @@ class _ItemRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
           child: Row(
             children: [
-              AppNetworkImage(
-                url: item.imageUrl,
-                width: 60,
-                height: 60,
-                radius: BorderRadius.circular(AppRadius.sm),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: SizedBox(
+                  width: 60,
+                  height: 60,
+                  child: ProductCoverImage(
+                    url: item.imageUrl,
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ),
               const SizedBox(width: AppSpacing.sm + 2),
               Expanded(

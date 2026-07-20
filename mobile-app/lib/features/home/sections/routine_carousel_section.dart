@@ -93,7 +93,11 @@ class _RoutineCard extends StatelessWidget {
         children: [
           Expanded(
             child: package.coverUrl != null && package.coverUrl!.isNotEmpty
-                ? AppNetworkImage(url: package.coverUrl!, width: width, fit: BoxFit.cover)
+                ? ProductCoverImage(
+                    url: package.coverUrl!,
+                    width: width,
+                    fit: BoxFit.contain,
+                  )
                 : Container(
                     color: AppColors.primaryLight,
                     alignment: Alignment.center,

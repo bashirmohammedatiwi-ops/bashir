@@ -45,14 +45,11 @@ class HomeProductCard extends ConsumerWidget {
                     padding: const EdgeInsets.all(10),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(HomeTheme.tileRadius),
-                      child: ColoredBox(
-                        color: ProductCoverImage.wellColor,
-                        child: Padding(
-                          padding: const EdgeInsets.all(8),
-                          child: ProductCoverImage(
-                            url: product.coverUrl,
-                            fit: BoxFit.contain,
-                          ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: ProductCoverImage(
+                          url: product.coverUrl,
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),

@@ -60,7 +60,11 @@ class _PackageBody extends ConsumerWidget {
         if (coverUrl != null && coverUrl.isNotEmpty)
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: AppNetworkImage(url: coverUrl, height: 200, fit: BoxFit.cover),
+            child: ProductCoverImage(
+              url: coverUrl,
+              height: 200,
+              fit: BoxFit.contain,
+            ),
           )
         else
           Container(

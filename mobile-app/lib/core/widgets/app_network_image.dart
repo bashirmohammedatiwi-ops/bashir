@@ -16,6 +16,8 @@ class AppNetworkImage extends StatelessWidget {
   final String? fallbackAsset;
   final Color? placeholderColor;
   final Color? fallbackColor;
+  /// خلفية ثابتة خلف الصورة — ضرورية لـ PNG الشفاف.
+  final Color? backgroundColor;
 
   const AppNetworkImage({
     super.key,
@@ -27,6 +29,7 @@ class AppNetworkImage extends StatelessWidget {
     this.fallbackAsset,
     this.placeholderColor,
     this.fallbackColor,
+    this.backgroundColor,
   });
 
   @override
@@ -53,14 +56,36 @@ class AppNetworkImage extends StatelessWidget {
         maxWidthDiskCache: pixelW,
         maxHeightDiskCache: pixelH,
         filterQuality: FilterQuality.medium,
-        placeholder: (_, __) => Container(color: placeholderColor ?? AppColors.shimmerBase),
+        placeholder: (_, __) => _solid(placeholderColor ?? AppColors.shimmerBase),
         errorWidget: (_, __, ___) => _fallback(),
+        imageBuilder: backgroundColor != null
+            ? (context, imageProvider) => Image(
+                  image: imageProvider,
+                  width: width,
+                  height: height,
+                  fit: fit,
+                  filterQuality: FilterQuality.medium,
+                  gaplessPlayback: true,
+                )
+            : null,
       );
+
+      if (backgroundColor != null) {
+        child = ColoredBox(
+          color: backgroundColor!,
+          child: child,
+        );
+      }
     }
+
     if (radius != null) {
       return ClipRRect(borderRadius: radius!, child: child);
     }
     return child;
+  }
+
+  Widget _solid(Color color) {
+    return Container(width: width, height: height, color: color);
   }
 
   Widget _fallback() {
@@ -81,7 +106,7 @@ class AppNetworkImage extends StatelessWidget {
   }
 }
 
-/// غلاف المنتج — خلفية بيضاء دائماً (مناسبة لصور PNG).
+/// غلاف المنتج — خلفية بيضاء دائماً (مناسبة لصور PNG الشفافة).
 class ProductCoverImage extends StatelessWidget {
   final String url;
   final double? width;
@@ -100,16 +125,64 @@ class ProductCoverImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: wellColor,
-      child: AppNetworkImage(
-        url: url,
-        width: width,
-        height: height,
-        fit: fit,
-        placeholderColor: wellColor,
-        fallbackColor: wellColor,
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final w = width ??
+            (constraints.maxWidth.isFinite && constraints.maxWidth > 0
+                ? constraints.maxWidth
+                : null);
+        final h = height ??
+            (constraints.maxHeight.isFinite && constraints.maxHeight > 0
+                ? constraints.maxHeight
+                : null);
+
+        return SizedBox(
+          width: w,
+          height: h,
+          child: ColoredBox(
+            color: wellColor,
+            child: url.isEmpty
+                ? Center(
+                    child: Image.asset(
+                      _fallbackAsset,
+                      width: (w != null && w > 48) ? w * 0.45 : 48,
+                      height: (h != null && h > 48) ? h * 0.45 : 48,
+                      fit: BoxFit.contain,
+                    ),
+                  )
+                : CachedNetworkImage(
+                    imageUrl: url,
+                    cacheManager: AppImageCacheManager.instance,
+                    width: w,
+                    height: h,
+                    fit: fit,
+                    fadeInDuration: const Duration(milliseconds: 60),
+                    fadeOutDuration: Duration.zero,
+                    memCacheWidth: cachePixelWidth(context, w),
+                    memCacheHeight: h != null && h.isFinite
+                        ? (h * MediaQuery.devicePixelRatioOf(context)).ceil()
+                        : null,
+                    filterQuality: FilterQuality.medium,
+                    placeholder: (_, __) => const ColoredBox(color: wellColor),
+                    errorWidget: (_, __, ___) => Center(
+                      child: Image.asset(
+                        _fallbackAsset,
+                        width: (w != null && w > 48) ? w * 0.45 : 48,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                    imageBuilder: (context, imageProvider) => Image(
+                      image: imageProvider,
+                      width: w,
+                      height: h,
+                      fit: fit,
+                      filterQuality: FilterQuality.medium,
+                      gaplessPlayback: true,
+                    ),
+                  ),
+          ),
+        );
+      },
     );
   }
 }
