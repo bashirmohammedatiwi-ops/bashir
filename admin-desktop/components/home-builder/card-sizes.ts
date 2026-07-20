@@ -144,6 +144,12 @@ export const SECTION_LAYOUTS: {
     description: "تمرير أفقي بأحجام متناوبة",
     types: ["BANNER_CAROUSEL", "PRODUCT_LIST", "PACKAGES"],
   },
+  {
+    value: "marquee",
+    label: "متحرك",
+    description: "صور تتحرك أفقياً مثل النشرة",
+    types: ["IMAGE_MARQUEE"],
+  },
 ];
 
 export function sizesForContext(ctx: CardSizeContext): CardSizeDef[] {

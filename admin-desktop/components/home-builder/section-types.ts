@@ -16,6 +16,7 @@ export type SectionType =
   | "CUSTOM_BANNER"
   | "SKIN_CONCERNS"
   | "IMAGE_TILES"
+  | "IMAGE_MARQUEE"
   | "CIRCLE_TILES"
   | "ROUTINE_CAROUSEL"
   | "CARE_HUB";
@@ -31,16 +32,17 @@ export const SECTION_TYPES: {
 }[] = [
   {
     value: "HERO_BANNER",
-    label: "بنر رئيسي + فئات",
+    label: "رأس الصفحة",
     group: "أعلى الصفحة",
-    description: "سلايدر كامل مع دوائر الأقسام المتداخلة (Nice One)",
+    description: "بنر صورة + أيقونات الفئات (4×2) — اختر البنرات والفئات من الأسفل",
     icon: "🏠",
     color: "#E1306C",
     defaultPayload: {
       bannerIds: [],
       categoryIds: [],
       maxItems: 8,
-      cardSize: "md",
+      adSlot: "hero",
+      cardSize: "hero",
       cardSizes: {},
       sectionLayout: "auto",
       showTitle: false,
@@ -48,12 +50,27 @@ export const SECTION_TYPES: {
   },
   {
     value: "PROMO_STRIP",
-    label: "شريط ترويجي",
+    label: "نشرة / شريط ترويج",
     group: "أعلى الصفحة",
-    description: "شريط ملون — شحن مجاني، عروض — مع نص متحرك ورابط ذكي",
-    icon: "📢",
+    description: "نشرة إخبارية متحركة أو شريط عروض — تحكم كامل بالنص والسرعة والألوان والربط",
+    icon: "📰",
     color: "#FCE4EC",
-    defaultPayload: { text: "", backgroundColor: "#FCE4EC", linkType: "", linkValue: "", link: "", marquee: true, icon: "🎁" },
+    defaultPayload: {
+      variant: "news",
+      text: "",
+      items: [],
+      label: "عاجل",
+      separator: "   •   ",
+      backgroundColor: "#FCE4EC",
+      textColor: "#2A2826",
+      linkType: "",
+      linkValue: "",
+      link: "",
+      marquee: true,
+      marqueeSpeed: 5,
+      icon: "🎁",
+      showIcon: true,
+    },
   },
   {
     value: "SKIN_CONCERNS",
@@ -62,7 +79,7 @@ export const SECTION_TYPES: {
     description: "شرائح أفقية — حب الشباب، تصبغات، جفاف…",
     icon: "✨",
     color: "#FFF3E0",
-    defaultPayload: { concernIds: [], maxItems: 10, display: "chips", showTitle: false },
+    defaultPayload: { concernIds: [], maxItems: 10, display: "chips", showTitle: true },
   },
   {
     value: "FLASH_SALE",
@@ -97,7 +114,7 @@ export const SECTION_TYPES: {
     defaultPayload: {
       filter: "bestSeller",
       showViewAll: true,
-      showTitle: false,
+      showTitle: true,
       limit: 12,
       productIds: [],
       categoryId: "",
@@ -117,7 +134,7 @@ export const SECTION_TYPES: {
     description: "باقات ومجموعات العناية",
     icon: "🎁",
     color: "#F3E5F5",
-    defaultPayload: { packageIds: [], kind: "all", cardSize: "md", cardSizes: {}, sectionLayout: "carousel", showTitle: false },
+    defaultPayload: { packageIds: [], kind: "all", cardSize: "md", cardSizes: {}, sectionLayout: "carousel", showTitle: true },
   },
   {
     value: "BANNER_FULL",
@@ -126,7 +143,15 @@ export const SECTION_TYPES: {
     description: "بنر واحد بعرض الشاشة",
     icon: "🖼️",
     color: "#E8F5E9",
-    defaultPayload: { bannerId: "", cardSize: "wide", sectionLayout: "auto", showTitle: false },
+    defaultPayload: {
+      bannerId: "",
+      source: "banner",
+      adSlot: "wide",
+      cardSize: "wide",
+      sectionLayout: "auto",
+      showTitle: false,
+      fullBleed: false,
+    },
   },
   {
     value: "BANNER_GRID_2",
@@ -169,7 +194,8 @@ export const SECTION_TYPES: {
     color: "#FFF8E1",
     defaultPayload: {
       bannerIds: [],
-      cardSize: "md",
+      adSlot: "wide169",
+      cardSize: "wide169",
       cardSizes: {},
       sectionLayout: "carousel",
       showTitle: false,
@@ -182,7 +208,15 @@ export const SECTION_TYPES: {
     description: "بنر واحد قابل للتخصيص",
     icon: "🎨",
     color: "#F1F8E9",
-    defaultPayload: { bannerId: "", cardSize: "wide", sectionLayout: "auto", showTitle: false },
+    defaultPayload: {
+      bannerId: "",
+      source: "banner",
+      adSlot: "wide",
+      cardSize: "wide",
+      sectionLayout: "auto",
+      showTitle: false,
+      fullBleed: false,
+    },
   },
   {
     value: "CATEGORY_GRID",
@@ -262,6 +296,25 @@ export const SECTION_TYPES: {
       cardSizes: {},
       sectionLayout: "varied",
       showTitle: false,
+    },
+  },
+  {
+    value: "IMAGE_MARQUEE",
+    label: "صور متحركة",
+    group: "بنرات",
+    description: "شريط صور يتحرك أفقياً — مثل النشرة الإخبارية — مع ربط لكل صورة",
+    icon: "🎞️",
+    color: "#FFF8E1",
+    defaultPayload: {
+      items: [],
+      adSlot: "wide169",
+      cardSize: "wide169",
+      sectionLayout: "marquee",
+      showTitle: false,
+      marqueeSpeed: 5,
+      marqueeGap: 12,
+      imageHeight: 120,
+      fullBleed: false,
     },
   },
   {

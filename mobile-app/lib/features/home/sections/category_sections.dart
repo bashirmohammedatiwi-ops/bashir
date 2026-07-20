@@ -8,7 +8,9 @@ import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/home_section.dart';
 import '../home_link.dart';
+import '../widgets/home_category_grid.dart';
 import '../widgets/home_section_shell.dart';
+import '../widgets/home_theme.dart';
 
 class CategoryTilesSection extends StatelessWidget {
   final HomeSection section;
@@ -18,45 +20,13 @@ class CategoryTilesSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (section.categories.isEmpty) return const SizedBox.shrink();
 
-    final maxH = section.categories
-        .map((c) => _specFor(c, section).height)
-        .fold(142.0, (a, b) => a > b ? a : b);
-
-    return HomeSectionShell(
-      section: section,
-      actionLabel: 'الكل',
-      onAction: () => context.push('/categories'),
-      child: SizedBox(
-        height: maxH + 26,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.fromLTRB(AppSpacing.screenH, 0, AppSpacing.screenH, AppSpacing.md),
-          itemCount: section.categories.length,
-          separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
-          itemBuilder: (_, i) {
-            final cat = section.categories[i];
-            final spec = _specFor(cat, section, i);
-            return Align(
-              alignment: Alignment.bottomCenter,
-              child: _CategoryTile(
-                category: cat,
-                width: spec.width,
-                height: spec.height,
-              ),
-            );
-          },
-        ),
-      ),
+    return HomeCategoryGrid(
+      categories: section.categories,
+      title: section.title ?? 'الفئات',
+      showTitle: section.showTitle,
+      onViewAll: () => context.push('/categories'),
     );
   }
-
-  CardSizeSpec _specFor(Category cat, HomeSection section, [int index = 0]) =>
-      resolveItemCardSize(
-        cardSize: cat.cardSize,
-        sectionLayout: section.sectionLayout,
-        index: index,
-        defaultSize: section.cardSize,
-      );
 }
 
 class MakeupCategoriesSection extends StatelessWidget {
@@ -82,7 +52,7 @@ class MakeupCategoriesSection extends StatelessWidget {
         height: maxH + 24,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.fromLTRB(AppSpacing.screenH, 0, AppSpacing.screenH, AppSpacing.md),
+          padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 0, HomeTheme.paddingH, 4),
           itemCount: section.categories.length,
           separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
           itemBuilder: (_, i) {
@@ -130,17 +100,11 @@ class _CategoryTile extends StatelessWidget {
         width: width,
         height: height,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.1),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(HomeTheme.cardRadius),
+          boxShadow: HomeTheme.softLift,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
+          borderRadius: BorderRadius.circular(HomeTheme.cardRadius),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -150,7 +114,7 @@ class _CategoryTile extends StatelessWidget {
                 Container(
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(0xFFFCE4EC), Color(0xFFE8F4FC)],
+                      colors: [Color(0xFFFCE4EC), Color(0xFFFFF5F7)],
                     ),
                   ),
                   alignment: Alignment.center,
@@ -165,25 +129,24 @@ class _CategoryTile extends StatelessWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withValues(alpha: 0.02),
-                      Colors.black.withValues(alpha: 0.55),
+                      Colors.black.withValues(alpha: 0.0),
+                      Colors.black.withValues(alpha: 0.48),
                     ],
                   ),
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 child: Align(
                   alignment: Alignment.bottomRight,
                   child: Text(
                     category.name,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: HomeTheme.body(
+                      size: 12,
                       color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 12,
-                      height: 1.2,
+                      weight: FontWeight.w700,
                     ),
                   ),
                 ),
@@ -218,37 +181,26 @@ class _MakeupCard extends StatelessWidget {
       child: Container(
         width: width,
         height: height,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.textPrimary.withValues(alpha: 0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
+        decoration: HomeTheme.cardDecoration(),
         clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
             Expanded(
               child: Container(
                 width: double.infinity,
-                color: accent,
+                color: HomeTheme.mist,
                 child: category.imageUrl.isNotEmpty
                     ? AppNetworkImage(url: category.imageUrl, fit: BoxFit.contain)
                     : const Icon(Icons.brush_outlined, color: AppColors.primary, size: 36),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
               child: Text(
                 category.name,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
+                style: HomeTheme.chipLabel.copyWith(fontSize: 12),
               ),
             ),
           ],

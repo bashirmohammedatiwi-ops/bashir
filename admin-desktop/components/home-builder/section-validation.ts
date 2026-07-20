@@ -23,9 +23,14 @@ export function validateSection(block: {
     case "HERO_BANNER":
       if (!asArray(p.bannerIds).length) warnings.push({ level: "warn", message: "لم تُحدَّد بنرات — سيُستخدم أول بنر نشط" });
       break;
-    case "PROMO_STRIP":
-      if (!String(p.text ?? "").trim()) warnings.push({ level: "error", message: "نص الشريط الترويجي فارغ" });
+    case "PROMO_STRIP": {
+      const text = String(p.text ?? "").trim();
+      const items = asArray(p.items).map(String).filter((s) => s.trim());
+      if (!text && !items.length) {
+        warnings.push({ level: "error", message: "أضف نصاً أو أسطر للنشرة" });
+      }
       break;
+    }
     case "PRODUCT_LIST":
     case "FLASH_SALE":
       if (p.source === "manual" && !asArray(p.productIds).length) {
@@ -37,7 +42,11 @@ export function validateSection(block: {
       break;
     case "BANNER_FULL":
     case "CUSTOM_BANNER":
-      if (!p.bannerId) warnings.push({ level: "warn", message: "لم يُحدَّد بنر" });
+      if (p.source === "inline") {
+        if (!p.imageId) warnings.push({ level: "error", message: "أضف صورة الإعلان" });
+      } else if (!p.bannerId) {
+        warnings.push({ level: "warn", message: "لم يُحدَّد بنر" });
+      }
       break;
     case "BANNER_GRID_2":
     case "BANNER_GRID_3":
@@ -46,6 +55,9 @@ export function validateSection(block: {
       break;
     case "IMAGE_TILES":
       if (!asArray(p.items).length) warnings.push({ level: "error", message: "أضف بطاقة صورة واحدة على الأقل" });
+      break;
+    case "IMAGE_MARQUEE":
+      if (!asArray(p.items).length) warnings.push({ level: "error", message: "أضف صورة واحدة على الأقل للشريط المتحرك" });
       break;
     case "CIRCLE_TILES":
       if (!asArray(p.items).length) warnings.push({ level: "error", message: "أضف دائرة واحدة على الأقل" });

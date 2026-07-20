@@ -81,27 +81,35 @@ class AppNetworkImage extends StatelessWidget {
   }
 }
 
-/// غلاف المنتج — شبكة أو شعار محلي.
+/// غلاف المنتج — خلفية بيضاء دائماً (مناسبة لصور PNG).
 class ProductCoverImage extends StatelessWidget {
   final String url;
   final double? width;
+  final double? height;
   final BoxFit fit;
+
+  static const Color wellColor = Colors.white;
 
   const ProductCoverImage({
     super.key,
     required this.url,
     this.width,
+    this.height,
     this.fit = BoxFit.contain,
   });
 
   @override
   Widget build(BuildContext context) {
-    return AppNetworkImage(
-      url: url,
-      width: width,
-      fit: fit,
-      placeholderColor: AppColors.surface,
-      fallbackColor: AppColors.surface,
+    return ColoredBox(
+      color: wellColor,
+      child: AppNetworkImage(
+        url: url,
+        width: width,
+        height: height,
+        fit: fit,
+        placeholderColor: wellColor,
+        fallbackColor: wellColor,
+      ),
     );
   }
 }

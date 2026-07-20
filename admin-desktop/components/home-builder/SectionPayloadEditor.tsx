@@ -53,6 +53,73 @@ function entityLists(props: EditorEntities) {
   };
 }
 
+export function SectionLinkHints({
+  type,
+  ...props
+}: { type: SectionType } & EditorEntities) {
+  const entities = entityLists(props);
+
+  if (type === "PROMO_STRIP") {
+    return (
+      <Text type="secondary">
+        الربط يُعدّ في حقول «عند الضغط» أعلاه — اختر منتج، فئة، أو عروض.
+      </Text>
+    );
+  }
+  if (type === "PRODUCT_LIST" || type === "FLASH_SALE") {
+    return (
+      <>
+        <Text type="secondary">رابط «عرض الكل» يُبنى تلقائياً من الفلتر</Text>
+        <ProductScopeFields entities={entities} />
+      </>
+    );
+  }
+  if (type === "HERO_BANNER") {
+    return (
+      <Text type="secondary">
+        البنرات: اربطها من صفحة البنرات. الفئات: كل أيقونة تفتح قسمها تلقائياً.
+      </Text>
+    );
+  }
+  if (
+    type === "CATEGORY_GRID" ||
+    type === "CATEGORY_TILES" ||
+    type === "MAKEUP_CATEGORIES"
+  ) {
+    return (
+      <Text type="secondary">
+        كل فئة تفتح منتجاتها تلقائياً. لتخصيص رابط فئة واحدة استخدم JSON المتقدم: categoryItems.
+      </Text>
+    );
+  }
+  if (type === "FEATURED_BRANDS" || type === "BRAND_SHOWCASE") {
+    return <Text type="secondary">كل براند يفتح صفحة منتجاته</Text>;
+  }
+  if (type === "PACKAGES" || type === "ROUTINE_CAROUSEL") {
+    return <Text type="secondary">كل باقة تفتح صفحة الباقة (/package/slug)</Text>;
+  }
+  if (type === "SKIN_CONCERNS") {
+    return <Text type="secondary">كل مشكلة تفتح منتجاتها عبر concernSlug</Text>;
+  }
+  if (type === "BANNER_FULL" || type === "CUSTOM_BANNER" || type.startsWith("BANNER_")) {
+    return (
+      <Text type="secondary">
+        اربط البنر من الأسفل مباشرة (صورة + رابط) أو من صفحة البنرات — يُحل الرابط في API
+      </Text>
+    );
+  }
+  if (type === "IMAGE_MARQUEE") {
+    return <Text type="secondary">اربط كل صورة من بطاقة العنصر — منتج، قسم، براند…</Text>;
+  }
+  if (type === "IMAGE_TILES" || type === "CIRCLE_TILES") {
+    return <Text type="secondary">اربط كل بطاقة من حقل الرابط داخل العنصر أدناه</Text>;
+  }
+  if (type === "CARE_HUB") {
+    return <Text type="secondary">الروابط تُبنى تلقائياً من المحتوى المختار</Text>;
+  }
+  return <Text type="secondary">لا إعدادات ربط إضافية — المحتوى يُربط تلقائياً</Text>;
+}
+
 export function SectionPayloadEditor(props: Props) {
   const { type, form, tab = "content" } = props;
   const entities = entityLists(props);
@@ -62,48 +129,7 @@ export function SectionPayloadEditor(props: Props) {
   }
 
   if (tab === "link") {
-    if (type === "PROMO_STRIP") {
-      return <LinkTargetPicker prefix={["payload"]} entities={entities} showLegacyLink />;
-    }
-    if (type === "PRODUCT_LIST" || type === "FLASH_SALE") {
-      return (
-        <>
-          <Text type="secondary">رابط «عرض الكل» يُبنى تلقائياً من الفلتر والتصفية</Text>
-          <ProductScopeFields entities={entities} />
-        </>
-      );
-    }
-    if (
-      type === "CATEGORY_GRID" ||
-      type === "CATEGORY_TILES" ||
-      type === "MAKEUP_CATEGORIES" ||
-      type === "HERO_BANNER"
-    ) {
-      return (
-        <Text type="secondary">
-          لكل فئة رابط افتراضي لقسمها. لتخصيص رابط فئة، أضف في payload حقل categoryItems: [{"{"} categoryId, linkType, linkValue {"}"}]
-        </Text>
-      );
-    }
-    if (type === "FEATURED_BRANDS" || type === "BRAND_SHOWCASE") {
-      return <Text type="secondary">كل براند يفتح صفحة منتجات البراند تلقائياً</Text>;
-    }
-    if (type === "PACKAGES" || type === "ROUTINE_CAROUSEL") {
-      return <Text type="secondary">كل باقة تفتح صفحة الباقة تلقائياً (/package/slug)</Text>;
-    }
-    if (type === "SKIN_CONCERNS") {
-      return <Text type="secondary">كل مشكلة تفتح منتجات المشكلة عبر concernSlug</Text>;
-    }
-    if (type === "BANNER_FULL" || type === "CUSTOM_BANNER" || type.startsWith("BANNER_")) {
-      return <Text type="secondary">اربط البنرات من صفحة البنرات — يُحل الرابط تلقائياً في API</Text>;
-    }
-    if (type === "IMAGE_TILES" || type === "CIRCLE_TILES") {
-      return <Text type="secondary">اربط كل بطاقة من تبويب المحتوى — حقل الرابط داخل كل عنصر</Text>;
-    }
-    if (type === "CARE_HUB") {
-      return <Text type="secondary">الروابط تُبنى تلقائياً من مشاكل البشرة والفئات والباقات المختارة</Text>;
-    }
-    return <Text type="secondary">لا توجد إعدادات ربط إضافية لهذا النوع</Text>;
+    return <SectionLinkHints type={type} {...props} />;
   }
 
   switch (type) {
@@ -111,17 +137,17 @@ export function SectionPayloadEditor(props: Props) {
       return (
         <>
           <Form.Item name={["payload", "bannerIds"]} label="بنرات السلايدر">
-            <EntityMultiPicker items={props.banners ?? []} imageKey="image" placeholder="بحث في البنرات..." />
+            <EntityMultiPicker items={props.banners ?? []} imageKey="image" placeholder="ابحث واختر البنرات..." />
           </Form.Item>
-          <Form.Item name={["payload", "categoryIds"]} label="فئات سريعة">
+          <Form.Item name={["payload", "categoryIds"]} label="أيقونات الفئات (حتى 8)">
             <EntityMultiPicker
               items={props.categories ?? []}
-              max={16}
-              placeholder="بحث في الفئات..."
+              max={8}
+              placeholder="ابحث واختر الفئات..."
             />
           </Form.Item>
-          <Form.Item name={["payload", "maxItems"]} label="عدد الفئات" initialValue={8}>
-            <InputNumber min={4} max={16} style={{ width: "100%" }} />
+          <Form.Item name={["payload", "maxItems"]} label="عدد الأيقونات" initialValue={8} hidden>
+            <InputNumber min={4} max={8} style={{ width: "100%" }} />
           </Form.Item>
         </>
       );
@@ -182,16 +208,47 @@ export function SectionPayloadEditor(props: Props) {
     case "BANNER_FULL":
     case "CUSTOM_BANNER":
       return (
-        <Form.Item name={["payload", "bannerId"]} label="البنر" rules={[{ required: true }]}>
-          <Select
-            showSearch
-            optionFilterProp="label"
-            options={(props.banners ?? []).map((b) => ({
-              value: b.id,
-              label: b.title ?? b.id,
-            }))}
-          />
-        </Form.Item>
+        <>
+          <Form.Item name={["payload", "source"]} label="مصدر الإعلان" initialValue="banner">
+            <Radio.Group>
+              <Radio value="banner">بنر جاهز من المكتبة</Radio>
+              <Radio value="inline">صورة + رابط مباشر</Radio>
+            </Radio.Group>
+          </Form.Item>
+          <Form.Item noStyle shouldUpdate={(p, c) => p.payload?.source !== c.payload?.source}>
+            {({ getFieldValue }) =>
+              getFieldValue(["payload", "source"]) === "inline" ? (
+                <>
+                  <Form.Item name={["payload", "imageId"]} label="صورة الإعلان" rules={[{ required: true }]}>
+                    <MediaPicker label="ارفع أو اختر صورة" />
+                  </Form.Item>
+                  <Form.Item name={["payload", "title"]} label="عنوان (اختياري)">
+                    <Input placeholder="يظهر إذا لم تكن الصورة نصية" />
+                  </Form.Item>
+                  <Form.Item name={["payload", "discountText"]} label="نص الخصم">
+                    <Input placeholder="50%" />
+                  </Form.Item>
+                  <Typography.Text strong style={{ display: "block", margin: "8px 0" }}>
+                    عند الضغط — ينتقل إلى:
+                  </Typography.Text>
+                  <LinkTargetPicker prefix={["payload"]} entities={entities} optional />
+                </>
+              ) : (
+                <Form.Item name={["payload", "bannerId"]} label="البنر" rules={[{ required: true }]}>
+                  <Select
+                    showSearch
+                    optionFilterProp="label"
+                    placeholder="ابحث عن بنر..."
+                    options={(props.banners ?? []).map((b) => ({
+                      value: b.id,
+                      label: b.title ?? b.id,
+                    }))}
+                  />
+                </Form.Item>
+              )
+            }
+          </Form.Item>
+        </>
       );
 
     case "BANNER_GRID_2":
@@ -227,6 +284,10 @@ export function SectionPayloadEditor(props: Props) {
                     <Form.Item {...rest} name={[name, "discountText"]} label="نص الخصم">
                       <Input placeholder="50%" />
                     </Form.Item>
+                    <Typography.Text strong style={{ display: "block", marginBottom: 8 }}>
+                      الرابط
+                    </Typography.Text>
+                    <LinkTargetPicker prefix={["payload", "items", name]} entities={entities} />
                     <Form.Item {...rest} name={[name, "cardSize"]} label="حجم البطاقة" initialValue="md">
                       <CardSizePicker context="banner" compact />
                     </Form.Item>
@@ -378,22 +439,108 @@ export function SectionPayloadEditor(props: Props) {
     case "PROMO_STRIP":
       return (
         <>
-          <Form.Item name={["payload", "text"]} label="نص الشريط" rules={[{ required: true }]}>
-            <Input.TextArea rows={3} placeholder="شحن مجاني للطلبات فوق 50,000 د.ع" />
+          <Form.Item name={["payload", "variant"]} label="شكل العرض" initialValue="news">
+            <Select
+              options={[
+                { value: "news", label: "📰 نشرة إخبارية (عاجل + متحرك)" },
+                { value: "ticker", label: "📜 شريط متحرك نحيف" },
+                { value: "strip", label: "🎁 بطاقة ترويج" },
+              ]}
+            />
+          </Form.Item>
+          <Form.Item name={["payload", "label"]} label="شارة النشرة" initialValue="عاجل">
+            <Input placeholder="عاجل / جديد / حصري" maxLength={12} />
+          </Form.Item>
+          <Form.Item name={["payload", "text"]} label="نص رئيسي">
+            <Input placeholder="شحن مجاني للطلبات فوق 50,000 د.ع" />
+          </Form.Item>
+          <Form.List name={["payload", "items"]}>
+            {(fields, { add, remove }) => (
+              <>
+                <Text strong style={{ display: "block", marginBottom: 8 }}>
+                  أسطر النشرة (تتتابع في الشريط المتحرك)
+                </Text>
+                {fields.map(({ key, name, ...rest }) => (
+                  <div key={key} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                    <Form.Item {...rest} name={name} style={{ flex: 1, marginBottom: 0 }}>
+                      <Input placeholder="سطر إخباري..." />
+                    </Form.Item>
+                    <Button danger type="text" icon={<MinusCircleOutlined />} onClick={() => remove(name)} />
+                  </div>
+                ))}
+                <Button type="dashed" onClick={() => add("")} icon={<PlusOutlined />} block>
+                  إضافة سطر
+                </Button>
+              </>
+            )}
+          </Form.List>
+          <Form.Item name={["payload", "separator"]} label="فاصل بين الأسطر" initialValue="   •   ">
+            <Input placeholder="   •   " />
           </Form.Item>
           <Form.Item name={["payload", "icon"]} label="أيقونة (إيموجي)" initialValue="🎁">
             <Input placeholder="🎁" maxLength={4} />
           </Form.Item>
+          <Form.Item name={["payload", "showIcon"]} label="إظهار الأيقونة" valuePropName="checked" initialValue={true}>
+            <Switch />
+          </Form.Item>
           <Form.Item name={["payload", "marquee"]} label="نص متحرك" valuePropName="checked" initialValue={true}>
             <Switch checkedChildren="متحرك" unCheckedChildren="ثابت" />
           </Form.Item>
+          <Form.Item name={["payload", "marqueeSpeed"]} label="سرعة الحركة (1–10)" initialValue={5}>
+            <InputNumber min={1} max={10} style={{ width: "100%" }} />
+          </Form.Item>
           <Form.Item name={["payload", "backgroundColor"]} label="لون الخلفية" initialValue="#FCE4EC">
             <Input placeholder="#FCE4EC" />
+          </Form.Item>
+          <Form.Item name={["payload", "textColor"]} label="لون النص">
+            <Input placeholder="#2A2826" />
           </Form.Item>
           <Typography.Text strong style={{ display: "block", margin: "12px 0 8px" }}>
             عند الضغط — ينتقل إلى:
           </Typography.Text>
           <LinkTargetPicker prefix={["payload"]} entities={entities} showLegacyLink optional={false} />
+        </>
+      );
+
+    case "IMAGE_MARQUEE":
+      return (
+        <>
+          <Text type="secondary" style={{ display: "block", marginBottom: 12 }}>
+            أضف صوراً تتحرك أفقياً — كل صورة قابلة للربط بمنتج أو قسم أو براند
+          </Text>
+          <Form.List name={["payload", "items"]}>
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...rest }) => (
+                  <Card
+                    key={key}
+                    size="small"
+                    title={`صورة ${name + 1}`}
+                    style={{ marginBottom: 10 }}
+                    extra={
+                      <Button danger type="link" icon={<MinusCircleOutlined />} onClick={() => remove(name)}>
+                        حذف
+                      </Button>
+                    }
+                  >
+                    <Form.Item {...rest} name={[name, "imageId"]} label="الصورة" rules={[{ required: true }]}>
+                      <MediaPicker label="اختر صورة الإعلان" />
+                    </Form.Item>
+                    <Form.Item {...rest} name={[name, "title"]} label="عنوان (اختياري)">
+                      <Input placeholder="للمعاينة في لوحة التحكم" />
+                    </Form.Item>
+                    <Typography.Text strong style={{ display: "block", marginBottom: 8 }}>
+                      عند الضغط — ينتقل إلى:
+                    </Typography.Text>
+                    <LinkTargetPicker prefix={["payload", "items", name]} entities={entities} />
+                  </Card>
+                ))}
+                <Button type="dashed" onClick={() => add({})} block icon={<PlusOutlined />}>
+                  + صورة متحركة
+                </Button>
+              </>
+            )}
+          </Form.List>
         </>
       );
 

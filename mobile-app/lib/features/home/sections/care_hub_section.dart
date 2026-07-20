@@ -92,6 +92,7 @@ class _CareHubSectionState extends State<CareHubSection> {
                 showViewAll: _section.showViewAll,
                 viewAllQuery: _section.viewAllQuery,
               ),
+              nested: true,
             ),
           ],
           if (hasCategories) ...[
@@ -110,6 +111,7 @@ class _CareHubSectionState extends State<CareHubSection> {
                 productCardSize: _section.productCardSize,
                 cardSize: _section.cardSize,
               ),
+              nested: true,
             ),
           ],
         ],

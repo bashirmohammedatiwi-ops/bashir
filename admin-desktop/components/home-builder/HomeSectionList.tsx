@@ -52,7 +52,7 @@ function sectionThumb(block: HomeBlockRow, resolved?: any): string | null {
   if (block.type === "PRODUCT_LIST" || block.type === "FLASH_SALE") {
     return mediaThumb(resolved.products?.[0]?.images?.[0]?.media);
   }
-  if (block.type === "IMAGE_TILES") {
+  if (block.type === "IMAGE_TILES" || block.type === "IMAGE_MARQUEE") {
     const url = resolved.items?.[0]?.imageUrl;
     return url ?? null;
   }

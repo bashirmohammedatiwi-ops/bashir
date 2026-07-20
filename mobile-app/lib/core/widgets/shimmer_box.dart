@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../features/home/widgets/home_theme.dart';
 import '../theme/app_colors.dart';
 
 class ShimmerBox extends StatelessWidget {
@@ -94,64 +95,59 @@ class HomeLoadingSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final heroH = MediaQuery.sizeOf(context).height * 0.38;
-    return DecoratedBox(
-      decoration: const BoxDecoration(gradient: AppColors.homeBackgroundGradient),
+    return ColoredBox(
+      color: HomeTheme.canvas,
       child: ListView(
         padding: EdgeInsets.zero,
         physics: const NeverScrollableScrollPhysics(),
         children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
-            child: ShimmerBox(height: heroH, radius: 0),
-          ),
-        const SizedBox(height: 16),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: List.generate(
-              5,
-              (_) => const Padding(
-                padding: EdgeInsets.only(left: 12),
-                child: ShimmerBox(width: 60, height: 60, radius: 30),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 24),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.04),
-                  blurRadius: 20,
-                  offset: const Offset(0, 6),
-                ),
+          const SizedBox(height: 52),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
+            child: Row(
+              children: [
+                const ShimmerBox(width: 42, height: 42, radius: 21),
+                const Spacer(),
+                const ShimmerBox(width: 42, height: 42, radius: 21),
               ],
             ),
-            child: const Padding(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ShimmerBox(height: 20, width: 160, radius: 8),
-                  SizedBox(height: 16),
-                  HorizontalProductsSkeleton(),
-                ],
+          ),
+          const SizedBox(height: 12),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
+            child: ShimmerBox(height: 48, radius: 999),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
+            child: Row(
+              children: List.generate(
+                5,
+                (_) => const Padding(
+                  padding: EdgeInsets.only(left: 10),
+                  child: ShimmerBox(width: 74, height: 84, radius: 16),
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: HorizontalProductsSkeleton(),
-        ),
-      ],
+          const SizedBox(height: 12),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
+            child: ShimmerBox(height: 290, radius: 0),
+          ),
+          const SizedBox(height: 24),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ShimmerBox(height: 12, width: 72, radius: 6),
+                SizedBox(height: 16),
+                HorizontalProductsSkeleton(),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

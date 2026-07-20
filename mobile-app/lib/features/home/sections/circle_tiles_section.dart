@@ -5,6 +5,7 @@ import '../../../data/models/home_section.dart';
 import '../home_link.dart';
 import '../widgets/circle_tile.dart';
 import '../widgets/home_section_shell.dart';
+import '../widgets/home_theme.dart';
 
 class CircleTilesSection extends StatelessWidget {
   final HomeSection section;
@@ -20,7 +21,7 @@ class CircleTilesSection extends StatelessWidget {
     return HomeSectionShell(
       section: section,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
+        padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
         child: layout == 'row'
             ? _CircleRow(items: items)
             : _CircleGrid(items: items, columns: layout == 'grid3' ? 3 : 4),

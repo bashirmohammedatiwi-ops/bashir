@@ -6,36 +6,66 @@ import 'product.dart';
 
 class PromoStrip {
   final String text;
+  final List<String> items;
   final String? link;
   final String? linkType;
   final String? linkValue;
   final String? backgroundColor;
+  final String? textColor;
   final bool marquee;
+  final double marqueeSpeed;
   final String? icon;
+  final String? variant;
+  final String? label;
+  final String? separator;
+  final bool showIcon;
+
   const PromoStrip({
     required this.text,
+    this.items = const [],
     this.link,
     this.linkType,
     this.linkValue,
     this.backgroundColor,
+    this.textColor,
     this.marquee = true,
+    this.marqueeSpeed = 5,
     this.icon,
+    this.variant,
+    this.label,
+    this.separator,
+    this.showIcon = true,
   });
 
   bool get hasLink =>
       (link != null && link!.isNotEmpty) ||
       (linkType != null && linkType!.isNotEmpty);
 
+  bool get hasContent =>
+      text.trim().isNotEmpty ||
+      items.any((e) => e.trim().isNotEmpty);
+
   factory PromoStrip.fromJson(Map<String, dynamic>? json) {
     if (json == null) return const PromoStrip(text: '');
+    final rawItems = json['items'];
+    final items = rawItems is List
+        ? rawItems.map((e) => e.toString()).where((s) => s.trim().isNotEmpty).toList()
+        : <String>[];
     return PromoStrip(
       text: asString(json['text']),
+      items: items,
       link: json['link']?.toString(),
       linkType: json['linkType']?.toString(),
       linkValue: json['linkValue']?.toString(),
       backgroundColor: json['backgroundColor']?.toString(),
+      textColor: json['textColor']?.toString(),
       marquee: json['marquee'] != false,
+      marqueeSpeed: (json['marqueeSpeed'] as num?)?.toDouble() ?? 5,
       icon: json['icon']?.toString(),
+      variant: json['variant']?.toString(),
+      label: json['label']?.toString(),
+      separator: json['separator']?.toString(),
+      showIcon: json['showIcon'] != false,
     );
   }
 }
@@ -100,6 +130,12 @@ class HomeSection {
   final String? layout;
   final String? sectionLayout;
   final String? cardSize;
+  final String? adSlot;
+  final double? bannerAspect;
+  final bool fullBleed;
+  final double? marqueeSpeed;
+  final double? marqueeGap;
+  final double? imageHeight;
   final bool showTitle;
   final double? paddingTop;
   final double? paddingBottom;
@@ -129,6 +165,12 @@ class HomeSection {
     this.layout,
     this.sectionLayout,
     this.cardSize,
+    this.adSlot,
+    this.bannerAspect,
+    this.fullBleed = false,
+    this.marqueeSpeed,
+    this.marqueeGap,
+    this.imageHeight,
     this.showTitle = false,
     this.paddingTop,
     this.paddingBottom,
@@ -159,6 +201,19 @@ class HomeSection {
         layout: json['layout']?.toString(),
         sectionLayout: json['sectionLayout']?.toString(),
         cardSize: json['cardSize']?.toString(),
+        adSlot: json['adSlot']?.toString(),
+        bannerAspect: json['bannerAspect'] != null
+            ? (json['bannerAspect'] as num).toDouble()
+            : null,
+        fullBleed: json['fullBleed'] == true,
+        marqueeSpeed: json['marqueeSpeed'] != null
+            ? (json['marqueeSpeed'] as num).toDouble()
+            : null,
+        marqueeGap:
+            json['marqueeGap'] != null ? (json['marqueeGap'] as num).toDouble() : null,
+        imageHeight: json['imageHeight'] != null
+            ? (json['imageHeight'] as num).toDouble()
+            : null,
         showTitle: json['showTitle'] == true,
         paddingTop: json['paddingTop'] != null ? (json['paddingTop'] as num).toDouble() : null,
         paddingBottom: json['paddingBottom'] != null ? (json['paddingBottom'] as num).toDouble() : null,

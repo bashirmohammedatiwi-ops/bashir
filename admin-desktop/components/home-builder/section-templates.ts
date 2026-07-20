@@ -111,6 +111,7 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
     accent: "#F59E0B",
     sections: [
       { type: "HERO_BANNER" },
+      { type: "IMAGE_MARQUEE", title: "عروض متحركة", payload: { items: [], imageHeight: 120, marqueeSpeed: 5 } },
       { type: "IMAGE_TILES", title: "اكتشفي المزيد", payload: { columns: 2, items: [] } },
       { type: "BANNER_GRID_3", title: "مجموعات" },
       { type: "BANNER_FULL" },

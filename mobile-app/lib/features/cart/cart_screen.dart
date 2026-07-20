@@ -567,7 +567,7 @@ class _CartProductTile extends ConsumerWidget {
                   width: 96,
                   height: 96,
                   child: item.imageUrl.isNotEmpty
-                      ? AppNetworkImage(url: item.imageUrl, fit: BoxFit.cover)
+                      ? ProductCoverImage(url: item.imageUrl, fit: BoxFit.contain)
                       : ColoredBox(
                           color: AppColors.primaryLight,
                           child: Center(

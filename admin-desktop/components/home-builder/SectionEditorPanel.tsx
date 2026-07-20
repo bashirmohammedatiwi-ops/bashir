@@ -13,7 +13,7 @@ import {
   Typography,
 } from "antd";
 import { SaveOutlined } from "@ant-design/icons";
-import { SectionPayloadEditor } from "./SectionPayloadEditor";
+import { SectionPayloadEditor, SectionLinkHints } from "./SectionPayloadEditor";
 import { SectionLayoutFields } from "./SectionLayoutFields";
 import { SectionType, labelForType, metaForType } from "./section-types";
 import { validateSection } from "./section-validation";
@@ -76,9 +76,9 @@ export function SectionEditorPanel({
           اختر قسماً من القائمة أو المعاينة، أو أضف قسماً جديداً من القوالب الجاهزة.
         </Text>
         <ul className="hb-editor-hints">
-          <li>الترتيب من الأعلى للأسفل = ترتيب الظهور في التطبيق</li>
-          <li>المعاينة على اليمين تعكس التطبيق مباشرة</li>
-          <li>التغييرات غير المحفوظة تظهر فوراً في المعاينة</li>
+          <li>اسحب الأقسام لترتيب الصفحة — نفس الترتيب في التطبيق</li>
+          <li>المعاينة على اليمين = شكل التطبيق الفعلي</li>
+          <li>تبويبان فقط: المحتوى والربط · المظهر</li>
         </ul>
       </Card>
     );
@@ -144,47 +144,41 @@ export function SectionEditorPanel({
           items={[
             {
               key: "content",
-              label: "المحتوى",
+              label: "المحتوى والربط",
               children: type ? (
-                <SectionPayloadEditor {...editorEntities} type={type} form={form} tab="content" />
-              ) : null,
-            },
-            {
-              key: "layout",
-              label: "التخطيط والأحجام",
-              children: type ? (
-                <SectionLayoutFields
-                  type={type}
-                  form={form}
-                  categories={editorEntities.categories}
-                  brands={editorEntities.brands}
-                  banners={editorEntities.banners}
-                />
-              ) : null,
-            },
-            {
-              key: "link",
-              label: "الربط",
-              children: type ? (
-                <SectionPayloadEditor {...editorEntities} type={type} form={form} tab="link" />
-              ) : null,
-            },
-            {
-              key: "style",
-              label: "التصميم",
-              children: (
                 <>
+                  <SectionPayloadEditor {...editorEntities} type={type} form={form} tab="content" />
+                  <Divider plain style={{ margin: "20px 0 12px" }}>
+                    الربط في التطبيق
+                  </Divider>
+                  <SectionLinkHints type={type} {...editorEntities} />
+                </>
+              ) : null,
+            },
+            {
+              key: "appearance",
+              label: "المظهر",
+              children: type ? (
+                <>
+                  <SectionLayoutFields
+                    type={type}
+                    form={form}
+                    categories={editorEntities.categories}
+                    brands={editorEntities.brands}
+                    banners={editorEntities.banners}
+                  />
+                  <Divider plain style={{ margin: "20px 0 12px" }}>
+                    ألوان وصور
+                  </Divider>
                   <Form.Item name={["payload", "headerImageId"]} label="صورة بجانب العنوان">
                     <MediaPicker label="اختيار صورة" />
                   </Form.Item>
                   <Form.Item name={["payload", "backgroundColor"]} label="لون الخلفية">
                     <Input type="color" style={{ width: 72, height: 32, padding: 2 }} />
                   </Form.Item>
-                  {type && (
-                    <SectionPayloadEditor {...editorEntities} type={type} form={form} tab="style" />
-                  )}
+                  <SectionPayloadEditor {...editorEntities} type={type} form={form} tab="style" />
                 </>
-              ),
+              ) : null,
             },
           ]}
         />

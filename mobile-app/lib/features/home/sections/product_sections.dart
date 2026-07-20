@@ -4,19 +4,25 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/formatters.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/card_sizes.dart';
+import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_network_image.dart';
-import '../../../core/widgets/horizontal_product_list.dart';
 import '../../../data/models/home_section.dart';
+import '../widgets/home_product_row.dart';
 import '../widgets/home_section_shell.dart';
-import '../widgets/home_animations.dart';
+import '../widgets/home_theme.dart';
 
 class ProductCarouselSection extends StatelessWidget {
   final HomeSection section;
   final bool compactTop;
-  const ProductCarouselSection({super.key, required this.section, this.compactTop = false});
+  final bool nested;
+
+  const ProductCarouselSection({
+    super.key,
+    required this.section,
+    this.compactTop = false,
+    this.nested = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -25,14 +31,16 @@ class ProductCarouselSection extends StatelessWidget {
     return HomeSectionShell(
       section: section,
       compactTop: compactTop,
-      actionLabel: section.showViewAll ? 'عرض الكل' : null,
-      onAction: section.showViewAll && section.viewAllQuery != null
+      showTitle: nested ? false : null,
+      actionLabel: !nested && section.showViewAll ? 'عرض الكل' : null,
+      onAction: !nested && section.showViewAll && section.viewAllQuery != null
           ? () => context.push('/products?${section.viewAllQuery}')
           : null,
-      child: HorizontalProductList(
+      child: HomeProductRow(
         products: section.products,
-        showRating: true,
-        itemWidth: cardSizeSpec(section.productCardSize ?? section.cardSize).productWidth,
+        itemWidth: cardSizeSpec(section.productCardSize ?? section.cardSize)
+            .productWidth
+            .clamp(148, 164),
       ),
     );
   }
@@ -41,6 +49,7 @@ class ProductCarouselSection extends StatelessWidget {
 class FlashSaleHomeSection extends StatefulWidget {
   final HomeSection section;
   final bool compactTop;
+
   const FlashSaleHomeSection({super.key, required this.section, this.compactTop = false});
 
   @override
@@ -76,84 +85,35 @@ class _FlashSaleHomeSectionState extends State<FlashSaleHomeSection> {
   Widget build(BuildContext context) {
     if (widget.section.products.isEmpty) return const SizedBox.shrink();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: HomeShimmerBorder(
-        borderRadius: BorderRadius.circular(AppRadius.xl + 2),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: AppColors.flashSaleGradient,
-            borderRadius: BorderRadius.circular(AppRadius.xl + 1),
-          ),
-          child: HomeSectionShell(
-          section: widget.section,
-          compactTop: widget.compactTop,
-          elevated: false,
-          actionLabel: widget.section.showViewAll ? 'عرض الكل' : null,
-          onAction: widget.section.showViewAll
-              ? () => context.push('/products?${widget.section.viewAllQuery ?? 'isPromo=1'}')
-              : null,
-          headerTrailing: widget.section.endsAt != null
-              ? ValueListenableBuilder<Duration>(
-                  valueListenable: _remaining,
-                  builder: (_, remaining, __) {
-                    if (remaining <= Duration.zero) return const SizedBox.shrink();
-                    final h = remaining.inHours.toString().padLeft(2, '0');
-                    final m = (remaining.inMinutes % 60).toString().padLeft(2, '0');
-                    final s = (remaining.inSeconds % 60).toString().padLeft(2, '0');
-                    return PulseBadge(child: _FlashCountdownChip(label: '$h:$m:$s'));
-                  },
-                )
-              : null,
-          child: HorizontalProductList(
-            products: widget.section.products,
-            showRating: true,
-            showPromoBadge: true,
-            itemWidth: cardSizeSpec(
-              widget.section.productCardSize ?? widget.section.cardSize,
-            ).productWidth,
-          ),
-        ),
-        ),
-      ),
-    );
-  }
-}
+    Widget? countdown;
+    if (widget.section.endsAt != null) {
+      countdown = ValueListenableBuilder<Duration>(
+        valueListenable: _remaining,
+        builder: (_, remaining, __) {
+          if (remaining <= Duration.zero) return const SizedBox.shrink();
+          final h = remaining.inHours.toString().padLeft(2, '0');
+          final m = (remaining.inMinutes % 60).toString().padLeft(2, '0');
+          final s = (remaining.inSeconds % 60).toString().padLeft(2, '0');
+          return HomeCountdownBoxes(hours: h, minutes: m, seconds: s);
+        },
+      );
+    }
 
-class _FlashCountdownChip extends StatelessWidget {
-  final String label;
-  const _FlashCountdownChip({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.25),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.timer_outlined, size: 14, color: Colors.white),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              fontFeatures: [FontFeature.tabularFigures()],
-            ),
-          ),
-        ],
+    return HomeSectionShell(
+      section: widget.section,
+      compactTop: widget.compactTop,
+      overline: 'عروض محدودة',
+      headerTrailing: countdown,
+      actionLabel: widget.section.showViewAll ? 'عرض الكل' : null,
+      onAction: widget.section.showViewAll
+          ? () => context.push('/products?${widget.section.viewAllQuery ?? 'isPromo=1'}')
+          : null,
+      child: HomeProductRow(
+        products: widget.section.products,
+        showPromoBadge: true,
+        itemWidth: cardSizeSpec(
+          widget.section.productCardSize ?? widget.section.cardSize,
+        ).productWidth.clamp(140, 156),
       ),
     );
   }
@@ -162,105 +122,82 @@ class _FlashCountdownChip extends StatelessWidget {
 class PackagesHomeSection extends StatelessWidget {
   final HomeSection section;
   final bool compactTop;
+
   const PackagesHomeSection({super.key, required this.section, this.compactTop = false});
 
   @override
   Widget build(BuildContext context) {
     if (section.packages.isEmpty) return const SizedBox.shrink();
+
     return HomeSectionShell(
       section: section,
       compactTop: compactTop,
+      overline: 'مجموعات',
       actionLabel: 'عرض الكل',
       onAction: () => context.push('/products?isPromo=1&title=الباقات'),
       child: SizedBox(
-        height: cardSizeSpec(section.cardSize).height.clamp(168, 210).toDouble(),
+        height: 220,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          cacheExtent: 280,
+          padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 0, HomeTheme.paddingH, 4),
           itemCount: section.packages.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 10),
+          separatorBuilder: (_, __) => const SizedBox(width: 14),
           itemBuilder: (_, i) {
             final p = section.packages[i];
             final hasDiscount = p.originalPrice != null && p.originalPrice! > p.price;
-            final cardW = cardSizeSpec(p.cardSize ?? section.cardSize).width.clamp(180, 230).toDouble();
-            return RepaintBoundary(
-              child: GestureDetector(
-                onTap: () {
-                  if (p.link != null && p.link!.isNotEmpty) {
-                    context.push(p.link!);
-                  } else {
-                    context.push('/package/${p.slug.isNotEmpty ? p.slug : p.id}');
-                  }
-                },
-                child: Container(
-                  width: cardW,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    border: Border.all(color: AppColors.border.withValues(alpha: 0.8)),
-                    color: AppColors.surface,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.06),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Expanded(
-                        child: p.coverUrl != null && p.coverUrl!.isNotEmpty
-                            ? AppNetworkImage(url: p.coverUrl!, width: 210, fit: BoxFit.cover)
-                            : Container(
-                                color: AppColors.primaryLight,
-                                alignment: Alignment.center,
-                                child: const Icon(Icons.card_giftcard_rounded,
-                                    color: AppColors.primary, size: 40),
+            final cardW = cardSizeSpec(p.cardSize ?? section.cardSize).width.clamp(170, 210).toDouble();
+            return GestureDetector(
+              onTap: () {
+                if (p.link != null && p.link!.isNotEmpty) {
+                  context.push(p.link!);
+                } else {
+                  context.push('/package/${p.slug.isNotEmpty ? p.slug : p.id}');
+                }
+              },
+              child: Container(
+                width: cardW,
+                decoration: HomeTheme.cardDecoration(),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: p.coverUrl != null && p.coverUrl!.isNotEmpty
+                          ? ProductCoverImage(
+                              url: p.coverUrl!,
+                              width: cardW,
+                              fit: BoxFit.contain,
+                            )
+                          : ColoredBox(
+                              color: HomeTheme.surfaceMuted,
+                              child: const Center(
+                                child: Icon(Icons.card_giftcard_rounded, color: AppColors.primary, size: 36),
                               ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              p.name,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
                             ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(p.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: HomeTheme.chipLabel),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Text(formatPrice(p.price), style: HomeTheme.price),
+                              if (hasDiscount) ...[
+                                const SizedBox(width: 6),
                                 Text(
-                                  formatPrice(p.price),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                    color: AppColors.primary,
-                                    fontSize: 13,
-                                  ),
+                                  formatPrice(p.originalPrice!),
+                                  style: HomeTheme.body(size: 11).copyWith(decoration: TextDecoration.lineThrough),
                                 ),
-                                if (hasDiscount) ...[
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    formatPrice(p.originalPrice!),
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      color: AppColors.textMuted,
-                                      decoration: TextDecoration.lineThrough,
-                                    ),
-                                  ),
-                                ],
                               ],
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             );

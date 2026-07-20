@@ -1,16 +1,13 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
-import '../../../core/widgets/section_header.dart';
 import '../../../data/models/home_section.dart';
 import '../home_link.dart';
-import 'home_surface_card.dart';
+import 'home_theme.dart';
 
-/// عرض العنوان — يُتحكم به من لوحة التحكم (حقل showTitle).
 bool homeSectionShowsTitle(HomeSection section) => section.showTitle;
 
-/// غلاف موحّد لأقسام الرئيسية — بطاقة عائمة وعناوين أنيقة.
+/// غلاف موحّد — عنوان + بطاقة بيضاء للمحتوى.
 class HomeSectionShell extends StatelessWidget {
   final HomeSection section;
   final bool compactTop;
@@ -19,6 +16,8 @@ class HomeSectionShell extends StatelessWidget {
   final Widget? headerTrailing;
   final bool? showTitle;
   final bool elevated;
+  final bool wrapCard;
+  final String? overline;
   final Widget child;
 
   const HomeSectionShell({
@@ -30,7 +29,9 @@ class HomeSectionShell extends StatelessWidget {
     this.onAction,
     this.headerTrailing,
     this.showTitle,
-    this.elevated = true,
+    this.elevated = false,
+    this.wrapCard = false,
+    this.overline,
   });
 
   bool get _showTitle => showTitle ?? homeSectionShowsTitle(section);
@@ -38,105 +39,82 @@ class HomeSectionShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cmsBg = parseHexColor(section.backgroundColor);
-    final surfaceColor = cmsBg ?? AppColors.homeSurface;
+
+    Widget body = child;
+    if (wrapCard && !elevated) {
+      body = Padding(
+        padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
+        child: DecoratedBox(
+          decoration: HomeTheme.cardDecoration(),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(HomeTheme.cardRadius),
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: child,
+            ),
+          ),
+        ),
+      );
+    }
 
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_showTitle)
-          SectionHeader(
-            title: section.title ?? '',
+        if (_showTitle && (section.title?.isNotEmpty ?? false))
+          HomeEditorialHeader(
+            title: section.title!,
+            subtitle: section.subtitle,
             actionLabel: actionLabel,
             onAction: onAction,
-            style: SectionHeaderStyle.niceOne,
-            compact: compactTop,
             trailing: headerTrailing,
+            compact: compactTop,
+            overline: overline,
           )
         else if ((actionLabel != null && onAction != null) || headerTrailing != null)
           Padding(
-            padding: EdgeInsets.fromLTRB(
-              AppSpacing.screenH,
-              compactTop ? AppSpacing.xs : AppSpacing.sm,
-              AppSpacing.screenH,
-              AppSpacing.xs,
-            ),
+            padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 4, HomeTheme.paddingH, 8),
             child: Row(
               children: [
-                if (headerTrailing != null) ...[
-                  headerTrailing!,
-                  const Spacer(),
-                ] else
-                  const Spacer(),
+                if (headerTrailing != null) ...[headerTrailing!, const Spacer()],
                 if (actionLabel != null && onAction != null)
-                  _ViewAllPill(label: actionLabel!, onTap: onAction!),
+                  GestureDetector(
+                    onTap: onAction,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(actionLabel!, style: HomeTheme.viewAll),
+                        const Icon(Icons.arrow_back_ios_new_rounded, size: 10, color: AppColors.primary),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
-        if (section.subtitle != null && section.subtitle!.isNotEmpty && _showTitle)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.screenH + 14,
-              0,
-              AppSpacing.screenH,
-              AppSpacing.sm,
-            ),
-            child: Text(
-              section.subtitle!,
-              style: TextStyle(
-                color: AppColors.textSecondary.withValues(alpha: 0.85),
-                fontSize: 13,
-                height: 1.45,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        child,
+        body,
       ],
     );
 
-    if (!elevated) {
-      return ColoredBox(color: surfaceColor, child: content);
-    }
-
-    return HomeSurfaceCard(
-      color: surfaceColor,
-      child: content,
-    );
-  }
-}
-
-class _ViewAllPill extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _ViewAllPill({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.primaryLight.withValues(alpha: 0.55),
-      borderRadius: BorderRadius.circular(AppRadius.pill),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const Icon(Icons.chevron_left, size: 16, color: AppColors.primary),
-            ],
+    if (elevated) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: cmsBg ?? Colors.white,
+            borderRadius: BorderRadius.circular(HomeTheme.cardRadius),
+            boxShadow: HomeTheme.softLift,
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(HomeTheme.cardRadius),
+            child: content,
           ),
         ),
-      ),
-    );
+      );
+    }
+
+    if (cmsBg != null) {
+      return ColoredBox(color: cmsBg, child: content);
+    }
+
+    return content;
   }
 }

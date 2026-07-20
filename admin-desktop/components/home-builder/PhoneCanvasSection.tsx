@@ -77,6 +77,8 @@ export function PhoneCanvasSection({ block, resolved, meta }: Props) {
       return <SkinConcernsSection title={title} concerns={resolved?.skinConcerns} />;
     case "IMAGE_TILES":
       return <ImageTilesSection title={title} items={resolved?.items} columns={(block.payload?.columns as number) ?? 2} />;
+    case "IMAGE_MARQUEE":
+      return <ImageMarqueePreview title={title} items={resolved?.items} height={Number(block.payload?.imageHeight) || 72} />;
     case "CIRCLE_TILES":
       return <CircleTilesPreview title={title} items={resolved?.items} />;
     case "ROUTINE_CAROUSEL":
@@ -268,6 +270,35 @@ function SkinConcernsSection({ title, concerns }: { title: string; concerns?: an
       <div className="pcs-skin-chips">
         {list.slice(0, 6).map((c, i) => (
           <span key={i} className="pcs-skin-chip">{c.icon ?? "✨"} {c.name}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ImageMarqueePreview({
+  title,
+  items,
+  height,
+}: {
+  title: string;
+  items?: any[];
+  height: number;
+}) {
+  const list = items?.length ? items : [null, null, null];
+  return (
+    <div className="pcs-image-marquee">
+      {title && <SectionHead title={title} action="" />}
+      <div className="pcs-marquee-track" style={{ height }}>
+        {list.map((item, i) => (
+          <div
+            key={i}
+            className="pcs-marquee-slide pcs-img"
+            style={{
+              width: height * 1.55,
+              backgroundImage: item?.imageUrl ? `url(${item.imageUrl})` : undefined,
+            }}
+          />
         ))}
       </div>
     </div>

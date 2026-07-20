@@ -1,5 +1,6 @@
 import { labelForType } from "./section-types";
 import { labelForCardSize } from "./card-sizes";
+import { labelForAdSlot } from "./ad-slots";
 
 export function sectionSummary(block: {
   type: string;
@@ -9,7 +10,11 @@ export function sectionSummary(block: {
   const p = block.payload ?? {};
   const arr = (k: string) => (Array.isArray(p[k]) ? (p[k] as unknown[]).length : 0);
   const layout = p.sectionLayout ? ` · ${p.sectionLayout}` : "";
-  const size = p.cardSize ? ` · ${labelForCardSize(String(p.cardSize))}` : "";
+  const size = p.adSlot
+    ? ` · ${labelForAdSlot(String(p.adSlot))}`
+    : p.cardSize
+      ? ` · ${labelForCardSize(String(p.cardSize))}`
+      : "";
 
   switch (block.type) {
     case "HERO_BANNER":
@@ -22,6 +27,8 @@ export function sectionSummary(block: {
       return `فلتر: ${filterLabel(String(p.filter ?? ""))}`;
     case "IMAGE_TILES":
       return `${arr("items")} بطاقة · ${p.columns ?? 2} أعمدة · ${p.shape ?? "rect"}${layout}${size}`;
+    case "IMAGE_MARQUEE":
+      return `${arr("items")} صورة متحركة${layout}${size}`;
     case "CIRCLE_TILES":
       return `${arr("items")} دائرة${layout}${size}`;
     case "ROUTINE_CAROUSEL":
@@ -41,7 +48,8 @@ export function sectionSummary(block: {
       return arr("concernIds") ? `${arr("concernIds")} مشكلة` : "كل المشاكل";
     case "BANNER_FULL":
     case "CUSTOM_BANNER":
-      return p.bannerId ? "بنر محدد" : "أول بنر نشط";
+      if (p.source === "inline") return `صورة مباشرة${size}`;
+      return p.bannerId ? `بنر محدد${size}` : `أول بنر نشط${size}`;
     case "BANNER_GRID_2":
     case "BANNER_GRID_3":
     case "BANNER_CAROUSEL":

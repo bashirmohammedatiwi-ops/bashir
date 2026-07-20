@@ -1,7 +1,7 @@
 "use client";
 
 import { Form, Input, Select, Space, Typography } from "antd";
-import { LINK_TARGET_TYPES } from "./link-target";
+import { LINK_TARGET_TYPES, LinkTargetType } from "./link-target";
 
 type EntityLists = {
   products?: any[];
@@ -21,8 +21,69 @@ type Props = {
   optional?: boolean;
 };
 
+type SearchOption = {
+  value: string;
+  label: string;
+  searchLabel?: string;
+};
+
+const LINK_GROUPS: { label: string; types: LinkTargetType[] }[] = [
+  { label: "تسوق", types: ["product", "brand", "package", "offers"] },
+  { label: "أقسام", types: ["category", "subcategory", "tertiary", "categoriesTab"] },
+  { label: "اكتشاف", types: ["search", "skinConcern", "products"] },
+  { label: "متقدم", types: ["url"] },
+];
+
 function namePath(prefix: (string | number)[], field: string) {
   return prefix.length ? [...prefix, field] : field;
+}
+
+function filterOption(input: string, option?: SearchOption) {
+  const q = input.toLowerCase().trim();
+  if (!q) return true;
+  const hay = (option?.searchLabel ?? option?.label ?? "").toString().toLowerCase();
+  return hay.includes(q);
+}
+
+function productOptions(products: any[]): SearchOption[] {
+  return (products ?? []).map((p) => {
+    const name = p.name ?? p.id;
+    const brand = p.brand?.name ?? "";
+    return {
+      value: p.slug || p.id,
+      label: brand ? `${name} — ${brand}` : name,
+      searchLabel: [name, p.slug, p.id, brand, p.sku, p.barcode].filter(Boolean).join(" "),
+    };
+  });
+}
+
+function categoryOptions(categories: any[], rootsOnly = false): SearchOption[] {
+  return (categories ?? [])
+    .filter((c) => !rootsOnly || !c.parentId)
+    .map((c) => ({
+      value: c.id,
+      label: c.name ?? c.id,
+      searchLabel: [c.name, c.slug, c.id].filter(Boolean).join(" "),
+    }));
+}
+
+function subcategoryOptions(subcategories: any[]): SearchOption[] {
+  return (subcategories ?? []).map((c) => ({
+    value: c.id,
+    label: c.parent?.name ? `${c.parent.name} › ${c.name}` : (c.name ?? c.id),
+    searchLabel: [c.parent?.name, c.name, c.slug, c.id].filter(Boolean).join(" "),
+  }));
+}
+
+function simpleOptions(items: any[], extra?: (item: any) => string): SearchOption[] {
+  return (items ?? []).map((item) => {
+    const name = item.name ?? item.slug ?? item.id;
+    return {
+      value: item.slug || item.id,
+      label: extra ? extra(item) : name,
+      searchLabel: [name, item.slug, item.id].filter(Boolean).join(" "),
+    };
+  });
 }
 
 export function LinkTargetPicker({
@@ -31,6 +92,14 @@ export function LinkTargetPicker({
   showLegacyLink = false,
   optional = true,
 }: Props) {
+  const groupedLinkTypes = LINK_GROUPS.map((g) => ({
+    label: g.label,
+    options: LINK_TARGET_TYPES.filter((t) => g.types.includes(t.value)).map((t) => ({
+      value: t.value,
+      label: `${t.icon} ${t.label}`,
+    })),
+  }));
+
   return (
     <>
       <Form.Item
@@ -40,11 +109,10 @@ export function LinkTargetPicker({
       >
         <Select
           allowClear={optional}
-          placeholder="بدون رابط"
-          options={LINK_TARGET_TYPES.map((t) => ({
-            value: t.value,
-            label: `${t.icon} ${t.label}`,
-          }))}
+          placeholder="ابحث أو اختر نوع الرابط..."
+          showSearch
+          optionFilterProp="label"
+          options={groupedLinkTypes}
         />
       </Form.Item>
 
@@ -74,12 +142,9 @@ export function LinkTargetPicker({
               <Form.Item name={namePath(prefix, "linkValue")} label="المنتج" rules={[{ required: true }]}>
                 <Select
                   showSearch
-                  optionFilterProp="label"
-                  placeholder="ابحث عن منتج..."
-                  options={(entities.products ?? []).map((p) => ({
-                    value: p.slug || p.id,
-                    label: `${p.name ?? p.id}${p.brand?.name ? ` — ${p.brand.name}` : ""}`,
-                  }))}
+                  filterOption={filterOption}
+                  placeholder="ابحث بالاسم، البراند، أو SKU..."
+                  options={productOptions(entities.products ?? [])}
                 />
               </Form.Item>
             );
@@ -90,10 +155,9 @@ export function LinkTargetPicker({
               <Form.Item name={namePath(prefix, "linkValue")} label="القسم الرئيسي" rules={[{ required: true }]}>
                 <Select
                   showSearch
-                  optionFilterProp="label"
-                  options={(entities.categories ?? [])
-                    .filter((c) => !c.parentId)
-                    .map((c) => ({ value: c.id, label: c.name ?? c.id }))}
+                  filterOption={filterOption}
+                  placeholder="ابحث عن قسم رئيسي..."
+                  options={categoryOptions(entities.categories ?? [], true)}
                 />
               </Form.Item>
             );
@@ -104,11 +168,9 @@ export function LinkTargetPicker({
               <Form.Item name={namePath(prefix, "linkValue")} label="القسم الفرعي" rules={[{ required: true }]}>
                 <Select
                   showSearch
-                  optionFilterProp="label"
-                  options={(entities.subcategories ?? []).map((c) => ({
-                    value: c.id,
-                    label: c.parent?.name ? `${c.parent.name} › ${c.name}` : (c.name ?? c.id),
-                  }))}
+                  filterOption={filterOption}
+                  placeholder="ابحث: قسم › فرعي..."
+                  options={subcategoryOptions(entities.subcategories ?? [])}
                 />
               </Form.Item>
             );
@@ -119,11 +181,9 @@ export function LinkTargetPicker({
               <Form.Item name={namePath(prefix, "linkValue")} label="القسم الثانوي" rules={[{ required: true }]}>
                 <Select
                   showSearch
-                  optionFilterProp="label"
-                  options={(entities.tertiary ?? []).map((c) => ({
-                    value: c.id,
-                    label: c.name ?? c.slug ?? c.id,
-                  }))}
+                  filterOption={filterOption}
+                  placeholder="ابحث عن قسم ثانوي..."
+                  options={simpleOptions(entities.tertiary ?? [])}
                 />
               </Form.Item>
             );
@@ -134,11 +194,9 @@ export function LinkTargetPicker({
               <Form.Item name={namePath(prefix, "linkValue")} label="البراند" rules={[{ required: true }]}>
                 <Select
                   showSearch
-                  optionFilterProp="label"
-                  options={(entities.brands ?? []).map((b) => ({
-                    value: b.id,
-                    label: b.name ?? b.id,
-                  }))}
+                  filterOption={filterOption}
+                  placeholder="ابحث عن براند..."
+                  options={simpleOptions(entities.brands ?? [])}
                 />
               </Form.Item>
             );
@@ -149,11 +207,9 @@ export function LinkTargetPicker({
               <Form.Item name={namePath(prefix, "linkValue")} label="الباقة / الروتين" rules={[{ required: true }]}>
                 <Select
                   showSearch
-                  optionFilterProp="label"
-                  options={(entities.packages ?? []).map((p) => ({
-                    value: p.slug || p.id,
-                    label: p.name ?? p.slug ?? p.id,
-                  }))}
+                  filterOption={filterOption}
+                  placeholder="ابحث عن باقة..."
+                  options={simpleOptions(entities.packages ?? [])}
                 />
               </Form.Item>
             );
@@ -164,10 +220,11 @@ export function LinkTargetPicker({
               <Form.Item name={namePath(prefix, "linkValue")} label="مشكلة البشرة" rules={[{ required: true }]}>
                 <Select
                   showSearch
-                  optionFilterProp="label"
+                  filterOption={filterOption}
                   options={(entities.skinConcerns ?? []).map((c) => ({
                     value: c.slug || c.id,
                     label: `${c.icon ?? "✨"} ${c.name ?? c.slug ?? c.id}`,
+                    searchLabel: [c.name, c.slug, c.id].filter(Boolean).join(" "),
                   }))}
                 />
               </Form.Item>
@@ -227,44 +284,33 @@ export function ProductScopeFields({ prefix = ["payload"], entities }: { prefix?
         <Select
           allowClear
           showSearch
-          optionFilterProp="label"
+          filterOption={filterOption}
           placeholder="كل الأقسام"
-          options={(entities.categories ?? [])
-            .filter((c) => !c.parentId)
-            .map((c) => ({ value: c.id, label: c.name ?? c.id }))}
+          options={categoryOptions(entities.categories ?? [], true)}
         />
       </Form.Item>
       <Form.Item name={[...prefix, "subcategoryId"]} label="قسم فرعي">
         <Select
           allowClear
           showSearch
-          optionFilterProp="label"
-          options={(entities.subcategories ?? []).map((c) => ({
-            value: c.id,
-            label: c.parent?.name ? `${c.parent.name} › ${c.name}` : (c.name ?? c.id),
-          }))}
+          filterOption={filterOption}
+          options={subcategoryOptions(entities.subcategories ?? [])}
         />
       </Form.Item>
       <Form.Item name={[...prefix, "tertiaryCategoryId"]} label="قسم ثانوي">
         <Select
           allowClear
           showSearch
-          optionFilterProp="label"
-          options={(entities.tertiary ?? []).map((c) => ({
-            value: c.id,
-            label: c.name ?? c.slug ?? c.id,
-          }))}
+          filterOption={filterOption}
+          options={simpleOptions(entities.tertiary ?? [])}
         />
       </Form.Item>
       <Form.Item name={[...prefix, "brandId"]} label="براند">
         <Select
           allowClear
           showSearch
-          optionFilterProp="label"
-          options={(entities.brands ?? []).map((b) => ({
-            value: b.id,
-            label: b.name ?? b.id,
-          }))}
+          filterOption={filterOption}
+          options={simpleOptions(entities.brands ?? [])}
         />
       </Form.Item>
     </Space>

@@ -148,15 +148,52 @@ function PhoneSectionBlock({
   if (block.type === "PROMO_STRIP") {
     const bg = (block.payload?.backgroundColor as string) ?? color;
     const text = (block.payload?.text as string) || label;
+    const items = (block.payload?.items as string[]) ?? [];
+    const combined = items.filter(Boolean).join((block.payload?.separator as string) || "   •   ") || text;
     const marquee = block.payload?.marquee !== false;
     const icon = (block.payload?.icon as string) || "🎁";
+    const variant = (block.payload?.variant as string) || "strip";
+    const newsLabel = (block.payload?.label as string) || "عاجل";
+    const textColor = (block.payload?.textColor as string) || "#2A2826";
+
+    if (variant === "news") {
+      return (
+        <div className="hb-preview-promo-wrap">
+          <div className="hb-preview-news" style={{ background: bg, color: textColor }}>
+            <span className="hb-preview-news-badge">
+              <span className="hb-preview-news-dot" />
+              {newsLabel}
+            </span>
+            <div className={`hb-preview-promo-text${marquee ? " marquee" : ""}`}>
+              <span>{combined || "نشرة إخبارية"}</span>
+              {marquee && <span aria-hidden>{combined || "نشرة إخبارية"}</span>}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (variant === "ticker") {
+      return (
+        <div className="hb-preview-promo-wrap">
+          <div className="hb-preview-ticker" style={{ background: bg, color: textColor }}>
+            <span className="hb-preview-promo-icon">{icon}</span>
+            <div className={`hb-preview-promo-text${marquee ? " marquee" : ""}`}>
+              <span>{combined || "شريط متحرك"}</span>
+              {marquee && <span aria-hidden>{combined || "شريط متحرك"}</span>}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="hb-preview-promo-wrap">
-        <div className="hb-preview-promo" style={{ background: bg }}>
+        <div className="hb-preview-promo" style={{ background: bg, color: textColor }}>
           <span className="hb-preview-promo-icon">{icon}</span>
           <div className={`hb-preview-promo-text${marquee ? " marquee" : ""}`}>
-            <span>{text || "شريط ترويجي"}</span>
-            {marquee && <span aria-hidden>{text || "شريط ترويجي"}</span>}
+            <span>{combined || "شريط ترويجي"}</span>
+            {marquee && <span aria-hidden>{combined || "شريط ترويجي"}</span>}
           </div>
         </div>
       </div>
@@ -187,6 +224,32 @@ function PhoneSectionBlock({
               )}
             </div>
           ))}
+        </div>
+      </MiniSection>
+    );
+  }
+
+  if (block.type === "IMAGE_MARQUEE") {
+    const items = resolved?.items ?? [];
+    const h = Number(block.payload?.imageHeight) || 72;
+    return (
+      <MiniSection title={label} subtitle={block.subtitle}>
+        <div className="hb-preview-marquee-images" style={{ height: h, padding: "0 0 8px" }}>
+          <div className="hb-preview-marquee-track">
+            {(items.length ? items : [1, 2, 3]).map((item: any, i: number) => (
+              <div
+                key={i}
+                className="hb-preview-img"
+                style={{
+                  width: h * 1.6,
+                  height: h,
+                  borderRadius: 8,
+                  flexShrink: 0,
+                  background: item.imageUrl ? `center/cover url(${item.imageUrl})` : color,
+                }}
+              />
+            ))}
+          </div>
         </div>
       </MiniSection>
     );

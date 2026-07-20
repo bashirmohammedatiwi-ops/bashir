@@ -1,0 +1,2 @@
+-- IMAGE_MARQUEE: صور متحركة أفقياً
+ALTER TYPE "HomeBlockType" ADD VALUE IF NOT EXISTS 'IMAGE_MARQUEE';

@@ -8,11 +8,19 @@ import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_section.dart';
 import '../widgets/home_section_shell.dart';
+import '../widgets/home_theme.dart';
 
 class RoutineCarouselSection extends StatelessWidget {
   final HomeSection section;
   final bool compactTop;
-  const RoutineCarouselSection({super.key, required this.section, this.compactTop = false});
+  final bool nested;
+
+  const RoutineCarouselSection({
+    super.key,
+    required this.section,
+    this.compactTop = false,
+    this.nested = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,15 +31,16 @@ class RoutineCarouselSection extends StatelessWidget {
     return HomeSectionShell(
       section: section,
       compactTop: compactTop,
-      actionLabel: section.showViewAll ? 'عرض الكل' : null,
-      onAction: section.viewAllQuery != null
+      showTitle: nested ? false : null,
+      actionLabel: !nested && section.showViewAll ? 'عرض الكل' : null,
+      onAction: !nested && section.viewAllQuery != null
           ? () => context.push('/products?${section.viewAllQuery}')
           : null,
       child: SizedBox(
         height: cardH,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 0, HomeTheme.paddingH, 4),
           itemCount: section.packages.length,
           separatorBuilder: (_, __) => const SizedBox(width: 10),
           itemBuilder: (_, i) {

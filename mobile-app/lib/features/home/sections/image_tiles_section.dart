@@ -6,6 +6,7 @@ import '../../../core/widgets/app_network_image.dart';
 import '../home_link.dart';
 import '../widgets/circle_tile.dart';
 import '../widgets/home_section_shell.dart';
+import '../widgets/home_theme.dart';
 import '../../../data/models/home_section.dart';
 
 class ImageTilesSection extends StatelessWidget {
@@ -26,14 +27,14 @@ class ImageTilesSection extends StatelessWidget {
       return HomeSectionShell(
         section: section,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
+          padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
           child: Wrap(
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
             children: [
               for (var i = 0; i < items.length; i++)
                 SizedBox(
-                  width: (MediaQuery.sizeOf(context).width - AppSpacing.screenH * 2 - AppSpacing.sm * (cols - 1)) / cols,
+                  width: (MediaQuery.sizeOf(context).width - HomeTheme.paddingH * 2 - AppSpacing.sm * (cols - 1)) / cols,
                   child: _CircleImageTile(data: items[i]),
                 ),
             ],
@@ -45,7 +46,7 @@ class ImageTilesSection extends StatelessWidget {
     return HomeSectionShell(
       section: section,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
+        padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
         child: useMosaic
             ? _MosaicLayout(items: items, section: section)
             : _UniformGrid(items: items, columns: cols, section: section),
@@ -118,7 +119,7 @@ class _MosaicLayout extends StatelessWidget {
             children: [
               Expanded(
                 flex: 3,
-                child: _ImageTile(data: items[0], radius: AppRadius.lg, index: 0, section: section),
+                child: _ImageTile(data: items[0], radius: HomeTheme.cardRadius, index: 0, section: section),
               ),
               if (items.length > 1) ...[
                 const SizedBox(width: AppSpacing.sm),
@@ -126,10 +127,10 @@ class _MosaicLayout extends StatelessWidget {
                   flex: 2,
                   child: Column(
                     children: [
-                      Expanded(child: _ImageTile(data: items[1], radius: AppRadius.md, index: 1, section: section)),
+                      Expanded(child: _ImageTile(data: items[1], radius: HomeTheme.tileRadius, index: 1, section: section)),
                       if (items.length > 2) ...[
                         const SizedBox(height: AppSpacing.sm),
-                        Expanded(child: _ImageTile(data: items[2], radius: AppRadius.md, index: 2, section: section)),
+                        Expanded(child: _ImageTile(data: items[2], radius: HomeTheme.tileRadius, index: 2, section: section)),
                       ],
                     ],
                   ),
@@ -146,7 +147,7 @@ class _MosaicLayout extends StatelessWidget {
               children: [
                 for (var i = 3; i < items.length && i < 5; i++) ...[
                   if (i > 3) const SizedBox(width: AppSpacing.sm),
-                  Expanded(child: _ImageTile(data: items[i], radius: AppRadius.md, index: i, section: section)),
+                  Expanded(child: _ImageTile(data: items[i], radius: HomeTheme.tileRadius, index: i, section: section)),
                 ],
               ],
             ),
@@ -168,7 +169,7 @@ class _UniformGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     const gap = AppSpacing.sm;
     final screenW = MediaQuery.sizeOf(context).width;
-    final tileW = (screenW - AppSpacing.screenH * 2 - gap * (columns - 1)) / columns;
+    final tileW = (screenW - HomeTheme.paddingH * 2 - gap * (columns - 1)) / columns;
 
     return Wrap(
       spacing: gap,
@@ -178,7 +179,7 @@ class _UniformGrid extends StatelessWidget {
           SizedBox(
             width: tileW,
             height: _tileHeight(Map<String, dynamic>.from(items[i] as Map), section, i),
-            child: _ImageTile(data: items[i], radius: AppRadius.md, index: i, section: section),
+            child: _ImageTile(data: items[i], radius: HomeTheme.tileRadius, index: i, section: section),
           ),
       ],
     );

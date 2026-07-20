@@ -62,6 +62,8 @@ export function resolveBlockPreview(
       return { banners: pickByIds(entities.banners ?? [], p.bannerIds) };
     case "IMAGE_TILES":
       return { items: Array.isArray(p.items) ? p.items : [] };
+    case "IMAGE_MARQUEE":
+      return { items: Array.isArray(p.items) ? p.items : [] };
     case "CIRCLE_TILES":
       return { items: Array.isArray(p.items) ? p.items : [] };
     case "ROUTINE_CAROUSEL":

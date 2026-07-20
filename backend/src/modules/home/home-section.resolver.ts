@@ -26,6 +26,12 @@ export interface ResolvedHomeSection {
   layout?: string;
   sectionLayout?: string;
   cardSize?: string;
+  adSlot?: string;
+  bannerAspect?: number;
+  fullBleed?: boolean;
+  marqueeSpeed?: number;
+  marqueeGap?: number;
+  imageHeight?: number;
   showTitle?: boolean;
   paddingTop?: number;
   paddingBottom?: number;
@@ -41,12 +47,19 @@ export interface ResolvedHomeSection {
   packages?: unknown[];
   promoStrip?: {
     text: string;
+    items?: string[];
     link?: string;
     linkType?: string;
     linkValue?: string;
     backgroundColor?: string;
+    textColor?: string;
     marquee?: boolean;
+    marqueeSpeed?: number;
     icon?: string;
+    variant?: string;
+    label?: string;
+    separator?: string;
+    showIcon?: boolean;
   };
   items?: unknown[];
   skinConcerns?: unknown[];
@@ -137,7 +150,10 @@ export class HomeSectionResolver {
       case HomeBlockType.HERO_BANNER: {
         const bannerIds = payload.bannerIds as string[] | undefined;
         const banners = this.pickBanners(ctx.allBanners, bannerIds);
-        const categories = await this.resolveCategories(payload, ctx.defaultCategories);
+        const categories = await this.resolveCategories(
+          { ...payload, maxItems: Math.min(8, (payload.maxItems as number) ?? 8) },
+          ctx.defaultCategories,
+        );
         return {
           ...base,
           layout: "overlap",
@@ -169,6 +185,17 @@ export class HomeSectionResolver {
 
       case HomeBlockType.BANNER_FULL:
       case HomeBlockType.CUSTOM_BANNER: {
+        if (payload.source === "inline" && payload.imageId) {
+          const inline = await this.resolveInlineAd(payload);
+          if (inline) {
+            const sized = this.sizeBanners([inline], payload);
+            return {
+              ...base,
+              layout: (payload.sectionLayout as string) ?? "full",
+              banners: sized.slice(0, 1),
+            };
+          }
+        }
         const bannerId = (payload.bannerId as string) ?? (payload.bannerIds as string[])?.[0];
         const banners = bannerId
           ? this.pickBanners(ctx.allBanners, [bannerId])
@@ -257,17 +284,28 @@ export class HomeSectionResolver {
         const linkType = payload.linkType as string | undefined;
         const linkValue = payload.linkValue as string | undefined;
         const legacyLink = payload.link as string | undefined;
+        const rawItems = payload.items;
+        const items = Array.isArray(rawItems)
+          ? rawItems.map((x) => String(x)).filter((s) => s.trim())
+          : [];
         return {
           ...base,
           layout: "strip",
           promoStrip: {
             text: (payload.text as string) ?? block.title ?? "",
+            items,
             linkType,
             linkValue,
             link: buildAppLink(linkType, linkValue, legacyLink),
             backgroundColor: (payload.backgroundColor as string) ?? "#FCE4EC",
+            textColor: (payload.textColor as string) ?? "",
             marquee: payload.marquee !== false,
+            marqueeSpeed: Number(payload.marqueeSpeed) || 5,
             icon: (payload.icon as string) ?? "",
+            variant: (payload.variant as string) ?? "strip",
+            label: (payload.label as string) ?? "عاجل",
+            separator: (payload.separator as string) ?? "   •   ",
+            showIcon: payload.showIcon !== false,
           },
         };
       }
@@ -281,6 +319,16 @@ export class HomeSectionResolver {
           layout: sectionLayout === "mosaic" ? "mosaic" : `grid${cols}`,
           sectionLayout,
           shape: (payload.shape as string) ?? "rect",
+          items,
+        };
+      }
+
+      case HomeBlockType.IMAGE_MARQUEE: {
+        const items = await this.resolveImageTiles(payload);
+        return {
+          ...base,
+          layout: "marquee",
+          sectionLayout: (payload.sectionLayout as string) ?? "marquee",
           items,
         };
       }
@@ -581,6 +629,27 @@ export class HomeSectionResolver {
         size,
       );
     });
+  }
+
+  private async resolveInlineAd(payload: Payload) {
+    const imageId = payload.imageId as string | undefined;
+    if (!imageId) return null;
+    const media = await this.prisma.media.findUnique({ where: { id: imageId } });
+    if (!media) return null;
+    const linkType = payload.linkType as string | undefined;
+    const linkValue = payload.linkValue as string | undefined;
+    const legacyLink = payload.link as string | undefined;
+    return {
+      id: `inline-${imageId}`,
+      title: (payload.title as string) ?? "",
+      subtitle: (payload.subtitle as string) ?? "",
+      discountText: (payload.discountText as string) ?? "",
+      backgroundColor: (payload.backgroundColor as string) ?? "",
+      linkType,
+      linkValue,
+      link: buildAppLink(linkType, linkValue, legacyLink),
+      image: media,
+    };
   }
 
   private async resolveImageTiles(payload: Payload) {

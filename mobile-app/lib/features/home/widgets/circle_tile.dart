@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/card_sizes.dart';
 import '../../../core/widgets/app_network_image.dart';
+import 'home_theme.dart';
 
-/// دائرة + صورة + عنوان — مشترك بين CIRCLE_TILES و SKIN_CONCERNS و CATEGORY_GRID.
-class CircleTile extends StatelessWidget {
+/// دائرة + صورة + عنوان — أسلوب Beautief ناعم.
+class CircleTile extends StatefulWidget {
   final String title;
   final String? subtitle;
   final String? imageUrl;
@@ -22,67 +23,57 @@ class CircleTile extends StatelessWidget {
     this.imageUrl,
     this.icon,
     this.cardSize,
-    this.width = 80,
+    this.width = 76,
   });
 
   @override
+  State<CircleTile> createState() => _CircleTileState();
+}
+
+class _CircleTileState extends State<CircleTile> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    final spec = cardSizeSpec(cardSize);
-    final diameter = (spec.width > 0 ? spec.width : 62.0).clamp(52.0, 88.0);
+    final spec = cardSizeSpec(widget.cardSize);
+    final diameter = (spec.width > 0 ? spec.width : 64.0).clamp(56.0, 68.0);
 
     return SizedBox(
-      width: width,
+      width: widget.width,
       child: GestureDetector(
-        onTap: onTap,
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
+        onTap: widget.onTap,
         behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: diameter,
-              height: diameter,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.primaryLight, width: 2),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+        child: AnimatedScale(
+          scale: _pressed ? 0.95 : 1,
+          duration: const Duration(milliseconds: 120),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: diameter,
+                height: diameter,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: HomeTheme.surfaceMuted),
+                  boxShadow: HomeTheme.softLift,
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: _CircleContent(imageUrl: widget.imageUrl, icon: widget.icon),
               ),
-              clipBehavior: Clip.antiAlias,
-              child: _CircleContent(imageUrl: imageUrl, icon: icon),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              title,
-              maxLines: 2,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 10.5,
-                fontWeight: FontWeight.w700,
-                height: 1.15,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            if (subtitle != null && subtitle!.isNotEmpty) ...[
-              const SizedBox(height: 2),
+              const SizedBox(height: 8),
               Text(
-                subtitle!,
-                maxLines: 1,
+                widget.title,
+                maxLines: 2,
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 9,
-                  color: AppColors.textSecondary.withValues(alpha: 0.85),
-                ),
+                style: HomeTheme.circleLabel,
               ),
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -102,8 +93,8 @@ class _CircleContent extends StatelessWidget {
     }
     final emoji = icon?.trim();
     if (emoji != null && emoji.isNotEmpty) {
-      return Center(child: Text(emoji, style: const TextStyle(fontSize: 26, height: 1)));
+      return Center(child: Text(emoji, style: const TextStyle(fontSize: 24, height: 1)));
     }
-    return const Icon(Icons.spa_outlined, color: Color(0xFF888888), size: 26);
+    return const Icon(Icons.spa_outlined, color: AppColors.primary, size: 24);
   }
 }
