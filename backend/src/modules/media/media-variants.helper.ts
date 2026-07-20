@@ -5,6 +5,7 @@ import { IMAGE_VARIANTS, VariantsRecord } from "./media.constants";
 import {
   AVIF_VARIANT_NAMES,
   COMPRESS,
+  flattenAlphaToWhite,
   JPEG_VARIANT_NAMES,
 } from "./media-optimize.helper";
 
@@ -41,11 +42,12 @@ export async function generateMediaVariants(
 
   const existing = (media.variants as VariantsRecord | null) ?? ({} as VariantsRecord);
   const variants: Partial<VariantsRecord> = { ...existing };
-  const original = sharp(originalPath, {
+  let original = sharp(originalPath, {
     failOn: "none",
     unlimited: true,
     sequentialRead: true,
   }).rotate();
+  original = await flattenAlphaToWhite(original);
 
   for (const v of IMAGE_VARIANTS) {
     if (skipThumb && v.name === "thumb" && variants.thumb?.formats?.webp) {

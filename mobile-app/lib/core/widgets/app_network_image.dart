@@ -43,11 +43,11 @@ class AppNetworkImage extends StatelessWidget {
           ? (height! * MediaQuery.devicePixelRatioOf(context)).ceil()
           : null;
 
-      child = CachedNetworkImage(
+      final image = CachedNetworkImage(
         imageUrl: url,
         cacheManager: AppImageCacheManager.instance,
-        width: width,
-        height: height,
+        width: backgroundColor == null ? width : null,
+        height: backgroundColor == null ? height : null,
         fit: fit,
         fadeInDuration: const Duration(milliseconds: 60),
         fadeOutDuration: Duration.zero,
@@ -58,23 +58,25 @@ class AppNetworkImage extends StatelessWidget {
         filterQuality: FilterQuality.medium,
         placeholder: (_, __) => _solid(placeholderColor ?? AppColors.shimmerBase),
         errorWidget: (_, __, ___) => _fallback(),
-        imageBuilder: backgroundColor != null
-            ? (context, imageProvider) => Image(
-                  image: imageProvider,
-                  width: width,
-                  height: height,
-                  fit: fit,
-                  filterQuality: FilterQuality.medium,
-                  gaplessPlayback: true,
-                )
-            : null,
+        imageBuilder: (context, imageProvider) => Image(
+          image: imageProvider,
+          fit: fit,
+          filterQuality: FilterQuality.medium,
+          gaplessPlayback: true,
+        ),
       );
 
       if (backgroundColor != null) {
-        child = ColoredBox(
-          color: backgroundColor!,
-          child: child,
+        child = SizedBox(
+          width: width,
+          height: height,
+          child: ColoredBox(
+            color: backgroundColor!,
+            child: image,
+          ),
         );
+      } else {
+        child = image;
       }
     }
 
@@ -136,50 +138,63 @@ class ProductCoverImage extends StatelessWidget {
                 ? constraints.maxHeight
                 : null);
 
+        if (url.isEmpty) {
+          return SizedBox(
+            width: w,
+            height: h,
+            child: ColoredBox(
+              color: wellColor,
+              child: Center(
+                child: Image.asset(
+                  _fallbackAsset,
+                  width: (w != null && w > 48) ? w * 0.45 : 48,
+                  height: (h != null && h > 48) ? h * 0.45 : 48,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          );
+        }
+
+        final pixelW = cachePixelWidth(context, w);
+        final pixelH = h != null && h.isFinite
+            ? (h * MediaQuery.devicePixelRatioOf(context)).ceil()
+            : null;
+
         return SizedBox(
           width: w,
           height: h,
-          child: ColoredBox(
-            color: wellColor,
-            child: url.isEmpty
-                ? Center(
-                    child: Image.asset(
-                      _fallbackAsset,
-                      width: (w != null && w > 48) ? w * 0.45 : 48,
-                      height: (h != null && h > 48) ? h * 0.45 : 48,
-                      fit: BoxFit.contain,
-                    ),
-                  )
-                : CachedNetworkImage(
-                    imageUrl: url,
-                    cacheManager: AppImageCacheManager.instance,
-                    width: w,
-                    height: h,
-                    fit: fit,
-                    fadeInDuration: const Duration(milliseconds: 60),
-                    fadeOutDuration: Duration.zero,
-                    memCacheWidth: cachePixelWidth(context, w),
-                    memCacheHeight: h != null && h.isFinite
-                        ? (h * MediaQuery.devicePixelRatioOf(context)).ceil()
-                        : null,
-                    filterQuality: FilterQuality.medium,
-                    placeholder: (_, __) => const ColoredBox(color: wellColor),
-                    errorWidget: (_, __, ___) => Center(
-                      child: Image.asset(
-                        _fallbackAsset,
-                        width: (w != null && w > 48) ? w * 0.45 : 48,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                    imageBuilder: (context, imageProvider) => Image(
-                      image: imageProvider,
-                      width: w,
-                      height: h,
-                      fit: fit,
-                      filterQuality: FilterQuality.medium,
-                      gaplessPlayback: true,
-                    ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              const ColoredBox(color: wellColor),
+              CachedNetworkImage(
+                imageUrl: url,
+                cacheManager: AppImageCacheManager.instance,
+                fit: fit,
+                fadeInDuration: const Duration(milliseconds: 60),
+                fadeOutDuration: Duration.zero,
+                memCacheWidth: pixelW,
+                memCacheHeight: pixelH,
+                maxWidthDiskCache: pixelW,
+                maxHeightDiskCache: pixelH,
+                filterQuality: FilterQuality.medium,
+                placeholder: (_, __) => const SizedBox.shrink(),
+                errorWidget: (_, __, ___) => Center(
+                  child: Image.asset(
+                    _fallbackAsset,
+                    width: (w != null && w > 48) ? w * 0.45 : 48,
+                    fit: BoxFit.contain,
                   ),
+                ),
+                imageBuilder: (context, imageProvider) => Image(
+                  image: imageProvider,
+                  fit: fit,
+                  filterQuality: FilterQuality.medium,
+                  gaplessPlayback: true,
+                ),
+              ),
+            ],
           ),
         );
       },

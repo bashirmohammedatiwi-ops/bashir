@@ -33,6 +33,9 @@ export const JPEG_VARIANT_NAMES = new Set(["large"]);
 /** AVIF for list/detail sizes — biggest win for mobile bandwidth. */
 export const AVIF_VARIANT_NAMES = new Set(["thumb", "small", "medium", "large"]);
 
+/** خلفية منتجات — PNG الشفاف يُدمج عليها (بدلاً من الأسود الافتراضي في sharp). */
+export const PRODUCT_IMAGE_BACKGROUND = { r: 255, g: 255, b: 255 } as const;
+
 function sharpInput(buffer: Buffer) {
   return sharp(buffer, {
     failOn: "none",
@@ -60,6 +63,15 @@ function fitWithinMax(width: number, height: number) {
     height: MAX_ORIGINAL_DIMENSION,
     resize: true,
   };
+}
+
+/** يدمج قناة الشفافية على أبيض — يمنع الخلفية السوداء في JPEG/WebP. */
+export async function flattenAlphaToWhite(pipeline: sharp.Sharp): Promise<sharp.Sharp> {
+  const meta = await pipeline.clone().metadata();
+  if (meta.hasAlpha) {
+    return pipeline.flatten({ background: PRODUCT_IMAGE_BACKGROUND });
+  }
+  return pipeline;
 }
 
 export interface OptimizedImage {
@@ -99,6 +111,8 @@ export async function optimizeForStorage(buffer: Buffer): Promise<OptimizedImage
       kernel: sharp.kernel.lanczos3,
     });
   }
+
+  pipeline = await flattenAlphaToWhite(pipeline);
 
   const thumbPipeline = pipeline.clone().resize({
     width: 320,
