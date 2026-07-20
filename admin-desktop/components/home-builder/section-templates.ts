@@ -18,6 +18,64 @@ export type PageTemplate = {
 
 export const PAGE_TEMPLATES: PageTemplate[] = [
   {
+    id: "alhayaa-current",
+    name: "الحياة — الواجهة الحالية",
+    description: "cream + sage — هيرو، نشرة، مشاكل بشرة، عروض، براندات، صور متحركة",
+    icon: "🌿",
+    accent: "#5C6B52",
+    sections: [
+      { type: "HERO_BANNER", title: "مرحباً بكم" },
+      {
+        type: "PROMO_STRIP",
+        payload: {
+          variant: "news",
+          label: "عاجل",
+          text: "🌿 عروض العناية — شحن مجاني فوق 50,000 د.ع",
+          backgroundColor: "#E8EFE4",
+          textColor: "#2C2A28",
+          marquee: true,
+          linkType: "offers",
+        },
+      },
+      {
+        type: "SKIN_CONCERNS",
+        title: "تسوّقي حسب مشكلتك",
+        payload: { display: "circles", showTitle: true, maxItems: 10 },
+      },
+      {
+        type: "FLASH_SALE",
+        title: "أقوى العروض",
+        payload: { filter: "promo", showViewAll: true, limit: 12, productCardSize: "md" },
+      },
+      {
+        type: "PRODUCT_LIST",
+        title: "الأكثر مبيعاً",
+        payload: { filter: "bestSeller", showViewAll: true, limit: 12 },
+      },
+      {
+        type: "FEATURED_BRANDS",
+        title: "براندات مميزة",
+        payload: { layout: "logos", showViewAll: true },
+      },
+      {
+        type: "IMAGE_MARQUEE",
+        title: "عروض متحركة",
+        payload: { items: [], imageHeight: 120, marqueeSpeed: 5, adSlot: "wide169" },
+      },
+      { type: "BANNER_CAROUSEL", title: "عروض حصرية" },
+      {
+        type: "PRODUCT_LIST",
+        title: "وصل حديثاً",
+        payload: { filter: "new", showViewAll: true, limit: 12 },
+      },
+      {
+        type: "CIRCLE_TILES",
+        title: "تسوّقي بسرعة",
+        payload: { sectionLayout: "row", showTitle: true, items: [] },
+      },
+    ],
+  },
+  {
     id: "nice-one",
     name: "Nice One كامل",
     description: "تخطيط متجر تجميل احترافي — هيرو، عروض، أكثر مبيعاً، براندات",

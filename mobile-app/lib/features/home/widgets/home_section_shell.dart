@@ -64,6 +64,7 @@ class HomeSectionShell extends StatelessWidget {
           HomeEditorialHeader(
             title: section.title!,
             subtitle: section.subtitle,
+            headerImageUrl: section.headerImageUrl,
             actionLabel: actionLabel,
             onAction: onAction,
             trailing: headerTrailing,

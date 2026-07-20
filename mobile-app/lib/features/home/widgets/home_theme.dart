@@ -154,6 +154,7 @@ abstract final class HomeTheme {
 class HomeEditorialHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
+  final String? headerImageUrl;
   final String? actionLabel;
   final VoidCallback? onAction;
   final Widget? trailing;
@@ -164,6 +165,7 @@ class HomeEditorialHeader extends StatelessWidget {
     super.key,
     required this.title,
     this.subtitle,
+    this.headerImageUrl,
     this.actionLabel,
     this.onAction,
     this.trailing,
@@ -183,6 +185,19 @@ class HomeEditorialHeader extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
+          if (headerImageUrl != null && headerImageUrl!.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: Image.network(
+                headerImageUrl!,
+                width: 36,
+                height: 36,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

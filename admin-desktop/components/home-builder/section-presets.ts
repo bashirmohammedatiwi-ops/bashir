@@ -1,0 +1,178 @@
+import { SectionType } from "./section-types";
+
+export type SectionPreset = {
+  id: string;
+  label: string;
+  description: string;
+  icon: string;
+  accent: string;
+  type: SectionType;
+  title?: string;
+  subtitle?: string;
+  payload?: Record<string, unknown>;
+};
+
+/** قوالب قسم واحد — سريعة ومطابقة لواجهة التطبيق الحالية */
+export const SECTION_PRESETS: SectionPreset[] = [
+  {
+    id: "hero-dock",
+    label: "هيرو + دوائر",
+    description: "سلايدر علوي مع اختصارات الفئات",
+    icon: "🏠",
+    accent: "#5C6B52",
+    type: "HERO_BANNER",
+    title: "مرحباً بكم",
+  },
+  {
+    id: "promo-news",
+    label: "نشرة عاجلة",
+    description: "شريط ترويجي متحرك — sage & cream",
+    icon: "📰",
+    accent: "#5C6B52",
+    type: "PROMO_STRIP",
+    payload: {
+      variant: "news",
+      label: "عاجل",
+      text: "🌿 عروض العناية — شحن مجاني فوق 50,000 د.ع",
+      backgroundColor: "#E8EFE4",
+      textColor: "#2C2A28",
+      marquee: true,
+      linkType: "offers",
+    },
+  },
+  {
+    id: "skin-circles",
+    label: "مشاكل البشرة",
+    description: "دوائر تفاعلية حسب نوع البشرة",
+    icon: "✨",
+    accent: "#5C6B52",
+    type: "SKIN_CONCERNS",
+    title: "تسوّقي حسب مشكلتك",
+    payload: { display: "circles", showTitle: true, maxItems: 10 },
+  },
+  {
+    id: "flash-row",
+    label: "عروض فلاش",
+    description: "منتجات مخفّضة مع عدّاد",
+    icon: "⚡",
+    accent: "#FF5722",
+    type: "FLASH_SALE",
+    title: "أقوى العروض",
+    payload: { filter: "promo", showViewAll: true, limit: 12, productCardSize: "md" },
+  },
+  {
+    id: "best-sellers",
+    label: "الأكثر مبيعاً",
+    description: "صف منتجات أفقي مع عرض الكل",
+    icon: "🔥",
+    accent: "#5C6B52",
+    type: "PRODUCT_LIST",
+    title: "الأكثر مبيعاً",
+    payload: { filter: "bestSeller", showViewAll: true, limit: 12 },
+  },
+  {
+    id: "brands-strip",
+    label: "شريط براندات",
+    description: "شعارات أفقية مع رابط عرض الكل",
+    icon: "🏷️",
+    accent: "#EEEBE4",
+    type: "FEATURED_BRANDS",
+    title: "براندات مميزة",
+    payload: { layout: "logos", showViewAll: true },
+  },
+  {
+    id: "marquee-ads",
+    label: "صور متحركة",
+    description: "شريط صور إعلانية مثل الأخبار",
+    icon: "🎞️",
+    accent: "#D4DFCF",
+    type: "IMAGE_MARQUEE",
+    title: "عروض متحركة",
+    payload: { items: [], imageHeight: 120, marqueeSpeed: 5, adSlot: "wide169", fullBleed: false },
+  },
+  {
+    id: "banner-duo",
+    label: "بنران غير متماثلين",
+    description: "شبكة 2 — تخطيط editorial",
+    icon: "▦",
+    accent: "#E8EFE4",
+    type: "BANNER_GRID_2",
+    title: "عروض مزدوجة",
+    payload: { bannerIds: [], sectionLayout: "asymmetric", showTitle: false },
+  },
+  {
+    id: "quick-circles",
+    label: "اختصارات دائرية",
+    description: "دوائر روابط سريعة",
+    icon: "⭕",
+    accent: "#F5E8EC",
+    type: "CIRCLE_TILES",
+    title: "تسوّقي بسرعة",
+    payload: { sectionLayout: "row", showTitle: true, items: [] },
+  },
+  {
+    id: "care-hub",
+    label: "مركز العناية",
+    description: "مشاكل + روتين + فئات + منتجات",
+    icon: "💆",
+    accent: "#E0F2F1",
+    type: "CARE_HUB",
+    title: "رحلة العناية",
+    payload: {
+      layout: "stacked",
+      routineKinds: ["ROUTINE_MORNING", "ROUTINE_EVENING"],
+      productFilter: "featured",
+      productLimit: 8,
+      showViewAll: true,
+    },
+  },
+  {
+    id: "promo-ticker",
+    label: "شريط متحرك",
+    description: "Ticker نحيف — مناسب للعروض السريعة",
+    icon: "📜",
+    accent: "#F5E8EC",
+    type: "PROMO_STRIP",
+    payload: { variant: "ticker", text: "🎁 عروض حصرية — اكتشفي المزيد", marquee: true, linkType: "offers" },
+  },
+  {
+    id: "new-arrivals",
+    label: "وصل حديثاً",
+    description: "صف منتجات جديدة",
+    icon: "✨",
+    accent: "#EEEBE4",
+    type: "PRODUCT_LIST",
+    title: "وصل حديثاً",
+    payload: { filter: "new", showViewAll: true, limit: 12 },
+  },
+  {
+    id: "banner-carousel",
+    label: "سلايدر بنرات",
+    description: "Carousel مع نقاط تنقل",
+    icon: "🎠",
+    accent: "#D4DFCF",
+    type: "BANNER_CAROUSEL",
+    title: "عروض حصرية",
+    payload: { bannerIds: [], adSlot: "wide169", sectionLayout: "carousel" },
+  },
+  {
+    id: "category-grid",
+    label: "شبكة فئات",
+    description: "دوائر فئات — تُخفى إذا الهيرو يعرض فئات",
+    icon: "🧩",
+    accent: "#E8EFE4",
+    type: "CATEGORY_GRID",
+    title: "تسوّقي حسب القسم",
+    payload: { showTitle: true, maxItems: 8 },
+  },
+  {
+    id: "brand-showcase",
+    label: "براندات بطاقات",
+    description: "بطاقات براند مع شعار كبير",
+    icon: "💎",
+    accent: "#EDEAF2",
+    type: "BRAND_SHOWCASE",
+    title: "خصومات البراندات",
+    payload: { layout: "cards", showViewAll: true },
+  },
+];

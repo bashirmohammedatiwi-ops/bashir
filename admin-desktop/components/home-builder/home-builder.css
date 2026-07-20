@@ -48,6 +48,17 @@
   flex-shrink: 0;
 }
 
+.hb-list-bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #e8efe4;
+  border-bottom: 1px solid #d4dfcf;
+  flex-shrink: 0;
+}
+
 .hb-list-loading {
   padding: 48px;
   text-align: center;
@@ -1016,4 +1027,116 @@
 .pcs-marquee-slide {
   flex-shrink: 0;
   border-radius: 8px;
+}
+
+/* ── Insert between sections ── */
+.hb-insert-row {
+  display: flex;
+  justify-content: center;
+  padding: 2px 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.hb-list:hover .hb-insert-row,
+.hb-insert-row:hover {
+  opacity: 1;
+}
+
+.hb-insert-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 12px;
+  border: 1px dashed #d4dfcf;
+  border-radius: 999px;
+  background: #faf8f5;
+  color: #5c6b52;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.hb-insert-btn:hover {
+  border-color: #5c6b52;
+  background: #e8efe4;
+}
+
+/* ── Section presets grid ── */
+.hb-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.hb-preset-card {
+  text-align: right;
+  padding: 14px;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+  border-top: 3px solid var(--hb-accent, #5c6b52);
+}
+
+.hb-preset-card:hover {
+  border-color: var(--hb-accent, #5c6b52);
+  box-shadow: 0 4px 16px rgba(92, 107, 82, 0.12);
+  transform: translateY(-2px);
+}
+
+.hb-preset-icon {
+  font-size: 24px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.hb-preset-name {
+  display: block;
+  font-size: 13px !important;
+}
+
+.hb-preset-desc {
+  font-size: 11px !important;
+  margin: 4px 0 0 !important;
+  line-height: 1.35 !important;
+}
+
+/* ── 4-tab editor ── */
+.hb-editor-tabs .ant-tabs-nav {
+  margin-bottom: 16px;
+}
+
+.hb-editor-basics-panel {
+  max-width: 520px;
+}
+
+.hb-editor-basics-panel .ant-alert {
+  margin-top: 8px;
+}
+
+.hb-category-item-row {
+  position: relative;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid #f0f0f0;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.hb-category-item-link {
+  padding-top: 4px;
+}
+
+.hb-category-item-remove {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+}
+
+.hb-json-tab-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
 }

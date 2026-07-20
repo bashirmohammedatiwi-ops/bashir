@@ -54,7 +54,7 @@ BannerLayoutConfig resolveBannerLayout(
   final slotId = itemCardSize ??
       section.adSlot ??
       section.cardSize ??
-      _defaultSlotForType(section.type);
+      _defaultSlotForType(section.type, index: index, section: section);
   final spec = _adSlots[slotId] ?? _adSlots['wide']!;
   final fullBleed = section.fullBleed ||
       spec.fullBleed ||
@@ -71,11 +71,16 @@ BannerLayoutConfig resolveBannerLayout(
   );
 }
 
-String _defaultSlotForType(String type) {
+String _defaultSlotForType(String type, {int index = 0, HomeSection? section}) {
   if (type == 'HERO_BANNER') return 'hero';
   if (type == 'BANNER_FULL' || type == 'CUSTOM_BANNER') return 'wide';
   if (type == 'BANNER_CAROUSEL') return 'wide169';
-  if (type == 'BANNER_GRID_2') return 'tall';
+  if (type == 'BANNER_GRID_2') {
+    if (section?.sectionLayout == 'asymmetric') {
+      return index == 0 ? 'tall' : 'compact';
+    }
+    return 'tall';
+  }
   if (type == 'BANNER_GRID_3') return 'compact';
   return 'wide';
 }

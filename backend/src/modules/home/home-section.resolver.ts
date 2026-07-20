@@ -39,6 +39,7 @@ export interface ResolvedHomeSection {
   backgroundColor?: string;
   showViewAll?: boolean;
   viewAllQuery?: string;
+  headerImageUrl?: string;
   endsAt?: string | null;
   banners?: unknown[];
   categories?: unknown[];
@@ -128,12 +129,20 @@ export class HomeSectionResolver {
       skinConcerns: unknown[];
     },
   ): Promise<ResolvedHomeSection | null> {
+    const headerImageId = payload.headerImageId as string | undefined;
+    let headerImageUrl: string | undefined;
+    if (headerImageId) {
+      const media = await this.prisma.media.findUnique({ where: { id: headerImageId } });
+      if (media) headerImageUrl = this.mediaPublicUrl(media);
+    }
+
     const base = {
       id: block.id,
       type: block.type,
       title: block.title,
       subtitle: block.subtitle,
       position: block.position,
+      headerImageUrl,
       backgroundColor:
         (payload.backgroundColor as string) ??
         (payload.accentColor as string) ??
@@ -267,6 +276,8 @@ export class HomeSectionResolver {
           layout: (payload.layout as string) ?? (block.type === HomeBlockType.BRAND_SHOWCASE ? "cards" : "logos"),
           sectionLayout: (payload.sectionLayout as string) ?? "varied",
           brands,
+          showViewAll: payload.showViewAll !== false,
+          viewAllQuery: (payload.viewAllQuery as string) ?? undefined,
         };
       }
 
@@ -277,6 +288,10 @@ export class HomeSectionResolver {
           layout: (payload.sectionLayout as string) ?? "carousel",
           kind: (payload.kind as string) ?? undefined,
           packages,
+          showViewAll: payload.showViewAll !== false,
+          viewAllQuery:
+            (payload.viewAllQuery as string) ??
+            "isPromo=1&title=" + encodeURIComponent(block.title ?? "الباقات"),
         };
       }
 
@@ -426,6 +441,9 @@ export class HomeSectionResolver {
       title?: string;
       discountText?: string;
       cardSize?: string;
+      linkType?: string;
+      linkValue?: string;
+      link?: string;
     }[]) ?? [];
     if (items.length) {
       const map = new Map((all as { id: string }[]).map((b) => [b.id, b]));
@@ -434,11 +452,19 @@ export class HomeSectionResolver {
         .map((item, idx) => {
           const banner = item.bannerId ? map.get(item.bannerId) : null;
           if (!banner) return null;
-          const sized = {
-            ...(banner as Record<string, unknown>),
-            title: item.title,
-            discountText: item.discountText,
-          };
+          const b = banner as Record<string, unknown>;
+          const sized = withResolvedLink({
+            ...b,
+            title: item.title ?? b.title,
+            discountText: item.discountText ?? b.discountText,
+            linkType: item.linkType ?? b.linkType,
+            linkValue: item.linkValue ?? b.linkValue,
+            link: buildAppLink(
+              (item.linkType ?? b.linkType) as string,
+              (item.linkValue ?? b.linkValue) as string,
+              (item.link ?? b.link) as string,
+            ),
+          });
           const size = resolveCardSize(payload, item.bannerId, idx, item.cardSize);
           return withCardSize(sized, size);
         })

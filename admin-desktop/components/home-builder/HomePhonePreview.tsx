@@ -119,7 +119,7 @@ function PhoneSectionBlock({
             height: 120,
             background: bannerUrl
               ? `center/cover url(${bannerUrl})`
-              : "linear-gradient(135deg, #E1306C, #c2185b)",
+              : "linear-gradient(135deg, #5C6B52, #4A5742)",
           }}
         />
         <div style={{ display: "flex", gap: 6, padding: "0 10px", marginTop: -18, overflow: "hidden" }}>
@@ -257,17 +257,18 @@ function PhoneSectionBlock({
 
   if (block.type === "FLASH_SALE") {
     return (
-      <MiniSection title={label} subtitle={block.subtitle} badge="⏱">
-        <ProductRow products={resolved?.products} accent="#FF5722" />
+      <MiniSection title={label} subtitle={block.subtitle} badge="⏱" showViewAll={block.payload?.showViewAll !== false}>
+        <ProductRow products={resolved?.products} accent="#FF5722" showPrice />
       </MiniSection>
     );
   }
 
   if (block.type === "PRODUCT_LIST" || block.type === "PACKAGES") {
     const list = resolved?.products ?? resolved?.packages;
+    const showAll = block.payload?.showViewAll !== false;
     return (
-      <MiniSection title={label} subtitle={block.subtitle} showViewAll>
-        <ProductRow products={list} isPackage={block.type === "PACKAGES"} />
+      <MiniSection title={label} subtitle={block.subtitle} showViewAll={showAll}>
+        <ProductRow products={list} isPackage={block.type === "PACKAGES"} showPrice={block.type === "PRODUCT_LIST"} />
       </MiniSection>
     );
   }
@@ -275,16 +276,31 @@ function PhoneSectionBlock({
   if (block.type.startsWith("BANNER")) {
     const banners = resolved?.banners ?? resolved?.items ?? [];
     const cols = block.type === "BANNER_GRID_3" ? 3 : block.type === "BANNER_GRID_2" ? 2 : 1;
+    const asymmetric = block.payload?.sectionLayout === "asymmetric" && cols === 2;
     return (
       <MiniSection title={block.type === "BANNER_FULL" ? undefined : label}>
-        <div style={{ display: "flex", gap: 4, padding: "0 10px 8px" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 4,
+            padding: "0 10px 8px",
+            alignItems: asymmetric ? "flex-start" : "stretch",
+          }}
+        >
           {Array.from({ length: cols }).map((_, i) => {
             const url = imgUrl(banners[i]);
+            const flex = asymmetric ? (i === 0 ? 1.4 : 1) : 1;
+            const height = cols === 1 ? 56 : asymmetric ? (i === 0 ? 88 : 64) : 72;
             return (
               <div
                 key={i}
                 className="hb-preview-img"
-                style={{ flex: 1, height: cols === 1 ? 56 : 72, borderRadius: 8, background: url ? `center/cover url(${url})` : color }}
+                style={{
+                  flex,
+                  height,
+                  borderRadius: 8,
+                  background: url ? `center/cover url(${url})` : color,
+                }}
               />
             );
           })}
@@ -318,8 +334,9 @@ function PhoneSectionBlock({
 
   if (block.type.includes("BRAND")) {
     const brands = resolved?.brands ?? [];
+    const showAll = block.payload?.showViewAll !== false;
     return (
-      <MiniSection title={label} showViewAll>
+      <MiniSection title={label} showViewAll={showAll}>
         <div style={{ display: "flex", gap: 6, padding: "0 10px 8px" }}>
           {(brands.length ? brands : [1, 2, 3, 4]).slice(0, 5).map((b: any, i: number) => {
             const url = typeof b === "object" ? imgUrl(b) : null;
@@ -452,10 +469,12 @@ function ProductRow({
   products,
   accent,
   isPackage,
+  showPrice,
 }: {
   products?: any[];
   accent?: string;
   isPackage?: boolean;
+  showPrice?: boolean;
 }) {
   const list = products?.length ? products : [null, null, null];
   const n = Math.min(list.length, 4);
@@ -463,6 +482,8 @@ function ProductRow({
     <div style={{ display: "flex", gap: 6, padding: "0 10px 8px", overflow: "hidden" }}>
       {list.slice(0, n).map((p, i) => {
         const url = isPackage ? imgUrl(p?.coverImage ?? p) : productCover(p);
+        const price = p?.price ?? p?.salePrice;
+        const orig = p?.originalPrice ?? p?.compareAtPrice;
         return (
           <div key={i} className="hb-preview-product">
             <div
@@ -472,6 +493,23 @@ function ProductRow({
             {p?.name && (
               <Text style={{ fontSize: 7, display: "block", marginTop: 2 }} ellipsis>
                 {p.name}
+              </Text>
+            )}
+            {showPrice && price != null && (
+              <Text
+                style={{
+                  fontSize: 7,
+                  display: "block",
+                  color: accent ?? "#5C6B52",
+                  fontWeight: 700,
+                }}
+              >
+                {Number(price).toLocaleString("ar-IQ")} د.ع
+                {orig != null && orig > price && (
+                  <span style={{ color: "#999", textDecoration: "line-through", marginRight: 4 }}>
+                    {Number(orig).toLocaleString("ar-IQ")}
+                  </span>
+                )}
               </Text>
             )}
           </div>

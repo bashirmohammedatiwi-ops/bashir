@@ -134,7 +134,7 @@ export const SECTION_TYPES: {
     description: "باقات ومجموعات العناية",
     icon: "🎁",
     color: "#F3E5F5",
-    defaultPayload: { packageIds: [], kind: "all", cardSize: "md", cardSizes: {}, sectionLayout: "carousel", showTitle: true },
+    defaultPayload: { packageIds: [], kind: "all", cardSize: "md", cardSizes: {}, sectionLayout: "carousel", showTitle: true, showViewAll: true },
   },
   {
     value: "BANNER_FULL",
@@ -280,6 +280,7 @@ export const SECTION_TYPES: {
       cardSizes: {},
       sectionLayout: "varied",
       showTitle: false,
+      showViewAll: true,
     },
   },
   {
@@ -296,6 +297,7 @@ export const SECTION_TYPES: {
       cardSizes: {},
       sectionLayout: "varied",
       showTitle: false,
+      showViewAll: true,
     },
   },
   {

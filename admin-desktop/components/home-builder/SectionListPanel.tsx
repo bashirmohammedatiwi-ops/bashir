@@ -10,8 +10,8 @@ import {
   PlusOutlined,
   WarningOutlined,
 } from "@ant-design/icons";
-import { Button, Empty, Input, Popconfirm, Space, Switch, Tag, Tooltip, Typography } from "antd";
-import { useMemo, useState } from "react";
+import { Button, Checkbox, Empty, Input, Popconfirm, Space, Switch, Tag, Tooltip, Typography } from "antd";
+import { Fragment, useMemo, useState } from "react";
 import { labelForType, metaForType } from "./section-types";
 import { sectionSummary } from "./section-summary";
 import { validateSection } from "./section-validation";
@@ -40,6 +40,12 @@ type Props = {
   onDelete: (id: string) => void;
   onToggle: (id: string, active: boolean) => void;
   onReorder: (ids: string[]) => void;
+  onInsertAt?: (index: number) => void;
+  bulkSelected?: string[];
+  onBulkSelect?: (ids: string[]) => void;
+  onBulkActivate?: () => void;
+  onBulkHide?: () => void;
+  onBulkExport?: () => void;
 };
 
 export function SectionListPanel({
@@ -54,6 +60,12 @@ export function SectionListPanel({
   onDelete,
   onToggle,
   onReorder,
+  onInsertAt,
+  bulkSelected = [],
+  onBulkSelect,
+  onBulkActivate,
+  onBulkHide,
+  onBulkExport,
 }: Props) {
   const [search, setSearch] = useState("");
   const [dragId, setDragId] = useState<string | null>(null);
@@ -99,6 +111,18 @@ export function SectionListPanel({
         </Button>
       </div>
 
+      {bulkSelected.length > 0 && onBulkSelect && (
+        <div className="hb-list-bulk-bar">
+          <Text type="secondary">{bulkSelected.length} محدد</Text>
+          <Space size={4}>
+            <Button size="small" onClick={onBulkActivate}>تفعيل</Button>
+            <Button size="small" onClick={onBulkHide}>إخفاء</Button>
+            <Button size="small" onClick={onBulkExport}>تصدير</Button>
+            <Button size="small" type="link" onClick={() => onBulkSelect([])}>إلغاء</Button>
+          </Space>
+        </div>
+      )}
+
       {loading ? (
         <div className="hb-list-loading">جاري التحميل...</div>
       ) : filtered.length === 0 ? (
@@ -111,7 +135,7 @@ export function SectionListPanel({
         </Empty>
       ) : (
         <div className="hb-list">
-          {filtered.map((block) => {
+          {filtered.map((block, mapIdx) => {
             const idx = blocks.indexOf(block);
             const meta = metaForType(block.type);
             const selected = selectedId === block.id;
@@ -121,94 +145,131 @@ export function SectionListPanel({
             const hasWarn = warnings.some((w) => w.level === "warn");
 
             return (
-              <div
-                key={block.id}
-                className={`hb-list-row${selected ? " selected" : ""}${inactive ? " inactive" : ""}`}
-                draggable
-                onDragStart={() => setDragId(block.id)}
-                onDragEnd={() => setDragId(null)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={() => onDrop(block.id)}
-                onClick={() => onSelect(block.id)}
-              >
+              <Fragment key={block.id}>
+                {mapIdx === 0 && onInsertAt && (
+                  <InsertRow index={0} onInsert={onInsertAt} />
+                )}
+                <div
+                  className={`hb-list-row${selected ? " selected" : ""}${inactive ? " inactive" : ""}`}
+                  draggable
+                  onDragStart={() => setDragId(block.id)}
+                  onDragEnd={() => setDragId(null)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => onDrop(block.id)}
+                  onClick={() => onSelect(block.id)}
+                >
+                {onBulkSelect && (
+                  <Checkbox
+                    checked={bulkSelected.includes(block.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) => {
+                      onBulkSelect(
+                        e.target.checked
+                          ? [...bulkSelected, block.id]
+                          : bulkSelected.filter((id) => id !== block.id),
+                      );
+                    }}
+                  />
+                )}
                 <HolderOutlined className="hb-list-drag" title="اسحب للترتيب" />
 
-                <span className="hb-list-order">{idx + 1}</span>
+                  <span className="hb-list-order">{idx + 1}</span>
 
-                <span
-                  className="hb-list-accent"
-                  style={{ background: meta?.color ?? "#1677ff" }}
-                  title={labelForType(block.type)}
-                />
-
-                <span className="hb-list-icon">{meta?.icon ?? "📦"}</span>
-
-                <div className="hb-list-body">
-                  <div className="hb-list-title-row">
-                    <Text strong ellipsis className="hb-list-title">
-                      {block.title || labelForType(block.type)}
-                    </Text>
-                    {(hasError || hasWarn) && (
-                      <Tooltip title={warnings.map((w) => w.message).join(" · ")}>
-                        <WarningOutlined className={hasError ? "hb-warn error" : "hb-warn"} />
-                      </Tooltip>
-                    )}
-                  </div>
-                  <div className="hb-list-meta">
-                    <Tag bordered={false} color="processing" className="hb-list-type-tag">
-                      {labelForType(block.type)}
-                    </Tag>
-                    <Text type="secondary" ellipsis className="hb-list-summary">
-                      {sectionSummary(block)}
-                    </Text>
-                  </div>
-                </div>
-
-                <div className="hb-list-status" onClick={(e) => e.stopPropagation()}>
-                  <Switch
-                    size="small"
-                    checked={!inactive}
-                    onChange={(checked) => onToggle(block.id, checked)}
+                  <span
+                    className="hb-list-accent"
+                    style={{ background: meta?.color ?? "#1677ff" }}
+                    title={labelForType(block.type)}
                   />
-                  <Text type="secondary" className="hb-list-status-label">
-                    {inactive ? "مخفي" : "نشط"}
-                  </Text>
-                </div>
 
-                <Space size={0} className="hb-list-actions" onClick={(e) => e.stopPropagation()}>
-                  <Tooltip title="أعلى">
-                    <Button
-                      type="text"
+                  <span className="hb-list-icon">{meta?.icon ?? "📦"}</span>
+
+                  <div className="hb-list-body">
+                    <div className="hb-list-title-row">
+                      <Text strong ellipsis className="hb-list-title">
+                        {block.title || labelForType(block.type)}
+                      </Text>
+                      {(hasError || hasWarn) && (
+                        <Tooltip title={warnings.map((w) => w.message).join(" · ")}>
+                          <WarningOutlined className={hasError ? "hb-warn error" : "hb-warn"} />
+                        </Tooltip>
+                      )}
+                    </div>
+                    <div className="hb-list-meta">
+                      <Tag bordered={false} color="processing" className="hb-list-type-tag">
+                        {labelForType(block.type)}
+                      </Tag>
+                      <Text type="secondary" ellipsis className="hb-list-summary">
+                        {sectionSummary(block)}
+                      </Text>
+                    </div>
+                  </div>
+
+                  <div className="hb-list-status" onClick={(e) => e.stopPropagation()}>
+                    <Switch
                       size="small"
-                      icon={<ArrowUpOutlined />}
-                      disabled={idx === 0}
-                      onClick={() => onMove(block.id, -1)}
+                      checked={!inactive}
+                      onChange={(checked) => onToggle(block.id, checked)}
                     />
-                  </Tooltip>
-                  <Tooltip title="أسفل">
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<ArrowDownOutlined />}
-                      disabled={idx === blocks.length - 1}
-                      onClick={() => onMove(block.id, 1)}
-                    />
-                  </Tooltip>
-                  <Tooltip title="تعديل">
-                    <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(block)} />
-                  </Tooltip>
-                  <Tooltip title="نسخ">
-                    <Button type="text" size="small" icon={<CopyOutlined />} onClick={() => onDuplicate(block)} />
-                  </Tooltip>
-                  <Popconfirm title="حذف هذا القسم؟" okText="حذف" cancelText="إلغاء" onConfirm={() => onDelete(block.id)}>
-                    <Button type="text" size="small" danger icon={<DeleteOutlined />} />
-                  </Popconfirm>
-                </Space>
-              </div>
+                    <Text type="secondary" className="hb-list-status-label">
+                      {inactive ? "مخفي" : "نشط"}
+                    </Text>
+                  </div>
+
+                  <Space size={0} className="hb-list-actions" onClick={(e) => e.stopPropagation()}>
+                    <Tooltip title="أعلى">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<ArrowUpOutlined />}
+                        disabled={idx === 0}
+                        onClick={() => onMove(block.id, -1)}
+                      />
+                    </Tooltip>
+                    <Tooltip title="أسفل">
+                      <Button
+                        type="text"
+                        size="small"
+                        icon={<ArrowDownOutlined />}
+                        disabled={idx === blocks.length - 1}
+                        onClick={() => onMove(block.id, 1)}
+                      />
+                    </Tooltip>
+                    <Tooltip title="تعديل">
+                      <Button type="text" size="small" icon={<EditOutlined />} onClick={() => onEdit(block)} />
+                    </Tooltip>
+                    <Tooltip title="نسخ">
+                      <Button type="text" size="small" icon={<CopyOutlined />} onClick={() => onDuplicate(block)} />
+                    </Tooltip>
+                    <Popconfirm title="حذف هذا القسم؟" okText="حذف" cancelText="إلغاء" onConfirm={() => onDelete(block.id)}>
+                      <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+                    </Popconfirm>
+                  </Space>
+                </div>
+                {onInsertAt && <InsertRow index={idx + 1} onInsert={onInsertAt} />}
+              </Fragment>
             );
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+function InsertRow({ index, onInsert }: { index: number; onInsert: (index: number) => void }) {
+  return (
+    <div className="hb-insert-row">
+      <button
+        type="button"
+        className="hb-insert-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          onInsert(index);
+        }}
+        title={`إدراج قسم في الموضع ${index + 1}`}
+      >
+        <PlusOutlined />
+        <span>إدراج هنا</span>
+      </button>
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   Select,
   Switch,
   Typography,
+  Alert,
 } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
@@ -495,10 +496,13 @@ export function SectionPayloadEditor(props: Props) {
           <Form.Item name={["payload", "textColor"]} label="لون النص">
             <Input placeholder="#2A2826" />
           </Form.Item>
-          <Typography.Text strong style={{ display: "block", margin: "12px 0 8px" }}>
-            عند الضغط — ينتقل إلى:
-          </Typography.Text>
-          <LinkTargetPicker prefix={["payload"]} entities={entities} showLegacyLink optional={false} />
+          <Alert
+            type="info"
+            showIcon
+            message="الربط"
+            description="اضبط وجهة الضغط من تبويب «الروابط»."
+            style={{ marginTop: 8 }}
+          />
         </>
       );
 
@@ -695,6 +699,16 @@ export function SectionPayloadEditor(props: Props) {
                 { value: "stacked", label: "أقسام مكدسة" },
                 { value: "tabs", label: "تبويبات" },
               ]}
+            />
+          </Form.Item>
+          <Form.Item name={["payload", "routineKinds"]} label="أنواع الروتين">
+            <Select
+              mode="multiple"
+              options={[
+                { value: "ROUTINE_MORNING", label: "🌅 روتين صباحي" },
+                { value: "ROUTINE_EVENING", label: "🌙 روتين مسائي" },
+              ]}
+              placeholder="صباحي + مسائي"
             />
           </Form.Item>
           <Form.Item name={["payload", "concernIds"]} label="مشاكل البشرة">

@@ -133,8 +133,10 @@ class PackagesHomeSection extends StatelessWidget {
       section: section,
       compactTop: compactTop,
       overline: 'مجموعات',
-      actionLabel: 'عرض الكل',
-      onAction: () => context.push('/products?isPromo=1&title=الباقات'),
+      actionLabel: section.showViewAll ? 'عرض الكل' : null,
+      onAction: section.showViewAll
+          ? () => context.push('/products?${section.viewAllQuery ?? 'isPromo=1&title=الباقات'}')
+          : null,
       child: SizedBox(
         height: 220,
         child: ListView.separated(

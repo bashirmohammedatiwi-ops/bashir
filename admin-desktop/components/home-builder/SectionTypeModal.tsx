@@ -2,6 +2,7 @@
 
 import { Checkbox, Input, Modal, Typography } from "antd";
 import { useMemo, useRef, useState } from "react";
+import { SECTION_PRESETS } from "./section-presets";
 import { PAGE_TEMPLATES } from "./section-templates";
 import { SECTION_TYPES, SectionType } from "./section-types";
 
@@ -11,6 +12,7 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onPickSection: (type: SectionType) => void;
+  onPickPreset: (presetId: string) => void;
   onApplyTemplate: (templateId: string, replace?: boolean) => void;
   hasExistingSections: boolean;
 };
@@ -19,10 +21,11 @@ export function SectionTypeModal({
   open,
   onClose,
   onPickSection,
+  onPickPreset,
   onApplyTemplate,
   hasExistingSections,
 }: Props) {
-  const [tab, setTab] = useState<"sections" | "templates">("sections");
+  const [tab, setTab] = useState<"presets" | "sections" | "templates">("presets");
   const [search, setSearch] = useState("");
   const replaceRef = useRef(false);
 
@@ -50,6 +53,17 @@ export function SectionTypeModal({
     if (!q) return PAGE_TEMPLATES;
     return PAGE_TEMPLATES.filter(
       (t) => t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q),
+    );
+  }, [search]);
+
+  const filteredPresets = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return SECTION_PRESETS;
+    return SECTION_PRESETS.filter(
+      (p) =>
+        p.label.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        p.type.toLowerCase().includes(q),
     );
   }, [search]);
 
@@ -92,17 +106,24 @@ export function SectionTypeModal({
       className="hb-type-modal"
       afterClose={() => {
         setSearch("");
-        setTab("sections");
+        setTab("presets");
       }}
     >
       <div className="hb-type-modal-head">
         <div>
           <Text strong style={{ fontSize: 18 }}>مكتبة الأقسام والقوالب</Text>
           <Paragraph type="secondary" style={{ margin: 0 }}>
-            اختر قسماً واحداً أو طبّق قالباً جاهزاً للصفحة كاملة
+            ابدأ بقالب جاهز، أو أضف قسماً واحداً، أو طبّق صفحة كاملة
           </Paragraph>
         </div>
         <div className="hb-type-tabs">
+          <button
+            type="button"
+            className={`hb-type-tab${tab === "presets" ? " active" : ""}`}
+            onClick={() => setTab("presets")}
+          >
+            سريع ({SECTION_PRESETS.length})
+          </button>
           <button
             type="button"
             className={`hb-type-tab${tab === "sections" ? " active" : ""}`}
@@ -115,13 +136,19 @@ export function SectionTypeModal({
             className={`hb-type-tab${tab === "templates" ? " active" : ""}`}
             onClick={() => setTab("templates")}
           >
-            قوالب ({PAGE_TEMPLATES.length})
+            صفحات ({PAGE_TEMPLATES.length})
           </button>
         </div>
       </div>
 
       <Input.Search
-        placeholder={tab === "sections" ? "ابحث عن نوع قسم..." : "ابحث عن قالب..."}
+        placeholder={
+          tab === "presets"
+            ? "ابحث عن قالب سريع..."
+            : tab === "sections"
+              ? "ابحث عن نوع قسم..."
+              : "ابحث عن قالب صفحة..."
+        }
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         allowClear
@@ -129,7 +156,26 @@ export function SectionTypeModal({
         style={{ marginBottom: 20 }}
       />
 
-      {tab === "sections" ? (
+      {tab === "presets" ? (
+        <div className="hb-preset-grid">
+          {filteredPresets.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className="hb-preset-card"
+              style={{ "--hb-accent": preset.accent } as React.CSSProperties}
+              onClick={() => {
+                onPickPreset(preset.id);
+                onClose();
+              }}
+            >
+              <span className="hb-preset-icon">{preset.icon}</span>
+              <Text strong className="hb-preset-name">{preset.label}</Text>
+              <Paragraph type="secondary" className="hb-preset-desc">{preset.description}</Paragraph>
+            </button>
+          ))}
+        </div>
+      ) : tab === "sections" ? (
         Object.entries(groups).map(([group, types]) => (
           <div key={group} className="hb-type-group">
             <Text className="hb-type-group-label">{group}</Text>

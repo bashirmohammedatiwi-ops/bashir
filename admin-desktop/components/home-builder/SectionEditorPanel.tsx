@@ -4,6 +4,7 @@ import {
   Alert,
   Button,
   Card,
+  Divider,
   Form,
   Input,
   Space,
@@ -13,8 +14,10 @@ import {
   Typography,
 } from "antd";
 import { SaveOutlined } from "@ant-design/icons";
-import { SectionPayloadEditor, SectionLinkHints } from "./SectionPayloadEditor";
+import { SectionPayloadEditor } from "./SectionPayloadEditor";
 import { SectionLayoutFields } from "./SectionLayoutFields";
+import { SectionLinksEditor } from "./SectionLinksEditor";
+import { SectionJsonTab } from "./SectionJsonTab";
 import { SectionType, labelForType, metaForType } from "./section-types";
 import { validateSection } from "./section-validation";
 import { MediaPicker } from "@/components/MediaPicker";
@@ -70,15 +73,16 @@ export function SectionEditorPanel({
           </div>
         </div>
         <Title level={5} style={{ marginTop: 16 }}>
-          تحرير القسم
+          استوديو تحرير الأقسام
         </Title>
         <Text type="secondary">
-          اختر قسماً من القائمة أو المعاينة، أو أضف قسماً جديداً من القوالب الجاهزة.
+          اختر قسماً من القائمة أو المعاينة، أو أضف قسماً من المكتبة — القوالب الجاهزة أو قسم واحد.
         </Text>
         <ul className="hb-editor-hints">
-          <li>اسحب الأقسام لترتيب الصفحة — نفس الترتيب في التطبيق</li>
-          <li>المعاينة على اليمين = شكل التطبيق الفعلي</li>
-          <li>تبويبان فقط: المحتوى والربط · المظهر</li>
+          <li>اسحب الأقسام للترتيب — أو أدرج بين أي قسمين عبر زر +</li>
+          <li>المعاينة على اليمين = شكل التطبيق الفعلي (cream + sage)</li>
+          <li>5 تبويبات: أساسيات · محتوى · روابط · تصميم · JSON</li>
+          <li>⌘S حفظ · ↑↓ التنقل · معاينة WYSIWYG مع عدّاد فلاش</li>
         </ul>
       </Card>
     );
@@ -88,10 +92,11 @@ export function SectionEditorPanel({
     <Card
       className="hb-editor-card"
       title={
-        <Space>
+        <Space wrap>
           <span>{meta?.icon ?? "📦"}</span>
           <span>{isNew ? "قسم جديد" : editing?.title || labelForType(type ?? "")}</span>
           <Tag color="blue">{labelForType(type ?? "")}</Tag>
+          {isNew && <Tag color="orange">غير محفوظ</Tag>}
         </Space>
       }
       extra={
@@ -119,18 +124,6 @@ export function SectionEditorPanel({
       )}
 
       <Form form={form} layout="vertical">
-        <div className="hb-editor-basics">
-          <Form.Item name="title" label="العنوان في التطبيق" style={{ flex: 2 }}>
-            <Input placeholder="مثال: الأكثر مبيعاً" />
-          </Form.Item>
-          <Form.Item name="subtitle" label="عنوان فرعي" style={{ flex: 2 }}>
-            <Input placeholder="اختياري" />
-          </Form.Item>
-          <Form.Item name="isActive" label="نشط" valuePropName="checked">
-            <Switch />
-          </Form.Item>
-        </div>
-
         <Form.Item name="position" label="رقم الترتيب" hidden>
           <Input type="number" />
         </Form.Item>
@@ -141,23 +134,55 @@ export function SectionEditorPanel({
         <Tabs
           activeKey={editorTab}
           onChange={onTabChange}
+          className="hb-editor-tabs"
           items={[
             {
+              key: "basics",
+              label: "أساسيات",
+              children: (
+                <div className="hb-editor-basics-panel">
+                  <Form.Item name="title" label="العنوان في التطبيق">
+                    <Input placeholder="مثال: الأكثر مبيعاً" size="large" />
+                  </Form.Item>
+                  <Form.Item name="subtitle" label="عنوان فرعي">
+                    <Input placeholder="اختياري — يظهر تحت العنوان" />
+                  </Form.Item>
+                  <Form.Item name="isActive" label="حالة القسم" valuePropName="checked">
+                    <Switch checkedChildren="نشط" unCheckedChildren="مخفي" />
+                  </Form.Item>
+                  {type && (
+                    <Alert
+                      type="success"
+                      showIcon={false}
+                      message={
+                        <Space>
+                          <span>{meta?.icon}</span>
+                          <Text strong>{labelForType(type)}</Text>
+                          <Text type="secondary">— {meta?.group}</Text>
+                        </Space>
+                      }
+                    />
+                  )}
+                </div>
+              ),
+            },
+            {
               key: "content",
-              label: "المحتوى والربط",
+              label: "المحتوى",
               children: type ? (
-                <>
-                  <SectionPayloadEditor {...editorEntities} type={type} form={form} tab="content" />
-                  <Divider plain style={{ margin: "20px 0 12px" }}>
-                    الربط في التطبيق
-                  </Divider>
-                  <SectionLinkHints type={type} {...editorEntities} />
-                </>
+                <SectionPayloadEditor {...editorEntities} type={type} form={form} tab="content" />
               ) : null,
             },
             {
-              key: "appearance",
-              label: "المظهر",
+              key: "links",
+              label: "الروابط",
+              children: type ? (
+                <SectionLinksEditor type={type} form={form} {...editorEntities} />
+              ) : null,
+            },
+            {
+              key: "design",
+              label: "التصميم",
               children: type ? (
                 <>
                   <SectionLayoutFields
@@ -168,17 +193,22 @@ export function SectionEditorPanel({
                     banners={editorEntities.banners}
                   />
                   <Divider plain style={{ margin: "20px 0 12px" }}>
-                    ألوان وصور
+                    ألوان وصور القسم
                   </Divider>
-                  <Form.Item name={["payload", "headerImageId"]} label="صورة بجانب العنوان">
+                  <Form.Item name={["payload", "headerImageId"]} label="صورة بجانب العنوان" tooltip="تظهر بجانب عنوان القسم في التطبيق">
                     <MediaPicker label="اختيار صورة" />
                   </Form.Item>
-                  <Form.Item name={["payload", "backgroundColor"]} label="لون الخلفية">
+                  <Form.Item name={["payload", "backgroundColor"]} label="لون خلفية القسم">
                     <Input type="color" style={{ width: 72, height: 32, padding: 2 }} />
                   </Form.Item>
                   <SectionPayloadEditor {...editorEntities} type={type} form={form} tab="style" />
                 </>
               ) : null,
+            },
+            {
+              key: "json",
+              label: "JSON",
+              children: type ? <SectionJsonTab type={type} form={form} /> : null,
             },
           ]}
         />

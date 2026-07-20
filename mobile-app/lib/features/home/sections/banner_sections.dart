@@ -73,10 +73,52 @@ class _PairRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final sectionLayout = resolveBannerLayout(section);
+    final sectionLayout = section.sectionLayout;
+    final asymmetric = sectionLayout == 'asymmetric';
     final gap = 10.0;
-    final pad = sectionLayout.fullBleed ? 0.0 : HomeTheme.paddingH * 2;
-    final itemW = (MediaQuery.sizeOf(context).width - pad - gap) / 2;
+    final pad = resolveBannerLayout(section).fullBleed ? 0.0 : HomeTheme.paddingH * 2;
+    final totalW = MediaQuery.sizeOf(context).width - pad;
+
+    if (asymmetric && banners.length >= 2) {
+      final leftW = (totalW - gap) * 0.58;
+      final rightW = (totalW - gap) * 0.42;
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 58,
+            child: HomeStaggerItem(
+              index: 0,
+              child: HomeBannerStage.fromSection(
+                banner: banners[0],
+                section: section,
+                index: 0,
+                width: leftW,
+                sceneIndex: 0,
+                onTap: () => openBannerLink(context, banners[0]),
+              ),
+            ),
+          ),
+          SizedBox(width: gap),
+          Expanded(
+            flex: 42,
+            child: HomeStaggerItem(
+              index: 1,
+              child: HomeBannerStage.fromSection(
+                banner: banners[1],
+                section: section,
+                index: 1,
+                width: rightW,
+                sceneIndex: 1,
+                onTap: () => openBannerLink(context, banners[1]),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    final itemW = (totalW - gap) / 2;
 
     return Row(
       children: [

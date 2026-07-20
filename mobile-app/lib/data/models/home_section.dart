@@ -143,6 +143,7 @@ class HomeSection {
   final String? backgroundColor;
   final bool showViewAll;
   final String? viewAllQuery;
+  final String? headerImageUrl;
   final DateTime? endsAt;
   final List<AppBanner> banners;
   final List<Category> categories;
@@ -178,6 +179,7 @@ class HomeSection {
     this.backgroundColor,
     this.showViewAll = true,
     this.viewAllQuery,
+    this.headerImageUrl,
     this.endsAt,
     this.banners = const [],
     this.categories = const [],
@@ -221,6 +223,7 @@ class HomeSection {
         backgroundColor: json['backgroundColor']?.toString(),
         showViewAll: json['showViewAll'] != false,
         viewAllQuery: json['viewAllQuery']?.toString(),
+        headerImageUrl: json['headerImageUrl']?.toString(),
         endsAt: DateTime.tryParse(asString(json['endsAt'])),
         banners: asList(json['banners']).map((e) => AppBanner.fromJson(asMap(e))).toList(),
         categories: asList(json['categories']).map((e) => Category.fromJson(asMap(e))).toList(),
