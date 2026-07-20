@@ -122,15 +122,15 @@ export function SectionLinkHints({
 }
 
 export function SectionPayloadEditor(props: Props) {
-  const { type, form, tab = "content" } = props;
-  const entities = entityLists(props);
+  const { type, form, tab = "content", ...editorEntities } = props;
+  const entities = entityLists(editorEntities);
 
   if (tab === "style") {
     return <SectionStyleFields showLayout={type === "CATEGORY_GRID"} />;
   }
 
   if (tab === "link") {
-    return <SectionLinkHints type={type} {...props} />;
+    return <SectionLinkHints type={type} {...editorEntities} />;
   }
 
   switch (type) {

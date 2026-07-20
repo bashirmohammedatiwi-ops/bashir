@@ -7,7 +7,8 @@ export type SectionLayoutId =
   | "varied"
   | "asymmetric"
   | "mosaic"
-  | "carousel";
+  | "carousel"
+  | "marquee";
 
 export type CardSizeContext =
   | "category"
