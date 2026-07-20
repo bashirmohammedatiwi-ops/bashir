@@ -125,6 +125,8 @@ enum HomeBlockType {
   CIRCLE_TILES
   ROUTINE_CAROUSEL
   CARE_HUB
+  SECTION_GROUP
+  MEDIA_GALLERY
 }
 
 // ---------------------- USERS / AUTH ----------------------

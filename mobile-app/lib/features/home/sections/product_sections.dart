@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/card_sizes.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_section.dart';
+import '../home_link.dart';
 import '../widgets/home_product_row.dart';
 import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
@@ -33,8 +33,12 @@ class ProductCarouselSection extends StatelessWidget {
       compactTop: compactTop,
       showTitle: nested ? false : null,
       actionLabel: !nested && section.showViewAll ? 'عرض الكل' : null,
-      onAction: !nested && section.showViewAll && section.viewAllQuery != null
-          ? () => context.push('/products?${section.viewAllQuery}')
+      onAction: !nested && section.showViewAll
+          ? () => openViewAllLink(
+                context,
+                query: section.viewAllQuery,
+                fallbackQuery: 'isBestSeller=1',
+              )
           : null,
       child: HomeProductRow(
         products: section.products,
@@ -106,7 +110,11 @@ class _FlashSaleHomeSectionState extends State<FlashSaleHomeSection> {
       headerTrailing: countdown,
       actionLabel: widget.section.showViewAll ? 'عرض الكل' : null,
       onAction: widget.section.showViewAll
-          ? () => context.push('/products?${widget.section.viewAllQuery ?? 'isPromo=1'}')
+          ? () => openViewAllLink(
+                context,
+                query: widget.section.viewAllQuery,
+                fallbackQuery: 'isPromo=1',
+              )
           : null,
       child: HomeProductRow(
         products: widget.section.products,
@@ -135,7 +143,11 @@ class PackagesHomeSection extends StatelessWidget {
       overline: 'مجموعات',
       actionLabel: section.showViewAll ? 'عرض الكل' : null,
       onAction: section.showViewAll
-          ? () => context.push('/products?${section.viewAllQuery ?? 'isPromo=1&title=الباقات'}')
+          ? () => openViewAllLink(
+                context,
+                query: section.viewAllQuery,
+                fallbackQuery: 'isPromo=1&title=الباقات',
+              )
           : null,
       child: SizedBox(
         height: 220,
@@ -149,13 +161,7 @@ class PackagesHomeSection extends StatelessWidget {
             final hasDiscount = p.originalPrice != null && p.originalPrice! > p.price;
             final cardW = cardSizeSpec(p.cardSize ?? section.cardSize).width.clamp(170, 210).toDouble();
             return GestureDetector(
-              onTap: () {
-                if (p.link != null && p.link!.isNotEmpty) {
-                  context.push(p.link!);
-                } else {
-                  context.push('/package/${p.slug.isNotEmpty ? p.slug : p.id}');
-                }
-              },
+              onTap: () => openPackageLink(context, p),
               child: Container(
                 width: cardW,
                 decoration: HomeTheme.cardDecoration(),

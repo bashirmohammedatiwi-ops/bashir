@@ -81,5 +81,64 @@ export function linkTargetLabel(
   if (linkType === "package") return `${prefix}: ${find(entities?.packages)}`;
   if (linkType === "skinConcern") return `${prefix}: ${find(entities?.skinConcerns)}`;
   if (linkType === "search") return `${prefix}: «${linkValue}»`;
+  if (linkType === "products") return `${prefix}: ${linkValue.slice(0, 48)}`;
   return `${prefix}: ${linkValue.slice(0, 40)}`;
+}
+
+/** روابط سريعة — نقرة واحدة في المحرر */
+export const QUICK_LINK_PRESETS: {
+  id: string;
+  label: string;
+  icon: string;
+  linkType: LinkTargetType;
+  linkValue?: string;
+}[] = [
+  { id: "offers", label: "العروض", icon: "⚡", linkType: "offers" },
+  { id: "categories", label: "تبويب الفئات", icon: "☰", linkType: "categoriesTab" },
+  { id: "brands-page", label: "كل البراندات", icon: "🏷️", linkType: "url", linkValue: "/brands" },
+  { id: "new", label: "وصل حديثاً", icon: "✨", linkType: "products", linkValue: "isNew=1&title=وصل حديثاً" },
+  { id: "best", label: "الأكثر مبيعاً", icon: "🔥", linkType: "products", linkValue: "isBestSeller=1&title=الأكثر مبيعاً" },
+  { id: "featured", label: "مختارات", icon: "⭐", linkType: "products", linkValue: "isFeatured=1&title=مختارات" },
+];
+
+/** قوالب «عرض الكل» — بدل كتابة query يدوياً */
+export const VIEW_ALL_PRESETS: { label: string; value: string; hint?: string }[] = [
+  { label: "افتراضي النظام (تلقائي)", value: "" },
+  { label: "العروض والتخفيضات", value: "isPromo=1&title=العروض", hint: "/products?isPromo=1" },
+  { label: "الأكثر مبيعاً", value: "isBestSeller=1&title=الأكثر مبيعاً" },
+  { label: "وصل حديثاً", value: "isNew=1&title=وصل حديثاً" },
+  { label: "منتجات مختارة", value: "isFeatured=1&title=مختارات" },
+  { label: "الباقات والروتين", value: "isPromo=1&title=الباقات" },
+  { label: "صفحة البراندات", value: "/brands", hint: "مسار مباشر" },
+  { label: "مركز العناية", value: "isFeatured=1&title=العناية" },
+];
+
+/** قوالب query لنوع «قائمة منتجات» */
+export const PRODUCT_QUERY_PRESETS: { label: string; value: string }[] = [
+  { label: "عروض", value: "isPromo=1&title=العروض" },
+  { label: "جديد", value: "isNew=1&title=جديد" },
+  { label: "الأكثر مبيعاً", value: "isBestSeller=1&title=الأكثر مبيعاً" },
+  { label: "مختارات", value: "isFeatured=1&title=مختارات" },
+];
+
+export function summarizeLink(
+  payload?: Record<string, unknown>,
+  entities?: Parameters<typeof linkTargetLabel>[2],
+): string {
+  if (!payload) return "";
+  const lt = payload.linkType as string | undefined;
+  const lv = payload.linkValue as string | undefined;
+  const legacy = payload.link as string | undefined;
+  if (!lt && !legacy) return "";
+  return linkTargetLabel(lt, lv, entities);
+}
+
+export function summarizeItemLinks(items: unknown[]): { linked: number; total: number } {
+  const list = Array.isArray(items) ? items : [];
+  let linked = 0;
+  for (const raw of list) {
+    const item = raw as Record<string, unknown>;
+    if (item?.linkType || item?.link) linked++;
+  }
+  return { linked, total: list.length };
 }

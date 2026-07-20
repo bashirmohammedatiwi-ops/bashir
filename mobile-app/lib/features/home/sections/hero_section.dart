@@ -350,6 +350,14 @@ class CategoryGridSection extends StatelessWidget {
       categories: cats,
       title: section.title ?? 'الفئات',
       showTitle: section.showTitle,
+      showViewAll: section.showViewAll,
+      onViewAll: section.showViewAll
+          ? () => openViewAllLink(
+                context,
+                query: section.viewAllQuery,
+                fallbackQuery: '/categories',
+              )
+          : null,
     );
   }
 }

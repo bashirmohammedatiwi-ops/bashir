@@ -1,7 +1,9 @@
 "use client";
 
 import { Form, Input, Select, Space, Typography } from "antd";
-import { LINK_TARGET_TYPES, LinkTargetType } from "./link-target";
+import { LINK_TARGET_TYPES, LinkTargetType, PRODUCT_QUERY_PRESETS } from "./link-target";
+import { LinkPreviewChip } from "./LinkPreviewChip";
+import { QuickLinkBar } from "./QuickLinkBar";
 
 type EntityLists = {
   products?: any[];
@@ -92,6 +94,7 @@ export function LinkTargetPicker({
   showLegacyLink = false,
   optional = true,
 }: Props) {
+  const form = Form.useFormInstance();
   const groupedLinkTypes = LINK_GROUPS.map((g) => ({
     label: g.label,
     options: LINK_TARGET_TYPES.filter((t) => g.types.includes(t.value)).map((t) => ({
@@ -101,7 +104,8 @@ export function LinkTargetPicker({
   }));
 
   return (
-    <>
+    <div className="hb-link-picker">
+      <QuickLinkBar prefix={prefix} />
       <Form.Item
         name={namePath(prefix, "linkType")}
         label="نوع الرابط"
@@ -241,14 +245,24 @@ export function LinkTargetPicker({
 
           if (linkType === "products") {
             return (
-              <Form.Item
-                name={namePath(prefix, "linkValue")}
-                label="معاملات قائمة المنتجات"
-                rules={[{ required: true }]}
-                extra="مثال: isPromo=1&categoryId=xxx"
-              >
-                <Input placeholder="isPromo=1&brandId=..." />
-              </Form.Item>
+              <>
+                <Form.Item label="قالب سريع" style={{ marginBottom: 8 }}>
+                  <Select
+                    allowClear
+                    placeholder="اختر قالباً..."
+                    options={PRODUCT_QUERY_PRESETS.map((p) => ({ value: p.value, label: p.label }))}
+                    onChange={(v) => v && form.setFieldValue(namePath(prefix, "linkValue"), v)}
+                  />
+                </Form.Item>
+                <Form.Item
+                  name={namePath(prefix, "linkValue")}
+                  label="معاملات قائمة المنتجات"
+                  rules={[{ required: true }]}
+                  extra="أو عدّل يدوياً: isPromo=1&categoryId=xxx"
+                >
+                  <Input placeholder="isPromo=1&brandId=..." dir="ltr" />
+                </Form.Item>
+              </>
             );
           }
 
@@ -270,7 +284,9 @@ export function LinkTargetPicker({
           <Input placeholder="/products?isPromo=1" />
         </Form.Item>
       )}
-    </>
+
+      <LinkPreviewChip prefix={prefix} entities={entities} />
+    </div>
   );
 }
 

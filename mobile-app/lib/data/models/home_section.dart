@@ -156,6 +156,12 @@ class HomeSection {
   final String? display;
   final String? shape;
   final String? kind;
+  final List<HomeSection> children;
+  final double? borderRadius;
+  final String? borderColor;
+  final double? framePaddingH;
+  final String? titleColor;
+  final bool frameShadow;
 
   const HomeSection({
     required this.id,
@@ -192,6 +198,12 @@ class HomeSection {
     this.display,
     this.shape,
     this.kind,
+    this.children = const [],
+    this.borderRadius,
+    this.borderColor,
+    this.framePaddingH,
+    this.titleColor,
+    this.frameShadow = false,
   });
 
   factory HomeSection.fromJson(Map<String, dynamic> json) => HomeSection(
@@ -238,5 +250,11 @@ class HomeSection {
         display: json['display']?.toString(),
         shape: json['shape']?.toString(),
         kind: json['kind']?.toString(),
+        children: asList(json['children']).map((e) => HomeSection.fromJson(asMap(e))).toList(),
+        borderRadius: json['borderRadius'] != null ? (json['borderRadius'] as num).toDouble() : null,
+        borderColor: json['borderColor']?.toString(),
+        framePaddingH: json['framePaddingH'] != null ? (json['framePaddingH'] as num).toDouble() : null,
+        titleColor: json['titleColor']?.toString(),
+        frameShadow: json['frameShadow'] == true,
       );
 }

@@ -1,6 +1,7 @@
 import { labelForType } from "./section-types";
 import { labelForCardSize } from "./card-sizes";
 import { labelForAdSlot } from "./ad-slots";
+import { summarizeItemLinks, summarizeLink } from "./link-target";
 
 export function sectionSummary(block: {
   type: string;
@@ -19,18 +20,30 @@ export function sectionSummary(block: {
   switch (block.type) {
     case "HERO_BANNER":
       return `${arr("bannerIds") || "كل"} بنر · ${arr("categoryIds") || "كل"} فئة`;
-    case "PROMO_STRIP":
-      return String(p.text ?? "").slice(0, 40) || "بدون نص";
+    case "PROMO_STRIP": {
+      const link = summarizeLink(p);
+      const text = String(p.text ?? "").slice(0, 36) || "بدون نص";
+      return link ? `${text} → ${link}` : text;
+    }
     case "PRODUCT_LIST":
     case "FLASH_SALE":
       if (arr("productIds")) return `${arr("productIds")} منتج (يدوي)`;
       return `فلتر: ${filterLabel(String(p.filter ?? ""))}`;
-    case "IMAGE_TILES":
-      return `${arr("items")} بطاقة · ${p.columns ?? 2} أعمدة · ${p.shape ?? "rect"}${layout}${size}`;
-    case "IMAGE_MARQUEE":
-      return `${arr("items")} صورة متحركة${layout}${size}`;
-    case "CIRCLE_TILES":
-      return `${arr("items")} دائرة${layout}${size}`;
+    case "IMAGE_TILES": {
+      const links = summarizeItemLinks(Array.isArray(p.items) ? p.items : []);
+      const linkPart = links.total ? ` · 🔗 ${links.linked}/${links.total}` : "";
+      return `${arr("items")} بطاقة · ${p.columns ?? 2} أعمدة · ${p.shape ?? "rect"}${layout}${size}${linkPart}`;
+    }
+    case "IMAGE_MARQUEE": {
+      const links = summarizeItemLinks(Array.isArray(p.items) ? p.items : []);
+      const linkPart = links.total ? ` · 🔗 ${links.linked}/${links.total}` : "";
+      return `${arr("items")} صورة متحركة${layout}${size}${linkPart}`;
+    }
+    case "CIRCLE_TILES": {
+      const links = summarizeItemLinks(Array.isArray(p.items) ? p.items : []);
+      const linkPart = links.total ? ` · 🔗 ${links.linked}/${links.total}` : "";
+      return `${arr("items")} دائرة${layout}${size}${linkPart}`;
+    }
     case "ROUTINE_CAROUSEL":
       return `روتين: ${p.kind ?? "ROUTINE_MORNING"}`;
     case "CARE_HUB":
@@ -40,6 +53,16 @@ export function sectionSummary(block: {
     case "FEATURED_BRANDS":
     case "BRAND_SHOWCASE":
       return arr("brandIds") ? `${arr("brandIds")} براند` : "كل البراندات";
+    case "SECTION_GROUP": {
+      const n = arr("children");
+      const bg = (p.backgroundColor as string) ?? "#F8F4EF";
+      return `${n} قسم فرعي · ${String(bg).slice(0, 7)}`;
+    }
+    case "MEDIA_GALLERY": {
+      const links = summarizeItemLinks(Array.isArray(p.items) ? p.items : []);
+      const linkPart = links.total ? ` · 🔗 ${links.linked}/${links.total}` : "";
+      return `${p.display ?? "scroll"} · ${arr("items")} صورة · ${p.shape ?? "rounded"}${linkPart}`;
+    }
     case "CATEGORY_GRID":
     case "CATEGORY_TILES":
     case "MAKEUP_CATEGORIES":

@@ -3,17 +3,13 @@
 import {
   CloudDownloadOutlined,
   CloudUploadOutlined,
-  EyeOutlined,
   LayoutOutlined,
-  MinusOutlined,
-  MobileOutlined,
   PlusOutlined,
   ReloadOutlined,
   UndoOutlined,
 } from "@ant-design/icons";
 import {
   Button,
-  Card,
   Col,
   Drawer,
   Dropdown,
@@ -22,11 +18,9 @@ import {
   Modal,
   Radio,
   Row,
-  Segmented,
   Space,
-  Statistic,
-  Switch,
   Tabs,
+  Tag,
   Typography,
   Alert,
   message,
@@ -34,13 +28,9 @@ import {
 import type { MenuProps } from "antd";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PhoneCanvas } from "@/components/home-builder/PhoneCanvas";
 import { SectionEditorPanel } from "@/components/home-builder/SectionEditorPanel";
 import { SectionListPanel } from "@/components/home-builder/SectionListPanel";
 import { SectionTypeModal } from "@/components/home-builder/SectionTypeModal";
-import type { DeviceSize } from "@/components/home-builder/StudioToolbar";
-import { filterPreviewBlocks, resolveBlockPreview } from "@/components/home-builder/preview-resolver";
-import { filterBuilderBlocks, pickHeroCategories } from "@/components/home-builder/fixed-hero";
 import { PAGE_TEMPLATES } from "@/components/home-builder/section-templates";
 import { SECTION_PRESETS } from "@/components/home-builder/section-presets";
 import {
@@ -50,6 +40,7 @@ import {
   isFixedTopSection,
 } from "@/components/home-builder/section-types";
 import { countWarnings, sectionHasErrors } from "@/components/home-builder/section-validation";
+import { filterBuilderBlocks } from "@/components/home-builder/fixed-hero";
 import { mutations, queries } from "@/lib/queries";
 import "@/components/home-builder/home-builder.css";
 
@@ -77,16 +68,11 @@ export default function HomeBuilderPage() {
   const [isNew, setIsNew] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editorTab, setEditorTab] = useState("basics");
-  const [previewOpen, setPreviewOpen] = useState(true);
-  const [previewZoom, setPreviewZoom] = useState(0.85);
-  const [previewDevice, setPreviewDevice] = useState<DeviceSize>("390");
-  const [showInactivePreview, setShowInactivePreview] = useState(false);
   const [dupModal, setDupModal] = useState<any | null>(null);
   const [dupMode, setDupMode] = useState<"after" | "end">("after");
   const [bulkSelected, setBulkSelected] = useState<string[]>([]);
   const undoStack = useRef<any[][]>([]);
   const [form] = Form.useForm();
-  const draftValues = Form.useWatch([], form);
 
   const { data: blocks, isLoading, refetch } = useQuery({
     queryKey: ["home-blocks"],
@@ -100,15 +86,6 @@ export default function HomeBuilderPage() {
   const { data: packages } = useQuery({ queryKey: ["packages"], queryFn: queries.packages });
   const { data: products } = useQuery({ queryKey: ["products-lite"], queryFn: () => queries.products({ limit: 300 }) });
   const { data: skinConcerns } = useQuery({ queryKey: ["skin-concerns"], queryFn: () => queries.skinConcerns(true) });
-  const {
-    data: liveFeed,
-    isFetching: previewLoading,
-    refetch: refetchPreview,
-  } = useQuery({
-    queryKey: ["home-preview"],
-    queryFn: queries.homePreview,
-    staleTime: 15_000,
-  });
 
   const editorEntities = useMemo(
     () => ({
@@ -130,76 +107,8 @@ export default function HomeBuilderPage() {
   );
 
   const builderBlocks = useMemo(() => filterBuilderBlocks(sorted), [sorted]);
-  const heroCategoryCount = pickHeroCategories(editorEntities).length;
-
   const activeCount = builderBlocks.filter((b) => b.isActive !== false).length;
   const { errors: errorCount, warns: warnCount } = useMemo(() => countWarnings(builderBlocks), [builderBlocks]);
-
-  const previewBlocks = useMemo(() => {
-    if (!isNew || !draftValues?.type) return builderBlocks;
-    const draft = {
-      id: DRAFT_SECTION_ID,
-      type: draftValues.type as string,
-      title: draftValues.title,
-      subtitle: draftValues.subtitle,
-      isActive: true,
-      position: insertAt ?? builderBlocks.length,
-      payload: (draftValues.payload ?? {}) as Record<string, unknown>,
-    };
-    const copy = [...builderBlocks];
-    const at = Math.min(insertAt ?? builderBlocks.length, copy.length);
-    copy.splice(at, 0, draft);
-    return copy;
-  }, [builderBlocks, isNew, draftValues, insertAt]);
-
-  const previewSections = useMemo(() => {
-    const apiSections: any[] = liveFeed?.sections ?? [];
-    const apiMap = new Map(apiSections.map((s) => [s.id, s]));
-
-    return previewBlocks.map((block) => {
-      const apiSec = block.id === DRAFT_SECTION_ID ? null : apiMap.get(block.id);
-      const isDraftTarget =
-        block.id === DRAFT_SECTION_ID ||
-        (editing?.id && editing.id === block.id) ||
-        (isNew && selectedId === block.id);
-      const draftBlock = isDraftTarget && draftValues
-        ? {
-            ...block,
-            type: draftValues.type ?? block.type,
-            title: draftValues.title ?? block.title,
-            subtitle: draftValues.subtitle ?? block.subtitle,
-            payload: { ...block.payload, ...(draftValues.payload ?? {}) },
-          }
-        : block;
-      const local = resolveBlockPreview(draftBlock, editorEntities, apiSec);
-      if (apiSec && !isDraftTarget) return apiSec;
-      return {
-        id: block.id,
-        type: draftBlock.type,
-        title: draftBlock.title,
-        subtitle: draftBlock.subtitle,
-        ...local,
-        promoStrip:
-          draftBlock.type === "PROMO_STRIP"
-            ? {
-                text: (draftBlock.payload?.text as string) ?? "",
-                backgroundColor: draftBlock.payload?.backgroundColor,
-                linkType: draftBlock.payload?.linkType,
-                linkValue: draftBlock.payload?.linkValue,
-              }
-            : apiSec?.promoStrip,
-      };
-    });
-  }, [previewBlocks, liveFeed, editorEntities, editing, isNew, selectedId, draftValues]);
-
-  const canvasBlocks = useMemo(
-    () =>
-      filterPreviewBlocks(previewBlocks, {
-        showInactive: showInactivePreview,
-        heroCategoryCount,
-      }),
-    [previewBlocks, showInactivePreview, heroCategoryCount],
-  );
 
   function pushUndo() {
     if (builderBlocks.length) undoStack.current = [...undoStack.current.slice(-9), builderBlocks.map((b) => ({ ...b }))];
@@ -253,13 +162,11 @@ export default function HomeBuilderPage() {
       if (idx < 0) return;
       if (e.key === "ArrowUp" && idx > 0) {
         e.preventDefault();
-        const b = builderBlocks[idx - 1];
-        guardUnsaved(() => openEdit(b));
+        guardUnsaved(() => openEdit(builderBlocks[idx - 1]));
       }
       if (e.key === "ArrowDown" && idx < builderBlocks.length - 1) {
         e.preventDefault();
-        const b = builderBlocks[idx + 1];
-        guardUnsaved(() => openEdit(b));
+        guardUnsaved(() => openEdit(builderBlocks[idx + 1]));
       }
     }
     window.addEventListener("keydown", onKey);
@@ -304,7 +211,6 @@ export default function HomeBuilderPage() {
       }
       setIsNew(false);
       await qc.invalidateQueries({ queryKey: ["home-blocks"] });
-      await qc.invalidateQueries({ queryKey: ["home-preview"] });
     },
     onError: () => message.error("تعذر الحفظ"),
   });
@@ -317,25 +223,18 @@ export default function HomeBuilderPage() {
       setEditing(null);
       setIsNew(false);
       qc.invalidateQueries({ queryKey: ["home-blocks"] });
-      qc.invalidateQueries({ queryKey: ["home-preview"] });
     },
   });
 
   const reorder = useMutation({
     mutationFn: mutations.reorderHomeBlocks,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["home-blocks"] });
-      qc.invalidateQueries({ queryKey: ["home-preview"] });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["home-blocks"] }),
   });
 
   const toggle = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
       mutations.updateHomeBlock(id, { isActive }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["home-blocks"] });
-      qc.invalidateQueries({ queryKey: ["home-preview"] });
-    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["home-blocks"] }),
   });
 
   const duplicate = useMutation({
@@ -365,7 +264,6 @@ export default function HomeBuilderPage() {
       message.success("تم النسخ — القسم الجديد مخفي حتى تفعّله");
       setDupModal(null);
       qc.invalidateQueries({ queryKey: ["home-blocks"] });
-      qc.invalidateQueries({ queryKey: ["home-preview"] });
     },
   });
 
@@ -399,7 +297,6 @@ export default function HomeBuilderPage() {
       setEditing(null);
       setIsNew(false);
       qc.invalidateQueries({ queryKey: ["home-blocks"] });
-      qc.invalidateQueries({ queryKey: ["home-preview"] });
     },
     onError: () => message.error("تعذر تطبيق القالب"),
   });
@@ -430,7 +327,6 @@ export default function HomeBuilderPage() {
       setImportOpen(false);
       setImportJson("");
       qc.invalidateQueries({ queryKey: ["home-blocks"] });
-      qc.invalidateQueries({ queryKey: ["home-preview"] });
     },
     onError: () => message.error("JSON غير صالح"),
   });
@@ -555,7 +451,6 @@ export default function HomeBuilderPage() {
     message.success(active ? "تم تفعيل المحدد" : "تم إخفاء المحدد");
     setBulkSelected([]);
     qc.invalidateQueries({ queryKey: ["home-blocks"] });
-    qc.invalidateQueries({ queryKey: ["home-preview"] });
   }
 
   function exportJson() {
@@ -581,36 +476,27 @@ export default function HomeBuilderPage() {
   };
 
   return (
-    <div className="hb-page">
-      <div className="hb-page-header">
-        <div>
-          <Title level={4} style={{ margin: 0 }}>
-            بناء الصفحة الرئيسية
+    <div className="hb-page hb-page--studio">
+      <header className="hb-studio-header">
+        <div className="hb-studio-header-main">
+          <Title level={3} style={{ margin: 0 }}>
+            استوديو الصفحة الرئيسية
           </Title>
           <Text type="secondary">
-            الرأس والبنرات وأيقونات الفئات ثابتة — أضف ورتّب الأقسام أسفلها فقط
-            {process.env.NEXT_PUBLIC_BUILD_SHA ? (
-              <span style={{ marginInlineStart: 8, fontSize: 11, opacity: 0.65 }}>
-                · build {process.env.NEXT_PUBLIC_BUILD_SHA}
-              </span>
-            ) : null}
+            رتّب الأقسام، خصّص الإطارات والمعارض — النتيجة مباشرة في تطبيق الهاتف
           </Text>
         </div>
-        <Space wrap>
+        <Space wrap className="hb-studio-header-actions">
+          <Tag color="green">{activeCount} نشط</Tag>
+          <Tag>{builderBlocks.length} قسم</Tag>
+          {(errorCount > 0 || warnCount > 0) && (
+            <Tag color={errorCount ? "red" : "orange"}>{errorCount + warnCount} تنبيه</Tag>
+          )}
           <Button icon={<UndoOutlined />} onClick={handleUndo}>
             تراجع
           </Button>
-          <Button icon={<ReloadOutlined />} onClick={() => { refetch(); refetchPreview(); }}>
+          <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
             تحديث
-          </Button>
-          <Button
-            icon={<EyeOutlined />}
-            type={previewOpen ? "primary" : "default"}
-            ghost={previewOpen}
-            onClick={() => setPreviewOpen((v) => !v)}
-            className="hb-preview-toggle"
-          >
-            المعاينة
           </Button>
           <Dropdown menu={toolsMenu}>
             <Button>أدوات</Button>
@@ -618,44 +504,24 @@ export default function HomeBuilderPage() {
           <Button icon={<LayoutOutlined />} onClick={() => setTypeModalOpen(true)}>
             قوالب
           </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={openAdd}>
+          <Button type="primary" size="large" icon={<PlusOutlined />} onClick={openAdd}>
             إضافة قسم
           </Button>
         </Space>
-      </div>
+      </header>
 
       <Alert
         type="info"
         showIcon
-        className="hb-fixed-info"
-        message="الجزء العلوي ثابت في التطبيق"
-        description="البحث، البنرات، الاختصارات الأربعة، وأيقونات الفئات تُدار من صفحات البنرات والفئات — لا تُضاف من هنا."
+        banner
+        className="hb-studio-banner"
+        message="الرأس ثابت في التطبيق"
+        description="البحث، البنر، الاختصارات، وأيقونات الفئات — من صفحات البنرات والفئات. هنا تُبنى الأقسام أسفلها فقط."
       />
 
-      <Row gutter={[12, 12]} className="hb-stats-row">
-        <Col xs={12} sm={6}>
-          <Card size="small"><Statistic title="أقسام قابلة للتحرير" value={builderBlocks.length} /></Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card size="small"><Statistic title="نشط" value={activeCount} valueStyle={{ color: "#52c41a" }} /></Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card size="small"><Statistic title="مخفي" value={builderBlocks.length - activeCount} /></Card>
-        </Col>
-        <Col xs={12} sm={6}>
-          <Card size="small">
-            <Statistic
-              title="تنبيهات"
-              value={errorCount + warnCount}
-              valueStyle={{ color: errorCount ? "#ff4d4f" : warnCount ? "#faad14" : undefined }}
-            />
-          </Card>
-        </Col>
-      </Row>
-
-      <Row gutter={16} className="hb-workspace">
-        <Col xs={24} xl={previewOpen ? 7 : 9}>
-          <Card title="ترتيب الأقسام (أسفل الرأس)" className="hb-list-card" styles={{ body: { padding: 0 } }}>
+      <Row gutter={20} className="hb-studio-workspace">
+        <Col xs={24} lg={9} xl={8}>
+          <div className="hb-studio-sidebar">
             <SectionListPanel
               blocks={builderBlocks}
               selectedId={selectedId}
@@ -687,10 +553,10 @@ export default function HomeBuilderPage() {
               onBulkHide={() => bulkSetActive(false)}
               onBulkExport={exportSelectedJson}
             />
-          </Card>
+          </div>
         </Col>
 
-        <Col xs={24} xl={previewOpen ? 10 : 15}>
+        <Col xs={24} lg={15} xl={16}>
           <SectionEditorPanel
             editing={editing}
             isNew={isNew}
@@ -702,76 +568,6 @@ export default function HomeBuilderPage() {
             editorEntities={editorEntities}
           />
         </Col>
-
-        {previewOpen && (
-          <Col xs={24} xl={7}>
-            <Card
-              className="hb-preview-card"
-              title={
-                <Space>
-                  <MobileOutlined />
-                  <span>معاينة التطبيق</span>
-                </Space>
-              }
-              extra={
-                <Space wrap size={4}>
-                  <Switch
-                    size="small"
-                    checked={showInactivePreview}
-                    onChange={setShowInactivePreview}
-                    checkedChildren="كل"
-                    unCheckedChildren="نشط"
-                  />
-                  <Segmented
-                    size="small"
-                    value={previewDevice}
-                    onChange={(v) => setPreviewDevice(v as DeviceSize)}
-                    options={["375", "390", "414"]}
-                  />
-                  <Button size="small" type="text" icon={<MinusOutlined />} onClick={() => setPreviewZoom((z) => Math.max(0.7, z - 0.05))} />
-                  <Text type="secondary" style={{ fontSize: 11 }}>{Math.round(previewZoom * 100)}%</Text>
-                  <Button size="small" type="text" icon={<PlusOutlined />} onClick={() => setPreviewZoom((z) => Math.min(1.2, z + 0.05))} />
-                  <Button size="small" type="text" loading={previewLoading} onClick={() => refetchPreview()}>
-                    تحديث
-                  </Button>
-                </Space>
-              }
-            >
-              <PhoneCanvas
-                blocks={canvasBlocks}
-                previewSections={previewSections}
-                editorEntities={editorEntities}
-                selectedId={selectedId}
-                zoom={previewZoom}
-                deviceSize={previewDevice}
-                onSelect={(id) => {
-                  guardUnsaved(() => {
-                    setSelectedId(id);
-                    if (id === DRAFT_SECTION_ID) return;
-                    const b = builderBlocks.find((x) => x.id === id);
-                    if (b) openEdit(b);
-                  });
-                }}
-                onEdit={openEdit}
-                onAddAt={openInsertAt}
-                onMove={moveBlock}
-                onDuplicate={(b) => {
-                  setDupModal(b);
-                  setDupMode("after");
-                }}
-                onDelete={(id) => remove.mutate(id)}
-                onToggle={(id, active) => toggle.mutate({ id, isActive: active })}
-                onReorder={(ids) => {
-                  pushUndo();
-                  reorder.mutate(ids);
-                }}
-              />
-              <Text type="secondary" className="hb-preview-hint">
-                WYSIWYG — ⌘S حفظ · ↑↓ التنقل · انقر القسم للتحرير · + بين الأقسام
-              </Text>
-            </Card>
-          </Col>
-        )}
       </Row>
 
       <SectionTypeModal

@@ -64,26 +64,26 @@ export function SectionEditorPanel({
   if (!editing && !isNew) {
     return (
       <Card className="hb-editor-card hb-editor-empty">
-        <div className="hb-editor-empty-visual">
-          <div className="hb-editor-empty-phone">
-            <div className="hb-editor-empty-phone-bar" />
-            <div className="hb-editor-empty-phone-block hero" />
-            <div className="hb-editor-empty-phone-block" />
-            <div className="hb-editor-empty-phone-block short" />
+        <div className="hb-editor-empty-visual hb-editor-empty-studio">
+          <div className="hb-empty-frame-demo">
+            <span className="hb-empty-frame-label">🖼️ إطار مجموعة</span>
+          </div>
+          <div className="hb-empty-media-demo">
+            <span>🎞️</span>
+            <span>📋</span>
+            <span>⚡</span>
           </div>
         </div>
-        <Title level={5} style={{ marginTop: 16 }}>
-          استوديو تحرير الأقسام
+        <Title level={4} style={{ marginTop: 20 }}>
+          اختر قسماً للتحرير
         </Title>
         <Text type="secondary">
-          اختر قسماً من القائمة أو المعاينة، أو أضف قسماً من المكتبة — القوالب الجاهزة أو قسم واحد.
+          من القائمة — أو أضف إطار مجموعة / معرض صور من زر الإضافة.
         </Text>
         <ul className="hb-editor-hints">
-          <li>اسحب الأقسام للترتيب — أو أدرج بين أي قسمين عبر زر +</li>
-          <li>الرأس والبنرات ثابتة — أضف الأقسام أسفلها فقط</li>
-          <li>المعاينة = شكل التطبيق (cream + sage)</li>
-          <li>5 تبويبات: أساسيات · محتوى · روابط · تصميم · JSON</li>
-          <li>⌘S حفظ · ↑↓ التنقل · معاينة WYSIWYG مع عدّاد فلاش</li>
+          <li>إطار مجموعة: عدة أقسام داخل خلفية ملونة</li>
+          <li>معرض صور: تمرير يدوي، marquee، شبكة، عمود</li>
+          <li>⌘S حفظ · ↑↓ التنقل · اسحب للترتيب</li>
         </ul>
       </Card>
     );

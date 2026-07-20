@@ -26,7 +26,9 @@ export type SectionType =
   | "IMAGE_MARQUEE"
   | "CIRCLE_TILES"
   | "ROUTINE_CAROUSEL"
-  | "CARE_HUB";
+  | "CARE_HUB"
+  | "SECTION_GROUP"
+  | "MEDIA_GALLERY";
 
 export const SECTION_TYPES: {
   value: SectionType;
@@ -105,6 +107,7 @@ export const SECTION_TYPES: {
       subcategoryId: "",
       tertiaryCategoryId: "",
       brandId: "",
+      viewAllQuery: "",
       cardSize: "md",
       cardSizes: {},
       sectionLayout: "carousel",
@@ -128,6 +131,7 @@ export const SECTION_TYPES: {
       subcategoryId: "",
       tertiaryCategoryId: "",
       brandId: "",
+      viewAllQuery: "",
       cardSize: "md",
       cardSizes: {},
       sectionLayout: "carousel",
@@ -234,7 +238,10 @@ export const SECTION_TYPES: {
     color: "#E8EAF6",
     defaultPayload: {
       categoryIds: [],
+      categoryItems: [],
       maxItems: 8,
+      showViewAll: true,
+      viewAllQuery: "/categories",
       cardSize: "md",
       cardSizes: {},
       sectionLayout: "varied",
@@ -250,7 +257,10 @@ export const SECTION_TYPES: {
     color: "#E1F5FE",
     defaultPayload: {
       categoryIds: [],
+      categoryItems: [],
       maxItems: 6,
+      showViewAll: true,
+      viewAllQuery: "/categories",
       cardSize: "md",
       cardSizes: {},
       sectionLayout: "varied",
@@ -266,7 +276,10 @@ export const SECTION_TYPES: {
     color: "#FCE4EC",
     defaultPayload: {
       categoryIds: [],
+      categoryItems: [],
       accentColor: "#FCE4EC",
+      showViewAll: true,
+      viewAllQuery: "/categories",
       cardSize: "md",
       cardSizes: {},
       sectionLayout: "varied",
@@ -393,6 +406,45 @@ export const SECTION_TYPES: {
       productLimit: 8,
       layout: "stacked",
       showTitle: true,
+    },
+  },
+  {
+    value: "SECTION_GROUP",
+    label: "إطار مجموعة أقسام",
+    group: "تصميم",
+    description: "ضع عدة أقسام داخل إطار بخلفية ملونة — مثالي لتجميع العروض أو العناية",
+    icon: "🖼️",
+    color: "#FFF8E7",
+    defaultPayload: {
+      backgroundColor: "#F8F4EF",
+      titleColor: "#2A2826",
+      borderColor: "",
+      borderRadius: 24,
+      paddingTop: 20,
+      paddingBottom: 20,
+      paddingH: 12,
+      shadow: true,
+      showTitle: true,
+      children: [],
+    },
+  },
+  {
+    value: "MEDIA_GALLERY",
+    label: "معرض صور",
+    group: "تصميم",
+    description: "صور ثابتة أو متحركة — تمرير يدوي، مارquee، شبكة، أو عمود — بأحجام وأشكال مختلفة",
+    icon: "🎞️",
+    color: "#EDE7F6",
+    defaultPayload: {
+      display: "scroll",
+      shape: "rounded",
+      size: "md",
+      columns: 3,
+      gap: 12,
+      height: 140,
+      marqueeSpeed: 5,
+      showTitle: true,
+      items: [],
     },
   },
 ];

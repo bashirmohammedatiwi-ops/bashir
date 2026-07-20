@@ -1980,3 +1980,239 @@
   min-height: 120px;
   padding: 16px;
 }
+
+/* ── Link picker UX ── */
+.hb-links-panel {
+  padding: 4px 0 12px;
+}
+
+.hb-link-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hb-quick-links {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f8faf6 0%, #f0f4ec 100%);
+  border: 1px solid rgba(92, 107, 82, 0.12);
+}
+
+.hb-quick-links-title {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #5c6b52;
+}
+
+.hb-quick-link-btn {
+  border-radius: 999px !important;
+  font-size: 11px !important;
+  height: 28px !important;
+  border-color: rgba(92, 107, 82, 0.2) !important;
+}
+
+.hb-link-preview {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #e8efe4;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hb-link-preview--empty {
+  background: #fff8f0;
+  border-color: #f0dcc4;
+}
+
+.hb-link-preview-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #2c2a28;
+}
+
+.hb-link-preview-path {
+  font-size: 10px !important;
+  color: #5c6b52 !important;
+  word-break: break-all;
+}
+
+.hb-view-all-picker {
+  margin-top: 4px;
+}
+
+.hb-view-all-chip {
+  appearance: none;
+  border: 1px solid rgba(92, 107, 82, 0.2);
+  background: #fff;
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #2c2a28;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.hb-view-all-chip:hover {
+  border-color: #5c6b52;
+  background: #f8faf6;
+}
+
+.hb-view-all-chip.active {
+  background: #5c6b52;
+  border-color: #5c6b52;
+  color: #fff;
+}
+
+.hb-tile-links-panel {
+  margin-top: 4px;
+}
+
+.hb-tile-links-collapse {
+  background: transparent;
+}
+
+.hb-tile-link-ok {
+  color: #5c6b52;
+}
+
+.hb-tile-link-missing {
+  color: #c45c26;
+}
+
+/* ── Studio layout (no phone preview) ── */
+.hb-page--studio {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding-bottom: 32px;
+}
+
+.hb-studio-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 20px 24px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #faf9f6 0%, #f0f4ec 100%);
+  border: 1px solid rgba(92, 107, 82, 0.12);
+}
+
+.hb-studio-header-main {
+  max-width: 520px;
+}
+
+.hb-studio-banner {
+  margin-bottom: 20px;
+  border-radius: 12px;
+}
+
+.hb-studio-workspace {
+  align-items: flex-start;
+}
+
+.hb-studio-sidebar {
+  position: sticky;
+  top: 12px;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #eeede8;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(44, 42, 40, 0.04);
+}
+
+.hb-studio-sidebar .hb-list-panel {
+  max-height: calc(100vh - 220px);
+}
+
+.hb-editor-card {
+  border-radius: 16px !important;
+  border: 1px solid #eeede8 !important;
+  box-shadow: 0 4px 24px rgba(44, 42, 40, 0.04) !important;
+}
+
+.hb-editor-empty-studio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+}
+
+.hb-empty-frame-demo {
+  width: 100%;
+  max-width: 280px;
+  padding: 20px 16px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #fce4ec 0%, #f8f4ef 100%);
+  border: 1px dashed rgba(92, 107, 82, 0.25);
+  text-align: center;
+}
+
+.hb-empty-frame-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5c6b52;
+}
+
+.hb-empty-media-demo {
+  display: flex;
+  gap: 10px;
+  font-size: 28px;
+}
+
+.hb-group-children {
+  margin-top: 8px;
+}
+
+.hb-group-child-card {
+  margin-bottom: 12px !important;
+  border-radius: 12px !important;
+  border-color: rgba(92, 107, 82, 0.15) !important;
+}
+
+.hb-frame-fields {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #faf9f6;
+  border: 1px solid #eeede8;
+  margin-bottom: 16px;
+}
+
+.hb-color-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.hb-color-chip {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  padding: 0;
+}
+
+.hb-color-chip.active {
+  border-color: #5c6b52;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #5c6b52;
+}
+
+.hb-mini-item-row {
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px solid #eeede8;
+}

@@ -110,6 +110,8 @@ class _CareHubSectionState extends State<CareHubSection> {
                 products: _section.products,
                 productCardSize: _section.productCardSize,
                 cardSize: _section.cardSize,
+                showViewAll: _section.showViewAll,
+                viewAllQuery: _section.viewAllQuery,
               ),
               nested: true,
             ),
@@ -128,8 +130,12 @@ class _CareHubSectionState extends State<CareHubSection> {
           section: HomeSection(
             id: '${_section.id}-routine-tab',
             type: 'ROUTINE_CAROUSEL',
+            title: 'روتين البشرة',
+            showTitle: true,
             packages: _section.packages,
             cardSize: _section.cardSize,
+            showViewAll: _section.showViewAll,
+            viewAllQuery: _section.viewAllQuery,
           ),
         );
       case 'أقسام':
@@ -139,8 +145,12 @@ class _CareHubSectionState extends State<CareHubSection> {
           section: HomeSection(
             id: '${_section.id}-products-tab',
             type: 'PRODUCT_LIST',
+            title: 'منتجات العناية',
+            showTitle: true,
             products: _section.products,
             productCardSize: _section.productCardSize,
+            showViewAll: _section.showViewAll,
+            viewAllQuery: _section.viewAllQuery,
           ),
         );
       default:

@@ -1,4 +1,5 @@
 import { labelForType } from "./section-types";
+import { summarizeItemLinks } from "./link-target";
 
 export type SectionWarning = {
   level: "error" | "warn" | "info";
@@ -98,6 +99,15 @@ export function validateSection(block: {
         const row = item as Record<string, unknown>;
         if (!row?.imageId) warnings.push({ level: "error", message: `البطاقة ${i + 1}: أضف صورة` });
       });
+      if (active) {
+        const stats = summarizeItemLinks(items);
+        if (stats.total > 0 && stats.linked < stats.total) {
+          warnings.push({
+            level: "warn",
+            message: `روابط البطاقات: ${stats.linked}/${stats.total} — بعضها بدون وجهة`,
+          });
+        }
+      }
       break;
     }
     case "IMAGE_MARQUEE": {
@@ -107,6 +117,15 @@ export function validateSection(block: {
         const row = item as Record<string, unknown>;
         if (!row?.imageId) warnings.push({ level: "error", message: `الصورة ${i + 1}: أضف صورة` });
       });
+      if (active) {
+        const stats = summarizeItemLinks(items);
+        if (stats.total > 0 && stats.linked < stats.total) {
+          warnings.push({
+            level: "warn",
+            message: `روابط الشريط: ${stats.linked}/${stats.total}`,
+          });
+        }
+      }
       break;
     }
     case "CIRCLE_TILES": {
@@ -116,6 +135,15 @@ export function validateSection(block: {
         const row = item as Record<string, unknown>;
         if (!row?.imageId) warnings.push({ level: "error", message: `الدائرة ${i + 1}: أضف صورة` });
       });
+      if (active) {
+        const stats = summarizeItemLinks(items);
+        if (stats.total > 0 && stats.linked < stats.total) {
+          warnings.push({
+            level: "warn",
+            message: `روابط الدوائر: ${stats.linked}/${stats.total}`,
+          });
+        }
+      }
       break;
     }
     case "ROUTINE_CAROUSEL":
@@ -150,8 +178,42 @@ export function validateSection(block: {
         warnings.push({ level: "info", message: "فارغ = البراندات المميزة من النظام" });
       }
       break;
-    default:
+    case "SECTION_GROUP": {
+      const children = asArray(p.children);
+      if (active && !children.length) {
+        warnings.push({ level: "error", message: "أضف قسمًا واحدًا على الأقل داخل الإطار" });
+      }
       break;
+    }
+    case "MEDIA_GALLERY": {
+      const items = asArray(p.items);
+      if (!items.length) warnings.push({ level: "error", message: "أضف صورة واحدة على الأقل" });
+      items.forEach((item, i) => {
+        const row = item as Record<string, unknown>;
+        if (!row?.imageId) warnings.push({ level: "error", message: `الصورة ${i + 1}: اختر صورة` });
+      });
+      if (active) {
+        const stats = summarizeItemLinks(items);
+        if (stats.total > 0 && stats.linked < stats.total) {
+          warnings.push({ level: "warn", message: `روابط الصور: ${stats.linked}/${stats.total}` });
+        }
+      }
+      break;
+    }
+    case "CATEGORY_GRID":
+    case "CATEGORY_TILES":
+    case "MAKEUP_CATEGORIES": {
+      const ids = asArray(p.categoryIds).map(String);
+      const items = asArray(p.categoryItems);
+      for (const raw of items) {
+        const row = raw as Record<string, unknown>;
+        const cid = String(row?.categoryId ?? "");
+        if (cid && ids.length && !ids.includes(cid)) {
+          warnings.push({ level: "warn", message: `تجاوز رابط لفئة غير مُختارة: ${cid.slice(0, 8)}…` });
+        }
+      }
+      break;
+    }
   }
 
   if (!block.title && !["HERO_BANNER", "PROMO_STRIP", "BANNER_FULL", "CUSTOM_BANNER"].includes(block.type)) {

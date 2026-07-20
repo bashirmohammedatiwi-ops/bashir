@@ -100,6 +100,7 @@ class HomeCategoryGrid extends StatelessWidget {
   final List<Category> categories;
   final String? title;
   final bool showTitle;
+  final bool showViewAll;
   final VoidCallback? onViewAll;
 
   const HomeCategoryGrid({
@@ -107,6 +108,7 @@ class HomeCategoryGrid extends StatelessWidget {
     required this.categories,
     this.title,
     this.showTitle = true,
+    this.showViewAll = true,
     this.onViewAll,
   });
 
@@ -123,8 +125,10 @@ class HomeCategoryGrid extends StatelessWidget {
         if (showTitle && title != null && title!.isNotEmpty)
           HomeEditorialHeader(
             title: title!,
-            actionLabel: 'عرض الكل',
-            onAction: onViewAll ?? () => context.push('/categories'),
+            actionLabel: showViewAll ? 'عرض الكل' : null,
+            onAction: showViewAll
+                ? (onViewAll ?? () => context.push('/categories'))
+                : null,
             compact: true,
           ),
         Padding(

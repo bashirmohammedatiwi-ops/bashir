@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -7,6 +6,7 @@ import '../../../core/theme/card_sizes.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_section.dart';
+import '../home_link.dart';
 import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
 
@@ -33,8 +33,12 @@ class RoutineCarouselSection extends StatelessWidget {
       compactTop: compactTop,
       showTitle: nested ? false : null,
       actionLabel: !nested && section.showViewAll ? 'عرض الكل' : null,
-      onAction: !nested && section.viewAllQuery != null
-          ? () => context.push('/products?${section.viewAllQuery}')
+      onAction: !nested && section.showViewAll
+          ? () => openViewAllLink(
+                context,
+                query: section.viewAllQuery,
+                fallbackQuery: 'isPromo=1&title=روتين البشرة',
+              )
           : null,
       child: SizedBox(
         height: cardH,
@@ -45,16 +49,9 @@ class RoutineCarouselSection extends StatelessWidget {
           separatorBuilder: (_, __) => const SizedBox(width: 10),
           itemBuilder: (_, i) {
             final p = section.packages[i];
-            final link = p.link;
             return RepaintBoundary(
               child: GestureDetector(
-                onTap: () {
-                  if (link != null && link.isNotEmpty) {
-                    context.push(link);
-                  } else {
-                    context.push('/package/${p.slug.isNotEmpty ? p.slug : p.id}');
-                  }
-                },
+                onTap: () => openPackageLink(context, p),
                 child: _RoutineCard(package: p, width: cardSizeSpec(section.cardSize).width.clamp(180, 230).toDouble()),
               ),
             );

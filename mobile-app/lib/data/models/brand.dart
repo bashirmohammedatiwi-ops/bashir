@@ -9,6 +9,7 @@ class Brand {
   final String? bgColorHex;
   final bool isFeatured;
   final String? cardSize;
+  final String? link;
   final AppMedia? logo;
 
   const Brand({
@@ -19,6 +20,7 @@ class Brand {
     this.bgColorHex,
     this.isFeatured = false,
     this.cardSize,
+    this.link,
     this.logo,
   });
 
@@ -30,6 +32,7 @@ class Brand {
         bgColorHex: json['bgColorHex']?.toString(),
         isFeatured: asBool(json['isFeatured']),
         cardSize: json['cardSize']?.toString(),
+        link: json['link']?.toString(),
         logo: json['logo'] is Map ? AppMedia.fromJson(asMap(json['logo'])) : null,
       );
 

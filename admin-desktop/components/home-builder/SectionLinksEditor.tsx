@@ -1,12 +1,14 @@
 "use client";
 
-import { Alert, Divider, Form, Input, Switch, Typography } from "antd";
+import { Alert, Divider, Form, Switch, Typography } from "antd";
 import { LinkTargetPicker, ProductScopeFields } from "./LinkTargetPicker";
 import { CategoryItemsEditor } from "./CategoryItemsEditor";
+import { TileItemsLinksPanel } from "./TileItemsLinksPanel";
+import { ViewAllPicker } from "./ViewAllPicker";
 import { SectionType } from "./section-types";
 import type { EditorEntities } from "./SectionPayloadEditor";
 
-const { Text } = Typography;
+const { Text, Title } = Typography;
 
 type Props = {
   type: SectionType;
@@ -25,20 +27,11 @@ function entityLists(props: EditorEntities) {
   };
 }
 
-function ViewAllFields({ defaultQuery }: { defaultQuery?: string }) {
+function ViewAllToggle() {
   return (
-    <>
-      <Form.Item name={["payload", "showViewAll"]} label="زر «عرض الكل»" valuePropName="checked">
-        <Switch checkedChildren="ظاهر" unCheckedChildren="مخفي" />
-      </Form.Item>
-      <Form.Item
-        name={["payload", "viewAllQuery"]}
-        label="رابط عرض الكل (اختياري)"
-        tooltip="مثال: isPromo=1&title=الباقات — فارغ = افتراضي النظام"
-      >
-        <Input placeholder={defaultQuery ?? "isFeatured=1&title=..."} dir="ltr" />
-      </Form.Item>
-    </>
+    <Form.Item name={["payload", "showViewAll"]} label="زر «عرض الكل»" valuePropName="checked">
+      <Switch checkedChildren="ظاهر" unCheckedChildren="مخفي" />
+    </Form.Item>
   );
 }
 
@@ -47,160 +40,123 @@ export function SectionLinksEditor({ type, form, ...props }: Props) {
   const payload = Form.useWatch("payload", form) ?? {};
   const categoryIds = (payload.categoryIds as string[]) ?? [];
 
-  if (type === "PROMO_STRIP") {
-    return (
-      <>
-        <Alert
-          type="info"
-          showIcon
-          message="عند الضغط على الشريط ينتقل العميل إلى:"
-          style={{ marginBottom: 16 }}
-        />
-        <LinkTargetPicker prefix={["payload"]} entities={entities} showLegacyLink optional={false} />
-      </>
-    );
-  }
-
-  if (type === "PRODUCT_LIST" || type === "FLASH_SALE") {
-    return (
-      <>
-        <Alert
-          type="info"
-          showIcon
-          message="نطاق المنتجات"
-          description="يُبنى رابط «عرض الكل» تلقائياً من الفلتر والفئات المختارة — أو خصّصه أدناه."
-          style={{ marginBottom: 16 }}
-        />
-        <ProductScopeFields entities={entities} />
-        <Divider plain>عرض الكل</Divider>
-        <ViewAllFields />
-      </>
-    );
-  }
-
-  if (type === "FEATURED_BRANDS" || type === "BRAND_SHOWCASE") {
-    return (
-      <>
-        <Alert
-          type="info"
-          showIcon
-          message="كل براند يفتح منتجاته تلقائياً عند الضغط."
-          style={{ marginBottom: 16 }}
-        />
-        <ViewAllFields />
-        <Text type="secondary" style={{ fontSize: 12 }}>
-          الافتراضي: صفحة كل البراندات (/brands)
-        </Text>
-      </>
-    );
-  }
-
-  if (type === "PACKAGES" || type === "ROUTINE_CAROUSEL") {
-    return (
-      <>
-        <Alert
-          type="info"
-          showIcon
-          message="كل باقة تفتح صفحتها (/package/slug) عند الضغط."
-          style={{ marginBottom: 16 }}
-        />
-        <ViewAllFields defaultQuery="isPromo=1&title=الباقات" />
-      </>
-    );
-  }
-
-  if (type === "IMAGE_TILES" || type === "CIRCLE_TILES" || type === "IMAGE_MARQUEE") {
-    return (
-      <Alert
-        type="warning"
-        showIcon
-        message="الربط لكل عنصر"
-        description="اربط كل بطاقة/صورة من تبويب «المحتوى» — حقل الرابط داخل كل عنصر."
-      />
-    );
-  }
-
-  if (
-    type === "BANNER_FULL" ||
-    type === "CUSTOM_BANNER" ||
-    type.startsWith("BANNER_")
-  ) {
-    return (
-      <Alert
-        type="info"
-        showIcon
-        message="ربط البنرات"
-        description="من تبويب المحتوى: صورة + رابط مباشر، أو اختر بنراً من صفحة البنرات. يُحل الرابط في API."
-      />
-    );
-  }
-
-  if (
-    type === "CATEGORY_GRID" ||
-    type === "CATEGORY_TILES" ||
-    type === "MAKEUP_CATEGORIES"
-  ) {
-    return (
-      <>
-        <Alert
-          type="info"
-          showIcon
-          message="الفئات"
-          description="كل فئة تفتح منتجاتها افتراضياً. يمكن تجاوز رابط فئة محددة أدناه."
-          style={{ marginBottom: 16 }}
-        />
-        <CategoryItemsEditor
-          categories={props.categories ?? []}
-          entities={entities}
-          selectedIds={categoryIds}
-        />
-      </>
-    );
-  }
-
-  if (type === "HERO_BANNER") {
-    return (
-      <>
-        <Alert
-          type="info"
-          showIcon
-          message="الهيرو"
-          description="البنرات من صفحة البنرات. أيقونات الفئات تفتح أقسامها. تجاوز روابط الفئات:"
-          style={{ marginBottom: 16 }}
-        />
-        <CategoryItemsEditor
-          categories={props.categories ?? []}
-          entities={entities}
-          selectedIds={categoryIds}
-        />
-      </>
-    );
-  }
-
-  if (type === "CARE_HUB") {
-    return (
-      <>
-        <Alert
-          type="info"
-          showIcon
-          message="مركز العناية"
-          description="الروابط تُبنى من المحتوى. حدّد نطاق منتجات العناية وعرض الكل:"
-          style={{ marginBottom: 16 }}
-        />
-        <ProductScopeFields entities={entities} />
-        <Divider plain>عرض الكل</Divider>
-        <ViewAllFields defaultQuery="isFeatured=1&title=العناية" />
-      </>
-    );
-  }
-
-  if (type === "SKIN_CONCERNS") {
-    return (
-      <Alert type="info" showIcon message="كل مشكلة بشرة تفتح منتجاتها عبر concernSlug." />
-    );
-  }
-
   return (
-    <Text type="secondary">لا إعدادات ربط إضافية — المحتوى يُربط تلقائياً في التطبيق.</Text>
+    <div className="hb-links-panel">
+      <Title level={5} style={{ marginTop: 0 }}>
+        🔗 الربط — بسيط وواضح
+      </Title>
+      <Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
+        اختر وجهة من القوائم أو استخدم «روابط سريعة». المعاينة أسفل كل حقل تُظهر المسار في التطبيق.
+      </Text>
+
+      {type === "PROMO_STRIP" && (
+        <>
+          <Alert type="info" showIcon message="عند الضغط على الشريط ينتقل العميل إلى:" style={{ marginBottom: 16 }} />
+          <LinkTargetPicker prefix={["payload"]} entities={entities} optional={false} />
+        </>
+      )}
+
+      {(type === "PRODUCT_LIST" || type === "FLASH_SALE") && (
+        <>
+          <Alert
+            type="info"
+            showIcon
+            message="نطاق المنتجات + عرض الكل"
+            description="حدّد فئة/براند لتضييق القائمة. «عرض الكل» يُبنى تلقائياً أو من القوالب."
+            style={{ marginBottom: 16 }}
+          />
+          <ProductScopeFields entities={entities} />
+          <Divider plain>عرض الكل</Divider>
+          <ViewAllToggle />
+          <ViewAllPicker />
+        </>
+      )}
+
+      {(type === "FEATURED_BRANDS" || type === "BRAND_SHOWCASE") && (
+        <>
+          <Alert type="success" showIcon message="كل براند يفتح منتجاته تلقائياً." style={{ marginBottom: 16 }} />
+          <ViewAllToggle />
+          <ViewAllPicker defaultQuery="/brands" />
+        </>
+      )}
+
+      {(type === "PACKAGES" || type === "ROUTINE_CAROUSEL") && (
+        <>
+          <Alert type="success" showIcon message="كل باقة تفتح صفحتها (/package/slug)." style={{ marginBottom: 16 }} />
+          <ViewAllToggle />
+          <ViewAllPicker defaultQuery="isPromo=1&title=الباقات" />
+        </>
+      )}
+
+      {(type === "IMAGE_TILES" || type === "CIRCLE_TILES" || type === "IMAGE_MARQUEE") && (
+        <TileItemsLinksPanel
+          entities={entities}
+          itemLabel={type === "CIRCLE_TILES" ? "دائرة" : type === "IMAGE_MARQUEE" ? "صورة" : "بطاقة"}
+        />
+      )}
+
+      {(type === "BANNER_FULL" || type === "CUSTOM_BANNER" || type.startsWith("BANNER_")) && (
+        <>
+          <Alert
+            type="info"
+            showIcon
+            message="ربط البنرات"
+            description="بنرات من صفحة البنرات: عدّل الربط هناك. البنر المباشر (inline): من تبويب المحتوى."
+          />
+          {type === "BANNER_FULL" || type === "CUSTOM_BANNER" ? (
+            <div style={{ marginTop: 16 }}>
+              <LinkTargetPicker prefix={["payload"]} entities={entities} optional />
+            </div>
+          ) : null}
+        </>
+      )}
+
+      {(type === "CATEGORY_GRID" || type === "CATEGORY_TILES" || type === "MAKEUP_CATEGORIES") && (
+        <>
+          <Alert
+            type="info"
+            showIcon
+            message="الفئات"
+            description="افتراضياً كل فئة تفتح منتجاتها. يمكن تجاوز رابط فئة محددة:"
+            style={{ marginBottom: 16 }}
+          />
+          <CategoryItemsEditor categories={props.categories ?? []} entities={entities} selectedIds={categoryIds} />
+          <Divider plain>عرض الكل</Divider>
+          <ViewAllToggle />
+          <ViewAllPicker defaultQuery="/categories" />
+        </>
+      )}
+
+      {type === "CARE_HUB" && (
+        <>
+          <Alert type="info" showIcon message="مركز العناية — نطاق المنتجات وعرض الكل" style={{ marginBottom: 16 }} />
+          <ProductScopeFields entities={entities} />
+          <Divider plain>عرض الكل</Divider>
+          <ViewAllToggle />
+          <ViewAllPicker defaultQuery="isFeatured=1&title=العناية" />
+        </>
+      )}
+
+      {type === "MEDIA_GALLERY" && (
+        <TileItemsLinksPanel entities={entities} itemLabel="صورة" />
+      )}
+
+      {type === "SECTION_GROUP" && (
+        <Alert
+          type="info"
+          showIcon
+          message="روابط الأقسام الفرعية"
+          description="عدّل رابط كل قسم فرعي من تبويب «المحتوى» داخل بطاقة القسم."
+        />
+      )}
+
+      {type === "SKIN_CONCERNS" && (
+        <Alert type="success" showIcon message="كل مشكلة بشرة تفتح منتجاتها تلقائياً (concernSlug)." />
+      )}
+
+      {!["PROMO_STRIP", "PRODUCT_LIST", "FLASH_SALE", "FEATURED_BRANDS", "BRAND_SHOWCASE", "PACKAGES", "ROUTINE_CAROUSEL", "IMAGE_TILES", "CIRCLE_TILES", "IMAGE_MARQUEE", "MEDIA_GALLERY", "SECTION_GROUP", "BANNER_FULL", "CUSTOM_BANNER", "BANNER_GRID_2", "BANNER_GRID_3", "BANNER_CAROUSEL", "CATEGORY_GRID", "CATEGORY_TILES", "MAKEUP_CATEGORIES", "CARE_HUB", "SKIN_CONCERNS", "HERO_BANNER"].includes(type) && (
+        <Text type="secondary">لا إعدادات ربط إضافية — المحتوى يُربط تلقائياً في التطبيق.</Text>
+      )}
+    </div>
   );
 }

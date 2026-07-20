@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -24,7 +23,14 @@ class CategoryTilesSection extends StatelessWidget {
       categories: section.categories,
       title: section.title ?? 'الفئات',
       showTitle: section.showTitle,
-      onViewAll: () => context.push('/categories'),
+      showViewAll: section.showViewAll,
+      onViewAll: section.showViewAll
+          ? () => openViewAllLink(
+                context,
+                query: section.viewAllQuery,
+                fallbackQuery: '/categories',
+              )
+          : null,
     );
   }
 }
@@ -93,9 +99,7 @@ class _CategoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push(
-        '/products?categoryId=${category.id}&title=${Uri.encodeComponent(category.name)}',
-      ),
+      onTap: () => openCategoryLink(context, category),
       child: Container(
         width: width,
         height: height,
@@ -175,9 +179,7 @@ class _MakeupCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => context.push(
-        '/products?categoryId=${category.id}&title=${Uri.encodeComponent(category.name)}',
-      ),
+      onTap: () => openCategoryLink(context, category),
       child: Container(
         width: width,
         height: height,

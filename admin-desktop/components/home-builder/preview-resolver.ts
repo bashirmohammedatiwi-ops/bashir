@@ -1,6 +1,7 @@
 import { mediaThumb } from "@/lib/mediaUrl";
 import type { EditorEntities } from "./SectionPayloadEditor";
 import { filterBuilderBlocks, pickHeroCategories } from "./fixed-hero";
+import { buildAppLinkPath } from "./link-target";
 
 type Block = {
   id: string;
@@ -15,6 +16,21 @@ function pickByIds<T extends { id: string }>(items: T[], ids?: unknown): T[] {
   if (!list.length) return items.slice(0, 12);
   const map = new Map(items.map((i) => [i.id, i]));
   return list.map((id) => map.get(id)).filter(Boolean) as T[];
+}
+
+function applyCategoryLinkOverrides<T extends { id: string; parentId?: string | null }>(
+  categories: T[],
+  payload: Record<string, unknown>,
+): (T & { linkType?: string; linkValue?: string; link?: string })[] {
+  const overrides =
+    (payload.categoryItems as { categoryId: string; linkType?: string; linkValue?: string }[]) ?? [];
+  const map = new Map(overrides.map((o) => [o.categoryId, o]));
+  return categories.map((c) => {
+    const ov = map.get(c.id);
+    if (!ov?.linkType) return c as T & { linkType?: string; linkValue?: string; link?: string };
+    const link = buildAppLinkPath(ov.linkType, ov.linkValue);
+    return { ...c, linkType: ov.linkType, linkValue: ov.linkValue, link };
+  });
 }
 
 function pickOne<T extends { id: string }>(items: T[], id?: unknown): T | undefined {
@@ -110,7 +126,36 @@ export function resolveBlockPreview(
     case "CATEGORY_GRID":
     case "CATEGORY_TILES":
     case "MAKEUP_CATEGORIES":
-      return { categories: pickByIds(entities.categories ?? [], p.categoryIds) };
+      return {
+        categories: applyCategoryLinkOverrides(
+          pickByIds(entities.categories ?? [], p.categoryIds),
+          p,
+        ),
+        showViewAll: p.showViewAll !== false,
+        viewAllQuery: (p.viewAllQuery as string) || "/categories",
+      };
+    case "MEDIA_GALLERY":
+      return {
+        items: resolveItems((p.items as unknown[]) ?? [], mediaMap),
+        display: p.display ?? "scroll",
+        shape: p.shape ?? "rounded",
+      };
+    case "SECTION_GROUP":
+      return {
+        backgroundColor: p.backgroundColor ?? "#F8F4EF",
+        children: ((p.children as { type?: string; title?: string; payload?: Record<string, unknown> }[]) ?? []).map(
+          (c, i) => ({
+            id: `preview-child-${i}`,
+            type: c.type,
+            title: c.title,
+            ...resolveBlockPreview(
+              { id: `preview-child-${i}`, type: c.type ?? "", payload: c.payload },
+              entities,
+              null,
+            ),
+          }),
+        ),
+      };
     case "SKIN_CONCERNS":
       return { skinConcerns: pickByIds(entities.skinConcerns ?? [], p.concernIds) };
     case "BANNER_FULL":

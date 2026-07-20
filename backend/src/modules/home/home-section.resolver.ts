@@ -67,6 +67,12 @@ export interface ResolvedHomeSection {
   display?: string;
   shape?: string;
   kind?: string;
+  children?: ResolvedHomeSection[];
+  borderRadius?: number;
+  borderColor?: string;
+  framePaddingH?: number;
+  titleColor?: string;
+  frameShadow?: boolean;
 }
 
 @Injectable()
@@ -111,6 +117,9 @@ export class HomeSectionResolver {
   }
 
   private isEmpty(s: ResolvedHomeSection): boolean {
+    if (s.type === HomeBlockType.SECTION_GROUP && Array.isArray(s.children) && s.children.length > 0) {
+      return false;
+    }
     if (s.promoStrip?.text) return false;
     const arrays = [s.banners, s.categories, s.products, s.brands, s.packages, s.items, s.skinConcerns];
     return !arrays.some((a) => Array.isArray(a) && a.length > 0);
@@ -173,10 +182,13 @@ export class HomeSectionResolver {
 
       case HomeBlockType.CATEGORY_GRID: {
         const categories = await this.resolveCategories(payload, ctx.defaultCategories);
+        const customViewAll = (payload.viewAllQuery as string | undefined)?.trim();
         return {
           ...base,
           layout: (payload.layout as string) ?? (payload.sectionLayout as string) ?? "overlap",
           categories,
+          showViewAll: payload.showViewAll !== false,
+          viewAllQuery: customViewAll || "/categories",
         };
       }
 
@@ -184,11 +196,14 @@ export class HomeSectionResolver {
       case HomeBlockType.MAKEUP_CATEGORIES: {
         const categories = await this.resolveCategories(payload, ctx.defaultCategories);
         const sectionLayout = (payload.sectionLayout as string) ?? "tiles";
+        const customViewAll = (payload.viewAllQuery as string | undefined)?.trim();
         return {
           ...base,
           layout: block.type === HomeBlockType.MAKEUP_CATEGORIES ? "makeup" : sectionLayout,
           sectionLayout,
           categories,
+          showViewAll: payload.showViewAll !== false,
+          viewAllQuery: customViewAll || "/categories",
         };
       }
 
@@ -258,13 +273,14 @@ export class HomeSectionResolver {
           block.type === HomeBlockType.FLASH_SALE
             ? ((payload.endsAt as string) ?? ctx.flashEndsAt)
             : undefined;
+        const customViewAll = (payload.viewAllQuery as string | undefined)?.trim();
         return {
           ...base,
           layout: block.type === HomeBlockType.FLASH_SALE ? "flash" : "carousel",
           products,
           endsAt: endsAt ?? null,
           showViewAll: payload.showViewAll !== false,
-          viewAllQuery: this.buildViewAllQuery(payload, filter, block.title),
+          viewAllQuery: customViewAll || this.buildViewAllQuery(payload, filter, block.title),
         };
       }
 
@@ -371,12 +387,16 @@ export class HomeSectionResolver {
       case HomeBlockType.ROUTINE_CAROUSEL: {
         const packages = await this.resolveRoutinePackages(payload, ctx.defaultPackages);
         const kind = (payload.kind as string) ?? "ROUTINE_MORNING";
+        const customViewAll = (payload.viewAllQuery as string | undefined)?.trim();
         return {
           ...base,
           layout: "carousel",
           kind,
           packages,
-          viewAllQuery: kind === "both" ? "isPromo=1&title=روتين البشرة" : undefined,
+          showViewAll: payload.showViewAll !== false,
+          viewAllQuery:
+            customViewAll ||
+            (kind === "both" ? "isPromo=1&title=روتين البشرة" : undefined),
         };
       }
 
@@ -400,6 +420,7 @@ export class HomeSectionResolver {
         );
         const productFilter = (payload.productFilter as string) ?? "featured";
         const products = await this.resolveProducts(payload, productFilter, ctx.productBuckets);
+        const customViewAll = (payload.viewAllQuery as string | undefined)?.trim();
         return {
           ...base,
           layout: (payload.layout as string) ?? "stacked",
@@ -409,12 +430,85 @@ export class HomeSectionResolver {
           packages: [...morningPkgs, ...eveningPkgs],
           products: products.slice(0, (payload.productLimit as number) ?? 8),
           items: routineKinds.map((k) => ({ kind: k })),
+          showViewAll: payload.showViewAll !== false,
+          viewAllQuery:
+            customViewAll ||
+            this.buildViewAllQuery(
+              { ...payload, filter: productFilter },
+              productFilter,
+              block.title ?? "العناية",
+            ),
+        };
+      }
+
+      case HomeBlockType.SECTION_GROUP: {
+        const rawChildren =
+          (payload.children as { type?: string; title?: string; payload?: Payload }[]) ?? [];
+        const children = await this.resolveGroupChildren(rawChildren, ctx, block);
+        return {
+          ...base,
+          layout: "group",
+          backgroundColor: (payload.backgroundColor as string) ?? "#F8F4EF",
+          titleColor: (payload.titleColor as string) ?? undefined,
+          borderColor: (payload.borderColor as string) || undefined,
+          borderRadius: Number(payload.borderRadius) || 24,
+          framePaddingH: Number(payload.paddingH) ?? 12,
+          paddingTop: Number(payload.paddingTop) ?? 20,
+          paddingBottom: Number(payload.paddingBottom) ?? 20,
+          frameShadow: payload.shadow !== false,
+          showTitle: payload.showTitle !== false,
+          children,
+        };
+      }
+
+      case HomeBlockType.MEDIA_GALLERY: {
+        const items = await this.resolveMediaGallery(payload);
+        return {
+          ...base,
+          layout: (payload.display as string) ?? "scroll",
+          display: (payload.display as string) ?? "scroll",
+          shape: (payload.shape as string) ?? "rounded",
+          cardSize: (payload.size as string) ?? "md",
+          imageHeight: Number(payload.height) || 140,
+          marqueeSpeed: Number(payload.marqueeSpeed) || 5,
+          marqueeGap: Number(payload.gap) ?? 12,
+          sectionLayout: payload.columns != null ? String(payload.columns) : undefined,
+          items,
         };
       }
 
       default:
         return null;
     }
+  }
+
+  private async resolveGroupChildren(
+    children: { type?: string; title?: string; payload?: Payload }[],
+    ctx: Parameters<HomeSectionResolver["resolve"]>[1],
+    parentBlock: HomeBlock,
+  ): Promise<ResolvedHomeSection[]> {
+    const out: ResolvedHomeSection[] = [];
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i];
+      const childType = child?.type as HomeBlockType | undefined;
+      if (!childType || childType === HomeBlockType.SECTION_GROUP || childType === HomeBlockType.HERO_BANNER) {
+        continue;
+      }
+      const childPayload = (child.payload ?? {}) as Payload;
+      const childBlock: HomeBlock = {
+        ...parentBlock,
+        id: `${parentBlock.id}-g${i}`,
+        type: childType,
+        title: child.title ?? null,
+        subtitle: null,
+        payload: childPayload as HomeBlock["payload"],
+      };
+      const resolved = await this.resolveBlock(childBlock, childPayload, ctx);
+      if (resolved && !this.isEmpty(resolved)) {
+        out.push({ ...resolved, title: child.title ?? resolved.title, position: i });
+      }
+    }
+    return out;
   }
 
   private pickBanners(all: unknown[], ids?: string[]): unknown[] {
@@ -676,6 +770,20 @@ export class HomeSectionResolver {
       link: buildAppLink(linkType, linkValue, legacyLink),
       image: media,
     };
+  }
+
+  private async resolveMediaGallery(payload: Payload) {
+    const defaultShape = (payload.shape as string) ?? "rounded";
+    const defaultSize = (payload.size as string) ?? "md";
+    const tiles = await this.resolveImageTiles(payload);
+    return tiles.map((tile, idx) => {
+      const raw = ((payload.items as Record<string, unknown>[]) ?? [])[idx] ?? {};
+      return {
+        ...(tile as Record<string, unknown>),
+        shape: (raw.shape as string) ?? defaultShape,
+        size: (raw.size as string) ?? defaultSize,
+      };
+    });
   }
 
   private async resolveImageTiles(payload: Payload) {

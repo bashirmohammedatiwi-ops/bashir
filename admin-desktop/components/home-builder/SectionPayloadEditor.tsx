@@ -21,6 +21,8 @@ import { EntityMultiPicker } from "./EntityMultiPicker";
 import { LinkTargetPicker, ProductScopeFields } from "./LinkTargetPicker";
 import { SectionStyleFields } from "./SectionStyleFields";
 import { CardSizePicker } from "./CardSizePicker";
+import { FrameStyleFields, MEDIA_DISPLAY_OPTIONS, MEDIA_SHAPE_OPTIONS, MEDIA_SIZE_OPTIONS } from "./FrameStyleFields";
+import { GroupChildrenEditor } from "./GroupChildrenEditor";
 import { PRODUCT_FILTERS, SectionType } from "./section-types";
 
 const { Text } = Typography;
@@ -89,7 +91,7 @@ export function SectionLinkHints({
   ) {
     return (
       <Text type="secondary">
-        كل فئة تفتح منتجاتها تلقائياً. لتخصيص رابط فئة واحدة استخدم JSON المتقدم: categoryItems.
+        كل فئة تفتح منتجاتها تلقائياً. لتخصيص رابط فئة: تبويب «الروابط» → تجاوز رابط فئة.
       </Text>
     );
   }
@@ -736,6 +738,83 @@ export function SectionPayloadEditor(props: Props) {
           <Form.Item name={["payload", "productLimit"]} label="عدد المنتجات" initialValue={8}>
             <InputNumber min={4} max={16} style={{ width: "100%" }} />
           </Form.Item>
+        </>
+      );
+
+    case "SECTION_GROUP":
+      return (
+        <>
+          <FrameStyleFields />
+          <Divider plain>الأقسام داخل الإطار</Divider>
+          <GroupChildrenEditor entities={props} />
+        </>
+      );
+
+    case "MEDIA_GALLERY":
+      return (
+        <>
+          <Form.Item name={["payload", "display"]} label="طريقة العرض" initialValue="scroll">
+            <Select options={MEDIA_DISPLAY_OPTIONS} />
+          </Form.Item>
+          <Form.Item name={["payload", "shape"]} label="شكل الصور" initialValue="rounded">
+            <Select options={MEDIA_SHAPE_OPTIONS} />
+          </Form.Item>
+          <Form.Item name={["payload", "size"]} label="الحجم" initialValue="md">
+            <Select options={MEDIA_SIZE_OPTIONS} />
+          </Form.Item>
+          <Form.Item name={["payload", "height"]} label="ارتفاع الصورة (px)" initialValue={140}>
+            <InputNumber min={60} max={320} style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item name={["payload", "gap"]} label="المسافة بين الصور" initialValue={12}>
+            <InputNumber min={4} max={32} style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item noStyle shouldUpdate={(prev, cur) => prev?.payload?.display !== cur?.payload?.display}>
+            {({ getFieldValue }) =>
+              getFieldValue(["payload", "display"]) === "grid" ? (
+                <Form.Item name={["payload", "columns"]} label="عدد الأعمدة" initialValue={3}>
+                  <InputNumber min={2} max={4} style={{ width: "100%" }} />
+                </Form.Item>
+              ) : getFieldValue(["payload", "display"]) === "marquee" ? (
+                <Form.Item name={["payload", "marqueeSpeed"]} label="سرعة الحركة" initialValue={5}>
+                  <InputNumber min={1} max={12} style={{ width: "100%" }} />
+                </Form.Item>
+              ) : null
+            }
+          </Form.Item>
+          <Divider plain>الصور</Divider>
+          <Form.List name={["payload", "items"]}>
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...rest }) => (
+                  <Card
+                    key={key}
+                    size="small"
+                    title={`صورة ${name + 1}`}
+                    style={{ marginBottom: 10 }}
+                    extra={
+                      <Button danger type="link" icon={<MinusCircleOutlined />} onClick={() => remove(name)}>
+                        حذف
+                      </Button>
+                    }
+                  >
+                    <Form.Item {...rest} name={[name, "imageId"]} label="الصورة" rules={[{ required: true }]}>
+                      <MediaPicker label="اختر صورة" />
+                    </Form.Item>
+                    <Form.Item {...rest} name={[name, "title"]} label="تسمية (اختياري)">
+                      <Input />
+                    </Form.Item>
+                    <Form.Item {...rest} name={[name, "shape"]} label="شكل (تجاوز)">
+                      <Select allowClear options={MEDIA_SHAPE_OPTIONS} placeholder="افتراضي القسم" />
+                    </Form.Item>
+                    <LinkTargetPicker prefix={["payload", "items", name]} entities={entities} />
+                  </Card>
+                ))}
+                <Button type="dashed" onClick={() => add({})} block icon={<PlusOutlined />}>
+                  + صورة
+                </Button>
+              </>
+            )}
+          </Form.List>
         </>
       );
 

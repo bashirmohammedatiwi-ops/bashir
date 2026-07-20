@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/brand.dart';
 import '../../../data/models/home_section.dart';
+import '../home_link.dart';
 import '../widgets/home_animations.dart';
 import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
@@ -28,7 +28,9 @@ class BrandHomeSection extends StatelessWidget {
       section: section,
       compactTop: compactTop,
       actionLabel: section.showViewAll ? 'عرض الكل' : null,
-      onAction: section.showViewAll ? () => context.push('/brands') : null,
+      onAction: section.showViewAll
+          ? () => openViewAllLink(context, query: section.viewAllQuery, fallbackQuery: '/brands')
+          : null,
       child: _cardsLayout ? _BrandCardsRow(brands: section.brands) : _BrandLogosRow(brands: section.brands),
     );
   }
@@ -52,9 +54,7 @@ class _BrandLogosRow extends StatelessWidget {
           return HomeStaggerItem(
             index: i,
             child: HomeTapScale(
-              onTap: () => context.push(
-                '/products?brandId=${b.id}&title=${Uri.encodeComponent(b.name)}',
-              ),
+              onTap: () => openBrandLink(context, b),
               child: Container(
                 width: 112,
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -111,9 +111,7 @@ class _BrandCardsRow extends StatelessWidget {
           return HomeStaggerItem(
             index: i,
             child: HomeTapScale(
-              onTap: () => context.push(
-                '/products?brandId=${b.id}&title=${Uri.encodeComponent(b.name)}',
-              ),
+              onTap: () => openBrandLink(context, b),
               child: Container(
                 width: 100,
                 decoration: HomeTheme.cardDecoration(),

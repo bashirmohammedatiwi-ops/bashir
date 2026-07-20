@@ -166,4 +166,32 @@ export const SECTION_PRESETS: SectionPreset[] = [
     title: "خصومات البراندات",
     payload: { layout: "cards", showViewAll: true },
   },
+  {
+    id: "care-frame",
+    label: "إطار العناية",
+    description: "مجموعة أقسام داخل إطار كريمي",
+    icon: "🖼️",
+    accent: "#F8F4EF",
+    type: "SECTION_GROUP",
+    title: "عناية البشرة",
+    payload: {
+      backgroundColor: "#F8F4EF",
+      borderRadius: 24,
+      shadow: true,
+      children: [
+        { type: "SKIN_CONCERNS", title: "مشاكل البشرة", payload: { display: "circles", maxItems: 8 } },
+        { type: "PRODUCT_LIST", title: "منتجات مختارة", payload: { filter: "featured", limit: 8 } },
+      ],
+    },
+  },
+  {
+    id: "media-scroll",
+    label: "معرض صور متحرك",
+    description: "تمرير يدوي — دوائر وبانرات",
+    icon: "🎞️",
+    accent: "#EDE7F6",
+    type: "MEDIA_GALLERY",
+    title: "اكتشفي المزيد",
+    payload: { display: "scroll", shape: "rounded", size: "md", height: 140, items: [] },
+  },
 ];

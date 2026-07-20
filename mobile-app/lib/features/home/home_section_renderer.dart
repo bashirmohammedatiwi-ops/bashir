@@ -14,6 +14,8 @@ import 'sections/circle_tiles_section.dart';
 import 'sections/care_hub_section.dart';
 import 'sections/routine_carousel_section.dart';
 import 'sections/image_marquee_section.dart';
+import 'sections/media_gallery_section.dart';
+import 'sections/section_group_section.dart';
 import 'sections/promo_sections.dart';
 import 'sections/skin_concerns_strip.dart';
 import 'widgets/home_animations.dart';
@@ -24,11 +26,13 @@ export 'sections/hero_section.dart' show HeroHomeSection;
 class HomeSectionWidget extends ConsumerWidget {
   final HomeSection section;
   final bool isFirstAfterHero;
+  final bool nestedInGroup;
 
   const HomeSectionWidget({
     super.key,
     required this.section,
     this.isFirstAfterHero = false,
+    this.nestedInGroup = false,
   });
 
   @override
@@ -52,6 +56,8 @@ class HomeSectionWidget extends ConsumerWidget {
       'PROMO_STRIP' => PromoStripSection(section: section),
       'IMAGE_TILES' => ImageTilesSection(section: section),
       'IMAGE_MARQUEE' => ImageMarqueeSection(section: section),
+      'MEDIA_GALLERY' => MediaGallerySection(section: section),
+      'SECTION_GROUP' => SectionGroupSection(section: section, compactTop: isFirstAfterHero),
       'CIRCLE_TILES' => CircleTilesSection(section: section),
       'ROUTINE_CAROUSEL' => RoutineCarouselSection(section: section, compactTop: isFirstAfterHero),
       'CARE_HUB' => CareHubSection(section: section, compactTop: isFirstAfterHero),
@@ -64,6 +70,8 @@ class HomeSectionWidget extends ConsumerWidget {
         ),
       _ => const SizedBox.shrink(),
     };
+
+    if (nestedInGroup) return RepaintBoundary(child: child);
 
     final top = sectionPadding(
       section.paddingTop?.toDouble(),
