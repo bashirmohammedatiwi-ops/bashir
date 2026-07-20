@@ -133,7 +133,7 @@ export class HomeSectionResolver {
     let headerImageUrl: string | undefined;
     if (headerImageId) {
       const media = await this.prisma.media.findUnique({ where: { id: headerImageId } });
-      if (media) headerImageUrl = this.mediaPublicUrl(media);
+      if (media) headerImageUrl = this.mediaPublicUrl(media) ?? undefined;
     }
 
     const base = {
