@@ -1060,7 +1060,7 @@ export async function resolveRichestParentAsin(asin) {
   const id = String(asin || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(id)) return id;
 
-  const cacheKey = `amazon:richest-parent:v3:${id}`;
+  const cacheKey = `amazon:richest-parent:v4:${id}`;
   const cached = cacheGet(cacheKey, DETAIL_TTL);
   if (cached) return cached;
 
@@ -2246,6 +2246,7 @@ export async function scrapeProductDetail(id, {
   light = false,
   skipRedirect = false,
   matchedChildAsin = '',
+  skipCache = false,
 } = {}) {
   const asin = String(id || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(asin)) return null;
@@ -2257,13 +2258,16 @@ export async function scrapeProductDetail(id, {
         light,
         skipRedirect: true,
         matchedChildAsin: matchedChildAsin || asin,
+        skipCache,
       });
     }
   }
 
-  const cacheKey = `amazon:detail:v22:${asin}:${light ? 'l' : 'f'}`;
-  const cached = cacheGet(cacheKey, DETAIL_TTL);
-  if (cached) return cached;
+  const cacheKey = `amazon:detail:v23:${asin}:${light ? 'l' : 'f'}`;
+  if (!skipCache) {
+    const cached = cacheGet(cacheKey, DETAIL_TTL);
+    if (cached) return cached;
+  }
 
   // اجلب ae + com + sa — SA/AE أوضح لتدرجات المكياج عندما com يُخفّي twister
   const settled = await Promise.allSettled([
@@ -2362,6 +2366,22 @@ export async function scrapeProductDetail(id, {
 
   const parentHtmlSources = [comHtml, aeHtml, saHtml, parentHtml].filter(Boolean);
   shades = enrichShadesFromParentHtml(shades, parentHtmlSources);
+
+  // twister ظاهر لكن parsing أعاد تدرجاً واحداً — أعد البناء من HTML الصفحة
+  if (shades.length <= 1 && expectedVariations > 1) {
+    const rescued = filterUsableShades(
+      mergeShadeLists(
+        ...parentHtmlSources.flatMap((chunk) => [
+          parseShadesFromHtml(chunk),
+          parseShadesFromAsinVariationValues(chunk),
+        ]),
+      ),
+    );
+    if (rescued.length > shades.length) {
+      shades = enrichShadesFromParentHtml(rescued, parentHtmlSources);
+      shades = filterUsableShades(shades);
+    }
+  }
 
   // احذف فقط صفحة الـ ASIN الحالية إن كانت بدون اسم تدرج (تكرار للمنتج الأب)
   if (shades.length > 2) {

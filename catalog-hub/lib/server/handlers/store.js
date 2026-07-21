@@ -339,8 +339,9 @@ export async function handleStoreApi(req, res, url) {
     if (!adapter) return;
     const id = decodeURIComponent(productMatch[2]);
     const light = q.light === '1' || q.light === 'true';
+    const refresh = q.refresh === '1' || q.refresh === 'true';
     try {
-      const raw = await adapter.fetchProductDetail(id, { light });
+      const raw = await adapter.fetchProductDetail(id, { light, refresh });
       if (!raw?.id) return sendJson(res, 404, { error: 'Product not found' });
       const product = toImportPayload({ ...raw, store: adapter.id, storeLabel: adapter.label });
       return sendJson(res, 200, { product });
@@ -360,8 +361,9 @@ export async function handleImportApi(req, res, url) {
     const adapter = getStoreAdapter(productMatch[1]);
     if (!adapter) return sendJson(res, 404, { error: 'متجر غير معروف' });
     const id = decodeURIComponent(productMatch[2]);
+    const refresh = q.refresh === '1' || q.refresh === 'true';
     try {
-      const raw = await adapter.fetchProductDetail(id, { light: false });
+      const raw = await adapter.fetchProductDetail(id, { light: false, refresh });
       if (!raw?.id) {
         // أمازون: البطاقة قد تظهر من البحث بينما التفاصيل تفشل مؤقتاً (كابتشا)
         const softMsg = adapter.id === 'amazon'

@@ -646,6 +646,10 @@ export default function CatalogImportPage() {
                 setPreview(partial);
               }
             },
+            {
+              listingAsin: opt.listingAsin,
+              expectedShadeCount: opt.shadeCount,
+            },
           );
         } catch (err) {
           // أمازون: البطاقة ظاهرة من البحث — ابنِ معاينة مؤقتة بدل «لم يُعثر»
@@ -716,15 +720,23 @@ export default function CatalogImportPage() {
         });
 
         if (opt.store === "amazon" && product.shades?.length) {
-          // استخرج ألوان السواتش من الصور في الخلفية
-          const withHex = await Promise.all(
-            product.shades.map(async (s) => ({
-              ...s,
-              colorHex: s.colorHex || (await resolveShadeColorHex(s)) || "",
-            })),
-          );
-          if (!isStale()) {
-            setPreview((prev) => (prev ? { ...prev, shades: withHex } : prev));
+          // استخرج ألوان السواتش على دفعات — لا تُبقي القائمة على تدرج واحد أثناء الانتظار
+          const withHex = product.shades.map((s) => ({ ...s }));
+          const batchSize = 8;
+          for (let i = 0; i < withHex.length; i += batchSize) {
+            if (isStale()) break;
+            const resolved = await Promise.all(
+              withHex.slice(i, i + batchSize).map(async (s) => ({
+                ...s,
+                colorHex: s.colorHex || (await resolveShadeColorHex(s)) || "",
+              })),
+            );
+            for (let j = 0; j < resolved.length; j += 1) {
+              withHex[i + j] = resolved[j];
+            }
+            if (!isStale()) {
+              setPreview((prev) => (prev ? { ...prev, shades: [...withHex] } : prev));
+            }
           }
         }
       } catch (err) {

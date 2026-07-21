@@ -429,7 +429,7 @@ function mergeAmazonLightFull(base, full) {
   };
 }
 
-export async function fetchProductDetail(id, { light = false } = {}) {
+export async function fetchProductDetail(id, { light = false, refresh = false } = {}) {
   const asin = String(id || '').trim().toUpperCase();
   if (!asin) return null;
 
@@ -438,26 +438,28 @@ export async function fetchProductDetail(id, { light = false } = {}) {
   if (!usePaapi() || process.env.AMAZON_FORCE_PAAPI !== '1') {
     const canonical = await resolveRichestParentAsin(asin);
     const matchedChild = canonical !== asin ? asin : '';
+    const scrapeOpts = {
+      skipRedirect: true,
+      matchedChildAsin: matchedChild,
+      skipCache: refresh,
+    };
 
     let detail = null;
     try {
       if (light) {
         detail = await scrapeProductDetail(canonical, {
+          ...scrapeOpts,
           light: true,
-          skipRedirect: true,
-          matchedChildAsin: matchedChild,
         });
       } else {
         const [base, full] = await Promise.all([
           scrapeProductDetail(canonical, {
+            ...scrapeOpts,
             light: true,
-            skipRedirect: true,
-            matchedChildAsin: matchedChild,
           }).catch(() => null),
           scrapeProductDetail(canonical, {
+            ...scrapeOpts,
             light: false,
-            skipRedirect: true,
-            matchedChildAsin: matchedChild,
           }).catch(() => null),
         ]);
         detail = mergeAmazonLightFull(base, full) || full || base;

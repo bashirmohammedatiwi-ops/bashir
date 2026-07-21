@@ -465,15 +465,26 @@ export async function searchCatalogByBarcode(
   return { barcode: barcode.trim(), options, stores: stats };
 }
 
-export async function fetchCatalogProduct(storeId: string, sourceId: string, storeLabel = "") {
+export async function fetchCatalogProduct(
+  storeId: string,
+  sourceId: string,
+  storeLabel = "",
+  opts?: { refresh?: boolean },
+) {
   // أمازون: إثراء باركود/لون كل التدرجات يحتاج وقتاً أطول
   const timeout = storeId === "amazon" ? 180_000 : 120_000;
+  const refreshQ = opts?.refresh ? "?refresh=1" : "";
   const data = await catalogFetch<{ product: Record<string, unknown> }>(
-    `/api/import/${encodeURIComponent(storeId)}/products/${encodeURIComponent(sourceId)}`,
+    `/api/import/${encodeURIComponent(storeId)}/products/${encodeURIComponent(sourceId)}${refreshQ}`,
     timeout,
   );
   return mapImportProduct(data.product, storeLabel);
 }
+
+export type FetchCatalogProductSmartOpts = {
+  listingAsin?: string;
+  expectedShadeCount?: number;
+};
 
 /**
  * أمازون: اجلب light أولاً (قائمة التدرجات سريعاً) ثم full (باركودات).
@@ -484,70 +495,86 @@ export async function fetchCatalogProductSmart(
   sourceId: string,
   storeLabel = "",
   onPartial?: (product: CatalogImportProduct) => void,
+  opts?: FetchCatalogProductSmartOpts,
 ) {
   if (storeId !== "amazon") {
     return fetchCatalogProduct(storeId, sourceId, storeLabel);
   }
 
-  let lightProduct: CatalogImportProduct | null = null;
-  try {
-    const light = await catalogFetch<{ product: Record<string, unknown> }>(
-      `/api/catalog/${encodeURIComponent(storeId)}/products/${encodeURIComponent(sourceId)}?light=1`,
-      90_000,
-    );
-    lightProduct = mapImportProduct(light.product || {}, storeLabel);
-    if (lightProduct.shades?.length) onPartial?.(lightProduct);
-  } catch {
-    lightProduct = null;
-  }
+  const fetchId = opts?.listingAsin || sourceId;
+  const expectedShades = Number(opts?.expectedShadeCount || 0);
 
-  const resolvedSourceId = lightProduct?.sourceId || sourceId;
-
-  try {
-    const full = await fetchCatalogProduct(storeId, resolvedSourceId, storeLabel);
-    // إن أعاد full تدرجات أقل من light — ادمج
-    if (lightProduct && (lightProduct.shades?.length || 0) > (full.shades?.length || 0)) {
-      const byAsin = new Map(
-        full.shades.map((s) => [String(s.sku || s.id || "").toUpperCase(), s]),
+  const loadAmazon = async (refresh = false) => {
+    let lightProduct: CatalogImportProduct | null = null;
+    try {
+      const refreshQ = refresh ? "&refresh=1" : "";
+      const light = await catalogFetch<{ product: Record<string, unknown> }>(
+        `/api/catalog/${encodeURIComponent(storeId)}/products/${encodeURIComponent(fetchId)}?light=1${refreshQ}`,
+        90_000,
       );
-      const mergedShades = lightProduct.shades.map((s) => {
-        const key = String(s.sku || s.id || "").toUpperCase();
-        const enriched = byAsin.get(key);
-        return enriched
-          ? {
-              ...s,
-              ...enriched,
-              nameAr: enriched.nameAr || s.nameAr,
-              nameEn: enriched.nameEn || s.nameEn,
-              imageUrl: enriched.imageUrl || s.imageUrl,
-              swatchUrl: enriched.swatchUrl || s.swatchUrl,
-              barcode: enriched.barcode || s.barcode,
-              colorHex: enriched.colorHex || s.colorHex,
-              price: enriched.price || s.price,
-              shadeNumber: enriched.shadeNumber || s.shadeNumber,
-              shadeCode: enriched.shadeCode || s.shadeCode,
-              position: enriched.position ?? s.position,
-            }
-          : s;
-      });
-      const seen = new Set(mergedShades.map((s) => String(s.sku || s.id || "").toUpperCase()));
-      for (const s of full.shades) {
-        const key = String(s.sku || s.id || "").toUpperCase();
-        if (key && !seen.has(key)) mergedShades.push(s);
-      }
-      return {
-        ...full,
-        descriptionAr: full.descriptionAr || lightProduct.descriptionAr,
-        descriptionEn: full.descriptionEn || lightProduct.descriptionEn,
-        shades: mergedShades,
-        hasShades: mergedShades.length > 1,
-      };
+      lightProduct = mapImportProduct(light.product || {}, storeLabel);
+      if (lightProduct.shades?.length) onPartial?.(lightProduct);
+    } catch {
+      lightProduct = null;
     }
-    return full;
-  } catch (err) {
-    if (lightProduct) return lightProduct;
-    throw err;
+
+    const resolvedSourceId = lightProduct?.sourceId || sourceId;
+
+    try {
+      const full = await fetchCatalogProduct(storeId, resolvedSourceId, storeLabel, { refresh });
+      // إن أعاد full تدرجات أقل من light — ادمج
+      if (lightProduct && (lightProduct.shades?.length || 0) > (full.shades?.length || 0)) {
+        const byAsin = new Map(
+          full.shades.map((s) => [String(s.sku || s.id || "").toUpperCase(), s]),
+        );
+        const mergedShades = lightProduct.shades.map((s) => {
+          const key = String(s.sku || s.id || "").toUpperCase();
+          const enriched = byAsin.get(key);
+          return enriched
+            ? {
+                ...s,
+                ...enriched,
+                nameAr: enriched.nameAr || s.nameAr,
+                nameEn: enriched.nameEn || s.nameEn,
+                imageUrl: enriched.imageUrl || s.imageUrl,
+                swatchUrl: enriched.swatchUrl || s.swatchUrl,
+                barcode: enriched.barcode || s.barcode,
+                colorHex: enriched.colorHex || s.colorHex,
+                price: enriched.price || s.price,
+                shadeNumber: enriched.shadeNumber || s.shadeNumber,
+                shadeCode: enriched.shadeCode || s.shadeCode,
+                position: enriched.position ?? s.position,
+              }
+            : s;
+        });
+        const seen = new Set(mergedShades.map((s) => String(s.sku || s.id || "").toUpperCase()));
+        for (const s of full.shades) {
+          const key = String(s.sku || s.id || "").toUpperCase();
+          if (key && !seen.has(key)) mergedShades.push(s);
+        }
+        return {
+          ...full,
+          descriptionAr: full.descriptionAr || lightProduct.descriptionAr,
+          descriptionEn: full.descriptionEn || lightProduct.descriptionEn,
+          shades: mergedShades,
+          hasShades: mergedShades.length > 1,
+        };
+      }
+      return full;
+    } catch (err) {
+      if (lightProduct) return lightProduct;
+      throw err;
+    }
+  };
+
+  let product = await loadAmazon(false);
+  if (
+    expectedShades > 1
+    && (product.shades?.length || 0) <= 1
+  ) {
+    product = await loadAmazon(true);
   }
+  return product;
 }
 
 export async function fetchCatalogPreview(storeId: string, sourceId: string) {
