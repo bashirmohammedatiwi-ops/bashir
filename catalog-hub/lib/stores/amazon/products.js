@@ -17,7 +17,7 @@ import {
   upsertAmazonProducts,
 } from './catalog-index.js';
 import { mapDetailProduct, mapListProduct, mapShadeFromVariation } from './map.js';
-import { resolveRichestParentAsin, scrapeBarcode, scrapeProductDetail, scrapeSearchProducts } from './scrape.js';
+import { resolveRichestParentAsin, scrapeBarcode, scrapeProductDetail, scrapeSearchProducts, ensureShadeBarcodes } from './scrape.js';
 
 /** احتياطي من الفهرس المحلي عندما يفشل scrape (كابتشا/حظر) */
 function detailFromIndex(asin) {
@@ -439,6 +439,7 @@ export async function fetchProductDetail(id, { light = false, refresh = false } 
     const canonical = await resolveRichestParentAsin(asin);
     const matchedChild = canonical !== asin ? asin : '';
     if (refresh) {
+      cacheDel(`amazon:detail:v24:${canonical}`);
       cacheDel(`amazon:detail:v23:${canonical}`);
       cacheDel(`amazon:richest-parent:v4:${asin}`);
       cacheDel(`amazon:richest-parent:v4:${canonical}`);
@@ -482,6 +483,16 @@ export async function fetchProductDetail(id, { light = false, refresh = false } 
       detail.parentAsin = canonical;
       detail.sku = canonical;
       detail = await mergePaapiShades(detail, canonical);
+      if (!light && (detail.shades?.length || 0) > 1) {
+        const have = detail.shades.filter((s) => String(s.barcode || '').replace(/\D/g, '').length >= 8).length;
+        if (have < detail.shades.length) {
+          detail.shades = await ensureShadeBarcodes(detail.shades, {
+            parentAsin: canonical,
+            deadline: Date.now() + (detail.shades.length > 30 ? 150_000 : 90_000),
+          });
+          detail.shadeCount = detail.shades.length;
+        }
+      }
       normalizeDetailImages(detail);
       rememberAmazonDetail(detail);
     }

@@ -499,6 +499,12 @@ function barcodeFromVariationInfo(info = {}) {
   if (Array.isArray(info?.external_product_id)) {
     for (const row of info.external_product_id) values.push(row?.value);
   }
+  if (info && typeof info === 'object') {
+    for (const [key, val] of Object.entries(info)) {
+      if (!val || typeof val === 'object') continue;
+      if (/upc|ean|gtin|barcode|isbn|external.?product/i.test(key)) values.push(val);
+    }
+  }
   return pickBestBarcode(values);
 }
 
@@ -541,6 +547,21 @@ function buildShadeBarcodeIndex(html = '') {
 
   for (const m of html.matchAll(
     /"asin"\s*:\s*"([A-Z0-9]{10})"[\s\S]{0,2500}?"(?:upc|ean|gtin|UPC|EAN|GTIN)"\s*:\s*"?(\d{8,14})"?/gi,
+  )) {
+    const bc = pickBestBarcode([m[2]]);
+    if (bc) byAsin.set(String(m[1]).toUpperCase(), bc);
+  }
+
+  // كتل JSON لكل ASIN — تلتقط UPC/EAN حتى لو اختلفت أسماء الحقول
+  for (const m of html.matchAll(/"([A-Z0-9]{10})"\s*:\s*\{([\s\S]{0,2500}?)\}/g)) {
+    const id = String(m[1]).toUpperCase();
+    if (!/^[A-Z0-9]{10}$/.test(id)) continue;
+    const bc = pickBestBarcode(extractAllBarcodesFromDetailHtml(m[2]));
+    if (bc) byAsin.set(id, bc);
+  }
+
+  for (const m of html.matchAll(
+    /\\&quot;([A-Z0-9]{10})\\&quot;[\s\S]{0,1200}?\\&quot;(?:upc|ean|gtin|UPC|EAN|GTIN)\\&quot;\s*:\s*\\&quot;(\d{8,14})\\&quot;/gi,
   )) {
     const bc = pickBestBarcode([m[2]]);
     if (bc) byAsin.set(String(m[1]).toUpperCase(), bc);
@@ -2040,14 +2061,69 @@ function mergeShadeLocales(enShades = [], arShades = []) {
   }));
 }
 
-async function enrichShadeDetails(shades = [], { deadline = 0, concurrency = 10, max = 120 } = {}) {
+function countShadesWithBarcode(shades = []) {
+  return shades.filter((s) => String(s.barcode || '').replace(/\D/g, '').length >= 8).length;
+}
+
+/** يضمن باركود EAN/UPC لكل تدرج — من HTML الأب أولاً ثم صفحة كل ASIN */
+export async function ensureShadeBarcodes(shades = [], {
+  htmlSources = [],
+  parentAsin = '',
+  deadline = 0,
+  concurrency = 12,
+} = {}) {
+  if (!shades?.length) return shades;
+
+  const sources = [...(htmlSources || []).filter(Boolean)];
+  const parent = String(parentAsin || '').toUpperCase();
+  if (parent && !sources.length) {
+    try {
+      const html = await fetchMarketHtml('com', `https://${MARKETS.com.host}/dp/${parent}?th=1&psc=1`, {
+        ttl: DETAIL_TTL,
+        cacheKey: `amazon:dp:com:${parent}:barcode-index`,
+      });
+      sources.push(html);
+    } catch { /* optional */ }
+  }
+
+  let out = enrichShadesFromParentHtml(shades.map((s) => ({ ...s })), sources);
+  const end = deadline || Date.now() + 150_000;
+  let missing = out.length - countShadesWithBarcode(out);
+  if (missing <= 0) return out;
+
+  out = await enrichShadeDetails(out, {
+    deadline: end,
+    concurrency,
+    max: out.length,
+    barcodeOnly: true,
+  });
+
+  missing = out.length - countShadesWithBarcode(out);
+  if (missing > 0 && Date.now() < end) {
+    out = await enrichShadeDetails(out, {
+      deadline: end,
+      concurrency: Math.max(4, Math.floor(concurrency / 2)),
+      max: out.length,
+      barcodeOnly: true,
+    });
+  }
+
+  return out;
+}
+
+async function enrichShadeDetails(shades = [], {
+  deadline = 0,
+  concurrency = 10,
+  max = 120,
+  barcodeOnly = false,
+} = {}) {
   const out = shades.map((s) => ({ ...s }));
   const limit = Math.min(out.length, max);
 
   const order = out
     .map((s, index) => ({
       index,
-      missing: !s.barcode || !s.colorHex,
+      missing: !s.barcode || (!barcodeOnly && !s.colorHex),
       missingBarcode: !s.barcode,
     }))
     .sort((a, b) => Number(b.missingBarcode) - Number(a.missingBarcode)
@@ -2060,9 +2136,9 @@ async function enrichShadeDetails(shades = [], { deadline = 0, concurrency = 10,
     const chunkIdx = order.slice(i, i + concurrency);
     const parts = await Promise.all(chunkIdx.map(async (index) => {
       const shade = out[index];
-      const cacheKey = `amazon:shade:v7:${shade.id}`;
+      const cacheKey = `amazon:shade:v8:${shade.id}:${barcodeOnly ? 'bc' : 'full'}`;
       const cached = cacheGet(cacheKey, DETAIL_TTL);
-      if (cached) return { index, ...cached };
+      if (cached && (!barcodeOnly || cached.barcode)) return { index, ...cached };
 
       try {
         let html = '';
@@ -2073,9 +2149,9 @@ async function enrichShadeDetails(shades = [], { deadline = 0, concurrency = 10,
 
         for (const mid of marketsToTry) {
           try {
-            const pageHtml = await fetchMarketHtml(mid, `https://${MARKETS[mid].host}/dp/${shade.id}`, {
+            const pageHtml = await fetchMarketHtml(mid, `https://${MARKETS[mid].host}/dp/${shade.id}?th=1&psc=1`, {
               ttl: DETAIL_TTL,
-              cacheKey: `amazon:dp:${mid}:${shade.id}`,
+              cacheKey: `amazon:dp:${mid}:${shade.id}:bc`,
             });
             if (!html) html = pageHtml;
             if (mid === 'ae' || mid === 'sa') htmlAr = pageHtml;
@@ -2087,7 +2163,12 @@ async function enrichShadeDetails(shades = [], { deadline = 0, concurrency = 10,
           }
         }
         barcode = pickBestBarcode(barcodeCandidates) || barcode;
-        if (!html) return { index };
+        if (barcodeOnly) {
+          const patch = { barcode };
+          if (barcode) cacheSet(cacheKey, patch);
+          return { index, ...patch };
+        }
+        if (!html) return { index, ...(barcode ? { barcode } : {}) };
 
         const price = decodeHtml(
           html.match(/class="a-price[^"]*"[^>]*>[\s\S]*?a-offscreen">([^<]+)/)?.[1] || '',
@@ -2263,10 +2344,26 @@ export async function scrapeProductDetail(id, {
     }
   }
 
-  const cacheKey = `amazon:detail:v23:${asin}:${light ? 'l' : 'f'}`;
+  const cacheKey = `amazon:detail:v24:${asin}:${light ? 'l' : 'f'}`;
   if (!skipCache) {
     const cached = cacheGet(cacheKey, DETAIL_TTL);
-    if (cached) return cached;
+    if (cached) {
+      if (light || (cached.shades?.length || 0) <= 1) return cached;
+      const have = countShadesWithBarcode(cached.shades || []);
+      const total = cached.shades?.length || 0;
+      if (have >= total || have >= Math.max(3, Math.floor(total * 0.85))) return cached;
+      try {
+        const enriched = await ensureShadeBarcodes(cached.shades || [], {
+          parentAsin: cached.id || asin,
+          deadline: Date.now() + 120_000,
+        });
+        const next = { ...cached, shades: enriched, shadeCount: enriched.length };
+        cacheSet(cacheKey, next);
+        return next;
+      } catch {
+        return cached;
+      }
+    }
   }
 
   // اجلب ae + com + sa — SA/AE أوضح لتدرجات المكياج عندما com يُخفّي twister
@@ -2412,8 +2509,14 @@ export async function scrapeProductDetail(id, {
   if (!light && shades.length > 1) {
     const before = shades;
     try {
-      const budgetMs = shades.length > 40 ? 120_000 : shades.length > 20 ? 90_000 : shades.length > 10 ? 60_000 : 45_000;
+      const budgetMs = shades.length > 40 ? 180_000 : shades.length > 20 ? 120_000 : shades.length > 10 ? 90_000 : 60_000;
       const deadline = Date.now() + budgetMs;
+      shades = await ensureShadeBarcodes(shades, {
+        htmlSources: parentHtmlSources,
+        parentAsin: asin,
+        deadline,
+        concurrency: shades.length > 40 ? 14 : 12,
+      });
       shades = await enrichShadeDetails(shades, {
         deadline,
         concurrency: shades.length > 40 ? 14 : 12,
@@ -2429,10 +2532,11 @@ export async function scrapeProductDetail(id, {
       }
       stillMissing = shades.filter((s) => !s.barcode).length;
       if (stillMissing > 0 && Date.now() < deadline) {
-        shades = await enrichShadeDetails(shades, {
+        shades = await ensureShadeBarcodes(shades, {
+          htmlSources: parentHtmlSources,
+          parentAsin: asin,
           deadline,
-          concurrency: 5,
-          max: shades.length,
+          concurrency: 6,
         });
       }
       if (!shades?.length) shades = before;
@@ -2442,10 +2546,12 @@ export async function scrapeProductDetail(id, {
     shades = enrichShadesFromParentHtml(shades, parentHtmlSources);
   } else if (light && shades.length > 1) {
     try {
-      shades = await enrichShadeDetails(shades, {
-        deadline: Date.now() + 28_000,
-        concurrency: 8,
-        max: Math.min(shades.length, 24),
+      shades = enrichShadesFromParentHtml(shades, parentHtmlSources);
+      shades = await ensureShadeBarcodes(shades, {
+        htmlSources: parentHtmlSources,
+        parentAsin: asin,
+        deadline: Date.now() + 35_000,
+        concurrency: 10,
       });
     } catch { /* optional */ }
   } else if (shades.length === 1) {
@@ -2536,6 +2642,20 @@ export async function scrapeProductDetail(id, {
     ? shades.find((s) => String(s.id || s.sku || '').toUpperCase() === childAsin)
     : null;
 
+  const knownBarcode = pickBestBarcode([
+    matchedShade?.barcode,
+    primary.barcode,
+    ae?.barcode,
+    sa?.barcode,
+    en?.barcode,
+  ]);
+  if (knownBarcode && childAsin) {
+    shades = shades.map((s) => {
+      if (String(s.id || s.sku || '').toUpperCase() !== childAsin) return s;
+      return { ...s, barcode: s.barcode || knownBarcode };
+    });
+  }
+
   const detail = {
     id: asin,
     parentAsin: parentAsin || asin,
@@ -2575,7 +2695,12 @@ export async function scrapeProductDetail(id, {
     return previous;
   }
   if (shades.length > 1 || expectedVariations <= 1) {
-    cacheSet(cacheKey, detail);
+    const bcCount = countShadesWithBarcode(shades);
+    const shouldCache = light
+      || shades.length <= 1
+      || bcCount >= shades.length
+      || bcCount >= Math.max(3, Math.floor(shades.length * 0.7));
+    if (shouldCache) cacheSet(cacheKey, detail);
   }
   return detail;
 }
