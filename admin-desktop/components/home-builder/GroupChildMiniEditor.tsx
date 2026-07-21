@@ -55,7 +55,7 @@ export function GroupChildMiniEditor({ type, listIndex, entities }: Props) {
           <LinkTargetPicker
             prefix={["payload", "children", listIndex, "payload"]}
             entities={entityLists}
-            optional={false}
+            optional
           />
         </>
       );
@@ -128,7 +128,6 @@ export function GroupChildMiniEditor({ type, listIndex, entities }: Props) {
                       {...rest}
                       name={[name, "imageId"]}
                       label={`صورة ${name + 1}`}
-                      rules={[{ required: true }]}
                     >
                       <MediaPicker label="اختر صورة" />
                     </Form.Item>

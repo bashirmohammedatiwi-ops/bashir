@@ -81,3 +81,38 @@ export const MEDIA_SIZE_OPTIONS = [
   { value: "xl", label: "كبير جداً (200)" },
   { value: "full", label: "كامل العرض" },
 ];
+
+export function MediaGalleryStyleFields() {
+  return (
+    <div className="hb-media-style-fields">
+      <Form.Item name={["payload", "display"]} label="طريقة العرض" initialValue="scroll">
+        <Select options={MEDIA_DISPLAY_OPTIONS} />
+      </Form.Item>
+      <Form.Item name={["payload", "shape"]} label="شكل الصور" initialValue="rounded">
+        <Select options={MEDIA_SHAPE_OPTIONS} />
+      </Form.Item>
+      <Form.Item name={["payload", "size"]} label="الحجم" initialValue="md">
+        <Select options={MEDIA_SIZE_OPTIONS} />
+      </Form.Item>
+      <Form.Item name={["payload", "height"]} label="ارتفاع الصورة (px)" initialValue={140}>
+        <InputNumber min={60} max={320} style={{ width: "100%" }} />
+      </Form.Item>
+      <Form.Item name={["payload", "gap"]} label="المسافة بين الصور" initialValue={12}>
+        <InputNumber min={4} max={32} style={{ width: "100%" }} />
+      </Form.Item>
+      <Form.Item noStyle shouldUpdate={(prev, cur) => prev?.payload?.display !== cur?.payload?.display}>
+        {({ getFieldValue }) =>
+          getFieldValue(["payload", "display"]) === "grid" ? (
+            <Form.Item name={["payload", "columns"]} label="عدد الأعمدة" initialValue={3}>
+              <InputNumber min={2} max={4} style={{ width: "100%" }} />
+            </Form.Item>
+          ) : getFieldValue(["payload", "display"]) === "marquee" ? (
+            <Form.Item name={["payload", "marqueeSpeed"]} label="سرعة الحركة" initialValue={5}>
+              <InputNumber min={1} max={12} style={{ width: "100%" }} />
+            </Form.Item>
+          ) : null
+        }
+      </Form.Item>
+    </div>
+  );
+}

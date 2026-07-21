@@ -43,16 +43,16 @@ export function SectionLinksEditor({ type, form, ...props }: Props) {
   return (
     <div className="hb-links-panel">
       <Title level={5} style={{ marginTop: 0 }}>
-        🔗 الربط — بسيط وواضح
+        الربط
       </Title>
       <Text type="secondary" style={{ display: "block", marginBottom: 16 }}>
-        اختر وجهة من القوائم أو استخدم «روابط سريعة». المعاينة أسفل كل حقل تُظهر المسار في التطبيق.
+        حدّد وجهة الضغط أو «عرض الكل». المعاينة أسفل كل حقل توضّح المسار في التطبيق.
       </Text>
 
       {type === "PROMO_STRIP" && (
         <>
           <Alert type="info" showIcon message="عند الضغط على الشريط ينتقل العميل إلى:" style={{ marginBottom: 16 }} />
-          <LinkTargetPicker prefix={["payload"]} entities={entities} optional={false} />
+          <LinkTargetPicker prefix={["payload"]} entities={entities} optional />
         </>
       )}
 

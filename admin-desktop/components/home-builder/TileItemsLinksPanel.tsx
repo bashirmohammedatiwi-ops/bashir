@@ -78,7 +78,7 @@ export function TileItemsLinksPanel({ entities, itemLabel = "عنصر" }: Props)
                   </span>
                 ),
                 children: (
-                  <LinkTargetPicker prefix={["payload", "items", i]} entities={entities} optional={false} />
+                  <LinkTargetPicker prefix={["payload", "items", i]} entities={entities} optional />
                 ),
               };
             })}

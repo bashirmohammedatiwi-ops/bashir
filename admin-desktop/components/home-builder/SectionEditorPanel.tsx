@@ -20,6 +20,7 @@ import { SectionLinksEditor } from "./SectionLinksEditor";
 import { SectionJsonTab } from "./SectionJsonTab";
 import { SectionType, labelForType, metaForType } from "./section-types";
 import { validateSection } from "./section-validation";
+import { FrameStyleFields, MediaGalleryStyleFields } from "./FrameStyleFields";
 import { MediaPicker } from "@/components/MediaPicker";
 
 const { Text, Title } = Typography;
@@ -75,14 +76,14 @@ export function SectionEditorPanel({
           </div>
         </div>
         <Title level={4} style={{ marginTop: 20 }}>
-          اختر قسماً للتحرير
+          اختر قسماً أو أضف جديداً
         </Title>
         <Text type="secondary">
-          من القائمة — أو أضف إطار مجموعة / معرض صور من زر الإضافة.
+          زر «إضافة قسم» → اختر قالباً سريعاً → عدّل المحتوى والربط في تبويب واحد → احفظ
         </Text>
         <ul className="hb-editor-hints">
+          <li>① العنوان والحالة · ② المحتوى والروابط · ③ التصميم</li>
           <li>إطار مجموعة: عدة أقسام داخل خلفية ملونة</li>
-          <li>معرض صور: تمرير يدوي، marquee، شبكة، عمود</li>
           <li>⌘S حفظ · ↑↓ التنقل · اسحب للترتيب</li>
         </ul>
       </Card>
@@ -135,11 +136,12 @@ export function SectionEditorPanel({
         <Tabs
           activeKey={editorTab}
           onChange={onTabChange}
+          destroyInactiveTabPane
           className="hb-editor-tabs"
           items={[
             {
               key: "basics",
-              label: "أساسيات",
+              label: "① أساسيات",
               children: (
                 <div className="hb-editor-basics-panel">
                   <Form.Item name="title" label="العنوان في التطبيق">
@@ -168,24 +170,53 @@ export function SectionEditorPanel({
               ),
             },
             {
-              key: "content",
-              label: "المحتوى",
+              key: "setup",
+              label: "② المحتوى والربط",
               children: type ? (
-                <SectionPayloadEditor {...editorEntities} type={type} form={form} tab="content" />
-              ) : null,
-            },
-            {
-              key: "links",
-              label: "الروابط",
-              children: type ? (
-                <SectionLinksEditor type={type} form={form} {...editorEntities} />
+                <div className="hb-editor-setup-panel">
+                  <SectionPayloadEditor {...editorEntities} type={type} form={form} tab="content" />
+                  <Divider plain className="hb-setup-divider">
+                    الربط والوجهات
+                  </Divider>
+                  <SectionLinksEditor type={type} form={form} {...editorEntities} />
+                </div>
               ) : null,
             },
             {
               key: "design",
-              label: "التصميم",
+              label: "③ التصميم",
               children: type ? (
                 <>
+                  {type === "SECTION_GROUP" && (
+                    <>
+                      <Alert
+                        type="info"
+                        showIcon
+                        message="إطار المجموعة"
+                        description="اللون، الحواف، والظل — يظهر حول كل الأقسام الفرعية في التطبيق"
+                        style={{ marginBottom: 16 }}
+                      />
+                      <FrameStyleFields />
+                      <Divider plain style={{ margin: "20px 0 12px" }}>
+                        تخطيط الأقسام الفرعية
+                      </Divider>
+                    </>
+                  )}
+                  {type === "MEDIA_GALLERY" && (
+                    <>
+                      <Alert
+                        type="info"
+                        showIcon
+                        message="شكل المعرض"
+                        description="طريقة العرض، الحجم، والحركة — الصور نفسها من تبويب المحتوى"
+                        style={{ marginBottom: 16 }}
+                      />
+                      <MediaGalleryStyleFields />
+                      <Divider plain style={{ margin: "20px 0 12px" }}>
+                        مظهر القسم
+                      </Divider>
+                    </>
+                  )}
                   <SectionLayoutFields
                     type={type}
                     form={form}
@@ -193,15 +224,23 @@ export function SectionEditorPanel({
                     brands={editorEntities.brands}
                     banners={editorEntities.banners}
                   />
-                  <Divider plain style={{ margin: "20px 0 12px" }}>
-                    ألوان وصور القسم
-                  </Divider>
-                  <Form.Item name={["payload", "headerImageId"]} label="صورة بجانب العنوان" tooltip="تظهر بجانب عنوان القسم في التطبيق">
-                    <MediaPicker label="اختيار صورة" />
-                  </Form.Item>
-                  <Form.Item name={["payload", "backgroundColor"]} label="لون خلفية القسم">
-                    <Input type="color" style={{ width: 72, height: 32, padding: 2 }} />
-                  </Form.Item>
+                  {type !== "SECTION_GROUP" && (
+                    <>
+                      <Divider plain style={{ margin: "20px 0 12px" }}>
+                        ألوان وصور القسم
+                      </Divider>
+                      <Form.Item
+                        name={["payload", "headerImageId"]}
+                        label="صورة بجانب العنوان"
+                        tooltip="تظهر بجانب عنوان القسم في التطبيق"
+                      >
+                        <MediaPicker label="اختيار صورة" />
+                      </Form.Item>
+                      <Form.Item name={["payload", "backgroundColor"]} label="لون خلفية القسم">
+                        <Input type="color" style={{ width: 72, height: 32, padding: 2 }} />
+                      </Form.Item>
+                    </>
+                  )}
                   <SectionPayloadEditor {...editorEntities} type={type} form={form} tab="style" />
                 </>
               ) : null,

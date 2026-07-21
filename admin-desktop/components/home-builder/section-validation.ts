@@ -33,7 +33,7 @@ export function validateSection(block: {
       const text = String(p.text ?? "").trim();
       const items = asArray(p.items).map(String).filter((s) => s.trim());
       if (!text && !items.length) {
-        warnings.push({ level: "error", message: "أضف نصاً أو أسطر للنشرة" });
+        warnings.push({ level: "warn", message: "أضف نصاً أو أسطر للنشرة — يمكن الحفظ والتعديل لاحقاً" });
       }
       const hasLink =
         (p.linkType && String(p.linkType).trim()) ||
@@ -46,7 +46,7 @@ export function validateSection(block: {
     case "PRODUCT_LIST":
     case "FLASH_SALE":
       if (p.source === "manual" && !asArray(p.productIds).length) {
-        warnings.push({ level: "error", message: "لم تُختر منتجات يدوياً" });
+        warnings.push({ level: "warn", message: "لم تُختر منتجات يدوياً — اخترها أو ارجع للفلتر التلقائي" });
       }
       if (
         p.source !== "manual" &&
@@ -64,7 +64,7 @@ export function validateSection(block: {
     case "BANNER_FULL":
     case "CUSTOM_BANNER":
       if (p.source === "inline") {
-        if (!p.imageId) warnings.push({ level: "error", message: "أضف صورة الإعلان" });
+        if (!p.imageId) warnings.push({ level: "warn", message: "أضف صورة الإعلان" });
       } else if (!p.bannerId) {
         warnings.push({ level: "warn", message: "لم يُحدَّد بنر" });
       }
@@ -73,8 +73,8 @@ export function validateSection(block: {
       const count = bannerCount(p);
       if (active && count !== 2) {
         warnings.push({
-          level: count === 0 ? "error" : "warn",
-          message: count === 0 ? "أضف بنرين بالضبط" : `شبكة 2 تحتاج بنرين — لديك ${count}`,
+          level: count === 0 ? "warn" : "warn",
+          message: count === 0 ? "أضف بنرين — يمكن الحفظ كمسودة مخفية" : `شبكة 2 تحتاج بنرين — لديك ${count}`,
         });
       }
       break;
@@ -83,8 +83,8 @@ export function validateSection(block: {
       const count = bannerCount(p);
       if (active && count !== 3) {
         warnings.push({
-          level: count === 0 ? "error" : "warn",
-          message: count === 0 ? "أضف 3 بنرات" : `شبكة 3 تحتاج 3 بنرات — لديك ${count}`,
+          level: "warn",
+          message: count === 0 ? "أضف 3 بنرات — يمكن الحفظ كمسودة مخفية" : `شبكة 3 تحتاج 3 بنرات — لديك ${count}`,
         });
       }
       break;
@@ -94,10 +94,10 @@ export function validateSection(block: {
       break;
     case "IMAGE_TILES": {
       const items = asArray(p.items);
-      if (!items.length) warnings.push({ level: "error", message: "أضف بطاقة صورة واحدة على الأقل" });
+      if (!items.length) warnings.push({ level: "warn", message: "أضف بطاقة صورة — يمكن الحفظ والإكمال لاحقاً" });
       items.forEach((item, i) => {
         const row = item as Record<string, unknown>;
-        if (!row?.imageId) warnings.push({ level: "error", message: `البطاقة ${i + 1}: أضف صورة` });
+        if (!row?.imageId) warnings.push({ level: "warn", message: `البطاقة ${i + 1}: أضف صورة` });
       });
       if (active) {
         const stats = summarizeItemLinks(items);
@@ -112,10 +112,10 @@ export function validateSection(block: {
     }
     case "IMAGE_MARQUEE": {
       const items = asArray(p.items);
-      if (!items.length) warnings.push({ level: "error", message: "أضف صورة واحدة على الأقل للشريط المتحرك" });
+      if (!items.length) warnings.push({ level: "warn", message: "أضف صورة للشريط — يمكن الحفظ والإكمال لاحقاً" });
       items.forEach((item, i) => {
         const row = item as Record<string, unknown>;
-        if (!row?.imageId) warnings.push({ level: "error", message: `الصورة ${i + 1}: أضف صورة` });
+        if (!row?.imageId) warnings.push({ level: "warn", message: `الصورة ${i + 1}: أضف صورة` });
       });
       if (active) {
         const stats = summarizeItemLinks(items);
@@ -130,10 +130,10 @@ export function validateSection(block: {
     }
     case "CIRCLE_TILES": {
       const items = asArray(p.items);
-      if (!items.length) warnings.push({ level: "error", message: "أضف دائرة واحدة على الأقل" });
+      if (!items.length) warnings.push({ level: "warn", message: "أضف دائرة — يمكن الحفظ والإكمال لاحقاً" });
       items.forEach((item, i) => {
         const row = item as Record<string, unknown>;
-        if (!row?.imageId) warnings.push({ level: "error", message: `الدائرة ${i + 1}: أضف صورة` });
+        if (!row?.imageId) warnings.push({ level: "warn", message: `الدائرة ${i + 1}: أضف صورة` });
       });
       if (active) {
         const stats = summarizeItemLinks(items);
@@ -155,7 +155,7 @@ export function validateSection(block: {
       const hasPkgs =
         asArray(p.morningPackageIds).length > 0 || asArray(p.eveningPackageIds).length > 0;
       if (active && !hasConcerns && !hasCats && !hasPkgs) {
-        warnings.push({ level: "error", message: "أضف مشاكل بشرة أو فئات أو باقات روتين" });
+        warnings.push({ level: "warn", message: "أضف مشاكل بشرة أو فئات أو باقات روتين" });
       }
       break;
     }
@@ -181,16 +181,16 @@ export function validateSection(block: {
     case "SECTION_GROUP": {
       const children = asArray(p.children);
       if (active && !children.length) {
-        warnings.push({ level: "error", message: "أضف قسمًا واحدًا على الأقل داخل الإطار" });
+        warnings.push({ level: "warn", message: "أضف قسماً واحداً على الأقل داخل الإطار" });
       }
       break;
     }
     case "MEDIA_GALLERY": {
       const items = asArray(p.items);
-      if (!items.length) warnings.push({ level: "error", message: "أضف صورة واحدة على الأقل" });
+      if (!items.length) warnings.push({ level: "warn", message: "أضف صورة واحدة على الأقل" });
       items.forEach((item, i) => {
         const row = item as Record<string, unknown>;
-        if (!row?.imageId) warnings.push({ level: "error", message: `الصورة ${i + 1}: اختر صورة` });
+        if (!row?.imageId) warnings.push({ level: "warn", message: `الصورة ${i + 1}: اختر صورة` });
       });
       if (active) {
         const stats = summarizeItemLinks(items);
@@ -246,5 +246,5 @@ export function countWarnings(blocks: { type: string; title?: string; isActive?:
 }
 
 export function sectionHasErrors(block: Parameters<typeof validateSection>[0]): boolean {
-  return validateSection(block).some((w) => w.level === "error");
+  return false;
 }

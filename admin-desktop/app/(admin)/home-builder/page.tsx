@@ -36,26 +36,17 @@ import { SECTION_PRESETS } from "@/components/home-builder/section-presets";
 import {
   SECTION_TYPES,
   SectionType,
-  normalizePayload,
   isFixedTopSection,
 } from "@/components/home-builder/section-types";
-import { countWarnings, sectionHasErrors } from "@/components/home-builder/section-validation";
+import { countWarnings } from "@/components/home-builder/section-validation";
 import { filterBuilderBlocks } from "@/components/home-builder/fixed-hero";
+import { serializeHomeBlockPayload } from "@/components/home-builder/home-block-payload";
 import { mutations, queries } from "@/lib/queries";
 import "@/components/home-builder/home-builder.css";
 
 const { Title, Text } = Typography;
 
 const DRAFT_SECTION_ID = "__draft__";
-
-function cleanPayload(type: SectionType, payload: Record<string, unknown>) {
-  const p = normalizePayload(type, { ...payload });
-  delete (p as any).source;
-  for (const key of ["categoryId", "subcategoryId", "tertiaryCategoryId", "brandId", "linkType", "linkValue"]) {
-    if (p[key] === "") delete p[key];
-  }
-  return p;
-}
 
 export default function HomeBuilderPage() {
   const qc = useQueryClient();
@@ -132,18 +123,6 @@ export default function HomeBuilderPage() {
   }
 
   function handleSave() {
-    const type = form.getFieldValue("type") as SectionType;
-    const block = {
-      type,
-      title: form.getFieldValue("title"),
-      isActive: form.getFieldValue("isActive"),
-      payload: form.getFieldValue("payload"),
-    };
-    if (sectionHasErrors(block)) {
-      message.error("أصلح الأخطاء الحمراء قبل الحفظ");
-      setEditorTab("content");
-      return;
-    }
     upsert.mutate();
   }
 
@@ -175,9 +154,9 @@ export default function HomeBuilderPage() {
 
   const upsert = useMutation({
     mutationFn: async () => {
-      const values = await form.validateFields();
+      const values = form.getFieldsValue(true);
       const type = values.type as SectionType;
-      const payload = cleanPayload(type, values.payload ?? {});
+      const payload = serializeHomeBlockPayload(type, values.payload ?? {});
       const body = {
         type,
         title: values.title,
@@ -212,7 +191,6 @@ export default function HomeBuilderPage() {
       setIsNew(false);
       await qc.invalidateQueries({ queryKey: ["home-blocks"] });
     },
-    onError: () => message.error("تعذر الحفظ"),
   });
 
   const remove = useMutation({
@@ -240,7 +218,7 @@ export default function HomeBuilderPage() {
   const duplicate = useMutation({
     mutationFn: async ({ block, mode }: { block: any; mode: "after" | "end" }) => {
       pushUndo();
-      const payload = cleanPayload(block.type, block.payload ?? {});
+      const payload = serializeHomeBlockPayload(block.type, block.payload ?? {});
       const result = await mutations.createHomeBlock({
         type: block.type,
         title: block.title ? `${block.title} (نسخة)` : undefined,
@@ -318,7 +296,7 @@ export default function HomeBuilderPage() {
           subtitle: item.subtitle,
           position: builderBlocks.length + i,
           isActive: item.isActive ?? true,
-          payload: cleanPayload(type, { ...def.defaultPayload, ...(item.payload ?? {}) }),
+          payload: serializeHomeBlockPayload(type, { ...def.defaultPayload, ...(item.payload ?? {}) }),
         });
       }
     },
@@ -372,7 +350,7 @@ export default function HomeBuilderPage() {
     setEditing(null);
     setIsNew(true);
     setSelectedId(DRAFT_SECTION_ID);
-    setEditorTab("basics");
+    setEditorTab("setup");
     setTypeModalOpen(false);
     form.resetFields();
     form.setFieldsValue({
@@ -400,7 +378,7 @@ export default function HomeBuilderPage() {
       setEditing(block);
       setIsNew(false);
       setSelectedId(block.id);
-      setEditorTab("basics");
+      setEditorTab("setup");
       form.setFieldsValue({
         type: block.type,
         title: block.title,

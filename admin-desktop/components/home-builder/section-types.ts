@@ -425,7 +425,13 @@ export const SECTION_TYPES: {
       paddingH: 12,
       shadow: true,
       showTitle: true,
-      children: [],
+      children: [
+        {
+          type: "PRODUCT_LIST",
+          title: "منتجات مختارة",
+          payload: { filter: "featured", limit: 8, showViewAll: true },
+        },
+      ],
     },
   },
   {

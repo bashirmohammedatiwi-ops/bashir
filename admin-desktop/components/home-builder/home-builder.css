@@ -2216,3 +2216,19 @@
   background: #fff;
   border: 1px solid #eeede8;
 }
+
+.hb-editor-setup-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hb-setup-divider {
+  margin: 20px 0 16px !important;
+  font-weight: 700;
+  color: #4a2466 !important;
+}
+
+.hb-media-style-fields {
+  padding: 4px 0 8px;
+}
