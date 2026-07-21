@@ -793,8 +793,10 @@ export default function CatalogImportPage() {
           }
         }
 
+        const shadeLabel = String(s.nameAr || s.nameEn || s.name || "").trim();
+        const shadeNumber = String(s.shadeNumber || s.shadeCode || "").trim();
         shades.push({
-          name: String(s.nameAr || s.nameEn || s.name || `درجة ${i + 1}`).trim(),
+          name: shadeLabel || (shadeNumber ? `درجة ${shadeNumber}` : `درجة ${i + 1}`),
           colorHex,
           barcode: shadeBarcode || undefined,
           sku: s.sku || s.miswagId,
@@ -803,6 +805,7 @@ export default function CatalogImportPage() {
           originalPrice,
           discountPercent,
           stock,
+          position: Number.isFinite(Number(s.position)) ? Number(s.position) : i,
         });
       }
 
@@ -1269,7 +1272,14 @@ export default function CatalogImportPage() {
                             <span className="ci-shade-swatch" style={{ background: "#ddd" }} />
                           )}
                           <div>
-                            <div>{s.nameAr || s.name}</div>
+                            <div>
+                              {s.shadeNumber ? (
+                                <Tag color="blue" style={{ marginInlineEnd: 6 }}>
+                                  #{s.shadeNumber}
+                                </Tag>
+                              ) : null}
+                              {s.nameAr || s.name || (s.shadeNumber ? `درجة ${s.shadeNumber}` : `درجة ${i + 1}`)}
+                            </div>
                             {s.nameEn && s.nameEn !== (s.nameAr || s.name) ? (
                               <small className="alhayaa-ltr-input">{s.nameEn}</small>
                             ) : null}

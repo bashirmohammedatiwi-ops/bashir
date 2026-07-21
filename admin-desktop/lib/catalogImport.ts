@@ -47,6 +47,9 @@ export type CatalogImportShade = {
   miswagId?: string;
   price?: string;
   optionGroup?: string;
+  shadeNumber?: string;
+  shadeCode?: string;
+  position?: number;
 };
 
 export type CatalogImportProduct = {
@@ -132,7 +135,7 @@ async function catalogFetch<T>(path: string, timeoutMs = 60_000): Promise<T> {
 }
 
 function mapImportProduct(raw: Record<string, unknown>, storeLabel = ""): CatalogImportProduct {
-  const shades = ((raw.shades as CatalogImportShade[]) || []).map((s) => ({
+  const shades = ((raw.shades as CatalogImportShade[]) || []).map((s, index) => ({
     id: s.id || s.sku || "",
     name: s.nameAr || s.nameEn || s.name || "",
     nameAr: s.nameAr || "",
@@ -145,6 +148,9 @@ function mapImportProduct(raw: Record<string, unknown>, storeLabel = ""): Catalo
     sku: s.sku || "",
     price: s.price || "",
     optionGroup: s.optionGroup || "",
+    shadeNumber: s.shadeNumber || s.shadeCode || String(index + 1).padStart(2, "0"),
+    shadeCode: s.shadeCode || s.shadeNumber || "",
+    position: Number.isFinite(Number(s.position)) ? Number(s.position) : index,
   }));
 
   const images = ((raw.images as { url: string }[]) || []).map((img, i) => ({
@@ -495,13 +501,16 @@ export async function fetchCatalogProductSmart(
           ? {
               ...s,
               ...enriched,
-              nameAr: s.nameAr || enriched.nameAr,
-              nameEn: s.nameEn || enriched.nameEn,
+              nameAr: enriched.nameAr || s.nameAr,
+              nameEn: enriched.nameEn || s.nameEn,
               imageUrl: enriched.imageUrl || s.imageUrl,
               swatchUrl: enriched.swatchUrl || s.swatchUrl,
               barcode: enriched.barcode || s.barcode,
               colorHex: enriched.colorHex || s.colorHex,
               price: enriched.price || s.price,
+              shadeNumber: enriched.shadeNumber || s.shadeNumber,
+              shadeCode: enriched.shadeCode || s.shadeCode,
+              position: enriched.position ?? s.position,
             }
           : s;
       });

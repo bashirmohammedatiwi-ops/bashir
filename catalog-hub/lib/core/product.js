@@ -17,12 +17,17 @@ export function emptyShade(i = 0) {
     price: '',
     inStock: true,
     optionGroup: '',
+    shadeNumber: '',
+    shadeCode: '',
+    position: i,
   };
 }
 
 export function normalizeShade(raw = {}, index = 0) {
   const hex = String(raw.hex || raw.colorHex || raw.hexColor || raw.color || '').trim();
   const barcode = String(raw.barcode || raw.ean || '').replace(/\D/g, '');
+  const position = Number.isFinite(Number(raw.position)) ? Number(raw.position) : index;
+  const shadeNumber = String(raw.shadeNumber || raw.shadeCode || '').trim();
   return {
     id: String(raw.id || raw.sku || raw.optionId || index),
     nameAr: String(raw.nameAr || raw.name || '').trim(),
@@ -36,6 +41,9 @@ export function normalizeShade(raw = {}, index = 0) {
     price: String(raw.price || '').trim(),
     inStock: raw.inStock !== false,
     optionGroup: String(raw.optionGroup || '').trim(),
+    shadeNumber: shadeNumber || String(position + 1).padStart(2, '0'),
+    shadeCode: String(raw.shadeCode || shadeNumber || '').trim(),
+    position,
   };
 }
 
@@ -106,6 +114,9 @@ export function toImportPayload(product) {
       price: s.price,
       inStock: s.inStock,
       optionGroup: s.optionGroup,
+      shadeNumber: s.shadeNumber,
+      shadeCode: s.shadeCode,
+      position: s.position,
     })),
     shadeCount: p.shadeCount,
     hasOptions: p.hasOptions,
