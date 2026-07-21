@@ -69,6 +69,7 @@ export type CatalogImportProduct = {
   images: { url: string; isPrimary?: boolean }[];
   shades: CatalogImportShade[];
   hasShades: boolean;
+  shadeCount?: number;
   sourceUrl?: string;
   priceHint?: string;
   categoryHint?: string;
