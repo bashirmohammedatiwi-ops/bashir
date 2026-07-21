@@ -467,17 +467,19 @@ export default function CatalogImportPage() {
     const q = searchText.trim();
     if (!q || !activeStores.length) return;
 
-    // إن لصق المستخدم باركوداً في خانة النص — وجّهه لمسار الباركود الأدق
+    // باركود EAN أو ASIN أمازون — مسار البحث الدقيق
+    const normalized = q.replace(/[\s-]/g, "");
     const digitsOnly = q.replace(/\D/g, "");
-    if (digitsOnly.length >= 8 && digitsOnly === q.replace(/[\s-]/g, "")) {
-      setBarcode(digitsOnly);
-      // استخدم مسار الباركود مباشرة
+    const asin = /^[A-Z0-9]{10}$/i.test(normalized) ? normalized.toUpperCase() : "";
+    if ((digitsOnly.length >= 8 && digitsOnly === normalized) || asin) {
+      const lookup = asin || digitsOnly;
+      setBarcode(lookup);
       setSearching(true);
       setOptions([]);
       setProducts([]);
       setSearchStoreStats([]);
       try {
-        const data = await searchCatalogByBarcode(digitsOnly, activeStores, (partial) => {
+        const data = await searchCatalogByBarcode(lookup, activeStores, (partial) => {
           setOptions((prev) => mergeSearchOptions(prev, partial.options));
           setSearchStoreStats(partial.stores || []);
           if (partial.options.length) {

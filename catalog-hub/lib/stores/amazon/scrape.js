@@ -1008,6 +1008,74 @@ function extractParentAsin(html = '', fallbackAsin = '') {
   ).toUpperCase() || String(fallbackAsin || '').toUpperCase();
 }
 
+/** يحوّل ASIN درجة فرعية إلى ASIN المنتج الأب (سريع — صفحة com فقط) */
+export async function resolveParentAsinQuick(asin) {
+  const id = String(asin || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{10}$/.test(id)) return id;
+
+  const cacheKey = `amazon:resolve-parent:v1:${id}`;
+  const cached = cacheGet(cacheKey, DETAIL_TTL);
+  if (cached) return cached;
+
+  try {
+    const html = await fetchMarketHtml('com', `https://${MARKETS.com.host}/dp/${id}?th=1&psc=1`, {
+      ttl: DETAIL_TTL,
+      cacheKey: `amazon:dp:com:${id}:parent-probe`,
+    });
+    const parent = extractParentAsin(html, id);
+    const resolved = parent && parent !== id ? parent : id;
+    cacheSet(cacheKey, resolved);
+    return resolved;
+  } catch {
+    return id;
+  }
+}
+
+function extractProductCoreName(title = '') {
+  let t = cleanShadeLabel(title);
+  t = t.replace(/\([^)]{0,80}\)/g, ' ');
+  t = t.replace(/\b\d+(\.\d+)?\s*(ml|g|gm|oz|fl\.?\s*oz|count|pack|pcs|piece|pieces)\b/gi, ' ');
+  t = t.replace(/\s+/g, ' ').trim();
+  const words = t.split(/\s+/).filter((w) => w.length > 2 && !/^(the|and|for|with|from|new)$/i.test(w));
+  return words.slice(0, 7).join(' ');
+}
+
+async function findAlternateAmazonListings(seed, { limit = 8 } = {}) {
+  if (!seed) return [];
+  const brand = String(seed.brandEn || seed.brandAr || '').trim();
+  const core = extractProductCoreName(seed.nameEn || seed.nameAr || '');
+  if (core.length < 5) return [];
+
+  const q = `${brand} ${core}`.trim().slice(0, 120);
+  try {
+    let items = [];
+    const makeup = await scrapeSearchProducts(q, { page: 1, limit: 24, categoryId: '11058281' });
+    items = makeup.items || [];
+    if (items.length < 4) {
+      const broad = await scrapeSearchProducts(q, { page: 1, limit: 24 });
+      items = mergeListLocales(items, broad.items || []);
+    }
+    const seedId = String(seed.id || seed.parentAsin || '').toUpperCase();
+    return items
+      .filter((it) => String(it.id || '').toUpperCase() !== seedId)
+      .slice(0, limit);
+  } catch {
+    return [];
+  }
+}
+
+function dedupeAmazonHits(hits = []) {
+  const seen = new Set();
+  const out = [];
+  for (const h of hits) {
+    const key = String(h.id || h.parentAsin || '').toUpperCase();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(h);
+  }
+  return out;
+}
+
 function filterUsableShades(shades = []) {
   return shades.filter((s) => {
     const id = String(s.id || s.sku || '').toUpperCase();
@@ -2023,11 +2091,26 @@ export async function scrapeSearchProducts(query, { page = 1, limit = 30, catego
   }
 }
 
-export async function scrapeProductDetail(id, { light = false } = {}) {
+export async function scrapeProductDetail(id, {
+  light = false,
+  skipRedirect = false,
+  matchedChildAsin = '',
+} = {}) {
   const asin = String(id || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(asin)) return null;
 
-  const cacheKey = `amazon:detail:v19:${asin}:${light ? 'l' : 'f'}`;
+  if (!skipRedirect) {
+    const parent = await resolveParentAsinQuick(asin);
+    if (parent && parent !== asin) {
+      return scrapeProductDetail(parent, {
+        light,
+        skipRedirect: true,
+        matchedChildAsin: matchedChildAsin || asin,
+      });
+    }
+  }
+
+  const cacheKey = `amazon:detail:v20:${asin}:${light ? 'l' : 'f'}`;
   const cached = cacheGet(cacheKey, DETAIL_TTL);
   if (cached) return cached;
 
@@ -2281,10 +2364,18 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
     ...shades.map((s) => s.barcode),
   ]);
 
+  const childAsin = String(matchedChildAsin || '').toUpperCase();
+  const matchedShade = childAsin
+    ? shades.find((s) => String(s.id || s.sku || '').toUpperCase() === childAsin)
+    : null;
+
   const detail = {
     id: asin,
     parentAsin: parentAsin || asin,
     sku: asin,
+    matchedChildAsin: childAsin && childAsin !== asin ? childAsin : '',
+    matchedShadeName: matchedShade?.nameAr || matchedShade?.nameEn || '',
+    matchedShadeBarcode: matchedShade?.barcode || '',
     barcode: pickBestBarcode(barcodes) || primary.barcode || ae?.barcode || sa?.barcode || shades.find((s) => s.barcode)?.barcode || '',
     barcodes,
     nameAr,
@@ -2326,7 +2417,7 @@ export async function scrapeBarcode(code) {
   let items = [];
   let softBlocked = false;
   for (const q of queries) {
-    const data = await scrapeSearchProducts(q, { page: 1, limit: 12, categoryId: AMAZON_ALL_CATEGORY });
+    const data = await scrapeSearchProducts(q, { page: 1, limit: 16, categoryId: AMAZON_ALL_CATEGORY });
     if (data.softBlocked) softBlocked = true;
     if (data.items?.length) {
       items = data.items;
@@ -2338,15 +2429,29 @@ export async function scrapeBarcode(code) {
   }
 
   const hits = [];
-  // light فقط أثناء البحث — أسرع ولا يتجاوز مهلة الواجهة؛ التدرجات تُثري عند فتح المنتج
-  for (const item of items.slice(0, 5)) {
+  const processed = new Set();
+
+  for (const item of items.slice(0, 12)) {
+    const cardAsin = String(item.id || '').toUpperCase();
+    if (!/^[A-Z0-9]{10}$/.test(cardAsin) || processed.has(cardAsin)) continue;
+    processed.add(cardAsin);
+
     try {
-      const detail = await scrapeProductDetail(item.id, { light: true });
+      const parent = await resolveParentAsinQuick(cardAsin);
+      const detail = await scrapeProductDetail(parent, { light: true, skipRedirect: true });
       if (!detail) {
-        hits.push({ ...item, barcode: digits, matchType: 'keyword' });
+        hits.push({
+          ...item,
+          id: parent,
+          parentAsin: parent,
+          listingAsin: cardAsin,
+          barcode: digits,
+          matchType: 'listing',
+        });
         continue;
       }
 
+      const canonicalId = String(detail.id || parent).toUpperCase();
       const candidates = [
         ...(detail.barcodes || []),
         detail.barcode,
@@ -2355,38 +2460,66 @@ export async function scrapeBarcode(code) {
       const shadeHit = (detail.shades || []).find((s) => barcodeMatches(digits, [s.barcode]));
       const exact = barcodeMatches(digits, candidates) || Boolean(shadeHit);
 
-      if (exact) {
+      hits.push({
+        ...detail,
+        id: canonicalId,
+        parentAsin: canonicalId,
+        sku: canonicalId,
+        listingAsin: cardAsin !== canonicalId ? cardAsin : undefined,
+        barcode: digits,
+        barcodes: uniqBarcodes([...candidates, digits]),
+        shadeName: shadeHit?.nameAr || shadeHit?.nameEn || detail.matchedShadeName || '',
+        matchedShadeName: shadeHit?.nameAr || shadeHit?.nameEn || detail.matchedShadeName || '',
+        matchType: exact ? 'ean' : 'listing',
+        shadeCount: detail.shadeCount || detail.shades?.length || 1,
+      });
+      await sleep(80);
+    } catch {
+      hits.push({
+        ...item,
+        id: cardAsin,
+        parentAsin: cardAsin,
+        barcode: digits,
+        matchType: 'listing',
+      });
+    }
+  }
+
+  const seed = hits.find((h) => h.matchType === 'ean')
+    || hits.find((h) => (h.shadeCount || 0) > 1)
+    || hits[0];
+  if (seed) {
+    const alternates = await findAlternateAmazonListings(seed);
+    for (const alt of alternates) {
+      const altCard = String(alt.id || '').toUpperCase();
+      if (!/^[A-Z0-9]{10}$/.test(altCard)) continue;
+      const parent = await resolveParentAsinQuick(altCard);
+      const canonicalId = String(parent || altCard).toUpperCase();
+      if (hits.some((h) => String(h.id || h.parentAsin || '').toUpperCase() === canonicalId)) continue;
+      try {
+        const detail = await scrapeProductDetail(parent, { light: true, skipRedirect: true });
+        if (!detail) continue;
         hits.push({
           ...detail,
+          id: String(detail.id || parent).toUpperCase(),
+          parentAsin: String(detail.id || parent).toUpperCase(),
+          listingAsin: altCard,
           barcode: digits,
-          barcodes: uniqBarcodes([...candidates, digits]),
-          shadeName: shadeHit?.nameAr || shadeHit?.nameEn || '',
-          matchType: 'ean',
-          shadeCount: detail.shadeCount,
+          matchType: 'alternate',
+          shadeCount: detail.shadeCount || detail.shades?.length || 1,
         });
-        break; // مطابقة دقيقة — كافية للبحث
-      }
-
-      hits.push({
-        id: detail.id,
-        nameAr: detail.nameAr,
-        nameEn: detail.nameEn,
-        brandAr: detail.brandAr,
-        thumb: detail.thumb,
-        price: detail.price,
-        barcode: digits,
-        barcodes: uniqBarcodes(candidates),
-        matchType: 'keyword',
-        shadeCount: detail.shadeCount,
-      });
-      await sleep(120);
-    } catch {
-      hits.push({ ...item, barcode: digits, matchType: 'keyword' });
+      } catch { /* optional */ }
+      if (hits.length >= 12) break;
     }
   }
 
   const exact = hits.filter((h) => h.matchType === 'ean');
-  const out = exact.length ? exact : hits.slice(0, 3);
+  const ranked = dedupeAmazonHits([
+    ...exact,
+    ...hits.filter((h) => h.matchType !== 'ean'),
+  ]);
+  const out = ranked.length ? ranked : hits.slice(0, 6);
+
   return out.map((h) => ({
     ...h,
     thumb: normalizeAmazonImageUrl(h.thumb || '', THUMB_SIZE),

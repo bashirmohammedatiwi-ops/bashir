@@ -84,6 +84,9 @@ export type CatalogImportOption = {
   miswagId?: string;
   shadeCount?: number;
   shadeName?: string;
+  matchedShadeName?: string;
+  parentAsin?: string;
+  listingAsin?: string;
   price?: string;
   category?: string;
   matchType?: string;
@@ -252,7 +255,7 @@ function storeSearchTimeoutMs(storeId: string, kind: "text" | "barcode" = "text"
   if (storeId === "orisdi") return kind === "barcode" ? 15_000 : 12_000;
   if (storeId === "waheteter") return kind === "barcode" ? 8_000 : 10_000;
   if (storeId === "niceone") return kind === "barcode" ? 45_000 : 25_000;
-  if (storeId === "amazon") return kind === "barcode" ? 30_000 : 18_000;
+  if (storeId === "amazon") return kind === "barcode" ? 60_000 : 18_000;
   // مسواگ: بحث الباركود يستعلم مصادر ميتاداتا خارجية بالتوازي مع v2 — يحتاج مهلة أطول قليلاً
   if (storeId === "miswag") return kind === "barcode" ? 22_000 : 10_000;
   return kind === "barcode" ? 12_000 : 10_000;
@@ -373,10 +376,14 @@ export async function searchCatalogProducts(
 }
 
 function mapBarcodeResult(r: Record<string, unknown>, storeId: string): CatalogImportOption {
+  const parentAsin = String(r.parentAsin || r.sourceId || r.id || "");
+  const listingAsin = String(r.listingAsin || "");
   return {
     store: String(r.store || storeId),
     storeLabel: String(r.storeLabel || r.store || storeId),
-    sourceId: String(r.sourceId || r.id || ""),
+    sourceId: parentAsin,
+    parentAsin,
+    listingAsin: listingAsin && listingAsin !== parentAsin ? listingAsin : undefined,
     nameAr: String(r.nameAr || r.name || ""),
     nameEn: String(r.nameEn || ""),
     brandAr: String(r.brandAr || r.manufacturer || ""),
@@ -385,6 +392,7 @@ function mapBarcodeResult(r: Record<string, unknown>, storeId: string): CatalogI
     barcode: String(r.barcode || ""),
     shadeCount: Number(r.shadeCount || 0),
     shadeName: String(r.shadeName || ""),
+    matchedShadeName: String(r.matchedShadeName || r.shadeName || ""),
     price: String(r.price || ""),
     category: String(r.category || ""),
     matchType: String(r.matchType || "barcode"),

@@ -38,11 +38,15 @@ function mapTextSearchHit(adapter, item) {
 }
 
 function mapBarcodeSearchHit(adapter, item, digits) {
+  const parentAsin = String(item.parentAsin || item.id || '').toUpperCase();
+  const listingAsin = String(item.listingAsin || '').toUpperCase();
   return {
     store: adapter.id,
     storeLabel: adapter.label,
-    id: item.id,
-    sourceId: item.id,
+    id: parentAsin,
+    sourceId: parentAsin,
+    parentAsin,
+    listingAsin: listingAsin && listingAsin !== parentAsin ? listingAsin : undefined,
     name: item.nameAr,
     nameAr: item.nameAr,
     nameEn: item.nameEn,
@@ -52,6 +56,7 @@ function mapBarcodeSearchHit(adapter, item, digits) {
     price: item.price,
     shadeCount: item.shadeCount,
     shadeName: item.shadeName,
+    matchedShadeName: item.matchedShadeName || item.shadeName,
     miswagId: item.miswagId || (isMiswagInternalId(digits) ? digits : ''),
     barcode: item.barcode || (isMiswagInternalId(digits) ? '' : digits),
     matchType: item.matchType || (isMiswagInternalId(digits) ? 'miswag_id' : 'ean'),
@@ -73,7 +78,7 @@ async function searchAdapter(adapter, query, digits) {
   const isBarcodeish = digits.length >= 8;
   // مهلة لكل متجر — مسواگ يستعلم مصادر ميتاداتا خارجية بالتوازي مع v2، يحتاج وقتاً أطول قليلاً
   const barcodeBudget = {
-    amazon: 28_000,
+    amazon: 55_000,
     miswag: 20_000,
     miraaya: 25_000,
     niceone: 40_000,

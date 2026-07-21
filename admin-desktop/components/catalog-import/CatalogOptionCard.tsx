@@ -66,8 +66,14 @@ function CatalogThumb({ src, alt }: { src: string; alt: string }) {
 
 function matchLabel(matchType?: string) {
   if (!matchType) return null;
-  if (["barcode", "ean", "index", "hint", "sku", "v2_scan", "v2_shade"].includes(matchType)) {
+  if (["barcode", "ean", "index", "hint", "sku", "v2_scan", "v2_shade", "asin"].includes(matchType)) {
     return { color: "blue" as const, text: "باركود" };
+  }
+  if (matchType === "alternate") {
+    return { color: "gold" as const, text: "قائمة بديلة" };
+  }
+  if (matchType === "listing") {
+    return { color: "default" as const, text: "عرض أمازون" };
   }
   if (["miswag_id", "miswag_product", "miswag_shade"].includes(matchType)) {
     return { color: "orange" as const, text: "رقم مسواگ" };
@@ -121,6 +127,12 @@ export function CatalogOptionCard({ option, selected, onSelect }: Props) {
             <Tag icon={<BgColorsOutlined />} color="purple">
               {shadeCount} تدرج
             </Tag>
+          ) : null}
+          {option.matchedShadeName ? (
+            <Tag color="cyan">درجة: {option.matchedShadeName}</Tag>
+          ) : null}
+          {option.store === "amazon" && option.sourceId ? (
+            <Tag className="alhayaa-ltr-input">ASIN {option.sourceId}</Tag>
           ) : null}
           {option.category ? <Tag>{option.category}</Tag> : null}
         </div>

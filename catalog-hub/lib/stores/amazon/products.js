@@ -18,6 +18,7 @@ import {
 } from './catalog-index.js';
 import { mapDetailProduct, mapListProduct, mapShadeFromVariation } from './map.js';
 import {
+  resolveParentAsinQuick,
   scrapeBarcode,
   scrapeProductDetail,
   scrapeSearchProducts,
@@ -505,13 +506,26 @@ export async function searchBarcode(code) {
   if (digits.length < 8 && !/^[A-Z0-9]{10}$/i.test(String(code || '').trim())) return [];
 
   if (/^[A-Z0-9]{10}$/i.test(String(code || '').trim())) {
-    const detail = await fetchProductDetail(String(code).trim().toUpperCase(), { light: true }).catch(() => null);
-    return detail ? [{
+    const raw = String(code).trim().toUpperCase();
+    const parent = await resolveParentAsinQuick(raw);
+    const detail = await fetchProductDetail(parent, { light: true }).catch(() => null);
+    if (!detail) return [];
+    const shadeHit = (detail.shades || []).find(
+      (s) => String(s.id || s.sku || '').toUpperCase() === raw,
+    );
+    return [{
       ...detail,
-      barcode: detail.barcode || digits,
+      id: parent,
+      parentAsin: parent,
+      sku: parent,
+      listingAsin: raw !== parent ? raw : undefined,
+      matchedChildAsin: raw !== parent ? raw : '',
+      barcode: detail.barcode || shadeHit?.barcode || '',
+      shadeName: shadeHit?.nameAr || shadeHit?.nameEn || detail.matchedShadeName || '',
+      matchedShadeName: shadeHit?.nameAr || shadeHit?.nameEn || detail.matchedShadeName || '',
       matchType: 'asin',
-      shadeCount: detail.shadeCount,
-    }] : [];
+      shadeCount: detail.shadeCount || detail.shades?.length || 1,
+    }];
   }
 
   const indexed = findAmazonByBarcode(digits);
@@ -543,6 +557,8 @@ export async function searchBarcode(code) {
     }
     return hits.map((h) => ({
       ...h,
+      id: String(h.parentAsin || h.id || '').toUpperCase(),
+      parentAsin: String(h.parentAsin || h.id || '').toUpperCase(),
       thumb: normalizeAmazonImageUrl(h.thumb || '', IMPORT_SIZE),
     }));
   }
