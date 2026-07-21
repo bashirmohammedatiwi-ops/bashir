@@ -145,9 +145,15 @@ function mapImportProduct(raw: Record<string, unknown>, storeLabel = ""): Catalo
     nameEn: s.nameEn || "",
     barcode: s.barcode || "",
     miswagId: s.miswagId || s.sku || "",
-    colorHex: s.colorHex || "",
-    imageUrl: s.imageUrl || "",
-    swatchUrl: s.swatchUrl || s.imageUrl || "",
+    colorHex: String(s.colorHex || (s as { hex?: string }).hex || ""),
+    imageUrl: String(s.imageUrl || (s as { image?: string }).image || ""),
+    swatchUrl: String(
+      s.swatchUrl
+      || (s as { swatchImage?: string }).swatchImage
+      || s.imageUrl
+      || (s as { image?: string }).image
+      || "",
+    ),
     sku: s.sku || "",
     price: s.price || "",
     optionGroup: s.optionGroup || "",
@@ -487,7 +493,7 @@ export async function fetchCatalogProductSmart(
   try {
     const light = await catalogFetch<{ product: Record<string, unknown> }>(
       `/api/catalog/${encodeURIComponent(storeId)}/products/${encodeURIComponent(sourceId)}?light=1`,
-      35_000,
+      90_000,
     );
     lightProduct = mapImportProduct(light.product || {}, storeLabel);
     if (lightProduct.shades?.length) onPartial?.(lightProduct);
@@ -495,8 +501,10 @@ export async function fetchCatalogProductSmart(
     lightProduct = null;
   }
 
+  const resolvedSourceId = lightProduct?.sourceId || sourceId;
+
   try {
-    const full = await fetchCatalogProduct(storeId, sourceId, storeLabel);
+    const full = await fetchCatalogProduct(storeId, resolvedSourceId, storeLabel);
     // إن أعاد full تدرجات أقل من light — ادمج
     if (lightProduct && (lightProduct.shades?.length || 0) > (full.shades?.length || 0)) {
       const byAsin = new Map(

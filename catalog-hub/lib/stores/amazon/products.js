@@ -17,12 +17,7 @@ import {
   upsertAmazonProducts,
 } from './catalog-index.js';
 import { mapDetailProduct, mapListProduct, mapShadeFromVariation } from './map.js';
-import {
-  resolveRichestParentAsin,
-  scrapeBarcode,
-  scrapeProductDetail,
-  scrapeSearchProducts,
-} from './scrape.js';
+import { resolveRichestParentAsin, scrapeBarcode, scrapeProductDetail, scrapeSearchProducts } from './scrape.js';
 
 /** احتياطي من الفهرس المحلي عندما يفشل scrape (كابتشا/حظر) */
 function detailFromIndex(asin) {
@@ -393,6 +388,47 @@ function rememberAmazonDetail(detail) {
   }], { categoryId: AMAZON_ALL_CATEGORY });
 }
 
+function mergeAmazonLightFull(base, full) {
+  if (!base && !full) return null;
+  if (!base) return full;
+  if (!full) return base;
+  const baseShades = base.shades?.length || 0;
+  const fullShades = full.shades?.length || 0;
+  if (baseShades <= fullShades) return full;
+  const byId = new Map((full.shades || []).map((s) => [String(s.id || s.sku || '').toUpperCase(), s]));
+  const shades = (base.shades || []).map((s) => {
+    const key = String(s.id || s.sku || '').toUpperCase();
+    const enriched = byId.get(key);
+    return enriched ? {
+      ...s,
+      ...enriched,
+      nameAr: s.nameAr || enriched.nameAr,
+      nameEn: s.nameEn || enriched.nameEn,
+      image: enriched.image || s.image,
+      swatchImage: enriched.swatchImage || s.swatchImage,
+      barcode: enriched.barcode || s.barcode,
+      colorHex: enriched.colorHex || s.colorHex,
+      price: enriched.price || s.price,
+    } : s;
+  });
+  const seen = new Set(shades.map((s) => String(s.id || s.sku || '').toUpperCase()));
+  for (const s of full.shades || []) {
+    const key = String(s.id || s.sku || '').toUpperCase();
+    if (key && !seen.has(key)) shades.push(s);
+  }
+  return {
+    ...full,
+    ...base,
+    descriptionAr: full.descriptionAr || base.descriptionAr,
+    descriptionEn: full.descriptionEn || base.descriptionEn,
+    barcode: full.barcode || base.barcode,
+    barcodes: [...new Set([...(full.barcodes || []), ...(base.barcodes || [])])],
+    shades,
+    shadeCount: shades.length,
+    hasOptions: shades.length > 1,
+  };
+}
+
 export async function fetchProductDetail(id, { light = false } = {}) {
   const asin = String(id || '').trim().toUpperCase();
   if (!asin) return null;
@@ -400,65 +436,45 @@ export async function fetchProductDetail(id, { light = false } = {}) {
   // المسار الافتراضي النهائي: scrape ثنائي اللغة + كل التدرجات
   // PA-API يُستخدم فقط إن وُجدت مفاتيح وطلب صريح عبر AMAZON_FORCE_PAAPI=1
   if (!usePaapi() || process.env.AMAZON_FORCE_PAAPI !== '1') {
-    // 1) دائماً اجلب light أولاً — فيه قائمة التدرجات (أسماء/صور) بسرعة
-    let base = null;
+    const canonical = await resolveRichestParentAsin(asin);
+    const matchedChild = canonical !== asin ? asin : '';
+
+    let detail = null;
     try {
-      base = await scrapeProductDetail(asin, { light: true });
-    } catch {
-      base = null;
-    }
-
-    let detail = base;
-
-    // 2) للاستيراد الكامل: أثْرِ الباركودات دون خسارة قائمة التدرجات إن فشل الإثراء
-    if (!light) {
-      try {
-        const full = await scrapeProductDetail(asin, { light: false });
-        if (full) {
-          const fullShades = full.shades?.length || 0;
-          const baseShades = base?.shades?.length || 0;
-          // إن أعاد full تدرجات أقل (فشل جزئي) — ادمج أسماء/صور light مع باركودات full
-          if (base && baseShades > fullShades) {
-            const byId = new Map((full.shades || []).map((s) => [s.id, s]));
-            detail = {
-              ...full,
-              ...base,
-              descriptionAr: full.descriptionAr || base.descriptionAr,
-              descriptionEn: full.descriptionEn || base.descriptionEn,
-              barcode: full.barcode || base.barcode,
-              barcodes: [...new Set([...(full.barcodes || []), ...(base.barcodes || [])])],
-              shades: (base.shades || []).map((s) => {
-                const enriched = byId.get(s.id);
-                return enriched ? {
-                  ...s,
-                  ...enriched,
-                  nameAr: s.nameAr || enriched.nameAr,
-                  nameEn: s.nameEn || enriched.nameEn,
-                  image: enriched.image || s.image,
-                  barcode: enriched.barcode || s.barcode,
-                  colorHex: enriched.colorHex || s.colorHex,
-                } : s;
-              }),
-              shadeCount: baseShades,
-              hasOptions: baseShades > 1,
-            };
-          } else {
-            detail = full;
-          }
-        }
-      } catch {
-        // أبقِ light — أفضل من درجة واحدة فارغة
-        detail = base;
+      if (light) {
+        detail = await scrapeProductDetail(canonical, {
+          light: true,
+          skipRedirect: true,
+          matchedChildAsin: matchedChild,
+        });
+      } else {
+        const [base, full] = await Promise.all([
+          scrapeProductDetail(canonical, {
+            light: true,
+            skipRedirect: true,
+            matchedChildAsin: matchedChild,
+          }).catch(() => null),
+          scrapeProductDetail(canonical, {
+            light: false,
+            skipRedirect: true,
+            matchedChildAsin: matchedChild,
+          }).catch(() => null),
+        ]);
+        detail = mergeAmazonLightFull(base, full) || full || base;
       }
+    } catch {
+      detail = null;
     }
 
     if (!detail) {
-      // البطاقة ظهرت من البحث — لا تُرجع 404؛ أعرض بيانات الفهرس/البحث
-      detail = detailFromIndex(asin);
+      detail = detailFromIndex(canonical) || detailFromIndex(asin);
     }
 
     if (detail) {
-      detail = await mergePaapiShades(detail, asin);
+      detail.id = canonical;
+      detail.parentAsin = canonical;
+      detail.sku = canonical;
+      detail = await mergePaapiShades(detail, canonical);
       normalizeDetailImages(detail);
       rememberAmazonDetail(detail);
     }
@@ -507,9 +523,9 @@ export async function searchBarcode(code) {
 
   if (/^[A-Z0-9]{10}$/i.test(String(code || '').trim())) {
     const raw = String(code).trim().toUpperCase();
-    const parent = await resolveRichestParentAsin(raw);
-    const detail = await fetchProductDetail(parent, { light: true }).catch(() => null);
+    const detail = await fetchProductDetail(raw, { light: true }).catch(() => null);
     if (!detail) return [];
+    const parent = String(detail.id || detail.parentAsin || raw).toUpperCase();
     const shadeHit = (detail.shades || []).find(
       (s) => String(s.id || s.sku || '').toUpperCase() === raw,
     );
@@ -524,7 +540,7 @@ export async function searchBarcode(code) {
       shadeName: shadeHit?.nameAr || shadeHit?.nameEn || detail.matchedShadeName || '',
       matchedShadeName: shadeHit?.nameAr || shadeHit?.nameEn || detail.matchedShadeName || '',
       matchType: 'asin',
-      shadeCount: detail.shadeCount || detail.shades?.length || 1,
+      shadeCount: detail.shades?.length || detail.shadeCount || 1,
     }];
   }
 

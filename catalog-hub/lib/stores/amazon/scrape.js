@@ -1060,7 +1060,7 @@ export async function resolveRichestParentAsin(asin) {
   const id = String(asin || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(id)) return id;
 
-  const cacheKey = `amazon:richest-parent:v2:${id}`;
+  const cacheKey = `amazon:richest-parent:v3:${id}`;
   const cached = cacheGet(cacheKey, DETAIL_TTL);
   if (cached) return cached;
 
@@ -1069,7 +1069,7 @@ export async function resolveRichestParentAsin(asin) {
   const htmlByMarket = {};
 
   const settled = await Promise.allSettled(
-    ['com', 'ae', 'sa'].map(async (mid) => {
+    ['sa', 'com', 'ae'].map(async (mid) => {
       const html = await fetchMarketHtml(mid, `https://${MARKETS[mid].host}/dp/${id}?th=1&psc=1`, {
         ttl: DETAIL_TTL,
         cacheKey: `amazon:probe:${mid}:${id}`,
@@ -1084,21 +1084,23 @@ export async function resolveRichestParentAsin(asin) {
     const { html } = r.value;
     for (const c of collectParentCandidates(html, id)) {
       candidates.add(c);
-      scores.set(c, Math.max(scores.get(c) || 0, estimateShadeCountFromHtml(html)));
     }
+    scores.set(id, Math.max(scores.get(id) || 0, estimateShadeCountFromHtml(html)));
   }
 
   const toProbe = [...candidates].slice(0, 18);
   await Promise.all(toProbe.map(async (c) => {
-    try {
-      const html = (c === id && htmlByMarket.com)
-        ? htmlByMarket.com
-        : await fetchMarketHtml('com', `https://${MARKETS.com.host}/dp/${c}?th=1&psc=1`, {
-          ttl: DETAIL_TTL,
-          cacheKey: `amazon:probe:com:${c}`,
-        });
-      scores.set(c, Math.max(scores.get(c) || 0, estimateShadeCountFromHtml(html)));
-    } catch { /* optional */ }
+    for (const mid of ['com', 'sa']) {
+      try {
+        const html = (c === id && htmlByMarket[mid])
+          ? htmlByMarket[mid]
+          : await fetchMarketHtml(mid, `https://${MARKETS[mid].host}/dp/${c}?th=1&psc=1`, {
+            ttl: DETAIL_TTL,
+            cacheKey: `amazon:probe:${mid}:${c}`,
+          });
+        scores.set(c, Math.max(scores.get(c) || 0, estimateShadeCountFromHtml(html)));
+      } catch { /* optional */ }
+    }
   }));
 
   // إن بقيت التدرجات قليلة — ابحث عن قائمة أمازون الأغنى (مكياج: قوائم متعددة)
@@ -1156,6 +1158,19 @@ export async function resolveRichestParentAsin(asin) {
         }
       } catch { /* optional */ }
     }
+  }
+
+  if (bestScore <= 1 && candidates.size > 1) {
+    // كل المرشّحين بدون twister — اختر من يظهر في linkParameters (قائمة أمازون البديلة)
+    const ranked = [...candidates].sort((a, b) => {
+      const sa = scores.get(a) || 0;
+      const sb = scores.get(b) || 0;
+      if (sb !== sa) return sb - sa;
+      if (a === id) return 1;
+      if (b === id) return -1;
+      return 0;
+    });
+    best = ranked[0] || best;
   }
 
   cacheSet(cacheKey, best);
@@ -2246,11 +2261,11 @@ export async function scrapeProductDetail(id, {
     }
   }
 
-  const cacheKey = `amazon:detail:v21:${asin}:${light ? 'l' : 'f'}`;
+  const cacheKey = `amazon:detail:v22:${asin}:${light ? 'l' : 'f'}`;
   const cached = cacheGet(cacheKey, DETAIL_TTL);
   if (cached) return cached;
 
-  // اجلب ae + com بالتوازي، وsa عند الحاجة للوصف/العنوان العربي
+  // اجلب ae + com + sa — SA/AE أوضح لتدرجات المكياج عندما com يُخفّي twister
   const settled = await Promise.allSettled([
     fetchMarketHtml('ae', `https://${MARKETS.ae.host}/dp/${asin}`, {
       ttl: DETAIL_TTL,
@@ -2260,10 +2275,15 @@ export async function scrapeProductDetail(id, {
       ttl: DETAIL_TTL,
       cacheKey: `amazon:dp:com:${asin}:desk`,
     }),
+    fetchMarketHtml('sa', `https://${MARKETS.sa.host}/dp/${asin}?th=1&psc=1`, {
+      ttl: DETAIL_TTL,
+      cacheKey: `amazon:dp:sa:${asin}:twister`,
+    }),
   ]);
 
   let aeHtml = settled[0].status === 'fulfilled' ? settled[0].value : '';
   let comHtml = settled[1].status === 'fulfilled' ? settled[1].value : '';
+  let saHtml = settled[2].status === 'fulfilled' ? settled[2].value : '';
 
   // احتياطي: صفحة com عادية إن فشلت نسخة سطح المكتب
   if (!comHtml) {
@@ -2275,21 +2295,13 @@ export async function scrapeProductDetail(id, {
     } catch { /* optional */ }
   }
 
-  let saHtml = '';
-  const aeTitleAr = hasArabic(aeHtml.match(/id="productTitle"[^>]*>([^<]+)/)?.[1] || '');
-  const aeDescPreview = aeHtml ? buildLocaleDescription(aeHtml, { arabic: true }) : '';
-  const needSa = !light
-    || !aeHtml
-    || !aeTitleAr
-    || !hasArabic(aeDescPreview)
-    || aeDescPreview.length < 80;
-  if (needSa) {
+  if (!saHtml) {
     try {
       saHtml = await fetchMarketHtml('sa', `https://${MARKETS.sa.host}/dp/${asin}`, {
         ttl: DETAIL_TTL,
         cacheKey: `amazon:dp:sa:${asin}`,
       });
-    } catch { /* اختياري */ }
+    } catch { /* optional */ }
   }
 
   if (!aeHtml && !comHtml && !saHtml) return null;
@@ -2351,15 +2363,14 @@ export async function scrapeProductDetail(id, {
   const parentHtmlSources = [comHtml, aeHtml, saHtml, parentHtml].filter(Boolean);
   shades = enrichShadesFromParentHtml(shades, parentHtmlSources);
 
-  if (shades.length > 1 && expectedVariations > 1) {
-    const children = shades.filter((s) => {
-      if (String(s.id) === asin) {
-        return isUsableShadeName(s.nameEn || s.nameAr) && (s.image || s.barcode);
-      }
-      return true;
+  // احذف فقط صفحة الـ ASIN الحالية إن كانت بدون اسم تدرج (تكرار للمنتج الأب)
+  if (shades.length > 2) {
+    shades = shades.filter((s) => {
+      if (String(s.id) !== asin) return true;
+      return isUsableShadeName(s.nameEn || s.nameAr);
     });
-    if (children.length >= Math.min(shades.length - 1, expectedVariations - 1)) {
-      shades = children.length ? children : shades;
+    if (!shades.length) {
+      shades = enrichShadesFromParentHtml([], parentHtmlSources);
     }
   }
   if (!shades.length) {
@@ -2607,7 +2618,7 @@ export async function scrapeBarcode(code) {
         shadeName: shadeHit?.nameAr || shadeHit?.nameEn || detail.matchedShadeName || '',
         matchedShadeName: shadeHit?.nameAr || shadeHit?.nameEn || detail.matchedShadeName || '',
         matchType: exact ? 'ean' : 'listing',
-        shadeCount: detail.shadeCount || detail.shades?.length || 1,
+        shadeCount: detail.shades?.length || detail.shadeCount || 1,
       });
       await sleep(80);
     } catch {

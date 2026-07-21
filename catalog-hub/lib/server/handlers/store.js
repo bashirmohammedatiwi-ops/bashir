@@ -342,7 +342,7 @@ export async function handleStoreApi(req, res, url) {
     try {
       const raw = await adapter.fetchProductDetail(id, { light });
       if (!raw?.id) return sendJson(res, 404, { error: 'Product not found' });
-      const product = normalizeProduct({ ...raw, store: adapter.id, storeLabel: adapter.label });
+      const product = toImportPayload({ ...raw, store: adapter.id, storeLabel: adapter.label });
       return sendJson(res, 200, { product });
     } catch (err) {
       return sendJson(res, 502, { error: err.message });
