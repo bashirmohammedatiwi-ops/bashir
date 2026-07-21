@@ -114,6 +114,7 @@ class ProductCoverImage extends StatelessWidget {
   final double? width;
   final double? height;
   final BoxFit fit;
+  final FilterQuality filterQuality;
 
   static const Color wellColor = Colors.white;
 
@@ -123,6 +124,7 @@ class ProductCoverImage extends StatelessWidget {
     this.width,
     this.height,
     this.fit = BoxFit.contain,
+    this.filterQuality = FilterQuality.medium,
   });
 
   @override
@@ -178,7 +180,7 @@ class ProductCoverImage extends StatelessWidget {
                 memCacheHeight: pixelH,
                 maxWidthDiskCache: pixelW,
                 maxHeightDiskCache: pixelH,
-                filterQuality: FilterQuality.medium,
+                filterQuality: filterQuality,
                 placeholder: (_, __) => const SizedBox.shrink(),
                 errorWidget: (_, __, ___) => Center(
                   child: Image.asset(
@@ -190,7 +192,7 @@ class ProductCoverImage extends StatelessWidget {
                 imageBuilder: (context, imageProvider) => Image(
                   image: imageProvider,
                   fit: fit,
-                  filterQuality: FilterQuality.medium,
+                  filterQuality: filterQuality,
                   gaplessPlayback: true,
                 ),
               ),

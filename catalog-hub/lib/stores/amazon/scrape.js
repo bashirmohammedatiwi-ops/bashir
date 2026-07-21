@@ -1,5 +1,6 @@
 import { cacheGet, cacheSet } from '../../core/cache.js';
 import { splitBilingualText } from '../../core/bilingual.js';
+import { enrichShadeColorsFromImages } from '../../core/shade-color-from-image.js';
 import { IMPORT_SIZE, THUMB_SIZE, normalizeAmazonImageUrl } from '../../core/images.js';
 import { AMAZON_ALL_CATEGORY } from './client.js';
 
@@ -515,6 +516,32 @@ function buildShadeBarcodeIndex(html = '') {
   return byAsin;
 }
 
+/** فهرس صورة سواتش صغيرة لكل ASIN */
+function buildShadeSwatchImageIndex(html = '') {
+  const byAsin = new Map();
+  if (!html) return byAsin;
+
+  for (const m of html.matchAll(
+    /data-asin="([A-Z0-9]{10})"[\s\S]{0,900}?src="(https:\/\/m\.media-amazon\.com\/images\/I\/[^"]+)"/gi,
+  )) {
+    const id = String(m[1]).toUpperCase();
+    const url = m[2];
+    if (isSwatchSizedUrl(url) || !byAsin.has(id)) {
+      byAsin.set(id, normalizeAmazonImageUrl(url, THUMB_SIZE));
+    }
+  }
+
+  for (const m of html.matchAll(
+    /data-asin="([A-Z0-9]{10})"[\s\S]{0,900}?src="(https:\/\/[^"]*images-amazon[^"]+)"/gi,
+  )) {
+    const id = String(m[1]).toUpperCase();
+    const url = m[2];
+    if (isSwatchSizedUrl(url)) byAsin.set(id, normalizeAmazonImageUrl(url, THUMB_SIZE));
+  }
+
+  return byAsin;
+}
+
 /** فهرس لون (#hex) لكل ASIN من سواتشات twister */
 function buildShadeHexIndex(html = '') {
   const byAsin = new Map();
@@ -552,6 +579,7 @@ function enrichShadesFromParentHtml(shades = [], htmlSources = []) {
   const barcodeIdx = new Map();
   const hexByAsin = new Map();
   const hexByLabel = new Map();
+  const swatchByAsin = new Map();
   const mergedHtml = sources.join('\n');
 
   for (const chunk of sources) {
@@ -561,6 +589,9 @@ function enrichShadesFromParentHtml(shades = [], htmlSources = []) {
     for (const [key, hex] of buildShadeHexIndex(chunk)) {
       if (key.startsWith('label:')) hexByLabel.set(key.slice(6), hex);
       else if (!hexByAsin.has(key)) hexByAsin.set(key, hex);
+    }
+    for (const [asin, url] of buildShadeSwatchImageIndex(chunk)) {
+      if (!swatchByAsin.has(asin)) swatchByAsin.set(asin, url);
     }
   }
 
@@ -578,9 +609,16 @@ function enrichShadesFromParentHtml(shades = [], htmlSources = []) {
         || colorHexGuess(label)
         || '';
     }
+    const swatchImage = s.swatchImage
+      || swatchByAsin.get(id)
+      || (isSwatchSizedUrl(s.image) ? s.image : '')
+      || '';
+    const image = s.image && !isSwatchSizedUrl(s.image) ? s.image : (s.image || swatchImage);
     return {
       ...s,
       barcode,
+      swatchImage: normalizeAmazonImageUrl(swatchImage, THUMB_SIZE),
+      image: normalizeAmazonImageUrl(image, IMPORT_SIZE),
       colorHex: normalizeHex(colorHex) || colorHex,
     };
   });
@@ -727,6 +765,7 @@ function putShade(byAsin, asin, patch = {}) {
     sku: id,
     barcode: '',
     image: '',
+    swatchImage: '',
     price: '',
     inStock: true,
     colorHex: '',
@@ -736,6 +775,16 @@ function putShade(byAsin, asin, patch = {}) {
   const usable = isUsableShadeName(name);
   const nextEn = (usable && name && hasLatin(name) ? name : '') || prev.nameEn;
   const nextAr = (usable && name && hasArabic(name) ? name : '') || prev.nameAr;
+  const swatchCandidate = patch.swatchImage || prev.swatchImage || '';
+  const imageCandidate = patch.image || prev.image || '';
+  const swatchImage = normalizeAmazonImageUrl(
+    swatchCandidate || (isSwatchSizedUrl(imageCandidate) ? imageCandidate : ''),
+    THUMB_SIZE,
+  );
+  const image = normalizeAmazonImageUrl(
+    imageCandidate && !isSwatchSizedUrl(imageCandidate) ? imageCandidate : (prev.image || imageCandidate || ''),
+    IMPORT_SIZE,
+  );
   byAsin.set(id, {
     ...prev,
     ...patch,
@@ -743,7 +792,8 @@ function putShade(byAsin, asin, patch = {}) {
     sku: id,
     nameEn: nextEn || nextAr,
     nameAr: nextAr || nextEn,
-    image: normalizeAmazonImageUrl(patch.image || prev.image || '', IMPORT_SIZE),
+    swatchImage: swatchImage || prev.swatchImage || '',
+    image: image || swatchImage || prev.image || '',
     colorHex: patch.colorHex || prev.colorHex || '',
     optionGroup: patch.optionGroup || prev.optionGroup || 'التدرج',
   });
@@ -1031,33 +1081,96 @@ function mergeEmbeddedTwisterJson(html = '') {
 
 function detectColorDimensionKey(variationValues = {}, displayLabels = {}) {
   const keys = Object.keys(variationValues);
-  for (const key of keys) {
+  const scoreKey = (key) => {
     const label = String(displayLabels[key] || key).toLowerCase();
-    if (/color|colour|shade|لون/i.test(label) || /color_name|colour_name/i.test(key)) {
-      return key;
+    const vals = variationValues[key];
+    const count = Array.isArray(vals) ? vals.length : 0;
+    if (count < 2) return -1;
+    if (/^color_name$|^colour_name$|^color$|^colour$/i.test(key)) return 1000 + count;
+    if (/color|colour|shade|tone|لون|lip.?color|eyeshadow|blush|foundation|lipstick|shade_name/i.test(label)
+      || /color|colour|shade|tone|lip_color|shade_name/i.test(key)) {
+      return 800 + count;
+    }
+    if (/size|capacity|count|pack|quantity|ml|oz|scent|fragrance|pattern|style|finish|material/i.test(key)) {
+      return -1;
+    }
+    if (/style_name|configuration|flavor|flavour/i.test(label) || /style_name|configuration/i.test(key)) {
+      return 300 + count;
+    }
+    return 100 + count;
+  };
+
+  let bestKey = '';
+  let bestScore = -1;
+  for (const key of keys) {
+    const score = scoreKey(key);
+    if (score > bestScore) {
+      bestScore = score;
+      bestKey = key;
     }
   }
-  for (const key of keys) {
-    if (/size|scent|style|pattern|count|quantity/i.test(key)) continue;
-    const vals = variationValues[key];
-    if (Array.isArray(vals) && vals.length > 1) return key;
-  }
+  if (bestKey) return bestKey;
   return keys.find((k) => Array.isArray(variationValues[k]) && variationValues[k].length > 1) || keys[0] || 'color_name';
+}
+
+function isLikelyColorDimensionKey(key = '', displayLabels = {}) {
+  const label = String(displayLabels[key] || key).toLowerCase();
+  if (/size|capacity|count|pack|quantity|ml|oz|scent|fragrance|pattern|material|volume/i.test(label)) {
+    return false;
+  }
+  if (/^color_name$|^colour_name$|^color$|^colour$|^shade_name$/i.test(key)) return true;
+  return /color|colour|shade|tone|لون|lip.?color|eyeshadow|blush|foundation|lipstick/i.test(label)
+    || /color|colour|shade|tone|lip_color|shade_name/i.test(key);
+}
+
+function colorDimensionKeys(variationValues = {}, displayLabels = {}) {
+  const keys = Object.keys(variationValues);
+  const primary = detectColorDimensionKey(variationValues, displayLabels);
+  const ordered = [primary, ...keys.filter((k) => k !== primary && isLikelyColorDimensionKey(k, displayLabels))];
+  return [...new Set(ordered.filter((k) => Array.isArray(variationValues[k]) && variationValues[k].length > 1))];
 }
 
 function colorImageForLabel(colorImages = {}, label = '') {
   const clean = cleanShadeLabel(label);
   const direct = colorImages[label] || colorImages[clean];
-  const pick = (entry) => {
+  const pick = (entry, preferLarge = true) => {
     const imgs = Array.isArray(entry) ? entry : (entry ? [entry] : []);
     const first = imgs[0] || {};
-    return first.hiRes || first.large || first.thumb || first.main?.['500'] || first.main || '';
+    if (preferLarge) {
+      return first.hiRes || first.large || first.main?.['500'] || first.main?.['425'] || first.thumb || first.main || '';
+    }
+    return first.thumb || first.small || first.main?.['36'] || first.main?.['75'] || first.main?.['100'] || '';
   };
-  if (direct) return pick(direct);
+  if (direct) return pick(direct, true);
   for (const [key, entry] of Object.entries(colorImages)) {
-    if (cleanShadeLabel(key) === clean) return pick(entry);
+    if (cleanShadeLabel(key) === clean) return pick(entry, true);
   }
   return '';
+}
+
+function colorSwatchForLabel(colorImages = {}, label = '') {
+  const clean = cleanShadeLabel(label);
+  const direct = colorImages[label] || colorImages[clean];
+  const pickSwatch = (entry) => {
+    const imgs = Array.isArray(entry) ? entry : (entry ? [entry] : []);
+    const first = imgs[0] || {};
+    return first.thumb || first.small || first.main?.['36'] || first.main?.['75'] || first.main?.['100'] || '';
+  };
+  if (direct) {
+    const sw = pickSwatch(direct);
+    if (sw) return sw;
+  }
+  for (const [key, entry] of Object.entries(colorImages)) {
+    if (cleanShadeLabel(key) === clean) {
+      const sw = pickSwatch(entry);
+      if (sw) return sw;
+    }
+  }
+  return '';
+}
+
+function isSwatchSizedUrl(url = '') {
+  return /(?:_SR|_UX|_SY|_SS)\d{1,3}[_,]\d{1,3}_|swatch|color-swatch|twister/i.test(String(url || ''));
 }
 
 function extractTwisterHtmlBlock(html = '', pattern) {
@@ -1070,10 +1183,14 @@ function extractTwisterHtmlBlock(html = '', pattern) {
 function parseTwisterHtmlSwatches(html = '', byAsin) {
   const blocks = [
     extractTwisterHtmlBlock(html, /id="variation_color_name"[\s\S]*?<\/ul>/i),
+    extractTwisterHtmlBlock(html, /id="variation_colour_name"[\s\S]*?<\/ul>/i),
+    extractTwisterHtmlBlock(html, /id="variation_shade_name"[\s\S]*?<\/ul>/i),
     extractTwisterHtmlBlock(html, /id="inline-twister-dim-values-container"[\s\S]*?<\/ul>/i),
     extractTwisterHtmlBlock(html, /id="tp-inline-twister-dim-values-container"[\s\S]*?<\/ul>/i),
     extractTwisterHtmlBlock(html, /id="softlines-twister"[\s\S]*?<\/ul>/i),
+    extractTwisterHtmlBlock(html, /id="twister"[\s\S]*?<\/ul>/i),
     extractTwisterHtmlBlock(html, /class="[^"]*twister[^"]*"[\s\S]{0,120000}/i),
+    extractTwisterHtmlBlock(html, /class="[^"]*imgSwatch[^"]*"[\s\S]{0,80000}/i),
   ].filter(Boolean);
 
   const seen = new Set();
@@ -1098,7 +1215,8 @@ function parseTwisterHtmlSwatches(html = '', byAsin) {
       putShade(byAsin, asin, {
         nameEn: label,
         nameAr: label,
-        image: img,
+        swatchImage: img && isSwatchSizedUrl(img) ? img : (img || ''),
+        image: img && !isSwatchSizedUrl(img) ? img : '',
         colorHex: swatchHex || (img ? '' : colorHexGuess(label)),
       });
     }
@@ -1137,18 +1255,19 @@ function parseShadesFromHtml(html = '') {
   } = mergeEmbeddedTwisterJson(html);
 
   const byAsin = new Map();
-  const colorKey = detectColorDimensionKey(variationValues, displayLabels);
-  const colorNames = variationValues[colorKey] || variationValues.color_name || variationValues.color || [];
-  const colorDimIndex = Math.max(0, Object.keys(variationValues).indexOf(colorKey));
+  const colorKeys = colorDimensionKeys(variationValues, displayLabels);
+  const colorKey = colorKeys[0] || detectColorDimensionKey(variationValues, displayLabels);
 
   for (const [label, info] of Object.entries(colorToAsin)) {
     const asin = String(info?.asin || info || '').toUpperCase();
     const clean = cleanShadeLabel(label);
     const image = colorImageForLabel(colorImages, label);
+    const swatchImage = colorSwatchForLabel(colorImages, label);
     putShade(byAsin, asin, {
       nameEn: clean,
       nameAr: clean,
       image,
+      swatchImage,
       colorHex: image ? '' : colorHexGuess(clean),
       optionGroup: 'التدرج',
     });
@@ -1171,10 +1290,12 @@ function parseShadesFromHtml(html = '') {
     }
     if (!asin) continue;
     const image = colorImageForLabel(colorImages, label);
+    const swatchImage = colorSwatchForLabel(colorImages, label);
     putShade(byAsin, asin, {
       nameEn: clean,
       nameAr: clean,
       image,
+      swatchImage,
       colorHex: image ? '' : colorHexGuess(clean),
       optionGroup: 'التدرج',
     });
@@ -1185,17 +1306,23 @@ function parseShadesFromHtml(html = '') {
       ? cleanShadeLabel(dimsArr.filter(Boolean).join(' / '))
       : cleanShadeLabel(dimsArr);
     const image = colorImageForLabel(colorImages, label);
+    const swatchImage = colorSwatchForLabel(colorImages, label);
     putShade(byAsin, asin, {
       nameEn: label,
       nameAr: label,
       image,
+      swatchImage,
       colorHex: image ? '' : colorHexGuess(label),
     });
   }
 
-  if (Array.isArray(colorNames) && colorNames.length && Object.keys(dimToAsin).length) {
+  for (const activeColorKey of colorKeys) {
+    const colorNames = variationValues[activeColorKey] || [];
+    const colorDimIndex = Math.max(0, Object.keys(variationValues).indexOf(activeColorKey));
+    if (!Array.isArray(colorNames) || !colorNames.length || !Object.keys(dimToAsin).length) continue;
+
     const seenColors = new Set();
-    for (const [key, asin] of Object.entries(dimToAsin)) {
+    for (const [key, childAsin] of Object.entries(dimToAsin)) {
       const parts = String(key).split('_').map((n) => Number(n));
       const colorIdx = parts[colorDimIndex];
       if (!Number.isFinite(colorIdx)) continue;
@@ -1205,11 +1332,14 @@ function parseShadesFromHtml(html = '') {
       if (seenColors.has(dedupeKey)) continue;
       seenColors.add(dedupeKey);
       const image = colorImageForLabel(colorImages, label);
-      putShade(byAsin, asin, {
+      const swatchImage = colorSwatchForLabel(colorImages, label);
+      putShade(byAsin, childAsin, {
         nameEn: label,
         nameAr: label,
         image,
+        swatchImage,
         colorHex: image ? '' : colorHexGuess(label),
+        optionGroup: displayLabels[activeColorKey] || 'التدرج',
       });
     }
   }
@@ -1223,10 +1353,14 @@ function parseShadesFromHtml(html = '') {
       || '',
     );
     const image = colorImageForLabel(colorImages, label);
+    const swatchImage = colorSwatchForLabel(colorImages, label);
+    const bc = barcodeFromVariationInfo(info);
     putShade(byAsin, asin, {
       nameEn: label,
       nameAr: label,
       image,
+      swatchImage,
+      barcode: bc,
       colorHex: image ? '' : colorHexGuess(label),
     });
   }
@@ -1490,6 +1624,7 @@ function mergeShadeLocales(enShades = [], arShades = []) {
       sku: s.sku || s.id,
       barcode: '',
       image: '',
+      swatchImage: '',
       price: '',
       inStock: true,
       colorHex: s.colorHex || '',
@@ -1504,6 +1639,7 @@ function mergeShadeLocales(enShades = [], arShades = []) {
       nameAr: ar || prev.nameAr,
       nameEn: en || prev.nameEn,
       image: prev.image || s.image || '',
+      swatchImage: prev.swatchImage || s.swatchImage || '',
       barcode: prev.barcode || s.barcode || '',
       price: prev.price || s.price || '',
       colorHex: prev.colorHex || s.colorHex || colorHexGuess(en || ar),
@@ -1522,6 +1658,7 @@ function mergeShadeLocales(enShades = [], arShades = []) {
     sku: s.sku || s.id,
     barcode: s.barcode || '',
     image: s.image || '',
+    swatchImage: s.swatchImage || '',
     price: s.price || '',
     inStock: true,
     colorHex: s.colorHex || '',
@@ -1599,11 +1736,16 @@ async function enrichShadeDetails(shades = [], { deadline = 0, concurrency = 10,
         );
         const guessed = colorHexGuess(colorNameEn || colorNameAr || existingNameEn || existingNameAr);
         const image = normalizeAmazonImageUrl(shade.image || thumb || '', IMPORT_SIZE);
+        const swatchImage = normalizeAmazonImageUrl(
+          shade.swatchImage || (isSwatchSizedUrl(thumb) ? thumb : '') || '',
+          THUMB_SIZE,
+        );
 
         const patch = {
           barcode,
           price: price || shade.price || '',
           image,
+          swatchImage,
           colorHex: swatchHex || shade.colorHex || (!image ? guessed : '') || '',
           nameEn: (keepExistingEn ? existingNameEn : '')
             || (colorNameEn && hasLatin(colorNameEn) ? colorNameEn : '')
@@ -1633,6 +1775,7 @@ async function enrichShadeDetails(shades = [], { deadline = 0, concurrency = 10,
         barcode: p.barcode || prev.barcode || '',
         price: p.price || prev.price || '',
         image: p.image || prev.image || '',
+        swatchImage: p.swatchImage || prev.swatchImage || '',
         colorHex: p.colorHex || prev.colorHex || '',
         nameEn: p.nameEn || prev.nameEn || '',
         nameAr: p.nameAr || prev.nameAr || '',
@@ -1727,7 +1870,7 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
   const asin = String(id || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(asin)) return null;
 
-  const cacheKey = `amazon:detail:v16:${asin}:${light ? 'l' : 'f'}`;
+  const cacheKey = `amazon:detail:v17:${asin}:${light ? 'l' : 'f'}`;
   const cached = cacheGet(cacheKey, DETAIL_TTL);
   if (cached) return cached;
 
@@ -1842,18 +1985,18 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
   if (!light && shades.length > 1) {
     const before = shades;
     try {
-      const budgetMs = shades.length > 40 ? 75_000 : shades.length > 15 ? 50_000 : 35_000;
+      const budgetMs = shades.length > 40 ? 120_000 : shades.length > 20 ? 90_000 : shades.length > 10 ? 60_000 : 45_000;
       const deadline = Date.now() + budgetMs;
       shades = await enrichShadeDetails(shades, {
         deadline,
-        concurrency: shades.length > 40 ? 12 : 10,
+        concurrency: shades.length > 40 ? 14 : 12,
         max: shades.length,
       });
       let stillMissing = shades.filter((s) => !s.barcode || !s.colorHex).length;
       if (stillMissing > 0 && Date.now() < deadline) {
         shades = await enrichShadeDetails(shades, {
           deadline,
-          concurrency: 6,
+          concurrency: 8,
           max: shades.length,
         });
       }
@@ -1861,7 +2004,7 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
       if (stillMissing > 0 && Date.now() < deadline) {
         shades = await enrichShadeDetails(shades, {
           deadline,
-          concurrency: 4,
+          concurrency: 5,
           max: shades.length,
         });
       }
@@ -1870,16 +2013,13 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
       shades = before;
     }
   } else if (light && shades.length > 1) {
-    const missingBarcode = shades.filter((s) => !s.barcode).length;
-    if (missingBarcode > 0 && missingBarcode <= 12) {
-      try {
-        shades = await enrichShadeDetails(shades, {
-          deadline: Date.now() + 14_000,
-          concurrency: 6,
-          max: Math.min(shades.length, 12),
-        });
-      } catch { /* optional */ }
-    }
+    try {
+      shades = await enrichShadeDetails(shades, {
+        deadline: Date.now() + 28_000,
+        concurrency: 8,
+        max: Math.min(shades.length, 24),
+      });
+    } catch { /* optional */ }
   } else if (shades.length === 1) {
     shades = enrichShadesFromParentHtml(shades, parentHtmlSources);
     shades[0].barcode = shades[0].barcode || primary.barcode || ae?.barcode || sa?.barcode || '';
@@ -1913,9 +2053,19 @@ export async function scrapeProductDetail(id, { light = false } = {}) {
       nameEn: finalEn,
       nameAr: finalAr,
       colorHex: normalizeHex(s.colorHex) || s.colorHex || colorHexGuess(finalEn || finalAr) || '',
+      swatchImage: normalizeAmazonImageUrl(s.swatchImage || '', THUMB_SIZE),
+      image: normalizeAmazonImageUrl(s.image || s.swatchImage || '', IMPORT_SIZE),
     };
   });
   shades = filterUsableShades(shades);
+
+  if (shades.length) {
+    try {
+      shades = await enrichShadeColorsFromImages(shades, {
+        concurrency: light ? 4 : 8,
+      });
+    } catch { /* optional */ }
+  }
 
   const nameAr = (ae?.nameAr && hasArabic(ae.nameAr) ? ae.nameAr : '')
     || (sa?.nameAr && hasArabic(sa.nameAr) ? sa.nameAr : '')

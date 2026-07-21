@@ -5,6 +5,7 @@ import '../../../data/models/brand.dart';
 import '../../../data/models/home_section.dart';
 import '../home_link.dart';
 import '../widgets/home_animations.dart';
+import '../widgets/home_scroll_perf.dart';
 import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
 
@@ -46,6 +47,8 @@ class _BrandLogosRow extends StatelessWidget {
       height: 72,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
+        cacheExtent: HomeScrollPerf.horizontalCacheExtent,
+        addAutomaticKeepAlives: false,
         padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
         itemCount: brands.length,
         separatorBuilder: (_, __) => const SizedBox(width: HomeTheme.itemGap),
@@ -103,6 +106,8 @@ class _BrandCardsRow extends StatelessWidget {
       height: 120,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
+        cacheExtent: HomeScrollPerf.horizontalCacheExtent,
+        addAutomaticKeepAlives: false,
         padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
         itemCount: brands.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),

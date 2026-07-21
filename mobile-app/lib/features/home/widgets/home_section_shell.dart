@@ -79,17 +79,12 @@ class HomeSectionShell extends StatelessWidget {
                 if (actionLabel != null && onAction != null)
                   GestureDetector(
                     onTap: onAction,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-                      decoration: HomeTheme.viewAllChipDecoration(),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(actionLabel!, style: HomeTheme.viewAll),
-                          const SizedBox(width: 3),
-                          Icon(Icons.arrow_back_ios_new_rounded, size: 9, color: HomeTheme.sageDark),
-                        ],
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(actionLabel!, style: HomeTheme.viewAll),
+                        Icon(Icons.chevron_left_rounded, size: 16, color: HomeTheme.accent),
+                      ],
                     ),
                   ),
               ],

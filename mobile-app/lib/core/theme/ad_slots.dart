@@ -14,7 +14,7 @@ const _adSlots = <String, AdSlotSpec>{
   'ultraWide': AdSlotSpec(aspect: 2.33),
   'wide169': AdSlotSpec(aspect: 1.78),
   'wide21': AdSlotSpec(aspect: 2),
-  'hero': AdSlotSpec(aspect: 2.08),
+  'hero': AdSlotSpec(aspect: 2.22),
   'wide': AdSlotSpec(aspect: 2.35),
   'standard43': AdSlotSpec(aspect: 1.33),
   'square': AdSlotSpec(aspect: 1),

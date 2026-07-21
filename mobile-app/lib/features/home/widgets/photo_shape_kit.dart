@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -442,22 +440,17 @@ class _PhotoOverlay extends StatelessWidget {
           Positioned(
             top: 10,
             right: 10,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: HomeTheme.sage.withValues(alpha: 0.92),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-                  ),
-                  child: Text(
-                    badge!,
-                    style: GoogleFontsStyle.badge,
-                  ),
-                ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: HomeTheme.sage.withValues(alpha: 0.94),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
+                boxShadow: HomeTheme.whisperLift,
+              ),
+              child: Text(
+                badge!,
+                style: GoogleFontsStyle.badge,
               ),
             ),
           ),

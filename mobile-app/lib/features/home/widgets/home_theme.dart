@@ -1,29 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// نظام تصميم الرئيسية — editorial beauty، بسيط وأنيق.
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/app_network_image.dart';
+
+/// نظام تصميم الرئيسية — احترافي، متوازن، متوافق مع هوية التطبيق.
 abstract final class HomeTheme {
-  static const paddingH = 18.0;
-  static const sectionGap = 26.0;
-  static const compactGap = 14.0;
+  static const paddingH = 16.0;
+  static const sectionGap = 24.0;
+  static const compactGap = 12.0;
   static const itemGap = 10.0;
-  static const cardRadius = 20.0;
-  static const tileRadius = 18.0;
-  static const squircle = 20.0;
+  static const cardRadius = 12.0;
+  static const tileRadius = 12.0;
+  static const squircle = 12.0;
   static const pillRadius = 999.0;
 
-  // Canvas & surfaces — ألوان دافئة وهادئة
+  static const productCardWidth = 158.0;
+  static const productCardHeight = 268.0;
+  static const productImageSize = 158.0;
+  static const productRowHeight = 272.0;
+  static const bannerAspect = 1.92;
+  static const bannerInset = 8.0;
+  static const bannerRadius = 14.0;
+
+  // Canvas — cream دافئ أنيق
   static const canvas = Color(0xFFFBF9F6);
-  static const canvasWarm = Color(0xFFF5F1EA);
+  static const canvasWarm = Color(0xFFF5F0EB);
   static const surface = Color(0xFFFFFFFF);
-  static const surfaceMuted = Color(0xFFEDE9E2);
-  static const pearl = Color(0xFFF7F4EF);
+  static const surfaceMuted = Color(0xFFEDE8E3);
+  static const pearl = Color(0xFFFAF7F4);
   static const champagne = Color(0xFFF0E8DC);
+
+  static const accent = AppColors.primary;
+  static const accentDark = AppColors.primaryDark;
+  static const accentLight = AppColors.primaryLight;
+  static const accentMid = Color(0xFFE8DFD6);
 
   static const sage = Color(0xFF627058);
   static const sageDark = Color(0xFF4E5A47);
   static const sageLight = Color(0xFFEEF2EB);
   static const sageMid = Color(0xFFD8E0D3);
+
   static const roseWash = Color(0xFFF8EDF0);
   static const sand = Color(0xFFF3EEE6);
   static const lavender = Color(0xFFF0EEF5);
@@ -31,33 +48,32 @@ abstract final class HomeTheme {
 
   static const ink = Color(0xFF2A2826);
   static const inkSoft = Color(0xFF6E6860);
-  static const inkMuted = Color(0xFFA49D94);
+  static const inkMuted = Color(0xFF9A948C);
 
   static const categoryTileColors = [
-    sageLight,
     roseWash,
+    sageLight,
     sand,
     lavender,
+    accentLight,
     blush,
-    Color(0xFFE8F0F2),
     Color(0xFFEBF2EC),
     Color(0xFFF5F0EA),
   ];
 
-  static TextStyle displayTitle({double size = 26, Color? color}) =>
+  static TextStyle displayTitle({double size = 22, Color? color}) =>
       GoogleFonts.cairo(
         fontSize: size,
-        fontWeight: FontWeight.w800,
-        height: 1.12,
-        letterSpacing: -0.3,
+        fontWeight: FontWeight.w700,
+        height: 1.2,
+        letterSpacing: -0.2,
         color: color ?? ink,
       );
 
-  static TextStyle sectionTitle({double size = 18, Color? color}) => GoogleFonts.cairo(
+  static TextStyle sectionTitle({double size = 17, Color? color}) => GoogleFonts.cairo(
         fontSize: size,
         fontWeight: FontWeight.w700,
-        height: 1.22,
-        letterSpacing: -0.15,
+        height: 1.25,
         color: color ?? ink,
       );
 
@@ -69,22 +85,22 @@ abstract final class HomeTheme {
       GoogleFonts.cairo(
         fontSize: size,
         fontWeight: weight,
-        height: 1.45,
+        height: 1.4,
         color: color ?? inkSoft,
       );
 
   static TextStyle get overline => GoogleFonts.cairo(
         fontSize: 10,
         fontWeight: FontWeight.w700,
-        letterSpacing: 0.8,
+        letterSpacing: 0.6,
         color: sage,
         height: 1.2,
       );
 
   static TextStyle get viewAll => GoogleFonts.cairo(
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: FontWeight.w700,
-        color: sageDark,
+        color: accent,
         height: 1.2,
       );
 
@@ -96,7 +112,7 @@ abstract final class HomeTheme {
       );
 
   static TextStyle get circleLabel => GoogleFonts.cairo(
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: FontWeight.w600,
         color: inkSoft,
         height: 1.15,
@@ -110,16 +126,16 @@ abstract final class HomeTheme {
       );
 
   static TextStyle get brandLabel => GoogleFonts.cairo(
-        fontSize: 9,
+        fontSize: 10,
         fontWeight: FontWeight.w600,
-        letterSpacing: 0.5,
+        letterSpacing: 0.3,
         color: inkMuted,
         height: 1.2,
       );
 
   static List<BoxShadow> get whisperLift => [
         BoxShadow(
-          color: ink.withValues(alpha: 0.03),
+          color: ink.withValues(alpha: 0.04),
           blurRadius: 10,
           offset: const Offset(0, 2),
           spreadRadius: -1,
@@ -128,67 +144,99 @@ abstract final class HomeTheme {
 
   static List<BoxShadow> get softShadow => [
         BoxShadow(
-          color: ink.withValues(alpha: 0.05),
-          blurRadius: 20,
-          offset: const Offset(0, 6),
-          spreadRadius: -4,
+          color: ink.withValues(alpha: 0.06),
+          blurRadius: 18,
+          offset: const Offset(0, 5),
+          spreadRadius: -3,
         ),
       ];
 
   static List<BoxShadow> get softLift => softShadow;
-
   static List<BoxShadow> get cardShadow => whisperLift;
-
   static List<BoxShadow> get stageShadow => softShadow;
 
-  /// خلفية الصفحة — تدرج خفيف من الأعلى.
   static BoxDecoration canvasDecoration() => const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [canvasWarm, canvas, canvas],
-          stops: [0, 0.22, 1],
+          stops: [0, 0.2, 1],
         ),
       );
 
-  /// رأس الهيرو — غسيل sage ناعم.
   static BoxDecoration heroHeaderDecoration() => BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            sageLight.withValues(alpha: 0.55),
+            roseWash,
+            Color.lerp(roseWash, canvas, 0.45)!,
             canvas.withValues(alpha: 0),
           ],
-          stops: const [0, 1],
+          stops: const [0, 0.55, 1],
         ),
+      );
+
+  static BoxDecoration heroActionClusterDecoration() => BoxDecoration(
+        color: surface.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(pillRadius),
+        border: Border.all(color: surfaceMuted.withValues(alpha: 0.9)),
+        boxShadow: whisperLift,
+      );
+
+  static BoxDecoration heroSearchDecoration() => BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: surfaceMuted.withValues(alpha: 0.85)),
+        boxShadow: [
+          BoxShadow(
+            color: ink.withValues(alpha: 0.07),
+            blurRadius: 22,
+            offset: const Offset(0, 8),
+            spreadRadius: -6,
+          ),
+        ],
+      );
+
+  static BoxDecoration heroDateChipDecoration() => BoxDecoration(
+        color: surface.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: sageMid.withValues(alpha: 0.85)),
+        boxShadow: whisperLift,
+      );
+
+  static BoxDecoration heroTrustPillDecoration() => BoxDecoration(
+        color: surface.withValues(alpha: 0.78),
+        borderRadius: BorderRadius.circular(pillRadius),
+        border: Border.all(color: surfaceMuted.withValues(alpha: 0.75)),
       );
 
   static BoxDecoration sectionSurface({Color? tint}) => BoxDecoration(
         color: tint ?? surface,
         borderRadius: BorderRadius.circular(squircle),
-        border: Border.all(color: surfaceMuted.withValues(alpha: 0.75)),
+        border: Border.all(color: surfaceMuted.withValues(alpha: 0.8)),
         boxShadow: whisperLift,
       );
 
   static BoxDecoration cardDecoration({Color? color}) => BoxDecoration(
         color: color ?? surface,
         borderRadius: BorderRadius.circular(cardRadius),
-        border: Border.all(color: surfaceMuted.withValues(alpha: 0.65)),
+        border: Border.all(color: surfaceMuted.withValues(alpha: 0.75)),
         boxShadow: whisperLift,
       );
 
   static BoxDecoration pillSurface({Color? fill}) => BoxDecoration(
         color: fill ?? surface,
         borderRadius: BorderRadius.circular(pillRadius),
-        border: Border.all(color: surfaceMuted.withValues(alpha: 0.8)),
+        border: Border.all(color: surfaceMuted.withValues(alpha: 0.85)),
         boxShadow: whisperLift,
       );
 
-  static BoxDecoration viewAllChipDecoration() => BoxDecoration(
-        color: sageLight,
-        borderRadius: BorderRadius.circular(pillRadius),
-        border: Border.all(color: sageMid.withValues(alpha: 0.7)),
+  static BoxDecoration searchDecoration() => BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: surfaceMuted),
+        boxShadow: whisperLift,
       );
 
   // Legacy aliases
@@ -198,7 +246,6 @@ abstract final class HomeTheme {
   static const blushMid = surfaceMuted;
 }
 
-/// خلفية موحّدة للصفحة الرئيسية.
 class HomeCanvasBackground extends StatelessWidget {
   final Widget child;
 
@@ -213,7 +260,6 @@ class HomeCanvasBackground extends StatelessWidget {
   }
 }
 
-/// عنوان قسم — خط accent رفيع + زر عرض الكل.
 class HomeEditorialHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -243,23 +289,22 @@ class HomeEditorialHeader extends StatelessWidget {
         HomeTheme.paddingH,
         compact ? 0 : 4,
         HomeTheme.paddingH,
-        14,
+        12,
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           if (headerImageUrl != null && headerImageUrl!.isNotEmpty) ...[
             ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                headerImageUrl!,
-                width: 38,
-                height: 38,
+              borderRadius: BorderRadius.circular(8),
+              child: AppNetworkImage(
+                url: headerImageUrl!,
+                width: 32,
+                height: 32,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 10),
           ],
           Expanded(
             child: Column(
@@ -267,35 +312,15 @@ class HomeEditorialHeader extends StatelessWidget {
               children: [
                 if (overline != null && overline!.isNotEmpty) ...[
                   Text(overline!, style: HomeTheme.overline),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
                 ],
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 3,
-                      height: compact ? 16 : 20,
-                      margin: const EdgeInsets.only(left: 2),
-                      decoration: BoxDecoration(
-                        color: HomeTheme.sage,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: HomeTheme.sectionTitle(size: compact ? 16 : 18),
-                      ),
-                    ),
-                  ],
+                Text(
+                  title,
+                  style: HomeTheme.sectionTitle(size: compact ? 16 : 17),
                 ),
                 if (subtitle != null && subtitle!.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 15),
-                    child: Text(subtitle!, style: HomeTheme.body(size: 12)),
-                  ),
+                  const SizedBox(height: 2),
+                  Text(subtitle!, style: HomeTheme.body(size: 12)),
                 ],
               ],
             ),
@@ -304,15 +329,14 @@ class HomeEditorialHeader extends StatelessWidget {
           if (actionLabel != null && onAction != null)
             GestureDetector(
               onTap: onAction,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
-                decoration: HomeTheme.viewAllChipDecoration(),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(actionLabel!, style: HomeTheme.viewAll),
-                    const SizedBox(width: 3),
-                    Icon(Icons.arrow_back_ios_new_rounded, size: 9, color: HomeTheme.sageDark),
+                    const SizedBox(width: 2),
+                    Icon(Icons.chevron_left_rounded, size: 16, color: HomeTheme.accent),
                   ],
                 ),
               ),
@@ -323,7 +347,6 @@ class HomeEditorialHeader extends StatelessWidget {
   }
 }
 
-/// حبة أفقية للفلاتر.
 class HomeFilterPill extends StatelessWidget {
   final String label;
   final bool selected;
@@ -341,21 +364,16 @@ class HomeFilterPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? HomeTheme.sage : HomeTheme.surface,
+      color: selected ? HomeTheme.accent : HomeTheme.surface,
       borderRadius: BorderRadius.circular(HomeTheme.pillRadius),
-      elevation: selected ? 0 : 0,
-      shadowColor: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(HomeTheme.pillRadius),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(HomeTheme.pillRadius),
-            border: Border.all(
-              color: selected ? HomeTheme.sage : HomeTheme.surfaceMuted,
-            ),
-            boxShadow: selected ? null : HomeTheme.whisperLift,
+            border: Border.all(color: selected ? HomeTheme.accent : AppColors.border),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -408,17 +426,17 @@ class HomeCountdownBoxes extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 3),
         child: Text(
           ':',
-          style: HomeTheme.body(size: 12, color: HomeTheme.sageDark, weight: FontWeight.w800),
+          style: HomeTheme.body(size: 13, color: HomeTheme.ink, weight: FontWeight.w800),
         ),
       );
 
   Widget _box(String v) => Container(
-        width: 30,
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        width: 28,
+        padding: const EdgeInsets.symmetric(vertical: 5),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: HomeTheme.sageDark,
-          borderRadius: BorderRadius.circular(8),
+          color: HomeTheme.ink,
+          borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
           v,

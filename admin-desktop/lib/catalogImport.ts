@@ -447,7 +447,7 @@ export async function searchCatalogByBarcode(
 
 export async function fetchCatalogProduct(storeId: string, sourceId: string, storeLabel = "") {
   // أمازون: إثراء باركود/لون كل التدرجات يحتاج وقتاً أطول
-  const timeout = storeId === "amazon" ? 120_000 : 120_000;
+  const timeout = storeId === "amazon" ? 180_000 : 120_000;
   const data = await catalogFetch<{ product: Record<string, unknown> }>(
     `/api/import/${encodeURIComponent(storeId)}/products/${encodeURIComponent(sourceId)}`,
     timeout,

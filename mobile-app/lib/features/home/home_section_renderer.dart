@@ -18,7 +18,6 @@ import 'sections/photo_wall_section.dart';
 import 'sections/section_group_section.dart';
 import 'sections/promo_sections.dart';
 import 'sections/skin_concerns_strip.dart';
-import 'widgets/home_animations.dart';
 import 'widgets/home_theme.dart';
 
 export 'sections/hero_section.dart' show HeroHomeSection;
@@ -137,37 +136,36 @@ List<HomeSection> _cmsSections(HomeFeed feed) {
       .toList();
 }
 
-List<Widget> buildHomeSections(HomeFeed feed) {
-  final widgets = <Widget>[];
-  var index = 0;
+/// فتحة قسم واحدة — للبناء الكسول في SliverList.
+class HomeSectionSlot {
+  final HomeSection section;
+  final bool isHero;
+  final bool isFirstAfterHero;
 
-  // الرأس + البنرات + الاختصارات + أيقونات الفئات — ثابتة دائماً
+  const HomeSectionSlot({
+    required this.section,
+    this.isHero = false,
+    this.isFirstAfterHero = false,
+  });
+}
+
+/// يحسب أقسام الرئيسية بدون بناء الـ widgets مسبقاً.
+List<HomeSectionSlot> resolveHomeSectionSlots(HomeFeed feed) {
+  final slots = <HomeSectionSlot>[];
   final fixedHero = _fixedHeroSection(feed);
   final heroHasCategories = fixedHero.categories.isNotEmpty;
-  widgets.add(HomeSectionEntrance(
-    index: index++,
-    child: HeroHomeSection(section: fixedHero),
-  ));
 
-  final cms = _cmsSections(feed);
-  if (cms.isEmpty) {
-    return widgets;
-  }
+  slots.add(HomeSectionSlot(section: fixedHero, isHero: true));
 
   var firstAfterHero = true;
-  for (final s in cms) {
-    // تجنّب تكرار شبكة الفئات إذا الهيرو يعرض فئات
+  for (final s in _cmsSections(feed)) {
     if (heroHasCategories && _isDuplicateCategorySection(s.type)) continue;
-
-    widgets.add(HomeSectionEntrance(
-      index: index++,
-      child: HomeSectionWidget(
-        section: s,
-        isFirstAfterHero: firstAfterHero,
-      ),
+    slots.add(HomeSectionSlot(
+      section: s,
+      isFirstAfterHero: firstAfterHero,
     ));
     firstAfterHero = false;
   }
 
-  return widgets;
+  return slots;
 }

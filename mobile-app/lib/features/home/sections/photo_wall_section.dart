@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../home_link.dart';
 import '../widgets/home_image_marquee.dart';
+import '../widgets/home_scroll_perf.dart';
 import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
 import '../widgets/photo_shape_kit.dart';
@@ -108,6 +109,8 @@ class PhotoWallSection extends StatelessWidget {
       height: height,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
+        cacheExtent: HomeScrollPerf.horizontalCacheExtent,
+        addAutomaticKeepAlives: false,
         itemCount: items.length,
         separatorBuilder: (_, __) => SizedBox(width: gap),
         itemBuilder: (_, i) => _buildTile(

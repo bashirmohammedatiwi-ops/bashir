@@ -1,12 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/card_sizes.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_section.dart';
+import '../../shell/main_shell.dart';
 import '../home_link.dart';
 import '../widgets/home_product_row.dart';
 import '../widgets/home_section_shell.dart';
@@ -50,17 +52,17 @@ class ProductCarouselSection extends StatelessWidget {
   }
 }
 
-class FlashSaleHomeSection extends StatefulWidget {
+class FlashSaleHomeSection extends ConsumerStatefulWidget {
   final HomeSection section;
   final bool compactTop;
 
   const FlashSaleHomeSection({super.key, required this.section, this.compactTop = false});
 
   @override
-  State<FlashSaleHomeSection> createState() => _FlashSaleHomeSectionState();
+  ConsumerState<FlashSaleHomeSection> createState() => _FlashSaleHomeSectionState();
 }
 
-class _FlashSaleHomeSectionState extends State<FlashSaleHomeSection> {
+class _FlashSaleHomeSectionState extends ConsumerState<FlashSaleHomeSection> {
   Timer? _timer;
   final _remaining = ValueNotifier<Duration>(Duration.zero);
 
@@ -68,7 +70,24 @@ class _FlashSaleHomeSectionState extends State<FlashSaleHomeSection> {
   void initState() {
     super.initState();
     _tick();
+    _startTimer();
+  }
+
+  void _startTimer() {
+    _timer?.cancel();
     _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+  }
+
+  void _syncTimer(bool homeActive) {
+    if (homeActive) {
+      if (_timer == null || !(_timer?.isActive ?? false)) {
+        _tick();
+        _startTimer();
+      }
+    } else {
+      _timer?.cancel();
+      _timer = null;
+    }
   }
 
   void _tick() {
@@ -87,6 +106,8 @@ class _FlashSaleHomeSectionState extends State<FlashSaleHomeSection> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<int>(navIndexProvider, (_, next) => _syncTimer(next == 0));
+
     if (widget.section.products.isEmpty) return const SizedBox.shrink();
 
     Widget? countdown;

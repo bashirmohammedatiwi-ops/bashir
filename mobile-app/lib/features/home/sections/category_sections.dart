@@ -8,6 +8,7 @@ import '../../../data/models/category.dart';
 import '../../../data/models/home_section.dart';
 import '../home_link.dart';
 import '../widgets/home_category_grid.dart';
+import '../widgets/home_scroll_perf.dart';
 import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
 
@@ -58,6 +59,8 @@ class MakeupCategoriesSection extends StatelessWidget {
         height: maxH + 24,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
+          cacheExtent: HomeScrollPerf.horizontalCacheExtent,
+          addAutomaticKeepAlives: false,
           padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 0, HomeTheme.paddingH, 4),
           itemCount: section.categories.length,
           separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),

@@ -16,7 +16,7 @@ import {
   queryAmazonIndex,
   upsertAmazonProducts,
 } from './catalog-index.js';
-import { mapDetailProduct, mapListProduct } from './map.js';
+import { mapDetailProduct, mapListProduct, mapShadeFromVariation } from './map.js';
 import {
   scrapeBarcode,
   scrapeProductDetail,
@@ -322,9 +322,55 @@ function normalizeDetailImages(detail) {
     detail.shades = detail.shades.map((s) => ({
       ...s,
       image: normalizeAmazonImageUrl(s.image || '', IMPORT_SIZE),
+      swatchImage: normalizeAmazonImageUrl(s.swatchImage || '', IMPORT_SIZE),
     }));
   }
   return detail;
+}
+
+function mergePaapiShades(detail, asin) {
+  if (!detail || !usePaapi()) return detail;
+  const parent = detail.parentAsin || asin;
+  return fetchVariations(parent)
+    .catch(() => [])
+    .then(async (variations) => {
+      if (!variations.length && parent !== asin) {
+        variations = await fetchVariations(asin).catch(() => []);
+      }
+      if (!variations.length) return detail;
+
+      const paShades = variations.map((v, i) => mapShadeFromVariation(v, i));
+      const byId = new Map((detail.shades || []).map((s) => [String(s.id || s.sku || '').toUpperCase(), s]));
+
+      for (const pa of paShades) {
+        const id = String(pa.id || pa.sku || '').toUpperCase();
+        if (!id) continue;
+        const prev = byId.get(id);
+        if (prev) {
+          byId.set(id, {
+            ...prev,
+            barcode: prev.barcode || pa.barcode,
+            price: prev.price || pa.price,
+            image: prev.image || pa.image,
+            swatchImage: prev.swatchImage || pa.swatchImage || pa.image,
+            colorHex: prev.colorHex || pa.colorHex,
+            nameEn: prev.nameEn || pa.nameEn,
+            nameAr: prev.nameAr || pa.nameAr,
+            optionGroup: prev.optionGroup || pa.optionGroup,
+          });
+        } else {
+          byId.set(id, pa);
+        }
+      }
+
+      const shades = [...byId.values()].filter((s) => s.nameEn || s.nameAr || s.image || s.swatchImage);
+      return {
+        ...detail,
+        shades,
+        shadeCount: shades.length,
+        hasOptions: shades.length > 1,
+      };
+    });
 }
 
 function rememberAmazonDetail(detail) {
@@ -411,6 +457,7 @@ export async function fetchProductDetail(id, { light = false } = {}) {
     }
 
     if (detail) {
+      detail = await mergePaapiShades(detail, asin);
       normalizeDetailImages(detail);
       rememberAmazonDetail(detail);
     }

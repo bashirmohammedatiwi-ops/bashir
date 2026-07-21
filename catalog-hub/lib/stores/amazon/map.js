@@ -172,6 +172,7 @@ export function mapShadeFromVariation(item = {}, index = 0) {
     sku: String(item.ASIN || ''),
     barcode: barcodeOf(item),
     image: firstImage(item),
+    swatchImage: firstImage(item),
     price: priceOf(item),
     inStock: true,
     colorHex: colorHexGuess(color),

@@ -85,7 +85,7 @@ class HomeBannerStage extends StatelessWidget {
       ),
     );
 
-    if (!layout.fullBleed) {
+    if (!layout.fullBleed && width == null) {
       card = Padding(
         padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
         child: card,
@@ -167,18 +167,28 @@ class _ImageOnlyLayout extends StatelessWidget {
       );
     }
 
-    return AppNetworkImage(
-      url: banner.imageUrl,
-      fit: BoxFit.cover,
+    return LayoutBuilder(
+      builder: (context, constraints) => AppNetworkImage(
+        url: banner.imageUrl,
+        width: constraints.maxWidth,
+        height: constraints.maxHeight,
+        fit: BoxFit.contain,
+        backgroundColor: tint.bg,
+      ),
     );
   }
 }
 
-double homeHeroBannerHeight(BuildContext context, {HomeSection? section}) {
-  final w = MediaQuery.sizeOf(context).width -
-      (section?.fullBleed == true ? 0 : HomeTheme.paddingH * 2);
+double homeHeroBannerHeight(
+  BuildContext context, {
+  HomeSection? section,
+  double? width,
+}) {
+  final inset = HomeTheme.bannerInset;
+  final w = width ??
+      (MediaQuery.sizeOf(context).width - (section?.fullBleed == true ? 0 : inset * 2));
   final layout = section != null
       ? resolveBannerLayout(section)
-      : const BannerLayoutConfig(aspect: 2.08);
+      : BannerLayoutConfig(aspect: HomeTheme.bannerAspect);
   return layout.heightFor(w);
 }

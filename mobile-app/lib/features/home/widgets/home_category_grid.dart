@@ -7,7 +7,7 @@ import '../home_link.dart';
 import 'home_animations.dart';
 import 'home_theme.dart';
 
-/// أيقونات الفئات أسفل البنر — شبكة 4×2 مع اسم مختصر.
+/// فئات الهيرو — شبكة 4×2 بنسب ثابتة.
 class HomeHeroCategoryStrip extends StatelessWidget {
   final List<Category> categories;
   final int maxItems;
@@ -19,17 +19,16 @@ class HomeHeroCategoryStrip extends StatelessWidget {
   });
 
   static const _columns = 4;
-  static const _rows = 2;
-  static const _gap = 10.0;
+  static const _gap = 8.0;
 
   @override
   Widget build(BuildContext context) {
     if (categories.isEmpty) return const SizedBox.shrink();
 
-    final items = categories.take(maxItems.clamp(1, _columns * _rows)).toList();
+    final items = categories.take(maxItems.clamp(1, _columns * 2)).toList();
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
+      padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 2, HomeTheme.paddingH, 2),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -37,66 +36,61 @@ class HomeHeroCategoryStrip extends StatelessWidget {
           crossAxisCount: _columns,
           mainAxisSpacing: _gap,
           crossAxisSpacing: _gap,
-          childAspectRatio: 0.82,
+          childAspectRatio: 1.02,
         ),
         itemCount: items.length,
-        itemBuilder: (context, index) => _cell(context, index, items),
+        itemBuilder: (context, index) => _cell(context, items[index], index),
       ),
     );
   }
 
-  Widget _cell(BuildContext context, int index, List<Category> items) {
-    final cat = items[index];
+  Widget _cell(BuildContext context, Category cat, int index) {
     final bg = HomeTheme.categoryTileColors[index % HomeTheme.categoryTileColors.length];
 
-    return HomeStaggerItem(
-      index: index,
-      child: HomeTapScale(
-        onTap: () => openSectionLink(
-          context,
-          linkType: cat.linkType,
-          linkValue: cat.linkValue,
-          legacyLink: cat.link ??
-              '/products?categoryId=${cat.id}&title=${Uri.encodeComponent(cat.name)}',
-        ),
-        child: Column(
-          children: [
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: bg,
-                  borderRadius: BorderRadius.circular(HomeTheme.tileRadius),
-                  border: Border.all(color: HomeTheme.surfaceMuted.withValues(alpha: 0.5)),
-                  boxShadow: HomeTheme.whisperLift,
-                ),
-                padding: const EdgeInsets.all(10),
+    return HomeTapScale(
+      onTap: () => openSectionLink(
+        context,
+        linkType: cat.linkType,
+        linkValue: cat.linkValue,
+        legacyLink: cat.link ??
+            '/products?categoryId=${cat.id}&title=${Uri.encodeComponent(cat.name)}',
+      ),
+      child: Column(
+        children: [
+          Expanded(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(HomeTheme.tileRadius),
+                border: Border.all(color: HomeTheme.surfaceMuted.withValues(alpha: 0.65)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(6),
                 child: cat.imageUrl.isNotEmpty
                     ? AppNetworkImage(url: cat.imageUrl, fit: BoxFit.contain)
                     : Center(
                         child: Text(
                           cat.icon ?? cat.name.characters.first,
-                          style: const TextStyle(fontSize: 22),
+                          style: const TextStyle(fontSize: 18),
                         ),
                       ),
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              cat.name,
-              maxLines: 1,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: HomeTheme.circleLabel,
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            cat.name,
+            maxLines: 1,
+            textAlign: TextAlign.center,
+            overflow: TextOverflow.ellipsis,
+            style: HomeTheme.circleLabel,
+          ),
+        ],
       ),
     );
   }
 }
 
-/// شبكة فئات — تمرير أفقي داخل بطاقة.
 class HomeCategoryGrid extends StatelessWidget {
   final List<Category> categories;
   final String? title;
@@ -113,12 +107,13 @@ class HomeCategoryGrid extends StatelessWidget {
     this.onViewAll,
   });
 
+  static const _tileSize = 72.0;
+
   @override
   Widget build(BuildContext context) {
     if (categories.isEmpty) return const SizedBox.shrink();
 
     final colCount = (categories.length / 2).ceil();
-    const tileW = 72.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -135,7 +130,7 @@ class HomeCategoryGrid extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
           child: SizedBox(
-            height: 172,
+            height: 176,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: colCount,
@@ -143,22 +138,19 @@ class HomeCategoryGrid extends StatelessWidget {
               itemBuilder: (_, col) {
                 final top = col * 2;
                 final bottom = top + 1;
-                return HomeStaggerItem(
-                  index: col,
-                  child: SizedBox(
-                    width: tileW,
-                    child: Column(
-                      children: [
-                        SizedBox(height: 80, child: _tile(context, top)),
-                        const SizedBox(height: HomeTheme.itemGap),
-                        SizedBox(
-                          height: 80,
-                          child: bottom < categories.length
-                              ? _tile(context, bottom)
-                              : const SizedBox.shrink(),
-                        ),
-                      ],
-                    ),
+                return SizedBox(
+                  width: _tileSize,
+                  child: Column(
+                    children: [
+                      SizedBox(height: 80, child: _tile(context, top)),
+                      const SizedBox(height: HomeTheme.itemGap),
+                      SizedBox(
+                        height: 80,
+                        child: bottom < categories.length
+                            ? _tile(context, bottom)
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
                   ),
                 );
               },
@@ -183,22 +175,27 @@ class HomeCategoryGrid extends StatelessWidget {
       ),
       child: Column(
         children: [
-          Container(
-            width: 72,
+          SizedBox(
+            width: _tileSize,
             height: 56,
-            decoration: BoxDecoration(
-              color: bg,
-              borderRadius: BorderRadius.circular(HomeTheme.tileRadius),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: bg,
+                borderRadius: BorderRadius.circular(HomeTheme.tileRadius),
+                border: Border.all(color: HomeTheme.surfaceMuted.withValues(alpha: 0.65)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: cat.imageUrl.isNotEmpty
+                    ? AppNetworkImage(url: cat.imageUrl, fit: BoxFit.contain)
+                    : Center(
+                        child: Text(
+                          cat.icon ?? cat.name.characters.first,
+                          style: const TextStyle(fontSize: 20),
+                        ),
+                      ),
+              ),
             ),
-            padding: const EdgeInsets.all(8),
-            child: cat.imageUrl.isNotEmpty
-                ? AppNetworkImage(url: cat.imageUrl, fit: BoxFit.contain)
-                : Center(
-                    child: Text(
-                      cat.icon ?? cat.name.characters.first,
-                      style: const TextStyle(fontSize: 22),
-                    ),
-                  ),
           ),
           const SizedBox(height: 4),
           Text(

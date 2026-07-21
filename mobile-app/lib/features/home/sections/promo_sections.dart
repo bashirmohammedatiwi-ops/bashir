@@ -41,8 +41,8 @@ Color _textColor(PromoStrip strip) =>
 
 Color _bg(PromoStrip strip) {
   final custom = parseHexColor(strip.backgroundColor);
-  if (custom == null) return HomeTheme.sageLight.withValues(alpha: 0.65);
-  return Color.lerp(custom, Colors.white, 0.78)!;
+  if (custom == null) return HomeTheme.roseWash;
+  return Color.lerp(custom, Colors.white, 0.85)!;
 }
 
 void _openLink(BuildContext context, PromoStrip strip) {
@@ -85,7 +85,7 @@ class _PromoCard extends StatelessWidget {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: HomeTheme.sageLight,
+                    color: HomeTheme.accentLight,
                     shape: BoxShape.circle,
                   ),
                   alignment: Alignment.center,
