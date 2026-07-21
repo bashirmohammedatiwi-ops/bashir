@@ -18,7 +18,7 @@ import {
 } from './catalog-index.js';
 import { mapDetailProduct, mapListProduct, mapShadeFromVariation } from './map.js';
 import {
-  resolveParentAsinQuick,
+  resolveRichestParentAsin,
   scrapeBarcode,
   scrapeProductDetail,
   scrapeSearchProducts,
@@ -507,7 +507,7 @@ export async function searchBarcode(code) {
 
   if (/^[A-Z0-9]{10}$/i.test(String(code || '').trim())) {
     const raw = String(code).trim().toUpperCase();
-    const parent = await resolveParentAsinQuick(raw);
+    const parent = await resolveRichestParentAsin(raw);
     const detail = await fetchProductDetail(parent, { light: true }).catch(() => null);
     if (!detail) return [];
     const shadeHit = (detail.shades || []).find(
@@ -529,6 +529,32 @@ export async function searchBarcode(code) {
   }
 
   const indexed = findAmazonByBarcode(digits);
+
+  if (!usePaapi()) {
+    const hits = await scrapeBarcode(digits);
+    // احفظ في الفهرس — ولا تعتمد على فهرس قديم بدرجة واحدة
+    if (hits.length) {
+      upsertAmazonProducts(
+        hits.map((h) => ({
+          ...h,
+          barcode: h.barcode || digits,
+          barcodes: [...new Set([...(h.barcodes || []), h.barcode, digits].filter(Boolean))],
+          thumb: normalizeAmazonImageUrl(h.thumb || '', IMPORT_SIZE),
+          shadeCount: h.shadeCount || h.shades?.length || 1,
+          categoryIds: [AMAZON_ALL_CATEGORY],
+        })),
+        { categoryId: AMAZON_ALL_CATEGORY },
+      );
+      return hits.map((h) => ({
+        ...h,
+        id: String(h.parentAsin || h.id || '').toUpperCase(),
+        parentAsin: String(h.parentAsin || h.id || '').toUpperCase(),
+        thumb: normalizeAmazonImageUrl(h.thumb || '', IMPORT_SIZE),
+        shadeCount: h.shadeCount || h.shades?.length || 1,
+      }));
+    }
+  }
+
   if (indexed) {
     return [{
       ...indexed,
@@ -541,26 +567,7 @@ export async function searchBarcode(code) {
   }
 
   if (!usePaapi()) {
-    const hits = await scrapeBarcode(digits);
-    // احفظ في الفهرس حتى لا يفشل فتح التفاصيل لاحقاً عند الكابتشا
-    if (hits.length) {
-      upsertAmazonProducts(
-        hits.map((h) => ({
-          ...h,
-          barcode: h.barcode || digits,
-          barcodes: [...new Set([...(h.barcodes || []), h.barcode, digits].filter(Boolean))],
-          thumb: normalizeAmazonImageUrl(h.thumb || '', IMPORT_SIZE),
-          categoryIds: [AMAZON_ALL_CATEGORY],
-        })),
-        { categoryId: AMAZON_ALL_CATEGORY },
-      );
-    }
-    return hits.map((h) => ({
-      ...h,
-      id: String(h.parentAsin || h.id || '').toUpperCase(),
-      parentAsin: String(h.parentAsin || h.id || '').toUpperCase(),
-      thumb: normalizeAmazonImageUrl(h.thumb || '', IMPORT_SIZE),
-    }));
+    return [];
   }
 
   const data = await paapiRequest('SearchItems', {

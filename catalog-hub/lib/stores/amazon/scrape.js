@@ -1008,27 +1008,163 @@ function extractParentAsin(html = '', fallbackAsin = '') {
   ).toUpperCase() || String(fallbackAsin || '').toUpperCase();
 }
 
-/** يحوّل ASIN درجة فرعية إلى ASIN المنتج الأب (سريع — صفحة com فقط) */
-export async function resolveParentAsinQuick(asin) {
+function estimateShadeCountFromHtml(html = '') {
+  if (!html) return 0;
+  const tw = mergeEmbeddedTwisterJson(html);
+  const liCount = [...html.matchAll(/<li\b[^>]*data-asin="([A-Z0-9]{10})"/gi)].length;
+  return Math.max(
+    extractVariationCount(html),
+    Object.keys(tw.colorToAsin || {}).length,
+    Object.keys(tw.asinVariationValues || {}).length,
+    Object.keys(tw.dimToAsin || {}).length,
+    liCount,
+  );
+}
+
+/** مرشّحات parent — twister + parentAsin + قوائم أمازون البديلة (مهم للمكياج) */
+function collectParentCandidates(html = '', fallbackAsin = '') {
+  const out = new Set();
+  const seed = String(fallbackAsin || '').toUpperCase();
+  if (/^[A-Z0-9]{10}$/.test(seed)) out.add(seed);
+
+  const parent = extractParentAsin(html, seed);
+  if (/^[A-Z0-9]{10}$/.test(parent)) out.add(parent);
+
+  for (const m of html.matchAll(/twister_([A-Z0-9]{10})/gi)) out.add(String(m[1]).toUpperCase());
+  for (const m of html.matchAll(/"parentAsin"\s*:\s*"([A-Z0-9]{10})"/gi)) out.add(String(m[1]).toUpperCase());
+  for (const m of html.matchAll(/"parent_asin"\s*:\s*"([A-Z0-9]{10})"/gi)) out.add(String(m[1]).toUpperCase());
+  for (const m of html.matchAll(/&quot;id&quot;:&quot;([A-Z0-9]{10})&quot;/gi)) out.add(String(m[1]).toUpperCase());
+  for (const m of html.matchAll(/\\"id\\":\\"([A-Z0-9]{10})\\"/g)) out.add(String(m[1]).toUpperCase());
+  for (const m of html.matchAll(/\\&quot;id\\&quot;:\\&quot;([A-Z0-9]{10})\\&quot;/g)) {
+    out.add(String(m[1]).toUpperCase());
+  }
+  for (const m of html.matchAll(/\\&quot;id\\&quot;:\\&quot;([A-Z0-9]{10})\\&quot;,\\&quot;linkParameters\\&quot;/g)) {
+    out.add(String(m[1]).toUpperCase());
+  }
+
+  for (const m of html.matchAll(/"id"\s*:\s*"([A-Z0-9]{10})"/g)) {
+    const ctx = html.slice(m.index, m.index + 500);
+    if (/linkParameters|contextLinks|buyingOptions|dimensionValuesDisplayData/i.test(ctx)) {
+      out.add(String(m[1]).toUpperCase());
+    }
+  }
+
+  return [...out];
+}
+
+/**
+ * يختار ASIN الأب الأغنى بالتدرجات — com + ae + sa + قوائم بديلة.
+ * مثال: باركود درجة B07F44CVFQ → B081TQWK89 (~73 درجة على amazon.com).
+ */
+export async function resolveRichestParentAsin(asin) {
   const id = String(asin || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(id)) return id;
 
-  const cacheKey = `amazon:resolve-parent:v1:${id}`;
+  const cacheKey = `amazon:richest-parent:v2:${id}`;
   const cached = cacheGet(cacheKey, DETAIL_TTL);
   if (cached) return cached;
 
-  try {
-    const html = await fetchMarketHtml('com', `https://${MARKETS.com.host}/dp/${id}?th=1&psc=1`, {
-      ttl: DETAIL_TTL,
-      cacheKey: `amazon:dp:com:${id}:parent-probe`,
-    });
-    const parent = extractParentAsin(html, id);
-    const resolved = parent && parent !== id ? parent : id;
-    cacheSet(cacheKey, resolved);
-    return resolved;
-  } catch {
-    return id;
+  const scores = new Map([[id, 0]]);
+  const candidates = new Set([id]);
+  const htmlByMarket = {};
+
+  const settled = await Promise.allSettled(
+    ['com', 'ae', 'sa'].map(async (mid) => {
+      const html = await fetchMarketHtml(mid, `https://${MARKETS[mid].host}/dp/${id}?th=1&psc=1`, {
+        ttl: DETAIL_TTL,
+        cacheKey: `amazon:probe:${mid}:${id}`,
+      });
+      htmlByMarket[mid] = html;
+      return { mid, html };
+    }),
+  );
+
+  for (const r of settled) {
+    if (r.status !== 'fulfilled') continue;
+    const { html } = r.value;
+    for (const c of collectParentCandidates(html, id)) {
+      candidates.add(c);
+      scores.set(c, Math.max(scores.get(c) || 0, estimateShadeCountFromHtml(html)));
+    }
   }
+
+  const toProbe = [...candidates].slice(0, 18);
+  await Promise.all(toProbe.map(async (c) => {
+    try {
+      const html = (c === id && htmlByMarket.com)
+        ? htmlByMarket.com
+        : await fetchMarketHtml('com', `https://${MARKETS.com.host}/dp/${c}?th=1&psc=1`, {
+          ttl: DETAIL_TTL,
+          cacheKey: `amazon:probe:com:${c}`,
+        });
+      scores.set(c, Math.max(scores.get(c) || 0, estimateShadeCountFromHtml(html)));
+    } catch { /* optional */ }
+  }));
+
+  // إن بقيت التدرجات قليلة — ابحث عن قائمة أمازون الأغنى (مكياج: قوائم متعددة)
+  let best = id;
+  let bestScore = scores.get(id) || 0;
+  for (const [c, n] of scores) {
+    if (n > bestScore) {
+      bestScore = n;
+      best = c;
+    }
+  }
+
+  if (bestScore < 12) {
+    const titleHtml = htmlByMarket.com || htmlByMarket.ae || htmlByMarket.sa || '';
+    const title = decodeHtml(titleHtml.match(/id="productTitle"[^>]*>([^<]+)/)?.[1] || '');
+    const brand = extractBrandFromHtml(titleHtml) || inferBrandFromTitle(title);
+    const core = extractProductCoreName(title);
+    if (core.length >= 5) {
+      try {
+        const q = `${brand} ${core}`.trim().slice(0, 120);
+        const search = await scrapeSearchProducts(q, { page: 1, limit: 12, categoryId: '11058281' });
+        for (const item of search.items || []) {
+          const card = String(item.id || '').toUpperCase();
+          if (!/^[A-Z0-9]{10}$/.test(card)) continue;
+          candidates.add(card);
+          try {
+            const html = await fetchMarketHtml('com', `https://${MARKETS.com.host}/dp/${card}?th=1&psc=1`, {
+              ttl: DETAIL_TTL,
+              cacheKey: `amazon:probe:com:${card}`,
+            });
+            const n = estimateShadeCountFromHtml(html);
+            scores.set(card, Math.max(scores.get(card) || 0, n));
+            if (n > bestScore) {
+              bestScore = n;
+              best = card;
+            }
+            for (const c of collectParentCandidates(html, card)) {
+              candidates.add(c);
+              if (c === card) continue;
+              try {
+                const parentHtml = await fetchMarketHtml('com', `https://${MARKETS.com.host}/dp/${c}?th=1&psc=1`, {
+                  ttl: DETAIL_TTL,
+                  cacheKey: `amazon:probe:com:${c}`,
+                });
+                const pn = estimateShadeCountFromHtml(parentHtml);
+                scores.set(c, Math.max(scores.get(c) || 0, pn));
+                if (pn > bestScore) {
+                  bestScore = pn;
+                  best = c;
+                }
+              } catch { /* skip */ }
+            }
+          } catch { /* skip */ }
+          if (bestScore >= 30) break;
+        }
+      } catch { /* optional */ }
+    }
+  }
+
+  cacheSet(cacheKey, best);
+  return best;
+}
+
+/** @deprecated alias — use resolveRichestParentAsin */
+export async function resolveParentAsinQuick(asin) {
+  return resolveRichestParentAsin(asin);
 }
 
 function extractProductCoreName(title = '') {
@@ -2100,7 +2236,7 @@ export async function scrapeProductDetail(id, {
   if (!/^[A-Z0-9]{10}$/.test(asin)) return null;
 
   if (!skipRedirect) {
-    const parent = await resolveParentAsinQuick(asin);
+    const parent = await resolveRichestParentAsin(asin);
     if (parent && parent !== asin) {
       return scrapeProductDetail(parent, {
         light,
@@ -2110,7 +2246,7 @@ export async function scrapeProductDetail(id, {
     }
   }
 
-  const cacheKey = `amazon:detail:v20:${asin}:${light ? 'l' : 'f'}`;
+  const cacheKey = `amazon:detail:v21:${asin}:${light ? 'l' : 'f'}`;
   const cached = cacheGet(cacheKey, DETAIL_TTL);
   if (cached) return cached;
 
@@ -2437,7 +2573,7 @@ export async function scrapeBarcode(code) {
     processed.add(cardAsin);
 
     try {
-      const parent = await resolveParentAsinQuick(cardAsin);
+      const parent = await resolveRichestParentAsin(cardAsin);
       const detail = await scrapeProductDetail(parent, { light: true, skipRedirect: true });
       if (!detail) {
         hits.push({
@@ -2493,7 +2629,7 @@ export async function scrapeBarcode(code) {
     for (const alt of alternates) {
       const altCard = String(alt.id || '').toUpperCase();
       if (!/^[A-Z0-9]{10}$/.test(altCard)) continue;
-      const parent = await resolveParentAsinQuick(altCard);
+      const parent = await resolveRichestParentAsin(altCard);
       const canonicalId = String(parent || altCard).toUpperCase();
       if (hits.some((h) => String(h.id || h.parentAsin || '').toUpperCase() === canonicalId)) continue;
       try {
