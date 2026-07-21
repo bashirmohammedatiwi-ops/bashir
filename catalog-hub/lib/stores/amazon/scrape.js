@@ -2087,7 +2087,12 @@ function parseShadesFromHtml(html = '') {
       || (Array.isArray(info?.dimensions) ? info.dimensions.join(' / ') : '')
       || '',
     );
-    if (colorKeys.length && !isUsableShadeName(label)) continue;
+    if (colorKeys.length && !isUsableShadeName(label)) {
+      label = extractShadeCode(label)
+        || extractShadeCode(info?.style_name || '')
+        || extractShadeCode(Array.isArray(info?.dimensions) ? info.dimensions.join(' ') : '')
+        || String(asin).slice(-4);
+    }
     const image = colorImageForLabel(colorImages, label);
     const swatchImage = colorSwatchForLabel(colorImages, label);
     const bc = barcodeFromVariationInfo(info);
