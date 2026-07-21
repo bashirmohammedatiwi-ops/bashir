@@ -402,8 +402,12 @@ function mergeAmazonLightFull(base, full) {
     return enriched ? {
       ...s,
       ...enriched,
-      nameAr: s.nameAr || enriched.nameAr,
-      nameEn: s.nameEn || enriched.nameEn,
+      nameEn: enriched.nameEn || s.nameEn,
+      nameAr: enriched.nameAr || s.nameAr,
+      shadeTitleEn: enriched.shadeTitleEn || s.shadeTitleEn,
+      shadeTitleAr: enriched.shadeTitleAr || s.shadeTitleAr,
+      shadeNumber: enriched.shadeNumber || s.shadeNumber,
+      shadeCode: enriched.shadeCode || s.shadeCode,
       image: enriched.image || s.image,
       swatchImage: enriched.swatchImage || s.swatchImage,
       barcode: enriched.barcode || s.barcode,
@@ -439,6 +443,8 @@ export async function fetchProductDetail(id, { light = false, refresh = false } 
     const canonical = await resolveRichestParentAsin(asin);
     const matchedChild = canonical !== asin ? asin : '';
     if (refresh) {
+      cacheDel(`amazon:detail:v27:${canonical}`);
+      cacheDel(`amazon:detail:v26:${canonical}`);
       cacheDel(`amazon:detail:v25:${canonical}`);
       cacheDel(`amazon:detail:v24:${canonical}`);
       cacheDel(`amazon:detail:v23:${canonical}`);
@@ -485,11 +491,13 @@ export async function fetchProductDetail(id, { light = false, refresh = false } 
       detail.sku = canonical;
       detail = await mergePaapiShades(detail, canonical);
       if (!light && (detail.shades?.length || 0) > 1) {
+        const total = detail.shades.length;
         const have = detail.shades.filter((s) => String(s.barcode || '').replace(/\D/g, '').length >= 8).length;
-        if (have < detail.shades.length) {
+        if (have < total) {
           detail.shades = await ensureShadeBarcodes(detail.shades, {
             parentAsin: canonical,
-            deadline: Date.now() + (detail.shades.length > 30 ? 150_000 : 90_000),
+            deadline: Date.now() + (total > 40 ? 180_000 : total > 20 ? 120_000 : 90_000),
+            concurrency: total > 40 ? 14 : 12,
           });
           detail.shadeCount = detail.shades.length;
         }

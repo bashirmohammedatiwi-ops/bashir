@@ -19,6 +19,8 @@ export function emptyShade(i = 0) {
     optionGroup: '',
     shadeNumber: '',
     shadeCode: '',
+    shadeTitleEn: '',
+    shadeTitleAr: '',
     position: i,
   };
 }
@@ -43,6 +45,8 @@ export function normalizeShade(raw = {}, index = 0) {
     optionGroup: String(raw.optionGroup || '').trim(),
     shadeNumber: shadeNumber || String(position + 1).padStart(2, '0'),
     shadeCode: String(raw.shadeCode || shadeNumber || '').trim(),
+    shadeTitleEn: String(raw.shadeTitleEn || '').trim(),
+    shadeTitleAr: String(raw.shadeTitleAr || '').trim(),
     position,
   };
 }
@@ -102,9 +106,11 @@ export function toImportPayload(product) {
     productUrl: p.productUrl,
     category: p.category,
     shades: p.shades.map((s) => ({
-      name: s.nameEn || s.nameAr,
+      name: s.shadeNumber || s.nameEn || s.nameAr,
       nameAr: s.nameAr,
       nameEn: s.nameEn,
+      shadeTitleEn: s.shadeTitleEn,
+      shadeTitleAr: s.shadeTitleAr,
       sku: s.sku || s.miswagId,
       miswagId: s.miswagId || s.sku,
       barcode: s.barcode,

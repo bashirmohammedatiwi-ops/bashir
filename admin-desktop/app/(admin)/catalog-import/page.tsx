@@ -807,10 +807,9 @@ export default function CatalogImportPage() {
           }
         }
 
-        const shadeLabel = String(s.nameAr || s.nameEn || s.name || "").trim();
-        const shadeNumber = String(s.shadeNumber || s.shadeCode || "").trim();
+        const shadeNumber = String(s.shadeNumber || s.shadeCode || s.nameEn || s.name || "").trim();
         shades.push({
-          name: shadeLabel || (shadeNumber ? `درجة ${shadeNumber}` : `درجة ${i + 1}`),
+          name: shadeNumber || `درجة ${i + 1}`,
           colorHex,
           barcode: shadeBarcode || undefined,
           sku: s.sku || s.miswagId,
@@ -1294,15 +1293,13 @@ export default function CatalogImportPage() {
                           )}
                           <div>
                             <div>
-                              {s.shadeNumber ? (
-                                <Tag color="blue" style={{ marginInlineEnd: 6 }}>
-                                  #{s.shadeNumber}
-                                </Tag>
-                              ) : null}
-                              {s.nameEn || s.nameAr || s.name || (s.shadeNumber ? `درجة ${s.shadeNumber}` : `درجة ${i + 1}`)}
+                              {s.shadeNumber || s.nameEn || s.name || `درجة ${i + 1}`}
                             </div>
-                            {s.nameAr && s.nameAr !== (s.nameEn || s.name) ? (
-                              <small>{s.nameAr}</small>
+                            {s.shadeTitleEn ? (
+                              <small className="alhayaa-ltr-input">{s.shadeTitleEn}</small>
+                            ) : null}
+                            {s.shadeTitleAr && s.shadeTitleAr !== s.shadeTitleEn ? (
+                              <small>{s.shadeTitleAr}</small>
                             ) : null}
                             {s.barcode && !isMiswagInternalId(s.barcode) ? (
                               <small>باركود: {s.barcode}</small>

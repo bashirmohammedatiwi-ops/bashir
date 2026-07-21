@@ -49,6 +49,8 @@ export type CatalogImportShade = {
   optionGroup?: string;
   shadeNumber?: string;
   shadeCode?: string;
+  shadeTitleEn?: string;
+  shadeTitleAr?: string;
   position?: number;
 };
 
@@ -145,9 +147,11 @@ async function catalogFetch<T>(path: string, timeoutMs = 60_000): Promise<T> {
 function mapImportProduct(raw: Record<string, unknown>, storeLabel = ""): CatalogImportProduct {
   const shades = ((raw.shades as CatalogImportShade[]) || []).map((s, index) => ({
     id: s.id || s.sku || "",
-    name: s.nameEn || s.nameAr || s.name || "",
+    name: s.shadeNumber || s.nameEn || s.nameAr || s.name || "",
     nameAr: s.nameAr || "",
     nameEn: s.nameEn || "",
+    shadeTitleEn: s.shadeTitleEn || "",
+    shadeTitleAr: s.shadeTitleAr || "",
     barcode: s.barcode || "",
     miswagId: s.miswagId || s.sku || "",
     colorHex: String(s.colorHex || (s as { hex?: string }).hex || ""),
@@ -522,8 +526,11 @@ export async function fetchCatalogProductSmart(
           ? {
               ...s,
               ...enriched,
+              name: enriched.shadeNumber || enriched.nameEn || s.shadeNumber || s.nameEn || s.name,
               nameAr: enriched.nameAr || s.nameAr,
               nameEn: enriched.nameEn || s.nameEn,
+              shadeTitleEn: enriched.shadeTitleEn || s.shadeTitleEn,
+              shadeTitleAr: enriched.shadeTitleAr || s.shadeTitleAr,
               imageUrl: enriched.imageUrl || s.imageUrl,
               swatchUrl: enriched.swatchUrl || s.swatchUrl,
               barcode: enriched.barcode || s.barcode,
@@ -591,6 +598,15 @@ export async function fetchCatalogProductSmart(
   ) {
     product = await loadAmazon(opts.listingAsin, true);
   }
+
+  const shadeTotal = product.shades?.length || 0;
+  const shadeBarcodes = (product.shades || []).filter(
+    (s) => String(s.barcode || "").replace(/\D/g, "").length >= 8,
+  ).length;
+  if (shadeTotal > 1 && shadeBarcodes < Math.max(1, Math.floor(shadeTotal * 0.4))) {
+    product = await loadAmazon(fetchId, true);
+  }
+
   return product;
 }
 

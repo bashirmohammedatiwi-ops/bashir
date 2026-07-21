@@ -284,6 +284,9 @@ function extractShadeCode(label = '') {
     const m = text.match(re);
     if (m?.[1]) return toAsciiDigits(m[1]);
   }
+  // trailing number: "AMAZONIAN 70", "HUSTLER 335"
+  const trail = text.match(/\s#?(\d{1,4})\s*$/);
+  if (trail?.[1]) return toAsciiDigits(trail[1]);
   return '';
 }
 
@@ -296,26 +299,36 @@ function splitShadeLabelParts(label = '') {
     name = text
       .replace(new RegExp(`^#?${code}(?:\\s*[-–—:]?\\s*)`, 'i'), '')
       .replace(new RegExp(`(?:^|\\s)#?${code}(?:\\s*[-–—:]?\\s*)`, 'i'), ' ')
+      .replace(new RegExp(`\\s#?${code}\\s*$`, 'i'), '')
       .trim();
   }
   name = name.replace(/^[-–—:|#\s]+/, '').trim();
   return { code, name };
 }
 
-function formatShadeEnglishName(code = '', namePart = '') {
-  const name = cleanShadeLabel(namePart);
-  const latin = hasLatin(name) && !/^[\d\s#-]+$/.test(name) ? name : '';
-  if (code && latin) return `${code} ${latin}`.trim();
-  if (code) return code;
-  return latin;
-}
-
-function formatShadeArabicName(code = '', namePart = '') {
-  const name = cleanShadeLabel(namePart);
-  const ar = hasArabic(name) ? name : '';
-  if (!ar) return '';
-  if (code && !new RegExp(`^#?${code}\\b`).test(ar)) return `${code} ${ar}`.trim();
-  return ar;
+/** اسم الدرجة = الرقم فقط؛ الاسم الوصفي في shadeTitleEn/shadeTitleAr */
+function buildShadeNameFields(code = '', titleEn = '', titleAr = '') {
+  const enTitle = cleanShadeLabel(titleEn);
+  const arTitle = cleanShadeLabel(titleAr);
+  if (code) {
+    return {
+      nameEn: code,
+      nameAr: code,
+      shadeCode: code,
+      shadeNumber: code,
+      shadeTitleEn: enTitle || '',
+      shadeTitleAr: arTitle || '',
+    };
+  }
+  const fallback = enTitle || arTitle || '';
+  return {
+    nameEn: fallback,
+    nameAr: arTitle || enTitle || fallback,
+    shadeCode: '',
+    shadeNumber: '',
+    shadeTitleEn: enTitle,
+    shadeTitleAr: arTitle,
+  };
 }
 
 function shouldPreferShadeName(existing = '', candidate = '') {
@@ -442,6 +455,10 @@ export function extractAllBarcodesFromDetailHtml(html = '') {
     /"gtin(?:13|12|14)?"\s*:\s*"?(\d{8,14})"?/gi,
     /"isbn"\s*:\s*"?(\d{8,14})"?/gi,
     /"external_product_id"\s*:\s*\[\s*\{\s*"value"\s*:\s*"(\d{8,14})"/gi,
+    /"external_product_id"\s*:\s*\[\s*\{\s*"Value"\s*:\s*"(\d{8,14})"/gi,
+    /"Value"\s*:\s*"(\d{8,14})"\s*,\s*"Type"\s*:\s*"(?:UPC|EAN|GTIN)"/gi,
+    /"Type"\s*:\s*"(?:UPC|EAN|GTIN)"\s*,\s*"Value"\s*:\s*"(\d{8,14})"/gi,
+    /"product_barcode"\s*:\s*"?(\d{8,14})"?/gi,
   ]) {
     for (const m of html.matchAll(re)) found.push(m[1]);
   }
@@ -939,8 +956,10 @@ function parseShadesFromAsinVariationValues(html = '') {
     variationValues,
   } = mergeEmbeddedTwisterJson(html);
   const byAsin = new Map();
+  const colorKeys = colorDimensionKeys(variationValues || {}, displayLabels || {});
   const labelKeys = [
-    'color_name', 'colour_name', 'style_name', 'Color', 'shade_name', 'size_name',
+    'color_name', 'colour_name', 'style_name', 'Color', 'shade_name',
+    ...colorKeys,
     ...Object.keys(variationValues || {}),
   ];
 
@@ -971,6 +990,7 @@ function parseShadesFromAsinVariationValues(html = '') {
         }
       }
     }
+    if (colorKeys.length && !isUsableShadeName(label)) continue;
 
     const image = colorImageForLabel(colorImages, label);
     const swatchImage = colorSwatchForLabel(colorImages, label);
@@ -995,22 +1015,19 @@ function assignShadeNumbers(shades = []) {
     const enParts = splitShadeLabelParts(s.nameEn || '');
     const arParts = splitShadeLabelParts(s.nameAr || '');
     const finalCode = code || enParts.code || arParts.code;
-    const nameEn = formatShadeEnglishName(
-      finalCode,
-      enParts.name || (hasLatin(s.nameEn) ? splitShadeLabelParts(s.nameEn).name : ''),
-    );
-    const nameAr = formatShadeArabicName(
-      finalCode,
-      arParts.name || (hasArabic(s.nameAr) ? splitShadeLabelParts(s.nameAr).name : ''),
-    );
+    const titleEn = enParts.name || (hasLatin(s.nameEn) ? splitShadeLabelParts(s.nameEn).name : '');
+    const titleAr = arParts.name || (hasArabic(s.nameAr) ? splitShadeLabelParts(s.nameAr).name : '');
+    const fields = buildShadeNameFields(finalCode, titleEn, titleAr);
     const position = index + 1;
+    const fallbackCode = finalCode || String(position).padStart(2, '0');
     return {
       ...s,
       position,
-      shadeCode: finalCode || String(position).padStart(2, '0'),
-      shadeNumber: finalCode || String(position).padStart(2, '0'),
-      nameEn: nameEn || s.nameEn || '',
-      nameAr: nameAr || (hasArabic(s.nameAr) ? s.nameAr : ''),
+      ...fields,
+      shadeCode: fields.shadeCode || fallbackCode,
+      shadeNumber: fields.shadeNumber || fallbackCode,
+      nameEn: fields.nameEn || fallbackCode,
+      nameAr: fields.nameAr || fields.nameEn || fallbackCode,
     };
   });
 }
@@ -1079,13 +1096,22 @@ function extractParentAsin(html = '', fallbackAsin = '') {
 function estimateShadeCountFromHtml(html = '') {
   if (!html) return 0;
   const tw = mergeEmbeddedTwisterJson(html);
-  const liCount = [...html.matchAll(/<li\b[^>]*data-asin="([A-Z0-9]{10})"/gi)].length;
+  const colorKeys = colorDimensionKeys(tw.variationValues || {}, tw.displayLabels || {});
+  const colorSwatchLi = [...html.matchAll(
+    /<li\b[^>]*data-asin="([A-Z0-9]{10})"[^>]*(?:variation_color|variation_colour|variation_shade|imgSwatch|twister)/gi,
+  )].length;
+  const colorToAsinCount = Object.keys(tw.colorToAsin || {}).length;
+  let colorVarCount = 0;
+  for (const key of colorKeys) {
+    const list = tw.variationValues?.[key];
+    if (Array.isArray(list)) colorVarCount = Math.max(colorVarCount, list.length);
+  }
+  // لا تستخدم dimToAsin — قد يكون حاصل ضرب أبعاد (لون × حجم) فيُبالغ بعدد التدرجات
   return Math.max(
+    colorToAsinCount,
+    colorVarCount,
+    colorSwatchLi,
     extractVariationCount(html),
-    Object.keys(tw.colorToAsin || {}).length,
-    Object.keys(tw.asinVariationValues || {}).length,
-    Object.keys(tw.dimToAsin || {}).length,
-    liCount,
   );
 }
 
@@ -1297,13 +1323,90 @@ function dedupeAmazonHits(hits = []) {
 
 function filterUsableShades(shades = []) {
   return shades.filter((s) => {
-    const id = String(s.id || s.sku || '').toUpperCase();
-    return isUsableShadeName(s.nameEn || s.nameAr)
-      || Boolean(s.image)
-      || Boolean(s.swatchImage)
-      || Boolean(s.barcode)
-      || /^[A-Z0-9]{10}$/.test(id);
+    const label = cleanShadeLabel(s.shadeTitleEn || s.nameEn || s.nameAr || '');
+    const code = String(s.shadeNumber || s.shadeCode || extractShadeCode(label) || '').trim();
+    const hasVisual = Boolean(s.image) || Boolean(s.swatchImage) || Boolean(s.colorHex);
+    const hasBarcode = String(s.barcode || '').replace(/\D/g, '').length >= 8;
+    return isUsableShadeName(label)
+      || Boolean(code)
+      || (hasVisual && (label || code))
+      || hasBarcode;
   });
+}
+
+function buildAuthoritativeColorAsins(htmlSources = []) {
+  const asins = new Set();
+  for (const html of htmlSources || []) {
+    if (!html) continue;
+    const tw = mergeEmbeddedTwisterJson(html);
+    for (const info of Object.values(tw.colorToAsin || {})) {
+      const id = String(info?.asin || info || '').toUpperCase();
+      if (/^[A-Z0-9]{10}$/.test(id)) asins.add(id);
+    }
+    const colorKeys = colorDimensionKeys(tw.variationValues || {}, tw.displayLabels || {});
+    const colorKey = colorKeys[0];
+    if (colorKey && tw.variationValues?.[colorKey] && Object.keys(tw.dimToAsin || {}).length) {
+      const colorNames = tw.variationValues[colorKey];
+      const colorDimIndex = Math.max(0, Object.keys(tw.variationValues).indexOf(colorKey));
+      for (const [key, childAsin] of Object.entries(tw.dimToAsin || {})) {
+        const parts = String(key).split('_').map((n) => Number(n));
+        const colorIdx = parts[colorDimIndex];
+        if (!Number.isFinite(colorIdx)) continue;
+        const id = String(childAsin || '').toUpperCase();
+        if (/^[A-Z0-9]{10}$/.test(id)) asins.add(id);
+      }
+    }
+    for (const block of [
+      extractTwisterHtmlBlock(html, /id="variation_color_name"[\s\S]*?<\/ul>/i),
+      extractTwisterHtmlBlock(html, /id="variation_colour_name"[\s\S]*?<\/ul>/i),
+      extractTwisterHtmlBlock(html, /id="variation_shade_name"[\s\S]*?<\/ul>/i),
+    ].filter(Boolean)) {
+      for (const m of block.matchAll(/<li\b[^>]*data-asin="([A-Z0-9]{10})"/gi)) {
+        asins.add(String(m[1]).toUpperCase());
+      }
+    }
+  }
+  return asins;
+}
+
+function shadeQualityScore(shade = {}) {
+  let score = 0;
+  if (String(shade.barcode || '').replace(/\D/g, '').length >= 8) score += 120;
+  if (shade.swatchImage || shade.colorHex) score += 40;
+  if (shade.shadeTitleEn || isUsableShadeName(shade.nameEn || shade.nameAr)) score += 20;
+  if (shade.image) score += 10;
+  if (shade.shadeNumber || shade.shadeCode) score += 8;
+  return score;
+}
+
+function dedupeShadesByNumber(shades = []) {
+  const byKey = new Map();
+  for (const s of shades) {
+    const num = String(
+      s.shadeNumber
+      || s.shadeCode
+      || extractShadeCode(s.shadeTitleEn || s.nameEn || s.nameAr || ''),
+    ).trim();
+    const key = num || String(s.id || s.sku || '').toUpperCase();
+    if (!key) continue;
+    const prev = byKey.get(key);
+    if (!prev || shadeQualityScore(s) > shadeQualityScore(prev)) byKey.set(key, s);
+  }
+  return [...byKey.values()];
+}
+
+/** يُبقي تدرجات اللون فقط ويزيل التكرار والـ ASINات الوهمية */
+function refineAmazonShades(shades = [], htmlSources = [], { dedupe = true } = {}) {
+  if (!shades?.length) return shades;
+  const colorAsins = buildAuthoritativeColorAsins(htmlSources);
+  let out = shades;
+  if (colorAsins.size >= Math.min(5, Math.max(3, Math.floor(shades.length * 0.25)))) {
+    out = shades.filter((s) => colorAsins.has(String(s.id || s.sku || '').toUpperCase()));
+    if (!out.length) out = shades;
+  }
+  out = filterUsableShades(out);
+  if (dedupe) out = dedupeShadesByNumber(out);
+  return out;
 }
 
 function buildColorLabelIndex(html = '') {
@@ -1379,15 +1482,11 @@ function normalizeAmazonShadeNames(shades = [], { comHtml = '', aeHtml = '', saH
     const nameArPart = (arParts.name && hasArabic(arParts.name) ? arParts.name : '')
       || (fromAr && hasArabic(fromAr) ? splitShadeLabelParts(fromAr).name : '');
 
-    const nameEn = formatShadeEnglishName(code, nameEnPart);
-    const nameAr = formatShadeArabicName(code, nameArPart);
+    const fields = buildShadeNameFields(code, nameEnPart, nameArPart);
 
     return {
       ...s,
-      nameEn,
-      nameAr,
-      shadeCode: code,
-      shadeNumber: code,
+      ...fields,
     };
   });
 }
@@ -1816,19 +1915,21 @@ function parseShadesFromHtml(html = '') {
     });
   }
 
-  for (const [asin, dimsArr] of Object.entries(dims)) {
-    const label = Array.isArray(dimsArr)
-      ? cleanShadeLabel(dimsArr.filter(Boolean).join(' / '))
-      : cleanShadeLabel(dimsArr);
-    const image = colorImageForLabel(colorImages, label);
-    const swatchImage = colorSwatchForLabel(colorImages, label);
-    putShade(byAsin, asin, {
-      nameEn: label,
-      nameAr: label,
-      image,
-      swatchImage,
-      colorHex: image ? '' : colorHexGuess(label),
-    });
+  if (!colorKeys.length) {
+    for (const [asin, dimsArr] of Object.entries(dims)) {
+      const label = Array.isArray(dimsArr)
+        ? cleanShadeLabel(dimsArr.filter(Boolean).join(' / '))
+        : cleanShadeLabel(dimsArr);
+      const image = colorImageForLabel(colorImages, label);
+      const swatchImage = colorSwatchForLabel(colorImages, label);
+      putShade(byAsin, asin, {
+        nameEn: label,
+        nameAr: label,
+        image,
+        swatchImage,
+        colorHex: image ? '' : colorHexGuess(label),
+      });
+    }
   }
 
   for (const activeColorKey of colorKeys) {
@@ -1867,6 +1968,7 @@ function parseShadesFromHtml(html = '') {
       || (Array.isArray(info?.dimensions) ? info.dimensions.join(' / ') : '')
       || '',
     );
+    if (colorKeys.length && !isUsableShadeName(label)) continue;
     const image = colorImageForLabel(colorImages, label);
     const swatchImage = colorSwatchForLabel(colorImages, label);
     const bc = barcodeFromVariationInfo(info);
@@ -1897,17 +1999,19 @@ function parseShadesFromHtml(html = '') {
   // HTML twister — دائماً كمصدر إضافي (ليس فقط عند غياب JSON)
   parseTwisterHtmlSwatches(html, byAsin);
 
-  for (const m of html.matchAll(
-    /data-asin="([A-Z0-9]{10})"[^>]{0,400}?(?:title|aria-label|alt)="([^"]{1,80})"/gi,
-  )) {
-    const label = cleanShadeLabel(m[2]);
-    if (!isUsableShadeName(label)) continue;
-    if (/click to select|اختر|select/i.test(label)) continue;
-    putShade(byAsin, m[1], {
-      nameEn: label,
-      nameAr: label,
-      colorHex: colorHexGuess(label),
-    });
+  if (byAsin.size < 3) {
+    for (const m of html.matchAll(
+      /data-asin="([A-Z0-9]{10})"[^>]{0,400}?(?:title|aria-label|alt)="([^"]{1,80})"/gi,
+    )) {
+      const label = cleanShadeLabel(m[2]);
+      if (!isUsableShadeName(label)) continue;
+      if (/click to select|اختر|select/i.test(label)) continue;
+      putShade(byAsin, m[1], {
+        nameEn: label,
+        nameAr: label,
+        colorHex: colorHexGuess(label),
+      });
+    }
   }
 
   return filterUsableShades([...byAsin.values()]);
@@ -2284,6 +2388,18 @@ async function enrichShadeDetails(shades = [], {
             continue;
           }
         }
+        if (!pickBestBarcode(barcodeCandidates)) {
+          try {
+            const mobileHtml = await fetchMarketHtml('com', `https://${MARKETS.com.host}/gp/aw/d/${shade.id}`, {
+              ttl: DETAIL_TTL,
+              cacheKey: `amazon:dp:com:${shade.id}:mobile-bc`,
+            });
+            const found = extractBarcodeFromDetailHtml(mobileHtml)
+              || extractBarcodeNearAsin(mobileHtml, shade.id);
+            if (found) barcodeCandidates.push(found);
+            if (!html) html = mobileHtml;
+          } catch { /* optional */ }
+        }
         barcode = pickBestBarcode(barcodeCandidates) || barcode;
         if (barcodeOnly) {
           const patch = { barcode };
@@ -2333,8 +2449,11 @@ async function enrichShadeDetails(shades = [], {
           || shade.shadeCode
           || shade.shadeNumber
           || '';
-        const nameEn = formatShadeEnglishName(code, splitShadeLabelParts(nameEnRaw).name);
-        const nameAr = formatShadeArabicName(code, splitShadeLabelParts(nameArRaw).name);
+        const fields = buildShadeNameFields(
+          code,
+          splitShadeLabelParts(nameEnRaw).name,
+          splitShadeLabelParts(nameArRaw).name,
+        );
 
         const patch = {
           barcode,
@@ -2342,10 +2461,7 @@ async function enrichShadeDetails(shades = [], {
           image,
           swatchImage,
           colorHex: swatchHex || shade.colorHex || (!image ? guessed : '') || '',
-          nameEn,
-          nameAr,
-          shadeCode: code,
-          shadeNumber: code,
+          ...fields,
         };
 
         cacheSet(cacheKey, patch);
@@ -2477,7 +2593,7 @@ export async function scrapeProductDetail(id, {
     }
   }
 
-  const cacheKey = `amazon:detail:v25:${asin}:${light ? 'l' : 'f'}`;
+  const cacheKey = `amazon:detail:v27:${asin}:${light ? 'l' : 'f'}`;
   if (!skipCache) {
     const cached = cacheGet(cacheKey, DETAIL_TTL);
     if (cached) {
@@ -2595,6 +2711,7 @@ export async function scrapeProductDetail(id, {
   }
 
   const parentHtmlSources = [comHtml, aeHtml, saHtml, parentHtml].filter(Boolean);
+  shades = refineAmazonShades(shades, parentHtmlSources, { dedupe: true });
   shades = enrichShadesFromParentHtml(shades, parentHtmlSources);
 
   // twister ظاهر لكن parsing أعاد تدرجاً واحداً — أعد البناء من HTML الصفحة
@@ -2680,11 +2797,12 @@ export async function scrapeProductDetail(id, {
   } else if (light && shades.length > 1) {
     try {
       shades = enrichShadesFromParentHtml(shades, parentHtmlSources);
+      const barcodeBudget = shades.length > 40 ? 120_000 : shades.length > 20 ? 90_000 : 60_000;
       shades = await ensureShadeBarcodes(shades, {
         htmlSources: parentHtmlSources,
         parentAsin: asin,
-        deadline: Date.now() + 35_000,
-        concurrency: 10,
+        deadline: Date.now() + barcodeBudget,
+        concurrency: shades.length > 40 ? 12 : 10,
       });
     } catch { /* optional */ }
   } else if (shades.length === 1) {
@@ -2698,8 +2816,9 @@ export async function scrapeProductDetail(id, {
 
   // نظّف أسماء التدرجات — رقم + اسم EN من amazon.com، AR من ae/sa
   shades = normalizeAmazonShadeNames(shades, { comHtml, aeHtml, saHtml });
-  shades = filterUsableShades(shades);
   shades = assignShadeNumbers(shades);
+  shades = dedupeShadesByNumber(shades);
+  shades = filterUsableShades(shades);
 
   if (shades.length) {
     try {
@@ -2803,10 +2922,10 @@ export async function scrapeProductDetail(id, {
   }
   if (shades.length > 1 || expectedVariations <= 1) {
     const bcCount = countShadesWithBarcode(shades);
-    const shouldCache = light
-      || shades.length <= 1
+    const minRatio = light ? 0.35 : 0.7;
+    const shouldCache = shades.length <= 1
       || bcCount >= shades.length
-      || bcCount >= Math.max(3, Math.floor(shades.length * 0.7));
+      || bcCount >= Math.max(3, Math.floor(shades.length * minRatio));
     if (shouldCache) cacheSet(cacheKey, detail);
   }
   return detail;
