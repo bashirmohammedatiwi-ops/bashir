@@ -1299,10 +1299,10 @@ export default function CatalogImportPage() {
                                   #{s.shadeNumber}
                                 </Tag>
                               ) : null}
-                              {s.nameAr || s.name || (s.shadeNumber ? `درجة ${s.shadeNumber}` : `درجة ${i + 1}`)}
+                              {s.nameEn || s.nameAr || s.name || (s.shadeNumber ? `درجة ${s.shadeNumber}` : `درجة ${i + 1}`)}
                             </div>
-                            {s.nameEn && s.nameEn !== (s.nameAr || s.name) ? (
-                              <small className="alhayaa-ltr-input">{s.nameEn}</small>
+                            {s.nameAr && s.nameAr !== (s.nameEn || s.name) ? (
+                              <small>{s.nameAr}</small>
                             ) : null}
                             {s.barcode && !isMiswagInternalId(s.barcode) ? (
                               <small>باركود: {s.barcode}</small>

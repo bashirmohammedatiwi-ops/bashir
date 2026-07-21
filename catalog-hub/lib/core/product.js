@@ -102,7 +102,7 @@ export function toImportPayload(product) {
     productUrl: p.productUrl,
     category: p.category,
     shades: p.shades.map((s) => ({
-      name: s.nameAr || s.nameEn,
+      name: s.nameEn || s.nameAr,
       nameAr: s.nameAr,
       nameEn: s.nameEn,
       sku: s.sku || s.miswagId,

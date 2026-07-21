@@ -145,7 +145,7 @@ async function catalogFetch<T>(path: string, timeoutMs = 60_000): Promise<T> {
 function mapImportProduct(raw: Record<string, unknown>, storeLabel = ""): CatalogImportProduct {
   const shades = ((raw.shades as CatalogImportShade[]) || []).map((s, index) => ({
     id: s.id || s.sku || "",
-    name: s.nameAr || s.nameEn || s.name || "",
+    name: s.nameEn || s.nameAr || s.name || "",
     nameAr: s.nameAr || "",
     nameEn: s.nameEn || "",
     barcode: s.barcode || "",
