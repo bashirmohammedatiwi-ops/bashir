@@ -68,12 +68,42 @@ mkdir -p "$STAGING_DIR"
 cp -r out/. "$STAGING_DIR/"
 chmod -R a+rX "$STAGING_DIR"
 
-# Atomic swap — avoids 403/500 while nginx still serves the old build
-rm -rf "$BACKUP_DIR"
+verify_admin_static() {
+  local dir="$1"
+  local missing=0
+  for rel in index.html login/index.html catalog-import/index.html products/index.html; do
+    if [[ ! -f "$dir/$rel" ]]; then
+      echo "ERROR: missing $dir/$rel"
+      missing=1
+    fi
+  done
+  if [[ "$missing" -ne 0 ]]; then
+    return 1
+  fi
+  echo "OK  admin static pages verified under $dir"
+}
+
+if ! verify_admin_static "$STAGING_DIR"; then
+  echo "ERROR: Next.js export incomplete — keeping previous admin-static (if any)"
+  rm -rf "$STAGING_DIR"
+  exit 1
+fi
+
+# Atomic swap — never leave admin-static empty if staging is valid
 if [[ -d "$OUT_DIR" ]]; then
+  rm -rf "$BACKUP_DIR"
   mv "$OUT_DIR" "$BACKUP_DIR"
 fi
-mv "$STAGING_DIR" "$OUT_DIR"
+if ! mv "$STAGING_DIR" "$OUT_DIR"; then
+  echo "ERROR: failed to promote admin-static — restoring backup"
+  if [[ -d "$BACKUP_DIR" ]]; then
+    rm -rf "$OUT_DIR"
+    mv "$BACKUP_DIR" "$OUT_DIR"
+  fi
+  exit 1
+fi
 rm -rf "$BACKUP_DIR"
+
+verify_admin_static "$OUT_DIR"
 
 echo "==> Admin web build ready: infra/admin-static/"

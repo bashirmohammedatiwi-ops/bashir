@@ -103,11 +103,28 @@ chmod +x scripts/build-admin-web.sh
 
 _verify_build
 
-echo "==> Restart nginx..."
-$COMPOSE restart nginx
+chmod -R a+rX "$INFRA_ROOT/admin-static"
+
+echo "==> Reload nginx (recreate to refresh bind mount)..."
+if [[ -f "$INFRA_ROOT/nginx/default.conf" ]]; then
+  :
+elif [[ -f "$INFRA_ROOT/nginx/default.bootstrap.conf" ]]; then
+  cp "$INFRA_ROOT/nginx/default.bootstrap.conf" "$INFRA_ROOT/nginx/default.conf"
+fi
+$COMPOSE up -d --force-recreate nginx
+
+sleep 2
+admin_code="$(curl -sS --max-time 10 -o /dev/null -w "%{http_code}" "http://127.0.0.1/login/" 2>/dev/null || echo "000")"
+if [[ "$admin_code" != "200" ]]; then
+  echo ""
+  echo "ERROR: admin still not reachable on :80 (login HTTP $admin_code)"
+  echo "  ls -la admin-static/index.html admin-static/login/index.html"
+  echo "  docker compose -f docker-compose.prod.yml logs nginx --tail=30"
+  exit 1
+fi
 
 echo ""
 echo "Admin updated."
-echo "  URL:   http://${DOMAIN}/home-builder/"
+echo "  URL:   http://${DOMAIN}/login/"
 echo "  Commit: $(_git_root | xargs -I{} git -C {} log -1 --oneline 2>/dev/null || echo 'n/a')"
 echo "  Tip:   hard refresh (Ctrl+Shift+R) or Incognito if UI looks old"
