@@ -533,9 +533,16 @@ export async function fetchCatalogProductSmart(
   const mergeLightFull = (lightProduct: CatalogImportProduct | null, full: CatalogImportProduct) => {
     const lightCount = lightProduct?.shades?.length || 0;
     const fullCount = full.shades?.length || 0;
+    const lightBarcodes = (lightProduct?.shades || []).filter(
+      (s) => String(s.barcode || "").replace(/\D/g, "").length >= 8,
+    ).length;
+    const fullBarcodes = (full.shades || []).filter(
+      (s) => String(s.barcode || "").replace(/\D/g, "").length >= 8,
+    ).length;
     const needFromLight = minExpectedShades > 0 && fullCount < minExpectedShades && lightCount > fullCount;
     const fullEmpty = fullCount === 0 && lightCount > 0;
-    if (lightProduct && (lightCount > fullCount || needFromLight || fullEmpty)) {
+    const needBarcodesFromLight = lightCount >= fullCount && lightBarcodes > fullBarcodes;
+    if (lightProduct && (lightCount > fullCount || needFromLight || fullEmpty || needBarcodesFromLight)) {
       const byAsin = new Map(
         full.shades.map((s) => [String(s.sku || s.id || "").toUpperCase(), s]),
       );

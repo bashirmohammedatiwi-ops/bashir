@@ -446,6 +446,7 @@ export async function fetchProductDetail(id, { light = false, refresh = false, m
       ? explicitChild
       : (canonical !== asin ? asin : '');
     if (refresh) {
+      cacheDel(`amazon:detail:v31:${canonical}`);
       cacheDel(`amazon:detail:v30:${canonical}`);
       cacheDel(`amazon:detail:v29:${canonical}`);
       cacheDel(`amazon:detail:v28:${canonical}`);
@@ -454,6 +455,8 @@ export async function fetchProductDetail(id, { light = false, refresh = false, m
       cacheDel(`amazon:detail:v25:${canonical}`);
       cacheDel(`amazon:detail:v24:${canonical}`);
       cacheDel(`amazon:detail:v23:${canonical}`);
+      cacheDel(`amazon:richest-parent:v6:${asin}`);
+      cacheDel(`amazon:richest-parent:v6:${canonical}`);
       cacheDel(`amazon:richest-parent:v5:${asin}`);
       cacheDel(`amazon:richest-parent:v5:${canonical}`);
       cacheDel(`amazon:richest-parent:v4:${asin}`);
@@ -500,12 +503,22 @@ export async function fetchProductDetail(id, { light = false, refresh = false, m
       detail = await mergePaapiShades(detail, canonical);
       if (!light && (detail.shades?.length || 0) > 1) {
         const total = detail.shades.length;
-        const have = detail.shades.filter((s) => String(s.barcode || '').replace(/\D/g, '').length >= 8).length;
+        let have = detail.shades.filter((s) => String(s.barcode || '').replace(/\D/g, '').length >= 8).length;
+        const minNeed = Math.max(3, Math.floor(total * 0.5));
         if (have < total) {
           detail.shades = await ensureShadeBarcodes(detail.shades, {
             parentAsin: canonical,
-            deadline: Date.now() + (total > 40 ? 180_000 : total > 20 ? 120_000 : 90_000),
+            deadline: Date.now() + (total > 40 ? 180_000 : total > 20 ? 150_000 : 120_000),
             concurrency: total > 40 ? 14 : 12,
+          });
+          detail.shadeCount = detail.shades.length;
+          have = detail.shades.filter((s) => String(s.barcode || '').replace(/\D/g, '').length >= 8).length;
+        }
+        if (have < minNeed) {
+          detail.shades = await ensureShadeBarcodes(detail.shades, {
+            parentAsin: canonical,
+            deadline: Date.now() + 90_000,
+            concurrency: 8,
           });
           detail.shadeCount = detail.shades.length;
         }

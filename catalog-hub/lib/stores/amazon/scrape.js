@@ -1019,7 +1019,12 @@ function parseShadesFromAsinVariationValues(html = '') {
         }
       }
     }
-    if (colorKeys.length && !isUsableShadeName(label)) continue;
+    if (colorKeys.length && !isUsableShadeName(label)) {
+      label = extractShadeCode(label)
+        || extractShadeCode(info?.style_name || '')
+        || extractShadeCode(Array.isArray(info?.dimensions) ? info.dimensions.join(' ') : '')
+        || String(id).slice(-4);
+    }
 
     const image = colorImageForLabel(colorImages, label);
     const swatchImage = colorSwatchForLabel(colorImages, label);
@@ -1222,7 +1227,7 @@ export async function resolveRichestParentAsin(asin) {
   const id = String(asin || '').trim().toUpperCase();
   if (!/^[A-Z0-9]{10}$/.test(id)) return id;
 
-  const cacheKey = `amazon:richest-parent:v5:${id}`;
+  const cacheKey = `amazon:richest-parent:v6:${id}`;
   const cached = cacheGet(cacheKey, DETAIL_TTL);
   if (cached) return cached;
 
@@ -1344,11 +1349,16 @@ export async function resolveRichestParentAsin(asin) {
     }
   }
 
-  if ((best === id || bestScore <= 1) && declaredParents.size) {
+  if ((best === id || bestScore < 10) && declaredParents.size) {
     for (const parent of declaredParents) {
-      if (/^[A-Z0-9]{10}$/.test(parent) && parent !== id) {
+      if (!/^[A-Z0-9]{10}$/.test(parent) || parent === id) continue;
+      const ps = scores.get(parent) || 0;
+      if (ps > bestScore) {
+        bestScore = ps;
         best = parent;
-        break;
+      } else if (best === id && ps >= 3) {
+        bestScore = ps;
+        best = parent;
       }
     }
   }
@@ -1510,6 +1520,10 @@ function refineAmazonShades(shades = [], htmlSources = [], {
     if (deduped.length >= minKeep || deduped.length >= Math.floor(out.length * 0.5)) {
       out = deduped;
     }
+  }
+  const minRetain = Math.max(3, Math.floor(shades.length * 0.85));
+  if (out.length < minRetain && shades.length >= minRetain) {
+    out = filterUsableShades(shades);
   }
   return out.length ? out : shades;
 }
@@ -2410,6 +2424,8 @@ export async function ensureShadeBarcodes(shades = [], {
       const html = await fetchMarketHtml('com', `https://${MARKETS.com.host}/dp/${parent}?th=1&psc=1`, {
         ttl: DETAIL_TTL,
         cacheKey: `amazon:dp:com:${parent}:barcode-index`,
+        acceptPartial: true,
+        retries: 4,
       });
       sources.push(html);
     } catch { /* optional */ }
@@ -2482,6 +2498,8 @@ async function enrichShadeDetails(shades = [], {
             const pageHtml = await fetchMarketHtml(mid, `https://${MARKETS[mid].host}/dp/${shade.id}?th=1&psc=1`, {
               ttl: DETAIL_TTL,
               cacheKey: `amazon:dp:${mid}:${shade.id}:bc`,
+              acceptPartial: true,
+              retries: 3,
             });
             if (mid === 'com') comHtml = pageHtml;
             if (mid === 'ae' || mid === 'sa') htmlAr = pageHtml;
@@ -2498,6 +2516,8 @@ async function enrichShadeDetails(shades = [], {
             const mobileHtml = await fetchMarketHtml('com', `https://${MARKETS.com.host}/gp/aw/d/${shade.id}`, {
               ttl: DETAIL_TTL,
               cacheKey: `amazon:dp:com:${shade.id}:mobile-bc`,
+              acceptPartial: true,
+              retries: 2,
             });
             const found = extractBarcodeFromDetailHtml(mobileHtml)
               || extractBarcodeNearAsin(mobileHtml, shade.id);
@@ -2699,7 +2719,7 @@ export async function scrapeProductDetail(id, {
     }
   }
 
-  const cacheKey = `amazon:detail:v30:${asin}:${light ? 'l' : 'f'}`;
+  const cacheKey = `amazon:detail:v31:${asin}:${light ? 'l' : 'f'}`;
   if (!skipCache) {
     const cached = cacheGet(cacheKey, DETAIL_TTL);
     if (cached) {
@@ -2891,9 +2911,12 @@ export async function scrapeProductDetail(id, {
     }
   }
 
-  if (shades.length <= 1 && expectedVariations > 2 && !_parentRetry) {
+  const sparseShades = expectedVariations > 8
+    && shades.length < Math.max(10, Math.floor(expectedVariations * 0.45));
+  if ((shades.length <= 1 || sparseShades) && expectedVariations > 2 && !_parentRetry) {
     const altCandidates = [...new Set([
       parentAsin,
+      extractDeclaredParentAsin(comHtml || aeHtml || saHtml, asin),
       extractParentAsin(comHtml || aeHtml || saHtml, asin),
       ...collectParentCandidates(comHtml || aeHtml || saHtml, asin),
     ].filter((c) => /^[A-Z0-9]{10}$/.test(String(c || '').toUpperCase()) && String(c).toUpperCase() !== asin))];
@@ -3171,12 +3194,14 @@ export async function scrapeBarcode(code) {
         matchedChildAsin: cardAsin !== parent ? cardAsin : '',
         skipCache: true,
       });
-      if ((detail?.shades?.length || 0) <= 1) {
+      if ((detail?.shades?.length || 0) <= 1
+        || ((detail?.shades?.length || 0) < 12 && (detail?.shadeCount || 0) > (detail?.shades?.length || 0))) {
         for (const altParent of collectParentCandidates(
           (await fetchMarketHtml('ae', `https://${MARKETS.ae.host}/dp/${cardAsin}?th=1&psc=1`, {
             ttl: DETAIL_TTL,
             cacheKey: `amazon:probe:ae:${cardAsin}:barcode`,
             retries: 4,
+            acceptPartial: true,
           }).catch(() => '')),
           cardAsin,
         )) {
@@ -3193,7 +3218,34 @@ export async function scrapeBarcode(code) {
               detail = retry;
             }
           } catch { /* skip */ }
-          if ((detail?.shades?.length || 0) > 10) break;
+          if ((detail?.shades?.length || 0) > 20) break;
+        }
+      }
+      if ((detail?.shades?.length || 0) < 15) {
+        for (const altParent of collectParentCandidates(
+          (await fetchMarketHtml('com', `https://${MARKETS.com.host}/dp/${cardAsin}?th=1&psc=1`, {
+            ttl: DETAIL_TTL,
+            cacheKey: `amazon:probe:com:${cardAsin}:barcode-parents`,
+            retries: 3,
+            acceptPartial: true,
+          }).catch(() => '')),
+          cardAsin,
+        )) {
+          if (altParent === parent || altParent === cardAsin) continue;
+          if (String(detail?.id || parent).toUpperCase() === altParent) continue;
+          try {
+            const retry = await scrapeProductDetail(altParent, {
+              light: true,
+              skipRedirect: true,
+              matchedChildAsin: cardAsin,
+              skipCache: true,
+              _parentRetry: true,
+            });
+            if ((retry?.shades?.length || 0) > (detail?.shades?.length || 0)) {
+              detail = retry;
+            }
+          } catch { /* skip */ }
+          if ((detail?.shades?.length || 0) > 30) break;
         }
       }
       if (!detail) {
@@ -3275,7 +3327,18 @@ export async function scrapeBarcode(code) {
     ...exact,
     ...hits.filter((h) => h.matchType !== 'ean'),
   ]);
-  const out = ranked.length ? ranked : hits.slice(0, 6);
+  const scoreHit = (h) => {
+    let score = (h.shadeCount || h.shades?.length || 0) * 10;
+    if (h.matchType === 'ean') score += 500;
+    if (barcodeMatches(digits, [
+      h.barcode,
+      ...(h.barcodes || []),
+      ...(h.shades || []).map((s) => s.barcode),
+    ])) score += 400;
+    return score;
+  };
+  const out = (ranked.length ? ranked : hits.slice(0, 6))
+    .sort((a, b) => scoreHit(b) - scoreHit(a));
 
   return out.map((h) => ({
     ...h,
