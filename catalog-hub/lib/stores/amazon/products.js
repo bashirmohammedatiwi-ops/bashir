@@ -433,7 +433,7 @@ function mergeAmazonLightFull(base, full) {
   };
 }
 
-export async function fetchProductDetail(id, { light = false, refresh = false } = {}) {
+export async function fetchProductDetail(id, { light = false, refresh = false, matchedChildAsin = '' } = {}) {
   const asin = String(id || '').trim().toUpperCase();
   if (!asin) return null;
 
@@ -441,8 +441,12 @@ export async function fetchProductDetail(id, { light = false, refresh = false } 
   // PA-API يُستخدم فقط إن وُجدت مفاتيح وطلب صريح عبر AMAZON_FORCE_PAAPI=1
   if (!usePaapi() || process.env.AMAZON_FORCE_PAAPI !== '1') {
     const canonical = await resolveRichestParentAsin(asin);
-    const matchedChild = canonical !== asin ? asin : '';
+    const explicitChild = String(matchedChildAsin || '').trim().toUpperCase();
+    const matchedChild = explicitChild && explicitChild !== canonical
+      ? explicitChild
+      : (canonical !== asin ? asin : '');
     if (refresh) {
+      cacheDel(`amazon:detail:v30:${canonical}`);
       cacheDel(`amazon:detail:v29:${canonical}`);
       cacheDel(`amazon:detail:v28:${canonical}`);
       cacheDel(`amazon:detail:v27:${canonical}`);

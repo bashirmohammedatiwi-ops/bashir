@@ -476,17 +476,28 @@ export async function searchCatalogByBarcode(
   return { barcode: barcode.trim(), options, stores: stats };
 }
 
+function amazonProductQuery(opts?: { refresh?: boolean; childAsin?: string; light?: boolean }) {
+  const parts: string[] = [];
+  if (opts?.light) parts.push("light=1");
+  if (opts?.refresh) parts.push("refresh=1");
+  const child = String(opts?.childAsin || "").trim().toUpperCase();
+  if (/^[A-Z0-9]{10}$/.test(child)) parts.push(`child=${encodeURIComponent(child)}`);
+  return parts.length ? `?${parts.join("&")}` : "";
+}
+
 export async function fetchCatalogProduct(
   storeId: string,
   sourceId: string,
   storeLabel = "",
-  opts?: { refresh?: boolean },
+  opts?: { refresh?: boolean; childAsin?: string },
 ) {
   // أمازون: إثراء باركود/لون كل التدرجات يحتاج وقتاً أطول
   const timeout = storeId === "amazon" ? 180_000 : 120_000;
-  const refreshQ = opts?.refresh ? "?refresh=1" : "";
+  const query = storeId === "amazon"
+    ? amazonProductQuery({ refresh: opts?.refresh, childAsin: opts?.childAsin })
+    : (opts?.refresh ? "?refresh=1" : "");
   const data = await catalogFetch<{ product: Record<string, unknown> }>(
-    `/api/import/${encodeURIComponent(storeId)}/products/${encodeURIComponent(sourceId)}${refreshQ}`,
+    `/api/import/${encodeURIComponent(storeId)}/products/${encodeURIComponent(sourceId)}${query}`,
     timeout,
   );
   return mapImportProduct(data.product, storeLabel);
@@ -512,7 +523,10 @@ export async function fetchCatalogProductSmart(
     return fetchCatalogProduct(storeId, sourceId, storeLabel);
   }
 
-  const fetchId = opts?.listingAsin || sourceId;
+  const fetchId = sourceId || opts?.listingAsin || "";
+  const childAsin = opts?.listingAsin && opts.listingAsin !== sourceId
+    ? opts.listingAsin
+    : undefined;
   const expectedShades = Number(opts?.expectedShadeCount || 0);
   const minExpectedShades = expectedShades > 1 ? Math.max(3, Math.floor(expectedShades * 0.5)) : 0;
 
@@ -520,7 +534,8 @@ export async function fetchCatalogProductSmart(
     const lightCount = lightProduct?.shades?.length || 0;
     const fullCount = full.shades?.length || 0;
     const needFromLight = minExpectedShades > 0 && fullCount < minExpectedShades && lightCount > fullCount;
-    if (lightProduct && (lightCount > fullCount || needFromLight)) {
+    const fullEmpty = fullCount === 0 && lightCount > 0;
+    if (lightProduct && (lightCount > fullCount || needFromLight || fullEmpty)) {
       const byAsin = new Map(
         full.shades.map((s) => [String(s.sku || s.id || "").toUpperCase(), s]),
       );
@@ -567,9 +582,9 @@ export async function fetchCatalogProductSmart(
   const loadAmazon = async (fetchAsin: string, refresh = false) => {
     let lightProduct: CatalogImportProduct | null = null;
     try {
-      const refreshQ = refresh ? "&refresh=1" : "";
+      const lightQuery = amazonProductQuery({ light: true, refresh, childAsin });
       const light = await catalogFetch<{ product: Record<string, unknown> }>(
-        `/api/catalog/${encodeURIComponent(storeId)}/products/${encodeURIComponent(fetchAsin)}?light=1${refreshQ}`,
+        `/api/catalog/${encodeURIComponent(storeId)}/products/${encodeURIComponent(fetchAsin)}${lightQuery}`,
         90_000,
       );
       lightProduct = mapImportProduct(light.product || {}, storeLabel);
@@ -584,7 +599,7 @@ export async function fetchCatalogProductSmart(
     const resolvedSourceId = lightProduct?.sourceId || fetchAsin || sourceId;
 
     try {
-      const full = await fetchCatalogProduct(storeId, resolvedSourceId, storeLabel, { refresh });
+      const full = await fetchCatalogProduct(storeId, resolvedSourceId, storeLabel, { refresh, childAsin });
       return mergeLightFull(lightProduct, full);
     } catch (err) {
       if (lightProduct) return lightProduct;
@@ -596,14 +611,6 @@ export async function fetchCatalogProductSmart(
   if (minExpectedShades > 1 && (product.shades?.length || 0) < minExpectedShades) {
     product = await loadAmazon(fetchId, true);
   }
-  if (
-    minExpectedShades > 1
-    && (product.shades?.length || 0) < minExpectedShades
-    && opts?.listingAsin
-    && opts.listingAsin !== fetchId
-  ) {
-    product = await loadAmazon(opts.listingAsin, true);
-  }
 
   const shadeTotal = product.shades?.length || 0;
   const shadeBarcodes = (product.shades || []).filter(
@@ -613,15 +620,10 @@ export async function fetchCatalogProductSmart(
     product = await loadAmazon(fetchId, true);
   }
 
-  if (
-    (product.shades?.length || 0) <= 1
-    && sourceId
-    && opts?.listingAsin
-    && opts.listingAsin !== sourceId
-  ) {
-    const viaParent = await loadAmazon(sourceId, true);
-    if ((viaParent.shades?.length || 0) > (product.shades?.length || 0)) {
-      product = viaParent;
+  if ((product.shades?.length || 0) <= 1 && fetchId) {
+    const refreshed = await loadAmazon(fetchId, true);
+    if ((refreshed.shades?.length || 0) > (product.shades?.length || 0)) {
+      product = refreshed;
     }
   }
 

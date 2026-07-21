@@ -156,7 +156,12 @@ async function fetchHtmlOnce(url, market) {
   return html;
 }
 
-async function fetchMarketHtml(marketId, url, { ttl = DEFAULT_TTL / 2, cacheKey = '', retries = 3 } = {}) {
+async function fetchMarketHtml(marketId, url, {
+  ttl = DEFAULT_TTL / 2,
+  cacheKey = '',
+  retries = 3,
+  acceptPartial = false,
+} = {}) {
   const market = MARKETS[marketId];
   if (!market) throw new Error(`سوق غير معروف: ${marketId}`);
   const key = cacheKey || `amazon:html:${marketId}:${url}`;
@@ -170,11 +175,13 @@ async function fetchMarketHtml(marketId, url, { ttl = DEFAULT_TTL / 2, cacheKey 
   }
 
   let lastErr = null;
+  let lastPartial = '';
   for (let attempt = 0; attempt < retries; attempt += 1) {
     try {
       if (attempt > 0) await sleep(700 + attempt * 900);
       const html = await fetchHtmlOnce(url, market);
       if (isBotHtml(html)) {
+        lastPartial = html || lastPartial;
         lastErr = new Error('bot page');
         lastErr.code = 'BOT';
         continue;
@@ -186,6 +193,7 @@ async function fetchMarketHtml(marketId, url, { ttl = DEFAULT_TTL / 2, cacheKey 
       if (err?.code === 'CAPTCHA') markCaptcha(marketId, 45_000);
     }
   }
+  if (acceptPartial && lastPartial) return lastPartial;
   throw lastErr || new Error('Amazon fetch failed');
 }
 
@@ -1114,6 +1122,18 @@ function extractParentAsin(html = '', fallbackAsin = '') {
   ).toUpperCase() || String(fallbackAsin || '').toUpperCase();
 }
 
+/** parent من HTML جزئي/كابتشا — linkParameters و parentAsin */
+function extractDeclaredParentAsin(html = '', childAsin = '') {
+  const child = String(childAsin || '').toUpperCase();
+  if (!html) return '';
+  const direct = extractParentAsin(html, child);
+  if (/^[A-Z0-9]{10}$/.test(direct) && direct !== child) return direct;
+  for (const c of collectParentCandidates(html, child)) {
+    if (c !== child) return c;
+  }
+  return '';
+}
+
 function scoreParentByParsedShades(html = '') {
   if (isBotHtml(html)) return 0;
   const shades = filterUsableShades(mergeShadeLists(
@@ -1213,10 +1233,14 @@ export async function resolveRichestParentAsin(asin) {
 
   const settled = await Promise.allSettled(
     ['ae', 'sa', 'com'].map(async (mid) => {
-      const html = await fetchMarketHtml(mid, `https://${MARKETS[mid].host}/dp/${id}?th=1&psc=1`, {
-        ttl: DETAIL_TTL,
-        cacheKey: `amazon:probe:${mid}:${id}`,
-      });
+      let html = '';
+      try {
+        html = await fetchMarketHtml(mid, `https://${MARKETS[mid].host}/dp/${id}?th=1&psc=1`, {
+          ttl: DETAIL_TTL,
+          cacheKey: `amazon:probe:${mid}:${id}`,
+          acceptPartial: true,
+        });
+      } catch { /* optional */ }
       htmlByMarket[mid] = html;
       return { mid, html };
     }),
@@ -1226,7 +1250,7 @@ export async function resolveRichestParentAsin(asin) {
     if (r.status !== 'fulfilled') continue;
     const { html } = r.value;
     for (const c of collectParentCandidates(html, id)) candidates.add(c);
-    const parent = extractParentAsin(html, id);
+    const parent = extractDeclaredParentAsin(html, id);
     if (/^[A-Z0-9]{10}$/.test(parent)) declaredParents.add(parent);
     scores.set(id, Math.max(scores.get(id) || 0, scoreParentByParsedShades(html)));
   }
@@ -1317,6 +1341,15 @@ export async function resolveRichestParentAsin(asin) {
         } catch { /* skip */ }
       }
       if (bestScore >= 10) break;
+    }
+  }
+
+  if ((best === id || bestScore <= 1) && declaredParents.size) {
+    for (const parent of declaredParents) {
+      if (/^[A-Z0-9]{10}$/.test(parent) && parent !== id) {
+        best = parent;
+        break;
+      }
     }
   }
 
@@ -2666,7 +2699,7 @@ export async function scrapeProductDetail(id, {
     }
   }
 
-  const cacheKey = `amazon:detail:v29:${asin}:${light ? 'l' : 'f'}`;
+  const cacheKey = `amazon:detail:v30:${asin}:${light ? 'l' : 'f'}`;
   if (!skipCache) {
     const cached = cacheGet(cacheKey, DETAIL_TTL);
     if (cached) {
@@ -2725,6 +2758,32 @@ export async function scrapeProductDetail(id, {
         cacheKey: `amazon:dp:sa:${asin}`,
       });
     } catch { /* optional */ }
+  }
+
+  if (!aeHtml && !comHtml && !saHtml) {
+    const markets = ['ae', 'com', 'sa'];
+    const partialSettled = await Promise.allSettled(
+      markets.map(async (mid) => {
+        try {
+          const html = await fetchMarketHtml(mid, `https://${MARKETS[mid].host}/dp/${asin}?th=1&psc=1`, {
+            ttl: DETAIL_TTL,
+            cacheKey: `amazon:dp:${mid}:${asin}:partial`,
+            retries: 2,
+            acceptPartial: true,
+          });
+          return { mid, html };
+        } catch {
+          return { mid, html: '' };
+        }
+      }),
+    );
+    for (const r of partialSettled) {
+      if (r.status !== 'fulfilled' || !r.value?.html) continue;
+      const { mid, html } = r.value;
+      if (mid === 'ae') aeHtml = html;
+      else if (mid === 'com') comHtml = html;
+      else if (mid === 'sa') saHtml = html;
+    }
   }
 
   if (!aeHtml && !comHtml && !saHtml) return null;
@@ -2812,6 +2871,25 @@ export async function scrapeProductDetail(id, {
     asin,
     en?.nameEn || ae?.nameEn || sa?.nameEn || primary.nameEn || primary.nameAr || '',
   );
+
+  if (!shades.length && expectedVariations > 1) {
+    const rescued = filterUsableShades(
+      mergeShadeLists(
+        ...parentHtmlSources.flatMap((chunk) => [
+          parseShadesFromHtml(chunk),
+          parseShadesFromAsinVariationValues(chunk),
+        ]),
+      ),
+    );
+    if (rescued.length) {
+      shades = refineAmazonShades(
+        enrichShadesFromParentHtml(rescued, parentHtmlSources),
+        parentHtmlSources,
+        { dedupe: false, expectedVariations },
+      );
+      shades = filterUsableShades(shades);
+    }
+  }
 
   if (shades.length <= 1 && expectedVariations > 2 && !_parentRetry) {
     const altCandidates = [...new Set([

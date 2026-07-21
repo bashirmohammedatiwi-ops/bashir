@@ -55,6 +55,21 @@ import { resolveShadeColorHex } from "@/lib/shadeColorFromImage";
 import { mutations, queries } from "@/lib/queries";
 import "./catalog-import.css";
 
+const ALL_CATALOG_STORES = [
+  "miswag",
+  "najdalatheyah",
+  "alkhabeer",
+  "elryan",
+  "faces",
+  "miraaya",
+  "beautyway",
+  "khaton",
+  "orisdi",
+  "waheteter",
+  "niceone",
+  "amazon",
+] as const;
+
 function errorMessage(err: unknown, fallback: string) {
   const e = err as {
     message?: string;
@@ -209,7 +224,7 @@ function mergeSearchOptions(
 export default function CatalogImportPage() {
   const [stores, setStores] = useState<CatalogStore[]>([]);
   // البحث الافتراضي يشمل أمازون — النتائج تظهر تدريجياً من المتاجر الأسرع
-  const [activeStores, setActiveStores] = useState<string[]>(["miswag", "najdalatheyah", "alkhabeer", "elryan", "faces", "miraaya", "beautyway", "khaton", "orisdi", "waheteter", "niceone", "amazon"]);
+  const [activeStores, setActiveStores] = useState<string[]>([...ALL_CATALOG_STORES]);
   const [browseStore, setBrowseStore] = useState("miswag");
   const [tree, setTree] = useState<CatalogCategoryNode[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -321,6 +336,7 @@ export default function CatalogImportPage() {
     () => activeStores.map((id) => stores.find((s) => s.id === id)?.label || id).join(" · "),
     [activeStores, stores],
   );
+  const amazonOnlySearch = activeStores.length === 1 && activeStores[0] === "amazon";
 
   useEffect(() => {
     fetchCatalogStores()
@@ -911,6 +927,20 @@ export default function CatalogImportPage() {
     setStep(0);
   }, [browseStore]);
 
+  const toggleAmazonOnlySearch = useCallback(() => {
+    if (amazonOnlySearch) {
+      setActiveStores([...ALL_CATALOG_STORES]);
+      return;
+    }
+    setActiveStores(["amazon"]);
+    setBrowseStore("amazon");
+    setSelectedCategory(null);
+    setCategoryPath("");
+    setProducts([]);
+    setOptions([]);
+    setStep(0);
+  }, [amazonOnlySearch]);
+
   const closeImportDrawer = useCallback(() => {
     previewLoadIdRef.current += 1;
     previewLockedRef.current = false;
@@ -963,6 +993,18 @@ export default function CatalogImportPage() {
             </p>
           </div>
           <div className="ci-store-chips">
+            <button
+              type="button"
+              className={`ci-store-chip ci-amazon-only${amazonOnlySearch ? " is-active" : ""}`}
+              style={amazonOnlySearch
+                ? { background: storeColor("amazon") }
+                : { color: storeColor("amazon"), borderColor: "#f0c674" }}
+              onClick={toggleAmazonOnlySearch}
+              title={amazonOnlySearch ? "إعادة تفعيل كل المتاجر في البحث" : "البحث من أمازون فقط وإيقاف باقي المتاجر"}
+            >
+              <span className="ci-store-dot" style={amazonOnlySearch ? undefined : { background: storeColor("amazon") }} />
+              {amazonOnlySearch ? "كل المتاجر" : "أمازون فقط"}
+            </button>
             {stores.map((store) => {
               const active = activeStores.includes(store.id);
               const browsing = browseStore === store.id;
