@@ -272,16 +272,50 @@ function isUsableShadeName(value = '') {
 /** رقم الدرجة من الاسم — مثل "108 Introvert" أو "#05 Nude" أو "No. 12" */
 function extractShadeCode(label = '') {
   const text = cleanShadeLabel(label);
+  const toAsciiDigits = (s = '') => String(s).replace(/[\u0660-\u0669]/g, (d) => String(d.charCodeAt(0) - 0x0660));
   const patterns = [
     /^#?(\d{1,4})\b/,
-    /(?:^|\b)(?:no\.?|n°|shade|color|colour|رقم)\s*#?\s*(\d{1,4})\b/i,
+    /^([\u0660-\u0669]{1,4})/,
+    /(?:^|\b)(?:no\.?|n°|shade|color|colour|رقم|بلون)\s*#?\s*(\d{1,4})\b/i,
     /\b(\d{1,4})\s*[-–—]\s*[A-Za-z\u0600-\u06FF]/,
+    /\b(\d{1,4})\s+[A-Za-z\u0600-\u06FF]{2,}/,
   ];
   for (const re of patterns) {
     const m = text.match(re);
-    if (m?.[1]) return m[1];
+    if (m?.[1]) return toAsciiDigits(m[1]);
   }
   return '';
+}
+
+function splitShadeLabelParts(label = '') {
+  const text = cleanShadeLabel(label);
+  if (!text) return { code: '', name: '' };
+  const code = extractShadeCode(text);
+  let name = text;
+  if (code) {
+    name = text
+      .replace(new RegExp(`^#?${code}(?:\\s*[-–—:]?\\s*)`, 'i'), '')
+      .replace(new RegExp(`(?:^|\\s)#?${code}(?:\\s*[-–—:]?\\s*)`, 'i'), ' ')
+      .trim();
+  }
+  name = name.replace(/^[-–—:|#\s]+/, '').trim();
+  return { code, name };
+}
+
+function formatShadeEnglishName(code = '', namePart = '') {
+  const name = cleanShadeLabel(namePart);
+  const latin = hasLatin(name) && !/^[\d\s#-]+$/.test(name) ? name : '';
+  if (code && latin) return `${code} ${latin}`.trim();
+  if (code) return code;
+  return latin;
+}
+
+function formatShadeArabicName(code = '', namePart = '') {
+  const name = cleanShadeLabel(namePart);
+  const ar = hasArabic(name) ? name : '';
+  if (!ar) return '';
+  if (code && !new RegExp(`^#?${code}\\b`).test(ar)) return `${code} ${ar}`.trim();
+  return ar;
 }
 
 function shouldPreferShadeName(existing = '', candidate = '') {
@@ -956,14 +990,27 @@ function parseShadesFromAsinVariationValues(html = '') {
 
 function assignShadeNumbers(shades = []) {
   return shades.map((s, index) => {
-    const label = s.nameEn || s.nameAr || '';
-    const code = extractShadeCode(label);
+    const code = String(s.shadeCode || s.shadeNumber || '').trim()
+      || extractShadeCode(s.nameEn || s.nameAr || '');
+    const enParts = splitShadeLabelParts(s.nameEn || '');
+    const arParts = splitShadeLabelParts(s.nameAr || '');
+    const finalCode = code || enParts.code || arParts.code;
+    const nameEn = formatShadeEnglishName(
+      finalCode,
+      enParts.name || (hasLatin(s.nameEn) ? splitShadeLabelParts(s.nameEn).name : ''),
+    );
+    const nameAr = formatShadeArabicName(
+      finalCode,
+      arParts.name || (hasArabic(s.nameAr) ? splitShadeLabelParts(s.nameAr).name : ''),
+    );
     const position = index + 1;
     return {
       ...s,
       position,
-      shadeCode: code,
-      shadeNumber: code || String(position).padStart(2, '0'),
+      shadeCode: finalCode || String(position).padStart(2, '0'),
+      shadeNumber: finalCode || String(position).padStart(2, '0'),
+      nameEn: nameEn || s.nameEn || '',
+      nameAr: nameAr || (hasArabic(s.nameAr) ? s.nameAr : ''),
     };
   });
 }
@@ -1260,7 +1307,7 @@ function filterUsableShades(shades = []) {
 }
 
 function buildColorLabelIndex(html = '') {
-  const { colorToAsin } = mergeEmbeddedTwisterJson(html);
+  const { colorToAsin, asinVariationValues } = mergeEmbeddedTwisterJson(html);
   const byAsin = new Map();
   for (const [label, info] of Object.entries(colorToAsin || {})) {
     const id = String(info?.asin || info || '').toUpperCase();
@@ -1269,7 +1316,80 @@ function buildColorLabelIndex(html = '') {
       byAsin.set(id, clean);
     }
   }
+  for (const [asin, info] of Object.entries(asinVariationValues || {})) {
+    const id = String(asin).toUpperCase();
+    if (!/^[A-Z0-9]{10}$/.test(id)) continue;
+    const label = cleanShadeLabel(
+      info?.color_name
+      || info?.Color
+      || info?.colour_name
+      || info?.style_name
+      || '',
+    );
+    if (!isUsableShadeName(label)) continue;
+    const prev = byAsin.get(id);
+    if (!prev || shouldPreferShadeName(prev, label)) byAsin.set(id, label);
+  }
   return byAsin;
+}
+
+/** فهرس EN/AR منفصل — com للإنجليزي، ae/sa للعربي */
+function buildBilingualShadeLabelIndexes(comHtml = '', aeHtml = '', saHtml = '') {
+  const en = buildColorLabelIndex(comHtml);
+  const ar = new Map();
+  for (const [id, label] of buildColorLabelIndex(aeHtml)) {
+    if (hasArabic(label)) ar.set(id, label);
+  }
+  for (const [id, label] of buildColorLabelIndex(saHtml)) {
+    if (hasArabic(label) && !ar.has(id)) ar.set(id, label);
+  }
+  for (const [id, label] of en) {
+    if (hasLatin(label)) en.set(id, label);
+  }
+  return { en, ar };
+}
+
+function normalizeAmazonShadeNames(shades = [], { comHtml = '', aeHtml = '', saHtml = '' } = {}) {
+  const { en: labelsEn, ar: labelsAr } = buildBilingualShadeLabelIndexes(comHtml, aeHtml, saHtml);
+
+  return shades.map((s) => {
+    const asin = String(s.id || s.sku || '').toUpperCase();
+    const fromEn = labelsEn.get(asin) || '';
+    const fromAr = labelsAr.get(asin) || '';
+
+    let rawEn = cleanShadeLabel(s.nameEn || '');
+    let rawAr = cleanShadeLabel(s.nameAr || '');
+    if (hasArabic(rawEn) && !hasLatin(rawEn)) {
+      if (!rawAr) rawAr = rawEn;
+      rawEn = '';
+    }
+    if (fromEn && hasLatin(fromEn)) {
+      rawEn = shouldPreferShadeName(rawEn, fromEn) ? fromEn : (rawEn || fromEn);
+    }
+    if (fromAr && hasArabic(fromAr)) {
+      rawAr = shouldPreferShadeName(rawAr, fromAr) ? fromAr : (rawAr || fromAr);
+    }
+
+    const enParts = splitShadeLabelParts(rawEn);
+    const arParts = splitShadeLabelParts(rawAr);
+    const code = enParts.code || arParts.code || extractShadeCode(rawEn || rawAr);
+
+    const nameEnPart = (enParts.name && hasLatin(enParts.name) ? enParts.name : '')
+      || (fromEn && hasLatin(fromEn) ? splitShadeLabelParts(fromEn).name : '');
+    const nameArPart = (arParts.name && hasArabic(arParts.name) ? arParts.name : '')
+      || (fromAr && hasArabic(fromAr) ? splitShadeLabelParts(fromAr).name : '');
+
+    const nameEn = formatShadeEnglishName(code, nameEnPart);
+    const nameAr = formatShadeArabicName(code, nameArPart);
+
+    return {
+      ...s,
+      nameEn,
+      nameAr,
+      shadeCode: code,
+      shadeNumber: code,
+    };
+  });
 }
 
 function decodeDataAState(raw = '') {
@@ -2048,8 +2168,8 @@ function mergeShadeLocales(enShades = [], arShades = []) {
 
   return [...byId.values()].map((s) => ({
     id: s.id,
-    nameAr: s.nameAr || s.nameEn,
-    nameEn: s.nameEn || s.nameAr,
+    nameAr: s.nameAr || '',
+    nameEn: s.nameEn || '',
     sku: s.sku || s.id,
     barcode: s.barcode || '',
     image: s.image || '',
@@ -2142,8 +2262,9 @@ async function enrichShadeDetails(shades = [], {
 
       try {
         let html = '';
+        let comHtml = '';
         let htmlAr = '';
-        const marketsToTry = ['ae', 'com', 'sa'];
+        const marketsToTry = ['com', 'ae', 'sa'];
         let barcode = shade.barcode || '';
         const barcodeCandidates = barcode ? [barcode] : [];
 
@@ -2153,8 +2274,9 @@ async function enrichShadeDetails(shades = [], {
               ttl: DETAIL_TTL,
               cacheKey: `amazon:dp:${mid}:${shade.id}:bc`,
             });
-            if (!html) html = pageHtml;
+            if (mid === 'com') comHtml = pageHtml;
             if (mid === 'ae' || mid === 'sa') htmlAr = pageHtml;
+            if (!html) html = pageHtml;
             const found = extractBarcodeFromDetailHtml(pageHtml)
               || extractBarcodeNearAsin(pageHtml, shade.id);
             if (found) barcodeCandidates.push(found);
@@ -2168,42 +2290,51 @@ async function enrichShadeDetails(shades = [], {
           if (barcode) cacheSet(cacheKey, patch);
           return { index, ...patch };
         }
-        if (!html) return { index, ...(barcode ? { barcode } : {}) };
+        if (!html && !comHtml) return { index, ...(barcode ? { barcode } : {}) };
 
         const price = decodeHtml(
-          html.match(/class="a-price[^"]*"[^>]*>[\s\S]*?a-offscreen">([^<]+)/)?.[1] || '',
+          (comHtml || html).match(/class="a-price[^"]*"[^>]*>[\s\S]*?a-offscreen">([^<]+)/)?.[1] || '',
         );
-        const thumb = html.match(/"hiRes"\s*:\s*"(https:[^"]+)"/)?.[1]
-          || html.match(/"large"\s*:\s*"(https:[^"]+)"/)?.[1]
+        const thumb = (comHtml || html).match(/"hiRes"\s*:\s*"(https:[^"]+)"/)?.[1]
+          || (comHtml || html).match(/"large"\s*:\s*"(https:[^"]+)"/)?.[1]
           || '';
-        const colorNameEn = extractSelectedColorName(html);
-        const colorNameAr = htmlAr ? extractSelectedColorName(htmlAr) : '';
-        const existingNameEn = shade.nameEn || '';
-        const existingNameAr = shade.nameAr || '';
+        const colorNameEn = extractSelectedColorName(comHtml || html);
+        const colorNameAr = extractSelectedColorName(htmlAr);
+        const existingNameEn = hasLatin(shade.nameEn) ? cleanShadeLabel(shade.nameEn) : '';
+        const existingNameAr = hasArabic(shade.nameAr) ? cleanShadeLabel(shade.nameAr) : '';
         const swatchHex = normalizeHex(
-          extractSwatchHexFromHtml(html, colorNameEn || existingNameEn)
+          extractSwatchHexFromHtml(comHtml || html, colorNameEn || existingNameEn)
           || extractSwatchHexFromHtml(htmlAr, colorNameAr || existingNameAr)
-          || buildShadeHexIndex(html).get(String(shade.id || '').toUpperCase())
+          || buildShadeHexIndex(comHtml || html).get(String(shade.id || '').toUpperCase())
           || '',
         );
-        const guessed = colorHexGuess(colorNameEn || colorNameAr || existingNameEn || existingNameAr);
+        const guessed = colorHexGuess(colorNameEn || existingNameEn || existingNameAr);
         const image = normalizeAmazonImageUrl(shade.image || thumb || '', IMPORT_SIZE);
         const swatchImage = normalizeAmazonImageUrl(
           shade.swatchImage || (isSwatchSizedUrl(thumb) ? thumb : '') || '',
           THUMB_SIZE,
         );
 
-        const nextEn = shouldPreferShadeName(existingNameEn, colorNameEn)
-          ? cleanShadeLabel(colorNameEn)
-          : (existingNameEn
-            || (colorNameEn && hasLatin(colorNameEn) ? cleanShadeLabel(colorNameEn) : '')
-            || (colorNameAr && hasLatin(colorNameAr) ? cleanShadeLabel(colorNameAr) : ''));
-        const nextAr = shouldPreferShadeName(existingNameAr, colorNameAr)
-          ? cleanShadeLabel(colorNameAr)
-          : (existingNameAr
-            || (colorNameAr && hasArabic(colorNameAr) ? cleanShadeLabel(colorNameAr) : '')
-            || (colorNameEn && hasArabic(colorNameEn) ? cleanShadeLabel(colorNameEn) : '')
-            || nextEn);
+        let nameEnRaw = existingNameEn;
+        let nameArRaw = existingNameAr;
+        if (colorNameEn && hasLatin(colorNameEn)) {
+          nameEnRaw = shouldPreferShadeName(nameEnRaw, colorNameEn)
+            ? cleanShadeLabel(colorNameEn)
+            : (nameEnRaw || cleanShadeLabel(colorNameEn));
+        }
+        if (colorNameAr && hasArabic(colorNameAr)) {
+          nameArRaw = shouldPreferShadeName(nameArRaw, colorNameAr)
+            ? cleanShadeLabel(colorNameAr)
+            : (nameArRaw || cleanShadeLabel(colorNameAr));
+        }
+
+        const code = extractShadeCode(nameEnRaw)
+          || extractShadeCode(nameArRaw)
+          || shade.shadeCode
+          || shade.shadeNumber
+          || '';
+        const nameEn = formatShadeEnglishName(code, splitShadeLabelParts(nameEnRaw).name);
+        const nameAr = formatShadeArabicName(code, splitShadeLabelParts(nameArRaw).name);
 
         const patch = {
           barcode,
@@ -2211,11 +2342,11 @@ async function enrichShadeDetails(shades = [], {
           image,
           swatchImage,
           colorHex: swatchHex || shade.colorHex || (!image ? guessed : '') || '',
-          nameEn: nextEn || nextAr,
-          nameAr: nextAr || nextEn,
+          nameEn,
+          nameAr,
+          shadeCode: code,
+          shadeNumber: code,
         };
-        if (!patch.nameEn && patch.nameAr && hasLatin(patch.nameAr)) patch.nameEn = patch.nameAr;
-        if (!patch.nameAr && patch.nameEn) patch.nameAr = patch.nameEn;
 
         cacheSet(cacheKey, patch);
         return { index, ...patch };
@@ -2236,6 +2367,8 @@ async function enrichShadeDetails(shades = [], {
         colorHex: p.colorHex || prev.colorHex || '',
         nameEn: p.nameEn || prev.nameEn || '',
         nameAr: p.nameAr || prev.nameAr || '',
+        shadeCode: p.shadeCode || p.shadeNumber || prev.shadeCode || prev.shadeNumber || '',
+        shadeNumber: p.shadeNumber || p.shadeCode || prev.shadeNumber || prev.shadeCode || '',
       };
     }
   }
@@ -2344,7 +2477,7 @@ export async function scrapeProductDetail(id, {
     }
   }
 
-  const cacheKey = `amazon:detail:v24:${asin}:${light ? 'l' : 'f'}`;
+  const cacheKey = `amazon:detail:v25:${asin}:${light ? 'l' : 'f'}`;
   if (!skipCache) {
     const cached = cacheGet(cacheKey, DETAIL_TTL);
     if (cached) {
@@ -2563,34 +2696,8 @@ export async function scrapeProductDetail(id, {
     }
   }
 
-  // نظّف أسماء التدرجات التالفة (مثل SQUARE) واملأ الناقص من colorToAsin إن أمكن
-  const colorLabels = buildColorLabelIndex(comHtml || aeHtml || saHtml);
-  shades = shades.map((s) => {
-    let nameEn = cleanShadeLabel(s.nameEn || '');
-    let nameAr = cleanShadeLabel(s.nameAr || '');
-    if (!isUsableShadeName(nameEn)) nameEn = '';
-    if (!isUsableShadeName(nameAr)) nameAr = '';
-    if (!nameEn && !nameAr) {
-      const fromIndex = colorLabels.get(String(s.id || '').toUpperCase());
-      if (fromIndex) nameEn = fromIndex;
-    }
-    if (!nameEn && !nameAr) {
-      const fromTitle = String(primary.nameEn || primary.nameAr || '').match(
-        /(?:-|–|—|:)\s*([A-Za-z0-9][A-Za-z0-9 /-]{1,40})$/,
-      )?.[1];
-      if (fromTitle && isUsableShadeName(fromTitle)) nameEn = cleanShadeLabel(fromTitle);
-    }
-    const finalEn = nameEn || nameAr || '';
-    const finalAr = nameAr || nameEn || '';
-    return {
-      ...s,
-      nameEn: finalEn,
-      nameAr: finalAr,
-      colorHex: normalizeHex(s.colorHex) || s.colorHex || colorHexGuess(finalEn || finalAr) || '',
-      swatchImage: normalizeAmazonImageUrl(s.swatchImage || '', THUMB_SIZE),
-      image: normalizeAmazonImageUrl(s.image || s.swatchImage || '', IMPORT_SIZE),
-    };
-  });
+  // نظّف أسماء التدرجات — رقم + اسم EN من amazon.com، AR من ae/sa
+  shades = normalizeAmazonShadeNames(shades, { comHtml, aeHtml, saHtml });
   shades = filterUsableShades(shades);
   shades = assignShadeNumbers(shades);
 
@@ -2740,7 +2847,11 @@ export async function scrapeBarcode(code) {
 
     try {
       const parent = await resolveRichestParentAsin(cardAsin);
-      const detail = await scrapeProductDetail(parent, { light: true, skipRedirect: true });
+      const detail = await scrapeProductDetail(parent, {
+        light: true,
+        skipRedirect: true,
+        matchedChildAsin: cardAsin !== parent ? cardAsin : '',
+      });
       if (!detail) {
         hits.push({
           ...item,
