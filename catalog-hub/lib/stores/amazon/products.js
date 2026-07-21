@@ -443,6 +443,7 @@ export async function fetchProductDetail(id, { light = false, refresh = false } 
     const canonical = await resolveRichestParentAsin(asin);
     const matchedChild = canonical !== asin ? asin : '';
     if (refresh) {
+      cacheDel(`amazon:detail:v28:${canonical}`);
       cacheDel(`amazon:detail:v27:${canonical}`);
       cacheDel(`amazon:detail:v26:${canonical}`);
       cacheDel(`amazon:detail:v25:${canonical}`);

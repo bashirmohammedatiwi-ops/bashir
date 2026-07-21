@@ -1327,10 +1327,12 @@ function filterUsableShades(shades = []) {
     const code = String(s.shadeNumber || s.shadeCode || extractShadeCode(label) || '').trim();
     const hasVisual = Boolean(s.image) || Boolean(s.swatchImage) || Boolean(s.colorHex);
     const hasBarcode = String(s.barcode || '').replace(/\D/g, '').length >= 8;
+    const id = String(s.id || s.sku || '').toUpperCase();
     return isUsableShadeName(label)
       || Boolean(code)
-      || (hasVisual && (label || code))
-      || hasBarcode;
+      || hasVisual
+      || hasBarcode
+      || (/^[A-Z0-9]{10}$/.test(id) && hasVisual);
   });
 }
 
@@ -1396,17 +1398,34 @@ function dedupeShadesByNumber(shades = []) {
 }
 
 /** يُبقي تدرجات اللون فقط ويزيل التكرار والـ ASINات الوهمية */
-function refineAmazonShades(shades = [], htmlSources = [], { dedupe = true } = {}) {
+function refineAmazonShades(shades = [], htmlSources = [], {
+  dedupe = true,
+  expectedVariations = 0,
+} = {}) {
   if (!shades?.length) return shades;
+  const minKeep = expectedVariations > 3
+    ? Math.max(3, Math.floor(Math.min(shades.length, expectedVariations) * 0.35))
+    : Math.min(3, shades.length);
   const colorAsins = buildAuthoritativeColorAsins(htmlSources);
   let out = shades;
-  if (colorAsins.size >= Math.min(5, Math.max(3, Math.floor(shades.length * 0.25)))) {
-    out = shades.filter((s) => colorAsins.has(String(s.id || s.sku || '').toUpperCase()));
-    if (!out.length) out = shades;
+  const colorThreshold = Math.min(5, Math.max(3, Math.floor(shades.length * 0.25)));
+  if (colorAsins.size >= colorThreshold) {
+    const filtered = shades.filter((s) => colorAsins.has(String(s.id || s.sku || '').toUpperCase()));
+    if (filtered.length >= Math.max(minKeep, Math.floor(shades.length * 0.35))) {
+      out = filtered;
+    }
   }
   out = filterUsableShades(out);
-  if (dedupe) out = dedupeShadesByNumber(out);
-  return out;
+  if (out.length < minKeep && shades.length >= minKeep) {
+    out = filterUsableShades(shades);
+  }
+  if (dedupe) {
+    const deduped = dedupeShadesByNumber(out);
+    if (deduped.length >= minKeep || deduped.length >= Math.floor(out.length * 0.5)) {
+      out = deduped;
+    }
+  }
+  return out.length ? out : shades;
 }
 
 function buildColorLabelIndex(html = '') {
@@ -2593,7 +2612,7 @@ export async function scrapeProductDetail(id, {
     }
   }
 
-  const cacheKey = `amazon:detail:v27:${asin}:${light ? 'l' : 'f'}`;
+  const cacheKey = `amazon:detail:v28:${asin}:${light ? 'l' : 'f'}`;
   if (!skipCache) {
     const cached = cacheGet(cacheKey, DETAIL_TTL);
     if (cached) {
@@ -2711,7 +2730,6 @@ export async function scrapeProductDetail(id, {
   }
 
   const parentHtmlSources = [comHtml, aeHtml, saHtml, parentHtml].filter(Boolean);
-  shades = refineAmazonShades(shades, parentHtmlSources, { dedupe: true });
   shades = enrichShadesFromParentHtml(shades, parentHtmlSources);
 
   // twister ظاهر لكن parsing أعاد تدرجاً واحداً — أعد البناء من HTML الصفحة
@@ -2729,6 +2747,11 @@ export async function scrapeProductDetail(id, {
       shades = filterUsableShades(shades);
     }
   }
+
+  shades = refineAmazonShades(shades, parentHtmlSources, {
+    dedupe: false,
+    expectedVariations,
+  });
 
   // احذف فقط صفحة الـ ASIN الحالية إن كانت بدون اسم تدرج (تكرار للمنتج الأب)
   if (shades.length > 2) {
@@ -2817,7 +2840,10 @@ export async function scrapeProductDetail(id, {
   // نظّف أسماء التدرجات — رقم + اسم EN من amazon.com، AR من ae/sa
   shades = normalizeAmazonShadeNames(shades, { comHtml, aeHtml, saHtml });
   shades = assignShadeNumbers(shades);
-  shades = dedupeShadesByNumber(shades);
+  shades = refineAmazonShades(shades, parentHtmlSources, {
+    dedupe: true,
+    expectedVariations,
+  });
   shades = filterUsableShades(shades);
 
   if (shades.length) {

@@ -515,7 +515,10 @@ export async function fetchCatalogProductSmart(
   const minExpectedShades = expectedShades > 1 ? Math.max(3, Math.floor(expectedShades * 0.5)) : 0;
 
   const mergeLightFull = (lightProduct: CatalogImportProduct | null, full: CatalogImportProduct) => {
-    if (lightProduct && (lightProduct.shades?.length || 0) > (full.shades?.length || 0)) {
+    const lightCount = lightProduct?.shades?.length || 0;
+    const fullCount = full.shades?.length || 0;
+    const needFromLight = minExpectedShades > 0 && fullCount < minExpectedShades && lightCount > fullCount;
+    if (lightProduct && (lightCount > fullCount || needFromLight)) {
       const byAsin = new Map(
         full.shades.map((s) => [String(s.sku || s.id || "").toUpperCase(), s]),
       );
@@ -552,6 +555,7 @@ export async function fetchCatalogProductSmart(
         descriptionAr: full.descriptionAr || lightProduct.descriptionAr,
         descriptionEn: full.descriptionEn || lightProduct.descriptionEn,
         shades: mergedShades,
+        shadeCount: mergedShades.length,
         hasShades: mergedShades.length > 1,
       };
     }
