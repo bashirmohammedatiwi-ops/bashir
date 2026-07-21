@@ -194,6 +194,7 @@ function mapImportProduct(raw: Record<string, unknown>, storeLabel = ""): Catalo
     images,
     shades,
     hasShades: shades.length > 1 || raw.hasOptions === true,
+    shadeCount: shades.length,
     sourceUrl: String(raw.productUrl || raw.sourceUrl || ""),
     priceHint: String(raw.price || raw.priceHint || ""),
     categoryHint: String(raw.category || raw.categoryHint || ""),
@@ -609,6 +610,18 @@ export async function fetchCatalogProductSmart(
   ).length;
   if (shadeTotal > 1 && shadeBarcodes < Math.max(1, Math.floor(shadeTotal * 0.4))) {
     product = await loadAmazon(fetchId, true);
+  }
+
+  if (
+    (product.shades?.length || 0) <= 1
+    && sourceId
+    && opts?.listingAsin
+    && opts.listingAsin !== sourceId
+  ) {
+    const viaParent = await loadAmazon(sourceId, true);
+    if ((viaParent.shades?.length || 0) > (product.shades?.length || 0)) {
+      product = viaParent;
+    }
   }
 
   return product;
