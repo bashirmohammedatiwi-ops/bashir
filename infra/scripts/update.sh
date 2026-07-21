@@ -43,6 +43,25 @@ render_nginx() {
   fi
 }
 
+ensure_nginx_responding() {
+  if curl -fsS --max-time 5 -o /dev/null "http://127.0.0.1/api/v1/health" 2>/dev/null; then
+    return 0
+  fi
+
+  echo "WARN: Nginx not responding on :80 — reset to HTTP bootstrap and recreate..."
+  cp nginx/default.bootstrap.conf nginx/default.conf
+  $COMPOSE up -d --force-recreate nginx
+  sleep 3
+
+  if ! $COMPOSE exec -T nginx nginx -t 2>/dev/null; then
+    echo "ERROR: nginx config invalid. Logs:"
+    $COMPOSE logs nginx --tail=30
+    return 1
+  fi
+
+  curl -fsS --max-time 8 -o /dev/null "http://127.0.0.1/" 2>/dev/null
+}
+
 sync_repo() {
   if [[ ! -d "$REPO_ROOT/.git" ]]; then
     echo "==> Not a git repo — skipping pull"
@@ -178,6 +197,7 @@ chmod -R a+rX admin-static
 echo "==> Reload Nginx..."
 render_nginx
 $COMPOSE up -d --force-recreate --remove-orphans nginx
+ensure_nginx_responding || echo "WARN: Nginx still not reachable on 127.0.0.1 — run: docker compose -f docker-compose.prod.yml logs nginx --tail=50"
 
 echo "==> Verify..."
 # انتظر جهوزية API الفعلية بدل sleep ثابت

@@ -17,16 +17,18 @@ set +a
 COMPOSE="docker compose -f docker-compose.prod.yml"
 FAILED=0
 
-admin_base() {
-  if curl -fsS --max-time 3 -o /dev/null "http://127.0.0.1/"; then
-    echo "http://127.0.0.1"
-  else
-    echo "http://${DOMAIN:-localhost}"
-  fi
-}
+# على السيرفر نفسه — localhost أدق من IP العام (قد يُرفض hairpin NAT)
+BASE="http://127.0.0.1"
+if ! curl -fsS --max-time 3 -o /dev/null "${BASE}/" 2>/dev/null \
+  && ! curl -fsS --max-time 3 -o /dev/null "http://${DOMAIN:-localhost}/" 2>/dev/null; then
+  BASE="http://${DOMAIN:-localhost}"
+fi
+if curl -fsS --max-time 3 -o /dev/null "http://127.0.0.1/" 2>/dev/null; then
+  BASE="http://127.0.0.1"
+fi
 
-ADMIN_BASE="$(admin_base)"
-API_BASE="http://${DOMAIN:-localhost}"
+ADMIN_BASE="$BASE"
+API_BASE="$BASE"
 
 check_http() {
   local name="$1"
@@ -97,6 +99,17 @@ fi
 if [[ "$FAILED" -ne 0 ]]; then
   echo ""
   echo "Verification failed."
+  echo ""
+  echo "==> Nginx diagnostics (last 40 lines):"
+  $COMPOSE logs nginx --tail=40 2>/dev/null || true
+  echo ""
+  echo "==> Nginx config test:"
+  $COMPOSE exec -T nginx nginx -t 2>&1 || true
+  echo ""
+  echo "Quick fix (IP / no SSL):"
+  echo "  cp nginx/default.bootstrap.conf nginx/default.conf"
+  echo "  docker compose -f docker-compose.prod.yml up -d --force-recreate nginx"
+  echo "  curl -s http://127.0.0.1/api/v1/health"
   exit 1
 fi
 
