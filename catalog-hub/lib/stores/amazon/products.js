@@ -17,7 +17,8 @@ import {
   upsertAmazonProducts,
 } from './catalog-index.js';
 import { mapDetailProduct, mapListProduct, mapShadeFromVariation } from './map.js';
-import { resolveRichestParentAsin, scrapeBarcode, scrapeProductDetail, scrapeSearchProducts, ensureShadeBarcodes } from './scrape.js';
+import { resolveRichestParentAsin, scrapeBarcode, scrapeProductDetail, scrapeSearchProducts, ensureShadeBarcodes, fetchAllShadesForListing } from './scrape.js';
+import { upsertVariantCache } from './variant-cache.js';
 
 /** احتياطي من الفهرس المحلي عندما يفشل scrape (كابتشا/حظر) */
 function detailFromIndex(asin) {
@@ -441,6 +442,7 @@ export async function fetchProductDetail(id, { light = false, refresh = false, m
   // PA-API يُستخدم فقط إن وُجدت مفاتيح وطلب صريح عبر AMAZON_FORCE_PAAPI=1
   if (!usePaapi() || process.env.AMAZON_FORCE_PAAPI !== '1') {
     const canonical = await resolveRichestParentAsin(asin);
+    let resolvedParent = canonical;
     const explicitChild = String(matchedChildAsin || '').trim().toUpperCase();
     const matchedChild = explicitChild && explicitChild !== canonical
       ? explicitChild
@@ -497,17 +499,30 @@ export async function fetchProductDetail(id, { light = false, refresh = false, m
     }
 
     if (detail) {
-      detail.id = canonical;
-      detail.parentAsin = canonical;
-      detail.sku = canonical;
-      detail = await mergePaapiShades(detail, canonical);
+      const shadeTotal = detail.shades?.length || 0;
+      if (shadeTotal < 8) {
+        const expanded = await fetchAllShadesForListing(matchedChild || asin, {
+          barcode: detail.barcode || '',
+          light,
+          skipCache: refresh,
+        }).catch(() => null);
+        if ((expanded?.shades?.length || 0) > shadeTotal) {
+          resolvedParent = String(expanded.id || expanded.parentAsin || resolvedParent).toUpperCase();
+          detail = expanded;
+        }
+      }
+
+      detail.id = resolvedParent;
+      detail.parentAsin = resolvedParent;
+      detail.sku = resolvedParent;
+      detail = await mergePaapiShades(detail, resolvedParent);
       if (!light && (detail.shades?.length || 0) > 1) {
         const total = detail.shades.length;
         let have = detail.shades.filter((s) => String(s.barcode || '').replace(/\D/g, '').length >= 8).length;
         const minNeed = Math.max(3, Math.floor(total * 0.5));
         if (have < total) {
           detail.shades = await ensureShadeBarcodes(detail.shades, {
-            parentAsin: canonical,
+            parentAsin: resolvedParent,
             deadline: Date.now() + (total > 40 ? 180_000 : total > 20 ? 150_000 : 120_000),
             concurrency: total > 40 ? 14 : 12,
           });
@@ -516,7 +531,7 @@ export async function fetchProductDetail(id, { light = false, refresh = false, m
         }
         if (have < minNeed) {
           detail.shades = await ensureShadeBarcodes(detail.shades, {
-            parentAsin: canonical,
+            parentAsin: resolvedParent,
             deadline: Date.now() + 90_000,
             concurrency: 8,
           });
@@ -525,6 +540,12 @@ export async function fetchProductDetail(id, { light = false, refresh = false, m
       }
       normalizeDetailImages(detail);
       rememberAmazonDetail(detail);
+      if ((detail.shades?.length || 0) >= 3) {
+        upsertVariantCache(detail, {
+          listingAsin: matchedChild || asin,
+          barcode: detail.barcode || detail.matchedShadeBarcode || '',
+        });
+      }
     }
     return detail;
   }
@@ -571,7 +592,8 @@ export async function searchBarcode(code) {
 
   if (/^[A-Z0-9]{10}$/i.test(String(code || '').trim())) {
     const raw = String(code).trim().toUpperCase();
-    const detail = await fetchProductDetail(raw, { light: true }).catch(() => null);
+    const detail = await fetchAllShadesForListing(raw, { light: true })
+      || await fetchProductDetail(raw, { light: true, matchedChildAsin: raw }).catch(() => null);
     if (!detail) return [];
     const parent = String(detail.id || detail.parentAsin || raw).toUpperCase();
     const shadeHit = (detail.shades || []).find(
@@ -588,7 +610,7 @@ export async function searchBarcode(code) {
       shadeName: shadeHit?.nameAr || shadeHit?.nameEn || detail.matchedShadeName || '',
       matchedShadeName: shadeHit?.nameAr || shadeHit?.nameEn || detail.matchedShadeName || '',
       matchType: 'asin',
-      shadeCount: detail.shades?.length || detail.shadeCount || 1,
+      shadeCount: detail.shadeCount || detail.shades?.length || 1,
     }];
   }
 

@@ -3,7 +3,7 @@ import { splitBilingualText } from '../../core/bilingual.js';
 import { enrichShadeColorsFromImages } from '../../core/shade-color-from-image.js';
 import { IMPORT_SIZE, THUMB_SIZE, normalizeAmazonImageUrl } from '../../core/images.js';
 import { AMAZON_ALL_CATEGORY } from './client.js';
-import { mergeDetailWithVariantCache, resolveParentHint, lookupVariantProduct } from './variant-cache.js';
+import { mergeDetailWithVariantCache, resolveParentHint, lookupVariantProduct, upsertVariantCache } from './variant-cache.js';
 
 const DEFAULT_TTL = 12 * 60 * 1000;
 const DETAIL_TTL = 20 * 60 * 1000;
@@ -3150,28 +3150,25 @@ export async function scrapeProductDetail(id, {
     asin,
     matchedChildAsin: childAsin,
     barcode: detail.barcode || '',
-    minShades: expectedVariations > 8 ? 10 : 3,
   });
 
   const previous = skipCache ? cachePeek(cacheKey) : null;
   const prevCount = previous?.shades?.length || 0;
   const liveCount = detail.shades?.length || 0;
   if (previous && prevCount > liveCount) {
-    return mergeDetailWithVariantCache(previous, {
+    detail = mergeDetailWithVariantCache(previous, {
       asin,
       matchedChildAsin: childAsin,
       barcode: detail.barcode || '',
-      minShades: expectedVariations > 8 ? 10 : 3,
     });
-  }
-  if (liveCount <= 1 && expectedVariations > 3 && prevCount > 1) {
-    return mergeDetailWithVariantCache(previous, {
+  } else if (liveCount <= 1 && expectedVariations > 3 && prevCount > 1) {
+    detail = mergeDetailWithVariantCache(previous, {
       asin,
       matchedChildAsin: childAsin,
       barcode: detail.barcode || '',
-      minShades: expectedVariations > 8 ? 10 : 3,
     });
   }
+
   if (liveCount > 1 || expectedVariations <= 1) {
     const bcCount = countShadesWithBarcode(detail.shades || []);
     const minRatio = light ? 0.35 : 0.7;
@@ -3180,6 +3177,100 @@ export async function scrapeProductDetail(id, {
       || bcCount >= Math.max(3, Math.floor(liveCount * minRatio));
     if (shouldCache) cacheSet(cacheKey, detail);
   }
+
+  if ((detail.shades?.length || 0) >= 3) {
+    upsertVariantCache(detail, {
+      listingAsin: childAsin,
+      barcode: detail.barcode || detail.matchedShadeBarcode || '',
+    });
+  }
+
+  return detail;
+}
+
+/** أي ASIN/باركود تدرج → جلب كatalog الأب بكل التدرجات */
+export async function fetchAllShadesForListing(listingAsin, {
+  barcode = '',
+  light = true,
+  skipCache = false,
+} = {}) {
+  const cardAsin = String(listingAsin || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{10}$/.test(cardAsin)) return null;
+
+  const digits = String(barcode || '').replace(/\D/g, '');
+  const parent = await resolveRichestParentAsin(cardAsin);
+  let detail = await scrapeProductDetail(parent, {
+    light,
+    skipRedirect: true,
+    matchedChildAsin: cardAsin !== parent ? cardAsin : '',
+    skipCache,
+  });
+
+  const tryAltParents = async (html, minBreak = 20) => {
+    for (const altParent of collectParentCandidates(html, cardAsin)) {
+      if (altParent === parent || altParent === cardAsin) continue;
+      if (String(detail?.id || parent).toUpperCase() === altParent) continue;
+      try {
+        const retry = await scrapeProductDetail(altParent, {
+          light,
+          skipRedirect: true,
+          matchedChildAsin: cardAsin,
+          skipCache: true,
+          _parentRetry: true,
+        });
+        if ((retry?.shades?.length || 0) > (detail?.shades?.length || 0)) {
+          detail = retry;
+        }
+      } catch { /* skip */ }
+      if ((detail?.shades?.length || 0) >= minBreak) break;
+    }
+  };
+
+  if ((detail?.shades?.length || 0) <= 1
+    || ((detail?.shades?.length || 0) < 12 && (detail?.shadeCount || 0) > (detail?.shades?.length || 0))) {
+    await tryAltParents(
+      (await fetchMarketHtml('ae', `https://${MARKETS.ae.host}/dp/${cardAsin}?th=1&psc=1`, {
+        ttl: DETAIL_TTL,
+        cacheKey: `amazon:probe:ae:${cardAsin}:listing`,
+        retries: 4,
+        acceptPartial: true,
+      }).catch(() => '')),
+      20,
+    );
+  }
+  if ((detail?.shades?.length || 0) < 15) {
+    await tryAltParents(
+      (await fetchMarketHtml('com', `https://${MARKETS.com.host}/dp/${cardAsin}?th=1&psc=1`, {
+        ttl: DETAIL_TTL,
+        cacheKey: `amazon:probe:com:${cardAsin}:listing-parents`,
+        retries: 3,
+        acceptPartial: true,
+      }).catch(() => '')),
+      30,
+    );
+  }
+
+  if (!detail) {
+    const cachedProduct = lookupVariantProduct({ asin: cardAsin, barcode: digits });
+    if (cachedProduct) {
+      detail = mergeDetailWithVariantCache({
+        id: cardAsin,
+        parentAsin: cachedProduct.parentAsin,
+        sku: cachedProduct.parentAsin,
+        shades: [],
+        shadeCount: 0,
+        barcode: digits,
+      }, { asin: cardAsin, matchedChildAsin: cardAsin, barcode: digits });
+    }
+  }
+
+  if (!detail) return null;
+
+  detail = mergeDetailWithVariantCache(detail, {
+    asin: String(detail.id || parent).toUpperCase(),
+    matchedChildAsin: cardAsin !== String(detail.id || parent).toUpperCase() ? cardAsin : '',
+    barcode: digits,
+  });
 
   return detail;
 }
@@ -3218,85 +3309,13 @@ export async function scrapeBarcode(code) {
     processed.add(cardAsin);
 
     try {
-      const parent = await resolveRichestParentAsin(cardAsin);
-      let detail = await scrapeProductDetail(parent, {
+      const detail = await fetchAllShadesForListing(cardAsin, {
+        barcode: digits,
         light: true,
-        skipRedirect: true,
-        matchedChildAsin: cardAsin !== parent ? cardAsin : '',
         skipCache: true,
       });
-      if ((detail?.shades?.length || 0) <= 1
-        || ((detail?.shades?.length || 0) < 12 && (detail?.shadeCount || 0) > (detail?.shades?.length || 0))) {
-        for (const altParent of collectParentCandidates(
-          (await fetchMarketHtml('ae', `https://${MARKETS.ae.host}/dp/${cardAsin}?th=1&psc=1`, {
-            ttl: DETAIL_TTL,
-            cacheKey: `amazon:probe:ae:${cardAsin}:barcode`,
-            retries: 4,
-            acceptPartial: true,
-          }).catch(() => '')),
-          cardAsin,
-        )) {
-          if (altParent === parent || altParent === cardAsin) continue;
-          try {
-            const retry = await scrapeProductDetail(altParent, {
-              light: true,
-              skipRedirect: true,
-              matchedChildAsin: cardAsin,
-              skipCache: true,
-              _parentRetry: true,
-            });
-            if ((retry?.shades?.length || 0) > (detail?.shades?.length || 0)) {
-              detail = retry;
-            }
-          } catch { /* skip */ }
-          if ((detail?.shades?.length || 0) > 20) break;
-        }
-      }
-      if ((detail?.shades?.length || 0) < 15) {
-        for (const altParent of collectParentCandidates(
-          (await fetchMarketHtml('com', `https://${MARKETS.com.host}/dp/${cardAsin}?th=1&psc=1`, {
-            ttl: DETAIL_TTL,
-            cacheKey: `amazon:probe:com:${cardAsin}:barcode-parents`,
-            retries: 3,
-            acceptPartial: true,
-          }).catch(() => '')),
-          cardAsin,
-        )) {
-          if (altParent === parent || altParent === cardAsin) continue;
-          if (String(detail?.id || parent).toUpperCase() === altParent) continue;
-          try {
-            const retry = await scrapeProductDetail(altParent, {
-              light: true,
-              skipRedirect: true,
-              matchedChildAsin: cardAsin,
-              skipCache: true,
-              _parentRetry: true,
-            });
-            if ((retry?.shades?.length || 0) > (detail?.shades?.length || 0)) {
-              detail = retry;
-            }
-          } catch { /* skip */ }
-          if ((detail?.shades?.length || 0) > 30) break;
-        }
-      }
       if (!detail) {
-        const cachedProduct = lookupVariantProduct({ asin: cardAsin, barcode: digits });
-        if (cachedProduct) {
-          detail = mergeDetailWithVariantCache({
-            id: cardAsin,
-            parentAsin: cachedProduct.parentAsin,
-            sku: cachedProduct.parentAsin,
-            nameEn: item.nameEn || cachedProduct.nameEn || '',
-            nameAr: item.nameAr || cachedProduct.nameAr || '',
-            brandEn: item.brandEn || cachedProduct.brandEn || '',
-            thumb: item.thumb || cachedProduct.thumb || '',
-            shades: [],
-            shadeCount: 0,
-            barcode: digits,
-          }, { asin: cardAsin, matchedChildAsin: cardAsin, barcode: digits });
-        }
-      }
-      if (!detail) {
+        const parent = await resolveRichestParentAsin(cardAsin);
         hits.push({
           ...item,
           id: parent,
@@ -3308,14 +3327,8 @@ export async function scrapeBarcode(code) {
         continue;
       }
 
-      detail = mergeDetailWithVariantCache(detail, {
-        asin: String(detail.id || parent).toUpperCase(),
-        matchedChildAsin: cardAsin !== String(detail.id || parent).toUpperCase() ? cardAsin : '',
-        barcode: digits,
-        minShades: 10,
-      });
-
-      const canonicalId = String(detail.id || parent).toUpperCase();
+      const parent = String(detail.id || detail.parentAsin || cardAsin).toUpperCase();
+      const canonicalId = parent;
       const candidates = [
         ...(detail.barcodes || []),
         detail.barcode,
@@ -3335,7 +3348,7 @@ export async function scrapeBarcode(code) {
         shadeName: shadeHit?.nameAr || shadeHit?.nameEn || detail.matchedShadeName || '',
         matchedShadeName: shadeHit?.nameAr || shadeHit?.nameEn || detail.matchedShadeName || '',
         matchType: exact ? 'ean' : 'listing',
-        shadeCount: countPublicShadeCount([], detail.shades || []),
+        shadeCount: detail.shadeCount || detail.shades?.length || 1,
       });
       await sleep(80);
     } catch {

@@ -195,10 +195,12 @@ function findCategoryLabel(tree: CatalogCategoryNode[], id: string, prefix = "")
 }
 
 function listProductToOption(p: CatalogListProduct, store: CatalogStore): CatalogImportOption {
+  const isAmazon = (p.store || store.id) === "amazon";
   return {
     store: p.store || store.id,
     storeLabel: p.storeLabel || store.label,
     sourceId: p.id,
+    listingAsin: isAmazon ? p.id : undefined,
     nameAr: p.nameAr,
     nameEn: p.nameEn,
     brandAr: p.brandAr,
