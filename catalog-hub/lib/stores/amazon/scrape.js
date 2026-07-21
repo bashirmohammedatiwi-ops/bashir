@@ -3,6 +3,7 @@ import { splitBilingualText } from '../../core/bilingual.js';
 import { enrichShadeColorsFromImages } from '../../core/shade-color-from-image.js';
 import { IMPORT_SIZE, THUMB_SIZE, normalizeAmazonImageUrl } from '../../core/images.js';
 import { AMAZON_ALL_CATEGORY } from './client.js';
+import { mergeDetailWithVariantCache, resolveParentHint, lookupVariantProduct } from './variant-cache.js';
 
 const DEFAULT_TTL = 12 * 60 * 1000;
 const DETAIL_TTL = 20 * 60 * 1000;
@@ -1230,6 +1231,12 @@ export async function resolveRichestParentAsin(asin) {
   const cacheKey = `amazon:richest-parent:v6:${id}`;
   const cached = cacheGet(cacheKey, DETAIL_TTL);
   if (cached) return cached;
+
+  const hint = resolveParentHint(id);
+  if (hint && hint !== id) {
+    cacheSet(cacheKey, hint);
+    return hint;
+  }
 
   const scores = new Map([[id, 0]]);
   const candidates = new Set([id]);
@@ -3109,7 +3116,7 @@ export async function scrapeProductDetail(id, {
     });
   }
 
-  const detail = {
+  let detail = {
     id: asin,
     parentAsin: parentAsin || asin,
     sku: asin,
@@ -3139,22 +3146,41 @@ export async function scrapeProductDetail(id, {
     source: 'scrape',
   };
 
+  detail = mergeDetailWithVariantCache(detail, {
+    asin,
+    matchedChildAsin: childAsin,
+    barcode: detail.barcode || '',
+    minShades: expectedVariations > 8 ? 10 : 3,
+  });
+
   const previous = skipCache ? cachePeek(cacheKey) : null;
   const prevCount = previous?.shades?.length || 0;
-  if (previous && prevCount > shades.length) {
-    return previous;
+  const liveCount = detail.shades?.length || 0;
+  if (previous && prevCount > liveCount) {
+    return mergeDetailWithVariantCache(previous, {
+      asin,
+      matchedChildAsin: childAsin,
+      barcode: detail.barcode || '',
+      minShades: expectedVariations > 8 ? 10 : 3,
+    });
   }
-  if (shades.length <= 1 && expectedVariations > 3 && prevCount > 1) {
-    return previous;
+  if (liveCount <= 1 && expectedVariations > 3 && prevCount > 1) {
+    return mergeDetailWithVariantCache(previous, {
+      asin,
+      matchedChildAsin: childAsin,
+      barcode: detail.barcode || '',
+      minShades: expectedVariations > 8 ? 10 : 3,
+    });
   }
-  if (shades.length > 1 || expectedVariations <= 1) {
-    const bcCount = countShadesWithBarcode(shades);
+  if (liveCount > 1 || expectedVariations <= 1) {
+    const bcCount = countShadesWithBarcode(detail.shades || []);
     const minRatio = light ? 0.35 : 0.7;
-    const shouldCache = shades.length <= 1
-      || bcCount >= shades.length
-      || bcCount >= Math.max(3, Math.floor(shades.length * minRatio));
+    const shouldCache = liveCount <= 1
+      || bcCount >= liveCount
+      || bcCount >= Math.max(3, Math.floor(liveCount * minRatio));
     if (shouldCache) cacheSet(cacheKey, detail);
   }
+
   return detail;
 }
 
@@ -3254,6 +3280,23 @@ export async function scrapeBarcode(code) {
         }
       }
       if (!detail) {
+        const cachedProduct = lookupVariantProduct({ asin: cardAsin, barcode: digits });
+        if (cachedProduct) {
+          detail = mergeDetailWithVariantCache({
+            id: cardAsin,
+            parentAsin: cachedProduct.parentAsin,
+            sku: cachedProduct.parentAsin,
+            nameEn: item.nameEn || cachedProduct.nameEn || '',
+            nameAr: item.nameAr || cachedProduct.nameAr || '',
+            brandEn: item.brandEn || cachedProduct.brandEn || '',
+            thumb: item.thumb || cachedProduct.thumb || '',
+            shades: [],
+            shadeCount: 0,
+            barcode: digits,
+          }, { asin: cardAsin, matchedChildAsin: cardAsin, barcode: digits });
+        }
+      }
+      if (!detail) {
         hits.push({
           ...item,
           id: parent,
@@ -3264,6 +3307,13 @@ export async function scrapeBarcode(code) {
         });
         continue;
       }
+
+      detail = mergeDetailWithVariantCache(detail, {
+        asin: String(detail.id || parent).toUpperCase(),
+        matchedChildAsin: cardAsin !== String(detail.id || parent).toUpperCase() ? cardAsin : '',
+        barcode: digits,
+        minShades: 10,
+      });
 
       const canonicalId = String(detail.id || parent).toUpperCase();
       const candidates = [
