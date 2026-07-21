@@ -21,8 +21,8 @@ import { EntityMultiPicker } from "./EntityMultiPicker";
 import { LinkTargetPicker, ProductScopeFields } from "./LinkTargetPicker";
 import { SectionStyleFields } from "./SectionStyleFields";
 import { CardSizePicker } from "./CardSizePicker";
-import { MEDIA_SHAPE_OPTIONS } from "./FrameStyleFields";
 import { GroupChildrenEditor } from "./GroupChildrenEditor";
+import { TileItemsList } from "./TileItemEditor";
 import { PRODUCT_FILTERS, SectionType } from "./section-types";
 
 const { Text } = Typography;
@@ -510,42 +510,13 @@ export function SectionPayloadEditor(props: Props) {
     case "IMAGE_MARQUEE":
       return (
         <>
-          <Text type="secondary" style={{ display: "block", marginBottom: 12 }}>
-            أضف صوراً تتحرك أفقياً — كل صورة قابلة للربط بمنتج أو قسم أو براند
-          </Text>
-          <Form.List name={["payload", "items"]}>
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map(({ key, name, ...rest }) => (
-                  <Card
-                    key={key}
-                    size="small"
-                    title={`صورة ${name + 1}`}
-                    style={{ marginBottom: 10 }}
-                    extra={
-                      <Button danger type="link" icon={<MinusCircleOutlined />} onClick={() => remove(name)}>
-                        حذف
-                      </Button>
-                    }
-                  >
-                    <Form.Item {...rest} name={[name, "imageId"]} label="الصورة">
-                      <MediaPicker label="اختر صورة الإعلان" />
-                    </Form.Item>
-                    <Form.Item {...rest} name={[name, "title"]} label="عنوان (اختياري)">
-                      <Input placeholder="للمعاينة في لوحة التحكم" />
-                    </Form.Item>
-                    <Typography.Text strong style={{ display: "block", marginBottom: 8 }}>
-                      عند الضغط — ينتقل إلى:
-                    </Typography.Text>
-                    <LinkTargetPicker prefix={["payload", "items", name]} entities={entities} />
-                  </Card>
-                ))}
-                <Button type="dashed" onClick={() => add({})} block icon={<PlusOutlined />}>
-                  + صورة متحركة
-                </Button>
-              </>
-            )}
-          </Form.List>
+          <Alert
+            type="info"
+            showIcon
+            message="شريط صور متحرك — لكل صورة شكل ونسبة وربط مستقل"
+            style={{ marginBottom: 16 }}
+          />
+          <TileItemsList entities={props} itemLabel="صورة" mode="rich" addLabel="+ صورة متحركة" />
         </>
       );
 
@@ -744,47 +715,31 @@ export function SectionPayloadEditor(props: Props) {
       return <GroupChildrenEditor entities={props} />;
 
     case "MEDIA_GALLERY":
+    case "PHOTO_WALL":
       return (
         <>
           <Alert
-            type="info"
+            type="success"
             showIcon
-            message="أضف الصور هنا — طريقة العرض والحركة من تبويب «التصميم»"
+            message="معرض صور — أضف الصور وخصّص كل واحدة"
+            description="الشكل، النسبة، الظل، والربط لكل صورة. الإعدادات العامة من تبويب «التصميم»."
             style={{ marginBottom: 16 }}
           />
-          <Form.List name={["payload", "items"]}>
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map(({ key, name, ...rest }) => (
-                  <Card
-                    key={key}
-                    size="small"
-                    title={`صورة ${name + 1}`}
-                    style={{ marginBottom: 10 }}
-                    extra={
-                      <Button danger type="link" icon={<MinusCircleOutlined />} onClick={() => remove(name)}>
-                        حذف
-                      </Button>
-                    }
-                  >
-                    <Form.Item {...rest} name={[name, "imageId"]} label="الصورة">
-                      <MediaPicker label="اختر صورة" />
-                    </Form.Item>
-                    <Form.Item {...rest} name={[name, "title"]} label="تسمية (اختياري)">
-                      <Input />
-                    </Form.Item>
-                    <Form.Item {...rest} name={[name, "shape"]} label="شكل (تجاوز)">
-                      <Select allowClear options={MEDIA_SHAPE_OPTIONS} placeholder="افتراضي القسم" />
-                    </Form.Item>
-                    <LinkTargetPicker prefix={["payload", "items", name]} entities={entities} />
-                  </Card>
-                ))}
-                <Button type="dashed" onClick={() => add({})} block icon={<PlusOutlined />}>
-                  + صورة
-                </Button>
-              </>
-            )}
-          </Form.List>
+          <TileItemsList entities={props} itemLabel="صورة" mode="rich" addLabel="+ صورة" />
+        </>
+      );
+
+    case "IMAGE_COLLAGE":
+      return (
+        <>
+          <Alert
+            type="success"
+            showIcon
+            message="فسيفساء Bento — بلاطات بأحجام مختلفة"
+            description="حدّد spanCols و spanRows لكل صورة لبناء شبكة غير متساوية."
+            style={{ marginBottom: 16 }}
+          />
+          <TileItemsList entities={props} itemLabel="بلاطة" mode="collage" addLabel="+ بلاطة" />
         </>
       );
 

@@ -41,8 +41,8 @@ Color _textColor(PromoStrip strip) =>
 
 Color _bg(PromoStrip strip) {
   final custom = parseHexColor(strip.backgroundColor);
-  if (custom == null) return HomeTheme.roseWash;
-  return Color.lerp(custom, Colors.white, 0.72)!;
+  if (custom == null) return HomeTheme.sageLight.withValues(alpha: 0.65);
+  return Color.lerp(custom, Colors.white, 0.78)!;
 }
 
 void _openLink(BuildContext context, PromoStrip strip) {
@@ -76,7 +76,7 @@ class _PromoCard extends StatelessWidget {
       child: HomeTapScale(
         onTap: strip.hasLink ? () => _openLink(context, strip) : null,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: HomeTheme.sectionSurface(tint: bg),
           child: Row(
             children: [
@@ -85,7 +85,7 @@ class _PromoCard extends StatelessWidget {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: HomeTheme.sageLight,
                     shape: BoxShape.circle,
                   ),
                   alignment: Alignment.center,

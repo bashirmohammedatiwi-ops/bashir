@@ -88,10 +88,28 @@ export function SectionLinksEditor({ type, form, ...props }: Props) {
         </>
       )}
 
-      {(type === "IMAGE_TILES" || type === "CIRCLE_TILES" || type === "IMAGE_MARQUEE") && (
+      {(type === "MEDIA_GALLERY" || type === "PHOTO_WALL" || type === "IMAGE_COLLAGE") && (
+        <Alert
+          type="success"
+          showIcon
+          message="ربط سريع لكل الصور"
+          description="طبّق رابطاً واحداً على الكل، أو عدّل كل صورة — البحث عن المنتجات مباشرة من السيرفر."
+          style={{ marginBottom: 12 }}
+        />
+      )}
+
+      {(type === "IMAGE_TILES" || type === "CIRCLE_TILES" || type === "IMAGE_MARQUEE" || type === "MEDIA_GALLERY" || type === "PHOTO_WALL" || type === "IMAGE_COLLAGE") && (
         <TileItemsLinksPanel
           entities={entities}
-          itemLabel={type === "CIRCLE_TILES" ? "دائرة" : type === "IMAGE_MARQUEE" ? "صورة" : "بطاقة"}
+          itemLabel={
+            type === "CIRCLE_TILES"
+              ? "دائرة"
+              : type === "IMAGE_COLLAGE"
+                ? "بلاطة"
+                : type === "IMAGE_MARQUEE" || type === "MEDIA_GALLERY" || type === "PHOTO_WALL"
+                  ? "صورة"
+                  : "بطاقة"
+          }
         />
       )}
 
@@ -137,10 +155,6 @@ export function SectionLinksEditor({ type, form, ...props }: Props) {
         </>
       )}
 
-      {type === "MEDIA_GALLERY" && (
-        <TileItemsLinksPanel entities={entities} itemLabel="صورة" />
-      )}
-
       {type === "SECTION_GROUP" && (
         <Alert
           type="info"
@@ -154,7 +168,7 @@ export function SectionLinksEditor({ type, form, ...props }: Props) {
         <Alert type="success" showIcon message="كل مشكلة بشرة تفتح منتجاتها تلقائياً (concernSlug)." />
       )}
 
-      {!["PROMO_STRIP", "PRODUCT_LIST", "FLASH_SALE", "FEATURED_BRANDS", "BRAND_SHOWCASE", "PACKAGES", "ROUTINE_CAROUSEL", "IMAGE_TILES", "CIRCLE_TILES", "IMAGE_MARQUEE", "MEDIA_GALLERY", "SECTION_GROUP", "BANNER_FULL", "CUSTOM_BANNER", "BANNER_GRID_2", "BANNER_GRID_3", "BANNER_CAROUSEL", "CATEGORY_GRID", "CATEGORY_TILES", "MAKEUP_CATEGORIES", "CARE_HUB", "SKIN_CONCERNS", "HERO_BANNER"].includes(type) && (
+      {!["PROMO_STRIP", "PRODUCT_LIST", "FLASH_SALE", "FEATURED_BRANDS", "BRAND_SHOWCASE", "PACKAGES", "ROUTINE_CAROUSEL", "IMAGE_TILES", "CIRCLE_TILES", "IMAGE_MARQUEE", "MEDIA_GALLERY", "PHOTO_WALL", "IMAGE_COLLAGE", "SECTION_GROUP", "BANNER_FULL", "CUSTOM_BANNER", "BANNER_GRID_2", "BANNER_GRID_3", "BANNER_CAROUSEL", "CATEGORY_GRID", "CATEGORY_TILES", "MAKEUP_CATEGORIES", "CARE_HUB", "SKIN_CONCERNS", "HERO_BANNER"].includes(type) && (
         <Text type="secondary">لا إعدادات ربط إضافية — المحتوى يُربط تلقائياً في التطبيق.</Text>
       )}
     </div>

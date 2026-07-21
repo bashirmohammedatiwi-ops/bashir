@@ -127,6 +127,8 @@ enum HomeBlockType {
   CARE_HUB
   SECTION_GROUP
   MEDIA_GALLERY
+  PHOTO_WALL
+  IMAGE_COLLAGE
 }
 
 // ---------------------- USERS / AUTH ----------------------

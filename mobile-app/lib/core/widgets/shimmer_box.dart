@@ -95,8 +95,7 @@ class HomeLoadingSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: HomeTheme.canvas,
+    return HomeCanvasBackground(
       child: ListView(
         padding: EdgeInsets.zero,
         physics: const NeverScrollableScrollPhysics(),

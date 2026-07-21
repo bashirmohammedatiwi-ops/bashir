@@ -56,13 +56,40 @@ class _CircleTileState extends State<CircleTile> {
                 width: diameter,
                 height: diameter,
                 decoration: BoxDecoration(
-                  color: Colors.white,
                   shape: BoxShape.circle,
-                  border: Border.all(color: HomeTheme.surfaceMuted),
-                  boxShadow: HomeTheme.softLift,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.white,
+                      HomeTheme.sageLight.withValues(alpha: 0.35),
+                    ],
+                  ),
+                  border: Border.all(
+                    color: HomeTheme.sage.withValues(alpha: 0.22),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: HomeTheme.sage.withValues(alpha: 0.16),
+                      blurRadius: 14,
+                      offset: const Offset(0, 5),
+                      spreadRadius: -2,
+                    ),
+                    ...HomeTheme.softLift,
+                  ],
                 ),
                 clipBehavior: Clip.antiAlias,
-                child: _CircleContent(imageUrl: widget.imageUrl, icon: widget.icon),
+                child: Padding(
+                  padding: const EdgeInsets.all(2.5),
+                  child: DecoratedBox(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: ClipOval(child: _CircleContent(imageUrl: widget.imageUrl, icon: widget.icon)),
+                  ),
+                ),
               ),
               const SizedBox(height: 8),
               Text(

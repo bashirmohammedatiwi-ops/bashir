@@ -67,7 +67,8 @@ class HomeHeroCategoryStrip extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: bg,
                   borderRadius: BorderRadius.circular(HomeTheme.tileRadius),
-                  border: Border.all(color: HomeTheme.surfaceMuted.withValues(alpha: 0.6)),
+                  border: Border.all(color: HomeTheme.surfaceMuted.withValues(alpha: 0.5)),
+                  boxShadow: HomeTheme.whisperLift,
                 ),
                 padding: const EdgeInsets.all(10),
                 child: cat.imageUrl.isNotEmpty

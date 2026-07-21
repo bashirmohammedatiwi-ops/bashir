@@ -113,16 +113,18 @@ class _HomeSectionEntranceState extends State<HomeSectionEntrance>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _fade;
+  late final Animation<Offset> _slide;
 
   @override
   void initState() {
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 460),
     );
-    final curve = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    final curve = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
     _fade = curve;
+    _slide = Tween<Offset>(begin: const Offset(0, 0.04), end: Offset.zero).animate(curve);
 
     final delay = Duration(milliseconds: 40 + widget.index.clamp(0, 6) * 35);
     Future<void>.delayed(delay, () {
@@ -138,7 +140,10 @@ class _HomeSectionEntranceState extends State<HomeSectionEntrance>
 
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(opacity: _fade, child: widget.child);
+    return FadeTransition(
+      opacity: _fade,
+      child: SlideTransition(position: _slide, child: widget.child),
+    );
   }
 }
 

@@ -461,18 +461,13 @@ export class HomeSectionResolver {
         };
       }
 
-      case HomeBlockType.MEDIA_GALLERY: {
-        const items = await this.resolveMediaGallery(payload);
+      case HomeBlockType.MEDIA_GALLERY:
+      case HomeBlockType.PHOTO_WALL:
+      case HomeBlockType.IMAGE_COLLAGE: {
+        const items = await this.resolveRichImageTiles(payload);
         return {
           ...base,
-          layout: (payload.display as string) ?? "scroll",
-          display: (payload.display as string) ?? "scroll",
-          shape: (payload.shape as string) ?? "rounded",
-          cardSize: (payload.size as string) ?? "md",
-          imageHeight: Number(payload.height) || 140,
-          marqueeSpeed: Number(payload.marqueeSpeed) || 5,
-          marqueeGap: Number(payload.gap) ?? 12,
-          sectionLayout: payload.columns != null ? String(payload.columns) : undefined,
+          ...this.photoSectionMeta(payload),
           items,
         };
       }
@@ -772,6 +767,67 @@ export class HomeSectionResolver {
     };
   }
 
+  private photoSectionMeta(payload: Payload) {
+    const aspect = this.aspectRatioNumber((payload.aspectRatio as string) ?? "auto");
+    return {
+      layout: (payload.display as string) ?? "scroll",
+      display: (payload.display as string) ?? "scroll",
+      shape: (payload.shape as string) ?? "rounded",
+      cardSize: (payload.size as string) ?? "md",
+      imageHeight: Number(payload.height) || 160,
+      marqueeSpeed: Number(payload.marqueeSpeed) || 5,
+      marqueeGap: Number(payload.gap) ?? 12,
+      sectionLayout: payload.columns != null ? String(payload.columns) : undefined,
+      fullBleed: payload.fullBleed === true,
+      bannerAspect: aspect ?? undefined,
+      kind: (payload.itemFit as string) ?? "cover",
+      backgroundColor: (payload.backgroundColor as string) ?? undefined,
+    };
+  }
+
+  private aspectRatioNumber(value?: string | null): number | null {
+    if (!value || value === "auto" || value === "custom") return null;
+    const map: Record<string, number> = {
+      "1:1": 1,
+      "4:3": 4 / 3,
+      "3:4": 3 / 4,
+      "16:9": 16 / 9,
+      "9:16": 9 / 16,
+      "2:1": 2,
+      "3:2": 3 / 2,
+      "4:5": 4 / 5,
+      "5:4": 5 / 4,
+      "21:9": 21 / 9,
+    };
+    return map[value] ?? null;
+  }
+
+  private async resolveRichImageTiles(payload: Payload) {
+    const defaultShape = (payload.shape as string) ?? "rounded";
+    const defaultSize = (payload.size as string) ?? "md";
+    const defaultAspect = (payload.aspectRatio as string) ?? "auto";
+    const defaultOverlay = (payload.overlayStyle as string) ?? "none";
+    const defaultBorder = (payload.borderStyle as string) ?? "none";
+    const tiles = await this.resolveImageTiles(payload);
+    return tiles.map((tile, idx) => {
+      const raw = ((payload.items as Record<string, unknown>[]) ?? [])[idx] ?? {};
+      return {
+        ...(tile as Record<string, unknown>),
+        shape: (raw.shape as string) ?? defaultShape,
+        size: (raw.size as string) ?? defaultSize,
+        aspectRatio: (raw.aspectRatio as string) ?? defaultAspect,
+        badge: raw.badge ?? "",
+        overlayStyle: (raw.overlayStyle as string) ?? defaultOverlay,
+        borderStyle: (raw.borderStyle as string) ?? defaultBorder,
+        showShadow: raw.showShadow ?? payload.showShadow !== false,
+        spanCols: Number(raw.spanCols) || 1,
+        spanRows: Number(raw.spanRows) || 1,
+        customWidth: raw.customWidth ?? null,
+        customHeight: raw.customHeight ?? null,
+      };
+    });
+  }
+
   private async resolveMediaGallery(payload: Payload) {
     const defaultShape = (payload.shape as string) ?? "rounded";
     const defaultSize = (payload.size as string) ?? "md";
@@ -793,6 +849,7 @@ export class HomeSectionResolver {
       subtitle?: string;
       linkType?: string;
       linkValue?: string;
+      link?: string;
       cardSize?: string;
     }[]) ?? [];
     if (!raw.length) return [];
@@ -816,7 +873,7 @@ export class HomeSectionResolver {
           image: media,
           linkType: item.linkType,
           linkValue: item.linkValue,
-          link: buildAppLink(item.linkType, item.linkValue),
+          link: buildAppLink(item.linkType, item.linkValue, item.link),
         },
         size,
       );

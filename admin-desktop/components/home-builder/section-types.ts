@@ -28,7 +28,9 @@ export type SectionType =
   | "ROUTINE_CAROUSEL"
   | "CARE_HUB"
   | "SECTION_GROUP"
-  | "MEDIA_GALLERY";
+  | "MEDIA_GALLERY"
+  | "PHOTO_WALL"
+  | "IMAGE_COLLAGE";
 
 export const SECTION_TYPES: {
   value: SectionType;
@@ -449,6 +451,55 @@ export const SECTION_TYPES: {
       gap: 12,
       height: 140,
       marqueeSpeed: 5,
+      showTitle: true,
+      items: [],
+    },
+  },
+  {
+    value: "PHOTO_WALL",
+    label: "معرض صور متقدم",
+    group: "تصميم",
+    description:
+      "أقسام صور احترافية — 9+ أشكال، 11 نسبة عرض، bento، carousel، overlay، ظل، وربط كامل لكل صورة",
+    icon: "🖼️",
+    color: "#E8F5E9",
+    defaultPayload: {
+      display: "scroll",
+      shape: "rounded",
+      aspectRatio: "4:3",
+      size: "md",
+      itemFit: "cover",
+      overlayStyle: "none",
+      borderStyle: "none",
+      gap: 12,
+      height: 160,
+      columns: 3,
+      marqueeSpeed: 5,
+      fullBleed: false,
+      showShadow: true,
+      showTitle: true,
+      items: [],
+    },
+  },
+  {
+    value: "IMAGE_COLLAGE",
+    label: "فسيفساء / Bento",
+    group: "تصميم",
+    description: "شبكة صور بأحجام مختلفة — كل بلاطة بشكل ونسبة وربط مستقل",
+    icon: "🧩",
+    color: "#FFF3E0",
+    defaultPayload: {
+      display: "bento",
+      shape: "rounded",
+      aspectRatio: "1:1",
+      size: "md",
+      itemFit: "cover",
+      overlayStyle: "gradient",
+      borderStyle: "none",
+      gap: 10,
+      height: 200,
+      columns: 4,
+      showShadow: true,
       showTitle: true,
       items: [],
     },

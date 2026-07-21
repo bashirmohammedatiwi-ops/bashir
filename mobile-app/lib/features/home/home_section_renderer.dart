@@ -14,7 +14,7 @@ import 'sections/circle_tiles_section.dart';
 import 'sections/care_hub_section.dart';
 import 'sections/routine_carousel_section.dart';
 import 'sections/image_marquee_section.dart';
-import 'sections/media_gallery_section.dart';
+import 'sections/photo_wall_section.dart';
 import 'sections/section_group_section.dart';
 import 'sections/promo_sections.dart';
 import 'sections/skin_concerns_strip.dart';
@@ -56,7 +56,7 @@ class HomeSectionWidget extends ConsumerWidget {
       'PROMO_STRIP' => PromoStripSection(section: section),
       'IMAGE_TILES' => ImageTilesSection(section: section),
       'IMAGE_MARQUEE' => ImageMarqueeSection(section: section),
-      'MEDIA_GALLERY' => MediaGallerySection(section: section),
+      'MEDIA_GALLERY' || 'PHOTO_WALL' || 'IMAGE_COLLAGE' => PhotoWallSection(section: section),
       'SECTION_GROUP' => SectionGroupSection(section: section, compactTop: isFirstAfterHero),
       'CIRCLE_TILES' => CircleTilesSection(section: section),
       'ROUTINE_CAROUSEL' => RoutineCarouselSection(section: section, compactTop: isFirstAfterHero),

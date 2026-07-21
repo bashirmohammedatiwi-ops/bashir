@@ -4,6 +4,7 @@ import { Form, Input, Select, Space, Typography } from "antd";
 import { LINK_TARGET_TYPES, LinkTargetType, PRODUCT_QUERY_PRESETS } from "./link-target";
 import { LinkPreviewChip } from "./LinkPreviewChip";
 import { QuickLinkBar } from "./QuickLinkBar";
+import { ProductSearchSelect } from "./ProductSearchSelect";
 
 type EntityLists = {
   products?: any[];
@@ -143,13 +144,8 @@ export function LinkTargetPicker({
 
           if (linkType === "product") {
             return (
-              <Form.Item name={namePath(prefix, "linkValue")} label="المنتج" rules={[{ required: true }]}>
-                <Select
-                  showSearch
-                  filterOption={filterOption}
-                  placeholder="ابحث بالاسم، البراند، أو SKU..."
-                  options={productOptions(entities.products ?? [])}
-                />
+              <Form.Item name={namePath(prefix, "linkValue")} label="المنتج">
+                <ProductSearchSelect seedProducts={entities.products ?? []} />
               </Form.Item>
             );
           }

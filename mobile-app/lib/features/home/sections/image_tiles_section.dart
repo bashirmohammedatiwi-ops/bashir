@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/card_sizes.dart';
-import '../../../core/widgets/app_network_image.dart';
+import '../../../data/models/home_section.dart';
 import '../home_link.dart';
 import '../widgets/circle_tile.dart';
 import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
-import '../../../data/models/home_section.dart';
+import '../widgets/photo_shape_kit.dart';
 
 class ImageTilesSection extends StatelessWidget {
   final HomeSection section;
@@ -203,80 +203,26 @@ class _ImageTile extends StatelessWidget {
   Widget build(BuildContext context) {
     if (data is! Map) return const SizedBox.shrink();
     final m = Map<String, dynamic>.from(data);
-    final imageUrl = m['imageUrl']?.toString() ?? '';
-    final title = m['title']?.toString() ?? '';
-    final subtitle = m['subtitle']?.toString() ?? '';
-    final link = m['link']?.toString();
-    final linkType = m['linkType']?.toString();
-    final linkValue = m['linkValue']?.toString();
+    final shape = section.shape ?? 'rounded';
+    final tileData = PhotoTileData.fromMap(
+      m,
+      defaultShape: shape == 'circle' ? 'circle' : 'rounded',
+      defaultOverlay: 'gradient',
+    );
+    if (tileData.imageUrl.isEmpty) return const SizedBox.shrink();
 
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(radius),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => openSectionLink(
-          context,
-          linkType: linkType,
-          linkValue: linkValue,
-          legacyLink: link,
-        ),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            AppNetworkImage(
-              url: imageUrl,
-              fit: BoxFit.cover,
-              radius: BorderRadius.zero,
-            ),
-            if (title.isNotEmpty || subtitle.isNotEmpty)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(10, 16, 10, 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: [
-                        Colors.black.withValues(alpha: 0.65),
-                        Colors.transparent,
-                      ],
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (title.isNotEmpty)
-                        Text(
-                          title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 12,
-                          ),
-                        ),
-                      if (subtitle.isNotEmpty)
-                        Text(
-                          subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 10,
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
-        ),
+    final h = _tileHeight(m, section, index);
+
+    return PhotoTile(
+      data: tileData,
+      width: double.infinity,
+      height: h,
+      expand: false,
+      onTap: () => openSectionLink(
+        context,
+        linkType: m['linkType']?.toString(),
+        linkValue: m['linkValue']?.toString(),
+        legacyLink: m['link']?.toString(),
       ),
     );
   }

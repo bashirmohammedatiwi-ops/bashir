@@ -95,11 +95,13 @@ export class ProductsService {
     if (q.search) {
       andFilters.push({
         OR: [
-          { name: { contains: q.search } },
-          { nameAr: { contains: q.search } },
-          { nameEn: { contains: q.search } },
-          { sku: { contains: q.search } },
-          { tags: { contains: q.search } },
+          { name: { contains: q.search, mode: "insensitive" } },
+          { nameAr: { contains: q.search, mode: "insensitive" } },
+          { nameEn: { contains: q.search, mode: "insensitive" } },
+          { sku: { contains: q.search, mode: "insensitive" } },
+          { barcode: { contains: q.search, mode: "insensitive" } },
+          { tags: { contains: q.search, mode: "insensitive" } },
+          { slug: { contains: q.search, mode: "insensitive" } },
         ],
       });
     }

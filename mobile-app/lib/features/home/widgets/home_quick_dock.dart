@@ -8,33 +8,33 @@ import '../../shell/main_shell.dart';
 import 'home_animations.dart';
 import 'home_theme.dart';
 
-/// اختصارات سريعة — 4 أيقونات بسيطة.
+/// اختصارات سريعة — أيقونات دائرية ناعمة.
 class HomeQuickDock extends ConsumerWidget {
   const HomeQuickDock({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final items = [
-      _Item(Icons.local_offer_outlined, 'العروض', AppColors.primary, () {
+      _Item(Icons.local_offer_outlined, 'العروض', HomeTheme.roseWash, AppColors.primary, () {
         ref.read(navIndexProvider.notifier).state = 2;
       }),
-      _Item(Icons.grid_view_rounded, 'الفئات', HomeTheme.sage, () {
+      _Item(Icons.grid_view_rounded, 'الفئات', HomeTheme.sageLight, HomeTheme.sage, () {
         ref.read(navIndexProvider.notifier).state = 1;
       }),
-      _Item(Icons.storefront_outlined, 'براندات', HomeTheme.inkSoft, () {
+      _Item(Icons.storefront_outlined, 'براندات', HomeTheme.sand, HomeTheme.inkSoft, () {
         context.push('/brands');
       }),
-      _Item(Icons.qr_code_scanner_rounded, 'مسح', HomeTheme.inkMuted, () {
+      _Item(Icons.qr_code_scanner_rounded, 'مسح', HomeTheme.lavender, HomeTheme.sageDark, () {
         context.push('/scan');
       }),
     ];
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 8, HomeTheme.paddingH, 4),
+      padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 10, HomeTheme.paddingH, 2),
       child: Row(
         children: [
           for (var i = 0; i < items.length; i++) ...[
-            if (i > 0) const SizedBox(width: 8),
+            if (i > 0) const SizedBox(width: 6),
             Expanded(
               child: HomeStaggerItem(index: i, child: items[i]),
             ),
@@ -48,10 +48,11 @@ class HomeQuickDock extends ConsumerWidget {
 class _Item extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color color;
+  final Color bg;
+  final Color iconColor;
   final VoidCallback onTap;
 
-  const _Item(this.icon, this.label, this.color, this.onTap);
+  const _Item(this.icon, this.label, this.bg, this.iconColor, this.onTap);
 
   @override
   Widget build(BuildContext context) {
@@ -60,22 +61,29 @@ class _Item extends StatelessWidget {
         HapticFeedback.selectionClick();
         onTap();
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: HomeTheme.sectionSurface(),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 20, color: color),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: HomeTheme.circleLabel,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: bg,
+              shape: BoxShape.circle,
+              border: Border.all(color: HomeTheme.surfaceMuted.withValues(alpha: 0.55)),
+              boxShadow: HomeTheme.whisperLift,
             ),
-          ],
-        ),
+            alignment: Alignment.center,
+            child: Icon(icon, size: 21, color: iconColor),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: HomeTheme.circleLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }
@@ -95,14 +103,43 @@ class HomeTrustStrip extends StatelessWidget {
         : 'توصيل سريع';
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 2, HomeTheme.paddingH, 8),
-      child: Text(
-        'أصلي · $shipping · دعم واتساب',
-        textAlign: TextAlign.center,
-        style: HomeTheme.body(size: 11, color: HomeTheme.inkMuted, weight: FontWeight.w500),
+      padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 6, HomeTheme.paddingH, 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _dot(),
+          const SizedBox(width: 8),
+          Text(
+            'أصلي',
+            style: HomeTheme.body(size: 11, color: HomeTheme.inkMuted, weight: FontWeight.w600),
+          ),
+          const SizedBox(width: 8),
+          _dot(),
+          const SizedBox(width: 8),
+          Text(
+            shipping,
+            style: HomeTheme.body(size: 11, color: HomeTheme.inkMuted, weight: FontWeight.w600),
+          ),
+          const SizedBox(width: 8),
+          _dot(),
+          const SizedBox(width: 8),
+          Text(
+            'دعم واتساب',
+            style: HomeTheme.body(size: 11, color: HomeTheme.inkMuted, weight: FontWeight.w600),
+          ),
+        ],
       ),
     );
   }
+
+  static Widget _dot() => Container(
+        width: 3,
+        height: 3,
+        decoration: BoxDecoration(
+          color: HomeTheme.sageMid,
+          shape: BoxShape.circle,
+        ),
+      );
 
   static String _format(int n) {
     if (n >= 1000) return '${(n / 1000).toStringAsFixed(0)}k';

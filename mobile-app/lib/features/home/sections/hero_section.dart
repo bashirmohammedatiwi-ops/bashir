@@ -42,15 +42,15 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
     final unread =
         auth.isAuthenticated ? ref.watch(unreadNotificationsCountProvider) : 0;
 
-    return ColoredBox(
-      color: HomeTheme.canvas,
+    return DecoratedBox(
+      decoration: HomeTheme.heroHeaderDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
             padding: EdgeInsets.fromLTRB(
               HomeTheme.paddingH,
-              topPad + 4,
+              topPad + 6,
               HomeTheme.paddingH,
               0,
             ),
@@ -62,9 +62,9 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
                   whatsapp: whatsapp,
                   onNotifications: () => context.push('/notifications'),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 14),
                 _GreetingRow(storeName: feed?.settings.storeName),
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 _SearchBar(
                   onSearch: () => context.push('/search'),
                   onScan: () => context.push('/scan'),
@@ -151,13 +151,12 @@ class _HeroBannerCarousel extends StatelessWidget {
         AnimatedSmoothIndicator(
           activeIndex: index,
           count: banners.length,
-          effect: ExpandingDotsEffect(
-            dotHeight: 6,
-            dotWidth: 6,
-            expansionFactor: 3,
-            spacing: 6,
+          effect: WormEffect(
+            dotHeight: 5,
+            dotWidth: 5,
+            spacing: 7,
             activeDotColor: HomeTheme.sage,
-            dotColor: HomeTheme.sage.withValues(alpha: 0.25),
+            dotColor: HomeTheme.sageMid,
           ),
         ),
       ],
@@ -180,16 +179,31 @@ class _GreetingRow extends StatelessWidget {
             : 'مساء النور';
     final name = (storeName ?? '').trim();
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(greeting, style: HomeTheme.sectionTitle(size: 17)),
-        if (name.isNotEmpty) ...[
-          const Spacer(),
-          Text(
-            name,
-            style: HomeTheme.body(size: 11, color: HomeTheme.inkMuted, weight: FontWeight.w600),
-          ),
-        ],
+        Text('مرحباً بك', style: HomeTheme.overline),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Text(greeting, style: HomeTheme.displayTitle(size: 22)),
+            if (name.isNotEmpty) ...[
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: HomeTheme.surface.withValues(alpha: 0.7),
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(color: HomeTheme.surfaceMuted.withValues(alpha: 0.7)),
+                ),
+                child: Text(
+                  name,
+                  style: HomeTheme.body(size: 10, color: HomeTheme.inkSoft, weight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ],
+        ),
       ],
     );
   }
@@ -238,12 +252,13 @@ class _RoundAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 40,
-      height: 40,
+      width: 42,
+      height: 42,
       decoration: BoxDecoration(
-        color: HomeTheme.surface,
+        color: HomeTheme.surface.withValues(alpha: 0.92),
         shape: BoxShape.circle,
-        border: Border.all(color: HomeTheme.surfaceMuted.withValues(alpha: 0.8)),
+        border: Border.all(color: HomeTheme.surfaceMuted.withValues(alpha: 0.75)),
+        boxShadow: HomeTheme.whisperLift,
       ),
       child: Stack(
         clipBehavior: Clip.none,
@@ -291,12 +306,12 @@ class _SearchBar extends StatelessWidget {
     return HomeTapScale(
       onTap: onSearch,
       child: Container(
-        height: 44,
-        decoration: HomeTheme.pillSurface(),
-        padding: const EdgeInsets.symmetric(horizontal: 14),
+        height: 48,
+        decoration: HomeTheme.pillSurface(fill: HomeTheme.surface),
+        padding: const EdgeInsets.only(left: 16, right: 6),
         child: Row(
           children: [
-            Icon(Icons.search_rounded, size: 19, color: HomeTheme.inkMuted),
+            Icon(Icons.search_rounded, size: 20, color: HomeTheme.sage),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -308,7 +323,17 @@ class _SearchBar extends StatelessWidget {
             ),
             HomeTapScale(
               onTap: onScan,
-              child: Icon(Icons.qr_code_scanner_rounded, size: 20, color: HomeTheme.sage),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: HomeTheme.sageLight,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: HomeTheme.sageMid.withValues(alpha: 0.6)),
+                ),
+                alignment: Alignment.center,
+                child: Icon(Icons.qr_code_scanner_rounded, size: 18, color: HomeTheme.sageDark),
+              ),
             ),
           ],
         ),

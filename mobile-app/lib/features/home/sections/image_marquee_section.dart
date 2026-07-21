@@ -32,6 +32,8 @@ class ImageMarqueeSection extends StatelessWidget {
         HomeMarqueeImage(
           url: url,
           width: imageW,
+          height: height,
+          shape: m['shape']?.toString() ?? 'rounded',
           onTap: () => openSectionLink(
             context,
             linkType: m['linkType']?.toString(),

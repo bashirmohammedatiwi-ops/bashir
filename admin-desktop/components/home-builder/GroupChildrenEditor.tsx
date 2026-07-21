@@ -31,7 +31,8 @@ const QUICK_CHILD_PRESETS: {
   { label: "شريط ترويج", type: "PROMO_STRIP", payload: { text: "عرض خاص — اضغط للتفاصيل", linkType: "offers" } },
   { label: "براندات", type: "FEATURED_BRANDS", title: "براندات مميزة" },
   { label: "مشاكل البشرة", type: "SKIN_CONCERNS", title: "تسوق حسب مشكلتك" },
-  { label: "معرض صور", type: "MEDIA_GALLERY", title: "اكتشفي المزيد", payload: { display: "scroll", items: [] } },
+  { label: "معرض صور", type: "PHOTO_WALL", title: "اكتشفي المزيد", payload: { display: "scroll", aspectRatio: "4:3", items: [] } },
+  { label: "Bento", type: "IMAGE_COLLAGE", title: "عروض", payload: { display: "bento", columns: 4, items: [] } },
 ];
 
 type Props = {

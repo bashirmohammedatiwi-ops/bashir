@@ -9,7 +9,7 @@ import '../../../data/models/product.dart';
 import 'home_animations.dart';
 import 'home_theme.dart';
 
-/// بطاقة منتج — flat، بسيطة.
+/// بطاقة منتج — flat، أنيقة، بسيطة.
 class HomeProductCard extends ConsumerWidget {
   final Product product;
   final double width;
@@ -38,39 +38,42 @@ class HomeProductCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
-              flex: 10,
+              flex: 11,
               child: Stack(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.all(10),
+                    padding: const EdgeInsets.all(8),
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(HomeTheme.tileRadius),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: ProductCoverImage(
-                          url: product.coverUrl,
-                          fit: BoxFit.contain,
+                      borderRadius: BorderRadius.circular(HomeTheme.tileRadius - 2),
+                      child: ColoredBox(
+                        color: HomeTheme.pearl,
+                        child: Padding(
+                          padding: const EdgeInsets.all(10),
+                          child: ProductCoverImage(
+                            url: product.coverUrl,
+                            fit: BoxFit.contain,
+                          ),
                         ),
                       ),
                     ),
                   ),
                   if (hasDiscount)
                     Positioned(
-                      top: 12,
-                      right: 12,
+                      top: 14,
+                      right: 14,
                       child: _badge('-${product.discountPercent.round()}%', AppColors.sale),
                     )
                   else if (showPromoBadge && product.isPromo)
                     Positioned(
-                      top: 12,
-                      right: 12,
-                      child: _badge('عرض', AppColors.primary),
+                      top: 14,
+                      right: 14,
+                      child: _badge('عرض', HomeTheme.sage),
                     ),
                 ],
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(11, 0, 11, 11),
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -86,12 +89,12 @@ class HomeProductCard extends ConsumerWidget {
                       weight: FontWeight.w600,
                     ),
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Text(formatPrice(product.price), style: HomeTheme.price.copyWith(fontSize: 13)),
                       if (hasDiscount) ...[
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 5),
                         Flexible(
                           child: Text(
                             formatPrice(product.originalPrice),
@@ -114,10 +117,11 @@ class HomeProductCard extends ConsumerWidget {
   }
 
   Widget _badge(String text, Color color) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(999),
+          boxShadow: HomeTheme.whisperLift,
         ),
         child: Text(
           text,

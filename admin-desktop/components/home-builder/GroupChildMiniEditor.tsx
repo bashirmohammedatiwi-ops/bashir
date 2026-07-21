@@ -89,6 +89,8 @@ export function GroupChildMiniEditor({ type, listIndex, entities }: Props) {
         </Form.Item>
       );
     case "MEDIA_GALLERY":
+    case "PHOTO_WALL":
+    case "IMAGE_COLLAGE":
     case "IMAGE_MARQUEE":
     case "IMAGE_TILES":
     case "CIRCLE_TILES":

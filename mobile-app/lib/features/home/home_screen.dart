@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/cache/home_image_precache.dart';
 import '../../core/network/api_client.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
@@ -53,54 +52,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       value: SystemUiOverlayStyle.dark,
       child: Scaffold(
         backgroundColor: HomeTheme.canvas,
-        body: HomeScrollScope(
-          offset: _scrollOffset,
-          child: feed.when(
-            loading: () => const HomeLoadingSkeleton(),
-            error: (e, _) => ErrorView(
-              message: friendlyError(e),
-              onRetry: () async {
-                await ref.read(apiCacheProvider).remove('home_v3');
-                ref.invalidate(homeFeedProvider);
-              },
-            ),
-            data: (data) {
-              if (_precachedFor != data.hashCode.toString()) {
-                _precachedFor = data.hashCode.toString();
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (mounted) precacheHomeFeedImages(context, data);
-                });
-              }
-              final sections = buildHomeSections(data);
-
-              return RefreshIndicator(
-                color: AppColors.primary,
-                backgroundColor: HomeTheme.surface,
-                edgeOffset: MediaQuery.paddingOf(context).top,
-                onRefresh: () async {
-                  HapticFeedback.mediumImpact();
+        body: HomeCanvasBackground(
+          child: HomeScrollScope(
+            offset: _scrollOffset,
+            child: feed.when(
+              loading: () => const HomeLoadingSkeleton(),
+              error: (e, _) => ErrorView(
+                message: friendlyError(e),
+                onRetry: () async {
                   await ref.read(apiCacheProvider).remove('home_v3');
                   ref.invalidate(homeFeedProvider);
-                  await ref.read(homeFeedProvider.future);
                 },
-                child: CustomScrollView(
-                  controller: _scroll,
-                  cacheExtent: 1200,
-                  physics: const AlwaysScrollableScrollPhysics(
-                    parent: BouncingScrollPhysics(),
-                  ),
-                  slivers: [
-                    for (final section in sections)
-                      SliverToBoxAdapter(child: section),
-                    SliverToBoxAdapter(
-                      child: SizedBox(
-                        height: MediaQuery.paddingOf(context).bottom + 96,
-                      ),
+              ),
+              data: (data) {
+                if (_precachedFor != data.hashCode.toString()) {
+                  _precachedFor = data.hashCode.toString();
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) precacheHomeFeedImages(context, data);
+                  });
+                }
+                final sections = buildHomeSections(data);
+
+                return RefreshIndicator(
+                  color: HomeTheme.sage,
+                  backgroundColor: HomeTheme.surface,
+                  displacement: 48,
+                  edgeOffset: MediaQuery.paddingOf(context).top,
+                  onRefresh: () async {
+                    HapticFeedback.mediumImpact();
+                    await ref.read(apiCacheProvider).remove('home_v3');
+                    ref.invalidate(homeFeedProvider);
+                    await ref.read(homeFeedProvider.future);
+                  },
+                  child: CustomScrollView(
+                    controller: _scroll,
+                    cacheExtent: 1200,
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
                     ),
-                  ],
-                ),
-              );
-            },
+                    slivers: [
+                      for (final section in sections)
+                        SliverToBoxAdapter(child: section),
+                      SliverToBoxAdapter(
+                        child: SizedBox(
+                          height: MediaQuery.paddingOf(context).bottom + 96,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
           ),
         ),
       ),

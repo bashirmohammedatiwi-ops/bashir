@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../data/models/home_section.dart';
 import '../home_link.dart';
 import 'home_theme.dart';
@@ -80,12 +79,17 @@ class HomeSectionShell extends StatelessWidget {
                 if (actionLabel != null && onAction != null)
                   GestureDetector(
                     onTap: onAction,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(actionLabel!, style: HomeTheme.viewAll),
-                        const Icon(Icons.arrow_back_ios_new_rounded, size: 10, color: AppColors.primary),
-                      ],
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                      decoration: HomeTheme.viewAllChipDecoration(),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(actionLabel!, style: HomeTheme.viewAll),
+                          const SizedBox(width: 3),
+                          Icon(Icons.arrow_back_ios_new_rounded, size: 9, color: HomeTheme.sageDark),
+                        ],
+                      ),
                     ),
                   ),
               ],

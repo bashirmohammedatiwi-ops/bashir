@@ -185,7 +185,9 @@ export function validateSection(block: {
       }
       break;
     }
-    case "MEDIA_GALLERY": {
+    case "MEDIA_GALLERY":
+    case "PHOTO_WALL":
+    case "IMAGE_COLLAGE": {
       const items = asArray(p.items);
       if (!items.length) warnings.push({ level: "warn", message: "أضف صورة واحدة على الأقل" });
       items.forEach((item, i) => {

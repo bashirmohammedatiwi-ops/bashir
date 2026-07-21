@@ -20,7 +20,7 @@ import { SectionLinksEditor } from "./SectionLinksEditor";
 import { SectionJsonTab } from "./SectionJsonTab";
 import { SectionType, labelForType, metaForType } from "./section-types";
 import { validateSection } from "./section-validation";
-import { FrameStyleFields, MediaGalleryStyleFields } from "./FrameStyleFields";
+import { FrameStyleFields, MediaGalleryStyleFields, PhotoWallStyleFields } from "./FrameStyleFields";
 import { MediaPicker } from "@/components/MediaPicker";
 
 const { Text, Title } = Typography;
@@ -208,10 +208,40 @@ export function SectionEditorPanel({
                         type="info"
                         showIcon
                         message="شكل المعرض"
-                        description="طريقة العرض، الحجم، والحركة — الصور نفسها من تبويب المحتوى"
+                        description="طريقة العرض، الحجم، والحركة — الصور من تبويب المحتوى"
                         style={{ marginBottom: 16 }}
                       />
                       <MediaGalleryStyleFields />
+                      <Divider plain style={{ margin: "20px 0 12px" }}>
+                        مظهر القسم
+                      </Divider>
+                    </>
+                  )}
+                  {type === "PHOTO_WALL" && (
+                    <>
+                      <Alert
+                        type="info"
+                        showIcon
+                        message="معرض صور متقدم"
+                        description="9+ أشكال · 11 نسبة · carousel · bento · overlay · ظل"
+                        style={{ marginBottom: 16 }}
+                      />
+                      <PhotoWallStyleFields />
+                      <Divider plain style={{ margin: "20px 0 12px" }}>
+                        مظهر القسم
+                      </Divider>
+                    </>
+                  )}
+                  {type === "IMAGE_COLLAGE" && (
+                    <>
+                      <Alert
+                        type="info"
+                        showIcon
+                        message="شبكة Bento"
+                        description="بلاطات بامتداد أعمدة/صفوف مختلف — من تبويب المحتوى"
+                        style={{ marginBottom: 16 }}
+                      />
+                      <PhotoWallStyleFields collage />
                       <Divider plain style={{ margin: "20px 0 12px" }}>
                         مظهر القسم
                       </Divider>

@@ -20,7 +20,7 @@ class SectionGroupSection extends StatelessWidget {
   Widget build(BuildContext context) {
     if (section.children.isEmpty) return const SizedBox.shrink();
 
-    final bg = parseHexColor(section.backgroundColor) ?? const Color(0xFFF8F4EF);
+    final bg = parseHexColor(section.backgroundColor) ?? HomeTheme.pearl;
     final border = parseHexColor(section.borderColor);
     final radius = section.borderRadius ?? 24;
     final padH = section.framePaddingH ?? 12;
@@ -35,15 +35,7 @@ class SectionGroupSection extends StatelessWidget {
           color: bg,
           borderRadius: BorderRadius.circular(radius),
           border: border != null ? Border.all(color: border.withValues(alpha: 0.35), width: 1) : null,
-          boxShadow: section.frameShadow
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ]
-              : null,
+          boxShadow: section.frameShadow ? HomeTheme.whisperLift : null,
         ),
         padding: EdgeInsets.fromLTRB(padH, padTop, padH, padBottom),
         child: Column(
