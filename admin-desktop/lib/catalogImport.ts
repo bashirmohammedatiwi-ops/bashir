@@ -114,7 +114,12 @@ async function catalogFetch<T>(path: string, timeoutMs = 60_000): Promise<T> {
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const res = await fetch(url, {
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+        "Cache-Control": "no-cache",
+        Pragma: "no-cache",
+      },
+      cache: "no-store",
       signal: ctrl.signal,
     });
     const json = await res.json();
@@ -503,76 +508,88 @@ export async function fetchCatalogProductSmart(
 
   const fetchId = opts?.listingAsin || sourceId;
   const expectedShades = Number(opts?.expectedShadeCount || 0);
+  const minExpectedShades = expectedShades > 1 ? Math.max(3, Math.floor(expectedShades * 0.5)) : 0;
 
-  const loadAmazon = async (refresh = false) => {
+  const mergeLightFull = (lightProduct: CatalogImportProduct | null, full: CatalogImportProduct) => {
+    if (lightProduct && (lightProduct.shades?.length || 0) > (full.shades?.length || 0)) {
+      const byAsin = new Map(
+        full.shades.map((s) => [String(s.sku || s.id || "").toUpperCase(), s]),
+      );
+      const mergedShades = lightProduct.shades.map((s) => {
+        const key = String(s.sku || s.id || "").toUpperCase();
+        const enriched = byAsin.get(key);
+        return enriched
+          ? {
+              ...s,
+              ...enriched,
+              nameAr: enriched.nameAr || s.nameAr,
+              nameEn: enriched.nameEn || s.nameEn,
+              imageUrl: enriched.imageUrl || s.imageUrl,
+              swatchUrl: enriched.swatchUrl || s.swatchUrl,
+              barcode: enriched.barcode || s.barcode,
+              colorHex: enriched.colorHex || s.colorHex,
+              price: enriched.price || s.price,
+              shadeNumber: enriched.shadeNumber || s.shadeNumber,
+              shadeCode: enriched.shadeCode || s.shadeCode,
+              position: enriched.position ?? s.position,
+            }
+          : s;
+      });
+      const seen = new Set(mergedShades.map((s) => String(s.sku || s.id || "").toUpperCase()));
+      for (const s of full.shades) {
+        const key = String(s.sku || s.id || "").toUpperCase();
+        if (key && !seen.has(key)) mergedShades.push(s);
+      }
+      return {
+        ...full,
+        descriptionAr: full.descriptionAr || lightProduct.descriptionAr,
+        descriptionEn: full.descriptionEn || lightProduct.descriptionEn,
+        shades: mergedShades,
+        hasShades: mergedShades.length > 1,
+      };
+    }
+    return full;
+  };
+
+  const loadAmazon = async (fetchAsin: string, refresh = false) => {
     let lightProduct: CatalogImportProduct | null = null;
     try {
       const refreshQ = refresh ? "&refresh=1" : "";
       const light = await catalogFetch<{ product: Record<string, unknown> }>(
-        `/api/catalog/${encodeURIComponent(storeId)}/products/${encodeURIComponent(fetchId)}?light=1${refreshQ}`,
+        `/api/catalog/${encodeURIComponent(storeId)}/products/${encodeURIComponent(fetchAsin)}?light=1${refreshQ}`,
         90_000,
       );
       lightProduct = mapImportProduct(light.product || {}, storeLabel);
-      if (lightProduct.shades?.length) onPartial?.(lightProduct);
+      const partialShades = lightProduct.shades?.length || 0;
+      const showPartial = partialShades > 1
+        && (!minExpectedShades || partialShades >= minExpectedShades);
+      if (showPartial) onPartial?.(lightProduct);
     } catch {
       lightProduct = null;
     }
 
-    const resolvedSourceId = lightProduct?.sourceId || sourceId;
+    const resolvedSourceId = lightProduct?.sourceId || fetchAsin || sourceId;
 
     try {
       const full = await fetchCatalogProduct(storeId, resolvedSourceId, storeLabel, { refresh });
-      // إن أعاد full تدرجات أقل من light — ادمج
-      if (lightProduct && (lightProduct.shades?.length || 0) > (full.shades?.length || 0)) {
-        const byAsin = new Map(
-          full.shades.map((s) => [String(s.sku || s.id || "").toUpperCase(), s]),
-        );
-        const mergedShades = lightProduct.shades.map((s) => {
-          const key = String(s.sku || s.id || "").toUpperCase();
-          const enriched = byAsin.get(key);
-          return enriched
-            ? {
-                ...s,
-                ...enriched,
-                nameAr: enriched.nameAr || s.nameAr,
-                nameEn: enriched.nameEn || s.nameEn,
-                imageUrl: enriched.imageUrl || s.imageUrl,
-                swatchUrl: enriched.swatchUrl || s.swatchUrl,
-                barcode: enriched.barcode || s.barcode,
-                colorHex: enriched.colorHex || s.colorHex,
-                price: enriched.price || s.price,
-                shadeNumber: enriched.shadeNumber || s.shadeNumber,
-                shadeCode: enriched.shadeCode || s.shadeCode,
-                position: enriched.position ?? s.position,
-              }
-            : s;
-        });
-        const seen = new Set(mergedShades.map((s) => String(s.sku || s.id || "").toUpperCase()));
-        for (const s of full.shades) {
-          const key = String(s.sku || s.id || "").toUpperCase();
-          if (key && !seen.has(key)) mergedShades.push(s);
-        }
-        return {
-          ...full,
-          descriptionAr: full.descriptionAr || lightProduct.descriptionAr,
-          descriptionEn: full.descriptionEn || lightProduct.descriptionEn,
-          shades: mergedShades,
-          hasShades: mergedShades.length > 1,
-        };
-      }
-      return full;
+      return mergeLightFull(lightProduct, full);
     } catch (err) {
       if (lightProduct) return lightProduct;
       throw err;
     }
   };
 
-  let product = await loadAmazon(false);
+  let product = await loadAmazon(fetchId, false);
+  if (minExpectedShades > 1 && (product.shades?.length || 0) < minExpectedShades) {
+    product = await loadAmazon(fetchId, true);
+  }
   if (
-    expectedShades > 1
-    && (product.shades?.length || 0) <= 1
+    minExpectedShades > 1
+    && (product.shades?.length || 0) < minExpectedShades
+    && opts?.listingAsin
+    && opts.listingAsin !== fetchId
   ) {
-    product = await loadAmazon(true);
+    product = await loadAmazon(opts.listingAsin, true);
   }
   return product;
 }

@@ -1,4 +1,4 @@
-import { cacheGet, cacheSet } from '../../core/cache.js';
+import { cacheGet, cachePeek, cacheSet } from '../../core/cache.js';
 import { splitBilingualText } from '../../core/bilingual.js';
 import { enrichShadeColorsFromImages } from '../../core/shade-color-from-image.js';
 import { IMPORT_SIZE, THUMB_SIZE, normalizeAmazonImageUrl } from '../../core/images.js';
@@ -2566,7 +2566,17 @@ export async function scrapeProductDetail(id, {
     source: 'scrape',
   };
 
-  cacheSet(cacheKey, detail);
+  const previous = skipCache ? cachePeek(cacheKey) : null;
+  const prevCount = previous?.shades?.length || 0;
+  if (previous && prevCount > shades.length) {
+    return previous;
+  }
+  if (shades.length <= 1 && expectedVariations > 3 && prevCount > 1) {
+    return previous;
+  }
+  if (shades.length > 1 || expectedVariations <= 1) {
+    cacheSet(cacheKey, detail);
+  }
   return detail;
 }
 

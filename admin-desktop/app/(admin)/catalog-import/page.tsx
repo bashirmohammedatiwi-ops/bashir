@@ -1263,8 +1263,15 @@ export default function CatalogImportPage() {
 
               {preview.shades.length > 0 && (
                 <div className="ci-drawer-section">
-                  <h4>التدرجات ({preview.shades.length})</h4>
-                  <div className="ci-shade-list">
+                  <h4>
+                    التدرجات ({preview.shades.length})
+                    {loadingPreview && (selected?.shadeCount || 0) > preview.shades.length ? (
+                      <span style={{ marginInlineStart: 8, fontWeight: 400, fontSize: 13 }}>
+                        / {selected?.shadeCount} جاري التحميل...
+                      </span>
+                    ) : null}
+                  </h4>
+                  <div className="ci-shade-list" style={{ maxHeight: 360, overflowY: "auto" }}>
                     {preview.shades.map((s, i) => {
                       const swatch = resolveCatalogImageUrl(s.swatchUrl || s.imageUrl || "");
                       const shadeBarcode = s.barcode && !isMiswagInternalId(s.barcode) ? s.barcode : "";

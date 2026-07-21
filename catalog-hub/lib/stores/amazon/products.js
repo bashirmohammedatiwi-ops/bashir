@@ -1,4 +1,4 @@
-import { cacheGet, cacheSet } from '../../core/cache.js';
+import { cacheGet, cacheSet, cacheDel } from '../../core/cache.js';
 import { IMPORT_SIZE, normalizeAmazonImageUrl } from '../../core/images.js';
 import {
   AMAZON_ALL_CATEGORY,
@@ -438,6 +438,11 @@ export async function fetchProductDetail(id, { light = false, refresh = false } 
   if (!usePaapi() || process.env.AMAZON_FORCE_PAAPI !== '1') {
     const canonical = await resolveRichestParentAsin(asin);
     const matchedChild = canonical !== asin ? asin : '';
+    if (refresh) {
+      cacheDel(`amazon:detail:v23:${canonical}`);
+      cacheDel(`amazon:richest-parent:v4:${asin}`);
+      cacheDel(`amazon:richest-parent:v4:${canonical}`);
+    }
     const scrapeOpts = {
       skipRedirect: true,
       matchedChildAsin: matchedChild,

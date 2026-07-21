@@ -11,6 +11,11 @@ export function cacheGet(key, ttlMs) {
   return entry.data;
 }
 
+/** قراءة آخر قيمة حتى لو انتهت صلاحيتها — للاحتفاظ بتدرجات أفضل عند فشل refresh */
+export function cachePeek(key) {
+  return stores.get(key)?.data ?? null;
+}
+
 export function cacheSet(key, data) {
   stores.set(key, { at: Date.now(), data });
   return data;
