@@ -21,10 +21,11 @@ class CategoryBrandsStrip extends StatelessWidget {
     this.subcategoryId,
   });
 
-  static const _tileWidth = 78.0;
-  static const _logoSize = 52.0;
+  static const _tileWidth = 82.0;
+  static const _logoSize = 56.0;
   static const _rowGap = 10.0;
   static const _colGap = 10.0;
+  static const _logoPadding = 8.0;
 
   @override
   Widget build(BuildContext context) {
@@ -77,23 +78,23 @@ class CategoryBrandsStripLoading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 52 + 34 + 10 + 52 + 34,
+      height: 56 + 34 + 10 + 56 + 34,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: 4,
         separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (_, __) => const SizedBox(
-          width: 78,
+          width: 82,
           child: Column(
             children: [
-              ShimmerBox(height: 52, width: 52, radius: 26),
+              ShimmerBox(height: 56, width: 56, radius: 28),
               SizedBox(height: 8),
-              ShimmerBox(height: 10, width: 60, radius: 4),
+              ShimmerBox(height: 10, width: 64, radius: 4),
               SizedBox(height: 10),
-              ShimmerBox(height: 52, width: 52, radius: 26),
+              ShimmerBox(height: 56, width: 56, radius: 28),
               SizedBox(height: 8),
-              ShimmerBox(height: 10, width: 60, radius: 4),
+              ShimmerBox(height: 10, width: 64, radius: 4),
             ],
           ),
         ),
@@ -131,43 +132,10 @@ class _BrandTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         child: Column(
           children: [
-            Container(
-              width: CategoryBrandsStrip._logoSize,
-              height: CategoryBrandsStrip._logoSize,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.surface,
-                border: Border.all(color: AppColors.hairline),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.ink.withValues(alpha: 0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: ClipOval(
-                child: brand.logoUrl.isNotEmpty
-                    ? AppNetworkImage(
-                        url: brand.logoUrl,
-                        width: CategoryBrandsStrip._logoSize,
-                        height: CategoryBrandsStrip._logoSize,
-                        fit: BoxFit.cover,
-                      )
-                    : ColoredBox(
-                        color: AppColors.primaryLight,
-                        child: Center(
-                          child: Text(
-                            brand.initial ?? brand.name.characters.first,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ),
-                      ),
-              ),
+            _BrandLogoCircle(
+              brand: brand,
+              size: CategoryBrandsStrip._logoSize,
+              padding: CategoryBrandsStrip._logoPadding,
             ),
             const SizedBox(height: 6),
             Text(
@@ -183,6 +151,76 @@ class _BrandTile extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BrandLogoCircle extends StatelessWidget {
+  final Brand brand;
+  final double size;
+  final double padding;
+
+  const _BrandLogoCircle({
+    required this.brand,
+    required this.size,
+    required this.padding,
+  });
+
+  Color _fallbackBg() {
+    final hex = brand.bgColorHex?.replaceFirst('#', '').trim();
+    if (hex == null || hex.length < 6) return AppColors.primaryLight;
+    try {
+      return Color(int.parse('FF${hex.substring(0, 6)}', radix: 16));
+    } catch (_) {
+      return AppColors.primaryLight;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final inner = size - (padding * 2);
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white,
+        border: Border.all(color: AppColors.hairline.withValues(alpha: 0.85)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.ink.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: Padding(
+          padding: EdgeInsets.all(padding),
+          child: brand.logoUrl.isNotEmpty
+              ? AppNetworkImage(
+                  url: brand.logoUrl,
+                  width: inner,
+                  height: inner,
+                  fit: BoxFit.contain,
+                  backgroundColor: Colors.white,
+                )
+              : ColoredBox(
+                  color: _fallbackBg(),
+                  child: Center(
+                    child: Text(
+                      brand.initial ?? brand.name.characters.first,
+                      style: TextStyle(
+                        fontSize: size * 0.34,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ),
         ),
       ),
     );
