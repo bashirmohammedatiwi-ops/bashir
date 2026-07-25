@@ -161,7 +161,12 @@ export default function ProductsPage() {
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["products-without-images-count"] });
     },
-    onError: () => message.error("تعذّر إخفاء المنتجات بدون صور"),
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? "تعذّر إخفاء المنتجات بدون صور";
+      message.error(typeof msg === "string" ? msg : "تعذّر إخفاء المنتجات بدون صور");
+    },
   });
 
   const upsert = useMutation({

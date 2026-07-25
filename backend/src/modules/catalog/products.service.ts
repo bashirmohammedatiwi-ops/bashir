@@ -9,7 +9,7 @@ import { CategoriesService } from "./categories.service";
 import { CreateProductDto, QueryProductsDto, UpdateProductDto } from "./dto/product.dto";
 import { InventorySyncService } from "../sync/inventory-sync.service";
 import { SettingsService } from "../settings/settings.service";
-import { withPlaceholderImages } from "../../common/product-placeholder.util";
+import { withPlaceholderImages, activeWithoutRealImagesWhere, hasRealProductImagesWhere } from "../../common/product-placeholder.util";
 import { sortShadesByNumber } from "../../common/shade-sort.util";
 
 const productRelationsFull = {
@@ -89,7 +89,7 @@ export class ProductsService {
         andFilters.push({ stock: { gt: 0 } });
       }
       if (s.hideProductsWithoutImages) {
-        andFilters.push({ images: { some: {} } });
+        andFilters.push(hasRealProductImagesWhere());
       }
     }
 
@@ -398,9 +398,9 @@ export class ProductsService {
   }
 
   /// فحص وجود منتج بنفس الباركود (المنتج نفسه أو أحد درجاته).
-  /** منتجات نشطة بدون صور مرفوعة (تظهر بالصورة الافتراضية فقط في التطبيق). */
+  /** منتجات نشطة بدون صور حقيقية (تظهر بالصورة الافتراضية فقط في التطبيق). */
   private activeWithoutImagesWhere(): Prisma.ProductWhereInput {
-    return { isActive: true, images: { none: {} } };
+    return activeWithoutRealImagesWhere();
   }
 
   async countActiveWithoutImages() {

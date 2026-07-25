@@ -6,7 +6,7 @@ import { CategoriesService } from "../catalog/categories.service";
 import { SettingsService } from "../settings/settings.service";
 
 import { buildAppLink, withResolvedLink } from "../../common/link-target.util";
-import { withPlaceholderImages } from "../../common/product-placeholder.util";
+import { withPlaceholderImages, hasRealProductImagesWhere } from "../../common/product-placeholder.util";
 import { resolveCardSize, sectionStyleFromPayload, withCardSize } from "./card-sizes.util";
 
 const productInclude = {
@@ -98,7 +98,7 @@ export class HomeSectionResolver {
     const s = (await this.settings.getAll()) as Record<string, unknown>;
     return {
       ...(s.hideOutOfStock ? { stock: { gt: 0 } } : {}),
-      ...(s.hideProductsWithoutImages ? { images: { some: {} } } : {}),
+      ...(s.hideProductsWithoutImages ? hasRealProductImagesWhere() : {}),
     };
   }
 

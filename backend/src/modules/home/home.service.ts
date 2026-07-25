@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { CmsPageKey } from "@prisma/client";
 import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { PrismaService } from "../../common/prisma.service";
-import { withPlaceholderImages } from "../../common/product-placeholder.util";
+import { withPlaceholderImages, hasRealProductImagesWhere } from "../../common/product-placeholder.util";
 import { BrandsService } from "../catalog/brands.service";
 import { CategoriesService } from "../catalog/categories.service";
 import { SettingsService } from "../settings/settings.service";
@@ -75,7 +75,7 @@ export class HomeService {
     const s = settings as Record<string, unknown>;
     const productVisibility = {
       ...(s.hideOutOfStock ? { stock: { gt: 0 } } : {}),
-      ...(s.hideProductsWithoutImages ? { images: { some: {} } } : {}),
+      ...(s.hideProductsWithoutImages ? hasRealProductImagesWhere() : {}),
     };
 
     const [
@@ -187,7 +187,7 @@ export class HomeService {
     const s = settings as Record<string, unknown>;
     const productVisibility = {
       ...(s.hideOutOfStock ? { stock: { gt: 0 } } : {}),
-      ...(s.hideProductsWithoutImages ? { images: { some: {} } } : {}),
+      ...(s.hideProductsWithoutImages ? hasRealProductImagesWhere() : {}),
     };
 
     const [banners, brands, packages, skinConcerns, offersBlocks, promoProducts] = await Promise.all([

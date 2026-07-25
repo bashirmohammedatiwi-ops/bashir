@@ -50,7 +50,7 @@ export class ProductsController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
   @Post("hide-without-images")
   hideWithoutImages() {
     return this.products.hideActiveWithoutImages();
