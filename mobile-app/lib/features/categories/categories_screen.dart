@@ -13,17 +13,19 @@ import '../../core/widgets/states.dart';
 import '../../data/models/category.dart';
 import '../catalog/catalog_providers.dart';
 import '../home/widgets/home_scroll_perf.dart';
+import 'widgets/category_brands_strip.dart';
 
 const double _kRailWidth = 86;
 const double _kRailItemHeight = 90;
 
-/// ألوان الصفحة — لوحة هادئة موحّدة بدون تعدد ألوان.
+/// ألوان الصفحة — لوحة هادئة موحّدة.
 abstract final class _CatPalette {
-  static const railBg = Color(0xFFFAF8F9);
+  static const canvas = Color(0xFFF9F7F8);
+  static const railBg = Color(0xFFFFFFFF);
   static const panelBg = Color(0xFFFFFFFF);
-  static const tileBg = Color(0xFFF7F4F5);
+  static const tileBg = Color(0xFFF5F2F3);
   static const tileActive = Color(0xFFFFF5F8);
-  static const imageWash = Color(0xFFF9F3F5);
+  static const imageWash = Color(0xFFFFF8FA);
 }
 
 /// إعدادات أداء التمرير والانتقال.
@@ -73,7 +75,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
     final cats = ref.watch(categoriesProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.scaffold,
+      backgroundColor: _CatPalette.canvas,
       body: cats.when(
         loading: () => const _CategoriesLoading(),
         error: (e, _) => SafeArea(
@@ -216,13 +218,23 @@ class _TopBar extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              'الأقسام',
-              style: AppTypography.sectionTitle.copyWith(
-                fontSize: 21,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.4,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'الأقسام',
+                  style: AppTypography.sectionTitle.copyWith(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'تصفّحي حسب القسم والبراند',
+                  style: AppTypography.caption.copyWith(fontSize: 12),
+                ),
+              ],
             ),
           ),
           _IconCircle(icon: Icons.search_rounded, onTap: onSearch),
@@ -384,61 +396,149 @@ class _RailTile extends StatelessWidget {
 
 // ─── Content body ─────────────────────────────────────────────────────────────
 
-class _CategoryBody extends StatelessWidget {
+class _CategoryBody extends ConsumerStatefulWidget {
   final Category parent;
   final Future<void> Function() onRefresh;
 
   const _CategoryBody({super.key, required this.parent, required this.onRefresh});
 
+  @override
+  ConsumerState<_CategoryBody> createState() => _CategoryBodyState();
+}
+
+class _CategoryBodyState extends ConsumerState<_CategoryBody> {
+  String? _selectedSubId;
+
+  @override
+  void didUpdateWidget(covariant _CategoryBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.parent.id != widget.parent.id) {
+      _selectedSubId = null;
+    }
+  }
+
   void _openAll(BuildContext context) {
-    context.push('/products?categoryId=${parent.id}&title=${Uri.encodeComponent(parent.name)}');
+    context.push(
+      '/products?categoryId=${widget.parent.id}&title=${Uri.encodeComponent(widget.parent.name)}',
+    );
+  }
+
+  void _onSubTap(Category sub) {
+    HapticFeedback.selectionClick();
+    setState(() => _selectedSubId = sub.id);
   }
 
   @override
   Widget build(BuildContext context) {
-    final subs = parent.children;
+    final subs = widget.parent.children;
     final detailed = subs.where((c) => c.children.isNotEmpty).toList(growable: false);
+    final brandsAsync = _selectedSubId != null
+        ? ref.watch(subcategoryBrandsProvider(_selectedSubId!))
+        : ref.watch(categoryBrandsProvider(widget.parent.id));
 
     return RefreshIndicator(
       color: AppColors.primary,
-      onRefresh: onRefresh,
+      onRefresh: () async {
+        ref.invalidate(categoryBrandsProvider(widget.parent.id));
+        if (_selectedSubId != null) {
+          ref.invalidate(subcategoryBrandsProvider(_selectedSubId!));
+        }
+        await widget.onRefresh();
+      },
       child: CustomScrollView(
-        key: PageStorageKey<String>('cat_scroll_${parent.id}'),
+        key: PageStorageKey<String>('cat_scroll_${widget.parent.id}'),
         physics: _CatPerf.scrollPhysics,
         cacheExtent: _CatPerf.bodyCacheExtent,
         slivers: [
           SliverToBoxAdapter(
             child: _BrowseAllBar(
-              parent: parent,
+              parent: widget.parent,
               subCount: subs.length,
               onTap: () => _openAll(context),
             ),
           ),
-          if (subs.isEmpty)
+          if (subs.isEmpty) ...[
             SliverFillRemaining(
               hasScrollBody: false,
               child: _NoSubsEmpty(onBrowse: () => _openAll(context)),
-            )
-          else ...[
+            ),
+            SliverToBoxAdapter(
+              child: brandsAsync.when(
+                loading: () => const Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _SectionLabel(title: 'البراندات'),
+                    CategoryBrandsStripLoading(),
+                  ],
+                ),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (brands) {
+                  if (brands.isEmpty) return const SizedBox.shrink();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const _SectionLabel(title: 'براندات القسم'),
+                      CategoryBrandsStrip(
+                        brands: brands,
+                        categoryId: widget.parent.id,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ] else ...[
             const SliverToBoxAdapter(child: _SectionLabel(title: 'الأقسام الفرعية')),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisSpacing: 14,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 0.8,
-                ),
-                delegate: SliverChildBuilderDelegate(
-                  (context, i) => _SubCard(
-                    key: ValueKey(subs[i].id),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 108,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  physics: _CatPerf.scrollPhysics,
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
+                  itemCount: subs.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (_, i) => _SubCircleChip(
                     category: subs[i],
+                    selected: _selectedSubId == subs[i].id,
+                    onTap: () => _onSubTap(subs[i]),
+                    onOpen: () {
+                      HapticFeedback.selectionClick();
+                      context.push(
+                        '/products?subcategoryId=${subs[i].id}&title=${Uri.encodeComponent(subs[i].name)}',
+                      );
+                    },
                   ),
-                  childCount: subs.length,
-                  addAutomaticKeepAlives: false,
-                  addRepaintBoundaries: true,
                 ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: brandsAsync.when(
+                loading: () => const Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _SectionLabel(title: 'البراندات'),
+                    CategoryBrandsStripLoading(),
+                  ],
+                ),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (brands) {
+                  if (brands.isEmpty) return const SizedBox.shrink();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _SectionLabel(
+                        title: _selectedSubId != null ? 'براندات القسم الفرعي' : 'براندات القسم',
+                        trailing: brands.length > 6 ? 'تمرير ←' : null,
+                      ),
+                      CategoryBrandsStrip(
+                        brands: brands,
+                        categoryId: _selectedSubId == null ? widget.parent.id : null,
+                        subcategoryId: _selectedSubId,
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
             if (detailed.isNotEmpty) ...[
@@ -465,21 +565,36 @@ class _CategoryBody extends StatelessWidget {
 
 class _SectionLabel extends StatelessWidget {
   final String title;
+  final String? trailing;
 
-  const _SectionLabel({required this.title});
+  const _SectionLabel({required this.title, this.trailing});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 20, 18, 2),
-      child: Text(
-        title,
-        style: AppTypography.caption.copyWith(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: AppColors.textMuted,
-          letterSpacing: 0.2,
-        ),
+      padding: const EdgeInsets.fromLTRB(18, 18, 18, 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: AppTypography.caption.copyWith(
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+                letterSpacing: -0.1,
+              ),
+            ),
+          ),
+          if (trailing != null)
+            Text(
+              trailing!,
+              style: AppTypography.caption.copyWith(
+                fontSize: 11,
+                color: AppColors.textMuted,
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -589,96 +704,73 @@ class _BrowseAllBar extends StatelessWidget {
   }
 }
 
-class _SubCard extends StatelessWidget {
+class _SubCircleChip extends StatelessWidget {
   final Category category;
+  final bool selected;
+  final VoidCallback onTap;
+  final VoidCallback onOpen;
 
-  const _SubCard({super.key, required this.category});
+  const _SubCircleChip({
+    required this.category,
+    required this.selected,
+    required this.onTap,
+    required this.onOpen,
+  });
+
+  static const _size = 58.0;
 
   @override
   Widget build(BuildContext context) {
-    final hasMore = category.children.isNotEmpty;
-
-    return RepaintBoundary(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            context.push(
-              '/products?subcategoryId=${category.id}&title=${Uri.encodeComponent(category.name)}',
-            );
-          },
-          borderRadius: BorderRadius.circular(16),
-          splashColor: AppColors.primary.withValues(alpha: 0.08),
-          child: Column(
-            children: [
-              Expanded(
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: _CatPalette.imageWash,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: LayoutBuilder(
-                            builder: (context, constraints) {
-                              final side = constraints.maxWidth;
-                              return _CatImage(
-                                category: category,
-                                fallbackSize: 20,
-                                size: side.isFinite ? side : 64,
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (hasMore)
-                      Positioned(
-                        top: 6,
-                        left: 6,
-                        child: Container(
-                          width: 18,
-                          height: 18,
-                          decoration: const BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            '${category.children.length}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
+    return SizedBox(
+      width: 72,
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: onTap,
+            onLongPress: onOpen,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              width: _size,
+              height: _size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selected ? AppColors.primaryLight : AppColors.surface,
+                border: Border.all(
+                  color: selected ? AppColors.primary : AppColors.hairline,
+                  width: selected ? 2 : 1,
                 ),
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primary.withValues(alpha: 0.12),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
               ),
-              const SizedBox(height: 8),
-              Text(
-                category.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 10.5,
-                  height: 1.25,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
+              child: ClipOval(
+                child: _CatImage(category: category, fallbackSize: 18, size: _size),
               ),
-            ],
+            ),
           ),
-        ),
+          const SizedBox(height: 6),
+          GestureDetector(
+            onTap: onOpen,
+            child: Text(
+              category.name,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 10,
+                height: 1.15,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                color: selected ? AppColors.primaryDark : AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

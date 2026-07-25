@@ -49,6 +49,16 @@ final brandsProvider = FutureProvider<List<Brand>>((ref) {
   return ref.read(apiServiceProvider).getBrands(all: true);
 });
 
+/// براندات مرتبطة بقسم رئيسي.
+final categoryBrandsProvider = FutureProvider.family<List<Brand>, String>((ref, categoryId) {
+  return ref.read(apiServiceProvider).getBrands(categoryId: categoryId);
+});
+
+/// براندات مرتبطة بقسم فرعي.
+final subcategoryBrandsProvider = FutureProvider.family<List<Brand>, String>((ref, subcategoryId) {
+  return ref.read(apiServiceProvider).getBrands(subcategoryId: subcategoryId);
+});
+
 final productDetailProvider =
     FutureProvider.family.autoDispose<Product, String>((ref, idOrSlug) {
   return ref.read(apiServiceProvider).getProduct(idOrSlug, forceRefresh: false);

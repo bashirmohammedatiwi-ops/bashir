@@ -175,6 +175,61 @@ export class BrandsService {
     return rows.map(mapBrand);
   }
 
+  /** براندات لها منتجات ضمن قسم رئيسي أو فرعي. */
+  async listForCategory(opts: {
+    categoryId?: string;
+    subcategoryId?: string;
+    storefront?: boolean;
+  }) {
+    const categoryId = opts.categoryId?.trim();
+    const subcategoryId = opts.subcategoryId?.trim();
+    if (!categoryId && !subcategoryId) return [];
+
+    const s = opts.storefront ? ((await this.settings.getAll()) as Record<string, unknown>) : {};
+    const productWhere: Prisma.ProductWhereInput = {
+      isActive: true,
+      ...(s.hideOutOfStock ? { stock: { gt: 0 } } : {}),
+      ...(subcategoryId
+        ? {
+            OR: [
+              { subcategoryId },
+              { subcategories: { some: { id: subcategoryId } } },
+              { tertiaryCategory: { parentId: subcategoryId } },
+              { tertiaryCategories: { some: { parentId: subcategoryId } } },
+            ],
+          }
+        : categoryId
+          ? {
+              OR: [
+                { categoryId },
+                { subcategory: { parentId: categoryId } },
+                { subcategories: { some: { parentId: categoryId } } },
+                { tertiaryCategory: { parent: { parentId: categoryId } } },
+                { tertiaryCategories: { some: { parent: { parentId: categoryId } } } },
+              ],
+            }
+          : {}),
+    };
+
+    const brandRows = await this.prisma.product.findMany({
+      where: productWhere,
+      select: { brandId: true },
+      distinct: ["brandId"],
+    });
+    const brandIds = brandRows.map((r) => r.brandId).filter(Boolean) as string[];
+    if (!brandIds.length) return [];
+
+    const rows = await this.prisma.brand.findMany({
+      where: { id: { in: brandIds }, isActive: true },
+      orderBy: [{ position: "asc" }, { name: "asc" }],
+      include: {
+        logo: true,
+        _count: { select: { products: true } },
+      },
+    });
+    return rows.map(mapBrand);
+  }
+
   /** إخفاء البراندات بدون منتجات ظاهرة — لوحة التحكم → إعدادات المتجر. */
   async filterStorefrontBrands<T extends { id: string }>(items: T[]): Promise<T[]> {
     const s = (await this.settings.getAll()) as Record<string, unknown>;

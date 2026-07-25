@@ -1,18 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models/product.dart';
-import '../../features/auth/auth_provider.dart';
-import '../../features/cart/cart_provider.dart';
-import '../../features/wishlist/wishlist_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
 import '../utils/formatters.dart';
 import 'app_network_image.dart';
-import 'app_snackbar.dart';
+import 'product_card_actions.dart';
 
 enum ProductCardStyle { standard, listing }
 
@@ -193,13 +189,13 @@ class _ListingImage extends StatelessWidget {
         ),
         Positioned(
           top: 10,
-          left: 10,
-          child: RepaintBoundary(child: _ListingWishButton(product: product)),
+          right: 10,
+          child: RepaintBoundary(child: ProductCardWishButton(product: product, size: 34)),
         ),
         if (badge != null)
           Positioned(
             top: 10,
-            right: 10,
+            left: 10,
             child: _ListingBadge(label: badge, sale: product.hasDiscount),
           ),
         if (hasShades)
@@ -314,43 +310,6 @@ class _ListingShades extends StatelessWidget {
   }
 }
 
-class _ListingWishButton extends ConsumerWidget {
-  final Product product;
-
-  const _ListingWishButton({required this.product});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final wished = ref.watch(wishlistProvider.select((s) => s.ids.contains(product.id)));
-
-    return Material(
-      color: Colors.white.withValues(alpha: 0.9),
-      elevation: 0,
-      shadowColor: Colors.transparent,
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: () async {
-          HapticFeedback.selectionClick();
-          if (!ref.read(authProvider).isAuthenticated) {
-            context.push('/login');
-            return;
-          }
-          await ref.read(wishlistProvider.notifier).toggle(product);
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Icon(
-            wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-            size: 16,
-            color: wished ? AppColors.sale : AppColors.textMuted,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _ListingInfo extends ConsumerWidget {
   final Product product;
   final bool showRating;
@@ -439,52 +398,10 @@ class _ListingInfo extends ConsumerWidget {
                   ],
                 ),
               ),
-              _ListingAddButton(product: product),
+              ProductCardCartControl(product: product, compact: true),
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ListingAddButton extends ConsumerWidget {
-  final Product product;
-
-  const _ListingAddButton({required this.product});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final enabled = product.inStock;
-
-    return Material(
-      color: enabled ? AppColors.primary : AppColors.divider,
-      shape: const CircleBorder(),
-      elevation: 0,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: enabled
-            ? () {
-                HapticFeedback.lightImpact();
-                if (product.shades.isNotEmpty) {
-                  context.push(
-                    '/product/${product.slug.isNotEmpty ? product.slug : product.id}',
-                  );
-                  return;
-                }
-                ref.read(cartProvider.notifier).add(product);
-                AppSnackbar.success(context, 'أُضيف إلى السلة');
-              }
-            : null,
-        child: SizedBox(
-          width: 34,
-          height: 34,
-          child: Icon(
-            Icons.add_rounded,
-            size: 20,
-            color: enabled ? Colors.white : AppColors.textMuted,
-          ),
-        ),
       ),
     );
   }
@@ -537,8 +454,8 @@ class _ImageSection extends StatelessWidget {
         ),
         Positioned(
           top: 10,
-          left: 10,
-          child: RepaintBoundary(child: _WishButton(product: product)),
+          right: 10,
+          child: RepaintBoundary(child: ProductCardWishButton(product: product)),
         ),
         if (product.hasDiscount)
           Positioned(
@@ -752,7 +669,7 @@ class _InfoSection extends ConsumerWidget {
                   ],
                 ),
               ),
-              _AddButton(product: product),
+              ProductCardCartControl(product: product),
             ],
           ),
         ],
@@ -791,94 +708,6 @@ class _Badge extends StatelessWidget {
           fontSize: 10,
           fontWeight: FontWeight.w900,
           height: 1,
-        ),
-      ),
-    );
-  }
-}
-
-class _AddButton extends ConsumerWidget {
-  final Product product;
-  const _AddButton({required this.product});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final enabled = product.inStock;
-    return Material(
-      color: Colors.transparent,
-      shape: const CircleBorder(),
-      child: Ink(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: enabled ? AppColors.primaryGradient : null,
-          color: enabled ? null : AppColors.divider,
-          boxShadow: enabled
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.28),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
-        ),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: enabled
-              ? () {
-                  HapticFeedback.lightImpact();
-                  if (product.shades.isNotEmpty) {
-                    context.push(
-                      '/product/${product.slug.isNotEmpty ? product.slug : product.id}',
-                    );
-                    return;
-                  }
-                  ref.read(cartProvider.notifier).add(product);
-                  AppSnackbar.success(context, 'أُضيف إلى السلة');
-                }
-              : null,
-          child: Icon(
-            Icons.add_rounded,
-            color: enabled ? Colors.white : AppColors.textMuted,
-            size: 20,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _WishButton extends ConsumerWidget {
-  final Product product;
-  const _WishButton({required this.product});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final wished = ref.watch(wishlistProvider.select((s) => s.ids.contains(product.id)));
-    return Material(
-      color: Colors.white,
-      shape: CircleBorder(side: BorderSide(color: AppColors.hairline.withValues(alpha: 0.8), width: 0.7)),
-      elevation: 0,
-      shadowColor: Colors.transparent,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: () async {
-          HapticFeedback.selectionClick();
-          if (!ref.read(authProvider).isAuthenticated) {
-            context.push('/login');
-            return;
-          }
-          await ref.read(wishlistProvider.notifier).toggle(product);
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Icon(
-            wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-            size: 16,
-            color: wished ? AppColors.sale : AppColors.textSecondary,
-          ),
         ),
       ),
     );

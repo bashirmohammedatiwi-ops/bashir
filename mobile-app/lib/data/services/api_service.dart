@@ -150,10 +150,16 @@ class ApiService {
   Future<List<Brand>> getBrands({
     bool featured = false,
     bool all = true,
+    String? categoryId,
+    String? subcategoryId,
     bool forceRefresh = false,
   }) async {
     try {
-      final key = 'brands_f${featured ? 1 : 0}_a${all ? 1 : 0}';
+      final key = categoryId != null
+          ? 'brands_cat_$categoryId'
+          : subcategoryId != null
+              ? 'brands_sub_$subcategoryId'
+              : 'brands_f${featured ? 1 : 0}_a${all ? 1 : 0}';
       final raw = await _cache.getOrFetch<List<dynamic>>(
         key: key,
         ttl: AppConfig.catalogCacheTtl,
@@ -162,6 +168,8 @@ class ApiService {
           final r = await _dio.get('/brands', queryParameters: {
             if (featured) 'featured': '1',
             if (all) 'all': '1',
+            if (categoryId != null) 'categoryId': categoryId,
+            if (subcategoryId != null) 'subcategoryId': subcategoryId,
           }, options: Options(extra: {'auth': false}));
           return asList(_data(r));
         },

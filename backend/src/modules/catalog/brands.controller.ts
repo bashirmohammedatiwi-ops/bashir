@@ -28,7 +28,16 @@ export class BrandsController {
     @Req() req: any,
     @Query("featured") featured?: string,
     @Query("all") all?: string,
+    @Query("categoryId") categoryId?: string,
+    @Query("subcategoryId") subcategoryId?: string,
   ) {
+    if (categoryId || subcategoryId) {
+      return this.service.listForCategory({
+        categoryId: categoryId || undefined,
+        subcategoryId: subcategoryId || undefined,
+        storefront: !isAdminViewRequest(req),
+      });
+    }
     return this.service.list({
       featuredOnly: featured === "1",
       all: all === "1",
