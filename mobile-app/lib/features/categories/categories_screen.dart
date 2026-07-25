@@ -464,18 +464,13 @@ class _CategoryBodyState extends ConsumerState<_CategoryBody> {
     final subs = widget.parent.children;
     final detailed = subs.where((c) => c.children.isNotEmpty).toList(growable: false);
     final selectedSub = _selectedSub;
-    final brandsAsync = _selectedSubId != null
-        ? ref.watch(subcategoryBrandsProvider(_selectedSubId!))
-        : ref.watch(categoryBrandsProvider(widget.parent.id));
+    final brandsAsync = ref.watch(categoryBrandsProvider(widget.parent.id));
 
     return RefreshIndicator(
       color: AppColors.primary,
       edgeOffset: 8,
       onRefresh: () async {
           ref.invalidate(categoryBrandsProvider(widget.parent.id));
-          if (_selectedSubId != null) {
-            ref.invalidate(subcategoryBrandsProvider(_selectedSubId!));
-          }
           await widget.onRefresh();
         },
         child: CustomScrollView(
@@ -497,7 +492,7 @@ class _CategoryBodyState extends ConsumerState<_CategoryBody> {
                 hasScrollBody: false,
                 child: _NoSubsEmpty(onBrowse: _openAll),
               ),
-              _brandsSliver(brandsAsync, widget.parent.id, null),
+              _brandsSliver(brandsAsync, widget.parent.id),
             ] else ...[
               SliverToBoxAdapter(
                 child: _SubcategoryStrip(
@@ -507,11 +502,7 @@ class _CategoryBodyState extends ConsumerState<_CategoryBody> {
                   onOpen: _openSub,
                 ),
               ),
-              _brandsSliver(
-                brandsAsync,
-                _selectedSubId == null ? widget.parent.id : null,
-                _selectedSubId,
-              ),
+              _brandsSliver(brandsAsync, widget.parent.id),
               if (detailed.isNotEmpty)
                 SliverToBoxAdapter(
                   child: Padding(
@@ -541,11 +532,7 @@ class _CategoryBodyState extends ConsumerState<_CategoryBody> {
       );
   }
 
-  Widget _brandsSliver(
-    AsyncValue<List<Brand>> brandsAsync,
-    String? categoryId,
-    String? subcategoryId,
-  ) {
+  Widget _brandsSliver(AsyncValue<List<Brand>> brandsAsync, String categoryId) {
     return SliverToBoxAdapter(
       child: brandsAsync.when(
         loading: () => const Padding(
@@ -553,7 +540,7 @@ class _CategoryBodyState extends ConsumerState<_CategoryBody> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _SectionTitle(title: 'البراندات'),
+              _SectionTitle(title: 'براندات القسم'),
               CategoryBrandsStripLoading(),
             ],
           ),
@@ -567,14 +554,13 @@ class _CategoryBodyState extends ConsumerState<_CategoryBody> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _SectionTitle(
-                  title: subcategoryId != null ? 'براندات القسم الفرعي' : 'براندات القسم',
+                  title: 'براندات القسم',
                   subtitle: '${brands.length} براند',
                   trailing: brands.length > 6 ? 'مرّري للمزيد' : null,
                 ),
                 CategoryBrandsStrip(
                   brands: brands,
                   categoryId: categoryId,
-                  subcategoryId: subcategoryId,
                 ),
               ],
             ),
@@ -648,7 +634,7 @@ class _HeroBanner extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       showSubCta
-                          ? 'براندات ومستحضرات ${selectedSub!.name}'
+                          ? 'منتجات ${selectedSub!.name}'
                           : subCount > 0
                               ? '$subCount قسم فرعي'
                               : 'كل منتجات القسم',
@@ -740,7 +726,7 @@ class _SubcategoryStrip extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
           child: _SectionTitle(
             title: 'الأقسام الفرعية',
-            subtitle: 'اختيار للبراندات · اضغطي الاسم للمنتجات',
+            subtitle: 'اضغطي الاسم لفتح المنتجات',
           ),
         ),
         SizedBox(
