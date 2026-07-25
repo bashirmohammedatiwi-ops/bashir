@@ -4,7 +4,7 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 
 /// مدير كاش الصور — مدة أقصر حتى تظهر تحديثات صور المنتجات أسرع.
 class AppImageCacheManager extends CacheManager with ImageCacheManager {
-  static const _key = 'alhayaaImages_v2';
+  static const _key = 'alhayaaImages_v3';
 
   static final AppImageCacheManager instance = AppImageCacheManager._();
 
@@ -12,8 +12,8 @@ class AppImageCacheManager extends CacheManager with ImageCacheManager {
       : super(
           Config(
             _key,
-            stalePeriod: const Duration(days: 3),
-            maxNrOfCacheObjects: 800,
+            stalePeriod: const Duration(hours: 12),
+            maxNrOfCacheObjects: 1000,
             fileService: HttpFileService(),
           ),
         );

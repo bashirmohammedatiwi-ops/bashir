@@ -67,30 +67,41 @@ class AppMedia {
     return null;
   }
 
-  /// يختار أصغر متغيّر يلبي عرض البكسل المطلوب.
+  String? _originalFileUrl() {
+    if (publicUrlBase.isEmpty || filename.isEmpty) return null;
+    final base = publicUrlBase.replaceAll(RegExp(r'/+$'), '');
+    // مسار ملف صورة كامل (نادر) — لا تخلط مع publicUrlBase الذي يحتوي نقطة من الدومين/IP.
+    if (RegExp(r'\.(webp|jpg|jpeg|png|avif)$', caseSensitive: false).hasMatch(base)) {
+      return resolveMediaUrl(base);
+    }
+    return resolveMediaUrl('$base/$filename.webp');
+  }
+
+  /// يختار أفضل متغيّر: الأصغر الذي يلبي العرض، أو الأكبر المتاح، ثم الأصل.
   String urlForTargetPixels(int targetPx) {
-    String? bestPath;
-    var bestWidth = 99999;
+    String? bestAtOrAbove;
+    var bestAtOrAboveWidth = 99999;
+    String? largestAvailable;
+    var largestWidth = 0;
 
     for (final entry in variantWidths.entries) {
       final path = _variantPath(entry.key);
       if (path == null) continue;
       final w = entry.value;
-      if (w >= targetPx && w < bestWidth) {
-        bestWidth = w;
-        bestPath = path;
+      if (w >= targetPx && w < bestAtOrAboveWidth) {
+        bestAtOrAboveWidth = w;
+        bestAtOrAbove = path;
+      } else if (w > largestWidth) {
+        largestWidth = w;
+        largestAvailable = path;
       }
     }
 
-    if (bestPath != null) return _bust(resolveMediaUrl(bestPath));
+    if (bestAtOrAbove != null) return _bust(resolveMediaUrl(bestAtOrAbove));
+    if (largestAvailable != null) return _bust(resolveMediaUrl(largestAvailable));
 
-    final original = _originalUrl();
+    final original = _originalFileUrl();
     if (original != null && original.isNotEmpty) return _bust(original);
-
-    for (final name in ['large', 'medium', 'small', 'thumb']) {
-      final p = _variantPath(name);
-      if (p != null) return _bust(resolveMediaUrl(p));
-    }
 
     return '';
   }

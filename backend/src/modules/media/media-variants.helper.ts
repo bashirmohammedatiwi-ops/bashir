@@ -99,6 +99,9 @@ export async function generateMediaVariants(
 
   await prisma.media.update({
     where: { id: mediaId },
-    data: { variants: variants as any },
+    data: {
+      variants: variants as any,
+      updatedAt: new Date(),
+    },
   });
 }

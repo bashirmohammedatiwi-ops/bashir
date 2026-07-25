@@ -42,6 +42,6 @@ class AppConfig {
   static const Duration homeCacheTtl = Duration(minutes: 5);
   /// أقسام الكتالوج تتغيّر أحياناً — كاش قصير + مفتاح إصدار في الـ API.
   static const Duration catalogCacheTtl = Duration(minutes: 10);
-  static const Duration productCacheTtl = Duration(minutes: 5);
-  static const Duration listingCacheTtl = Duration(minutes: 2);
+  static const Duration productCacheTtl = Duration(minutes: 2);
+  static const Duration listingCacheTtl = Duration(minutes: 1);
 }

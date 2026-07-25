@@ -179,8 +179,14 @@ class Product {
   }
 
   String get displayCoverUrl => coverUrl;
-  List<String> get galleryUrls =>
-      images.map((e) => e.fullUrl).where((e) => e.isNotEmpty).toList();
+  List<String> get galleryUrls => images
+      .map((e) {
+        final full = e.fullUrl;
+        if (full.isNotEmpty) return full;
+        return e.url;
+      })
+      .where((e) => e.isNotEmpty)
+      .toList();
   bool get inStock => stock > 0;
   bool get hasDiscount => discountPercent > 0 && originalPrice > price;
   String get brandName => brand?.name ?? '';

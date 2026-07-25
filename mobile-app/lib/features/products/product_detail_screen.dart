@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
+import '../../core/cache/image_cache.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -38,11 +39,26 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   int _quantity = 1;
   ProductShade? _shade;
   final _pageCtrl = PageController();
+  String? _precachedGalleryStamp;
 
   @override
   void dispose() {
     _pageCtrl.dispose();
     super.dispose();
+  }
+
+  void _precacheGallery(BuildContext context, Product product) {
+    final urls = product.galleryUrls;
+    if (urls.isEmpty) return;
+    final stamp = urls.join('|');
+    if (_precachedGalleryStamp == stamp) return;
+    _precachedGalleryStamp = stamp;
+    precacheProductCovers(
+      context,
+      urls,
+      limit: urls.length.clamp(1, 8),
+      layoutWidth: MediaQuery.sizeOf(context).width,
+    );
   }
 
   @override
@@ -100,6 +116,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   }
 
   Widget _buildContent(Product product) {
+    _precacheGallery(context, product);
     final gallery = product.galleryUrls.isNotEmpty ? product.galleryUrls : [''];
     final zoomableUrls = gallery.where((u) => u.trim().isNotEmpty).toList();
 

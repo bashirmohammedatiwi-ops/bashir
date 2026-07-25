@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/api_client.dart';
 import '../../data/models/brand.dart';
@@ -60,8 +62,20 @@ final subcategoryBrandsProvider = FutureProvider.family<List<Brand>, String>((re
 });
 
 final productDetailProvider =
-    FutureProvider.family.autoDispose<Product, String>((ref, idOrSlug) {
-  return ref.read(apiServiceProvider).getProduct(idOrSlug, forceRefresh: false);
+    FutureProvider.family.autoDispose<Product, String>((ref, idOrSlug) async {
+  final api = ref.read(apiServiceProvider);
+  final product = await api.getProduct(idOrSlug, forceRefresh: false);
+
+  final imageStamp = '${product.coverUrl}|${product.galleryUrls.join(',')}';
+  unawaited(() async {
+    try {
+      final fresh = await api.getProduct(idOrSlug, forceRefresh: true);
+      final freshStamp = '${fresh.coverUrl}|${fresh.galleryUrls.join(',')}';
+      if (freshStamp != imageStamp) ref.invalidateSelf();
+    } catch (_) {}
+  }());
+
+  return product;
 });
 
 final loyaltyProvider = FutureProvider.autoDispose<LoyaltySummary>((ref) {

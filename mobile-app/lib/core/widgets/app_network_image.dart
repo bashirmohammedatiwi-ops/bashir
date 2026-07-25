@@ -176,12 +176,25 @@ class ProductCoverImage extends StatelessWidget {
                 fit: fit,
                 fadeInDuration: const Duration(milliseconds: 60),
                 fadeOutDuration: Duration.zero,
+                useOldImageOnUrlChange: true,
                 memCacheWidth: pixelW,
                 memCacheHeight: pixelH,
                 maxWidthDiskCache: pixelW,
                 maxHeightDiskCache: pixelH,
                 filterQuality: filterQuality,
-                placeholder: (_, __) => const SizedBox.shrink(),
+                placeholder: (_, __) => ColoredBox(
+                  color: wellColor,
+                  child: Center(
+                    child: SizedBox(
+                      width: 28,
+                      height: 28,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primary.withValues(alpha: 0.35),
+                      ),
+                    ),
+                  ),
+                ),
                 errorWidget: (_, __, ___) => Center(
                   child: Image.asset(
                     _fallbackAsset,
