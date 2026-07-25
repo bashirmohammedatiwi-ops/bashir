@@ -12,6 +12,8 @@ export const queries = {
     api
       .get("/products/barcode-check", { params: { barcode } })
       .then((r) => r.data?.data ?? r.data),
+  productsWithoutImagesCount: () =>
+    api.get("/products/without-images/count").then((r) => r.data?.data ?? r.data),
   categories: () =>
     api.get("/categories", { params: { all: 1, minimal: 1 } }).then((r) => r.data?.data ?? r.data),
   categoriesFull: () =>
@@ -69,6 +71,8 @@ export const mutations = {
   updateProduct: (id: string, data: any) =>
     api.patch(`/products/${id}`, data).then((r) => r.data?.data ?? r.data),
   deleteProduct: (id: string) => api.delete(`/products/${id}`).then((r) => r.data),
+  hideProductsWithoutImages: () =>
+    api.post("/products/hide-without-images").then((r) => r.data?.data ?? r.data),
 
   createCategory: (data: any) => api.post("/categories", data).then((r) => r.data?.data ?? r.data),
   updateCategory: (id: string, data: any) =>

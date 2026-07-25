@@ -16,6 +16,7 @@ import {
   UpdateProfileDto,
 } from "./dto/auth.dto";
 import { Role } from "@prisma/client";
+import { normalizePhone } from "../../common/phone.util";
 
 @Injectable()
 export class AuthService {
@@ -25,17 +26,17 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const email = dto.email.trim().toLowerCase();
-    const exists = await this.prisma.user.findUnique({ where: { email } });
-    if (exists) {
-      throw new ConflictException("هذا البريد الإلكتروني مسجّل مسبقاً");
+    const phone = normalizePhone(dto.phone.trim());
+    const phoneTaken = await this.prisma.user.findUnique({ where: { phone } });
+    if (phoneTaken && !phoneTaken.deletedAt) {
+      throw new ConflictException("رقم الهاتف مستخدم في حساب آخر");
     }
 
-    const phone = dto.phone?.trim();
-    if (phone) {
-      const phoneTaken = await this.prisma.user.findUnique({ where: { phone } });
-      if (phoneTaken) {
-        throw new ConflictException("رقم الهاتف مستخدم في حساب آخر");
+    const email = dto.email?.trim().toLowerCase();
+    if (email) {
+      const exists = await this.prisma.user.findUnique({ where: { email } });
+      if (exists && !exists.deletedAt) {
+        throw new ConflictException("هذا البريد الإلكتروني مسجّل مسبقاً");
       }
     }
 
@@ -43,9 +44,9 @@ export class AuthService {
     try {
       const user = await this.prisma.user.create({
         data: {
-          email,
+          email: email || undefined,
           name: dto.name.trim(),
-          phone: phone || undefined,
+          phone,
           passwordHash,
           role: Role.CUSTOMER,
         },
@@ -64,10 +65,17 @@ export class AuthService {
   }
 
   async login(dto: LoginDto, meta?: { ip?: string; userAgent?: string }) {
-    const email = dto.email.trim().toLowerCase();
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user || !user.passwordHash) {
-      throw new UnauthorizedException("البريد الإلكتروني أو كلمة المرور غير صحيحة");
+    const email = dto.email?.trim().toLowerCase();
+    const phone = dto.phone?.trim() ? normalizePhone(dto.phone.trim()) : undefined;
+
+    const user = phone
+      ? await this.prisma.user.findUnique({ where: { phone } })
+      : email
+        ? await this.prisma.user.findUnique({ where: { email } })
+        : null;
+
+    if (!user || !user.passwordHash || user.deletedAt) {
+      throw new UnauthorizedException("رقم الهاتف أو كلمة المرور غير صحيحة");
     }
     if (!user.isActive) {
       throw new UnauthorizedException("تم تعطيل هذا الحساب");
@@ -75,7 +83,7 @@ export class AuthService {
 
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) {
-      throw new UnauthorizedException("البريد الإلكتروني أو كلمة المرور غير صحيحة");
+      throw new UnauthorizedException("رقم الهاتف أو كلمة المرور غير صحيحة");
     }
 
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
@@ -98,6 +106,14 @@ export class AuthService {
     });
     if (!session) throw new UnauthorizedException("Session not found");
     if (session.expiresAt < new Date()) throw new UnauthorizedException("Session expired");
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, isActive: true, deletedAt: true },
+    });
+    if (!user || !user.isActive || user.deletedAt) {
+      throw new UnauthorizedException("Session expired");
+    }
 
     await this.prisma.session.update({
       where: { id: session.id },
@@ -132,6 +148,8 @@ export class AuthService {
         phone: true,
         name: true,
         role: true,
+        isActive: true,
+        deletedAt: true,
         loyaltyPoints: true,
         birthday: true,
         avatarUrl: true,
@@ -139,7 +157,7 @@ export class AuthService {
         _count: { select: { orders: true, wishlist: true } },
       },
     });
-    if (!user) throw new UnauthorizedException();
+    if (!user || user.deletedAt || !user.isActive) throw new UnauthorizedException();
     const tier =
       user.loyaltyPoints >= 3000 ? "platinum"
       : user.loyaltyPoints >= 1500 ? "gold"
@@ -179,11 +197,21 @@ export class AuthService {
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const phone = dto.phone?.trim() ? normalizePhone(dto.phone.trim()) : undefined;
+    if (phone) {
+      const taken = await this.prisma.user.findFirst({
+        where: { phone, id: { not: userId }, deletedAt: null },
+      });
+      if (taken) {
+        throw new ConflictException("رقم الهاتف مستخدم في حساب آخر");
+      }
+    }
+
     return this.prisma.user.update({
       where: { id: userId },
       data: {
         name: dto.name,
-        phone: dto.phone,
+        phone,
         avatarUrl: dto.avatarUrl,
         birthday: dto.birthday ? new Date(dto.birthday) : undefined,
       },
@@ -197,6 +225,68 @@ export class AuthService {
         avatarUrl: true,
       },
     });
+  }
+
+  async deleteAccount(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, deletedAt: true, role: true },
+    });
+    if (!user || user.deletedAt) {
+      throw new BadRequestException("الحساب غير موجود أو محذوف مسبقاً");
+    }
+    if (user.role !== Role.CUSTOMER) {
+      throw new BadRequestException("لا يمكن حذف هذا النوع من الحسابات من التطبيق");
+    }
+
+    const tombstone = `deleted_${userId}`;
+    const now = new Date();
+
+    await this.prisma.$transaction([
+      this.prisma.session.updateMany({
+        where: { userId, revokedAt: null },
+        data: { revokedAt: now },
+      }),
+      this.prisma.wishlist.deleteMany({ where: { userId } }),
+      this.prisma.address.updateMany({
+        where: { userId },
+        data: {
+          fullName: "محذوف",
+          phone: tombstone,
+          city: "—",
+          governorate: null,
+          area: null,
+          street: null,
+          house: null,
+          notes: null,
+        },
+      }),
+      this.prisma.notification.deleteMany({ where: { userId } }),
+      this.prisma.deviceToken.deleteMany({ where: { userId } }),
+      this.prisma.loyaltyHistory.deleteMany({ where: { userId } }),
+      this.prisma.review.updateMany({
+        where: { userId },
+        data: { userId: null, userName: "مستخدم محذوف" },
+      }),
+      this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          isActive: false,
+          deletedAt: now,
+          name: null,
+          email: `${tombstone}@deleted.local`,
+          phone: tombstone,
+          passwordHash: null,
+          avatarUrl: null,
+          birthday: null,
+          loyaltyPoints: 0,
+          emailVerifiedAt: null,
+          phoneVerifiedAt: null,
+        },
+      }),
+    ]);
+
+    return { success: true, message: "تم حذف الحساب بنجاح" };
   }
 
   private async issueTokens(

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/auth_gate.dart';
+import '../../core/utils/phone_util.dart';
 import '../../data/services/api_service.dart';
 import '../auth/auth_provider.dart';
 
@@ -25,7 +26,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     super.initState();
     final user = ref.read(authProvider).user;
     _name = TextEditingController(text: user?.name ?? '');
-    _phone = TextEditingController(text: user?.phone ?? '');
+    _phone = TextEditingController(text: formatPhoneLocal(user?.phone));
   }
 
   @override
@@ -87,18 +88,23 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                 validator: (v) => (v == null || v.trim().length < 2) ? 'أدخل اسمك' : null,
               ),
               const SizedBox(height: 14),
-              TextFormField(
-                initialValue: user?.email,
-                enabled: false,
-                decoration: const InputDecoration(
-                    labelText: 'البريد الإلكتروني', prefixIcon: Icon(Icons.email_outlined)),
-              ),
-              const SizedBox(height: 14),
+              if (user?.email != null && user!.email!.isNotEmpty) ...[
+                TextFormField(
+                  initialValue: user.email,
+                  enabled: false,
+                  decoration: const InputDecoration(
+                      labelText: 'البريد الإلكتروني', prefixIcon: Icon(Icons.email_outlined)),
+                ),
+                const SizedBox(height: 14),
+              ],
               TextFormField(
                 controller: _phone,
                 keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(
-                    labelText: 'رقم الهاتف', prefixIcon: Icon(Icons.phone_outlined)),
+                    labelText: 'رقم الهاتف',
+                    hintText: '07701234567',
+                    prefixIcon: Icon(Icons.phone_outlined)),
+                validator: (v) => validateIraqiPhone(v),
               ),
               const SizedBox(height: 28),
               ElevatedButton(

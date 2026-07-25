@@ -4,12 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/friendly_error.dart';
+import '../../../core/utils/phone_util.dart';
 import '../../../core/widgets/app_snackbar.dart';
+import '../../../core/widgets/language_toggle_bar.dart';
 import '../auth_provider.dart';
+import '../widgets/auth_shell.dart';
+import '../../../features/cart/widgets/cart_theme.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -20,7 +24,6 @@ class RegisterScreen extends ConsumerStatefulWidget {
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
-  final _email = TextEditingController();
   final _phone = TextEditingController();
   final _password = TextEditingController();
   bool _obscure = true;
@@ -29,7 +32,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   void dispose() {
     _name.dispose();
-    _email.dispose();
     _phone.dispose();
     _password.dispose();
     super.dispose();
@@ -42,9 +44,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     try {
       await ref.read(authProvider.notifier).register(
             name: _name.text.trim(),
-            email: _email.text.trim(),
-            password: _password.text,
             phone: _phone.text.trim(),
+            password: _password.text,
           );
       if (mounted) {
         HapticFeedback.mediumImpact();
@@ -52,12 +53,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      final msg = friendlyError(e);
-      if (isEmailAlreadyRegisteredError(e)) {
+      final lang = ref.read(languageCodeProvider);
+      final msg = friendlyError(e, lang: lang);
+      if (isPhoneAlreadyRegisteredError(e)) {
         AppSnackbar.action(
           context,
           message: msg,
-          actionLabel: 'تسجيل الدخول',
+          actionLabel: ref.s.signIn,
           onAction: () => context.pop(),
         );
       } else {
@@ -72,99 +74,76 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     final s = ref.s;
     return Scaffold(
-      backgroundColor: AppColors.scaffold,
-      appBar: AppBar(title: Text(s.createAccount), elevation: 0),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.xxl),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('انضم إلى الحياة', style: AppTypography.sectionTitle.copyWith(fontSize: 24)),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  'أنشئ حسابك وابدأ التسوّق واكسب نقاط الولاء',
-                  style: AppTypography.caption.copyWith(fontSize: 14, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: AppSpacing.xxl),
-                TextFormField(
-                  controller: _name,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.name],
-                  decoration: const InputDecoration(
-                    labelText: 'الاسم الكامل',
-                    prefixIcon: Icon(Icons.person_outline_rounded),
-                  ),
-                  validator: (v) => (v == null || v.trim().length < 2) ? 'أدخل اسمك' : null,
-                ),
-                const SizedBox(height: AppSpacing.md + 2),
-                TextFormField(
-                  controller: _email,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.email],
-                  decoration: const InputDecoration(
-                    labelText: 'البريد الإلكتروني',
-                    prefixIcon: Icon(Icons.email_outlined),
-                  ),
-                  validator: (v) => (v == null || !v.contains('@')) ? 'أدخل بريداً صحيحاً' : null,
-                ),
-                const SizedBox(height: AppSpacing.md + 2),
-                TextFormField(
-                  controller: _phone,
-                  keyboardType: TextInputType.phone,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.telephoneNumber],
-                  decoration: const InputDecoration(
-                    labelText: 'رقم الهاتف (اختياري)',
-                    prefixIcon: Icon(Icons.phone_outlined),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md + 2),
-                TextFormField(
-                  controller: _password,
-                  obscureText: _obscure,
-                  textInputAction: TextInputAction.done,
-                  autofillHints: const [AutofillHints.newPassword],
-                  onFieldSubmitted: (_) => _submit(),
-                  decoration: InputDecoration(
-                    labelText: 'كلمة المرور',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                      onPressed: () => setState(() => _obscure = !_obscure),
-                    ),
-                  ),
-                  validator: (v) => (v == null || v.length < 6) ? 'كلمة المرور 6 أحرف على الأقل' : null,
-                ),
-                const SizedBox(height: AppSpacing.xxl),
-                SizedBox(
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: _loading ? null : _submit,
-                    child: _loading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.4),
-                          )
-                        : const Text('إنشاء الحساب'),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.lg),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+      backgroundColor: CartTheme.bg,
+      body: Column(
+        children: [
+          const LanguageToggleBar(),
+          Expanded(
+            child: AuthShell(
+              title: s.registerJoinTitle,
+              subtitle: s.registerPhoneSubtitle,
+              onBack: () => context.pop(),
+              footer: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(s.haveAccountAlready, style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                  TextButton(onPressed: () => context.pop(), child: Text(s.signIn)),
+                ],
+              ),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('لديك حساب بالفعل؟', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
-                    TextButton(onPressed: () => context.pop(), child: const Text('سجّل الدخول')),
+                    TextFormField(
+                      controller: _name,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.name],
+                      decoration: authFieldDecoration(label: s.fullName, icon: Icons.person_outline_rounded),
+                      validator: (v) => (v == null || v.trim().length < 2) ? s.enterYourName : null,
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _phone,
+                      keyboardType: TextInputType.phone,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.telephoneNumber],
+                      decoration: authFieldDecoration(
+                        label: s.phoneNumber,
+                        hint: '07701234567',
+                        icon: Icons.phone_outlined,
+                      ),
+                      validator: (v) => validateIraqiPhone(v),
+                    ),
+                    const SizedBox(height: 14),
+                    TextFormField(
+                      controller: _password,
+                      obscureText: _obscure,
+                      textInputAction: TextInputAction.done,
+                      autofillHints: const [AutofillHints.newPassword],
+                      onFieldSubmitted: (_) => _submit(),
+                      decoration: authFieldDecoration(
+                        label: s.password,
+                        icon: Icons.lock_outline_rounded,
+                        suffix: IconButton(
+                          icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                          onPressed: () => setState(() => _obscure = !_obscure),
+                        ),
+                      ),
+                      validator: (v) => (v == null || v.length < 6) ? s.passwordMin6 : null,
+                    ),
+                    const SizedBox(height: 22),
+                    authPrimaryButton(
+                      label: s.createAccount,
+                      onPressed: _loading ? null : _submit,
+                      loading: _loading,
+                    ),
                   ],
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

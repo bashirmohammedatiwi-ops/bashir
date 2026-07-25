@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AppstoreOutlined,
   CloudDownloadOutlined,
+  EyeInvisibleOutlined,
   PlusOutlined,
   SearchOutlined,
   UnorderedListOutlined,
@@ -120,6 +121,11 @@ export default function ProductsPage() {
     queryFn: queries.mediaStats,
     staleTime: 60_000,
   });
+  const { data: withoutImagesStats } = useQuery({
+    queryKey: ["products-without-images-count"],
+    queryFn: queries.productsWithoutImagesCount,
+    staleTime: 30_000,
+  });
   const { data: skinConcernsData } = useQuery({
     queryKey: ["skin-concerns"],
     queryFn: () => queries.skinConcerns(true),
@@ -141,6 +147,21 @@ export default function ProductsPage() {
       qc.invalidateQueries({ queryKey: ["products"] });
     },
     onError: () => message.error("تعذّر تحديث حالة المنتج"),
+  });
+
+  const hideWithoutImages = useMutation({
+    mutationFn: mutations.hideProductsWithoutImages,
+    onSuccess: (result: { hidden?: number }) => {
+      const n = Number(result?.hidden ?? 0);
+      message.success(
+        n > 0
+          ? `تم إيقاف ${n.toLocaleString("ar-IQ")} منتج بدون صورة — لن تظهر في التطبيق`
+          : "لا توجد منتجات نشطة بدون صور",
+      );
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["products-without-images-count"] });
+    },
+    onError: () => message.error("تعذّر إخفاء المنتجات بدون صور"),
   });
 
   const upsert = useMutation({
@@ -478,6 +499,30 @@ export default function ProductsPage() {
         subtitle={`${total.toLocaleString("ar-IQ")} منتج${isFetching && !isLoading ? " — جاري التحديث..." : ""}`}
         extra={
           <Space wrap>
+            <Popconfirm
+              title="إيقاف المنتجات بدون صور؟"
+              description={
+                withoutImagesStats?.count
+                  ? `سيتم إيقاف ${Number(withoutImagesStats.count).toLocaleString("ar-IQ")} منتج نشط يعرض الصورة الافتراضية فقط ولن يصل إلى تطبيق الهاتف.`
+                  : "لا توجد منتجات نشطة بدون صور حالياً."
+              }
+              onConfirm={() => hideWithoutImages.mutate()}
+              okText="إيقاف الكل"
+              cancelText="إلغاء"
+              okButtonProps={{ disabled: !withoutImagesStats?.count }}
+            >
+              <Button
+                size="large"
+                icon={<EyeInvisibleOutlined />}
+                loading={hideWithoutImages.isPending}
+                disabled={!withoutImagesStats?.count}
+              >
+                إخفاء بدون صور
+                {withoutImagesStats?.count
+                  ? ` (${Number(withoutImagesStats.count).toLocaleString("ar-IQ")})`
+                  : ""}
+              </Button>
+            </Popconfirm>
             <Link href="/catalog-import">
               <Button size="large" icon={<CloudDownloadOutlined />}>
                 استيراد من الكتالوج

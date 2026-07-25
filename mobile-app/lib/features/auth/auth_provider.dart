@@ -35,8 +35,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthState(AuthStatus.guest);
   }
 
-  Future<void> login(String email, String password) async {
-    final data = await _api.login(email, password);
+  Future<void> login(String phone, String password) async {
+    final data = await _api.login(phone, password);
     await _tokens.save(
       access: data['accessToken'] as String,
       refresh: data['refreshToken'] as String,
@@ -47,12 +47,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> register({
     required String name,
-    required String email,
+    required String phone,
     required String password,
-    String? phone,
+    String? email,
   }) async {
     final data = await _api.register(
-        name: name, email: email, password: password, phone: phone);
+        name: name, phone: phone, password: password, email: email);
     await _tokens.save(
       access: data['accessToken'] as String,
       refresh: data['refreshToken'] as String,
@@ -71,6 +71,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     final refresh = await _tokens.refresh;
     if (refresh != null) await _api.logout(refresh);
+    await _tokens.clear();
+    state = const AuthState(AuthStatus.guest);
+  }
+
+  Future<void> deleteAccount() async {
+    await _api.deleteAccount();
     await _tokens.clear();
     state = const AuthState(AuthStatus.guest);
   }

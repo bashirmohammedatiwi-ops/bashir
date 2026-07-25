@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/utils/responsive.dart';
 import '../../core/theme/app_colors.dart';
 import '../home/widgets/home_theme.dart';
 import '../cart/cart_provider.dart';
@@ -94,6 +95,7 @@ class _BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
+    final navHeight = Responsive.bottomNavHeight(context);
 
     return RepaintBoundary(
       child: Padding(
@@ -119,7 +121,7 @@ class _BottomNav extends StatelessWidget {
             child: ColoredBox(
               color: Colors.white,
               child: SizedBox(
-                height: 68,
+                height: navHeight,
                 child: Row(
                   children: [
                     _NavItem(
@@ -198,8 +200,9 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pillW = isCenter ? 46.0 : 42.0;
-    final pillH = isCenter ? 46.0 : 38.0;
+    final compact = Responsive.isCompact(context);
+    final pillW = isCenter ? (compact ? 42.0 : 46.0) : (compact ? 38.0 : 42.0);
+    final pillH = isCenter ? (compact ? 42.0 : 46.0) : (compact ? 34.0 : 38.0);
 
     return Expanded(
       child: Material(
@@ -277,7 +280,7 @@ class _NavItem extends StatelessWidget {
                 duration: _BottomNav._duration,
                 curve: _BottomNav._curve,
                 style: GoogleFonts.cairo(
-                  fontSize: active ? 10 : 9.5,
+                  fontSize: Responsive.navLabelSize(context, active: active),
                   fontWeight: active ? FontWeight.w800 : FontWeight.w600,
                   color: active ? AppColors.primaryDark : AppColors.textMuted,
                   height: 1,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/models/product.dart';
 import '../theme/app_spacing.dart';
+import '../utils/responsive.dart';
 import '../widgets/scroll_perf.dart';
 import 'product_card.dart';
 import 'shimmer_box.dart';
@@ -29,21 +30,16 @@ class ProductGrid extends StatelessWidget {
     this.header,
   });
 
-  static const _standardDelegate = SliverGridDelegateWithFixedCrossAxisCount(
-    crossAxisCount: 2,
-    childAspectRatio: 0.62,
-    crossAxisSpacing: AppSpacing.md,
-    mainAxisSpacing: AppSpacing.md,
-  );
-
-  static const _listingDelegate = SliverGridDelegateWithFixedCrossAxisCount(
-    crossAxisCount: 2,
-    childAspectRatio: 0.54,
-    crossAxisSpacing: 12,
-    mainAxisSpacing: 14,
-  );
-
-  static const gridDelegate = _standardDelegate;
+  static SliverGridDelegate delegateFor(BuildContext context, {bool listing = false}) {
+    final cols = Responsive.gridColumns(context);
+    final spacing = Responsive.gridSpacing(context);
+    return SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: cols,
+      childAspectRatio: Responsive.gridChildAspectRatio(context, listing: listing),
+      crossAxisSpacing: spacing,
+      mainAxisSpacing: listing ? 14 : spacing,
+    );
+  }
 
   int? _indexForKey(Key key) {
     if (key is! ValueKey<String>) return null;
@@ -54,7 +50,7 @@ class ProductGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final delegate = listingStyle ? _listingDelegate : _standardDelegate;
+    final delegate = delegateFor(context, listing: listingStyle);
     final itemCount = products.length + extraSlots;
 
     Widget itemBuilder(BuildContext context, int i) {

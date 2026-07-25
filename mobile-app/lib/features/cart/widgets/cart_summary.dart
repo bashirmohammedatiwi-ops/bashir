@@ -24,25 +24,22 @@ class CartSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 16, CartTheme.hPad, 0),
+      padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 18, CartTheme.hPad, 0),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(18),
         decoration: CartTheme.cardDecoration(),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('ملخص الطلب', style: AppTypography.screenTitle),
-            const SizedBox(height: 14),
             _Row(label: 'المجموع ($itemCount)', value: formatPrice(subtotal)),
             if (discount > 0) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               _Row(
                 label: 'خصم الكوبون',
                 value: '- ${formatPrice(discount)}',
                 valueColor: AppColors.success,
               ),
             ],
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             _Row(
               label: 'الشحن',
               value: freeShipping ? 'مجاني' : 'يُحسب عند الدفع',
@@ -50,7 +47,7 @@ class CartSummaryCard extends StatelessWidget {
               muted: !freeShipping,
             ),
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
+              padding: EdgeInsets.symmetric(vertical: 14),
               child: Divider(height: 1, color: AppColors.divider),
             ),
             Row(

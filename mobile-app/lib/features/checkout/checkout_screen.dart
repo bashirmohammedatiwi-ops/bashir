@@ -4,25 +4,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_typography.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/friendly_error.dart';
+import '../../core/utils/phone_util.dart';
 import '../../core/widgets/app_snackbar.dart';
-import '../../core/widgets/section_card.dart';
+import '../../core/widgets/auth_gate.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/address.dart';
 import '../../data/models/coupon.dart';
+import '../../data/models/user.dart';
 import '../../data/services/api_service.dart';
+import '../auth/auth_provider.dart';
 import '../cart/cart_provider.dart';
 import '../cart/coupon_provider.dart';
-import '../../core/widgets/auth_gate.dart';
-import '../auth/auth_provider.dart';
 import '../shell/main_shell.dart';
 import '../profile/profile_providers.dart';
-import '../profile/widgets/address_form.dart';
+import 'widgets/checkout_delivery_card.dart';
+import 'widgets/checkout_header.dart';
+import 'widgets/checkout_sections.dart';
+import 'widgets/checkout_theme.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -31,7 +32,14 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 }
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
-  Address? _selected;
+  final _formKey = GlobalKey<FormState>();
+  final _nameCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _streetCtrl = TextEditingController();
+  final _houseCtrl = TextEditingController();
+  final _couponCtrl = TextEditingController();
+  final _notesCtrl = TextEditingController();
+
   Coupon? _coupon;
   String? _couponError;
   int _shippingFee = 0;
@@ -41,8 +49,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   bool _useLoyalty = false;
   int _loyaltySpent = 0;
   String _paymentMethod = 'COD';
-  final _couponCtrl = TextEditingController();
-  final _notesCtrl = TextEditingController();
+  String? _governorate;
+  String? _area;
+  String? _addressId;
+  bool _bootstrapped = false;
 
   @override
   void initState() {
@@ -55,17 +65,56 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           _couponCtrl.text = c.code;
         });
       }
+      _maybeBootstrap();
     });
   }
 
   @override
   void dispose() {
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _streetCtrl.dispose();
+    _houseCtrl.dispose();
     _couponCtrl.dispose();
     _notesCtrl.dispose();
     super.dispose();
   }
 
+  void _maybeBootstrap() {
+    if (_bootstrapped) return;
+    final user = ref.read(authProvider).user;
+    final addresses = ref.read(addressesProvider).valueOrNull;
+    if (user == null) return;
+    _bootstrapFromUser(user, addresses);
+  }
+
+  void _bootstrapFromUser(AppUser user, List<Address>? addresses) {
+    if (_bootstrapped) return;
+    _nameCtrl.text = user.name;
+    _phoneCtrl.text = formatPhoneLocal(user.phone);
+    if (addresses != null && addresses.isNotEmpty) {
+      final preferred = addresses.firstWhere((a) => a.isDefault, orElse: () => addresses.first);
+      _applyAddress(preferred, refreshShipping: false);
+    }
+    _bootstrapped = true;
+    if (_governorate != null) _refreshShipping();
+  }
+
+  void _applyAddress(Address address, {bool refreshShipping = true}) {
+    setState(() {
+      _addressId = address.id;
+      if (address.fullName.trim().isNotEmpty) _nameCtrl.text = address.fullName;
+      if (address.phone.trim().isNotEmpty) _phoneCtrl.text = formatPhoneLocal(address.phone);
+      _governorate = address.governorate ?? address.city;
+      _area = address.area;
+      _streetCtrl.text = address.street ?? '';
+      _houseCtrl.text = address.house ?? '';
+    });
+    if (refreshShipping) _refreshShipping();
+  }
+
   Future<void> _refreshShipping() async {
+    if (_governorate == null || _governorate!.isEmpty) return;
     final subtotal = ref.read(cartProvider).subtotal;
     setState(() {
       _shippingLoading = true;
@@ -73,13 +122,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     });
     try {
       final fee = await ref.read(apiServiceProvider).shippingQuote(
-            governorate: _selected?.governorate ?? _selected?.city,
-            area: _selected?.area,
+            governorate: _governorate,
+            area: _area,
             subtotal: subtotal,
           );
-      setState(() => _shippingFee = fee);
+      if (mounted) setState(() => _shippingFee = fee);
     } catch (e) {
-      setState(() => _shippingError = friendlyError(e));
+      if (mounted) setState(() => _shippingError = friendlyError(e));
     } finally {
       if (mounted) setState(() => _shippingLoading = false);
     }
@@ -108,7 +157,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
       setState(() => _coupon = coupon);
       ref.read(appliedCouponProvider.notifier).state = coupon;
-    } catch (e) {
+    } catch (_) {
       setState(() {
         _coupon = null;
         _couponError = 'الكوبون غير صالح';
@@ -116,21 +165,45 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
   }
 
-  Future<void> _placeOrder() async {
-    final cart = ref.read(cartProvider);
-    if (_selected == null) {
-      AppSnackbar.error(context, 'يرجى اختيار عنوان التوصيل');
-      return;
+  Address _buildAddressFromForm() {
+    final city = _area?.isNotEmpty == true ? _area! : (_governorate ?? '');
+    return Address(
+      id: _addressId ?? '',
+      fullName: _nameCtrl.text.trim(),
+      phone: normalizePhone(_phoneCtrl.text.trim()),
+      city: city,
+      governorate: _governorate,
+      area: _area,
+      street: _streetCtrl.text.trim().isEmpty ? null : _streetCtrl.text.trim(),
+      house: _houseCtrl.text.trim().isEmpty ? null : _houseCtrl.text.trim(),
+      isDefault: true,
+    );
+  }
+
+  Future<Address> _upsertAddress() async {
+    final payload = _buildAddressFromForm();
+    final api = ref.read(apiServiceProvider);
+    if (_addressId != null && _addressId!.isNotEmpty) {
+      return api.updateAddress(_addressId!, payload);
     }
+    return api.createAddress(payload);
+  }
+
+  Future<void> _placeOrder() async {
+    if (!_formKey.currentState!.validate()) return;
     if (_paymentMethod == 'CARD') {
       AppSnackbar.show(context, 'الدفع بالبطاقة قيد التفعيل — اختر الدفع عند الاستلام حالياً');
       return;
     }
+    HapticFeedback.mediumImpact();
     setState(() => _placing = true);
     try {
+      final cart = ref.read(cartProvider);
+      final address = await _upsertAddress();
+      ref.invalidate(addressesProvider);
       final order = await ref.read(apiServiceProvider).createOrder(
             items: cart.items.map((e) => e.toOrderItem()).toList(),
-            addressId: _selected!.id,
+            addressId: address.id,
             couponCode: _coupon?.code,
             notes: _notesCtrl.text.trim(),
             loyaltySpent: _useLoyalty ? _loyaltySpent : 0,
@@ -175,9 +248,22 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Widget _buildCheckout(AppStrings s) {
     final cart = ref.watch(cartProvider);
+    final user = ref.watch(authProvider).user;
+    final addressesAsync = ref.watch(addressesProvider);
+
+    ref.listen(addressesProvider, (prev, next) {
+      next.whenData((list) {
+        if (!_bootstrapped && user != null) {
+          _bootstrapFromUser(user, list);
+          if (mounted) setState(() {});
+        }
+      });
+    });
+
     if (cart.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: Text(s.checkout), elevation: 0),
+        backgroundColor: CheckoutTheme.bg,
+        appBar: AppBar(title: Text(s.checkout), elevation: 0, backgroundColor: CheckoutTheme.bg),
         body: EmptyState(
           icon: Icons.shopping_bag_outlined,
           title: s.emptyCartTitle,
@@ -192,400 +278,104 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ),
       );
     }
-    final addresses = ref.watch(addressesProvider);
-    final points = ref.watch(authProvider).user?.points ?? 0;
+
+    final points = user?.points ?? 0;
     final subtotal = cart.subtotal;
     final discount = _coupon?.discountFor(subtotal) ?? 0;
     final shipping = (_coupon?.freeShipping ?? false) ? 0 : _shippingFee;
     final beforeLoyalty = (subtotal - discount + shipping).clamp(0, 1 << 31);
     final loyaltyDiscount = _useLoyalty ? _loyaltyDiscount : 0;
     final total = (beforeLoyalty - loyaltyDiscount).clamp(0, 1 << 31);
+    final savedAddresses = addressesAsync.valueOrNull ?? [];
 
     return Scaffold(
-      backgroundColor: AppColors.scaffold,
-      appBar: AppBar(title: Text(s.checkout), elevation: 0),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.lg),
+      backgroundColor: CheckoutTheme.bg,
+      body: Column(
         children: [
-          SectionTitle(s.deliveryAddress),
-          addresses.when(
-            loading: () => const Padding(
-              padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
-              child: ShimmerBox(height: 80, radius: AppRadius.lg),
-            ),
-            error: (e, _) => ErrorView.from(e, onRetry: () => ref.invalidate(addressesProvider)),
-            data: (list) {
-              if (_selected == null && list.isNotEmpty) {
-                _selected = list.firstWhere((a) => a.isDefault, orElse: () => list.first);
-              }
-              if (_selected != null && _shippingFee == 0 && !_shippingLoading) {
-                WidgetsBinding.instance.addPostFrameCallback((_) => _refreshShipping());
-              }
-              if (list.isEmpty) {
-                return _AddAddressCard(onAdd: () => _addAddress());
-              }
-              return Column(
+          CheckoutHeader(
+            itemCount: cart.count,
+            onBack: () => context.pop(),
+          ),
+          Expanded(
+            child: addressesAsync.when(
+              loading: () => ListView(
+                padding: EdgeInsets.only(bottom: CheckoutTheme.shellNavReserve(context) + 80),
+                children: const [
+                  Padding(
+                    padding: EdgeInsets.all(16),
+                    child: ShimmerBox(height: 280, radius: 20),
+                  ),
+                ],
+              ),
+              error: (e, _) => ErrorView.from(e, onRetry: () => ref.invalidate(addressesProvider)),
+              data: (_) => ListView(
+                padding: EdgeInsets.only(bottom: CheckoutTheme.shellNavReserve(context) + 90),
                 children: [
-                  for (final a in list)
-                    _AddressTile(
-                      address: a,
-                      selected: _selected?.id == a.id,
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _selected = a);
-                        _refreshShipping();
-                      },
+                  CheckoutDeliveryCard(
+                    formKey: _formKey,
+                    nameCtrl: _nameCtrl,
+                    phoneCtrl: _phoneCtrl,
+                    streetCtrl: _streetCtrl,
+                    houseCtrl: _houseCtrl,
+                    governorate: _governorate,
+                    area: _area,
+                    onGovernorateChanged: (v) => setState(() {
+                      _governorate = v;
+                      _area = null;
+                    }),
+                    onAreaChanged: (v) => setState(() => _area = v),
+                    savedAddresses: savedAddresses,
+                    selectedAddressId: _addressId,
+                    onPickAddress: (a) {
+                      HapticFeedback.selectionClick();
+                      _applyAddress(a);
+                    },
+                    onShippingChanged: _refreshShipping,
+                  ),
+                  const SizedBox(height: 14),
+                  CheckoutShippingBanner(error: _shippingError, onRetry: _refreshShipping),
+                  CheckoutCouponCard(
+                    controller: _couponCtrl,
+                    error: _couponError,
+                    appliedCode: _coupon?.code,
+                    onApply: _applyCoupon,
+                  ),
+                  const SizedBox(height: 14),
+                  CheckoutPaymentCard(
+                    paymentMethod: _paymentMethod,
+                    onChanged: (v) => setState(() => _paymentMethod = v),
+                  ),
+                  const SizedBox(height: 14),
+                  CheckoutNotesCard(controller: _notesCtrl),
+                  if (points >= 100) ...[
+                    const SizedBox(height: 14),
+                    CheckoutLoyaltyCard(
+                      points: points,
+                      useLoyalty: _useLoyalty,
+                      loyaltyDiscount: loyaltyDiscount,
+                      onChanged: (v) => _toggleLoyalty(v, points, beforeLoyalty),
                     ),
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: TextButton.icon(
-                      onPressed: _addAddress,
-                      icon: const Icon(Icons.add_rounded),
-                      label: const Text('إضافة عنوان جديد'),
-                    ),
+                  ],
+                  const SizedBox(height: 14),
+                  CheckoutSummaryCard(
+                    subtotal: subtotal,
+                    discount: discount,
+                    loyaltyDiscount: loyaltyDiscount,
+                    shipping: shipping,
+                    total: total,
+                    shippingLoading: _shippingLoading,
                   ),
-                ],
-              );
-            },
-          ),
-          if (_shippingError != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.sale.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.sale.withValues(alpha: 0.2)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.local_shipping_outlined, color: AppColors.sale, size: 18),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(_shippingError!, style: AppTypography.caption)),
-                  TextButton(onPressed: _refreshShipping, child: const Text('إعادة')),
+                  const SizedBox(height: 16),
                 ],
               ),
             ),
-          ],
-          const SizedBox(height: AppSpacing.lg),
-          const SectionTitle('كود الخصم'),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _couponCtrl,
-                  decoration: InputDecoration(
-                    hintText: 'أدخل كود الخصم',
-                    errorText: _couponError,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              SizedBox(
-                height: 52,
-                child: ElevatedButton(onPressed: _applyCoupon, child: const Text('تطبيق')),
-              ),
-            ],
           ),
-          if (_coupon != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: AppColors.success, size: 18),
-                  const SizedBox(width: 6),
-                  Text('تم تطبيق الكوبون ${_coupon!.code}',
-                      style: const TextStyle(color: AppColors.success)),
-                ],
-              ),
-            ),
-          const SizedBox(height: AppSpacing.lg),
-          const SectionTitle('طريقة الدفع'),
-          _PaymentOption(
-            title: 'الدفع عند الاستلام',
-            subtitle: 'ادفع نقداً عند استلام الطلب',
-            icon: Icons.payments_outlined,
-            selected: _paymentMethod == 'COD',
-            onTap: () => setState(() => _paymentMethod = 'COD'),
-          ),
-          const SizedBox(height: 8),
-          _PaymentOption(
-            title: 'بطاقة ائتمان / مدى',
-            subtitle: 'قريباً — سيتم تفعيل الدفع الإلكتروني',
-            icon: Icons.credit_card_rounded,
-            selected: _paymentMethod == 'CARD',
-            enabled: false,
-            badge: 'قريباً',
-            onTap: () {},
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          const SectionTitle('ملاحظات الطلب'),
-          TextField(
-            controller: _notesCtrl,
-            maxLines: 2,
-            decoration: const InputDecoration(hintText: 'أي تعليمات خاصة بالتوصيل...'),
-          ),
-          if (points >= 100) ...[
-            const SizedBox(height: AppSpacing.lg),
-            const SectionTitle('نقاط الولاء'),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: Text('استخدم $points نقطة', style: AppTypography.body.copyWith(fontWeight: FontWeight.w600)),
-              subtitle: Text(
-                _useLoyalty && _loyaltySpent > 0
-                    ? 'خصم ${formatPrice(loyaltyDiscount)} (100 نقطة = ${formatPrice(1000)})'
-                    : '100 نقطة = ${formatPrice(1000)}',
-                style: AppTypography.caption,
-              ),
-              value: _useLoyalty,
-              activeThumbColor: AppColors.primary,
-              onChanged: (v) => _toggleLoyalty(v, points, beforeLoyalty),
-            ),
-          ],
-          const SizedBox(height: AppSpacing.lg),
-          SectionCard(
-            title: 'ملخّص الطلب',
-            child: Column(
-              children: [
-                SummaryRow(label: 'المجموع الفرعي', value: formatPrice(subtotal)),
-                if (discount > 0)
-                  SummaryRow(label: 'الخصم', value: '- ${formatPrice(discount)}', valueColor: AppColors.success),
-                if (loyaltyDiscount > 0)
-                  SummaryRow(
-                    label: 'نقاط الولاء',
-                    value: '- ${formatPrice(loyaltyDiscount)}',
-                    valueColor: AppColors.success,
-                  ),
-                SummaryRow(
-                  label: 'الشحن',
-                  value: _shippingLoading ? '...' : (shipping == 0 ? 'مجاني' : formatPrice(shipping)),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                  child: Divider(height: 1),
-                ),
-                SummaryRow(label: 'الإجمالي', value: formatPrice(total), bold: true),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppSpacing.lg),
         ],
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm + 2, AppSpacing.lg, AppSpacing.sm + 2),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 14,
-                offset: const Offset(0, -2)),
-          ],
-        ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: 52,
-            child: ElevatedButton(
-              onPressed: _placing ? null : _placeOrder,
-              child: _placing
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.4))
-                  : Text('تأكيد الطلب • ${formatPrice(total)}'),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _addAddress() async {
-    final result = await showAddressForm(context);
-    if (result == null) return;
-    try {
-      final created = await ref.read(apiServiceProvider).createAddress(result);
-      ref.invalidate(addressesProvider);
-      setState(() => _selected = created);
-      _refreshShipping();
-    } catch (e) {
-      if (mounted) AppSnackbar.error(context, friendlyError(e));
-    }
-  }
-}
-
-class _AddressTile extends StatelessWidget {
-  final Address address;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _AddressTile({required this.address, required this.selected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Material(
-        color: selected ? AppColors.primaryLight : AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          child: Container(
-            padding: const EdgeInsets.all(AppSpacing.md + 2),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-              border: Border.all(color: selected ? AppColors.primary : AppColors.border, width: selected ? 1.5 : 1),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
-                  color: selected ? AppColors.primary : AppColors.textMuted,
-                ),
-                const SizedBox(width: AppSpacing.sm + 2),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(address.fullName, style: AppTypography.body.copyWith(fontWeight: FontWeight.w700)),
-                          if (address.isDefault) ...[
-                            const SizedBox(width: AppSpacing.sm),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(AppRadius.sm),
-                              ),
-                              child: Text(
-                                'افتراضي',
-                                style: AppTypography.caption.copyWith(
-                                  color: AppColors.primary,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(address.phone, style: AppTypography.caption),
-                      Text(address.summary, style: AppTypography.caption.copyWith(height: 1.4)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PaymentOption extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final bool selected;
-  final bool enabled;
-  final String? badge;
-  final VoidCallback onTap;
-
-  const _PaymentOption({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-    this.enabled = true,
-    this.badge,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Opacity(
-      opacity: enabled ? 1 : 0.55,
-      child: Material(
-        color: selected ? AppColors.primaryLight : AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: enabled ? onTap : null,
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: selected ? AppColors.primary : AppColors.border, width: selected ? 1.5 : 1),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: selected ? AppColors.primary : AppColors.textSecondary),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-                      const SizedBox(height: 2),
-                      Text(subtitle,
-                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                    ],
-                  ),
-                ),
-                if (badge != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.warning.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(badge!,
-                        style: const TextStyle(
-                            color: AppColors.warning, fontSize: 11, fontWeight: FontWeight.w800)),
-                  )
-                else
-                  Icon(
-                    selected ? Icons.radio_button_checked : Icons.radio_button_off,
-                    color: selected ? AppColors.primary : AppColors.textMuted,
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AddAddressCard extends StatelessWidget {
-  final VoidCallback onAdd;
-  const _AddAddressCard({required this.onAdd});
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onAdd,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.primary, style: BorderStyle.solid),
-          color: AppColors.primaryLight,
-        ),
-        child: Row(
-          children: const [
-            Icon(Icons.add_location_alt_outlined, color: AppColors.primary),
-            SizedBox(width: 10),
-            Text('أضف عنوان التوصيل', style: TextStyle(fontWeight: FontWeight.w700)),
-          ],
-        ),
+      bottomNavigationBar: CheckoutBottomBar(
+        total: total,
+        placing: _placing,
+        onPlace: _placeOrder,
       ),
     );
   }

@@ -5,12 +5,15 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/l10n/app_strings.dart';
-import '../../core/l10n/locale_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../core/utils/phone_util.dart';
+import '../../core/utils/responsive.dart';
 import '../../core/utils/support_links.dart';
+import '../../core/widgets/language_toggle_bar.dart';
 import '../auth/auth_provider.dart';
+import '../cart/widgets/cart_theme.dart';
 import '../catalog/catalog_providers.dart';
 import 'profile_providers.dart';
 
@@ -21,80 +24,82 @@ class AccountScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
     final s = ref.watch(stringsProvider);
-    final lang = ref.watch(languageCodeProvider);
-    final top = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
-      backgroundColor: AppColors.scaffold,
-      body: !auth.isAuthenticated
-          ? _GuestAccount(topPad: top, s: s)
-          : ListView(
-              padding: EdgeInsets.only(bottom: AppSpacing.huge + 40),
-              children: [
-                _ProfileHeader(topPad: top),
-                const SizedBox(height: AppSpacing.md),
-                _QuickActions(),
-                const SizedBox(height: AppSpacing.lg),
-                _MenuGroup(
-                  title: s.myPurchases,
-                  children: [
-                    _tile(context, Icons.receipt_long_outlined, s.myOrders, () => context.push('/orders')),
-                    _tile(context, Icons.favorite_border_rounded, s.wishlist, () => context.push('/wishlist')),
-                    _tile(context, Icons.storefront_outlined, s.brands, () => context.push('/brands')),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                _MenuGroup(
-                  title: s.myAccount,
-                  children: [
-                    _tile(context, Icons.location_on_outlined, s.addresses, () => context.push('/addresses')),
-                    _tile(context, Icons.stars_outlined, s.loyaltyPoints, () => context.push('/loyalty')),
-                    _tile(
-                      context,
-                      Icons.notifications_none_rounded,
-                      s.notifications,
-                      () => context.push('/notifications'),
-                      badge: ref.watch(unreadNotificationsCountProvider),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                _SupportSection(s: s),
-                const SizedBox(height: AppSpacing.md),
-                _MenuGroup(
-                  title: s.settings,
-                  children: [
-                    _tile(context, Icons.edit_outlined, s.editProfile, () => context.push('/edit-profile')),
-                    _tile(context, Icons.lock_outline_rounded, s.changePassword, () => context.push('/change-password')),
-                    _tile(
-                      context,
-                      Icons.language_rounded,
-                      s.language,
-                      () => context.push('/language-settings'),
-                      trailing: Text(
-                        lang == 'ar' ? s.arabic : s.english,
-                        style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700),
+      backgroundColor: CartTheme.bg,
+      body: Column(
+        children: [
+          const LanguageToggleBar(),
+          Expanded(
+            child: !auth.isAuthenticated
+                ? _GuestAccount(s: s)
+                : ListView(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.huge + 40),
+                    children: [
+                      _ProfileHeader(),
+                      const SizedBox(height: AppSpacing.md),
+                      _QuickActions(),
+                      const SizedBox(height: AppSpacing.lg),
+                      _MenuGroup(
+                        title: s.myPurchases,
+                        children: [
+                          _tile(context, Icons.receipt_long_outlined, s.myOrders, () => context.push('/orders')),
+                          _tile(context, Icons.favorite_border_rounded, s.wishlist, () => context.push('/wishlist')),
+                          _tile(context, Icons.storefront_outlined, s.brands, () => context.push('/brands')),
+                        ],
                       ),
-                    ),
-                    _tile(context, Icons.info_outline_rounded, s.aboutApp, () => _about(context, s)),
-                    _tile(
-                      context,
-                      Icons.logout_rounded,
-                      s.logout,
-                      () => _logout(context, ref, s),
-                      color: AppColors.sale,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                Center(
-                  child: Text(
-                    '${AppConfig.storeName} • ${s.version} 1.0.0',
-                    style: AppTypography.caption,
+                      const SizedBox(height: AppSpacing.md),
+                      _MenuGroup(
+                        title: s.myAccount,
+                        children: [
+                          _tile(context, Icons.location_on_outlined, s.addresses, () => context.push('/addresses')),
+                          _tile(context, Icons.stars_outlined, s.loyaltyPoints, () => context.push('/loyalty')),
+                          _tile(
+                            context,
+                            Icons.notifications_none_rounded,
+                            s.notifications,
+                            () => context.push('/notifications'),
+                            badge: ref.watch(unreadNotificationsCountProvider),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      _SupportSection(s: s),
+                      const SizedBox(height: AppSpacing.md),
+                      _MenuGroup(
+                        title: s.settings,
+                        children: [
+                          _tile(context, Icons.edit_outlined, s.editProfile, () => context.push('/edit-profile')),
+                          _tile(context, Icons.lock_outline_rounded, s.changePassword, () => context.push('/change-password')),
+                          _tile(context, Icons.info_outline_rounded, s.aboutApp, () => _about(context, s)),
+                          _tile(
+                            context,
+                            Icons.logout_rounded,
+                            s.logout,
+                            () => _logout(context, ref, s),
+                            color: AppColors.sale,
+                          ),
+                          _tile(
+                            context,
+                            Icons.delete_forever_outlined,
+                            s.deleteAccount,
+                            () => _deleteAccount(context, ref, s),
+                            color: AppColors.sale,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      Center(
+                        child: Text(
+                          '${AppConfig.storeName} • ${s.version} 1.0.0',
+                          style: AppTypography.caption.copyWith(color: CartTheme.charcoal.withValues(alpha: 0.5)),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -113,10 +118,10 @@ class AccountScreen extends ConsumerWidget {
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: (color ?? AppColors.primary).withValues(alpha: 0.08),
+            color: (color ?? CartTheme.brand).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: color ?? AppColors.primary, size: 22),
+          child: Icon(icon, color: color ?? CartTheme.brandDark, size: 22),
         ),
         title: Text(
           title,
@@ -180,24 +185,58 @@ class AccountScreen extends ConsumerWidget {
       await ref.read(authProvider.notifier).logout();
     }
   }
+
+  Future<void> _deleteAccount(BuildContext context, WidgetRef ref, AppStrings s) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
+        title: Text(s.deleteAccountTitle),
+        content: Text(s.deleteAccountBody),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(s.cancel)),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              s.deleteAccountConfirm,
+              style: const TextStyle(color: AppColors.sale, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !context.mounted) return;
+
+    try {
+      await ref.read(authProvider.notifier).deleteAccount();
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(s.deleteAccountSuccess)),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
+  }
 }
 
 class _GuestAccount extends StatelessWidget {
-  final double topPad;
   final AppStrings s;
-  const _GuestAccount({required this.topPad, required this.s});
+  const _GuestAccount({required this.s});
 
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: EdgeInsets.fromLTRB(AppSpacing.lg, topPad + 16, AppSpacing.lg, 120),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 16, AppSpacing.lg, 120),
       children: [
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            gradient: AppColors.luxuryGradient,
+            gradient: CartTheme.brandGradient,
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: AppColors.hairline),
+            boxShadow: CartTheme.softShadow,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,7 +245,7 @@ class _GuestAccount extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: const Icon(Icons.person_rounded, color: Colors.white, size: 28),
@@ -214,12 +253,12 @@ class _GuestAccount extends StatelessWidget {
               const SizedBox(height: 18),
               Text(
                 s.guestWelcome,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.4),
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.4),
               ),
               const SizedBox(height: 8),
               Text(
                 s.guestSubtitle,
-                style: AppTypography.body.copyWith(color: AppColors.textSecondary),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.85), height: 1.4),
               ),
               const SizedBox(height: 22),
               SizedBox(
@@ -245,19 +284,13 @@ class _GuestAccount extends StatelessWidget {
           title: s.explore,
           children: [
             ListTile(
-              leading: const Icon(Icons.storefront_outlined, color: AppColors.primary),
+              leading: const Icon(Icons.storefront_outlined, color: CartTheme.brandDark),
               title: Text(s.brands, style: const TextStyle(fontWeight: FontWeight.w700)),
               trailing: const Icon(Icons.chevron_left_rounded),
               onTap: () => context.push('/brands'),
             ),
             ListTile(
-              leading: const Icon(Icons.language_rounded, color: AppColors.primary),
-              title: Text(s.language, style: const TextStyle(fontWeight: FontWeight.w700)),
-              trailing: const Icon(Icons.chevron_left_rounded),
-              onTap: () => context.push('/language-settings'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.info_outline_rounded, color: AppColors.primary),
+              leading: const Icon(Icons.info_outline_rounded, color: CartTheme.brandDark),
               title: Text(s.aboutApp, style: const TextStyle(fontWeight: FontWeight.w700)),
               trailing: const Icon(Icons.chevron_left_rounded),
               onTap: () => showAboutDialog(
@@ -285,43 +318,70 @@ class _QuickActions extends ConsumerWidget {
     ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-      child: Row(
-        children: [
-          for (var i = 0; i < actions.length; i++) ...[
-            if (i > 0) const SizedBox(width: 10),
-            Expanded(
-              child: Material(
-                color: AppColors.surface,
+      padding: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = Responsive.isCompact(context);
+          final labelStyle = TextStyle(
+            fontSize: compact ? 9.5 : 11,
+            fontWeight: FontWeight.w800,
+          );
+
+          Widget actionTile((IconData, String, VoidCallback) action) {
+            return Material(
+              color: CartTheme.card,
+              borderRadius: BorderRadius.circular(16),
+              child: InkWell(
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  action.$3();
+                },
                 borderRadius: BorderRadius.circular(16),
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    actions[i].$3();
-                  },
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.hairline),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(actions[i].$1, color: AppColors.primary, size: 22),
-                        const SizedBox(height: 6),
-                        Text(
-                          actions[i].$2,
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
-                        ),
-                      ],
-                    ),
+                child: Container(
+                  padding: EdgeInsets.symmetric(vertical: compact ? 12 : 14),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: CartTheme.brandSoft),
+                  ),
+                  child: Column(
+                    children: [
+                      Icon(action.$1, color: CartTheme.brandDark, size: compact ? 20 : 22),
+                      const SizedBox(height: 6),
+                      Text(
+                        action.$2,
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                        overflow: TextOverflow.ellipsis,
+                        style: labelStyle,
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-          ],
-        ],
+            );
+          }
+
+          if (compact) {
+            return GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 1.35,
+              children: [for (final a in actions) actionTile(a)],
+            );
+          }
+
+          return Row(
+            children: [
+              for (var i = 0; i < actions.length; i++) ...[
+                if (i > 0) const SizedBox(width: 10),
+                Expanded(child: actionTile(actions[i])),
+              ],
+            ],
+          );
+        },
       ),
     );
   }
@@ -348,10 +408,10 @@ class _MenuGroup extends StatelessWidget {
         Container(
           margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: CartTheme.card,
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: AppColors.hairline),
-            boxShadow: AppColors.cardShadow,
+            border: Border.all(color: CartTheme.brandSoft),
+            boxShadow: CartTheme.softShadow,
           ),
           child: Column(
             children: [
@@ -400,7 +460,7 @@ class _SupportSection extends ConsumerWidget {
             ),
             title: Text(s.whatsappSupport, style: const TextStyle(fontWeight: FontWeight.w700)),
             trailing: const Icon(Icons.chevron_left_rounded, color: AppColors.textMuted),
-            onTap: () => openWhatsApp(whatsapp, message: 'مرحباً، أحتاج مساعدة'),
+            onTap: () => openWhatsApp(whatsapp, message: s.whatsappHelpMessage),
           ),
         if (phone != null && phone.isNotEmpty)
           ListTile(
@@ -425,8 +485,7 @@ class _SupportSection extends ConsumerWidget {
 }
 
 class _ProfileHeader extends ConsumerWidget {
-  final double topPad;
-  const _ProfileHeader({required this.topPad});
+  const _ProfileHeader();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -435,12 +494,12 @@ class _ProfileHeader extends ConsumerWidget {
     if (user == null) return const SizedBox.shrink();
 
     return Container(
-      margin: EdgeInsets.fromLTRB(AppSpacing.lg, topPad + 8, AppSpacing.lg, 0),
+      margin: const EdgeInsets.fromLTRB(AppSpacing.lg, 16, AppSpacing.lg, 0),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
+        gradient: CartTheme.brandGradient,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: AppColors.elevatedShadow,
+        boxShadow: CartTheme.softShadow,
       ),
       child: Row(
         children: [
@@ -449,7 +508,7 @@ class _ProfileHeader extends ConsumerWidget {
             backgroundColor: Colors.white,
             child: Text(
               user.name.isNotEmpty ? user.name[0] : '؟',
-              style: const TextStyle(color: AppColors.primary, fontSize: 24, fontWeight: FontWeight.w900),
+              style: const TextStyle(color: CartTheme.brand, fontSize: 24, fontWeight: FontWeight.w900),
             ),
           ),
           const SizedBox(width: 14),
@@ -462,7 +521,12 @@ class _ProfileHeader extends ConsumerWidget {
                   style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 2),
-                Text(user.email, style: TextStyle(color: Colors.white.withValues(alpha: 0.78), fontSize: 12)),
+                Text(
+                  formatPhoneLocal(user.phone).isNotEmpty
+                      ? formatPhoneLocal(user.phone)
+                      : (user.email ?? ''),
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.78), fontSize: 12),
+                ),
                 const SizedBox(height: 10),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

@@ -398,6 +398,25 @@ export class ProductsService {
   }
 
   /// فحص وجود منتج بنفس الباركود (المنتج نفسه أو أحد درجاته).
+  /** منتجات نشطة بدون صور مرفوعة (تظهر بالصورة الافتراضية فقط في التطبيق). */
+  private activeWithoutImagesWhere(): Prisma.ProductWhereInput {
+    return { isActive: true, images: { none: {} } };
+  }
+
+  async countActiveWithoutImages() {
+    const count = await this.prisma.product.count({ where: this.activeWithoutImagesWhere() });
+    return { count };
+  }
+
+  async hideActiveWithoutImages() {
+    const result = await this.prisma.product.updateMany({
+      where: this.activeWithoutImagesWhere(),
+      data: { isActive: false },
+    });
+    await this.homeFeedCache.invalidateAll();
+    return { hidden: result.count };
+  }
+
   async checkBarcode(barcode?: string) {
     const code = barcode?.trim();
     if (!code) return { exists: false, product: null, matchedShadeName: null };

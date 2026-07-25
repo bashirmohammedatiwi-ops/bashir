@@ -8,6 +8,7 @@ import 'core/push/push_service.dart';
 import 'core/config/app_config.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/responsive_app.dart';
 import 'core/widgets/scroll_perf.dart';
 import 'features/auth/auth_provider.dart';
 import 'features/splash/splash_screen.dart';
@@ -66,9 +67,11 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> {
         locale: locale,
         supportedLocales: _locales,
         localizationsDelegates: _delegates,
-        builder: (context, child) => Directionality(
-          textDirection: direction,
-          child: child ?? const SizedBox.shrink(),
+        builder: (context, child) => ResponsiveApp(
+          child: Directionality(
+            textDirection: direction,
+            child: child ?? const SizedBox.shrink(),
+          ),
         ),
         home: SplashScreen(
           lang: localeSettings.loaded ? locale.languageCode : 'ar',
@@ -86,9 +89,11 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> {
       locale: locale,
       supportedLocales: _locales,
       localizationsDelegates: _delegates,
-      builder: (context, child) => Directionality(
-        textDirection: direction,
-        child: child ?? const SizedBox.shrink(),
+      builder: (context, child) => ResponsiveApp(
+        child: Directionality(
+          textDirection: direction,
+          child: child ?? const SizedBox.shrink(),
+        ),
       ),
     );
   }

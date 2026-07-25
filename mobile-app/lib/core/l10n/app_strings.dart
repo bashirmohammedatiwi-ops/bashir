@@ -84,6 +84,14 @@ class AppStrings {
   String get logoutConfirmTitle => isAr ? 'تسجيل الخروج' : 'Log Out';
   String get logoutConfirmBody =>
       isAr ? 'هل تريد تسجيل الخروج من حسابك؟' : 'Do you want to log out of your account?';
+  String get deleteAccount => isAr ? 'حذف الحساب' : 'Delete Account';
+  String get deleteAccountTitle => isAr ? 'حذف الحساب' : 'Delete Account';
+  String get deleteAccountBody => isAr
+      ? 'سيتم حذف بياناتك الشخصية (الاسم، البريد، الهاتف، العناوين، المفضلة) وإلغاء جلساتك. تبقى الطلبات السابقة في سجلات المتجر فقط لأغراض قانونية ولا يمكن التراجع عن هذا الإجراء.'
+      : 'Your personal data (name, email, phone, addresses, wishlist) and sessions will be removed. Past orders remain in store records for legal purposes only. This cannot be undone.';
+  String get deleteAccountConfirm => isAr ? 'حذف نهائياً' : 'Delete Permanently';
+  String get deleteAccountSuccess =>
+      isAr ? 'تم حذف حسابك بنجاح' : 'Your account has been deleted';
   String get cancel => isAr ? 'إلغاء' : 'Cancel';
   String get explore => isAr ? 'استكشاف' : 'Explore';
   String get login => isAr ? 'تسجيل الدخول' : 'Log In';
@@ -383,4 +391,90 @@ class AppStrings {
     if (hour < 17) return goodAfternoon;
     return goodEvening;
   }
+
+  // ─── Auth screens ─────────────────────────────────────────────────────────
+  String get welcomeBack => isAr ? 'مرحباً بعودتك' : 'Welcome back';
+  String get loginPhoneSubtitle =>
+      isAr ? 'سجّل دخولك برقم هاتفك لمتابعة التسوّق' : 'Sign in with your phone to continue shopping';
+  String get registerJoinTitle => isAr ? 'انضم إلى الحياة' : 'Join deema alhayat';
+  String get registerPhoneSubtitle => isAr
+      ? 'أنشئ حسابك برقم هاتفك وابدأ التسوّق واكسب نقاط الولاء'
+      : 'Create your account with your phone and start earning loyalty points';
+  String get fullName => isAr ? 'الاسم الكامل' : 'Full name';
+  String get phoneNumber => isAr ? 'رقم الهاتف' : 'Phone number';
+  String get password => isAr ? 'كلمة المرور' : 'Password';
+  String get passwordMin6 =>
+      isAr ? 'كلمة المرور 6 أحرف على الأقل' : 'Password must be at least 6 characters';
+  String get enterYourName => isAr ? 'أدخل اسمك' : 'Enter your name';
+  String get enterYourNameShort => isAr ? 'أدخل الاسم' : 'Enter your name';
+  String get noAccountYet => isAr ? 'ليس لديك حساب؟' : "Don't have an account?";
+  String get haveAccountAlready => isAr ? 'لديك حساب بالفعل؟' : 'Already have an account?';
+  String get signUp => isAr ? 'أنشئ حساباً' : 'Sign up';
+  String get signIn => isAr ? 'سجّل الدخول' : 'Sign in';
+  String get totalLabel => isAr ? 'الإجمالي' : 'Total';
+  String get yourProducts => isAr ? 'منتجاتك' : 'Your items';
+  String get haveCouponCode => isAr ? 'لديك كود خصم؟' : 'Have a discount code?';
+  String get enterCode => isAr ? 'أدخل الكود' : 'Enter code';
+  String get applyBtn => isAr ? 'تطبيق' : 'Apply';
+  String itemRemoved(String name) => isAr ? 'حُذف «$name»' : 'Removed "$name"';
+  String get maxQtyReached =>
+      isAr ? 'وصلتِ للحد الأقصى المتاح' : 'Maximum available quantity reached';
+  String get enterCouponPrompt => isAr ? 'أدخل كود الخصم' : 'Enter a discount code';
+  String get invalidCouponShort => isAr ? 'الكوبون غير صالح' : 'Invalid coupon';
+  String get cardPaymentDisabled => isAr
+      ? 'الدفع بالبطاقة قيد التفعيل — اختر الدفع عند الاستلام حالياً'
+      : 'Card payment is not available yet — please use cash on delivery';
+
+  // ─── Checkout (extended) ──────────────────────────────────────────────────
+  String get recipientInfo => isAr ? 'بيانات المستلم' : 'Recipient details';
+  String get recipientAutoFill =>
+      isAr ? 'تُملأ تلقائياً من حسابك — يمكنك تعديلها' : 'Auto-filled from your account — you can edit';
+  String get deliveryLocation => isAr ? 'عنوان التوصيل' : 'Delivery address';
+  String get deliveryLocationHint => isAr
+      ? 'اختر محافظتك واكتب العنوان بالتفصيل'
+      : 'Select your governorate and enter your address';
+  String get streetLabel => isAr ? 'الشارع / أقرب نقطة دالة' : 'Street / landmark';
+  String get enterStreet => isAr ? 'أدخل الشارع أو نقطة دالة' : 'Enter street or landmark';
+  String get houseOptional => isAr ? 'رقم المنزل / الشقة (اختياري)' : 'House / apt (optional)';
+  String get governorate => isAr ? 'المحافظة' : 'Governorate';
+  String get selectGovernorate => isAr ? 'اختر المحافظة' : 'Select governorate';
+  String get areaLabel => isAr ? 'المنطقة' : 'Area';
+  String get selectArea => isAr ? 'اختر المنطقة' : 'Select area';
+  String get governorateCity => isAr ? 'المحافظة / المدينة' : 'Governorate / city';
+  String get requiredField => isAr ? 'مطلوب' : 'Required';
+  String get paymentMethod => isAr ? 'طريقة الدفع' : 'Payment method';
+  String get cardComingSoon => isAr ? 'قريباً' : 'Soon';
+  String get cardPayment => isAr ? 'بطاقة ائتمان / مدى' : 'Credit / debit card';
+  String get cardPaymentSoon => isAr
+      ? 'قريباً — سيتم تفعيل الدفع الإلكتروني'
+      : 'Coming soon — online payment will be enabled';
+  String get orderNotes => isAr ? 'ملاحظات الطلب' : 'Order notes';
+  String get orderNotesHint =>
+      isAr ? 'تعليمات إضافية للتوصيل (اختياري)' : 'Extra delivery instructions (optional)';
+  String get notes => isAr ? 'ملاحظات' : 'Notes';
+  String get deliveryStep => isAr ? 'التوصيل' : 'Delivery';
+  String get paymentStep => isAr ? 'الدفع' : 'Payment';
+  String get confirmStep => isAr ? 'تأكيد' : 'Confirm';
+  String get useLoyaltyPoints => isAr ? 'نقاط الولاء' : 'Loyalty points';
+  String loyaltyUseTitle(int points) =>
+      isAr ? 'استخدم $points نقطة ولاء' : 'Use $points loyalty points';
+  String loyaltyDiscountHint(String discount, String per100) => isAr
+      ? 'خصم $discount (100 نقطة = $per100)'
+      : '$discount off (100 pts = $per100)';
+  String get loyaltyPointsRule => isAr
+      ? '100 نقطة = خصم عند الدفع'
+      : '100 points = discount at checkout';
+  String get orderPlacedSuccess => isAr ? 'تم استلام طلبك بنجاح!' : 'Your order was placed successfully!';
+  String orderNumberLabel(String num) => isAr ? 'رقم الطلب: $num' : 'Order #$num';
+  String get orderPlacedCodNote => isAr
+      ? 'سيتواصل معك فريقنا لتأكيد الطلب.\nالدفع عند الاستلام نقداً.'
+      : 'Our team will contact you to confirm.\nCash on delivery.';
+  String get trackOrder => isAr ? 'تتبّع الطلب' : 'Track order';
+
+  String tierLabel(String tier) => switch (tier) {
+        'platinum' => isAr ? 'بلاتيني' : 'Platinum',
+        'gold' => isAr ? 'ذهبي' : 'Gold',
+        'silver' => isAr ? 'فضي' : 'Silver',
+        _ => isAr ? 'عضو' : 'Member',
+      };
 }

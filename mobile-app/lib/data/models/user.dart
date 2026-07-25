@@ -2,7 +2,7 @@ import '../../core/utils/json.dart';
 
 class AppUser {
   final String id;
-  final String email;
+  final String? email;
   final String name;
   final String? phone;
   final String? avatarUrl;
@@ -13,7 +13,7 @@ class AppUser {
 
   const AppUser({
     required this.id,
-    required this.email,
+    this.email,
     required this.name,
     this.phone,
     this.avatarUrl,
@@ -25,7 +25,7 @@ class AppUser {
 
   factory AppUser.fromJson(Map<String, dynamic> json) => AppUser(
         id: asString(json['id']),
-        email: asString(json['email']),
+        email: json['email']?.toString(),
         name: asString(json['name']),
         phone: json['phone']?.toString(),
         avatarUrl: json['avatarUrl']?.toString(),

@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/locale_provider.dart';
+import '../../../core/l10n/app_strings.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
@@ -17,39 +20,39 @@ class CartItemCard extends ConsumerWidget {
 
   const CartItemCard({super.key, required this.item});
 
+  void _openProduct(BuildContext context) {
+    context.push('/product/${item.routeId}');
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageCodeProvider);
+    final s = ref.s;
+    final displayName = item.localizedName(lang);
+    final imageSize = Responsive.cartItemImageSize(context);
     final notifier = ref.read(cartProvider.notifier);
 
     return Dismissible(
       key: Key(item.key),
       direction: DismissDirection.endToStart,
       background: Container(
-        alignment: Alignment.centerLeft,
-        margin: const EdgeInsets.only(bottom: 2),
-        padding: const EdgeInsets.only(left: 28),
+        alignment: AlignmentDirectional.centerStart,
+        padding: const EdgeInsetsDirectional.only(start: 22),
         decoration: BoxDecoration(
           color: AppColors.sale,
           borderRadius: BorderRadius.circular(CartTheme.radiusLg),
         ),
-        child: const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.delete_outline_rounded, color: Colors.white, size: 26),
-            SizedBox(height: 4),
-            Text('حذف', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12)),
-          ],
-        ),
+        child: const Icon(Icons.delete_outline_rounded, color: Colors.white, size: 22),
       ),
       onDismissed: (_) {
         HapticFeedback.mediumImpact();
         notifier.remove(item.key);
-        AppSnackbar.show(context, 'حُذف «${item.name}»');
+        AppSnackbar.show(context, s.itemRemoved(displayName));
       },
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => context.push('/product/${item.productId}'),
+          onTap: () => _openProduct(context),
           borderRadius: BorderRadius.circular(CartTheme.radiusLg),
           child: Ink(
             decoration: CartTheme.cardDecoration(),
@@ -57,26 +60,28 @@ class CartItemCard extends ConsumerWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(CartTheme.radiusMd),
-                  child: ColoredBox(
-                    color: AppColors.scaffold,
-                    child: SizedBox(
-                      width: CartTheme.imageSize,
-                      height: CartTheme.imageSize,
-                      child: item.imageUrl.isNotEmpty
-                          ? ProductCoverImage(url: item.imageUrl, fit: BoxFit.contain)
-                          : Center(
-                              child: Text(
-                                item.name.isNotEmpty ? item.name.characters.first : '?',
-                                style: const TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.w900,
-                                  color: AppColors.primary,
-                                ),
+                Container(
+                  width: imageSize,
+                  height: imageSize,
+                  decoration: BoxDecoration(
+                    color: CartTheme.brandWash,
+                    borderRadius: BorderRadius.circular(CartTheme.radiusMd),
+                    border: Border.all(color: CartTheme.brandSoft),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(CartTheme.radiusMd - 1),
+                    child: item.imageUrl.isNotEmpty
+                        ? ProductCoverImage(url: item.imageUrl, fit: BoxFit.contain)
+                        : Center(
+                            child: Text(
+                              item.name.isNotEmpty ? displayName.characters.first : '?',
+                              style: const TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w900,
+                                color: CartTheme.brand,
                               ),
                             ),
-                    ),
+                          ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -85,73 +90,65 @@ class CartItemCard extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        item.name,
+                        displayName,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontWeight: FontWeight.w800,
                           fontSize: 14,
                           height: 1.35,
-                          color: AppColors.textPrimary,
+                          color: CartTheme.charcoal,
                         ),
                       ),
                       if (item.shadeName != null) ...[
                         const SizedBox(height: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: AppColors.scaffold,
-                            borderRadius: BorderRadius.circular(999),
-                          ),
+                          decoration: CartTheme.pillDecoration(),
                           child: Text(
                             item.shadeName!,
                             style: const TextStyle(
                               fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w700,
+                              color: CartTheme.brandDark,
                             ),
                           ),
                         ),
                       ],
                       const SizedBox(height: 10),
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           Text(
-                            formatPrice(item.price),
-                            style: AppTypography.price.copyWith(fontSize: 14),
+                            formatPrice(item.lineTotal),
+                            style: AppTypography.price.copyWith(
+                              fontSize: 15,
+                              color: CartTheme.brandDark,
+                            ),
                           ),
                           if (item.quantity > 1) ...[
                             const SizedBox(width: 6),
                             Text(
                               '× ${item.quantity}',
-                              style: AppTypography.caption.copyWith(fontSize: 12),
+                              style: AppTypography.caption.copyWith(fontSize: 11),
                             ),
                           ],
                           const Spacer(),
-                          Text(
-                            formatPrice(item.lineTotal),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 15,
-                              color: AppColors.textPrimary,
-                            ),
+                          _QtyStepper(
+                            quantity: item.quantity,
+                            onDecrement: () {
+                              HapticFeedback.selectionClick();
+                              notifier.decrement(item.key);
+                            },
+                            onIncrement: () {
+                              HapticFeedback.selectionClick();
+                              final ok = notifier.increment(item.key);
+                              if (!ok && context.mounted) {
+                                AppSnackbar.show(context, s.maxQtyReached);
+                              }
+                            },
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 12),
-                      _QtyStepper(
-                        quantity: item.quantity,
-                        onDecrement: () {
-                          HapticFeedback.selectionClick();
-                          notifier.decrement(item.key);
-                        },
-                        onIncrement: () {
-                          HapticFeedback.selectionClick();
-                          final ok = notifier.increment(item.key);
-                          if (!ok && context.mounted) {
-                            AppSnackbar.show(context, 'وصلتِ للحد الأقصى المتاح');
-                          }
-                        },
                       ),
                     ],
                   ),
@@ -179,29 +176,28 @@ class _QtyStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 36,
+      height: 34,
       decoration: BoxDecoration(
-        color: AppColors.scaffold,
+        color: CartTheme.brandWash,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.hairline),
+        border: Border.all(color: CartTheme.brandSoft),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           _StepBtn(icon: Icons.remove_rounded, onTap: onDecrement),
-          ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 36),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
               '$quantity',
-              textAlign: TextAlign.center,
               style: const TextStyle(
                 fontWeight: FontWeight.w900,
-                fontSize: 14,
-                color: AppColors.textPrimary,
+                fontSize: 13,
+                color: CartTheme.charcoal,
               ),
             ),
           ),
-          _StepBtn(icon: Icons.add_rounded, onTap: onIncrement),
+          _StepBtn(icon: Icons.add_rounded, onTap: onIncrement, filled: true),
         ],
       ),
     );
@@ -211,19 +207,22 @@ class _QtyStepper extends StatelessWidget {
 class _StepBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
+  final bool filled;
 
-  const _StepBtn({required this.icon, required this.onTap});
+  const _StepBtn({required this.icon, required this.onTap, this.filled = false});
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: filled ? CartTheme.brand : Colors.transparent,
+      borderRadius: BorderRadius.circular(999),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(999),
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Icon(icon, size: 18, color: AppColors.textPrimary),
+        child: SizedBox(
+          width: 34,
+          height: 34,
+          child: Icon(icon, size: 16, color: filled ? Colors.white : CartTheme.brandDark),
         ),
       ),
     );

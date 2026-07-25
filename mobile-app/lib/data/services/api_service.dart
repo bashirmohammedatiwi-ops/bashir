@@ -6,6 +6,7 @@ import '../../core/config/app_config.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
 import '../../core/utils/json.dart';
+import '../../core/utils/phone_util.dart';
 import '../models/address.dart';
 import '../models/brand.dart';
 import '../models/category.dart';
@@ -349,10 +350,10 @@ class ApiService {
   }
 
   // ---- AUTH ----
-  Future<Map<String, dynamic>> login(String email, String password) async {
+  Future<Map<String, dynamic>> login(String phone, String password) async {
     try {
       final r = await _dio.post('/auth/login',
-          data: {'email': email, 'password': password},
+          data: {'phone': normalizePhone(phone), 'password': password},
           options: Options(extra: {'auth': false}));
       return asMap(_data(r));
     } catch (e) {
@@ -362,17 +363,17 @@ class ApiService {
 
   Future<Map<String, dynamic>> register({
     required String name,
-    required String email,
+    required String phone,
     required String password,
-    String? phone,
+    String? email,
   }) async {
     try {
       final r = await _dio.post('/auth/register',
           data: {
             'name': name,
-            'email': email,
+            'phone': normalizePhone(phone),
             'password': password,
-            if (phone != null && phone.isNotEmpty) 'phone': phone,
+            if (email != null && email.isNotEmpty) 'email': email,
           },
           options: Options(extra: {'auth': false}));
       return asMap(_data(r));
@@ -394,7 +395,7 @@ class ApiService {
     try {
       final r = await _dio.patch('/auth/me', data: {
         if (name != null) 'name': name,
-        if (phone != null) 'phone': phone,
+        if (phone != null) 'phone': normalizePhone(phone),
         if (birthday != null) 'birthday': birthday,
       });
       return AppUser.fromJson(asMap(_data(r)));
@@ -412,6 +413,14 @@ class ApiService {
         'currentPassword': currentPassword,
         'newPassword': newPassword,
       });
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  Future<void> deleteAccount() async {
+    try {
+      await _dio.delete('/auth/me');
     } catch (e) {
       _throw(e);
     }

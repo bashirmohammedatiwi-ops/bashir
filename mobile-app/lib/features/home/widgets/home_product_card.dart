@@ -16,16 +16,18 @@ import 'home_theme.dart';
 class HomeProductCard extends ConsumerWidget {
   final Product product;
   final double width;
+  final double height;
   final bool showPromoBadge;
 
   const HomeProductCard({
     super.key,
     required this.product,
     this.width = HomeTheme.productCardWidth,
+    this.height = HomeTheme.productCardHeight,
     this.showPromoBadge = false,
   });
 
-  static const _cardHeight = HomeTheme.productCardHeight;
+  double get _cardHeight => height;
   static const _radius = AppRadius.lg;
 
   @override

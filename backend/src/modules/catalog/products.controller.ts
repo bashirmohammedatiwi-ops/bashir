@@ -40,6 +40,22 @@ export class ProductsController {
     return this.products.checkBarcode(barcode);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
+  @Get("without-images/count")
+  countWithoutImages() {
+    return this.products.countActiveWithoutImages();
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Post("hide-without-images")
+  hideWithoutImages() {
+    return this.products.hideActiveWithoutImages();
+  }
+
   @Public()
   @Get(":idOrSlug")
   findOne(@Param("idOrSlug") idOrSlug: string) {

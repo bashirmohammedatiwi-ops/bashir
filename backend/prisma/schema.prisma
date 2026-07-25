@@ -140,6 +140,7 @@ model User {
   passwordHash    String?
   role            Role       @default(CUSTOMER)
   isActive        Boolean    @default(true)
+  deletedAt       DateTime?
   emailVerifiedAt DateTime?
   phoneVerifiedAt DateTime?
   loyaltyPoints   Int        @default(0)
@@ -161,6 +162,7 @@ model User {
 
   @@index([role])
   @@index([createdAt])
+  @@index([deletedAt])
 }
 
 model Session {

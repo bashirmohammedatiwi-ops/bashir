@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/utils/responsive.dart';
 import '../../../data/models/product.dart';
 import 'home_product_card.dart';
 import 'home_scroll_perf.dart';
@@ -21,15 +22,20 @@ class HomeProductRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = itemWidth == HomeTheme.productCardWidth
+        ? Responsive.productCardWidth(context)
+        : itemWidth;
+    final height = Responsive.productCardHeight(context);
     return HomeHorizontalList(
-      height: HomeTheme.productRowHeight,
+      height: height + 4,
       padding: padding,
       itemCount: products.length,
       itemBuilder: (_, i) => RepaintBoundary(
         child: HomeProductCard(
           key: ValueKey(products[i].id),
           product: products[i],
-          width: itemWidth,
+          width: width,
+          height: height,
           showPromoBadge: showPromoBadge,
         ),
       ),

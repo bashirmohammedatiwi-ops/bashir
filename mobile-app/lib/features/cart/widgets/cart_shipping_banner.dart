@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import 'cart_theme.dart';
 
-class CartShippingBanner extends StatelessWidget {
+class CartShippingBanner extends ConsumerWidget {
   final int subtotal;
   final int threshold;
   final bool freeShippingCoupon;
@@ -19,7 +21,8 @@ class CartShippingBanner extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     if (threshold <= 0 && !freeShippingCoupon) return const SizedBox.shrink();
 
     final achieved = freeShippingCoupon || (threshold > 0 && subtotal >= threshold);
@@ -27,51 +30,55 @@ class CartShippingBanner extends StatelessWidget {
     final progress = threshold > 0 ? (subtotal / threshold).clamp(0.0, 1.0) : 1.0;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 0, CartTheme.hPad, 4),
+      padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 8, CartTheme.hPad, 0),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: achieved ? null : onBrowse,
-          borderRadius: BorderRadius.circular(CartTheme.radiusLg),
+          borderRadius: BorderRadius.circular(CartTheme.radiusMd),
           child: Ink(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(CartTheme.radiusLg),
-              gradient: LinearGradient(
-                colors: achieved
-                    ? [const Color(0xFFEEF9F2), const Color(0xFFF7FCF9)]
-                    : [AppColors.accentSoft.withValues(alpha: 0.5), AppColors.blush],
-              ),
+              color: achieved ? const Color(0xFFEEF9F4) : CartTheme.brandWash,
+              borderRadius: BorderRadius.circular(CartTheme.radiusMd),
               border: Border.all(
                 color: achieved
                     ? AppColors.success.withValues(alpha: 0.2)
-                    : AppColors.accent.withValues(alpha: 0.25),
+                    : CartTheme.brandSoft,
               ),
             ),
             child: Column(
               children: [
                 Row(
                   children: [
-                    Icon(
-                      achieved ? Icons.check_circle_rounded : Icons.local_shipping_outlined,
-                      color: achieved ? AppColors.success : AppColors.accent,
-                      size: 22,
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: achieved
+                            ? AppColors.success.withValues(alpha: 0.12)
+                            : CartTheme.brandSoft,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        achieved ? Icons.check_rounded : Icons.local_shipping_outlined,
+                        color: achieved ? AppColors.success : CartTheme.brand,
+                        size: 18,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         achieved
-                            ? (freeShippingCoupon ? 'شحن مجاني مع الكوبون ✓' : 'مبروك! توصيل مجاني')
-                            : 'باقي ${formatPrice(remaining)} للتوصيل المجاني',
+                            ? (freeShippingCoupon ? s.freeShippingWithCoupon : s.freeShippingCongrats)
+                            : s.remainingForFreeShipping(formatPrice(remaining)),
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w800,
-                          color: achieved ? AppColors.success : AppColors.textPrimary,
+                          color: achieved ? AppColors.success : CartTheme.charcoal,
                         ),
                       ),
                     ),
-                    if (!achieved)
-                      Icon(Icons.chevron_left_rounded, color: AppColors.textMuted.withValues(alpha: 0.8)),
                   ],
                 ),
                 if (!achieved && threshold > 0) ...[
@@ -80,9 +87,9 @@ class CartShippingBanner extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                     child: LinearProgressIndicator(
                       value: progress,
-                      minHeight: 5,
-                      backgroundColor: AppColors.surface.withValues(alpha: 0.7),
-                      color: AppColors.primary,
+                      minHeight: 4,
+                      backgroundColor: Colors.white,
+                      color: CartTheme.brand,
                     ),
                   ),
                 ],

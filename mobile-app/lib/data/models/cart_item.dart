@@ -1,10 +1,14 @@
+import '../../core/l10n/localized_text.dart';
 import '../../core/utils/json.dart';
 import 'product.dart';
 
 /// عنصر سلة محلي (يُحفظ على الجهاز ويُرسل عند إنشاء الطلب).
 class CartItem {
   final String productId;
+  final String? productSlug;
   final String name;
+  final String? nameAr;
+  final String? nameEn;
   final String imageUrl;
   final int price;
   final int quantity;
@@ -14,7 +18,10 @@ class CartItem {
 
   const CartItem({
     required this.productId,
+    this.productSlug,
     required this.name,
+    this.nameAr,
+    this.nameEn,
     required this.imageUrl,
     required this.price,
     this.quantity = 1,
@@ -26,10 +33,22 @@ class CartItem {
   /// مفتاح فريد يجمع المنتج مع الدرجة المختارة.
   String get key => shadeId == null ? productId : '$productId:$shadeId';
   int get lineTotal => price * quantity;
+  String get routeId =>
+      (productSlug != null && productSlug!.isNotEmpty) ? productSlug! : productId;
+
+  String localizedName(String lang) => localizedText(
+        languageCode: lang,
+        ar: nameAr ?? name,
+        en: nameEn,
+        fallback: name,
+      );
 
   CartItem copyWith({int? quantity}) => CartItem(
         productId: productId,
+        productSlug: productSlug,
         name: name,
+        nameAr: nameAr,
+        nameEn: nameEn,
         imageUrl: imageUrl,
         price: price,
         quantity: quantity ?? this.quantity,
@@ -42,7 +61,10 @@ class CartItem {
     final price = shade?.price ?? p.price;
     return CartItem(
       productId: p.id,
-      name: p.name,
+      productSlug: p.slug.isNotEmpty ? p.slug : null,
+      name: p.localizedName('ar'),
+      nameAr: p.nameAr ?? p.name,
+      nameEn: p.nameEn,
       imageUrl: shade?.image?.thumb.isNotEmpty == true ? shade!.image!.thumb : p.coverUrl,
       price: price,
       quantity: quantity,
@@ -54,7 +76,10 @@ class CartItem {
 
   Map<String, dynamic> toJson() => {
         'productId': productId,
+        if (productSlug != null) 'productSlug': productSlug,
         'name': name,
+        if (nameAr != null) 'nameAr': nameAr,
+        if (nameEn != null) 'nameEn': nameEn,
         'imageUrl': imageUrl,
         'price': price,
         'quantity': quantity,
@@ -65,7 +90,10 @@ class CartItem {
 
   factory CartItem.fromJson(Map<String, dynamic> json) => CartItem(
         productId: asString(json['productId']),
+        productSlug: json['productSlug']?.toString(),
         name: asString(json['name']),
+        nameAr: json['nameAr']?.toString(),
+        nameEn: json['nameEn']?.toString(),
         imageUrl: asString(json['imageUrl']),
         price: asInt(json['price']),
         quantity: asInt(json['quantity'], 1),
