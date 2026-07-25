@@ -95,19 +95,19 @@ abstract final class Responsive {
   }
 
   static double bottomNavHeight(BuildContext context) {
-    return isCompact(context) ? 64 : 70;
+    return isCompact(context) ? 60 : 64;
   }
 
   static double navLabelSize(BuildContext context, {required bool active}) {
-    if (isCompact(context)) return active ? 9 : 8.5;
-    return active ? 10 : 9.5;
+    if (isCompact(context)) return active ? 9 : 8;
+    return active ? 10 : 9;
   }
 
   static double shellBottomReserve(BuildContext context, {double base = 68}) {
     final safe = MediaQuery.paddingOf(context).bottom;
     final navH = bottomNavHeight(context);
-    final centerLift = isCompact(context) ? 18.0 : 22.0;
-    return navH + centerLift + (safe > 0 ? 8 : 14);
+    final outerPad = safe > 0 ? 6.0 : 10.0;
+    return navH + outerPad + 12;
   }
 }
 

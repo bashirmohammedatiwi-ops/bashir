@@ -69,11 +69,7 @@ class _MainShellState extends ConsumerState<MainShell> {
 
   void _selectTab(int i) {
     if (ref.read(navIndexProvider) != i) {
-      if (i == 2) {
-        HapticFeedback.mediumImpact();
-      } else {
-        HapticFeedback.selectionClick();
-      }
+      HapticFeedback.selectionClick();
     }
     ref.read(navIndexProvider.notifier).state = i;
   }
