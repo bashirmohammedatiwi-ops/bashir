@@ -16,9 +16,9 @@ export class AdminCacheController {
 
   @Post("invalidate")
   async invalidate(@Body() body: { keys?: string[] }) {
-    const keys = body?.keys?.length ? body.keys : ["home"];
+    const keys = body?.keys?.length ? body.keys : ["home", "offers"];
     let cleared = 0;
-    if (keys.includes("home")) {
+    if (keys.includes("home") || keys.includes("offers")) {
       cleared += await this.homeFeedCache.invalidateAll();
     }
     return { success: true, cleared, keys };

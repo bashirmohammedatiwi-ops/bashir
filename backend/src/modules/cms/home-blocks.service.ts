@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { CmsPageKey, Prisma } from "@prisma/client";
 import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { PrismaService } from "../../common/prisma.service";
 
@@ -10,9 +10,12 @@ export class HomeBlocksService {
     private readonly homeFeedCache: HomeFeedCacheService,
   ) {}
 
-  list(activeOnly = true) {
+  list(activeOnly = true, pageKey: CmsPageKey = CmsPageKey.HOME) {
     return this.prisma.homeBlock.findMany({
-      where: activeOnly ? { isActive: true } : undefined,
+      where: {
+        pageKey,
+        ...(activeOnly ? { isActive: true } : {}),
+      },
       orderBy: { position: "asc" },
     });
   }
@@ -68,6 +71,10 @@ export class HomeBlocksService {
     }
     if (!partial || data.isActive !== undefined) out.isActive = data.isActive !== false;
     if (!partial || data.payload !== undefined) out.payload = data.payload ?? {};
+    if (!partial || data.pageKey !== undefined) {
+      const raw = String(data.pageKey ?? CmsPageKey.HOME).toUpperCase();
+      out.pageKey = raw === CmsPageKey.OFFERS ? CmsPageKey.OFFERS : CmsPageKey.HOME;
+    }
     return out;
   }
 

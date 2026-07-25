@@ -22,8 +22,8 @@ class AppImageCacheManager extends CacheManager with ImageCacheManager {
 /// يضبط حدود كاش Flutter للصور في الذاكرة.
 void configureImageCache() {
   final cache = PaintingBinding.instance.imageCache;
-  cache.maximumSize = 280;
-  cache.maximumSizeBytes = 140 << 20; // 140 MB
+  cache.maximumSize = 320;
+  cache.maximumSizeBytes = 160 << 20; // 160 MB
 }
 
 /// يحسب عرض الكاش المناسب حسب حجم العرض على الشاشة.
@@ -58,7 +58,7 @@ Future<void> precacheAppImage(
 void precacheProductCovers(
   BuildContext context,
   Iterable<String> urls, {
-  int limit = 16,
+  int limit = 24,
   double layoutWidth = 180,
 }) {
   var count = 0;

@@ -7,6 +7,7 @@ import 'core/push/push_service.dart';
 import 'core/config/app_config.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/scroll_perf.dart';
 import 'features/auth/auth_provider.dart';
 
 class AlhayaaApp extends ConsumerStatefulWidget {
@@ -45,6 +46,7 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
+        scrollBehavior: const AppScrollBehavior(),
         locale: const Locale('ar'),
         supportedLocales: _locales,
         localizationsDelegates: _delegates,
@@ -70,6 +72,7 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> {
       title: AppConfig.storeName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      scrollBehavior: const AppScrollBehavior(),
       routerConfig: router,
       locale: const Locale('ar'),
       supportedLocales: _locales,

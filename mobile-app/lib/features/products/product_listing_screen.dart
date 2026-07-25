@@ -6,6 +6,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/cache/image_cache.dart';
+import '../../core/theme/app_typography.dart';
 import '../../core/widgets/listing_toolbar.dart';
 import '../../core/widgets/product_grid.dart';
 import '../../core/widgets/shimmer_box.dart';
@@ -52,6 +53,7 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
   bool _loading = false;
   bool _hasMore = true;
   bool _firstLoad = true;
+  bool _paginationQueued = false;
   String? _error;
 
   String _sort = 'default';
@@ -72,15 +74,19 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
   void initState() {
     super.initState();
     _fetch();
-    _scroll.addListener(() {
-      if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 400) {
-        _fetch();
-      }
-    });
+    _scroll.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_paginationQueued || _loading || !_hasMore) return;
+    if (_scroll.position.pixels < _scroll.position.maxScrollExtent - 480) return;
+    _paginationQueued = true;
+    _fetch().whenComplete(() => _paginationQueued = false);
   }
 
   @override
   void dispose() {
+    _scroll.removeListener(_onScroll);
     _scroll.dispose();
     super.dispose();
   }
@@ -131,7 +137,7 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
           precacheProductCovers(
             context,
             result.items.map((p) => p.coverUrl),
-            limit: 12,
+            limit: 20,
           );
         });
       }
@@ -147,21 +153,27 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
     return Scaffold(
       backgroundColor: AppColors.scaffold,
       appBar: AppBar(
-        title: Text(widget.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        backgroundColor: AppColors.surface,
+        surfaceTintColor: Colors.transparent,
+        title: Text(
+          widget.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.sectionTitle.copyWith(fontSize: 18),
+        ),
         elevation: 0,
-      ),
-      body: Column(
-        children: [
-          ListingToolbar(
+        scrolledUnderElevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(52),
+          child: ListingToolbar(
             sortLabel: _sortLabels[_sort] ?? 'ترتيب',
             onSort: _openSort,
             onFilter: _openFilter,
-            count: _items.length,
             hasFilter: _minPrice != null || _maxPrice != null || _inStock || _minRating != null,
           ),
-          Expanded(child: _buildBody()),
-        ],
+        ),
       ),
+      body: _buildBody(),
     );
   }
 
@@ -180,6 +192,9 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
         controller: _scroll,
         products: _items,
         showPromoBadge: widget.isPromo,
+        showRating: true,
+        listingStyle: true,
+        padding: const EdgeInsets.fromLTRB(14, 4, 14, 24),
         extraSlots: _hasMore ? 2 : 0,
       ),
     );

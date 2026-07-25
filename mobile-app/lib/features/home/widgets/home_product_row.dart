@@ -25,11 +25,13 @@ class HomeProductRow extends StatelessWidget {
       height: HomeTheme.productRowHeight,
       padding: padding,
       itemCount: products.length,
-      itemBuilder: (_, i) => HomeProductCard(
-        key: ValueKey(products[i].id),
-        product: products[i],
-        width: itemWidth,
-        showPromoBadge: showPromoBadge,
+      itemBuilder: (_, i) => RepaintBoundary(
+        child: HomeProductCard(
+          key: ValueKey(products[i].id),
+          product: products[i],
+          width: itemWidth,
+          showPromoBadge: showPromoBadge,
+        ),
       ),
     );
   }

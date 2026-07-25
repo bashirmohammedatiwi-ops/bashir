@@ -11,6 +11,7 @@ import '../../../data/models/home_section.dart';
 import '../../shell/main_shell.dart';
 import '../home_link.dart';
 import '../widgets/home_product_row.dart';
+import '../widgets/home_scroll_perf.dart';
 import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
 
@@ -170,68 +171,66 @@ class PackagesHomeSection extends StatelessWidget {
                 fallbackQuery: 'isPromo=1&title=الباقات',
               )
           : null,
-      child: SizedBox(
+      child: HomeHorizontalList(
         height: 220,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 0, HomeTheme.paddingH, 4),
-          itemCount: section.packages.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 14),
-          itemBuilder: (_, i) {
-            final p = section.packages[i];
-            final hasDiscount = p.originalPrice != null && p.originalPrice! > p.price;
-            final cardW = cardSizeSpec(p.cardSize ?? section.cardSize).width.clamp(170, 210).toDouble();
-            return GestureDetector(
-              onTap: () => openPackageLink(context, p),
-              child: Container(
-                width: cardW,
-                decoration: HomeTheme.cardDecoration(),
-                clipBehavior: Clip.antiAlias,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: p.coverUrl != null && p.coverUrl!.isNotEmpty
-                          ? ProductCoverImage(
-                              url: p.coverUrl!,
-                              width: cardW,
-                              fit: BoxFit.contain,
-                            )
-                          : ColoredBox(
-                              color: HomeTheme.surfaceMuted,
-                              child: const Center(
-                                child: Icon(Icons.card_giftcard_rounded, color: AppColors.primary, size: 36),
-                              ),
+        padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 0, HomeTheme.paddingH, 4),
+        itemCount: section.packages.length,
+        itemGap: 14,
+        itemBuilder: (_, i) {
+          final p = section.packages[i];
+          final hasDiscount = p.originalPrice != null && p.originalPrice! > p.price;
+          final cardW = cardSizeSpec(p.cardSize ?? section.cardSize).width.clamp(170, 210).toDouble();
+          return GestureDetector(
+            onTap: () => openPackageLink(context, p),
+            child: Container(
+              width: cardW,
+              decoration: HomeTheme.cardDecoration(),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: p.coverUrl != null && p.coverUrl!.isNotEmpty
+                        ? ProductCoverImage(
+                            url: p.coverUrl!,
+                            width: cardW,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.medium,
+                          )
+                        : ColoredBox(
+                            color: HomeTheme.surfaceMuted,
+                            child: const Center(
+                              child: Icon(Icons.card_giftcard_rounded, color: AppColors.primary, size: 36),
                             ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(p.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: HomeTheme.chipLabel),
-                          const SizedBox(height: 6),
-                          Row(
-                            children: [
-                              Text(formatPrice(p.price), style: HomeTheme.price),
-                              if (hasDiscount) ...[
-                                const SizedBox(width: 6),
-                                Text(
-                                  formatPrice(p.originalPrice!),
-                                  style: HomeTheme.body(size: 11).copyWith(decoration: TextDecoration.lineThrough),
-                                ),
-                              ],
-                            ],
                           ),
-                        ],
-                      ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(p.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: HomeTheme.chipLabel),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Text(formatPrice(p.price), style: HomeTheme.price),
+                            if (hasDiscount) ...[
+                              const SizedBox(width: 6),
+                              Text(
+                                formatPrice(p.originalPrice!),
+                                style: HomeTheme.body(size: 11).copyWith(decoration: TextDecoration.lineThrough),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }

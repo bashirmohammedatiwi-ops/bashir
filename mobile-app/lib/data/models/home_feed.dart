@@ -22,6 +22,7 @@ class HomeFeed {
   final List<Product> newArrivals;
   final List<Product> bestSellers;
   final List<Product> featured;
+  final List<Product> promoProducts;
   final StoreSettings settings;
 
   const HomeFeed({
@@ -34,6 +35,7 @@ class HomeFeed {
     this.newArrivals = const [],
     this.bestSellers = const [],
     this.featured = const [],
+    this.promoProducts = const [],
     this.settings = const StoreSettings(),
   });
 
@@ -52,6 +54,7 @@ class HomeFeed {
       newArrivals: asList(json['newArrivals']).map(Product.fromJson).toList(),
       bestSellers: asList(json['bestSellers']).map(Product.fromJson).toList(),
       featured: asList(json['featuredProducts']).map(Product.fromJson).toList(),
+      promoProducts: asList(json['promoProducts']).map(Product.fromJson).toList(),
       settings: StoreSettings.fromJson(asMap(json['settings'])),
     );
   }

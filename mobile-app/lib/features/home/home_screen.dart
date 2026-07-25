@@ -87,7 +87,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           );
                         },
                         childCount: slots.length + 1,
-                        addAutomaticKeepAlives: true,
+                        addAutomaticKeepAlives: false,
                         addRepaintBoundaries: true,
                       ),
                     ),

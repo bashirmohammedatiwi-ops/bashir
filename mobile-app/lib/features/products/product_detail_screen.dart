@@ -12,7 +12,7 @@ import '../../core/utils/formatters.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/fullscreen_image_viewer.dart';
-import '../../core/widgets/product_card.dart';
+import '../../core/widgets/horizontal_product_list.dart';
 import '../../core/widgets/product_detail_skeleton.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/product.dart';
@@ -1293,18 +1293,11 @@ class _SimilarProducts extends ConsumerWidget {
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
               ),
             ),
-            SizedBox(
+            HorizontalProductList(
+              products: products,
+              itemWidth: 168,
               height: 296,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                itemCount: products.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (_, i) => ProductCard(
-                  product: products[i],
-                  width: 168,
-                ),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
             ),
           ],
         );

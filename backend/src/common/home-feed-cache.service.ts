@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { RedisCacheService } from "./redis-cache.service";
 
 export const HOME_FEED_CACHE_PREFIX = "home:feed:v2:";
+export const OFFERS_FEED_CACHE_PREFIX = "offers:feed:v1:";
 
 @Injectable()
 export class HomeFeedCacheService {
@@ -33,7 +34,20 @@ export class HomeFeedCacheService {
     return this.redis.set(key, value, this.ttlSec());
   }
 
-  invalidateAll() {
-    return this.redis.invalidatePrefix(HOME_FEED_CACHE_PREFIX);
+  buildOffersKey(settings: Record<string, unknown>): string {
+    const flags = [
+      settings.hideOutOfStock ? "1" : "0",
+      settings.hideProductsWithoutImages ? "1" : "0",
+      String(settings.flashSaleEndsAt ?? ""),
+    ].join(":");
+    return `${OFFERS_FEED_CACHE_PREFIX}${flags}`;
+  }
+
+  async invalidateAll() {
+    const [home, offers] = await Promise.all([
+      this.redis.invalidatePrefix(HOME_FEED_CACHE_PREFIX),
+      this.redis.invalidatePrefix(OFFERS_FEED_CACHE_PREFIX),
+    ]);
+    return home + offers;
   }
 }

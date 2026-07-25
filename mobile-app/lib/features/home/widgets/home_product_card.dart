@@ -90,7 +90,7 @@ class _ImageSection extends StatelessWidget {
                 width: constraints.maxWidth,
                 height: constraints.maxHeight,
                 fit: BoxFit.contain,
-                filterQuality: FilterQuality.high,
+                filterQuality: FilterQuality.medium,
               ),
             ),
           ),

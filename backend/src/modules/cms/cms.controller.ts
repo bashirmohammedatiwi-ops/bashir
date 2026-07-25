@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { Role } from "@prisma/client";
+import { Role, CmsPageKey } from "@prisma/client";
 import { Public } from "../../common/decorators/public.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -113,8 +113,9 @@ export class CmsController {
   }
 
   // ---- Home Blocks ----
-  @Public() @Get("home-blocks") listHome(@Query("active") active?: string) {
-    return this.home.list(active !== "0");
+  @Public() @Get("home-blocks") listHome(@Query("active") active?: string, @Query("page") page?: string) {
+    const pageKey = page?.toLowerCase() === "offers" ? CmsPageKey.OFFERS : CmsPageKey.HOME;
+    return this.home.list(active !== "0", pageKey);
   }
 
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)

@@ -671,9 +671,15 @@ model Banner {
   @@index([position])
 }
 
+enum CmsPageKey {
+  HOME
+  OFFERS
+}
+
 model HomeBlock {
   id              String         @id @default(uuid())
   type            HomeBlockType
+  pageKey         CmsPageKey     @default(HOME)
   title           String?
   subtitle        String?
   payload         Json           // configuration for the block (filter, ids, layout)
@@ -684,6 +690,8 @@ model HomeBlock {
 
   @@index([isActive])
   @@index([position])
+  @@index([pageKey])
+  @@index([pageKey, isActive])
 }
 
 // ---------------------- REVIEWS ----------------------

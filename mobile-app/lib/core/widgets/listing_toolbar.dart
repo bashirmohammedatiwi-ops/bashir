@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
-import '../theme/app_typography.dart';
 
-/// شريط ترتيب/تصفية موحّد لقوائم المنتجات.
+/// شريط ترتيب/تصفية — بسيط وأنيق بدون عداد منتجات.
 class ListingToolbar extends StatelessWidget {
   final VoidCallback onSort;
   final VoidCallback onFilter;
-  final int count;
   final bool hasFilter;
   final String? sortLabel;
 
@@ -16,49 +14,31 @@ class ListingToolbar extends StatelessWidget {
     super.key,
     required this.onSort,
     required this.onFilter,
-    required this.count,
     this.hasFilter = false,
     this.sortLabel,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(bottom: BorderSide(color: AppColors.divider)),
-      ),
-      padding: const EdgeInsets.fromLTRB(AppSpacing.md, AppSpacing.xs, AppSpacing.md, AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 4, AppSpacing.lg, 12),
+      child: Row(
         children: [
-          if (count > 0)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppSpacing.sm, right: 4),
-              child: Text(
-                '$count منتج',
-                style: AppTypography.caption.copyWith(fontWeight: FontWeight.w600),
-              ),
+          Expanded(
+            child: _ToolPill(
+              icon: Icons.swap_vert_rounded,
+              label: sortLabel ?? 'ترتيب',
+              onTap: onSort,
             ),
-          Row(
-            children: [
-              Expanded(
-                child: _ToolChip(
-                  icon: Icons.swap_vert_rounded,
-                  label: sortLabel ?? 'ترتيب',
-                  onTap: onSort,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: _ToolChip(
-                  icon: Icons.tune_rounded,
-                  label: 'تصفية',
-                  onTap: onFilter,
-                  active: hasFilter,
-                ),
-              ),
-            ],
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _ToolPill(
+              icon: Icons.tune_rounded,
+              label: 'تصفية',
+              onTap: onFilter,
+              active: hasFilter,
+            ),
           ),
         ],
       ),
@@ -66,13 +46,13 @@ class ListingToolbar extends StatelessWidget {
   }
 }
 
-class _ToolChip extends StatelessWidget {
+class _ToolPill extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
   final bool active;
 
-  const _ToolChip({
+  const _ToolPill({
     required this.icon,
     required this.label,
     required this.onTap,
@@ -82,24 +62,38 @@ class _ToolChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: active ? AppColors.primaryLight : AppColors.scaffold,
-      borderRadius: BorderRadius.circular(AppRadius.md),
+      color: active ? AppColors.primaryLight : AppColors.surface,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(
+              color: active ? AppColors.primarySoft : AppColors.hairline,
+            ),
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 18, color: active ? AppColors.primary : AppColors.textSecondary),
+              Icon(
+                icon,
+                size: 17,
+                color: active ? AppColors.primary : AppColors.textSecondary,
+              ),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: active ? AppColors.primary : AppColors.textPrimary,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: active ? AppColors.primaryDark : AppColors.textPrimary,
+                  ),
                 ),
               ),
             ],

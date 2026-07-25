@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/scroll_perf.dart';
 import 'home_theme.dart';
 
-/// إعدادات تمرير وقوائم الرئيسية — أداء أعلى وحركة أنعم.
-abstract final class HomeScrollPerf {
-  static const verticalCacheExtent = 1800.0;
-  static const horizontalCacheExtent = 420.0;
+export '../../../core/widgets/scroll_perf.dart' show AppScrollBehavior, AppScrollPerf;
 
-  static ScrollPhysics get physics => const BouncingScrollPhysics(
-        parent: AlwaysScrollableScrollPhysics(),
-      );
+/// إعدادات تمرير الرئيسية — للتوافق مع الملفات الحالية.
+abstract final class HomeScrollPerf {
+  static const verticalCacheExtent = AppScrollPerf.verticalCacheExtent;
+  static const horizontalCacheExtent = AppScrollPerf.horizontalCacheExtent;
+  static const gridCacheExtent = AppScrollPerf.gridCacheExtent;
+  static ScrollPhysics get physics => AppScrollPerf.physics;
 }
 
 /// قائمة أفقية محسّنة — cacheExtent + بدون keep-alive زائد.
@@ -19,6 +20,7 @@ class HomeHorizontalList extends StatelessWidget {
   final IndexedWidgetBuilder itemBuilder;
   final double itemGap;
   final EdgeInsetsGeometry? padding;
+  final ScrollPhysics? physics;
 
   const HomeHorizontalList({
     super.key,
@@ -27,28 +29,24 @@ class HomeHorizontalList extends StatelessWidget {
     required this.itemBuilder,
     this.itemGap = HomeTheme.itemGap,
     this.padding,
+    this.physics,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return AppHorizontalList(
       height: height,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: padding ??
-            const EdgeInsets.fromLTRB(
-              HomeTheme.paddingH,
-              0,
-              HomeTheme.paddingH,
-              4,
-            ),
-        cacheExtent: HomeScrollPerf.horizontalCacheExtent,
-        addAutomaticKeepAlives: false,
-        addRepaintBoundaries: true,
-        itemCount: itemCount,
-        separatorBuilder: (_, __) => SizedBox(width: itemGap),
-        itemBuilder: itemBuilder,
-      ),
+      itemCount: itemCount,
+      itemBuilder: itemBuilder,
+      itemGap: itemGap,
+      physics: physics,
+      padding: padding ??
+          const EdgeInsets.fromLTRB(
+            HomeTheme.paddingH,
+            0,
+            HomeTheme.paddingH,
+            4,
+          ),
     );
   }
 }

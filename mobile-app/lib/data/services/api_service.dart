@@ -77,6 +77,25 @@ class ApiService {
     }
   }
 
+  Future<HomeFeed> getOffers({bool forceRefresh = false}) async {
+    try {
+      final raw = await _cache.getOrFetch<Map<String, dynamic>>(
+        key: 'offers_v1',
+        ttl: AppConfig.homeCacheTtl,
+        forceRefresh: forceRefresh,
+        fetch: () async {
+          final r = await _dio.get('/offers', options: Options(extra: {'auth': false}));
+          return asMap(_data(r));
+        },
+        parse: (json) => asMap(json),
+        serialize: (m) => m,
+      );
+      return HomeFeed.fromJson(raw);
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
   // ---- CATEGORIES ----
   Future<List<Category>> getCategories({bool forceRefresh = false}) async {
     try {

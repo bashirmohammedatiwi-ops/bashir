@@ -169,3 +169,19 @@ List<HomeSectionSlot> resolveHomeSectionSlots(HomeFeed feed) {
 
   return slots;
 }
+
+/// أقسام صفحة العروض — بدون رأس الرئيسية الثابت.
+List<HomeSectionSlot> resolveOffersSectionSlots(HomeFeed feed) {
+  final slots = <HomeSectionSlot>[];
+  var firstAfterHero = true;
+  for (final s in _orderedSections(feed.sections)) {
+    final isHero = s.type == 'HERO_BANNER';
+    slots.add(HomeSectionSlot(
+      section: s,
+      isHero: isHero,
+      isFirstAfterHero: !isHero && firstAfterHero,
+    ));
+    if (!isHero) firstAfterHero = false;
+  }
+  return slots;
+}

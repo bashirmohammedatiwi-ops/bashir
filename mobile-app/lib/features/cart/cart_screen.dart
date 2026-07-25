@@ -10,7 +10,7 @@ import '../../core/utils/formatters.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/app_snackbar.dart';
-import '../../core/widgets/product_card.dart';
+import '../../core/widgets/horizontal_product_list.dart';
 import '../../data/models/cart_item.dart';
 import '../../data/models/coupon.dart';
 import '../../data/models/product.dart';
@@ -1133,15 +1133,11 @@ class _YouMayLike extends StatelessWidget {
           padding: EdgeInsets.fromLTRB(16, 28, 16, 12),
           child: Text('قد يعجبك أيضاً', style: AppTypography.sectionTitle),
         ),
-        SizedBox(
+        HorizontalProductList(
+          products: products,
+          itemWidth: 148,
           height: 260,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: products.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (_, i) => ProductCard(product: products[i], width: 148),
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
         ),
       ],
     );

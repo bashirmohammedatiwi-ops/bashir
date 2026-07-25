@@ -49,7 +49,7 @@ class AppNetworkImage extends StatelessWidget {
         width: backgroundColor == null ? width : null,
         height: backgroundColor == null ? height : null,
         fit: fit,
-        fadeInDuration: const Duration(milliseconds: 60),
+        fadeInDuration: Duration.zero,
         fadeOutDuration: Duration.zero,
         memCacheWidth: pixelW,
         memCacheHeight: pixelH,

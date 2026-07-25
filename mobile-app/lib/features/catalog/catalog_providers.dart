@@ -13,6 +13,11 @@ final homeFeedProvider = FutureProvider.autoDispose<HomeFeed>((ref) {
   return ref.read(apiServiceProvider).getHome();
 });
 
+final offersFeedProvider = FutureProvider.autoDispose<HomeFeed>((ref) {
+  ref.keepAlive();
+  return ref.read(apiServiceProvider).getOffers();
+});
+
 final categoriesProvider = FutureProvider<List<Category>>((ref) async {
   ref.keepAlive();
   // أول تحميل بعد التحديث يجلب من الشبكة (مفتاح كاش جديد + TTL أقصر)

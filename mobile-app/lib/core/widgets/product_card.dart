@@ -14,12 +14,16 @@ import '../utils/formatters.dart';
 import 'app_network_image.dart';
 import 'app_snackbar.dart';
 
-/// بطاقة منتج بمعايير متجر عالمي — صورة كبيرة، تسلسل واضح، إضافة سريعة.
+enum ProductCardStyle { standard, listing }
+
+/// بطاقة منتج — معيار عام أو تصميم فاخر لصفحة القائمة.
 class ProductCard extends ConsumerWidget {
   final Product product;
   final double? width;
   final bool showPromoBadge;
   final bool showRating;
+  final bool lite;
+  final ProductCardStyle style;
 
   const ProductCard({
     super.key,
@@ -27,16 +31,24 @@ class ProductCard extends ConsumerWidget {
     this.width,
     this.showPromoBadge = false,
     this.showRating = false,
+    this.lite = false,
+    this.style = ProductCardStyle.standard,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    if (style == ProductCardStyle.listing) {
+      return _ListingProductCard(
+        product: product,
+        showPromoBadge: showPromoBadge,
+        showRating: showRating,
+      );
+    }
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => context.push(
-          '/product/${product.slug.isNotEmpty ? product.slug : product.id}',
-        ),
+        onTap: () => _openProduct(context),
         borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Ink(
           width: width,
@@ -44,7 +56,7 @@ class ProductCard extends ConsumerWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: AppColors.hairline, width: 0.7),
-            boxShadow: AppColors.softShadow,
+            boxShadow: lite ? null : AppColors.softShadow,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -54,6 +66,7 @@ class ProductCard extends ConsumerWidget {
                 child: _ImageSection(
                   product: product,
                   showPromoBadge: showPromoBadge,
+                  lite: lite,
                 ),
               ),
               Expanded(
@@ -69,15 +82,369 @@ class ProductCard extends ConsumerWidget {
       ),
     );
   }
+
+  void _openProduct(BuildContext context) {
+    context.push('/product/${product.slug.isNotEmpty ? product.slug : product.id}');
+  }
 }
+
+// ─── Listing style ────────────────────────────────────────────────────────────
+
+class _ListingProductCard extends ConsumerWidget {
+  final Product product;
+  final bool showPromoBadge;
+  final bool showRating;
+
+  const _ListingProductCard({
+    required this.product,
+    required this.showPromoBadge,
+    required this.showRating,
+  });
+
+  static const _imageWash = Color(0xFFFFF6F8);
+  static const _radius = 18.0;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => context.push(
+          '/product/${product.slug.isNotEmpty ? product.slug : product.id}',
+        ),
+        borderRadius: BorderRadius.circular(_radius),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(_radius),
+            border: Border.all(color: AppColors.hairline.withValues(alpha: 0.65)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 12,
+                child: _ListingImage(
+                  product: product,
+                  showPromoBadge: showPromoBadge,
+                ),
+              ),
+              Expanded(
+                flex: 9,
+                child: _ListingInfo(
+                  product: product,
+                  showRating: showRating,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ListingImage extends StatelessWidget {
+  final Product product;
+  final bool showPromoBadge;
+
+  const _ListingImage({required this.product, required this.showPromoBadge});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasShades = product.shades.isNotEmpty || product.shadeCount > 0;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(17.5)),
+          child: ColoredBox(
+            color: _ListingProductCard._imageWash,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(10, 12, 10, 8),
+              child: LayoutBuilder(
+                builder: (context, constraints) => Center(
+                  child: ProductCoverImage(
+                    url: product.coverUrl,
+                    width: constraints.maxWidth,
+                    height: constraints.maxHeight,
+                    fit: BoxFit.contain,
+                    filterQuality: FilterQuality.medium,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: 8,
+          left: 8,
+          child: RepaintBoundary(child: _ListingWishButton(product: product)),
+        ),
+        if (product.hasDiscount)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: _ListingBadge(label: '-${product.discountPercent}%'),
+          )
+        else if (product.isNew)
+          const Positioned(
+            top: 8,
+            right: 8,
+            child: _ListingBadge(label: 'جديد', dark: true),
+          )
+        else if (showPromoBadge && product.isPromo)
+          const Positioned(
+            top: 8,
+            right: 8,
+            child: _ListingBadge(label: 'عرض'),
+          ),
+        if (hasShades)
+          Positioned(
+            right: 8,
+            bottom: 8,
+            child: _ShadeIndicator(
+              shades: product.shades,
+              totalCount: product.shades.isNotEmpty ? product.shades.length : product.shadeCount,
+            ),
+          ),
+        if (!product.inStock)
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(17.5)),
+              child: ColoredBox(
+                color: Colors.white.withValues(alpha: 0.75),
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.ink.withValues(alpha: 0.82),
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                    ),
+                    child: const Text(
+                      'نفد المخزون',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ListingBadge extends StatelessWidget {
+  final String label;
+  final bool dark;
+
+  const _ListingBadge({required this.label, this.dark = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: dark ? AppColors.ink : AppColors.primary,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 9.5,
+          fontWeight: FontWeight.w800,
+          height: 1,
+        ),
+      ),
+    );
+  }
+}
+
+class _ListingWishButton extends ConsumerWidget {
+  final Product product;
+
+  const _ListingWishButton({required this.product});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final wished = ref.watch(wishlistProvider.select((s) => s.ids.contains(product.id)));
+
+    return Material(
+      color: Colors.white.withValues(alpha: 0.92),
+      shape: CircleBorder(
+        side: BorderSide(color: AppColors.hairline.withValues(alpha: 0.8)),
+      ),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: () async {
+          HapticFeedback.selectionClick();
+          if (!ref.read(authProvider).isAuthenticated) {
+            context.push('/login');
+            return;
+          }
+          await ref.read(wishlistProvider.notifier).toggle(product);
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(7),
+          child: Icon(
+            wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+            size: 15,
+            color: wished ? AppColors.sale : AppColors.textSecondary,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ListingInfo extends ConsumerWidget {
+  final Product product;
+  final bool showRating;
+
+  const _ListingInfo({required this.product, required this.showRating});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(11, 8, 9, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (product.brandName.isNotEmpty)
+            Text(
+              product.brandName.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.brand.copyWith(
+                fontSize: 9.5,
+                color: AppColors.primary.withValues(alpha: 0.85),
+                letterSpacing: 0.4,
+              ),
+            ),
+          if (product.brandName.isNotEmpty) const SizedBox(height: 3),
+          Expanded(
+            child: Text(
+              product.name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+                height: 1.28,
+                color: AppColors.textPrimary,
+                letterSpacing: -0.1,
+              ),
+            ),
+          ),
+          if (showRating && product.rating > 0) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.star_rounded, size: 12, color: AppColors.star),
+                const SizedBox(width: 2),
+                Text(
+                  product.rating.toStringAsFixed(1),
+                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ],
+          const Spacer(),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      formatPrice(product.price),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                        color: product.hasDiscount ? AppColors.sale : AppColors.textPrimary,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    if (product.hasDiscount)
+                      Text(
+                        formatPrice(product.originalPrice),
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textMuted,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              _ListingAddButton(product: product),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ListingAddButton extends ConsumerWidget {
+  final Product product;
+
+  const _ListingAddButton({required this.product});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enabled = product.inStock;
+
+    return Material(
+      color: enabled ? AppColors.primary : AppColors.divider,
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: InkWell(
+        onTap: enabled
+            ? () {
+                HapticFeedback.lightImpact();
+                if (product.shades.isNotEmpty) {
+                  context.push(
+                    '/product/${product.slug.isNotEmpty ? product.slug : product.id}',
+                  );
+                  return;
+                }
+                ref.read(cartProvider.notifier).add(product);
+                AppSnackbar.success(context, 'أُضيف إلى السلة');
+              }
+            : null,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          child: Icon(
+            Icons.add_rounded,
+            size: 18,
+            color: enabled ? Colors.white : AppColors.textMuted,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Standard style ───────────────────────────────────────────────────────────
 
 class _ImageSection extends StatelessWidget {
   final Product product;
   final bool showPromoBadge;
+  final bool lite;
 
   const _ImageSection({
     required this.product,
     required this.showPromoBadge,
+    this.lite = false,
   });
 
   bool get _hasShades => product.shades.isNotEmpty || product.shadeCount > 0;
@@ -90,7 +457,6 @@ class _ImageSection extends StatelessWidget {
         ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg - 0.5)),
           child: ColoredBox(
-            // خلفية الصورة بيضاء نقية دائماً
             color: Colors.white,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
@@ -100,13 +466,13 @@ class _ImageSection extends StatelessWidget {
                     url: product.coverUrl,
                     width: constraints.maxWidth,
                     fit: BoxFit.contain,
+                    filterQuality: lite ? FilterQuality.low : FilterQuality.medium,
                   ),
                 ),
               ),
             ),
           ),
         ),
-        // فاصل رقيق بين الصورة والمعلومات
         const Positioned(
           left: 12,
           right: 12,
@@ -116,7 +482,7 @@ class _ImageSection extends StatelessWidget {
         Positioned(
           top: 10,
           left: 10,
-          child: _WishButton(product: product),
+          child: RepaintBoundary(child: _WishButton(product: product)),
         ),
         if (product.hasDiscount)
           Positioned(
@@ -125,19 +491,20 @@ class _ImageSection extends StatelessWidget {
             child: _Badge(
               label: '-${product.discountPercent}%',
               color: AppColors.sale,
+              lite: lite,
             ),
           )
         else if (product.isNew)
-          const Positioned(
+          Positioned(
             top: 10,
             right: 10,
-            child: _Badge(label: 'جديد', color: AppColors.ink),
+            child: _Badge(label: 'جديد', color: AppColors.ink, lite: lite),
           )
         else if (showPromoBadge && product.isPromo)
-          const Positioned(
+          Positioned(
             top: 10,
             right: 10,
-            child: _Badge(label: 'عرض', color: AppColors.primary),
+            child: _Badge(label: 'عرض', color: AppColors.primary, lite: lite),
           ),
         if (_hasShades)
           Positioned(
@@ -341,7 +708,8 @@ class _InfoSection extends ConsumerWidget {
 class _Badge extends StatelessWidget {
   final String label;
   final Color color;
-  const _Badge({required this.label, required this.color});
+  final bool lite;
+  const _Badge({required this.label, required this.color, this.lite = false});
 
   @override
   Widget build(BuildContext context) {
@@ -350,13 +718,15 @@ class _Badge extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: lite
+            ? null
+            : [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Text(
         label,
