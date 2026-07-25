@@ -1,6 +1,6 @@
 "use client";
 
-import { AutoComplete, Form, Space, Tag, Typography } from "antd";
+import { AutoComplete, Form, Input, Space, Tag, Typography } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { queries } from "@/lib/queries";

@@ -210,7 +210,7 @@ function mapImportProduct(raw: Record<string, unknown>, storeLabel = ""): Catalo
     shadeNumber: s.shadeNumber || s.shadeCode || String(index + 1).padStart(2, "0"),
     shadeCode: s.shadeCode || s.shadeNumber || "",
     position: Number.isFinite(Number(s.position)) ? Number(s.position) : index,
-  }));
+  })));
 
   const images = ((raw.images as { url: string }[]) || []).map((img, i) => ({
     url: img.url,
