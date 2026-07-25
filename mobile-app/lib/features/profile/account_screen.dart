@@ -13,9 +13,11 @@ import '../../core/utils/responsive.dart';
 import '../../core/utils/support_links.dart';
 import '../../core/widgets/language_toggle_bar.dart';
 import '../auth/auth_provider.dart';
+import '../auth/widgets/auth_shell.dart';
 import '../cart/widgets/cart_theme.dart';
 import '../catalog/catalog_providers.dart';
 import 'profile_providers.dart';
+import 'widgets/account_theme.dart';
 
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
@@ -24,137 +26,96 @@ class AccountScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
     final s = ref.watch(stringsProvider);
+    final hPad = Responsive.horizontalPadding(context);
 
     return Scaffold(
-      backgroundColor: CartTheme.bg,
-      body: Column(
-        children: [
-          const LanguageToggleBar(),
-          Expanded(
-            child: !auth.isAuthenticated
-                ? _GuestAccount(s: s)
-                : ListView(
-                    padding: const EdgeInsets.only(bottom: AppSpacing.huge + 40),
-                    children: [
-                      _ProfileHeader(),
-                      const SizedBox(height: AppSpacing.md),
-                      _QuickActions(),
-                      const SizedBox(height: AppSpacing.lg),
-                      _MenuGroup(
-                        title: s.myPurchases,
+      backgroundColor: AccountTheme.pageBg,
+      body: !auth.isAuthenticated
+          ? Column(
+              children: [
+                const LanguageToggleBar(),
+                Expanded(child: _GuestAccount(s: s, hPad: hPad)),
+              ],
+            )
+          : CustomScrollView(
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              slivers: [
+                SliverToBoxAdapter(child: const LanguageToggleBar()),
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(hPad, 4, hPad, Responsive.shellBottomReserve(context) + 32),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      const _ProfileHeader(),
+                      const SizedBox(height: AccountTheme.sectionGap),
+                      const _QuickActionsGrid(),
+                      const SizedBox(height: AccountTheme.sectionGap),
+                      AccountSection(
+                        title: s.explore,
+                        icon: Icons.storefront_outlined,
                         children: [
-                          _tile(context, Icons.receipt_long_outlined, s.myOrders, () => context.push('/orders')),
-                          _tile(context, Icons.favorite_border_rounded, s.wishlist, () => context.push('/wishlist')),
-                          _tile(context, Icons.storefront_outlined, s.brands, () => context.push('/brands')),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      _MenuGroup(
-                        title: s.myAccount,
-                        children: [
-                          _tile(context, Icons.location_on_outlined, s.addresses, () => context.push('/addresses')),
-                          _tile(context, Icons.stars_outlined, s.loyaltyPoints, () => context.push('/loyalty')),
-                          _tile(
-                            context,
-                            Icons.notifications_none_rounded,
-                            s.notifications,
-                            () => context.push('/notifications'),
+                          AccountMenuTile(
+                            icon: Icons.storefront_rounded,
+                            title: s.brands,
+                            color: AccountTheme.brands,
+                            onTap: () => context.push('/brands'),
+                          ),
+                          AccountMenuTile(
+                            icon: Icons.notifications_active_rounded,
+                            title: s.notifications,
+                            color: AccountTheme.notifications,
                             badge: ref.watch(unreadNotificationsCountProvider),
+                            onTap: () => context.push('/notifications'),
                           ),
                         ],
                       ),
-                      const SizedBox(height: AppSpacing.md),
+                      const SizedBox(height: AccountTheme.sectionGap),
                       _SupportSection(s: s),
-                      const SizedBox(height: AppSpacing.md),
-                      _MenuGroup(
+                      const SizedBox(height: AccountTheme.sectionGap),
+                      AccountSection(
                         title: s.settings,
+                        icon: Icons.settings_outlined,
                         children: [
-                          _tile(context, Icons.edit_outlined, s.editProfile, () => context.push('/edit-profile')),
-                          _tile(context, Icons.lock_outline_rounded, s.changePassword, () => context.push('/change-password')),
-                          _tile(context, Icons.info_outline_rounded, s.aboutApp, () => _about(context, s)),
-                          _tile(
-                            context,
-                            Icons.logout_rounded,
-                            s.logout,
-                            () => _logout(context, ref, s),
-                            color: AppColors.sale,
+                          AccountMenuTile(
+                            icon: Icons.person_outline_rounded,
+                            title: s.editProfile,
+                            color: AccountTheme.settings,
+                            onTap: () => context.push('/edit-profile'),
                           ),
-                          _tile(
-                            context,
-                            Icons.delete_forever_outlined,
-                            s.deleteAccount,
-                            () => _deleteAccount(context, ref, s),
-                            color: AppColors.sale,
+                          AccountMenuTile(
+                            icon: Icons.lock_outline_rounded,
+                            title: s.changePassword,
+                            color: AccountTheme.settings,
+                            onTap: () => context.push('/change-password'),
+                          ),
+                          AccountMenuTile(
+                            icon: Icons.info_outline_rounded,
+                            title: s.aboutApp,
+                            color: AccountTheme.settings,
+                            onTap: () => _about(context, s),
                           ),
                         ],
                       ),
-                      const SizedBox(height: AppSpacing.xl),
+                      const SizedBox(height: AccountTheme.sectionGap),
+                      _DangerZone(
+                        onLogout: () => _logout(context, ref, s),
+                        onDelete: () => _deleteAccount(context, ref, s),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
                       Center(
                         child: Text(
                           '${AppConfig.storeName} • ${s.version} 1.0.0',
-                          style: AppTypography.caption.copyWith(color: CartTheme.charcoal.withValues(alpha: 0.5)),
+                          style: AppTypography.caption.copyWith(
+                            color: CartTheme.charcoal.withValues(alpha: 0.45),
+                          ),
                         ),
                       ),
-                    ],
+                    ]),
                   ),
-          ),
-        ],
-      ),
+                ),
+              ],
+            ),
     );
   }
-
-  Widget _tile(
-    BuildContext context,
-    IconData icon,
-    String title,
-    VoidCallback onTap, {
-    Color? color,
-    int badge = 0,
-    Widget? trailing,
-  }) =>
-      ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 2),
-        leading: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: (color ?? CartTheme.brand).withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, color: color ?? CartTheme.brandDark, size: 22),
-        ),
-        title: Text(
-          title,
-          style: AppTypography.bodyStrong.copyWith(
-            color: color ?? AppColors.textPrimary,
-            fontSize: 14.5,
-          ),
-        ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (trailing != null) trailing,
-            if (badge > 0)
-              Container(
-                margin: const EdgeInsets.only(left: AppSpacing.sm),
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.sale,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-                child: Text(
-                  badge > 9 ? '9+' : '$badge',
-                  style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800),
-                ),
-              ),
-            const Icon(Icons.chevron_left_rounded, color: AppColors.textMuted),
-          ],
-        ),
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-      );
 
   void _about(BuildContext context, AppStrings s) {
     showAboutDialog(
@@ -210,89 +171,196 @@ class AccountScreen extends ConsumerWidget {
     try {
       await ref.read(authProvider.notifier).deleteAccount();
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(s.deleteAccountSuccess)),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(s.deleteAccountSuccess)));
     } catch (e) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
     }
+  }
+}
+
+class AccountSection extends StatelessWidget {
+  final String title;
+  final IconData? icon;
+  final List<Widget> children;
+
+  const AccountSection({
+    super.key,
+    required this.title,
+    this.icon,
+    required this.children,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AccountTheme.sectionTitle(title, icon: icon),
+        Container(
+          decoration: AccountTheme.pageCard(),
+          child: Column(
+            children: [
+              for (var i = 0; i < children.length; i++) ...[
+                if (i > 0) Divider(height: 1, indent: 72, endIndent: 16, color: CartTheme.brandSoft),
+                children[i],
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class AccountMenuTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final Color color;
+  final VoidCallback onTap;
+  final int badge;
+
+  const AccountMenuTile({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    required this.color,
+    required this.onTap,
+    this.badge = 0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: Container(
+        width: 46,
+        height: 46,
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Icon(icon, color: color, size: 23),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: CartTheme.charcoal),
+      ),
+      subtitle: subtitle == null
+          ? null
+          : Text(
+              subtitle!,
+              style: TextStyle(fontSize: 12, color: CartTheme.charcoal.withValues(alpha: 0.5)),
+            ),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (badge > 0)
+            Container(
+              margin: const EdgeInsets.only(left: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.sale,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                badge > 9 ? '9+' : '$badge',
+                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800),
+              ),
+            ),
+          Icon(Icons.chevron_left_rounded, color: CartTheme.charcoal.withValues(alpha: 0.35)),
+        ],
+      ),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+    );
   }
 }
 
 class _GuestAccount extends StatelessWidget {
   final AppStrings s;
-  const _GuestAccount({required this.s});
+  final double hPad;
+
+  const _GuestAccount({required this.s, required this.hPad});
 
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 16, AppSpacing.lg, 120),
+      padding: EdgeInsets.fromLTRB(hPad, 8, hPad, 120),
       children: [
         Container(
           padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: CartTheme.brandGradient,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: CartTheme.softShadow,
-          ),
+          decoration: AccountTheme.heroDecoration(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 56,
-                height: 56,
+                width: 62,
+                height: 62,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
                 ),
-                child: const Icon(Icons.person_rounded, color: Colors.white, size: 28),
+                child: const Icon(Icons.person_rounded, color: Colors.white, size: 32),
               ),
               const SizedBox(height: 18),
               Text(
                 s.guestWelcome,
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.4),
+                style: const TextStyle(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: -0.5,
+                  height: 1.15,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 s.guestSubtitle,
-                style: TextStyle(color: Colors.white.withValues(alpha: 0.85), height: 1.4),
+                style: TextStyle(color: Colors.white.withValues(alpha: 0.88), height: 1.45, fontSize: 14),
               ),
               const SizedBox(height: 22),
+              authPrimaryButton(label: s.login, onPressed: () => context.push('/login')),
+              const SizedBox(height: 12),
               SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => context.push('/login'),
-                  child: Text(s.login),
-                ),
-              ),
-              const SizedBox(height: 10),
-              SizedBox(
+                height: 52,
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: () => context.push('/register'),
-                  child: Text(s.register),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: BorderSide(color: Colors.white.withValues(alpha: 0.65), width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                  ),
+                  child: Text(
+                    s.register,
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                  ),
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(height: 20),
-        _MenuGroup(
+        const SizedBox(height: AccountTheme.sectionGap),
+        AccountSection(
           title: s.explore,
+          icon: Icons.explore_outlined,
           children: [
-            ListTile(
-              leading: const Icon(Icons.storefront_outlined, color: CartTheme.brandDark),
-              title: Text(s.brands, style: const TextStyle(fontWeight: FontWeight.w700)),
-              trailing: const Icon(Icons.chevron_left_rounded),
+            AccountMenuTile(
+              icon: Icons.storefront_rounded,
+              title: s.brands,
+              color: AccountTheme.brands,
               onTap: () => context.push('/brands'),
             ),
-            ListTile(
-              leading: const Icon(Icons.info_outline_rounded, color: CartTheme.brandDark),
-              title: Text(s.aboutApp, style: const TextStyle(fontWeight: FontWeight.w700)),
-              trailing: const Icon(Icons.chevron_left_rounded),
+            AccountMenuTile(
+              icon: Icons.info_outline_rounded,
+              title: s.aboutApp,
+              color: AccountTheme.settings,
               onTap: () => showAboutDialog(
                 context: context,
                 applicationName: AppConfig.storeName,
@@ -306,123 +374,132 @@ class _GuestAccount extends StatelessWidget {
   }
 }
 
-class _QuickActions extends ConsumerWidget {
+class _QuickActionsGrid extends ConsumerWidget {
+  const _QuickActionsGrid();
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(stringsProvider);
     final actions = [
-      (Icons.receipt_long_rounded, s.myOrders, () => context.push('/orders')),
-      (Icons.favorite_rounded, s.wishlist, () => context.push('/wishlist')),
-      (Icons.stars_rounded, s.loyaltyPoints, () => context.push('/loyalty')),
-      (Icons.location_on_rounded, s.addresses, () => context.push('/addresses')),
+      _QuickAction(
+        icon: Icons.receipt_long_rounded,
+        label: s.myOrders,
+        color: AccountTheme.orders,
+        onTap: () => context.push('/orders'),
+      ),
+      _QuickAction(
+        icon: Icons.favorite_rounded,
+        label: s.wishlist,
+        color: AccountTheme.wishlist,
+        onTap: () => context.push('/wishlist'),
+      ),
+      _QuickAction(
+        icon: Icons.stars_rounded,
+        label: s.loyaltyPoints,
+        color: AccountTheme.loyalty,
+        onTap: () => context.push('/loyalty'),
+      ),
+      _QuickAction(
+        icon: Icons.location_on_rounded,
+        label: s.addresses,
+        color: AccountTheme.addresses,
+        onTap: () => context.push('/addresses'),
+      ),
     ];
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final compact = Responsive.isCompact(context);
-          final labelStyle = TextStyle(
-            fontSize: compact ? 9.5 : 11,
-            fontWeight: FontWeight.w800,
-          );
-
-          Widget actionTile((IconData, String, VoidCallback) action) {
-            return Material(
-              color: CartTheme.card,
-              borderRadius: BorderRadius.circular(16),
-              child: InkWell(
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  action.$3();
-                },
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: EdgeInsets.symmetric(vertical: compact ? 12 : 14),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: CartTheme.brandSoft),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(action.$1, color: CartTheme.brandDark, size: compact ? 20 : 22),
-                      const SizedBox(height: 6),
-                      Text(
-                        action.$2,
-                        maxLines: 2,
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
-                        style: labelStyle,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }
-
-          if (compact) {
-            return GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              childAspectRatio: 1.35,
-              children: [for (final a in actions) actionTile(a)],
-            );
-          }
-
-          return Row(
-            children: [
-              for (var i = 0; i < actions.length; i++) ...[
-                if (i > 0) const SizedBox(width: 10),
-                Expanded(child: actionTile(actions[i])),
-              ],
-            ],
-          );
-        },
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AccountTheme.sectionTitle(s.myPurchases, icon: Icons.shopping_bag_outlined),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 10,
+          crossAxisSpacing: 10,
+          childAspectRatio: Responsive.isCompact(context) ? 1.45 : 1.55,
+          children: [for (final a in actions) _QuickActionTile(action: a)],
+        ),
+      ],
     );
   }
 }
 
-class _MenuGroup extends StatelessWidget {
-  final String? title;
-  final List<Widget> children;
-  const _MenuGroup({this.title, required this.children});
+class _QuickAction {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+}
+
+class _QuickActionTile extends StatelessWidget {
+  final _QuickAction action;
+
+  const _QuickActionTile({required this.action});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (title != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, 8),
-            child: Text(
-              title!,
-              style: AppTypography.overline.copyWith(color: AppColors.textMuted),
-            ),
-          ),
-        Container(
-          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          action.onTap();
+        },
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
           decoration: BoxDecoration(
-            color: CartTheme.card,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: CartTheme.brandSoft),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: action.color.withValues(alpha: 0.18)),
+            gradient: LinearGradient(
+              begin: Alignment.topRight,
+              end: Alignment.bottomLeft,
+              colors: [
+                action.color.withValues(alpha: 0.08),
+                Colors.white,
+              ],
+            ),
             boxShadow: CartTheme.softShadow,
           ),
-          child: Column(
-            children: [
-              for (var i = 0; i < children.length; i++) ...[
-                if (i > 0) const Divider(height: 1, indent: 68, endIndent: AppSpacing.lg),
-                children[i],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: action.color.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(action.icon, color: action.color, size: 24),
+                ),
+                const Spacer(),
+                Text(
+                  action.label,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 13.5,
+                    color: CartTheme.charcoal,
+                    height: 1.2,
+                  ),
+                ),
               ],
-            ],
+            ),
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -443,40 +520,24 @@ class _SupportSection extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return _MenuGroup(
+    return AccountSection(
       title: s.support,
+      icon: Icons.headset_mic_outlined,
       children: [
         if (whatsapp != null && whatsapp.isNotEmpty)
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 2),
-            leading: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: const Color(0xFF25D366).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.chat_outlined, color: Color(0xFF25D366)),
-            ),
-            title: Text(s.whatsappSupport, style: const TextStyle(fontWeight: FontWeight.w700)),
-            trailing: const Icon(Icons.chevron_left_rounded, color: AppColors.textMuted),
+          AccountMenuTile(
+            icon: Icons.chat_rounded,
+            title: s.whatsappSupport,
+            subtitle: whatsapp,
+            color: const Color(0xFF25D366),
             onTap: () => openWhatsApp(whatsapp, message: s.whatsappHelpMessage),
           ),
         if (phone != null && phone.isNotEmpty)
-          ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 2),
-            leading: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.phone_outlined, color: AppColors.primary),
-            ),
-            title: Text(s.callUs, style: const TextStyle(fontWeight: FontWeight.w700)),
-            subtitle: Text(phone, style: AppTypography.caption),
-            trailing: const Icon(Icons.chevron_left_rounded, color: AppColors.textMuted),
+          AccountMenuTile(
+            icon: Icons.phone_in_talk_rounded,
+            title: s.callUs,
+            subtitle: phone,
+            color: AccountTheme.addresses,
             onTap: () => callPhone(phone),
           ),
       ],
@@ -493,64 +554,231 @@ class _ProfileHeader extends ConsumerWidget {
     final s = ref.watch(stringsProvider);
     if (user == null) return const SizedBox.shrink();
 
+    final contact = formatPhoneLocal(user.phone).isNotEmpty
+        ? formatPhoneLocal(user.phone)
+        : (user.email ?? '');
+
     return Container(
-      margin: const EdgeInsets.fromLTRB(AppSpacing.lg, 16, AppSpacing.lg, 0),
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: CartTheme.brandGradient,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: CartTheme.softShadow,
-      ),
-      child: Row(
+      decoration: AccountTheme.heroDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: Colors.white,
-            child: Text(
-              user.name.isNotEmpty ? user.name[0] : '؟',
-              style: const TextStyle(color: CartTheme.brand, fontSize: 24, fontWeight: FontWeight.w900),
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user.name,
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 68,
+                height: 68,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  formatPhoneLocal(user.phone).isNotEmpty
-                      ? formatPhoneLocal(user.phone)
-                      : (user.email ?? ''),
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.78), fontSize: 12),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(10),
+                alignment: Alignment.center,
+                child: Text(
+                  user.name.isNotEmpty ? user.name[0] : '؟',
+                  style: const TextStyle(
+                    color: CartTheme.brand,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w900,
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.stars_rounded, color: Colors.white, size: 15),
-                      const SizedBox(width: 5),
-                      Text(
-                        '${user.points} ${s.loyaltyPointsCount}',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      user.name,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.3,
+                        height: 1.15,
                       ),
-                    ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      contact,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.82),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Material(
+                color: Colors.white.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  onTap: () => context.push('/edit-profile'),
+                  borderRadius: BorderRadius.circular(14),
+                  child: const Padding(
+                    padding: EdgeInsets.all(10),
+                    child: Icon(Icons.edit_rounded, color: Colors.white, size: 20),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _HeaderChip(
+                  icon: Icons.stars_rounded,
+                  label: '${user.points}',
+                  hint: s.loyaltyPointsCount,
+                  onTap: () => context.push('/loyalty'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _HeaderChip(
+                  icon: Icons.receipt_long_rounded,
+                  label: s.myOrders,
+                  hint: s.viewAll,
+                  onTap: () => context.push('/orders'),
+                ),
+              ),
+            ],
           ),
         ],
       ),
+    );
+  }
+}
+
+class _HeaderChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String hint;
+  final VoidCallback onTap;
+
+  const _HeaderChip({
+    required this.icon,
+    required this.label,
+    required this.hint,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white.withValues(alpha: 0.14),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.white, size: 18),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 13,
+                      ),
+                    ),
+                    Text(
+                      hint,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_left_rounded, color: Colors.white.withValues(alpha: 0.7), size: 18),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DangerZone extends ConsumerWidget {
+  final VoidCallback onLogout;
+  final VoidCallback onDelete;
+
+  const _DangerZone({required this.onLogout, required this.onDelete});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AccountTheme.sectionTitle(s.myAccount, icon: Icons.manage_accounts_outlined),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: AccountTheme.pageCard(color: Colors.white),
+          child: Column(
+            children: [
+              SizedBox(
+                height: 50,
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onLogout,
+                  icon: const Icon(Icons.logout_rounded, size: 20),
+                  label: Text(s.logout),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: CartTheme.brandDark,
+                    side: const BorderSide(color: CartTheme.brand, width: 1.5),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 48,
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete_forever_outlined, size: 19),
+                  label: Text(s.deleteAccount),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AccountTheme.danger,
+                    backgroundColor: AccountTheme.dangerSoft,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
