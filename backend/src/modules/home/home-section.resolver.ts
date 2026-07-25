@@ -623,17 +623,15 @@ export class HomeSectionResolver {
           imageUrl = this.mediaPublicUrl(media) ?? undefined;
         }
       }
-      return withCardSize(
-        {
-          ...cat,
-          image,
-          ...(imageUrl ? { imageUrl } : {}),
-          linkType: ov?.linkType,
-          linkValue: ov?.linkValue,
-          link,
-        },
-        size,
-      );
+      const row: CategoryRow = {
+        ...cat,
+        image,
+        ...(imageUrl ? { imageUrl } : {}),
+        linkType: ov?.linkType,
+        linkValue: ov?.linkValue,
+        link,
+      };
+      return withCardSize(row, size);
     };
 
     if (!ids?.length) {
@@ -665,11 +663,10 @@ export class HomeSectionResolver {
     type BrandRow = { id: string } & Record<string, unknown>;
     const ids = payload.brandIds as string[] | undefined;
 
-    const enrich = (b: BrandRow, index: number): BrandRow & { cardSize: string } =>
-      withCardSize(
-        { ...b, link: buildAppLink("brand", b.id) },
-        resolveCardSize(payload, b.id, index),
-      );
+    const enrich = (b: BrandRow, index: number): BrandRow & { cardSize: string } => {
+      const row: BrandRow = { ...b, link: buildAppLink("brand", b.id) };
+      return withCardSize(row, resolveCardSize(payload, b.id, index));
+    };
 
     if (!ids?.length) {
       const list = (fallback as BrandRow[]).map((b, i) => enrich(b, i));
