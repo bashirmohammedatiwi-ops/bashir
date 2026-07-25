@@ -101,8 +101,7 @@ class _ListingProductCard extends ConsumerWidget {
     required this.showRating,
   });
 
-  static const _imageWash = Color(0xFFFFF6F8);
-  static const _radius = 18.0;
+  static const _radius = 20.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -113,17 +112,19 @@ class _ListingProductCard extends ConsumerWidget {
           '/product/${product.slug.isNotEmpty ? product.slug : product.id}',
         ),
         borderRadius: BorderRadius.circular(_radius),
+        splashColor: AppColors.primary.withValues(alpha: 0.06),
+        highlightColor: AppColors.primary.withValues(alpha: 0.03),
         child: Ink(
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(_radius),
-            border: Border.all(color: AppColors.hairline.withValues(alpha: 0.65)),
+            boxShadow: AppColors.cardShadow,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                flex: 12,
+                flex: 11,
                 child: _ListingImage(
                   product: product,
                   showPromoBadge: showPromoBadge,
@@ -153,16 +154,29 @@ class _ListingImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasShades = product.shades.isNotEmpty || product.shadeCount > 0;
+    final badge = product.hasDiscount
+        ? '-${product.discountPercent}%'
+        : product.isNew
+            ? 'جديد'
+            : (showPromoBadge && product.isPromo)
+                ? 'عرض'
+                : null;
 
     return Stack(
       fit: StackFit.expand,
       children: [
         ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(17.5)),
-          child: ColoredBox(
-            color: _ListingProductCard._imageWash,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(19.5)),
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFFFFF8FA), Color(0xFFFFFFFF)],
+              ),
+            ),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(10, 12, 10, 8),
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
               child: LayoutBuilder(
                 builder: (context, constraints) => Center(
                   child: ProductCoverImage(
@@ -178,33 +192,21 @@ class _ListingImage extends StatelessWidget {
           ),
         ),
         Positioned(
-          top: 8,
-          left: 8,
+          top: 10,
+          left: 10,
           child: RepaintBoundary(child: _ListingWishButton(product: product)),
         ),
-        if (product.hasDiscount)
+        if (badge != null)
           Positioned(
-            top: 8,
-            right: 8,
-            child: _ListingBadge(label: '-${product.discountPercent}%'),
-          )
-        else if (product.isNew)
-          const Positioned(
-            top: 8,
-            right: 8,
-            child: _ListingBadge(label: 'جديد', dark: true),
-          )
-        else if (showPromoBadge && product.isPromo)
-          const Positioned(
-            top: 8,
-            right: 8,
-            child: _ListingBadge(label: 'عرض'),
+            top: 10,
+            right: 10,
+            child: _ListingBadge(label: badge, sale: product.hasDiscount),
           ),
         if (hasShades)
           Positioned(
-            right: 8,
-            bottom: 8,
-            child: _ShadeIndicator(
+            left: 10,
+            bottom: 10,
+            child: _ListingShades(
               shades: product.shades,
               totalCount: product.shades.isNotEmpty ? product.shades.length : product.shadeCount,
             ),
@@ -212,18 +214,18 @@ class _ListingImage extends StatelessWidget {
         if (!product.inStock)
           Positioned.fill(
             child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(17.5)),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(19.5)),
               child: ColoredBox(
-                color: Colors.white.withValues(alpha: 0.75),
+                color: Colors.white.withValues(alpha: 0.72),
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                     decoration: BoxDecoration(
-                      color: AppColors.ink.withValues(alpha: 0.82),
+                      color: AppColors.ink.withValues(alpha: 0.78),
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                     ),
                     child: const Text(
-                      'نفد المخزون',
+                      'نفد',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 10,
@@ -242,17 +244,17 @@ class _ListingImage extends StatelessWidget {
 
 class _ListingBadge extends StatelessWidget {
   final String label;
-  final bool dark;
+  final bool sale;
 
-  const _ListingBadge({required this.label, this.dark = false});
+  const _ListingBadge({required this.label, this.sale = false});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: dark ? AppColors.ink : AppColors.primary,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
+        color: sale ? AppColors.sale : AppColors.ink,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         label,
@@ -267,6 +269,51 @@ class _ListingBadge extends StatelessWidget {
   }
 }
 
+class _ListingShades extends StatelessWidget {
+  final List<ProductShade> shades;
+  final int totalCount;
+
+  const _ListingShades({required this.shades, required this.totalCount});
+
+  @override
+  Widget build(BuildContext context) {
+    final count = shades.isNotEmpty ? shades.length : totalCount;
+    if (count <= 0) return const SizedBox.shrink();
+    final visible = shades.take(3).toList();
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < (visible.isNotEmpty ? visible.length : (count > 3 ? 3 : count)); i++) ...[
+          if (i > 0) const SizedBox(width: 3),
+          visible.isNotEmpty
+              ? _ShadeDot(shade: visible[i])
+              : Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.shimmerBase,
+                    border: Border.all(color: Colors.white, width: 1.2),
+                  ),
+                ),
+        ],
+        if (count > 3) ...[
+          const SizedBox(width: 4),
+          Text(
+            '+${count - 3}',
+            style: const TextStyle(
+              fontSize: 8.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textMuted,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class _ListingWishButton extends ConsumerWidget {
   final Product product;
 
@@ -277,10 +324,10 @@ class _ListingWishButton extends ConsumerWidget {
     final wished = ref.watch(wishlistProvider.select((s) => s.ids.contains(product.id)));
 
     return Material(
-      color: Colors.white.withValues(alpha: 0.92),
-      shape: CircleBorder(
-        side: BorderSide(color: AppColors.hairline.withValues(alpha: 0.8)),
-      ),
+      color: Colors.white.withValues(alpha: 0.9),
+      elevation: 0,
+      shadowColor: Colors.transparent,
+      shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: () async {
@@ -292,11 +339,11 @@ class _ListingWishButton extends ConsumerWidget {
           await ref.read(wishlistProvider.notifier).toggle(product);
         },
         child: Padding(
-          padding: const EdgeInsets.all(7),
+          padding: const EdgeInsets.all(8),
           child: Icon(
             wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-            size: 15,
-            color: wished ? AppColors.sale : AppColors.textSecondary,
+            size: 16,
+            color: wished ? AppColors.sale : AppColors.textMuted,
           ),
         ),
       ),
@@ -313,19 +360,20 @@ class _ListingInfo extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(11, 8, 9, 10),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (product.brandName.isNotEmpty)
             Text(
-              product.brandName.toUpperCase(),
+              product.brandName,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTypography.brand.copyWith(
-                fontSize: 9.5,
-                color: AppColors.primary.withValues(alpha: 0.85),
-                letterSpacing: 0.4,
+              style: const TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMuted,
+                letterSpacing: 0.2,
               ),
             ),
           if (product.brandName.isNotEmpty) const SizedBox(height: 3),
@@ -336,10 +384,10 @@ class _ListingInfo extends ConsumerWidget {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 12.5,
-                fontWeight: FontWeight.w700,
-                height: 1.28,
+                fontWeight: FontWeight.w600,
+                height: 1.3,
                 color: AppColors.textPrimary,
-                letterSpacing: -0.1,
+                letterSpacing: -0.15,
               ),
             ),
           ),
@@ -347,18 +395,22 @@ class _ListingInfo extends ConsumerWidget {
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.star_rounded, size: 12, color: AppColors.star),
+                const Icon(Icons.star_rounded, size: 11, color: AppColors.star),
                 const SizedBox(width: 2),
                 Text(
                   product.rating.toStringAsFixed(1),
-                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
           ],
-          const Spacer(),
+          const SizedBox(height: 6),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Column(
@@ -367,10 +419,11 @@ class _ListingInfo extends ConsumerWidget {
                     Text(
                       formatPrice(product.price),
                       style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
                         color: product.hasDiscount ? AppColors.sale : AppColors.textPrimary,
-                        letterSpacing: -0.2,
+                        letterSpacing: -0.3,
+                        height: 1.1,
                       ),
                     ),
                     if (product.hasDiscount)
@@ -380,6 +433,7 @@ class _ListingInfo extends ConsumerWidget {
                           fontSize: 10,
                           color: AppColors.textMuted,
                           decoration: TextDecoration.lineThrough,
+                          height: 1.2,
                         ),
                       ),
                   ],
@@ -405,8 +459,10 @@ class _ListingAddButton extends ConsumerWidget {
 
     return Material(
       color: enabled ? AppColors.primary : AppColors.divider,
-      borderRadius: BorderRadius.circular(AppRadius.pill),
+      shape: const CircleBorder(),
+      elevation: 0,
       child: InkWell(
+        customBorder: const CircleBorder(),
         onTap: enabled
             ? () {
                 HapticFeedback.lightImpact();
@@ -420,12 +476,12 @@ class _ListingAddButton extends ConsumerWidget {
                 AppSnackbar.success(context, 'أُضيف إلى السلة');
               }
             : null,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: SizedBox(
+          width: 34,
+          height: 34,
           child: Icon(
             Icons.add_rounded,
-            size: 18,
+            size: 20,
             color: enabled ? Colors.white : AppColors.textMuted,
           ),
         ),

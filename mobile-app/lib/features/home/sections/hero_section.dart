@@ -15,6 +15,7 @@ import '../widgets/home_hero_header.dart';
 import '../widgets/home_banner_stage.dart';
 import '../widgets/home_category_grid.dart';
 import '../widgets/home_quick_dock.dart';
+import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
 
 class HeroHomeSection extends ConsumerStatefulWidget {
@@ -31,29 +32,29 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
   @override
   Widget build(BuildContext context) {
     final apiCats = ref.watch(categoriesProvider).valueOrNull;
-    final parents = apiCats != null ? storefrontParentCategories(apiCats) : null;
-    final cats = (parents != null && parents.isNotEmpty)
-        ? parents
-        : _normalizeCategories(widget.section.categories);
+    final fromSection = _normalizeCategories(widget.section.categories);
+    final cats = fromSection.isNotEmpty
+        ? filterStorefrontCategories(fromSection, apiCats)
+        : (apiCats != null ? storefrontParentCategories(apiCats) : <Category>[]);
     final banners = widget.section.banners;
 
-    return DecoratedBox(
-      decoration: HomeTheme.heroHeaderDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const HomeHeroHeader(),
-          const SizedBox(height: 14),
-          _HeroBannerCarousel(
-            section: widget.section,
-            banners: banners,
-            index: _bannerIndex,
-            onChanged: (i) => setState(() => _bannerIndex = i),
-          ),
-          const HomeQuickDock(),
-          if (cats.isNotEmpty) HomeHeroCategoryStrip(categories: cats),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const HomeHeroHeader(),
+        const SizedBox(height: 12),
+        _HeroBannerCarousel(
+          section: widget.section,
+          banners: banners,
+          index: _bannerIndex,
+          onChanged: (i) => setState(() => _bannerIndex = i),
+        ),
+        const HomeQuickDock(),
+        if (cats.isNotEmpty) ...[
+          const HomeSectionDivider(),
+          HomeHeroCategoryStrip(categories: cats),
         ],
-      ),
+      ],
     );
   }
 }
@@ -139,7 +140,7 @@ class _HeroBannerCarousel extends StatelessWidget {
             expansionFactor: 3,
             spacing: 6,
             activeDotColor: AppColors.primary,
-            dotColor: HomeTheme.sageMid,
+            dotColor: HomeTheme.divider,
           ),
         ),
       ],
@@ -149,9 +150,15 @@ class _HeroBannerCarousel extends StatelessWidget {
   Widget _wrapBanner(Widget child) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: HomeTheme.bannerInset),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(HomeTheme.bannerRadius),
-        child: child,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(HomeTheme.bannerRadius),
+          boxShadow: HomeTheme.whisperLift,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(HomeTheme.bannerRadius),
+          child: child,
+        ),
       ),
     );
   }

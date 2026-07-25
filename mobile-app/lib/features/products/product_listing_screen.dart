@@ -6,13 +6,16 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/cache/image_cache.dart';
-import '../../core/theme/app_typography.dart';
-import '../../core/widgets/listing_toolbar.dart';
 import '../../core/widgets/product_grid.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
+import '../../data/models/category.dart';
 import '../../data/models/product.dart';
 import '../../data/services/api_service.dart';
+import '../catalog/catalog_providers.dart';
+import '../catalog/category_tree.dart';
+import 'widgets/category_children_strip.dart';
+import 'widgets/listing_page_header.dart';
 
 class ProductListingScreen extends ConsumerStatefulWidget {
   final String title;
@@ -151,29 +154,22 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.scaffold,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        surfaceTintColor: Colors.transparent,
-        title: Text(
-          widget.title,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: AppTypography.sectionTitle.copyWith(fontSize: 18),
-        ),
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(52),
-          child: ListingToolbar(
+      backgroundColor: const Color(0xFFF9F7F8),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ListingPageHeader(
+            title: widget.title,
+            productCount: _firstLoad ? null : _items.length,
+            hasMore: _hasMore,
             sortLabel: _sortLabels[_sort] ?? 'ترتيب',
             onSort: _openSort,
             onFilter: _openFilter,
             hasFilter: _minPrice != null || _maxPrice != null || _inStock || _minRating != null,
           ),
-        ),
+          Expanded(child: _buildBody()),
+        ],
       ),
-      body: _buildBody(),
     );
   }
 
@@ -185,6 +181,34 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
     if (_items.isEmpty) {
       return const EmptyState(icon: Icons.search_off_rounded, title: 'لا توجد منتجات مطابقة');
     }
+
+    final categoriesAsync = ref.watch(categoriesProvider);
+    final roots = categoriesAsync.valueOrNull ?? const <Category>[];
+    final childCategories = listingChildCategories(
+      roots,
+      categoryId: widget.categoryId,
+      subcategoryId: widget.subcategoryId,
+      tertiaryCategoryId: widget.tertiaryCategoryId,
+    );
+    final effectiveSubId = listingSubcategoryId(
+      roots,
+      subcategoryId: widget.subcategoryId,
+      tertiaryCategoryId: widget.tertiaryCategoryId,
+    );
+    final showChildStrip = (widget.categoryId != null ||
+            widget.subcategoryId != null ||
+            widget.tertiaryCategoryId != null) &&
+        childCategories.isNotEmpty;
+    final activeChildId = listingActiveChildId(
+      categoryId: widget.categoryId,
+      subcategoryId: widget.subcategoryId,
+      tertiaryCategoryId: widget.tertiaryCategoryId,
+    );
+
+    final stripParentTitle = effectiveSubId != null
+        ? (findCategoryById(roots, effectiveSubId)?.name ?? widget.title)
+        : widget.title;
+
     return RefreshIndicator(
       color: AppColors.primary,
       onRefresh: () => _fetch(reset: true),
@@ -194,8 +218,21 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
         showPromoBadge: widget.isPromo,
         showRating: true,
         listingStyle: true,
-        padding: const EdgeInsets.fromLTRB(14, 4, 14, 24),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 28),
         extraSlots: _hasMore ? 2 : 0,
+        header: showChildStrip
+            ? CategoryChildrenStrip(
+                children: childCategories,
+                selectedChildId: activeChildId,
+                onSelect: (child) => navigateListingChild(
+                  context: context,
+                  categoryId: widget.categoryId,
+                  subcategoryId: effectiveSubId,
+                  child: child,
+                  parentTitle: stripParentTitle,
+                ),
+              )
+            : null,
       ),
     );
   }

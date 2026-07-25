@@ -8,7 +8,7 @@ import 'home_animations.dart';
 import 'home_section_shell.dart';
 import 'home_theme.dart';
 
-/// فئات الهيرو — شبكة دوائر تعرض كل الأقسام الرئيسية (بدون حد 8).
+/// فئات الهيرو — تمرير أفقي على خلفية بيضاء.
 class HomeHeroCategoryStrip extends StatelessWidget {
   final List<Category> categories;
 
@@ -17,27 +17,31 @@ class HomeHeroCategoryStrip extends StatelessWidget {
     required this.categories,
   });
 
-  static const _columns = 4;
-  static const _gap = 10.0;
-
   @override
   Widget build(BuildContext context) {
     if (categories.isEmpty) return const SizedBox.shrink();
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 4, HomeTheme.paddingH, 6),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: _columns,
-          mainAxisSpacing: _gap,
-          crossAxisSpacing: _gap,
-          childAspectRatio: 0.82,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HomeSectionHeader(
+          title: 'تسوقي حسب القسم',
+          compact: true,
+          actionLabel: 'الكل',
+          onAction: () => context.push('/categories'),
         ),
-        itemCount: categories.length,
-        itemBuilder: (context, index) => _CategoryCircleTile(category: categories[index], index: index),
-      ),
+        SizedBox(
+          height: 108,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
+            itemCount: categories.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 14),
+            itemBuilder: (_, i) => _CategoryCircleTile(category: categories[i], index: i),
+          ),
+        ),
+        const SizedBox(height: 8),
+      ],
     );
   }
 }
@@ -95,7 +99,7 @@ class _CategoryCircleTile extends StatelessWidget {
 
   const _CategoryCircleTile({required this.category, required this.index});
 
-  static const _size = 64.0;
+  static const _size = 62.0;
 
   @override
   Widget build(BuildContext context) {
@@ -118,11 +122,7 @@ class _CategoryCircleTile extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: HomeTheme.surface,
-              border: Border.all(
-                color: HomeTheme.surfaceMuted.withValues(alpha: 0.85),
-                width: 1,
-              ),
-              boxShadow: HomeTheme.whisperLift,
+              border: Border.all(color: HomeTheme.divider, width: 1),
             ),
             child: ClipOval(
               child: category.imageUrl.isNotEmpty
@@ -138,7 +138,7 @@ class _CategoryCircleTile extends StatelessWidget {
                         child: Text(
                           category.icon ?? category.name.characters.first,
                           style: TextStyle(
-                            fontSize: 22,
+                            fontSize: 20,
                             fontWeight: FontWeight.w700,
                             color: HomeTheme.inkSoft.withValues(alpha: 0.85),
                           ),
@@ -149,13 +149,13 @@ class _CategoryCircleTile extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           SizedBox(
-            width: 72,
+            width: 68,
             child: Text(
               category.name,
               maxLines: 2,
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
-              style: HomeTheme.circleLabel.copyWith(fontSize: 11, height: 1.15),
+              style: HomeTheme.circleLabel.copyWith(fontSize: 10.5, height: 1.15),
             ),
           ),
         ],

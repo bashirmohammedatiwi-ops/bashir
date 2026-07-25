@@ -14,7 +14,7 @@ import '../../profile/profile_providers.dart';
 import 'home_animations.dart';
 import 'home_theme.dart';
 
-/// رأس الهيرو — هوية بوتيك فاخرة مع بحث بارز وإجراءات سريعة.
+/// رأس الرئيسية — نظيف على خلفية بيضاء.
 class HomeHeroHeader extends ConsumerWidget {
   const HomeHeroHeader({super.key});
 
@@ -30,82 +30,34 @@ class HomeHeroHeader extends ConsumerWidget {
         auth.isAuthenticated ? ref.watch(unreadNotificationsCountProvider) : 0;
     final cartCount = ref.watch(cartProvider).count;
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Positioned(
-          top: -28,
-          left: -36,
-          child: _AmbientOrb(
-            size: 160,
-            colors: [
-              HomeTheme.roseWash.withValues(alpha: 0.95),
-              HomeTheme.roseWash.withValues(alpha: 0),
-            ],
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        HomeTheme.paddingH,
+        topPad + 8,
+        HomeTheme.paddingH,
+        0,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _BrandActionBar(
+            storeName: storeName,
+            unread: unread,
+            cartCount: cartCount,
+            whatsapp: whatsapp,
+            onCart: () => openCartTab(context, ProviderScope.containerOf(context, listen: false)),
+            onNotifications: () => context.push('/notifications'),
           ),
-        ),
-        Positioned(
-          top: 36,
-          right: -24,
-          child: _AmbientOrb(
-            size: 120,
-            colors: [
-              HomeTheme.sageLight.withValues(alpha: 0.9),
-              HomeTheme.sageLight.withValues(alpha: 0),
-            ],
+          const SizedBox(height: 16),
+          _GreetingBlock(),
+          const SizedBox(height: 14),
+          _SearchBar(
+            onSearch: () => context.push('/search'),
+            onScan: () => context.push('/scan'),
           ),
-        ),
-        Padding(
-          padding: EdgeInsets.fromLTRB(
-            HomeTheme.paddingH,
-            topPad + 6,
-            HomeTheme.paddingH,
-            0,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _BrandActionBar(
-                storeName: storeName,
-                unread: unread,
-                cartCount: cartCount,
-                whatsapp: whatsapp,
-                onCart: () => openCartTab(context, ProviderScope.containerOf(context, listen: false)),
-                onNotifications: () => context.push('/notifications'),
-              ),
-              const SizedBox(height: 18),
-              _GreetingBlock(),
-              const SizedBox(height: 14),
-              _PremiumSearchBar(
-                onSearch: () => context.push('/search'),
-                onScan: () => context.push('/scan'),
-              ),
-              const SizedBox(height: 10),
-              _TrustPills(freeShippingThreshold: threshold),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _AmbientOrb extends StatelessWidget {
-  final double size;
-  final List<Color> colors;
-
-  const _AmbientOrb({required this.size, required this.colors});
-
-  @override
-  Widget build(BuildContext context) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(colors: colors),
-        ),
+          const SizedBox(height: 10),
+          _TrustPills(freeShippingThreshold: threshold),
+        ],
       ),
     );
   }
@@ -131,60 +83,20 @@ class _BrandActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Expanded(child: _BrandMark(storeName: storeName)),
-        _ActionCluster(
-          unread: unread,
-          cartCount: cartCount,
-          whatsapp: whatsapp,
-          onCart: onCart,
-          onNotifications: onNotifications,
-        ),
-      ],
-    );
-  }
-}
-
-class _BrandMark extends StatelessWidget {
-  final String storeName;
-
-  const _BrandMark({required this.storeName});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
       children: [
         Container(
-          width: 46,
-          height: 46,
+          width: 42,
+          height: 42,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: AppColors.primaryGradient,
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.22),
-                blurRadius: 14,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            border: Border.all(color: HomeTheme.divider, width: 1.2),
           ),
-          padding: const EdgeInsets.all(2.5),
-          child: DecoratedBox(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(7),
-              child: Image.asset(
-                'assets/images/alhayaa_logo.png',
-                fit: BoxFit.contain,
-              ),
-            ),
+          padding: const EdgeInsets.all(2),
+          child: ClipOval(
+            child: Image.asset('assets/images/alhayaa_logo.png', fit: BoxFit.contain),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,79 +105,35 @@ class _BrandMark extends StatelessWidget {
                 storeName.isNotEmpty ? storeName : AppConfig.storeName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: HomeTheme.displayTitle(size: 20),
+                style: HomeTheme.displayTitle(size: 19),
               ),
-              const SizedBox(height: 2),
-              Row(
-                children: [
-                  Container(
-                    width: 14,
-                    height: 2,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(99),
-                      gradient: AppColors.primaryGradient,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'جمالك يبدأ هنا',
-                    style: HomeTheme.body(
-                      size: 11,
-                      color: HomeTheme.sage,
-                      weight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+              Text(
+                'متجرك للعناية والجمال',
+                style: HomeTheme.body(size: 11, color: HomeTheme.inkMuted),
               ),
             ],
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _ActionCluster extends StatelessWidget {
-  final int unread;
-  final int cartCount;
-  final String? whatsapp;
-  final VoidCallback onCart;
-  final VoidCallback onNotifications;
-
-  const _ActionCluster({
-    required this.unread,
-    required this.cartCount,
-    required this.whatsapp,
-    required this.onCart,
-    required this.onNotifications,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-      decoration: HomeTheme.heroActionClusterDecoration(),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+        _HeaderIconButton(
+          icon: Icons.shopping_bag_outlined,
+          badge: cartCount,
+          onTap: onCart,
+        ),
+        const SizedBox(width: 4),
+        _HeaderIconButton(
+          icon: Icons.notifications_none_rounded,
+          badge: unread,
+          onTap: onNotifications,
+        ),
+        if (whatsapp != null && whatsapp!.isNotEmpty) ...[
+          const SizedBox(width: 4),
           _HeaderIconButton(
-            icon: Icons.shopping_bag_outlined,
-            badge: cartCount,
-            onTap: onCart,
+            icon: Icons.chat_rounded,
+            iconColor: const Color(0xFF25D366),
+            onTap: () => openWhatsApp(whatsapp, message: 'مرحباً، أحتاج مساعدة'),
           ),
-          _HeaderIconButton(
-            icon: Icons.notifications_none_rounded,
-            badge: unread,
-            onTap: onNotifications,
-          ),
-          if (whatsapp != null && whatsapp!.isNotEmpty)
-            _HeaderIconButton(
-              icon: Icons.chat_rounded,
-              iconColor: const Color(0xFF25D366),
-              onTap: () => openWhatsApp(whatsapp, message: 'مرحباً، أحتاج مساعدة'),
-            ),
         ],
-      ),
+      ],
     );
   }
 }
@@ -290,18 +158,22 @@ class _HeaderIconButton extends StatelessWidget {
         HapticFeedback.selectionClick();
         onTap();
       },
-      child: SizedBox(
-        width: 38,
-        height: 38,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: HomeTheme.divider),
+        ),
         child: Stack(
           clipBehavior: Clip.none,
           alignment: Alignment.center,
           children: [
-            Icon(icon, size: 21, color: iconColor ?? HomeTheme.ink),
+            Icon(icon, size: 20, color: iconColor ?? HomeTheme.ink),
             if (badge > 0)
               Positioned(
-                top: 2,
-                left: 2,
+                top: 0,
+                left: 0,
                 child: Container(
                   constraints: const BoxConstraints(minWidth: 15),
                   height: 15,
@@ -335,10 +207,12 @@ class _GreetingBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final greeting = _greetingForHour(now.hour);
-    final subtitle = _subtitleForHour(now.hour);
-    final weekday = _weekdayArabic(now.weekday);
+    final hour = DateTime.now().hour;
+    final greeting = hour < 12
+        ? 'صباح الخير'
+        : hour < 17
+            ? 'مساء الخير'
+            : 'مساء النور';
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -347,42 +221,11 @@ class _GreetingBlock extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('مرحباً بك', style: HomeTheme.overline),
-              const SizedBox(height: 5),
-              Text(
-                greeting,
-                style: HomeTheme.displayTitle(size: 26, color: HomeTheme.ink),
-              ),
+              Text(greeting, style: HomeTheme.overline),
               const SizedBox(height: 4),
               Text(
-                subtitle,
-                style: HomeTheme.body(size: 13, color: HomeTheme.inkSoft),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 10),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-          decoration: HomeTheme.heroDateChipDecoration(),
-          child: Column(
-            children: [
-              Text(
-                weekday,
-                style: HomeTheme.body(
-                  size: 10,
-                  color: HomeTheme.sageDark,
-                  weight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '${now.day}/${now.month}',
-                style: HomeTheme.body(
-                  size: 11,
-                  color: HomeTheme.ink,
-                  weight: FontWeight.w800,
-                ),
+                'ماذا تبحثين اليوم؟',
+                style: HomeTheme.displayTitle(size: 24),
               ),
             ],
           ),
@@ -390,46 +233,18 @@ class _GreetingBlock extends StatelessWidget {
       ],
     );
   }
-
-  static String _greetingForHour(int hour) {
-    if (hour < 12) return 'صباح الخير';
-    if (hour < 17) return 'مساء الخير';
-    return 'مساء النور';
-  }
-
-  static String _subtitleForHour(int hour) {
-    if (hour < 12) return 'ابدئي يومك بروتين يناسبك';
-    if (hour < 17) return 'اكتشفي أحدث العروض والوصول الجديد';
-    return 'تسوقي بأمان — توصيل سريع لبابك';
-  }
-
-  static String _weekdayArabic(int weekday) {
-    const days = [
-      'الاثنين',
-      'الثلاثاء',
-      'الأربعاء',
-      'الخميس',
-      'الجمعة',
-      'السبت',
-      'الأحد',
-    ];
-    return days[(weekday - 1).clamp(0, 6)];
-  }
 }
 
-class _PremiumSearchBar extends StatelessWidget {
+class _SearchBar extends StatelessWidget {
   final VoidCallback onSearch;
   final VoidCallback onScan;
 
-  const _PremiumSearchBar({
-    required this.onSearch,
-    required this.onScan,
-  });
+  const _SearchBar({required this.onSearch, required this.onScan});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 52,
+      height: 50,
       decoration: HomeTheme.heroSearchDecoration(),
       child: Row(
         children: [
@@ -437,22 +252,10 @@ class _PremiumSearchBar extends StatelessWidget {
             child: HomeTapScale(
               onTap: onSearch,
               child: Padding(
-                padding: const EdgeInsetsDirectional.only(start: 6, end: 8),
+                padding: const EdgeInsetsDirectional.only(start: 14, end: 8),
                 child: Row(
                   children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: HomeTheme.sageLight,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.search_rounded,
-                        size: 20,
-                        color: HomeTheme.sageDark,
-                      ),
-                    ),
+                    Icon(Icons.search_rounded, size: 20, color: HomeTheme.inkMuted),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -475,30 +278,23 @@ class _PremiumSearchBar extends StatelessWidget {
                 onScan();
               },
               child: Container(
-                height: 40,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
+                height: 38,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                  borderRadius: BorderRadius.circular(999),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.24),
-                      blurRadius: 10,
-                      offset: const Offset(0, 3),
-                    ),
-                  ],
+                  color: HomeTheme.accent,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Row(
+                child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.qr_code_scanner_rounded, size: 17, color: Colors.white),
-                    const SizedBox(width: 6),
+                    Icon(Icons.qr_code_scanner_rounded, size: 16, color: Colors.white),
+                    SizedBox(width: 5),
                     Text(
                       'مسح',
-                      style: HomeTheme.body(
-                        size: 12,
+                      style: TextStyle(
                         color: Colors.white,
-                        weight: FontWeight.w700,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -521,17 +317,16 @@ class _TrustPills extends StatelessWidget {
   Widget build(BuildContext context) {
     final threshold = freeShippingThreshold;
     final shipping = threshold != null && threshold > 0
-        ? 'شحن +${_format(threshold)}'
+        ? 'شحن مجاني +${_format(threshold)}'
         : 'توصيل سريع';
 
-    return Wrap(
-      spacing: 6,
-      runSpacing: 6,
-      alignment: WrapAlignment.center,
+    return Row(
       children: [
-        _TrustPill(icon: Icons.verified_outlined, label: 'منتجات أصلية'),
-        _TrustPill(icon: Icons.local_shipping_outlined, label: shipping),
-        _TrustPill(icon: Icons.support_agent_outlined, label: 'دعم واتساب'),
+        _pill(Icons.verified_outlined, 'أصلية'),
+        const SizedBox(width: 6),
+        _pill(Icons.local_shipping_outlined, shipping),
+        const SizedBox(width: 6),
+        _pill(Icons.support_agent_outlined, 'دعم'),
       ],
     );
   }
@@ -540,33 +335,28 @@ class _TrustPills extends StatelessWidget {
     if (n >= 1000) return '${(n / 1000).toStringAsFixed(0)}k';
     return '$n';
   }
-}
 
-class _TrustPill extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _TrustPill({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: HomeTheme.heroTrustPillDecoration(),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: HomeTheme.sage),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: HomeTheme.body(
-              size: 10,
-              color: HomeTheme.inkSoft,
-              weight: FontWeight.w600,
+  Widget _pill(IconData icon, String label) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 7),
+        decoration: HomeTheme.heroTrustPillDecoration(),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 13, color: HomeTheme.accent),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: HomeTheme.body(size: 10, weight: FontWeight.w600),
+                textAlign: TextAlign.center,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

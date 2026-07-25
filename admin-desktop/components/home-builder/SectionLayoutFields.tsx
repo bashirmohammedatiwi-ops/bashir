@@ -23,6 +23,7 @@ import {
   layoutsForType,
 } from "./card-sizes";
 import { SectionType } from "./section-types";
+import { buildCategoryCatalog, catalogPickerItems } from "./category-catalog";
 
 const { Text } = Typography;
 
@@ -32,6 +33,8 @@ type Props = {
   type: SectionType;
   form: FormInstance;
   categories?: Entity[];
+  subcategories?: Entity[];
+  tertiary?: Entity[];
   brands?: Entity[];
   banners?: Entity[];
 };
@@ -83,6 +86,17 @@ function entitiesForType(type: SectionType, props: Props): Entity[] {
   if (type.includes("BRAND")) return props.brands ?? [];
   if (type.includes("BANNER") || type === "CUSTOM_BANNER") return props.banners ?? [];
   if (type === "PACKAGES") return (props as any).packages ?? [];
+  if (
+    type === "CATEGORY_GRID" ||
+    type === "CATEGORY_TILES" ||
+    type === "MAKEUP_CATEGORIES" ||
+    type === "HERO_BANNER" ||
+    type === "CARE_HUB"
+  ) {
+    return catalogPickerItems(
+      buildCategoryCatalog(props.categories ?? [], props.subcategories ?? [], props.tertiary ?? []),
+    );
+  }
   return props.categories ?? [];
 }
 
@@ -109,7 +123,7 @@ const LAYOUT_SECTION_TYPES: SectionType[] = [
   "CUSTOM_BANNER",
 ];
 
-export function SectionLayoutFields({ type, form, categories, brands, banners }: Props) {
+export function SectionLayoutFields({ type, form, categories, subcategories, tertiary, brands, banners }: Props) {
   const payload = Form.useWatch("payload", form) ?? {};
   const idField = idFieldForType(type);
   const ids = (idField ? (payload[idField] as string[]) : []) ?? [];
@@ -233,7 +247,7 @@ export function SectionLayoutFields({ type, form, categories, brands, banners }:
                     </Text>
                     <EntitySizesEditor
                       ids={ids}
-                      entities={entitiesForType(type, { type, form, categories, brands, banners })}
+                      entities={entitiesForType(type, { type, form, categories, subcategories, tertiary, brands, banners })}
                       context={context}
                       defaultSize={defaultSize}
                     />

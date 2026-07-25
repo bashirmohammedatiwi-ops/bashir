@@ -78,7 +78,7 @@ class _ImageSection extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg - 0.5)),
-          child: ColoredBox(color: const Color(0xFFFFF6F8)),
+          child: ColoredBox(color: const Color(0xFFFAFAFA)),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),

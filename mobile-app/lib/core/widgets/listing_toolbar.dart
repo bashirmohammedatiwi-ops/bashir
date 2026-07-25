@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
-import '../theme/app_spacing.dart';
 
-/// شريط ترتيب/تصفية — بسيط وأنيق بدون عداد منتجات.
+/// شريط ترتيب/تصفية — بسيط وأنيق.
 class ListingToolbar extends StatelessWidget {
   final VoidCallback onSort;
   final VoidCallback onFilter;
@@ -21,19 +20,19 @@ class ListingToolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 4, AppSpacing.lg, 12),
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
       child: Row(
         children: [
           Expanded(
-            child: _ToolPill(
-              icon: Icons.swap_vert_rounded,
+            child: _ToolChip(
+              icon: Icons.sort_rounded,
               label: sortLabel ?? 'ترتيب',
               onTap: onSort,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
-            child: _ToolPill(
+            child: _ToolChip(
               icon: Icons.tune_rounded,
               label: 'تصفية',
               onTap: onFilter,
@@ -46,13 +45,13 @@ class ListingToolbar extends StatelessWidget {
   }
 }
 
-class _ToolPill extends StatelessWidget {
+class _ToolChip extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
   final bool active;
 
-  const _ToolPill({
+  const _ToolChip({
     required this.icon,
     required this.label,
     required this.onTap,
@@ -62,25 +61,19 @@ class _ToolPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: active ? AppColors.primaryLight : AppColors.surface,
-      borderRadius: BorderRadius.circular(AppRadius.pill),
+      color: active ? AppColors.primaryLight : const Color(0xFFF5F2F3),
+      borderRadius: BorderRadius.circular(12),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.pill),
-            border: Border.all(
-              color: active ? AppColors.primarySoft : AppColors.hairline,
-            ),
-          ),
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
-                size: 17,
+                size: 16,
                 color: active ? AppColors.primary : AppColors.textSecondary,
               ),
               const SizedBox(width: 6),
@@ -90,7 +83,7 @@ class _ToolPill extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                     color: active ? AppColors.primaryDark : AppColors.textPrimary,
                   ),

@@ -251,6 +251,8 @@ export function SectionEditorPanel({
                     type={type}
                     form={form}
                     categories={editorEntities.categories}
+                    subcategories={editorEntities.subcategories}
+                    tertiary={editorEntities.tertiary}
                     brands={editorEntities.brands}
                     banners={editorEntities.banners}
                   />

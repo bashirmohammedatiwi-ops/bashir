@@ -52,7 +52,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               final bottomPad = MediaQuery.paddingOf(context).bottom + 96;
 
               return RefreshIndicator(
-                color: HomeTheme.sage,
+                color: HomeTheme.accent,
                 backgroundColor: HomeTheme.surface,
                 displacement: 48,
                 edgeOffset: MediaQuery.paddingOf(context).top,

@@ -4,15 +4,15 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_network_image.dart';
 
-/// نظام تصميم الرئيسية — احترافي، متوازن، متوافق مع هوية التطبيق.
+/// نظام تصميم الرئيسية — خلفية بيضاء، نظيفة، عصرية.
 abstract final class HomeTheme {
   static const paddingH = 16.0;
-  static const sectionGap = 24.0;
-  static const compactGap = 12.0;
+  static const sectionGap = 20.0;
+  static const compactGap = 10.0;
   static const itemGap = 10.0;
-  static const cardRadius = 12.0;
+  static const cardRadius = 14.0;
   static const tileRadius = 12.0;
-  static const squircle = 12.0;
+  static const squircle = 14.0;
   static const pillRadius = 999.0;
 
   static const productCardWidth = 158.0;
@@ -20,35 +20,36 @@ abstract final class HomeTheme {
   static const productImageSize = 158.0;
   static const productRowHeight = 272.0;
   static const bannerAspect = 1.92;
-  static const bannerInset = 8.0;
-  static const bannerRadius = 14.0;
+  static const bannerInset = 16.0;
+  static const bannerRadius = 16.0;
 
-  // Canvas — cream دافئ أنيق
-  static const canvas = Color(0xFFFBF9F6);
-  static const canvasWarm = Color(0xFFF5F0EB);
+  // خلفية بيضاء بالكامل
+  static const canvas = Color(0xFFFFFFFF);
+  static const canvasWarm = Color(0xFFFFFFFF);
   static const surface = Color(0xFFFFFFFF);
-  static const surfaceMuted = Color(0xFFEDE8E3);
-  static const pearl = Color(0xFFFAF7F4);
-  static const champagne = Color(0xFFF0E8DC);
+  static const surfaceMuted = Color(0xFFF3F4F6);
+  static const pearl = Color(0xFFFAFAFA);
+  static const champagne = Color(0xFFF5F5F5);
 
   static const accent = AppColors.primary;
   static const accentDark = AppColors.primaryDark;
   static const accentLight = AppColors.primaryLight;
-  static const accentMid = Color(0xFFE8DFD6);
+  static const accentMid = Color(0xFFFCE4EC);
 
   static const sage = Color(0xFF627058);
   static const sageDark = Color(0xFF4E5A47);
-  static const sageLight = Color(0xFFEEF2EB);
-  static const sageMid = Color(0xFFD8E0D3);
+  static const sageLight = Color(0xFFF5F7F4);
+  static const sageMid = Color(0xFFE8EDE5);
 
-  static const roseWash = Color(0xFFF8EDF0);
-  static const sand = Color(0xFFF3EEE6);
-  static const lavender = Color(0xFFF0EEF5);
-  static const blush = Color(0xFFF5ECE8);
+  static const roseWash = Color(0xFFFFF5F8);
+  static const sand = Color(0xFFFAFAFA);
+  static const lavender = Color(0xFFF8F7FC);
+  static const blush = Color(0xFFFFF8FA);
 
-  static const ink = Color(0xFF2A2826);
-  static const inkSoft = Color(0xFF6E6860);
-  static const inkMuted = Color(0xFF9A948C);
+  static const ink = Color(0xFF1A1A1A);
+  static const inkSoft = Color(0xFF6B7280);
+  static const inkMuted = Color(0xFF9CA3AF);
+  static const divider = Color(0xFFF0F0F0);
 
   static const categoryTileColors = [
     roseWash,
@@ -57,22 +58,22 @@ abstract final class HomeTheme {
     lavender,
     accentLight,
     blush,
-    Color(0xFFEBF2EC),
-    Color(0xFFF5F0EA),
+    Color(0xFFF0F4F1),
+    Color(0xFFFAF8F6),
   ];
 
   static TextStyle displayTitle({double size = 22, Color? color}) =>
       GoogleFonts.cairo(
         fontSize: size,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w800,
         height: 1.2,
-        letterSpacing: -0.2,
+        letterSpacing: -0.3,
         color: color ?? ink,
       );
 
   static TextStyle sectionTitle({double size = 17, Color? color}) => GoogleFonts.cairo(
         fontSize: size,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w800,
         height: 1.25,
         color: color ?? ink,
       );
@@ -92,8 +93,8 @@ abstract final class HomeTheme {
   static TextStyle get overline => GoogleFonts.cairo(
         fontSize: 10,
         fontWeight: FontWeight.w700,
-        letterSpacing: 0.6,
-        color: sage,
+        letterSpacing: 0.5,
+        color: accent,
         height: 1.2,
       );
 
@@ -104,11 +105,10 @@ abstract final class HomeTheme {
         height: 1.2,
       );
 
-  /// بطاقة قسم خفيفة — بدون ظلال ثقيلة.
   static BoxDecoration sectionSurface({Color? tint}) => BoxDecoration(
         color: tint ?? surface,
         borderRadius: BorderRadius.circular(cardRadius),
-        border: Border.all(color: surfaceMuted.withValues(alpha: 0.75)),
+        border: Border.all(color: divider),
       );
 
   static TextStyle get chipLabel => GoogleFonts.cairo(
@@ -142,8 +142,8 @@ abstract final class HomeTheme {
 
   static List<BoxShadow> get whisperLift => [
         BoxShadow(
-          color: ink.withValues(alpha: 0.04),
-          blurRadius: 10,
+          color: ink.withValues(alpha: 0.03),
+          blurRadius: 8,
           offset: const Offset(0, 2),
           spreadRadius: -1,
         ),
@@ -151,10 +151,10 @@ abstract final class HomeTheme {
 
   static List<BoxShadow> get softShadow => [
         BoxShadow(
-          color: ink.withValues(alpha: 0.06),
-          blurRadius: 18,
-          offset: const Offset(0, 5),
-          spreadRadius: -3,
+          color: ink.withValues(alpha: 0.05),
+          blurRadius: 16,
+          offset: const Offset(0, 4),
+          spreadRadius: -4,
         ),
       ];
 
@@ -162,88 +162,63 @@ abstract final class HomeTheme {
   static List<BoxShadow> get cardShadow => whisperLift;
   static List<BoxShadow> get stageShadow => softShadow;
 
-  static BoxDecoration canvasDecoration() => const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [canvasWarm, canvas, canvas],
-          stops: [0, 0.2, 1],
-        ),
-      );
+  static BoxDecoration canvasDecoration() => const BoxDecoration(color: canvas);
 
-  static BoxDecoration heroHeaderDecoration() => BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            roseWash,
-            Color.lerp(roseWash, canvas, 0.45)!,
-            canvas.withValues(alpha: 0),
-          ],
-          stops: const [0, 0.55, 1],
-        ),
-      );
+  static BoxDecoration heroHeaderDecoration() => const BoxDecoration(color: canvas);
 
   static BoxDecoration heroActionClusterDecoration() => BoxDecoration(
-        color: surface.withValues(alpha: 0.88),
+        color: surface,
         borderRadius: BorderRadius.circular(pillRadius),
-        border: Border.all(color: surfaceMuted.withValues(alpha: 0.9)),
-        boxShadow: whisperLift,
+        border: Border.all(color: divider),
       );
 
   static BoxDecoration heroSearchDecoration() => BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: surfaceMuted.withValues(alpha: 0.85)),
-        boxShadow: [
-          BoxShadow(
-            color: ink.withValues(alpha: 0.07),
-            blurRadius: 22,
-            offset: const Offset(0, 8),
-            spreadRadius: -6,
-          ),
-        ],
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: divider),
       );
 
   static BoxDecoration heroDateChipDecoration() => BoxDecoration(
-        color: surface.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: sageMid.withValues(alpha: 0.85)),
-        boxShadow: whisperLift,
+        color: pearl,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: divider),
       );
 
   static BoxDecoration heroTrustPillDecoration() => BoxDecoration(
-        color: surface.withValues(alpha: 0.78),
+        color: pearl,
         borderRadius: BorderRadius.circular(pillRadius),
-        border: Border.all(color: surfaceMuted.withValues(alpha: 0.75)),
+        border: Border.all(color: divider),
       );
 
   static BoxDecoration cardDecoration({Color? color}) => BoxDecoration(
         color: color ?? surface,
         borderRadius: BorderRadius.circular(cardRadius),
-        border: Border.all(color: surfaceMuted.withValues(alpha: 0.75)),
-        boxShadow: whisperLift,
+        border: Border.all(color: divider),
       );
 
   static BoxDecoration pillSurface({Color? fill}) => BoxDecoration(
         color: fill ?? surface,
         borderRadius: BorderRadius.circular(pillRadius),
-        border: Border.all(color: surfaceMuted.withValues(alpha: 0.85)),
-        boxShadow: whisperLift,
+        border: Border.all(color: divider),
       );
 
   static BoxDecoration searchDecoration() => BoxDecoration(
         color: surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: surfaceMuted),
-        boxShadow: whisperLift,
+        border: Border.all(color: divider),
+      );
+
+  static BoxDecoration dockDecoration() => BoxDecoration(
+        color: surface,
+        borderRadius: BorderRadius.circular(cardRadius),
+        border: Border.all(color: divider),
       );
 
   // Legacy aliases
   static const petal = roseWash;
   static const mist = surfaceMuted;
-  static const blushDeep = surfaceMuted;
-  static const blushMid = surfaceMuted;
+  static const blushDeep = divider;
+  static const blushMid = divider;
 }
 
 class HomeCanvasBackground extends StatelessWidget {
@@ -253,9 +228,18 @@ class HomeCanvasBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: HomeTheme.canvasDecoration(),
-      child: child,
+    return ColoredBox(color: HomeTheme.canvas, child: child);
+  }
+}
+
+class HomeSectionDivider extends StatelessWidget {
+  const HomeSectionDivider({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(horizontal: HomeTheme.paddingH, vertical: 4),
+      child: Divider(height: 1, thickness: 1, color: HomeTheme.divider),
     );
   }
 }
@@ -373,7 +357,7 @@ class HomeFilterPill extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(HomeTheme.pillRadius),
-            border: Border.all(color: selected ? HomeTheme.accent : AppColors.border),
+            border: Border.all(color: selected ? HomeTheme.accent : HomeTheme.divider),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

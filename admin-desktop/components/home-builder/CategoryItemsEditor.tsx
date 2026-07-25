@@ -1,73 +1,97 @@
 "use client";
 
-import { Button, Form, Select, Typography } from "antd";
+import { Button, Card, Form, Select, Typography } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
+import { MediaPicker } from "@/components/MediaPicker";
+import { CardSizePicker } from "./CardSizePicker";
 import { LinkTargetPicker } from "./LinkTargetPicker";
+import { buildCategoryCatalog, catalogSelectOptions } from "./category-catalog";
 
 const { Text } = Typography;
 
-type Category = { id: string; name?: string; slug?: string };
+type Category = { id: string; name?: string; slug?: string; parentName?: string };
 
 type Props = {
   categories: Category[];
+  subcategories?: Category[];
+  tertiary?: Category[];
   entities: Parameters<typeof LinkTargetPicker>[0]["entities"];
-  /** categoryIds from payload — used to suggest rows */
   selectedIds?: string[];
 };
 
-export function CategoryItemsEditor({ categories, entities, selectedIds = [] }: Props) {
-  const options = categories.map((c) => ({
-    value: c.id,
-    label: c.name ?? c.slug ?? c.id,
-  }));
+export function CategoryItemsEditor({
+  categories,
+  subcategories = [],
+  tertiary = [],
+  entities,
+  selectedIds = [],
+}: Props) {
+  const catalog = buildCategoryCatalog(categories, subcategories, tertiary);
+  const groupedOptions = catalogSelectOptions(catalog);
 
   return (
     <>
       <Text type="secondary" style={{ display: "block", marginBottom: 12 }}>
-        تجاوز رابط فئة محددة — افتراضياً كل فئة تفتح منتجاتها. اترك فارغاً لاستخدام الافتراضي.
+        خصّص صورة وحجم وربط لكل قسم. اترك الصورة فارغة لاستخدام صورة القسم من الكتالوج.
       </Text>
       <Form.List name={["payload", "categoryItems"]}>
         {(fields, { add, remove }) => (
           <>
             {fields.map(({ key, name, ...rest }) => (
-              <div key={key} className="hb-category-item-row">
+              <Card
+                key={key}
+                size="small"
+                title={`تخصيص قسم ${name + 1}`}
+                style={{ marginBottom: 10 }}
+                extra={
+                  <Button danger type="link" icon={<MinusCircleOutlined />} onClick={() => remove(name)}>
+                    حذف
+                  </Button>
+                }
+              >
                 <Form.Item
                   {...rest}
                   name={[name, "categoryId"]}
-                  label="الفئة"
-                  rules={[{ required: true, message: "اختر فئة" }]}
-                  style={{ flex: 1, marginBottom: 8 }}
+                  label="القسم"
+                  rules={[{ required: true, message: "اختر قسماً" }]}
                 >
                   <Select
                     showSearch
                     optionFilterProp="label"
-                    options={options}
-                    placeholder="اختر فئة..."
+                    options={groupedOptions}
+                    placeholder="رئيسي / فرعي / ثانوي..."
                   />
                 </Form.Item>
-                <div className="hb-category-item-link">
-                  <LinkTargetPicker
-                    prefix={["payload", "categoryItems", name]}
-                    entities={entities}
-                    optional
-                  />
-                </div>
-                <Button
-                  type="text"
-                  danger
-                  icon={<MinusCircleOutlined />}
-                  onClick={() => remove(name)}
-                  className="hb-category-item-remove"
+                <Form.Item {...rest} name={[name, "imageId"]} label="صورة مخصصة (اختياري)">
+                  <MediaPicker label="ارفع أو اختر صورة بأي مقاس" />
+                </Form.Item>
+                <Form.Item {...rest} name={[name, "cardSize"]} label="حجم العرض" initialValue="md">
+                  <CardSizePicker context="category" compact />
+                </Form.Item>
+                <Text strong style={{ display: "block", marginBottom: 8 }}>
+                  رابط مخصص (اختياري)
+                </Text>
+                <LinkTargetPicker
+                  prefix={["payload", "categoryItems", name]}
+                  entities={entities}
+                  optional
                 />
-              </div>
+              </Card>
             ))}
             <Button
               type="dashed"
               icon={<PlusOutlined />}
               block
-              onClick={() => add({ categoryId: selectedIds[0], linkType: undefined, linkValue: undefined })}
+              onClick={() =>
+                add({
+                  categoryId: selectedIds[0],
+                  cardSize: "md",
+                  linkType: undefined,
+                  linkValue: undefined,
+                })
+              }
             >
-              إضافة تجاوز رابط
+              إضافة تخصيص (صورة / حجم / رابط)
             </Button>
           </>
         )}

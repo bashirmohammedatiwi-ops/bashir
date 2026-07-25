@@ -88,8 +88,8 @@ class HomeSectionWidget extends ConsumerWidget {
 
   double _topSpacing(String type, bool compact) {
     if (type == 'PROMO_STRIP') return HomeTheme.compactGap;
-    if (compact) return 10;
-    return 18;
+    if (compact) return 8;
+    return 14;
   }
 }
 

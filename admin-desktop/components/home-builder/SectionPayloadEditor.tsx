@@ -18,6 +18,7 @@ import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { MediaPicker } from "@/components/MediaPicker";
 import { EntityMultiPicker } from "./EntityMultiPicker";
+import { CategoryCatalogPicker } from "./CategoryCatalogPicker";
 import { LinkTargetPicker, ProductScopeFields } from "./LinkTargetPicker";
 import { SectionStyleFields } from "./SectionStyleFields";
 import { CardSizePicker } from "./CardSizePicker";
@@ -91,7 +92,7 @@ export function SectionLinkHints({
   ) {
     return (
       <Text type="secondary">
-        كل فئة تفتح منتجاتها تلقائياً. لتخصيص رابط فئة: تبويب «الروابط» → تجاوز رابط فئة.
+        كل قسم يفتح منتجاته تلقائياً. لتخصيص صورة/حجم/رابط: تبويب «الروابط» → تخصيص القسم.
       </Text>
     );
   }
@@ -142,15 +143,17 @@ export function SectionPayloadEditor(props: Props) {
           <Form.Item name={["payload", "bannerIds"]} label="بنرات السلايدر">
             <EntityMultiPicker items={props.banners ?? []} imageKey="image" placeholder="ابحث واختر البنرات..." />
           </Form.Item>
-          <Form.Item name={["payload", "categoryIds"]} label="أيقونات الفئات (حتى 8)">
-            <EntityMultiPicker
-              items={props.categories ?? []}
-              max={8}
-              placeholder="ابحث واختر الفئات..."
+          <Form.Item name={["payload", "categoryIds"]} label="أيقونات الفئات">
+            <CategoryCatalogPicker
+              categories={props.categories ?? []}
+              subcategories={props.subcategories ?? []}
+              tertiary={props.tertiary ?? []}
+              max={24}
+              placeholder="رئيسي / فرعي / ثانوي..."
             />
           </Form.Item>
-          <Form.Item name={["payload", "maxItems"]} label="عدد الأيقونات" initialValue={8} hidden>
-            <InputNumber min={4} max={8} style={{ width: "100%" }} />
+          <Form.Item name={["payload", "maxItems"]} label="عدد الأيقونات" initialValue={12} hidden>
+            <InputNumber min={4} max={24} style={{ width: "100%" }} />
           </Form.Item>
         </>
       );
@@ -159,11 +162,16 @@ export function SectionPayloadEditor(props: Props) {
     case "CATEGORY_TILES":
       return (
         <>
-          <Form.Item name={["payload", "categoryIds"]} label="الفئات">
-            <EntityMultiPicker items={props.categories ?? []} max={12} placeholder="بحث..." />
+          <Form.Item name={["payload", "categoryIds"]} label="الأقسام (رئيسي / فرعي / ثانوي)">
+            <CategoryCatalogPicker
+              categories={props.categories ?? []}
+              subcategories={props.subcategories ?? []}
+              tertiary={props.tertiary ?? []}
+              max={24}
+            />
           </Form.Item>
-          <Form.Item name={["payload", "maxItems"]} label="الحد الأقصى" initialValue={8}>
-            <InputNumber min={3} max={12} style={{ width: "100%" }} />
+          <Form.Item name={["payload", "maxItems"]} label="الحد الأقصى" initialValue={12}>
+            <InputNumber min={3} max={24} style={{ width: "100%" }} />
           </Form.Item>
         </>
       );
@@ -172,7 +180,12 @@ export function SectionPayloadEditor(props: Props) {
       return (
         <>
           <Form.Item name={["payload", "categoryIds"]} label="أقسام المكياج">
-            <EntityMultiPicker items={props.categories ?? []} max={8} />
+            <CategoryCatalogPicker
+              categories={props.categories ?? []}
+              subcategories={props.subcategories ?? []}
+              tertiary={props.tertiary ?? []}
+              max={16}
+            />
           </Form.Item>
           <Form.Item name={["payload", "accentColor"]} label="لون خلفية البطاقات">
             <Input placeholder="#FCE4EC" />
@@ -694,7 +707,12 @@ export function SectionPayloadEditor(props: Props) {
             />
           </Form.Item>
           <Form.Item name={["payload", "categoryIds"]} label="فئات العناية">
-            <EntityMultiPicker items={props.categories ?? []} max={8} />
+            <CategoryCatalogPicker
+              categories={props.categories ?? []}
+              subcategories={props.subcategories ?? []}
+              tertiary={props.tertiary ?? []}
+              max={12}
+            />
           </Form.Item>
           <Form.Item name={["payload", "morningPackageIds"]} label="باقات روتين صباحي">
             <EntityMultiPicker items={props.packages ?? []} max={6} />

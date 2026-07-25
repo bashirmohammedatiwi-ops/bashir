@@ -129,19 +129,29 @@ export function SectionLinksEditor({ type, form, ...props }: Props) {
         </>
       )}
 
-      {(type === "CATEGORY_GRID" || type === "CATEGORY_TILES" || type === "MAKEUP_CATEGORIES") && (
+      {(type === "CATEGORY_GRID" || type === "CATEGORY_TILES" || type === "MAKEUP_CATEGORIES" || type === "HERO_BANNER" || type === "CARE_HUB") && (
         <>
           <Alert
             type="info"
             showIcon
-            message="الفئات"
-            description="افتراضياً كل فئة تفتح منتجاتها. يمكن تجاوز رابط فئة محددة:"
+            message="تخصيص الأقسام"
+            description="يمكنك ربط صورة مخصصة بأي قسم (رئيسي / فرعي / ثانوي) وتحديد حجم العرض والرابط."
             style={{ marginBottom: 16 }}
           />
-          <CategoryItemsEditor categories={props.categories ?? []} entities={entities} selectedIds={categoryIds} />
-          <Divider plain>عرض الكل</Divider>
-          <ViewAllToggle />
-          <ViewAllPicker defaultQuery="/categories" />
+          <CategoryItemsEditor
+            categories={props.categories ?? []}
+            subcategories={props.subcategories ?? []}
+            tertiary={props.tertiary ?? []}
+            entities={entities}
+            selectedIds={categoryIds}
+          />
+          {type !== "HERO_BANNER" && type !== "CARE_HUB" && (
+            <>
+              <Divider plain>عرض الكل</Divider>
+              <ViewAllToggle />
+              <ViewAllPicker defaultQuery="/categories" />
+            </>
+          )}
         </>
       )}
 

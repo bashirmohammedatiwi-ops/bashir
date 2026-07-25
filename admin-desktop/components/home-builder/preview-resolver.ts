@@ -2,6 +2,7 @@ import { mediaThumb } from "@/lib/mediaUrl";
 import type { EditorEntities } from "./SectionPayloadEditor";
 import { filterBuilderBlocks, pickHeroCategories } from "./fixed-hero";
 import { buildAppLinkPath } from "./link-target";
+import { buildCategoryCatalog, pickCatalogByIds } from "./category-catalog";
 
 type Block = {
   id: string;
@@ -18,18 +19,50 @@ function pickByIds<T extends { id: string }>(items: T[], ids?: unknown): T[] {
   return list.map((id) => map.get(id)).filter(Boolean) as T[];
 }
 
-function applyCategoryLinkOverrides<T extends { id: string; parentId?: string | null }>(
+function categoryCatalogFromEntities(entities: EditorEntities) {
+  return buildCategoryCatalog(
+    entities.categories ?? [],
+    entities.subcategories ?? [],
+    entities.tertiary ?? [],
+  );
+}
+
+function applyCategoryLinkOverrides<T extends { id: string; parentId?: string | null; image?: unknown }>(
   categories: T[],
   payload: Record<string, unknown>,
-): (T & { linkType?: string; linkValue?: string; link?: string })[] {
+  mediaMap: MediaMap,
+): (T & { linkType?: string; linkValue?: string; link?: string; image?: unknown; imageUrl?: string; cardSize?: string })[] {
   const overrides =
-    (payload.categoryItems as { categoryId: string; linkType?: string; linkValue?: string }[]) ?? [];
+    (payload.categoryItems as {
+      categoryId: string;
+      linkType?: string;
+      linkValue?: string;
+      imageId?: string;
+      cardSize?: string;
+    }[]) ?? [];
   const map = new Map(overrides.map((o) => [o.categoryId, o]));
   return categories.map((c) => {
     const ov = map.get(c.id);
-    if (!ov?.linkType) return c as T & { linkType?: string; linkValue?: string; link?: string };
-    const link = buildAppLinkPath(ov.linkType, ov.linkValue);
-    return { ...c, linkType: ov.linkType, linkValue: ov.linkValue, link };
+    let row = { ...c } as T & {
+      linkType?: string;
+      linkValue?: string;
+      link?: string;
+      image?: unknown;
+      imageUrl?: string;
+      cardSize?: string;
+    };
+    if (ov?.linkType) {
+      const link = buildAppLinkPath(ov.linkType, ov.linkValue);
+      row = { ...row, linkType: ov.linkType, linkValue: ov.linkValue, link };
+    }
+    if (ov?.imageId) {
+      const media = mediaMap.get(ov.imageId);
+      const url = media ? mediaThumb(media as any) : null;
+      if (media) row.image = media;
+      if (url) row.imageUrl = url;
+    }
+    if (ov?.cardSize) row.cardSize = ov.cardSize;
+    return row;
   });
 }
 
@@ -48,6 +81,8 @@ function buildMediaMap(entities: EditorEntities): MediaMap {
   };
   for (const b of entities.banners ?? []) add(b);
   for (const c of entities.categories ?? []) add(c);
+  for (const c of entities.subcategories ?? []) add(c);
+  for (const c of entities.tertiary ?? []) add(c);
   for (const c of entities.skinConcerns ?? []) add(c);
   for (const b of entities.brands ?? []) add(b);
   for (const p of entities.packages ?? []) add(p);
@@ -101,11 +136,13 @@ export function resolveBlockPreview(
   const mediaMap = buildMediaMap(entities);
 
   switch (block.type) {
-    case "HERO_BANNER":
+    case "HERO_BANNER": {
+      const catalog = categoryCatalogFromEntities(entities);
       return {
         banners: pickByIds(entities.banners ?? [], p.bannerIds),
-        categories: pickByIds(entities.categories ?? [], p.categoryIds),
+        categories: applyCategoryLinkOverrides(pickCatalogByIds(catalog, p.categoryIds), p, mediaMap),
       };
+    }
     case "PRODUCT_LIST":
     case "FLASH_SALE":
       if (Array.isArray(p.productIds) && p.productIds.length) {
@@ -125,15 +162,14 @@ export function resolveBlockPreview(
       return { brands: pickByIds(entities.brands ?? [], p.brandIds) };
     case "CATEGORY_GRID":
     case "CATEGORY_TILES":
-    case "MAKEUP_CATEGORIES":
+    case "MAKEUP_CATEGORIES": {
+      const catalog = categoryCatalogFromEntities(entities);
       return {
-        categories: applyCategoryLinkOverrides(
-          pickByIds(entities.categories ?? [], p.categoryIds),
-          p,
-        ),
+        categories: applyCategoryLinkOverrides(pickCatalogByIds(catalog, p.categoryIds), p, mediaMap),
         showViewAll: p.showViewAll !== false,
         viewAllQuery: (p.viewAllQuery as string) || "/categories",
       };
+    }
     case "MEDIA_GALLERY":
       return {
         items: resolveItems((p.items as unknown[]) ?? [], mediaMap),
@@ -181,7 +217,11 @@ export function resolveBlockPreview(
     case "CARE_HUB":
       return {
         skinConcerns: pickByIds(entities.skinConcerns ?? [], p.concernIds).slice(0, 6),
-        categories: pickByIds(entities.categories ?? [], p.categoryIds).slice(0, 4),
+        categories: applyCategoryLinkOverrides(
+          pickCatalogByIds(categoryCatalogFromEntities(entities), p.categoryIds).slice(0, 4),
+          p,
+          mediaMap,
+        ),
         packages: (entities.packages ?? []).slice(0, 4),
         products: (entities.products ?? []).slice(0, Number(p.productLimit) || 4),
       };

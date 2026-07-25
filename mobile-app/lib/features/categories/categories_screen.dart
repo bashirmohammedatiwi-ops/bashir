@@ -752,6 +752,7 @@ class _DetailBlock extends StatelessWidget {
               itemBuilder: (_, i) => _DetailChip(
                 key: ValueKey(items[i].id),
                 category: items[i],
+                subcategoryId: category.id,
               ),
             ),
           ),
@@ -763,8 +764,9 @@ class _DetailBlock extends StatelessWidget {
 
 class _DetailChip extends StatelessWidget {
   final Category category;
+  final String subcategoryId;
 
-  const _DetailChip({super.key, required this.category});
+  const _DetailChip({super.key, required this.category, required this.subcategoryId});
 
   @override
   Widget build(BuildContext context) {
@@ -776,7 +778,7 @@ class _DetailChip extends StatelessWidget {
           onTap: () {
             HapticFeedback.selectionClick();
             context.push(
-              '/products?tertiaryCategoryId=${category.id}&title=${Uri.encodeComponent(category.name)}',
+              '/products?subcategoryId=$subcategoryId&tertiaryCategoryId=${category.id}&title=${Uri.encodeComponent(category.name)}',
             );
           },
           borderRadius: BorderRadius.circular(14),

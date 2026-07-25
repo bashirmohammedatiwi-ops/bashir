@@ -14,24 +14,28 @@ class HomeQuickDock extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final items = [
-      _Item(Icons.local_offer_outlined, 'العروض', HomeTheme.roseWash, AppColors.primary, () {
+      _Item(Icons.local_offer_outlined, 'العروض', () {
         ref.read(navIndexProvider.notifier).state = 2;
       }),
-      _Item(Icons.grid_view_rounded, 'الفئات', HomeTheme.sageLight, HomeTheme.sage, () {
+      _Item(Icons.grid_view_rounded, 'الفئات', () {
         ref.read(navIndexProvider.notifier).state = 1;
       }),
-      _Item(Icons.storefront_outlined, 'براندات', HomeTheme.sand, HomeTheme.inkSoft, () {
+      _Item(Icons.storefront_outlined, 'براندات', () {
         context.push('/brands');
       }),
-      _Item(Icons.qr_code_scanner_rounded, 'مسح', HomeTheme.lavender, AppColors.primary, () {
-        context.push('/scan');
+      _Item(Icons.favorite_border_rounded, 'المفضلة', () {
+        context.push('/wishlist');
       }),
     ];
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 4, HomeTheme.paddingH, 0),
-      child: Row(
-        children: [for (final item in items) Expanded(child: item)],
+      padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 12, HomeTheme.paddingH, 0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        decoration: HomeTheme.dockDecoration(),
+        child: Row(
+          children: [for (final item in items) Expanded(child: item)],
+        ),
       ),
     );
   }
@@ -40,11 +44,9 @@ class HomeQuickDock extends ConsumerWidget {
 class _Item extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color bg;
-  final Color iconColor;
   final VoidCallback onTap;
 
-  const _Item(this.icon, this.label, this.bg, this.iconColor, this.onTap);
+  const _Item(this.icon, this.label, this.onTap);
 
   @override
   Widget build(BuildContext context) {
@@ -57,18 +59,23 @@ class _Item extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 44,
-            height: 44,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
-              color: bg,
+              color: HomeTheme.pearl,
               shape: BoxShape.circle,
-              border: Border.all(color: HomeTheme.surfaceMuted.withValues(alpha: 0.7)),
+              border: Border.all(color: HomeTheme.divider),
             ),
             alignment: Alignment.center,
-            child: Icon(icon, size: 20, color: iconColor),
+            child: Icon(icon, size: 20, color: HomeTheme.accent),
           ),
-          const SizedBox(height: 4),
-          Text(label, style: HomeTheme.circleLabel, maxLines: 1, overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 5),
+          Text(
+            label,
+            style: HomeTheme.circleLabel.copyWith(fontSize: 10),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );

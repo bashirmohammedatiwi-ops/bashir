@@ -568,51 +568,96 @@ export class HomeSectionResolver {
     return this.sizeBanners(this.pickBanners(all, ids).slice(0, max), payload);
   }
 
-  private categoryDefaultLink(cat: { id: string; parentId?: string | null }) {
+  private categoryDefaultLink(cat: {
+    id: string;
+    parentId?: string | null;
+    parent?: { parentId?: string | null } | null;
+  }) {
     if (!cat.parentId) return buildAppLink("category", cat.id);
-    return buildAppLink("subcategory", cat.id);
+    if (!cat.parent?.parentId) return buildAppLink("subcategory", cat.id);
+    return buildAppLink("tertiary", cat.id);
   }
 
   private async resolveCategories(payload: Payload, fallback: unknown[]) {
+    type CategoryOverride = {
+      categoryId: string;
+      linkType?: string;
+      linkValue?: string;
+      imageId?: string;
+      cardSize?: string;
+    };
+    type CategoryRow = {
+      id: string;
+      parentId?: string | null;
+      parent?: { parentId?: string | null } | null;
+      image?: unknown;
+    } & Record<string, unknown>;
+
     const ids = payload.categoryIds as string[] | undefined;
-    const overrides = (payload.categoryItems as { categoryId: string; linkType?: string; linkValue?: string }[]) ?? [];
+    const overrides = (payload.categoryItems as CategoryOverride[]) ?? [];
     const overrideMap = new Map(overrides.map((o) => [o.categoryId, o]));
     const max = payload.maxItems as number | undefined;
+
+    const mediaIds = overrides.map((o) => o.imageId).filter(Boolean) as string[];
+    const mediaList = mediaIds.length
+      ? await this.prisma.media.findMany({ where: { id: { in: mediaIds } } })
+      : [];
+    const mediaMap = new Map(mediaList.map((m) => [m.id, m]));
+
+    const enrich = (
+      cat: CategoryRow,
+      id: string,
+      index: number,
+      ov?: CategoryOverride,
+    ): CategoryRow & { cardSize: string } => {
+      const link = ov?.linkType
+        ? buildAppLink(ov.linkType, ov.linkValue)
+        : this.categoryDefaultLink(cat);
+      const size = resolveCardSize(payload, id, index, ov?.cardSize);
+      let image = cat.image;
+      let imageUrl: string | undefined;
+      if (ov?.imageId) {
+        const media = mediaMap.get(ov.imageId);
+        if (media) {
+          image = media;
+          imageUrl = this.mediaPublicUrl(media) ?? undefined;
+        }
+      }
+      return withCardSize(
+        {
+          ...cat,
+          image,
+          ...(imageUrl ? { imageUrl } : {}),
+          linkType: ov?.linkType,
+          linkValue: ov?.linkValue,
+          link,
+        },
+        size,
+      );
+    };
+
     if (!ids?.length) {
-      let source = fallback as { id: string; parentId?: string | null }[];
+      let source = fallback as CategoryRow[];
       if (typeof max === "number" && max > 0) source = source.slice(0, max);
-      const fallbackList = source
-        .map((c, i) => {
-          const ov = overrideMap.get(c.id);
-          const link = ov?.linkType
-            ? buildAppLink(ov.linkType, ov.linkValue)
-            : this.categoryDefaultLink(c);
-          return withCardSize(
-            { ...c, linkType: ov?.linkType, linkValue: ov?.linkValue, link } as Record<string, unknown>,
-            resolveCardSize(payload, c.id, i),
-          );
-        });
+      const fallbackList = source.map((c, i) => enrich(c, c.id, i, overrideMap.get(c.id)));
       return this.categories.filterStorefrontCategories(fallbackList);
     }
+
     const cats = await this.prisma.category.findMany({
       where: { id: { in: ids }, isActive: true },
-      include: { image: true },
+      include: {
+        image: true,
+        parent: { select: { id: true, parentId: true } },
+      },
     });
     const map = new Map(cats.map((c) => [c.id, c]));
     const resolved = ids
       .map((id, i) => {
         const cat = map.get(id);
         if (!cat) return null;
-        const ov = overrideMap.get(id);
-        const link = ov?.linkType
-          ? buildAppLink(ov.linkType, ov.linkValue)
-          : this.categoryDefaultLink(cat);
-        return withCardSize(
-          { ...cat, linkType: ov?.linkType, linkValue: ov?.linkValue, link } as Record<string, unknown>,
-          resolveCardSize(payload, id, i),
-        );
+        return enrich(cat as CategoryRow, id, i, overrideMap.get(id));
       })
-      .filter(Boolean) as Record<string, unknown>[];
+      .filter((c): c is CategoryRow & { cardSize: string } => c != null);
     return this.categories.filterStorefrontCategories(resolved);
   }
 
