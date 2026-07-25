@@ -4,6 +4,7 @@ import { Alert, Divider, Form, Switch, Typography } from "antd";
 import { LinkTargetPicker, ProductScopeFields } from "./LinkTargetPicker";
 import { CategoryItemsEditor } from "./CategoryItemsEditor";
 import { TileItemsLinksPanel } from "./TileItemsLinksPanel";
+import { GalleryBulkLinksPanel } from "./GalleryBulkLinksPanel";
 import { ViewAllPicker } from "./ViewAllPicker";
 import { SectionType } from "./section-types";
 import type { EditorEntities } from "./SectionPayloadEditor";
@@ -89,26 +90,29 @@ export function SectionLinksEditor({ type, form, ...props }: Props) {
       )}
 
       {(type === "MEDIA_GALLERY" || type === "PHOTO_WALL" || type === "IMAGE_COLLAGE") && (
-        <Alert
-          type="success"
-          showIcon
-          message="ربط سريع لكل الصور"
-          description="طبّق رابطاً واحداً على الكل، أو عدّل كل صورة — البحث عن المنتجات مباشرة من السيرفر."
-          style={{ marginBottom: 12 }}
-        />
+        <>
+          <Alert
+            type="success"
+            showIcon
+            message="معرض الصور — الربط من تبويب المحتوى"
+            description="كل صورة لها بحث ربط مباشر. استخدم الأزرار أدناه لتطبيق رابط واحد على الكل."
+            style={{ marginBottom: 12 }}
+          />
+          <GalleryBulkLinksPanel
+            itemLabel={type === "IMAGE_COLLAGE" ? "بلاطة" : "صورة"}
+          />
+        </>
       )}
 
-      {(type === "IMAGE_TILES" || type === "CIRCLE_TILES" || type === "IMAGE_MARQUEE" || type === "MEDIA_GALLERY" || type === "PHOTO_WALL" || type === "IMAGE_COLLAGE") && (
+      {(type === "IMAGE_TILES" || type === "CIRCLE_TILES" || type === "IMAGE_MARQUEE") && (
         <TileItemsLinksPanel
           entities={entities}
           itemLabel={
             type === "CIRCLE_TILES"
               ? "دائرة"
-              : type === "IMAGE_COLLAGE"
-                ? "بلاطة"
-                : type === "IMAGE_MARQUEE" || type === "MEDIA_GALLERY" || type === "PHOTO_WALL"
-                  ? "صورة"
-                  : "بطاقة"
+              : type === "IMAGE_MARQUEE"
+                ? "صورة"
+                : "بطاقة"
           }
         />
       )}

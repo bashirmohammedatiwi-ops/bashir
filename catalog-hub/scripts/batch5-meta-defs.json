@@ -1,0 +1,1179 @@
+{
+  "50064861": {
+    "brandEn": "Vaseline",
+    "nameEn": "Vaseline Lip Therapy 20g",
+    "kind": "care",
+    "careLeaf": "care/face-care/lip-care",
+    "typeKey": "lip-balm",
+    "c": {
+      "introEn": "Vaseline Lip Therapy nourishes dry lips with a classic petrolatum-rich formula that locks in moisture for soft, smooth lips.",
+      "introAr": "مرطب فازلين للشفاه يغذي الشفاه الجافة بتركيبة غنية بالفازلين تحبس الرطوبة وتترك الشفاه ناعمة.",
+      "catEn": "Lip care",
+      "catAr": "عناية الشفاه",
+      "typeEn": "Lip balm",
+      "typeAr": "مرطب شفاه",
+      "benefitsEn": [
+        "Deep moisture",
+        "Soothes dryness",
+        "Classic trusted formula"
+      ],
+      "benefitsAr": [
+        "ترطيب عميق",
+        "يهدئ الجفاف",
+        "تركيبة موثوقة"
+      ],
+      "suitEn": "Dry or chapped lips",
+      "suitAr": "الشفاه الجافة أو المتشققة",
+      "sizeEn": "20 g",
+      "sizeAr": "20 جم"
+    }
+  },
+  "850035582251": {
+    "brandEn": "Mielle",
+    "nameEn": "Mielle Rosemary Mint Strengthening Conditioner 355ml",
+    "kind": "care",
+    "careLeaf": "care/hair-care/shampoo-conditioners",
+    "typeKey": "conditioner",
+    "c": {
+      "introEn": "Mielle Rosemary Mint Conditioner strengthens and softens hair with biotin and natural oils while leaving a fresh herbal scent.",
+      "introAr": "بلسم ميلي بإكليل الجبل والنعناع يقوي الشعر ويلينه بالبيوتين والزيوت الطبيعية برائحة عشبية منعشة.",
+      "catEn": "Hair care",
+      "catAr": "عناية الشعر",
+      "typeEn": "Strengthening conditioner",
+      "typeAr": "بلسم مقوي",
+      "benefitsEn": [
+        "Strengthens strands",
+        "Adds softness",
+        "Fresh rosemary mint scent"
+      ],
+      "benefitsAr": [
+        "يقوي الخصلات",
+        "نعومة للشعر",
+        "رائحة إكليل الجبل والنعناع"
+      ],
+      "suitEn": "Weak or dry hair needing daily conditioning",
+      "suitAr": "الشعر الضعيف أو الجاف",
+      "sizeEn": "355 ml",
+      "sizeAr": "355 مل"
+    }
+  },
+  "854102006763": {
+    "brandEn": "Mielle",
+    "nameEn": "Mielle Rosemary Mint Strengthening Hair Mask 340g",
+    "kind": "care",
+    "careLeaf": "care/hair-care/oil--masks",
+    "typeKey": "hair-mask",
+    "c": {
+      "introEn": "Mielle Rosemary Mint Hair Mask delivers intensive nourishment to strengthen hair, reduce breakage, and restore softness.",
+      "introAr": "قناع ميلي بروزماري ونعناع يغذي الشعر بعمق لتقويته وتقليل التقصُ واستعادة النعومة.",
+      "catEn": "Hair care",
+      "catAr": "عناية الشعر",
+      "typeEn": "Deep conditioning mask",
+      "typeAr": "قناع ترطيب عميق",
+      "benefitsEn": [
+        "Intensive repair",
+        "Strengthens hair",
+        "Smooth finish"
+      ],
+      "benefitsAr": [
+        "إصلاح مكثف",
+        "تقوية الشعر",
+        "لمسة ناعمة"
+      ],
+      "suitEn": "Damaged or brittle hair",
+      "suitAr": "الشعر التالف أو الهش",
+      "sizeEn": "340 g",
+      "sizeAr": "340 جم"
+    }
+  },
+  "737052351100": {
+    "brandEn": "Hugo Boss",
+    "nameEn": "Hugo Boss Bottled Eau de Toilette 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Hugo Boss Bottled is a modern masculine classic blending warm spices and woods for confident everyday elegance.",
+      "introAr": "بوتلد من هوغو بوس عطر رجالي كلاسيكي يمزج التوابل الدافئة والأخشاب بأناقة يومية واثقة.",
+      "familyEn": "Woody spicy",
+      "familyAr": "خشبي حار",
+      "notesEn": "Apple, cinnamon, geranium, sandalwood, vanilla, cedar",
+      "notesAr": "تفاح، قرفة، جيرانيوم، خشب الصندل، فانيلا، أرز",
+      "charEn": "Warm, polished, and versatile",
+      "charAr": "دافئ ومصقول ومتعدد الاستخدام",
+      "bestEn": "Office, daily wear, and evening occasions",
+      "bestAr": "العمل والاستخدام اليومي والمناسبات",
+      "longEn": "6–8 hours with moderate projection",
+      "longAr": "6–8 ساعات بثبات متوسط"
+    }
+  },
+  "9314839020742": {
+    "brandEn": "QV",
+    "nameEn": "QV Moisturising Cream 500g",
+    "kind": "care",
+    "careLeaf": "care/skin-and-body-care/body-moisturizer",
+    "typeKey": "body-cream",
+    "c": {
+      "introEn": "QV Moisturising Cream is a dermatologist-tested formula for very dry and sensitive skin, delivering long-lasting hydration without fragrance.",
+      "introAr": "كريم كيو في المرطب تركيبة طبية مختبرة للبشرة شديد الجفاف والحساسة بترطيب طويل دون عطر.",
+      "catEn": "Derma body care",
+      "catAr": "عناية الجسم الطبية",
+      "typeEn": "Moisturising cream",
+      "typeAr": "كريم مرطب",
+      "benefitsEn": [
+        "Fragrance-free",
+        "Long-lasting hydration",
+        "Suitable for sensitive skin"
+      ],
+      "benefitsAr": [
+        "خالٍ من العطر",
+        "ترطيب طويل",
+        "مناسب للبشرة الحساسة"
+      ],
+      "suitEn": "Very dry, sensitive, or eczema-prone skin",
+      "suitAr": "البشرة شديد الجفاف أو الحساسة",
+      "sizeEn": "500 g",
+      "sizeAr": "500 جم"
+    }
+  },
+  "8809864766884": {
+    "brandEn": "Beauty of Joseon",
+    "nameEn": "Beauty of Joseon Matte Sun Stick SPF50+ PA++++ 18g",
+    "kind": "care",
+    "careLeaf": "care/sun-care/sunscreen",
+    "typeKey": "sunscreen",
+    "c": {
+      "introEn": "Beauty of Joseon Matte Sun Stick offers portable Korean SPF50+ protection with a non-greasy matte finish ideal for touch-ups.",
+      "introAr": "قلم حماية بيوتي أوف جوسون يوفر واقي شمس كوري محمول بمعامل 50+ بلمسة مطفية غير دهنية للتجديد خلال اليوم.",
+      "catEn": "Korean sun care",
+      "catAr": "حماية الشمس الكورية",
+      "typeEn": "Matte sun stick",
+      "typeAr": "قلم واقي شمس مطفي",
+      "benefitsEn": [
+        "SPF50+ PA++++",
+        "Matte finish",
+        "Easy reapplication"
+      ],
+      "benefitsAr": [
+        "حماية 50+",
+        "لمسة مطفية",
+        "سهل التجديد"
+      ],
+      "suitEn": "Daily sun protection on face and body",
+      "suitAr": "الحماية اليومية من الشمس",
+      "sizeEn": "18 g",
+      "sizeAr": "18 جم"
+    }
+  },
+  "079625014921": {
+    "brandEn": "Real Techniques",
+    "nameEn": "Real Techniques Miracle Mini Sponges 4-Pack",
+    "kind": "makeup",
+    "makeupSub": "face",
+    "m": {
+      "introEn": "Real Techniques Miracle Mini Sponges blend foundation and concealer seamlessly in hard-to-reach areas with a soft, streak-free finish.",
+      "introAr": "اسفنج ريل تكنيكس ميني ميركل يدمج الأساس والكونسيلر بسلاسة في المناطق الصعبة بلمسة ناعمة دون خطوط.",
+      "typeEn": "Mini makeup sponges",
+      "typeAr": "اسفنج مكياج ميني",
+      "benefitsEn": [
+        "Precision blending",
+        "Streak-free finish",
+        "Travel-friendly size"
+      ],
+      "benefitsAr": [
+        "دمج دقيق",
+        "لمسة خالية من الخطوط",
+        "حجم مناسب للسفر"
+      ],
+      "suitEn": "Foundation and concealer application",
+      "suitAr": "تطبيق الأساس والكونسيلر"
+    }
+  },
+  "3432240506641": {
+    "brandEn": "Cartier",
+    "nameEn": "Cartier La Panthère Eau de Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Cartier La Panthère is a bold feline floral with velvety gardenia and musk that captures sensual elegance and power.",
+      "introAr": "لا بانتير من كارتييه زهري جريء يجمع زهراً مخملياً مع المسك يعكس أناقة وحسية قوية.",
+      "familyEn": "Floral musky",
+      "familyAr": "زهري مسكي",
+      "notesEn": "Dried fruits, gardenia, musk, oakmoss",
+      "notesAr": "فواكه مجففة، زهر أبيض، مسك، طحلب البلوط",
+      "charEn": "Sensual, elegant, and distinctive",
+      "charAr": "حسي وأنيق ومميز",
+      "bestEn": "Evening wear and special occasions",
+      "bestAr": "السهرات والمناسبات الخاصة",
+      "longEn": "7–9 hours with strong projection",
+      "longAr": "7–9 ساعات بثبات قوي"
+    }
+  },
+  "3349668579839": {
+    "brandEn": "Paco Rabanne",
+    "nameEn": "Paco Rabanne 1 Million Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Paco Rabanne 1 Million Parfum is a rich amber-leather scent with spicy warmth and bold masculine allure.",
+      "introAr": "وان مليون بارفيوم عطر رجالي فاخر بالعنبر والجلد والتوابل الدافئة.",
+      "familyEn": "Amber leather",
+      "familyAr": "عنبر وجلد",
+      "notesEn": "Blood mandarin, cinnamon, leather, amber, patchouli",
+      "notesAr": "برتقال دموي، قرفة، جلد، عنبر، باتشولي",
+      "charEn": "Bold, luxurious, seductive",
+      "charAr": "جريء وفاخر وآسر",
+      "bestEn": "Evenings and special nights",
+      "bestAr": "السهرات والليال",
+      "longEn": "8–10 hours with strong projection",
+      "longAr": "8–10 ساعات بثبات قوي"
+    }
+  },
+  "3760294350621": {
+    "brandEn": "The Woods Collection",
+    "nameEn": "The Woods Collection Natural Bloom Eau de Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "The Woods Collection Natural Bloom is a niche floral woody fragrance celebrating fresh blossoms and elegant natural beauty.",
+      "introAr": "ناتشورال بلوم عطر نيش زهري خشبي يجسّد الاناقة الطبيعية والجمال الهادئ.",
+      "familyEn": "Floral woody",
+      "familyAr": "زهري خشبي",
+      "notesEn": "Bergamot, jasmine, rose, cedar, musk",
+      "notesAr": "حمضيات، ياسمين، ورد، أرز، مسك",
+      "charEn": "Fresh, refined, naturally elegant",
+      "charAr": "منعش وأنيق وطبيعي",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3595471024787": {
+    "brandEn": "Mercedes-Benz",
+    "nameEn": "Mercedes-Benz Intense Eau de Toilette 120ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Mercedes-Benz Intense is a bold aromatic fougère with citrus freshness and warm woody depth for modern masculinity.",
+      "introAr": "مرسيدس بنز انتنس عطر رجالي جريء يمزج الحمضيات والأعشاب بعمق خشبي دافئ.",
+      "familyEn": "Aromatic fougère",
+      "familyAr": "عشبي أروماتي فوجير",
+      "notesEn": "Calabrian bergamot, violet, patchouli, amber",
+      "notesAr": "برغموت، بنفسج، باتشولي، عنبر",
+      "charEn": "Bold, fresh, and confident",
+      "charAr": "جريء ومنعش وواثق",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3600531584696": {
+    "brandEn": "Maybelline",
+    "nameEn": "Maybelline Falsies Lash Lift Mascara",
+    "kind": "makeup",
+    "makeupSub": "eyes",
+    "m": {
+      "introEn": "Maybelline Falsies Lash Lift Mascara lifts and curls lashes for a wide-eyed, false-lash effect in one coat.",
+      "introAr": "ماسكارا فالسيس لاش ليفت ترفع الرموش وتقوّمها لإطلالة عيون واسعة بطبقة واحدة.",
+      "typeEn": "Lash lift mascara",
+      "typeAr": "ماسكارا رفع الرموش",
+      "benefitsEn": [
+        "Lift and curl",
+        "False-lash effect",
+        "All-day wear"
+      ],
+      "benefitsAr": [
+        "رفع وتقوية",
+        "تأثير رموش صناعية",
+        "ثبات طوال اليوم"
+      ],
+      "suitEn": "Everyday eye looks",
+      "suitAr": "إطلالات عيون يومية"
+    }
+  },
+  "3274872421554": {
+    "brandEn": "Kenzo",
+    "nameEn": "Kenzo Homme Eau de Toilette Intense 110ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Kenzo Homme EDT Intense is an aquatic woody fragrance with mint, sea notes, and cedar for fresh masculine energy.",
+      "introAr": "كنزو هوم انتنس عطر بحري خشبي يجمع النعناع ونوتات البحر والأرز بطابع رجالي منعش.",
+      "familyEn": "Aquatic woody",
+      "familyAr": "بحري خشبي",
+      "notesEn": "Mint, sea notes, vetiver, cedar",
+      "notesAr": "نعناع، نوتات بحرية، فيتيفر، أرز",
+      "charEn": "Fresh, aquatic, and energizing",
+      "charAr": "منعش وبحري ومنشّط",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3274872428829": {
+    "brandEn": "Givenchy",
+    "nameEn": "Givenchy Xeryus Rouge Eau de Toilette 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Givenchy Xeryus Rouge is a vibrant aromatic fragrance with grapefruit, cactus, and cedar for dynamic masculine appeal.",
+      "introAr": "جيفنشي إكسيروس روج عطر عشبي نابّض يمزج الجريفروت والأرز بحضور رجالي ديناميكي.",
+      "familyEn": "Aromatic citrus",
+      "familyAr": "عشبي حمضي",
+      "notesEn": "Grapefruit, cactus, cedar, sandalwood",
+      "notesAr": "جريفروت، صبار، أرز، خشب الصندل",
+      "charEn": "Vibrant, fresh, and bold",
+      "charAr": "نابّض ومنعش وجريء",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3516641717315": {
+    "brandEn": "Franck Olivier",
+    "nameEn": "Franck Olivier Oud Vanille Eau de Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "isNiche": true,
+      "isUnisex": true
+    },
+    "p": {
+      "introEn": "Franck Olivier Oud Vanille blends creamy vanilla with rich oud for a warm, gourmand unisex niche scent.",
+      "introAr": "عود فانيلا من فرانك أوليفير يمزج الفانيلا الكريمية مع العود لعطر نيش دافئ للجنسين.",
+      "familyEn": "Oriental gourmand",
+      "familyAr": "شرقي غورماند",
+      "notesEn": "Vanilla, oud, spices, amber",
+      "notesAr": "فانيلا، عود، توابل، عنبر",
+      "charEn": "Warm, sweet, and luxurious",
+      "charAr": "دافئ وحلو وفاخر",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3760294350652": {
+    "brandEn": "The Woods Collection",
+    "nameEn": "The Woods Collection Natural Royal Night Eau de Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "isNiche": true,
+      "isUnisex": true
+    },
+    "p": {
+      "introEn": "The Woods Collection Natural Royal Night is a deep niche woody amber fragrance for evening sophistication.",
+      "introAr": "ناتشورال رويال نايت عطر نيش خشبي عنبري عميق للأناقة الليالية والسهرات.",
+      "familyEn": "Woody amber",
+      "familyAr": "خشبي عنبري",
+      "notesEn": "Spices, woods, amber, musk",
+      "notesAr": "توابل، أخشاب، عنبر، مسك",
+      "charEn": "Deep, elegant, and nocturnal",
+      "charAr": "عميق وأنيق لليل",
+      "bestEn": "Evening wear and formal occasions",
+      "bestAr": "السهرات والمناسبات الرسمية",
+      "longEn": "8–12 hours with moderate sillage",
+      "longAr": "8–12 ساعة بثبات متوسط"
+    }
+  },
+  "3616304249716": {
+    "brandEn": "Gucci",
+    "nameEn": "Gucci Bloom Eau de Parfum Intense 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": true
+    },
+    "p": {
+      "introEn": "Gucci Bloom EDP Intense is a rich white floral with tuberose, jasmine, and rangoon creeper for lush femininity.",
+      "introAr": "قوتشي بلوم انتنس زهري أبيض غني بالتيوبروز والياسمين لأناقة نسائية فاخرة.",
+      "familyEn": "White floral",
+      "familyAr": "زهري أبيض",
+      "notesEn": "Tuberose, jasmine, rangoon creeper, musk",
+      "notesAr": "تيوبروز، ياسمين، زهر رانجون، مسك",
+      "charEn": "Lush, feminine, and opulent",
+      "charAr": "غني ونسائي وفاخر",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3346470304925": {
+    "brandEn": "Guerlain",
+    "nameEn": "Guerlain Homme Eau de Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Guerlain Homme EDP is a refined minty-citrus woody fragrance with lime, mint, and cedar for elegant masculinity.",
+      "introAr": "غيرلان هوم عطر رجالي يمزج الليمون والنعناع والأرز بأناقة رجالية مصقولة.",
+      "familyEn": "Citrus aromatic",
+      "familyAr": "حمضي عشبي",
+      "notesEn": "Lime, mint, cedar, vetiver",
+      "notesAr": "ليمون، نعناع، أرز، فيتيفر",
+      "charEn": "Refined, fresh, and elegant",
+      "charAr": "مصقول ومنعش وأنيق",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3386460011600": {
+    "brandEn": "S.T. Dupont",
+    "nameEn": "S.T. Dupont Passenger Eau de Toilette 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "S.T. Dupont Passenger is a fresh aromatic fragrance with citrus, lavender, and woods for everyday refinement.",
+      "introAr": "باسنجر من اس تي ديبون عطر عشبي منعش يجمع الحمضيات والخزامة والأخشاب.",
+      "familyEn": "Aromatic fresh",
+      "familyAr": "عشبي منعش",
+      "notesEn": "Citrus, lavender, woods, musk",
+      "notesAr": "حمضيات، خزامة، أخشاب، مسك",
+      "charEn": "Fresh, clean, and refined",
+      "charAr": "منعش ونقي ومصقول",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3349668622009": {
+    "brandEn": "Paco Rabanne",
+    "nameEn": "Paco Rabanne 1 Million Golden Oud Parfum Intense 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men",
+      "isNew": true
+    },
+    "p": {
+      "introEn": "Paco Rabanne 1 Million Golden Oud Parfum Intense is a luxurious oud-amber scent with golden warmth and bold projection.",
+      "introAr": "وان مليون العود الذهبي بارفيوم انتنس عطر رجالي فاخر بالعود والعنبر ودفء ذهبي جريء.",
+      "familyEn": "Oud amber",
+      "familyAr": "عود عنبري",
+      "notesEn": "Oud, amber, spices, leather",
+      "notesAr": "عود، عنبر، توابل، جلد",
+      "charEn": "Luxurious, bold, and intense",
+      "charAr": "فاخر وجريء ومكثف",
+      "bestEn": "Evenings and special occasions",
+      "bestAr": "السهرات والمناسبات الخاصة",
+      "longEn": "10+ hours with strong sillage",
+      "longAr": "أكثر من 10 ساعات بثبات قوي"
+    }
+  },
+  "614514780497": {
+    "brandEn": "Rasasi",
+    "nameEn": "Rasasi Emotion Eau de Parfum 50ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Rasasi Emotion is a soft floral fruity fragrance with peach, rose, and musk for romantic everyday wear.",
+      "introAr": "إيموشن من الرصاصي عطر نسائي زهري فاكهي ناعم بالخوخ والورد والمسك لإطلالة رومانسية.",
+      "familyEn": "Floral fruity",
+      "familyAr": "زهري فاكهي",
+      "notesEn": "Peach, rose, jasmine, musk",
+      "notesAr": "خوخ، ورد، ياسمين، مسك",
+      "charEn": "Soft, romantic, and feminine",
+      "charAr": "ناعم ورومانسي ونسائي",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "7640233340721": {
+    "brandEn": "Elie Saab",
+    "nameEn": "Elie Saab Le Parfum Lumière Eau de Parfum 90ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Elie Saab Le Parfum Lumière is a luminous floral with orange blossom, jasmine, and patchouli for radiant elegance.",
+      "introAr": "لو بارفيوم لوميير من إيلي صعب عطر زهري مشرق بالبراق والياسمين والباتشولي لأناقة متوهجة.",
+      "familyEn": "Floral luminous",
+      "familyAr": "زهري مشرق",
+      "notesEn": "Orange blossom, jasmine, patchouli, rose",
+      "notesAr": "زهر البرتقال، ياسمين، باتشولي، ورد",
+      "charEn": "Radiant, elegant, and feminine",
+      "charAr": "مشرق وأنيق ونسائي",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "7640233341414": {
+    "brandEn": "Elie Saab",
+    "nameEn": "Elie Saab Elixir Eau de Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": true
+    },
+    "p": {
+      "introEn": "Elie Saab Elixir is an intense floral amber with rose, vanilla, and amber for luxurious feminine depth.",
+      "introAr": "إليكسير من إيلي صعب عطر نسائي زهري عنبري مكثف بالورد والفانيلا والعنبر لعمق فاخر.",
+      "familyEn": "Floral amber",
+      "familyAr": "زهري عنبري",
+      "notesEn": "Rose, vanilla, amber, patchouli",
+      "notesAr": "ورد، فانيلا، عنبر، باتشولي",
+      "charEn": "Luxurious, deep, and sensual",
+      "charAr": "فاخر وعميق وحسي",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3274872420625": {
+    "brandEn": "Kenzo",
+    "nameEn": "Kenzo Amour Eau de Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Kenzo Amour is a warm floral fragrance with rice, tea, and cherry blossom for serene feminine beauty.",
+      "introAr": "كنزو أمور عطر نسائي زهري دافئ يجمع الأرز والشاي وزهر الكرز لجمال نسائي هادئ.",
+      "familyEn": "Floral gourmand",
+      "familyAr": "زهري غورماند",
+      "notesEn": "Rice, tea, cherry blossom, musk",
+      "notesAr": "أرز، شاي، زهر الكرز، مسك",
+      "charEn": "Warm, serene, and feminine",
+      "charAr": "دافئ وهادئ ونسائي",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "8411061088166": {
+    "brandEn": "Carolina Herrera",
+    "nameEn": "Carolina Herrera 212 VIP Men Eau de Toilette 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Carolina Herrera 212 VIP Men is a playful aromatic leather with ginger, vodka accord, and leather for nightlife energy.",
+      "introAr": "™٢١٢ في آي بي رجالي عطر عشبي جلدي منعش بالزنجبيل والجلد لطابع ليلي حيوي.",
+      "familyEn": "Aromatic leather",
+      "familyAr": "عشبي جلدي",
+      "notesEn": "Ginger, vodka accord, leather, amber",
+      "notesAr": "زنجبيل، جلد، عنبر",
+      "charEn": "Playful, energetic, and bold",
+      "charAr": "مرح ومنشّط وجريء",
+      "bestEn": "Nightlife and social events",
+      "bestAr": "الأسار والمناسبات الاجتماعية",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "8057971183661": {
+    "brandEn": "Dolce & Gabbana",
+    "nameEn": "Dolce & Gabbana Q Eau de Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Dolce & Gabbana Q is a bold cherry-vanilla fragrance with cherry, jasmine, and cedar for confident femininity.",
+      "introAr": "كيو من دولتشي غابانا عطر نسائي جريء بالكرز والفانيلا والياسمين لأناقة واثقة.",
+      "familyEn": "Fruity floral",
+      "familyAr": "فاكهي زهري",
+      "notesEn": "Cherry, jasmine, vanilla, cedar",
+      "notesAr": "كرز، ياسمين، فانيلا، أرز",
+      "charEn": "Bold, sweet, and confident",
+      "charAr": "جريء وحلو وواثق",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3595471024800": {
+    "brandEn": "Mercedes-Benz",
+    "nameEn": "Mercedes-Benz Le Parfum Eau de Parfum 120ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Mercedes-Benz Le Parfum is a sophisticated woody amber with bergamot, violet, and patchouli for refined masculinity.",
+      "introAr": "مرسيدس بنز لي بارفيوم عطر رجالي خشبي عنبري مصقول بالبرغموت والبنفسج والباتشولي.",
+      "familyEn": "Woody amber",
+      "familyAr": "خشبي عنبري",
+      "notesEn": "Bergamot, violet, patchouli, amber",
+      "notesAr": "برغموت، بنفسج، باتشولي، عنبر",
+      "charEn": "Sophisticated, warm, and refined",
+      "charAr": "متطور ودافئ ومصقول",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "854102006787": {
+    "brandEn": "Mielle",
+    "nameEn": "Mielle Rosemary Mint Styling Cream 240ml",
+    "kind": "care",
+    "careLeaf": "care/hair-care/hair-styling",
+    "typeKey": "hair-spray",
+    "c": {
+      "introEn": "Mielle Rosemary Mint Styling Cream defines and moisturizes hair with rosemary and mint while providing light hold for daily styles.",
+      "introAr": "كريم تصفيف ميلي بإكليل الجبل والنعناع يعرِّف الشعر ويرطبه بثبات خفيف للتسريحات اليومية.",
+      "catEn": "Hair care",
+      "catAr": "عناية الشعر",
+      "typeEn": "Styling cream",
+      "typeAr": "كريم تصفيف",
+      "benefitsEn": [
+        "Light hold",
+        "Moisturizing",
+        "Fresh herbal scent"
+      ],
+      "benefitsAr": [
+        "ثبات خفيف",
+        "ترطيب",
+        "رائحة عشبية منعشة"
+      ],
+      "suitEn": "Daily styling and moisture",
+      "suitAr": "التصفيف والترطيب اليومي",
+      "sizeEn": "240 ml",
+      "sizeAr": "240 مل"
+    }
+  },
+  "3346133203671": {
+    "brandEn": "Hermès",
+    "nameEn": "Hermès Twilly Eau Ginger Eau de Parfum 85ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": true
+    },
+    "p": {
+      "introEn": "Hermès Twilly Eau Ginger is a spicy fresh floral with ginger, tuberose, and cedar for vibrant youthful energy.",
+      "introAr": "تويلي أو جنجر من هيرمس عطر نسائي منعش حار بالزنجبيل والتيوبروز لطابع شباب منعش.",
+      "familyEn": "Spicy floral",
+      "familyAr": "زهري حار",
+      "notesEn": "Ginger, tuberose, cedar, sandalwood",
+      "notesAr": "زنجبيل، تيوبروز، أرز، خشب الصندل",
+      "charEn": "Vibrant, spicy, and youthful",
+      "charAr": "نابّض وحار وشباب",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3616301794639": {
+    "brandEn": "Gucci",
+    "nameEn": "Gucci Guilty Eau de Parfum Intense Pour Femme 90ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Gucci Guilty EDP Intense Pour Femme is a rich amber floral with mandarin, lilac, and patchouli for bold femininity.",
+      "introAr": "قوتشي غلتي انتنس عطر نسائي عنبري زهري جريء بالمندرين والبنفسج والباتشولي.",
+      "familyEn": "Amber floral",
+      "familyAr": "زهري عنبري",
+      "notesEn": "Mandarin, lilac, patchouli, amber",
+      "notesAr": "مندرين، بنفسج، باتشولي، عنبر",
+      "charEn": "Bold, sensual, and intense",
+      "charAr": "جريء وحسي ومكثف",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "8435137764730": {
+    "brandEn": "Prada",
+    "nameEn": "Prada L'Homme Intense Eau de Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Prada L'Homme Intense is a sophisticated iris-amber fragrance with iris, patchouli, and tonka bean for refined masculinity.",
+      "introAr": "برادا لهوم انتنس عطر رجالي بالسائبلية والعنبر يمزج السائبلية والباتشولي والتونكا بأناقة مصقولة.",
+      "familyEn": "Powdery amber",
+      "familyAr": "عنبري بودري",
+      "notesEn": "Iris, patchouli, tonka bean, amber",
+      "notesAr": "سائبلية، باتشولي، تونكا، عنبر",
+      "charEn": "Sophisticated, powdery, and elegant",
+      "charAr": "متطور وأنيق ومصقول",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "8034097956928": {
+    "brandEn": "Emanuel Ungaro",
+    "nameEn": "Ungaro Pour Homme Eau de Toilette 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Ungaro Pour Homme is a classic aromatic fougère with lavender, basil, and oakmoss for timeless masculine style.",
+      "introAr": "انغارو بور هوم عطر رجالي كلاسيكي عشبي بالخزامة والريحان وطحلب البلوط.",
+      "familyEn": "Aromatic fougère",
+      "familyAr": "عشبي فوجير",
+      "notesEn": "Lavender, basil, oakmoss, musk",
+      "notesAr": "خزامة، ريحان، طحلب البلوط، مسك",
+      "charEn": "Classic, aromatic, and timeless",
+      "charAr": "كلاسيكي وعشبي وخالد",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3508441001275": {
+    "brandEn": "Creed",
+    "nameEn": "Creed Aventus Cologne Eau de Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men",
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Creed Aventus Cologne is a fresher niche take on Aventus with pineapple, bergamot, and birch for vibrant luxury.",
+      "introAr": "كريد أفينتوس كولون عطر نيش منعش بالأناناس والبرغموت والخشب لفخامة نابضة.",
+      "familyEn": "Fruity chypre",
+      "familyAr": "فاكهي شيبر",
+      "notesEn": "Pineapple, bergamot, birch, musk",
+      "notesAr": "أناناس، برغموت، خشب، مسك",
+      "charEn": "Fresh, vibrant, and luxurious",
+      "charAr": "منعش ونابّض وفاخر",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3614273790840": {
+    "brandEn": "Valentino",
+    "nameEn": "Valentino Donna Born In Roma Intense Eau de Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": true
+    },
+    "p": {
+      "introEn": "Valentino Donna Born In Roma Intense is a bold vanilla-jasmine fragrance with bourbon vanilla and jasmine for modern glamour.",
+      "introAr": "دونا بورن إن روما انتنس من فالنتينو عطر نسائي جريء بالفانيلا والياسمين لبراقة عصرية.",
+      "familyEn": "Vanilla floral",
+      "familyAr": "فانيلا زهري",
+      "notesEn": "Bourbon vanilla, jasmine, benzoin",
+      "notesAr": "فانيلا، ياسمين، بنزوين",
+      "charEn": "Bold, glamorous, and modern",
+      "charAr": "جريء وفاخر وعصري",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3274872396197": {
+    "brandEn": "Givenchy",
+    "nameEn": "Givenchy Ange ou Démon Eau de Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Givenchy Ange ou Démon is a mysterious floral with saffron, lily, and tonka bean for dual feminine allure.",
+      "introAr": "أنج أو ديمون من جيفنشي عطر نسائي غامض بالزعفران والزنبق والتونكا لجذبية أنثوية مزدوجة.",
+      "familyEn": "Floral oriental",
+      "familyAr": "شرقي زهري",
+      "notesEn": "Saffron, lily, tonka bean, vanilla",
+      "notesAr": "زعفران، زنبق، تونكا، فانيلا",
+      "charEn": "Mysterious, sensual, and dual",
+      "charAr": "غامض وحسي ومزدوج",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3274872423398": {
+    "brandEn": "Kenzo",
+    "nameEn": "Kenzo Homme Eau de Parfum 110ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Kenzo Homme EDP is a deeper aquatic woody with mint, sea notes, and sandalwood for lasting fresh masculinity.",
+      "introAr": "كنزو هوم أو دو بارفيوم عطر بحري خشبي عميق بالنعناع ونوتات البحر وخشب الصندل.",
+      "familyEn": "Aquatic woody",
+      "familyAr": "بحري خشبي",
+      "notesEn": "Mint, sea notes, sandalwood, vetiver",
+      "notesAr": "نعناع، نوتات بحرية، خشب الصندل، فيتيفر",
+      "charEn": "Fresh, deep, and masculine",
+      "charAr": "منعش وعميق ورجالي",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3274872423336": {
+    "brandEn": "Kenzo",
+    "nameEn": "Kenzo Homme Eau de Toilette 110ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Kenzo Homme EDT is the iconic aquatic woody with bamboo, mint, and sea notes for fresh daily wear.",
+      "introAr": "كنزو هوم أو دو تواليت الأيقوني البحري الخشبي بالخوضة والنعناع ونوتات البحر.",
+      "familyEn": "Aquatic woody",
+      "familyAr": "بحري خشبي",
+      "notesEn": "Bamboo, mint, sea notes, cedar",
+      "notesAr": "خوضة، نعناع، نوتات بحرية، أرز",
+      "charEn": "Fresh, iconic, and easy to wear",
+      "charAr": "منعش وأيقوني وسهل",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "027131017752": {
+    "brandEn": "Estée Lauder",
+    "nameEn": "Estée Lauder Youth-Dew Eau de Parfum 67ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Estée Lauder Youth-Dew is a classic oriental spic fragrance with spices, rose, and amber for vintage elegance.",
+      "introAr": "يوث ديو من إستي لودر عطر شرقي كلاسيكي بالتوابل والورد والعنبر لأناقة تراثية.",
+      "familyEn": "Oriental spicy",
+      "familyAr": "شرقي عنبري",
+      "notesEn": "Spices, rose, amber, patchouli",
+      "notesAr": "توابل، ورد، عنبر، باتشولي",
+      "charEn": "Classic, warm, and timeless",
+      "charAr": "كلاسيكي ودافئ وخالد",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "027131020424": {
+    "brandEn": "Estée Lauder",
+    "nameEn": "Estée Lauder White Linen Eau de Parfum 60ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Estée Lauder White Linen is a crisp floral with aldehydes, jasmine, and sandalwood for clean classic femininity.",
+      "introAr": "وايت لينن من إستي لودر عطر نسائي زهري نقي بالياسمين وخشب الصندل لأناقة كلاسيكية نقية.",
+      "familyEn": "Floral aldehydic",
+      "familyAr": "زهري ألديهيدي",
+      "notesEn": "Aldehydes, jasmine, rose, sandalwood",
+      "notesAr": "ياسمين، ورد، خشب الصندل",
+      "charEn": "Crisp, clean, and classic",
+      "charAr": "نقي ونظيف وكلاسيكي",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "744109218965": {
+    "brandEn": "HiSmile",
+    "nameEn": "HiSmile V34 Teeth Whitening Serum 30ml",
+    "kind": "care",
+    "careLeaf": "care/mouth--teeth-care/teeth-whitening",
+    "typeKey": "toothpaste",
+    "c": {
+      "introEn": "HiSmile V34 Teeth Whitening Serum uses colour-correcting technology to brighten teeth and reduce yellow tones for a whiter smile.",
+      "introAr": "سيروم هاي سمايل لتبييض الأسنان بتقنية تصحيح اللون لإشراق الأسنان وتقليل الاصفرات.",
+      "catEn": "Oral care",
+      "catAr": "العناية بالفم والأسنان",
+      "typeEn": "Teeth whitening serum",
+      "typeAr": "سيروم تبييض",
+      "benefitsEn": [
+        "Colour-correcting formula",
+        "Brightens teeth",
+        "Easy application"
+      ],
+      "benefitsAr": [
+        "تصحيح اللون",
+        "إشراق الأسنان",
+        "سهولة الاستخدام"
+      ],
+      "suitEn": "Daily teeth brightening routine",
+      "suitAr": "روتين تبييض الأسنان اليومي",
+      "sizeEn": "30 ml",
+      "sizeAr": "30 مل"
+    }
+  },
+  "7702018070732": {
+    "brandEn": "Gillette Venus",
+    "nameEn": "Gillette Venus Simply 3 Disposable Razors 12-Pack",
+    "kind": "care",
+    "careLeaf": "care/women-care/women-hair-removal",
+    "typeKey": "razor",
+    "c": {
+      "introEn": "Gillette Venus Simply 3 Disposable Razors provide a close comfortable shave with three blades and a moisture strip in a convenient 12-pack.",
+      "introAr": "موس حلاقة جيليت فينوس سيمبلي 3 شفرات للاستخدام الواحد مع شريط مرطب في عبوة 12 قطعة.",
+      "catEn": "Women's grooming",
+      "catAr": "عناية النساء",
+      "typeEn": "Disposable razors",
+      "typeAr": "موس حلاقة للاستخدام الواحد",
+      "benefitsEn": [
+        "3-blade shave",
+        "Moisture strip",
+        "12-pack value"
+      ],
+      "benefitsAr": [
+        "شفرات ثلاث",
+        "شريط مرطب",
+        "عبوة 12 قطعة"
+      ],
+      "suitEn": "Body hair removal",
+      "suitAr": "إزالة شعر الجسم",
+      "sizeEn": "12-pack",
+      "sizeAr": "12 قطعة"
+    }
+  },
+  "689304184595": {
+    "brandEn": "Anastasia Beverly Hills",
+    "nameEn": "Anastasia Contour Powder Kit Light-Medium",
+    "kind": "makeup",
+    "makeupSub": "face",
+    "m": {
+      "introEn": "Anastasia Contour Powder Kit Light-Medium includes six shades to sculpt, highlight, and define features with buildable natural finish.",
+      "introAr": "باليت كونتور باودر لايت تو مديوم من أناستاسيا بأستان لمة لنحت وإبراز وتحديد الملامح بتغطية طبيعية.",
+      "typeEn": "Contour powder kit",
+      "typeAr": "باليت كونتور باودر",
+      "benefitsEn": [
+        "Six versatile shades",
+        "Buildable coverage",
+        "Sculpts and highlights"
+      ],
+      "benefitsAr": [
+        "خمس درجات متعددة",
+        "تغطية قابلة للبناء",
+        "نحت وإبراز"
+      ],
+      "suitEn": "Face sculpting and contouring",
+      "suitAr": "نحت وتحديد الملامح"
+    }
+  },
+  "3700550218227": {
+    "brandEn": "Kilian",
+    "nameEn": "Kilian Love Don't Be Shy Eau de Parfum 50ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Kilian Love Don't Be Shy is a gourmand floral with orange blossom, marshmallow, and vanilla for sweet luxurious femininity.",
+      "introAr": "لوف دونت بي شاي من كيليان عطر نيش غورماند زهري بالبرتقال والمارشميلو والفانيلا.",
+      "familyEn": "Gourmand floral",
+      "familyAr": "زهري غورماند",
+      "notesEn": "Orange blossom, marshmallow, vanilla, neroli",
+      "notesAr": "زهر البرتقال، مارشميلو، فانيلا، نيرولي",
+      "charEn": "Sweet, playful, and luxurious",
+      "charAr": "حلو ومرح وفاخر",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3616303452247": {
+    "brandEn": "Roberto Cavalli",
+    "nameEn": "Roberto Cavalli Tobacco More Eau de Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": true
+    },
+    "p": {
+      "introEn": "Roberto Cavalli Tobacco More is a warm tobacco-vanilla fragrance with tobacco leaf, vanilla, and amber for bold sensuality.",
+      "introAr": "توباكو مور من روبرتو كفالي عطر نسائي دافئ بالتبغ والفانيلا والعنبر لحسية جريئة.",
+      "familyEn": "Tobacco vanilla",
+      "familyAr": "تبغ وفانيلا",
+      "notesEn": "Tobacco leaf, vanilla, amber, spices",
+      "notesAr": "تبغ، فانيلا، عنبر، توابل",
+      "charEn": "Warm, bold, and sensual",
+      "charAr": "دافئ وجريء وحسي",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3616303470654": {
+    "brandEn": "Roberto Cavalli",
+    "nameEn": "Roberto Cavalli Divine Oud Intense Eau de Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "isNiche": true,
+      "isUnisex": true
+    },
+    "p": {
+      "introEn": "Roberto Cavalli Divine Oud Intense is a rich oud-amber niche fragrance with oud, saffron, and amber for opulent depth.",
+      "introAr": "عود ديفاين انتنس من روبرتو كفالي عطر نيش عميق بالعود والزعفران والعنبر لفخامة فاخرة.",
+      "familyEn": "Oud amber",
+      "familyAr": "عود عنبري",
+      "notesEn": "Oud, saffron, amber, leather",
+      "notesAr": "عود، زعفران، عنبر، جلد",
+      "charEn": "Opulent, deep, and intense",
+      "charAr": "فاخر وعميق ومكثف",
+      "bestEn": "Evening and special occasions",
+      "bestAr": "السهرات والمناسبات الخاصة",
+      "longEn": "10+ hours",
+      "longAr": "أكثر من 10 ساعات"
+    }
+  },
+  "3616302038916": {
+    "brandEn": "Roberto Cavalli",
+    "nameEn": "Roberto Cavalli Woodiris Eau de Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Roberto Cavalli Woodiris is a woody floral with iris, cedarwood, and amber for sophisticated feminine elegance.",
+      "introAr": "وود إيريس من روبرتو كفالي زهري خشبي بالسائبلية والأرز والعنبر لأناقة نسائية رفيعة.",
+      "familyEn": "Woody floral",
+      "familyAr": "زهري خشبي",
+      "notesEn": "Iris, cedarwood, amber, musk",
+      "notesAr": "سائبلية، أرز، عنبر، مسك",
+      "charEn": "Sophisticated, woody, and elegant",
+      "charAr": "متطور وخشبي وأنيق",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3616301776154": {
+    "brandEn": "Roberto Cavalli",
+    "nameEn": "Roberto Cavalli Wild Incense Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "isNiche": true,
+      "isUnisex": true
+    },
+    "p": {
+      "introEn": "Roberto Cavalli Wild Incense Parfum is a smoky incense-amber niche scent with frankincense, amber, and woods for mystical depth.",
+      "introAr": "وايلد إنسينس بارفيوم من روبرتو كفالي عطر نيش بالبخور والعنبر والأخشاب لعمق صوفي.",
+      "familyEn": "Incense amber",
+      "familyAr": "عنبر بخور",
+      "notesEn": "Frankincense, amber, woods, spices",
+      "notesAr": "لبان، عنبر، أخشاب، توابل",
+      "charEn": "Smoky, mystical, and deep",
+      "charAr": "دخاني وصوفي وعميق",
+      "bestEn": "Evening and formal wear",
+      "bestAr": "السهرات والملابس الرسمية",
+      "longEn": "10+ hours",
+      "longAr": "أكثر من 10 ساعات"
+    }
+  },
+  "3616302038947": {
+    "brandEn": "Roberto Cavalli",
+    "nameEn": "Roberto Cavalli Frantic Rose Eau de Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": true
+    },
+    "p": {
+      "introEn": "Roberto Cavalli Frantic Rose is a vibrant rose fragrance with rose, peony, and musk for passionate femininity.",
+      "introAr": "فرانتيك روز من روبرتو كفالي عطر وردي نابّض بالورد والبيوني والمسك لأناقة نسائية شغوفة.",
+      "familyEn": "Floral rose",
+      "familyAr": "وردي",
+      "notesEn": "Rose, peony, musk, amber",
+      "notesAr": "ورد، بيوني، مسك، عنبر",
+      "charEn": "Vibrant, passionate, and floral",
+      "charAr": "نابّض وشغوف وزهري",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3616304668722": {
+    "brandEn": "Roberto Cavalli",
+    "nameEn": "Roberto Cavalli Royal Soul Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Roberto Cavalli Royal Soul Parfum is a luxurious white floral with tuberose, jasmine, and sandalwood for regal femininity.",
+      "introAr": "رويال سول بارفيوم من روبرتو كفالي زهري أبيض فاخر بالتيوبروز والياسمين وخشب الصندل لأناقة ملكية.",
+      "familyEn": "White floral",
+      "familyAr": "زهري أبيض",
+      "notesEn": "Tuberose, jasmine, sandalwood, musk",
+      "notesAr": "تيوبروز، ياسمين، خشب الصندل، مسك",
+      "charEn": "Regal, luxurious, and floral",
+      "charAr": "ملكي وفاخر وزهري",
+      "bestEn": "Daily wear and special occasions",
+      "bestAr": "الاستخدام اليومي والمناسبات",
+      "longEn": "6–10 hours with good longevity",
+      "longAr": "6–10 ساعات بثبات جيد"
+    }
+  },
+  "3386460132916": {
+    "brandEn": "Van Cleef & Arpels",
+    "nameEn": "Van Cleef & Arpels Moonlight Patchouli Le Parfum 75ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Van Cleef Moonlight Patchouli Le Parfum is a niche woody patchouli with rose, patchouli, and leather for dark elegant beauty.",
+      "introAr": "مونلايت باتشولي لي بارفيوم من فان كليف عطر نيش خشبي بالباتشولي والورد والجلد لجمال أنيق مظلم.",
+      "familyEn": "Woody patchouli",
+      "familyAr": "خشبي باتشولي",
+      "notesEn": "Rose, patchouli, leather, musk",
+      "notesAr": "ورد، باتشولي، جلد، مسك",
+      "charEn": "Dark, elegant, and sophisticated",
+      "charAr": "مظلم وأنيق ومتطور",
+      "bestEn": "Evening and special occasions",
+      "bestAr": "السهرات والمناسبات الخاصة",
+      "longEn": "8–12 hours",
+      "longAr": "8–12 ساعة"
+    }
+  }
+}

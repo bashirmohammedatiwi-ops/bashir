@@ -1,12 +1,12 @@
 "use client";
 
-import { Alert, Button, Collapse, Form, Space, Typography } from "antd";
-import { LinkTargetPicker } from "./LinkTargetPicker";
+import { Alert, Button, Form, Space, Typography } from "antd";
+import { SmartLinkPicker } from "./SmartLinkPicker";
 import { QUICK_LINK_PRESETS, summarizeItemLinks } from "./link-target";
 
 const { Text } = Typography;
 
-type EntityLists = Parameters<typeof LinkTargetPicker>[0]["entities"];
+type EntityLists = Parameters<typeof SmartLinkPicker>[0]["entities"];
 
 type Props = {
   entities: EntityLists;
@@ -61,28 +61,29 @@ export function TileItemsLinksPanel({ entities, itemLabel = "عنصر" }: Props)
             ))}
           </Space>
 
-          <Collapse
-            accordion
-            size="small"
-            className="hb-tile-links-collapse"
-            items={items.map((item, i) => {
+          <div className="hb-tile-links-rows">
+            {items.map((item, i) => {
               const hasLink = Boolean(item?.linkType || item?.link);
               const title = item?.title ? String(item.title).slice(0, 28) : "";
-              return {
-                key: String(i),
-                label: (
-                  <span className={hasLink ? "hb-tile-link-ok" : "hb-tile-link-missing"}>
+              return (
+                <div key={i} className="hb-tile-links-row">
+                  <div className={`hb-tile-links-row-title${hasLink ? " ok" : " missing"}`}>
                     {itemLabel} {i + 1}
                     {title ? ` · ${title}` : ""}
                     {hasLink ? " ✓" : " ⚠️"}
-                  </span>
-                ),
-                children: (
-                  <LinkTargetPicker prefix={["payload", "items", i]} entities={entities} optional />
-                ),
-              };
+                  </div>
+                  <SmartLinkPicker
+                    prefix={["payload", "items", i]}
+                    entities={entities}
+                    optional
+                    compact
+                    showQuickBar={false}
+                    showPreview={false}
+                  />
+                </div>
+              );
             })}
-          />
+          </div>
         </>
       )}
     </div>

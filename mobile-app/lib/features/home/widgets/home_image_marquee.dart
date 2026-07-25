@@ -11,6 +11,7 @@ class HomeImageMarquee extends StatefulWidget {
   final double speed;
   final double gap;
   final double radius;
+  final bool startFromEndInRtl;
 
   const HomeImageMarquee({
     super.key,
@@ -19,6 +20,7 @@ class HomeImageMarquee extends StatefulWidget {
     this.speed = 5,
     this.gap = 12,
     this.radius = 14,
+    this.startFromEndInRtl = false,
   });
 
   @override
@@ -82,10 +84,12 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
   Widget build(BuildContext context) {
     if (widget.images.isEmpty) return const SizedBox.shrink();
 
-    final isRtl = Directionality.of(context) == TextDirection.rtl;
+    final direction = Directionality.of(context);
+    final isRtl = direction == TextDirection.rtl;
+    final startFromEnd = widget.startFromEndInRtl && isRtl;
 
     Widget row = Row(
-      textDirection: Directionality.of(context),
+      textDirection: direction,
       mainAxisSize: MainAxisSize.min,
       children: [
         for (final img in widget.images) ...[
@@ -93,6 +97,12 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
           SizedBox(width: widget.gap),
         ],
       ],
+    );
+
+    final loop = Row(
+      textDirection: direction,
+      mainAxisSize: MainAxisSize.min,
+      children: [row, row],
     );
 
     return ClipRect(
@@ -105,11 +115,12 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
               (isRtl ? 1 : -1) * _ctrl.value * _loopWidth,
               0,
             ),
-            child: Row(
-              textDirection: Directionality.of(context),
-              mainAxisSize: MainAxisSize.min,
-              children: [row, row],
-            ),
+            child: startFromEnd
+                ? Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: loop,
+                  )
+                : loop,
           ),
         ),
       ),

@@ -1,0 +1,1262 @@
+{
+  "737052352060": {
+    "brandEn": "Hugo Boss",
+    "nameEn": "Hugo Boss Bottled Night EDT 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Hugo Boss Bottled Night is a dark woody aromatic with birch, cardamom, and musk for confident evening masculinity.",
+      "introAr": "بوتلد نايت من هوغو بوس عطر خشبي عطري داكن بالخشب والهيل والمسك لأناقة رجالية مسائية واثقة.",
+      "familyEn": "Floral amber",
+      "familyAr": "زهري عنبري",
+      "notesEn": "Pink pepper, jasmine, amber, vanilla, musk",
+      "notesAr": "فلفل وردي، ياسمين، عنبر، فانيلا، مسك",
+      "charEn": "Warm, radiant, sophisticated",
+      "charAr": "دافئ ومتوهج وراقٍ",
+      "bestEn": "Evening wear and cooler seasons",
+      "bestAr": "السهرات والفصول الباردة",
+      "longEn": "7–9 hours with moderate sillage",
+      "longAr": "7–9 ساعات بثبات جيد"
+    },
+    "brandAr": "هوغو بوس",
+    "nameAr": "هوغو بوس - بوتلد نايت أو دو تواليت 100 مل"
+  },
+  "8011530810023": {
+    "brandEn": "Trussardi",
+    "nameEn": "Trussardi Uomo EDT 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Trussardi Uomo is a classic Italian aromatic scent with citrus, geranium, and woods for timeless masculine elegance.",
+      "introAr": "أومو من تروساردي عطر عطري إيطالي كلاسيكي بالليمون والجيرانيوم والأخشاب لأناقة رجالية خالدة.",
+      "familyEn": "Amber aromatic",
+      "familyAr": "عنبري عطري",
+      "notesEn": "Mint, green apple, lemon, tonka bean, vanilla, amber, leather",
+      "notesAr": "نعناع، تفاح أخضر، ليمون، فول التونكا، فانيلا، عنبر، جلد",
+      "charEn": "Bold, sensual, powerful",
+      "charAr": "جريء وحسي وقوي",
+      "bestEn": "Night outs and special occasions",
+      "bestAr": "الخروج الليلي والمناسبات",
+      "longEn": "8–10 hours with strong projection",
+      "longAr": "8–10 ساعات بثبات قوي"
+    },
+    "brandAr": "تروساردي",
+    "nameAr": "تروساردي - أومو أو دو تواليت 100 مل"
+  },
+  "7640163970029": {
+    "brandEn": "Bentley",
+    "nameEn": "Bentley Infinite Intense EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Bentley Infinite Intense is a rich woody amber with spicy warmth and luxurious depth for the modern gentleman.",
+      "introAr": "إنفينايت إنتنس من بنتلي عطر عنبري خشبي غني ودافئ وعميق يمنح الرجل حضوراً قوياً.",
+      "familyEn": "Floral fruity",
+      "familyAr": "زهري فواكه",
+      "notesEn": "Bergamot, peach, rose, jasmine, musk, sandalwood",
+      "notesAr": "برغموت، خوخ، ورد، ياسمين، مسك، صندل",
+      "charEn": "Soft, feminine, elegant",
+      "charAr": "ناعم وأنثوي وأنيق",
+      "bestEn": "Daily wear and office",
+      "bestAr": "الاستخدام اليومي والعمل",
+      "longEn": "6–8 hours",
+      "longAr": "6–8 ساعات"
+    },
+    "brandAr": "بنتلي",
+    "nameAr": "بنتلي - إنفينايت إنتنس أو دو بارفيوم 100 مل"
+  },
+  "3614274143751": {
+    "brandEn": "Armani",
+    "nameEn": "Armani Acqua di Gio Elixir EDP 50ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men",
+      "isNew": true
+    },
+    "p": {
+      "introEn": "Armani Acqua di Gio Elixir intensifies the iconic marine scent with deeper amber and patchouli in a concentrated elixir.",
+      "introAr": "أكوا دي جيو إليكسير من أرماني يعمق العطر البحري الأيقوني بعنبر وباتشولي أغنى بتركيز إليكسير.",
+      "familyEn": "Woody aromatic",
+      "familyAr": "خشبي عطري",
+      "notesEn": "Cypress, vetiver, cashmere wood, musk, benzoin",
+      "notesAr": "سرو، فيتيفر، خشب كاشمير، مسك، بنزوين",
+      "charEn": "Dark, smoky, refined",
+      "charAr": "داكن ودخاني ومصقول",
+      "bestEn": "Evening wear and formal occasions",
+      "bestAr": "السهرات والمناسبات الرسمية",
+      "longEn": "8–10 hours",
+      "longAr": "8–10 ساعات"
+    },
+    "brandAr": "أرماني",
+    "nameAr": "أرماني - أكوا دي جيو إليكسير أو دو بارفيوم 50 مل"
+  },
+  "737052041353": {
+    "brandEn": "Hugo Boss",
+    "nameEn": "Hugo Boss Femme EDP 75ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Hugo Boss Femme is an elegant floral fruity fragrance with mandarin, black currant, and jasmine for modern femininity.",
+      "introAr": "فيم من هوغو بوس عطر زهري فاكهة أنيق بالمندرين والكشمش والياسمين لأنوثة عصرية.",
+      "familyEn": "Oriental amber",
+      "familyAr": "شرقي عنبري",
+      "notesEn": "Grapefruit, ginger, amber, tobacco, cedar",
+      "notesAr": "جريفروت، زنجبيل، عنبر، تبغ، أرز",
+      "charEn": "Warm, luxurious, charismatic",
+      "charAr": "دافئ وفاخر وجذاب",
+      "bestEn": "Evenings and cooler weather",
+      "bestAr": "السهرات والطقس البارد",
+      "longEn": "7–9 hours",
+      "longAr": "7–9 ساعات"
+    },
+    "brandAr": "هوغو بوس",
+    "nameAr": "هوغو بوس - فيم أو دو بارفيوم 75 مل"
+  },
+  "8690604111053": {
+    "brandEn": "Flormar",
+    "nameEn": "Flormar Lip Liner 205",
+    "kind": "makeup",
+    "makeupSub": "lips",
+    "m": {
+      "introEn": "Flormar Lip Liner 205 defines and shapes lips with a smooth, long-wearing formula in a versatile rose shade.",
+      "introAr": "محدد شفاه رقم 205 من فلورمار يحدّد ويشكّل الشفاه بتركيبة ناعمة طويلة الثبات بلون وردي متعدد الاستخدام.",
+      "typeEn": "Lip liner",
+      "typeAr": "محدد شفاه",
+      "benefitsEn": [
+        "Precise definition",
+        "Long-wearing",
+        "Smooth glide"
+      ],
+      "benefitsAr": [
+        "تحديد دقيق",
+        "ثبات طويل",
+        "انزلاق ناعم"
+      ],
+      "suitEn": "Defining and shaping lip contours",
+      "suitAr": "تحديد وتشكيل ملامح الشفاه"
+    },
+    "brandAr": "فلورمار",
+    "nameAr": "فلورمار - محدد شفاه رقم 205"
+  },
+  "3348901786393": {
+    "brandEn": "Dior",
+    "nameEn": "Dior Addict Purple Glow EDP 50ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Dior Addict Purple Glow is a luminous floral fruity scent with blackcurrant, rose, and musk for vibrant feminine charm.",
+      "introAr": "أديكت بيربل جلو من ديور عطر زهري فاكه مشع بالكشمش والورد والمسك لجذب أنثوي نابض.",
+      "familyEn": "Floral fruity",
+      "familyAr": "زهري فواكه",
+      "notesEn": "Bergamot, tiare flower, coconut, jasmine, musk",
+      "notesAr": "برغموت، زهر التيار، جوز الهند، ياسمين، مسك",
+      "charEn": "Tropical, sunny, joyful",
+      "charAr": "استوائي ومشمس ومبهج",
+      "bestEn": "Summer days and vacations",
+      "bestAr": "أيام الصيف والعطلات",
+      "longEn": "5–7 hours",
+      "longAr": "5–7 ساعات"
+    },
+    "brandAr": "ديور",
+    "nameAr": "ديور - أديكت بيربل جلو أو دو بارفيوم 50 مل"
+  },
+  "3348901786331": {
+    "brandEn": "Dior",
+    "nameEn": "Dior Addict Rosy Glow EDP 50ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Dior Addict Rosy Glow is a soft floral musk with rose, raspberry, and vanilla for a radiant feminine aura.",
+      "introAr": "أديكت روزي جلو من ديور عطر زهري مسكي ناعم بالورد والتوت والفانيلا لهائة أنثوية مشعة.",
+      "familyEn": "Floral",
+      "familyAr": "زهري",
+      "notesEn": "Pear, jasmine sambac, sandalwood, benzoin",
+      "notesAr": "كمثرى، ياسمين، صندل، بنزوين",
+      "charEn": "Radiant, joyful, modern floral",
+      "charAr": "مشع ومبهج وزهري عصري",
+      "bestEn": "Spring and daytime wear",
+      "bestAr": "الربيع والنهار",
+      "longEn": "6–8 hours",
+      "longAr": "6–8 ساعات"
+    },
+    "brandAr": "ديور",
+    "nameAr": "ديور - أديكت روزي جلو أو دو بارفيوم 50 مل"
+  },
+  "3614221031735": {
+    "brandEn": "Roberto Cavalli",
+    "nameEn": "Roberto Cavalli Splendid Vanilla EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Roberto Cavalli Splendid Vanilla wraps rich vanilla in white flowers and amber for opulent feminine warmth.",
+      "introAr": "سبلنديد فانيلا من روبرتو كفالي يلف الفانيلا بالزهور البيضاء والعنبر لدفء أنثوي فاخر.",
+      "familyEn": "Aquatic woody",
+      "familyAr": "مائي خشبي",
+      "notesEn": "Lemon, rose, tarragon, cedar, musk",
+      "notesAr": "ليمون، ورد، طرخون، أرز، مسك",
+      "charEn": "Fresh, clean, versatile",
+      "charAr": "منعش ونظيف ومتعدد",
+      "bestEn": "Daily wear and warm weather",
+      "bestAr": "الاستخدام اليومي والطقس الدافئ",
+      "longEn": "4–6 hours",
+      "longAr": "4–6 ساعات"
+    },
+    "brandAr": "روبرتو كفالي",
+    "nameAr": "روبرتو كفالي - سبلنديد فانيلا أو دو بارفيوم 100 مل"
+  },
+  "3274872456341": {
+    "brandEn": "Givenchy",
+    "nameEn": "Givenchy L'Interdit Rouge Ultime EDP 80ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Givenchy L'Interdit Rouge Ultime is a bold tuberose-amber fragrance with blood orange and sandalwood for dramatic allure.",
+      "introAr": "لانتردي روج ألتيم من جيفنشي عطر جريء بالتيوبيوز والعنبر والبرتقال لجذبية درامية.",
+      "familyEn": "Floral fruity",
+      "familyAr": "زهري فواكه",
+      "notesEn": "Bergamot, tiare, coconut, jasmine, musk",
+      "notesAr": "برغموت، زهر التيار، جوز الهند، ياسمين، مسك",
+      "charEn": "Tropical, light, joyful",
+      "charAr": "استوائي وخفيف ومبهج",
+      "bestEn": "Summer and casual wear",
+      "bestAr": "الصيف والاستخدام اليومي",
+      "longEn": "4–6 hours",
+      "longAr": "4–6 ساعات"
+    },
+    "brandAr": "جيفنشي",
+    "nameAr": "جيفنشي - لانتردي روج ألتيم أو دو بارفيوم 80 مل"
+  },
+  "3386460088190": {
+    "brandEn": "Van Cleef",
+    "nameEn": "Van Cleef Bois Doré EDP 75ml",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Van Cleef Bois Doré is a niche woody floral with mandarin, orange blossom, and cedar for refined unisex elegance.",
+      "introAr": "بوا دوري من فان كليف عطر نيش خشبي زهري بالمندرين وزهر البرتقال والأرز لأناقة راقية.",
+      "familyEn": "Fruity floral",
+      "familyAr": "فواكه زهرية",
+      "notesEn": "Lemon, mandarin, apple, jasmine, musk",
+      "notesAr": "ليمون، مندرين، تفاح، ياسمين، مسك",
+      "charEn": "Fresh, playful, sunny",
+      "charAr": "منعش ومرح ومشمس",
+      "bestEn": "Daytime and summer",
+      "bestAr": "النهار والصيف",
+      "longEn": "5–7 hours",
+      "longAr": "5–7 ساعات"
+    },
+    "brandAr": "فان كليف",
+    "nameAr": "فان كليف - بوا دوري أو دو بارفيوم 75 مل"
+  },
+  "3614273673846": {
+    "brandEn": "Armani",
+    "nameEn": "Armani My Way Floral EDP 90ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Armani My Way Floral celebrates blooming florals with bergamot, orange blossom, and vanilla for joyful femininity.",
+      "introAr": "ماي واي فلورال من أرماني يحتفي بالزهور المتفتحة والبرتقال والفانيلا لأنوثة مبتهجة.",
+      "familyEn": "Gourmand woody",
+      "familyAr": "غورماند خشبي",
+      "notesEn": "Cognac, oak, cinnamon, praline, vanilla",
+      "notesAr": "كونياك، بلوط، قرفة، حلوى البندق، فانيلا",
+      "charEn": "Warm, boozy, luxurious",
+      "charAr": "دافئ وفاخر وساحر",
+      "bestEn": "Evenings and cold weather",
+      "bestAr": "السهرات والطقس البارد",
+      "longEn": "8–10 hours",
+      "longAr": "8–10 ساعات"
+    },
+    "brandAr": "أرماني",
+    "nameAr": "أرماني - ماي واي فلورال أو دو بارفيوم 90 مل"
+  },
+  "3423222012700": {
+    "brandEn": "Narciso Rodriguez",
+    "nameEn": "Narciso Rodriguez Musc Noir EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Narciso Rodriguez Musc Noir is a sensual musk-floral with plum, heliotrope, and suede for mysterious femininity.",
+      "introAr": "مسك نوار من نارسيسو رودريغز عطر مسكي زهري حسي بالخوخ والهليوتروب والسيود لغموض أنثوي.",
+      "familyEn": "Aromatic woody",
+      "familyAr": "عطري خشبي",
+      "notesEn": "Sage, narcissus, vetiver, cedar, patchouli",
+      "notesAr": "مريمية، نرجس، فيتيفر، أرز، باتشولي",
+      "charEn": "Refined, modern, elegant",
+      "charAr": "راقٍ وعصري وأنيق",
+      "bestEn": "Office and evening wear",
+      "bestAr": "العمل والسهرات",
+      "longEn": "7–9 hours",
+      "longAr": "7–9 ساعات"
+    },
+    "brandAr": "نارسيسو رودريغز",
+    "nameAr": "نارسيسو رودريغز - مسك نوار أو دو بارفيوم 100 مل"
+  },
+  "3581000018679": {
+    "brandEn": "Nicolai",
+    "nameEn": "Nicolai Patchouli Intense EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Nicolai Patchouli Intense is a niche patchouli-centric scent with lavender, geranium, and amber for deep sophistication.",
+      "introAr": "باتشولي إنتنس من نيكولاي عطر نيش مركز على الباتشولي مع اللافندر والجيرانيوم والعنبر.",
+      "familyEn": "Floral oriental",
+      "familyAr": "زهري شرقي",
+      "notesEn": "Peach, apricot, tuberose, jasmine, vanilla, musk",
+      "notesAr": "خوخ، مشمش، تيوبروز، ياسمين، فانيلا، مسك",
+      "charEn": "Vibrant, sensual, classic",
+      "charAr": "نابض وحسي وكلاسيكي",
+      "bestEn": "Evening wear and special occasions",
+      "bestAr": "السهرات والمناسبات",
+      "longEn": "6–8 hours",
+      "longAr": "6–8 ساعات"
+    },
+    "brandAr": "نيكولاي",
+    "nameAr": "نيكولاي - باتشولي إنتنس أو دو بارفيوم 100 مل"
+  },
+  "3386460066075": {
+    "brandEn": "Boucheron",
+    "nameEn": "Boucheron Quatre EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Boucheron Quatre is a modern floral fruity fragrance with apple, jasmine, and cedar for elegant everyday femininity.",
+      "introAr": "كواتر من بوشرون عطر زهري فاكه عصري بالتفاح والياسمين والأرز لأناقة يومية.",
+      "familyEn": "Green woody",
+      "familyAr": "أخضر خشبي",
+      "notesEn": "Bergamot, green notes, cedar, vetiver, musk",
+      "notesAr": "برغموت، نوتات خضراء، أرز، فيتيفر، مسك",
+      "charEn": "Fresh, natural, serene",
+      "charAr": "منعش وطبيعي وهادئ",
+      "bestEn": "Daily wear for nature lovers",
+      "bestAr": "الاستخدام اليومي",
+      "longEn": "6–8 hours",
+      "longAr": "6–8 ساعات"
+    },
+    "brandAr": "بوشرون",
+    "nameAr": "بوشرون - كواتر بور فيم أو دو بارفيوم 100 مل"
+  },
+  "8005610328799": {
+    "brandEn": "Gucci",
+    "nameEn": "Gucci Rush EDT 75ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Gucci Rush is an iconic bold chypre floral with peach, gardenia, and patchouli for unforgettable feminine impact.",
+      "introAr": "راش من قوتشي عطر شيبري زهري جريء بالخوخ والجاردينيا والباتشولي لتأثير أنثوي لا يُنسى.",
+      "familyEn": "Aromatic fougere",
+      "familyAr": "عطري خشبي",
+      "notesEn": "Pine, pink pepper, mineral notes, patchouli",
+      "notesAr": "صنوبر، فلفل وردي، نوتات معدنية، باتشولي",
+      "charEn": "Crisp, atmospheric, unisex",
+      "charAr": "منعش وجوي ومتعدد",
+      "bestEn": "Cool evenings and layering",
+      "bestAr": "الأمسيات الباردة",
+      "longEn": "5–7 hours",
+      "longAr": "5–7 ساعات"
+    },
+    "brandAr": "قوتشي",
+    "nameAr": "قوتشي - راش أو دو تواليت 75 مل"
+  },
+  "3423478812154": {
+    "brandEn": "Narciso Rodriguez",
+    "nameEn": "Narciso Rodriguez Rose Musc EDP Intense 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Narciso Rodriguez Rose Musc Intense amplifies rose and musk with amber and patchouli for rich feminine depth.",
+      "introAr": "روز مسك إنتنس من نارسيسو رودريغز يعزز الورد والمسك مع العنبر والباتشولي لعمق أنثوي.",
+      "familyEn": "Leather floral",
+      "familyAr": "جلد زهري",
+      "notesEn": "Iris, patchouli, leather, benzoin, vanilla",
+      "notesAr": "سوسن، باتشولي، جلد، بنزوين، فانيلا",
+      "charEn": "Elegant, leathery, refined",
+      "charAr": "أنيق وجلدي ومصقول",
+      "bestEn": "Fall/winter and formal wear",
+      "bestAr": "الخريف والمناسبات",
+      "longEn": "8–10 hours",
+      "longAr": "8–10 ساعات"
+    },
+    "brandAr": "نارسيسو رودريغز",
+    "nameAr": "نارسيسو رودريغز - روز مسك إنتنس أو دو بارفيوم 100 مل"
+  },
+  "724120095653": {
+    "brandEn": "Thameen",
+    "nameEn": "Thameen Amber Room EDP 50ml",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Thameen Amber Room is a niche amber-spice fragrance with cinnamon, benzoin, and oud for regal unisex warmth.",
+      "introAr": "عنبر روم من ثمين عطر نيش عنبري توابلي بالقرفة والبنزوين والعود لدفء ملكي.",
+      "familyEn": "Amber spicy",
+      "familyAr": "عنبري توابل",
+      "notesEn": "Ginger, vanilla, lavender, woody amber",
+      "notesAr": "زنجبيل، فانيلا، خزامى، عنبر خشبي",
+      "charEn": "Warm, modern, luxurious",
+      "charAr": "دافئ وعصري وفاخر",
+      "bestEn": "Evenings and special occasions",
+      "bestAr": "السهرات",
+      "longEn": "7–9 hours",
+      "longAr": "7–9 ساعات"
+    },
+    "brandAr": "ثمين",
+    "nameAr": "ثمين - عنبر روم أو دو بارفيوم 50 مل"
+  },
+  "3614274350753": {
+    "brandEn": "Valentino",
+    "nameEn": "Valentino Donna Born In Roma Extradose Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": true
+    },
+    "p": {
+      "introEn": "Valentino Donna Born In Roma Extradose is an intense vanilla-amber scent with jasmine and benzoin for bold femininity.",
+      "introAr": "دونا بورن إن روما إكسترا دوز من فالنتينو عطر فانيلا عنبري مكثف بالياسمين والبنزوين لأنوثة جريئة.",
+      "familyEn": "Vanilla floral",
+      "familyAr": "فانيلا زهري",
+      "notesEn": "Jasmine, vanilla, benzoin, musk",
+      "notesAr": "ياسمين، فانيلا، بنزوين، مسك",
+      "charEn": "Radiant, sweet, elegant",
+      "charAr": "مشع وحلو وأنيق",
+      "bestEn": "Evening wear and dates",
+      "bestAr": "السهرات والمناسبات",
+      "longEn": "7–9 hours",
+      "longAr": "7–9 ساعات"
+    },
+    "brandAr": "فالنتينو",
+    "nameAr": "فالنتينو - دونا بورن إن روما إكسترا دوز بارفيوم 100 مل"
+  },
+  "3574661177137": {
+    "brandEn": "Listerine",
+    "nameEn": "Listerine Cool Mint Mouthwash 500ml",
+    "kind": "care",
+    "careLeaf": "care/mouth--teeth-care/mouthwash",
+    "typeKey": "mouthwash",
+    "c": {
+      "introEn": "Listerine Cool Mint Mouthwash kills germs and freshens breath with a cooling mint formula for daily oral care.",
+      "introAr": "غسول فم ليسترين بالنعناع المنعش يقضي على الجراثيم وينعش الفم بتركيبة منعشة للعناية اليومية.",
+      "catEn": "Mouth care",
+      "catAr": "العناية بالفم",
+      "typeEn": "Mouthwash",
+      "typeAr": "غسول فم",
+      "benefitsEn": [
+        "Kills germs",
+        "Fresh breath",
+        "Cooling mint"
+      ],
+      "benefitsAr": [
+        "يقضي على الجراثيم",
+        "نعاة الفم",
+        "نعناع منعش"
+      ],
+      "suitEn": "Daily oral hygiene",
+      "suitAr": "النظافة الفموية اليومية",
+      "sizeEn": "500 ml",
+      "sizeAr": "500 مل"
+    },
+    "brandAr": "ليسترين",
+    "nameAr": "ليسترين - غسول فم بالنعناع المنعش 500 مل"
+  },
+  "3606000537460": {
+    "brandEn": "CeraVe",
+    "nameEn": "CeraVe Moisturising Lotion SPF 30",
+    "kind": "care",
+    "careLeaf": "care/sun-care/sunscreen",
+    "typeKey": "sunscreen",
+    "c": {
+      "introEn": "CeraVe Moisturising Lotion SPF 30 hydrates skin while providing broad-spectrum sun protection with ceramides.",
+      "introAr": "لوشن سيرافي المرطب بعامل حماية 30 يرطب البشرة ويوفر حماية واسعة من أشعة الشمس بالسيراميد.",
+      "catEn": "Sun care",
+      "catAr": "العناية بالشمس",
+      "typeEn": "Sunscreen lotion",
+      "typeAr": "لوشن وقاية شمس",
+      "benefitsEn": [
+        "SPF 30 protection",
+        "Ceramides",
+        "Daily hydration"
+      ],
+      "benefitsAr": [
+        "حماية 30",
+        "سيراميد",
+        "ترطيب يومي"
+      ],
+      "suitEn": "Face and body daily sun care",
+      "suitAr": "الوجه والجسم للحماية اليومية من الشمس",
+      "sizeEn": "SPF 30",
+      "sizeAr": "عامل حماية 30"
+    },
+    "brandAr": "سيرافي",
+    "nameAr": "سيرافي - لوشن مرطب بعامل حماية 30 من الشمس"
+  },
+  "8051277318536": {
+    "brandEn": "The House of Oud",
+    "nameEn": "The House of Oud Grape Pearls EDP 75ml",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "The House of Oud Grape Pearls is a niche fruity floral with grape, pear, and musk for playful luxury.",
+      "introAr": "جريب بيرل من ذا هاوس أوف عود عطر نيش زهري فاكه بالعنب والكمثرى والمسك لفخامة مرحة.",
+      "familyEn": "Aquatic woody",
+      "familyAr": "مائي خشبي",
+      "notesEn": "Sea salt, driftwood, bergamot, cedar, musk",
+      "notesAr": "ملح البحر، خشب طافٍ، برغموت، أرز، مسك",
+      "charEn": "Artistic, fresh, unconventional",
+      "charAr": "فني ومنعش وغير تقليدي",
+      "bestEn": "Creative wear and layering",
+      "bestAr": "إطلالات إبداعية",
+      "longEn": "6–8 hours",
+      "longAr": "6–8 ساعات"
+    },
+    "brandAr": "ذا هاوس أوف عود",
+    "nameAr": "ذا هاوس أوف عود - جريب بيرل أو دو بارفيوم 75 مل"
+  },
+  "8051277318642": {
+    "brandEn": "The House of Oud",
+    "nameEn": "The House of Oud Just Before EDP 75ml",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "The House of Oud Just Before is a niche amber-woody scent with bergamot, incense, and vanilla for contemplative depth.",
+      "introAr": "جست بيفور من ذا هاوس أوف عود عطر نيش عنبري خشبي بالبرتقال والبخور والفانيلا لعمق تأملي.",
+      "familyEn": "Amber fougere",
+      "familyAr": "عنبري عطري",
+      "notesEn": "Grapefruit, amber, vanilla, tonka, patchouli",
+      "notesAr": "جريفروت، عنبر، فانيلا، تونكا، باتشولي",
+      "charEn": "Powerful, sweet, bold",
+      "charAr": "قوي وجريء",
+      "bestEn": "Night outs and parties",
+      "bestAr": "الحفلات والخروج",
+      "longEn": "8–10 hours",
+      "longAr": "8–10 ساعات"
+    },
+    "brandAr": "ذا هاوس أوف عود",
+    "nameAr": "ذا هاوس أوف عود - جست بيفور أو دو بارفيوم 75 مل"
+  },
+  "8056669925897": {
+    "brandEn": "Dolce & Gabbana",
+    "nameEn": "Dolce & Gabbana The One For Men Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Dolce & Gabbana The One For Men Parfum is a warm amber-tobacco scent with ginger and cedar for powerful masculinity.",
+      "introAr": "ذا ون فور من من دولتشي غابانا عطر عنبري دافئ بالتبغ والزنجبيل والأرز لقوة رجالية.",
+      "familyEn": "Powdery floral",
+      "familyAr": "زهري بودري",
+      "notesEn": "Rose, peony, musk, sandalwood, vanilla",
+      "notesAr": "ورد، زهر الفايونيا، مسك، صندل، فانيلا",
+      "charEn": "Soft, sensual, graceful",
+      "charAr": "ناعم وحسي ورشيق",
+      "bestEn": "Daily and office wear",
+      "bestAr": "اليومي والعمل",
+      "longEn": "6–8 hours",
+      "longAr": "6–8 ساعات"
+    },
+    "brandAr": "دولتشي غابانا",
+    "nameAr": "دولتشي غابانا - ذا ون فور من بارفيوم 100 مل"
+  },
+  "3616303445584": {
+    "brandEn": "Chloé",
+    "nameEn": "Chloé Eau de Parfum Intense 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Chloé Eau de Parfum Intense is a rich rose-honey fragrance with amber and patchouli for sophisticated femininity.",
+      "introAr": "أو دي بارفيوم إنتنس من كلوي عطر وردي غني بالعسل والعنبر والباتشولي لأناقة راقية.",
+      "familyEn": "Woody oud",
+      "familyAr": "خشبي عود",
+      "notesEn": "Oud, rosewood, cardamom, sandalwood, amber",
+      "notesAr": "عود، خشب الورد، هيل، صندل، عنبر",
+      "charEn": "Luxurious, smoky, refined",
+      "charAr": "فاخر ودخاني ومصقول",
+      "bestEn": "Evening wear and special occasions",
+      "bestAr": "السهرات",
+      "longEn": "8–10 hours",
+      "longAr": "8–10 ساعات"
+    },
+    "brandAr": "كلوي",
+    "nameAr": "كلوي - أو دي بارفيوم إنتنس 100 مل"
+  },
+  "3614272898301": {
+    "brandEn": "Lancôme",
+    "nameEn": "Lancôme Rose Peonia EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Lancôme Rose Peonia blends peony, rose, and musk in a luminous floral for romantic everyday elegance.",
+      "introAr": "روز بيونيا من لانكوم يمزج البيونيا والورد والمسك في زهري مشع لأناقة رومانسية.",
+      "familyEn": "Exotic floral",
+      "familyAr": "زهري غريب",
+      "notesEn": "Pomegranate, persimmon, orchid, amber, mahogany",
+      "notesAr": "رمان، فاكهة الكاكي، أوركيد، عنبر، خشب أحمر",
+      "charEn": "Bold, exotic, sensual",
+      "charAr": "جريء وغريب وحسي",
+      "bestEn": "Evenings and dates",
+      "bestAr": "السهرات",
+      "longEn": "6–8 hours",
+      "longAr": "6–8 ساعات"
+    },
+    "brandAr": "لانكوم",
+    "nameAr": "لانكوم - روز بيونيا أو دو بارفيوم 100 مل"
+  },
+  "5057566220828": {
+    "brandEn": "Makeup Revolution",
+    "nameEn": "Makeup Revolution Reloaded Palette",
+    "kind": "makeup",
+    "makeupSub": "eyes",
+    "m": {
+      "introEn": "Makeup Revolution Reloaded Palette features versatile eyeshadow shades for everyday and evening eye looks.",
+      "introAr": "باليت ظلال عيون ريلودد من ريفولوشن يضم ألواناً متعددة لإطلالات العيون اليومية والمسائية.",
+      "typeEn": "Eyeshadow palette",
+      "typeAr": "باليت ظلال عيون",
+      "benefitsEn": [
+        "Versatile shades",
+        "Blendable formula",
+        "Day-to-night looks"
+      ],
+      "benefitsAr": [
+        "ألوان متعددة",
+        "قابل للدمج",
+        "إطلالات يوم ومساء"
+      ],
+      "suitEn": "Creating versatile eye makeup looks",
+      "suitAr": "إطلالات متنوعة للعيون"
+    },
+    "brandAr": "ريفولوشن",
+    "nameAr": "ريفولوشن - باليت ظلال عيون ريلودد"
+  },
+  "3614271717092": {
+    "brandEn": "YSL",
+    "nameEn": "YSL Y Deodorant Stick 75g",
+    "kind": "care",
+    "careLeaf": "care/skin-and-body-care/deodorant",
+    "typeKey": "deodorant",
+    "c": {
+      "introEn": "YSL Y Deodorant Stick provides long-lasting freshness and protection with the signature Y fragrance.",
+      "introAr": "مزيل عرق واي ستيك من إيف سان لوران يوفر انتعاشاً وحماية طويلة الأمد بعبير واي الأصلي.",
+      "catEn": "Body care",
+      "catAr": "عناية الجسم",
+      "typeEn": "Deodorant stick",
+      "typeAr": "مزيل عرق ستيك",
+      "benefitsEn": [
+        "Long-lasting freshness",
+        "48-hour protection",
+        "Signature Y scent"
+      ],
+      "benefitsAr": [
+        "انتعاش طويل",
+        "حماية متواصلة",
+        "عبير واي الأصلي"
+      ],
+      "suitEn": "Daily underarm protection",
+      "suitAr": "الحماية اليومية تحت الإبط",
+      "sizeEn": "75 g",
+      "sizeAr": "75 جم"
+    },
+    "brandAr": "إيف سان لوران",
+    "nameAr": "إيف سان لوران - مزيل عرق واي ستيك 75 جم"
+  },
+  "7640111494027": {
+    "brandEn": "Grès",
+    "nameEn": "Grès Cabotine EDT 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Grès Cabotine is a classic green floral with hyacinth, rose, and sandalwood for timeless feminine grace.",
+      "introAr": "كابوتين من جريس عطر زهري أخضر كلاسيكي بالزهرة والورد والصندل لأناقة خالدة.",
+      "familyEn": "Woody floral",
+      "familyAr": "خشبي زهري",
+      "notesEn": "Peach, patchouli, jasmine, vanilla, musk",
+      "notesAr": "خوخ، باتشولي، ياسمين، فانيلا، مسك",
+      "charEn": "Opulent, warm, sophisticated",
+      "charAr": "فاخر ودافئ وراقٍ",
+      "bestEn": "Evening and fall/winter",
+      "bestAr": "السهرات والخريف",
+      "longEn": "7–9 hours",
+      "longAr": "7–9 ساعات"
+    },
+    "brandAr": "جريس",
+    "nameAr": "جريس - كابوتين أو دو تواليت 100 مل"
+  },
+  "3600524070113": {
+    "brandEn": "L'Oreal",
+    "nameEn": "L'Oreal Prime Lab Pore Minimizer 30ml",
+    "kind": "makeup",
+    "makeupSub": "face",
+    "m": {
+      "introEn": "L'Oreal Prime Lab Pore Minimizer blurs pores and mattifies skin for a smooth makeup base.",
+      "introAr": "برايمر لاب لتقليل المسام من لوريال يُطَفِي المسام ويُمَطِّف البشرة قاعدة ماكياج ناعمة.",
+      "typeEn": "Face primer",
+      "typeAr": "برايمر وجه",
+      "benefitsEn": [
+        "Minimizes pores",
+        "Mattifying finish",
+        "Smooth base"
+      ],
+      "benefitsAr": [
+        "تقليل المسام",
+        "لمسة مطفية",
+        "قاعدة ناعمة"
+      ],
+      "suitEn": "Oily skin and large pores",
+      "suitAr": "البشرة الزيتية والمسام الواسعة"
+    },
+    "brandAr": "لوريال",
+    "nameAr": "لوريال - برايمر لاب لتقليل المسام 30 مل"
+  },
+  "3605521651587": {
+    "brandEn": "Maison Margiela",
+    "nameEn": "Maison Margiela Replica Beach Walk EDT 100ml",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Maison Margiela Replica Beach Walk evokes sun and sea with coconut, bergamot, and musk for breezy unisex joy.",
+      "introAr": "ريبليكا بيتش ووك من ميزون مارجييلا يجسد الشمس والبحر بجوز الهند والبرتقال والمسك لفرح علوي.",
+      "familyEn": "Leather floral",
+      "familyAr": "جلد زهري",
+      "notesEn": "Raspberry, orchid, leather, suede, musk",
+      "notesAr": "توت، أوركيد، جلد، مخمل، مسك",
+      "charEn": "Luxurious, leathery, elegant",
+      "charAr": "فاخر وجلدي وأنيق",
+      "bestEn": "Cool weather and formal events",
+      "bestAr": "الطقس البارد والمناسبات",
+      "longEn": "8–10 hours",
+      "longAr": "8–10 ساعات"
+    },
+    "brandAr": "ميزون مارجييلا",
+    "nameAr": "ميزون مارجييلا - ريبليكا بيتش ووك أو دو تواليت 100 مل"
+  },
+  "30144224": {
+    "brandEn": "Maybelline",
+    "nameEn": "Maybelline Lash Sensational Firework Mascara",
+    "kind": "makeup",
+    "makeupSub": "eyes",
+    "m": {
+      "introEn": "Maybelline Lash Sensational Firework Mascara delivers explosive volume and length with a fanning brush.",
+      "introAr": "ماسكارا لاش سينشنال فايروورك من مايبيلين تمنح كثافة وطولاً مرتفعين بفرشاة مروحية.",
+      "typeEn": "Volumizing mascara",
+      "typeAr": "ماسكارا للكثافة",
+      "benefitsEn": [
+        "Fanning brush",
+        "Explosive volume",
+        "Length boost"
+      ],
+      "benefitsAr": [
+        "فرشاة مروحية",
+        "كثافة عالية",
+        "إطالة الطول"
+      ],
+      "suitEn": "Dramatic lash volume and length",
+      "suitAr": "كثافة وطول درامي للرموش"
+    },
+    "brandAr": "مايبيلين",
+    "nameAr": "مايبيلين - ماسكارا لاش سينشنال فايروورك"
+  },
+  "3614272544444": {
+    "brandEn": "Armani",
+    "nameEn": "Armani Code Absolu EDP 75ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Armani Code Absolu is a warm oriental vanilla scent with tonka, suede, and woods for sensual femininity.",
+      "introAr": "كود أبسولو من أرماني عطر شرقي دافئ بالفانيلا وحبوب التونكا والأخشاب لأنوثة حسية.",
+      "familyEn": "Aromatic marine",
+      "familyAr": "عطري بحري",
+      "notesEn": "Bergamot, herbs, sea notes, musk, amber",
+      "notesAr": "برغموت، أعشاب، نوتات بحرية، مسك، عنبر",
+      "charEn": "Fresh, coastal, artistic",
+      "charAr": "منعش وساحلي وفني",
+      "bestEn": "Warm weather and daytime",
+      "bestAr": "الطقس الدافئ",
+      "longEn": "10–12 hours",
+      "longAr": "10–12 ساعة"
+    },
+    "brandAr": "أرماني",
+    "nameAr": "أرماني - كود أبسولو بور فيم أو دو بارفيوم 75 مل"
+  },
+  "3614225358463": {
+    "brandEn": "Calvin Klein",
+    "nameEn": "Calvin Klein Women EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Calvin Klein Women is a modern floral with bergamot, peony, and white musk for clean feminine confidence.",
+      "introAr": "ويمن من كالفن كلاين عطر زهري عصري بالبرتقال والبيونيا والمسك الأبيض لثقة أنثوية.",
+      "familyEn": "Oriental vanilla",
+      "familyAr": "شرقي فانيلا",
+      "notesEn": "Ginger, bergamot, vanilla, sandalwood, musk",
+      "notesAr": "زنجبيل، برغموت، فانيلا، صندل، مسك",
+      "charEn": "Warm, gourmand, enveloping",
+      "charAr": "دافئ وغني ومحيط",
+      "bestEn": "Cold weather and evenings",
+      "bestAr": "الطقس البارد",
+      "longEn": "10–12 hours",
+      "longAr": "10–12 ساعة"
+    },
+    "brandAr": "كالفن كلاين",
+    "nameAr": "كالفن كلاين - ويمن أو دو بارفيوم 100 مل"
+  },
+  "3700134410542": {
+    "brandEn": "G Parfums",
+    "nameEn": "G Parfums Yes I Am The King EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "G Parfums Yes I Am The King is a bold spicy amber fragrance with cinnamon, leather, and vanilla for royal masculinity.",
+      "introAr": "نعم أنا الملك من جي بارفوم عطر عنبري جريء بالقرفة والجلد والفانيلا لملكية رجالية.",
+      "familyEn": "Woody gourmand",
+      "familyAr": "خشبي غورماند",
+      "notesEn": "Pineapple, bergamot, cedar, whiskey, caramel, vanilla",
+      "notesAr": "أناناس، برغموت، أرز، وسكي، كراميل، فانيلا",
+      "charEn": "Bold, boozy, vibrant",
+      "charAr": "جريء وفني ونابض",
+      "bestEn": "Statement wear and evenings",
+      "bestAr": "السهرات",
+      "longEn": "10–12 hours",
+      "longAr": "10–12 ساعة"
+    },
+    "brandAr": "جي بارفوم",
+    "nameAr": "جي بارفوم - نعم أنا الملك أو دو بارفوم 100 مل"
+  },
+  "3770010614616": {
+    "brandEn": "Essential Parfums",
+    "nameEn": "Essential Parfums The Musc EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Essential Parfums The Musc is a clean niche musk scent with bergamot, jasmine, and sandalwood for effortless unisex elegance.",
+      "introAr": "ذا مسك من إسينشيال بارفيومز عطر نيش مسكي نقي بالبرتقال والياسمين والصندل لأناقة علوية.",
+      "familyEn": "Woody leather",
+      "familyAr": "خشبي جلدي",
+      "notesEn": "Pineapple, bergamot, patchouli, saffron, leather, oud",
+      "notesAr": "أناناس، برغموت، باتشولي، زعفران، جلد، عود",
+      "charEn": "Rich, leathery, sophisticated",
+      "charAr": "غني وجلدي وراقي",
+      "bestEn": "Evening wear and cooler seasons",
+      "bestAr": "السهرات",
+      "longEn": "10–12 hours",
+      "longAr": "10–12 ساعة"
+    },
+    "brandAr": "إسينشيال بارفيومز",
+    "nameAr": "إسينشيال بارفيومز - ذا مسك أو دو بارفيوم 100 مل"
+  },
+  "3348901426961": {
+    "brandEn": "Dior",
+    "nameEn": "Dior J'adore Roller Pearl EDP 20ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Dior J'adore Roller Pearl is a portable luminous floral with ylang-ylang, rose, and jasmine for radiant femininity.",
+      "introAr": "جادور رولر بيرل من ديور عطر زهري مشع قابل للحمل باليلانغ يلانج والورد والياسمين لإشراق أنثوي.",
+      "familyEn": "Floral amber",
+      "familyAr": "زهري عنبري",
+      "notesEn": "Pink pepper, jasmine, amber, vanilla, musk",
+      "notesAr": "فلفل وردي، ياسمين، عنبر، فانيلا، مسك",
+      "charEn": "Warm, radiant, sophisticated",
+      "charAr": "دافئ ومتوهج وراقٍ",
+      "bestEn": "Evening wear and cooler seasons",
+      "bestAr": "السهرات والفصول الباردة",
+      "longEn": "7–9 hours with moderate sillage",
+      "longAr": "7–9 ساعات بثبات جيد"
+    },
+    "brandAr": "ديور",
+    "nameAr": "ديور - جادور رولر بيرل أو دو بارفيوم 20 مل"
+  },
+  "769915194951": {
+    "brandEn": "The Ordinary",
+    "nameEn": "The Ordinary Niacinamide 10% + Zinc 1% 60ml",
+    "kind": "care",
+    "careLeaf": "care/face-care/face-moisturizer",
+    "typeKey": "serum",
+    "c": {
+      "introEn": "The Ordinary Niacinamide 10% + Zinc 1% serum helps reduce blemishes, refine pores, and balance oily skin.",
+      "introAr": "سيروم نياسيناميد 10% + زنك 1% من ذا أوردنري يساعد على تقليل الشوائب وتنقية المسام وتوازن البشرة الزيتية.",
+      "catEn": "Face care",
+      "catAr": "عناية الوجه",
+      "typeEn": "Serum",
+      "typeAr": "سيروم",
+      "benefitsEn": [
+        "Niacinamide 10%",
+        "Zinc 1%",
+        "Refines pores"
+      ],
+      "benefitsAr": [
+        "نياسيناميد 10%",
+        "زنك 1%",
+        "تنقية المسام"
+      ],
+      "suitEn": "Oily and blemish-prone skin",
+      "suitAr": "البشرة الزيتية والمعرضة للشوائب",
+      "sizeEn": "60 ml",
+      "sizeAr": "60 مل"
+    },
+    "brandAr": "ذا أوردينري",
+    "nameAr": "ذا أوردينري - سيروم نياسيناميد 10% + زنك 1% 60 مل"
+  },
+  "8809634610027": {
+    "brandEn": "Axis-Y",
+    "nameEn": "Axis-Y Quinoa One Step Gel Cleanser 180ml",
+    "kind": "care",
+    "careLeaf": "care/korean-skincare/skin-care",
+    "typeKey": "cleanser",
+    "c": {
+      "introEn": "Axis-Y Quinoa One Step Gel Cleanser gently cleanses with quinoa extract and centella for balanced Korean skincare.",
+      "introAr": "جل منظف بالكينوا من أكسيس واي ينظف بلطف بمستخلص الكينوا والسنتيلا لعناية كورية متوازنة.",
+      "catEn": "Korean skincare",
+      "catAr": "العناية الكورية",
+      "typeEn": "Gel cleanser",
+      "typeAr": "جل منظف",
+      "benefitsEn": [
+        "Quinoa extract",
+        "Centella asiatica",
+        "One-step cleanse"
+      ],
+      "benefitsAr": [
+        "مستخلص الكينوا",
+        "السنتيلا",
+        "تنظيف بخطوة واحدة"
+      ],
+      "suitEn": "All skin types",
+      "suitAr": "جميع أنواع البشرة",
+      "sizeEn": "180 ml",
+      "sizeAr": "180 مل"
+    },
+    "brandAr": "أكسيس واي",
+    "nameAr": "أكسيس واي - جل منظف بالكينوا 180 مل"
+  },
+  "783320403897": {
+    "brandEn": "Bvlgari",
+    "nameEn": "Bvlgari Man Wood Neroli EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Bvlgari Man Wood Neroli is a woody citrus scent with neroli, bergamot, and vetiver for refined masculine freshness.",
+      "introAr": "من وود نيرولي من بولغاري عطر خشبي حملي بالنيرولي والبرتقال والفيتيفر لانعواش رجالي مصقول.",
+      "familyEn": "Amber aromatic",
+      "familyAr": "عنبري عطري",
+      "notesEn": "Mint, green apple, lemon, tonka bean, vanilla, amber, leather",
+      "notesAr": "نعناع، تفاح أخضر، ليمون، فول التونكا، فانيلا، عنبر، جلد",
+      "charEn": "Bold, sensual, powerful",
+      "charAr": "جريء وحسي وقوي",
+      "bestEn": "Night outs and special occasions",
+      "bestAr": "الخروج الليلي والمناسبات",
+      "longEn": "8–10 hours with strong projection",
+      "longAr": "8–10 ساعات بثبات قوي"
+    },
+    "brandAr": "بولغاري",
+    "nameAr": "بولغاري - من وود نيرولي أو دو بارفيوم 100 مل"
+  },
+  "3423222092245": {
+    "brandEn": "Narciso Rodriguez",
+    "nameEn": "Narciso Rodriguez For Her Forever EDP 50ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Narciso Rodriguez For Her Forever is a luminous musk-floral with orange blossom, musk, and amber for modern femininity.",
+      "introAr": "فور هير فور إفر من نارسيسو رودريغز عطر مسكي زهري مشع بالبرتقال والمسك والعنبر لأنوثة عصرية.",
+      "familyEn": "Floral fruity",
+      "familyAr": "زهري فواكه",
+      "notesEn": "Bergamot, peach, rose, jasmine, musk, sandalwood",
+      "notesAr": "برغموت، خوخ، ورد، ياسمين، مسك، صندل",
+      "charEn": "Soft, feminine, elegant",
+      "charAr": "ناعم وأنثوي وأنيق",
+      "bestEn": "Daily wear and office",
+      "bestAr": "الاستخدام اليومي والعمل",
+      "longEn": "6–8 hours",
+      "longAr": "6–8 ساعات"
+    },
+    "brandAr": "نارسيسو رودريغز",
+    "nameAr": "نارسيسو رودريغز - فور هير فور إفر أو دو بارفيوم 50 مل"
+  },
+  "3423222092252": {
+    "brandEn": "Narciso Rodriguez",
+    "nameEn": "Narciso Rodriguez For Her Forever EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Narciso Rodriguez For Her Forever in 100ml offers the same iconic musk-floral signature with lasting elegant presence.",
+      "introAr": "فور هير فور إفر بحجم 100 مل يقدم نفحة مسكية زهرية أيقونية بثبات أنيق وحضور مدموع.",
+      "familyEn": "Woody aromatic",
+      "familyAr": "خشبي عطري",
+      "notesEn": "Cypress, vetiver, cashmere wood, musk, benzoin",
+      "notesAr": "سرو، فيتيفر، خشب كاشمير، مسك، بنزوين",
+      "charEn": "Dark, smoky, refined",
+      "charAr": "داكن ودخاني ومصقول",
+      "bestEn": "Evening wear and formal occasions",
+      "bestAr": "السهرات والمناسبات الرسمية",
+      "longEn": "8–10 hours",
+      "longAr": "8–10 ساعات"
+    },
+    "brandAr": "نارسيسو رودريغز",
+    "nameAr": "نارسيسو رودريغز - فور هير فور إفر أو دو بارفيوم 100 مل"
+  },
+  "8005610298894": {
+    "brandEn": "Hugo Boss",
+    "nameEn": "Hugo Boss The Scent For Her EDP 50ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Hugo Boss The Scent For Her is a seductive floral-fruity scent with peach, freesia, and cocoa for feminine allure.",
+      "introAr": "ذا سينت فور هير من هوغو بوس عطر زهري فاكه مغري بالخوخ والفريزيا والكاكاو لجذبية أنثوية.",
+      "familyEn": "Oriental amber",
+      "familyAr": "شرقي عنبري",
+      "notesEn": "Grapefruit, ginger, amber, tobacco, cedar",
+      "notesAr": "جريفروت، زنجبيل، عنبر، تبغ، أرز",
+      "charEn": "Warm, luxurious, charismatic",
+      "charAr": "دافئ وفاخر وجذاب",
+      "bestEn": "Evenings and cooler weather",
+      "bestAr": "السهرات والطقس البارد",
+      "longEn": "7–9 hours",
+      "longAr": "7–9 ساعات"
+    },
+    "brandAr": "هوغو بوس",
+    "nameAr": "هوغو بوس - ذا سينت فور هير أو دو بارفيوم 50 مل"
+  },
+  "3386460057059": {
+    "brandEn": "Boucheron",
+    "nameEn": "Boucheron Place Vendôme EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Boucheron Place Vendôme is a refined floral with pear, jasmine, and benzoin for Parisian feminine elegance.",
+      "introAr": "بلاس فاندوم من بوشرون عطر زهري راقي بالكمثرى والياسمين والبنزوين لأناقة باريسية.",
+      "familyEn": "Floral fruity",
+      "familyAr": "زهري فواكه",
+      "notesEn": "Bergamot, tiare flower, coconut, jasmine, musk",
+      "notesAr": "برغموت، زهر التيار، جوز الهند، ياسمين، مسك",
+      "charEn": "Tropical, sunny, joyful",
+      "charAr": "استوائي ومشمس ومبهج",
+      "bestEn": "Summer days and vacations",
+      "bestAr": "أيام الصيف والعطلات",
+      "longEn": "5–7 hours",
+      "longAr": "5–7 ساعات"
+    },
+    "brandAr": "بوشرون",
+    "nameAr": "بوشرون - بلاس فاندوم أو دو بارفيوم 100 مل"
+  },
+  "3614273604833": {
+    "brandEn": "Giorgio Armani",
+    "nameEn": "Giorgio Armani Code Parfum EDP 75ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Giorgio Armani Code Parfum is an intense aromatic fougère with lavender, tonka, and woods for magnetic masculinity.",
+      "introAr": "كود بارفيوم بور هوم من جيورجيو أرماني عطر فوجير عطري مكثف باللافندر وحبوب التونكا والأخشاب لرجولة جذابة.",
+      "familyEn": "Floral",
+      "familyAr": "زهري",
+      "notesEn": "Pear, jasmine sambac, sandalwood, benzoin",
+      "notesAr": "كمثرى، ياسمين، صندل، بنزوين",
+      "charEn": "Radiant, joyful, modern floral",
+      "charAr": "مشع ومبهج وزهري عصري",
+      "bestEn": "Spring and daytime wear",
+      "bestAr": "الربيع والنهار",
+      "longEn": "6–8 hours",
+      "longAr": "6–8 ساعات"
+    },
+    "brandAr": "جيورجيو أرماني",
+    "nameAr": "جيورجيو أرماني - كود بارفيوم بور هوم 75 مل"
+  },
+  "764302316091": {
+    "brandEn": "Shea Moisture",
+    "nameEn": "Shea Moisture Power Greens Hair Cream 237ml",
+    "kind": "care",
+    "careLeaf": "care/hair-care/hair-treatment",
+    "typeKey": "hair-treatment",
+    "c": {
+      "introEn": "Shea Moisture Power Greens Hair Cream nourishes and defines hair with kale, spinach, and shea butter.",
+      "introAr": "كريم شعر باور جرينز من شيا موشر يغذي ويعرّف الشعر بالكينوا والسبانخ وزبدة الشيا.",
+      "catEn": "Hair treatment",
+      "catAr": "علاج الشعر",
+      "typeEn": "Leave-in hair cream",
+      "typeAr": "كريم شعر بدون شطف",
+      "benefitsEn": [
+        "Power greens blend",
+        "Shea butter",
+        "Defines curls"
+      ],
+      "benefitsAr": [
+        "مزيج خضراوات قوية",
+        "زبدة الشيا",
+        "يعرّف التجاعيد"
+      ],
+      "suitEn": "Dry, curly, or textured hair",
+      "suitAr": "الشعر الجاف والمجعّد والمنوع",
+      "sizeEn": "237 ml",
+      "sizeAr": "237 مل"
+    },
+    "brandAr": "شيا موشر",
+    "nameAr": "شيا موشر - كريم شعر باور جرينز 237 مل"
+  },
+  "8033488153281": {
+    "brandEn": "Xerjoff",
+    "nameEn": "Xerjoff Casamorati Gran Ballo EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Xerjoff Casamorati Gran Ballo is a niche gourmand floral with caramel, jasmine, and vanilla for opulent femininity.",
+      "introAr": "كاساموراتي جران بالو من زيرجوف عطر نيش غورماند زهري بالكراميل والياسمين والفانيلا لفخامة.",
+      "familyEn": "Aquatic woody",
+      "familyAr": "مائي خشبي",
+      "notesEn": "Lemon, rose, tarragon, cedar, musk",
+      "notesAr": "ليمون، ورد، طرخون، أرز، مسك",
+      "charEn": "Fresh, clean, versatile",
+      "charAr": "منعش ونظيف ومتعدد",
+      "bestEn": "Daily wear and warm weather",
+      "bestAr": "الاستخدام اليومي والطقس الدافئ",
+      "longEn": "4–6 hours",
+      "longAr": "4–6 ساعات"
+    },
+    "brandAr": "زيرجوف",
+    "nameAr": "زيرجوف - كاساموراتي جران بالو أو دو بارفيوم 100 مل"
+  },
+  "8681008055227": {
+    "brandEn": "Nishane",
+    "nameEn": "Nishane Wulong Cha EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Nishane Wulong Cha is a niche tea-inspired scent with bergamot, tea, and musk for artistic unisex freshness.",
+      "introAr": "وولونج تشا من نيشان عطر نيش مستوح من الشاي بالبرتقال والشاي والمسك لإبداع فني.",
+      "familyEn": "Floral fruity",
+      "familyAr": "زهري فواكه",
+      "notesEn": "Bergamot, tiare, coconut, jasmine, musk",
+      "notesAr": "برغموت، زهر التيار، جوز الهند، ياسمين، مسك",
+      "charEn": "Tropical, light, joyful",
+      "charAr": "استوائي وخفيف ومبهج",
+      "bestEn": "Summer and casual wear",
+      "bestAr": "الصيف والاستخدام اليومي",
+      "longEn": "4–6 hours",
+      "longAr": "4–6 ساعات"
+    },
+    "brandAr": "نيشان",
+    "nameAr": "نيشان - وولونج تشا أو دو بارفيوم 100 مل"
+  },
+  "3614222793458": {
+    "brandEn": "Roberto Cavalli",
+    "nameEn": "Roberto Cavalli Paradiso Assoluto EDP 50ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Roberto Cavalli Paradiso Assoluto is a tropical floral with jasmine, citrus, and amber for sun-kissed femininity.",
+      "introAr": "باراديسو أسولوتو من روبرتو كفالي عطر استوائي بالياسمين والحملية والعنبر لأنوثة مشمسة.",
+      "familyEn": "Fruity floral",
+      "familyAr": "فواكه زهرية",
+      "notesEn": "Lemon, mandarin, apple, jasmine, musk",
+      "notesAr": "ليمون، مندرين، تفاح، ياسمين، مسك",
+      "charEn": "Fresh, playful, sunny",
+      "charAr": "منعش ومرح ومشمس",
+      "bestEn": "Daytime and summer",
+      "bestAr": "النهار والصيف",
+      "longEn": "5–7 hours",
+      "longAr": "5–7 ساعات"
+    },
+    "brandAr": "روبرتو كفالي",
+    "nameAr": "روبرتو كفالي - باراديسو أسولوتو أو دو بارفيوم 50 مل"
+  },
+  "3614272865235": {
+    "brandEn": "Giorgio Armani",
+    "nameEn": "Giorgio Armani Acqua di Gio Profondo EDP 125ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Giorgio Armani Acqua di Gio Profondo dives deeper into marine freshness with patchouli, incense, and musk for bold masculinity.",
+      "introAr": "أكوا دي جيو بروفوندو من جيورجيو أرماني يغوص بعمق في الانتعاش البحري مع الباتشولي والبخور والمسك لرجولة جريئة.",
+      "familyEn": "Gourmand woody",
+      "familyAr": "غورماند خشبي",
+      "notesEn": "Cognac, oak, cinnamon, praline, vanilla",
+      "notesAr": "كونياك، بلوط، قرفة، حلوى البندق، فانيلا",
+      "charEn": "Warm, boozy, luxurious",
+      "charAr": "دافئ وفاخر وساحر",
+      "bestEn": "Evenings and cold weather",
+      "bestAr": "السهرات والطقس البارد",
+      "longEn": "8–10 hours",
+      "longAr": "8–10 ساعات"
+    },
+    "brandAr": "جيورجيو أرماني",
+    "nameAr": "جيورجيو أرماني - أكوا دي جيو بروفوندو أو دو بارفيوم 125 مل"
+  }
+}

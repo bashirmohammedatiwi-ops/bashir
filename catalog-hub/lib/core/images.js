@@ -219,7 +219,7 @@ function upgradeSalla(url = '') {
 
 function upgradeFaces(url = '') {
   let u = String(url || '').trim();
-  if (!u || !/demandware\.net|faces\.com/i.test(u)) return u;
+  if (!u || !/demandware\.net|demandware\.static|faces\.com|faces\.ae|sites-faces/i.test(u)) return u;
   if (/\/(?:small|swatch)\//i.test(u) && !/\/(?:large|hi-res)\//i.test(u)) {
     u = u.replace(/\/small\//i, '/large/').replace(/\/swatch\//i, '/large/');
   }

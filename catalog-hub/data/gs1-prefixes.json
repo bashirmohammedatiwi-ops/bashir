@@ -1,11 +1,27 @@
 {
+  "3052503": {
+    "brand": "Bourjois",
+    "updatedAt": 1784992805418
+  },
   "3337875": {
     "brand": "CeraVe",
     "updatedAt": 1783553514329
   },
+  "3338221": {
+    "brand": "Phyto",
+    "updatedAt": 1784993436891
+  },
   "3600524": {
     "brand": "Loreal Paris",
     "updatedAt": 1783609200898
+  },
+  "3701436": {
+    "brand": "Phyto",
+    "updatedAt": 1784993427639
+  },
+  "6287020": {
+    "brand": "IBRAQ",
+    "updatedAt": 1784994928625
   },
   "6291106": {
     "brand": "Huda Beauty",
@@ -15,13 +31,29 @@
     "brand": "Nafas",
     "updatedAt": 1783765566220
   },
+  "30525031": {
+    "brand": "Bourjois",
+    "updatedAt": 1784992805418
+  },
   "33378755": {
     "brand": "CeraVe",
     "updatedAt": 1783553514329
   },
+  "33382210": {
+    "brand": "Phyto",
+    "updatedAt": 1784993436891
+  },
   "36005240": {
     "brand": "Loreal Paris",
     "updatedAt": 1783609200898
+  },
+  "37014369": {
+    "brand": "Phyto",
+    "updatedAt": 1784993427639
+  },
+  "62870202": {
+    "brand": "IBRAQ",
+    "updatedAt": 1784994928625
   },
   "62911060": {
     "brand": "Huda Beauty",
@@ -54,5 +86,13 @@
   "07613185": {
     "brand": "Revlon",
     "updatedAt": 1783614955313
+  },
+  "0022796": {
+    "brand": "OGX",
+    "updatedAt": 1784993534830
+  },
+  "00227969": {
+    "brand": "OGX",
+    "updatedAt": 1784993534830
   }
 }

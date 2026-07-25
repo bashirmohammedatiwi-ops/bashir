@@ -60,13 +60,9 @@ class PhotoTileData {
       aspectRatio: raw['aspectRatio']?.toString().trim().isNotEmpty == true
           ? raw['aspectRatio'].toString()
           : defaultAspect,
-      overlayStyle: galleryMode
-          ? 'none'
-          : (overlayFromRaw?.isNotEmpty == true ? overlayFromRaw : defaultOverlay),
-      borderStyle: galleryMode
-          ? 'none'
-          : (borderFromRaw?.isNotEmpty == true ? borderFromRaw : defaultBorder),
-      showShadow: galleryMode ? false : shadowFromRaw,
+      overlayStyle: overlayFromRaw?.isNotEmpty == true ? overlayFromRaw : defaultOverlay,
+      borderStyle: borderFromRaw?.isNotEmpty == true ? borderFromRaw : defaultBorder,
+      showShadow: shadowFromRaw,
       customWidth: (raw['customWidth'] as num?)?.toDouble(),
       customHeight: (raw['customHeight'] as num?)?.toDouble(),
       spanCols: (raw['spanCols'] as num?)?.toInt() ?? 1,
@@ -167,7 +163,8 @@ abstract final class PhotoShapeGeometry {
     };
   }
 
-  static double cornerRadius(String shape, double height) {
+  static double cornerRadius(String shape, double height, {double? override}) {
+    if (override != null && override >= 0) return override;
     return switch (shape) {
       'circle' => height / 2,
       'pill' => height / 2,

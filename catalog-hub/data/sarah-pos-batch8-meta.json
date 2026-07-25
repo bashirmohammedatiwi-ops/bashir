@@ -1,0 +1,616 @@
+{
+  "083078009649": {
+    "brandEn": "Carmex",
+    "nameEn": "Carmex Lip Balm Variety Pack 3x1",
+    "brandAr": "كارمكس",
+    "nameAr": "كارمكس - مجموعة مرطب الشفاءة كارمكس بنكهات متعددة",
+    "kind": "care",
+    "careLeaf": "care/face-care/face-moisturizer",
+    "typeKey": "lip-balm",
+    "descriptionEn": "Carmex Lip Balm Variety Pack 3x1 supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: مرطب شفاه\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: —",
+    "descriptionAr": "كارمكس - مجموعة مرطب الشفاءة كارمكس بنكهات متعددة— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: مرطب شفاه\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: —"
+  },
+  "856017000010": {
+    "brandEn": "Cantu",
+    "nameEn": "Cantu Shea Butter Moisturizing Shampoo 400ml",
+    "brandAr": "كانتو",
+    "nameAr": "كانتو - شامبو مرطب بزبدة الشيا 400مل",
+    "kind": "care",
+    "careLeaf": "care/hair-care/shampoo-conditioners",
+    "typeKey": "shampoo",
+    "descriptionEn": "Cantu Shea Butter Moisturizing Shampoo 400ml supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: شامبو\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: 400 ml",
+    "descriptionAr": "كانتو - شامبو مرطب بزبدة الشيا 400مل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: شامبو\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: 400 ml"
+  },
+  "3337875597197": {
+    "brandEn": "CeraVe",
+    "nameEn": "CeraVe Foaming Facial Cleanser 236ml",
+    "brandAr": "سيرافي",
+    "nameAr": "سيرافي - منظف وملطف رغوي 236 مل",
+    "kind": "care",
+    "careLeaf": "care/face-care/cleansers--toners",
+    "typeKey": "cleanser",
+    "descriptionEn": "CeraVe Foaming Facial Cleanser 236ml supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: غسول\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: 236 ml",
+    "descriptionAr": "سيرافي - منظف وملطف رغوي 236 مل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: غسول\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: 236 ml"
+  },
+  "3337871322595": {
+    "brandEn": "Vichy",
+    "nameEn": "Vichy Deodorant Roll-On Sensitive Skin 40ml",
+    "brandAr": "فيشي",
+    "nameAr": "فيشي - رول اون للعرق للبشرة الحساسة 40 مل",
+    "kind": "care",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "Vichy Deodorant Roll-On Sensitive Skin 40ml supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: مزيل عرق\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: 40 ml",
+    "descriptionAr": "فيشي - رول اون للعرق للبشرة الحساسة 40 مل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: مزيل عرق\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: 40 ml",
+    "careLeaf": "care/skin-and-body-care/deodorant",
+    "typeKey": "deodorant"
+  },
+  "3337871310868": {
+    "brandEn": "Vichy",
+    "nameEn": "Vichy 48H Intensive Anti-Perspirant Roll-On 50ml",
+    "brandAr": "فيشي",
+    "nameAr": "فيشي - مزيل عرق مكثف 48 ساعة رول من فيشي- 50مل",
+    "kind": "care",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "Vichy 48H Intensive Anti-Perspirant Roll-On 50ml supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: مزيل عرق\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: 50 ml",
+    "descriptionAr": "فيشي - مزيل عرق مكثف 48 ساعة رول من فيشي- 50مل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: مزيل عرق\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: 50 ml",
+    "careLeaf": "care/skin-and-body-care/deodorant",
+    "typeKey": "deodorant"
+  },
+  "800897003777": {
+    "brandEn": "NYX",
+    "nameEn": "NYX The Brow Glue Clear Brow Mascara",
+    "brandAr": "نيكس",
+    "nameAr": "نيكس - ماسكرا حواجب شفافه",
+    "kind": "makeup",
+    "makeupSub": "eyes",
+    "descriptionEn": "NYX The Brow Glue Clear Brow Mascara delivers reliable makeup performance for everyday looks.\n\n◆ Category: Makeup\n◆ Product type: مكياج العيون\n◆ Key benefits: Easy application · Buildable result · Everyday wear\n◆ Suitable for: Daily makeup",
+    "descriptionAr": "نيكس - ماسكرا حواجب شفافه— منتج مكياج عملي لإطلالات يومية.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: مكياج العيون\n◆ الفوائد الرئيسية: سهل التطبيق · تغطية قابلة للبناء · للاستخدام اليومي\n◆ الأنسب لـ: إطلالات يومية"
+  },
+  "3337871320362": {
+    "brandEn": "Vichy",
+    "nameEn": "Vichy 72H Anti-Perspirant Deodorant 50ml",
+    "brandAr": "فيشي",
+    "nameAr": "فيشي - مضاد الروائح 72 ساعه من فيتشي 50مل",
+    "kind": "care",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "Vichy 72H Anti-Perspirant Deodorant 50ml supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: مزيل عرق\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: 50 ml",
+    "descriptionAr": "فيشي - مضاد الروائح 72 ساعه من فيتشي 50مل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: مزيل عرق\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: 50 ml",
+    "careLeaf": "care/skin-and-body-care/deodorant",
+    "typeKey": "deodorant"
+  },
+  "681619818219": {
+    "brandEn": "The Balm",
+    "nameEn": "The Balm Meet Matt Hughes Mini Lip Set Vol.12",
+    "brandAr": "ذابالم",
+    "nameAr": "ذابالم - طقم ارواج ميني ذابالم ميني الاصدار الثاني عشر الإصدار 12",
+    "kind": "makeup",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "The Balm Meet Matt Hughes Mini Lip Set Vol.12 delivers reliable makeup performance for everyday looks.\n\n◆ Category: Makeup\n◆ Product type: مكياج الشفاه\n◆ Key benefits: Easy application · Buildable result · Everyday wear\n◆ Suitable for: Daily makeup",
+    "descriptionAr": "ذابالم - طقم ارواج ميني ذابالم ميني الاصدار الثاني عشر الإصدار 12— منتج مكياج عملي لإطلالات يومية.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: مكياج الشفاه\n◆ الفوائد الرئيسية: سهل التطبيق · تغطية قابلة للبناء · للاستخدام اليومي\n◆ الأنسب لـ: إطلالات يومية",
+    "makeupSub": "lips"
+  },
+  "3548752189095": {
+    "brandEn": "Make Up For Ever",
+    "nameEn": "Make Up For Ever HD Skin Face Palette Harmony 2",
+    "brandAr": "ميك اب فور ايفر",
+    "nameAr": "ميك اب فور ايفر - باليت الوجه الشامل اتش دي سكن هارموني 2",
+    "kind": "makeup",
+    "makeupSub": "face",
+    "descriptionEn": "Make Up For Ever HD Skin Face Palette Harmony 2 delivers reliable makeup performance for everyday looks.\n\n◆ Category: Makeup\n◆ Product type: مكياج الوجه\n◆ Key benefits: Easy application · Buildable result · Everyday wear\n◆ Suitable for: Daily makeup",
+    "descriptionAr": "ميك اب فور ايفر - باليت الوجه الشامل اتش دي سكن هارموني 2— منتج مكياج عملي لإطلالات يومية.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: مكياج الوجه\n◆ الفوائد الرئيسية: سهل التطبيق · تغطية قابلة للبناء · للاستخدام اليومي\n◆ الأنسب لـ: إطلالات يومية"
+  },
+  "764302204176": {
+    "brandEn": "Shea Moisture",
+    "nameEn": "Shea Moisture Daily Hydration Shampoo Coconut Oil 384ml",
+    "brandAr": "شيا مويستشر",
+    "nameAr": "شيا مويستشر - شامبو مرطب يومي بزيت جوز الهند البكر 100٪ 384 مل",
+    "kind": "care",
+    "careLeaf": "care/hair-care/shampoo-conditioners",
+    "typeKey": "shampoo",
+    "descriptionEn": "Shea Moisture Daily Hydration Shampoo Coconut Oil 384ml supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: شامبو\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: 384 ml",
+    "descriptionAr": "شيا مويستشر - شامبو مرطب يومي بزيت جوز الهند البكر 100٪ 384 مل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: شامبو\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: 384 ml"
+  },
+  "764302215837": {
+    "brandEn": "Shea Moisture",
+    "nameEn": "Shea Moisture Coconut & Hibiscus Curl Enhancing Smoothie 384ml",
+    "brandAr": "شيا مويستشر",
+    "nameAr": "شيا مويستشر - شامبوا جامايكا بزيت الخروع الأسود 384 مل",
+    "kind": "care",
+    "careLeaf": "care/hair-care/hair-treatment",
+    "typeKey": "hair-treatment",
+    "descriptionEn": "Shea Moisture Coconut & Hibiscus Curl Enhancing Smoothie 384ml supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: علاج شعر\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: 384 ml",
+    "descriptionAr": "شيا مويستشر - شامبوا جامايكا بزيت الخروع الأسود 384 مل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: علاج شعر\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: 384 ml"
+  },
+  "856017000126": {
+    "brandEn": "Cantu",
+    "nameEn": "Cantu Shea Butter Leave-In Conditioning Cream 453g",
+    "brandAr": "كانتو",
+    "nameAr": "كانتو - كريم بلسم زبدة الشيا لاصلاح الشعر من - كانتو 453 غ",
+    "kind": "care",
+    "careLeaf": "care/hair-care/hair-treatment",
+    "typeKey": "conditioner",
+    "descriptionEn": "Cantu Shea Butter Leave-In Conditioning Cream 453g supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: بلسم\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: 453 g",
+    "descriptionAr": "كانتو - كريم بلسم زبدة الشيا لاصلاح الشعر من - كانتو 453 غ— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: بلسم\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: 453 g"
+  },
+  "764302290209": {
+    "brandEn": "Shea Moisture",
+    "nameEn": "Shea Moisture Jamaican Black Castor Oil Strengthen & Restore Shampoo",
+    "brandAr": "شيا مويستشر",
+    "nameAr": "شيا مويستشر - شامبو جوز الهند والكركديه من شيا مويستشر 354 مل",
+    "kind": "care",
+    "careLeaf": "care/hair-care/shampoo-conditioners",
+    "typeKey": "shampoo",
+    "descriptionEn": "Shea Moisture Jamaican Black Castor Oil Strengthen & Restore Shampoo supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: شامبو\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: —",
+    "descriptionAr": "شيا مويستشر - شامبو جوز الهند والكركديه من شيا مويستشر 354 مل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: شامبو\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: —"
+  },
+  "681619818271": {
+    "brandEn": "The Balm",
+    "nameEn": "The Balm Meet Matt Hughes Mini Lip Set Vol.14",
+    "brandAr": "ذابالم",
+    "nameAr": "ذابالم - طقم ارواج ميني ذابالم ميني الاصدار الرابع عشر الإصدار 14",
+    "kind": "makeup",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "The Balm Meet Matt Hughes Mini Lip Set Vol.14 delivers reliable makeup performance for everyday looks.\n\n◆ Category: Makeup\n◆ Product type: مكياج الشفاه\n◆ Key benefits: Easy application · Buildable result · Everyday wear\n◆ Suitable for: Daily makeup",
+    "descriptionAr": "ذابالم - طقم ارواج ميني ذابالم ميني الاصدار الرابع عشر الإصدار 14— منتج مكياج عملي لإطلالات يومية.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: مكياج الشفاه\n◆ الفوائد الرئيسية: سهل التطبيق · تغطية قابلة للبناء · للاستخدام اليومي\n◆ الأنسب لـ: إطلالات يومية",
+    "makeupSub": "lips"
+  },
+  "3562700361005": {
+    "brandEn": "Jaguar",
+    "nameEn": "Jaguar Green Men Eau de Toilette 100ml",
+    "brandAr": "جاكوار",
+    "nameAr": "جاكوار - الاخضر او دو تواليت 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "descriptionEn": "Jaguar Green Men Eau de Toilette 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "جاكوار - الاخضر او دو تواليت 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3562700373084": {
+    "brandEn": "Jaguar",
+    "nameEn": "Jaguar Classic Blue Eau de Toilette 100ml",
+    "brandAr": "جاكوار",
+    "nameAr": "جاكوار - كلاسيك السماوي تواليت 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "descriptionEn": "Jaguar Classic Blue Eau de Toilette 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "جاكوار - كلاسيك السماوي تواليت 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "072140000219": {
+    "brandEn": "Eucerin",
+    "nameEn": "Eucerin Original Healing Cream 454g",
+    "brandAr": "يوسيرين",
+    "nameAr": "يوسيرين - الكريم الأصلي العلاجي للبشرة شديدة الجفاف والبشرة الحساسة خالي من العطور 454 جم",
+    "kind": "care",
+    "careLeaf": "care/skin-and-body-care/body-moisturizer",
+    "typeKey": "cream",
+    "descriptionEn": "Eucerin Original Healing Cream 454g supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: كريم\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: 454 g",
+    "descriptionAr": "يوسيرين - الكريم الأصلي العلاجي للبشرة شديدة الجفاف والبشرة الحساسة خالي من العطور 454 جم— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: كريم\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: 454 g"
+  },
+  "5907587149687": {
+    "brandEn": "Inglot",
+    "nameEn": "Inglot AMC Gel Eye Liner 68",
+    "brandAr": "انجلوت",
+    "nameAr": "انجلوت - كحل جل من انجلوت بيج- 68",
+    "kind": "makeup",
+    "makeupSub": "eyes",
+    "descriptionEn": "Inglot AMC Gel Eye Liner 68 delivers reliable makeup performance for everyday looks.\n\n◆ Category: Makeup\n◆ Product type: مكياج العيون\n◆ Key benefits: Easy application · Buildable result · Everyday wear\n◆ Suitable for: Daily makeup",
+    "descriptionAr": "انجلوت - كحل جل من انجلوت بيج- 68— منتج مكياج عملي لإطلالات يومية.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: مكياج العيون\n◆ الفوائد الرئيسية: سهل التطبيق · تغطية قابلة للبناء · للاستخدام اليومي\n◆ الأنسب لـ: إطلالات يومية"
+  },
+  "817513015311": {
+    "brandEn": "Cantu",
+    "nameEn": "Cantu Moisturizing Curl Activator Cream 400ml",
+    "brandAr": "كانتو",
+    "nameAr": "كانتو - شامبو زبدة الشيا للشعر الطبيعي خالٍ من الكبريتات 400 مل",
+    "kind": "care",
+    "careLeaf": "care/hair-care/hair-treatment",
+    "typeKey": "hair-treatment",
+    "descriptionEn": "Cantu Moisturizing Curl Activator Cream 400ml supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: علاج شعر\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: 400 ml",
+    "descriptionAr": "كانتو - شامبو زبدة الشيا للشعر الطبيعي خالٍ من الكبريتات 400 مل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: علاج شعر\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: 400 ml"
+  },
+  "3274872428058": {
+    "brandEn": "Givenchy",
+    "nameEn": "Givenchy L'Interdit Rouge Eau de Parfum 80ml",
+    "brandAr": "جivenchy",
+    "nameAr": "جivenchy - جيفنشي لا انترديت روج او دو بارفيوم 80مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": true
+    },
+    "descriptionEn": "Givenchy L'Interdit Rouge Eau de Parfum 80ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "جivenchy - جيفنشي لا انترديت روج او دو بارفيوم 80مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3337875797719": {
+    "brandEn": "La Roche-Posay",
+    "nameEn": "La Roche-Posay Anthelios UVMune 400 Invisible Fluid SPF50+ 50ml",
+    "brandAr": "لاروش بوزيه",
+    "nameAr": "لاروش بوزيه - واقي شمس لاروش بوزيه كريم مرطب بلا عطر مع عامل حماية 50+ 50مل",
+    "kind": "care",
+    "careLeaf": "care/sun-care/sunscreen",
+    "typeKey": "sunscreen",
+    "descriptionEn": "La Roche-Posay Anthelios UVMune 400 Invisible Fluid SPF50+ 50ml supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: واقي شمس\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: 50 ml",
+    "descriptionAr": "لاروش بوزيه - واقي شمس لاروش بوزيه كريم مرطب بلا عطر مع عامل حماية 50+ 50مل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: واقي شمس\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: 50 ml"
+  },
+  "3274872441057": {
+    "brandEn": "Givenchy",
+    "nameEn": "Givenchy Gentleman Eau de Parfum Boisee 100ml",
+    "brandAr": "جivenchy",
+    "nameAr": "جivenchy - جيفنشي جنتلمان جيڤنشي  بوازيه او دي بارفيوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "descriptionEn": "Givenchy Gentleman Eau de Parfum Boisee 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "جivenchy - جيفنشي جنتلمان جيڤنشي  بوازيه او دي بارفيوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "6291106038354": {
+    "brandEn": "Huda Beauty",
+    "nameEn": "Huda Beauty Rose Quartz Eyeshadow Palette",
+    "brandAr": "هدى بيوتي",
+    "nameAr": "هدى بيوتي - باليت هدى بيوتي روز كوارتز",
+    "kind": "makeup",
+    "makeupSub": "eyes",
+    "descriptionEn": "Huda Beauty Rose Quartz Eyeshadow Palette delivers reliable makeup performance for everyday looks.\n\n◆ Category: Makeup\n◆ Product type: مكياج العيون\n◆ Key benefits: Easy application · Buildable result · Everyday wear\n◆ Suitable for: Daily makeup",
+    "descriptionAr": "هدى بيوتي - باليت هدى بيوتي روز كوارتز— منتج مكياج عملي لإطلالات يومية.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: مكياج العيون\n◆ الفوائد الرئيسية: سهل التطبيق · تغطية قابلة للبناء · للاستخدام اليومي\n◆ الأنسب لـ: إطلالات يومية"
+  },
+  "3349668582297": {
+    "brandEn": "Paco Rabanne",
+    "nameEn": "Paco Rabanne Phantom Eau de Toilette 100ml",
+    "brandAr": "باكو رابان",
+    "nameAr": "باكو رابان - فانتوم الرجالي او دو تواليت 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men",
+      "isNew": true
+    },
+    "descriptionEn": "Paco Rabanne Phantom Eau de Toilette 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "باكو رابان - فانتوم الرجالي او دو تواليت 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3386460078573": {
+    "brandEn": "Rochas",
+    "nameEn": "Rochas Madame Rochas Eau de Toilette 100ml",
+    "brandAr": "راوش",
+    "nameAr": "راوش - روشاس مدام للنساء - او دي تواليت ، 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Rochas Madame Rochas Eau de Toilette 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "راوش - روشاس مدام للنساء - او دي تواليت ، 100 مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3274872439078": {
+    "brandEn": "Givenchy",
+    "nameEn": "Givenchy Reserve Privee Eau de Parfum 100ml",
+    "brandAr": "جivenchy",
+    "nameAr": "جivenchy - جيفنشي جنتلمان ريزيرڤ بريڤيه أو دو برفافيوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men",
+      "isNiche": true
+    },
+    "descriptionEn": "Givenchy Reserve Privee Eau de Parfum 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "جivenchy - جيفنشي جنتلمان ريزيرڤ بريڤيه أو دو برفافيوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3360373063680": {
+    "brandEn": "Cacharel",
+    "nameEn": "Cacharel Amor Amor Eau de Toilette 100ml",
+    "brandAr": "كاشريل",
+    "nameAr": "كاشريل - امور امور او دو تواليت 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Cacharel Amor Amor Eau de Toilette 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "كاشريل - امور امور او دو تواليت 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "085715806352": {
+    "brandEn": "Dunhill",
+    "nameEn": "Dunhill Icon Racing Blue Eau de Parfum 100ml",
+    "brandAr": "دنهل",
+    "nameAr": "دنهل - دانهيل ايكون ريسنغ الازرق او دو بارفيوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "descriptionEn": "Dunhill Icon Racing Blue Eau de Parfum 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "دنهل - دانهيل ايكون ريسنغ الازرق او دو بارفيوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3760294350669": {
+    "brandEn": "The Woods Collection",
+    "nameEn": "The Woods Collection Natural Dusk Eau de Parfum 100ml",
+    "brandAr": "ذا وودز كوليكشن",
+    "nameAr": "ذا وودز كوليكشن - باي ناتشورال دسك او دو بارفيوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "descriptionEn": "The Woods Collection Natural Dusk Eau de Parfum 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "ذا وودز كوليكشن - باي ناتشورال دسك او دو بارفيوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "022548237564": {
+    "brandEn": "DKNY",
+    "nameEn": "DKNY Be Delicious Eau de Parfum 100ml",
+    "brandAr": "دكني",
+    "nameAr": "دكني - دونا كاران دكني الذهبي غولدن ديليشس او دو بارفيوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "DKNY Be Delicious Eau de Parfum 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "دكني - دونا كاران دكني الذهبي غولدن ديليشس او دو بارفيوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3614229461312": {
+    "brandEn": "Gucci",
+    "nameEn": "Gucci Bloom Profumo Di Fiori Eau de Parfum 100ml",
+    "brandAr": "قوتشي",
+    "nameAr": "قوتشي - بلوم بروفومو دي فيوري أو دو برفيوم100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Gucci Bloom Profumo Di Fiori Eau de Parfum 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "قوتشي - بلوم بروفومو دي فيوري أو دو برفيوم100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3612345679642": {
+    "brandEn": "Vertus",
+    "nameEn": "Vertus Sole Patchouli Eau de Parfum 100ml",
+    "brandAr": "فيرتوس",
+    "nameAr": "فيرتوس - سول باتشولي او دو بارفيوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "descriptionEn": "Vertus Sole Patchouli Eau de Parfum 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "فيرتوس - سول باتشولي او دو بارفيوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3760294350713": {
+    "brandEn": "The Woods Collection",
+    "nameEn": "The Woods Collection Panorama Eau de Parfum 100ml",
+    "brandAr": "ذا وودز كوليكشن",
+    "nameAr": "ذا وودز كوليكشن - بانوراما او دو بارفيوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "descriptionEn": "The Woods Collection Panorama Eau de Parfum 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "ذا وودز كوليكشن - بانوراما او دو بارفيوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "4250338487516": {
+    "brandEn": "Essence",
+    "nameEn": "Essence I Love Extreme Volume Mascara",
+    "brandAr": "اسنس",
+    "nameAr": "اسنس - ماسكرا اي لوف اكستريم فوليوم من ايسنس",
+    "kind": "makeup",
+    "makeupSub": "eyes",
+    "descriptionEn": "Essence I Love Extreme Volume Mascara delivers reliable makeup performance for everyday looks.\n\n◆ Category: Makeup\n◆ Product type: مكياج العيون\n◆ Key benefits: Easy application · Buildable result · Everyday wear\n◆ Suitable for: Daily makeup",
+    "descriptionAr": "اسنس - ماسكرا اي لوف اكستريم فوليوم من ايسنس— منتج مكياج عملي لإطلالات يومية.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: مكياج العيون\n◆ الفوائد الرئيسية: سهل التطبيق · تغطية قابلة للبناء · للاستخدام اليومي\n◆ الأنسب لـ: إطلالات يومية"
+  },
+  "3606000537743": {
+    "brandEn": "CeraVe",
+    "nameEn": "CeraVe Hydrating Facial Cleanser 355ml",
+    "brandAr": "سيرافي",
+    "nameAr": "سيرافي - لوشن سيرافي للبشرة العادية و الجافة 355 ملل",
+    "kind": "care",
+    "careLeaf": "care/face-care/cleansers--toners",
+    "typeKey": "cleanser",
+    "descriptionEn": "CeraVe Hydrating Facial Cleanser 355ml supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: غسول\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: 355 ml",
+    "descriptionAr": "سيرافي - لوشن سيرافي للبشرة العادية و الجافة 355 ملل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: غسول\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: 355 ml"
+  },
+  "3349668588732": {
+    "brandEn": "Paco Rabanne",
+    "nameEn": "Paco Rabanne Invictus Victory Eau de Parfum Extreme 100ml",
+    "brandAr": "باكوربان",
+    "nameAr": "باكوربان - باكو رابان انفيكتوس فيكتوري اكستريم او دو بارفيوم- 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men",
+      "isNew": true
+    },
+    "descriptionEn": "Paco Rabanne Invictus Victory Eau de Parfum Extreme 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "باكوربان - باكو رابان انفيكتوس فيكتوري اكستريم او دو بارفيوم- 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3145891297201": {
+    "brandEn": "Chanel",
+    "nameEn": "Chanel Allure Sensuelle Eau de Parfum 50ml",
+    "brandAr": "شانيل",
+    "nameAr": "شانيل - ألور سنشوال أو دو برفيوم 50 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Chanel Allure Sensuelle Eau de Parfum 50ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "شانيل - ألور سنشوال أو دو برفيوم 50 مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3137370357476": {
+    "brandEn": "Nina Ricci",
+    "nameEn": "Nina Ricci Nina Eau de Toilette 80ml",
+    "brandAr": "نينا رتشي",
+    "nameAr": "نينا رتشي - ريتشي نينا التفاحة او دو تواليت 80مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Nina Ricci Nina Eau de Toilette 80ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "نينا رتشي - ريتشي نينا التفاحة او دو تواليت 80مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3145891125306": {
+    "brandEn": "Chanel",
+    "nameEn": "Chanel Allure Eau de Parfum 100ml",
+    "brandAr": "شانيل",
+    "nameAr": "شانيل - الور النسائي او دو بارفيوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Chanel Allure Eau de Parfum 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "شانيل - الور النسائي او دو بارفيوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "817513010040": {
+    "brandEn": "Cantu",
+    "nameEn": "Cantu Deep Treatment Masque 340g",
+    "brandAr": "كانتو",
+    "nameAr": "كانتو - ماسك الشعر للعلاج العميق بزبدة الشيا من كانتو 340ج",
+    "kind": "care",
+    "careLeaf": "care/hair-care/hair-treatment",
+    "typeKey": "hair-treatment",
+    "descriptionEn": "Cantu Deep Treatment Masque 340g supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: علاج شعر\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: 340 g",
+    "descriptionAr": "كانتو - ماسك الشعر للعلاج العميق بزبدة الشيا من كانتو 340ج— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: علاج شعر\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: 340 g"
+  },
+  "7640111493723": {
+    "brandEn": "Jaguar",
+    "nameEn": "Jaguar Classic Gold Eau de Toilette 100ml",
+    "brandAr": "جاكوار",
+    "nameAr": "جاكوار - كلاسيك الذهبي او دو تواليت 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "descriptionEn": "Jaguar Classic Gold Eau de Toilette 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "جاكوار - كلاسيك الذهبي او دو تواليت 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3700134402233": {
+    "brandEn": "Geparlys",
+    "nameEn": "Geparlys Infinite Pleasure Eau de Parfum 100ml",
+    "brandAr": "انفينيت جست",
+    "nameAr": "انفينيت جست - جيرل او دي برفيوم للنساء من استل فيندوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Geparlys Infinite Pleasure Eau de Parfum 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "انفينيت جست - جيرل او دي برفيوم للنساء من استل فيندوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3337875549530": {
+    "brandEn": "La Roche-Posay",
+    "nameEn": "La Roche-Posay Anthelios Anti-Shine Sunscreen Spray SPF50+ 75ml",
+    "brandAr": "لاروش بوزيه",
+    "nameAr": "لاروش بوزيه - بخاخ واقي شمس انثيليوس بعامل حماية 50 من لاروش بوزاي - 75 مل",
+    "kind": "care",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "La Roche-Posay Anthelios Anti-Shine Sunscreen Spray SPF50+ 75ml supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: واقي شمس\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: 75 ml",
+    "descriptionAr": "لاروش بوزيه - بخاخ واقي شمس انثيليوس بعامل حماية 50 من لاروش بوزاي - 75 مل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: واقي شمس\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: 75 ml",
+    "careLeaf": "care/sun-care/sunscreen",
+    "typeKey": "sunscreen"
+  },
+  "3380810424072": {
+    "brandEn": "Clarins",
+    "nameEn": "Clarins UV Plus SPF50+ Rose Multi-Protection Sunscreen 30ml",
+    "brandAr": "كلارنس",
+    "nameAr": "كلارنس - يو في بلس مضاد للتلوث وردي يو في بلس مضاد للتلوث وردي كلارنس-30مل",
+    "kind": "care",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "Clarins UV Plus SPF50+ Rose Multi-Protection Sunscreen 30ml supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: واقي شمس\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: 30 ml",
+    "descriptionAr": "كلارنس - يو في بلس مضاد للتلوث وردي يو في بلس مضاد للتلوث وردي كلارنس-30مل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: واقي شمس\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: 30 ml",
+    "careLeaf": "care/sun-care/sunscreen",
+    "typeKey": "sunscreen"
+  },
+  "3760294350645": {
+    "brandEn": "The Woods Collection",
+    "nameEn": "The Woods Collection Natural Secret Eau de Parfum 100ml",
+    "brandAr": "ذا وودز كوليكشن",
+    "nameAr": "ذا وودز كوليكشن - باي ناتشورال سيكريت او دو بارفيوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "descriptionEn": "The Woods Collection Natural Secret Eau de Parfum 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "ذا وودز كوليكشن - باي ناتشورال سيكريت او دو بارفيوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "817513015700": {
+    "brandEn": "Cantu",
+    "nameEn": "Cantu Wave Whip Curling Mousse 248ml",
+    "brandAr": "كانتو",
+    "nameAr": "كانتو - موس ويف لتجعيد الشعر 248مل",
+    "kind": "care",
+    "careLeaf": "care/hair-care/hair-styling",
+    "typeKey": "hair-treatment",
+    "descriptionEn": "Cantu Wave Whip Curling Mousse 248ml supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: تصفيف شعر\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: 248 ml",
+    "descriptionAr": "كانتو - موس ويف لتجعيد الشعر 248مل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: تصفيف شعر\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: 248 ml"
+  },
+  "3274870002168": {
+    "brandEn": "Givenchy",
+    "nameEn": "Givenchy Xeryus Eau de Toilette 100ml",
+    "brandAr": "جivenchy",
+    "nameAr": "جivenchy - جيفنشي اكسيروس او دو تواليت 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "descriptionEn": "Givenchy Xeryus Eau de Toilette 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "جivenchy - جيفنشي اكسيروس او دو تواليت 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "602004070432": {
+    "brandEn": "Benefit",
+    "nameEn": "Benefit Benetint Rose Tinted Lip & Cheek Stain 10ml",
+    "brandAr": "بنفت",
+    "nameAr": "بنفت - احمر الخدود والشفاه بيني تينت روز تنتد من بنفت -10مل",
+    "kind": "makeup",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "Benefit Benetint Rose Tinted Lip & Cheek Stain 10ml delivers reliable makeup performance for everyday looks.\n\n◆ Category: Makeup\n◆ Product type: مكياج الشفاه\n◆ Key benefits: Easy application · Buildable result · Everyday wear\n◆ Suitable for: Daily makeup",
+    "descriptionAr": "بنفت - احمر الخدود والشفاه بيني تينت روز تنتد من بنفت -10مل— منتج مكياج عملي لإطلالات يومية.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: مكياج الشفاه\n◆ الفوائد الرئيسية: سهل التطبيق · تغطية قابلة للبناء · للاستخدام اليومي\n◆ الأنسب لـ: إطلالات يومية",
+    "makeupSub": "lips"
+  },
+  "3454960014664": {
+    "brandEn": "Lalique",
+    "nameEn": "Lalique Eau de Parfum 100ml",
+    "brandAr": "لاليك",
+    "nameAr": "لاليك - الابيض النسائي او دو بارفيوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Lalique Eau de Parfum 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "لاليك - الابيض النسائي او دو بارفيوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "716393009581": {
+    "brandEn": "Giorgio Beverly Hills",
+    "nameEn": "Giorgio Beverly Hills Eau de Toilette 90ml",
+    "brandAr": "جورجيو بيفرلي هيلز",
+    "nameAr": "جورجيو بيفرلي هيلز - الاصفر النسائي او دو تواليت 90مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Giorgio Beverly Hills Eau de Toilette 90ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "جورجيو بيفرلي هيلز - الاصفر النسائي او دو تواليت 90مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  }
+}

@@ -1,0 +1,35 @@
+#!/usr/bin/env node
+/** Restore full batch6 candidate list (48 items from discovery run). */
+import { readFileSync, writeFileSync } from 'fs';
+
+const EXTRA = [
+  {"barcode":"3337871324599","sarahId":"DGGdRAz","nameAr":"مزيل العرق رول 48 ساعة من فيشي مضاد للتصبق -50مل","nameEn":"","brandAr":"فيشي","brandEn":"فيشي","category":"مزيل عرق","url":"https://sarahmakeup37.com/ar/DGGdRAz","stock":58,"posName":"VICHY 48H ANTI-PERSPIRANT ROLL-ON 50ML"},
+  {"barcode":"689304348423","sarahId":"xAqKlAj","nameAr":"انستازيا بيڤرلي هيلز شمع براو فريز لتصفيف الحواجب","nameEn":"","brandAr":"انستازيا ANASTASIA","brandEn":"Anastasia","category":"صابونة الحواجب","url":"https://sarahmakeup37.com/ar/xAqKlAj","stock":35,"posName":"ANASTASIA BROW FREEZE WAX 8G"},
+  {"barcode":"072140020491","sarahId":"NoWvAG","nameAr":"يوسيرين كريم بتركيبة متطورة لاصلاح البشرة الجافة جدا 454ج","nameEn":"","brandAr":"يوسيرين EUCERIN","brandEn":"Eucerin","category":"مرطب","url":"https://sarahmakeup37.com/ar/NoWvAG","stock":31,"posName":"EUCERIN REPAIR CREAM 454G"},
+  {"barcode":"3337875722827","sarahId":"Xvppwv","nameAr":"لاروش بوزيه  ايفاكلار سيروم 30 مل","nameEn":"","brandAr":"لاروش بوزيه La Roche Posay","brandEn":"La Roche-Posay","category":"سيروم-","url":"https://sarahmakeup37.com/ar/Xvppwv","stock":29,"posName":"LAROCHE POSAY EFFACLARR SERUM PEELING 30ML"},
+  {"barcode":"381371020652","sarahId":"nnNVWE","nameAr":"زيت جل بالشيا و زبدة الكاكاو من جونسون - 192مل","nameEn":"","brandAr":"جونسون Johnsons","brandEn":"Johnson's","category":"زيت","url":"https://sarahmakeup37.com/ar/nnNVWE","stock":23,"posName":"Johnson's Shea & cocoa Butter Oil gel 192ml"},
+  {"barcode":"3760294351178","sarahId":"wGBbGV","nameAr":"عطر ذا وودز كوليكشن باي ناتشورال فلام او دو بارفيوم 100مل","nameEn":"","brandAr":"ذا وودز كوليكشنthe woods collection","brandEn":"The Woods Collection","category":"عطور","url":"https://sarahmakeup37.com/ar/wGBbGV","stock":20,"posName":"THE WOODS NATURAL FLAME EDP 100ML"},
+  {"barcode":"8011003872077","sarahId":"wWEPmbW","nameAr":"عطر فرزاتشي ايروس الرجالي الاصدار البارفيوم 100مل","nameEn":"","brandAr":"فرزاتشي VERSACE","brandEn":"Versace","category":"تريند","url":"https://sarahmakeup37.com/ar/wWEPmbW","stock":17,"posName":"Versace EROS PARFUM 100ML"},
+  {"barcode":"614514410103","sarahId":"OKvVzN","nameAr":"الرصاصي عطر شاستيتي او دو بيرفيوم النسائي - 100 مل","nameEn":"","brandAr":"","brandEn":"Rasasi","category":"عطور كلاسيكيه","url":"https://sarahmakeup37.com/ar/OKvVzN","stock":12,"posName":"RASASI CHASTITY W EDP 100ML"},
+  {"barcode":"689304188890","sarahId":"wGzAOR","nameAr":"انستازيا بيفرلي هيلز باليت نوفو - 12 ظل","nameEn":"","brandAr":"انستازيا ANASTASIA","brandEn":"Anastasia","category":"ظلال العيون","url":"https://sarahmakeup37.com/ar/wGzAOR","stock":12,"posName":"ANASTASIA NOUVEAU PALETTE"},
+  {"barcode":"7640111502791","sarahId":"wGjEeD","nameAr":"عطر لاليك انكر نوار اكستريم او دو بارفيوم 100مل","nameEn":"","brandAr":"لاليك LALIOUE","brandEn":"Lalique","category":"عطور الرجال","url":"https://sarahmakeup37.com/ar/wGjEeD","stock":9,"posName":"LALIQUE ANCRE N EXTREME EDP 100ML"},
+  {"barcode":"8057971188727","sarahId":"KZmAnB","nameAr":"عطر دولتشي غابانا ذا ون قولد الرجالي او دو بارفيوم انتنس 100مل","nameEn":"","brandAr":"دولسي غابانا DOLCE & GABBANA","brandEn":"Dolce & Gabbana","category":"عطور الرجال","url":"https://sarahmakeup37.com/ar/KZmAnB","stock":8,"posName":"D&G GOLD THE ONE EDP INTENSE 100ML"},
+  {"barcode":"3614228899376","sarahId":"gvxqEK","nameAr":"عطر روبرتو كفالي بارادايس فاوند او دو تواليت 75مل","nameEn":"","brandAr":"روبرتroberto cavalli","brandEn":"Roberto Cavalli","category":"عطور الرجال","url":"https://sarahmakeup37.com/ar/gvxqEK","stock":8,"posName":"R-CAVALLI PARADISE FOUND EDT 75ML"},
+  {"barcode":"3616303048181","sarahId":"dAlmlj","nameAr":"عطر قوتشي عطر فلورا غورجيوس جاسمين او دو برفيوم 100مل","nameEn":"","brandAr":"قوتشي GUCCI","brandEn":"Gucci","category":"عطور النساء","url":"https://sarahmakeup37.com/ar/dAlmlj","stock":7,"posName":"GUCCI FLORA GORGEOUS JASMINE 100ML EDP"},
+  {"barcode":"3337875583626","sarahId":"yOQEGq","nameAr":"لاروش بوزيه هيالو بي 5 سيرم لبشرة مرنة 30 مل","nameEn":"","brandAr":"لاروش بوزيه La Roche Posay","brandEn":"La Roche-Posay","category":"","url":"https://sarahmakeup37.com/ar/yOQEGq","stock":7,"posName":"LA ROCHE HYA B5 SERUM 30ML"},
+  {"barcode":"8018365500037","sarahId":"lGGGOBa","nameAr":"عطر فرزاتشي او فريش الرجالي تواليت 100مل","nameEn":"","brandAr":"فرزاتشي VERSACE","brandEn":"Versace","category":"عطور الرجال","url":"https://sarahmakeup37.com/ar/lGGGOBa","stock":6,"posName":"VERSACE FRAICHE EDT 100ML"},
+  {"barcode":"3614228954051","sarahId":"ajbDyg","nameAr":"عطر روبرتو كفalli بارادايس فاوند او دو تواليت 50مل","nameEn":"","brandAr":"روبرتroberto cavalli","brandEn":"Roberto Cavalli","category":"عطور الرجال","url":"https://sarahmakeup37.com/ar/ajbDyg","stock":6,"posName":"ROBERTO CAVALLI PARADISE FOUND EDT 50ML"},
+  {"barcode":"8011003858552","sarahId":"KQDXba","nameAr":"عطر فرزاتشي ديلان توركواز أو دو تواليت 100مل","nameEn":"","brandAr":"فرزاتشي VERSACE","brandEn":"Versace","category":"عطور النساء","url":"https://sarahmakeup37.com/ar/KQDXba","stock":5,"posName":"VERSACE TURQUOISE EDT 100ML"},
+  {"barcode":"3700550216094","sarahId":"GPnPRP","nameAr":"عطر كيليان انجل شير او دو بارفيوم-50مل","nameEn":"","brandAr":"كيليان","brandEn":"Kilian","category":"عطور النيش","url":"https://sarahmakeup37.com/ar/GPnPRP","stock":5,"posName":"KILIAN ANGELS SHARE EDP 50 ML"},
+  {"barcode":"3274872448780","sarahId":"pQxgKWg","nameAr":"جيفنشي عطر جنتلمان سوسايتي أو دو برفان 100مل","nameEn":"","brandAr":"جبفنشي GIVENCHY","brandEn":"Givenchy","category":"عطور الرجال","url":"https://sarahmakeup37.com/ar/pQxgKWg","stock":3,"posName":"GIV-SOCIETY EDP 100ML"},
+  {"barcode":"3355992004596","sarahId":"GPpeQW","nameAr":"عطر تيد لابيدوس رومبا او دو تواليت 100مل","nameEn":"","brandAr":"","brandEn":"Ted Lapidus","category":"عطور كلاسيكيه","url":"https://sarahmakeup37.com/ar/GPpeQW","stock":3,"posName":"TED LAPIDUS RUMBA EDT 100ML"},
+  {"barcode":"3760294350881","sarahId":"gqKWwE","nameAr":"عطر ذا وودز كوليكشن باي ناتشورال ايسنس او دو بارفيوم 100مل","nameEn":"","brandAr":"ذا وودز كوليكشنthe woods collection","brandEn":"The Woods Collection","category":"عطور","url":"https://sarahmakeup37.com/ar/gqKWwE","stock":3,"posName":"THE WOODS NATURAL EDDENCE EDP 100ML"},
+  {"barcode":"3386460126014","sarahId":"jOdnxl","nameAr":"عطر فان كليف اوريكد ليذر او دو بارفيوم 75مل","nameEn":"","brandAr":"فان كليف Van Cleef & Arpels","brandEn":"Van Cleef & Arpels","category":"عطور الرجال","url":"https://sarahmakeup37.com/ar/jOdnxl","stock":2,"posName":"VAN CLEEF & ARPELS ORCHID LEATHER EDP 75ML"},
+];
+
+const currentPath = new URL('../data/sarah-pos-candidates-batch6.json', import.meta.url);
+const current = JSON.parse(readFileSync(currentPath, 'utf8'));
+const byBc = new Map([...EXTRA, ...current].map((c) => [c.barcode, c]));
+const merged = [...byBc.values()].sort((a, b) => b.stock - a.stock);
+writeFileSync(currentPath.pathname, `${JSON.stringify(merged, null, 2)}\n`);
+console.log(`Restored ${merged.length} batch6 candidates`);

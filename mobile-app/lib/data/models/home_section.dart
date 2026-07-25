@@ -156,6 +156,13 @@ class HomeSection {
   final String? display;
   final String? shape;
   final String? kind;
+  final String? aspectRatio;
+  final String? overlayStyle;
+  final String? borderStyle;
+  final bool showShadow;
+  final double? customWidth;
+  final double? customHeight;
+  final double? tileCornerRadius;
   final List<HomeSection> children;
   final double? borderRadius;
   final String? borderColor;
@@ -198,6 +205,13 @@ class HomeSection {
     this.display,
     this.shape,
     this.kind,
+    this.aspectRatio,
+    this.overlayStyle,
+    this.borderStyle,
+    this.showShadow = false,
+    this.customWidth,
+    this.customHeight,
+    this.tileCornerRadius,
     this.children = const [],
     this.borderRadius,
     this.borderColor,
@@ -250,6 +264,15 @@ class HomeSection {
         display: json['display']?.toString(),
         shape: json['shape']?.toString(),
         kind: json['kind']?.toString(),
+        aspectRatio: json['aspectRatio']?.toString(),
+        overlayStyle: json['overlayStyle']?.toString(),
+        borderStyle: json['borderStyle']?.toString(),
+        showShadow: json['showShadow'] == true,
+        customWidth: json['customWidth'] != null ? (json['customWidth'] as num).toDouble() : null,
+        customHeight: json['customHeight'] != null ? (json['customHeight'] as num).toDouble() : null,
+        tileCornerRadius: json['tileCornerRadius'] != null
+            ? (json['tileCornerRadius'] as num).toDouble()
+            : null,
         children: asList(json['children']).map((e) => HomeSection.fromJson(asMap(e))).toList(),
         borderRadius: json['borderRadius'] != null ? (json['borderRadius'] as num).toDouble() : null,
         borderColor: json['borderColor']?.toString(),

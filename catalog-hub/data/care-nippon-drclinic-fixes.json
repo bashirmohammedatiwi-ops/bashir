@@ -1,0 +1,659 @@
+[
+  {
+    "barcode": "8680923356143",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Pentavitin Moisturizing Care Aloe Vera 350ml",
+    "nameAr": "نيبون غسول Pentavitin المرطب بالصبار 350 مل",
+    "typeKey": "body-wash",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-cleansers"
+    ],
+    "introEn": "Nippon Pentavitin Aloe Vera wash cleanses and hydrates with up to 72-hour moisture lock.",
+    "introAr": "غسول نيبون Pentavitin بالصبار ينظف ويرطب مع حبس الرطوبة حتى 72 ساعة."
+  },
+  {
+    "barcode": "8680923356037",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Pentavitin Moisturizing Care All Skin Types 350ml",
+    "nameAr": "نيبون غسول Pentavitin المرطب لجميع أنواع البشرة 350 مل",
+    "typeKey": "body-wash",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-cleansers"
+    ],
+    "introEn": "Nippon Pentavitin All Skin Types wash gently cleanses while maintaining the skin moisture barrier.",
+    "introAr": "غسول نيبون Pentavitin لجميع أنواع البشرة ينظف بلطف مع الحفاظ على حاجز الترطيب."
+  },
+  {
+    "barcode": "8680923356167",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Pentavitin Sensitive Skin Moisturizing Care Rose Extract 350ml",
+    "nameAr": "نيبون غسول Pentavitin المرطب للبشرة الحساسة بخلاصة الورد 350 مل",
+    "typeKey": "body-wash",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-cleansers"
+    ],
+    "introEn": "Nippon Pentavitin Rose Extract wash soothes sensitive skin and leaves it soft after cleansing.",
+    "introAr": "غسول نيبون Pentavitin بخلاصة الورد يهدئ البشرة الحساسة ويتركها ناعمة بعد التنظيف."
+  },
+  {
+    "barcode": "8680923355030",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Advanced Facial Repair & Care Cleansing Foam 160ml",
+    "nameAr": "نيبون رغوة تنظيف متقدمة للإصلاح والعناية 160 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Nippon Advanced Cleansing Foam deep-cleans while supporting skin repair and daily care.",
+    "introAr": "رغوة نيبون المتقدمة تنظف بعمق وتدعم إصلاح البشرة والعناية اليومية."
+  },
+  {
+    "barcode": "8680923355085",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Lip Mask & Scrub Bubble Gum 20g",
+    "nameAr": "نيبون قناع وسكراب شفاه بنكهة العلكة 20 جم",
+    "typeKey": "lip-balm",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-lip-care"
+    ],
+    "introEn": "Nippon Bubble Gum Lip Mask & Scrub exfoliates dead skin and nourishes lips with sugar granules.",
+    "introAr": "قناع وسكراب شفاه نيبون بنكهة العلكة يقشّر ويغذّي الشفاه بحبيبات السكر."
+  },
+  {
+    "barcode": "8680923355092",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Lip Mask & Scrub Strawberry 20g",
+    "nameAr": "نيبون قناع وسكراب شفاه بالفراولة 20 جم",
+    "typeKey": "lip-balm",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-lip-care"
+    ],
+    "introEn": "Nippon Strawberry Lip Mask & Scrub gently exfoliates and leaves lips smooth and moisturised.",
+    "introAr": "قناع وسكراب شفاه نيبون بالفراولة يقشّر بلطف ويترك الشفاه ناعمة ومرطبة."
+  },
+  {
+    "barcode": "8680923355139",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Sun Protect Cream SPF50+ All Skin Types 50ml",
+    "nameAr": "نيبون كريم واقي شمس SPF50+ لجميع أنواع البشرة 50 مل",
+    "typeKey": "sunscreen",
+    "sub": [
+      "care-face-care",
+      "care-sun-care"
+    ],
+    "tert": [
+      "care-sun-care-sunscreen"
+    ],
+    "introEn": "Nippon Sun Protect SPF50+ shields all skin types from UVA/UVB with a lightweight daily cream.",
+    "introAr": "كريم نيبون واقي الشمس SPF50+ يحمي من UVA/UVB بتركيبة خفيفة للاستخدام اليومي."
+  },
+  {
+    "barcode": "8680923355214",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Daily Feminine Wash Aloe Vera 250ml",
+    "nameAr": "نيبون غسول نسائي يومي بالصبار 250 مل",
+    "typeKey": "body-wash",
+    "sub": [
+      "care-women-care"
+    ],
+    "tert": [
+      "care-women-care-intimate-wash"
+    ],
+    "introEn": "Nippon Daily Feminine Wash with aloe vera gently cleanses and refreshes intimate areas.",
+    "introAr": "غسول نيبون النسائي اليومي بالصبار ينظف بلطف وينعش المناطق الحساسة."
+  },
+  {
+    "barcode": "8680923355221",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Daily Feminine Wash Chamomile 250ml",
+    "nameAr": "نيبون غسول نسائي يومي بالبابونج 250 مل",
+    "typeKey": "body-wash",
+    "sub": [
+      "care-women-care"
+    ],
+    "tert": [
+      "care-women-care-intimate-wash"
+    ],
+    "introEn": "Nippon Daily Feminine Wash with chamomile soothes and maintains natural intimate balance.",
+    "introAr": "غسول نيبون النسائي اليومي بالبابونج يهدئ ويحافظ على التوازن الطبيعي."
+  },
+  {
+    "barcode": "8680923354965",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Balance Whitening Body Cream 50ml",
+    "nameAr": "نيبون كريم Balance المبيّض للجسم 50 مل",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-whitening"
+    ],
+    "introEn": "Nippon Balance Whitening Body Cream helps even skin tone and hydrates body skin.",
+    "introAr": "كريم نيبون Balance المبيّض يساعد على توحيد لون الجسم وترطيبه."
+  },
+  {
+    "barcode": "8680923354958",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Brightening Body Cream Collagen & Arbutin 50ml",
+    "nameAr": "نيبون كريم تفتيح للجسم بالكولاجين والاربوتين 50 مل",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-whitening"
+    ],
+    "introEn": "Nippon Collagen & Arbutin Body Cream brightens dull skin while nourishing the body.",
+    "introAr": "كريم نيبون بالكولاجين والاربوتين يفتح البشرة الباهتة ويغذّي الجسم."
+  },
+  {
+    "barcode": "8680923356402",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Sweet & Refreshing Shower Gel Sunset Glow 600ml",
+    "nameAr": "نيبون جل الاستحمام المنعش - رائحة ضوء الغروب 600 مل",
+    "typeKey": "body-wash",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-cleansers"
+    ],
+    "introEn": "Nippon Sweet & Refreshing Shower Gel Sunset Glow cleanses and leaves skin delicately scented.",
+    "introAr": "جل استحمام نيبون Sunset Glow ينظف ويترك البشرة معطرة بلطف."
+  },
+  {
+    "barcode": "8680923356419",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Sweet & Refreshing Shower Gel Ocean Breeze 600ml",
+    "nameAr": "نيبون جل الاستحمام المنعش - رائحة النسيم البحري 600 مل",
+    "typeKey": "body-wash",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-cleansers"
+    ],
+    "introEn": "Nippon Sweet & Refreshing Shower Gel Ocean Breeze refreshes skin with a clean, airy scent.",
+    "introAr": "جل استحمام نيبون Ocean Breeze ينعش البشرة برائحة نظيفة ومنعشة."
+  },
+  {
+    "barcode": "8680923356396",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Sweet & Refreshing Shower Gel Green Essence 600ml",
+    "nameAr": "نيبون جل استحمام منعش Green Essence 600 مل",
+    "typeKey": "body-wash",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-cleansers"
+    ],
+    "introEn": "Nippon Green Essence Shower Gel cleanses with a fresh herbal scent and leaves skin soft.",
+    "introAr": "جل استحمام نيبون Green Essence ينظف برائحة أعشاب منعشة ويترك البشرة ناعمة."
+  },
+  {
+    "barcode": "8680923356426",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Sweet & Refreshing Shower Gel Pink Blossom 600ml",
+    "nameAr": "نيبون جل استحمام منعش Pink Blossom 600 مل",
+    "typeKey": "body-wash",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-cleansers"
+    ],
+    "introEn": "Nippon Pink Blossom Shower Gel refreshes skin with a delicate floral fragrance.",
+    "introAr": "جل استحمام نيبون Pink Blossom ينعش البشرة برائحة زهرية رقيقة."
+  },
+  {
+    "barcode": "8680923361345",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Whitening Roll-On Antiperspirant White 70ml",
+    "nameAr": "نيبون رول أون مضاد للتعرق والتفتيح أبيض 70 مل",
+    "typeKey": "deodorant",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-deodorant"
+    ],
+    "introEn": "Nippon Whitening Roll-On White controls wetness and odour while supporting even underarm tone.",
+    "introAr": "رول أون نيبون الأبيض يتحكم بالتعرق والرائحة ويدعم توحيد لون تحت الإبط."
+  },
+  {
+    "barcode": "8680923361451",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Whitening Roll-On Antiperspirant Orange 70ml",
+    "nameAr": "نيبون رول أون مضاد للتعرق والتفتيح برتقالي 70 مل",
+    "typeKey": "deodorant",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-deodorant"
+    ],
+    "introEn": "Nippon Orange Roll-On antiperspirant controls wetness and helps brighten underarms.",
+    "introAr": "رول أون نيبون البرتقالي يتحكم بالتعرق ويساعد على تفتيح تحت الإبط."
+  },
+  {
+    "barcode": "8680923355160",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Whitening Roll-On Antiperspirant Blue 70ml",
+    "nameAr": "نيبون رول أون مضاد للتعرق والتفتيح أزرق 70 مل",
+    "typeKey": "deodorant",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-deodorant"
+    ],
+    "introEn": "Nippon Blue Roll-On antiperspirant delivers long-lasting protection with a fresh feel.",
+    "introAr": "رول أون نيبون الأزرق يمنح حماية طويلة من التعرق مع إحساس منعش."
+  },
+  {
+    "barcode": "8680923355177",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Whitening Roll-On Antiperspirant Pink 70ml",
+    "nameAr": "نيبون رول أون مضاد للتعرق والتفتيح وردي 70 مل",
+    "typeKey": "deodorant",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-deodorant"
+    ],
+    "introEn": "Nippon Whitening Roll-On Pink provides antiperspirant protection and helps brighten underarms.",
+    "introAr": "رول أون نيبون الوردي المضاد للتعرق يحمي ويساعد على تفتيح تحت الإبط."
+  },
+  {
+    "barcode": "8680923355191",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Whitening Roll-On Antiperspirant Brown 70ml",
+    "nameAr": "نيبون رول أون مضاد للتعرق والتفتيح بني 70 مل",
+    "typeKey": "deodorant",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-deodorant"
+    ],
+    "introEn": "Nippon Brown Roll-On antiperspirant provides effective wetness control and odour protection.",
+    "introAr": "رول أون نيبون البني يتحكم بالتعرق ويحمي من الرائحة بفعالية."
+  },
+  {
+    "barcode": "8680923355207",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Whitening Roll-On Antiperspirant Maroon 70ml",
+    "nameAr": "نيبون رول أون مضاد للتعرق والتفتيح خمري 70 مل",
+    "typeKey": "deodorant",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-deodorant"
+    ],
+    "introEn": "Nippon Maroon Roll-On antiperspirant helps brighten underarms while keeping skin dry.",
+    "introAr": "رول أون نيبون الخمري يساعد على تفتيح تحت الإبط مع الحفاظ على جفاف البشرة."
+  },
+  {
+    "barcode": "8680923356389",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Gentle Cleansing Foam 200ml",
+    "nameAr": "نيبون رغوة تنظيف لطيفة للوجه 200 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Nippon Gentle Cleansing Foam removes daily impurities without disturbing the skin barrier.",
+    "introAr": "رغوة نيبون اللطيفة تزيل الشوائب اليومية دون الإخلال بحاجز البشرة."
+  },
+  {
+    "barcode": "8680923356150",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Pentavitin Moisturizing Care Hyaluronic Acid 350ml",
+    "nameAr": "نيبون غسول Pentavitin المرطب بحمض الهيالورونيك 350 مل",
+    "typeKey": "body-wash",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-cleansers"
+    ],
+    "introEn": "Nippon Pentavitin Hyaluronic wash gently cleanses while locking in moisture for up to 72 hours.",
+    "introAr": "غسول نيبون Pentavitin بحمض الهيالورونيك ينظف بلطف ويحبس الرطوبة في البشرة."
+  },
+  {
+    "barcode": "8680923355016",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Cleansing Foam with Aloe Vera 160ml",
+    "nameAr": "نيبون رغوة تنظيف بالصبار 160 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Nippon Aloe Vera Cleansing Foam soothes and cleanses normal to sensitive skin.",
+    "introAr": "رغوة نيبون بالصبار تهدئ وتنظف البشرة العادية إلى الحساسة."
+  },
+  {
+    "barcode": "8680923355023",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Cleansing Foam with Chamomile 160ml",
+    "nameAr": "نيبون رغوة تنظيف بالبابونج 160 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Nippon Chamomile Cleansing Foam calms skin while removing makeup and impurities.",
+    "introAr": "رغوة نيبون بالبابونج تهدئ البشرة وتزيل المكياج والشوائب."
+  },
+  {
+    "barcode": "8680923355047",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Moisturizing Body Lotion Argan Oil 400ml",
+    "nameAr": "نيبون لوشن مرطب للجسم بزيت الأرغان 400 مل",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Nippon Body Lotion with argan oil nourishes dry skin and improves softness.",
+    "introAr": "لوشن نيبون بزيت الأرغان يغذّي البشرة الجافة ويمنحها نعومة."
+  },
+  {
+    "barcode": "8680923355061",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Moisturizing Body Lotion Shea Butter 400ml",
+    "nameAr": "نيبون لوشن مرطب للجسم بزبدة الشيا 400 مل",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Nippon Shea Butter Body Lotion deeply moisturises very dry, rough skin.",
+    "introAr": "لوشن نيبون بزبدة الشيا يرطب بعمق البشرة الجافة والخشنة."
+  },
+  {
+    "barcode": "8680923355078",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Moisturizing Body Lotion Vitamin E 400ml",
+    "nameAr": "نيبون لوشن مرطب للجسم بفيتامين E 400 مل",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Nippon Vitamin E Body Lotion protects and hydrates for smoother-looking skin.",
+    "introAr": "لوشن نيبون بفيتامين E يحمي ويرطب البشرة لمظهر أكثر نعومة."
+  },
+  {
+    "barcode": "8680923355054",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Moisturizing Body Lotion Collagen 400ml",
+    "nameAr": "نيبون لوشن مرطب للجسم بالكولاجين 400 مل",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Nippon Collagen Body Lotion supports elasticity and daily body hydration.",
+    "introAr": "لوشن نيبون بالكولاجين يدعم مرونة البشرة وترطيب الجسم يومياً."
+  },
+  {
+    "barcode": "8680923361444",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon 25% Urea Foot Care Cream 50g",
+    "nameAr": "نيبون كريم للقدمين 25% يوريا 50 جم",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Nippon 25% Urea Foot Cream softens dry, cracked heels with shea butter and argan oil.",
+    "introAr": "كريم نيبون للقدمين بتركيز 25% يوريا يلين الكعبين الجاف والمتشقق."
+  },
+  {
+    "barcode": "8680923355115",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Lip Moisturizer SPF 30 4.5ml",
+    "nameAr": "نيبون مرطب شفاه SPF 30 4.5 مل",
+    "typeKey": "lip-balm",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-lip-care"
+    ],
+    "introEn": "Nippon Lip Moisturizer SPF 30 protects and hydrates delicate lip skin.",
+    "introAr": "مرطب شفاه نيبون SPF 30 يحمي ويرطب الشفاه."
+  },
+  {
+    "barcode": "8680923356273",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Advanced Repair Face Serum 20ml",
+    "nameAr": "نيبون سيروم إصلاح متقدم للوجه 20 مل",
+    "typeKey": "serum",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Nippon Advanced Repair Serum supports skin renewal and overnight recovery.",
+    "introAr": "سيروم نيبون للإصلاح المتقدم يدعم تجديد البشرة والتعافي الليلي."
+  },
+  {
+    "barcode": "8680923354972",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Brightening Body Cream Vitamin E 50ml",
+    "nameAr": "نيبون كريم تفتيح للجسم بفيتامين E 50 مل",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-whitening"
+    ],
+    "introEn": "Nippon Brightening Body Cream with vitamin E supports a more even-looking tone.",
+    "introAr": "كريم نيبون للتفتيح بفيتامين E يدعم مظهراً أكثر تجانساً للجسم."
+  },
+  {
+    "barcode": "8680923358000",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Whitening Roll-On Antiperspirant 75ml",
+    "nameAr": "نيبون رول أون مضاد للتعرق والتفتيح 75 مل",
+    "typeKey": "deodorant",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-deodorant"
+    ],
+    "introEn": "Nippon Whitening Roll-On provides antiperspirant protection and helps even underarm tone.",
+    "introAr": "رول أون نيبون المضاد للتعرق يحمي ويساعد على توحيد لون تحت الإبط."
+  },
+  {
+    "barcode": "8680923355993",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Brightening Body Cream Glutathione 50ml",
+    "nameAr": "نيبون كريم تفتيح للجسم بالجلوتاثيون 50 مل",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-whitening"
+    ],
+    "introEn": "Nippon Glutathione Body Cream helps brighten dull-looking body skin.",
+    "introAr": "كريم نيبون بالجلوتاثيون يساعد على تفتيح البشرة الباهتة للجسم."
+  },
+  {
+    "barcode": "8680923355146",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Brightening Body Cream Collagen 50ml",
+    "nameAr": "نيبون كريم تفتيح للجسم بالكولاجين 50 مل",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-whitening"
+    ],
+    "introEn": "Nippon Collagen Brightening Cream nourishes while supporting a brighter body tone.",
+    "introAr": "كريم نيبون للتفتيح بالكولاجين يغذّي ويدعم مظهراً أفتح للجسم."
+  },
+  {
+    "barcode": "8680923354989",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Hyaluronic Acid Face Serum 30ml",
+    "nameAr": "نيبون سيروم وجه بحمض الهيالورونيك 30 مل",
+    "typeKey": "serum",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Nippon Hyaluronic Acid Serum delivers deep hydration and plumper-looking skin.",
+    "introAr": "سيروم نيبون بحمض الهيالورونيك يرطب بعمق ويمنح البشرة مظهراً أكثر امتلاءً."
+  },
+  {
+    "barcode": "8680923355153",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Vitamin C Face Serum 30ml",
+    "nameAr": "نيبون سيروم وجه بفيتامين سي 30 مل",
+    "typeKey": "serum",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Nippon Vitamin C Serum brightens dull skin and supports an even-looking complexion.",
+    "introAr": "سيروم نيبون بفيتامين سي يفتح البشرة الباهتة ويدعم مظهراً أكثر تجانساً."
+  },
+  {
+    "barcode": "8680923354941",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Collagen Face Serum 30ml",
+    "nameAr": "نيبون سيروم وجه بالكولاجين 30 مل",
+    "typeKey": "serum",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Nippon Collagen Serum improves elasticity and helps reduce the look of fine lines.",
+    "introAr": "سيروم نيبون بالكولاجين يحسّن المرونة ويساعد على تقليل مظهر الخطوط الدقيقة."
+  },
+  {
+    "barcode": "8680923354996",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Niacinamide Face Serum 30ml",
+    "nameAr": "نيبون سيروم وجه بالنياسيناميد 30 مل",
+    "typeKey": "serum",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Nippon Niacinamide Serum helps refine pores and balance uneven-looking skin tone.",
+    "introAr": "سيروم نيبون بالنياسيناميد يساعد على تنقية المسام وتوحيد لون البشرة."
+  },
+  {
+    "barcode": "8680923355184",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Whitening Roll-On Antiperspirant Green 70ml",
+    "nameAr": "نيبون رول أون مضاد للتعرق والتفتيح أخضر 70 مل",
+    "typeKey": "deodorant",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-deodorant"
+    ],
+    "introEn": "Nippon Green Roll-On antiperspirant controls wetness and helps brighten underarms.",
+    "introAr": "رول أون نيبون الأخضر يتحكم بالتعرق ويساعد على تفتيح تحت الإبط."
+  }
+]

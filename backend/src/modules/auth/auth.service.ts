@@ -25,28 +25,58 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (exists) throw new ConflictException("Email already registered");
+    const email = dto.email.trim().toLowerCase();
+    const exists = await this.prisma.user.findUnique({ where: { email } });
+    if (exists) {
+      throw new ConflictException("هذا البريد الإلكتروني مسجّل مسبقاً");
+    }
+
+    const phone = dto.phone?.trim();
+    if (phone) {
+      const phoneTaken = await this.prisma.user.findUnique({ where: { phone } });
+      if (phoneTaken) {
+        throw new ConflictException("رقم الهاتف مستخدم في حساب آخر");
+      }
+    }
+
     const passwordHash = await bcrypt.hash(dto.password, 10);
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        name: dto.name,
-        phone: dto.phone,
-        passwordHash,
-        role: Role.CUSTOMER,
-      },
-    });
-    return this.issueTokens(user.id, user.role);
+    try {
+      const user = await this.prisma.user.create({
+        data: {
+          email,
+          name: dto.name.trim(),
+          phone: phone || undefined,
+          passwordHash,
+          role: Role.CUSTOMER,
+        },
+      });
+      return this.issueTokens(user.id, user.role);
+    } catch (err: any) {
+      if (err?.code === "P2002") {
+        const target = Array.isArray(err?.meta?.target) ? err.meta.target.join(",") : "";
+        if (target.includes("phone")) {
+          throw new ConflictException("رقم الهاتف مستخدم في حساب آخر");
+        }
+        throw new ConflictException("هذا البريد الإلكتروني مسجّل مسبقاً");
+      }
+      throw err;
+    }
   }
 
   async login(dto: LoginDto, meta?: { ip?: string; userAgent?: string }) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (!user || !user.passwordHash) throw new UnauthorizedException("Invalid credentials");
-    if (!user.isActive) throw new UnauthorizedException("Account disabled");
+    const email = dto.email.trim().toLowerCase();
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user || !user.passwordHash) {
+      throw new UnauthorizedException("البريد الإلكتروني أو كلمة المرور غير صحيحة");
+    }
+    if (!user.isActive) {
+      throw new UnauthorizedException("تم تعطيل هذا الحساب");
+    }
 
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
-    if (!ok) throw new UnauthorizedException("Invalid credentials");
+    if (!ok) {
+      throw new UnauthorizedException("البريد الإلكتروني أو كلمة المرور غير صحيحة");
+    }
 
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
 

@@ -51,7 +51,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         context.go('/');
       }
     } catch (e) {
-      if (mounted) AppSnackbar.error(context, friendlyError(e));
+      if (!mounted) return;
+      final msg = friendlyError(e);
+      if (isEmailAlreadyRegisteredError(e)) {
+        AppSnackbar.action(
+          context,
+          message: msg,
+          actionLabel: 'تسجيل الدخول',
+          onAction: () => context.pop(),
+        );
+      } else {
+        AppSnackbar.error(context, msg);
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }

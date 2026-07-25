@@ -223,7 +223,7 @@ export function SectionEditorPanel({
                         type="info"
                         showIcon
                         message="معرض صور متقدم"
-                        description="9+ أشكال · 11 نسبة · carousel · bento · overlay · ظل"
+                        description="الأبعاد، الإطار، الظل، وطريقة العرض — تظهر في التطبيق كما تختارها هنا."
                         style={{ marginBottom: 16 }}
                       />
                       <PhotoWallStyleFields />

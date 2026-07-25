@@ -1,0 +1,454 @@
+[
+  {
+    "barcode": "5011451103870",
+    "brandEn": "Simple",
+    "brandAr": "سيمبل",
+    "nameEn": "Simple Kind to Skin Moisturising Facial Wash 150ml",
+    "nameAr": "سيمبل Kind to Skin غسول وجه مرطب 150 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Simple Moisturising Facial Wash gently cleanses while helping maintain the skin's natural moisture.",
+    "introAr": "غسول سيمبل المرطب ينظف بلطف ويساعد على الحفاظ برطوبة البشرة الطبيعية."
+  },
+  {
+    "barcode": "5011451103931",
+    "brandEn": "Simple",
+    "brandAr": "سيمبل",
+    "nameEn": "Simple Kind to Skin Hydrating Light Moisturiser 125ml",
+    "nameAr": "سيمبل Kind to Skin مرطب خفيف 125 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Simple Hydrating Light Moisturiser provides fast-absorbing hydration for sensitive skin.",
+    "introAr": "مرطب سيمبل الخفيف يمنح ترطيباً سريع الامتصاص للبشرة الحساسة."
+  },
+  {
+    "barcode": "5011451103948",
+    "brandEn": "Simple",
+    "brandAr": "سيمبل",
+    "nameEn": "Simple Kind to Skin Replenishing Rich Moisturiser 125ml",
+    "nameAr": "سيمبل Kind to Skin مرطب غني 125 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Simple Replenishing Rich Moisturiser nourishes dry skin for up to 12 hours of hydration.",
+    "introAr": "مرطب سيمبل الغني يغذّي البشرة الجافة ويرطبها حتى 12 ساعة."
+  },
+  {
+    "barcode": "8710908708787",
+    "brandEn": "Simple",
+    "brandAr": "سيمبل",
+    "nameEn": "Simple Water Boost Hydrating Booster 25ml",
+    "nameAr": "سيمبل Water Boost معزّز ترطيب 25 مل",
+    "typeKey": "serum",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Simple Water Boost Hydrating Booster delivers an instant moisture boost for dehydrated skin.",
+    "introAr": "معزّز سيمبل Water Boost يرطب البشرة الجافة فوراً."
+  },
+  {
+    "barcode": "8710447473832",
+    "brandEn": "Simple",
+    "brandAr": "سيمبل",
+    "nameEn": "Simple Kind to Skin Clearing Booster 25ml",
+    "nameAr": "سيمبل Kind to Skin معزّز تنقية 25 مل",
+    "typeKey": "serum",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Simple Clearing Booster helps reduce blemishes and supports clearer-looking skin.",
+    "introAr": "معزّز سيمبل للتنقية يساعد على تقليل الحبوب ومظهر بشرة أوضح."
+  },
+  {
+    "barcode": "8013134009360",
+    "brandEn": "Foltene Pharma",
+    "brandAr": "فولتين فارما",
+    "nameEn": "Foltene Pharma Eyelash and Eyebrow Energizing Treatment 6.5ml",
+    "nameAr": "فولتين فارما علاج منشّط للرموش والحواجب 6.5 مل",
+    "typeKey": "serum",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-eye-care"
+    ],
+    "introEn": "Foltene Eyelash and Eyebrow Treatment energizes lashes and brows for a fuller look.",
+    "introAr": "علاج فولتين للرموش والحواجب ينشّط الرموش والحواجب لمظهر أكثر كثافة."
+  },
+  {
+    "barcode": "8013134009384",
+    "brandEn": "Foltene Pharma",
+    "brandAr": "فولتين فارما",
+    "nameEn": "Foltene Pharma Hair and Scalp Treatment for Women 12 Ampoules 6ml",
+    "nameAr": "فولتين فارما علاج الشعر وفروة الرأس للنساء 12 أمبولة 6 مل",
+    "typeKey": "serum",
+    "sub": [
+      "care-hair-care"
+    ],
+    "tert": [
+      "care-hair-care-hair-treatment"
+    ],
+    "introEn": "Foltene Women Hair Treatment ampoules help reduce hair loss and revitalize the scalp.",
+    "introAr": "أمبولات فولتين لعلاج الشعر تساعد على تقليل التساقط وتنشيط فروة الرأس."
+  },
+  {
+    "barcode": "8886467068812",
+    "brandEn": "St. Ives",
+    "brandAr": "سانت آيفز",
+    "nameEn": "St. Ives Clear Glow Tea Tree Micellar Water 400ml",
+    "nameAr": "سانت آيفز Clear Glow ماء ميسيلار بالشاي الأخضر 400 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "St. Ives Tea Tree Micellar Water cleanses, tones and removes makeup in one gentle step.",
+    "introAr": "ماء ميسيلar سانت آيفز بالشاي الأخضر ينظف ويزيل المكياج بلطف."
+  },
+  {
+    "barcode": "8886467068805",
+    "brandEn": "St. Ives",
+    "brandAr": "سانت آيفز",
+    "nameEn": "St. Ives Rosy Glow Rose Micellar Water 400ml",
+    "nameAr": "سانت آيفز Rosy Glow ماء ميسيلار بالورد 400 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "St. Ives Rose Micellar Water gently removes makeup while leaving skin softly refreshed.",
+    "introAr": "ماء ميسيلar سانت آيفز بالورد يزيل المكياج ويترك البشرة منعشة."
+  },
+  {
+    "barcode": "8886467068799",
+    "brandEn": "St. Ives",
+    "brandAr": "سانت آيفز",
+    "nameEn": "St. Ives Fresh Glow Apricot Micellar Water 400ml",
+    "nameAr": "سانت آيفز Fresh Glow ماء ميسيلار بالمشمش 400 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "St. Ives Apricot Micellar Water cleanses and removes makeup with a fresh, glowing finish.",
+    "introAr": "ماء ميسيلar سانت آيفز بالمشمش ينظف ويزيل المكياج لمظهر مشرق."
+  },
+  {
+    "barcode": "5907609345707",
+    "brandEn": "Eveline Cosmetics",
+    "brandAr": "إيفيلين",
+    "nameEn": "Eveline Cosmetics White Prestige 4D Facial Wash Gel 150ml",
+    "nameAr": "إيفيلين White Prestige 4D جل غسول وجه 150 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Eveline White Prestige 4D Wash Gel brightens skin and removes impurities and dead cells.",
+    "introAr": "جل غسول إيفيلين White Prestige 4D يفتح البشرة ويزيل الشوائب والخلايا الميتة."
+  },
+  {
+    "barcode": "3574660310405",
+    "brandEn": "Gosh",
+    "brandAr": "غوش",
+    "nameEn": "Gosh Ultra Thin Brow Pen",
+    "nameAr": "غوش قلم حواجب فائق الدقة",
+    "typeKey": "makeup",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-eye-care"
+    ],
+    "introEn": "Gosh Ultra Thin Brow Pen defines brows with precise, natural-looking strokes.",
+    "introAr": "قلم جوش فائق الدقة يحدّد الحواجب بخطوط دقيقة وطبيعية."
+  },
+  {
+    "barcode": "4005900871237",
+    "brandEn": "Eucerin",
+    "brandAr": "يوسيرين",
+    "nameEn": "Eucerin DermoPurifyer Post-Acne Marks Triple Effect Serum 40ml",
+    "nameAr": "يوسيرين DermoPurifyer سيروم ما بعد حب الشباب ثلاثي المفعول 40 مل",
+    "typeKey": "serum",
+    "sub": [
+      "care-derma-hub",
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Eucerin Post-Acne Marks Serum helps fade marks and improve uneven-looking skin tone.",
+    "introAr": "سيروم يوسيرين لآثار حب الشباب يساعد على تلطيف البقع وتوحيد لون البشرة."
+  },
+  {
+    "barcode": "4005808166190",
+    "brandEn": "Nivea",
+    "brandAr": "نيفيا",
+    "nameEn": "Nivea Creme Multi-Purpose Moisturiser 150ml",
+    "nameAr": "نيفيا كريم كلاسيكي متعدد الاستخدامات 150 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-skin-and-body-care",
+      "care-face-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Nivea Creme is the classic all-purpose moisturiser for face, hands and body.",
+    "introAr": "كريم نيفيا الكلاسيكي مرطب متعدد الاستخدامات للوجه واليدين والجسم."
+  },
+  {
+    "barcode": "42164104",
+    "brandEn": "Nivea",
+    "brandAr": "نيفيا",
+    "nameEn": "Nivea Creme Multi-Purpose Moisturiser 60ml",
+    "nameAr": "نيفيا كريم كلاسيكي متعدد الاستخدامات 60 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-skin-and-body-care",
+      "care-face-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Nivea Creme is the classic all-purpose moisturiser for face, hands and body.",
+    "introAr": "كريم نيفيا الكلاسيكي مرطب متعدد الاستخدامات للوجه واليدين والجسم."
+  },
+  {
+    "barcode": "3574661656014",
+    "brandEn": "Johnson's",
+    "brandAr": "جونسون",
+    "nameEn": "Johnson's Soft Cream Face and Body 200ml",
+    "nameAr": "جونسون كريم سوفت للوجه والجسم 200 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Johnson's Soft Cream gently moisturises face and body for soft, comfortable skin.",
+    "introAr": "كريم جونسون سوفت يرطب الوجه والجسم بلطف لبشرة ناعمة ومريحة."
+  },
+  {
+    "barcode": "3600524053147",
+    "brandEn": "L'Oréal Paris",
+    "brandAr": "لوريال باريس",
+    "nameEn": "L'Oréal Paris Hyaluron Expert Oil Control Face Wash 200ml",
+    "nameAr": "لوريال باريس Hyaluron Expert غسول تحكم بالدهون 200 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "L'Oréal Hyaluron Expert Oil Control Wash cleanses excess oil while maintaining hydration.",
+    "introAr": "غسول لوريال Hyaluron Expert يتحكم بالدهون مع الحفاظ على ترطيب البشرة."
+  },
+  {
+    "barcode": "9314839002632",
+    "brandEn": "QV",
+    "brandAr": "كيو في",
+    "nameEn": "QV Moisturising Replenish Cream 100g",
+    "nameAr": "كيو في كريم Moisturising Replenish 100 جم",
+    "typeKey": "cream",
+    "sub": [
+      "care-derma-hub",
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "QV Replenish Cream restores moisture to dry, sensitive skin without irritation.",
+    "introAr": "كريم كيو في Replenish يعيد الرطوبة للبشرة الجافة والحساسة دون تهيج."
+  },
+  {
+    "barcode": "9314839008955",
+    "brandEn": "QV",
+    "brandAr": "كيو في",
+    "nameEn": "QV Intensive Body Moisturiser 100g",
+    "nameAr": "كيو في مرطب مركّز للجسم 100 جم",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "QV Intensive Body Moisturiser provides rich hydration for very dry body skin.",
+    "introAr": "مرطب كيو في المركّز للجسم يرطب بعمق البشرة الجافة جداً."
+  },
+  {
+    "barcode": "9314839006876",
+    "brandEn": "QV",
+    "brandAr": "كيو في",
+    "nameEn": "QV Heel Balm for Dry Cracked Heels 50g",
+    "nameAr": "كيو في مرهم للكعبين الجاف والمتشقق 50 جم",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "QV Heel Balm softens dry, cracked heels and restores comfortable skin.",
+    "introAr": "مرهم كيو في للكعبين يلين الجلد الجاف والمتشقق."
+  },
+  {
+    "barcode": "5902802705891",
+    "brandEn": "Bioliq",
+    "brandAr": "بيوليك",
+    "nameEn": "Bioliq Dermo CICA Intensively Regenerating Cream 30ml",
+    "nameAr": "بيوليك Dermo CICA كريم تجديد مكثف 30 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Bioliq CICA Cream supports intensive skin regeneration and barrier recovery.",
+    "introAr": "كريم بيوليك CICA يدعم تجديد البشرة وإصلاح حاجزها."
+  },
+  {
+    "barcode": "5906071044651",
+    "brandEn": "Bioliq",
+    "brandAr": "بيوليك",
+    "nameEn": "Bioliq Dermo Antiperspirant Roll-On 48h 50ml",
+    "nameAr": "بيوليك Dermo رول أون مضاد للتعرق 48 ساعة 50 مل",
+    "typeKey": "deodorant",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-deodorant"
+    ],
+    "introEn": "Bioliq Antiperspirant Roll-On provides 48-hour protection against wetness and odour.",
+    "introAr": "رول أون بيوليك المضاد للتعرق يمنح حماية 48 ساعة."
+  },
+  {
+    "barcode": "5906071028798",
+    "brandEn": "Bioliq",
+    "brandAr": "بيوليك",
+    "nameEn": "Bioliq Intensive Eye Serum 15ml",
+    "nameAr": "بيوليك سيروم العيون المكثف 15 مل",
+    "typeKey": "eye-cream",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-eye-care"
+    ],
+    "introEn": "Bioliq Intensive Eye Serum targets fine lines and tired-looking eye area.",
+    "introAr": "سيروم بيوليك المكثف للعيون يستهدف الخطوط الدقيقة ومظهر التعب."
+  },
+  {
+    "barcode": "5906071004402",
+    "brandEn": "Bioliq",
+    "brandAr": "بيوليك",
+    "nameEn": "Bioliq Clean Purifying Cleansing Gel 125ml",
+    "nameAr": "بيوليك Clean جل تنظيف وتنقية 125 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Bioliq Clean Purifying Gel cleanses pores and removes daily impurities.",
+    "introAr": "جل بيوليك Clean ينظف المسام ويزيل الشوائب اليومية."
+  },
+  {
+    "barcode": "5906071009285",
+    "brandEn": "Bioliq",
+    "brandAr": "بيوليك",
+    "nameEn": "Bioliq Exfoliating Face Gel 125ml",
+    "nameAr": "بيوليك جل مقشر للوجه 125 مل",
+    "typeKey": "scrub",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Bioliq Exfoliating Gel gently removes dead skin cells for smoother-looking skin.",
+    "introAr": "جل بيوليك المقشر يزيل خلايا الجلد الميتة لمظهر أنعم."
+  },
+  {
+    "barcode": "3600541897694",
+    "brandEn": "Garnier",
+    "brandAr": "غارنييه",
+    "nameEn": "Garnier SkinActive Micellar Water-in-Oil Cleanser 400ml",
+    "nameAr": "غارنييه SkinActive ماء ميسيلار Water-in-Oil 400 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Garnier Micellar Water-in-Oil removes waterproof makeup while nourishing skin.",
+    "introAr": "ماء ميسيلar غارنييه Water-in-Oil يزيل المكياج المقاوم للماء ويغذّي البشرة."
+  },
+  {
+    "barcode": "3574661287256",
+    "brandEn": "Neutrogena",
+    "brandAr": "نيوتروجينا",
+    "nameEn": "Neutrogena Hydro Boost Gel Cream Facial Moisturiser 50ml",
+    "nameAr": "نيوتروجينا Hydro Boost كريم جل مرطب للوجه 50 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Neutrogena Hydro Boost Gel Cream delivers long-lasting hydration with hyaluronic acid.",
+    "introAr": "كريم جel نيوتروجينا Hydro Boost يرطب لفترة طويلة بحمض الهيالورونيك."
+  },
+  {
+    "barcode": "3574661333595",
+    "brandEn": "Catrice",
+    "brandAr": "كاتrice",
+    "nameEn": "Catrice All Matt+ Shine Control Powder",
+    "nameAr": "كاتريس All Matt+ بودرة تحكم باللمعان",
+    "typeKey": "makeup",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Catrice All Matt+ Powder controls shine and sets makeup for a matte finish.",
+    "introAr": "بودرة Catrice All Matt+ تتحكم باللمعان وتثبّت المكياج بلمسة مطفية."
+  }
+]

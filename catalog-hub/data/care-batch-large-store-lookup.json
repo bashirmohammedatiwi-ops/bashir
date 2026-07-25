@@ -1,0 +1,2596 @@
+{
+  "updatedAt": 1784746860448,
+  "found": 120,
+  "rows": [
+    {
+      "barcode": "6976623801017",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6942349743955",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6941349360711",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6932511219333",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6941349381846",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6941349379812",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6942349717116",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6942349708886",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6929428206945",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6929428206952",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6942349737428",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6942349708909",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6942349717284",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6942349713491",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3574661450964",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8886467068812",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8886467068805",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8886467068799",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "77043357644",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "77043003466",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "77043104507",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "77043103609",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "77043358023",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "77043355862",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4005808668861",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5900017087665",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4005900612090",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Micellair Expert Make Up Cleaning Foam 150 ml",
+        "nameAr": "غسول رغوي ميسيلار لتنظيف الوجه من الماكياج 150 مل",
+        "brandEn": "Nivea",
+        "brandAr": "Nivea",
+        "sku": "4005900612090-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "42355083",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8999777011826",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "9005800352367",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5900017080628",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Energy Micellar face fluid with vitamin C+B3 400 ml",
+        "nameAr": "ميسيلار إنرجي بفيتامين ج+بي3 400 مل",
+        "brandEn": "Nivea",
+        "brandAr": "Nivea",
+        "sku": "5900017080628-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "3600542468466",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3600542446198",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "SkinActive Fast Bright Face Wash with Pure Lemon 400 ml",
+        "nameAr": "غسول الوجه بالليمون النقي لأشراقة فورية 400 مل",
+        "brandEn": "Garnier",
+        "brandAr": "Garnier",
+        "sku": "3600542446198-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "3600524076085",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3600524165185",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3600524128968",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3600523959631",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3600524053147",
+      "miraaya": {
+        "nameEn": "Loreal Hyaluron Expert Oil Control Face Wash",
+        "nameAr": "لوريال غسول تحكم بالزيت هايالورون اكسبرت",
+        "brandEn": "Loreal",
+        "brandAr": "Loreal"
+      },
+      "elryan": {
+        "nameEn": "L’Oréal Paris Dermo Hyaluron Oil Control Wash – 200ml",
+        "nameAr": "لوريال باريس غسول ديرمو هيالورون للتحكم بالزيوت – 200 مل",
+        "brandEn": "LOreal Paris",
+        "brandAr": "LOreal Paris",
+        "sku": "3600524053147-6734454ea288ca0019aad543"
+      }
+    },
+    {
+      "barcode": "8994993016013",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3600524019587",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6294016925769",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3600541897694",
+      "miraaya": {
+        "nameEn": "Garnier SkinActive Micellar Water-in-Oil Cleanser - 400ml",
+        "nameAr": "غارنييه سكين اكتيف ماء ميسيلار بالزيت منظف - 400 مل",
+        "brandEn": "Garnier",
+        "brandAr": "Garnier"
+      },
+      "elryan": {
+        "nameEn": "Micellar Cleansing Makeup Remover 400 ml",
+        "nameAr": "ماء ميسيلار منظف بالزيت 400 مل",
+        "brandEn": "Garnier",
+        "brandAr": "Garnier",
+        "sku": "3600541897694-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "3600541729711",
+      "miraaya": {
+        "nameEn": "Garnier SkinActive Micellar Cleansing Water All-in-1 - 400ml",
+        "nameAr": "غارنييه سكين أكتيف ماء ميسيلار منظف متعدد الاستخدامات - 400 مل",
+        "brandEn": "Garnier",
+        "brandAr": "Garnier"
+      },
+      "elryan": {
+        "nameEn": "Micellar Skin Cleaning Water",
+        "nameAr": "مزيل الماكياج ميسيلار لتنظيف البشرة",
+        "brandEn": "Garnier",
+        "brandAr": "Garnier",
+        "sku": "3600541729711-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "3600542536868",
+      "miraaya": {
+        "nameEn": "Garnier Skin Naturals Anti-Acne Micellar Cleansing Water - 400ml",
+        "nameAr": "غارنييه سكين ناتشرالز ماء ميسيلار منظف مضاد لحب الشباب - 400 مل",
+        "brandEn": "Garnier",
+        "brandAr": "Garnier"
+      },
+      "elryan": {
+        "nameEn": "Micellar Cleansing Water Salicylic Acid 400 ml",
+        "nameAr": "ميسيلار للبشرة المعرضة للحبوب 400 مل",
+        "brandEn": "Garnier",
+        "brandAr": "Garnier",
+        "sku": "3600542536868-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "6974388193750",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3600542488051",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5021044025908",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3600540676627",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3610340656040",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Daily Exfoliating Wash For Acne Prone Skin 150 ml‎",
+        "nameAr": "غسول يومي مقشر للبشرة المعرضة لحب الشباب 150 مل",
+        "brandEn": "Garnier",
+        "brandAr": "Garnier",
+        "sku": "3610340656040-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "8994993028894",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3600542105286",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Pure Active Charcoal Anti Blackhead Cleansing Gel Wash 200 ml - Garnier",
+        "nameAr": "غسول جل منظف بالفحم مضاد للرؤوس السوداء 200 مل - غارنييه",
+        "brandEn": "Garnier",
+        "brandAr": "Garnier",
+        "sku": "3600542105286-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "8859362515422",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5060120163424",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "7531829534276",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6930236309308",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8901138008369",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5907609345707",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Eveline Cosmetics White Prestige 4D Facial Wash Gel - Brightens skin and removes impurities and dead skin cells, 150 ml",
+        "nameAr": "إيفلين كوزميتكس وايت بريستيج 4 دي غسول جل للوجه - يفتح لون البشرة ويزيل الشوائب وخلايا الجلد الميت, 150 مل",
+        "brandEn": "Eveline Cosmetics",
+        "brandAr": "Eveline Cosmetics",
+        "sku": "5907609345707-6943d17b94ccee001f51bc04"
+      }
+    },
+    {
+      "barcode": "3574660310405",
+      "miraaya": {
+        "nameEn": "Gosh Ultra Thin Brow Pen",
+        "nameAr": "غوش قلم الحاجب الدقيق",
+        "brandEn": "Gosh",
+        "brandAr": "Gosh"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "3574660149807",
+      "miraaya": {
+        "nameEn": "Beautybomb Only Matte Liquid Lipstick",
+        "nameAr": "بيوتي بومب احمر شفاه سائل مات فقط",
+        "brandEn": "Beautybomb",
+        "brandAr": "Beautybomb"
+      },
+      "elryan": {
+        "nameEn": "Daily Facial Scrub & Blackhead Clearing 150 ml - Clean&clear",
+        "nameAr": "مقشر يومي للوجه وإزالة الرؤوس السوداء 150 مل - كلين أند كلير",
+        "brandEn": "Clean & Clear",
+        "brandAr": "Clean & Clear",
+        "sku": "3574660149807-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "5012251013499",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5012251013390",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8999999053048",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8999999562199",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8999999053062",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8999999058340",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8999999053031",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8851932407915",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8851932407908",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5011451103870",
+      "miraaya": {
+        "nameEn": "Loreal Infaillible 24H Concealer Pomade",
+        "nameAr": "لوريال كونسيلر انفاليبل 24 ساعة",
+        "brandEn": "Loreal",
+        "brandAr": "Loreal"
+      },
+      "elryan": {
+        "nameEn": "Moisturizing Facial Wash 150 ml",
+        "nameAr": "غسول جل مرطب للوجه 150 مل",
+        "brandEn": "Simple",
+        "brandAr": "Simple",
+        "sku": "5011451103870-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "5011451103863",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Refreshing Facial Wash Gel 150 ml",
+        "nameAr": "جل غسول منعش للوجه 150 مل",
+        "brandEn": "Simple",
+        "brandAr": "Simple",
+        "sku": "5011451103863-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "5011451104020",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Age Resisting Facial Wash 150 ml - Simple",
+        "nameAr": "غسول الوجه المقاوم لعلامات التقدم في السن 150 مل - سيمبل",
+        "brandEn": "Simple",
+        "brandAr": "Simple",
+        "sku": "5011451104020-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "8710908710773",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Simple Micellar Facial Gel Wash - Removes Impurities and Makeup, 150 ml",
+        "nameAr": "سمبل ميسيلار غسول جل للوجه - يزيل الشوائب والمكياج, 150 مل",
+        "brandEn": "Simple",
+        "brandAr": "Simple",
+        "sku": "8710908710773-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "8901030953941",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Protect N Glow Vitamin C Facial Wash 150 ml",
+        "nameAr": "غسول الوجه بروتيكت إن جلو بفيتامين سي 150 مل",
+        "brandEn": "Simple",
+        "brandAr": "Simple",
+        "sku": "8901030953941-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "8710908708787",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "مرطب الوجه ووتر بوتس للبشرة الجافة, 25 مل",
+        "nameAr": "مرطب الوجه ووتر بوتس للبشرة الجافة, 25 مل",
+        "brandEn": "Simple",
+        "brandAr": "Simple",
+        "sku": "8710908708787"
+      }
+    },
+    {
+      "barcode": "8710447473832",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Simple Clearing Booster , 25ml",
+        "nameAr": "مرطب سمبل منقي للبشرة الدهنية , 25 مل",
+        "brandEn": "Simple",
+        "brandAr": "Simple",
+        "sku": "8710447473832-66c32666c114f20036ed33ff"
+      }
+    },
+    {
+      "barcode": "8720181157134",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Serum 10% Niacinamide Vitamin B3 - 30ml",
+        "nameAr": "سيروم نياسيناميد 10% - 30 مل",
+        "brandEn": "Simple",
+        "brandAr": "Simple",
+        "sku": "8720181157134-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "8720181476846",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8720181476877",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8720181476853",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5011451103931",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Simple Hydrating Light Moisturiser , 125ml",
+        "nameAr": "مرطب خفيف القوام سمبل , 125 مل",
+        "brandEn": "Simple",
+        "brandAr": "Simple",
+        "sku": "5011451103931-66c32666c114f20036ed33ff"
+      }
+    },
+    {
+      "barcode": "5011451103948",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Simple Replenishing Rich Moisturiser , 125ml",
+        "nameAr": "سمبل مرطب غني للبشرة الجافة , 125 مل",
+        "brandEn": "Simple",
+        "brandAr": "Simple",
+        "sku": "5011451103948-66c32666c114f20036ed33ff"
+      }
+    },
+    {
+      "barcode": "87300700076",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "362032050515",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "362032050522",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "362032050539",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "358892336500",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Tizo Tizo2 Primer Sunscreen Non Tinted SPF40, 50 g",
+        "nameAr": "تايزو 2 برايمر واقي شمس غير ملون بعامل حماية 40, 50 غم",
+        "brandEn": "TIZO",
+        "brandAr": "تايزو",
+        "sku": "358892336500-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "358892326501",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Tizo3 Primer Sunscreen Tinted SPF40, 50 g",
+        "nameAr": "تايزو 3 واقي شمس ملون بعامل حماية 40، 50 غم",
+        "brandEn": "TIZO",
+        "brandAr": "تايزو",
+        "sku": "358892326501-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "893689001181",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3350900002589",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3350900000264",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3350900003104",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3350900000011",
+      "miraaya": {
+        "nameEn": "Embryolisse Concentrated Multitasking Moisturizer Cream - 75ml",
+        "nameAr": "امبريوليس كريم الحليب متعدد الترطيب المركز المعجزة - 75 مل",
+        "brandEn": "Embryolisse",
+        "brandAr": "Embryolisse"
+      },
+      "elryan": {
+        "nameEn": "Embryolisse Lait-Crème Concentré Multi-Function Cream - hydrates and primes skin, 75 ml",
+        "nameAr": "إمبريوليس لايت كريم كونسنتري كريم متعدد الوظائف - يرطب ويهيئ البشرة, 75 مل",
+        "brandEn": "Embryolisse",
+        "brandAr": "إمبريوليس",
+        "sku": "3350900000011-6943d17b94ccee001f51bc04"
+      }
+    },
+    {
+      "barcode": "3350900003128",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "769915233537",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "769915234053",
+      "miraaya": {
+        "nameEn": "The Ordinary Glycolic Acid 7% Exfoliating Toner - 100ml",
+        "nameAr": "ذا اورديناري تونر مقشر بحمض الجليكوليك 7% - 100 مل",
+        "brandEn": "The Ordinary",
+        "brandAr": "The Ordinary"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "769915194852",
+      "miraaya": {
+        "nameEn": "The Ordinary Salicylic Acid 2% Masque - 50ML",
+        "nameAr": "ذا اوردنري ماسك حمض الساليسيليك 2% - 50 مل",
+        "brandEn": "The Ordinary",
+        "brandAr": "The Ordinary"
+      },
+      "elryan": {
+        "nameEn": "The Ordinary Salicylic Acid 2% Masque Mask - 50ml",
+        "nameAr": "ماسك الوجه ذا اوردنري بحمض الساليسيليك 2% - 50 مل",
+        "brandEn": "The Ordinary",
+        "brandAr": "The Ordinary",
+        "sku": "769915194852-64d88d2eaf1b950012da5095"
+      }
+    },
+    {
+      "barcode": "769915193626",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "The Ordinary 100% L Ascorbic Acid Powder, 20 g",
+        "nameAr": "اوردنري مسحوق حمض الأسكوربيك للعناية بالبشرة, 20 غم",
+        "brandEn": "The Ordinary",
+        "brandAr": "The Ordinary",
+        "sku": "769915193626-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "769915231724",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "769915190281",
+      "miraaya": {
+        "nameEn": "The Ordinary Lactic Acid 5% + Hyaluronic Acid 2%",
+        "nameAr": "ذا اورديناري حمض اللاكتيك 5٪ + حمض الهيالورونيك 2٪ – سيروم تقشير لطيف",
+        "brandEn": "The Ordinary",
+        "brandAr": "The Ordinary"
+      },
+      "elryan": {
+        "nameEn": "The Ordinary Lactic Acid 5% + HA Exfoliating Serum , 30 ml",
+        "nameAr": "سيروم مقشر بحمض اللاكتيك 5% + حمض الهيالورونيك من اوردنري , 30 مل",
+        "brandEn": "The Ordinary",
+        "brandAr": "The Ordinary",
+        "sku": "769915190281-64d88d2eaf1b950012da5095"
+      }
+    },
+    {
+      "barcode": "769915195606",
+      "miraaya": {
+        "nameEn": "The Ordinary Peeling Solution AHA 30% + BHA 2% - 30ml",
+        "nameAr": "ذا اورديناري محلول تقشير AHA 30% + BHA 2% - 30 مل",
+        "brandEn": "The Ordinary",
+        "brandAr": "The Ordinary"
+      },
+      "elryan": {
+        "nameEn": "The Ordinary AHA 30% + BHA 2% Peeling Solution - 30ml",
+        "nameAr": "محلول تقشير الوجه ذا اورديناري AHA 30% + BHA 2%  - 30 مل",
+        "brandEn": "The Ordinary",
+        "brandAr": "The Ordinary",
+        "sku": "769915195606-6317b260912c8406a67caa44"
+      }
+    },
+    {
+      "barcode": "769915196009",
+      "miraaya": {
+        "nameEn": "The Ordinary Retinol 0.5% In Squalane - 30ml",
+        "nameAr": "ذا اوردينري سيروم الريتنول 0.5% ان سكوالان - 30 مل",
+        "brandEn": "The Ordinary",
+        "brandAr": "The Ordinary"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "769915233490",
+      "miraaya": {
+        "nameEn": "The Ordinary Hyaluronic Acid 2% + B5 Serum",
+        "nameAr": "ذا اورديناري سيروم حمض الهيالورونيك 2% + B5",
+        "brandEn": "The Ordinary",
+        "brandAr": "The Ordinary"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "769915195712",
+      "miraaya": {
+        "nameEn": "The Ordinary Caffeine Solution 5% + EGCG - 30ml",
+        "nameAr": "ذا اورديناري محلول الكافيين 5% + EGCG - 30 مل",
+        "brandEn": "The Ordinary",
+        "brandAr": "The Ordinary"
+      },
+      "elryan": {
+        "nameEn": "The Ordinary Caffeine Solution 5% + EGCG (30ml)",
+        "nameAr": "محلول الكافيين 5% + EGCG (30 مل) من ذا أورديناري",
+        "brandEn": "The Ordinary",
+        "brandAr": "The Ordinary",
+        "sku": "769915195712-6317b260912c8406a67caa44"
+      }
+    },
+    {
+      "barcode": "769915195941",
+      "miraaya": {
+        "nameEn": "The Ordinary Niacinamide 10% + Zinc 1% - 30ml",
+        "nameAr": "ذا اورديناري نياسيناميد 10% + زنك 1% - 30 مل",
+        "brandEn": "The Ordinary",
+        "brandAr": "The Ordinary"
+      },
+      "elryan": {
+        "nameEn": "The Ordinary Niacinamide 10% + Zinc 1% Face Serum - 30ml",
+        "nameAr": "سيروم الوجه ذا اوردينري نياسيناميد 10٪ + زنك 1٪ - 30 مل",
+        "brandEn": "The Ordinary",
+        "brandAr": "The Ordinary",
+        "sku": "769915195941-6317b260912c8406a67caa44"
+      }
+    },
+    {
+      "barcode": "8800272720970",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8800272720949",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8800272720963",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8800272720956",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8809438489805",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8809438489843",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8809438489850",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8809438489133",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8809438489126",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8809438489010",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8809438489829",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8809438489836",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8809667080446",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8809438488990",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8809667080354",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8809438489003",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8850008800230",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8850008800254",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8802547874623",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "709257078335",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "892717001162",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Chromabright for Skin Lightening 93 g",
+        "nameAr": "سيروم تفتيح البشرة كرومابرايت 93 غم",
+        "brandEn": "Pfb Vanish",
+        "brandAr": "Pfb Vanish",
+        "sku": "892717001162-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "70501116906",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3574661288376",
+      "miraaya": {
+        "nameEn": "Neutrogena Hydro Boost Cleanser Water Gel - 200ml",
+        "nameAr": "نيتروجينا جل منظف هيدرو بوست - 200 مل",
+        "brandEn": "Neutrogena",
+        "brandAr": "Neutrogena"
+      },
+      "elryan": {
+        "nameEn": "Hydro Boost Cleanser Water Gel 200 ml",
+        "nameAr": "غسول جل مائي هيدرو بوست 200 مل",
+        "brandEn": "Neutrogena",
+        "brandAr": "Neutrogena",
+        "sku": "3574661288376-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "3574661351711",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Neutrogena Hydro Boost City Shield Hydrating Lotion , 50 ml",
+        "nameAr": "لوشن مرطب  نيوتروجينا هيدرو بوست سيتي شيلد - 50 مل",
+        "brandEn": "Neutrogena",
+        "brandAr": "Neutrogena",
+        "sku": "3574661351711-66c32666c114f20036ed33ff"
+      }
+    },
+    {
+      "barcode": "3574661287263",
+      "miraaya": {
+        "nameEn": "Neutrogena HydraBoost Water Gel - 50ml",
+        "nameAr": "نيتروجينا جل مائي هايدرا بوست - 50 مل",
+        "brandEn": "Neutrogena",
+        "brandAr": "Neutrogena"
+      },
+      "elryan": {
+        "nameEn": "Hydro Boost Water Gel 50 ml",
+        "nameAr": "جل مائي هايدرو بوست 50 مل",
+        "brandEn": "Neutrogena",
+        "brandAr": "Neutrogena",
+        "sku": "3574661287263-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "3574661287256",
+      "miraaya": {
+        "nameEn": "Neutrogena Hydro Boost Gel Cream Facial Moisturiser - 50ml",
+        "nameAr": "نيتروجينا هيدرو بوست كريم جل مرطب للوجه - 50 مل",
+        "brandEn": "Neutrogena",
+        "brandAr": "Neutrogena"
+      },
+      "elryan": {
+        "nameEn": "Hydro Boost Gel Cream 50 ml",
+        "nameAr": "جل كريم لترطيب فائق 50 مل",
+        "brandEn": "Neutrogena",
+        "brandAr": "Neutrogena",
+        "sku": "3574661287256-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "3574661520353",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3574661639208",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3574661336657",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "70501017128",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3574660245844",
+      "miraaya": {
+        "nameEn": "Neutrogena Deep Clean Gel Wash - 200ml",
+        "nameAr": "نيتروجينا غسول جل التنظيف العميق - 200 مل",
+        "brandEn": "Neutrogena",
+        "brandAr": "Neutrogena"
+      },
+      "elryan": {
+        "nameEn": "Deep Clean Facial Wash Gel 200 ml",
+        "nameAr": "غسول جل للتنظيف العميق 200 مل",
+        "brandEn": "Neutrogena",
+        "brandAr": "Neutrogena",
+        "sku": "3574660245844-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "3574661529240",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Clear & Soothe Micellar Jelly Make Up Remover 200 ml - Neutrogena",
+        "nameAr": "مزيل الماكياج ميسيلار جيلي كلير & سوث 200 مل - نيوتروجينا",
+        "brandEn": "Neutrogena",
+        "brandAr": "Neutrogena",
+        "sku": "3574661529240-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "3574661333595",
+      "miraaya": {
+        "nameEn": "Catrice All Matt+ Shine Control Powder",
+        "nameAr": "Catrice All Matt+ Shine Control باودر",
+        "brandEn": "Catrice",
+        "brandAr": "Catrice"
+      },
+      "elryan": {
+        "nameEn": "Facial Wash Clear & Protect Oil free 200 ml",
+        "nameAr": "غسول لتنقية وحماية الوجه خالي من الزيت 200 مل",
+        "brandEn": "Neutrogena",
+        "brandAr": "Neutrogena",
+        "sku": "3574661333595-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "3574661835570",
+      "miraaya": {
+        "nameEn": "Neutrogena Face Wash Fresh and Clear With Vitamin C - 200ml",
+        "nameAr": "نيتروجينا غسول الوجه فريش آند كلير بفيتامين سي - 200 مل",
+        "brandEn": "Neutrogena",
+        "brandAr": "Neutrogena"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "3574660569759",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Refreshingly Clear Facial Wash 200 ml",
+        "nameAr": "غسول الوجه المنعش 200 مل",
+        "brandEn": "Neutrogena",
+        "brandAr": "Neutrogena",
+        "sku": "3574660569759-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "3574661073224",
+      "miraaya": {
+        "nameEn": "Neutrogena Oil Balancing Facial Wash",
+        "nameAr": "نيتروجينا غسول وجه متوازن للزيت",
+        "brandEn": "Neutrogena",
+        "brandAr": "Neutrogena"
+      },
+      "elryan": {
+        "nameEn": "Neutrogena Pore & Shine Daily Wash - 200ml",
+        "nameAr": "غسول نيوتروجينا  للوجه اليومي لتوازن الزيوت بور آند شاين - 200 مل",
+        "brandEn": "Neutrogena",
+        "brandAr": "Neutrogena",
+        "sku": "3574661073224-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "3574661292113",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Visibly Clear Wash Fein & Matt 150 ml - Neutrogena",
+        "nameAr": "غسول فيزيبلي كلير فين آند مات 150 مل - نيوتروجينا",
+        "brandEn": "Neutrogena",
+        "brandAr": "Neutrogena",
+        "sku": "3574661292113-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "5904125995461",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8859690411328",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8859690409790",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8859690410437",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8859690400346",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8859690407123",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8859690408847",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "635494334203",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3606000499607",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "733739076847",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Organic Vegetable Glycerin 237 ml - Now",
+        "nameAr": "جلسرين نباتي عضوي 237 مل - ناو",
+        "brandEn": "Now",
+        "brandAr": "Now",
+        "sku": "733739076847-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "8809317118628",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6921199122189",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6921199122172",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6921199101832",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6921199199822",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6921199119387",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6930236309889",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8809305993831",
+      "miraaya": {
+        "nameEn": "Secret Key Snow white Spot Gel - 65g",
+        "nameAr": "سنو وايت جل لتفتيح البقع - 65 غم",
+        "brandEn": "Secret Key",
+        "brandAr": "Secret Key"
+      },
+      "elryan": {
+        "nameEn": "Secret Key Snow White Spot Gel - 65 g",
+        "nameAr": "سيكرت كي سنو وايت سبوت جل لتفتيح التصبغات - 65 غم",
+        "brandEn": "Secret Key",
+        "brandAr": "سيكرت كي",
+        "sku": "8809305993831-696b306f091794004276a030"
+      }
+    },
+    {
+      "barcode": "4806500238822",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4806500238815",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6398565103149",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6921199196913",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4897075016021",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764150154",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764150161",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "79656000078",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "733739081902",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Red Clay Powder Moroccan 170 g - Now",
+        "nameAr": "مسحوق الطين الأحمر المغربي 170 غم - ناو",
+        "brandEn": "Now",
+        "brandAr": "Now",
+        "sku": "733739081902-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "71661009749",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6297001217634",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4000196901187",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Glysolid Cream 250 ml",
+        "nameAr": "كريم جليسوليد 250 مل",
+        "brandEn": "Glysolid",
+        "brandAr": "Glysolid",
+        "sku": "4000196901187-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "60018915",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Vaseline Blue Seal Aloe Fresh",
+        "nameAr": "مرطب بخلاصة الصبار",
+        "brandEn": "Vaseline",
+        "brandAr": "Vaseline",
+        "sku": "60018915-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "60019066",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Blueseal Baby Jelly 100 ml - Vaseline",
+        "nameAr": "فازلين بلوسيل بيبي 100 مل - فازلين",
+        "brandEn": "Vaseline",
+        "brandAr": "Vaseline",
+        "sku": "60019066-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "6001085121028",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Vaseline Blue Seal Nourishing Skin Jelly Vitamin E - 100ml",
+        "nameAr": "فازلين جل مغذي للبشرة بفيتامين هـ - 100 مل",
+        "brandEn": "Vaseline",
+        "brandAr": "Vaseline",
+        "sku": "6001085121028-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "60018960",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Vaseline Cocoa Butter Rich Conditioning Jelly - 100 ml",
+        "nameAr": "فازلين جل بلسم غني بزبدة الكاكاو - 100 مل",
+        "brandEn": "Vaseline",
+        "brandAr": "Vaseline",
+        "sku": "60018960-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "6001085120946",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Pure Petroleum Jelly Original",
+        "nameAr": "جل هلامي نقي أصلي",
+        "brandEn": "Vaseline",
+        "brandAr": "Vaseline",
+        "sku": "6001085120946-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "4005808858743",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "72140032258",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4005900480392",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Eucerin Sun Kids Spray SPF 50 - 200 ml",
+        "nameAr": "إيوسرين واقي شمس للأطفال سبراي عامل حماية من الشمس 50 - 200 مل",
+        "brandEn": "Eucerin",
+        "brandAr": "Eucerin",
+        "sku": "4005900480392-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "4005800321320",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Eucerin Sun Hydro Protect SPF 50, 50 ml",
+        "nameAr": "واقي شمس هيدرو بروتكت بعامل حماية 50، 50 مل",
+        "brandEn": "Eucerin",
+        "brandAr": "Eucerin",
+        "sku": "4005800321320-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "4005800119361",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4005900492944",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4005800108464",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Eucerin Ultra Sensitive Serum, 50 ml",
+        "nameAr": "يوسيرين كريم مرطب للبشرة الحساسة, 50 مل",
+        "brandEn": "Eucerin",
+        "brandAr": "Eucerin",
+        "sku": "4005800108464-6943d17b94ccee001f51bc04"
+      }
+    },
+    {
+      "barcode": "4005800182037",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4005800295485",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4005900871237",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Dermo Purifyer Post Acne Marks Triple Effect Serum 40 ml - Eucerin",
+        "nameAr": "سيروم ديرمو بيوريفايير ثلاثي التأثير لعلاج التصبغات وآثار حب الشباب 40 مل - يوسرين",
+        "brandEn": "Eucerin",
+        "brandAr": "Eucerin",
+        "sku": "4005900871237-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "4005900570796",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Eucerin Anti Pigment Day Cream SPF30، 50 ml",
+        "nameAr": "كريم نهاري مضاد للتصبغ بعامل حماية من أشعة الشمس 30، 50 مل",
+        "brandEn": "Eucerin",
+        "brandAr": "Eucerin",
+        "sku": "4005900570796-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "4005800210617",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Eucerin Anti-Pigment Dual Serum, 30 ml",
+        "nameAr": "يوسيرين سيروم مزدوج مضاد للبقع, 30 مل",
+        "brandEn": "Eucerin",
+        "brandAr": "Eucerin",
+        "sku": "4005800210617-6943d17b94ccee001f51bc04"
+      }
+    },
+    {
+      "barcode": "4005900552372",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "72140633820",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Eucerin Advanced Repair Hand Creme 78 g",
+        "nameAr": "كريم إصلاح اليدين المتقدم 78 غم",
+        "brandEn": "Eucerin",
+        "brandAr": "Eucerin",
+        "sku": "72140633820-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "4005800034329",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Urea Repair Plus Hand  Cream 75 ml - Eucerin",
+        "nameAr": "كريم باليوريا لإصلاح اليدين 75 مل - يوسرين",
+        "brandEn": "Eucerin",
+        "brandAr": "Eucerin",
+        "sku": "4005800034329-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "4005800034428",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4005800288296",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4005800283079",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4005800036798",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4005800194849",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4005800192883",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Eucerin Dermo Pure Cleanser, 400 ml",
+        "nameAr": "يوسيرين ديرمو بيوور جل منظف للوجه, 400 مل",
+        "brandEn": "Eucerin",
+        "brandAr": "Eucerin",
+        "sku": "4005800192883-6943d17b94ccee001f51bc04"
+      }
+    },
+    {
+      "barcode": "4005800347467",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "72140019433",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Eucerin Lotion Skin Calming, 500 ml",
+        "nameAr": "يوسيرين لوشن تهدئة البشرة 500, مل",
+        "brandEn": "Eucerin",
+        "brandAr": "Eucerin",
+        "sku": "72140019433-6943d17b94ccee001f51bc04"
+      }
+    },
+    {
+      "barcode": "72140634827",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "72140003043",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Eucerin Daily Hydration Lotion With SPF15+, 500 ml",
+        "nameAr": "يوسيرين لوشن الترطيب اليومي بعامل حماية من الشمس +15, 500 مل",
+        "brandEn": "Eucerin",
+        "brandAr": "Eucerin",
+        "sku": "72140003043-6943d17b94ccee001f51bc04"
+      }
+    },
+    {
+      "barcode": "72140020491",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Eucerin Advanced Repair Cream, 454G",
+        "nameAr": "يوسرين كريم الإصلاح المتقدم, 454غم",
+        "brandEn": "Eucerin",
+        "brandAr": "Eucerin",
+        "sku": "72140020491-6943d17b94ccee001f51bc04"
+      }
+    },
+    {
+      "barcode": "72140000219",
+      "miraaya": {
+        "nameEn": "Eucerin Original Healing Cream  - 454 g",
+        "nameAr": "يوسيرين كريم مرطب ومعالج للجسم - 454 جم",
+        "brandEn": "Eucerin",
+        "brandAr": "Eucerin"
+      },
+      "elryan": {
+        "nameEn": "Eucerin Original Healing Cream 454 g",
+        "nameAr": "كريم علاجي للبشرة 454 غم",
+        "brandEn": "Eucerin",
+        "brandAr": "Eucerin",
+        "sku": "72140000219-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "8680923356389",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923356143",
+      "miraaya": {
+        "nameEn": "Nippon Pentavitin Moisturizing Care Aloe Vera- 350ml",
+        "nameAr": "نيبون غسول بنتافيتين المرطب بالصبار - 350مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923356037",
+      "miraaya": {
+        "nameEn": "Nippon Pentavitin Moisturizing Care All Skin Types - 350ml",
+        "nameAr": "نيبون غسول بنتافيتين المرطب لجميع أنواع البشرة - 350مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923356150",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923356167",
+      "miraaya": {
+        "nameEn": "Nippon Pentavitin Sensitive Skin Moisturizing Care Rose Extract - 350ml",
+        "nameAr": "نيبون غسول بنتافيتين المرطب للبشرة الحساسة بالورد - 350مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355016",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355023",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355030",
+      "miraaya": {
+        "nameEn": "Nippon Advanced Facial Repair & Care Cleansing Foam - 160ml",
+        "nameAr": "نيبون رغوة تنظيف الوجه المتقدمة للإصلاح والعناية - 160مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355047",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355061",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355078",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355054",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923361444",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355115",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355085",
+      "miraaya": {
+        "nameEn": "Nippon Lip Mask & Scrub With Bubble Gum And Sugar Granules - 20g",
+        "nameAr": "نيبون قناع وسكراب الشفاه بالبابل غم وحبيبات السكر - 20غ",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355092",
+      "miraaya": {
+        "nameEn": "Nippon Lip Mask & Scrub With Strawberry And Sugar Granules - 20g",
+        "nameAr": "نيبون قناع وسكراب الشفاه بالفراولة وحبيبات السكر - 20غ",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923356273",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923354972",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923358000",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355993",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355146",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355139",
+      "miraaya": {
+        "nameEn": "Nippon Sun Protect Cream all skin types SPF50+ - 50 ml",
+        "nameAr": "نيبون كريم الحماية من الشمس 50 لجميع أنواع البشرة - 50مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355238",
+      "miraaya": {
+        "nameEn": "Nippon Advanced Facial Repair & Care Cream All Skin types - 100ml",
+        "nameAr": "نيبون كريم الإصلاح والعناية المتقدمة لجميع أنواع البشرة - 100 مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355252",
+      "miraaya": {
+        "nameEn": "Nippon Advanced Facial Repair & Care Cream oily skin type - 100ml",
+        "nameAr": "نيبون كريم الإصلاح والعناية المتقدمة للبشرة الدهنية - 100 مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355245",
+      "miraaya": {
+        "nameEn": "Nippon Advanced Facial Repair & Care Cream sensitive skin - 100ml",
+        "nameAr": "نيبون كريم الإصلاح والعناية المتقدمة للبشرة الحساسة - 100 مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923360195",
+      "miraaya": {
+        "nameEn": "Nippon Hair Care Anti Dandruff Shampoo - 400ml",
+        "nameAr": "نيبون شامبو مضاد لقشرة الشعر - 400مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923360188",
+      "miraaya": {
+        "nameEn": "Nippon Hair Care Anti Hair Fall & Repair Shampoo - 400ml",
+        "nameAr": "نيبون شامبو مضاد لتساقط الشعر - 400مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355214",
+      "miraaya": {
+        "nameEn": "Nippon Daily Feminine Wash  ALOE BARBADENSIS LEAF JUICE - 250ml",
+        "nameAr": "نيبون غسول النظافة الأنثوية اليومي بالألوفيرا - 250مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355221",
+      "miraaya": {
+        "nameEn": "Nippon Daily Feminine Wash CHAMOMILLA RECUTITA FLOWER EXTRACT - 250ml",
+        "nameAr": "نيبون غسول النظافة الأنثوية اليومي بالبابونج - 250مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923354965",
+      "miraaya": {
+        "nameEn": "Nippon Balance Whitening Body Cream - 50ml",
+        "nameAr": "نيبون كريم بالانس المبيّض للجسم - 50مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923354958",
+      "miraaya": {
+        "nameEn": "Nippon Brightening Body Cream Collagen & Arbutin - 50ml",
+        "nameAr": "نيبون كريم تفتيح الجسم بالكولاجين والاربوتين - 50مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923354989",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355153",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923354941",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923354996",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923356402",
+      "miraaya": {
+        "nameEn": "Nippon Sweet & Refreshing Shower Gel Sunset Glow - 600ml",
+        "nameAr": "نيبون جل الاستحمام المنعش - رائحة ضوء الغروب - 600مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923356419",
+      "miraaya": {
+        "nameEn": "Nippon Sweet & Refreshing Shower Gel Ocean Breeze - 600ml",
+        "nameAr": "نيبون جل الاستحمام المنعش - رائحة النسيم البحري - 600مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923356396",
+      "miraaya": {
+        "nameEn": "Nippon Sweet & Refreshing Shower Gel Green Essence - 600ml",
+        "nameAr": "نيبون جل الاستحمام المنعش - رائحة الأعشاب الخضراء - 600مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923356426",
+      "miraaya": {
+        "nameEn": "Nippon Sweet & Refreshing Shower Gel Pink Blossom - 600ml",
+        "nameAr": "نيبون جل الاستحمام المنعش رائحة الزهور الوردية - 600مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923361345",
+      "miraaya": {
+        "nameEn": "Nippon Roll Antiperspirant Whitening Purple Roll-On unisex - 70ml",
+        "nameAr": "نيبون رول مضاد العرق المبيض رول أون بنفسجي - 70 مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923361451",
+      "miraaya": {
+        "nameEn": "Nippon Roll Antiperspirant Whitening Orange Roll-On unisex - 70ml",
+        "nameAr": "نيبون رول مضاد العرق المبيض برتقالي رول أون - 70 مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355160",
+      "miraaya": {
+        "nameEn": "Nippon Roll Antiperspirant Whitening Blue Roll-On unisex - 70ml",
+        "nameAr": "نيبون رول مضاد العرق المبيض ازرق رول أون - 70 مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355184",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355177",
+      "miraaya": {
+        "nameEn": "Nippon Roll Antiperspirant Whitening Pink Roll-On unisex - 70ml",
+        "nameAr": "نيبون رول مضاد العرق المبيض وردي رول أون - 70 مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355191",
+      "miraaya": {
+        "nameEn": "Nippon Roll Antiperspirant Whitening Brown Roll-On unisex - 70ml",
+        "nameAr": "نيبون رول مضاد العرق المبيض بني رول أون - 70 مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8680923355207",
+      "miraaya": {
+        "nameEn": "Nippon Roll Antiperspirant Whitening Maroon Roll-On unisex - 70ml",
+        "nameAr": "نيبون رول مضاد العرق المبيض ماروني رول أون - 70 مل",
+        "brandEn": "Nippon",
+        "brandAr": "Nippon"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "5281019046677",
+      "miraaya": {
+        "nameEn": "Cosmaline Soft Wave Purifying Face Wash for Oily Skin - 250ml",
+        "nameAr": "كوزمالاين سوفت ويف غسول وجه منقي للبشرة الدهنية - 250 مل",
+        "brandEn": "Cosmaline",
+        "brandAr": "Cosmaline"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "5281019046684",
+      "miraaya": {
+        "nameEn": "Cosmaline Hydrating Face Wash for Normal to Dry Skin - 250ml",
+        "nameAr": "كوزمالاين غسول وجه مرطب للبشرة العادية إلى الجافة - 250 مل",
+        "brandEn": "Cosmaline",
+        "brandAr": "Cosmaline"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8806358568207",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8800261260579",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8901030769504",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4005900008442",
+      "miraaya": {
+        "nameEn": "Nivea Soft Moisturizer - 200ml",
+        "nameAr": "نيفيا سوفت كريم مرطب - 200 مل",
+        "brandEn": "Nivea",
+        "brandAr": "Nivea"
+      },
+      "elryan": {
+        "nameEn": "Soft Moisturizing Cream 200 ml - Nivea",
+        "nameAr": "كريم ترطيب ناعم 200 مل - نيفيا",
+        "brandEn": "Nivea",
+        "brandAr": "Nivea",
+        "sku": "4005900008442-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "9005800358840",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Nivea Family Care Moisturizing Cream - Hydrates dry skin and leaves it soft and smooth, 450 ml",
+        "nameAr": "نيفيا فاميلي كير كريم مرطب للوجه والجسم واليدين - يرطب البشرة الجافة ويمنحها نعومة تدوم, 450 مل",
+        "brandEn": "Nivea",
+        "brandAr": "Nivea",
+        "sku": "9005800358840-6943d17b94ccee001f51bc04"
+      }
+    },
+    {
+      "barcode": "4005808166190",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Moisturizing Body Cream",
+        "nameAr": "كريم ترطيب الجسم",
+        "brandEn": "Nivea",
+        "brandAr": "Nivea",
+        "sku": "4005808166190-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "42164104",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "Moisturizing Body Cream",
+        "nameAr": "كريم ترطيب الجسم",
+        "brandEn": "Nivea",
+        "brandAr": "Nivea",
+        "sku": "42164104-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "3574661656014",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "كريم سوفت للوجه و الجسم 200 مل",
+        "nameAr": "Soft Cream Face & Body 200 ml",
+        "brandEn": "Johnson's",
+        "brandAr": "Johnson's",
+        "sku": "3574661656014-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "77043104736",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764159508",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764154909",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764154954",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764154923",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764154930",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764154893",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764157658",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764157627",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764157641",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764157634",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764157665",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764157610",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764157962",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764157979",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764157931",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764157986",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764157290",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764152547",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764152554",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764158518",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764158501",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764158549",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764158525",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "6971764158532",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8436575091129",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8436575091136",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8436575091648",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8436575098012",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8436575098029",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8436575098036",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3760074270279",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "3760074270194",
+      "miraaya": {
+        "nameEn": "Floxia Spot And Complexion Control Micro Emulsion Cream",
+        "nameAr": "فلوكسيا كريم مايكرو للتحكم بالبقع وتوحيد لون البشرة",
+        "brandEn": "Floxia",
+        "brandAr": "Floxia"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "303160227066",
+      "miraaya": {
+        "nameEn": "Panoxyl Creamy Face Wash",
+        "nameAr": "بانوكسيل غسول وجه كريمي",
+        "brandEn": "Panoxyl",
+        "brandAr": "Panoxyl"
+      },
+      "elryan": {
+        "nameEn": "Acne Creamy Face Wash 170 g - PanOxyl",
+        "nameAr": "غسول كريمي للوجه لعلاج حب الشباب 170 غم - بانأوكزيل",
+        "brandEn": "PanOxyl",
+        "brandAr": "PanOxyl",
+        "sku": "303160227066-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "303160228551",
+      "miraaya": {
+        "nameEn": "Panoxyl Maximum Strength Acne Foaming Wash",
+        "nameAr": "بانوكسيل غسول رغوي لحب الشباب بقوة قصوى",
+        "brandEn": "Panoxyl",
+        "brandAr": "Panoxyl"
+      },
+      "elryan": {
+        "nameEn": "PANOXYL FACE WASH ACNE FOAMING 156GR",
+        "nameAr": "غسول بانكوسيل رغوي للبشرة المعرضة للحبوب 156 غ",
+        "brandEn": "PanOxyl",
+        "brandAr": "PanOxyl",
+        "sku": "303160228551-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "3760019121642",
+      "miraaya": {
+        "nameEn": "Soskin Whitening Body Lotion and Sensitive Area - 150ml",
+        "nameAr": "سوسكن لوشن التبييض للجسم والمناطق الحساسة - 150 مل",
+        "brandEn": "Soskin",
+        "brandAr": "Soskin"
+      },
+      "elryan": {
+        "nameEn": "Whitening Body Lotion And Sensitive Area 150 ml - Soskin",
+        "nameAr": "لوشن لتفتيح الجسم والمناطق الحساسة 150 مل - سوسكين",
+        "brandEn": "Soskin",
+        "brandAr": "Soskin",
+        "sku": "3760019121642-670d069eb60cc700199e175f"
+      }
+    },
+    {
+      "barcode": "5901643177546",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5901643177560",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5901643177584",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8000921303107",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5997001720554",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5997001720752",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8017990166793",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5902802707789",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5902802707796",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5902802705891",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "كريم سيكا لتجديد البشرة بشكل مكثف 30 مل",
+        "nameAr": "Cica cream intensively regenerating after dermatological treatments 30 ml",
+        "brandEn": "Bioliq",
+        "brandAr": "بايوليك",
+        "sku": "5902802705891-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "5906071003641",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5906071023021",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5906071044651",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "مزيل العرق رول اون 48 ساعة من الحماية 50 مل",
+        "nameAr": "Antiperspirant 48h Roll On Deodorant 50 ml",
+        "brandEn": "Bioliq",
+        "brandAr": "بايوليك",
+        "sku": "5906071044651-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "5906071028798",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "سيروم العيون المكثف 15 مل",
+        "nameAr": "Intensive Eye Serum 15 ml",
+        "brandEn": "Bioliq",
+        "brandAr": "بايوليك",
+        "sku": "5906071028798-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "5906071028187",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5906071043340",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5902802708205",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5902802708175",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5906071004402",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "جل التنظيف والتنقية بيوليك كلين 125 مل",
+        "nameAr": "Bioliq Clean Purifying Cleansing Gel 125 ml",
+        "brandEn": "Bioliq",
+        "brandAr": "بايوليك",
+        "sku": "5906071004402-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "5906071023045",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5906071023076",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5906071027814",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5906071023069",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5906071023038",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5906071022963",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5902802705969",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5902802706492",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5906071043333",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5902802700506",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5906071007809",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5906071002705",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5906071043784",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5906071049366",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5902802700414",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5906071009285",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "جل مقشر للوجه 125 مل",
+        "nameAr": "Exfoliating Face Gel 125 ml",
+        "brandEn": "Bioliq",
+        "brandAr": "بايوليك",
+        "sku": "5906071009285-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "5906071029443",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "9314839002632",
+      "miraaya": {
+        "nameEn": "QV Moisturising Replenish Cream - 100g",
+        "nameAr": "كيو في كريم مرطب معزز - 100 غم",
+        "brandEn": "QV",
+        "brandAr": "QV"
+      },
+      "elryan": {
+        "nameEn": "مرطب للبشرة الجافة 100 غم",
+        "nameAr": "Moisturising Cream 100 g",
+        "brandEn": "ego QV",
+        "brandAr": "ايجو كيو في",
+        "sku": "9314839002632-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "9314839002618",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "9314839019890",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "9314839008948",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "9314839008955",
+      "miraaya": null,
+      "elryan": {
+        "nameEn": "كريم الترطيب المركز للجسم 100 غم",
+        "nameAr": "Intensive Moisturizing Body Cream 100 g",
+        "brandEn": "ego QV",
+        "brandAr": "ايجو كيو في",
+        "sku": "9314839008955-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "9314839015427",
+      "miraaya": {
+        "nameEn": "QV Flare Up Skin Cream",
+        "nameAr": "كيو في كريم فليير اب لتهيج البشرة المعرضه للاكزيما",
+        "brandEn": "QV",
+        "brandAr": "QV"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "9314839017476",
+      "miraaya": {
+        "nameEn": "QV SPF15 Hand Cream",
+        "nameAr": "كيو في كريم اليدين بمعامل حماية 15",
+        "brandEn": "QV",
+        "brandAr": "QV"
+      },
+      "elryan": {
+        "nameEn": "كريم لليدين مع عامل حماية من الشمس 15",
+        "nameAr": "Hand cream with SPF 15",
+        "brandEn": "ego QV",
+        "brandAr": "ايجو كيو في",
+        "sku": "9314839017476-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "9314839021350",
+      "miraaya": {
+        "nameEn": "QV Face Moisturising Day Cream SPF 30",
+        "nameAr": "كيو في كريم مرطب نهاري مع عامل حماية 30",
+        "brandEn": "QV",
+        "brandAr": "QV"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "9314839006876",
+      "miraaya": {
+        "nameEn": "QV Rehydrate and Revive Heel Balm",
+        "nameAr": "كيو في كريم الترطيب العميق للقدمين الجافه و المتشققه",
+        "brandEn": "QV",
+        "brandAr": "QV"
+      },
+      "elryan": {
+        "nameEn": "مرطب للأقدام 50 غم",
+        "nameAr": "Heel Moisturizer 50 g",
+        "brandEn": "ego QV",
+        "brandAr": "ايجو كيو في",
+        "sku": "9314839006876-66d845baac93b00018d78215"
+      }
+    },
+    {
+      "barcode": "9314839021206",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "5902802700827",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4103040036308",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4103040130167",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4103040043726",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4103040147738",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "4103040043580",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8435534412982",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8435534412753",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8435534410148",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8435534410124",
+      "miraaya": null,
+      "elryan": null
+    },
+    {
+      "barcode": "8013134009360",
+      "miraaya": {
+        "nameEn": "Foltene Eyelash And Eyebrow Energizing Treatment",
+        "nameAr": "فولتين علاج منشط للرموش والحواجب",
+        "brandEn": "Foltene",
+        "brandAr": "Foltene"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8013134009384",
+      "miraaya": {
+        "nameEn": "Tarte Amazonian Clay 12-Hour Blush",
+        "nameAr": "تارت أمازونيان كلاي 12-ساعة احمر خدود",
+        "brandEn": "Tarte",
+        "brandAr": "Tarte"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8013134009308",
+      "miraaya": {
+        "nameEn": "Foltene Strengthening Shampoo For Thinning Hair",
+        "nameAr": "فولتين شامبو مقوي للشعر الخفيف والمتساقط",
+        "brandEn": "Foltene",
+        "brandAr": "Foltene"
+      },
+      "elryan": null
+    },
+    {
+      "barcode": "8013134009292",
+      "miraaya": {
+        "nameEn": "Foltene Pharma Thinning Hair Strengthening Shampoo for Men - 200ml",
+        "nameAr": "فولتين فارما شامبو تقوية الشعر الخفيف للرجال - 200 مل",
+        "brandEn": "Foltene",
+        "brandAr": "Foltene"
+      },
+      "elryan": null
+    }
+  ]
+}

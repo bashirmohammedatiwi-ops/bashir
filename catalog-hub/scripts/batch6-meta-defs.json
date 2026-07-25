@@ -1,0 +1,1237 @@
+{
+  "3337871324599": {
+    "brandEn": "Vichy",
+    "nameEn": "Vichy 48H Anti-Perspirant Roll-On 50ml",
+    "kind": "care",
+    "careLeaf": "care/skin-and-body-care/deodorant",
+    "typeKey": "deodorant",
+    "c": {
+      "introEn": "Vichy 48H Anti-Perspirant Roll-On delivers long-lasting protection against perspiration and wetness with a dermatologist-tested formula.",
+      "introAr": "مزيل عرق فيشي رول أون يوفر حماية 48 ساعة من التعرق والرطوبة بتركيبة مختبرة طبياً.",
+      "catEn": "Body care",
+      "catAr": "عناية الجسم",
+      "typeEn": "Anti-perspirant roll-on",
+      "typeAr": "مزيل عرق رول",
+      "benefitsEn": [
+        "48-hour protection",
+        "Anti-wetness",
+        "Dermatologist tested"
+      ],
+      "benefitsAr": [
+        "حماية 48 ساعة",
+        "مضاد للتعرق",
+        "مختبر طبياً"
+      ],
+      "suitEn": "Daily underarm protection",
+      "suitAr": "الحماية اليومية تحت الإبط",
+      "sizeEn": "50 ml",
+      "sizeAr": "50 مل"
+    }
+  },
+  "773602710683": {
+    "brandEn": "MAC",
+    "nameEn": "MAC Fix+ Alcohol-Free Setting Spray 100ml",
+    "kind": "makeup",
+    "makeupSub": "face",
+    "m": {
+      "introEn": "MAC Fix+ Alcohol-Free Setting Spray sets makeup for up to 12 hours while delivering instant hydration and a natural finish.",
+      "introAr": "مثبت ماك فيكس بلس خالٍ من الكحول يثبت المكياج حتى 12 ساعة مع ترطيب فوري ولمسة طبيعية.",
+      "typeEn": "Setting spray",
+      "typeAr": "مثبت مكياج",
+      "benefitsEn": [
+        "12-hour wear",
+        "Hydrating mist",
+        "Alcohol-free formula"
+      ],
+      "benefitsAr": [
+        "ثبات 12 ساعة",
+        "رذاذ مرطب",
+        "خالٍ من الكحول"
+      ],
+      "suitEn": "All skin types for setting foundation and powder",
+      "suitAr": "جميع أنواع البشرة لتثبيت الأساس والبودرة"
+    }
+  },
+  "3606000537699": {
+    "brandEn": "CeraVe",
+    "nameEn": "CeraVe Hydrating Facial Cleanser 355ml",
+    "kind": "care",
+    "careLeaf": "care/face-care/cleansers--toners",
+    "typeKey": "cleanser",
+    "c": {
+      "introEn": "CeraVe Hydrating Facial Cleanser gently removes dirt and makeup while maintaining the skin barrier with ceramides and hyaluronic acid.",
+      "introAr": "غسول سيرافي المرطب ينظف بلطف ويزيل المكياج مع الحفاظ على حاجز البشرة بالسيراميد وحمض الهيالورونيك.",
+      "catEn": "Facial cleansing",
+      "catAr": "تنظيف الوجه",
+      "typeEn": "Hydrating cleanser",
+      "typeAr": "غسول مرطب",
+      "benefitsEn": [
+        "Ceramides",
+        "Hyaluronic acid",
+        "Non-foaming gentle formula"
+      ],
+      "benefitsAr": [
+        "سيراميد",
+        "حمض الهيالورونيك",
+        "تركيبة لطيفة"
+      ],
+      "suitEn": "Normal to dry sensitive skin",
+      "suitAr": "البشرة العادية إلى الجافة والحساسة",
+      "sizeEn": "355 ml",
+      "sizeAr": "355 مل"
+    }
+  },
+  "850045076085": {
+    "brandEn": "Olaplex",
+    "nameEn": "Olaplex No.7 Bonding Oil 30ml",
+    "kind": "care",
+    "careLeaf": "care/hair-care/hair-styling",
+    "typeKey": "hair-oil",
+    "c": {
+      "introEn": "Olaplex No.7 Bonding Oil is a highly concentrated styling oil that repairs, strengthens, and adds brilliant shine to all hair types.",
+      "introAr": "زيت أولابليكس رقم 7 المركز يصلح الشعر ويقويه ويمنحه لمعاناً رائعاً لجميع أنواع الشعر.",
+      "catEn": "Hair styling",
+      "catAr": "تصفيف الشعر",
+      "typeEn": "Bonding oil",
+      "typeAr": "زيت تركيب",
+      "benefitsEn": [
+        "Repairs bonds",
+        "Heat protection",
+        "High shine finish"
+      ],
+      "benefitsAr": [
+        "إصلاح روابط الشعر",
+        "حماية من الحرارة",
+        "لمعان عالي"
+      ],
+      "suitEn": "Damaged, colored, or heat-styled hair",
+      "suitAr": "الشعر التالف أو المصبوغ",
+      "sizeEn": "30 ml",
+      "sizeAr": "30 مل"
+    }
+  },
+  "689304348423": {
+    "brandEn": "Anastasia Beverly Hills",
+    "nameEn": "Anastasia Brow Freeze Wax 8g",
+    "kind": "makeup",
+    "makeupSub": "face",
+    "m": {
+      "introEn": "Anastasia Brow Freeze Wax sculpts and sets brows in place with a clear, long-wearing formula for laminated brow looks.",
+      "introAr": "شمع أناستازيا براو فريز يثبت الحواجب ويشكلها بتركيبة شفافة طويلة الثبات لمظهر حواجب مثبتة.",
+      "typeEn": "Brow styling wax",
+      "typeAr": "شمع تصفيف الحواجب",
+      "benefitsEn": [
+        "Strong hold",
+        "Clear finish",
+        "Laminated brow effect"
+      ],
+      "benefitsAr": [
+        "ثبات قوي",
+        "لمسة شفافة",
+        "مظهر حواجب مثبتة"
+      ],
+      "suitEn": "Shaping and setting eyebrows",
+      "suitAr": "تشكيل وتثبيت الحواجب"
+    }
+  },
+  "072140020491": {
+    "brandEn": "Eucerin",
+    "nameEn": "Eucerin Advanced Repair Cream 454g",
+    "kind": "care",
+    "careLeaf": "care/skin-and-body-care/body-moisturizer",
+    "typeKey": "cream",
+    "c": {
+      "introEn": "Eucerin Advanced Repair Cream is a rich, fragrance-free moisturizer clinically proven to relieve very dry, rough skin.",
+      "introAr": "كريم يوسيرين لإصلاح البشرة المتقدم مرطب غني خالٍ من العطور يخفف البشرة شديدة الجفاف والخشونة.",
+      "catEn": "Body moisturizer",
+      "catAr": "مرطب الجسم",
+      "typeEn": "Repair cream",
+      "typeAr": "كريم إصلاح",
+      "benefitsEn": [
+        "Fragrance-free",
+        "Clinically proven",
+        "Intensive moisture"
+      ],
+      "benefitsAr": [
+        "خالٍ من العطور",
+        "مثبت سريرياً",
+        "ترطيب مكثف"
+      ],
+      "suitEn": "Very dry, rough, or cracked skin",
+      "suitAr": "البشرة شديدة الجفاف والخشونة",
+      "sizeEn": "454 g",
+      "sizeAr": "454 جم"
+    }
+  },
+  "3337875722827": {
+    "brandEn": "La Roche-Posay",
+    "nameEn": "La Roche-Posay Effaclar Serum 30ml",
+    "kind": "care",
+    "careLeaf": "care/face-care/face-moisturizer",
+    "typeKey": "serum",
+    "c": {
+      "introEn": "La Roche-Posay Effaclar Serum is a gentle exfoliating serum with salicylic acid to refine pores and improve skin texture.",
+      "introAr": "سيروم لاروش بوزيه إيفاكلار مقشر لطيف بحمض الساليسيليك لتنقية المسام وتحسين ملمس البشرة.",
+      "catEn": "Derma face care",
+      "catAr": "عناية الوجه الطبية",
+      "typeEn": "Exfoliating serum",
+      "typeAr": "سيروم مقشر",
+      "benefitsEn": [
+        "Salicylic acid",
+        "Refines pores",
+        "Smoother skin texture"
+      ],
+      "benefitsAr": [
+        "حمض ساليسيليك",
+        "تنقية المسام",
+        "ملمس أنعم"
+      ],
+      "suitEn": "Oily, blemish-prone skin",
+      "suitAr": "البشرة الدهنية المعرضة للشوائب",
+      "sizeEn": "30 ml",
+      "sizeAr": "30 مل"
+    }
+  },
+  "3337875597395": {
+    "brandEn": "CeraVe",
+    "nameEn": "CeraVe Moisturising Lotion 473ml",
+    "kind": "care",
+    "careLeaf": "care/skin-and-body-care/body-moisturizer",
+    "typeKey": "cream",
+    "c": {
+      "introEn": "CeraVe Moisturising Lotion provides all-day hydration for normal to dry skin with essential ceramides and MVE technology.",
+      "introAr": "لوشن سيرافي المرطب يوفر ترطيباً طوال اليوم للبشرة العادية والجافة بالسيراميد وتقنية الترطيب المتدرج.",
+      "catEn": "Body moisturizer",
+      "catAr": "مرطب الجسم",
+      "typeEn": "Moisturising lotion",
+      "typeAr": "لوشن مرطب",
+      "benefitsEn": [
+        "24-hour hydration",
+        "Ceramides",
+        "Lightweight texture"
+      ],
+      "benefitsAr": [
+        "ترطيب 24 ساعة",
+        "سيراميد",
+        "قوام خفيف"
+      ],
+      "suitEn": "Normal to dry skin on face and body",
+      "suitAr": "البشرة العادية إلى الجافة",
+      "sizeEn": "473 ml",
+      "sizeAr": "473 مل"
+    }
+  },
+  "381371020652": {
+    "brandEn": "Johnson's",
+    "nameEn": "Johnson's Shea & Cocoa Butter Oil Gel 192ml",
+    "kind": "care",
+    "careLeaf": "care/skin-and-body-care/body-oil",
+    "typeKey": "body-oil",
+    "c": {
+      "introEn": "Johnson's Shea & Cocoa Butter Oil Gel nourishes dry skin with rich shea and cocoa butter in a fast-absorbing gel-oil texture.",
+      "introAr": "زيت جل جونسون بالشيا وزبدة الكاكاو يغذي البشرة الجافة بتركيبة غنية تُمتَص بسرعة.",
+      "catEn": "Body care",
+      "catAr": "عناية الجسم",
+      "typeEn": "Nourishing oil gel",
+      "typeAr": "زيت جل مغذٍ",
+      "benefitsEn": [
+        "Shea and cocoa butter",
+        "Deep nourishment",
+        "Fast absorption"
+      ],
+      "benefitsAr": [
+        "شيا وزبدة كاكاو",
+        "تغذية عميقة",
+        "امتصاص سريع"
+      ],
+      "suitEn": "Dry skin on body",
+      "suitAr": "البشرة الجافة للجسم",
+      "sizeEn": "192 ml",
+      "sizeAr": "192 مل"
+    }
+  },
+  "3760294351178": {
+    "brandEn": "The Woods Collection",
+    "nameEn": "The Woods Collection Natural Flame EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "The Woods Collection Natural Flame is a niche warm floral amber that glows with spicy warmth and elegant depth.",
+      "introAr": "ناتشورال فلام من ذا وودز كوليكشن عطر نيش زهري عنبري دافئ يتألق بدفء التوابل وعمق أنيق.",
+      "familyEn": "Floral amber",
+      "familyAr": "زهري عنبري",
+      "notesEn": "Pink pepper, jasmine, amber, vanilla, musk",
+      "notesAr": "فلفل وردي، ياسمين، عنبر، فانيلا، مسك",
+      "charEn": "Warm, radiant, sophisticated",
+      "charAr": "دافئ ومتوهج وراقٍ",
+      "bestEn": "Evening wear and cooler seasons",
+      "bestAr": "السهرات والفصول الباردة",
+      "longEn": "7–9 hours with moderate sillage",
+      "longAr": "7–9 ساعات بثبات جيد"
+    }
+  },
+  "3606000534919": {
+    "brandEn": "CeraVe",
+    "nameEn": "CeraVe Foaming Facial Cleanser 237ml",
+    "kind": "care",
+    "careLeaf": "care/face-care/cleansers--toners",
+    "typeKey": "cleanser",
+    "c": {
+      "introEn": "CeraVe Foaming Facial Cleanser removes excess oil and dirt without disrupting the skin barrier, ideal for normal to oily skin.",
+      "introAr": "غسول سيرافي الرغوي ينظف الزيوت والأوساخ دون الإخلال بحاجز البشرة، مثالي للبشرة العادية إلى الدهنية.",
+      "catEn": "Facial cleansing",
+      "catAr": "تنظيف الوجه",
+      "typeEn": "Foaming cleanser",
+      "typeAr": "غسول رغوي",
+      "benefitsEn": [
+        "Ceramides",
+        "Niacinamide",
+        "Oil control"
+      ],
+      "benefitsAr": [
+        "سيراميد",
+        "نياسيناميد",
+        "تنظيم الدهون"
+      ],
+      "suitEn": "Normal to oily skin",
+      "suitAr": "البشرة العادية إلى الدهنية",
+      "sizeEn": "237 ml",
+      "sizeAr": "237 مل"
+    }
+  },
+  "8011003872077": {
+    "brandEn": "Versace",
+    "nameEn": "Versace Eros Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men",
+      "isNew": true
+    },
+    "p": {
+      "introEn": "Versace Eros Parfum intensifies the iconic Eros DNA with richer amber, leather, and vanilla for bold seductive power.",
+      "introAr": "إيروس بارفيوم من فرزاتشي يعزز توقيع إيروس الأيقوني بعنبر وجلد وفانيلا أغنى لجاذبية جريئة.",
+      "familyEn": "Amber aromatic",
+      "familyAr": "عنبري عطري",
+      "notesEn": "Mint, green apple, lemon, tonka bean, vanilla, amber, leather",
+      "notesAr": "نعناع، تفاح أخضر، ليمون، فول التونكا، فانيلا، عنبر، جلد",
+      "charEn": "Bold, sensual, powerful",
+      "charAr": "جريء وحسي وقوي",
+      "bestEn": "Night outs and special occasions",
+      "bestAr": "الخروج الليلي والمناسبات",
+      "longEn": "8–10 hours with strong projection",
+      "longAr": "8–10 ساعات بثبات قوي"
+    }
+  },
+  "614514410103": {
+    "brandEn": "Rasasi",
+    "nameEn": "Rasasi Chastity Eau de Parfum 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Rasasi Chastity is a soft feminine floral with powdery musk and delicate fruits for graceful everyday elegance.",
+      "introAr": "شاستيتي من الرصاصي زهري نسائي ناعم بمسك بودري وفواكه رقيقة لأناقة يومية رشيقة.",
+      "familyEn": "Floral fruity",
+      "familyAr": "زهري فواكه",
+      "notesEn": "Bergamot, peach, rose, jasmine, musk, sandalwood",
+      "notesAr": "برغموت، خوخ، ورد، ياسمين، مسك، صندل",
+      "charEn": "Soft, feminine, elegant",
+      "charAr": "ناعم وأنثوي وأنيق",
+      "bestEn": "Daily wear and office",
+      "bestAr": "الاستخدام اليومي والعمل",
+      "longEn": "6–8 hours",
+      "longAr": "6–8 ساعات"
+    }
+  },
+  "689304188890": {
+    "brandEn": "Anastasia Beverly Hills",
+    "nameEn": "Anastasia Beverly Hills Nouveau Palette",
+    "kind": "makeup",
+    "makeupSub": "eyes",
+    "m": {
+      "introEn": "Anastasia Nouveau Palette features 12 versatile eyeshadow shades from soft mattes to shimmering metallics for day-to-night looks.",
+      "introAr": "باليت أناستازيا نوفو يضم 12 ظل عيون متعددة الاستخدام من مطفي إلى لامع للإطلالات اليومية والمسائية.",
+      "typeEn": "Eyeshadow palette",
+      "typeAr": "باليت ظلال عيون",
+      "benefitsEn": [
+        "12 versatile shades",
+        "Blendable formula",
+        "Day-to-night looks"
+      ],
+      "benefitsAr": [
+        "12 لون متعدد",
+        "قابل للدمج",
+        "إطلالات يوم ومساء"
+      ],
+      "suitEn": "Creating versatile eye makeup looks",
+      "suitAr": "إطلالات متنوعة للعيون"
+    }
+  },
+  "7640111502791": {
+    "brandEn": "Lalique",
+    "nameEn": "Lalique Encre Noire Extreme EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Lalique Encre Noire Extreme deepens the iconic vetiver scent with smoky cypress and dark woods for mysterious intensity.",
+      "introAr": "إنكر نوار إكستريم من لاليك يعمق نفحات الفيتيفر الأيقونية بسرو وخشب داكن لكثافة غامضة.",
+      "familyEn": "Woody aromatic",
+      "familyAr": "خشبي عطري",
+      "notesEn": "Cypress, vetiver, cashmere wood, musk, benzoin",
+      "notesAr": "سرو، فيتيفر، خشب كاشمير، مسك، بنزوين",
+      "charEn": "Dark, smoky, refined",
+      "charAr": "داكن ودخاني ومصقول",
+      "bestEn": "Evening wear and formal occasions",
+      "bestAr": "السهرات والمناسبات الرسمية",
+      "longEn": "8–10 hours",
+      "longAr": "8–10 ساعات"
+    }
+  },
+  "8057971188727": {
+    "brandEn": "Dolce & Gabbana",
+    "nameEn": "Dolce & Gabbana The One Gold EDP Intense 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men",
+      "isNew": true
+    },
+    "p": {
+      "introEn": "D&G The One Gold EDP Intense is a warm oriental fragrance with amber, tobacco, and spices for luxurious masculine appeal.",
+      "introAr": "ذا ون قولد إنتنس من دولتشي غابانا عطر شرقي دافئ بعنبر وتبغ وتوابل لجاذبية رجالية فاخرة.",
+      "familyEn": "Oriental amber",
+      "familyAr": "شرقي عنبري",
+      "notesEn": "Grapefruit, ginger, amber, tobacco, cedar",
+      "notesAr": "جريفروت، زنجبيل، عنبر، تبغ، أرز",
+      "charEn": "Warm, luxurious, charismatic",
+      "charAr": "دافئ وفاخر وجذاب",
+      "bestEn": "Evenings and cooler weather",
+      "bestAr": "السهرات والطقس البارد",
+      "longEn": "7–9 hours",
+      "longAr": "7–9 ساعات"
+    }
+  },
+  "3614228899376": {
+    "brandEn": "Roberto Cavalli",
+    "nameEn": "Roberto Cavalli Paradise Found EDT 75ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Roberto Cavalli Paradise Found is a tropical floral fruity scent evoking sun-kissed beaches and carefree summer joy.",
+      "introAr": "بارادايس فاوند من روبرتو كفالي عطر استوائي زهري فواكه يستحضر شواطئ مشمسة وفرح صيفي.",
+      "familyEn": "Floral fruity",
+      "familyAr": "زهري فواكه",
+      "notesEn": "Bergamot, tiare flower, coconut, jasmine, musk",
+      "notesAr": "برغموت، زهر التيار، جوز الهند، ياسمين، مسك",
+      "charEn": "Tropical, sunny, joyful",
+      "charAr": "استوائي ومشمس ومبهج",
+      "bestEn": "Summer days and vacations",
+      "bestAr": "أيام الصيف والعطلات",
+      "longEn": "5–7 hours",
+      "longAr": "5–7 ساعات"
+    }
+  },
+  "3616303048181": {
+    "brandEn": "Gucci",
+    "nameEn": "Gucci Flora Gorgeous Jasmine EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": true
+    },
+    "p": {
+      "introEn": "Gucci Flora Gorgeous Jasmine celebrates radiant jasmine with pear and sandalwood for a luminous floral signature.",
+      "introAr": "فلورا غورجوس جاسمين من قوتشي يحتفي بالياسمين المشع مع الكمثرى والصندل لتوقيع زهري لامع.",
+      "familyEn": "Floral",
+      "familyAr": "زهري",
+      "notesEn": "Pear, jasmine sambac, sandalwood, benzoin",
+      "notesAr": "كمثرى، ياسمين، صندل، بنزوين",
+      "charEn": "Radiant, joyful, modern floral",
+      "charAr": "مشع ومبهج وزهري عصري",
+      "bestEn": "Spring and daytime wear",
+      "bestAr": "الربيع والنهار",
+      "longEn": "6–8 hours",
+      "longAr": "6–8 ساعات"
+    }
+  },
+  "3337875583626": {
+    "brandEn": "La Roche-Posay",
+    "nameEn": "La Roche-Posay Hyalu B5 Serum 30ml",
+    "kind": "care",
+    "careLeaf": "care/face-care/face-moisturizer",
+    "typeKey": "serum",
+    "c": {
+      "introEn": "La Roche-Posay Hyalu B5 Serum combines pure hyaluronic acid and vitamin B5 to replump and repair dehydrated skin.",
+      "introAr": "سيروم هيالو بي 5 من لاروش بوزيه يجمع حمض الهيالورونيك النقي وفيتامين ب5 لإعادة امتلاء وإصلاح البشرة المجففة.",
+      "catEn": "Face serum",
+      "catAr": "سيروم الوجه",
+      "typeEn": "Hydrating serum",
+      "typeAr": "سيروم مرطب",
+      "benefitsEn": [
+        "Hyaluronic acid",
+        "Vitamin B5",
+        "Replumps skin"
+      ],
+      "benefitsAr": [
+        "حمض الهيالورونيك",
+        "فيتامين ب5",
+        "يملأ البشرة"
+      ],
+      "suitEn": "Dehydrated or stressed skin",
+      "suitAr": "البشرة المجففة أو المجهدة",
+      "sizeEn": "30 ml",
+      "sizeAr": "30 مل"
+    }
+  },
+  "8018365500037": {
+    "brandEn": "Versace",
+    "nameEn": "Versace Man Eau Fraiche EDT 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Versace Man Eau Fraiche is a fresh aquatic woody scent with citrus and musk for effortless daily freshness.",
+      "introAr": "مان أو فريش من فرزاتشي عطر مائي خشبي منعش بالحمضيات والمسك لانتعاش يومي بلا مجهود.",
+      "familyEn": "Aquatic woody",
+      "familyAr": "مائي خشبي",
+      "notesEn": "Lemon, rose, tarragon, cedar, musk",
+      "notesAr": "ليمون، ورد، طرخون، أرز، مسك",
+      "charEn": "Fresh, clean, versatile",
+      "charAr": "منعش ونظيف ومتعدد",
+      "bestEn": "Daily wear and warm weather",
+      "bestAr": "الاستخدام اليومي والطقس الدافئ",
+      "longEn": "4–6 hours",
+      "longAr": "4–6 ساعات"
+    }
+  },
+  "3614228954051": {
+    "brandEn": "Roberto Cavalli",
+    "nameEn": "Roberto Cavalli Paradise Found EDT 50ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Roberto Cavalli Paradise Found EDT offers the same tropical floral escape in a convenient 50ml size.",
+      "introAr": "بارادايس فاوند من روبرتو كفالي يقدم نفس الهروب الاستوائي الزهري بحجم 50 مل.",
+      "familyEn": "Floral fruity",
+      "familyAr": "زهري فواكه",
+      "notesEn": "Bergamot, tiare, coconut, jasmine, musk",
+      "notesAr": "برغموت، زهر التيار، جوز الهند، ياسمين، مسك",
+      "charEn": "Tropical, light, joyful",
+      "charAr": "استوائي وخفيف ومبهج",
+      "bestEn": "Summer and casual wear",
+      "bestAr": "الصيف والاستخدام اليومي",
+      "longEn": "4–6 hours",
+      "longAr": "4–6 ساعات"
+    }
+  },
+  "8011003858552": {
+    "brandEn": "Versace",
+    "nameEn": "Versace Dylan Turquoise EDT 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Versace Dylan Turquoise is a vibrant fruity floral with lemon, apple, and musk capturing Mediterranean summer energy.",
+      "introAr": "ديلان توركواز من فرزاتشي زهري فواكه نابض بالحياة بليمون وتفاح ومسك يجسد طاقة الصيف المتوسطي.",
+      "familyEn": "Fruity floral",
+      "familyAr": "فواكه زهرية",
+      "notesEn": "Lemon, mandarin, apple, jasmine, musk",
+      "notesAr": "ليمون، مندرين، تفاح، ياسمين، مسك",
+      "charEn": "Fresh, playful, sunny",
+      "charAr": "منعش ومرح ومشمس",
+      "bestEn": "Daytime and summer",
+      "bestAr": "النهار والصيف",
+      "longEn": "5–7 hours",
+      "longAr": "5–7 ساعات"
+    }
+  },
+  "3700550216094": {
+    "brandEn": "Kilian",
+    "nameEn": "Kilian Angels' Share EDP 50ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Kilian Angels' Share is a gourmand niche masterpiece of cognac, oak, and praline with intoxicating warmth.",
+      "introAr": "أنجلز شير من كيليان تحفة نيش غورماند من الكونياك والبلوط وحلوى البندق بدفء ساحر.",
+      "familyEn": "Gourmand woody",
+      "familyAr": "غورماند خشبي",
+      "notesEn": "Cognac, oak, cinnamon, praline, vanilla",
+      "notesAr": "كونياك، بلوط، قرفة، حلوى البندق، فانيلا",
+      "charEn": "Warm, boozy, luxurious",
+      "charAr": "دافئ وفاخر وساحر",
+      "bestEn": "Evenings and cold weather",
+      "bestAr": "السهرات والطقس البارد",
+      "longEn": "8–10 hours",
+      "longAr": "8–10 ساعات"
+    }
+  },
+  "3337875597357": {
+    "brandEn": "CeraVe",
+    "nameEn": "CeraVe Foaming Facial Cleanser 473ml",
+    "kind": "care",
+    "careLeaf": "care/face-care/cleansers--toners",
+    "typeKey": "cleanser",
+    "c": {
+      "introEn": "CeraVe Foaming Facial Cleanser 473ml deeply cleanses normal to oily skin while maintaining essential moisture balance.",
+      "introAr": "غسول سيرافي الرغوي 473 مل ينظف بعمق البشرة العادية إلى الدهنية مع الحفاظ على توازن الرطوبة.",
+      "catEn": "Facial cleansing",
+      "catAr": "تنظيف الوجه",
+      "typeEn": "Foaming cleanser",
+      "typeAr": "غسول رغوي",
+      "benefitsEn": [
+        "Large family size",
+        "Ceramides",
+        "Oil control without dryness"
+      ],
+      "benefitsAr": [
+        "حجم عائلي",
+        "سيراميد",
+        "تنظيف دون جفاف"
+      ],
+      "suitEn": "Normal to oily skin",
+      "suitAr": "البشرة العادية إلى الدهنية",
+      "sizeEn": "473 ml",
+      "sizeAr": "473 مل"
+    }
+  },
+  "3274872448780": {
+    "brandEn": "Givenchy",
+    "nameEn": "Givenchy Gentleman Society EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "p": {
+      "introEn": "Givenchy Gentleman Society blends sage, narcissus, and vetiver for a modern refined masculine signature.",
+      "introAr": "جنتلمن سوسايتي من جيفنشي يمزج المريمية والنرجس والفيتيفر لتوقيع رجالي عصري راقٍ.",
+      "familyEn": "Aromatic woody",
+      "familyAr": "عطري خشبي",
+      "notesEn": "Sage, narcissus, vetiver, cedar, patchouli",
+      "notesAr": "مريمية، نرجس، فيتيفر، أرز، باتشولي",
+      "charEn": "Refined, modern, elegant",
+      "charAr": "راقٍ وعصري وأنيق",
+      "bestEn": "Office and evening wear",
+      "bestAr": "العمل والسهرات",
+      "longEn": "7–9 hours",
+      "longAr": "7–9 ساعات"
+    }
+  },
+  "3355992004596": {
+    "brandEn": "Ted Lapidus",
+    "nameEn": "Ted Lapidus Rumba EDT 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Ted Lapidus Rumba is a classic vibrant floral oriental with peach, tuberose, and vanilla for bold feminine charm.",
+      "introAr": "رومبا من تيد لابيدوس زهري شرقي كلاسيكي نابض بالخوخ والتيوبروز والفانيلا لسحر أنثوي جريء.",
+      "familyEn": "Floral oriental",
+      "familyAr": "زهري شرقي",
+      "notesEn": "Peach, apricot, tuberose, jasmine, vanilla, musk",
+      "notesAr": "خوخ، مشمش، تيوبروز، ياسمين، فانيلا، مسك",
+      "charEn": "Vibrant, sensual, classic",
+      "charAr": "نابض وحسي وكلاسيكي",
+      "bestEn": "Evening wear and special occasions",
+      "bestAr": "السهرات والمناسبات",
+      "longEn": "6–8 hours",
+      "longAr": "6–8 ساعات"
+    }
+  },
+  "3760294350881": {
+    "brandEn": "The Woods Collection",
+    "nameEn": "The Woods Collection Natural Essence EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "The Woods Collection Natural Essence is a niche green woody fragrance celebrating crisp nature and serene elegance.",
+      "introAr": "ناتشورال إسنس من ذا وودز كوليكشن عطر نيش أخضر خشبي يحتفي بالطبيعة الهادئة والأناقة.",
+      "familyEn": "Green woody",
+      "familyAr": "أخضر خشبي",
+      "notesEn": "Bergamot, green notes, cedar, vetiver, musk",
+      "notesAr": "برغموت، نوتات خضراء، أرز، فيتيفر، مسك",
+      "charEn": "Fresh, natural, serene",
+      "charAr": "منعش وطبيعي وهادئ",
+      "bestEn": "Daily wear for nature lovers",
+      "bestAr": "الاستخدام اليومي",
+      "longEn": "6–8 hours",
+      "longAr": "6–8 ساعات"
+    }
+  },
+  "3614274017069": {
+    "brandEn": "Maison Margiela",
+    "nameEn": "Maison Margiela Under The Stars EDT 100ml",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Maison Margiela Under The Stars captures a crisp night outdoors with pine, pepper, and mineral freshness.",
+      "introAr": "أندر ذا ستارز من ميزون مارجييلا يجسد ليلة باردة في الهواء الطلق بصنوبر وفلفل وانتعاش معدني.",
+      "familyEn": "Aromatic fougere",
+      "familyAr": "عطري خشبي",
+      "notesEn": "Pine, pink pepper, mineral notes, patchouli",
+      "notesAr": "صنوبر، فلفل وردي، نوتات معدنية، باتشولي",
+      "charEn": "Crisp, atmospheric, unisex",
+      "charAr": "منعش وجوي ومتعدد",
+      "bestEn": "Cool evenings and layering",
+      "bestAr": "الأمسيات الباردة",
+      "longEn": "5–7 hours",
+      "longAr": "5–7 ساعات"
+    }
+  },
+  "8809913830641": {
+    "brandEn": "Skin1004",
+    "nameEn": "Skin1004 Madagascar Centella Double Cleansing Duo",
+    "kind": "care",
+    "careLeaf": "care/korean-skincare/skin-care",
+    "typeKey": "cleanser",
+    "c": {
+      "introEn": "Skin1004 Double Cleansing Duo pairs ampoule foam and light cleansing oil with centella for a complete Korean cleanse.",
+      "introAr": "طقم التنظيف المزدوج من سكين 1004 يجمع رغوة أمبولة وزيت تنظيف خفيف بالسنتيلا لروتين كوري كامل.",
+      "catEn": "Korean skincare",
+      "catAr": "العناية الكورية",
+      "typeEn": "Double cleansing set",
+      "typeAr": "طقم تنظيف مزدوج",
+      "benefitsEn": [
+        "Centella asiatica",
+        "Two-step cleanse",
+        "Gentle daily use"
+      ],
+      "benefitsAr": [
+        "سنتيلا",
+        "تنظيف على مرحلتين",
+        "لطيف يومياً"
+      ],
+      "suitEn": "All skin types",
+      "suitAr": "جميع أنواع البشرة",
+      "sizeEn": "Duo set",
+      "sizeAr": "طقم"
+    }
+  },
+  "681619815997": {
+    "brandEn": "theBalm",
+    "nameEn": "theBalm Meet Matt(e) Mini Lip Kit Vol 13",
+    "kind": "makeup",
+    "makeupSub": "lips",
+    "m": {
+      "introEn": "theBalm Meet Matt(e) Mini Lip Kit Vol 13 includes mini matte lipsticks in wearable nude and berry shades.",
+      "introAr": "طقم أحمر الشفاه ميني ميت مات الإصدار 13 من ذا بالم يضم ألوان مطفية عارية وتوتية للاستخدام اليومي.",
+      "typeEn": "Mini matte lip kit",
+      "typeAr": "طقم أحمر شفاه مطفي",
+      "benefitsEn": [
+        "Matte finish",
+        "Mini travel sizes",
+        "Versatile nude tones"
+      ],
+      "benefitsAr": [
+        "لمسة مطفية",
+        "أحجام صغيرة",
+        "درجات عارية متعددة"
+      ],
+      "suitEn": "Everyday lip color",
+      "suitAr": "لون الشفاه اليومي"
+    }
+  },
+  "3346130018926": {
+    "brandEn": "Hermès",
+    "nameEn": "Hermès Barenia EDP Intense 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": true
+    },
+    "p": {
+      "introEn": "Hermès Barenia EDP Intense is a sophisticated leather floral with iris and patchouli for timeless Parisian elegance.",
+      "introAr": "بارينيا إنتنس من هيرميس جلد زهري راقٍ بالسوسن والباتشولي لأناقة باريسية خالدة.",
+      "familyEn": "Leather floral",
+      "familyAr": "جلد زهري",
+      "notesEn": "Iris, patchouli, leather, benzoin, vanilla",
+      "notesAr": "سوسن، باتشولي، جلد، بنزوين، فانيلا",
+      "charEn": "Elegant, leathery, refined",
+      "charAr": "أنيق وجلدي ومصقول",
+      "bestEn": "Fall/winter and formal wear",
+      "bestAr": "الخريف والمناسبات",
+      "longEn": "8–10 hours",
+      "longAr": "8–10 ساعات"
+    }
+  },
+  "8809576261868": {
+    "brandEn": "Skin1004",
+    "nameEn": "Skin1004 Madagascar Centella Ampoule Kit",
+    "kind": "care",
+    "careLeaf": "care/korean-skincare/skin-care",
+    "typeKey": "serum",
+    "c": {
+      "introEn": "Skin1004 Centella Ampoule Kit delivers soothing centella ampoules to calm irritation and strengthen the skin barrier.",
+      "introAr": "طقم أمبولات سنتيلا من سكين 1004 يهدئ التهيج ويقوي حاجز البشرة بتركيز السنتيلا.",
+      "catEn": "Korean skincare",
+      "catAr": "العناية الكورية",
+      "typeEn": "Ampoule kit",
+      "typeAr": "طقم أمبولات",
+      "benefitsEn": [
+        "Centella asiatica",
+        "Soothing care",
+        "Barrier support"
+      ],
+      "benefitsAr": [
+        "سنتيلا",
+        "تهدئة",
+        "دعم الحاجز"
+      ],
+      "suitEn": "Sensitive or irritated skin",
+      "suitAr": "البشرة الحساسة أو المتهيجة",
+      "sizeEn": "Kit",
+      "sizeAr": "طقم"
+    }
+  },
+  "3614274217155": {
+    "brandEn": "Valentino",
+    "nameEn": "Valentino Uomo Born In Roma The Gold EDT 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men",
+      "isNew": true
+    },
+    "p": {
+      "introEn": "Valentino Uomo Born In Roma The Gold is a warm spicy amber scent with vanilla and ginger for modern Roman luxury.",
+      "introAr": "أومو بورن إن روما ذا جولد من فالنتينو عطر عنبري توابل دافئ بفانيلا وزنجبيل.",
+      "familyEn": "Amber spicy",
+      "familyAr": "عنبري توابل",
+      "notesEn": "Ginger, vanilla, lavender, woody amber",
+      "notesAr": "زنجبيل، فانيلا، خزامى، عنبر خشبي",
+      "charEn": "Warm, modern, luxurious",
+      "charAr": "دافئ وعصري وفاخر",
+      "bestEn": "Evenings and special occasions",
+      "bestAr": "السهرات",
+      "longEn": "7–9 hours",
+      "longAr": "7–9 ساعات"
+    }
+  },
+  "3614274217148": {
+    "brandEn": "Valentino",
+    "nameEn": "Valentino Donna Born In Roma The Gold EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": true
+    },
+    "p": {
+      "introEn": "Valentino Donna Born In Roma The Gold is a luminous vanilla floral with jasmine for radiant feminine allure.",
+      "introAr": "دونا بورن إن روما ذا قولد من فالنتينو فانيلا زهري مشع بالياسمين لجاذبية أنثوية.",
+      "familyEn": "Vanilla floral",
+      "familyAr": "فانيلا زهري",
+      "notesEn": "Jasmine, vanilla, benzoin, musk",
+      "notesAr": "ياسمين، فانيلا، بنزوين، مسك",
+      "charEn": "Radiant, sweet, elegant",
+      "charAr": "مشع وحلو وأنيق",
+      "bestEn": "Evening wear and dates",
+      "bestAr": "السهرات والمناسبات",
+      "longEn": "7–9 hours",
+      "longAr": "7–9 ساعات"
+    }
+  },
+  "855732733210": {
+    "brandEn": "Min New York",
+    "nameEn": "Min New York Long Board EDP 75ml",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Min New York Long Board EDP is an avant-garde niche scent inspired by surf culture with salty woods and citrus.",
+      "introAr": "لونج بورد من مين نيويورك عطر نيش فني مستوحى من ثقافة ركوب الأمواج بخشب مالح وحمضيات.",
+      "familyEn": "Aquatic woody",
+      "familyAr": "مائي خشبي",
+      "notesEn": "Sea salt, driftwood, bergamot, cedar, musk",
+      "notesAr": "ملح البحر، خشب طافٍ، برغموت، أرز، مسك",
+      "charEn": "Artistic, fresh, unconventional",
+      "charAr": "فني ومنعش وغير تقليدي",
+      "bestEn": "Creative wear and layering",
+      "bestAr": "إطلالات إبداعية",
+      "longEn": "6–8 hours",
+      "longAr": "6–8 ساعات"
+    }
+  },
+  "5060150185168": {
+    "brandEn": "Color Wow",
+    "nameEn": "Color Wow Dream Cocktail Carb-Infused Leave-In 200ml",
+    "kind": "care",
+    "careLeaf": "care/hair-care/hair-treatment",
+    "typeKey": "hair-treatment",
+    "c": {
+      "introEn": "Color Wow Dream Cocktail is a leave-in treatment that strengthens hair and reduces breakage with heat protection.",
+      "introAr": "دريم كوكتيل من كولور واو علاج بدون شطف يقوي الشعر ويقلل التقصّ مع حماية من الحرارة.",
+      "catEn": "Hair treatment",
+      "catAr": "علاج الشعر",
+      "typeEn": "Leave-in treatment",
+      "typeAr": "علاج بدون شطف",
+      "benefitsEn": [
+        "Reduces breakage",
+        "Heat protection",
+        "Strengthens hair"
+      ],
+      "benefitsAr": [
+        "يقلل التقصّ",
+        "حماية حرارية",
+        "يقوي الشعر"
+      ],
+      "suitEn": "Damaged or heat-styled hair",
+      "suitAr": "الشعر التالف",
+      "sizeEn": "200 ml",
+      "sizeAr": "200 مل"
+    }
+  },
+  "8809875906477": {
+    "brandEn": "Beauty of Joseon",
+    "nameEn": "Beauty of Joseon Light On Centella + Vitamin C Serum 30ml",
+    "kind": "care",
+    "careLeaf": "care/korean-skincare/skin-care",
+    "typeKey": "serum",
+    "c": {
+      "introEn": "Beauty of Joseon Light On Serum combines centella and vitamin C to brighten dull skin and improve overall radiance.",
+      "introAr": "سيروم لايت أون من بيوتي أوف جوسون يجمع السنتيلا وفيتامين سي لإشراق البشرة الباهتة.",
+      "catEn": "Korean skincare",
+      "catAr": "العناية الكورية",
+      "typeEn": "Brightening serum",
+      "typeAr": "سيروم إشراق",
+      "benefitsEn": [
+        "Centella",
+        "Vitamin C",
+        "Radiance boost"
+      ],
+      "benefitsAr": [
+        "سنتيلا",
+        "فيتامين سي",
+        "إشراق"
+      ],
+      "suitEn": "Dull or uneven skin tone",
+      "suitAr": "البشرة الباهتة",
+      "sizeEn": "30 ml",
+      "sizeAr": "30 مل"
+    }
+  },
+  "3349668614523": {
+    "brandEn": "Paco Rabanne",
+    "nameEn": "Paco Rabanne Invictus Victory Elixir 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men",
+      "isNew": true
+    },
+    "p": {
+      "introEn": "Paco Rabanne Invictus Victory Elixir amplifies the Invictus line with richer amber and vanilla for maximum power.",
+      "introAr": "إنفكتوس فيكتوري إليكسير من باكو رابان يعزز خط إنفكتوس بعنبر وفانيلا أغنى لأقصى قوة.",
+      "familyEn": "Amber fougere",
+      "familyAr": "عنبري عطري",
+      "notesEn": "Grapefruit, amber, vanilla, tonka, patchouli",
+      "notesAr": "جريفروت، عنبر، فانيلا، تونكا، باتشولي",
+      "charEn": "Powerful, sweet, bold",
+      "charAr": "قوي وجريء",
+      "bestEn": "Night outs and parties",
+      "bestAr": "الحفلات والخروج",
+      "longEn": "8–10 hours",
+      "longAr": "8–10 ساعات"
+    }
+  },
+  "3700134403957": {
+    "brandEn": "Rasasi",
+    "nameEn": "Rasasi Femme Sensual EDP 85ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Rasasi Femme Sensual is a soft powdery floral with rose and musk for understated feminine grace.",
+      "introAr": "فيم سنشوال من الرصاصي زهري بودري ناعم بالورد والمسك لأناقة أنثوية هادئة.",
+      "familyEn": "Powdery floral",
+      "familyAr": "زهري بودري",
+      "notesEn": "Rose, peony, musk, sandalwood, vanilla",
+      "notesAr": "ورد، زهر الفايونيا، مسك، صندل، فانيلا",
+      "charEn": "Soft, sensual, graceful",
+      "charAr": "ناعم وحسي ورشيق",
+      "bestEn": "Daily and office wear",
+      "bestAr": "اليومي والعمل",
+      "longEn": "6–8 hours",
+      "longAr": "6–8 ساعات"
+    }
+  },
+  "602004146151": {
+    "brandEn": "Benefit",
+    "nameEn": "Benefit Fan Fest Fanning & Volumizing Mascara",
+    "kind": "makeup",
+    "makeupSub": "eyes",
+    "m": {
+      "introEn": "Benefit Fan Fest Mascara fans out lashes for full-volume impact with a lightweight formula that resists clumping.",
+      "introAr": "ماسكارا فان فيست من بنفيت تفرش الرموش لتأثير كثيف بتركيبة خفيفة دون تكتل.",
+      "typeEn": "Volumizing mascara",
+      "typeAr": "ماسكارا للكثافة",
+      "benefitsEn": [
+        "Fanning brush",
+        "Full volume",
+        "Clump-resistant"
+      ],
+      "benefitsAr": [
+        "فرشاة مروحية",
+        "كثافة",
+        "دون تكتل"
+      ],
+      "suitEn": "Adding volume and length to lashes",
+      "suitAr": "كثافة وطول الرموش"
+    }
+  },
+  "072140634827": {
+    "brandEn": "Eucerin",
+    "nameEn": "Eucerin Advanced Repair Lotion 500ml",
+    "kind": "care",
+    "careLeaf": "care/skin-and-body-care/body-moisturizer",
+    "typeKey": "cream",
+    "c": {
+      "introEn": "Eucerin Advanced Repair Lotion is a fast-absorbing body lotion that relieves very dry skin with urea and ceramides.",
+      "introAr": "لوشن يوسيرين لإصلاح البشرة المتقدم سريع الامتصاص يخفف الجفاف الشديد باليوريا والسيراميد.",
+      "catEn": "Body moisturizer",
+      "catAr": "مرطب الجسم",
+      "typeEn": "Repair lotion",
+      "typeAr": "لوشن إصلاح",
+      "benefitsEn": [
+        "Urea formula",
+        "Fast absorbing",
+        "Fragrance-free"
+      ],
+      "benefitsAr": [
+        "اليوريا",
+        "امتصاص سريع",
+        "خالٍ من العطور"
+      ],
+      "suitEn": "Very dry body skin",
+      "suitAr": "جسم جاف جداً",
+      "sizeEn": "500 ml",
+      "sizeAr": "500 مل"
+    }
+  },
+  "888066024082": {
+    "brandEn": "Tom Ford",
+    "nameEn": "Tom Ford Oud Wood EDP 50ml",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Tom Ford Oud Wood is an iconic niche oud fragrance blending rare oud with rosewood, cardamom, and amber.",
+      "introAr": "عود وود من توم فورد عطر عود نيش أيقوني يمزج العود النادر مع خشب الورد والهيل والعنبر.",
+      "familyEn": "Woody oud",
+      "familyAr": "خشبي عود",
+      "notesEn": "Oud, rosewood, cardamom, sandalwood, amber",
+      "notesAr": "عود، خشب الورد، هيل، صندل، عنبر",
+      "charEn": "Luxurious, smoky, refined",
+      "charAr": "فاخر ودخاني ومصقول",
+      "bestEn": "Evening wear and special occasions",
+      "bestAr": "السهرات",
+      "longEn": "8–10 hours",
+      "longAr": "8–10 ساعات"
+    }
+  },
+  "088300162543": {
+    "brandEn": "Calvin Klein",
+    "nameEn": "Calvin Klein Euphoria EDP 50ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Calvin Klein Euphoria is a bold exotic floral with pomegranate and orchid for sensual modern femininity.",
+      "introAr": "إيفوريا من كالفن كلاين زهري غريب جريء برمان وزهر الأوركيد لأنوثة عصرية حسية.",
+      "familyEn": "Exotic floral",
+      "familyAr": "زهري غريب",
+      "notesEn": "Pomegranate, persimmon, orchid, amber, mahogany",
+      "notesAr": "رمان، فاكهة الكاكي، أوركيد، عنبر، خشب أحمر",
+      "charEn": "Bold, exotic, sensual",
+      "charAr": "جريء وغريب وحسي",
+      "bestEn": "Evenings and dates",
+      "bestAr": "السهرات",
+      "longEn": "6–8 hours",
+      "longAr": "6–8 ساعات"
+    }
+  },
+  "783320411168": {
+    "brandEn": "Bvlgari",
+    "nameEn": "Bvlgari Splendida Patchouli Tentation EDP 100ml",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "p": {
+      "introEn": "Bvlgari Splendida Patchouli Tentation wraps rich patchouli in peach and white flowers for opulent depth.",
+      "introAr": "سبلنديدا باتشولي تمبتيشن من بولغاري يلف الباتشولي الغني بالخوخ والزهور البيضاء لعمق فاخر.",
+      "familyEn": "Woody floral",
+      "familyAr": "خشبي زهري",
+      "notesEn": "Peach, patchouli, jasmine, vanilla, musk",
+      "notesAr": "خوخ، باتشولي، ياسمين، فانيلا، مسك",
+      "charEn": "Opulent, warm, sophisticated",
+      "charAr": "فاخر ودافئ وراقٍ",
+      "bestEn": "Evening and fall/winter",
+      "bestAr": "السهرات والخريف",
+      "longEn": "7–9 hours",
+      "longAr": "7–9 ساعات"
+    }
+  },
+  "3386460126014": {
+    "brandEn": "Van Cleef & Arpels",
+    "nameEn": "Van Cleef & Arpels Orchid Leather EDP 75ml",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Van Cleef Orchid Leather is a luxurious leather floral with raspberry and suede for refined unisex elegance.",
+      "introAr": "أوركيد ليذر من فان كليف جلد زهري فاخر بالتوت والجلد المخمل لأناقة متعددة.",
+      "familyEn": "Leather floral",
+      "familyAr": "جلد زهري",
+      "notesEn": "Raspberry, orchid, leather, suede, musk",
+      "notesAr": "توت، أوركيد، جلد، مخمل، مسك",
+      "charEn": "Luxurious, leathery, elegant",
+      "charAr": "فاخر وجلدي وأنيق",
+      "bestEn": "Cool weather and formal events",
+      "bestAr": "الطقس البارد والمناسبات",
+      "longEn": "8–10 hours",
+      "longAr": "8–10 ساعات"
+    }
+  },
+  "8681008055258": {
+    "brandEn": "Nishane",
+    "nameEn": "Nishane Ege Extrait 100ml",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Nishane Ege Extrait captures the Aegean breeze with citrus, herbs, and salty musk in an extrait concentration.",
+      "introAr": "إيجي إكستريه من نيشاني يجسد نسيم بحر إيجه بالحمضيات والأعشاب ومسك مالح بتركيز إكستريه.",
+      "familyEn": "Aromatic marine",
+      "familyAr": "عطري بحري",
+      "notesEn": "Bergamot, herbs, sea notes, musk, amber",
+      "notesAr": "برغموت، أعشاب، نوتات بحرية، مسك، عنبر",
+      "charEn": "Fresh, coastal, artistic",
+      "charAr": "منعش وساحلي وفني",
+      "bestEn": "Warm weather and daytime",
+      "bestAr": "الطقس الدافئ",
+      "longEn": "10–12 hours",
+      "longAr": "10–12 ساعة"
+    }
+  },
+  "607845070085": {
+    "brandEn": "NARS",
+    "nameEn": "NARS Climax Mascara",
+    "kind": "makeup",
+    "makeupSub": "eyes",
+    "m": {
+      "introEn": "NARS Climax Mascara delivers explosive volume with a buildable formula and hourglass brush for dramatic lashes.",
+      "introAr": "ماسكارا كلايماكس من نارس تمنح كثافة عالية بتركيبة قابلة للبناء وفرشاة ساعة رملية.",
+      "typeEn": "Volumizing mascara",
+      "typeAr": "ماسكارا للكثافة",
+      "benefitsEn": [
+        "Explosive volume",
+        "Buildable formula",
+        "Hourglass brush"
+      ],
+      "benefitsAr": [
+        "كثافة عالية",
+        "قابل للبناء",
+        "فرشاة ساعة رملية"
+      ],
+      "suitEn": "Dramatic lash looks",
+      "suitAr": "إطلالات رموش درامية"
+    }
+  },
+  "8681008055074": {
+    "brandEn": "Nishane",
+    "nameEn": "Nishane Ani Extrait 100ml",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Nishane Ani Extrait is a rich oriental vanilla fragrance with ginger, bergamot, and sandalwood in extrait strength.",
+      "introAr": "آني إكستريه من نيشاني عطر شرقي غني بالفانيلا مع زنجبيل وبرغموت وصندل بتركيز إكستريه.",
+      "familyEn": "Oriental vanilla",
+      "familyAr": "شرقي فانيلا",
+      "notesEn": "Ginger, bergamot, vanilla, sandalwood, musk",
+      "notesAr": "زنجبيل، برغموت، فانيلا، صندل، مسك",
+      "charEn": "Warm, gourmand, enveloping",
+      "charAr": "دافئ وغني ومحيط",
+      "bestEn": "Cold weather and evenings",
+      "bestAr": "الطقس البارد",
+      "longEn": "10–12 hours",
+      "longAr": "10–12 ساعة"
+    }
+  },
+  "8683608070617": {
+    "brandEn": "Nishane",
+    "nameEn": "Nishane Hacivat X Tero Extrait 100ml",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Nishane Hacivat X Tero Extrait fuses bright pineapple and bergamot with whiskey, caramel, and vanilla for bold niche artistry.",
+      "introAr": "هاسيفات إكس تيرو من نيشاني يمزج الأناناس والبرغموت مع الوسكي والكراميل والفانيلا.",
+      "familyEn": "Woody gourmand",
+      "familyAr": "خشبي غورماند",
+      "notesEn": "Pineapple, bergamot, cedar, whiskey, caramel, vanilla",
+      "notesAr": "أناناس، برغموت، أرز، وسكي، كراميل، فانيلا",
+      "charEn": "Bold, boozy, vibrant",
+      "charAr": "جريء وفني ونابض",
+      "bestEn": "Statement wear and evenings",
+      "bestAr": "السهرات",
+      "longEn": "10–12 hours",
+      "longAr": "10–12 ساعة"
+    }
+  },
+  "8683608070594": {
+    "brandEn": "Nishane",
+    "nameEn": "Nishane Hacivat X Kredo Extrait 100ml",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "p": {
+      "introEn": "Nishane Hacivat X Kredo Extrait blends sparkling pineapple and patchouli with saffron, leather, and oud for dramatic depth.",
+      "introAr": "هاسيفات إكس كريدو من نيشاني يمزج الأناناس والباتشولي مع الزعفران والجلد والعود.",
+      "familyEn": "Woody leather",
+      "familyAr": "خشبي جلدي",
+      "notesEn": "Pineapple, bergamot, patchouli, saffron, leather, oud",
+      "notesAr": "أناناس، برغموت، باتشولي، زعفران، جلد، عود",
+      "charEn": "Rich, leathery, sophisticated",
+      "charAr": "غني وجلدي وراقي",
+      "bestEn": "Evening wear and cooler seasons",
+      "bestAr": "السهرات",
+      "longEn": "10–12 hours",
+      "longAr": "10–12 ساعة"
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "50064861": {
+    "brandEn": "Vaseline",
+    "brandAr": "فازلين",
+    "nameEn": "Vaseline Lip Therapy 20g",
+    "nameAr": "مرطب ومورد الشفاه 20 جم",
+    "kind": "care",
+    "careLeaf": "care/face-care/lip-care",
+    "typeKey": "lip-balm",
+    "c": {
+      "introEn": "Vaseline Lip Therapy nourishes dry lips with a classic petrolatum-rich formula that locks in moisture for soft, smooth lips.",
+      "introAr": "مرطب فازلين للشفاه يغذي الشفاه الجافة بتركيبة غنية بالفازلين تحبس الرطوبة وتترك الشفاه ناعمة.",
+      "catEn": "Lip care",
+      "catAr": "عناية الشفاه",
+      "typeEn": "Lip balm",
+      "typeAr": "مرطب شفاه",
+      "benefitsEn": ["Deep moisture", "Soothes dryness", "Classic trusted formula"],
+      "benefitsAr": ["ترطيب عميق", "يهدئ الجفاف", "تركيبة موثوقة"],
+      "suitEn": "Dry or chapped lips",
+      "suitAr": "الشفاه الجافة أو المتشققة",
+      "sizeEn": "20 g",
+      "sizeAr": "20 جم"
+    }
+  },
+  "850035582251": {
+    "brandEn": "Mielle",
+    "brandAr": "ميلي",
+    "nameEn": "Mielle Rosemary Mint Strengthening Conditioner 355ml",
+    "nameAr": "بلسم مقوي للشعر بإكليل الجبل والنعناع 355 مل",
+    "kind": "care",
+    "careLeaf": "care/hair-care/shampoo-conditioners",
+    "typeKey": "conditioner",
+    "c": {
+      "introEn": "Mielle Rosemary Mint Conditioner strengthens and softens hair with biotin and natural oils while leaving a fresh herbal scent.",
+      "introAr": "بلسم ميلي بإكليل الجبل والنعناع يقوي الشعر ويلينه بالبيوتين والزيوت الطبيعية برائحة عشبية منعشة.",
+      "catEn": "Hair care",
+      "catAr": "عناية الشعر",
+      "typeEn": "Strengthening conditioner",
+      "typeAr": "بلسم مقوي",
+      "benefitsEn": ["Strengthens strands", "Adds softness", "Fresh rosemary mint scent"],
+      "benefitsAr": ["يقوي الخصلات", "نعومة للشعر", "رائحة إكليل الجبل والنعناع"],
+      "suitEn": "Weak or dry hair needing daily conditioning",
+      "suitAr": "الشعر الضعيف أو الجاف",
+      "sizeEn": "355 ml",
+      "sizeAr": "355 مل"
+    }
+  },
+  "854102006763": {
+    "brandEn": "Mielle",
+    "brandAr": "ميلي",
+    "nameEn": "Mielle Rosemary Mint Strengthening Hair Mask 340g",
+    "nameAr": "قnaع روزماري ونعnaع لتقوية الشعر 340 جم",
+    "kind": "care",
+    "careLeaf": "care/hair-care/oil--masks",
+    "typeKey": "hair-mask",
+    "c": {
+      "introEn": "Mielle Rosemary Mint Hair Mask delivers intensive nourishment to strengthen hair, reduce breakage, and restore softness.",
+      "introAr": "قnaع ميلي بروزماري ونعnaع يغذي الشعر بعمق لتقويته وتقليل التقصف واستعادة النعومة.",
+      "catEn": "Hair care",
+      "catAr": "عناية الشعر",
+      "typeEn": "Deep conditioning mask",
+      "typeAr": "قnaع ترطيب عميق",
+      "benefitsEn": ["Intensive repair", "Strengthens hair", "Smooth finish"],
+      "benefitsAr": ["إصلاح مكثف", "تقوية الشعر", "لمسة ناعمة"],
+      "suitEn": "Damaged or brittle hair",
+      "suitAr": "الشعر التالف أو الهش",
+      "sizeEn": "340 g",
+      "sizeAr": "340 جم"
+    }
+  }
+}

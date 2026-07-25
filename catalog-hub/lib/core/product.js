@@ -4,6 +4,38 @@
 
 import { collectImageUrls, upgradeImageUrl, THUMB_SIZE } from './images.js';
 
+/** مفتاح ترتيب رقم التدرج تصاعدياً (2 قبل 10 قبل 160) */
+export function shadeNumberSortKey(shade = {}, fallbackIndex = 0) {
+  const raw = String(
+    shade.shadeNumber || shade.shadeCode || shade.name || shade.nameEn || shade.nameAr || '',
+  ).trim();
+  const digits = raw.match(/\d+/);
+  if (digits) {
+    const num = Number(digits[0]);
+    if (Number.isFinite(num)) return [0, num, raw.toLowerCase(), fallbackIndex];
+  }
+  return [1, raw.toLowerCase(), fallbackIndex];
+}
+
+/** يرتّب التدرجات تصاعدياً حسب رقم الدرجة ويحدّث position */
+export function sortShadesByNumber(shades = []) {
+  return [...shades]
+    .map((shade, index) => ({
+      ...shade,
+      position: Number.isFinite(Number(shade.position)) ? Number(shade.position) : index,
+    }))
+    .sort((a, b) => {
+      const ka = shadeNumberSortKey(a, a.position ?? 0);
+      const kb = shadeNumberSortKey(b, b.position ?? 0);
+      for (let i = 0; i < ka.length; i += 1) {
+        if (ka[i] < kb[i]) return -1;
+        if (ka[i] > kb[i]) return 1;
+      }
+      return 0;
+    })
+    .map((shade, index) => ({ ...shade, position: index }));
+}
+
 export function emptyShade(i = 0) {
   return {
     id: String(i),
@@ -52,7 +84,7 @@ export function normalizeShade(raw = {}, index = 0) {
 }
 
 export function normalizeProduct(raw = {}) {
-  const shades = (raw.shades || []).map((s, i) => normalizeShade(s, i));
+  const shades = sortShadesByNumber((raw.shades || []).map((s, i) => normalizeShade(s, i)));
   const images = collectImageUrls(
     raw.thumb,
     raw.images,

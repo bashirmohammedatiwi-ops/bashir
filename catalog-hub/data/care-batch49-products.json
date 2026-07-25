@@ -1,0 +1,818 @@
+[
+  {
+    "barcode": "8680923345116",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Prebiotic Face Wash Gel Salicylic Acid 250ml",
+    "nameAr": "دكتور كلينيك غسول وجه جل بروبيوتيك بحمض الساليسيليك 250 مل",
+    "typeKey": "cleanser",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-cleansers-toners"
+    ],
+    "descriptionEn": "Dr.Clinic Prebiotic Face Wash Gel with salicylic acid cleanses oily and blemish-prone skin while supporting the skin barrier.\n\n◆ Category: Face care\n◆ Product type: Facial cleansing gel\n◆ Key benefits: Salicylic acid cleanse · Prebiotic support · Fresh clean feel\n◆ Suitable for: Daily care routines\n◆ Size: 250 ml",
+    "descriptionAr": "جل غسول دكتور كلينيك بروبيوتيك بحمض الساليسيليك ينظف البشرة الدهنية والمعرضة للحبوب مع دعم حاجز البشرة.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: جل غسول للوجه\n◆ الفوائد الرئيسية: تنظيف بحمض الساليسيليك · دعم بروبيوتيك · إحساس نظافة وانتعاش\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 250 مل"
+  },
+  {
+    "barcode": "8680923345086",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Vitamin C Facial Day Cream 50ml",
+    "nameAr": "دكتور كلينيك كريم نهاري للوجه بفيتامين سي 50 مل",
+    "typeKey": "cream",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Dr.Clinic Vitamin C Facial Day Cream brightens dull skin and delivers daily hydration with antioxidant care.\n\n◆ Category: Face care\n◆ Product type: Vitamin C day cream\n◆ Key benefits: Vitamin C radiance · Daily hydration · Antioxidant protection\n◆ Suitable for: Daily care routines\n◆ Size: 50 ml",
+    "descriptionAr": "كريم دكتور كلينيك النهاري بفيتامين سي يضيء البشرة الباهتة ويمنح ترطيباً يومياً بعناية مضادة للأكسدة.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: كريم نهاري بفيتامين سي\n◆ الفوائد الرئيسية: إشراقة فيتامين سي · ترطيب يومي · حماية مضادة للأكسدة\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 50 مل"
+  },
+  {
+    "barcode": "8680923345093",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Eyelash & Brow Enhancer Serum 6ml",
+    "nameAr": "دكتور كلينيك سيروم معزز للرموش والحواجب 6 مل",
+    "typeKey": "serum",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-eye-care"
+    ],
+    "descriptionEn": "Dr.Clinic Eyelash & Brow Enhancer Serum nourishes lashes and brows for a fuller healthier appearance.\n\n◆ Category: Face care\n◆ Product type: Lash and brow serum\n◆ Key benefits: Lash nourishment · Brow care · Daily enhancement\n◆ Suitable for: Daily care routines\n◆ Size: 6 ml",
+    "descriptionAr": "سيروم دكتور كلينيك المعزز للرموش والحواجب يغذي الرموش والحواجب لمظهر أكثر كثافة وصحة.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: سيروم للرموش والحواجب\n◆ الفوائد الرئيسية: تغذية الرموش · عناية بالحواجب · تعزيز يومي\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 6 مل"
+  },
+  {
+    "barcode": "8680923353234",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Moisturizing Body Lotion Normal Skin 250ml",
+    "nameAr": "دكتور كلينيك لوشن مرطب للجسم للبشرة العادية 250 مل",
+    "typeKey": "body-cream",
+    "subcategorySlugs": [
+      "care-skin-and-body-care"
+    ],
+    "tertiarySlugs": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "descriptionEn": "Dr.Clinic Moisturizing Body Lotion for normal skin keeps body skin soft and comfortably hydrated all day.\n\n◆ Category: Body care\n◆ Product type: Body moisturizing lotion\n◆ Key benefits: Daily body hydration · Soft skin feel · Normal skin formula\n◆ Suitable for: Daily care routines\n◆ Size: 250 ml",
+    "descriptionAr": "لوشن دكتور كلينيك المرطب للبشرة العادية يحافظ على نعومة وترطيب بشرة الجسم طوال اليوم.\n\n◆ التصنيف: العناية بالجسم\n◆ نوع المنتج: لوشن مرطب للجسم\n◆ الفوائد الرئيسية: ترطيب يومي للجسم · بشرة ناعمة · تركيبة للبشرة العادية\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 250 مل"
+  },
+  {
+    "barcode": "8680923353227",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Moisturizing Body Lotion Tea Tree 250ml",
+    "nameAr": "دكتور كلينيك لوشن مرطب للجسم بشجرة الشاي 250 مل",
+    "typeKey": "body-cream",
+    "subcategorySlugs": [
+      "care-skin-and-body-care"
+    ],
+    "tertiarySlugs": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "descriptionEn": "Dr.Clinic Tea Tree Body Lotion refreshes and moisturizes body skin with purifying tea tree care.\n\n◆ Category: Body care\n◆ Product type: Tea tree body lotion\n◆ Key benefits: Tea tree freshness · Body hydration · Purifying care\n◆ Suitable for: Daily care routines\n◆ Size: 250 ml",
+    "descriptionAr": "لوشن دكتور كلينيك بشجرة الشاي ينعش ويرطب بشرة الجسم بعناية منقية.\n\n◆ التصنيف: العناية بالجسم\n◆ نوع المنتج: لوشن جسم بشجرة الشاي\n◆ الفوائد الرئيسية: انتعاش شجرة الشاي · ترطيب الجسم · عناية منقية\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 250 مل"
+  },
+  {
+    "barcode": "8680923353210",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Moisturizing Body Lotion Dry & Sensitive Skin 250ml",
+    "nameAr": "دكتور كلينيك لوشن مرطب للجسم للبشرة الجافة والحساسة 250 مل",
+    "typeKey": "body-cream",
+    "subcategorySlugs": [
+      "care-skin-and-body-care"
+    ],
+    "tertiarySlugs": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "descriptionEn": "Dr.Clinic Body Lotion for dry and sensitive skin delivers gentle long-lasting moisture and comfort.\n\n◆ Category: Body care\n◆ Product type: Body lotion for dry skin\n◆ Key benefits: Gentle hydration · Sensitive skin care · Soft comfortable finish\n◆ Suitable for: Daily care routines\n◆ Size: 250 ml",
+    "descriptionAr": "لوشن دكتور كلينيك للبشرة الجافة والحساسة يمنح ترطيباً لطيفاً يدوم ويمنح راحة للبشرة.\n\n◆ التصنيف: العناية بالجسم\n◆ نوع المنتج: لوشن جسم للبشرة الجافة\n◆ الفوائد الرئيسية: ترطيب لطيف · عناية للبشرة الحساسة · لمسة مريحة\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 250 مل"
+  },
+  {
+    "barcode": "8680923360317",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Prebiotic Face Wash Gel 250ml",
+    "nameAr": "دكتور كلينيك غسول وجه جل بروبيوتيك 250 مل",
+    "typeKey": "cleanser",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-cleansers-toners"
+    ],
+    "descriptionEn": "Dr.Clinic Prebiotic Face Wash Gel gently cleanses while supporting a balanced healthy skin microbiome.\n\n◆ Category: Face care\n◆ Product type: Prebiotic cleansing gel\n◆ Key benefits: Prebiotic cleanse · Balanced skin feel · Daily face wash\n◆ Suitable for: Daily care routines\n◆ Size: 250 ml",
+    "descriptionAr": "جل غسول دكتور كلينيك بروبيوتيك ينظف بلطف مع دعم توازن ميكروبيوم البشرة.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: جل غسول بروبيوتيك\n◆ الفوائد الرئيسية: تنظيف بروبيوتيك · إحساس متوازن · غسول يومي للوجه\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 250 مل"
+  },
+  {
+    "barcode": "8680923334806",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Collagen Intense Cream 50ml",
+    "nameAr": "دكتور كلينيك كريم كولاجين مكثف 50 مل",
+    "typeKey": "cream",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Dr.Clinic Collagen Intense Cream firms and nourishes skin with intensive collagen-rich daily care.\n\n◆ Category: Face care\n◆ Product type: Collagen face cream\n◆ Key benefits: Collagen nourishment · Firming care · Rich daily moisture\n◆ Suitable for: Daily care routines\n◆ Size: 50 ml",
+    "descriptionAr": "كريم دكتور كلينيك الكولاجين المكثف يشد ويغذي البشرة بعناية يومية غنية بالكولاجين.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: كريم وجه بالكولاجين\n◆ الفوائد الرئيسية: تغذية بالكولاجين · عناية بالشد · ترطيب يومي غني\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 50 مل"
+  },
+  {
+    "barcode": "8680923356228",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Prebiotic Face Cleansing Foam Oily Skin 160ml",
+    "nameAr": "دكتور كلينيك رغوة تنظيف الوجه بروبيوتيك للبشرة الدهنية 160 مل",
+    "typeKey": "cleanser",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-cleansers-toners"
+    ],
+    "descriptionEn": "Dr.Clinic Prebiotic Cleansing Foam for oily skin removes excess sebum without over-drying.\n\n◆ Category: Face care\n◆ Product type: Foaming cleanser\n◆ Key benefits: Oil control cleanse · Prebiotic balance · Refreshing foam\n◆ Suitable for: Daily care routines\n◆ Size: 160 ml",
+    "descriptionAr": "رغوة دكتور كلينيك بروبيوتيك للبشرة الدهنية تزيل الزيوت الزائدة دون جفاف مفرط.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: غسول رغوي\n◆ الفوائد الرئيسية: تنظيف يتحكم بالدهون · توازن بروبيوتيك · رغوة منعشة\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 160 مل"
+  },
+  {
+    "barcode": "8680923356211",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Prebiotic Face Cleansing Foam Anti-Acne 160ml",
+    "nameAr": "دكتور كلينيك رغوة تنظيف الوجه بروبيوتيك مضادة للحبوب 160 مل",
+    "typeKey": "cleanser",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-cleansers-toners"
+    ],
+    "descriptionEn": "Dr.Clinic Anti-Acne Cleansing Foam targets blemish-prone skin with a purifying prebiotic formula.\n\n◆ Category: Face care\n◆ Product type: Anti-acne foaming cleanser\n◆ Key benefits: Anti-acne cleanse · Purifying foam · Prebiotic support\n◆ Suitable for: Daily care routines\n◆ Size: 160 ml",
+    "descriptionAr": "رغوة دكتور كلينيك المضادة للحبوب تستهدف البشرة المعرضة للبثور بتركيبة بروبيوتيك منقية.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: غسول رغوي مضاد للحبوب\n◆ الفوائد الرئيسية: تنظيف مضاد للحبوب · رغوة منقية · دعم بروبيوتيك\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 160 مل"
+  },
+  {
+    "barcode": "8680923336367",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Prebiotic Deep Cleansing Foam 160ml",
+    "nameAr": "دكتور كلينيك رغوة تنظيف عميق بروبيوتيك 160 مل",
+    "typeKey": "cleanser",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-cleansers-toners"
+    ],
+    "descriptionEn": "Dr.Clinic Prebiotic Deep Cleansing Foam removes impurities and makeup residue for a fresh clean feel.\n\n◆ Category: Face care\n◆ Product type: Deep cleansing foam\n◆ Key benefits: Deep pore cleanse · Makeup removal · Prebiotic care\n◆ Suitable for: Daily care routines\n◆ Size: 160 ml",
+    "descriptionAr": "رغوة دكتور كلينيك للتنظيف العميق بروبيوتيك تزيل الشوائب وبقايا المكياج لإحساس نظافة وانتعاش.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: رغوة تنظيف عميق\n◆ الفوائد الرئيسية: تنظيف عميق للمسام · إزالة المكياج · عناية بروبيوتيك\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 160 مل"
+  },
+  {
+    "barcode": "8680923345864",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Tea Tree Face Wash 200ml",
+    "nameAr": "دكتور كلينيك غسول وجه بشجرة الشاي 200 مل",
+    "typeKey": "cleanser",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-cleansers-toners"
+    ],
+    "descriptionEn": "Dr.Clinic Tea Tree Face Wash purifies oily and congested skin with refreshing botanical care.\n\n◆ Category: Face care\n◆ Product type: Tea tree face wash\n◆ Key benefits: Tea tree purify · Fresh cleanse · Oily skin support\n◆ Suitable for: Daily care routines\n◆ Size: 200 ml",
+    "descriptionAr": "غسول دكتور كلينيك بشجرة الشاي ينقي البشرة الدهنية والمسدودة بعناية نباتية منعشة.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: غسول وجه بشجرة الشاي\n◆ الفوائد الرئيسية: تنقية شجرة الشاي · تنظيف منعش · دعم البشرة الدهنية\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 200 مل"
+  },
+  {
+    "barcode": "8680923352206",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Anti-Age Face Wash Gel 150ml",
+    "nameAr": "دكتور كلينيك غسول وجه جل مضاد للشيخوخة 150 مل",
+    "typeKey": "cleanser",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-cleansers-toners"
+    ],
+    "descriptionEn": "Dr.Clinic Anti-Age Face Wash Gel cleanses mature skin while supporting a smoother refreshed complexion.\n\n◆ Category: Face care\n◆ Product type: Anti-aging cleansing gel\n◆ Key benefits: Anti-age cleanse · Gentle gel formula · Refreshed skin\n◆ Suitable for: Daily care routines\n◆ Size: 150 ml",
+    "descriptionAr": "جل غسول دكتور كلينيك المضاد للشيخوخة ينظف البشرة الناضجة ويدعم مظهراً أنعم وأكثر انتعاشاً.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: جل غسول مضاد للشيخوخة\n◆ الفوائد الرئيسية: تنظيف مضاد للشيخوخة · تركيبة جل لطيفة · بشرة منتعشة\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 150 مل"
+  },
+  {
+    "barcode": "8680923349411",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Double Phase Cleansing Water 400ml",
+    "nameAr": "دكتور كلينيك ماء تنظيف ثنائي المراحل 400 مل",
+    "typeKey": "cleanser",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-cleansers-toners"
+    ],
+    "descriptionEn": "Dr.Clinic Double Phase Cleansing Water dissolves waterproof makeup and sunscreen in one gentle step.\n\n◆ Category: Face care\n◆ Product type: Dual-phase cleansing water\n◆ Key benefits: Makeup melting cleanse · Two-phase formula · No-rinse option\n◆ Suitable for: Daily care routines\n◆ Size: 400 ml",
+    "descriptionAr": "ماء التنظيف ثنائي المراحل من دكتور كلينيك يذيب المكياج المقاوم للماء وواقي الشمس بلطف.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: ماء تنظيف ثنائي المراحل\n◆ الفوائد الرئيسية: إذابة المكياج · تركيبة ثنائية · بدون شطف\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 400 مل"
+  },
+  {
+    "barcode": "8680923346090",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Prebiotic Micellar Water Panthenol Normal Skin 400ml",
+    "nameAr": "دكتور كلينيك ماء ميسيلار بروبيوتيك بالبانثينول للبشرة العادية 400 مل",
+    "typeKey": "cleanser",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-cleansers-toners"
+    ],
+    "descriptionEn": "Dr.Clinic Panthenol Micellar Water gently removes makeup and impurities while soothing normal skin.\n\n◆ Category: Face care\n◆ Product type: Micellar cleansing water\n◆ Key benefits: Panthenol soothe · Micellar cleanse · Normal skin formula\n◆ Suitable for: Daily care routines\n◆ Size: 400 ml",
+    "descriptionAr": "ماء ميسيلار دكتور كلينيك بالبانثينول يزيل المكياج والشوائب بلطف مع تهدئة البشرة العادية.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: ماء ميسيلار للتنظيف\n◆ الفوائد الرئيسية: تهدئة بالبانثينول · تنظيف ميسيلار · تركيبة للبشرة العادية\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 400 مل"
+  },
+  {
+    "barcode": "8680923346106",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Prebiotic Micellar Water Niacinamide Oily Skin 400ml",
+    "nameAr": "دكتور كلينيك ماء ميسيلار بروبيوتيك بالنياسيناميد للبشرة الدهنية 400 مل",
+    "typeKey": "cleanser",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-cleansers-toners"
+    ],
+    "descriptionEn": "Dr.Clinic Niacinamide Micellar Water cleanses oily skin and helps refine the look of pores.\n\n◆ Category: Face care\n◆ Product type: Micellar cleansing water\n◆ Key benefits: Niacinamide care · Oil-control cleanse · Pore-refining feel\n◆ Suitable for: Daily care routines\n◆ Size: 400 ml",
+    "descriptionAr": "ماء ميسيلار دكتور كلينيك بالنياسيناميد ينظف البشرة الدهنية ويساعد على تحسين مظهر المسام.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: ماء ميسيلار للتنظيف\n◆ الفوائد الرئيسية: عناية نياسيناميد · تنظيف يتحكم بالدهون · تحسين مظهر المسام\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 400 مل"
+  },
+  {
+    "barcode": "8680923346151",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Intimate Gel 300ml",
+    "nameAr": "دكتور كلينيك جل للعناية الحميمة 300 مل",
+    "typeKey": "cleanser",
+    "subcategorySlugs": [
+      "care-skin-and-body-care"
+    ],
+    "tertiarySlugs": [
+      "care-skin-and-body-care-body-cleansers"
+    ],
+    "descriptionEn": "Dr.Clinic Intimate Gel provides gentle daily cleansing with a pH-balanced formula for intimate care.\n\n◆ Category: Body care\n◆ Product type: Intimate cleansing gel\n◆ Key benefits: Gentle intimate cleanse · pH-balanced care · Daily freshness\n◆ Suitable for: Daily care routines\n◆ Size: 300 ml",
+    "descriptionAr": "جل دكتور كلينيك للعناية الحميمة يمنح تنظيفاً يومياً لطيفاً بتركيبة متوازنة درجة الحموضة.\n\n◆ التصنيف: العناية بالجسم\n◆ نوع المنتج: جل للعناية الحميمة\n◆ الفوائد الرئيسية: تنظيف حميمي لطيف · عناية متوازنة درجة الحموضة · انتعاش يومي\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 300 مل"
+  },
+  {
+    "barcode": "8680923357218",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Hair Serum 30ml",
+    "nameAr": "دكتور كلينيك سيروم الشعر 30 مل",
+    "typeKey": "serum",
+    "subcategorySlugs": [
+      "care-hair-care"
+    ],
+    "tertiarySlugs": [
+      "care-hair-care-hair-treatment"
+    ],
+    "descriptionEn": "Dr.Clinic Hair Serum nourishes dry or damaged hair and adds smoothness and shine.\n\n◆ Category: Hair care\n◆ Product type: Hair treatment serum\n◆ Key benefits: Hair nourishment · Smooth finish · Daily treatment\n◆ Suitable for: Daily care routines\n◆ Size: 30 ml",
+    "descriptionAr": "سيروم دكتور كلينيك للشعر يغذي الشعر الجاف أو التالف ويضيف نعومة ولمعاناً.\n\n◆ التصنيف: العناية بالشعر\n◆ نوع المنتج: سيروم علاج للشعر\n◆ الفوائد الرئيسية: تغذية الشعر · لمسة ناعمة · علاج يومي\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 30 مل"
+  },
+  {
+    "barcode": "8680923337456",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic SPF 50+ Illuminating Sun Cream 50ml",
+    "nameAr": "دكتور كلينيك كريم شمس SPF 50+ مضيء 50 مل",
+    "typeKey": "sunscreen",
+    "subcategorySlugs": [
+      "care-face-care",
+      "care-sun-care"
+    ],
+    "tertiarySlugs": [
+      "care-sun-care-sunscreen"
+    ],
+    "descriptionEn": "Dr.Clinic SPF 50+ Illuminating Sun Cream protects against UV rays while adding a radiant glow.\n\n◆ Category: Sun protection\n◆ Product type: Illuminating sunscreen\n◆ Key benefits: SPF 50+ protection · Radiant finish · Daily sun defense\n◆ Suitable for: Daily care routines\n◆ Size: 50 ml",
+    "descriptionAr": "كريم شمس دكتور كلينيك SPF 50+ المُضيءء يحمي من الأشعة فوق البنفسجية ويضيف إشراقة.\n\n◆ التصنيف: حماية من الشمس\n◆ نوع المنتج: واقي شمس مُضيءء\n◆ الفوائد الرئيسية: حماية SPF 50+ · لمسة مُضيءئة · دفاع يومي من الشمس\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 50 مل"
+  },
+  {
+    "barcode": "8680923353753",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Pink Sunscreen SPF 50+ Tone Equalizing 50ml",
+    "nameAr": "دكتور كلينيك واقي شمس وردي SPF 50+ لتوحيد اللون 50 مل",
+    "typeKey": "sunscreen",
+    "subcategorySlugs": [
+      "care-face-care",
+      "care-sun-care"
+    ],
+    "tertiarySlugs": [
+      "care-sun-care-sunscreen"
+    ],
+    "descriptionEn": "Dr.Clinic Pink Sunscreen SPF 50+ evens skin tone while delivering high broad-spectrum protection.\n\n◆ Category: Sun protection\n◆ Product type: Tone-correcting sunscreen\n◆ Key benefits: SPF 50+ protection · Tone equalizing tint · Daily wear\n◆ Suitable for: Daily care routines\n◆ Size: 50 ml",
+    "descriptionAr": "واقي الشمس الوردي من دكتور كلينيك SPF 50+ يوحّد لون البشرة مع حماية واسعة الطيف.\n\n◆ التصنيف: حماية من الشمس\n◆ نوع المنتج: واقي شمس لتوحيد اللون\n◆ الفوائد الرئيسية: حماية SPF 50+ · توحيد اللون · استخدام يومي\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 50 مل"
+  },
+  {
+    "barcode": "8680923344850",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Repairing Hand and Face Cream 50ml",
+    "nameAr": "دكتور كلينيك كريم مرمِّم لليدين والوجه 50 مل",
+    "typeKey": "cream",
+    "subcategorySlugs": [
+      "care-hand-care"
+    ],
+    "tertiarySlugs": [
+      "care-hand-care-hand-moisturizer"
+    ],
+    "descriptionEn": "Dr.Clinic Repairing Hand and Face Cream restores moisture to dry hands and face with a nourishing formula.\n\n◆ Category: Hand care\n◆ Product type: Repairing hand cream\n◆ Key benefits: Hand and face repair · Deep moisture · Daily comfort\n◆ Suitable for: Daily care routines\n◆ Size: 50 ml",
+    "descriptionAr": "كريم دكتور كلينيك المرمِّم لليدين والوجه يعيد الترطيب لليدين والوجه الجافين بتركيبة مغذية.\n\n◆ التصنيف: العناية باليدين\n◆ نوع المنتج: كريم مرمِّم لليدين\n◆ الفوائد الرئيسية: إصلاح اليدين والوجه · ترطيب عميق · راحة يومية\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 50 مل"
+  },
+  {
+    "barcode": "8680923344867",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Foot Care Cream 50ml",
+    "nameAr": "دكتور كلينيك كريم العناية بالقدمين 50 مل",
+    "typeKey": "cream",
+    "subcategorySlugs": [
+      "care-skin-and-body-care"
+    ],
+    "tertiarySlugs": [
+      "care-skin-and-body-care-foot-care"
+    ],
+    "descriptionEn": "Dr.Clinic Foot Care Cream softens rough dry feet and helps restore comfortable smooth skin.\n\n◆ Category: Foot care\n◆ Product type: Foot care cream\n◆ Key benefits: Softens rough feet · Intensive moisture · Daily foot care\n◆ Suitable for: Daily care routines\n◆ Size: 50 ml",
+    "descriptionAr": "كريم دكتور كلينيك للقدمين ينعّم القدمين الجافة الخشنة ويساعد على استعادة نعومة مريحة.\n\n◆ التصنيف: العناية بالقدمين\n◆ نوع المنتج: كريم للقدمين\n◆ الفوائد الرئيسية: تنعيم القدمين الخشنة · ترطيب مكثف · عناية يومية للقدمين\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 50 مل"
+  },
+  {
+    "barcode": "8680923359922",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Collagen Glow Set",
+    "nameAr": "دكتور كلينيك طقم كولاجين غلو",
+    "typeKey": "moisturizer",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Dr.Clinic Collagen Glow Set combines collagen care essentials for a brighter firmer-looking routine.\n\n◆ Category: Face care\n◆ Product type: Skincare set\n◆ Key benefits: Collagen routine set · Glow boost · Complete face care\n◆ Suitable for: Daily care routines\n◆ Size: طقم",
+    "descriptionAr": "طقم كولاجين غلو من دكتور كلينيك يجمع أساسيات العناية بالكولاجين لروتين أكثر إشراقاً وشداً.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: طقم عناية بالبشرة\n◆ الفوائد الرئيسية: طقم روتين كولاجين · تعزيز الإشراق · عناية وجه متكاملة\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: طقم"
+  },
+  {
+    "barcode": "8680923335162",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Collagen Intense Serum 30ml",
+    "nameAr": "دكتور كلينيك سيروم كولاجين مكثف 30 مل",
+    "typeKey": "serum",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Dr.Clinic Collagen Intense Serum delivers concentrated collagen support for firmer smoother-looking skin.\n\n◆ Category: Face care\n◆ Product type: Collagen serum\n◆ Key benefits: Intense collagen · Firming serum · Daily anti-age step\n◆ Suitable for: Daily care routines\n◆ Size: 30 ml",
+    "descriptionAr": "سيروم دكتور كلينيك الكولاجين المكثف يقدم دعماً مركزاً بالكولاجين لبشرة أكثر شدّاً ونعومة.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: سيروم كولاجين\n◆ الفوائد الرئيسية: كولاجين مكثف · سيروم للشد · خطوة مضادة للشيخوخة\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 30 مل"
+  },
+  {
+    "barcode": "8680923356242",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Solutions Exfoliating Facial Peeling AHA 10% + BHA 2% Salicylic Acid 30ml",
+    "nameAr": "دكتور كلينيك سيروم تقشير الوجه AHA 10% + BHA 2% بحمض الساليسيليك 30 مل",
+    "typeKey": "scrub",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-face-scrubs"
+    ],
+    "descriptionEn": "Dr.Clinic AHA + BHA Peeling Serum chemically exfoliates to renew skin, unclog pores and improve texture and tone.\n\n◆ Category: Face care\n◆ Product type: Exfoliating peeling serum\n◆ Key benefits: 10% AHA exfoliation · 2% BHA pore care · Smoother even tone\n◆ Suitable for: Daily care routines\n◆ Size: 30 ml",
+    "descriptionAr": "سيروم دكتور كلينيك للتقشير بـ AHA و BHA يقشّر كيميائياً لتجديد البشرة وتنظيف المسام وتحسين الملمس واللون.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: سيروم تقشير\n◆ الفوائد الرئيسية: تقشير AHA 10% · عناية BHA 2% بالمسام · ملمس ولون أكثر تجانساً\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 30 مل"
+  },
+  {
+    "barcode": "8680923353296",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Anti-Age Serum 30ml",
+    "nameAr": "دكتور كلينيك سيروم مضاد للشيخوخة 30 مل",
+    "typeKey": "serum",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Dr.Clinic Anti-Age Serum targets fine lines and loss of firmness for a more youthful complexion.\n\n◆ Category: Face care\n◆ Product type: Anti-aging serum\n◆ Key benefits: Anti-aging care · Fine line support · Firming serum\n◆ Suitable for: Daily care routines\n◆ Size: 30 ml",
+    "descriptionAr": "سيروم دكتور كلينيك المضاد للشيخوخة يستهدف الخطوط الدقيقة وفقدان الشد لمظهر أكثر شباباً.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: سيروم مضاد للشيخوخة\n◆ الفوائد الرئيسية: عناية مضاد للشيخوخة · دعم الخطوط الدقيقة · سيروم للشد\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 30 مل"
+  },
+  {
+    "barcode": "8680923334790",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Anti-Wrinkle Eye Care Cream 15ml",
+    "nameAr": "دكتور كلينيك كريم العناية بالعين مضاد للتجاعيد 15 مل",
+    "typeKey": "cream",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-eye-care"
+    ],
+    "descriptionEn": "Dr.Clinic Anti-Wrinkle Eye Care Cream hydrates the delicate eye area and helps reduce the look of wrinkles.\n\n◆ Category: Face care\n◆ Product type: Anti-wrinkle eye cream\n◆ Key benefits: Eye area hydration · Wrinkle care · Gentle daily formula\n◆ Suitable for: Daily care routines\n◆ Size: 15 ml",
+    "descriptionAr": "كريم دكتور كلينيك للعناية بالعين مضاد للتجاعيد يرطب محيط العين الرقيق ويساعد على تقليل مظهر التجاعيد.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: كريم عين مضاد للتجاعيد\n◆ الفوائد الرئيسية: ترطيب محيط العين · عناية بالتجاعيد · تركيبة يومية لطيفة\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 15 مل"
+  },
+  {
+    "barcode": "8680923343174",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Anti-Acne Gel 15ml",
+    "nameAr": "دكتور كلينيك جل مضاد للحبوب 15 مل",
+    "typeKey": "serum",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Dr.Clinic Anti-Acne Gel targets blemishes with a focused formula for clearer-looking skin.\n\n◆ Category: Face care\n◆ Product type: Anti-acne spot gel\n◆ Key benefits: Spot blemish care · Purifying gel · Targeted treatment\n◆ Suitable for: Daily care routines\n◆ Size: 15 ml",
+    "descriptionAr": "جل دكتور كلينيك المضاد للحبوب يستهدف البثور بتركيبة مركزة لبشرة أوضح.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: جل موضعي مضاد للحبوب\n◆ الفوائد الرئيسية: عناية موضعية بالبثور · جل منقٍ · علاج مركّز\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 15 مل"
+  },
+  {
+    "barcode": "8680923335148",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Lash & Brow Enhancer Serum 6ml",
+    "nameAr": "دكتور كلينيك سيروم معزز للرموش والحواجب 6 مل",
+    "typeKey": "serum",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-eye-care"
+    ],
+    "descriptionEn": "Dr.Clinic Lash & Brow Enhancer Serum strengthens and nourishes lashes and brows for fuller definition.\n\n◆ Category: Face care\n◆ Product type: Lash and brow serum\n◆ Key benefits: Lash strengthening · Brow definition · Daily serum care\n◆ Suitable for: Daily care routines\n◆ Size: 6 ml",
+    "descriptionAr": "سيروم دكتور كلينيك المعزز للرموش والحواجب يقوي ويغذي الرموش والحواجب لتعريف أكثر كثافة.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: سيروم للرموش والحواجب\n◆ الفوائد الرئيسية: تقوية الرموش · تعريف الحواجب · عناية سيروم يومية\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 6 مل"
+  },
+  {
+    "barcode": "8680923344935",
+    "brandEn": "Dr.Clinic",
+    "brandAr": "دكتور كلينيك",
+    "nameEn": "Dr.Clinic Aqua Bomb Moisture Tank Cream 50ml",
+    "nameAr": "دكتور كلينيك كريم أكوا بومب المرطب 50 مل",
+    "typeKey": "moisturizer",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Dr.Clinic Aqua Bomb Moisture Tank Cream floods skin with lightweight hydration for a plump dewy finish.\n\n◆ Category: Face care\n◆ Product type: Hydrating face cream\n◆ Key benefits: Intense hydration · Lightweight texture · Dewy moisture boost\n◆ Suitable for: Daily care routines\n◆ Size: 50 ml",
+    "descriptionAr": "كريم دكتور كلينيك أكوا بومب المرطب يغمر البشرة بترطيب خفيف لإحساس ممتلئ وندي.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: كريم وجه مرطب\n◆ الفوائد الرئيسية: ترطيب مكثف · قوام خفيف · دفعة رطوبة ندية\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 50 مل"
+  },
+  {
+    "barcode": "5028197269586",
+    "brandEn": "The Body Shop",
+    "brandAr": "ذا بودي شوب",
+    "nameEn": "The Body Shop Tea Tree Foaming Facial Wash 150ml",
+    "nameAr": "ذا بودي شوب غسول وجه رغوي بشجرة الشاي 150 مل",
+    "typeKey": "cleanser",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-cleansers-toners"
+    ],
+    "descriptionEn": "The Body Shop Tea Tree Foaming Facial Wash deeply cleanses blemish-prone skin with refreshing tea tree.\n\n◆ Category: Face care\n◆ Product type: Foaming facial wash\n◆ Key benefits: Tea tree cleanse · Purifying foam · Blemish-prone skin\n◆ Suitable for: Daily care routines\n◆ Size: 150 ml",
+    "descriptionAr": "غسول ذا بودي شوب الرغوي بشجرة الشاي ينظف بعمق البشرة المعرضة للحبوب بانتعاش شجرة الشاي.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: غسول وجه رغوي\n◆ الفوائد الرئيسية: تنظيف شجرة الشاي · رغوة منقية · للبشرة المعرضة للحبوب\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 150 مل"
+  },
+  {
+    "barcode": "5028197334277",
+    "brandEn": "The Body Shop",
+    "brandAr": "ذا بودي شوب",
+    "nameEn": "The Body Shop Tea Tree Toner 250ml",
+    "nameAr": "ذا بودي شوب تونر شجرة الشاي 250 مل",
+    "typeKey": "toner",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-cleansers-toners"
+    ],
+    "descriptionEn": "The Body Shop Tea Tree Toner refreshes skin after cleansing and helps reduce the look of pores.\n\n◆ Category: Face care\n◆ Product type: Facial toner\n◆ Key benefits: Pore-refining toner · Tea tree freshness · Post-cleanse prep\n◆ Suitable for: Daily care routines\n◆ Size: 250 ml",
+    "descriptionAr": "تونر ذا بودي شوب بشجرة الشاي ينعش البشرة بعد التنظيف ويساعد على تقليل مظهر المسام.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: تونر للوجه\n◆ الفوائد الرئيسية: تونر للمسام · انتعاش شجرة الشاي · تجهيز بعد التنظيف\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 250 مل"
+  },
+  {
+    "barcode": "8809624500079",
+    "brandEn": "Elizavecca",
+    "brandAr": "إليزافيكا",
+    "nameEn": "Elizavecca Moisture Hyaluronic Acid Memory Cream 100g",
+    "nameAr": "إليزافيكا كريم مرطّب مرطّب حمض الهيالورونيك 100 جم",
+    "typeKey": "cream",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Elizavecca Hyaluronic Acid Memory Cream delivers bouncy hydration with a cushiony moisture-rich texture.\n\n◆ Category: Face care\n◆ Product type: Hyaluronic face cream\n◆ Key benefits: Hyaluronic hydration · Memory texture · Plump moisture\n◆ Suitable for: Daily care routines\n◆ Size: 100 g",
+    "descriptionAr": "كريم إليزافيكا بمرطّب حمض الهيالورونيك يمنح ترطيباً مرناً بقوام غني بالرطوبة.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: كريم وجه بالهيالورونيك\n◆ الفوائد الرئيسية: ترطيب الهيالورونيك · قوام مرطّب · رطوبة ممتلئة\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 100 جم"
+  },
+  {
+    "barcode": "785364130081",
+    "brandEn": "Mario Badescu",
+    "brandAr": "ماريو بديسكو",
+    "nameEn": "Mario Badescu Drying Lotion 29ml",
+    "nameAr": "ماريو بديسكو لوشن التجفيف 29 مل",
+    "typeKey": "serum",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Mario Badescu Drying Lotion is a cult-favorite overnight spot treatment for whiteheads and surface blemishes.\n\n◆ Category: Face care\n◆ Product type: Spot drying treatment\n◆ Key benefits: Overnight spot care · Dries blemishes · Targeted treatment\n◆ Suitable for: Daily care routines\n◆ Size: 29 ml",
+    "descriptionAr": "لوشن التجفيف من ماريو بديسكو علاج ليلي كلاسيكي للرؤوس البيضاء والبثور السطحية.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: علاج موضعي للبثور\n◆ الفوائد الرئيسية: عناية ليلية موضعية · يجفف البثور · علاج مركّز\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 29 مل"
+  },
+  {
+    "barcode": "785364130531",
+    "brandEn": "Mario Badescu",
+    "brandAr": "ماريو بديسكو",
+    "nameEn": "Mario Badescu Facial Spray Aloe Adaptogens & Coconut Water 118ml",
+    "nameAr": "ماريو بديسكو بخاخ وجه بالصبار والالمكيّفات وماء جوز الهند 118 مل",
+    "typeKey": "toner",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-cleansers-toners"
+    ],
+    "descriptionEn": "Mario Badescu Facial Spray with aloe, adaptogens and coconut water refreshes and hydrates skin on the go.\n\n◆ Category: Face care\n◆ Product type: Facial mist toner\n◆ Key benefits: Hydrating facial mist · Adaptogen care · Makeup refresh\n◆ Suitable for: Daily care routines\n◆ Size: 118 ml",
+    "descriptionAr": "بخاخ ماريو بديسكو بالصبار والالمكيّفات وماء جوز الهند ينعش ويرطب البشرة في أي وقت.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: بخاخ تونر للوجه\n◆ الفوائد الرئيسية: بخاخ مرطب · عناية مكيّف · تنشيط المكياج\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 118 مل"
+  },
+  {
+    "barcode": "785364130357",
+    "brandEn": "Mario Badescu",
+    "brandAr": "ماريو بديسكو",
+    "nameEn": "Mario Badescu Facial Spray Aloe Cucumber & Green Tea 118ml",
+    "nameAr": "ماريو بديسكو بخاخ وجه بالصبار والخيار والشاي الأخضر 118 مل",
+    "typeKey": "toner",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-cleansers-toners"
+    ],
+    "descriptionEn": "Mario Badescu Cucumber & Green Tea Facial Spray cools and soothes skin with a refreshing botanical mist.\n\n◆ Category: Face care\n◆ Product type: Facial mist toner\n◆ Key benefits: Cooling cucumber · Green tea soothe · Instant refresh\n◆ Suitable for: Daily care routines\n◆ Size: 118 ml",
+    "descriptionAr": "بخاخ ماريو بديسكو بالصبار والخيار والشاي الأخضر يبرد ويهدئ البشرة برذاذ نباتية منعش.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: بخاخ تونر للوجه\n◆ الفوائد الرئيسية: تبريد بالخيار · تهدئة بالشاي الأخضر · انتعاش فوري\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 118 مل"
+  },
+  {
+    "barcode": "785364130388",
+    "brandEn": "Mario Badescu",
+    "brandAr": "ماريو بديسكو",
+    "nameEn": "Mario Badescu Facial Spray Aloe Chamomile & Lavender 118ml",
+    "nameAr": "ماريو بديسكو بخاخ وجه بالصبار والبابونج والخزامى 118 مل",
+    "typeKey": "toner",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-cleansers-toners"
+    ],
+    "descriptionEn": "Mario Badescu Chamomile & Lavender Facial Spray calms sensitive skin with a gentle soothing mist.\n\n◆ Category: Face care\n◆ Product type: Facial mist toner\n◆ Key benefits: Chamomile calm · Lavender soothe · Sensitive skin friendly\n◆ Suitable for: Daily care routines\n◆ Size: 118 ml",
+    "descriptionAr": "بخاخ ماريو بديسكو بالصبار والبابونج والخزامى يهدئ البشرة الحساسة برذاذ لطيف.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: بخاخ تونر للوجه\n◆ الفوائد الرئيسية: تهدئة بالبابونج · الخزامى مهدئ · مناسب للحساسة\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 118 مل"
+  },
+  {
+    "barcode": "785364130098",
+    "brandEn": "Mario Badescu",
+    "brandAr": "ماريو بديسكو",
+    "nameEn": "Mario Badescu Facial Spray Aloe Herbs & Rosewater 118ml",
+    "nameAr": "ماريو بديسكو بخاخ وجه بالصبار والأعشاب وماء الورد 118 مل",
+    "typeKey": "toner",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-cleansers-toners"
+    ],
+    "descriptionEn": "Mario Badescu Herbs & Rosewater Facial Spray revives dull skin with a classic rose-infused refresh.\n\n◆ Category: Face care\n◆ Product type: Facial mist toner\n◆ Key benefits: Rosewater refresh · Herbal mist · Daily hydration boost\n◆ Suitable for: Daily care routines\n◆ Size: 118 ml",
+    "descriptionAr": "بخاخ ماريو بديسكو بالصبار والأعشاب وماء الورد ينعش البشرة الباهتة بلمسة ورد كلاسيكية.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: بخاخ تونر للوجه\n◆ الفوائد الرئيسية: انتعاش ماء الورد · رذاذ أعشاب · دفعة ترطيب يومية\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 118 مل"
+  },
+  {
+    "barcode": "8001841762869",
+    "brandEn": "Olay",
+    "brandAr": "أولاي",
+    "nameEn": "Olay Scrubs Pore Perfecting Berry Burst 150ml",
+    "nameAr": "أولاي مقشر تفتيح المسام بنكهة التوت 150 مل",
+    "typeKey": "scrub",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-face-scrubs"
+    ],
+    "descriptionEn": "Olay Pore Perfecting Berry Burst Scrub gently exfoliates to refine pores and reveal smoother skin.\n\n◆ Category: Face care\n◆ Product type: Facial scrub\n◆ Key benefits: Pore refining scrub · Berry burst formula · Smoother texture\n◆ Suitable for: Daily care routines\n◆ Size: 150 ml",
+    "descriptionAr": "مقشر أولاي تفتيح المسام بنكهة التوت يقشّر بلطف لتحسين المسام وإظهار بشرة أنعم.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: مقشر للوجه\n◆ الفوائد الرئيسية: مقشر للمسام · تركيبة نكهة التوت · ملمس أنعم\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 150 مل"
+  },
+  {
+    "barcode": "6942349717048",
+    "brandEn": "Fayankou",
+    "brandAr": "فايانكو",
+    "nameEn": "Fayankou Collagen Moisturize Whiten Cream 150ml",
+    "nameAr": "فايانكو كريم كولاجين مرطب ومبيّض 150 مل",
+    "typeKey": "cream",
+    "subcategorySlugs": [
+      "care-korean-skincare-6",
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-korean-skincare-6-skin-care",
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Fayankou Collagen Moisturize Whiten Cream hydrates while supporting a brighter even-looking complexion.\n\n◆ Category: Korean skincare\n◆ Product type: Brightening moisturizer\n◆ Key benefits: Collagen moisture · Brightening care · Even tone support\n◆ Suitable for: Daily care routines\n◆ Size: 150 ml",
+    "descriptionAr": "كريم فايانكو بالكولاجين المرطب والمبيّض يرطب ويدعم مظهراً أكثر إشراقاً وتجانساً.\n\n◆ التصنيف: العناية الكورية\n◆ نوع المنتج: مرطب مبيّض\n◆ الفوائد الرئيسية: ترطيب كولاجين · عناية تفتيحح · دعم توحيد اللون\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 150 مل"
+  },
+  {
+    "barcode": "6942349717031",
+    "brandEn": "Fayankou",
+    "brandAr": "فايانكو",
+    "nameEn": "Fayankou Retinol Cleanser",
+    "nameAr": "فايانكو غسول ريتينول",
+    "typeKey": "cleanser",
+    "subcategorySlugs": [
+      "care-korean-skincare-6",
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-korean-skincare-6-skin-care",
+      "care-face-care-cleansers-toners"
+    ],
+    "descriptionEn": "Fayankou Retinol Cleanser gently cleanses while supporting skin renewal with retinol care.\n\n◆ Category: Korean skincare\n◆ Product type: Retinol cleanser\n◆ Key benefits: Retinol cleanse · Gentle renewal · Daily face wash\n◆ Suitable for: Daily care routines\n◆ Size: حسب المنتج",
+    "descriptionAr": "غسول فايانكو بالريتينول ينظف بلطف مع دعم تجديد البشرة بعناية الريتينول.\n\n◆ التصنيف: العناية الكورية\n◆ نوع المنتج: غسول ريتينول\n◆ الفوائد الرئيسية: تنظيف ريتينول · تجديد لطيف · غسول يومي\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: حسب المنتج"
+  },
+  {
+    "barcode": "6942349717079",
+    "brandEn": "Fayankou",
+    "brandAr": "فايانكو",
+    "nameEn": "Fayankou Retinol Serum 30ml",
+    "nameAr": "فايانكو سيروم ريتينول 30 مل",
+    "typeKey": "serum",
+    "subcategorySlugs": [
+      "care-korean-skincare-6",
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-korean-skincare-6-skin-care",
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Fayankou Retinol Serum helps refine texture and reduce signs of aging with nightly renewal care.\n\n◆ Category: Korean skincare\n◆ Product type: Retinol serum\n◆ Key benefits: Retinol renewal · Texture refinement · Anti-aging serum\n◆ Suitable for: Daily care routines\n◆ Size: 30 ml",
+    "descriptionAr": "سيروم فايانكو بالريتينول يساعد على تحسين الملمس وتقليل علامات التقدم بعناية تجديد ليلية.\n\n◆ التصنيف: العناية الكورية\n◆ نوع المنتج: سيروم ريتينول\n◆ الفوائد الرئيسية: تجديد ريتينول · تحسين الملمس · سيروم مضاد للشيخوخة\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 30 مل"
+  },
+  {
+    "barcode": "6942349717611",
+    "brandEn": "Fayankou",
+    "brandAr": "فايانكو",
+    "nameEn": "Fayankou Hyaluronic Acid Serum 30ml",
+    "nameAr": "فايانكو سيروم حمض الهيالورونيك 30 مل",
+    "typeKey": "serum",
+    "subcategorySlugs": [
+      "care-korean-skincare-6",
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-korean-skincare-6-skin-care",
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Fayankou Hyaluronic Acid Serum delivers deep hydration for plump dewy-looking skin.\n\n◆ Category: Korean skincare\n◆ Product type: Hyaluronic acid serum\n◆ Key benefits: Deep hydration · Plumping serum · Lightweight absorb\n◆ Suitable for: Daily care routines\n◆ Size: 30 ml",
+    "descriptionAr": "سيروم فايانكو بحمض الهيالورونيك يمنح ترطيباً عميقاً لبشرة ممتلئة وندية.\n\n◆ التصنيف: العناية الكورية\n◆ نوع المنتج: سيروم حمض الهيالورونيك\n◆ الفوائد الرئيسية: ترطيب عميق · سيروم مملِّس · امتصاص خفيف\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 30 مل"
+  },
+  {
+    "barcode": "6942349717628",
+    "brandEn": "Fayankou",
+    "brandAr": "فايانكو",
+    "nameEn": "Fayankou Niacinamide Serum 30ml",
+    "nameAr": "فايانكو سيروم نياسيناميد 30 مل",
+    "typeKey": "serum",
+    "subcategorySlugs": [
+      "care-korean-skincare-6",
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-korean-skincare-6-skin-care",
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Fayankou Niacinamide Serum helps minimize pores and balance uneven tone for clearer skin.\n\n◆ Category: Korean skincare\n◆ Product type: Niacinamide serum\n◆ Key benefits: Niacinamide balance · Pore care · Tone refining\n◆ Suitable for: Daily care routines\n◆ Size: 30 ml",
+    "descriptionAr": "سيروم فايانكو بالنياسيناميد يساعد على تصغير المسام وتوازن اللون غير المتجانس لبشرة أوضح.\n\n◆ التصنيف: العناية الكورية\n◆ نوع المنتج: سيروم نياسيناميد\n◆ الفوائد الرئيسية: توازن نياسيناميد · عناية بالمسام · تحسين اللون\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 30 مل"
+  },
+  {
+    "barcode": "6942349717642",
+    "brandEn": "Fayankou",
+    "brandAr": "فايانكو",
+    "nameEn": "Fayankou Vitamin C Serum 30ml",
+    "nameAr": "فايانكو سيروم فيتامين سي 30 مل",
+    "typeKey": "serum",
+    "subcategorySlugs": [
+      "care-korean-skincare-6",
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-korean-skincare-6-skin-care",
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Fayankou Vitamin C Serum brightens dull skin and supports antioxidant protection.\n\n◆ Category: Korean skincare\n◆ Product type: Vitamin C serum\n◆ Key benefits: Vitamin C glow · Antioxidant care · Brightening serum\n◆ Suitable for: Daily care routines\n◆ Size: 30 ml",
+    "descriptionAr": "سيروم فايانكو بفيتامين سي يضiء البشرة الباهتة ويدعم الحماية المضادة للأكسدة.\n\n◆ التصنيف: العناية الكورية\n◆ نوع المنتج: سيروم فيتامين سي\n◆ الفوائد الرئيسية: إشراقة فيتامين سي · عناية مضادة للأكسدة · سيروم تفتيحح\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 30 مل"
+  },
+  {
+    "barcode": "6942349717659",
+    "brandEn": "Fayankou",
+    "brandAr": "فايانكو",
+    "nameEn": "Fayankou Retinoic Acid Serum 30ml",
+    "nameAr": "فايانكو سيروم الريتينويك  30 مل",
+    "typeKey": "serum",
+    "subcategorySlugs": [
+      "care-korean-skincare-6",
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-korean-skincare-6-skin-care",
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Fayankou Retinoic Acid Serum supports advanced skin renewal for smoother firmer-looking skin.\n\n◆ Category: Korean skincare\n◆ Product type: Retinoic acid serum\n◆ Key benefits: Retinoic renewal · Firming care · Advanced anti-age\n◆ Suitable for: Daily care routines\n◆ Size: 30 ml",
+    "descriptionAr": "سيروم فايانكو بـ الريتينويك  يدعم تجديداً متقدماً للبشرة لمظهر أنعم وأكثر شدّاً.\n\n◆ التصنيف: العناية الكورية\n◆ نوع المنتج: سيروم الريتينويك \n◆ الفوائد الرئيسية: تجديد الريتينويك · عناية بالشد · مضاد للشيخوخة متقدم\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 30 مل"
+  },
+  {
+    "barcode": "6940824131082",
+    "brandEn": "Mooyam",
+    "brandAr": "مويام",
+    "nameEn": "Mooyam Glutathione 2% Serum 30ml",
+    "nameAr": "مويام سيروم جلوتاثيون 2% 30 مل",
+    "typeKey": "serum",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Mooyam Glutathione 2% Serum helps brighten uneven tone and supports antioxidant skin defense.\n\n◆ Category: Face care\n◆ Product type: Brightening serum\n◆ Key benefits: 2% glutathione · Brightening care · Antioxidant support\n◆ Suitable for: Daily care routines\n◆ Size: 30 ml",
+    "descriptionAr": "سيروم مويام بـ جلوتاثيون 2% يساعد على تفتيحح اللون غير المتجانس ويدعم دفاع البشرة المضاد للأكسدة.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: سيروم مُضيءء\n◆ الفوائد الرئيسية: جلوتاثيون 2% · عناية تفتيحح · دعم مضاد للأكسدة\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 30 مل"
+  },
+  {
+    "barcode": "6942349742491",
+    "brandEn": "Sadoer",
+    "brandAr": "سادور",
+    "nameEn": "Sadoer Salicylic Acid Serum 30ml",
+    "nameAr": "سادور سيروم حمض الساليسيليك 30 مل",
+    "typeKey": "serum",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Sadoer Salicylic Acid Serum helps clear congested pores and refine blemish-prone skin.\n\n◆ Category: Face care\n◆ Product type: Salicylic acid serum\n◆ Key benefits: Salicylic exfoliation · Pore clearing · Blemish care\n◆ Suitable for: Daily care routines\n◆ Size: 30 ml",
+    "descriptionAr": "سيروم سادور بحمض الساليسيليك يساعد على تنظيف المسام المسدودة وتحسين البشرة المعرضة للحبوب.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: سيروم حمض الساليسيليك\n◆ الفوائد الرئيسية: تقشير ساليسيليك · تنظيف المسام · عناية بالحبوب\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 30 مل"
+  },
+  {
+    "barcode": "6941349389132",
+    "brandEn": "Sadoer",
+    "brandAr": "سادور",
+    "nameEn": "Sadoer Arbutin White Serum 30ml",
+    "nameAr": "سادور سيروم أربوتين للتفتيح 30 مل",
+    "typeKey": "serum",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Sadoer Arbutin White Serum targets dark spots and dullness for a brighter even complexion.\n\n◆ Category: Face care\n◆ Product type: Brightening serum\n◆ Key benefits: Arbutin brightening · Dark spot care · Even tone\n◆ Suitable for: Daily care routines\n◆ Size: 30 ml",
+    "descriptionAr": "سيروم سادور أربوتين White يستهدف البقع والبهتان لبشرة أكثر إشراقاً وتجانساً.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: سيروم تفتيح\n◆ الفوائد الرئيسية: تفتيح أربوتين · عناية بالبقع · توحيد اللون\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 30 مل"
+  },
+  {
+    "barcode": "6942349712081",
+    "brandEn": "Sadoer",
+    "brandAr": "سادور",
+    "nameEn": "Sadoer Niacinamide Serum 30ml",
+    "nameAr": "سادور سيروم نياسيناميد 30 مل",
+    "typeKey": "serum",
+    "subcategorySlugs": [
+      "care-face-care"
+    ],
+    "tertiarySlugs": [
+      "care-face-care-face-moisturizer"
+    ],
+    "descriptionEn": "Sadoer Niacinamide Serum balances oil and helps improve the appearance of pores and uneven tone.\n\n◆ Category: Face care\n◆ Product type: Niacinamide serum\n◆ Key benefits: Niacinamide balance · Oil control · Pore refining\n◆ Suitable for: Daily care routines\n◆ Size: 30 ml",
+    "descriptionAr": "سيروم سادور بالنياسيناميد يوازن الزيوت ويساعد على تحسين مظهر المسام واللون غير المتجانس.\n\n◆ التصنيف: العناية بالوجه\n◆ نوع المنتج: سيروم نياسيناميد\n◆ الفوائد الرئيسية: توازن نياسيناميد · تحكم بالدهون · تحسين المسام\n◆ الأنسب لـ: الاستخدام اليومي ضمن روتين العناية\n◆ الحجم: 30 مل"
+  }
+]

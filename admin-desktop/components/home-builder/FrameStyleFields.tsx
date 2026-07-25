@@ -1,6 +1,6 @@
 "use client";
 
-import { Form, Input, InputNumber, Select, Switch } from "antd";
+import { Col, Form, Input, InputNumber, Row, Select, Switch } from "antd";
 import {
   IMAGE_ASPECT_OPTIONS,
   IMAGE_BORDER_OPTIONS,
@@ -86,35 +86,88 @@ export function PhotoWallStyleFields({ collage = false }: { collage?: boolean })
           ).map((o) => ({ value: o.value, label: `${o.icon} ${o.label}` }))}
         />
       </Form.Item>
+
       <Form.Item name={["payload", "shape"]} label="الشكل الافتراضي" initialValue="rounded">
         <Select options={IMAGE_SHAPE_OPTIONS.map((o) => ({ value: o.value, label: `${o.preview} ${o.label}` }))} />
       </Form.Item>
       <ShapePreviewChip name={["payload", "shape"]} />
-      <Form.Item name={["payload", "aspectRatio"]} label="نسبة العرض الافتراضية" initialValue="4:3">
+
+      <Form.Item name={["payload", "aspectRatio"]} label="نسبة العرض" initialValue="4:3">
         <Select options={IMAGE_ASPECT_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
       </Form.Item>
-      <Form.Item name={["payload", "size"]} label="الحجم الافتراضي" initialValue="md">
-        <Select options={IMAGE_SIZE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
+
+      <Form.Item noStyle shouldUpdate={(p, c) => p?.payload?.aspectRatio !== c?.payload?.aspectRatio}>
+        {({ getFieldValue }) =>
+          getFieldValue(["payload", "aspectRatio"]) === "custom" ? (
+            <Row gutter={12}>
+              <Col span={12}>
+                <Form.Item name={["payload", "customWidth"]} label="عرض مخصص (px)">
+                  <InputNumber min={48} max={900} style={{ width: "100%" }} placeholder="180" />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item name={["payload", "customHeight"]} label="ارتفاع مخصص (px)">
+                  <InputNumber min={48} max={900} style={{ width: "100%" }} placeholder="240" />
+                </Form.Item>
+              </Col>
+            </Row>
+          ) : null
+        }
       </Form.Item>
-      <Form.Item name={["payload", "itemFit"]} label="ملء الصورة" initialValue="cover">
-        <Select options={[...IMAGE_FIT_OPTIONS]} />
-      </Form.Item>
-      <Form.Item name={["payload", "overlayStyle"]} label="طبقة النص الافتراضية" initialValue="none">
-        <Select options={[...IMAGE_OVERLAY_OPTIONS]} />
-      </Form.Item>
-      <Form.Item name={["payload", "borderStyle"]} label="إطار الصور" initialValue="none">
-        <Select options={[...IMAGE_BORDER_OPTIONS]} />
-      </Form.Item>
-      <Form.Item name={["payload", "height"]} label="ارتفاع الصف (px)" initialValue={160}>
-        <InputNumber min={48} max={480} style={{ width: "100%" }} />
-      </Form.Item>
-      <Form.Item name={["payload", "gap"]} label="المسافة بين الصور" initialValue={12}>
-        <InputNumber min={0} max={48} style={{ width: "100%" }} />
-      </Form.Item>
-      <Form.Item name={["payload", "fullBleed"]} label="ملاصق للحافة" valuePropName="checked">
-        <Switch checkedChildren="نعم" unCheckedChildren="لا" />
-      </Form.Item>
-      <Form.Item name={["payload", "showShadow"]} label="ظل للصور" valuePropName="checked" initialValue>
+
+      <Row gutter={12}>
+        <Col xs={24} sm={12}>
+          <Form.Item name={["payload", "size"]} label="حجم الصورة" initialValue="md">
+            <Select options={IMAGE_SIZE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Form.Item name={["payload", "height"]} label="ارتفاع الصف (px)" initialValue={160}>
+            <InputNumber min={48} max={480} style={{ width: "100%" }} />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Row gutter={12}>
+        <Col xs={24} sm={12}>
+          <Form.Item name={["payload", "itemFit"]} label="ملء الصورة" initialValue="cover">
+            <Select options={[...IMAGE_FIT_OPTIONS]} />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Form.Item name={["payload", "tileCornerRadius"]} label="استدارة الزوايا (px)" initialValue={14}>
+            <InputNumber min={0} max={48} style={{ width: "100%" }} />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Row gutter={12}>
+        <Col xs={24} sm={12}>
+          <Form.Item name={["payload", "overlayStyle"]} label="طبقة النص" initialValue="none">
+            <Select options={[...IMAGE_OVERLAY_OPTIONS]} />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Form.Item name={["payload", "borderStyle"]} label="إطار الصور" initialValue="none">
+            <Select options={[...IMAGE_BORDER_OPTIONS]} />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Row gutter={12}>
+        <Col xs={24} sm={12}>
+          <Form.Item name={["payload", "gap"]} label="المسافة بين الصور" initialValue={12}>
+            <InputNumber min={0} max={48} style={{ width: "100%" }} />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Form.Item name={["payload", "showShadow"]} label="ظل للصور" valuePropName="checked" initialValue>
+            <Switch checkedChildren="نعم" unCheckedChildren="لا" />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Form.Item name={["payload", "fullBleed"]} label="ملاصق للحافة (بدون هامش)" valuePropName="checked">
         <Switch checkedChildren="نعم" unCheckedChildren="لا" />
       </Form.Item>
       <Form.Item noStyle shouldUpdate={(prev, cur) => prev?.payload?.display !== cur?.payload?.display}>

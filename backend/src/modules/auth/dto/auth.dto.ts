@@ -1,28 +1,28 @@
 import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator";
 
 export class RegisterDto {
-  @IsEmail()
+  @IsEmail({}, { message: "أدخل بريداً إلكترونياً صحيحاً" })
   email: string;
 
-  @IsString()
-  @MinLength(2)
+  @IsString({ message: "الاسم مطلوب" })
+  @MinLength(2, { message: "الاسم يجب أن يكون حرفين على الأقل" })
   name: string;
 
-  @IsString()
-  @MinLength(6)
+  @IsString({ message: "كلمة المرور مطلوبة" })
+  @MinLength(6, { message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" })
   password: string;
 
   @IsOptional()
-  @IsString()
+  @IsString({ message: "رقم الهاتف غير صالح" })
   phone?: string;
 }
 
 export class LoginDto {
-  @IsEmail()
+  @IsEmail({}, { message: "أدخل بريداً إلكترونياً صحيحاً" })
   email: string;
 
-  @IsString()
-  @MinLength(6)
+  @IsString({ message: "كلمة المرور مطلوبة" })
+  @MinLength(6, { message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" })
   password: string;
 }
 

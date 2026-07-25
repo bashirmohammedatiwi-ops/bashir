@@ -24,6 +24,7 @@ import { SectionStyleFields } from "./SectionStyleFields";
 import { CardSizePicker } from "./CardSizePicker";
 import { GroupChildrenEditor } from "./GroupChildrenEditor";
 import { TileItemsList } from "./TileItemEditor";
+import { PhotoWallItemsEditor } from "./PhotoWallItemsEditor";
 import { PRODUCT_FILTERS, SectionType } from "./section-types";
 
 const { Text } = Typography;
@@ -734,32 +735,10 @@ export function SectionPayloadEditor(props: Props) {
 
     case "MEDIA_GALLERY":
     case "PHOTO_WALL":
-      return (
-        <>
-          <Alert
-            type="success"
-            showIcon
-            message="معرض صور — أضف الصور وخصّص كل واحدة"
-            description="الشكل، النسبة، الظل، والربط لكل صورة. الإعدادات العامة من تبويب «التصميم»."
-            style={{ marginBottom: 16 }}
-          />
-          <TileItemsList entities={props} itemLabel="صورة" mode="rich" addLabel="+ صورة" />
-        </>
-      );
+      return <PhotoWallItemsEditor entities={props} />;
 
     case "IMAGE_COLLAGE":
-      return (
-        <>
-          <Alert
-            type="success"
-            showIcon
-            message="فسيفساء Bento — بلاطات بأحجام مختلفة"
-            description="حدّد spanCols و spanRows لكل صورة لبناء شبكة غير متساوية."
-            style={{ marginBottom: 16 }}
-          />
-          <TileItemsList entities={props} itemLabel="بلاطة" mode="collage" addLabel="+ بلاطة" />
-        </>
-      );
+      return <PhotoWallItemsEditor entities={props} collage />;
 
     default:
       return null;

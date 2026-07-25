@@ -1,0 +1,598 @@
+{
+  "30144224": {
+    "brandEn": "Maybelline",
+    "brandAr": "مايبيلين",
+    "nameEn": "Maybelline Lash Sensational Firework Mascara",
+    "nameAr": "مايبيلين - ماسكارا لاش سينشنال فايروورك",
+    "kind": "makeup",
+    "makeupSub": "eyes",
+    "descriptionEn": "Maybelline Lash Sensational Firework Mascara delivers explosive volume and length with a fanning brush.\n\n◆ Category: Makeup\n◆ Product type: Volumizing mascara\n◆ Key benefits: Fanning brush · Explosive volume · Length boost\n◆ Suitable for: Dramatic lash volume and length",
+    "descriptionAr": "ماسكارا لاش سينشنال فايروورك من مايبيلين تمنح كثافة وطولاً مرتفعين بفرشاة مروحية.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: ماسكارا للكثافة\n◆ الفوائد الرئيسية: فرشاة مروحية · كثافة عالية · إطالة الطول\n◆ الأنسب لـ: كثافة وطول درامي للرموش"
+  },
+  "737052352060": {
+    "brandEn": "Hugo Boss",
+    "brandAr": "هوغو بوس",
+    "nameEn": "Hugo Boss Bottled Night EDT 100ml",
+    "nameAr": "هوغو بوس - بوتلد نايت أو دو تواليت 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "descriptionEn": "Hugo Boss Bottled Night is a dark woody aromatic with birch, cardamom, and musk for confident evening masculinity.\n\n◆ Scent family: Floral amber\n◆ Key notes: Pink pepper, jasmine, amber, vanilla, musk\n◆ Character: Warm, radiant, sophisticated\n◆ Best for: Evening wear and cooler seasons\n◆ Longevity: 7–9 hours with moderate sillage",
+    "descriptionAr": "بوتلد نايت من هوغو بوس عطر خشبي عطري داكن بالخشب والهيل والمسك لأناقة رجالية مسائية واثقة.\n\n◆ عائلة العطر: زهري عنبري\n◆ النوتات الرئيسية: فلفل وردي، ياسمين، عنبر، فانيلا، مسك\n◆ الطابع: دافئ ومتوهج وراقٍ\n◆ الأنسب لـ: السهرات والفصول الباردة\n◆ الثبات: 7–9 ساعات بثبات جيد"
+  },
+  "8011530810023": {
+    "brandEn": "Trussardi",
+    "brandAr": "تروساردي",
+    "nameEn": "Trussardi Uomo EDT 100ml",
+    "nameAr": "تروساردي - أومو أو دو تواليت 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "descriptionEn": "Trussardi Uomo is a classic Italian aromatic scent with citrus, geranium, and woods for timeless masculine elegance.\n\n◆ Scent family: Amber aromatic\n◆ Key notes: Mint, green apple, lemon, tonka bean, vanilla, amber, leather\n◆ Character: Bold, sensual, powerful\n◆ Best for: Night outs and special occasions\n◆ Longevity: 8–10 hours with strong projection",
+    "descriptionAr": "أومو من تروساردي عطر عطري إيطالي كلاسيكي بالليمون والجيرانيوم والأخشاب لأناقة رجالية خالدة.\n\n◆ عائلة العطر: عنبري عطري\n◆ النوتات الرئيسية: نعناع، تفاح أخضر، ليمون، فول التونكا، فانيلا، عنبر، جلد\n◆ الطابع: جريء وحسي وقوي\n◆ الأنسب لـ: الخروج الليلي والمناسبات\n◆ الثبات: 8–10 ساعات بثبات قوي"
+  },
+  "7640163970029": {
+    "brandEn": "Bentley",
+    "brandAr": "بنتلي",
+    "nameEn": "Bentley Infinite Intense EDP 100ml",
+    "nameAr": "بنتلي - إنفينايت إنتنس أو دو بارفيوم 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "descriptionEn": "Bentley Infinite Intense is a rich woody amber with spicy warmth and luxurious depth for the modern gentleman.\n\n◆ Scent family: Floral fruity\n◆ Key notes: Bergamot, peach, rose, jasmine, musk, sandalwood\n◆ Character: Soft, feminine, elegant\n◆ Best for: Daily wear and office\n◆ Longevity: 6–8 hours",
+    "descriptionAr": "إنفينايت إنتنس من بنتلي عطر عنبري خشبي غني ودافئ وعميق يمنح الرجل حضوراً قوياً.\n\n◆ عائلة العطر: زهري فواكه\n◆ النوتات الرئيسية: برغموت، خوخ، ورد، ياسمين، مسك، صندل\n◆ الطابع: ناعم وأنثوي وأنيق\n◆ الأنسب لـ: الاستخدام اليومي والعمل\n◆ الثبات: 6–8 ساعات"
+  },
+  "3614274143751": {
+    "brandEn": "Armani",
+    "brandAr": "أرماني",
+    "nameEn": "Armani Acqua di Gio Elixir EDP 50ml",
+    "nameAr": "أرماني - أكوا دي جيو إليكسير أو دو بارفيوم 50 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men",
+      "isNew": true
+    },
+    "descriptionEn": "Armani Acqua di Gio Elixir intensifies the iconic marine scent with deeper amber and patchouli in a concentrated elixir.\n\n◆ Scent family: Woody aromatic\n◆ Key notes: Cypress, vetiver, cashmere wood, musk, benzoin\n◆ Character: Dark, smoky, refined\n◆ Best for: Evening wear and formal occasions\n◆ Longevity: 8–10 hours",
+    "descriptionAr": "أكوا دي جيو إليكسير من أرماني يعمق العطر البحري الأيقوني بعنبر وباتشولي أغنى بتركيز إليكسير.\n\n◆ عائلة العطر: خشبي عطري\n◆ النوتات الرئيسية: سرو، فيتيفر، خشب كاشمير، مسك، بنزوين\n◆ الطابع: داكن ودخاني ومصقول\n◆ الأنسب لـ: السهرات والمناسبات الرسمية\n◆ الثبات: 8–10 ساعات"
+  },
+  "737052041353": {
+    "brandEn": "Hugo Boss",
+    "brandAr": "هوغو بوس",
+    "nameEn": "Hugo Boss Femme EDP 75ml",
+    "nameAr": "هوغو بوس - فيم أو دو بارفيوم 75 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Hugo Boss Femme is an elegant floral fruity fragrance with mandarin, black currant, and jasmine for modern femininity.\n\n◆ Scent family: Oriental amber\n◆ Key notes: Grapefruit, ginger, amber, tobacco, cedar\n◆ Character: Warm, luxurious, charismatic\n◆ Best for: Evenings and cooler weather\n◆ Longevity: 7–9 hours",
+    "descriptionAr": "فيم من هوغو بوس عطر زهري فاكهة أنيق بالمندرين والكشمش والياسمين لأنوثة عصرية.\n\n◆ عائلة العطر: شرقي عنبري\n◆ النوتات الرئيسية: جريفروت، زنجبيل، عنبر، تبغ، أرز\n◆ الطابع: دافئ وفاخر وجذاب\n◆ الأنسب لـ: السهرات والطقس البارد\n◆ الثبات: 7–9 ساعات"
+  },
+  "8690604111053": {
+    "brandEn": "Flormar",
+    "brandAr": "فلورمار",
+    "nameEn": "Flormar Lip Liner 205",
+    "nameAr": "فلورمار - محدد شفاه رقم 205",
+    "kind": "makeup",
+    "makeupSub": "lips",
+    "descriptionEn": "Flormar Lip Liner 205 defines and shapes lips with a smooth, long-wearing formula in a versatile rose shade.\n\n◆ Category: Makeup\n◆ Product type: Lip liner\n◆ Key benefits: Precise definition · Long-wearing · Smooth glide\n◆ Suitable for: Defining and shaping lip contours",
+    "descriptionAr": "محدد شفاه رقم 205 من فلورمار يحدّد ويشكّل الشفاه بتركيبة ناعمة طويلة الثبات بلون وردي متعدد الاستخدام.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: محدد شفاه\n◆ الفوائد الرئيسية: تحديد دقيق · ثبات طويل · انزلاق ناعم\n◆ الأنسب لـ: تحديد وتشكيل ملامح الشفاه"
+  },
+  "3348901786393": {
+    "brandEn": "Dior",
+    "brandAr": "ديور",
+    "nameEn": "Dior Addict Purple Glow EDP 50ml",
+    "nameAr": "ديور - أديكت بيربل جلو أو دو بارفيوم 50 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Dior Addict Purple Glow is a luminous floral fruity scent with blackcurrant, rose, and musk for vibrant feminine charm.\n\n◆ Scent family: Floral fruity\n◆ Key notes: Bergamot, tiare flower, coconut, jasmine, musk\n◆ Character: Tropical, sunny, joyful\n◆ Best for: Summer days and vacations\n◆ Longevity: 5–7 hours",
+    "descriptionAr": "أديكت بيربل جلو من ديور عطر زهري فاكه مشع بالكشمش والورد والمسك لجذب أنثوي نابض.\n\n◆ عائلة العطر: زهري فواكه\n◆ النوتات الرئيسية: برغموت، زهر التيار، جوز الهند، ياسمين، مسك\n◆ الطابع: استوائي ومشمس ومبهج\n◆ الأنسب لـ: أيام الصيف والعطلات\n◆ الثبات: 5–7 ساعات"
+  },
+  "3348901786331": {
+    "brandEn": "Dior",
+    "brandAr": "ديور",
+    "nameEn": "Dior Addict Rosy Glow EDP 50ml",
+    "nameAr": "ديور - أديكت روزي جلو أو دو بارفيوم 50 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Dior Addict Rosy Glow is a soft floral musk with rose, raspberry, and vanilla for a radiant feminine aura.\n\n◆ Scent family: Floral\n◆ Key notes: Pear, jasmine sambac, sandalwood, benzoin\n◆ Character: Radiant, joyful, modern floral\n◆ Best for: Spring and daytime wear\n◆ Longevity: 6–8 hours",
+    "descriptionAr": "أديكت روزي جلو من ديور عطر زهري مسكي ناعم بالورد والتوت والفانيلا لهائة أنثوية مشعة.\n\n◆ عائلة العطر: زهري\n◆ النوتات الرئيسية: كمثرى، ياسمين، صندل، بنزوين\n◆ الطابع: مشع ومبهج وزهري عصري\n◆ الأنسب لـ: الربيع والنهار\n◆ الثبات: 6–8 ساعات"
+  },
+  "3614221031735": {
+    "brandEn": "Roberto Cavalli",
+    "brandAr": "روبرتو كفالي",
+    "nameEn": "Roberto Cavalli Splendid Vanilla EDP 100ml",
+    "nameAr": "روبرتو كفالي - سبلنديد فانيلا أو دو بارفيوم 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Roberto Cavalli Splendid Vanilla wraps rich vanilla in white flowers and amber for opulent feminine warmth.\n\n◆ Scent family: Aquatic woody\n◆ Key notes: Lemon, rose, tarragon, cedar, musk\n◆ Character: Fresh, clean, versatile\n◆ Best for: Daily wear and warm weather\n◆ Longevity: 4–6 hours",
+    "descriptionAr": "سبلنديد فانيلا من روبرتو كفالي يلف الفانيلا بالزهور البيضاء والعنبر لدفء أنثوي فاخر.\n\n◆ عائلة العطر: مائي خشبي\n◆ النوتات الرئيسية: ليمون، ورد، طرخون، أرز، مسك\n◆ الطابع: منعش ونظيف ومتعدد\n◆ الأنسب لـ: الاستخدام اليومي والطقس الدافئ\n◆ الثبات: 4–6 ساعات"
+  },
+  "3274872456341": {
+    "brandEn": "Givenchy",
+    "brandAr": "جيفنشي",
+    "nameEn": "Givenchy L'Interdit Rouge Ultime EDP 80ml",
+    "nameAr": "جيفنشي - لانتردي روج ألتيم أو دو بارفيوم 80 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Givenchy L'Interdit Rouge Ultime is a bold tuberose-amber fragrance with blood orange and sandalwood for dramatic allure.\n\n◆ Scent family: Floral fruity\n◆ Key notes: Bergamot, tiare, coconut, jasmine, musk\n◆ Character: Tropical, light, joyful\n◆ Best for: Summer and casual wear\n◆ Longevity: 4–6 hours",
+    "descriptionAr": "لانتردي روج ألتيم من جيفنشي عطر جريء بالتيوبيوز والعنبر والبرتقال لجذبية درامية.\n\n◆ عائلة العطر: زهري فواكه\n◆ النوتات الرئيسية: برغموت، زهر التيار، جوز الهند، ياسمين، مسك\n◆ الطابع: استوائي وخفيف ومبهج\n◆ الأنسب لـ: الصيف والاستخدام اليومي\n◆ الثبات: 4–6 ساعات"
+  },
+  "3386460088190": {
+    "brandEn": "Van Cleef",
+    "brandAr": "فان كليف",
+    "nameEn": "Van Cleef Bois Doré EDP 75ml",
+    "nameAr": "فان كليف - بوا دوري أو دو بارفيوم 75 مل",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "descriptionEn": "Van Cleef Bois Doré is a niche woody floral with mandarin, orange blossom, and cedar for refined unisex elegance.\n\n◆ Scent family: Fruity floral\n◆ Key notes: Lemon, mandarin, apple, jasmine, musk\n◆ Character: Fresh, playful, sunny\n◆ Best for: Daytime and summer\n◆ Longevity: 5–7 hours",
+    "descriptionAr": "بوا دوري من فان كليف عطر نيش خشبي زهري بالمندرين وزهر البرتقال والأرز لأناقة راقية.\n\n◆ عائلة العطر: فواكه زهرية\n◆ النوتات الرئيسية: ليمون، مندرين، تفاح، ياسمين، مسك\n◆ الطابع: منعش ومرح ومشمس\n◆ الأنسب لـ: النهار والصيف\n◆ الثبات: 5–7 ساعات"
+  },
+  "3614273673846": {
+    "brandEn": "Armani",
+    "brandAr": "أرماني",
+    "nameEn": "Armani My Way Floral EDP 90ml",
+    "nameAr": "أرماني - ماي واي فلورال أو دو بارفيوم 90 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Armani My Way Floral celebrates blooming florals with bergamot, orange blossom, and vanilla for joyful femininity.\n\n◆ Scent family: Gourmand woody\n◆ Key notes: Cognac, oak, cinnamon, praline, vanilla\n◆ Character: Warm, boozy, luxurious\n◆ Best for: Evenings and cold weather\n◆ Longevity: 8–10 hours",
+    "descriptionAr": "ماي واي فلورال من أرماني يحتفي بالزهور المتفتحة والبرتقال والفانيلا لأنوثة مبتهجة.\n\n◆ عائلة العطر: غورماند خشبي\n◆ النوتات الرئيسية: كونياك، بلوط، قرفة، حلوى البندق، فانيلا\n◆ الطابع: دافئ وفاخر وساحر\n◆ الأنسب لـ: السهرات والطقس البارد\n◆ الثبات: 8–10 ساعات"
+  },
+  "3423222012700": {
+    "brandEn": "Narciso Rodriguez",
+    "brandAr": "نارسيسو رودريغز",
+    "nameEn": "Narciso Rodriguez Musc Noir EDP 100ml",
+    "nameAr": "نارسيسو رودريغز - مسك نوار أو دو بارفيوم 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Narciso Rodriguez Musc Noir is a sensual musk-floral with plum, heliotrope, and suede for mysterious femininity.\n\n◆ Scent family: Aromatic woody\n◆ Key notes: Sage, narcissus, vetiver, cedar, patchouli\n◆ Character: Refined, modern, elegant\n◆ Best for: Office and evening wear\n◆ Longevity: 7–9 hours",
+    "descriptionAr": "مسك نوار من نارسيسو رودريغز عطر مسكي زهري حسي بالخوخ والهليوتروب والسيود لغموض أنثوي.\n\n◆ عائلة العطر: عطري خشبي\n◆ النوتات الرئيسية: مريمية، نرجس، فيتيفر، أرز، باتشولي\n◆ الطابع: راقٍ وعصري وأنيق\n◆ الأنسب لـ: العمل والسهرات\n◆ الثبات: 7–9 ساعات"
+  },
+  "3581000018679": {
+    "brandEn": "Nicolai",
+    "brandAr": "نيكولاي",
+    "nameEn": "Nicolai Patchouli Intense EDP 100ml",
+    "nameAr": "نيكولاي - باتشولي إنتنس أو دو بارفيوم 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "descriptionEn": "Nicolai Patchouli Intense is a niche patchouli-centric scent with lavender, geranium, and amber for deep sophistication.\n\n◆ Scent family: Floral oriental\n◆ Key notes: Peach, apricot, tuberose, jasmine, vanilla, musk\n◆ Character: Vibrant, sensual, classic\n◆ Best for: Evening wear and special occasions\n◆ Longevity: 6–8 hours",
+    "descriptionAr": "باتشولي إنتنس من نيكولاي عطر نيش مركز على الباتشولي مع اللافندر والجيرانيوم والعنبر.\n\n◆ عائلة العطر: زهري شرقي\n◆ النوتات الرئيسية: خوخ، مشمش، تيوبروز، ياسمين، فانيلا، مسك\n◆ الطابع: نابض وحسي وكلاسيكي\n◆ الأنسب لـ: السهرات والمناسبات\n◆ الثبات: 6–8 ساعات"
+  },
+  "3386460066075": {
+    "brandEn": "Boucheron",
+    "brandAr": "بوشرون",
+    "nameEn": "Boucheron Quatre EDP 100ml",
+    "nameAr": "بوشرون - كواتر بور فيم أو دو بارفيوم 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Boucheron Quatre is a modern floral fruity fragrance with apple, jasmine, and cedar for elegant everyday femininity.\n\n◆ Scent family: Green woody\n◆ Key notes: Bergamot, green notes, cedar, vetiver, musk\n◆ Character: Fresh, natural, serene\n◆ Best for: Daily wear for nature lovers\n◆ Longevity: 6–8 hours",
+    "descriptionAr": "كواتر من بوشرون عطر زهري فاكه عصري بالتفاح والياسمين والأرز لأناقة يومية.\n\n◆ عائلة العطر: أخضر خشبي\n◆ النوتات الرئيسية: برغموت، نوتات خضراء، أرز، فيتيفر، مسك\n◆ الطابع: منعش وطبيعي وهادئ\n◆ الأنسب لـ: الاستخدام اليومي\n◆ الثبات: 6–8 ساعات"
+  },
+  "8005610328799": {
+    "brandEn": "Gucci",
+    "brandAr": "قوتشي",
+    "nameEn": "Gucci Rush EDT 75ml",
+    "nameAr": "قوتشي - راش أو دو تواليت 75 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Gucci Rush is an iconic bold chypre floral with peach, gardenia, and patchouli for unforgettable feminine impact.\n\n◆ Scent family: Aromatic fougere\n◆ Key notes: Pine, pink pepper, mineral notes, patchouli\n◆ Character: Crisp, atmospheric, unisex\n◆ Best for: Cool evenings and layering\n◆ Longevity: 5–7 hours",
+    "descriptionAr": "راش من قوتشي عطر شيبري زهري جريء بالخوخ والجاردينيا والباتشولي لتأثير أنثوي لا يُنسى.\n\n◆ عائلة العطر: عطري خشبي\n◆ النوتات الرئيسية: صنوبر، فلفل وردي، نوتات معدنية، باتشولي\n◆ الطابع: منعش وجوي ومتعدد\n◆ الأنسب لـ: الأمسيات الباردة\n◆ الثبات: 5–7 ساعات"
+  },
+  "3423478812154": {
+    "brandEn": "Narciso Rodriguez",
+    "brandAr": "نارسيسو رودريغز",
+    "nameEn": "Narciso Rodriguez Rose Musc EDP Intense 100ml",
+    "nameAr": "نارسيسو رودريغز - روز مسك إنتنس أو دو بارفيوم 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Narciso Rodriguez Rose Musc Intense amplifies rose and musk with amber and patchouli for rich feminine depth.\n\n◆ Scent family: Leather floral\n◆ Key notes: Iris, patchouli, leather, benzoin, vanilla\n◆ Character: Elegant, leathery, refined\n◆ Best for: Fall/winter and formal wear\n◆ Longevity: 8–10 hours",
+    "descriptionAr": "روز مسك إنتنس من نارسيسو رودريغز يعزز الورد والمسك مع العنبر والباتشولي لعمق أنثوي.\n\n◆ عائلة العطر: جلد زهري\n◆ النوتات الرئيسية: سوسن، باتشولي، جلد، بنزوين، فانيلا\n◆ الطابع: أنيق وجلدي ومصقول\n◆ الأنسب لـ: الخريف والمناسبات\n◆ الثبات: 8–10 ساعات"
+  },
+  "724120095653": {
+    "brandEn": "Thameen",
+    "brandAr": "ثمين",
+    "nameEn": "Thameen Amber Room EDP 50ml",
+    "nameAr": "ثمين - عنبر روم أو دو بارفيوم 50 مل",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "descriptionEn": "Thameen Amber Room is a niche amber-spice fragrance with cinnamon, benzoin, and oud for regal unisex warmth.\n\n◆ Scent family: Amber spicy\n◆ Key notes: Ginger, vanilla, lavender, woody amber\n◆ Character: Warm, modern, luxurious\n◆ Best for: Evenings and special occasions\n◆ Longevity: 7–9 hours",
+    "descriptionAr": "عنبر روم من ثمين عطر نيش عنبري توابلي بالقرفة والبنزوين والعود لدفء ملكي.\n\n◆ عائلة العطر: عنبري توابل\n◆ النوتات الرئيسية: زنجبيل، فانيلا، خزامى، عنبر خشبي\n◆ الطابع: دافئ وعصري وفاخر\n◆ الأنسب لـ: السهرات\n◆ الثبات: 7–9 ساعات"
+  },
+  "3614274350753": {
+    "brandEn": "Valentino",
+    "brandAr": "فالنتينو",
+    "nameEn": "Valentino Donna Born In Roma Extradose Parfum 100ml",
+    "nameAr": "فالنتينو - دونا بورن إن روما إكسترا دوز بارفيوم 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": true
+    },
+    "descriptionEn": "Valentino Donna Born In Roma Extradose is an intense vanilla-amber scent with jasmine and benzoin for bold femininity.\n\n◆ Scent family: Vanilla floral\n◆ Key notes: Jasmine, vanilla, benzoin, musk\n◆ Character: Radiant, sweet, elegant\n◆ Best for: Evening wear and dates\n◆ Longevity: 7–9 hours",
+    "descriptionAr": "دونا بورن إن روما إكسترا دوز من فالنتينو عطر فانيلا عنبري مكثف بالياسمين والبنزوين لأنوثة جريئة.\n\n◆ عائلة العطر: فانيلا زهري\n◆ النوتات الرئيسية: ياسمين، فانيلا، بنزوين، مسك\n◆ الطابع: مشع وحلو وأنيق\n◆ الأنسب لـ: السهرات والمناسبات\n◆ الثبات: 7–9 ساعات"
+  },
+  "3574661177137": {
+    "brandEn": "Listerine",
+    "brandAr": "ليسترين",
+    "nameEn": "Listerine Cool Mint Mouthwash 500ml",
+    "nameAr": "ليسترين - غسول فم بالنعناع المنعش 500 مل",
+    "kind": "care",
+    "careLeaf": "care/mouth--teeth-care/mouthwash",
+    "typeKey": "mouthwash",
+    "descriptionEn": "Listerine Cool Mint Mouthwash kills germs and freshens breath with a cooling mint formula for daily oral care.\n\n◆ Category: Mouth care\n◆ Product type: Mouthwash\n◆ Key benefits: Kills germs · Fresh breath · Cooling mint\n◆ Suitable for: Daily oral hygiene\n◆ Size: 500 ml",
+    "descriptionAr": "غسول فم ليسترين بالنعناع المنعش يقضي على الجراثيم وينعش الفم بتركيبة منعشة للعناية اليومية.\n\n◆ التصنيف: العناية بالفم\n◆ نوع المنتج: غسول فم\n◆ الفوائد الرئيسية: يقضي على الجراثيم · نعاة الفم · نعناع منعش\n◆ الأنسب لـ: النظافة الفموية اليومية\n◆ الحجم: 500 مل"
+  },
+  "3606000537460": {
+    "brandEn": "CeraVe",
+    "brandAr": "سيرافي",
+    "nameEn": "CeraVe Moisturising Lotion SPF 30",
+    "nameAr": "سيرافي - لوشن مرطب بعامل حماية 30 من الشمس",
+    "kind": "care",
+    "careLeaf": "care/sun-care/sunscreen",
+    "typeKey": "sunscreen",
+    "descriptionEn": "CeraVe Moisturising Lotion SPF 30 hydrates skin while providing broad-spectrum sun protection with ceramides.\n\n◆ Category: Sun care\n◆ Product type: Sunscreen lotion\n◆ Key benefits: SPF 30 protection · Ceramides · Daily hydration\n◆ Suitable for: Face and body daily sun care\n◆ Size: SPF 30",
+    "descriptionAr": "لوشن سيرافي المرطب بعامل حماية 30 يرطب البشرة ويوفر حماية واسعة من أشعة الشمس بالسيراميد.\n\n◆ التصنيف: العناية بالشمس\n◆ نوع المنتج: لوشن وقاية شمس\n◆ الفوائد الرئيسية: حماية 30 · سيراميد · ترطيب يومي\n◆ الأنسب لـ: الوجه والجسم للحماية اليومية من الشمس\n◆ الحجم: عامل حماية 30"
+  },
+  "8051277318536": {
+    "brandEn": "The House of Oud",
+    "brandAr": "ذا هاوس أوف عود",
+    "nameEn": "The House of Oud Grape Pearls EDP 75ml",
+    "nameAr": "ذا هاوس أوف عود - جريب بيرل أو دو بارفيوم 75 مل",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "descriptionEn": "The House of Oud Grape Pearls is a niche fruity floral with grape, pear, and musk for playful luxury.\n\n◆ Scent family: Aquatic woody\n◆ Key notes: Sea salt, driftwood, bergamot, cedar, musk\n◆ Character: Artistic, fresh, unconventional\n◆ Best for: Creative wear and layering\n◆ Longevity: 6–8 hours",
+    "descriptionAr": "جريب بيرل من ذا هاوس أوف عود عطر نيش زهري فاكه بالعنب والكمثرى والمسك لفخامة مرحة.\n\n◆ عائلة العطر: مائي خشبي\n◆ النوتات الرئيسية: ملح البحر، خشب طافٍ، برغموت، أرز، مسك\n◆ الطابع: فني ومنعش وغير تقليدي\n◆ الأنسب لـ: إطلالات إبداعية\n◆ الثبات: 6–8 ساعات"
+  },
+  "8051277318642": {
+    "brandEn": "The House of Oud",
+    "brandAr": "ذا هاوس أوف عود",
+    "nameEn": "The House of Oud Just Before EDP 75ml",
+    "nameAr": "ذا هاوس أوف عود - جست بيفور أو دو بارفيوم 75 مل",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "descriptionEn": "The House of Oud Just Before is a niche amber-woody scent with bergamot, incense, and vanilla for contemplative depth.\n\n◆ Scent family: Amber fougere\n◆ Key notes: Grapefruit, amber, vanilla, tonka, patchouli\n◆ Character: Powerful, sweet, bold\n◆ Best for: Night outs and parties\n◆ Longevity: 8–10 hours",
+    "descriptionAr": "جست بيفور من ذا هاوس أوف عود عطر نيش عنبري خشبي بالبرتقال والبخور والفانيلا لعمق تأملي.\n\n◆ عائلة العطر: عنبري عطري\n◆ النوتات الرئيسية: جريفروت، عنبر، فانيلا، تونكا، باتشولي\n◆ الطابع: قوي وجريء\n◆ الأنسب لـ: الحفلات والخروج\n◆ الثبات: 8–10 ساعات"
+  },
+  "8056669925897": {
+    "brandEn": "Dolce & Gabbana",
+    "brandAr": "دولتشي غابانا",
+    "nameEn": "Dolce & Gabbana The One For Men Parfum 100ml",
+    "nameAr": "دولتشي غابانا - ذا ون فور من بارفيوم 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "descriptionEn": "Dolce & Gabbana The One For Men Parfum is a warm amber-tobacco scent with ginger and cedar for powerful masculinity.\n\n◆ Scent family: Powdery floral\n◆ Key notes: Rose, peony, musk, sandalwood, vanilla\n◆ Character: Soft, sensual, graceful\n◆ Best for: Daily and office wear\n◆ Longevity: 6–8 hours",
+    "descriptionAr": "ذا ون فور من من دولتشي غابانا عطر عنبري دافئ بالتبغ والزنجبيل والأرز لقوة رجالية.\n\n◆ عائلة العطر: زهري بودري\n◆ النوتات الرئيسية: ورد، زهر الفايونيا، مسك، صندل، فانيلا\n◆ الطابع: ناعم وحسي ورشيق\n◆ الأنسب لـ: اليومي والعمل\n◆ الثبات: 6–8 ساعات"
+  },
+  "3616303445584": {
+    "brandEn": "Chloé",
+    "brandAr": "كلوي",
+    "nameEn": "Chloé Eau de Parfum Intense 100ml",
+    "nameAr": "كلوي - أو دي بارفيوم إنتنس 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Chloé Eau de Parfum Intense is a rich rose-honey fragrance with amber and patchouli for sophisticated femininity.\n\n◆ Scent family: Woody oud\n◆ Key notes: Oud, rosewood, cardamom, sandalwood, amber\n◆ Character: Luxurious, smoky, refined\n◆ Best for: Evening wear and special occasions\n◆ Longevity: 8–10 hours",
+    "descriptionAr": "أو دي بارفيوم إنتنس من كلوي عطر وردي غني بالعسل والعنبر والباتشولي لأناقة راقية.\n\n◆ عائلة العطر: خشبي عود\n◆ النوتات الرئيسية: عود، خشب الورد، هيل، صندل، عنبر\n◆ الطابع: فاخر ودخاني ومصقول\n◆ الأنسب لـ: السهرات\n◆ الثبات: 8–10 ساعات"
+  },
+  "3614272898301": {
+    "brandEn": "Lancôme",
+    "brandAr": "لانكوم",
+    "nameEn": "Lancôme Rose Peonia EDP 100ml",
+    "nameAr": "لانكوم - روز بيونيا أو دو بارفيوم 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Lancôme Rose Peonia blends peony, rose, and musk in a luminous floral for romantic everyday elegance.\n\n◆ Scent family: Exotic floral\n◆ Key notes: Pomegranate, persimmon, orchid, amber, mahogany\n◆ Character: Bold, exotic, sensual\n◆ Best for: Evenings and dates\n◆ Longevity: 6–8 hours",
+    "descriptionAr": "روز بيونيا من لانكوم يمزج البيونيا والورد والمسك في زهري مشع لأناقة رومانسية.\n\n◆ عائلة العطر: زهري غريب\n◆ النوتات الرئيسية: رمان، فاكهة الكاكي، أوركيد، عنبر، خشب أحمر\n◆ الطابع: جريء وغريب وحسي\n◆ الأنسب لـ: السهرات\n◆ الثبات: 6–8 ساعات"
+  },
+  "5057566220828": {
+    "brandEn": "Makeup Revolution",
+    "brandAr": "ريفولوشن",
+    "nameEn": "Makeup Revolution Reloaded Palette",
+    "nameAr": "ريفولوشن - باليت ظلال عيون ريلودد",
+    "kind": "makeup",
+    "makeupSub": "eyes",
+    "descriptionEn": "Makeup Revolution Reloaded Palette features versatile eyeshadow shades for everyday and evening eye looks.\n\n◆ Category: Makeup\n◆ Product type: Eyeshadow palette\n◆ Key benefits: Versatile shades · Blendable formula · Day-to-night looks\n◆ Suitable for: Creating versatile eye makeup looks",
+    "descriptionAr": "باليت ظلال عيون ريلودد من ريفولوشن يضم ألواناً متعددة لإطلالات العيون اليومية والمسائية.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: باليت ظلال عيون\n◆ الفوائد الرئيسية: ألوان متعددة · قابل للدمج · إطلالات يوم ومساء\n◆ الأنسب لـ: إطلالات متنوعة للعيون"
+  },
+  "3614271717092": {
+    "brandEn": "YSL",
+    "brandAr": "إيف سان لوران",
+    "nameEn": "YSL Y Deodorant Stick 75g",
+    "nameAr": "إيف سان لوران - مزيل عرق واي ستيك 75 جم",
+    "kind": "care",
+    "careLeaf": "care/skin-and-body-care/deodorant",
+    "typeKey": "deodorant",
+    "descriptionEn": "YSL Y Deodorant Stick provides long-lasting freshness and protection with the signature Y fragrance.\n\n◆ Category: Body care\n◆ Product type: Deodorant stick\n◆ Key benefits: Long-lasting freshness · 48-hour protection · Signature Y scent\n◆ Suitable for: Daily underarm protection\n◆ Size: 75 g",
+    "descriptionAr": "مزيل عرق واي ستيك من إيف سان لوران يوفر انتعاشاً وحماية طويلة الأمد بعبير واي الأصلي.\n\n◆ التصنيف: عناية الجسم\n◆ نوع المنتج: مزيل عرق ستيك\n◆ الفوائد الرئيسية: انتعاش طويل · حماية متواصلة · عبير واي الأصلي\n◆ الأنسب لـ: الحماية اليومية تحت الإبط\n◆ الحجم: 75 جم"
+  },
+  "7640111494027": {
+    "brandEn": "Grès",
+    "brandAr": "جريس",
+    "nameEn": "Grès Cabotine EDT 100ml",
+    "nameAr": "جريس - كابوتين أو دو تواليت 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Grès Cabotine is a classic green floral with hyacinth, rose, and sandalwood for timeless feminine grace.\n\n◆ Scent family: Woody floral\n◆ Key notes: Peach, patchouli, jasmine, vanilla, musk\n◆ Character: Opulent, warm, sophisticated\n◆ Best for: Evening and fall/winter\n◆ Longevity: 7–9 hours",
+    "descriptionAr": "كابوتين من جريس عطر زهري أخضر كلاسيكي بالزهرة والورد والصندل لأناقة خالدة.\n\n◆ عائلة العطر: خشبي زهري\n◆ النوتات الرئيسية: خوخ، باتشولي، ياسمين، فانيلا، مسك\n◆ الطابع: فاخر ودافئ وراقٍ\n◆ الأنسب لـ: السهرات والخريف\n◆ الثبات: 7–9 ساعات"
+  },
+  "3600524070113": {
+    "brandEn": "L'Oreal",
+    "brandAr": "لوريال",
+    "nameEn": "L'Oreal Prime Lab Pore Minimizer 30ml",
+    "nameAr": "لوريال - برايمر لاب لتقليل المسام 30 مل",
+    "kind": "makeup",
+    "makeupSub": "face",
+    "descriptionEn": "L'Oreal Prime Lab Pore Minimizer blurs pores and mattifies skin for a smooth makeup base.\n\n◆ Category: Makeup\n◆ Product type: Face primer\n◆ Key benefits: Minimizes pores · Mattifying finish · Smooth base\n◆ Suitable for: Oily skin and large pores",
+    "descriptionAr": "برايمر لاب لتقليل المسام من لوريال يُطَفِي المسام ويُمَطِّف البشرة قاعدة ماكياج ناعمة.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: برايمر وجه\n◆ الفوائد الرئيسية: تقليل المسام · لمسة مطفية · قاعدة ناعمة\n◆ الأنسب لـ: البشرة الزيتية والمسام الواسعة"
+  },
+  "3605521651587": {
+    "brandEn": "Maison Margiela",
+    "brandAr": "ميزون مارجييلا",
+    "nameEn": "Maison Margiela Replica Beach Walk EDT 100ml",
+    "nameAr": "ميزون مارجييلا - ريبليكا بيتش ووك أو دو تواليت 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "descriptionEn": "Maison Margiela Replica Beach Walk evokes sun and sea with coconut, bergamot, and musk for breezy unisex joy.\n\n◆ Scent family: Leather floral\n◆ Key notes: Raspberry, orchid, leather, suede, musk\n◆ Character: Luxurious, leathery, elegant\n◆ Best for: Cool weather and formal events\n◆ Longevity: 8–10 hours",
+    "descriptionAr": "ريبليكا بيتش ووك من ميزون مارجييلا يجسد الشمس والبحر بجوز الهند والبرتقال والمسك لفرح علوي.\n\n◆ عائلة العطر: جلد زهري\n◆ النوتات الرئيسية: توت، أوركيد، جلد، مخمل، مسك\n◆ الطابع: فاخر وجلدي وأنيق\n◆ الأنسب لـ: الطقس البارد والمناسبات\n◆ الثبات: 8–10 ساعات"
+  },
+  "3614272544444": {
+    "brandEn": "Armani",
+    "brandAr": "أرماني",
+    "nameEn": "Armani Code Absolu EDP 75ml",
+    "nameAr": "أرماني - كود أبسولو بور فيم أو دو بارفيوم 75 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Armani Code Absolu is a warm oriental vanilla scent with tonka, suede, and woods for sensual femininity.\n\n◆ Scent family: Aromatic marine\n◆ Key notes: Bergamot, herbs, sea notes, musk, amber\n◆ Character: Fresh, coastal, artistic\n◆ Best for: Warm weather and daytime\n◆ Longevity: 10–12 hours",
+    "descriptionAr": "كود أبسولو من أرماني عطر شرقي دافئ بالفانيلا وحبوب التونكا والأخشاب لأنوثة حسية.\n\n◆ عائلة العطر: عطري بحري\n◆ النوتات الرئيسية: برغموت، أعشاب، نوتات بحرية، مسك، عنبر\n◆ الطابع: منعش وساحلي وفني\n◆ الأنسب لـ: الطقس الدافئ\n◆ الثبات: 10–12 ساعة"
+  },
+  "3614225358463": {
+    "brandEn": "Calvin Klein",
+    "brandAr": "كالفن كلاين",
+    "nameEn": "Calvin Klein Women EDP 100ml",
+    "nameAr": "كالفن كلاين - ويمن أو دو بارفيوم 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Calvin Klein Women is a modern floral with bergamot, peony, and white musk for clean feminine confidence.\n\n◆ Scent family: Oriental vanilla\n◆ Key notes: Ginger, bergamot, vanilla, sandalwood, musk\n◆ Character: Warm, gourmand, enveloping\n◆ Best for: Cold weather and evenings\n◆ Longevity: 10–12 hours",
+    "descriptionAr": "ويمن من كالفن كلاين عطر زهري عصري بالبرتقال والبيونيا والمسك الأبيض لثقة أنثوية.\n\n◆ عائلة العطر: شرقي فانيلا\n◆ النوتات الرئيسية: زنجبيل، برغموت، فانيلا، صندل، مسك\n◆ الطابع: دافئ وغني ومحيط\n◆ الأنسب لـ: الطقس البارد\n◆ الثبات: 10–12 ساعة"
+  },
+  "3700134410542": {
+    "brandEn": "G Parfums",
+    "brandAr": "جي بارفوم",
+    "nameEn": "G Parfums Yes I Am The King EDP 100ml",
+    "nameAr": "جي بارفوم - نعم أنا الملك أو دو بارفوم 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "descriptionEn": "G Parfums Yes I Am The King is a bold spicy amber fragrance with cinnamon, leather, and vanilla for royal masculinity.\n\n◆ Scent family: Woody gourmand\n◆ Key notes: Pineapple, bergamot, cedar, whiskey, caramel, vanilla\n◆ Character: Bold, boozy, vibrant\n◆ Best for: Statement wear and evenings\n◆ Longevity: 10–12 hours",
+    "descriptionAr": "نعم أنا الملك من جي بارفوم عطر عنبري جريء بالقرفة والجلد والفانيلا لملكية رجالية.\n\n◆ عائلة العطر: خشبي غورماند\n◆ النوتات الرئيسية: أناناس، برغموت، أرز، وسكي، كراميل، فانيلا\n◆ الطابع: جريء وفني ونابض\n◆ الأنسب لـ: السهرات\n◆ الثبات: 10–12 ساعة"
+  },
+  "3770010614616": {
+    "brandEn": "Essential Parfums",
+    "brandAr": "إسينشيال بارفيومز",
+    "nameEn": "Essential Parfums The Musc EDP 100ml",
+    "nameAr": "إسينشيال بارفيومز - ذا مسك أو دو بارفيوم 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "descriptionEn": "Essential Parfums The Musc is a clean niche musk scent with bergamot, jasmine, and sandalwood for effortless unisex elegance.\n\n◆ Scent family: Woody leather\n◆ Key notes: Pineapple, bergamot, patchouli, saffron, leather, oud\n◆ Character: Rich, leathery, sophisticated\n◆ Best for: Evening wear and cooler seasons\n◆ Longevity: 10–12 hours",
+    "descriptionAr": "ذا مسك من إسينشيال بارفيومز عطر نيش مسكي نقي بالبرتقال والياسمين والصندل لأناقة علوية.\n\n◆ عائلة العطر: خشبي جلدي\n◆ النوتات الرئيسية: أناناس، برغموت، باتشولي، زعفران، جلد، عود\n◆ الطابع: غني وجلدي وراقي\n◆ الأنسب لـ: السهرات\n◆ الثبات: 10–12 ساعة"
+  },
+  "3348901426961": {
+    "brandEn": "Dior",
+    "brandAr": "ديور",
+    "nameEn": "Dior J'adore Roller Pearl EDP 20ml",
+    "nameAr": "ديور - جادور رولر بيرل أو دو بارفيوم 20 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Dior J'adore Roller Pearl is a portable luminous floral with ylang-ylang, rose, and jasmine for radiant femininity.\n\n◆ Scent family: Floral amber\n◆ Key notes: Pink pepper, jasmine, amber, vanilla, musk\n◆ Character: Warm, radiant, sophisticated\n◆ Best for: Evening wear and cooler seasons\n◆ Longevity: 7–9 hours with moderate sillage",
+    "descriptionAr": "جادور رولر بيرل من ديور عطر زهري مشع قابل للحمل باليلانغ يلانج والورد والياسمين لإشراق أنثوي.\n\n◆ عائلة العطر: زهري عنبري\n◆ النوتات الرئيسية: فلفل وردي، ياسمين، عنبر، فانيلا، مسك\n◆ الطابع: دافئ ومتوهج وراقٍ\n◆ الأنسب لـ: السهرات والفصول الباردة\n◆ الثبات: 7–9 ساعات بثبات جيد"
+  },
+  "769915194951": {
+    "brandEn": "The Ordinary",
+    "brandAr": "ذا أوردينري",
+    "nameEn": "The Ordinary Niacinamide 10% + Zinc 1% 60ml",
+    "nameAr": "ذا أوردينري - سيروم نياسيناميد 10% + زنك 1% 60 مل",
+    "kind": "care",
+    "careLeaf": "care/face-care/face-moisturizer",
+    "typeKey": "serum",
+    "descriptionEn": "The Ordinary Niacinamide 10% + Zinc 1% serum helps reduce blemishes, refine pores, and balance oily skin.\n\n◆ Category: Face care\n◆ Product type: Serum\n◆ Key benefits: Niacinamide 10% · Zinc 1% · Refines pores\n◆ Suitable for: Oily and blemish-prone skin\n◆ Size: 60 ml",
+    "descriptionAr": "سيروم نياسيناميد 10% + زنك 1% من ذا أوردنري يساعد على تقليل الشوائب وتنقية المسام وتوازن البشرة الزيتية.\n\n◆ التصنيف: عناية الوجه\n◆ نوع المنتج: سيروم\n◆ الفوائد الرئيسية: نياسيناميد 10% · زنك 1% · تنقية المسام\n◆ الأنسب لـ: البشرة الزيتية والمعرضة للشوائب\n◆ الحجم: 60 مل"
+  },
+  "8809634610027": {
+    "brandEn": "Axis-Y",
+    "brandAr": "أكسيس واي",
+    "nameEn": "Axis-Y Quinoa One Step Gel Cleanser 180ml",
+    "nameAr": "أكسيس واي - جل منظف بالكينوا 180 مل",
+    "kind": "care",
+    "careLeaf": "care/korean-skincare/skin-care",
+    "typeKey": "cleanser",
+    "descriptionEn": "Axis-Y Quinoa One Step Gel Cleanser gently cleanses with quinoa extract and centella for balanced Korean skincare.\n\n◆ Category: Korean skincare\n◆ Product type: Gel cleanser\n◆ Key benefits: Quinoa extract · Centella asiatica · One-step cleanse\n◆ Suitable for: All skin types\n◆ Size: 180 ml",
+    "descriptionAr": "جل منظف بالكينوا من أكسيس واي ينظف بلطف بمستخلص الكينوا والسنتيلا لعناية كورية متوازنة.\n\n◆ التصنيف: العناية الكورية\n◆ نوع المنتج: جل منظف\n◆ الفوائد الرئيسية: مستخلص الكينوا · السنتيلا · تنظيف بخطوة واحدة\n◆ الأنسب لـ: جميع أنواع البشرة\n◆ الحجم: 180 مل"
+  },
+  "783320403897": {
+    "brandEn": "Bvlgari",
+    "brandAr": "بولغاري",
+    "nameEn": "Bvlgari Man Wood Neroli EDP 100ml",
+    "nameAr": "بولغاري - من وود نيرولي أو دو بارفيوم 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "descriptionEn": "Bvlgari Man Wood Neroli is a woody citrus scent with neroli, bergamot, and vetiver for refined masculine freshness.\n\n◆ Scent family: Amber aromatic\n◆ Key notes: Mint, green apple, lemon, tonka bean, vanilla, amber, leather\n◆ Character: Bold, sensual, powerful\n◆ Best for: Night outs and special occasions\n◆ Longevity: 8–10 hours with strong projection",
+    "descriptionAr": "من وود نيرولي من بولغاري عطر خشبي حملي بالنيرولي والبرتقال والفيتيفر لانعواش رجالي مصقول.\n\n◆ عائلة العطر: عنبري عطري\n◆ النوتات الرئيسية: نعناع، تفاح أخضر، ليمون، فول التونكا، فانيلا، عنبر، جلد\n◆ الطابع: جريء وحسي وقوي\n◆ الأنسب لـ: الخروج الليلي والمناسبات\n◆ الثبات: 8–10 ساعات بثبات قوي"
+  },
+  "3423222092245": {
+    "brandEn": "Narciso Rodriguez",
+    "brandAr": "نارسيسو رودريغز",
+    "nameEn": "Narciso Rodriguez For Her Forever EDP 50ml",
+    "nameAr": "نارسيسو رودريغز - فور هير فور إفر أو دو بارفيوم 50 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Narciso Rodriguez For Her Forever is a luminous musk-floral with orange blossom, musk, and amber for modern femininity.\n\n◆ Scent family: Floral fruity\n◆ Key notes: Bergamot, peach, rose, jasmine, musk, sandalwood\n◆ Character: Soft, feminine, elegant\n◆ Best for: Daily wear and office\n◆ Longevity: 6–8 hours",
+    "descriptionAr": "فور هير فور إفر من نارسيسو رودريغز عطر مسكي زهري مشع بالبرتقال والمسك والعنبر لأنوثة عصرية.\n\n◆ عائلة العطر: زهري فواكه\n◆ النوتات الرئيسية: برغموت، خوخ، ورد، ياسمين، مسك، صندل\n◆ الطابع: ناعم وأنثوي وأنيق\n◆ الأنسب لـ: الاستخدام اليومي والعمل\n◆ الثبات: 6–8 ساعات"
+  },
+  "3423222092252": {
+    "brandEn": "Narciso Rodriguez",
+    "brandAr": "نارسيسو رودريغز",
+    "nameEn": "Narciso Rodriguez For Her Forever EDP 100ml",
+    "nameAr": "نارسيسو رودريغز - فور هير فور إفر أو دو بارفيوم 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Narciso Rodriguez For Her Forever in 100ml offers the same iconic musk-floral signature with lasting elegant presence.\n\n◆ Scent family: Woody aromatic\n◆ Key notes: Cypress, vetiver, cashmere wood, musk, benzoin\n◆ Character: Dark, smoky, refined\n◆ Best for: Evening wear and formal occasions\n◆ Longevity: 8–10 hours",
+    "descriptionAr": "فور هير فور إفر بحجم 100 مل يقدم نفحة مسكية زهرية أيقونية بثبات أنيق وحضور مدموع.\n\n◆ عائلة العطر: خشبي عطري\n◆ النوتات الرئيسية: سرو، فيتيفر، خشب كاشمير، مسك، بنزوين\n◆ الطابع: داكن ودخاني ومصقول\n◆ الأنسب لـ: السهرات والمناسبات الرسمية\n◆ الثبات: 8–10 ساعات"
+  },
+  "8005610298894": {
+    "brandEn": "Hugo Boss",
+    "brandAr": "هوغو بوس",
+    "nameEn": "Hugo Boss The Scent For Her EDP 50ml",
+    "nameAr": "هوغو بوس - ذا سينت فور هير أو دو بارفيوم 50 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Hugo Boss The Scent For Her is a seductive floral-fruity scent with peach, freesia, and cocoa for feminine allure.\n\n◆ Scent family: Oriental amber\n◆ Key notes: Grapefruit, ginger, amber, tobacco, cedar\n◆ Character: Warm, luxurious, charismatic\n◆ Best for: Evenings and cooler weather\n◆ Longevity: 7–9 hours",
+    "descriptionAr": "ذا سينت فور هير من هوغو بوس عطر زهري فاكه مغري بالخوخ والفريزيا والكاكاو لجذبية أنثوية.\n\n◆ عائلة العطر: شرقي عنبري\n◆ النوتات الرئيسية: جريفروت، زنجبيل، عنبر، تبغ، أرز\n◆ الطابع: دافئ وفاخر وجذاب\n◆ الأنسب لـ: السهرات والطقس البارد\n◆ الثبات: 7–9 ساعات"
+  },
+  "3386460057059": {
+    "brandEn": "Boucheron",
+    "brandAr": "بوشرون",
+    "nameEn": "Boucheron Place Vendôme EDP 100ml",
+    "nameAr": "بوشرون - بلاس فاندوم أو دو بارفيوم 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Boucheron Place Vendôme is a refined floral with pear, jasmine, and benzoin for Parisian feminine elegance.\n\n◆ Scent family: Floral fruity\n◆ Key notes: Bergamot, tiare flower, coconut, jasmine, musk\n◆ Character: Tropical, sunny, joyful\n◆ Best for: Summer days and vacations\n◆ Longevity: 5–7 hours",
+    "descriptionAr": "بلاس فاندوم من بوشرون عطر زهري راقي بالكمثرى والياسمين والبنزوين لأناقة باريسية.\n\n◆ عائلة العطر: زهري فواكه\n◆ النوتات الرئيسية: برغموت، زهر التيار، جوز الهند، ياسمين، مسك\n◆ الطابع: استوائي ومشمس ومبهج\n◆ الأنسب لـ: أيام الصيف والعطلات\n◆ الثبات: 5–7 ساعات"
+  },
+  "3614273604833": {
+    "brandEn": "Giorgio Armani",
+    "brandAr": "جيورجيو أرماني",
+    "nameEn": "Giorgio Armani Code Parfum EDP 75ml",
+    "nameAr": "جيورجيو أرماني - كود بارفيوم بور هوم 75 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "descriptionEn": "Giorgio Armani Code Parfum is an intense aromatic fougère with lavender, tonka, and woods for magnetic masculinity.\n\n◆ Scent family: Floral\n◆ Key notes: Pear, jasmine sambac, sandalwood, benzoin\n◆ Character: Radiant, joyful, modern floral\n◆ Best for: Spring and daytime wear\n◆ Longevity: 6–8 hours",
+    "descriptionAr": "كود بارفيوم بور هوم من جيورجيو أرماني عطر فوجير عطري مكثف باللافندر وحبوب التونكا والأخشاب لرجولة جذابة.\n\n◆ عائلة العطر: زهري\n◆ النوتات الرئيسية: كمثرى، ياسمين، صندل، بنزوين\n◆ الطابع: مشع ومبهج وزهري عصري\n◆ الأنسب لـ: الربيع والنهار\n◆ الثبات: 6–8 ساعات"
+  },
+  "764302316091": {
+    "brandEn": "Shea Moisture",
+    "brandAr": "شيا موشر",
+    "nameEn": "Shea Moisture Power Greens Hair Cream 237ml",
+    "nameAr": "شيا موشر - كريم شعر باور جرينز 237 مل",
+    "kind": "care",
+    "careLeaf": "care/hair-care/hair-treatment",
+    "typeKey": "hair-treatment",
+    "descriptionEn": "Shea Moisture Power Greens Hair Cream nourishes and defines hair with kale, spinach, and shea butter.\n\n◆ Category: Hair treatment\n◆ Product type: Leave-in hair cream\n◆ Key benefits: Power greens blend · Shea butter · Defines curls\n◆ Suitable for: Dry, curly, or textured hair\n◆ Size: 237 ml",
+    "descriptionAr": "كريم شعر باور جرينز من شيا موشر يغذي ويعرّف الشعر بالكينوا والسبانخ وزبدة الشيا.\n\n◆ التصنيف: علاج الشعر\n◆ نوع المنتج: كريم شعر بدون شطف\n◆ الفوائد الرئيسية: مزيج خضراوات قوية · زبدة الشيا · يعرّف التجاعيد\n◆ الأنسب لـ: الشعر الجاف والمجعّد والمنوع\n◆ الحجم: 237 مل"
+  },
+  "8033488153281": {
+    "brandEn": "Xerjoff",
+    "brandAr": "زيرجوف",
+    "nameEn": "Xerjoff Casamorati Gran Ballo EDP 100ml",
+    "nameAr": "زيرجوف - كاساموراتي جران بالو أو دو بارفيوم 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "isNiche": true
+    },
+    "descriptionEn": "Xerjoff Casamorati Gran Ballo is a niche gourmand floral with caramel, jasmine, and vanilla for opulent femininity.\n\n◆ Scent family: Aquatic woody\n◆ Key notes: Lemon, rose, tarragon, cedar, musk\n◆ Character: Fresh, clean, versatile\n◆ Best for: Daily wear and warm weather\n◆ Longevity: 4–6 hours",
+    "descriptionAr": "كاساموراتي جران بالو من زيرجوف عطر نيش غورماند زهري بالكراميل والياسمين والفانيلا لفخامة.\n\n◆ عائلة العطر: مائي خشبي\n◆ النوتات الرئيسية: ليمون، ورد، طرخون، أرز، مسك\n◆ الطابع: منعش ونظيف ومتعدد\n◆ الأنسب لـ: الاستخدام اليومي والطقس الدافئ\n◆ الثبات: 4–6 ساعات"
+  },
+  "8681008055227": {
+    "brandEn": "Nishane",
+    "brandAr": "نيشان",
+    "nameEn": "Nishane Wulong Cha EDP 100ml",
+    "nameAr": "نيشان - وولونج تشا أو دو بارفيوم 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "descriptionEn": "Nishane Wulong Cha is a niche tea-inspired scent with bergamot, tea, and musk for artistic unisex freshness.\n\n◆ Scent family: Floral fruity\n◆ Key notes: Bergamot, tiare, coconut, jasmine, musk\n◆ Character: Tropical, light, joyful\n◆ Best for: Summer and casual wear\n◆ Longevity: 4–6 hours",
+    "descriptionAr": "وولونج تشا من نيشان عطر نيش مستوح من الشاي بالبرتقال والشاي والمسك لإبداع فني.\n\n◆ عائلة العطر: زهري فواكه\n◆ النوتات الرئيسية: برغموت، زهر التيار، جوز الهند، ياسمين، مسك\n◆ الطابع: استوائي وخفيف ومبهج\n◆ الأنسب لـ: الصيف والاستخدام اليومي\n◆ الثبات: 4–6 ساعات"
+  },
+  "3614222793458": {
+    "brandEn": "Roberto Cavalli",
+    "brandAr": "روبرتو كفالي",
+    "nameEn": "Roberto Cavalli Paradiso Assoluto EDP 50ml",
+    "nameAr": "روبرتو كفالي - باراديسو أسولوتو أو دو بارفيوم 50 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "Roberto Cavalli Paradiso Assoluto is a tropical floral with jasmine, citrus, and amber for sun-kissed femininity.\n\n◆ Scent family: Fruity floral\n◆ Key notes: Lemon, mandarin, apple, jasmine, musk\n◆ Character: Fresh, playful, sunny\n◆ Best for: Daytime and summer\n◆ Longevity: 5–7 hours",
+    "descriptionAr": "باراديسو أسولوتو من روبرتو كفالي عطر استوائي بالياسمين والحملية والعنبر لأنوثة مشمسة.\n\n◆ عائلة العطر: فواكه زهرية\n◆ النوتات الرئيسية: ليمون، مندرين، تفاح، ياسمين، مسك\n◆ الطابع: منعش ومرح ومشمس\n◆ الأنسب لـ: النهار والصيف\n◆ الثبات: 5–7 ساعات"
+  },
+  "3614272865235": {
+    "brandEn": "Giorgio Armani",
+    "brandAr": "جيورجيو أرماني",
+    "nameEn": "Giorgio Armani Acqua di Gio Profondo EDP 125ml",
+    "nameAr": "جيورجيو أرماني - أكوا دي جيو بروفوندو أو دو بارفيوم 125 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "descriptionEn": "Giorgio Armani Acqua di Gio Profondo dives deeper into marine freshness with patchouli, incense, and musk for bold masculinity.\n\n◆ Scent family: Gourmand woody\n◆ Key notes: Cognac, oak, cinnamon, praline, vanilla\n◆ Character: Warm, boozy, luxurious\n◆ Best for: Evenings and cold weather\n◆ Longevity: 8–10 hours",
+    "descriptionAr": "أكوا دي جيو بروفوندو من جيورجيو أرماني يغوص بعمق في الانتعاش البحري مع الباتشولي والبخور والمسك لرجولة جريئة.\n\n◆ عائلة العطر: غورماند خشبي\n◆ النوتات الرئيسية: كونياك، بلوط، قرفة، حلوى البندق، فانيلا\n◆ الطابع: دافئ وفاخر وساحر\n◆ الأنسب لـ: السهرات والطقس البارد\n◆ الثبات: 8–10 ساعات"
+  }
+}

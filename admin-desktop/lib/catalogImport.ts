@@ -111,6 +111,46 @@ export function isEanBarcode(value = "") {
   return /^\d{8,14}$/.test(d) && !isMiswagInternalId(d);
 }
 
+type ShadeSortable = {
+  name?: string;
+  nameEn?: string;
+  nameAr?: string;
+  shadeNumber?: string;
+  shadeCode?: string;
+  position?: number;
+};
+
+function shadeNumberSortKey(shade: ShadeSortable, fallbackIndex = 0): Array<string | number> {
+  const raw = String(
+    shade.shadeNumber || shade.shadeCode || shade.name || shade.nameEn || shade.nameAr || "",
+  ).trim();
+  const digits = raw.match(/\d+/);
+  if (digits) {
+    const num = Number(digits[0]);
+    if (Number.isFinite(num)) return [0, num, raw.toLowerCase(), fallbackIndex];
+  }
+  return [1, raw.toLowerCase(), fallbackIndex];
+}
+
+/** يرتّب التدرجات تصاعدياً حسب رقم الدرجة */
+export function sortShadesByNumber<T extends ShadeSortable>(shades: T[] = []): T[] {
+  return [...shades]
+    .map((shade, index) => ({
+      ...shade,
+      position: Number.isFinite(Number(shade.position)) ? Number(shade.position) : index,
+    }))
+    .sort((a, b) => {
+      const ka = shadeNumberSortKey(a, a.position ?? 0);
+      const kb = shadeNumberSortKey(b, b.position ?? 0);
+      for (let i = 0; i < ka.length; i += 1) {
+        if (ka[i] < kb[i]) return -1;
+        if (ka[i] > kb[i]) return 1;
+      }
+      return 0;
+    })
+    .map((shade, index) => ({ ...shade, position: index }));
+}
+
 async function catalogFetch<T>(path: string, timeoutMs = 60_000): Promise<T> {
   const url = `${getCatalogHubUrl()}${path}`;
   const ctrl = new AbortController();
@@ -146,7 +186,7 @@ async function catalogFetch<T>(path: string, timeoutMs = 60_000): Promise<T> {
 }
 
 function mapImportProduct(raw: Record<string, unknown>, storeLabel = ""): CatalogImportProduct {
-  const shades = ((raw.shades as CatalogImportShade[]) || []).map((s, index) => ({
+  const shades = sortShadesByNumber(((raw.shades as CatalogImportShade[]) || []).map((s, index) => ({
     id: s.id || s.sku || "",
     name: s.shadeNumber || s.nameEn || s.nameAr || s.name || "",
     nameAr: s.nameAr || "",

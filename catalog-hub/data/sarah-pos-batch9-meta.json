@@ -1,0 +1,430 @@
+{
+  "817513019883": {
+    "brandEn": "Cantu",
+    "nameEn": "Cantu Avocado Hydrating Conditioner 400ml",
+    "brandAr": "بلسم كانتو",
+    "nameAr": "بلسم كانتو - الأفوكادو المرطب 400 مل",
+    "kind": "care",
+    "careLeaf": "care/hair-care/shampoo-conditioners",
+    "typeKey": "conditioner",
+    "descriptionEn": "CANTU ‎‎‎‎ ‎‎‎‎‎ç‎ 400‎‎ supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: بلسم\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: —",
+    "descriptionAr": "بلسم كانتو - الأفوكادو المرطب 400 مل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: بلسم\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: —"
+  },
+  "3614274143751": {
+    "brandEn": "Giorgio Armani",
+    "nameEn": "Giorgio Armani Acqua di Gio Elixir Eau de Parfum 50ml",
+    "brandAr": "جورجيو أرماني",
+    "nameAr": "جورجيو أرماني - أكوا دي جيو إلكسير برفيوم 50مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men",
+      "isNew": true
+    },
+    "descriptionEn": "ARMANI ACQUA DI GIO ELIXIR Eau de Parfum 50ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "جورجيو أرماني - أكوا دي جيو إلكسير برفيوم 50مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3348901653725": {
+    "brandEn": "Dior",
+    "nameEn": "Dior Purple Oud Eau de Parfum 100ml",
+    "brandAr": "ديور باربل",
+    "nameAr": "ديور باربل - عود او دو بارفيوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNiche": true
+    },
+    "descriptionEn": "CD PURPLE OUD 100ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "ديور باربل - عود او دو بارفيوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3348901473651": {
+    "brandEn": "Dior",
+    "nameEn": "Dior Joy Deodorant Spray 100ml",
+    "brandAr": "مزيل عرق",
+    "nameAr": "مزيل عرق - ديور جوي 100مل (بخاخ)",
+    "kind": "care",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "DIOR JOY DEO. 100ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "مزيل عرق - ديور جوي 100مل (بخاخ)— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات",
+    "careLeaf": "care/skin-and-body-care/deodorant",
+    "typeKey": "deodorant"
+  },
+  "8683608071225": {
+    "brandEn": "Nishane",
+    "nameEn": "Nishane Hacivat Extrait de Parfum 100ml",
+    "brandAr": "نيشاني هاتشيفات",
+    "nameAr": "نيشاني هاتشيفات - اكسترايت دو بارفيوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "descriptionEn": "NISHAN HACIVAT DE Parfum 100ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "نيشاني هاتشيفات - اكسترايت دو بارفيوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "783320476501": {
+    "brandEn": "BVL AU THE NOIR COLOGNE 75ML",
+    "nameEn": "BVL AU THE NOIR COLOGNE 75ML",
+    "brandAr": "بولغاري او",
+    "nameAr": "بولغاري او - ذا نوير انتنس الاسود كوليجن 75مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "BVL AU THE NOIR COLOGNE 75ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "بولغاري او - ذا نوير انتنس الاسود كوليجن 75مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "783320413858": {
+    "brandEn": "BVL MAN IN BLACK EDP 100ML",
+    "nameEn": "BVL MAN IN BLACK Eau de Parfum 100ML",
+    "brandAr": "بولغاري مان",
+    "nameAr": "بولغاري مان - ان بلاك او دو بارفيوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "BVL MAN IN BLACK Eau de Parfum 100ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "بولغاري مان - ان بلاك او دو بارفيوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "6294018404347": {
+    "brandEn": "Kayali",
+    "nameEn": "Kayali Vanilla Candy Rock Sugar 42 Eau de Parfum 100ml",
+    "brandAr": "كيالي فانيلا",
+    "nameAr": "كيالي فانيلا - كاندي روك شوجار 42 - 100 مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNiche": true
+    },
+    "descriptionEn": "KAYLI VANILLA CANDY 100 100ml is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "كيالي فانيلا - كاندي روك شوجار 42 - 100 مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "769915234060": {
+    "brandEn": "The Ordinary",
+    "nameEn": "The Ordinary Glycolic Acid 7% Toning Solution",
+    "brandAr": "تونر الجليكوليك",
+    "nameAr": "تونر الجليكوليك - اسيد ذا اورديناري",
+    "kind": "care",
+    "careLeaf": "care/face-care/cleansers--toners",
+    "typeKey": "toner",
+    "descriptionEn": "THE ORDINARY GLYCOLIC ACID 7% supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: سيروم\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: —",
+    "descriptionAr": "تونر الجليكوليك - اسيد ذا اورديناري— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: سيروم\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: —"
+  },
+  "3614222402084": {
+    "brandEn": "TIFFANY & CO",
+    "nameEn": "TIFFANY Eau de Parfum 75ML",
+    "brandAr": "تيفاني آند كو",
+    "nameAr": "تيفاني آند كو - اندكو النسائي انتنس  او دو بارفيوم 75مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "TIFFANY Eau de Parfum 75ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "تيفاني آند كو - اندكو النسائي انتنس  او دو بارفيوم 75مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "8011003870233": {
+    "brandEn": "Versace",
+    "nameEn": "Versace Pour Homme Eau de Toilette Set 100ml",
+    "brandAr": "فرزاتشي",
+    "nameAr": "فرزاتشي - طقم فرزاتشي بور اوم او دو تواليت عطر 100مل+عينة للشنطة 10مل+شنطة يد",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men"
+    },
+    "descriptionEn": "VERSACE Pour Homme SET Eau de Toilette 100ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "فرزاتشي - طقم فرزاتشي بور اوم او دو تواليت عطر 100مل+عينة للشنطة 10مل+شنطة يد— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "8011003060320": {
+    "brandEn": "MOSCHINO",
+    "nameEn": "MOSCHINO GOLD Eau de Toilette 75ML",
+    "brandAr": "موسكينو",
+    "nameAr": "موسكينو - او دي تواليت 75مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "MOSCHINO GOLD Eau de Toilette 75ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "موسكينو - او دي تواليت 75مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3606000537736": {
+    "brandEn": "CeraVe",
+    "nameEn": "CeraVe Moisturising Lotion Normal to Dry Skin 236ml",
+    "brandAr": "سيرافي",
+    "nameAr": "سيرافي - لوشن سيرافي للبشرة العادية و الجافة 236 مل",
+    "kind": "care",
+    "careLeaf": "care/face-care/face-moisturizer",
+    "typeKey": "cream",
+    "descriptionEn": "CERAVE MOIS -LOTION N-DRY 237ML supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: كريم\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: 237 ml",
+    "descriptionAr": "سيرافي - لوشن سيرافي للبشرة العادية و الجافة 236 مل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: كريم\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: 237 ml"
+  },
+  "3386460023337": {
+    "brandEn": "LANVIN",
+    "nameEn": "LANVIN MARRY ME Eau de Parfum 75ML",
+    "brandAr": "لانفان",
+    "nameAr": "لانفان - لانفين ماري مي او دو بارفيوم 75مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "LANVIN MARRY ME Eau de Parfum 75ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "لانفان - لانفين ماري مي او دو بارفيوم 75مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3274872423008": {
+    "brandEn": "GIVENCHY",
+    "nameEn": "GIV-GENTLEMAN Eau de Toilette INTENSE Eau de Toilette 100ML;",
+    "brandAr": "جivenchy",
+    "nameAr": "جivenchy - جيفنشي جنتلمان او دو تواليت انتنس 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": true,
+      "isNiche": false
+    },
+    "descriptionEn": "GIV-GENTLEMAN Eau de Toilette INTENSE Eau de Toilette 100ML; is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "جivenchy - جيفنشي جنتلمان او دو تواليت انتنس 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3548752189088": {
+    "brandEn": "Make Up For Ever",
+    "nameEn": "Make Up For Ever HD Skin Face Palette Harmony 1",
+    "brandAr": "ميك اب فور ايفر",
+    "nameAr": "ميك اب فور ايفر - باليت الوجه الشامل اتش دي سكن هارموني 1",
+    "kind": "makeup",
+    "makeupSub": "face",
+    "descriptionEn": "MAKE UP FOR EVER HD SKIN PALETTE HARMONY 1 delivers reliable makeup performance for everyday looks.\n\n◆ Category: Makeup\n◆ Product type: مكياج العيون\n◆ Key benefits: Easy application · Buildable result · Everyday wear\n◆ Suitable for: Daily makeup",
+    "descriptionAr": "ميك اب فور ايفر - باليت الوجه الشامل اتش دي سكن هارموني 1— منتج مكياج عملي لإطلالات يومية.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: مكياج العيون\n◆ الفوائد الرئيسية: سهل التطبيق · تغطية قابلة للبناء · للاستخدام اليومي\n◆ الأنسب لـ: إطلالات يومية"
+  },
+  "8018365070264": {
+    "brandEn": "Versace",
+    "nameEn": "Versace Crystal Noir Eau de Parfum 50ml",
+    "brandAr": "فرزاتشي",
+    "nameAr": "فرزاتشي - كريستال نوار او دو بارفيوم 50مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women"
+    },
+    "descriptionEn": "VERSACE CRYSTAL NOIR Eau de Parfum 50ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "فرزاتشي - كريستال نوار او دو بارفيوم 50مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3614273476164": {
+    "brandEn": "LANCOME",
+    "nameEn": "LANCOME IDOLE AURA Eau de Parfum 100ML",
+    "brandAr": "لانكوم",
+    "nameAr": "لانكوم - ايدول اورا او دو بارفيوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "LANCOME IDOLE AURA Eau de Parfum 100ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "لانكوم - ايدول اورا او دو بارفيوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "730870263112": {
+    "brandEn": "ESCADA",
+    "nameEn": "ESCADA SENTIMENT Eau de Toilette 75ML",
+    "brandAr": "اسكادا",
+    "nameAr": "اسكادا - سنتمنت او دو تواليت النسائي 75مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "ESCADA SENTIMENT Eau de Toilette 75ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "اسكادا - سنتمنت او دو تواليت النسائي 75مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "764302231530": {
+    "brandEn": "Shea Moisture",
+    "nameEn": "Shea Moisture Manuka Honey & Yogurt Shampoo 384ml",
+    "brandAr": "شيا مويستشر",
+    "nameAr": "شيا مويستشر - شامبو مانوكا للعسل والزبادي 384 مل",
+    "kind": "care",
+    "careLeaf": "care/hair-care/shampoo-conditioners",
+    "typeKey": "shampoo",
+    "descriptionEn": "شيا مويستشر شامبو مانوكا للعسل والزبادي 384 مل supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: شامبو\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: —",
+    "descriptionAr": "شيا مويستشر - شامبو مانوكا للعسل والزبادي 384 مل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: شامبو\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: —"
+  },
+  "085715806345": {
+    "brandEn": "dunhill",
+    "nameEn": "DUNHILL ICON RACING Eau de Parfum 100ML",
+    "brandAr": "دنهل",
+    "nameAr": "دنهل - دانهيل ايكون ريسنغ الاحمر او دو بارفيوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "DUNHILL ICON RACING Eau de Parfum 100ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "دنهل - دانهيل ايكون ريسنغ الاحمر او دو بارفيوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3700578526007": {
+    "brandEn": "Parfums de Marly",
+    "nameEn": "Parfums de Marly Sedley Eau de Parfum 125ml",
+    "brandAr": "مارلي",
+    "nameAr": "مارلي - سيدلي او دو بارفيوم 125مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "men",
+      "isNiche": true
+    },
+    "descriptionEn": "RARFUM-D MARLY SEDLEY 125ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "مارلي - سيدلي او دو بارفيوم 125مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "8436018276168": {
+    "brandEn": "Rosendo Mateu",
+    "nameEn": "Rosendo Mateu No. 1 Eau de Parfum 100ml",
+    "brandAr": "روسيندو ماتيو",
+    "nameAr": "روسيندو ماتيو - نمبر ون 1 اودي بارفيوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "descriptionEn": "ROSENDO MATEU Eau de Parfum 100ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "روسيندو ماتيو - نمبر ون 1 اودي بارفيوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3562700373145": {
+    "brandEn": "JAGUAR",
+    "nameEn": "JAGUAR CLASSIC BLACK Eau de Toilette 100ML",
+    "brandAr": "جاكوار",
+    "nameAr": "جاكوار - الاسود كلاسيك بلاك تواليت 100مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "JAGUAR CLASSIC BLACK Eau de Toilette 100ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "جاكوار - الاسود كلاسيك بلاك تواليت 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3614273069540": {
+    "brandEn": "YVES SAINTLAURENT",
+    "nameEn": "YSL NEW LIBRE INTENSE 510ML",
+    "brandAr": "افسان لوران",
+    "nameAr": "افسان لوران - عطر ايف سان لوران ليبر انتنس او دو بارفيوم 50مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": true,
+      "isNiche": false
+    },
+    "descriptionEn": "YSL NEW LIBRE INTENSE 510ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "افسان لوران - عطر ايف سان لوران ليبر انتنس او دو بارفيوم 50مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "817513015328": {
+    "brandEn": "Cantu",
+    "nameEn": "Cantu Sulfate-Free Hydrating Cream Conditioner 400ml",
+    "brandAr": "كانتو",
+    "nameAr": "كانتو - بلسم كريم مرطب خالي من الكبريتات- 400مل",
+    "kind": "care",
+    "careLeaf": "care/hair-care/shampoo-conditioners",
+    "typeKey": "conditioner",
+    "descriptionEn": "CANTU ‎‎‎‎ ‎‎‎‎‎ ‎‎‎ 400‎‎ supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: بلسم\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: —",
+    "descriptionAr": "كانتو - بلسم كريم مرطب خالي من الكبريتات- 400مل— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: بلسم\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: —"
+  },
+  "6294018405771": {
+    "brandEn": "Huda Beauty",
+    "nameEn": "Huda Beauty Icy Nude Eyeshadow Palette",
+    "brandAr": "هدى بيوتي",
+    "nameAr": "هدى بيوتي - آيسي نود باليت ظلال عيون",
+    "kind": "makeup",
+    "makeupSub": "eyes",
+    "descriptionEn": "H.B ICY NUDE PALETTE delivers reliable makeup performance for everyday looks.\n\n◆ Category: Makeup\n◆ Product type: مكياج العيون\n◆ Key benefits: Easy application · Buildable result · Everyday wear\n◆ Suitable for: Daily makeup",
+    "descriptionAr": "هدى بيوتي - آيسي نود باليت ظلال عيون— منتج مكياج عملي لإطلالات يومية.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: مكياج العيون\n◆ الفوائد الرئيسية: سهل التطبيق · تغطية قابلة للبناء · للاستخدام اليومي\n◆ الأنسب لـ: إطلالات يومية"
+  },
+  "8683608070600": {
+    "brandEn": "Nishane",
+    "nameEn": "Nishane Tempfluo Extrait de Parfum 100ml",
+    "brandAr": "نيشاني تيمبفلو",
+    "nameAr": "نيشاني تيمبفلو - اكسترايت دو بارفيوم 100مل",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "descriptionEn": "NISHANE TEMPFLUO 100ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "نيشاني تيمبفلو - اكسترايت دو بارفيوم 100مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "8681008055395": {
+    "brandEn": "Nishane",
+    "nameEn": "Nishane Zenne Extrait de Parfum 50ml",
+    "brandAr": "نيشاني زيني",
+    "nameAr": "نيشاني زيني - اكسترايت دو بارفيوم 50مل",
+    "kind": "perfume",
+    "subs": {
+      "isUnisex": true,
+      "isNiche": true
+    },
+    "descriptionEn": "NISHANE ZENNE Eau de Parfum 55ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "نيشاني زيني - اكسترايت دو بارفيوم 50مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3348901011297": {
+    "brandEn": "C.D OUD ISPAHAN EDP 125ML",
+    "nameEn": "C.D OUD ISPAHAN Eau de Parfum 125ML",
+    "brandAr": "ديور عود",
+    "nameAr": "ديور عود - اصفهان او دو بارفيوم 125مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "C.D OUD ISPAHAN Eau de Parfum 125ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "ديور عود - اصفهان او دو بارفيوم 125مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  },
+  "3380810304848": {
+    "brandEn": "Clarins",
+    "nameEn": "Clarins Dry Touch Sun Care Cream SPF50+",
+    "brandAr": "كلارنس كريم",
+    "nameAr": "كلارنس كريم - واقي شمس",
+    "kind": "care",
+    "careLeaf": "care/sun-care/sunscreen",
+    "typeKey": "sunscreen",
+    "descriptionEn": "CLARINS DRY TOUCH SUN CARE CREAM +50 supports daily care with a trusted formula for regular use.\n\n◆ Category: Skincare\n◆ Product type: واقي شمس\n◆ Key benefits: Daily care · Trusted formula · Regular use\n◆ Suitable for: Daily care routines\n◆ Size: —",
+    "descriptionAr": "كلارنس كريم - واقي شمس— منتج عناية يومي بتركيبة موثوقة.\n\n◆ التصنيف: العناية\n◆ نوع المنتج: واقي شمس\n◆ الفوائد الرئيسية: عناية يومية · تركيبة موثوقة · للاستخدام المنتظم\n◆ الأنسب لـ: الروتين اليومي\n◆ الحجم: —"
+  },
+  "3145891209303": {
+    "brandEn": "Chanel",
+    "nameEn": "Chanel Gabrielle Deodorant Spray 100ml",
+    "brandAr": "مزيل عرق",
+    "nameAr": "مزيل عرق - شانيل غابريل 100مل (بخاخ)",
+    "kind": "care",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": false
+    },
+    "descriptionEn": "CHANEL GABRIELLE DEO.100ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "مزيل عرق - شانيل غابريل 100مل (بخاخ)— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات",
+    "careLeaf": "care/skin-and-body-care/deodorant",
+    "typeKey": "deodorant"
+  },
+  "3760265190805": {
+    "brandEn": "MANCERA",
+    "nameEn": "MANCERA ROSEOUAD&MUSC Eau de Parfum 120ML",
+    "brandAr": "مانسيرا",
+    "nameAr": "مانسيرا - روز عود مسك او دو بارفيوم 120مل",
+    "kind": "perfume",
+    "subs": {
+      "gender": "women",
+      "isNew": false,
+      "isNiche": true
+    },
+    "descriptionEn": "MANCERA ROSEOUAD&MUSC Eau de Parfum 120ML is a refined fragrance with elegant character and lasting presence.\n\n◆ Scent family: Eau de parfum\n◆ Key notes: Bergamot, florals, amber, woods, musk\n◆ Character: Elegant and long-lasting\n◆ Best for: Daily to evening wear\n◆ Longevity: 6–10 hours with good projection",
+    "descriptionAr": "مانسيرا - روز عود مسك او دو بارفيوم 120مل— عطر راقٍ يتميز بطابع أنيق وثبات جيد.\n\n◆ عائلة العطر: عطر فاخر\n◆ النوتات الرئيسية: نوتات زهرية وخشبية وعنبرية\n◆ الطابع: أنيق وثابت\n◆ الأنسب لـ: الاستخدام اليومي والمناسبات\n◆ الثبات: 6–10 ساعات"
+  }
+}

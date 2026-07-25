@@ -8,23 +8,44 @@ import '../widgets/home_theme.dart';
 import '../widgets/photo_shape_kit.dart';
 import '../../../data/models/home_section.dart';
 
-/// معرض صور متقدم — بطاقات أنيقة بأحجام وأشكال متنوعة، بدون ظلال.
+/// معرض صور متقدم — إعدادات لوحة التحكم تُطبَّق مباشرة في التطبيق.
 class PhotoWallSection extends StatelessWidget {
   final HomeSection section;
   const PhotoWallSection({super.key, required this.section});
 
   bool get _isAdvanced => section.type == 'PHOTO_WALL' || section.type == 'IMAGE_COLLAGE';
 
+  GalleryRenderStyle get _style => GalleryRenderStyle(
+        defaultShape: section.shape ?? 'rounded',
+        defaultAspect: section.aspectRatio ??
+            (section.bannerAspect != null ? _aspectLabel(section.bannerAspect!) : null),
+        defaultSize: section.cardSize ?? 'md',
+        defaultOverlay: section.overlayStyle ?? 'none',
+        defaultBorder: section.borderStyle ?? 'none',
+        defaultShadow: section.showShadow,
+        fit: PhotoShapeGeometry.parseFit(section.kind),
+        tileCornerRadius: section.tileCornerRadius,
+        sectionCustomWidth: section.customWidth,
+        sectionCustomHeight: section.customHeight,
+      );
+
+  String? _aspectLabel(double aspect) {
+    if ((aspect - 1).abs() < 0.05) return '1:1';
+    if ((aspect - 4 / 3).abs() < 0.05) return '4:3';
+    if ((aspect - 3 / 4).abs() < 0.05) return '3:4';
+    if ((aspect - 16 / 9).abs() < 0.05) return '16:9';
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final items = section.items.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
     if (items.isEmpty) return const SizedBox.shrink();
 
+    final style = _style;
     final display = _resolveDisplay(section.display ?? section.layout);
-    final defaultShape = section.shape ?? 'rounded';
-    final defaultSize = section.cardSize ?? 'md';
     final defaultAspect = section.bannerAspect;
-    final height = section.imageHeight ?? PhotoShapeGeometry.sizeHeight(defaultSize);
+    final height = section.imageHeight ?? PhotoShapeGeometry.sizeHeight(style.defaultSize);
     final gap = section.marqueeGap ?? 10;
     final padH = section.fullBleed ? 0.0 : HomeTheme.paddingH;
 
@@ -41,40 +62,35 @@ class PhotoWallSection extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: padH),
         child: switch (display) {
-          'marquee' => _marquee(context, items, height, gap, defaultShape, defaultSize, defaultAspect, onTap),
+          'marquee' => _marquee(context, items, height, gap, style, defaultAspect, onTap),
           'grid' => GalleryGridLayout(
               items: items,
               gap: gap,
-              defaultShape: defaultShape,
+              style: style,
               defaultAspect: defaultAspect,
               columns: (int.tryParse(section.sectionLayout ?? '') ?? 2).clamp(2, 3),
               onTap: onTap,
             ),
-          'stack' => _stack(items, gap, defaultShape, defaultAspect, onTap),
+          'stack' => _stack(items, gap, style, defaultAspect, onTap),
           'scroll' => GalleryHorizontalLayout(
               items: items,
               height: height,
               gap: gap,
-              defaultShape: defaultShape,
-              defaultSize: defaultSize,
+              style: style,
               defaultAspect: defaultAspect,
               onTap: onTap,
             ),
           'bento' || 'mosaic' => GalleryBentoLayout(
               items: items,
               gap: gap,
-              defaultShape: defaultShape,
-              defaultAspect: defaultAspect?.toString(),
-              defaultSize: defaultSize,
+              style: style,
               autoSpan: display == 'mosaic' || _isAdvanced,
               onTap: onTap,
             ),
           _ => GalleryBentoLayout(
               items: items,
               gap: gap,
-              defaultShape: defaultShape,
-              defaultAspect: defaultAspect?.toString(),
-              defaultSize: defaultSize,
+              style: style,
               autoSpan: _isAdvanced,
               onTap: onTap,
             ),
@@ -83,7 +99,6 @@ class PhotoWallSection extends StatelessWidget {
     );
   }
 
-  /// تحويل أوضاع العرض القديمة إلى تخطيط بطاقات أنيق.
   String _resolveDisplay(String? raw) {
     final d = raw?.trim().toLowerCase() ?? '';
     if (_isAdvanced) {
@@ -93,7 +108,6 @@ class PhotoWallSection extends StatelessWidget {
         'stack' => 'stack',
         'scroll' => 'scroll',
         'bento' || 'mosaic' => d,
-        // carousel / stagger / افتراضي → bento
         _ => 'bento',
       };
     }
@@ -105,23 +119,19 @@ class PhotoWallSection extends StatelessWidget {
     List<Map<String, dynamic>> items,
     double height,
     double gap,
-    String defaultShape,
-    String defaultSize,
+    GalleryRenderStyle style,
     double? defaultAspect,
     void Function(Map<String, dynamic>) onTap,
   ) {
     final images = <HomeMarqueeImage>[];
     for (final raw in items) {
-      final data = PhotoTileData.fromMap(
-        raw,
-        defaultShape: defaultShape,
-        galleryMode: true,
-      );
+      final data = style.tileData(raw);
       if (data.imageUrl.isEmpty) continue;
+      final tileH = data.customHeight ?? height;
       final w = PhotoShapeGeometry.tileWidth(
-        height: height,
+        height: tileH,
         shape: data.shape,
-        size: defaultSize,
+        size: style.itemSize(raw),
         data: data,
         defaultAspect: defaultAspect,
       );
@@ -129,7 +139,7 @@ class PhotoWallSection extends StatelessWidget {
         HomeMarqueeImage(
           url: data.imageUrl,
           width: w,
-          height: height,
+          height: tileH,
           shape: data.shape,
           onTap: () => onTap(raw),
         ),
@@ -141,13 +151,14 @@ class PhotoWallSection extends StatelessWidget {
       height: height,
       speed: section.marqueeSpeed ?? 5,
       gap: gap,
+      startFromEndInRtl: true,
     );
   }
 
   Widget _stack(
     List<Map<String, dynamic>> items,
     double gap,
-    String defaultShape,
+    GalleryRenderStyle style,
     double? defaultAspect,
     void Function(Map<String, dynamic>) onTap,
   ) {
@@ -157,21 +168,18 @@ class PhotoWallSection extends StatelessWidget {
           if (i > 0) SizedBox(height: gap),
           LayoutBuilder(
             builder: (context, constraints) {
-              final data = PhotoTileData.fromMap(
-                items[i],
-                defaultShape: defaultShape,
-                defaultAspect: defaultAspect?.toString(),
-                galleryMode: true,
-              );
+              final data = style.tileData(items[i]);
               if (data.imageUrl.isEmpty) return const SizedBox.shrink();
               final aspect = PhotoShapeGeometry.parseAspect(data.aspectRatio) ??
                   defaultAspect ??
                   PhotoShapeGeometry.aspectForShape(data.shape);
-              final h = constraints.maxWidth / aspect;
+              final h = data.customHeight ?? (constraints.maxWidth / aspect);
               return GalleryPhotoCard(
                 data: data,
-                width: constraints.maxWidth,
-                height: h.clamp(120, 280),
+                width: data.customWidth ?? constraints.maxWidth,
+                height: h.clamp(120, 480),
+                fit: style.fit,
+                cornerRadiusOverride: style.tileCornerRadius,
                 onTap: () => onTap(items[i]),
               );
             },

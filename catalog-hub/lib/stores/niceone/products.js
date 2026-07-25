@@ -72,11 +72,11 @@ async function fetchListingPage({ category = '', search = '', page = 1, lang = '
   return out;
 }
 
-async function fetchListingMerged({ category = '', search = '', page = 1, limit = 30 } = {}) {
+async function fetchListingMerged({ category = '', search = '', page = 1, limit = 30, arOnly = false } = {}) {
   const arData = await fetchListingPage({ category, search, page, lang: 'ar' });
 
-  // بحث نصي: صفحة عربية فقط (أسرع) — التفاصيل ثنائية اللغة عند فتح المنتج
-  if (search) {
+  // بحث نصي أو arOnly: صفحة عربية فقط (أسرع)
+  if (search || arOnly) {
     const merged = arData.items.map((item) => mapListItem({
       ...item,
       barcode: item.barcode || barcodeFromImageUrl(item.thumb || ''),
@@ -110,12 +110,12 @@ async function fetchListingMerged({ category = '', search = '', page = 1, limit 
   });
 }
 
-export async function listCategoryProducts(categoryId, { page = 1, limit = 30 } = {}) {
+export async function listCategoryProducts(categoryId, { page = 1, limit = 30, arOnly = false } = {}) {
   const category = String(categoryId || '').trim();
   if (!category || category === 'root') {
-    return fetchListingMerged({ page, limit });
+    return fetchListingMerged({ page, limit, arOnly });
   }
-  return fetchListingMerged({ category, page, limit });
+  return fetchListingMerged({ category, page, limit, arOnly });
 }
 
 export async function searchProducts(query, { page = 1, limit = 30 } = {}) {

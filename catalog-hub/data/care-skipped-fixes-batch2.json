@@ -1,0 +1,818 @@
+[
+  {
+    "barcode": "3574661520353",
+    "brandEn": "Neutrogena",
+    "brandAr": "نيوتروجينا",
+    "nameEn": "Neutrogena Clear & Defend Rapid Gel 15ml",
+    "nameAr": "نيوتروجينا كلير أند ديفند جل سريع المفعول 15 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-face-care",
+      "care-derma-hub"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Neutrogena Clear & Defend Rapid Gel targets blemishes with salicylic acid for clearer-looking skin.",
+    "introAr": "جل نيوتروجينا كلير أند ديفند السريع يستهدف الحبوب بحمض الساليسيليك لبشرة أكثر صفاءً."
+  },
+  {
+    "barcode": "3574661639208",
+    "brandEn": "Neutrogena",
+    "brandAr": "نيوتروجينا",
+    "nameEn": "Neutrogena Soothing Clear Mist Toner 125ml",
+    "nameAr": "نيوتروجينا تونر Soothing Clear Mist 125 مل",
+    "typeKey": "toner",
+    "sub": [
+      "care-face-care",
+      "care-derma-hub"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Neutrogena Soothing Clear Mist Toner refreshes blemish-prone skin and helps unclog pores.",
+    "introAr": "تونر نيوتروجينا Soothing Clear Mist ينعش البشرة المعرضة للحبوب ويساعد على تنظيف المسام."
+  },
+  {
+    "barcode": "3574661336657",
+    "brandEn": "Neutrogena",
+    "brandAr": "نيوتروجينا",
+    "nameEn": "Neutrogena Anti-Blackhead Lotion 200ml",
+    "nameAr": "نيوتروجينا لوشن مضاد للرؤوس السوداء 200 مل",
+    "typeKey": "toner",
+    "sub": [
+      "care-face-care",
+      "care-derma-hub"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Neutrogena Anti-Blackhead Lotion helps reduce blackheads and refine the look of pores.",
+    "introAr": "لوشن نيوتروجينا المضاد للرؤوس السوداء يساعد على تقليلها وتحسين مظهر المسام."
+  },
+  {
+    "barcode": "3574661656014",
+    "brandEn": "Johnson's",
+    "brandAr": "جونسون",
+    "nameEn": "Johnson's Moisture Soft Cream Face & Body 200ml",
+    "nameAr": "جونسون كريم سوفت المرطب للوجه والجسم 200 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-skin-and-body-care",
+      "care-face-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Johnson's Moisture Soft Cream gently moisturises dry skin on the face and body.",
+    "introAr": "كريم جونسون سوفت المرطب يرطب البشرة الجافة للوجه والجسم بلطف."
+  },
+  {
+    "barcode": "3350900003128",
+    "brandEn": "Embryolisse",
+    "brandAr": "أمبريوليس",
+    "nameEn": "Embryolisse Anti-Brown Spot Night Peeling Cream 40ml",
+    "nameAr": "أمبريوليس كريم ليلي مقشر ضد البقع الداكنة 40 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Embryolisse Night Peeling Cream works overnight to help fade the look of brown spots.",
+    "introAr": "كريم أمبريوليس الليلي المقشر يعمل أثناء النوم للمساعدة على تفتيح مظهر البقع الداكنة."
+  },
+  {
+    "barcode": "4005800034428",
+    "brandEn": "Eucerin",
+    "brandAr": "يوسيرين",
+    "nameEn": "Eucerin UreaRepair PLUS Foot Cream 10% Urea 100ml",
+    "nameAr": "يوسيرين كريم القدمين UreaRepair PLUS 10% يوريا 100 مل",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care",
+      "care-derma-hub"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Eucerin UreaRepair Foot Cream with 10% urea intensively moisturises very dry, cracked feet.",
+    "introAr": "كريم يوسيرين للقدمين بتركيز 10% يوريا يرطب بشكل مكثف القدمين الجافة والمتشققة."
+  },
+  {
+    "barcode": "4005900008442",
+    "brandEn": "Nivea",
+    "brandAr": "نيفيا",
+    "nameEn": "Nivea Soft Moisturising Cream 200ml",
+    "nameAr": "نيفيا سوفت كريم مرطب 200 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-skin-and-body-care",
+      "care-face-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Nivea Soft Cream is a light, fast-absorbing moisturiser for face, hands and body.",
+    "introAr": "كريم نيفيا سوفت خفيف وسريع الامتصاص يرطب الوجه واليدين والجسم."
+  },
+  {
+    "barcode": "4005808166190",
+    "brandEn": "Nivea",
+    "brandAr": "نيفيا",
+    "nameEn": "Nivea Creme Multi-Purpose Moisturiser 150ml",
+    "nameAr": "نيفيا كريم كلاسيكي متعدد الاستخدامات 150 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-skin-and-body-care",
+      "care-face-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Nivea Creme is the classic rich moisturiser for face, hands and body.",
+    "introAr": "كريم نيفيا الكلاسيكي مرطب غني للوجه واليدين والجسم."
+  },
+  {
+    "barcode": "9005800358840",
+    "brandEn": "Nivea",
+    "brandAr": "نيفيا",
+    "nameEn": "Nivea Family Care All-Purpose Cream 450ml",
+    "nameAr": "نيفيا فاميلي كير كريم متعدد الاستخدامات 450 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Nivea Family Care Cream provides everyday moisture for the whole family.",
+    "introAr": "كريم نيفيا فاميلي كير يمنح ترطيباً يومياً لجميع أفراد العائلة."
+  },
+  {
+    "barcode": "6001085121028",
+    "brandEn": "Vaseline",
+    "brandAr": "فازلين",
+    "nameEn": "Vaseline Blue Seal Vitamin E Petroleum Jelly 100ml",
+    "nameAr": "فازلين بلو سيل هلامي بفيتامين E 100 مل",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Vaseline Blue Seal Vitamin E Jelly locks in moisture and helps protect dry skin.",
+    "introAr": "فازلين بلو سيل بفيتامين E يحبس الرطوبة ويساعد على حماية البشرة الجافة."
+  },
+  {
+    "barcode": "6001085120946",
+    "brandEn": "Vaseline",
+    "brandAr": "فازلين",
+    "nameEn": "Vaseline Pure Petroleum Jelly Original 100g",
+    "nameAr": "فازلين هلامي بتروليوم الأصلي 100 جم",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Vaseline Original Petroleum Jelly helps heal and protect dry, cracked skin.",
+    "introAr": "فازلين الأصلي يعالج ويحمي البشرة الجافة والمتشققة."
+  },
+  {
+    "barcode": "4000196901187",
+    "brandEn": "Glysolid",
+    "brandAr": "جليسوليد",
+    "nameEn": "Glysolid Glycerin Cream 250ml",
+    "nameAr": "جليسوليد كريم مرطب بالجلسرين 250 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-skin-and-body-care",
+      "care-face-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Glysolid Glycerin Cream deeply moisturises dry, rough skin on hands and body.",
+    "introAr": "كريم جليسوليد بالجلسرين يرطب بعمق البشرة الجافة والخشنة لليدين والجسم."
+  },
+  {
+    "barcode": "4103040036308",
+    "brandEn": "Sebamed",
+    "brandAr": "سيبامد",
+    "nameEn": "Sebamed Clear Face Cleansing Foam 150ml",
+    "nameAr": "سيبامد Clear Face رغوة غسول للوجه 150 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care",
+      "care-derma-hub"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Sebamed Clear Face Foam cleanses blemish-prone skin while supporting the skin barrier.",
+    "introAr": "رغوة سيبامد Clear Face تنظف البشرة المعرضة للحبوب مع دعم حاجز البشرة."
+  },
+  {
+    "barcode": "4103040043726",
+    "brandEn": "Sebamed",
+    "brandAr": "سيبامد",
+    "nameEn": "Sebamed Moisturising Body Lotion 200ml",
+    "nameAr": "سيبامد لوشن مرطب للجسم 200 مل",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Sebamed Moisturising Lotion hydrates normal to dry skin with a pH-balanced formula.",
+    "introAr": "لوشن سيبامد المرطب يرطب البشرة العادية إلى الجافة بتركيبة متوازنة الحموضة."
+  },
+  {
+    "barcode": "4103040043580",
+    "brandEn": "Sebamed",
+    "brandAr": "سيبامد",
+    "nameEn": "Sebamed Clear Face Cleansing Bar 100g",
+    "nameAr": "سيبامد Clear Face صابونة غسول للوجه 100 جم",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care",
+      "care-derma-hub"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Sebamed Clear Face Cleansing Bar gently cleanses oily and blemish-prone skin.",
+    "introAr": "صابونة سيبامد Clear Face تنظف بلطف البشرة الدهنية والمعرضة للحبوب."
+  },
+  {
+    "barcode": "4103040147738",
+    "brandEn": "Sebamed",
+    "brandAr": "سيبامد",
+    "nameEn": "Sebamed Baby Body Milk 200ml",
+    "nameAr": "سيبامد حليب جسم للأطفال 200 مل",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Sebamed Baby Body Milk gently moisturises delicate baby skin from head to toe.",
+    "introAr": "حليب جسم سيبامد للأطفال يرطب بلطف بشرة الطفل الحساسة."
+  },
+  {
+    "barcode": "5902802707789",
+    "brandEn": "Bioliq",
+    "brandAr": "بيوليك",
+    "nameEn": "Bioliq Specialist Balancing Day Cream 30ml",
+    "nameAr": "بيوليك Specialist كريم نهاري متوازن للبشرة المعرضة للعيوب 30 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Bioliq Specialist Balancing Day Cream mattifies oily skin and helps reduce imperfections.",
+    "introAr": "كريم بيوليك Specialist النهاري يوازن البشرة الدهنية ويساعد على تقليل العيوب."
+  },
+  {
+    "barcode": "8994993016013",
+    "brandEn": "L'Oréal Paris",
+    "brandAr": "لوريال باريس",
+    "nameEn": "L'Oréal Paris Revitalift Hyaluronic Acid Gel Cleanser 100ml",
+    "nameAr": "لوريال باريس Revitalift غسول جل بحمض الهيالورونيك 100 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "L'Oréal Revitalift HA Gel Cleanser removes impurities while hydrating mature skin.",
+    "introAr": "غسول جل لوريال Revitalift بحمض الهيالورونيك ينظف الشوائب ويرطب البشرة الناضجة."
+  },
+  {
+    "barcode": "8994993028894",
+    "brandEn": "Garnier",
+    "brandAr": "غارنييه",
+    "nameEn": "Garnier SkinActive Fast Bright Vitamin C Serum Cleanser 100ml",
+    "nameAr": "غارنييه SkinActive Fast Bright غسول سيروم فيتامين سي 100 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Garnier Fast Bright Vitamin C Cleanser brightens dull skin and removes daily impurities.",
+    "introAr": "غسول غارنييه Fast Bright بفيتامين سي يفتح البشرة الباهتة ويزيل الشوائب اليومية."
+  },
+  {
+    "barcode": "6974388193750",
+    "brandEn": "I'm From",
+    "brandAr": "آيم فروم",
+    "nameEn": "I'm From Rice Whip Facial Cleanser 150ml",
+    "nameAr": "آيم فروم Rice Whip غسول وجه بالأرز 150 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-korean-skincare-6",
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "I'm From Rice Whip Cleanser creates a creamy foam that cleanses gently without stripping moisture.",
+    "introAr": "غسول آيم فروم Rice Whip يرغي بقوام كريمي ينظف بلطف دون تجفيف البشرة."
+  },
+  {
+    "barcode": "5060120163424",
+    "brandEn": "Xpel",
+    "brandAr": "إكسبيل",
+    "nameEn": "Xpel Tea Tree Foaming Face Wash 200ml",
+    "nameAr": "إكسبيل غسول وجه رغوي بشجرة الشاي 200 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Xpel Tea Tree Foaming Face Wash purifies skin with tea tree and peppermint oils.",
+    "introAr": "غسول إكسبيل الرغوي بشجرة الشاي ينقي البشرة بزيت شجرة الشاي والنعناع."
+  },
+  {
+    "barcode": "6930236309308",
+    "brandEn": "Rose Berry",
+    "brandAr": "روز بيري",
+    "nameEn": "Rose Berry Moisturizing Cream for Face and Body 200ml",
+    "nameAr": "روز بيري كريم مرطب للوجه والجسم 200 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-skin-and-body-care",
+      "care-face-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Rose Berry Moisturizing Cream nourishes dry skin on the face and body with a rich texture.",
+    "introAr": "كريم روز بيري المرطب يغذي البشرة الجافة للوجه والجسم بقوام غني."
+  },
+  {
+    "barcode": "8901138008369",
+    "brandEn": "Himalaya",
+    "brandAr": "هيمالايا",
+    "nameEn": "Himalaya Purifying Neem Face Wash 150ml",
+    "nameAr": "هيمالايا غسول وجه منقٍ بالنيم 150 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Himalaya Purifying Neem Face Wash removes excess oil and helps prevent pimples.",
+    "introAr": "غسول هيمالايا المنقٍ بالنيم يزيل الزيوت الزائدة ويساعد على الوقاية من الحبوب."
+  },
+  {
+    "barcode": "8901030769504",
+    "brandEn": "Himalaya",
+    "brandAr": "هيمالايا",
+    "nameEn": "Himalaya Purifying Neem Face Wash 150ml",
+    "nameAr": "هيمالايا غسول وجه منقٍ بالنيم 150 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Himalaya Purifying Neem Face Wash removes excess oil and helps prevent pimples.",
+    "introAr": "غسول هيمالايا المنقٍ بالنيم يزيل الزيوت الزائدة ويساعد على الوقاية من الحبوب."
+  },
+  {
+    "barcode": "8999999053048",
+    "brandEn": "Pond's",
+    "brandAr": "بوندز",
+    "nameEn": "Pond's Pure White Anti-Pollution Face Wash 100g",
+    "nameAr": "بوندز Pure White غسول وجه مضاد للتلوث 100 جم",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Pond's Pure White Face Wash deep-cleanses pollution and brightens dull-looking skin.",
+    "introAr": "غسول بوندز Pure White ينظف عميقاً آثار التلوث ويفتح البشرة الباهتة."
+  },
+  {
+    "barcode": "8999999562199",
+    "brandEn": "Pond's",
+    "brandAr": "بوندز",
+    "nameEn": "Pond's Pure Bright Serum Whip Foam 100g",
+    "nameAr": "بوندز Pure Bright رغوة غسول بسيروم التفتيح 100 جم",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Pond's Pure Bright Whip Foam cleanses and boosts radiance with a lightweight serum formula.",
+    "introAr": "رغوة بوندز Pure Bright تنظف وتعزز الإشراق بتركيبة سيروم خفيفة."
+  },
+  {
+    "barcode": "8999999053062",
+    "brandEn": "Pond's",
+    "brandAr": "بوندز",
+    "nameEn": "Pond's Clear Solutions Anti-Bacterial Facial Scrub 100g",
+    "nameAr": "بوندز Clear Solutions مقشر وجه مضاد للبكتيريا 100 جم",
+    "typeKey": "scrub",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-scrubs"
+    ],
+    "introEn": "Pond's Clear Solutions Scrub exfoliates dead cells and helps fight blemish-causing bacteria.",
+    "introAr": "مقشر بوندز Clear Solutions يقشّر الخلايا الميتة ويساعد على مكافحة البكتيريا المسببة للحبوب."
+  },
+  {
+    "barcode": "8999999058340",
+    "brandEn": "Pond's",
+    "brandAr": "بوندز",
+    "nameEn": "Pond's Acne Solution Facial Foam 100g",
+    "nameAr": "بوندز Acne Solution رغوة غسول للبشرة المعرضة للحبوب 100 جم",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care",
+      "care-derma-hub"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Pond's Acne Solution Foam cleanses acne-prone skin and helps reduce breakouts.",
+    "introAr": "رغوة بوندز Acne Solution تنظف البشرة المعرضة للحبوب وتساعد على تقليل البثور."
+  },
+  {
+    "barcode": "8999999053031",
+    "brandEn": "Pond's",
+    "brandAr": "بوندز",
+    "nameEn": "Pond's White Beauty Facial Foam 100g",
+    "nameAr": "بوندز White Beauty رغوة غسول للتفتيح 100 جم",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Pond's White Beauty Foam cleanses and supports a brighter, more even-looking complexion.",
+    "introAr": "رغوة بوندز White Beauty تنظف وتدعم مظهراً أفتح وأكثر تجانساً."
+  },
+  {
+    "barcode": "8851932407915",
+    "brandEn": "Pond's",
+    "brandAr": "بوندز",
+    "nameEn": "Pond's Vitamin Micellar Water Detoxing Charcoal 400ml",
+    "nameAr": "بوندز Vitamin Micellar Water بالفحم المنشط 400 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Pond's Vitamin Micellar Charcoal Water removes makeup and detoxifies pores with vitamins A, B3, B5, C and E.",
+    "introAr": "ماء ميسيلار بوندز بالفحم والفيتامينات يزيل المكياج وينقّي المسام."
+  },
+  {
+    "barcode": "8851932407908",
+    "brandEn": "Pond's",
+    "brandAr": "بوندز",
+    "nameEn": "Pond's Vitamin Micellar Water 400ml",
+    "nameAr": "بوندز Vitamin Micellar Water 400 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Pond's Vitamin Micellar Water gently removes makeup and nourishes skin with essential vitamins.",
+    "introAr": "ماء ميسيلار بوندز بالفيتامينات يزيل المكياج بلطف ويغذّي البشرة."
+  },
+  {
+    "barcode": "8720181476846",
+    "brandEn": "Simple",
+    "brandAr": "سيمبل",
+    "nameEn": "Simple Age Resisting Night Cream 50ml",
+    "nameAr": "سيمبل كريم ليلي مقاوم لعلامات التقدم في السن 50 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Simple Age Resisting Night Cream supports overnight renewal for smoother-looking mature skin.",
+    "introAr": "كريم سيمبل الليلي المقاوم لعلامات التقدم في السن يدعم تجديد البشرة طوال الليل."
+  },
+  {
+    "barcode": "8720181476877",
+    "brandEn": "Simple",
+    "brandAr": "سيمبل",
+    "nameEn": "Simple Water Boost Hydrating Gel Cream 50ml",
+    "nameAr": "سيمبل Water Boost كريم جل مرطب 50 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Simple Water Boost Gel Cream delivers instant hydration for dehydrated skin.",
+    "introAr": "كريم سيمبل Water Boost الجل يرطب البشرة الجافة فوراً."
+  },
+  {
+    "barcode": "8720181476853",
+    "brandEn": "Simple",
+    "brandAr": "سيمبل",
+    "nameEn": "Simple Protect 'N' Glow Brightening Gel Cream 50ml",
+    "nameAr": "سيمبل Protect N Glow كريم جل مشرق 50 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Simple Protect 'N' Glow Gel Cream brightens dull skin and supports a healthy-looking glow.",
+    "introAr": "كريم سيمبل Protect N Glow الجل يفتح البشرة الباهتة ويدعم مظهراً مشرقاً."
+  },
+  {
+    "barcode": "709257078335",
+    "brandEn": "Ban",
+    "brandAr": "بان",
+    "nameEn": "Ban Ultra Roll-On Antiperspirant Deodorant 90ml",
+    "nameAr": "بان Ultra مزيل عرق رول أون 90 مل",
+    "typeKey": "deodorant",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-deodorant"
+    ],
+    "introEn": "Ban Ultra Roll-On provides long-lasting antiperspirant protection against wetness and odour.",
+    "introAr": "مزيل عرق بان Ultra رول أون يمنح حماية مضادة للتعرق والرائحة لفترة طويلة."
+  },
+  {
+    "barcode": "6921199101832",
+    "brandEn": "Roushun",
+    "brandAr": "روشون",
+    "nameEn": "Roushun Bye Bye Blackhead Green Tea Bubble Cleanser 100ml",
+    "nameAr": "روشون Bye Bye Blackhead غسول فقاعات بالشاي الأخضر 100 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Roushun Green Tea Bubble Cleanser deep-cleans pores and helps reduce blackheads.",
+    "introAr": "غسول روشون الفقاعات بالشاي الأخضر ينظف المسام عميقاً ويساعد على تقليل الرؤوس السوداء."
+  },
+  {
+    "barcode": "6921199199822",
+    "brandEn": "Roushun",
+    "brandAr": "روشون",
+    "nameEn": "Roushun AHA BHA PHA 30 Days Miracle Serum 50ml",
+    "nameAr": "روشون سيروم 30 Days Miracle بأحماض AHA BHA PHA 50 مل",
+    "typeKey": "serum",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Roushun 30 Days Miracle Serum with AHA, BHA and PHA helps refine texture and clear blemishes.",
+    "introAr": "سيروم روشون 30 Days Miracle بأحماض AHA وBHA وPHA يساعد على تحسين ملمس البشرة وتقليل الحبوب."
+  },
+  {
+    "barcode": "6398565103149",
+    "brandEn": "Ronza",
+    "brandAr": "رونزا",
+    "nameEn": "Ronza Body Splash 250ml",
+    "nameAr": "رونزا بخاخ عطر للجسم 250 مل",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Ronza Body Splash lightly scents and refreshes skin after bathing.",
+    "introAr": "بخاخ رونزا للجسم يمنح رائحة منعشة وخفيفة بعد الاستحمام."
+  },
+  {
+    "barcode": "6971764150154",
+    "brandEn": "Dr.Rashel",
+    "brandAr": "دكتور راشيل",
+    "nameEn": "Dr.Rashel Whitening Fade Cleanser 80ml",
+    "nameAr": "دكتور راشيل غسول Whitening Fade للتفتيح 80 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Dr.Rashel Whitening Fade Cleanser gently cleanses while supporting a brighter-looking tone.",
+    "introAr": "غسول دكتور راشيل Whitening Fade ينظف بلطف ويدعم مظهراً أفتح للبشرة."
+  },
+  {
+    "barcode": "8800261260579",
+    "brandEn": "Ekel",
+    "brandAr": "إيكيل",
+    "nameEn": "Ekel Soothing & Moisture Aloe Vera 100% Gel 100ml",
+    "nameAr": "إيكيل جل صبار 100% مهدئ ومرطب 100 مل",
+    "typeKey": "body-cream",
+    "sub": [
+      "care-skin-and-body-care",
+      "care-face-care"
+    ],
+    "tert": [
+      "care-skin-and-body-care-body-moisturizer"
+    ],
+    "introEn": "Ekel Aloe Vera Gel soothes irritation and delivers lightweight hydration for face and body.",
+    "introAr": "جل إيكيل بالصبار 100% يهدئ التهيج ويرطب الوجه والجسم بلطف."
+  },
+  {
+    "barcode": "8436575098012",
+    "brandEn": "Biovene",
+    "brandAr": "بيوفين",
+    "nameEn": "Biovene Bakuchiol Radiance Hydrogel Eye Patches 60 pcs",
+    "nameAr": "بيوفين لصقات عين هيدروجل 60 قطعة",
+    "typeKey": "eye-cream",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-eye-care"
+    ],
+    "introEn": "Biovene Bakuchiol Eye Patches hydrate, brighten and help reduce the look of puffiness.",
+    "introAr": "لصقات بيوفين للعين الهيدروجلية ترطب وتفتح وتساعد على تقليل انتفاخ تحت العين."
+  },
+  {
+    "barcode": "8000921303107",
+    "brandEn": "Pura Natura",
+    "brandAr": "بورا ناتورا",
+    "nameEn": "Pura Natura Psoristop Shampoo 250ml",
+    "nameAr": "بورا ناتورا شامبو Psoristop 250 مل",
+    "typeKey": "shampoo",
+    "sub": [
+      "care-hair-care"
+    ],
+    "tert": [
+      "care-hair-care-shampoo-conditioners"
+    ],
+    "introEn": "Pura Natura Psoristop Shampoo gently cleanses the scalp and helps reduce flaking.",
+    "introAr": "شامبو بورا ناتورا Psoristop ينظف فروة الرأس بلطف ويساعد على تقليل القشرة."
+  },
+  {
+    "barcode": "5997001720554",
+    "brandEn": "Dermaflora",
+    "brandAr": "ديرمافلورا",
+    "nameEn": "Dermaflora 0% Aloe Vera Hydrogel 50ml",
+    "nameAr": "ديرمافلورا جل هيدروجل بالصبار 0% 50 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-face-care",
+      "care-derma-hub"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Dermaflora Aloe Vera Hydrogel soothes sensitive skin with a fragrance-free formula.",
+    "introAr": "جل ديرمافلورا بالصبار يهدئ البشرة الحساسة بتركيبة خالية من العطر."
+  },
+  {
+    "barcode": "5997001720752",
+    "brandEn": "Dermaflora",
+    "brandAr": "ديرمافلورا",
+    "nameEn": "Dermaflora 0% Micellar Facial Scrub 100ml",
+    "nameAr": "ديرمافلورا مقشر وجه ميسيلار 0% 100 مل",
+    "typeKey": "scrub",
+    "sub": [
+      "care-face-care",
+      "care-derma-hub"
+    ],
+    "tert": [
+      "care-face-care-face-scrubs"
+    ],
+    "introEn": "Dermaflora Micellar Scrub gently exfoliates while cleansing sensitive skin.",
+    "introAr": "مقشر ديرمافلورا الميسيلار يقشّر بلطف مع تنظيف البشرة الحساسة."
+  },
+  {
+    "barcode": "8017990166793",
+    "brandEn": "Acty Mask",
+    "brandAr": "إكتي mask",
+    "nameEn": "Acty Mask Gel Detergente 3-in-1 for Combination Skin 150ml",
+    "nameAr": "إكتي mask جل منظف 3 في 1 للبشرة المختلطة 150 مل",
+    "typeKey": "cleanser",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-cleansers-toners"
+    ],
+    "introEn": "Acty Mask 3-in-1 Gel works as a cleanser, scrub and mask for combination skin.",
+    "introAr": "جل إكتي mask 3 في 1 يعمل كغسول ومقشر وقناع للبشرة المختلطة."
+  },
+  {
+    "barcode": "8680923355238",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Advanced Facial Repair & Care Cream All Skin Types 100ml",
+    "nameAr": "نيبون كريم الإصلاح والعناية المتقدمة لجميع أنواع البشرة 100 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Nippon Advanced Repair Cream nourishes and restores all skin types.",
+    "introAr": "كريم نيبون المتقدم للإصلاح والعناية يغذّي ويرمّم جميع أنواع البشرة."
+  },
+  {
+    "barcode": "8680923355252",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Advanced Facial Repair & Care Cream Oily Skin 100ml",
+    "nameAr": "نيبون كريم الإصلاح والعناية المتقدمة للبشرة الدهنية 100 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Nippon Advanced Repair Cream for oily skin mattifies while supporting skin recovery.",
+    "introAr": "كريم نيبون المتقدم للبشرة الدهنية يوازن اللمعان ويدعم إصلاح البشرة."
+  },
+  {
+    "barcode": "8680923355245",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Advanced Facial Repair & Care Cream Sensitive Skin 100ml",
+    "nameAr": "نيبون كريم الإصلاح والعناية المتقدمة للبشرة الحساسة 100 مل",
+    "typeKey": "cream",
+    "sub": [
+      "care-face-care"
+    ],
+    "tert": [
+      "care-face-care-face-moisturizer"
+    ],
+    "introEn": "Nippon Advanced Repair Cream for sensitive skin calms irritation and restores comfort.",
+    "introAr": "كريم نيبون المتقدم للبشرة الحساسة يهدئ التهيج ويعيد الراحة للبشرة."
+  },
+  {
+    "barcode": "8680923360195",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Hair Care Anti-Dandruff Shampoo 400ml",
+    "nameAr": "نيبون شامبو مضاد لقشرة الشعر 400 مل",
+    "typeKey": "shampoo",
+    "sub": [
+      "care-hair-care"
+    ],
+    "tert": [
+      "care-hair-care-shampoo-conditioners"
+    ],
+    "introEn": "Nippon Anti-Dandruff Shampoo cleanses the scalp and helps reduce visible flaking.",
+    "introAr": "شامبو نيبون المضاد لقشرة الشعر ينظف فروة الرأس ويساعد على تقليل القشرة."
+  },
+  {
+    "barcode": "8680923360188",
+    "brandEn": "Nippon",
+    "brandAr": "نيبون",
+    "nameEn": "Nippon Hair Care Anti Hair Fall & Repair Shampoo 400ml",
+    "nameAr": "نيبون شامبو مضاد لتساقط الشعر 400 مل",
+    "typeKey": "shampoo",
+    "sub": [
+      "care-hair-care"
+    ],
+    "tert": [
+      "care-hair-care-shampoo-conditioners"
+    ],
+    "introEn": "Nippon Anti Hair Fall Shampoo strengthens hair and supports scalp health.",
+    "introAr": "شامبو نيبون المضاد لتساقط الشعر يقوّي الشعر ويدعم صحة فروة الرأس."
+  }
+]

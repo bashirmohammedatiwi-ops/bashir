@@ -10,6 +10,7 @@ import { CreateProductDto, QueryProductsDto, UpdateProductDto } from "./dto/prod
 import { InventorySyncService } from "../sync/inventory-sync.service";
 import { SettingsService } from "../settings/settings.service";
 import { withPlaceholderImages } from "../../common/product-placeholder.util";
+import { sortShadesByNumber } from "../../common/shade-sort.util";
 
 const productRelationsFull = {
   brand: { select: { id: true, name: true, slug: true } },
@@ -484,7 +485,7 @@ export class ProductsService {
   }
 
   private shadeCreateData(shades: CreateProductDto["shades"]) {
-    return (shades ?? []).map((s, i) => ({
+    return sortShadesByNumber(shades ?? []).map((s, i) => ({
       name: s.name,
       colorHex: s.colorHex,
       colorHexEnd: s.colorHexEnd,

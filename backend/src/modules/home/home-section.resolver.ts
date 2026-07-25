@@ -69,6 +69,13 @@ export interface ResolvedHomeSection {
   display?: string;
   shape?: string;
   kind?: string;
+  aspectRatio?: string;
+  overlayStyle?: string;
+  borderStyle?: string;
+  showShadow?: boolean;
+  customWidth?: number | null;
+  customHeight?: number | null;
+  tileCornerRadius?: number;
   children?: ResolvedHomeSection[];
   borderRadius?: number;
   borderColor?: string;
@@ -833,7 +840,14 @@ export class HomeSectionResolver {
       sectionLayout: payload.columns != null ? String(payload.columns) : undefined,
       fullBleed: payload.fullBleed === true,
       bannerAspect: aspect ?? undefined,
+      aspectRatio: (payload.aspectRatio as string) ?? "auto",
       kind: (payload.itemFit as string) ?? "cover",
+      overlayStyle: (payload.overlayStyle as string) ?? "none",
+      borderStyle: (payload.borderStyle as string) ?? "none",
+      showShadow: payload.showShadow !== false,
+      customWidth: payload.customWidth ?? null,
+      customHeight: payload.customHeight ?? null,
+      tileCornerRadius: Number(payload.tileCornerRadius) || undefined,
       backgroundColor: (payload.backgroundColor as string) ?? undefined,
     };
   }

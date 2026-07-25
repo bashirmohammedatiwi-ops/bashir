@@ -3,7 +3,7 @@
 import { Button, Card, Col, Collapse, Form, Input, InputNumber, Row, Select, Switch } from "antd";
 import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import { MediaPicker } from "@/components/MediaPicker";
-import { LinkTargetPicker } from "./LinkTargetPicker";
+import { SmartLinkPicker } from "./SmartLinkPicker";
 import {
   IMAGE_ASPECT_OPTIONS,
   IMAGE_BORDER_OPTIONS,
@@ -181,7 +181,7 @@ export function TileItemEditor({
             key: "link",
             label: "🔗 الربط",
             children: (
-              <LinkTargetPicker prefix={prefix} entities={entityLists} optional showLegacyLink />
+              <SmartLinkPicker prefix={prefix} entities={entityLists} optional showQuickBar showPreview />
             ),
           },
         ]}

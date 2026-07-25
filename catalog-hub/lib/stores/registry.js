@@ -43,6 +43,13 @@ const SALLA_STORES = [
     siteUrl: 'https://alkhabeershop.com',
     storeIdentifier: 'alkhabeershop.com',
   },
+  {
+    id: 'sarahmakeup',
+    label: 'ساره ستور Sarah Makeup',
+    domain: 'sarahmakeup37.com',
+    siteUrl: 'https://sarahmakeup37.com',
+    storeIdentifier: 'sarahmakeup37.com',
+  },
 ];
 
 /** محولات مخصصة (غير Salla) */

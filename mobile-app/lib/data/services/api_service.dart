@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/cache/api_cache.dart';
 import '../../core/config/app_config.dart';
 import '../../core/network/api_client.dart';
+import '../../core/network/api_exception.dart';
 import '../../core/utils/json.dart';
 import '../models/address.dart';
 import '../models/brand.dart';
@@ -18,15 +19,8 @@ import '../models/product.dart';
 import '../models/review.dart';
 import '../models/user.dart';
 
-class ApiException implements Exception {
-  final String message;
-  final int? status;
-  ApiException(this.message, [this.status]);
-  @override
-  String toString() => message;
-}
+export '../../core/network/api_exception.dart' show ApiException, parseApiErrorMessage;
 
-/// واجهة موحّدة لكل نقاط الاتصال مع خادم لوحة التحكم.
 class ApiService {
   final Dio _dio;
   final ApiCache _cache;
@@ -43,16 +37,34 @@ class ApiService {
 
   Never _throw(Object e) {
     if (e is DioException) {
-      final data = e.response?.data;
-      String msg = 'تعذّر الاتصال بالخادم';
-      if (data is Map && data['message'] != null) {
-        final m = data['message'];
-        msg = m is List ? m.join('، ') : m.toString();
-      } else if (e.type == DioExceptionType.connectionError ||
-          e.type == DioExceptionType.connectionTimeout) {
-        msg = 'تحقق من اتصالك بالإنترنت';
+      final status = e.response?.statusCode;
+      final parsed = parseApiErrorMessage(e.response?.data);
+      String msg = parsed ?? '';
+
+      if (msg.isEmpty) {
+        if (e.type == DioExceptionType.connectionError ||
+            e.type == DioExceptionType.connectionTimeout ||
+            e.type == DioExceptionType.sendTimeout ||
+            e.type == DioExceptionType.receiveTimeout) {
+          msg = 'تحقق من اتصالك بالإنترنت';
+        } else if (status != null) {
+          msg = switch (status) {
+            400 => 'البيانات المدخلة غير صحيحة',
+            401 => 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
+            403 => 'غير مسموح بهذا الإجراء',
+            404 => 'غير موجود',
+            409 => 'البيانات مستخدمة مسبقاً',
+            422 => 'تحقق من البيانات المدخلة',
+            429 => 'محاولات كثيرة — حاول لاحقاً',
+            >= 500 => 'الخادم مشغول مؤقتاً',
+            _ => 'حدث خطأ ($status)',
+          };
+        } else {
+          msg = 'تعذّر الاتصال بالخادم';
+        }
       }
-      throw ApiException(msg, e.response?.statusCode);
+
+      throw ApiException(msg, status);
     }
     throw ApiException(e.toString());
   }

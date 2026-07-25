@@ -1,0 +1,962 @@
+[
+  {
+    "barcode": "3337871324599",
+    "sarahId": "DGGdRAz",
+    "url": "https://sarahmakeup37.com/ar/DGGdRAz",
+    "stock": 58,
+    "brandEn": "Vichy",
+    "nameEn": "Vichy 48H Anti-Perspirant Roll-On 50ml",
+    "nameAr": "مزيل عرق رول 48 ساعة مضاد للتعرق 50 مل",
+    "brandAr": "فيشي",
+    "descriptionEn": "Vichy 48H Anti-Perspirant Roll-On delivers long-lasting protection against perspiration and wetness with a dermatologist-tested formula.\n\n◆ Category: Body care\n◆ Product type: Anti-perspirant roll-on\n◆ Key benefits: 48-hour protection · Anti-wetness · Dermatologist tested\n◆ Suitable for: Daily underarm protection\n◆ Size: 50 ml",
+    "descriptionAr": "مزيل عرق فيشي رول أون يوفر حماية 48 ساعة من التعرق والرطوبة بتركيبة مختبرة طبياً.\n\n◆ التصنيف: عناية الجسم\n◆ نوع المنتج: مزيل عرق رول\n◆ الفوائد الرئيسية: حماية 48 ساعة · مضاد للتعرق · مختبر طبياً\n◆ الأنسب لـ: الحماية اليومية تحت الإبط\n◆ الحجم: 50 مل",
+    "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+    "subcategoryIds": [
+      "23aaaa07-91ee-4937-847e-d7866a9e937a",
+      "09146169-f9c4-4649-a365-ca1b8cda365f"
+    ],
+    "tertiaryCategoryIds": [
+      "9464c921-9650-421f-8e2b-6a172f7524c5"
+    ],
+    "isNew": false
+  },
+  {
+    "barcode": "773602710683",
+    "sarahId": "lGVdPD",
+    "url": "https://sarahmakeup37.com/ar/lGVdPD",
+    "stock": 43,
+    "brandEn": "MAC",
+    "nameEn": "MAC Fix+ Alcohol-Free Setting Spray 100ml",
+    "nameAr": "فيكس بلس مثبت مكياج خالي من الكحول 100 مل",
+    "brandAr": "ماك",
+    "descriptionEn": "MAC Fix+ Alcohol-Free Setting Spray sets makeup for up to 12 hours while delivering instant hydration and a natural finish.\n\n◆ Category: Makeup\n◆ Product type: Setting spray\n◆ Key benefits: 12-hour wear · Hydrating mist · Alcohol-free formula\n◆ Suitable for: All skin types for setting foundation and powder",
+    "descriptionAr": "مثبت ماك فiks بلس خالٍ من الكحول يثبت المكياج حتى 12 ساعة مع ترطيب فوري ولمسة طبيعية.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: مثبت مكياج\n◆ الفوائد الرئيسية: ثبات 12 ساعة · رذاذ مرطب · خالٍ من الكحول\n◆ الأنسب لـ: جميع أنواع البشرة لتثبيت الأساس والبودرة",
+    "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+    "subcategoryIds": [
+      "2bbecee1-084d-446c-b4fd-65f769130de9"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "3606000537699",
+    "sarahId": "govKZZ",
+    "url": "https://sarahmakeup37.com/ar/govKZZ",
+    "stock": 41,
+    "brandEn": "CeraVe",
+    "nameEn": "CeraVe Hydrating Facial Cleanser 355ml",
+    "nameAr": "غسول ومرطب للبشرة الجافة و العادية 355 مل",
+    "brandAr": "سيرافي",
+    "descriptionEn": "CeraVe Hydrating Facial Cleanser gently removes dirt and makeup while maintaining the skin barrier with ceramides and hyaluronic acid.\n\n◆ Category: Facial cleansing\n◆ Product type: Hydrating cleanser\n◆ Key benefits: Ceramides · Hyaluronic acid · Non-foaming gentle formula\n◆ Suitable for: Normal to dry sensitive skin\n◆ Size: 355 ml",
+    "descriptionAr": "غسول سيرافي المرطب ينظف بلطف ويزيل المكياج مع الحفاظ على حاجز البشرة بالسيراميد وحمض الهيالورونيك.\n\n◆ التصنيف: تنظيف الوجه\n◆ نوع المنتج: غسول مرطب\n◆ الفوائد الرئيسية: سيراميد · حمض الهيالورونيك · تركيبة لطيفة\n◆ الأنسب لـ: البشرة العادية إلى الجافة والحساسة\n◆ الحجم: 355 مل",
+    "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+    "subcategoryIds": [
+      "07661898-571a-4a88-aa6c-76dcdbf53029",
+      "09146169-f9c4-4649-a365-ca1b8cda365f"
+    ],
+    "tertiaryCategoryIds": [
+      "05028a17-da64-4c66-b25f-73c758acc2f8"
+    ],
+    "isNew": false
+  },
+  {
+    "barcode": "850045076085",
+    "sarahId": "mgdxno",
+    "url": "https://sarahmakeup37.com/ar/mgdxno",
+    "stock": 39,
+    "brandEn": "Olaplex",
+    "nameEn": "Olaplex No.7 Bonding Oil 30ml",
+    "nameAr": "زيت تركيب رقم 7 للشعر 30 مل",
+    "brandAr": "أولابليكس",
+    "descriptionEn": "Olaplex No.7 Bonding Oil is a highly concentrated styling oil that repairs, strengthens, and adds brilliant shine to all hair types.\n\n◆ Category: Hair styling\n◆ Product type: Bonding oil\n◆ Key benefits: Repairs bonds · Heat protection · High shine finish\n◆ Suitable for: Damaged, colored, or heat-styled hair\n◆ Size: 30 ml",
+    "descriptionAr": "زيت أولaplex رقم 7 المركز يصلح الشعر ويقويه ويمنحه لمعاناً رائعاً لجميع أنواع الشعر.\n\n◆ التصنيف: تصفيف الشعر\n◆ نوع المنتج: زيت تركيب\n◆ الفوائد الرئيسية: إصلاح روابط الشعر · حماية من الحرارة · لمعان عالي\n◆ الأنسب لـ: الشعر التالف أو المصبوغ\n◆ الحجم: 30 مل",
+    "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+    "subcategoryIds": [
+      "150a633e-80a7-4cb3-8f2d-8eab90a99190"
+    ],
+    "tertiaryCategoryIds": [
+      "c508347a-8844-4068-b508-9653ede66b8b"
+    ],
+    "isNew": false
+  },
+  {
+    "barcode": "689304348423",
+    "sarahId": "xAqKlAj",
+    "url": "https://sarahmakeup37.com/ar/xAqKlAj",
+    "stock": 35,
+    "brandEn": "Anastasia Beverly Hills",
+    "nameEn": "Anastasia Brow Freeze Wax 8g",
+    "nameAr": "شمع براو فريز لتصفيف الحواجب 8 جم",
+    "brandAr": "أناستازيا",
+    "descriptionEn": "Anastasia Brow Freeze Wax sculpts and sets brows in place with a clear, long-wearing formula for laminated brow looks.\n\n◆ Category: Makeup\n◆ Product type: Brow styling wax\n◆ Key benefits: Strong hold · Clear finish · Laminated brow effect\n◆ Suitable for: Shaping and setting eyebrows",
+    "descriptionAr": "شمع أنastasia براو فريز يثبت الحواجب ويشكلها بتركيبة شفافة طويلة الثبات لمظهر حواجب laminated.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: شمع تصفيف الحواجب\n◆ الفوائد الرئيسية: ثبات قوي · لمسة شفافة · مظهر حواجب مثبتة\n◆ الأنسب لـ: تشكيل وتثبيت الحواجب",
+    "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+    "subcategoryIds": [
+      "2bbecee1-084d-446c-b4fd-65f769130de9"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "072140020491",
+    "sarahId": "NoWvAG",
+    "url": "https://sarahmakeup37.com/ar/NoWvAG",
+    "stock": 31,
+    "brandEn": "Eucerin",
+    "nameEn": "Eucerin Advanced Repair Cream 454g",
+    "nameAr": "كريم إصلاح متقدم للبشرة الجافة جداً 454 جم",
+    "brandAr": "يوسيرين",
+    "descriptionEn": "Eucerin Advanced Repair Cream is a rich, fragrance-free moisturizer clinically proven to relieve very dry, rough skin.\n\n◆ Category: Body moisturizer\n◆ Product type: Repair cream\n◆ Key benefits: Fragrance-free · Clinically proven · Intensive moisture\n◆ Suitable for: Very dry, rough, or cracked skin\n◆ Size: 454 g",
+    "descriptionAr": "كريم يوسيرين لإصلاح البشرة المتقدم مرطب غني خالٍ من العطور يخفف البشرة شديدة الجفاف والخشونة.\n\n◆ التصنيف: مرطب الجسم\n◆ نوع المنتج: كريم إصلاح\n◆ الفوائد الرئيسية: خالٍ من العطور · مثبت سريرياً · ترطيب مكثف\n◆ الأنسب لـ: البشرة شديدة الجفاف والخشونة\n◆ الحجم: 454 جم",
+    "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+    "subcategoryIds": [
+      "23aaaa07-91ee-4937-847e-d7866a9e937a",
+      "09146169-f9c4-4649-a365-ca1b8cda365f"
+    ],
+    "tertiaryCategoryIds": [
+      "fcd86b22-a0fd-47b9-ba4c-c76164dadab2"
+    ],
+    "isNew": false
+  },
+  {
+    "barcode": "3337875722827",
+    "sarahId": "Xvppwv",
+    "url": "https://sarahmakeup37.com/ar/Xvppwv",
+    "stock": 29,
+    "brandEn": "La Roche-Posay",
+    "nameEn": "La Roche-Posay Effaclar Serum 30ml",
+    "nameAr": "سيروم إيفاكلار 30 مل",
+    "brandAr": "لاروش بوزي",
+    "descriptionEn": "La Roche-Posay Effaclar Serum is a gentle exfoliating serum with salicylic acid to refine pores and improve skin texture.\n\n◆ Category: Derma face care\n◆ Product type: Exfoliating serum\n◆ Key benefits: Salicylic acid · Refines pores · Smoother skin texture\n◆ Suitable for: Oily, blemish-prone skin\n◆ Size: 30 ml",
+    "descriptionAr": "سيروم لaroche-posay إيفاكلار مقشر لطيف بحمض الساليسيليك لتنقية المسام وتحسين ملمس البشرة.\n\n◆ التصنيف: عناية الوجه الطبية\n◆ نوع المنتج: سيروم مقشر\n◆ الفوائد الرئيسية: حمض ساليسيليك · تنقية المسام · ملمس أنعم\n◆ الأنسب لـ: البشرة الدهنية المعرضة للشوائب\n◆ الحجم: 30 مل",
+    "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+    "subcategoryIds": [
+      "07661898-571a-4a88-aa6c-76dcdbf53029",
+      "09146169-f9c4-4649-a365-ca1b8cda365f"
+    ],
+    "tertiaryCategoryIds": [
+      "21801439-d0e9-4106-b5e8-dfdd70ffeb8d"
+    ],
+    "isNew": false
+  },
+  {
+    "barcode": "3337875597395",
+    "sarahId": "oGlvKE",
+    "url": "https://sarahmakeup37.com/ar/oGlvKE",
+    "stock": 24,
+    "brandEn": "CeraVe",
+    "nameEn": "CeraVe Moisturising Lotion 473ml",
+    "nameAr": "لوشن مرطب للبشرة العادية و الجافة 473 مل",
+    "brandAr": "سيرافي",
+    "descriptionEn": "CeraVe Moisturising Lotion provides all-day hydration for normal to dry skin with essential ceramides and MVE technology.\n\n◆ Category: Body moisturizer\n◆ Product type: Moisturising lotion\n◆ Key benefits: 24-hour hydration · Ceramides · Lightweight texture\n◆ Suitable for: Normal to dry skin on face and body\n◆ Size: 473 ml",
+    "descriptionAr": "لوشن سيرافي المرطب يوفر ترطيباً طوال اليوم للبشرة العادية والجافة بالسيراميد وتقنية MVE.\n\n◆ التصنيف: مرطب الجسم\n◆ نوع المنتج: لوشن مرطب\n◆ الفوائد الرئيسية: ترطيب 24 ساعة · سيراميد · قوام خفيف\n◆ الأنسب لـ: البشرة العادية إلى الجافة\n◆ الحجم: 473 مل",
+    "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+    "subcategoryIds": [
+      "23aaaa07-91ee-4937-847e-d7866a9e937a",
+      "09146169-f9c4-4649-a365-ca1b8cda365f"
+    ],
+    "tertiaryCategoryIds": [
+      "fcd86b22-a0fd-47b9-ba4c-c76164dadab2"
+    ],
+    "isNew": false
+  },
+  {
+    "barcode": "381371020652",
+    "sarahId": "nnNVWE",
+    "url": "https://sarahmakeup37.com/ar/nnNVWE",
+    "stock": 23,
+    "brandEn": "Johnson's",
+    "nameEn": "Johnson's Shea & Cocoa Butter Oil Gel 192ml",
+    "nameAr": "زيت جل بالشيا وزبدة الكاكاو 192 مل",
+    "brandAr": "جونسون",
+    "descriptionEn": "Johnson's Shea & Cocoa Butter Oil Gel nourishes dry skin with rich shea and cocoa butter in a fast-absorbing gel-oil texture.\n\n◆ Category: Body care\n◆ Product type: Nourishing oil gel\n◆ Key benefits: Shea and cocoa butter · Deep nourishment · Fast absorption\n◆ Suitable for: Dry skin on body\n◆ Size: 192 ml",
+    "descriptionAr": "زيت جel جونسون بالشيا وزبدة الكاكاو يغذي البشرة الجافة بتركيبة غنية تُمتَص بسرعة.\n\n◆ التصنيف: عناية الجسم\n◆ نوع المنتج: زيت جel مغذٍ\n◆ الفوائد الرئيسية: شيا وزبدة كاكاو · تغذية عميقة · امتصاص سريع\n◆ الأنسب لـ: البشرة الجافة للجسم\n◆ الحجم: 192 مل",
+    "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+    "subcategoryIds": [
+      "23aaaa07-91ee-4937-847e-d7866a9e937a"
+    ],
+    "tertiaryCategoryIds": [
+      "a898f04c-03d4-4ab6-baa7-bb64cf0d2e3e"
+    ],
+    "isNew": false
+  },
+  {
+    "barcode": "3760294351178",
+    "sarahId": "wGBbGV",
+    "url": "https://sarahmakeup37.com/ar/wGBbGV",
+    "stock": 20,
+    "brandEn": "The Woods Collection",
+    "nameEn": "The Woods Collection Natural Flame EDP 100ml",
+    "nameAr": "ناتشورال فليم أو دو بارفيوم 100 مل",
+    "brandAr": "ذا وودز كوليكشن",
+    "descriptionEn": "The Woods Collection Natural Flame is a niche warm floral amber that glows with spicy warmth and elegant depth.\n\n◆ Scent family: Floral amber\n◆ Key notes: Pink pepper, jasmine, amber, vanilla, musk\n◆ Character: Warm, radiant, sophisticated\n◆ Best for: Evening wear and cooler seasons\n◆ Longevity: 7–9 hours with moderate sillage",
+    "descriptionAr": "ناتشورال فلام من ذa وودz كوليكشن عطر نيش زهري عنبري دافئ يتألق بدفء توابli وعمق أنيق.\n\n◆ عائلة العطر: زهري عنبري\n◆ النوتات الرئيسية: فلفل وردي، ياسmin، عنبر، فانيلا، مسك\n◆ الطابع: دافئ ومتوهج وراقٍ\n◆ الأنسب لـ: السهرات والفصول الباردة\n◆ الثبات: 7–9 ساعات بثبات جيد",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "92a95f2e-d855-4943-9875-b85e684f746a",
+      "1ba9f472-af81-4708-9304-07f3435b6b24"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "3606000534919",
+    "sarahId": "ReWamx",
+    "url": "https://sarahmakeup37.com/ar/ReWamx",
+    "stock": 18,
+    "brandEn": "CeraVe",
+    "nameEn": "CeraVe Foaming Facial Cleanser 237ml",
+    "nameAr": "غسول رغوي للبشرة العادية إلى الدهنة 237 مل",
+    "brandAr": "سيرافي",
+    "descriptionEn": "CeraVe Foaming Facial Cleanser removes excess oil and dirt without disrupting the skin barrier, ideal for normal to oily skin.\n\n◆ Category: Facial cleansing\n◆ Product type: Foaming cleanser\n◆ Key benefits: Ceramides · Niacinamide · Oil control\n◆ Suitable for: Normal to oily skin\n◆ Size: 237 ml",
+    "descriptionAr": "غسول سيرافي الرغوي ينظف الزيوت والأوساخ دون الإخلال بحاجز البشرة، مثالي للبشرة العادية إلى الدهنية.\n\n◆ التصنيف: تنظيف الوجه\n◆ نوع المنتج: غسول رغوي\n◆ الفوائد الرئيسية: سيراميد · نيacinamide · تنظيم الدهون\n◆ الأنسب لـ: البشرة العادية إلى الدهنية\n◆ الحجم: 237 مل",
+    "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+    "subcategoryIds": [
+      "07661898-571a-4a88-aa6c-76dcdbf53029",
+      "09146169-f9c4-4649-a365-ca1b8cda365f"
+    ],
+    "tertiaryCategoryIds": [
+      "05028a17-da64-4c66-b25f-73c758acc2f8"
+    ],
+    "isNew": false
+  },
+  {
+    "barcode": "8011003872077",
+    "sarahId": "wWEPmbW",
+    "url": "https://sarahmakeup37.com/ar/wWEPmbW",
+    "stock": 17,
+    "brandEn": "Versace",
+    "nameEn": "Versace Eros Parfum 100ml",
+    "nameAr": "إيروس بارفيوم 100 مل",
+    "brandAr": "فرزاتشي",
+    "descriptionEn": "Versace Eros Parfum intensifies the iconic Eros DNA with richer amber, leather, and vanilla for bold seductive power.\n\n◆ Scent family: Amber aromatic\n◆ Key notes: Mint, green apple, lemon, tonka bean, vanilla, amber, leather\n◆ Character: Bold, sensual, powerful\n◆ Best for: Night outs and special occasions\n◆ Longevity: 8–10 hours with strong projection",
+    "descriptionAr": "إيروس بارfium من فرsacchi يعزز DNA إيروس الأيقوني بعنبر وجلد وفانيلa أغنى لجاذبية جريئة.\n\n◆ عائلة العطر: عنبري عطري\n◆ النوتات الرئيسية: نعناع، تفاح أخضر، ليمون، حبوب التونka، فانيلا، عنبر، جلد\n◆ الطابع: جريء وحسي وقوي\n◆ الأنسب لـ: الخروج الليلي والمناسبات\n◆ الثبات: 8–10 ساعات بثبات قوي",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "8dca642a-1194-4101-b5cc-486ca1664e89",
+      "07d0e8c3-3369-47b7-bb34-d430ca4a26d4"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": true
+  },
+  {
+    "barcode": "614514410103",
+    "sarahId": "OKvVzN",
+    "url": "https://sarahmakeup37.com/ar/OKvVzN",
+    "stock": 12,
+    "brandEn": "Rasasi",
+    "nameEn": "Rasasi Chastity Eau de Parfum 100ml",
+    "nameAr": "شاستيتي أو دو بارفيوم 100 مل",
+    "brandAr": "الرصاصي",
+    "descriptionEn": "Rasasi Chastity is a soft feminine floral with powdery musk and delicate fruits for graceful everyday elegance.\n\n◆ Scent family: Floral fruity\n◆ Key notes: Bergamot, peach, rose, jasmine, musk, sandalwood\n◆ Character: Soft, feminine, elegant\n◆ Best for: Daily wear and office\n◆ Longevity: 6–8 hours",
+    "descriptionAr": "شastity من الرصاصي زهري نسائي ناعم بمسk بودري وفواكه رقيقة لأناقة يومية رشيقة.\n\n◆ عائلة العطر: زهري فواكه\n◆ النوتات الرئيسية: برغamot، خوخ، ورد، ياسmin، مسك، صندل\n◆ الطابع: ناعم وأنثوي وأنيق\n◆ الأنسب لـ: الاستخدام اليومي والعمل\n◆ الثبات: 6–8 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "1ba9f472-af81-4708-9304-07f3435b6b24"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "689304188890",
+    "sarahId": "wGzAOR",
+    "url": "https://sarahmakeup37.com/ar/wGzAOR",
+    "stock": 12,
+    "brandEn": "Anastasia Beverly Hills",
+    "nameEn": "Anastasia Beverly Hills Nouveau Palette",
+    "nameAr": "باليت نوفو 12 ظل عيون",
+    "brandAr": "أناستازيا",
+    "descriptionEn": "Anastasia Nouveau Palette features 12 versatile eyeshadow shades from soft mattes to shimmering metallics for day-to-night looks.\n\n◆ Category: Makeup\n◆ Product type: Eyeshadow palette\n◆ Key benefits: 12 versatile shades · Blendable formula · Day-to-night looks\n◆ Suitable for: Creating versatile eye makeup looks",
+    "descriptionAr": "باليت أنastasia نوفو يضم 12 ظل عيون متعددة الاستخدام من مطفي إلى مetalic للإطلالات اليومية والمسائية.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: باليت ظلال عيون\n◆ الفوائد الرئيسية: 12 لون متعدد · قابل للدمج · إطلالات يوم ومساء\n◆ الأنسب لـ: إطلالات متنوعة للعيون",
+    "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+    "subcategoryIds": [
+      "be0ba95f-62a6-4245-8012-5f6943ea5cab"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "7640111502791",
+    "sarahId": "wGjEeD",
+    "url": "https://sarahmakeup37.com/ar/wGjEeD",
+    "stock": 9,
+    "brandEn": "Lalique",
+    "nameEn": "Lalique Encre Noire Extreme EDP 100ml",
+    "nameAr": "إنكر نوار إكستريم أو دو بارفيوم 100 مل",
+    "brandAr": "لاليك",
+    "descriptionEn": "Lalique Encre Noire Extreme deepens the iconic vetiver scent with smoky cypress and dark woods for mysterious intensity.\n\n◆ Scent family: Woody aromatic\n◆ Key notes: Cypress, vetiver, cashmere wood, musk, benzoin\n◆ Character: Dark, smoky, refined\n◆ Best for: Evening wear and formal occasions\n◆ Longevity: 8–10 hours",
+    "descriptionAr": "انكر نوar اكستريم من لalique يعمق نفحات الفetiver الأيقونية بسرو وخشب داكن ل intensity غامضة.\n\n◆ عائلة العطر: خشبي عطري\n◆ النوتات الرئيسية: سرو، فيتiver، خشب كashmere، مسك، benzoin\n◆ الطابع: داكن ودخاني وrefined\n◆ الأنسب لـ: السهرات والمناسبات الرسمية\n◆ الثبات: 8–10 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "8dca642a-1194-4101-b5cc-486ca1664e89"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "8057971188727",
+    "sarahId": "KZmAnB",
+    "url": "https://sarahmakeup37.com/ar/KZmAnB",
+    "stock": 8,
+    "brandEn": "Dolce & Gabbana",
+    "nameEn": "Dolce & Gabbana The One Gold EDP Intense 100ml",
+    "nameAr": "ذا ون قولد أو دو بارفيوم إنتنس 100 مل",
+    "brandAr": "دولتشي غابانا",
+    "descriptionEn": "D&G The One Gold EDP Intense is a warm oriental fragrance with amber, tobacco, and spices for luxurious masculine appeal.\n\n◆ Scent family: Oriental amber\n◆ Key notes: Grapefruit, ginger, amber, tobacco, cedar\n◆ Character: Warm, luxurious, charismatic\n◆ Best for: Evenings and cooler weather\n◆ Longevity: 7–9 hours",
+    "descriptionAr": "ذا وan قold انتنس من دولce غabana عطر شرقي دافئ بعنبر وتبغ وتوابل لجاذبية رجالية فاخرة.\n\n◆ عائلة العطر: شرقي عنبري\n◆ النوتات الرئيسية: جريpfruit، زنجبيل، عنبر، تبغ، أرز\n◆ الطابع: دافئ وفاخر وجذاب\n◆ الأنسب لـ: السهرات والطقس البارد\n◆ الثبات: 7–9 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "8dca642a-1194-4101-b5cc-486ca1664e89",
+      "07d0e8c3-3369-47b7-bb34-d430ca4a26d4"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": true
+  },
+  {
+    "barcode": "3614228899376",
+    "sarahId": "gvxqEK",
+    "url": "https://sarahmakeup37.com/ar/gvxqEK",
+    "stock": 8,
+    "brandEn": "Roberto Cavalli",
+    "nameEn": "Roberto Cavalli Paradise Found EDT 75ml",
+    "nameAr": "بارادايس فاوند أو دو تواليت 75 مل",
+    "brandAr": "روبرتو كفالي",
+    "descriptionEn": "Roberto Cavalli Paradise Found is a tropical floral fruity scent evoking sun-kissed beaches and carefree summer joy.\n\n◆ Scent family: Floral fruity\n◆ Key notes: Bergamot, tiare flower, coconut, jasmine, musk\n◆ Character: Tropical, sunny, joyful\n◆ Best for: Summer days and vacations\n◆ Longevity: 5–7 hours",
+    "descriptionAr": "بارadise فaound من روبرto كavalli عطر استوائي زهري فواكه يevoke شواطئ مشمسة وفرح صيفي.\n\n◆ عائلة العطر: زهري فواكه\n◆ النوتات الرئيسية: برغamot، tiare، جوز الهند، ياسmin، مسك\n◆ الطابع: استوائي ومشمس ومبهج\n◆ الأنسب لـ: أيام الصيف والعطلات\n◆ الثبات: 5–7 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "1ba9f472-af81-4708-9304-07f3435b6b24"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "3616303048181",
+    "sarahId": "dAlmlj",
+    "url": "https://sarahmakeup37.com/ar/dAlmlj",
+    "stock": 7,
+    "brandEn": "Gucci",
+    "nameEn": "Gucci Flora Gorgeous Jasmine EDP 100ml",
+    "nameAr": "فلورا غورجوس جاسمين أو دو بارفيوم 100 مل",
+    "brandAr": "قوتشي",
+    "descriptionEn": "Gucci Flora Gorgeous Jasmine celebrates radiant jasmine with pear and sandalwood for a luminous floral signature.\n\n◆ Scent family: Floral\n◆ Key notes: Pear, jasmine sambac, sambac absolute, sandalwood\n◆ Character: Radiant, joyful, modern floral\n◆ Best for: Spring and daytime wear\n◆ Longevity: 6–8 hours",
+    "descriptionAr": "فlora غorgeous جasmin من gucci يحتفي بالياسmin المشع مع كمثرى وصندل لتوقيع زهري لامع.\n\n◆ عائلة العطر: زهري\n◆ النوتات الرئيسية: كمثرى، ياسmin sambac، صندل\n◆ الطابع: مشع ومبهج وزهري عصري\n◆ الأنسب لـ: الربيع والنهار\n◆ الثبات: 6–8 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "1ba9f472-af81-4708-9304-07f3435b6b24",
+      "07d0e8c3-3369-47b7-bb34-d430ca4a26d4"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": true
+  },
+  {
+    "barcode": "3337875583626",
+    "sarahId": "yOQEGq",
+    "url": "https://sarahmakeup37.com/ar/yOQEGq",
+    "stock": 7,
+    "brandEn": "La Roche-Posay",
+    "nameEn": "La Roche-Posay Hyalu B5 Serum 30ml",
+    "nameAr": "سيروم هيالو بي 5 30 مل",
+    "brandAr": "لاروش بوزي",
+    "descriptionEn": "La Roche-Posay Hyalu B5 Serum combines pure hyaluronic acid and vitamin B5 to replump and repair dehydrated skin.\n\n◆ Category: Face serum\n◆ Product type: Hydrating serum\n◆ Key benefits: Hyaluronic acid · Vitamin B5 · Replumps skin\n◆ Suitable for: Dehydrated or stressed skin\n◆ Size: 30 ml",
+    "descriptionAr": "سيروم هيalu B5 من لaroche-posay يجمع حمض الهيالuronic النقي وفيتamin B5 لإعادة امتلاء وإصلاح البشرة المجففة.\n\n◆ التصنيف: سيروم الوجه\n◆ نوع المنتج: سيروم مرطب\n◆ الفوائد الرئيسية: حمض hyaluronic · فيتamin B5 · يملأ البشرة\n◆ الأنسب لـ: البشرة المجففة أو المجهدة\n◆ الحجم: 30 مل",
+    "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+    "subcategoryIds": [
+      "07661898-571a-4a88-aa6c-76dcdbf53029",
+      "09146169-f9c4-4649-a365-ca1b8cda365f"
+    ],
+    "tertiaryCategoryIds": [
+      "21801439-d0e9-4106-b5e8-dfdd70ffeb8d"
+    ],
+    "isNew": false
+  },
+  {
+    "barcode": "8018365500037",
+    "sarahId": "lGGGOBa",
+    "url": "https://sarahmakeup37.com/ar/lGGGOBa",
+    "stock": 6,
+    "brandEn": "Versace",
+    "nameEn": "Versace Man Eau Fraiche EDT 100ml",
+    "nameAr": "مان أو فريش أو دو تواليت 100 مل",
+    "brandAr": "فرزاتشي",
+    "descriptionEn": "Versace Man Eau Fraiche is a fresh aquatic woody scent with citrus and musk for effortless daily freshness.\n\n◆ Scent family: Aquatic woody\n◆ Key notes: Lemon, rose, tarragon, cedar, musk\n◆ Character: Fresh, clean, versatile\n◆ Best for: Daily wear and warm weather\n◆ Longevity: 4–6 hours",
+    "descriptionAr": "مان أو فraiche من فرsacchi عطر acuatico منعش بحمcitrus ومسk لانتعاش يومي بلا مجهود.\n\n◆ عائلة العطر: مائي خشبي\n◆ النوتات الرئيسية: ليمون، ورد، tarragon، أرز، مسk\n◆ الطابع: منعش ونظيف ومتعدد\n◆ الأنسب لـ: الاستخدام اليومي والطقس الدافئ\n◆ الثبات: 4–6 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "8dca642a-1194-4101-b5cc-486ca1664e89"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "3614228954051",
+    "sarahId": "ajbDyg",
+    "url": "https://sarahmakeup37.com/ar/ajbDyg",
+    "stock": 6,
+    "brandEn": "Roberto Cavalli",
+    "nameEn": "Roberto Cavalli Paradise Found EDT 50ml",
+    "nameAr": "بارادايس فاوند أو دو تواليت 50 مل",
+    "brandAr": "روبرتو كفالي",
+    "descriptionEn": "Roberto Cavalli Paradise Found EDT offers the same tropical floral escape in a convenient 50ml size.\n\n◆ Scent family: Floral fruity\n◆ Key notes: Bergamot, tiare, coconut, jasmine, musk\n◆ Character: Tropical, light, joyful\n◆ Best for: Summer and casual wear\n◆ Longevity: 4–6 hours",
+    "descriptionAr": "بارadise فaound EDT 50ml من روبرto كavalli نفس الهروb الاستوائي الزهري بحجم 50ml.\n\n◆ عائلة العطر: زهري فواكه\n◆ النوتات الرئيسية: برغamot، tiare، جوز هind، ياسmin، مسk\n◆ الطابع: استوائي وخفيف ومبهج\n◆ الأنسب لـ: الصيف والاستخدام اليومي\n◆ الثبات: 4–6 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "1ba9f472-af81-4708-9304-07f3435b6b24"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "8011003858552",
+    "sarahId": "KQDXba",
+    "url": "https://sarahmakeup37.com/ar/KQDXba",
+    "stock": 5,
+    "brandEn": "Versace",
+    "nameEn": "Versace Dylan Turquoise EDT 100ml",
+    "nameAr": "ديلان توركواز أو دو تواليت 100 مل",
+    "brandAr": "فرزاتشي",
+    "descriptionEn": "Versace Dylan Turquoise is a vibrant fruity floral with lemon, apple, and musk capturing Mediterranean summer energy.\n\n◆ Scent family: Fruity floral\n◆ Key notes: Lemon, mandarin, apple, jasmine, musk\n◆ Character: Fresh, playful, sunny\n◆ Best for: Daytime and summer\n◆ Longevity: 5–7 hours",
+    "descriptionAr": "دylan تurquoise من فرsacchi زهري فواكه نابض بالحياة بليمون وتفاح ومسk يجسد طاقة الصيف المتوسطي.\n\n◆ عائلة العطر: فواكه زهرية\n◆ النوتات الرئيسية: ليمون، mandarin، تفاح، ياسmin، مسk\n◆ الطابع: منعش ومرح ومشمس\n◆ الأنسب لـ: النهار والصيف\n◆ الثبات: 5–7 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "1ba9f472-af81-4708-9304-07f3435b6b24"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "3700550216094",
+    "sarahId": "GPnPRP",
+    "url": "https://sarahmakeup37.com/ar/GPnPRP",
+    "stock": 5,
+    "brandEn": "Kilian",
+    "nameEn": "Kilian Angels' Share EDP 50ml",
+    "nameAr": "أنجلز شير أو دو بارفيوم 50 مل",
+    "brandAr": "كيليان",
+    "descriptionEn": "Kilian Angels' Share is a gourmand niche masterpiece of cognac, oak, and praline with intoxicating warmth.\n\n◆ Scent family: Gourmand woody\n◆ Key notes: Cognac, oak, cinnamon, praline, vanilla\n◆ Character: Warm, boozy, luxurious\n◆ Best for: Evenings and cold weather\n◆ Longevity: 8–10 hours",
+    "descriptionAr": "انgel شare من كilian تحفة نيش gourmand من cognac وبلut وpraline بدفء ساحر.\n\n◆ عائلة العطر: غourmand خشبي\n◆ النوتات الرئيسية: cognac، بلut، قرفة، praline، فانيلa\n◆ الطابع: دافئ وفاخر وساحر\n◆ الأنسب لـ: السهرات والطقس البارد\n◆ الثبات: 8–10 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "92a95f2e-d855-4943-9875-b85e684f746a",
+      "1ba9f472-af81-4708-9304-07f3435b6b24"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "3337875597357",
+    "sarahId": "OgymNK",
+    "url": "https://sarahmakeup37.com/ar/OgymNK",
+    "stock": 4,
+    "brandEn": "CeraVe",
+    "nameEn": "CeraVe Foaming Facial Cleanser 473ml",
+    "nameAr": "غسول رغوي للبشرة العادية إلى الدهنة 473 مل",
+    "brandAr": "سيرافي",
+    "descriptionEn": "CeraVe Foaming Facial Cleanser 473ml deeply cleanses normal to oily skin while maintaining essential moisture balance.\n\n◆ Category: Facial cleansing\n◆ Product type: Foaming cleanser\n◆ Key benefits: Large family size · Ceramides · Oil control without dryness\n◆ Suitable for: Normal to oily skin\n◆ Size: 473 ml",
+    "descriptionAr": "غسول سيرافي الرغوي 473ml ينظف بعمق البشرة العادية إلى الدهنية مع الحفاظ على توازن الرطوبة.\n\n◆ التصنيف: تنظيف الوجه\n◆ نوع المنتج: غسول رغوي\n◆ الفوائد الرئيسية: حجم عائلي · سيراميد · تنظيف دون جفاف\n◆ الأنسب لـ: البشرة العادية إلى الدهنية\n◆ الحجم: 473 مل",
+    "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+    "subcategoryIds": [
+      "07661898-571a-4a88-aa6c-76dcdbf53029",
+      "09146169-f9c4-4649-a365-ca1b8cda365f"
+    ],
+    "tertiaryCategoryIds": [
+      "05028a17-da64-4c66-b25f-73c758acc2f8"
+    ],
+    "isNew": false
+  },
+  {
+    "barcode": "3274872448780",
+    "sarahId": "pQxgKWg",
+    "url": "https://sarahmakeup37.com/ar/pQxgKWg",
+    "stock": 3,
+    "brandEn": "Givenchy",
+    "nameEn": "Givenchy Gentleman Society EDP 100ml",
+    "nameAr": "جنتلمن سوسايتي أو دو برفيوم 100 مل",
+    "brandAr": "جيفنشي",
+    "descriptionEn": "Givenchy Gentleman Society blends sage, narcissus, and vetiver for a modern refined masculine signature.\n\n◆ Scent family: Aromatic woody\n◆ Key notes: Sage, narcissus, vetiver, cedar, patchouli\n◆ Character: Refined, modern, elegant\n◆ Best for: Office and evening wear\n◆ Longevity: 7–9 hours",
+    "descriptionAr": "جentleman سociety من جivenchy يمزج المerymية والنرgis والvetiver لتوقيع رجالي عصري راقٍ.\n\n◆ عائلة العطر: عطري خشبي\n◆ النوتات الرئيسية: مerymية، narcisus، vetiver، أرz، patchouli\n◆ الطابع: راقٍ وعصري وأنيق\n◆ الأنسب لـ: العمل والسهرات\n◆ الثبات: 7–9 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "8dca642a-1194-4101-b5cc-486ca1664e89"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "3355992004596",
+    "sarahId": "GPpeQW",
+    "url": "https://sarahmakeup37.com/ar/GPpeQW",
+    "stock": 3,
+    "brandEn": "Ted Lapidus",
+    "nameEn": "Ted Lapidus Rumba EDT 100ml",
+    "nameAr": "رومبا أو دو تواليت 100 مل",
+    "brandAr": "تيد لابيدوس",
+    "descriptionEn": "Ted Lapidus Rumba is a classic vibrant floral oriental with peach, tuberose, and vanilla for bold feminine charm.\n\n◆ Scent family: Floral oriental\n◆ Key notes: Peach, apricot, tuberose, jasmine, vanilla, musk\n◆ Character: Vibrant, sensual, classic\n◆ Best for: Evening wear and special occasions\n◆ Longevity: 6–8 hours",
+    "descriptionAr": "rumba من ted lapidus زهري شرقي كلاسيكي نابض بالخوخ والtuberose والفانيلa لسحر أنثوي جريء.\n\n◆ عائلة العطر: زهري شرقي\n◆ النوتات الرئيسية: خوخ، مشمش، tuberose، ياسmin، فانيلa، مسk\n◆ الطابع: نابض وحسي وكلاسيكي\n◆ الأنسب لـ: السهرات والمناسبات\n◆ الثبات: 6–8 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "1ba9f472-af81-4708-9304-07f3435b6b24"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "3760294350881",
+    "sarahId": "gqKWwE",
+    "url": "https://sarahmakeup37.com/ar/gqKWwE",
+    "stock": 3,
+    "brandEn": "The Woods Collection",
+    "nameEn": "The Woods Collection Natural Essence EDP 100ml",
+    "nameAr": "ناتشورال إسنس أو دو بارفيوم 100 مل",
+    "brandAr": "ذا وودز كوليكشن",
+    "descriptionEn": "The Woods Collection Natural Essence is a niche green woody fragrance celebrating crisp nature and serene elegance.\n\n◆ Scent family: Green woody\n◆ Key notes: Bergamot, green notes, cedar, vetiver, musk\n◆ Character: Fresh, natural, serene\n◆ Best for: Daily wear for nature lovers\n◆ Longevity: 6–8 hours",
+    "descriptionAr": "ناتشورal essence من ذa وoodz كوليكشن عطر نيش أخضر خشبي يحتفي بالطبيعة الهادئة والأناقة.\n\n◆ عائلة العطر: أخضر خشبي\n◆ النوتات الرئيسية: برغamot، نوتات خضراء، أرz، vetiver، مسk\n◆ الطابع: منعش وطبيعي وهادئ\n◆ الأنسب لـ: الاستخدام اليومي\n◆ الثبات: 6–8 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "92a95f2e-d855-4943-9875-b85e684f746a",
+      "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "3614274017069",
+    "sarahId": "wAYZXpX",
+    "url": "https://sarahmakeup37.com/ar/wAYZXpX",
+    "stock": 2,
+    "brandEn": "Maison Margiela",
+    "nameEn": "Maison Margiela Under The Stars EDT 100ml",
+    "nameAr": "أندر ذا ستارز أو دو تواليت 100 مل",
+    "brandAr": "ميزون مارجييلا",
+    "descriptionEn": "Maison Margiela Under The Stars captures a crisp night outdoors with pine, pepper, and mineral freshness.\n\n◆ Scent family: Aromatic fougere\n◆ Key notes: Pine, pink pepper, mineral notes, patchouli\n◆ Character: Crisp, atmospheric, unisex\n◆ Best for: Cool evenings and layering\n◆ Longevity: 5–7 hours",
+    "descriptionAr": "under the stars من maison margiela يجسد ليلة باردة في الهواء الطلق بصنوبر وفلفل وانتعاش معدني.\n\n◆ عائلة العطر: aromatic fougere\n◆ النوتات الرئيسية: صنوبر، فلفل وردي، نوتات معدنية، patchouli\n◆ الطابع: منعsh وatmospheric\n◆ الأنسب لـ: الأمسيات الباردة\n◆ الثبات: 5–7 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "92a95f2e-d855-4943-9875-b85e684f746a",
+      "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "8809913830641",
+    "sarahId": "VDlYlwP",
+    "url": "https://sarahmakeup37.com/ar/VDlYlwP",
+    "stock": 2,
+    "brandEn": "Skin1004",
+    "nameEn": "Skin1004 Madagascar Centella Double Cleansing Duo",
+    "nameAr": "طقم التنظيف المزدوج بمركز سنتيلا",
+    "brandAr": "سكين 1004",
+    "descriptionEn": "Skin1004 Double Cleansing Duo pairs ampoule foam and light cleansing oil with centella for a complete Korean cleanse.\n\n◆ Category: Korean skincare\n◆ Product type: Double cleansing set\n◆ Key benefits: Centella asiatica · Two-step cleanse · Gentle daily use\n◆ Suitable for: All skin types\n◆ Size: Duo set",
+    "descriptionAr": "طقم التنظيف المزدوج من سkin1004 يجمع رغوة أمpoule وزيت تنظيف خفيف بالcentella لroutine كوري كامل.\n\n◆ التصنيف: العناية الكورية\n◆ نوع المنتج: طقم تنظيف مزدوج\n◆ الفوائد الرئيسية: centella · تنظيف على مرحلتين · لطيف يومياً\n◆ الأنسب لـ: جميع أنواع البشرة\n◆ الحجم: طقم",
+    "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+    "subcategoryIds": [
+      "7d2bfaec-d963-404b-b9b5-04b64a82bf29",
+      "07661898-571a-4a88-aa6c-76dcdbf53029"
+    ],
+    "tertiaryCategoryIds": [
+      "2cf78dfc-8e8f-4f48-b75f-59eb445ba269"
+    ],
+    "isNew": false
+  },
+  {
+    "barcode": "681619815997",
+    "sarahId": "YzWAVXw",
+    "url": "https://sarahmakeup37.com/ar/YzWAVXw",
+    "stock": 2,
+    "brandEn": "theBalm",
+    "nameEn": "theBalm Meet Matt(e) Mini Lip Kit Vol 13",
+    "nameAr": "طقم أحمر شفاه ميني ميت مات الإصدار 13",
+    "brandAr": "ذا بالم",
+    "descriptionEn": "theBalm Meet Matt(e) Mini Lip Kit Vol 13 includes mini matte lipsticks in wearable nude and berry shades.\n\n◆ Category: Makeup\n◆ Product type: Mini matte lip kit\n◆ Key benefits: Matte finish · Mini travel sizes · Versatile nude tones\n◆ Suitable for: Everyday lip color",
+    "descriptionAr": "طقم أحمر الشفاه مini meet matt(e) vol 13 من thebalm يضم ألوان nude وتوتi قابلة للاستخدام.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: طقم أحمر شفاه مطفي\n◆ الفوائد الرئيسية: لمسة مطfية · أحجام mini · درجات nude\n◆ الأنسب لـ: لون الشفاه اليومي",
+    "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+    "subcategoryIds": [
+      "56da5b82-c847-4e9b-9cea-cc901236189f"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "3346130018926",
+    "sarahId": "dbveGmr",
+    "url": "https://sarahmakeup37.com/ar/dbveGmr",
+    "stock": 2,
+    "brandEn": "Hermès",
+    "nameEn": "Hermès Barenia EDP Intense 100ml",
+    "nameAr": "بارينيا أو دي بارفيوم إنتنس 100 مل",
+    "brandAr": "هيرميس",
+    "descriptionEn": "Hermès Barenia EDP Intense is a sophisticated leather floral with iris and patchouli for timeless Parisian elegance.\n\n◆ Scent family: Leather floral\n◆ Key notes: Iris, patchouli, leather, benzoin, vanilla\n◆ Character: Elegant, leathery, refined\n◆ Best for: Fall/winter and formal wear\n◆ Longevity: 8–10 hours",
+    "descriptionAr": "بارenia انتنس من hermès جلد زهري راقٍ بالiris وpatchouli لأناقة parisian خالدة.\n\n◆ عائلة العطر: جلد زهري\n◆ النوتات الرئيسية: iris، patchouli، جلد، benzoin، فانيلa\n◆ الطابع: أنيق وجلدي وrefined\n◆ الأنسب لـ: الخريف والمناسبات\n◆ الثبات: 8–10 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "1ba9f472-af81-4708-9304-07f3435b6b24",
+      "07d0e8c3-3369-47b7-bb34-d430ca4a26d4"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": true
+  },
+  {
+    "barcode": "8809576261868",
+    "sarahId": "RvPxjXX",
+    "url": "https://sarahmakeup37.com/ar/RvPxjXX",
+    "stock": 2,
+    "brandEn": "Skin1004",
+    "nameEn": "Skin1004 Madagascar Centella Ampoule Kit",
+    "nameAr": "طقم أمبولات سنتيلا مدغشقر",
+    "brandAr": "سكين 1004",
+    "descriptionEn": "Skin1004 Centella Ampoule Kit delivers soothing centella ampoules to calm irritation and strengthen the skin barrier.\n\n◆ Category: Korean skincare\n◆ Product type: Ampoule kit\n◆ Key benefits: Centella asiatica · Soothing care · Barrier support\n◆ Suitable for: Sensitive or irritated skin\n◆ Size: Kit",
+    "descriptionAr": "طقم أمpoules centella من skin1004 يهدئ التهيج ويقوي حاجز البشرة بتركيز centella.\n\n◆ التصنيف: العناية الكورية\n◆ نوع المنتج: طقم أمpoules\n◆ الفوائد الرئيسية: centella · تهدئة · دعم الحاجz\n◆ الأنسب لـ: البشرة الحساسة أو المتهيجة\n◆ الحجم: طقم",
+    "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+    "subcategoryIds": [
+      "7d2bfaec-d963-404b-b9b5-04b64a82bf29",
+      "07661898-571a-4a88-aa6c-76dcdbf53029"
+    ],
+    "tertiaryCategoryIds": [
+      "2cf78dfc-8e8f-4f48-b75f-59eb445ba269"
+    ],
+    "isNew": false
+  },
+  {
+    "barcode": "3614274217155",
+    "sarahId": "XzqQvBj",
+    "url": "https://sarahmakeup37.com/ar/XzqQvBj",
+    "stock": 2,
+    "brandEn": "Valentino",
+    "nameEn": "Valentino Uomo Born In Roma The Gold EDT 100ml",
+    "nameAr": "أومو بورن إن روما ذا جولد أو دو تواليت 100 مل",
+    "brandAr": "فالنتينو",
+    "descriptionEn": "Valentino Uomo Born In Roma The Gold is a warm spicy amber scent with vanilla and ginger for modern Roman luxury.\n\n◆ Scent family: Amber spicy\n◆ Key notes: Ginger, vanilla, lavender, woody amber\n◆ Character: Warm, modern, luxurious\n◆ Best for: Evenings and special occasions\n◆ Longevity: 7–9 hours",
+    "descriptionAr": "uomo born in roma the gold من valentino عطر عنبري توabli دافئ بفانيلa وزنجبيل.\n\n◆ عائلة العطر: عنbري توabli\n◆ النوتات الرئيسية: زنجبيل، فانيلa، lavandula، عنber خشبي\n◆ الطابع: دافئ وعصري وفاخر\n◆ الأنسب لـ: السهرات\n◆ الثبات: 7–9 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "8dca642a-1194-4101-b5cc-486ca1664e89",
+      "07d0e8c3-3369-47b7-bb34-d430ca4a26d4"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": true
+  },
+  {
+    "barcode": "3614274217148",
+    "sarahId": "jgadaNQ",
+    "url": "https://sarahmakeup37.com/ar/jgadaNQ",
+    "stock": 2,
+    "brandEn": "Valentino",
+    "nameEn": "Valentino Donna Born In Roma The Gold EDP 100ml",
+    "nameAr": "دونا بورن إن روما ذا قولد أو دو بارفيوم 100 مل",
+    "brandAr": "فالنتينو",
+    "descriptionEn": "Valentino Donna Born In Roma The Gold is a luminous vanilla floral with jasmine for radiant feminine allure.\n\n◆ Scent family: Vanilla floral\n◆ Key notes: Jasmine, vanilla, benzoin, musk\n◆ Character: Radiant, sweet, elegant\n◆ Best for: Evening wear and dates\n◆ Longevity: 7–9 hours",
+    "descriptionAr": "donna born in roma the gold من valentino فانيلa زهري luminescent بالyasmin لجاذbية أنثوية.\n\n◆ عائلة العطر: فانيلa زهري\n◆ النوتات الرئيسية: yasmin، فانيلa، benzoin، مسk\n◆ الطابع: مشع وحلو وأنيق\n◆ الأنسب لـ: السهرات والمناسبات\n◆ الثبات: 7–9 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "1ba9f472-af81-4708-9304-07f3435b6b24",
+      "07d0e8c3-3369-47b7-bb34-d430ca4a26d4"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": true
+  },
+  {
+    "barcode": "855732733210",
+    "sarahId": "ZYDWPeP",
+    "url": "https://sarahmakeup37.com/ar/ZYDWPeP",
+    "stock": 2,
+    "brandEn": "Min New York",
+    "nameEn": "Min New York Long Board EDP 75ml",
+    "nameAr": "لونج بورد أو دو بارفيوم 75 مل",
+    "brandAr": "مين نيويورك",
+    "descriptionEn": "Min New York Long Board EDP is an avant-garde niche scent inspired by surf culture with salty woods and citrus.\n\n◆ Scent family: Aquatic woody\n◆ Key notes: Sea salt, driftwood, bergamot, cedar, musk\n◆ Character: Artistic, fresh, unconventional\n◆ Best for: Creative wear and layering\n◆ Longevity: 6–8 hours",
+    "descriptionAr": "long board من min new york عطر نيش avant-garde مستوhب من ثقافة الرfof بخشb مالح وحمcitrus.\n\n◆ عائلة العطر: مائي خshbi\n◆ النوتات الرئيسية: ملح البحر، driftwood، برغamot، أرz، مسk\n◆ الطابع: فني ومنعsh وغير تقليدي\n◆ الأنسب لـ: إطلالات إبداعية\n◆ الثبات: 6–8 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "92a95f2e-d855-4943-9875-b85e684f746a",
+      "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "5060150185168",
+    "sarahId": "KjqAAlE",
+    "url": "https://sarahmakeup37.com/ar/KjqAAlE",
+    "stock": 2,
+    "brandEn": "Color Wow",
+    "nameEn": "Color Wow Dream Cocktail Carb-Infused Leave-In 200ml",
+    "nameAr": "دريم كوكتيل علاج الشعر التالف 200 مل",
+    "brandAr": "كولور وو",
+    "descriptionEn": "Color Wow Dream Cocktail is a leave-in treatment that strengthens hair and reduces breakage with heat protection.\n\n◆ Category: Hair treatment\n◆ Product type: Leave-in treatment\n◆ Key benefits: Reduces breakage · Heat protection · Strengthens hair\n◆ Suitable for: Damaged or heat-styled hair\n◆ Size: 200 ml",
+    "descriptionAr": "dream cocktail من color wow علاج leave-in يقوي الشعر ويقلل التقصُ مع حماية من الحرارة.\n\n◆ التصنيف: علاج الشعر\n◆ نوع المنتج: علاج بدون شطف\n◆ الفوائد الرئيسية: يقلل التقصُ · حماية حرارية · يقوي الشعر\n◆ الأنسب لـ: الشعر التالف\n◆ الحجم: 200 مل",
+    "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+    "subcategoryIds": [
+      "150a633e-80a7-4cb3-8f2d-8eab90a99190"
+    ],
+    "tertiaryCategoryIds": [
+      "ee39d6a6-5074-43b6-a80c-a7c1b23c3bd1"
+    ],
+    "isNew": false
+  },
+  {
+    "barcode": "8809875906477",
+    "sarahId": "rAmaGVd",
+    "url": "https://sarahmakeup37.com/ar/rAmaGVd",
+    "stock": 2,
+    "brandEn": "Beauty of Joseon",
+    "nameEn": "Beauty of Joseon Glow Serum Propolis + Niacinamide 30ml",
+    "nameAr": "سيروم إشراق بالبروبوليس والنياسيناميد 30 مل",
+    "brandAr": "بيوتي أوف جوسون",
+    "descriptionEn": "Beauty of Joseon Glow Serum combines propolis and niacinamide to brighten dull skin and improve overall radiance.\n\n◆ Category: Korean skincare\n◆ Product type: Brightening serum\n◆ Key benefits: Propolis · Niacinamide · Radiance boost\n◆ Suitable for: Dull or uneven skin tone\n◆ Size: 30 ml",
+    "descriptionAr": "سيروم glow من beauty of joseon يجمع propolis وniacinamide لإشراق البشرة الباهتة.\n\n◆ التصنيف: العناية الكورية\n◆ نوع المنتج: سيروم إشراق\n◆ الفوائد الرئيسية: propolis · niacinamide · إشراق\n◆ الأنسب لـ: البشرة الباهتة\n◆ الحجم: 30 مل",
+    "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+    "subcategoryIds": [
+      "7d2bfaec-d963-404b-b9b5-04b64a82bf29",
+      "07661898-571a-4a88-aa6c-76dcdbf53029"
+    ],
+    "tertiaryCategoryIds": [
+      "2cf78dfc-8e8f-4f48-b75f-59eb445ba269"
+    ],
+    "isNew": false
+  },
+  {
+    "barcode": "3349668614523",
+    "sarahId": "ePOWdbq",
+    "url": "https://sarahmakeup37.com/ar/ePOWdbq",
+    "stock": 2,
+    "brandEn": "Paco Rabanne",
+    "nameEn": "Paco Rabanne Invictus Victory Elixir 100ml",
+    "nameAr": "إنفكتوس فيكتوري إليكسير بارفيوم 100 مل",
+    "brandAr": "باكو رابان",
+    "descriptionEn": "Paco Rabanne Invictus Victory Elixir amplifies the Invictus line with richer amber and vanilla for maximum power.\n\n◆ Scent family: Amber fougere\n◆ Key notes: Grapefruit, amber, vanilla, tonka, patchouli\n◆ Character: Powerful, sweet, bold\n◆ Best for: Night outs and parties\n◆ Longevity: 8–10 hours",
+    "descriptionAr": "invictus victory elixir من paco rabanne يعزز خط invictus بعنber وفانيلa أغنى لأقصى قوة.\n\n◆ عائلة العطر: عنbri fougere\n◆ النوتات الرئيسية: جريpfruit، عنber، فانيلa، tonka، patchouli\n◆ الطابع: قوي وجريء\n◆ الأنسب لـ: الحفلات والخروج\n◆ الثبات: 8–10 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "8dca642a-1194-4101-b5cc-486ca1664e89",
+      "07d0e8c3-3369-47b7-bb34-d430ca4a26d4"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": true
+  },
+  {
+    "barcode": "3700134403957",
+    "sarahId": "BrxxYdz",
+    "url": "https://sarahmakeup37.com/ar/BrxxYdz",
+    "stock": 2,
+    "brandEn": "Rasasi",
+    "nameEn": "Rasasi Femme Sensual EDP 85ml",
+    "nameAr": "فيم سنشوال أو دو بارفيوم 85 مل",
+    "brandAr": "الرصاصي",
+    "descriptionEn": "Rasasi Femme Sensual is a soft powdery floral with rose and musk for understated feminine grace.\n\n◆ Scent family: Powdery floral\n◆ Key notes: Rose, peony, musk, sandalwood, vanilla\n◆ Character: Soft, sensual, graceful\n◆ Best for: Daily and office wear\n◆ Longevity: 6–8 hours",
+    "descriptionAr": "femme sensual من الرصاصi زهري بودري ناعم بالورد والمسk لأناقة أنثوية هادئة.\n\n◆ عائلة العطر: زهري بودري\n◆ النوتات الرئيسية: ورد، peony، مسk، صندl، فانيلa\n◆ الطابع: ناعm وحسي ورشيق\n◆ الأنسب لـ: اليومي والعمل\n◆ الثبات: 6–8 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "1ba9f472-af81-4708-9304-07f3435b6b24"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "602004146151",
+    "sarahId": "BrzdDxD",
+    "url": "https://sarahmakeup37.com/ar/BrzdDxD",
+    "stock": 2,
+    "brandEn": "Benefit",
+    "nameEn": "Benefit Fan Fest Fanning & Volumizing Mascara",
+    "nameAr": "ماسكارا فان فيست لتكثيف الرموش",
+    "brandAr": "بنفيت",
+    "descriptionEn": "Benefit Fan Fest Mascara fans out lashes for full-volume impact with a lightweight formula that resists clumping.\n\n◆ Category: Makeup\n◆ Product type: Volumizing mascara\n◆ Key benefits: Fanning brush · Full volume · Clump-resistant\n◆ Suitable for: Adding volume and length to lashes",
+    "descriptionAr": "مascara fan fest من benefit تfan الرموش لتأثير كثيف بتركيبة خفيفة دون تكتul.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: مascara للكثافة\n◆ الفوائد الرئيسية: فرشاة fanning · كثافة · دون تكتul\n◆ الأنسب لـ: كثافة وطول الرموش",
+    "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+    "subcategoryIds": [
+      "be0ba95f-62a6-4245-8012-5f6943ea5cab"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "072140634827",
+    "sarahId": "ydvaeKq",
+    "url": "https://sarahmakeup37.com/ar/ydvaeKq",
+    "stock": 2,
+    "brandEn": "Eucerin",
+    "nameEn": "Eucerin Advanced Repair Lotion 500ml",
+    "nameAr": "لوشن إصلاح متقدم خالٍ من العطور 500 مل",
+    "brandAr": "يوسيرين",
+    "descriptionEn": "Eucerin Advanced Repair Lotion is a fast-absorbing body lotion that relieves very dry skin with urea and ceramides.\n\n◆ Category: Body moisturizer\n◆ Product type: Repair lotion\n◆ Key benefits: Urea formula · Fast absorbing · Fragrance-free\n◆ Suitable for: Very dry body skin\n◆ Size: 500 ml",
+    "descriptionAr": "لوشن يوسيرين لإصلاح البشرة المتقدم سريع الامتصاص يخفف الجفaf الشديد بالurea والسيراميد.\n\n◆ التصنيف: مرطب الجسم\n◆ نوع المنتج: لوشن إصلاح\n◆ الفوائد الرئيسية: urea · امتصاص سريع · خالٍ من العطور\n◆ الأنسب لـ: جسم جاف جداً\n◆ الحجم: 500 مل",
+    "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+    "subcategoryIds": [
+      "23aaaa07-91ee-4937-847e-d7866a9e937a",
+      "09146169-f9c4-4649-a365-ca1b8cda365f"
+    ],
+    "tertiaryCategoryIds": [
+      "fcd86b22-a0fd-47b9-ba4c-c76164dadab2"
+    ],
+    "isNew": false
+  },
+  {
+    "barcode": "888066024082",
+    "sarahId": "rAAGBvl",
+    "url": "https://sarahmakeup37.com/ar/rAAGBvl",
+    "stock": 2,
+    "brandEn": "Tom Ford",
+    "nameEn": "Tom Ford Oud Wood EDP 50ml",
+    "nameAr": "عود وود أو دو بارفيوم 50 مل",
+    "brandAr": "توم فورد",
+    "descriptionEn": "Tom Ford Oud Wood is an iconic niche oud fragrance blending rare oud with rosewood, cardamom, and amber.\n\n◆ Scent family: Woody oud\n◆ Key notes: Oud, rosewood, cardamom, sandalwood, amber\n◆ Character: Luxurious, smoky, refined\n◆ Best for: Evening wear and special occasions\n◆ Longevity: 8–10 hours",
+    "descriptionAr": "oud wood من tom ford عطر oud نيش أيقوني يمزج oud نادر مع rosewood وcardamom وعنber.\n\n◆ عائلة العطر: خشbi oud\n◆ النوتات الرئيسية: oud، rosewood، cardamom، صندl، عنber\n◆ الطابع: فاخr ودخani وrefined\n◆ الأنسب لـ: السهرات\n◆ الثبات: 8–10 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "92a95f2e-d855-4943-9875-b85e684f746a",
+      "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "088300162543",
+    "sarahId": "GYYoerg",
+    "url": "https://sarahmakeup37.com/ar/GYYoerg",
+    "stock": 2,
+    "brandEn": "Calvin Klein",
+    "nameEn": "Calvin Klein Euphoria EDP 50ml",
+    "nameAr": "إيفوريا أو دو بارفيوم 50 مل",
+    "brandAr": "كالفن كلاين",
+    "descriptionEn": "Calvin Klein Euphoria is a bold exotic floral with pomegranate and orchid for sensual modern femininity.\n\n◆ Scent family: Exotic floral\n◆ Key notes: Pomegranate, persimmon, orchid, amber, mahogany\n◆ Character: Bold, exotic, sensual\n◆ Best for: Evenings and dates\n◆ Longevity: 6–8 hours",
+    "descriptionAr": "euphoria من calvin klein زهري exotic جريء برمان وorchid لأنوثة عصرية sensual.\n\n◆ عائلة العطر: زهري exotic\n◆ النوتات الرئيسية: رمان، persimmon، orchid، عنber، mahogany\n◆ الطابع: جريء وexotic\n◆ الأنسب لـ: السهرات\n◆ الثبات: 6–8 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "1ba9f472-af81-4708-9304-07f3435b6b24"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "783320411168",
+    "sarahId": "zvvdXGo",
+    "url": "https://sarahmakeup37.com/ar/zvvdXGo",
+    "stock": 2,
+    "brandEn": "Bvlgari",
+    "nameEn": "Bvlgari Splendida Patchouli Tentation EDP 100ml",
+    "nameAr": "سبلنديدا باتشولي تمبتيشن أو دو بارفيوم 100 مل",
+    "brandAr": "بولغاري",
+    "descriptionEn": "Bvlgari Splendida Patchouli Tentation wraps rich patchouli in peach and white flowers for opulent depth.\n\n◆ Scent family: Woody floral\n◆ Key notes: Peach, patchouli, jasmine, vanilla, musk\n◆ Character: Opulent, warm, sophisticated\n◆ Best for: Evening and fall/winter\n◆ Longevity: 7–9 hours",
+    "descriptionAr": "splendida patchouli tentation من bvlgari يلف patchouli غنياً بالخوخ والزهور البيضاء لعمق opulent.\n\n◆ عائلة العطر: خشbi زهري\n◆ النوتات الرئيسية: خوخ، patchouli، yasmin، فانيلa، مسk\n◆ الطابع: فاخr ودافئ\n◆ الأنسب لـ: السهرات والخريف\n◆ الثبات: 7–9 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "1ba9f472-af81-4708-9304-07f3435b6b24"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "3386460126014",
+    "sarahId": "jOdnxl",
+    "url": "https://sarahmakeup37.com/ar/jOdnxl",
+    "stock": 2,
+    "brandEn": "Van Cleef & Arpels",
+    "nameEn": "Van Cleef & Arpels Orchid Leather EDP 75ml",
+    "nameAr": "أوركيد ليذر أو دو بارفيوم 75 مل",
+    "brandAr": "فان كليف",
+    "descriptionEn": "Van Cleef Orchid Leather is a luxurious leather floral with raspberry and suede for refined unisex elegance.\n\n◆ Scent family: Leather floral\n◆ Key notes: Raspberry, orchid, leather, suede, musk\n◆ Character: Luxurious, leathery, elegant\n◆ Best for: Cool weather and formal events\n◆ Longevity: 8–10 hours",
+    "descriptionAr": "orchid leather من van cleef جلد زهري فاخr بتوت وsuede لأناقة unisex refined.\n\n◆ عائلة العطر: جلد زهري\n◆ النوتات الرئيسية: توت، orchid، جلد، suede، مسk\n◆ الطابع: فاخr وجلdi\n◆ الأنسب لـ: الطقس البارد والمناسبات\n◆ الثبات: 8–10 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "92a95f2e-d855-4943-9875-b85e684f746a",
+      "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "8681008055258",
+    "sarahId": "GmVWRE",
+    "url": "https://sarahmakeup37.com/ar/GmVWRE",
+    "stock": 2,
+    "brandEn": "Nishane",
+    "nameEn": "Nishane Ege Extrait 100ml",
+    "nameAr": "إيجي إكستريه 100 مل",
+    "brandAr": "نيشان",
+    "descriptionEn": "Nishane Ege Extrait captures the Aegean breeze with citrus, herbs, and salty musk in an extrait concentration.\n\n◆ Scent family: Aromatic marine\n◆ Key notes: Bergamot, herbs, sea notes, musk, amber\n◆ Character: Fresh, coastal, artistic\n◆ Best for: Warm weather and daytime\n◆ Longevity: 10–12 hours",
+    "descriptionAr": "ege extrait من nishane يجسد نسيم بحر ege بcitrus وأعشاب ومسk مالh بتركيز extrait.\n\n◆ عائلة العطر: عطري بحري\n◆ النوتات الرئيسية: برغamot، أعشاب، نوتات بحرية، مسk، عنber\n◆ الطابع: منعsh ساحli\n◆ الأنسب لـ: الطقس الدافئ\n◆ الثبات: 10–12 ساعة",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "92a95f2e-d855-4943-9875-b85e684f746a",
+      "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "607845070085",
+    "sarahId": "RARbrn",
+    "url": "https://sarahmakeup37.com/ar/RARbrn",
+    "stock": 2,
+    "brandEn": "NARS",
+    "nameEn": "NARS Climax Mascara",
+    "nameAr": "ماسكارا كلايماكس للحجم والكثافة",
+    "brandAr": "نارس",
+    "descriptionEn": "NARS Climax Mascara delivers explosive volume with a buildable formula and hourglass brush for dramatic lashes.\n\n◆ Category: Makeup\n◆ Product type: Volumizing mascara\n◆ Key benefits: Explosive volume · Buildable formula · Hourglass brush\n◆ Suitable for: Dramatic lash looks",
+    "descriptionAr": "مascara climax من nars تمنح كثافة explosive بتركيبة قابلة للبناء وفرشاة hourglass.\n\n◆ التصنيف: مكياج\n◆ نوع المنتج: مascara للكثافة\n◆ الفوائد الرئيسية: كثافة عالية · قابل للبناء · فرشاة hourglass\n◆ الأنسب لـ: إطلالات رموش درامية",
+    "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+    "subcategoryIds": [
+      "be0ba95f-62a6-4245-8012-5f6943ea5cab"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "8681008055074",
+    "sarahId": "wWEryKW",
+    "url": "https://sarahmakeup37.com/ar/wWEryKW",
+    "stock": 1,
+    "brandEn": "Nishane",
+    "nameEn": "Nishane Ani EDP 100ml",
+    "nameAr": "أني أو دو بارفيوم 100 مل",
+    "brandAr": "نيشان",
+    "descriptionEn": "Nishane Ani is a warm spicy vanilla fragrance inspired by ancient Anatolian heritage with ginger and bergamot.\n\n◆ Scent family: Spicy vanilla\n◆ Key notes: Bergamot, ginger, vanilla, benzoin, musk\n◆ Character: Warm, gourmand, nostalgic\n◆ Best for: Fall/winter evenings\n◆ Longevity: 8–10 hours",
+    "descriptionAr": "ani من nishane عطر فانيلa توabli دافئ مستوhب من تراث anatolia بالزنجبيل والبرغamot.\n\n◆ عائلة العطر: فانيلa توabli\n◆ النوتات الرئيسية: برغamot، زنجبيل، فانيلa، benzoin، مسk\n◆ الطابع: دافئ وgourmand\n◆ الأنسب لـ: أمسيات الخريف\n◆ الثبات: 8–10 ساعات",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "92a95f2e-d855-4943-9875-b85e684f746a",
+      "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "8683608070617",
+    "sarahId": "ZgprlY",
+    "url": "https://sarahmakeup37.com/ar/ZgprlY",
+    "stock": 1,
+    "brandEn": "Nishane",
+    "nameEn": "Nishane Hacivat X Tero Extrait 100ml",
+    "nameAr": "هاسيفات إكس تيرو إكسترايت 100 مل",
+    "brandAr": "نيشان",
+    "descriptionEn": "Nishane Hacivat X Tero Extrait pairs the iconic Hacivat pineapple-oud with smoky Tero depth in extrait strength.\n\n◆ Scent family: Woody fruity\n◆ Key notes: Pineapple, bergamot, patchouli, oakmoss, musk\n◆ Character: Bold, smoky, complex\n◆ Best for: Statement evening wear\n◆ Longevity: 10–12 hours",
+    "descriptionAr": "hacivat x tero extrait من nishane يجمع ananas-oud الأيقوني hacivat مع عمق tero الدخani.\n\n◆ عائلة العطر: خشbi فواكه\n◆ النوتات الرئيسية: ananas، برغamot، patchouli، oakmoss، مسk\n◆ الطابع: جريء ودخani\n◆ الأنسب لـ: سهرات مميزة\n◆ الثبات: 10–12 ساعة",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "92a95f2e-d855-4943-9875-b85e684f746a",
+      "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  },
+  {
+    "barcode": "8683608070594",
+    "sarahId": "lYyaoN",
+    "url": "https://sarahmakeup37.com/ar/lYyaoN",
+    "stock": 1,
+    "brandEn": "Nishane",
+    "nameEn": "Nishane Hacivat X Kredo Extrait 100ml",
+    "nameAr": "هاسيفات إكس كريدو إكسترايت 100 مل",
+    "brandAr": "نيشان",
+    "descriptionEn": "Nishane Hacivat X Kredo Extrait blends Hacivat brightness with Kredo leather incense for dramatic contrast.\n\n◆ Scent family: Woody leather\n◆ Key notes: Pineapple, leather, incense, patchouli, musk\n◆ Character: Complex, bold, luxurious\n◆ Best for: Special occasions\n◆ Longevity: 10–12 hours",
+    "descriptionAr": "hacivat x kredo extrait من nishane يمزج brightness hacivat مع kredo جلد وبخور.\n\n◆ عائلة العطر: خشbi جلdi\n◆ النوتات الرئيسية: ananas، جلd، بخور، patchouli، مسk\n◆ الطابع: معقد وجريء\n◆ الأنسب لـ: مناسبات خاصة\n◆ الثبات: 10–12 ساعة",
+    "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+    "subcategoryIds": [
+      "92a95f2e-d855-4943-9875-b85e684f746a",
+      "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a"
+    ],
+    "tertiaryCategoryIds": [],
+    "isNew": false
+  }
+]

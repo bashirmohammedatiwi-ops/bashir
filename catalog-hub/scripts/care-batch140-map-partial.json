@@ -1,0 +1,528 @@
+{
+  "30160668": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Metal Detox Shampoo 1500ml",
+    "nameAr": "شامpo لورéal Professionnel metal detox 1500 ml",
+    "typeKey": "shampoo",
+    "size": "1500"
+  },
+  "8025026275616": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Try Me Discovery Set 5 pcs",
+    "nameAr": "مجموعة تجربة ناشi أrغان 5 قطع",
+    "typeKey": "hair-oil",
+    "size": "5 pcs",
+    "tertiary": "care-hair-care-hair-treatment"
+  },
+  "8025026277399": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Essential Energy Conditioner 150ml",
+    "nameAr": "بلسم ناشi أrغان الطاقة الأساسية 150 ml",
+    "typeKey": "conditioner",
+    "size": "150"
+  },
+  "8025026274800": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Armonia Scalp Scrub 150ml",
+    "nameAr": "مقشر فروة الرأس ناشi أrغان أرمونيا 150 ml",
+    "typeKey": "hair-mask",
+    "size": "150"
+  },
+  "8025026280832": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Blondy Joy Conditioner 150ml",
+    "nameAr": "بلسم ناشi أrغان بلوندي جوy 150 ml",
+    "typeKey": "conditioner",
+    "size": "150"
+  },
+  "8025026008962": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Armonia Shampoo 1000ml",
+    "nameAr": "شامبو ناشi أrغان أرمونيا 1000 ml",
+    "typeKey": "shampoo",
+    "size": "1000"
+  },
+  "8025026281488": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Classic Shampoo 1000ml",
+    "nameAr": "شامبو ناشi أrغان كلاسيك 1000 ml",
+    "typeKey": "shampoo",
+    "size": "1000"
+  },
+  "8025026281495": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Classic Conditioner 1000ml",
+    "nameAr": "بلسم ناشi أrغان كلاسيك 1000 ml",
+    "typeKey": "conditioner",
+    "size": "1000"
+  },
+  "8025026008672": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Filler Therapy Restorative Conditioner 1000ml",
+    "nameAr": "بلسم ناشi أrغان فيller ثيرapy restorative 1000 ml",
+    "typeKey": "conditioner",
+    "size": "1000"
+  },
+  "8025026277863": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Deep Infusion Mask 150ml",
+    "nameAr": "قناع ناشi أrغان ديب إnfusion 150 ml",
+    "typeKey": "hair-mask",
+    "size": "150"
+  },
+  "8025026272028": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Love Hair Mist 20ml",
+    "nameAr": "رذاذ ناشi أrغان love hair mist 20 ml",
+    "typeKey": "leave-in",
+    "size": "20",
+    "tertiary": "care-hair-care-hair-styling"
+  },
+  "8025026007521": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Oil 30ml",
+    "nameAr": "زيت ناشi أrغان 30 ml",
+    "typeKey": "hair-oil",
+    "size": "30"
+  },
+  "8025026278266": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Instant Hydrating Styling Mask 150ml",
+    "nameAr": "قناع ناشi أrغان instant hydrating styling 150 ml",
+    "typeKey": "hair-mask",
+    "size": "150"
+  },
+  "8025026273766": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Shampoo 200ml",
+    "nameAr": "شامبو ناشi أrغان 200 ml",
+    "typeKey": "shampoo",
+    "size": "200"
+  },
+  "8025026274596": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Classic Conditioner 200ml",
+    "nameAr": "بلسم ناشi أrغان كلاسيك 200 ml",
+    "typeKey": "conditioner",
+    "size": "200"
+  },
+  "8025026274565": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Classic Conditioner 500ml",
+    "nameAr": "بلسم ناشi أrغان كلاسيك 500 ml",
+    "typeKey": "conditioner",
+    "size": "500"
+  },
+  "8025026273810": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Hydra Therapy Shampoo 500ml",
+    "nameAr": "شامبو ناشi أrغان هيدra ثيرapy 500 ml",
+    "typeKey": "shampoo",
+    "size": "500"
+  },
+  "8025026281662": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Essential Energy Conditioner 500ml",
+    "nameAr": "بلسم ناشi أrغان الطاقة الأساسية 500 ml",
+    "typeKey": "conditioner",
+    "size": "500"
+  },
+  "8025026271977": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Filler Therapy Lifting Mask 100ml",
+    "nameAr": "قناع ناشi أrغان فيller ثيرapy lifting 100 ml",
+    "typeKey": "hair-mask",
+    "size": "100"
+  },
+  "8025026277412": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Repair & Shine Serum 100ml",
+    "nameAr": "سيروم ناشi أrغان repair & shine 100 ml",
+    "typeKey": "leave-in",
+    "size": "100"
+  },
+  "8025026008313": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Oil 100ml",
+    "nameAr": "زيت ناشi أrغان 100 ml",
+    "typeKey": "hair-oil",
+    "size": "100"
+  },
+  "8025026008474": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Oil Vials Display 24 x 8ml",
+    "nameAr": "زيت ناشi أrغان أمبولات 24 × 8 ml",
+    "typeKey": "hair-oil",
+    "size": "24×8"
+  },
+  "8025026270536": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Armonia Shampoo 250ml",
+    "nameAr": "شامبو ناشi أrغان أرمونيا 250 ml",
+    "typeKey": "shampoo",
+    "size": "250"
+  },
+  "8025026280825": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Blondy Joy Conditioner 250ml",
+    "nameAr": "بلسم ناشi أrغان بلوندي جوy 250 ml",
+    "typeKey": "conditioner",
+    "size": "250"
+  },
+  "8025026271984": {
+    "brandEn": "Nashi Argan",
+    "brandAr": "ناشي أrغان",
+    "nameEn": "Nashi Argan Filler Therapy Restorative Shampoo 250ml",
+    "nameAr": "شامبو ناشi أrغان فيller ثيرapy restorative 250 ml",
+    "typeKey": "shampoo",
+    "size": "250"
+  },
+  "5060743580639": {
+    "brandEn": "Hairburst",
+    "brandAr": "هيرbيرst",
+    "nameEn": "Hairburst Scalp Massage Brush",
+    "nameAr": "فرشاة تدليك فروة الرأس هيرbيرst",
+    "typeKey": "leave-in",
+    "size": "1 pc",
+    "tertiary": "care-hair-care-hair-brushes-accessories"
+  },
+  "5060743580950": {
+    "brandEn": "Hairburst",
+    "brandAr": "هيرbيرst",
+    "nameEn": "Hairburst Conditioner for Dry & Damaged Hair 350ml",
+    "nameAr": "بلسم هيرbيرst للشعر الجاف والتالف 350 ml",
+    "typeKey": "conditioner",
+    "size": "350"
+  },
+  "5060743580943": {
+    "brandEn": "Hairburst",
+    "brandAr": "هيرbيرst",
+    "nameEn": "Hairburst Shampoo for Dry & Damaged Hair 350ml",
+    "nameAr": "شامبو هيرbيرst للشعر الجاف والتالف 350 ml",
+    "typeKey": "shampoo",
+    "size": "350"
+  },
+  "5060743580912": {
+    "brandEn": "Hairburst",
+    "brandAr": "هيرbيرst",
+    "nameEn": "Hairburst Conditioner for Oily Hair 350ml",
+    "nameAr": "بلسم هيرbيرst للشعر الدهني 350 ml",
+    "typeKey": "conditioner",
+    "size": "350"
+  },
+  "5060743580905": {
+    "brandEn": "Hairburst",
+    "brandAr": "هيرbيرst",
+    "nameEn": "Hairburst Shampoo for Oily Hair 350ml",
+    "nameAr": "شامبو هيرbيرst للشعر الدهني 350 ml",
+    "typeKey": "shampoo",
+    "size": "350"
+  },
+  "5060743580936": {
+    "brandEn": "Hairburst",
+    "brandAr": "هيرbيرst",
+    "nameEn": "Hairburst Longer & Stronger Conditioner 350ml",
+    "nameAr": "بلسم هيرbيرst للشعر الأطول والأقوى 350 ml",
+    "typeKey": "conditioner",
+    "size": "350"
+  },
+  "5060743580929": {
+    "brandEn": "Hairburst",
+    "brandAr": "هيرbيرst",
+    "nameEn": "Hairburst Shampoo for Curly Hair 350ml",
+    "nameAr": "شامبو هيرbيرst للشعر المجعد 350 ml",
+    "typeKey": "shampoo",
+    "size": "350"
+  },
+  "5060743580783": {
+    "brandEn": "Hairburst",
+    "brandAr": "هيرbيرst",
+    "nameEn": "Hairburst Dry Shampoo 200ml",
+    "nameAr": "شامبو جاف هيرbيرst 200 ml",
+    "typeKey": "hair-spray",
+    "size": "200"
+  },
+  "5060743580714": {
+    "brandEn": "Hairburst",
+    "brandAr": "هيرbيرst",
+    "nameEn": "Hairburst Derma Scalp Roller",
+    "nameAr": "رولer derma لفروة الرأس هيرbيرst",
+    "typeKey": "leave-in",
+    "size": "1 pc",
+    "tertiary": "care-hair-care-hair-brushes-accessories"
+  },
+  "3474637188207": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Absolut Repair Molecular Shampoo 1500ml",
+    "nameAr": "شامpo لورéal Professionnel absolut repair molecular 1500 ml",
+    "typeKey": "shampoo",
+    "size": "1500"
+  },
+  "3474636975570": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Silver Clarifying Shampoo 1500ml",
+    "nameAr": "شامpo لورéal Professionnel silver 1500 ml",
+    "typeKey": "shampoo",
+    "size": "1500"
+  },
+  "3474636975976": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Vitamino Color Shampoo 1500ml",
+    "nameAr": "شامpo لورéal Professionnel vitamino color 1500 ml",
+    "typeKey": "shampoo",
+    "size": "1500"
+  },
+  "3474636975938": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Absolut Repair Shampoo 1500ml",
+    "nameAr": "شامpo لورéal Professionnel absolut repair 1500 ml",
+    "typeKey": "shampoo",
+    "size": "1500"
+  },
+  "3474636975556": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Volumetry Shampoo 1500ml",
+    "nameAr": "شامpo لورéal Professionnel volumetry 1500 ml",
+    "typeKey": "shampoo",
+    "size": "1500"
+  },
+  "3474636975587": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Sensi Balance Shampoo 1500ml",
+    "nameAr": "شامpo لورéal Professionnel sensi balance 1500 ml",
+    "typeKey": "shampoo",
+    "size": "1500"
+  },
+  "3474637090531": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Scalp Advanced Oily Mask 250ml",
+    "nameAr": "قناع لورéal Professionnel للفروة الدهنية 250 ml",
+    "typeKey": "hair-mask",
+    "size": "250"
+  },
+  "3474636976072": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Pro Longer Mask 250ml",
+    "nameAr": "قناع لورéal Professionnel pro longer 250 ml",
+    "typeKey": "hair-mask",
+    "size": "250"
+  },
+  "3474636975921": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Absolut Repair Shampoo 500ml",
+    "nameAr": "شامpo لورéal Professionnel absolut repair 500 ml",
+    "typeKey": "shampoo",
+    "size": "500"
+  },
+  "3474636974429": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Pro Longer Shampoo 300ml",
+    "nameAr": "شامpo لورéal Professionnel pro longer 300 ml",
+    "typeKey": "shampoo",
+    "size": "300"
+  },
+  "3474636975396": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Pro Longer Mask 500ml",
+    "nameAr": "قnaع لورéal Professionnel pro longer 500 ml",
+    "typeKey": "hair-mask",
+    "size": "500"
+  },
+  "3474636977307": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Pro Longer Ends Filler Cream 150ml",
+    "nameAr": "كريم لورéal Professionnel pro longer 150 ml",
+    "typeKey": "leave-in",
+    "size": "150"
+  },
+  "3474636976119": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Pro Longer Conditioner 200ml",
+    "nameAr": "بلسم لورéal Professionnel pro longer 200 ml",
+    "typeKey": "conditioner",
+    "size": "200"
+  },
+  "3474636975952": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Vitamino Color Shampoo 500ml",
+    "nameAr": "شامpo لورéal Professionnel vitamino color 500 ml",
+    "typeKey": "shampoo",
+    "size": "500"
+  },
+  "3474636202447": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Vitamino Color Fresh Feel Masque 500ml",
+    "nameAr": "قnaع لورéal Professionnel vitamino color 500 ml",
+    "typeKey": "hair-mask",
+    "size": "500"
+  },
+  "3474637069155": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Curl Expression Cream 250ml",
+    "nameAr": "كريم لورéal Professionnel curl expression 250 ml",
+    "typeKey": "leave-in",
+    "size": "250",
+    "tertiary": "care-hair-care-hair-styling"
+  },
+  "3474636975679": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Vitamino Color Mask 500ml",
+    "nameAr": "قnaع لورéal Professionnel vitamino color mask 500 ml",
+    "typeKey": "hair-mask",
+    "size": "500"
+  },
+  "3474636975297": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Inforcer Mask 250ml",
+    "nameAr": "قnaع لورéal Professionnel inforcer 250 ml",
+    "typeKey": "hair-mask",
+    "size": "250"
+  },
+  "3474636975211": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Inforcer Conditioner 200ml",
+    "nameAr": "بلسم لورéal Professionnel inforcer 200 ml",
+    "typeKey": "conditioner",
+    "size": "200"
+  },
+  "3474637072483": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Curl Expression Shampoo 500ml",
+    "nameAr": "شامpo لورéal Professionnel curl expression 500 ml",
+    "typeKey": "shampoo",
+    "size": "500"
+  },
+  "3474637069162": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Curl Expression Mask 500ml",
+    "nameAr": "قnaع لورéal Professionnel curl expression 500 ml",
+    "typeKey": "hair-mask",
+    "size": "500"
+  },
+  "3474637268435": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Vitamino Color Spectrum Glass Shine 50ml",
+    "nameAr": "مصل لورéal Professionnel spectrum glass shine 50 ml",
+    "typeKey": "leave-in",
+    "size": "50",
+    "tertiary": "care-hair-care-hair-styling"
+  },
+  "3474637090609": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Mythic Oil 50ml",
+    "nameAr": "زيت لورéal Professionnel mythic oil 50 ml",
+    "typeKey": "hair-oil",
+    "size": "50"
+  },
+  "3474637268510": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Vitamino Color Spectrum Shampoo 300ml",
+    "nameAr": "شامpo لورéal Professionnel vitamino color spectrum 300 ml",
+    "typeKey": "shampoo",
+    "size": "300"
+  },
+  "3474637268381": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Vitamino Color Spectrum Purple Shampoo 300ml",
+    "nameAr": "شامpo لورéal Professionnel spectrum purple 300 ml",
+    "typeKey": "shampoo",
+    "size": "300"
+  },
+  "3474637268206": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Vitamino Color Spectrum Green Shampoo 300ml",
+    "nameAr": "شامpo لورéal Professionnel spectrum green 300 ml",
+    "typeKey": "shampoo",
+    "size": "300"
+  },
+  "3474637268459": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Vitamino Color Spectrum Mask 250ml",
+    "nameAr": "قnaع لورéal Professionnel vitamino color spectrum 250 ml",
+    "typeKey": "hair-mask",
+    "size": "250"
+  },
+  "3474636974269": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Silver Shampoo 500ml",
+    "nameAr": "شامpo لورéal Professionnel silver 500 ml",
+    "typeKey": "shampoo",
+    "size": "500"
+  },
+  "3474637269012": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Vitamino Color Spectrum Conditioner 200ml",
+    "nameAr": "بلسم لورéal Professionnel vitamino color spectrum 200 ml",
+    "typeKey": "conditioner",
+    "size": "200"
+  },
+  "3474636976133": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Silver Conditioner 200ml",
+    "nameAr": "بلسم لورéal Professionnel silver 200 ml",
+    "typeKey": "conditioner",
+    "size": "200"
+  },
+  "3474636693214": {
+    "brandEn": "L'Oréal Professionnel",
+    "brandAr": "لورéal Professionnel",
+    "nameEn": "Serie Expert Pro Source Chamomile Shampoo 1500ml",
+    "nameAr": "شامpo لورéal Professionnel pro source chamomile 1500 ml",
+    "typeKey": "shampoo",
+    "size": "1500"
+  }
+}

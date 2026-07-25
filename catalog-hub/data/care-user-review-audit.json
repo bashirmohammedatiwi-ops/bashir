@@ -1,0 +1,3666 @@
+{
+  "needsFix": [
+    {
+      "b": "6976623801017",
+      "brand": "Sadoer",
+      "name": "Sadoer Face Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6942349743955",
+      "brand": "Sadoer",
+      "name": "Sadoer Refreshing Foaming Face Wash",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6941349360711",
+      "brand": "Bioaqua",
+      "name": "Bioaqua Rose Hyaluronic Acid Serum 100 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6932511219333",
+      "brand": "Dissar",
+      "name": "Dissar Facial Toner 50 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6941349381846",
+      "brand": "Bioaqua",
+      "name": "Bioaqua Vitamin C Cleanser 100 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6941349379812",
+      "brand": "Bioaqua",
+      "name": "Bioaqua Vitamin C Toner 120 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6942349717116",
+      "brand": "Fayankou",
+      "name": "Fayankou Vitamin C Cleanser 100 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6942349708886",
+      "brand": "Fayankou",
+      "name": "Fayankou Avocado Cleanser 100 G",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6929428206945",
+      "brand": "Only",
+      "name": "Only Niacinamide & Hyaluronic Face Wash Cleansing Gel 1",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6929428206952",
+      "brand": "Only",
+      "name": "Only Retinol Anti-Aging Anti-Spot Face Cleanser 150ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6942349737428",
+      "brand": "Sadoer",
+      "name": "Sadoer SPF 60 Sunscreen 60 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6942349708909",
+      "brand": "Fayankou",
+      "name": "Fayankou Vitamin C Whitening Amino Acid Gentle Cleanser",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6942349717284",
+      "brand": "Fayankou",
+      "name": "Fayankou Collagen Moisturizing Face Spray 150ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6942349713491",
+      "brand": "Fayankou",
+      "name": "Fayankou Collagen Serum 40 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3574661450964",
+      "brand": "Johnson's",
+      "name": "Johnson's Micellar Rose-Infused Cleansing Water 400ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8886467068812",
+      "brand": "Skincare",
+      "name": "All-in-1 Micellar Cleansing Water 400ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8886467068805",
+      "brand": "Skincare",
+      "name": "All-in-1 Micellar Cleansing Water 400ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8886467068799",
+      "brand": "Skincare",
+      "name": "All-in-1 Micellar Cleansing Water 400ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "77043357644",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "77043003466",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "77043104507",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "77043103609",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "77043358023",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "77043355862",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "4005808668861",
+      "brand": "Nivea",
+      "name": "Nivea Refreshing Face Wash Gel",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5900017087665",
+      "brand": "Nivea",
+      "name": "Nivea Derma Skin Clear Cleansing Gel for Blemish-Prone ",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4005900612090",
+      "brand": "Nivea",
+      "name": "Nivea Micellair Expert Make Up Cleaning Foam 150 Ml",
+      "ref": "Micellair Expert Make Up Cleaning Foam 150 ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "42355083",
+      "brand": "Nivea",
+      "name": "Nivea MicellAIR Expert Waterproof Eye Make-Up Remover 1",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8999777011826",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "9005800352367",
+      "brand": "Nivea",
+      "name": "Nivea Rose Touch Two-Phase Eye Make-Up Remover 100ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5900017080628",
+      "brand": "Nivea",
+      "name": "Nivea Energy Micellar Face Fluid with Vitamin C+b3 400 ",
+      "ref": "Energy Micellar face fluid with vitamin C+B3 400 ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "3600542468466",
+      "brand": "Garnier",
+      "name": "Garnier Skin Naturals Vitamin C Brightening 200 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3600542446198",
+      "brand": "Garnier",
+      "name": "Garnier Skinactive Fast Bright Face with Pure Lemon Was",
+      "ref": "SkinActive Fast Bright Face Wash with Pure Lemon 400 ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "3600524076085",
+      "brand": "L'Oréal Paris",
+      "name": "L'Oréal Paris Revitalift Vitamin C + Salicylic Acid Cle",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3600524165185",
+      "brand": "L'Oréal Paris",
+      "name": "L'Oréal Paris Cleansing Gel with Glycolic Acid 150 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3600524128968",
+      "brand": "L'Oréal Paris",
+      "name": "L'Oréal Paris Bright Reveal Spot",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3600523959631",
+      "brand": "L'Oréal Paris",
+      "name": "L'Oréal Paris Hyaluron Specialist Replumping Smoothing ",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3600524053147",
+      "brand": "L'Oréal Paris",
+      "name": "L'Oréal Paris Hyaluron Expert Oil Control Face Wash 200",
+      "ref": "Loreal Hyaluron Expert Oil Control Face Wash",
+      "pos": "",
+      "reasons": [
+        "BRAND? store=Loreal cur=L'Oréal Paris"
+      ]
+    },
+    {
+      "b": "8994993016013",
+      "brand": "L'Oréal Paris",
+      "name": "L'Oréal Paris Revitalift Hyaluronic Acid Gel Cleanser 1",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3600524019587",
+      "brand": "L'Oréal Paris",
+      "name": "L'Oréal Paris Revitalift 5% Glycolic Acid Peeling Toner",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6294016925769",
+      "brand": "Garnier",
+      "name": "Garnier SkinActive Micellar Cleansing Water Vitamin C 4",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3600541897694",
+      "name": "",
+      "ref": "Garnier SkinActive Micellar Water-in-Oil Cleanser - 400",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "3600541729711",
+      "brand": "Garnier",
+      "name": "Garnier Skinactive Micellar Cleansing Water All-in-1 - ",
+      "ref": "Garnier SkinActive Micellar Cleansing Water All-in-1 - ",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "3600542536868",
+      "brand": "Garnier",
+      "name": "Garnier Skin Naturals Anti-acne Micellar Cleansing Wate",
+      "ref": "Garnier Skin Naturals Anti-Acne Micellar Cleansing Wate",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "6974388193750",
+      "brand": "I'm From",
+      "name": "I'm From Rice Whip Facial Cleanser 150ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3600542488051",
+      "brand": "Garnier",
+      "name": "Garnier Pure Active HA Moisturizing Cleansing Emulsion ",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5021044025908",
+      "brand": "Garnier",
+      "name": "Garnier Pure Active Anti-Blackhead Deep Pore Wash 150ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3600540676627",
+      "brand": "Garnier",
+      "name": "Garnier Pure Active 3-in-1 Anti-Imperfections Wash 150m",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3610340656040",
+      "brand": "Garnier",
+      "name": "Garnier Daily Exfoliating for Acne Prone Skin Wash 150 ",
+      "ref": "Daily Exfoliating Wash For Acne Prone Skin 150 ml‎",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8994993028894",
+      "brand": "Garnier",
+      "name": "Garnier SkinActive Fast Bright Vitamin C Serum Cleanser",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3600542105286",
+      "brand": "Garnier",
+      "name": "Garnier Pure Active Charcoal Anti Blackhead Cleansing G",
+      "ref": "Pure Active Charcoal Anti Blackhead Cleansing Gel Wash ",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8859362515422",
+      "brand": "YC",
+      "name": "Yc Salicylic Acid Cica 100 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5060120163424",
+      "brand": "Xpel",
+      "name": "Xpel Tea Tree Foaming Face Wash 200ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "7531829534276",
+      "brand": "Derma 101",
+      "name": "Derma 101 Face Wash 200 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6930236309308",
+      "brand": "Rose Berry",
+      "name": "Rose Berry Moisturizing Cream for Face and Body 200ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8901138008369",
+      "brand": "Himalaya",
+      "name": "Himalaya Purifying Neem Face Wash 150ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5907609345707",
+      "brand": "Eveline Cosmetics",
+      "name": "Eveline Cosmetics ¥ 4D 200LG",
+      "ref": "Eveline Cosmetics White Prestige 4D Facial Wash Gel - B",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.13) vs Eveline Cosmetics White Prestige 4D Facial Wa"
+      ]
+    },
+    {
+      "b": "3574660310405",
+      "brand": "Gosh",
+      "name": "Gosh Catchy Eyes Mascara 50 Black",
+      "ref": "Gosh Ultra Thin Brow Pen",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.20) vs Gosh Ultra Thin Brow Pen"
+      ]
+    },
+    {
+      "b": "5012251013499",
+      "brand": "Beauty Formulas",
+      "name": "Beauty Formulas Brightening Vitamin C",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5012251013390",
+      "brand": "Beauty Formulas",
+      "name": "Beauty Formulas Brightening Vitamin C Facial Tonic 150m",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8999999053048",
+      "brand": "Pond's",
+      "name": "Pond's Pure White Anti-Pollution Face Wash 100g",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8999999562199",
+      "brand": "Pond's",
+      "name": "Pond's Pure Bright Serum Whip Foam 100g",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8999999053062",
+      "brand": "Pond's",
+      "name": "Pond's Clear Solutions Anti-Bacterial Facial Scrub 100g",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8999999058340",
+      "brand": "Pond's",
+      "name": "Pond's Acne Solution Facial Foam 100g",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8999999053031",
+      "brand": "Pond's",
+      "name": "Pond's White Beauty Facial Foam 100g",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8851932407915",
+      "brand": "Pond's",
+      "name": "Pond's Vitamin Micellar Water Detoxing Charcoal 400ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8851932407908",
+      "brand": "Pond's",
+      "name": "Pond's Vitamin Micellar Water 400ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5011451103870",
+      "brand": "Simple",
+      "name": "Simple Kind to Skin Moisturising Facial Wash 150ml",
+      "ref": "Loreal Infaillible 24H Concealer Pomade",
+      "pos": "",
+      "reasons": [
+        "NAME_MISMATCH(0.00) vs Loreal Infaillible 24H Concealer Pomade",
+        "BRAND? store=Loreal cur=Simple"
+      ]
+    },
+    {
+      "b": "8710908708787",
+      "brand": "Simple",
+      "name": "Simple Face Serum 25 Ml",
+      "ref": "مرطب الوجه ووتر بوتس للبشرة الجافة, 25 مل",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.00) vs مرطب الوجه ووتر بوتس للبشرة الجافة, 25 مل"
+      ]
+    },
+    {
+      "b": "8710447473832",
+      "brand": "Simple",
+      "name": "Simple Face Serum 25 Ml",
+      "ref": "Simple Clearing Booster , 25ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.25) vs Simple Clearing Booster , 25ml"
+      ]
+    },
+    {
+      "b": "8720181157134",
+      "brand": "Simple",
+      "name": "Simple Niacinamide Serum 30 Ml",
+      "ref": "Serum 10% Niacinamide Vitamin B3 - 30ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8720181476846",
+      "brand": "Simple",
+      "name": "Simple Age Resisting Night Cream 50ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8720181476877",
+      "brand": "Simple",
+      "name": "Simple Water Boost Hydrating Gel Cream 50ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8720181476853",
+      "brand": "Simple",
+      "name": "Simple Protect 'N' Glow Brightening Gel Cream 50ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5011451103931",
+      "brand": "Simple",
+      "name": "Simple Facial Toner 125 Ml",
+      "ref": "Simple Hydrating Light Moisturiser , 125ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.20) vs Simple Hydrating Light Moisturiser , 125ml"
+      ]
+    },
+    {
+      "b": "5011451103948",
+      "brand": "Simple",
+      "name": "Simple Face Serum 25 Ml",
+      "ref": "Simple Replenishing Rich Moisturiser , 125ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.20) vs Simple Replenishing Rich Moisturiser , 125ml"
+      ]
+    },
+    {
+      "b": "87300700076",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "362032050515",
+      "brand": "Obagi",
+      "name": "Obagi Vitamin C 10% Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "362032050522",
+      "brand": "Obagi",
+      "name": "Obagi Vitamin C 15% Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "362032050539",
+      "brand": "Obagi",
+      "name": "Obagi Vitamin C 20% Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "358892336500",
+      "brand": "TIZO",
+      "name": "Tizo 2 Primer +40SPF Sunscreen",
+      "ref": "Tizo Tizo2 Primer Sunscreen Non Tinted SPF40, 50 g",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "358892326501",
+      "brand": "TIZO",
+      "name": "Tizo 3 Primer SPF+40 Sunscreen",
+      "ref": "Tizo3 Primer Sunscreen Tinted SPF40, 50 g",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "893689001181",
+      "brand": "RevitaLash",
+      "name": "RevitaLash Advanced Eyelash Conditioner 3.5ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3350900002589",
+      "brand": "Embryolisse",
+      "name": "Embryolisse Moisturizing Lotion 400ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3350900000264",
+      "brand": "Embryolisse",
+      "name": "Embryolisse Foaming Cream-Milk Face & Body Cleanser 200",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3350900003104",
+      "brand": "Embryolisse",
+      "name": "Embryolisse Face Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3350900000011",
+      "brand": "Embryolisse",
+      "name": "Embryolisse Cream 75 Ml",
+      "ref": "Embryolisse Concentrated Multitasking Moisturizer Cream",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "3350900003128",
+      "brand": "Embryolisse",
+      "name": "Embryolisse Anti-Brown Spot Night Peeling Cream 40ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "769915233537",
+      "brand": "The Ordinary",
+      "name": "The Ordinary Salicylic Acid Body Serum 240 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "769915234053",
+      "brand": "GLYCOLIC ACID",
+      "name": "Glycolic Acid 7% Exfoliating Toner 100 Ml",
+      "ref": "The Ordinary Glycolic Acid 7% Exfoliating Toner - 100ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "769915194852",
+      "brand": "The Ordinary",
+      "name": "The Ordinary Salicylic Acid 2/ Masque",
+      "ref": "The Ordinary Salicylic Acid 2% Masque - 50ML",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "769915193626",
+      "brand": "The Ordinary",
+      "name": "The Ordinary Acid Powder 20 G",
+      "ref": "The Ordinary 100% L Ascorbic Acid Powder, 20 g",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "769915231724",
+      "brand": "The Ordinary",
+      "name": "The Ordinary Salicylic Acid 2% 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "769915190281",
+      "brand": "The Ordinary",
+      "name": "The Ordinary Lactic Acid 5% +HA",
+      "ref": "The Ordinary Lactic Acid 5% + Hyaluronic Acid 2%",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "769915195606",
+      "brand": "The Ordinary",
+      "name": "The Ordinary Peeling Solution 30 Ml",
+      "ref": "The Ordinary Peeling Solution AHA 30% + BHA 2% - 30ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "769915196009",
+      "brand": "The Ordinary",
+      "name": "The Ordinary Retinol 0.5% in Squalane 30 Ml",
+      "ref": "The Ordinary Retinol 0.5% In Squalane - 30ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "769915233490",
+      "brand": "The Ordinary",
+      "name": "The Ordinary Hyaluronic Acid 2% Serum 30 Ml",
+      "ref": "The Ordinary Hyaluronic Acid 2% + B5 Serum",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "769915195712",
+      "brand": "The Ordinary",
+      "name": "The Ordinary Caffeine 5%EGCG",
+      "ref": "The Ordinary Caffeine Solution 5% + EGCG - 30ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "769915195941",
+      "brand": "The Ordinary",
+      "name": "The Ordinary Niacinamide +ZINC1%",
+      "ref": "The Ordinary Niacinamide 10% + Zinc 1% - 30ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8800272720970",
+      "brand": "Derma 101",
+      "name": "Derma 101 Nourishing Snail , Toner 200 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8800272720949",
+      "brand": "Derma 101",
+      "name": "Derma 101 Snail Foam Cleanser 150 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8800272720963",
+      "brand": "Derma 101",
+      "name": "Derma 101 Nourishing Snail Cream 50 G",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8800272720956",
+      "brand": "Derma 101",
+      "name": "Derma 101 Nourishing Snail Serum 50 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8809438489805",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "8809438489843",
+      "brand": "Derma 101",
+      "name": "Derma 101 Retinol Toner 200 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8809438489850",
+      "brand": "Derma 101",
+      "name": "Derma 101 Vitamin C Toner 200 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8809438489133",
+      "brand": "Derma 101",
+      "name": "Derma 101 Retinol Toner 300 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8809438489126",
+      "brand": "Derma 101",
+      "name": "Derma 101 Rose Water Toner 300 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8809438489010",
+      "brand": "Derma 101",
+      "name": "Derma 101 Collagen Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8809438489829",
+      "brand": "Derma 101",
+      "name": "Derma 101 Power Brightening Serum 30ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8809438489836",
+      "brand": "Derma 101",
+      "name": "Derma 101 Multi Peptides Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8809667080446",
+      "brand": "DERMA NIACINAMIDE",
+      "name": "Derma Niacinamide Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8809438488990",
+      "brand": "Derma 101",
+      "name": "Derma 101 Salicylic Acid Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8809667080354",
+      "brand": "Derma 101",
+      "name": "Derma 101 Derma Vitamin C 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8809438489003",
+      "brand": "Derma 101",
+      "name": "Derma 101 Alpha Arbutin Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8850008800230",
+      "brand": "Fair Lady",
+      "name": "Fair Lady Brightening Papaya Cream 50 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8850008800254",
+      "brand": "Fair Lady",
+      "name": "Fair Lady Gel 7 Day Soothing Gel 50 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8802547874623",
+      "brand": "Cat Eye",
+      "name": "Cat Eye Double Lash Eyelash Fortifier Serum",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "709257078335",
+      "brand": "Ban",
+      "name": "Ban Ultra Roll-On Antiperspirant Deodorant 90ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "70501116906",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "3574661287256",
+      "name": "",
+      "ref": "Neutrogena Hydro Boost Gel Cream Facial Moisturiser - 5",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "3574661520353",
+      "brand": "Neutrogena",
+      "name": "Neutrogena Clear & Defend Rapid Gel 15ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3574661639208",
+      "brand": "Neutrogena",
+      "name": "Neutrogena Soothing Clear Mist Toner 125ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3574661336657",
+      "brand": "Neutrogena",
+      "name": "Neutrogena Anti-Blackhead Lotion 200ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "70501017128",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "3574661333595",
+      "name": "",
+      "ref": "Catrice All Matt+ Shine Control Powder",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "5904125995461",
+      "brand": "YC",
+      "name": "Yc Cevi Alpha Arbutin Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8859690411328",
+      "brand": "YC",
+      "name": "YC Alpha Arbutin Whitening Bath Salt",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8859690409790",
+      "brand": "YC",
+      "name": "YC Alpha Arbutin Whitening Body Serum",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8859690410437",
+      "brand": "YC",
+      "name": "Yc Alpha Arbutin Collagen Fomaing 120 G",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8859690400346",
+      "brand": "YC",
+      "name": "YC Alpha Arbutin Whitening Capsule Cream",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8859690407123",
+      "brand": "YC",
+      "name": "Yc Alpha Arbutin Collagen Plus Cream 100 G",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8859690408847",
+      "brand": "YC",
+      "name": "Yc Alpha Arbutin Collagen Cream 50 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "635494334203",
+      "brand": "SkinCeuticals",
+      "name": "Skinceuticals Daily Moisture 60 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3606000499607",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "8809317118628",
+      "brand": "Farm Stay",
+      "name": "Farm Stay Snail Mucus Moisture Toner 150ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6921199122189",
+      "brand": "Dr.Davey",
+      "name": "Dr.davey Hyaluronic Acid Serum",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6921199122172",
+      "brand": "Dr.Davey",
+      "name": "Dr.davey Hyaluronic Acid Gel Cream",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6921199101832",
+      "brand": "Roushun",
+      "name": "Roushun Bye Bye Blackhead Green Tea Bubble Cleanser 100",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6921199199822",
+      "brand": "Roushun",
+      "name": "Roushun AHA BHA PHA 30 Days Miracle Serum 50ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6921199119387",
+      "brand": "Dr.Davey",
+      "name": "Dr.davey Licorice Root 60 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6930236309889",
+      "brand": "Rose Berry",
+      "name": "Rose Berry Snow White Whitening Cream",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4806500238822",
+      "brand": "Kokuryu",
+      "name": "Kokuryu Lemon Cleanser 225ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4806500238815",
+      "brand": "Kokuryu Cucumber",
+      "name": "Kokuryu Cucumber Cleanser 225 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6398565103149",
+      "brand": "Ronza",
+      "name": "Ronza Body Splash 250ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6921199196913",
+      "brand": "Dr.Davey",
+      "name": "Dr.davey 99% Aloe Vera 120 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4897075016021",
+      "brand": "Dr.Davey",
+      "name": "Dr.davey Facial Toner 120 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764150154",
+      "brand": "Dr.Rashel",
+      "name": "Dr.Rashel Whitening Fade Cleanser 80ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764150161",
+      "brand": "Dr.Rashel",
+      "name": "Dr.rashel Facial Toner 50 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "79656000078",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "71661009749",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "6297001217634",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "4000196901187",
+      "brand": "Glysolid",
+      "name": "Glysolid Glycerin Cream 250ml",
+      "ref": "Glysolid Cream 250 ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "60018915",
+      "brand": "Vaseline",
+      "name": "Vaseline Blue Seal Aloe Fresh Petroleum Jelly 100ml",
+      "ref": "Vaseline Blue Seal Aloe Fresh",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "60019066",
+      "brand": "Vaseline",
+      "name": "Vaseline Blueseal Baby Jelly",
+      "ref": "Blueseal Baby Jelly 100 ml - Vaseline",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "6001085121028",
+      "brand": "Vaseline",
+      "name": "Vaseline Blue Seal Vitamin E Petroleum Jelly 100ml",
+      "ref": "Vaseline Blue Seal Nourishing Skin Jelly Vitamin E - 10",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "60018960",
+      "name": "",
+      "ref": "Vaseline Cocoa Butter Rich Conditioning Jelly - 100 ml",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "6001085120946",
+      "brand": "Vaseline",
+      "name": "Vaseline Pure Petroleum Jelly Original 100g",
+      "ref": "Pure Petroleum Jelly Original",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "4005808858743",
+      "brand": "Eucerin",
+      "name": "Eucerin Ato Control Lotion 250 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "72140032258",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "4005800321320",
+      "brand": "Eucerin",
+      "name": "Eucerin Hydro Ultra Light Fluid SPF +50 Sunscreen",
+      "ref": "Eucerin Sun Hydro Protect SPF 50, 50 ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "4005800119361",
+      "brand": "Eucerin",
+      "name": "Eucerin Oil Control SPF+50 Sunscreen",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4005900492944",
+      "brand": "Eucerin",
+      "name": "Eucerin Hyaluronic Filler Eye Cream 15 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4005800108464",
+      "brand": "Eucerin",
+      "name": "Eucerin Ultra Sensitive Care 50 Ml",
+      "ref": "Eucerin Ultra Sensitive Serum, 50 ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "4005800182037",
+      "brand": "Eucerin",
+      "name": "Eucerin Oil Control Mattifying 50 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4005800295485",
+      "brand": "Eucerin",
+      "name": "Eucerin Dermo Oil Control SPF 30 Sunscreen",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4005900871237",
+      "brand": "Eucerin",
+      "name": "Eucerin Dermopurifyer Oil Control 40 Ml",
+      "ref": "Dermo Purifyer Post Acne Marks Triple Effect Serum 40 m",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.11) vs Dermo Purifyer Post Acne Marks Triple Effect "
+      ]
+    },
+    {
+      "b": "4005900570796",
+      "brand": "Eucerin",
+      "name": "Eucerin Anti Pugment Day Care SPF+30 Sunscreen",
+      "ref": "Eucerin Anti Pigment Day Cream SPF30، 50 ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "4005900552372",
+      "brand": "Eucerin",
+      "name": "Eucerin Anti Pigment Spot 5 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "72140633820",
+      "name": "",
+      "ref": "Eucerin Advanced Repair Hand Creme 78 g",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "4005800034329",
+      "brand": "Eucerin",
+      "name": "Eucerin Urea Repair Hand 75 Ml",
+      "ref": "Urea Repair Plus Hand  Cream 75 ml - Eucerin",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "4005800034428",
+      "brand": "Eucerin",
+      "name": "Eucerin UreaRepair PLUS Foot Cream 10% Urea 100ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4005800288296",
+      "brand": "Eucerin",
+      "name": "Eucerin UreaRepair PLUS 10% Urea Foot Foam 150ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4005800283079",
+      "brand": "Eucerin",
+      "name": "Eucerin Hyaluron-Filler Moisture Booster Gel-Cream 200m",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4005800036798",
+      "brand": "Eucerin",
+      "name": "Eucerin Calming Shampoo 250 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4005800194849",
+      "brand": "Eucerin",
+      "name": "Eucerin pH5 Washlotion Refill 400ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4005800192883",
+      "brand": "Eucerin",
+      "name": "Eucerin Dermopure Cleasing Gel 400 Ml",
+      "ref": "Eucerin Dermo Pure Cleanser, 400 ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "4005800347467",
+      "brand": "Eucerin",
+      "name": "Eucerin Anti-pigment Cleansing Gel 400 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "72140019433",
+      "name": "",
+      "ref": "Eucerin Lotion Skin Calming, 500 ml",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "72140634827",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "72140003043",
+      "name": "",
+      "ref": "Eucerin Daily Hydration Lotion With SPF15+, 500 ml",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "72140020491",
+      "name": "",
+      "ref": "Eucerin Advanced Repair Cream, 454G",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "72140000219",
+      "name": "",
+      "ref": "Eucerin Original Healing Cream  - 454 g",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "8680923356389",
+      "brand": "Nippon",
+      "name": "Nippon Gentle Cleansing Foam 200ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923356143",
+      "brand": "Nippon",
+      "name": "Nippon Pentavitin Moisturizing Care Aloe Vera 350ml",
+      "ref": "Nippon Pentavitin Moisturizing Care Aloe Vera- 350ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923356037",
+      "brand": "Nippon",
+      "name": "Nippon Pentavitin Moisturizing Care All Skin Types 350m",
+      "ref": "Nippon Pentavitin Moisturizing Care All Skin Types - 35",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923356150",
+      "brand": "Nippon",
+      "name": "Nippon Pentavitin Moisturizing Care Hyaluronic Acid 350",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923356167",
+      "brand": "Nippon",
+      "name": "Nippon Pentavitin Sensitive Skin Moisturizing Care Rose",
+      "ref": "Nippon Pentavitin Sensitive Skin Moisturizing Care Rose",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923355016",
+      "brand": "Nippon",
+      "name": "Nippon Cleansing Foam with Aloe Vera 160ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923355023",
+      "brand": "Nippon",
+      "name": "Nippon Cleansing Foam with Chamomile 160ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923355030",
+      "brand": "Nippon",
+      "name": "Nippon Advanced Facial Repair & Care Cleansing Foam 160",
+      "ref": "Nippon Advanced Facial Repair & Care Cleansing Foam - 1",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923355047",
+      "brand": "Nippon",
+      "name": "Nippon Moisturizing Body Lotion Argan Oil 400ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923355061",
+      "brand": "Nippon",
+      "name": "Nippon Moisturizing Body Lotion Shea Butter 400ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923355078",
+      "brand": "Nippon",
+      "name": "Nippon Moisturizing Body Lotion Vitamin E 400ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923355054",
+      "brand": "Nippon",
+      "name": "Nippon Moisturizing Body Lotion Collagen 400ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923361444",
+      "brand": "Nippon",
+      "name": "Nippon 25% Urea Foot Care Cream 50g",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923355115",
+      "brand": "Nippon",
+      "name": "Nippon Lip Moisturizer SPF 30 4.5ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923355085",
+      "brand": "Nippon",
+      "name": "Nippon Lip Mask & Scrub Bubble Gum 20g",
+      "ref": "Nippon Lip Mask & Scrub With Bubble Gum And Sugar Granu",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923355092",
+      "brand": "Nippon",
+      "name": "Nippon Lip Mask & Scrub Strawberry 20g",
+      "ref": "Nippon Lip Mask & Scrub With Strawberry And Sugar Granu",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923356273",
+      "brand": "Nippon",
+      "name": "Nippon Advanced Repair Face Serum 20ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923354972",
+      "brand": "Nippon",
+      "name": "Nippon Brightening Body Cream Vitamin E 50ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923358000",
+      "brand": "Nippon",
+      "name": "Nippon Whitening Roll-On Antiperspirant 75ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923355993",
+      "brand": "Nippon",
+      "name": "Nippon Brightening Body Cream Glutathione 50ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923355146",
+      "brand": "Nippon",
+      "name": "Nippon Brightening Body Cream Collagen 50ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923355139",
+      "brand": "Nippon",
+      "name": "Nippon Sun Protect Cream SPF50+ All Skin Types 50ml",
+      "ref": "Nippon Sun Protect Cream all skin types SPF50+ - 50 ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923355238",
+      "brand": "Nippon",
+      "name": "Nippon Advanced Facial Repair & Care Cream All Skin Typ",
+      "ref": "Nippon Advanced Facial Repair & Care Cream All Skin typ",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923355252",
+      "brand": "Nippon",
+      "name": "Nippon Advanced Facial Repair & Care Cream Oily Skin 10",
+      "ref": "Nippon Advanced Facial Repair & Care Cream oily skin ty",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923355245",
+      "brand": "Nippon",
+      "name": "Nippon Advanced Facial Repair & Care Cream Sensitive Sk",
+      "ref": "Nippon Advanced Facial Repair & Care Cream sensitive sk",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923360195",
+      "brand": "Nippon",
+      "name": "Nippon Hair Care Anti-Dandruff Shampoo 400ml",
+      "ref": "Nippon Hair Care Anti Dandruff Shampoo - 400ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923360188",
+      "brand": "Nippon",
+      "name": "Nippon Hair Care Anti Hair Fall & Repair Shampoo 400ml",
+      "ref": "Nippon Hair Care Anti Hair Fall & Repair Shampoo - 400m",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923355214",
+      "brand": "Nippon",
+      "name": "Nippon Daily Feminine Wash Aloe Vera 250ml",
+      "ref": "Nippon Daily Feminine Wash  ALOE BARBADENSIS LEAF JUICE",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923355221",
+      "brand": "Nippon",
+      "name": "Nippon Daily Feminine Wash Chamomile 250ml",
+      "ref": "Nippon Daily Feminine Wash CHAMOMILLA RECUTITA FLOWER E",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923354965",
+      "brand": "Nippon",
+      "name": "Nippon Balance Whitening Body Cream 50ml",
+      "ref": "Nippon Balance Whitening Body Cream - 50ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923354958",
+      "brand": "Nippon",
+      "name": "Nippon Brightening Body Cream Collagen & Arbutin 50ml",
+      "ref": "Nippon Brightening Body Cream Collagen & Arbutin - 50ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923354989",
+      "brand": "Nippon",
+      "name": "Nippon Hyaluronic Acid Face Serum 30ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923355153",
+      "brand": "Nippon",
+      "name": "Nippon Vitamin C Face Serum 30ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923354941",
+      "brand": "Nippon",
+      "name": "Nippon Collagen Face Serum 30ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923354996",
+      "brand": "Nippon",
+      "name": "Nippon Niacinamide Face Serum 30ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923356402",
+      "brand": "Nippon",
+      "name": "Nippon Sweet & Refreshing Shower Gel Sunset Glow 600ml",
+      "ref": "Nippon Sweet & Refreshing Shower Gel Sunset Glow - 600m",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923356419",
+      "brand": "Nippon",
+      "name": "Nippon Sweet & Refreshing Shower Gel Ocean Breeze 600ml",
+      "ref": "Nippon Sweet & Refreshing Shower Gel Ocean Breeze - 600",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923356396",
+      "brand": "Nippon",
+      "name": "Nippon Sweet & Refreshing Shower Gel Green Essence 600m",
+      "ref": "Nippon Sweet & Refreshing Shower Gel Green Essence - 60",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923356426",
+      "brand": "Nippon",
+      "name": "Nippon Sweet & Refreshing Shower Gel Pink Blossom 600ml",
+      "ref": "Nippon Sweet & Refreshing Shower Gel Pink Blossom - 600",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923361345",
+      "brand": "Nippon",
+      "name": "Nippon Whitening Roll-On Antiperspirant White 70ml",
+      "ref": "Nippon Roll Antiperspirant Whitening Purple Roll-On uni",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923361451",
+      "brand": "Nippon",
+      "name": "Nippon Whitening Roll-On Antiperspirant Orange 70ml",
+      "ref": "Nippon Roll Antiperspirant Whitening Orange Roll-On uni",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923355160",
+      "brand": "Nippon",
+      "name": "Nippon Whitening Roll-On Antiperspirant Blue 70ml",
+      "ref": "Nippon Roll Antiperspirant Whitening Blue Roll-On unise",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923355184",
+      "brand": "Nippon",
+      "name": "Nippon Whitening Roll-On Antiperspirant Green 70ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8680923355177",
+      "brand": "Nippon",
+      "name": "Nippon Whitening Roll-On Antiperspirant Pink 70ml",
+      "ref": "Nippon Roll Antiperspirant Whitening Pink Roll-On unise",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923355191",
+      "brand": "Nippon",
+      "name": "Nippon Whitening Roll-On Antiperspirant Brown 70ml",
+      "ref": "Nippon Roll Antiperspirant Whitening Brown Roll-On unis",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8680923355207",
+      "brand": "Nippon",
+      "name": "Nippon Whitening Roll-On Antiperspirant Maroon 70ml",
+      "ref": "Nippon Roll Antiperspirant Whitening Maroon Roll-On uni",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "5281019046677",
+      "brand": "Cosmaline",
+      "name": "Cosmaline Soft Wave Purifying Face Wash Oily Skin 250ml",
+      "ref": "Cosmaline Soft Wave Purifying Face Wash for Oily Skin -",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "5281019046684",
+      "brand": "Cosmaline",
+      "name": "Cosmaline Moisturizing Face Wash Dry to Normal Skin 250",
+      "ref": "Cosmaline Hydrating Face Wash for Normal to Dry Skin - ",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "8806358568207",
+      "brand": "T-Moly",
+      "name": "T-moly Bambo Fresh 96% Toner 300 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8800261260579",
+      "brand": "Ekel",
+      "name": "Ekel Soothing & Moisture Aloe Vera 100% Gel 100ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8901030769504",
+      "brand": "Himalaya",
+      "name": "Himalaya Purifying Neem Face Wash 150ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4005900008442",
+      "brand": "Nivea",
+      "name": "Nivea Soft Moisturising Cream 200ml",
+      "ref": "Nivea Soft Moisturizer - 200ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "9005800358840",
+      "brand": "Nivea",
+      "name": "Nivea Family Care All-Purpose Cream 450ml",
+      "ref": "Nivea Family Care Moisturizing Cream - Hydrates dry ski",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "4005808166190",
+      "brand": "Nivea",
+      "name": "Nivea Creme Multi-Purpose Moisturiser 150ml",
+      "ref": "Moisturizing Body Cream",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.00) vs Moisturizing Body Cream"
+      ]
+    },
+    {
+      "b": "42164104",
+      "brand": "Nivea",
+      "name": "Nivea Creme Multi-Purpose Moisturiser 60ml",
+      "ref": "Moisturizing Body Cream",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.00) vs Moisturizing Body Cream"
+      ]
+    },
+    {
+      "b": "3574661656014",
+      "brand": "Johnson's",
+      "name": "Johnson's Moisture Soft Cream Face & Body 200ml",
+      "ref": "كريم سوفت للوجه و الجسم 200 مل",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.00) vs كريم سوفت للوجه و الجسم 200 مل"
+      ]
+    },
+    {
+      "b": "77043104736",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "6971764159508",
+      "brand": "Estelin",
+      "name": "Estelin Body Lotion 269 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764154909",
+      "brand": "Estelin",
+      "name": "Estelin Vitamin C Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764154954",
+      "brand": "Estelin",
+      "name": "Estelin B5 Ceramide Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764154923",
+      "brand": "Estelin",
+      "name": "Estelin Salicylic Acid Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764154930",
+      "brand": "Estelin",
+      "name": "Estelin Rice Collagen Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764154893",
+      "brand": "Estelin",
+      "name": "Estelin Niacinamide Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764157658",
+      "brand": "Estelin",
+      "name": "Estelin AHA Facial Toner 400ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764157627",
+      "brand": "Estelin",
+      "name": "Estelin Vitamin C Toner 400 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764157641",
+      "brand": "Estelin",
+      "name": "Estelin Repair Toner 400 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764157634",
+      "brand": "Estelin",
+      "name": "Estelin Arbutin Toner 400 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764157665",
+      "brand": "Estelin",
+      "name": "Estelin Retinol Toner 400 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764157610",
+      "brand": "Estelin",
+      "name": "Estelin Hyaluronic Toner 400 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764157962",
+      "brand": "Estelin",
+      "name": "Estelin Retinol Cream 200 G",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764157979",
+      "brand": "Estelin",
+      "name": "Estelin Peptide+collagen Cream 200 G",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764157931",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "6971764157986",
+      "brand": "Estelin",
+      "name": "Estelin Ceramide Face Cream 200g",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764157290",
+      "brand": "Estelin",
+      "name": "Estelin Uva/uvb SPF +50 Sunscreen",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764152547",
+      "brand": "Estelin",
+      "name": "Estelin Repair Suncream SPF +60 Sunscreen",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764152554",
+      "brand": "Estelin",
+      "name": "Estelin Sun Protection Cream SPF 90",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "6971764158518",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "6971764158501",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "6971764158549",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "6971764158525",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "6971764158532",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "8436575091129",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "8436575091136",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "8436575091648",
+      "brand": "Biovene",
+      "name": "Biovene Vitamins Hair & Skin Gummy Supplements",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8436575098012",
+      "brand": "Biovene",
+      "name": "Biovene Bakuchiol Radiance Hydrogel Eye Patches 60 pcs",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8436575098029",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "8436575098036",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "3760074270279",
+      "brand": "Floxia",
+      "name": "Floxia Deodorant Anti-Odor Roll-On 15ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "3760074270194",
+      "brand": "Floxia",
+      "name": "Floxia Disco-micro Emulsion Spot Complex 40 Ml",
+      "ref": "Floxia Spot And Complexion Control Micro Emulsion Cream",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "303160227066",
+      "brand": "Panoxyl",
+      "name": "Panoxyl 4% Acne Creamy Wash",
+      "ref": "Panoxyl Creamy Face Wash",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "303160228551",
+      "brand": "Panoxyl",
+      "name": "Panoxyl Acne Foaming Wash 156 G",
+      "ref": "Panoxyl Maximum Strength Acne Foaming Wash",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "3760019121642",
+      "brand": "Soskin",
+      "name": "Soskin Whitening Body Lotion 150ml",
+      "ref": "Soskin Whitening Body Lotion and Sensitive Area - 150ml",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "5901643177546",
+      "brand": "Dermedic",
+      "name": "Dermedic 50+ Dry Skin Sunscreen",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5901643177560",
+      "brand": "Dermedic",
+      "name": "Dermedic 50+ Oily Skin Sunscreen",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5901643177584",
+      "brand": "Dermedic",
+      "name": "Dermedic 05+ Hyper Reactive Skin Sunscreen",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8000921303107",
+      "brand": "Pura Natura",
+      "name": "Pura Natura Psoristop Shampoo 250ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5997001720554",
+      "brand": "Dermaflora",
+      "name": "Dermaflora 0% Aloe Vera Hydrogel 50ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5997001720752",
+      "brand": "Dermaflora",
+      "name": "Dermaflora 0% Micellar Facial Scrub 100ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8017990166793",
+      "brand": "Acty Mask",
+      "name": "Acty Mask Gel Detergente 3-in-1 for Combination Skin 15",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5902802707789",
+      "brand": "Bioliq",
+      "name": "Bioliq Specialist Balancing Day Cream 30ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5902802707796",
+      "brand": "Bioliq",
+      "name": "Bioliq Dermo Night Cream for Acne-Prone Skin 30ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5902802705891",
+      "brand": "Bioliq",
+      "name": "Bioliq Dermo CICA Intensively Regenerating Cream 30ml",
+      "ref": "كريم سيكا لتجديد البشرة بشكل مكثف 30 مل",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.00) vs كريم سيكا لتجديد البشرة بشكل مكثف 30 مل"
+      ]
+    },
+    {
+      "b": "5906071003641",
+      "brand": "Bioliq",
+      "name": "Bioliq Eyelash 4+ Eyelash Boost Serum 3ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5906071023021",
+      "brand": "Bioliq",
+      "name": "Bioliq Dermo Anti-Acne Spot Serum 15ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5906071044651",
+      "brand": "Bioliq",
+      "name": "Bioliq Dermo Antiperspirant 48h Roll-On 50ml",
+      "ref": "مزيل العرق رول اون 48 ساعة من الحماية 50 مل",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.00) vs مزيل العرق رول اون 48 ساعة من الحماية 50 مل"
+      ]
+    },
+    {
+      "b": "5906071028798",
+      "brand": "Bioliq",
+      "name": "Bioliq Intensive Eye Serum 15ml",
+      "ref": "سيروم العيون المكثف 15 مل",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.00) vs سيروم العيون المكثف 15 مل"
+      ]
+    },
+    {
+      "b": "5906071028187",
+      "brand": "Regenerum",
+      "name": "Regenerum Regenerative Face Serum 50ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5906071043340",
+      "brand": "Regenerum",
+      "name": "Regenerum Regenerative Hand Serum 50ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5902802708205",
+      "brand": "Bioliq",
+      "name": "Bioliq BHL Barrier Protective Hand Cream 75ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5902802708175",
+      "brand": "Bioliq",
+      "name": "Bioliq BHL Barrier Protective Face Cream 50ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5906071004402",
+      "brand": "Bioliq",
+      "name": "Bioliq Clean Purifying Cleansing Gel 125ml",
+      "ref": "جل التنظيف والتنقية بيوليك كلين 125 مل",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.00) vs جل التنظيف والتنقية بيوليك كلين 125 مل"
+      ]
+    },
+    {
+      "b": "5906071023045",
+      "brand": "Bioliq",
+      "name": "Bioliq Dermo Regenerating Night Cream for Acne-Prone Sk",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5906071023076",
+      "brand": "Bioliq",
+      "name": "Bioliq Dermo Soothing & Strengthening Cream for Coupero",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5906071027814",
+      "brand": "Bioliq",
+      "name": "Bioliq Dermo Strengthening & Protective Cream SPF 15 30",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5906071023069",
+      "brand": "Bioliq",
+      "name": "Bioliq Dermo Repair Cream for Atopic Skin 50ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5906071023038",
+      "brand": "Bioliq",
+      "name": "Bioliq Dermo Day Cream for Acne-Prone Skin 50ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5906071022963",
+      "brand": "Bioliq",
+      "name": "Bioliq Dermo Brightening Cream for Discoloration 50ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5902802705969",
+      "brand": "Bioliq",
+      "name": "Bioliq Dermo CICA Oil for Scars and Stretch Marks 30ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5902802706492",
+      "brand": "Bioliq",
+      "name": "Bioliq Pure Vitamin C Serum 20% 30ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5906071043333",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "5902802700506",
+      "brand": "Bioliq",
+      "name": "Bioliq Pro Intensive Moisturizing Serum 30ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5906071007809",
+      "brand": "Bioliq",
+      "name": "Bioliq Clean Anti-Wrinkle Facial Cleansing Gel 125ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5906071002705",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "5906071043784",
+      "brand": "Bioliq",
+      "name": "Bioliq Clean Micellar Cleansing Water 200ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5906071049366",
+      "brand": "Bioliq",
+      "name": "Bioliq Specialist Anti-Imperfection Toning Liquid 200ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5902802700414",
+      "brand": "Bioliq",
+      "name": "Bioliq Specialist Point Serum with Concealer 10ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5906071009285",
+      "brand": "Bioliq",
+      "name": "Bioliq Exfoliating Face Gel 125ml",
+      "ref": "جل مقشر للوجه 125 مل",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.00) vs جل مقشر للوجه 125 مل"
+      ]
+    },
+    {
+      "b": "5906071029443",
+      "brand": "Bioliq",
+      "name": "Bioliq Specialist Acne Marks Removal Night Cream 30ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "9314839002632",
+      "brand": "QV",
+      "name": "QV All Skin Types Cream 100 G",
+      "ref": "QV Moisturising Replenish Cream - 100g",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.20) vs QV Moisturising Replenish Cream - 100g"
+      ]
+    },
+    {
+      "b": "9314839002618",
+      "brand": "QV",
+      "name": "QV Face Cream 250 G",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "9314839019890",
+      "brand": "QV",
+      "name": "QV Gentle Wash Refill 250g",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "9314839008948",
+      "brand": "QV",
+      "name": "QV Intensive Moisturising Cleanser 250g",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "9314839008955",
+      "brand": "ego QV",
+      "name": "Ego QV QV Intensive Body Moisturiser 100 G",
+      "ref": "كريم الترطيب المركز للجسم 100 غم",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.20) vs كريم الترطيب المركز للجسم 100 غم"
+      ]
+    },
+    {
+      "b": "9314839015427",
+      "brand": "QV",
+      "name": "QV Flare Up10 Cream 100 G",
+      "ref": "QV Flare Up Skin Cream",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "9314839017476",
+      "brand": "QV",
+      "name": "QV Hand SPF 15 Cream 50 G",
+      "ref": "QV SPF15 Hand Cream",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "9314839021350",
+      "brand": "QV",
+      "name": "QV Moisturising Day SPF 30 Cream",
+      "ref": "QV Face Moisturising Day Cream SPF 30",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    },
+    {
+      "b": "9314839006876",
+      "brand": "QV",
+      "name": "QV Heel Balm for Dry Cracked Heels 50g",
+      "ref": "QV Rehydrate and Revive Heel Balm",
+      "pos": "",
+      "reasons": [
+        "NAME_MISMATCH(0.29) vs QV Rehydrate and Revive Heel Balm"
+      ]
+    },
+    {
+      "b": "9314839021206",
+      "brand": "QV",
+      "name": "QV Face Night Cream with Niacinamide B3 50g",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "5902802700827",
+      "brand": "Regenerum",
+      "name": "Regenerum Regenerative Foot Serum 125ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4103040036308",
+      "brand": "Sebamed",
+      "name": "Sebamed Clear Face Cleansing Foam 150ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4103040130167",
+      "name": "",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "NO_OVERRIDE"
+      ]
+    },
+    {
+      "b": "4103040043726",
+      "brand": "Sebamed",
+      "name": "Sebamed Moisturising Body Lotion 200ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4103040147738",
+      "brand": "Sebamed",
+      "name": "Sebamed Baby Body Milk 200ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "4103040043580",
+      "brand": "Sebamed",
+      "name": "Sebamed Clear Face Cleansing Bar 100g",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8435534412982",
+      "brand": "La Cabine",
+      "name": "La Cabine Lacabine Advanced 25% Vit-c - 30m Serum",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8435534412753",
+      "brand": "La Cabine",
+      "name": "La Cabine Lacabine 10% Glycolic Acid Serum Cream 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8435534410148",
+      "brand": "La Cabine",
+      "name": "La Cabine Dark Spots Corrector Mujer Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8435534410124",
+      "brand": "La Cabine",
+      "name": "La Cabine Pure Retinol Serum 30 Ml",
+      "ref": "",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NO_SOURCE"
+      ]
+    },
+    {
+      "b": "8013134009360",
+      "brand": "Foltene",
+      "name": "Foltene Face Serum 6.5 Ml",
+      "ref": "Foltene Eyelash And Eyebrow Energizing Treatment",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.17) vs Foltene Eyelash And Eyebrow Energizing Treatm"
+      ]
+    },
+    {
+      "b": "8013134009384",
+      "brand": "Foltene",
+      "name": "Foltene Face Serum 12 Ml",
+      "ref": "Tarte Amazonian Clay 12-Hour Blush",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC",
+        "NAME_MISMATCH(0.00) vs Tarte Amazonian Clay 12-Hour Blush",
+        "BRAND? store=Tarte cur=Foltene"
+      ]
+    },
+    {
+      "b": "8013134009308",
+      "brand": "Foltene",
+      "name": "Foltene Strengthening for Thinning Hair Wo Shampoo",
+      "ref": "Foltene Strengthening Shampoo For Thinning Hair",
+      "pos": "",
+      "reasons": [
+        "GENERIC_DESC"
+      ]
+    }
+  ],
+  "looksOk": [
+    {
+      "b": "3574660149807",
+      "brand": "Beautybomb",
+      "name": "Beautybomb Only Matte Liquid Lipstick",
+      "ref": "Beautybomb Only Matte Liquid Lipstick",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "5011451103863",
+      "brand": "Simple",
+      "name": "Simple Refreshing Facial Wash Gel 150ml",
+      "ref": "Refreshing Facial Wash Gel 150 ml",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "5011451104020",
+      "brand": "Simple",
+      "name": "Simple Age Resisting Facial Wash 150ml",
+      "ref": "Age Resisting Facial Wash 150 ml - Simple",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "8710908710773",
+      "brand": "Simple",
+      "name": "Simple Micellar Facial Gel Wash 150ml",
+      "ref": "Simple Micellar Facial Gel Wash - Removes Impurities an",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "8901030953941",
+      "brand": "Simple",
+      "name": "Simple Protect 'N' Glow Vitamin C Facial Wash 150ml",
+      "ref": "Protect N Glow Vitamin C Facial Wash 150 ml",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "892717001162",
+      "brand": "PFB Vanish",
+      "name": "PFB Vanish Chromabright Skin Lightening Serum 93g",
+      "ref": "Chromabright for Skin Lightening 93 g",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "3574661288376",
+      "brand": "Neutrogena",
+      "name": "Neutrogena Hydro Boost Cleanser Water Gel 200ml",
+      "ref": "Neutrogena Hydro Boost Cleanser Water Gel - 200ml",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "3574661351711",
+      "brand": "Neutrogena",
+      "name": "Neutrogena Hydro Boost City Shield SPF25 Hydrating Loti",
+      "ref": "Neutrogena Hydro Boost City Shield Hydrating Lotion , 5",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "3574661287263",
+      "brand": "Neutrogena",
+      "name": "Neutrogena Hydro Boost Water Gel 50ml",
+      "ref": "Neutrogena HydraBoost Water Gel - 50ml",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "3574660245844",
+      "brand": "Neutrogena",
+      "name": "Neutrogena Deep Clean Gel Wash 200ml",
+      "ref": "Neutrogena Deep Clean Gel Wash - 200ml",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "3574661529240",
+      "brand": "Neutrogena",
+      "name": "Neutrogena Clear & Soothe Micellar Jelly Makeup Remover",
+      "ref": "Clear & Soothe Micellar Jelly Make Up Remover 200 ml - ",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "3574661835570",
+      "brand": "Neutrogena",
+      "name": "Neutrogena Fresh & Clear Vitamin C Face Wash 200ml",
+      "ref": "Neutrogena Face Wash Fresh and Clear With Vitamin C - 2",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "3574660569759",
+      "brand": "Neutrogena",
+      "name": "Neutrogena Refreshingly Clear Facial Wash 200ml",
+      "ref": "Refreshingly Clear Facial Wash 200 ml",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "3574661073224",
+      "brand": "Neutrogena",
+      "name": "Neutrogena Oil Balancing Facial Wash 200ml",
+      "ref": "Neutrogena Oil Balancing Facial Wash",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "3574661292113",
+      "brand": "Neutrogena",
+      "name": "Neutrogena Visibly Clear Fine & Matte Wash 150ml",
+      "ref": "Visibly Clear Wash Fein & Matt 150 ml - Neutrogena",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "733739076847",
+      "brand": "Now Foods",
+      "name": "Now Foods Solutions Organic Vegetable Glycerin 237ml",
+      "ref": "Organic Vegetable Glycerin 237 ml - Now",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "8809305993831",
+      "brand": "Secret Key",
+      "name": "Secret Key Snow White Spot Gel 65g",
+      "ref": "Secret Key Snow white Spot Gel - 65g",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "733739081902",
+      "brand": "Now Foods",
+      "name": "Now Foods Solutions Red Clay Powder Moroccan 170g",
+      "ref": "Red Clay Powder Moroccan 170 g - Now",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "4005900480392",
+      "brand": "Eucerin",
+      "name": "Eucerin Sun Kids Spray SPF 50 200ml",
+      "ref": "Eucerin Sun Kids Spray SPF 50 - 200 ml",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "4005800210617",
+      "brand": "Eucerin",
+      "name": "Eucerin Anti-Pigment Dual Serum 30ml",
+      "ref": "Eucerin Anti-Pigment Dual Serum, 30 ml",
+      "pos": "",
+      "reasons": []
+    },
+    {
+      "b": "8013134009292",
+      "brand": "Foltene",
+      "name": "Foltene Pharma Thinning Hair Strengthening Shampoo for ",
+      "ref": "Foltene Pharma Thinning Hair Strengthening Shampoo for ",
+      "pos": "",
+      "reasons": []
+    }
+  ],
+  "at": 1784874212873
+}

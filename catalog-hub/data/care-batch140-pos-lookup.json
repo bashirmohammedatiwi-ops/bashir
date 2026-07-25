@@ -1,0 +1,1822 @@
+[
+  {
+    "barcode": "8025026275616",
+    "pos": {
+      "price": 26400,
+      "originalPrice": 33000,
+      "discountPercent": 20,
+      "stock": 1,
+      "name": "ى‎ ‎‎ ‎‎‎‎ ‎‎‎ ‎‎‎ ‎é‎‎",
+      "offerName": "ى‎ 40%",
+      "syncedAt": "2026-07-12T13:50:45.460Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026277399",
+    "pos": {
+      "price": 27750,
+      "originalPrice": 27750,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "ى‎ ‎‎‎‎ ‎‎‎‎ ‎‎‎‎‎ ‎«‎‎‎ 150 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.495Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026274800",
+    "pos": {
+      "price": 49000,
+      "originalPrice": 49000,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "ى‎ ‎) ‎ê‎ 3‎1 ‎‎ ‎‎‎‎‎ ‎k‎‎‎‎ 150 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.495Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026280832",
+    "pos": {
+      "price": 32500,
+      "originalPrice": 32500,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "ى‎ ‎‎‎‎ ‎‎ ‎ى‎ ‎‎­‎ ‎‎ç‎ 150 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.495Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026008962",
+    "pos": {
+      "price": 86500,
+      "originalPrice": 86500,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "ى‎ ‎‎‎‎ ‎‎‎ 3 ‎1 ‎‎ ‎‎‎‎‎ ‎‎)‎ 1000 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.495Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026281488",
+    "pos": {
+      "price": 70500,
+      "originalPrice": 70500,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "ى‎ ‎‎‎‎ ‎‎‎ ‎é‎‎ ‎‎‎‎ ‎‎‎‎ ‎‎‎ 1000 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.495Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026281495",
+    "pos": {
+      "price": 70500,
+      "originalPrice": 70500,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "ى‎ ‎‎‎ ‎‎‎ ‎é‎‎ ‎‎‎ ‎\u001f‎ 1000 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.495Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026008672",
+    "pos": {
+      "price": 63800,
+      "originalPrice": 79750,
+      "discountPercent": 20,
+      "stock": 2,
+      "name": "ى‎ ‎‎‎‎ ‎‎‎ ‎‎ن ‎‎‎‎‎ 1000 ‎‎",
+      "offerName": "ى‎ 40%",
+      "syncedAt": "2026-07-12T13:50:48.038Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026277863",
+    "pos": {
+      "price": 25600,
+      "originalPrice": 32000,
+      "discountPercent": 20,
+      "stock": 2,
+      "name": "ى‎ ë‎ ‎‎‎ ‎‎‎ ‎é‎‎ ‎‎‎ ‎\u001f‎ ‎‎‎ 150‎‎",
+      "offerName": "ى‎ 40%",
+      "syncedAt": "2026-07-12T13:50:48.371Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026272028",
+    "pos": {
+      "price": 19600,
+      "originalPrice": 24500,
+      "discountPercent": 20,
+      "stock": 4,
+      "name": "ى‎  ‎‎‎‎ ‎‎‎ ‎‎‎ ‎é‎‎ 20‎‎",
+      "offerName": "ى‎ 40%",
+      "syncedAt": "2026-07-12T13:50:45.460Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026007521",
+    "pos": {
+      "price": 21800,
+      "originalPrice": 27250,
+      "discountPercent": 20,
+      "stock": 3,
+      "name": "ى‎ ‎‎ ‎‎‎ ‎‎‎‎‎ ‎‎‎ ‎\u001f‎ ‎‎‎ 30‎‎",
+      "offerName": "ى‎ 40%",
+      "syncedAt": "2026-07-12T13:50:45.460Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026278266",
+    "pos": {
+      "price": 30500,
+      "originalPrice": 30500,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "ى‎ ë‎ ‎‎‎‎ ‎‎‎ ‎\u001f‎ ‎‎‎i 150 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.495Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026273766",
+    "pos": {
+      "price": 24400,
+      "originalPrice": 30500,
+      "discountPercent": 20,
+      "stock": 3,
+      "name": "ى‎ ‎‎‎‎ ‎‎‎ ‎é‎‎ ‎‎‎ ‎‎‎‎ ‎‎‎ 200‎‎",
+      "offerName": "ى‎ 40%",
+      "syncedAt": "2026-07-12T13:50:45.460Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026274596",
+    "pos": {
+      "price": 24400,
+      "originalPrice": 30500,
+      "discountPercent": 20,
+      "stock": 3,
+      "name": "ى‎ ‎‎‎‎ ‎‎‎ ‎é‎‎ ‎‎‎ ‎\u001f‎ 200‎‎",
+      "offerName": "ى‎ 40%",
+      "syncedAt": "2026-07-12T13:50:45.460Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026274565",
+    "pos": {
+      "price": 48800,
+      "originalPrice": 61000,
+      "discountPercent": 20,
+      "stock": 3,
+      "name": "ى‎ ‎‎‎ ‎‎‎ ‎é‎‎ ‎‎‎ ‎\u001f‎ 500‎‎",
+      "offerName": "ى‎ 40%",
+      "syncedAt": "2026-07-12T13:50:45.460Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026273810",
+    "pos": {
+      "price": 48800,
+      "originalPrice": 61000,
+      "discountPercent": 20,
+      "stock": 3,
+      "name": "ى‎ ‎‎‎‎ ‎‎‎ ‎é‎‎ ‎‎‎ ‎‎‎‎ ‎‎‎ 500‎‎",
+      "offerName": "ى‎ 40%",
+      "syncedAt": "2026-07-12T13:50:45.460Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026281662",
+    "pos": {
+      "price": 52750,
+      "originalPrice": 52750,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "ى‎ ‎‎‎‎ ‎ن‎ ‎‎‎‎ ‎‎‎‎‎ ‎«‎‎‎ 500 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.495Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026271977",
+    "pos": {
+      "price": 53000,
+      "originalPrice": 53000,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "ى‎ ‎‎‎‎‎ ‎‎‎‎‎ ‎ك‎ ‎‎‎ 100 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.495Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026277412",
+    "pos": {
+      "price": 41000,
+      "originalPrice": 41000,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "ى‎ ‎‎‎‎‎ ‎ن‎ ‎‎‎‎ ‎‎‎‎‎ ‎«‎‎‎ 100 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.495Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026008313",
+    "pos": {
+      "price": 48800,
+      "originalPrice": 61000,
+      "discountPercent": 20,
+      "stock": 3,
+      "name": "ى‎ ‎‎ ‎‎‎ ‎‎é‎‎ ‎‎‎ ‎\u001f‎ ‎‎‎ 100‎‎",
+      "offerName": "ى‎ 40%",
+      "syncedAt": "2026-07-12T13:50:45.460Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026008474",
+    "pos": {
+      "price": 79800,
+      "originalPrice": 99750,
+      "discountPercent": 20,
+      "stock": 2,
+      "name": "ى‎ ‎‎‎‎  ‎‎‎‎ ‎‎ن ‎‎‎‎‎  ‎‎24X8",
+      "offerName": "ى‎ 40%",
+      "syncedAt": "2026-07-12T13:50:48.038Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026270536",
+    "pos": {
+      "price": 32500,
+      "originalPrice": 32500,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "ى‎ ‎‎‎‎ ‎‎ê‎ 3 ‎ 1 ‎‎ ‎‎‎‎‎ ‎‎)‎ 250 ‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.495Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026280825",
+    "pos": {
+      "price": 32500,
+      "originalPrice": 32500,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "ى‎ ‎‎‎‎ ‎‎‎ ‎ى‎ ‎‎­‎ ‎‎ç‎ 250 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.495Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8025026271984",
+    "pos": {
+      "price": 37250,
+      "originalPrice": 37250,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "ى‎ ‎‎‎‎ ‎‎‎ ‎ك‎ ‎‎‎ 250 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.495Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "5060743580639",
+    "pos": {
+      "price": 19000,
+      "originalPrice": 19000,
+      "discountPercent": 0,
+      "stock": 4,
+      "name": "HAIRBRUST MASSAGE BRUSH",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.652Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "5060743580950",
+    "pos": {
+      "price": 29000,
+      "originalPrice": 29000,
+      "discountPercent": 0,
+      "stock": 7,
+      "name": "HAIR BRUST COND. DRY& DAMAGED HAIR 350ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.656Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "5060743580943",
+    "pos": {
+      "price": 24750,
+      "originalPrice": 24750,
+      "discountPercent": 0,
+      "stock": 4,
+      "name": "HAIR BRUST SHAMPOO DRY& DAMAGED 350ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.656Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "5060743580912",
+    "pos": {
+      "price": 24750,
+      "originalPrice": 24750,
+      "discountPercent": 0,
+      "stock": 12,
+      "name": "HAIR BRUST COND .OILY 350ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.656Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "5060743580905",
+    "pos": {
+      "price": 24750,
+      "originalPrice": 24750,
+      "discountPercent": 0,
+      "stock": 12,
+      "name": "HAIR BRUST SHAMPOO OILY 350ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.656Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "5060743580936",
+    "pos": {
+      "price": 24750,
+      "originalPrice": 24750,
+      "discountPercent": 0,
+      "stock": 11,
+      "name": "HAIR BURST LONGER COND. 350ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.656Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "5060743580929",
+    "pos": {
+      "price": 24750,
+      "originalPrice": 24750,
+      "discountPercent": 0,
+      "stock": 10,
+      "name": "HAIR BRUST SHAMPOO CURLY 350ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.656Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "5060743580783",
+    "pos": {
+      "price": 32500,
+      "originalPrice": 32500,
+      "discountPercent": 0,
+      "stock": 7,
+      "name": "HAIR BRUST DRY SHAMPOO 200ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.656Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "5060743580714",
+    "pos": {
+      "price": 34000,
+      "originalPrice": 34000,
+      "discountPercent": 0,
+      "stock": 17,
+      "name": "HAIR BRUST DERMA SCALP ROLLER",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.656Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474637188207",
+    "pos": {
+      "price": 79000,
+      "originalPrice": 79000,
+      "discountPercent": 0,
+      "stock": 4,
+      "name": "‎‎‎‎‎ ‎‎‎‎ ‎‎‎ ‎‎‎‎‎‎‎‎ 1500 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.304Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636975570",
+    "pos": {
+      "price": 60000,
+      "originalPrice": 60000,
+      "discountPercent": 0,
+      "stock": 6,
+      "name": "‎‎‎‎‎ ‎‎‎‎ ‎‎‎ 1500 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.304Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636975976",
+    "pos": {
+      "price": 60000,
+      "originalPrice": 60000,
+      "discountPercent": 0,
+      "stock": 5,
+      "name": "‎‎‎‎‎ ‎‎‎‎ ‎ں‎‎‎‎ ‎‎ 1500‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:48.251Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636975938",
+    "pos": {
+      "price": 60000,
+      "originalPrice": 60000,
+      "discountPercent": 0,
+      "stock": 6,
+      "name": "‎‎‎‎‎ ‎‎‎‎‎‎ ‎‎‎ ‎‎‎‎ 1500‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:20.894Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636975556",
+    "pos": {
+      "price": 60000,
+      "originalPrice": 60000,
+      "discountPercent": 0,
+      "stock": 5,
+      "name": "‎‎‎‎‎ ‎àb ‎‎‎‎‎‎ 1500‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:48.251Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "30160668",
+    "pos": {
+      "price": 61750,
+      "originalPrice": 61750,
+      "discountPercent": 0,
+      "stock": 5,
+      "name": "LOREAL METAL DETOX SHAMPOO 1500ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:44.495Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636975587",
+    "pos": {
+      "price": 56750,
+      "originalPrice": 56750,
+      "discountPercent": 0,
+      "stock": 1,
+      "name": "‎‎‎‎‎ ‎àb ‎‎‎‎ ‎‎‎‎ 1500‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:44.179Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474637090531",
+    "pos": {
+      "price": 41500,
+      "originalPrice": 41500,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "LOREAL OILY MASK 250ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:44.479Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636976072",
+    "pos": {
+      "price": 41250,
+      "originalPrice": 41250,
+      "discountPercent": 0,
+      "stock": 2,
+      "name": "LOREAL LNG MASK 250ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:44.479Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636975921",
+    "pos": {
+      "price": 30000,
+      "originalPrice": 30000,
+      "discountPercent": 0,
+      "stock": 15,
+      "name": "LOREAL ABSOLUT REPAIR SHAMPOO 500ML",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:20.882Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636974429",
+    "pos": {
+      "price": 20500,
+      "originalPrice": 20500,
+      "discountPercent": 0,
+      "stock": 5,
+      "name": "LOREAL PRO LONGER SHAMPOO 300ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:45.316Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636975396",
+    "pos": {
+      "price": 60000,
+      "originalPrice": 60000,
+      "discountPercent": 0,
+      "stock": 10,
+      "name": "LOREAL Professionnel Pro Longer Mask 500ml",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.084Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636977307",
+    "pos": {
+      "price": 24750,
+      "originalPrice": 24750,
+      "discountPercent": 0,
+      "stock": 31,
+      "name": "LOREAL PRO LONGER CREAM 150ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:48.371Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636976119",
+    "pos": {
+      "price": 34750,
+      "originalPrice": 34750,
+      "discountPercent": 0,
+      "stock": 7,
+      "name": "LOREAL LNG COND 200ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:44.479Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636975952",
+    "pos": {
+      "price": 30000,
+      "originalPrice": 30000,
+      "discountPercent": 0,
+      "stock": 31,
+      "name": "LOREAL VIT C SHAMPOO 500ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:44.479Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636202447",
+    "pos": {
+      "price": 26750,
+      "originalPrice": 26750,
+      "discountPercent": 0,
+      "stock": 45,
+      "name": "‎‎‎‎‎ ‎ں‎‎‎‎ ‎‎ ë‎ ‎‎ ‎‎‎ 500‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:38.938Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474637069155",
+    "pos": {
+      "price": 30250,
+      "originalPrice": 30250,
+      "discountPercent": 0,
+      "stock": 9,
+      "name": "LOREAL CURL EXPRESSION CREAM 250ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:46.106Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636975679",
+    "pos": {
+      "price": 60000,
+      "originalPrice": 60000,
+      "discountPercent": 0,
+      "stock": 9,
+      "name": "LOREAL Professionnel   Vitamino Color Mask 500ml",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.084Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636975297",
+    "pos": {
+      "price": 41250,
+      "originalPrice": 41250,
+      "discountPercent": 0,
+      "stock": 6,
+      "name": "LOREAL INFORCER  MASK 250ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:44.479Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636975211",
+    "pos": {
+      "price": 34750,
+      "originalPrice": 34750,
+      "discountPercent": 0,
+      "stock": 20,
+      "name": "LOREAL INFORCER COND 200ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:45.316Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474637072483",
+    "pos": {
+      "price": 29250,
+      "originalPrice": 29250,
+      "discountPercent": 0,
+      "stock": 38,
+      "name": "LOREAL CURL EXPRESSION SHAMPOO 500ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:46.097Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474637069162",
+    "pos": {
+      "price": 45750,
+      "originalPrice": 45750,
+      "discountPercent": 0,
+      "stock": 17,
+      "name": "LOREAL EXPERT CURL EXPRESSION MASK 500ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:46.106Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474637268435",
+    "pos": {
+      "price": 41250,
+      "originalPrice": 41250,
+      "discountPercent": 0,
+      "stock": 2,
+      "name": "LOREAL SPECTRUM GLASSSHINE 50ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.661Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474637090609",
+    "pos": {
+      "price": 38000,
+      "originalPrice": 38000,
+      "discountPercent": 0,
+      "stock": 2,
+      "name": "LOREAL MRVL OIL 50ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:45.316Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474637268510",
+    "pos": {
+      "price": 20500,
+      "originalPrice": 20500,
+      "discountPercent": 0,
+      "stock": 2,
+      "name": "LOREAL VITSPECTRUM SHAMPOO 300ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.752Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474637268381",
+    "pos": {
+      "price": 20500,
+      "originalPrice": 20500,
+      "discountPercent": 0,
+      "stock": 2,
+      "name": "LOREAL SPECTRUM PURPLE SHAMPOO 300ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.661Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474637268206",
+    "pos": {
+      "price": 20500,
+      "originalPrice": 20500,
+      "discountPercent": 0,
+      "stock": 2,
+      "name": "LOREAL SPECCTRUM GREEN SHAMPOO 300ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.661Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474637268459",
+    "pos": {
+      "price": 41250,
+      "originalPrice": 41250,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "LOREAL VITSPECTRUM MASK 250ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.661Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636974269",
+    "pos": {
+      "price": 30000,
+      "originalPrice": 30000,
+      "discountPercent": 0,
+      "stock": 26,
+      "name": "LOREAL SHAMPOO SILVER 500ML",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:21.070Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474637269012",
+    "pos": {
+      "price": 41250,
+      "originalPrice": 41250,
+      "discountPercent": 0,
+      "stock": 1,
+      "name": "LOREAL VITSPECTRUM COND. 200ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.661Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636976133",
+    "pos": {
+      "price": 34750,
+      "originalPrice": 34750,
+      "discountPercent": 0,
+      "stock": 7,
+      "name": "LOREAL SILVER CONDITIONER 200ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:44.043Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600523736836",
+    "pos": {
+      "price": 12000,
+      "originalPrice": 12000,
+      "discountPercent": 0,
+      "stock": 36,
+      "name": "‎‎‎‎‎ ‎‎‎‎‎ ‎‎ ‎‎ى‎ 180‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:48.843Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600523738632",
+    "pos": {
+      "price": 12000,
+      "originalPrice": 12000,
+      "discountPercent": 0,
+      "stock": 31,
+      "name": "‎‎‎‎‎ ‎‎‎‎‎ ‎‎ ‎‎‎ 180‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:48.843Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600523738625",
+    "pos": {
+      "price": 12000,
+      "originalPrice": 12000,
+      "discountPercent": 0,
+      "stock": 35,
+      "name": "‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎ ‎‎‎‎ ‎‎ ‎‎ى‎ 180‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:48.843Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600523738649",
+    "pos": {
+      "price": 12000,
+      "originalPrice": 12000,
+      "discountPercent": 0,
+      "stock": 36,
+      "name": "‎‎‎‎‎ ‎  ‎‎ى‎ ‎‎‎ 180‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:48.843Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3610340028502",
+    "pos": {
+      "price": 5500,
+      "originalPrice": 5500,
+      "discountPercent": 0,
+      "stock": 29,
+      "name": "‎‎‎‎‎ ‎‎‎‎ ‎‎‎ ‎‎‎‎‎ ‎‎‎ ‎ں‎‎ 300 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:20.481Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3610340653865",
+    "pos": {
+      "price": 5250,
+      "originalPrice": 5250,
+      "discountPercent": 0,
+      "stock": 19,
+      "name": "‎‎‎‎‎ ‎‎‎‎ ‎‎‎ ‎‎‎‎ ‎‎‎‎ 300‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:43.129Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3610340650659",
+    "pos": {
+      "price": 5000,
+      "originalPrice": 5000,
+      "discountPercent": 0,
+      "stock": 47,
+      "name": "‎‎‎‎‎ ‎‎‎‎ ‎‎ ‎«‎‎‎ 300‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:44.179Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600524135720",
+    "pos": {
+      "price": 10000,
+      "originalPrice": 10000,
+      "discountPercent": 0,
+      "stock": 7,
+      "name": "‎‎‎‎‎ ‎‎‎ ‎‎‎‎‎‎‎‎ 150‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:48.843Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600524074876",
+    "pos": {
+      "price": 8750,
+      "originalPrice": 8750,
+      "discountPercent": 0,
+      "stock": 48,
+      "name": "‎‎‎‎‎ ‎‎‎ ‎‎‎ 150‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.420Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600524127961",
+    "pos": {
+      "price": 10000,
+      "originalPrice": 10000,
+      "discountPercent": 0,
+      "stock": 10,
+      "name": "‎‎‎‎‎ ‎‎‎‎ ‎‎‎‎‎‎‎ ‎‎‎ 200‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:48.843Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600524087593",
+    "pos": {
+      "price": 8750,
+      "originalPrice": 8750,
+      "discountPercent": 0,
+      "stock": 137,
+      "name": "‎‎‎‎‎ ‎‎‎ ‎‎‎ ‎‎‎‎ 200‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.420Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600524074739",
+    "pos": {
+      "price": 8750,
+      "originalPrice": 8750,
+      "discountPercent": 0,
+      "stock": 66,
+      "name": "‎‎‎‎‎ ‎‎‎ ‎‎‎ ‎‎‎‎ 200‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.420Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600524075651",
+    "pos": {
+      "price": 8750,
+      "originalPrice": 8750,
+      "discountPercent": 0,
+      "stock": 53,
+      "name": "‎‎‎‎‎ ‎‎‎‎ ‎‎‎ 150‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:47.420Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600524034931",
+    "pos": {
+      "price": 10000,
+      "originalPrice": 10000,
+      "discountPercent": 0,
+      "stock": 167,
+      "name": "‎‎‎‎‎‎ ‎‎‎ ‎‎‎ ‎‎‎ ‎‎è ‎‎‎ ‎ى‎ 150‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:49.238Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600520837963",
+    "pos": {
+      "price": 4750,
+      "originalPrice": 4750,
+      "discountPercent": 0,
+      "stock": 56,
+      "name": "‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎ ‎‎‎‎‎ 400 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:20.453Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600524016265",
+    "pos": {
+      "price": 7000,
+      "originalPrice": 7000,
+      "discountPercent": 0,
+      "stock": 22,
+      "name": "‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎ ‎‎ `‎‎ 300‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:48.843Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600524004538",
+    "pos": {
+      "price": 13500,
+      "originalPrice": 13500,
+      "discountPercent": 0,
+      "stock": 23,
+      "name": "‎‎‎‎‎ ‎‎‎‎‎ ‎é ‎‎‎ 8 ‎‎‎‎ ‎‎ `‎‎ 200‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:45.323Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600521852972",
+    "pos": {
+      "price": 7500,
+      "originalPrice": 7500,
+      "discountPercent": 0,
+      "stock": 26,
+      "name": "‎‎‎‎‎ ‎‎‎ ‎‎‎ ‎‎‎ ‎‎ ‎i‎‎‎ 200‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:40.906Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600524228040",
+    "pos": {
+      "price": 19000,
+      "originalPrice": 19000,
+      "discountPercent": 0,
+      "stock": 6,
+      "name": "‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎ ق‎ ‎‎‎‎‎‎ ‎‎‎‎‎‎‎‎ ‎‎‎ 150",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:21.401Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3610340653650",
+    "pos": {
+      "price": 5000,
+      "originalPrice": 5000,
+      "discountPercent": 0,
+      "stock": 21,
+      "name": "‎‎‎‎‎ ‎‎‎‎ ‎‎‎‎ ‎‎‎‎ 400‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:21.075Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3610340636691",
+    "pos": {
+      "price": 5000,
+      "originalPrice": 5000,
+      "discountPercent": 0,
+      "stock": 55,
+      "name": "‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎ ‎‎‎ ‎ه‎‎ 400‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:40.737Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600523955015",
+    "pos": {
+      "price": 9000,
+      "originalPrice": 9000,
+      "discountPercent": 0,
+      "stock": 37,
+      "name": "‎‎‎‎‎ ‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎ ‎‎‎‎ 700‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:21.224Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3610340667275",
+    "pos": {
+      "price": 6500,
+      "originalPrice": 6500,
+      "discountPercent": 0,
+      "stock": 15,
+      "name": "‎‎‎‎‎ ‎‎‎‎ ‎‎‎ ‎‎‎ 360‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:21.387Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "7509552847598",
+    "pos": {
+      "price": 5000,
+      "originalPrice": 5000,
+      "discountPercent": 0,
+      "stock": 149,
+      "name": "‎‎‎‎‎ ‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎ ‎‎‎‎ 370‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:44.479Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "7509552843026",
+    "pos": {
+      "price": 3250,
+      "originalPrice": 3250,
+      "discountPercent": 0,
+      "stock": 43,
+      "name": "LOREAL ELVIVE DREAM LONG LISS SHAMPOO 400ml",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:43.379Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600524016234",
+    "pos": {
+      "price": 7000,
+      "originalPrice": 7000,
+      "discountPercent": 0,
+      "stock": 21,
+      "name": "‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎ ‎‎‎‎‎‎ 300‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:21.424Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600521453315",
+    "pos": {
+      "price": 3250,
+      "originalPrice": 3250,
+      "discountPercent": 0,
+      "stock": 52,
+      "name": "‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎‎‎ 400 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:35.519Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600520838014",
+    "pos": {
+      "price": 3250,
+      "originalPrice": 3250,
+      "discountPercent": 0,
+      "stock": 38,
+      "name": "‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎‎ ‎‎_‎‎ ‎‎‎‎ ‎‎é 400 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:20.453Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "7509552847505",
+    "pos": {
+      "price": 5000,
+      "originalPrice": 5000,
+      "discountPercent": 0,
+      "stock": 66,
+      "name": "‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎ 370‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:20.887Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "7509552848021",
+    "pos": {
+      "price": 5000,
+      "originalPrice": 5000,
+      "discountPercent": 0,
+      "stock": 150,
+      "name": "‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎ 370‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:44.479Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "7509552847529",
+    "pos": {
+      "price": 5000,
+      "originalPrice": 5000,
+      "discountPercent": 0,
+      "stock": 117,
+      "name": "‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎ 370‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:44.479Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3610340020025",
+    "pos": {
+      "price": 3750,
+      "originalPrice": 3750,
+      "discountPercent": 0,
+      "stock": 33,
+      "name": "‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎ ‎\u001f‎ ‎‎‎‎ ‎‎‎‎ 400 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:36.383Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "7509552875010",
+    "pos": {
+      "price": 7250,
+      "originalPrice": 7250,
+      "discountPercent": 0,
+      "stock": 60,
+      "name": "‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎ ‎‎‎‎‎‎â 370‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:21.387Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600523477777",
+    "pos": {
+      "price": 9000,
+      "originalPrice": 9000,
+      "discountPercent": 0,
+      "stock": 8,
+      "name": "‎‎‎‎‎ ‎‎‎‎ ‎«‎‎‎ 700‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:21.224Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "7509552848007",
+    "pos": {
+      "price": 5000,
+      "originalPrice": 5000,
+      "discountPercent": 0,
+      "stock": 69,
+      "name": "‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎ ‎â‎‎‎ 370‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:44.479Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "7509552889543",
+    "pos": {
+      "price": 5000,
+      "originalPrice": 5000,
+      "discountPercent": 0,
+      "stock": 7,
+      "name": "‎‎‎‎‎ ‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎‎‎‎ 370‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:46.230Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3610340667237",
+    "pos": {
+      "price": 6000,
+      "originalPrice": 6000,
+      "discountPercent": 0,
+      "stock": 44,
+      "name": "‎‎‎‎‎ ‎‎‎ ‎‎‎‎ ‎‎é 360‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:21.258Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3610340649653",
+    "pos": {
+      "price": 4750,
+      "originalPrice": 4750,
+      "discountPercent": 0,
+      "stock": 47,
+      "name": "‎‎‎‎‎ ‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎‎‎ 400‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:21.075Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600523944354",
+    "pos": {
+      "price": 7750,
+      "originalPrice": 7750,
+      "discountPercent": 0,
+      "stock": 31,
+      "name": "‎‎‎‎‎ ‎‎‎ ‎‎‎‎ ‎‎‎‎‎ 200 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:48.248Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3610340655197",
+    "pos": {
+      "price": 4750,
+      "originalPrice": 4750,
+      "discountPercent": 0,
+      "stock": 118,
+      "name": "‎‎‎‎‎ ‎‎‎‎ ‎‎‎‎‎‎‎‎ 400‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:21.075Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3610340667268",
+    "pos": {
+      "price": 6500,
+      "originalPrice": 6500,
+      "discountPercent": 0,
+      "stock": 20,
+      "name": "‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎ ‎‎‎ ‎‎‎‎‎‎‎‎‎‎‎ 360‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:21.261Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600521767818",
+    "pos": {
+      "price": 4750,
+      "originalPrice": 4750,
+      "discountPercent": 0,
+      "stock": 28,
+      "name": "‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎ ‎‎‎ ‎ں‎‎ 400 ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:20.453Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3610340667251",
+    "pos": {
+      "price": 6000,
+      "originalPrice": 6000,
+      "discountPercent": 0,
+      "stock": 21,
+      "name": "‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎ ‎‎‎ ‎‎‎ ‎ں‎‎ 360‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:21.261Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600524016272",
+    "pos": {
+      "price": 7000,
+      "originalPrice": 7000,
+      "discountPercent": 0,
+      "stock": 22,
+      "name": "‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎ 300‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:21.424Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3600523477821",
+    "pos": {
+      "price": 9000,
+      "originalPrice": 9000,
+      "discountPercent": 0,
+      "stock": 13,
+      "name": "‎‎‎‎‎ ‎‎‎‎ ‎‎‎‎‎ ‎‎‎‎‎ ‎‎‎ 700‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:21.424Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636692408",
+    "pos": {
+      "price": 73500,
+      "originalPrice": 73500,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "KERASTASE BLOND ABSOLU MASK VIOLET 200ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:41.143Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636728336",
+    "pos": {
+      "price": 81750,
+      "originalPrice": 81750,
+      "discountPercent": 0,
+      "stock": 19,
+      "name": "KERASTASE CHRONOLOGISTE LEAVE IN 10ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:41.905Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636728268",
+    "pos": {
+      "price": 51500,
+      "originalPrice": 51500,
+      "discountPercent": 0,
+      "stock": 77,
+      "name": "KERASTASE CHRONO BAIN 250V310",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:42.444Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636873999",
+    "pos": {
+      "price": 73500,
+      "originalPrice": 73500,
+      "discountPercent": 0,
+      "stock": 11,
+      "name": "kerastase xhronologiste shampoo 200ml",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:45.344Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636728305",
+    "pos": {
+      "price": 522500,
+      "originalPrice": 522500,
+      "discountPercent": 0,
+      "stock": 2,
+      "name": "KERASTASE SET CAVIAR",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:42.444Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474637157906",
+    "pos": {
+      "price": 65500,
+      "originalPrice": 65500,
+      "discountPercent": 0,
+      "stock": 7,
+      "name": "KERSASTASE SYMBIOSE SHAMPOO 500ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:45.211Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474637155063",
+    "pos": {
+      "price": 56750,
+      "originalPrice": 56750,
+      "discountPercent": 0,
+      "stock": 1,
+      "name": "k‎‎‎ ‎‎‎ ‎‎‎ ‎‎‎‎ë‎‎‎‎ 150‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:48.843Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636400195",
+    "pos": {
+      "price": 45750,
+      "originalPrice": 45750,
+      "discountPercent": 0,
+      "stock": 25,
+      "name": "k‎‎‎ ‎‎‎‎ ‎‎‎ ‎‎‎‎ 250‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:39.050Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636397433",
+    "pos": {
+      "price": 51500,
+      "originalPrice": 51500,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "KERASTASE SPECIFIQUE SHAMPOO 250ML",
+      "offerName": null,
+      "syncedAt": "2026-07-17T18:21:20.462Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636858033",
+    "pos": {
+      "price": 50000,
+      "originalPrice": 50000,
+      "discountPercent": 0,
+      "stock": 13,
+      "name": "‎_‎‎‎‎ ‎‎‎‎ ‎‎‎‎ 250‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:42.138Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636397495",
+    "pos": {
+      "price": 122500,
+      "originalPrice": 122500,
+      "discountPercent": 0,
+      "stock": 4,
+      "name": "kerastase specifique mask 200ml",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:45.344Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474630677630",
+    "pos": {
+      "price": 19500,
+      "originalPrice": 19500,
+      "discountPercent": 0,
+      "stock": 10,
+      "name": "k‎‎‎ ‎‎‎‎ ‎‎‎‎ ‎‎‎‎ 18‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:37.221Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636614103",
+    "pos": {
+      "price": 49000,
+      "originalPrice": 49000,
+      "discountPercent": 0,
+      "stock": 10,
+      "name": "‎_‎‎‎‎ ‎‎‎‎ ‎‎‎‎ ‎ں‎‎ ‎‎‎‎ 250‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:40.417Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474630647770",
+    "pos": {
+      "price": 25750,
+      "originalPrice": 25750,
+      "discountPercent": 0,
+      "stock": 17,
+      "name": "KERASTASE PROTOCOLE HAIR SOIN N2 KERATINE 400ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:39.929Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636968688",
+    "pos": {
+      "price": 60500,
+      "originalPrice": 60500,
+      "discountPercent": 0,
+      "stock": 4,
+      "name": "KERASTASE CURL MANIFESTO SHAMPOO 250ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:43.628Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636400218",
+    "pos": {
+      "price": 82500,
+      "originalPrice": 82500,
+      "discountPercent": 0,
+      "stock": 5,
+      "name": "k‎‎‎ ë‎ ‎‎‎‎‎‎ 200‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:38.542Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636397969",
+    "pos": {
+      "price": 50000,
+      "originalPrice": 50000,
+      "discountPercent": 0,
+      "stock": 10,
+      "name": "k‎‎‎ ‎‎‎‎ ‎â‎‎ 250‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:38.307Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636397945",
+    "pos": {
+      "price": 45750,
+      "originalPrice": 45750,
+      "discountPercent": 0,
+      "stock": 9,
+      "name": "KERASTASE BAIN FORCE SPLITE 250ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:44.495Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636397884",
+    "pos": {
+      "price": 51500,
+      "originalPrice": 51500,
+      "discountPercent": 0,
+      "stock": 6,
+      "name": "k‎‎‎ ‎‎‎ ‎‎‎ ‎é ‎‎‎ 200‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:48.843Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474636693214",
+    "pos": {
+      "price": 28750,
+      "originalPrice": 28750,
+      "discountPercent": 0,
+      "stock": 1,
+      "name": "LOREAL PRO- SOURCE SHAMPOO CHAMOMILE FLOWER 1500ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:43.783Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "4008668230971",
+    "pos": {
+      "price": 20500,
+      "originalPrice": 20500,
+      "discountPercent": 0,
+      "stock": 4,
+      "name": "ELEBVA  ‎‎‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:46.934Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "4008668230957",
+    "pos": {
+      "price": 20500,
+      "originalPrice": 20500,
+      "discountPercent": 0,
+      "stock": 9,
+      "name": "ELEBVA ‎‎‎ ‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:46.934Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "4008668230964",
+    "pos": {
+      "price": 15500,
+      "originalPrice": 15500,
+      "discountPercent": 0,
+      "stock": 13,
+      "name": "ELEBVA ë‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:46.934Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8033171866177",
+    "pos": {
+      "price": 34500,
+      "originalPrice": 46000,
+      "discountPercent": 25,
+      "stock": 2,
+      "name": "NOOK SUPER ACTIVE LOTION 100ML",
+      "offerName": "HELIA-D ‎‎‎ 25%",
+      "syncedAt": "2026-07-12T13:50:45.323Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8033171866153",
+    "pos": {
+      "price": 39000,
+      "originalPrice": 52000,
+      "discountPercent": 25,
+      "stock": 23,
+      "name": "NOOK ‎‎‎ ‎ ‎‎‎ ‎«‎‎‎  ‎‎‎  12*7ML",
+      "offerName": "HELIA-D ‎‎‎ 25%",
+      "syncedAt": "2026-07-12T13:50:45.987Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8033171866061",
+    "pos": {
+      "price": 18000,
+      "originalPrice": 24000,
+      "discountPercent": 25,
+      "stock": 12,
+      "name": "NOOK ‎‎‎‎ ‎‎‎‎ ‎‎‎‎ ‎‎‎‎ ‎‎‎‎ ‎‎‎  1000‎‎",
+      "offerName": "HELIA-D ‎‎‎ 25%",
+      "syncedAt": "2026-07-17T18:21:21.062Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8033171866191",
+    "pos": {
+      "price": 20800,
+      "originalPrice": 26000,
+      "discountPercent": 20,
+      "stock": 11,
+      "name": "DIFFERENCE HAIR CARE SHAMPOO REPAIR 1000ML",
+      "offerName": "‎‎ ‎‎‎‎‎‎20%",
+      "syncedAt": "2026-07-12T13:50:48.607Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8033171866054",
+    "pos": {
+      "price": 18750,
+      "originalPrice": 25000,
+      "discountPercent": 25,
+      "stock": 20,
+      "name": "NOOK ‎‎‎‎ ‎‎‎ ‎‎‎ ‎‎‎‎ ‎‎‎‎ ‎‎‎  1000‎‎",
+      "offerName": "HELIA-D ‎‎‎ 25%",
+      "syncedAt": "2026-07-17T18:21:21.062Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "8033171866108",
+    "pos": {
+      "price": 21000,
+      "originalPrice": 28000,
+      "discountPercent": 25,
+      "stock": 35,
+      "name": "NOOK ë‎ ‎‎ ‎‎‎‎ ‎‎‎ 1000‎‎",
+      "offerName": "HELIA-D ‎‎‎ 25%",
+      "syncedAt": "2026-07-17T18:21:21.258Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474630267596",
+    "pos": {
+      "price": 23000,
+      "originalPrice": 23000,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "‎‎‎‎‎ ‎‎‎ك‎ ‎‎‎‎ ‎‎‎‎‎ 125‎‎",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:42.243Z"
+    },
+    "inApp": null
+  },
+  {
+    "barcode": "3474637106331",
+    "pos": {
+      "price": 77250,
+      "originalPrice": 77250,
+      "discountPercent": 0,
+      "stock": 3,
+      "name": "LOREAL AMINEXIL FULL &STROG 90ML",
+      "offerName": null,
+      "syncedAt": "2026-07-12T13:50:45.316Z"
+    },
+    "inApp": null
+  }
+]
