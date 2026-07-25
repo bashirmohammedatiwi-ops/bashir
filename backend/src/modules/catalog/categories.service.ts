@@ -205,6 +205,14 @@ export class CategoriesService {
     };
   }
 
+  /** يُرجع معرفات الأقسام التي تحتوي منتجات (حسب إعدادات الإخفاء). */
+  async filterStorefrontCategories<T extends { id: string }>(items: T[]): Promise<T[]> {
+    const cfg = await this.storefrontHideConfig();
+    if (!cfg.any || !items.length) return items;
+    const presence = await this.deepProductPresence(cfg.hideOutOfStock);
+    return items.filter((c) => presence.get(c.id) === true);
+  }
+
   async list(all = false, minimal = false, storefront = false) {
     const hideCfg = storefront ? await this.storefrontHideConfig() : null;
     const presence = hideCfg?.any

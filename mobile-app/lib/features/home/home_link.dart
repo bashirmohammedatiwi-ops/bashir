@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/navigation/app_navigation.dart';
+import '../../../core/utils/support_links.dart';
 import '../../../data/models/banner.dart';
 import '../../../data/models/brand.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/home_section.dart';
-import '../shell/main_shell.dart';
 
 void openSectionLink(
   BuildContext context, {
@@ -51,11 +52,11 @@ void openSectionLink(
     return;
   }
   if (type == 'offers') {
-    context.push('/products?isPromo=1&title=العروض');
+    openOffersTab(context, ProviderScope.containerOf(context, listen: false));
     return;
   }
   if (type == 'categoriesTab') {
-    ProviderScope.containerOf(context, listen: false).read(navIndexProvider.notifier).state = 1;
+    openCategoriesTab(context, ProviderScope.containerOf(context, listen: false));
     return;
   }
   if (type == 'products' && value.isNotEmpty) {
@@ -64,12 +65,20 @@ void openSectionLink(
     return;
   }
   if (type == 'url' && value.isNotEmpty) {
-    context.push(value);
+    openExternalUrl(value);
     return;
   }
   if (legacy.isNotEmpty) {
     if (legacy == '/categories-tab') {
-      ProviderScope.containerOf(context, listen: false).read(navIndexProvider.notifier).state = 1;
+      openCategoriesTab(context, ProviderScope.containerOf(context, listen: false));
+      return;
+    }
+    if (legacy == '/cart') {
+      openCartTab(context, ProviderScope.containerOf(context, listen: false));
+      return;
+    }
+    if (legacy == '/offers' || legacy.startsWith('/offers')) {
+      openOffersTab(context, ProviderScope.containerOf(context, listen: false));
       return;
     }
     context.push(legacy);

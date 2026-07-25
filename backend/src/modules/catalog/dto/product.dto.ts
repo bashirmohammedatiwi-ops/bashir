@@ -151,10 +151,22 @@ export class QueryProductsDto extends PaginationDto {
   @IsOptional() @IsString() skinType?: string;
   @IsOptional() @IsString() status?: string;
 
-  @IsOptional() @IsBoolean() isFeatured?: boolean;
-  @IsOptional() @IsBoolean() isNew?: boolean;
-  @IsOptional() @IsBoolean() isBestSeller?: boolean;
-  @IsOptional() @IsBoolean() isPromo?: boolean;
+  @IsOptional()
+  @Transform(({ value }) => value === "true" || value === true || value === "1")
+  @IsBoolean()
+  isFeatured?: boolean;
+  @IsOptional()
+  @Transform(({ value }) => value === "true" || value === true || value === "1")
+  @IsBoolean()
+  isNew?: boolean;
+  @IsOptional()
+  @Transform(({ value }) => value === "true" || value === true || value === "1")
+  @IsBoolean()
+  isBestSeller?: boolean;
+  @IsOptional()
+  @Transform(({ value }) => value === "true" || value === true || value === "1")
+  @IsBoolean()
+  isPromo?: boolean;
 
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) minPrice?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) maxPrice?: number;

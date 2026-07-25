@@ -175,6 +175,23 @@ export class BrandsService {
     return rows.map(mapBrand);
   }
 
+  /** إخفاء البراندات بدون منتجات ظاهرة — لوحة التحكم → إعدادات المتجر. */
+  async filterStorefrontBrands<T extends { id: string }>(items: T[]): Promise<T[]> {
+    const s = (await this.settings.getAll()) as Record<string, unknown>;
+    if (!s.hideEmptyBrands || !items.length) return items;
+    const rows = await this.prisma.product.findMany({
+      where: {
+        isActive: true,
+        brandId: { in: items.map((b) => b.id) },
+        ...(s.hideOutOfStock ? { stock: { gt: 0 } } : {}),
+      },
+      select: { brandId: true },
+      distinct: ["brandId"],
+    });
+    const withProducts = new Set(rows.map((r) => r.brandId).filter(Boolean) as string[]);
+    return items.filter((b) => withProducts.has(b.id));
+  }
+
   async findOne(idOrSlug: string) {
     const brand = await this.prisma.brand.findFirst({
       where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }] },

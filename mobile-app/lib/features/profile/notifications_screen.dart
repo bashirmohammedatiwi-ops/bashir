@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/navigation/notification_navigation.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/notification.dart';
 import '../../data/services/api_service.dart';
@@ -46,8 +48,10 @@ class NotificationsScreen extends ConsumerWidget {
       ),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (e, _) =>
-            ErrorView(message: e.toString(), onRetry: () => ref.invalidate(notificationsProvider)),
+        error: (e, _) => ErrorView(
+          message: friendlyError(e),
+          onRetry: () => ref.invalidate(notificationsProvider),
+        ),
         data: (list) {
           if (list.isEmpty) {
             return const EmptyState(
@@ -73,9 +77,9 @@ class _NotificationTile extends ConsumerWidget {
   final AppNotification notification;
   const _NotificationTile({required this.notification});
 
-  IconData get _icon => switch (notification.type) {
+  IconData get _icon => switch (notification.type.toUpperCase()) {
         'ORDER' => Icons.receipt_long_rounded,
-        'PROMO' => Icons.local_offer_rounded,
+        'OFFER' || 'PROMO' => Icons.local_offer_rounded,
         'LOYALTY' => Icons.stars_rounded,
         _ => Icons.notifications_rounded,
       };
@@ -85,28 +89,7 @@ class _NotificationTile extends ConsumerWidget {
       await ref.read(apiServiceProvider).markNotificationRead(notification.id);
       ref.invalidate(notificationsProvider);
     }
-    final linkType = notification.linkType?.toUpperCase();
-    final linkId = notification.linkId;
-    if (linkId == null || linkId.isEmpty) return;
-
-    switch (linkType) {
-      case 'ORDER':
-        if (context.mounted) context.push('/orders/$linkId');
-      case 'PRODUCT':
-        if (context.mounted) context.push('/product/$linkId');
-      case 'CATEGORY':
-        if (context.mounted) {
-          context.push('/products?categoryId=$linkId&title=التصنيف');
-        }
-      case 'BRAND':
-        if (context.mounted) {
-          context.push('/products?brandId=$linkId&title=العلامة');
-        }
-      case 'PROMO':
-        if (context.mounted) context.push('/products?isPromo=1&title=العروض');
-      default:
-        break;
-    }
+    if (context.mounted) openNotificationLink(context, notification);
   }
 
   @override

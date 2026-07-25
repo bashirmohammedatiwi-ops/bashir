@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -6,22 +7,26 @@ import '../../../core/theme/card_sizes.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/home_section.dart';
+import '../../catalog/catalog_providers.dart';
 import '../home_link.dart';
+import '../home_category_filter.dart';
 import '../widgets/home_category_grid.dart';
 import '../widgets/home_scroll_perf.dart';
 import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
 
-class CategoryTilesSection extends StatelessWidget {
+class CategoryTilesSection extends ConsumerWidget {
   final HomeSection section;
   const CategoryTilesSection({super.key, required this.section});
 
   @override
-  Widget build(BuildContext context) {
-    if (section.categories.isEmpty) return const SizedBox.shrink();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final apiCats = ref.watch(categoriesProvider).valueOrNull;
+    final visible = filterStorefrontCategories(section.categories, apiCats);
+    if (visible.isEmpty) return const SizedBox.shrink();
 
     return HomeCategoryGrid(
-      categories: section.categories,
+      categories: visible,
       title: section.title ?? 'الفئات',
       showTitle: section.showTitle,
       showViewAll: section.showViewAll,
@@ -36,16 +41,18 @@ class CategoryTilesSection extends StatelessWidget {
   }
 }
 
-class MakeupCategoriesSection extends StatelessWidget {
+class MakeupCategoriesSection extends ConsumerWidget {
   final HomeSection section;
   const MakeupCategoriesSection({super.key, required this.section});
 
   @override
-  Widget build(BuildContext context) {
-    if (section.categories.isEmpty) return const SizedBox.shrink();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final apiCats = ref.watch(categoriesProvider).valueOrNull;
+    final visible = filterStorefrontCategories(section.categories, apiCats);
+    if (visible.isEmpty) return const SizedBox.shrink();
     final accent = parseHexColor(section.backgroundColor) ?? AppColors.primaryLight;
 
-    final maxH = section.categories
+    final maxH = visible
         .map((c) => resolveItemCardSize(
               cardSize: c.cardSize,
               sectionLayout: section.sectionLayout,
@@ -62,10 +69,10 @@ class MakeupCategoriesSection extends StatelessWidget {
           cacheExtent: HomeScrollPerf.horizontalCacheExtent,
           addAutomaticKeepAlives: false,
           padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 0, HomeTheme.paddingH, 4),
-          itemCount: section.categories.length,
+          itemCount: visible.length,
           separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
           itemBuilder: (_, i) {
-            final cat = section.categories[i];
+            final cat = visible[i];
             final spec = resolveItemCardSize(
               cardSize: cat.cardSize,
               sectionLayout: section.sectionLayout,

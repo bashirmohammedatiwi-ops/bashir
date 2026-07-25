@@ -20,6 +20,8 @@ class CartNotifier extends StateNotifier<CartState> {
 
   static const _key = 'cart_items_v1';
 
+  int _maxQty(CartItem item) => item.stock > 0 ? item.stock : 999;
+
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_key);
@@ -37,18 +39,24 @@ class CartNotifier extends StateNotifier<CartState> {
     await prefs.setString(_key, jsonEncode(state.items.map((e) => e.toJson()).toList()));
   }
 
-  void add(Product product, {int quantity = 1, ProductShade? shade}) {
+  /// يعيد false إذا وصلت الكمية للحد الأقصى.
+  bool add(Product product, {int quantity = 1, ProductShade? shade}) {
     final item = CartItem.fromProduct(product, quantity: quantity, shade: shade);
     final items = [...state.items];
     final idx = items.indexWhere((e) => e.key == item.key);
     if (idx >= 0) {
-      final newQty = items[idx].quantity + quantity;
+      final max = _maxQty(items[idx]);
+      final newQty = (items[idx].quantity + quantity).clamp(1, max);
+      if (newQty == items[idx].quantity) return false;
       items[idx] = items[idx].copyWith(quantity: newQty);
     } else {
-      items.add(item);
+      final max = _maxQty(item);
+      final qty = quantity.clamp(1, max);
+      items.add(item.copyWith(quantity: qty));
     }
     state = CartState(items);
     _persist();
+    return true;
   }
 
   void setQuantity(String key, int quantity) {
@@ -58,15 +66,18 @@ class CartNotifier extends StateNotifier<CartState> {
     }
     final items = [
       for (final e in state.items)
-        if (e.key == key) e.copyWith(quantity: quantity) else e
+        if (e.key == key) e.copyWith(quantity: quantity.clamp(1, _maxQty(e))) else e
     ];
     state = CartState(items);
     _persist();
   }
 
-  void increment(String key) {
+  /// يعيد false عند الوصول لحد المخزون.
+  bool increment(String key) {
     final item = state.items.firstWhere((e) => e.key == key);
+    if (item.quantity >= _maxQty(item)) return false;
     setQuantity(key, item.quantity + 1);
+    return true;
   }
 
   void decrement(String key) {
@@ -84,14 +95,13 @@ class CartNotifier extends StateNotifier<CartState> {
     return null;
   }
 
-  void incrementProduct(Product product) {
-    if (product.shades.isNotEmpty) return;
+  bool incrementProduct(Product product) {
+    if (product.shades.isNotEmpty) return false;
     final existing = firstItemForProduct(product.id);
     if (existing != null && existing.shadeId == null) {
-      increment(existing.key);
-    } else {
-      add(product);
+      return increment(existing.key);
     }
+    return add(product);
   }
 
   void decrementProduct(String productId) {

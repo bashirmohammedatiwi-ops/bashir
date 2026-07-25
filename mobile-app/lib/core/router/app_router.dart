@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/navigation/app_navigation.dart';
+
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/brands/brands_screen.dart';
@@ -24,7 +26,25 @@ import '../../features/wishlist/wishlist_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
+    redirect: (context, state) {
+      if (state.uri.path == '/cart') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final container = ProviderScope.containerOf(context);
+          openCartTab(context, container);
+        });
+        return '/';
+      }
+      if (state.uri.path == '/offers') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final container = ProviderScope.containerOf(context);
+          openOffersTab(context, container);
+        });
+        return '/';
+      }
+      return null;
+    },
     routes: [
       GoRoute(path: '/', builder: (_, __) => const MainShell()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),

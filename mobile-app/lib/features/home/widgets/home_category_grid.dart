@@ -5,30 +5,27 @@ import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/category.dart';
 import '../home_link.dart';
 import 'home_animations.dart';
+import 'home_section_shell.dart';
 import 'home_theme.dart';
 
-/// فئات الهيرو — شبكة 4×2 بنسب ثابتة.
+/// فئات الهيرو — شبكة دوائر تعرض كل الأقسام الرئيسية (بدون حد 8).
 class HomeHeroCategoryStrip extends StatelessWidget {
   final List<Category> categories;
-  final int maxItems;
 
   const HomeHeroCategoryStrip({
     super.key,
     required this.categories,
-    this.maxItems = 8,
   });
 
   static const _columns = 4;
-  static const _gap = 8.0;
+  static const _gap = 10.0;
 
   @override
   Widget build(BuildContext context) {
     if (categories.isEmpty) return const SizedBox.shrink();
 
-    final items = categories.take(maxItems.clamp(1, _columns * 2)).toList();
-
     return Padding(
-      padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 2, HomeTheme.paddingH, 2),
+      padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 4, HomeTheme.paddingH, 6),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
@@ -36,56 +33,10 @@ class HomeHeroCategoryStrip extends StatelessWidget {
           crossAxisCount: _columns,
           mainAxisSpacing: _gap,
           crossAxisSpacing: _gap,
-          childAspectRatio: 1.02,
+          childAspectRatio: 0.82,
         ),
-        itemCount: items.length,
-        itemBuilder: (context, index) => _cell(context, items[index], index),
-      ),
-    );
-  }
-
-  Widget _cell(BuildContext context, Category cat, int index) {
-    final bg = HomeTheme.categoryTileColors[index % HomeTheme.categoryTileColors.length];
-
-    return HomeTapScale(
-      onTap: () => openSectionLink(
-        context,
-        linkType: cat.linkType,
-        linkValue: cat.linkValue,
-        legacyLink: cat.link ??
-            '/products?categoryId=${cat.id}&title=${Uri.encodeComponent(cat.name)}',
-      ),
-      child: Column(
-        children: [
-          Expanded(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: bg,
-                borderRadius: BorderRadius.circular(HomeTheme.tileRadius),
-                border: Border.all(color: HomeTheme.surfaceMuted.withValues(alpha: 0.65)),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(6),
-                child: cat.imageUrl.isNotEmpty
-                    ? AppNetworkImage(url: cat.imageUrl, fit: BoxFit.contain)
-                    : Center(
-                        child: Text(
-                          cat.icon ?? cat.name.characters.first,
-                          style: const TextStyle(fontSize: 18),
-                        ),
-                      ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            cat.name,
-            maxLines: 1,
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-            style: HomeTheme.circleLabel,
-          ),
-        ],
+        itemCount: categories.length,
+        itemBuilder: (context, index) => _CategoryCircleTile(category: categories[index], index: index),
       ),
     );
   }
@@ -107,19 +58,15 @@ class HomeCategoryGrid extends StatelessWidget {
     this.onViewAll,
   });
 
-  static const _tileSize = 72.0;
-
   @override
   Widget build(BuildContext context) {
     if (categories.isEmpty) return const SizedBox.shrink();
-
-    final colCount = (categories.length / 2).ceil();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (showTitle && title != null && title!.isNotEmpty)
-          HomeEditorialHeader(
+          HomeSectionHeader(
             title: title!,
             actionLabel: showViewAll ? 'عرض الكل' : null,
             onAction: showViewAll
@@ -127,83 +74,89 @@ class HomeCategoryGrid extends StatelessWidget {
                 : null,
             compact: true,
           ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
-          child: SizedBox(
-            height: 176,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: colCount,
-              separatorBuilder: (_, __) => const SizedBox(width: HomeTheme.itemGap),
-              itemBuilder: (_, col) {
-                final top = col * 2;
-                final bottom = top + 1;
-                return SizedBox(
-                  width: _tileSize,
-                  child: Column(
-                    children: [
-                      SizedBox(height: 80, child: _tile(context, top)),
-                      const SizedBox(height: HomeTheme.itemGap),
-                      SizedBox(
-                        height: 80,
-                        child: bottom < categories.length
-                            ? _tile(context, bottom)
-                            : const SizedBox.shrink(),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
+        SizedBox(
+          height: 108,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
+            itemCount: categories.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 14),
+            itemBuilder: (_, i) => _CategoryCircleTile(category: categories[i], index: i),
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _tile(BuildContext context, int index) {
-    final cat = categories[index];
-    final bg = HomeTheme.categoryTileColors[index % HomeTheme.categoryTileColors.length];
+class _CategoryCircleTile extends StatelessWidget {
+  final Category category;
+  final int index;
+
+  const _CategoryCircleTile({required this.category, required this.index});
+
+  static const _size = 64.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = HomeTheme.categoryTileColors[index % HomeTheme.categoryTileColors.length];
 
     return HomeTapScale(
       onTap: () => openSectionLink(
         context,
-        linkType: cat.linkType,
-        linkValue: cat.linkValue,
-        legacyLink: cat.link ??
-            '/products?categoryId=${cat.id}&title=${Uri.encodeComponent(cat.name)}',
+        linkType: category.linkType,
+        linkValue: category.linkValue,
+        legacyLink: category.link ??
+            '/products?categoryId=${category.id}&title=${Uri.encodeComponent(category.name)}',
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: _tileSize,
-            height: 56,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: bg,
-                borderRadius: BorderRadius.circular(HomeTheme.tileRadius),
-                border: Border.all(color: HomeTheme.surfaceMuted.withValues(alpha: 0.65)),
+          Container(
+            width: _size,
+            height: _size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: HomeTheme.surface,
+              border: Border.all(
+                color: HomeTheme.surfaceMuted.withValues(alpha: 0.85),
+                width: 1,
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: cat.imageUrl.isNotEmpty
-                    ? AppNetworkImage(url: cat.imageUrl, fit: BoxFit.contain)
-                    : Center(
+              boxShadow: HomeTheme.whisperLift,
+            ),
+            child: ClipOval(
+              child: category.imageUrl.isNotEmpty
+                  ? AppNetworkImage(
+                      url: category.imageUrl,
+                      width: _size,
+                      height: _size,
+                      fit: BoxFit.cover,
+                    )
+                  : ColoredBox(
+                      color: accent,
+                      child: Center(
                         child: Text(
-                          cat.icon ?? cat.name.characters.first,
-                          style: const TextStyle(fontSize: 20),
+                          category.icon ?? category.name.characters.first,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: HomeTheme.inkSoft.withValues(alpha: 0.85),
+                          ),
                         ),
                       ),
-              ),
+                    ),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            cat.name,
-            maxLines: 1,
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-            style: HomeTheme.circleLabel,
+          const SizedBox(height: 6),
+          SizedBox(
+            width: 72,
+            child: Text(
+              category.name,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
+              style: HomeTheme.circleLabel.copyWith(fontSize: 11, height: 1.15),
+            ),
           ),
         ],
       ),

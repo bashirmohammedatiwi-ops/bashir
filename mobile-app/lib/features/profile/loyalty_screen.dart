@@ -77,9 +77,10 @@ class _LoyaltyBody extends ConsumerWidget {
             const Text('سجل النقاط', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
             const SizedBox(height: 10),
             if (summary.history.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(child: Text('لا يوجد سجل بعد', style: TextStyle(color: AppColors.textMuted))),
+              const EmptyState(
+                icon: Icons.history_rounded,
+                title: 'لا يوجد سجل بعد',
+                subtitle: 'ستظهر معاملات النقاط هنا',
               )
             else
               for (final h in summary.history) _HistoryTile(item: h),

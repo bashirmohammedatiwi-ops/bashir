@@ -3,8 +3,11 @@ import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../navigation/app_navigation.dart';
+import '../navigation/notification_navigation.dart';
 import '../../data/services/api_service.dart';
 import '../../features/auth/auth_provider.dart';
 
@@ -60,9 +63,26 @@ class PushService {
           await _unregister(ref, _token!);
         }
       });
+
+      FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        _openFromMessage(message.data);
+      });
+
+      final initial = await messaging.getInitialMessage();
+      if (initial != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _openFromMessage(initial.data);
+        });
+      }
     } catch (e) {
       debugPrint('[PushService] init failed: $e');
     }
+  }
+
+  static void _openFromMessage(Map<String, dynamic> data) {
+    final ctx = rootNavigatorKey.currentContext;
+    if (ctx == null || !ctx.mounted) return;
+    openPushPayload(ctx, data);
   }
 
   static Future<void> _register(WidgetRef ref, String token) async {

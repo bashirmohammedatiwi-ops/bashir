@@ -12,6 +12,7 @@ void warmupAppData(WidgetRef ref) {
   });
 
   ref.read(homeFeedProvider.future);
+  ref.read(offersFeedProvider.future);
   ref.read(categoriesProvider.future);
   ref.read(brandsProvider.future);
 }

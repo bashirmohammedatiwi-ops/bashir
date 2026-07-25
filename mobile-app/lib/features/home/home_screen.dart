@@ -59,8 +59,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 onRefresh: () async {
                   HapticFeedback.mediumImpact();
                   await ref.read(apiCacheProvider).remove('home_v3');
+                  await ref.read(apiCacheProvider).remove('categories_all_v2');
+                  ref.invalidate(categoriesProvider);
                   ref.invalidate(homeFeedProvider);
-                  await ref.read(homeFeedProvider.future);
+                  await Future.wait([
+                    ref.read(homeFeedProvider.future),
+                    ref.read(categoriesProvider.future),
+                  ]);
                 },
                 child: CustomScrollView(
                   cacheExtent: HomeScrollPerf.verticalCacheExtent,

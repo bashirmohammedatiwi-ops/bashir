@@ -9,6 +9,8 @@ class AppNotification {
   final String? imageUrl;
   final String? linkType;
   final String? linkId;
+  final String? linkSlug;
+  final String? externalUrl;
   final bool read;
   final DateTime? createdAt;
 
@@ -20,6 +22,8 @@ class AppNotification {
     this.imageUrl,
     this.linkType,
     this.linkId,
+    this.linkSlug,
+    this.externalUrl,
     this.read = false,
     this.createdAt,
   });
@@ -32,6 +36,8 @@ class AppNotification {
         imageUrl: json['imageUrl']?.toString(),
         linkType: json['linkType']?.toString(),
         linkId: json['linkId']?.toString(),
+        linkSlug: json['linkSlug']?.toString(),
+        externalUrl: json['externalUrl']?.toString(),
         read: json['readAt'] != null,
         createdAt: parseDate(json['createdAt']),
       );

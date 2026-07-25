@@ -37,9 +37,17 @@ class ApiCache {
       }
     }
 
-    final value = await fetch();
-    await _store(key, serialize(value));
-    return value;
+    try {
+      final value = await fetch();
+      await _store(key, serialize(value));
+      return value;
+    } catch (e) {
+      if (entry != null) {
+        _memory[key] = entry;
+        return parse(entry.data);
+      }
+      rethrow;
+    }
   }
 
   Future<void> remove(String key) async {

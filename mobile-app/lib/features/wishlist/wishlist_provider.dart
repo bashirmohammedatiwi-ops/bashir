@@ -7,7 +7,13 @@ class WishlistState {
   final List<Product> products;
   final Set<String> ids;
   final bool loading;
-  const WishlistState({this.products = const [], this.ids = const {}, this.loading = false});
+  final String? error;
+  const WishlistState({
+    this.products = const [],
+    this.ids = const {},
+    this.loading = false,
+    this.error,
+  });
 }
 
 class WishlistNotifier extends StateNotifier<WishlistState> {
@@ -27,12 +33,15 @@ class WishlistNotifier extends StateNotifier<WishlistState> {
     try {
       final products = await _api.getWishlist();
       state = WishlistState(products: products, ids: products.map((e) => e.id).toSet());
-    } catch (_) {
-      state = WishlistState(products: state.products, ids: state.ids);
+    } catch (e) {
+      state = WishlistState(
+        products: state.products,
+        ids: state.ids,
+        error: e.toString(),
+      );
     }
   }
 
-  /// يبدّل حالة المفضلة. يعيد true إن أصبح مضافاً.
   void clear() => state = const WishlistState();
 
   Future<bool> toggle(Product product) async {

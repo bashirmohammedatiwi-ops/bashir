@@ -1172,7 +1172,10 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
             child: Center(
                 child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
           ),
-          error: (_, __) => const SizedBox.shrink(),
+          error: (e, _) => ErrorView(
+            message: friendlyError(e),
+            onRetry: () => ref.invalidate(productReviewsProvider(widget.product.id)),
+          ),
           data: (reviews) {
             if (reviews.isEmpty && !_showForm) {
               return Padding(

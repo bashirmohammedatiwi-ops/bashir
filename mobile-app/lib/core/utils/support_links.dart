@@ -13,3 +13,13 @@ Future<bool> callPhone(String? phone) async {
   if (raw.isEmpty) return false;
   return launchUrl(Uri.parse('tel:$raw'));
 }
+
+Future<bool> openExternalUrl(String url) async {
+  final trimmed = url.trim();
+  if (trimmed.isEmpty) return false;
+  final uri = Uri.tryParse(trimmed);
+  if (uri == null) return false;
+  final normalized = uri.hasScheme ? uri : Uri.parse('https://$trimmed');
+  if (!await canLaunchUrl(normalized)) return false;
+  return launchUrl(normalized, mode: LaunchMode.externalApplication);
+}

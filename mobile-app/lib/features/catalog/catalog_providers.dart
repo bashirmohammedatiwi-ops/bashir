@@ -13,9 +13,21 @@ final homeFeedProvider = FutureProvider.autoDispose<HomeFeed>((ref) {
   return ref.read(apiServiceProvider).getHome();
 });
 
-final offersFeedProvider = FutureProvider.autoDispose<HomeFeed>((ref) {
+final offersFeedProvider = FutureProvider.autoDispose<HomeFeed>((ref) async {
   ref.keepAlive();
-  return ref.read(apiServiceProvider).getOffers();
+  final api = ref.read(apiServiceProvider);
+  try {
+    return await api.getOffers();
+  } catch (_) {
+    return api.getHome().then((home) => HomeFeed(
+          sections: const [],
+          flashSale: home.flashSale,
+          promoProducts: home.promoProducts.isNotEmpty
+              ? home.promoProducts
+              : home.flashSale.products,
+          settings: home.settings,
+        )).catchError((_) => const HomeFeed());
+  }
 });
 
 final categoriesProvider = FutureProvider<List<Category>>((ref) async {

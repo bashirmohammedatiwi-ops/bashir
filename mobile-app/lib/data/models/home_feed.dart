@@ -42,7 +42,7 @@ class HomeFeed {
   factory HomeFeed.fromJson(Map<String, dynamic> json) {
     final flash = asMap(json['flashSale']);
     return HomeFeed(
-      sections: asList(json['sections']).map((e) => HomeSection.fromJson(asMap(e))).toList(),
+      sections: _parseSections(json['sections']),
       banners: asList(json['banners']).map(AppBanner.fromJson).toList(),
       categories: asList(json['categories']).map(Category.fromJson).toList(),
       brands: asList(json['brands']).map(Brand.fromJson).toList(),
@@ -57,5 +57,17 @@ class HomeFeed {
       promoProducts: asList(json['promoProducts']).map(Product.fromJson).toList(),
       settings: StoreSettings.fromJson(asMap(json['settings'])),
     );
+  }
+
+  static List<HomeSection> _parseSections(dynamic raw) {
+    final out = <HomeSection>[];
+    for (final item in asList(raw)) {
+      try {
+        out.add(HomeSection.fromJson(asMap(item)));
+      } catch (_) {
+        // تجاهل قسم تالف — لا نعطّل الصفحة
+      }
+    }
+    return out;
   }
 }

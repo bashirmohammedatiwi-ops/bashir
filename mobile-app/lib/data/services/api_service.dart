@@ -79,6 +79,35 @@ class ApiService {
 
   Future<HomeFeed> getOffers({bool forceRefresh = false}) async {
     try {
+      return await _fetchOffers(forceRefresh: forceRefresh);
+    } catch (_) {
+      try {
+        await Future<void>.delayed(const Duration(milliseconds: 400));
+        return await _fetchOffers(forceRefresh: true);
+      } catch (_) {
+        return _offersFallbackFromHome();
+      }
+    }
+  }
+
+  Future<HomeFeed> _offersFallbackFromHome() async {
+    try {
+      final home = await getHome();
+      return HomeFeed(
+        sections: const [],
+        flashSale: home.flashSale,
+        promoProducts: home.promoProducts.isNotEmpty
+            ? home.promoProducts
+            : home.flashSale.products,
+        settings: home.settings,
+      );
+    } catch (_) {
+      return const HomeFeed();
+    }
+  }
+
+  Future<HomeFeed> _fetchOffers({bool forceRefresh = false}) async {
+    try {
       final raw = await _cache.getOrFetch<Map<String, dynamic>>(
         key: 'offers_v1',
         ttl: AppConfig.homeCacheTtl,
@@ -198,11 +227,11 @@ class ApiService {
           if (minPrice != null) 'minPrice': minPrice,
           if (maxPrice != null) 'maxPrice': maxPrice,
           if (minRating != null) 'minRating': minRating,
-          if (inStock == true) 'inStock': 'true',
-          if (isNew == true) 'isNew': true,
-          if (isBestSeller == true) 'isBestSeller': true,
-          if (isPromo == true) 'isPromo': true,
-          if (isFeatured == true) 'isFeatured': true,
+          if (inStock == true) 'inStock': '1',
+          if (isNew == true) 'isNew': '1',
+          if (isBestSeller == true) 'isBestSeller': '1',
+          if (isPromo == true) 'isPromo': '1',
+          if (isFeatured == true) 'isFeatured': '1',
           if (concernSlug != null && concernSlug.isNotEmpty) 'concernSlug': concernSlug,
         }, options: Options(extra: {'auth': false}));
         return _body(r);

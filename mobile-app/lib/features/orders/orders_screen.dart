@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
@@ -27,6 +28,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   bool _loading = false;
   bool _hasMore = true;
   bool _firstLoad = true;
+  String? _error;
 
   @override
   void initState() {
@@ -52,6 +54,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       _hasMore = true;
       _items.clear();
       _firstLoad = true;
+      _error = null;
     }
     if (!_hasMore) return;
     setState(() => _loading = true);
@@ -62,7 +65,10 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         _hasMore = result.hasNext;
         _page++;
         _firstLoad = false;
+        _error = null;
       });
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -90,6 +96,9 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
         separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm + 2),
         itemBuilder: (_, __) => const ShimmerBox(height: 110, radius: AppRadius.lg),
       );
+    }
+    if (_error != null && _items.isEmpty) {
+      return ErrorView(message: friendlyError(_error!), onRetry: () => _fetch(reset: true));
     }
     if (_items.isEmpty) {
       return const EmptyState(

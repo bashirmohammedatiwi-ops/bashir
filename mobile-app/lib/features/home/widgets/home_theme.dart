@@ -104,6 +104,13 @@ abstract final class HomeTheme {
         height: 1.2,
       );
 
+  /// بطاقة قسم خفيفة — بدون ظلال ثقيلة.
+  static BoxDecoration sectionSurface({Color? tint}) => BoxDecoration(
+        color: tint ?? surface,
+        borderRadius: BorderRadius.circular(cardRadius),
+        border: Border.all(color: surfaceMuted.withValues(alpha: 0.75)),
+      );
+
   static TextStyle get chipLabel => GoogleFonts.cairo(
         fontSize: 12,
         fontWeight: FontWeight.w600,
@@ -209,13 +216,6 @@ abstract final class HomeTheme {
         color: surface.withValues(alpha: 0.78),
         borderRadius: BorderRadius.circular(pillRadius),
         border: Border.all(color: surfaceMuted.withValues(alpha: 0.75)),
-      );
-
-  static BoxDecoration sectionSurface({Color? tint}) => BoxDecoration(
-        color: tint ?? surface,
-        borderRadius: BorderRadius.circular(squircle),
-        border: Border.all(color: surfaceMuted.withValues(alpha: 0.8)),
-        boxShadow: whisperLift,
       );
 
   static BoxDecoration cardDecoration({Color? color}) => BoxDecoration(

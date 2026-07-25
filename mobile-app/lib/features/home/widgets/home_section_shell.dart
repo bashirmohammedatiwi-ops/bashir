@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_section.dart';
 import '../home_link.dart';
 import 'home_theme.dart';
 
 bool homeSectionShowsTitle(HomeSection section) => section.showTitle;
 
-/// غلاف موحّد — عنوان + بطاقة بيضاء للمحتوى.
+/// غلاف موحّد للأقسام — بسيط، أنيق، بدون تعقيد.
 class HomeSectionShell extends StatelessWidget {
   final HomeSection section;
   final bool compactTop;
@@ -40,15 +41,15 @@ class HomeSectionShell extends StatelessWidget {
     final cmsBg = parseHexColor(section.backgroundColor);
 
     Widget body = child;
-    if (wrapCard && !elevated) {
+    if (wrapCard) {
       body = Padding(
         padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
         child: DecoratedBox(
-          decoration: HomeTheme.cardDecoration(),
+          decoration: HomeTheme.sectionSurface(),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(HomeTheme.cardRadius),
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.only(bottom: 10),
               child: child,
             ),
           ),
@@ -60,7 +61,7 @@ class HomeSectionShell extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (_showTitle && (section.title?.isNotEmpty ?? false))
-          HomeEditorialHeader(
+          HomeSectionHeader(
             title: section.title!,
             subtitle: section.subtitle,
             headerImageUrl: section.headerImageUrl,
@@ -72,21 +73,12 @@ class HomeSectionShell extends StatelessWidget {
           )
         else if ((actionLabel != null && onAction != null) || headerTrailing != null)
           Padding(
-            padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 4, HomeTheme.paddingH, 8),
+            padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 2, HomeTheme.paddingH, 8),
             child: Row(
               children: [
                 if (headerTrailing != null) ...[headerTrailing!, const Spacer()],
                 if (actionLabel != null && onAction != null)
-                  GestureDetector(
-                    onTap: onAction,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(actionLabel!, style: HomeTheme.viewAll),
-                        Icon(Icons.chevron_left_rounded, size: 16, color: HomeTheme.accent),
-                      ],
-                    ),
-                  ),
+                  _ViewAllLink(label: actionLabel!, onTap: onAction!),
               ],
             ),
           ),
@@ -98,11 +90,7 @@ class HomeSectionShell extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
         child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: cmsBg ?? Colors.white,
-            borderRadius: BorderRadius.circular(HomeTheme.cardRadius),
-            boxShadow: HomeTheme.softLift,
-          ),
+          decoration: HomeTheme.sectionSurface(tint: cmsBg ?? HomeTheme.surface),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(HomeTheme.cardRadius),
             child: content,
@@ -116,5 +104,110 @@ class HomeSectionShell extends StatelessWidget {
     }
 
     return content;
+  }
+}
+
+/// عنوان قسم — خط وردي + نص واضح.
+class HomeSectionHeader extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final String? headerImageUrl;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  final Widget? trailing;
+  final bool compact;
+  final String? overline;
+
+  const HomeSectionHeader({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.headerImageUrl,
+    this.actionLabel,
+    this.onAction,
+    this.trailing,
+    this.compact = false,
+    this.overline,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        HomeTheme.paddingH,
+        compact ? 2 : 6,
+        HomeTheme.paddingH,
+        10,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 3,
+            height: compact ? 28 : 34,
+            margin: const EdgeInsets.only(left: 10, top: 2),
+            decoration: BoxDecoration(
+              color: HomeTheme.accent,
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+          if (headerImageUrl != null && headerImageUrl!.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: AppNetworkImage(
+                url: headerImageUrl!,
+                width: 36,
+                height: 36,
+                fit: BoxFit.cover,
+              ),
+            ),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (overline != null && overline!.isNotEmpty) ...[
+                  Text(overline!, style: HomeTheme.overline),
+                  const SizedBox(height: 2),
+                ],
+                Text(title, style: HomeTheme.sectionTitle(size: compact ? 16 : 17)),
+                if (subtitle != null && subtitle!.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(subtitle!, style: HomeTheme.body(size: 12)),
+                ],
+              ],
+            ),
+          ),
+          if (trailing != null) trailing!,
+          if (actionLabel != null && onAction != null)
+            _ViewAllLink(label: actionLabel!, onTap: onAction!),
+        ],
+      ),
+    );
+  }
+}
+
+class _ViewAllLink extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const _ViewAllLink({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label, style: HomeTheme.viewAll),
+            Icon(Icons.chevron_left_rounded, size: 16, color: HomeTheme.accent),
+          ],
+        ),
+      ),
+    );
   }
 }

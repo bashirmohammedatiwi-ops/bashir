@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/product_grid.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
@@ -48,7 +49,12 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
                 child: const Text('تسجيل الدخول'),
               ),
             )
-          : wishlist.loading && wishlist.products.isEmpty
+          : wishlist.error != null && wishlist.products.isEmpty
+              ? ErrorView(
+                  message: friendlyError(wishlist.error!),
+                  onRetry: () => ref.read(wishlistProvider.notifier).load(),
+                )
+              : wishlist.loading && wishlist.products.isEmpty
               ? const ProductGridSkeleton(count: 6)
               : wishlist.products.isEmpty
                   ? EmptyState(

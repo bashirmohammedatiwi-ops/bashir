@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -27,6 +28,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   bool _loading = false;
   bool _searched = false;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final q = GoRouterState.of(context).uri.queryParameters['q']?.trim();
+      if (q != null && q.isNotEmpty) {
+        _controller.text = q;
+        _search(q);
+      }
+    });
+  }
 
   @override
   void dispose() {

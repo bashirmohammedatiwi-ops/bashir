@@ -44,8 +44,7 @@ class HomeProductCard extends ConsumerWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(_radius),
-            border: Border.all(color: AppColors.hairline, width: 0.7),
-            boxShadow: AppColors.softShadow,
+            border: Border.all(color: AppColors.hairline.withValues(alpha: 0.55)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -79,7 +78,7 @@ class _ImageSection extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg - 0.5)),
-          child: const ColoredBox(color: Colors.white),
+          child: ColoredBox(color: const Color(0xFFFFF6F8)),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
@@ -99,7 +98,7 @@ class _ImageSection extends StatelessWidget {
           left: 10,
           right: 10,
           bottom: 0,
-          child: Divider(height: 1, thickness: 0.7, color: AppColors.divider),
+          child: Divider(height: 1, thickness: 0.5, color: AppColors.divider),
         ),
         if (product.hasDiscount)
           Positioned(

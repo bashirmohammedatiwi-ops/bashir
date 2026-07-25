@@ -88,8 +88,8 @@ class HomeSectionWidget extends ConsumerWidget {
 
   double _topSpacing(String type, bool compact) {
     if (type == 'PROMO_STRIP') return HomeTheme.compactGap;
-    if (compact) return HomeTheme.compactGap;
-    return HomeTheme.sectionGap;
+    if (compact) return 10;
+    return 18;
   }
 }
 
@@ -104,6 +104,23 @@ bool _isDuplicateCategorySection(String type) =>
     type == 'CATEGORY_GRID' ||
     type == 'CATEGORY_TILES' ||
     type == 'MAKEUP_CATEGORIES';
+
+/// هل القسم يحتوي محتوى ظاهر؟ (احتياط عند الكاش القديم)
+bool isHomeSectionVisible(HomeSection section) {
+  if (section.type == 'PROMO_STRIP') {
+    return section.promoStrip?.hasContent ?? false;
+  }
+  if (section.type == 'SECTION_GROUP') {
+    return section.children.isNotEmpty;
+  }
+  return section.banners.isNotEmpty ||
+      section.categories.isNotEmpty ||
+      section.products.isNotEmpty ||
+      section.brands.isNotEmpty ||
+      section.packages.isNotEmpty ||
+      section.skinConcerns.isNotEmpty ||
+      section.items.isNotEmpty;
+}
 
 HomeSection _fixedHeroSection(HomeFeed feed) {
   HomeSection? cmsHero;
@@ -121,12 +138,15 @@ HomeSection _fixedHeroSection(HomeFeed feed) {
       ? cmsHero!.categories
       : feed.categories;
 
+  final parentCategories = categories.where((c) => c.parentId == null).toList();
+  final heroCategories = parentCategories.isNotEmpty ? parentCategories : categories;
+
   return HomeSection(
     id: cmsHero?.id ?? 'fixed-hero',
     type: 'HERO_BANNER',
     position: -1,
     banners: banners,
-    categories: categories,
+    categories: heroCategories,
   );
 }
 
@@ -159,6 +179,7 @@ List<HomeSectionSlot> resolveHomeSectionSlots(HomeFeed feed) {
 
   var firstAfterHero = true;
   for (final s in _cmsSections(feed)) {
+    if (!isHomeSectionVisible(s)) continue;
     if (heroHasCategories && _isDuplicateCategorySection(s.type)) continue;
     slots.add(HomeSectionSlot(
       section: s,
@@ -175,6 +196,7 @@ List<HomeSectionSlot> resolveOffersSectionSlots(HomeFeed feed) {
   final slots = <HomeSectionSlot>[];
   var firstAfterHero = true;
   for (final s in _orderedSections(feed.sections)) {
+    if (!isHomeSectionVisible(s)) continue;
     final isHero = s.type == 'HERO_BANNER';
     slots.add(HomeSectionSlot(
       section: s,

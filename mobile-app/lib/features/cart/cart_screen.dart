@@ -642,7 +642,10 @@ class _CartProductTile extends ConsumerWidget {
                           },
                           onIncrement: () {
                             HapticFeedback.selectionClick();
-                            notifier.increment(item.key);
+                            final ok = notifier.increment(item.key);
+                            if (!ok && context.mounted) {
+                              AppSnackbar.show(context, 'وصلتِ للحد الأقصى المتاح');
+                            }
                           },
                         ),
                         const Spacer(),

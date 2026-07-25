@@ -6,22 +6,24 @@ import 'package:go_router/go_router.dart';
 import '../../core/cache/image_cache.dart';
 import '../../core/config/app_config.dart';
 import '../../core/network/api_client.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_typography.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/product_card.dart';
-import '../../core/widgets/product_grid.dart';
 import '../../core/widgets/scroll_perf.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
+import '../../data/models/home_feed.dart';
 import '../../data/models/product.dart';
 import '../../data/services/api_service.dart';
 import '../catalog/catalog_providers.dart';
 import '../home/home_section_renderer.dart';
-import '../home/widgets/home_scroll_perf.dart';
+import 'widgets/offers_cms_banner.dart';
+import 'widgets/offers_flash_pulse.dart';
+import 'widgets/offers_hero.dart';
+import 'widgets/offers_loading.dart';
+import 'widgets/offers_theme.dart';
 
-/// تبويب العروض — أقسام CMS من لوحة التحكم + شبكة منتجات ترويجية.
+/// تبويب العروض — تصميم جديد مع تحميل موثوق.
 class OffersScreen extends ConsumerStatefulWidget {
   const OffersScreen({super.key});
 
@@ -35,12 +37,17 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
   int _page = 1;
   bool _loadingMore = false;
   bool _hasMore = true;
+  bool _initialLoad = true;
   String? _gridError;
+  bool _refreshingCms = false;
 
   @override
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _fetchMore();
+    });
   }
 
   @override
@@ -50,7 +57,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
   }
 
   void _onScroll() {
-    if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 400) {
+    if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 420) {
       _fetchMore();
     }
   }
@@ -64,6 +71,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
       _gridError = null;
     }
     if (!_hasMore) return;
+
     setState(() => _loadingMore = true);
     try {
       final result = await ref.read(apiServiceProvider).getProducts(
@@ -77,6 +85,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
         _items.addAll(result.items);
         _hasMore = result.hasNext;
         _page++;
+        _initialLoad = false;
       });
       if (mounted && result.items.isNotEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -85,267 +94,200 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _gridError = friendlyError(e));
+      if (!mounted) return;
+      var fallback = _promoFallbackFromFeed();
+      if (fallback.isEmpty) {
+        try {
+          final home = await ref.read(apiServiceProvider).getHome();
+          fallback = home.promoProducts.isNotEmpty
+              ? home.promoProducts
+              : home.flashSale.products;
+        } catch (_) {}
+      }
+      if (reset && fallback.isNotEmpty) {
+        setState(() {
+          _items.addAll(fallback);
+          _hasMore = false;
+          _initialLoad = false;
+          _gridError = null;
+        });
+      } else {
+        setState(() {
+          _gridError = friendlyError(e);
+          _initialLoad = false;
+        });
+      }
     } finally {
       if (mounted) setState(() => _loadingMore = false);
     }
   }
 
+  Future<void> _refreshCms() async {
+    if (_refreshingCms) return;
+    setState(() => _refreshingCms = true);
+    try {
+      await ref.read(apiServiceProvider).getOffers(forceRefresh: true);
+      ref.invalidate(offersFeedProvider);
+      await ref.read(offersFeedProvider.future);
+    } finally {
+      if (mounted) setState(() => _refreshingCms = false);
+    }
+  }
+
   Future<void> _refreshAll() async {
     HapticFeedback.mediumImpact();
-    await ref.read(apiCacheProvider).remove('offers_v1');
-    ref.invalidate(offersFeedProvider);
-    await _fetchMore(reset: true);
-    await ref.read(offersFeedProvider.future);
+    await Future.wait([
+      _fetchMore(reset: true),
+      _refreshCms(),
+    ]);
+  }
+
+  bool _hasFlashSection(List<HomeSectionSlot> slots) =>
+      slots.any((s) => s.section.type == 'FLASH_SALE');
+
+  List<Product> _promoFallbackFromFeed() {
+    final feed = ref.read(offersFeedProvider).valueOrNull;
+    if (feed != null) {
+      if (feed.promoProducts.isNotEmpty) return feed.promoProducts;
+      if (feed.flashSale.products.isNotEmpty) return feed.flashSale.products;
+    }
+    return const [];
   }
 
   @override
   Widget build(BuildContext context) {
     final feed = ref.watch(offersFeedProvider);
+    final feedData = feed.valueOrNull;
     final top = MediaQuery.paddingOf(context).top;
-    final bottomPad = MediaQuery.paddingOf(context).bottom + 100;
+    final bottomPad = MediaQuery.paddingOf(context).bottom + 108;
 
-    return Scaffold(
-      backgroundColor: AppColors.scaffold,
-      body: feed.when(
-        loading: () => CustomScrollView(
-          physics: AppScrollPerf.physics,
-          slivers: const [SliverFillRemaining(child: ProductGridSkeleton(count: 6))],
-        ),
-        error: (e, _) => ErrorView(
-          message: friendlyError(e),
-          onRetry: _refreshAll,
-        ),
-        data: (data) {
-          final slots = resolveOffersSectionSlots(data);
-          final hasCms = slots.isNotEmpty;
-          final promoCount = data.promoProducts.isNotEmpty
-              ? data.promoProducts.length
-              : data.flashSale.products.length;
+    final slots = feedData != null ? resolveOffersSectionSlots(feedData) : const <HomeSectionSlot>[];
+    final promoCount = feedData != null
+        ? (feedData.promoProducts.isNotEmpty
+            ? feedData.promoProducts.length
+            : feedData.flashSale.products.length)
+        : _items.length;
+    final showFlashPulse = feedData != null &&
+        feedData.flashSale.products.isNotEmpty &&
+        !_hasFlashSection(slots);
 
-          if (_items.isEmpty && !_loadingMore && _gridError == null) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) _fetchMore();
-            });
-          }
+    final showInitialSkeleton = _initialLoad && _items.isEmpty && _gridError == null;
 
-          return RefreshIndicator(
-            color: AppColors.primary,
-            edgeOffset: top + 20,
-            onRefresh: _refreshAll,
-            child: CustomScrollView(
-              controller: _scroll,
-              physics: AppScrollPerf.physics,
-              cacheExtent: AppScrollPerf.verticalCacheExtent,
-              slivers: [
-                if (!hasCms)
-                  SliverToBoxAdapter(child: _OffersHero(topPad: top, count: promoCount)),
-                SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      if (index >= slots.length) return null;
-                      final slot = slots[index];
-                      if (slot.isHero) {
-                        return Padding(
-                          padding: EdgeInsets.only(top: top),
-                          child: RepaintBoundary(child: HeroHomeSection(section: slot.section)),
-                        );
-                      }
-                      return HomeSectionWidget(
-                        key: ValueKey(slot.section.id),
-                        section: slot.section,
-                        isFirstAfterHero: slot.isFirstAfterHero,
-                      );
-                    },
-                    childCount: slots.length,
-                    addAutomaticKeepAlives: false,
-                    addRepaintBoundaries: true,
-                  ),
-                ),
-                if (_items.isNotEmpty || _loadingMore) ...[
-                  SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 8),
-                    sliver: SliverToBoxAdapter(
-                      child: Row(
-                        children: [
-                          Text('كل العروض', style: AppTypography.sectionTitle.copyWith(fontSize: 18)),
-                          const Spacer(),
-                          if (_items.isNotEmpty)
-                            Text(
-                              '${_items.length}+ منتج',
-                              style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700),
-                            ),
-                        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Scaffold(
+        backgroundColor: OffersTheme.canvas,
+        body: OffersCanvas(
+          child: showInitialSkeleton && feedData == null && feed.isLoading
+              ? const OffersLoadingView()
+              : RefreshIndicator(
+                  color: OffersTheme.accent,
+                  backgroundColor: OffersTheme.surface,
+                  edgeOffset: top + 12,
+                  onRefresh: _refreshAll,
+                  child: CustomScrollView(
+                    controller: _scroll,
+                    physics: AppScrollPerf.physics,
+                    cacheExtent: AppScrollPerf.verticalCacheExtent,
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: OffersHero(
+                          topPad: top,
+                          promoCount: promoCount,
+                          flashSale: feedData?.flashSale,
+                        ),
                       ),
-                    ),
-                  ),
-                  if (_gridError != null && _items.isEmpty)
-                    SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: ErrorView(message: _gridError!, onRetry: () => _fetchMore(reset: true)),
-                    )
-                  else
-                    SliverPadding(
-                      padding: EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, bottomPad),
-                      sliver: SliverGrid(
-                        gridDelegate: ProductGrid.gridDelegate,
+                      const SliverToBoxAdapter(child: OffersPerksRow()),
+                      if (feed.isLoading && feedData == null)
+                        const SliverToBoxAdapter(child: OffersCmsSkeleton()),
+                      if (showFlashPulse)
+                        SliverToBoxAdapter(child: OffersFlashPulse(flashSale: feedData!.flashSale)),
+                      SliverList(
                         delegate: SliverChildBuilderDelegate(
-                          (context, i) {
-                            if (i >= _items.length) {
-                              return const ShimmerBox(height: double.infinity, radius: AppRadius.lg);
+                          (context, index) {
+                            if (index >= slots.length) return null;
+                            final slot = slots[index];
+                            if (slot.isHero) {
+                              return RepaintBoundary(
+                                child: OffersCmsBanner(section: slot.section),
+                              );
                             }
-                            return RepaintBoundary(
-                              child: ProductCard(
-                                key: ValueKey(_items[i].id),
-                                product: _items[i],
-                                showPromoBadge: true,
-                                showRating: true,
-                                lite: true,
+                            return OffersSectionFrame(
+                              child: HomeSectionWidget(
+                                key: ValueKey(slot.section.id),
+                                section: slot.section,
+                                isFirstAfterHero: slot.isFirstAfterHero,
                               ),
                             );
                           },
-                          childCount: _items.length + (_hasMore ? 2 : 0),
+                          childCount: slots.length,
                           addAutomaticKeepAlives: false,
                           addRepaintBoundaries: true,
                         ),
                       ),
-                    ),
-                ] else if (!hasCms && !_loadingMore) ...[
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: EmptyState(
-                      icon: Icons.local_offer_outlined,
-                      title: 'لا توجد عروض حالياً',
-                      subtitle: 'عودي قريباً لاكتشاف تخفيضات جديدة',
-                      action: ElevatedButton(
-                        onPressed: () => context.push('/products?title=المنتجات'),
-                        child: const Text('تصفّح المنتجات'),
+                      SliverToBoxAdapter(
+                        child: OffersCatalogHeader(
+                          loadedCount: _items.length,
+                          loading: _loadingMore && _items.isEmpty,
+                        ),
                       ),
-                    ),
+                      if (_gridError != null && _items.isEmpty)
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: ErrorView(
+                            message: _gridError!,
+                            onRetry: () => _fetchMore(reset: true),
+                          ),
+                        )
+                      else if (_items.isNotEmpty)
+                        SliverPadding(
+                          padding: EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, bottomPad),
+                          sliver: SliverGrid(
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
+                              childAspectRatio: 0.58,
+                            ),
+                            delegate: SliverChildBuilderDelegate(
+                              (context, i) {
+                                if (i >= _items.length) {
+                                  return const ShimmerBox(height: double.infinity, radius: 16);
+                                }
+                                return RepaintBoundary(
+                                  child: ProductCard(
+                                    key: ValueKey(_items[i].id),
+                                    product: _items[i],
+                                    showPromoBadge: true,
+                                    showRating: true,
+                                    style: ProductCardStyle.listing,
+                                  ),
+                                );
+                              },
+                              childCount: _items.length + (_hasMore ? 2 : 0),
+                              addAutomaticKeepAlives: false,
+                              addRepaintBoundaries: true,
+                            ),
+                          ),
+                        )
+                      else if (!_loadingMore && _items.isEmpty && _gridError == null)
+                        SliverFillRemaining(
+                          hasScrollBody: false,
+                          child: EmptyState(
+                            icon: Icons.local_offer_outlined,
+                            title: 'لا توجد عروض حالياً',
+                            subtitle: 'عودي قريباً لاكتشاف تخفيضات جديدة',
+                            action: ElevatedButton(
+                              onPressed: () => context.push('/products?title=المنتجات'),
+                              child: const Text('تصفّح المنتجات'),
+                            ),
+                          ),
+                        )
+                      else
+                        SliverToBoxAdapter(child: SizedBox(height: bottomPad)),
+                    ],
                   ),
-                ],
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _OffersHero extends StatelessWidget {
-  final double topPad;
-  final int count;
-
-  const _OffersHero({required this.topPad, required this.count});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(AppSpacing.lg, topPad + 12, AppSpacing.lg, AppSpacing.xl),
-      decoration: const BoxDecoration(
-        gradient: AppColors.offerHeroGradient,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                 ),
-                child: const Text(
-                  'OFFERS',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed: () => context.push('/products?isPromo=1&title=كل العروض'),
-                style: TextButton.styleFrom(foregroundColor: Colors.white),
-                child: const Text('الكل', style: TextStyle(fontWeight: FontWeight.w800)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-          const Text(
-            'عروض\nاستثنائية',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 34,
-              fontWeight: FontWeight.w900,
-              height: 1.05,
-              letterSpacing: -1,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            count > 0
-                ? 'وفّري أكثر على $count منتج مختار بعناية'
-                : 'اكتشفي أقوى التخفيضات على منتجات العناية والجمال',
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.84),
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              _HeroStat(icon: Icons.local_fire_department_rounded, label: 'تخفيضات حقيقية'),
-              const SizedBox(width: 10),
-              _HeroStat(icon: Icons.verified_rounded, label: 'منتجات أصلية'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HeroStat extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _HeroStat({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: const Color(0xFFFFD4E0), size: 18),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
         ),
       ),
     );

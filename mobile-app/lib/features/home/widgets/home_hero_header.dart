@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/navigation/app_navigation.dart';
 import '../../../core/utils/support_links.dart';
 import '../../auth/auth_provider.dart';
 import '../../cart/cart_provider.dart';
@@ -69,7 +70,7 @@ class HomeHeroHeader extends ConsumerWidget {
                 unread: unread,
                 cartCount: cartCount,
                 whatsapp: whatsapp,
-                onCart: () => context.push('/cart'),
+                onCart: () => openCartTab(context, ProviderScope.containerOf(context, listen: false)),
                 onNotifications: () => context.push('/notifications'),
               ),
               const SizedBox(height: 18),

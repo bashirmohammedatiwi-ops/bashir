@@ -3,6 +3,8 @@ import { CmsPageKey } from "@prisma/client";
 import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { PrismaService } from "../../common/prisma.service";
 import { withPlaceholderImages } from "../../common/product-placeholder.util";
+import { BrandsService } from "../catalog/brands.service";
+import { CategoriesService } from "../catalog/categories.service";
 import { SettingsService } from "../settings/settings.service";
 import { HomeSectionResolver } from "./home-section.resolver";
 
@@ -32,6 +34,8 @@ export class HomeService {
     private readonly settings: SettingsService,
     private readonly sectionResolver: HomeSectionResolver,
     private readonly homeFeedCache: HomeFeedCacheService,
+    private readonly categories: CategoriesService,
+    private readonly brands: BrandsService,
   ) {}
 
   async feed(options?: { skipCache?: boolean }) {
@@ -91,23 +95,8 @@ export class HomeService {
         orderBy: { position: "asc" },
         include: { image: true },
       }),
-      this.prisma.category.findMany({
-        where: { isActive: true, parentId: null },
-        orderBy: { position: "asc" },
-        include: {
-          image: true,
-          children: {
-            where: { isActive: true },
-            orderBy: { position: "asc" },
-            include: { image: true },
-          },
-        },
-      }),
-      this.prisma.brand.findMany({
-        where: { isActive: true, isFeatured: true },
-        orderBy: { position: "asc" },
-        include: { logo: true },
-      }),
+      this.categories.list(false, true, true),
+      this.brands.list({ featuredOnly: true, storefront: true }),
       this.prisma.package.findMany({
         where: { isActive: true },
         orderBy: { position: "asc" },

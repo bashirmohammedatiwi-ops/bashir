@@ -8,6 +8,8 @@ import '../../../core/theme/app_colors.dart';
 import '../../../data/models/banner.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/home_section.dart';
+import '../../catalog/catalog_providers.dart';
+import '../home_category_filter.dart';
 import '../home_link.dart';
 import '../widgets/home_hero_header.dart';
 import '../widgets/home_banner_stage.dart';
@@ -28,7 +30,11 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
 
   @override
   Widget build(BuildContext context) {
-    final cats = _normalizeCategories(widget.section.categories);
+    final apiCats = ref.watch(categoriesProvider).valueOrNull;
+    final parents = apiCats != null ? storefrontParentCategories(apiCats) : null;
+    final cats = (parents != null && parents.isNotEmpty)
+        ? parents
+        : _normalizeCategories(widget.section.categories);
     final banners = widget.section.banners;
 
     return DecoratedBox(
@@ -172,13 +178,14 @@ class QuickCategoryGrid extends ConsumerWidget {
   }
 }
 
-class CategoryGridSection extends StatelessWidget {
+class CategoryGridSection extends ConsumerWidget {
   final HomeSection section;
   const CategoryGridSection({super.key, required this.section});
 
   @override
-  Widget build(BuildContext context) {
-    final cats = _normalizeCategories(section.categories);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final apiCats = ref.watch(categoriesProvider).valueOrNull;
+    final cats = filterStorefrontCategories(_normalizeCategories(section.categories), apiCats);
     if (cats.isEmpty) return const SizedBox.shrink();
     return HomeCategoryGrid(
       categories: cats,

@@ -19,6 +19,7 @@ import '../cart/cart_provider.dart';
 import '../cart/coupon_provider.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../auth/auth_provider.dart';
+import '../shell/main_shell.dart';
 import '../profile/profile_providers.dart';
 import '../profile/widgets/address_form.dart';
 
@@ -34,6 +35,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   String? _couponError;
   int _shippingFee = 0;
   bool _shippingLoading = false;
+  String? _shippingError;
   bool _placing = false;
   bool _useLoyalty = false;
   int _loyaltySpent = 0;
@@ -64,7 +66,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _refreshShipping() async {
     final subtotal = ref.read(cartProvider).subtotal;
-    setState(() => _shippingLoading = true);
+    setState(() {
+      _shippingLoading = true;
+      _shippingError = null;
+    });
     try {
       final fee = await ref.read(apiServiceProvider).shippingQuote(
             governorate: _selected?.governorate ?? _selected?.city,
@@ -72,7 +77,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             subtotal: subtotal,
           );
       setState(() => _shippingFee = fee);
-    } catch (_) {
+    } catch (e) {
+      setState(() => _shippingError = friendlyError(e));
     } finally {
       if (mounted) setState(() => _shippingLoading = false);
     }
@@ -167,6 +173,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Widget _buildCheckout() {
     final cart = ref.watch(cartProvider);
+    if (cart.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('إتمام الطلب'), elevation: 0),
+        body: EmptyState(
+          icon: Icons.shopping_bag_outlined,
+          title: 'السلة فارغة',
+          subtitle: 'أضيفي منتجات قبل إتمام الطلب',
+          action: ElevatedButton(
+            onPressed: () {
+              ref.read(navIndexProvider.notifier).state = 3;
+              context.go('/');
+            },
+            child: const Text('الذهاب للسلة'),
+          ),
+        ),
+      );
+    }
     final addresses = ref.watch(addressesProvider);
     final points = ref.watch(authProvider).user?.points ?? 0;
     final subtotal = cart.subtotal;
@@ -223,6 +246,26 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               );
             },
           ),
+          if (_shippingError != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.sale.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.sale.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.local_shipping_outlined, color: AppColors.sale, size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(_shippingError!, style: AppTypography.caption)),
+                  TextButton(onPressed: _refreshShipping, child: const Text('إعادة')),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: AppSpacing.lg),
           const SectionTitle('كود الخصم'),
           Row(

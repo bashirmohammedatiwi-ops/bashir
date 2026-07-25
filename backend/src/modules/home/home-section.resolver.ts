@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { HomeBlock, HomeBlockType } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
+import { BrandsService } from "../catalog/brands.service";
+import { CategoriesService } from "../catalog/categories.service";
 import { SettingsService } from "../settings/settings.service";
 
 import { buildAppLink, withResolvedLink } from "../../common/link-target.util";
@@ -80,6 +82,8 @@ export class HomeSectionResolver {
   constructor(
     private readonly prisma: PrismaService,
     private readonly settings: SettingsService,
+    private readonly categories: CategoriesService,
+    private readonly brands: BrandsService,
   ) {}
 
   /// فلاتر ظهور المنتجات في واجهة المتجر (مخزون/صور) حسب الإعدادات.
@@ -106,10 +110,14 @@ export class HomeSectionResolver {
     const sections: ResolvedHomeSection[] = [];
 
     for (const block of blocks) {
-      const payload = (block.payload ?? {}) as Payload;
-      const section = await this.resolveBlock(block, payload, ctx);
-      if (section && !this.isEmpty(section)) {
-        sections.push(section);
+      try {
+        const payload = (block.payload ?? {}) as Payload;
+        const section = await this.resolveBlock(block, payload, ctx);
+        if (section && !this.isEmpty(section)) {
+          sections.push(section);
+        }
+      } catch {
+        // قسم CMS تالف لا يعطّل الصفحة بالكامل
       }
     }
 
@@ -168,10 +176,7 @@ export class HomeSectionResolver {
       case HomeBlockType.HERO_BANNER: {
         const bannerIds = payload.bannerIds as string[] | undefined;
         const banners = this.pickBanners(ctx.allBanners, bannerIds);
-        const categories = await this.resolveCategories(
-          { ...payload, maxItems: Math.min(8, (payload.maxItems as number) ?? 8) },
-          ctx.defaultCategories,
-        );
+        const categories = await this.resolveCategories(payload, ctx.defaultCategories);
         return {
           ...base,
           layout: "overlap",
@@ -572,10 +577,11 @@ export class HomeSectionResolver {
     const ids = payload.categoryIds as string[] | undefined;
     const overrides = (payload.categoryItems as { categoryId: string; linkType?: string; linkValue?: string }[]) ?? [];
     const overrideMap = new Map(overrides.map((o) => [o.categoryId, o]));
-    const max = (payload.maxItems as number) ?? 16;
+    const max = payload.maxItems as number | undefined;
     if (!ids?.length) {
-      return (fallback as { id: string; parentId?: string | null }[])
-        .slice(0, max)
+      let source = fallback as { id: string; parentId?: string | null }[];
+      if (typeof max === "number" && max > 0) source = source.slice(0, max);
+      const fallbackList = source
         .map((c, i) => {
           const ov = overrideMap.get(c.id);
           const link = ov?.linkType
@@ -586,13 +592,14 @@ export class HomeSectionResolver {
             resolveCardSize(payload, c.id, i),
           );
         });
+      return this.categories.filterStorefrontCategories(fallbackList);
     }
     const cats = await this.prisma.category.findMany({
       where: { id: { in: ids }, isActive: true },
       include: { image: true },
     });
     const map = new Map(cats.map((c) => [c.id, c]));
-    return ids
+    const resolved = ids
       .map((id, i) => {
         const cat = map.get(id);
         if (!cat) return null;
@@ -605,7 +612,8 @@ export class HomeSectionResolver {
           resolveCardSize(payload, id, i),
         );
       })
-      .filter(Boolean);
+      .filter(Boolean) as Record<string, unknown>[];
+    return this.categories.filterStorefrontCategories(resolved);
   }
 
   private async resolveBrands(payload: Payload, fallback: unknown[]) {
@@ -616,22 +624,24 @@ export class HomeSectionResolver {
         resolveCardSize(payload, id, ids?.indexOf(id) ?? 0),
       );
     if (!ids?.length) {
-      return (fallback as { id: string }[]).map((b, i) =>
+      const list = (fallback as { id: string }[]).map((b, i) =>
         enrich(b as Record<string, unknown>, b.id),
       );
+      return this.brands.filterStorefrontBrands(list);
     }
     const brands = await this.prisma.brand.findMany({
       where: { id: { in: ids }, isActive: true },
       include: { logo: true },
     });
     const map = new Map(brands.map((b) => [b.id, b]));
-    return ids
+    const resolved = ids
       .map((id, i) => {
         const brand = map.get(id);
         if (!brand) return null;
         return enrich(brand as Record<string, unknown>, id);
       })
-      .filter(Boolean);
+      .filter(Boolean) as Record<string, unknown>[];
+    return this.brands.filterStorefrontBrands(resolved);
   }
 
   private async resolvePackages(payload: Payload, fallback: unknown[]) {

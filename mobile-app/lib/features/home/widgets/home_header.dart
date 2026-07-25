@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/navigation/app_navigation.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../auth/auth_provider.dart';
 import '../../profile/profile_providers.dart';
@@ -78,7 +79,7 @@ class HomeHeader extends ConsumerWidget {
                     children: [
                       _IconBtn(
                         icon: Icons.shopping_bag_outlined,
-                        onTap: () => context.push('/cart'),
+                        onTap: () => openCartTab(context, ProviderScope.containerOf(context, listen: false)),
                       ),
                       const SizedBox(width: 2),
                       _IconBtn(
