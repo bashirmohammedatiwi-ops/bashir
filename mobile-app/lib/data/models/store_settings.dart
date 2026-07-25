@@ -1,3 +1,4 @@
+import '../../core/config/app_config.dart';
 import '../../core/utils/json.dart';
 
 class StoreSettings {
@@ -7,14 +8,14 @@ class StoreSettings {
   final String? whatsapp;
 
   const StoreSettings({
-    this.storeName = 'الحياة',
+    this.storeName = AppConfig.storeNameAr,
     this.freeShippingThreshold = 50000,
     this.supportPhone,
     this.whatsapp,
   });
 
   factory StoreSettings.fromJson(Map<String, dynamic> json) => StoreSettings(
-        storeName: asString(json['storeName'], 'الحياة'),
+        storeName: asString(json['storeName'], AppConfig.storeNameAr),
         freeShippingThreshold: asInt(json['freeShippingThreshold'], 50000),
         supportPhone: json['supportPhone']?.toString(),
         whatsapp: json['whatsapp']?.toString(),

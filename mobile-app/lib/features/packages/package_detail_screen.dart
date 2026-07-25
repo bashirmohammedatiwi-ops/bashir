@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/json.dart';
@@ -22,9 +23,10 @@ class PackageDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     final async = ref.watch(packageDetailProvider(idOrSlug));
     return Scaffold(
-      appBar: AppBar(title: const Text('الباقة')),
+      appBar: AppBar(title: Text(s.packageTitle)),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (e, _) => ErrorView(

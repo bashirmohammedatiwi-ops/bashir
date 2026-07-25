@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_feed.dart';
@@ -67,6 +68,7 @@ class _OffersFlashPulseState extends ConsumerState<OffersFlashPulse> {
   @override
   Widget build(BuildContext context) {
     ref.listen<int>(navIndexProvider, (_, next) => _syncTimer(next == 2));
+    final s = ref.s;
 
     final products = widget.flashSale.products;
     if (products.isEmpty) return const SizedBox.shrink();
@@ -94,8 +96,8 @@ class _OffersFlashPulseState extends ConsumerState<OffersFlashPulse> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('عرض سريع', style: OffersTheme.title(size: 15)),
-                      Text('ينتهي قريباً', style: OffersTheme.body(size: 11)),
+                      Text(s.flashSale, style: OffersTheme.title(size: 15)),
+                      Text(s.endsSoon, style: OffersTheme.body(size: 11)),
                     ],
                   ),
                 ),

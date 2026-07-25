@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/cache/image_cache.dart';
 import '../../core/config/app_config.dart';
 import '../../core/network/api_client.dart';
@@ -156,6 +157,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.s;
     final feed = ref.watch(offersFeedProvider);
     final feedData = feed.valueOrNull;
     final top = MediaQuery.paddingOf(context).top;
@@ -275,11 +277,11 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                           hasScrollBody: false,
                           child: EmptyState(
                             icon: Icons.local_offer_outlined,
-                            title: 'لا توجد عروض حالياً',
-                            subtitle: 'عودي قريباً لاكتشاف تخفيضات جديدة',
+                            title: s.noOffersNow,
+                            subtitle: s.checkBackSoon,
                             action: ElevatedButton(
-                              onPressed: () => context.push('/products?title=المنتجات'),
-                              child: const Text('تصفّح المنتجات'),
+                              onPressed: () => context.push('/products?title=${Uri.encodeComponent(s.products)}'),
+                              child: Text(s.browseProductsBtn),
                             ),
                           ),
                         )

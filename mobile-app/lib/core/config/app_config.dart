@@ -23,7 +23,13 @@ class AppConfig {
     return _defaultMediaBaseUrl;
   }
 
-  static const String storeName = 'الحياة';
+  static const String storeNameAr = 'ديما الحياة';
+  static const String storeNameEn = 'deema alhayat';
+  static const String storeName = storeNameAr;
+
+  static String displayStoreName(String lang) =>
+      lang == 'ar' ? storeNameAr : storeNameEn;
+
   static const String currency = 'د.ع';
 
   /// صورة بديلة للمنتجات بدون صور (من السيرفر).

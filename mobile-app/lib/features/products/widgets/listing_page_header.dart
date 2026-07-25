@@ -1,103 +1,121 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/listing_toolbar.dart';
+import 'listing_theme.dart';
 
-/// رأس صفحة المنتجات — عنوان + عداد + شريط ترتيب/تصفية.
-class ListingPageHeader extends StatelessWidget {
+/// رأس صفحة المنتجات — نظيف بدون عداد.
+class ListingPageHeader extends ConsumerWidget {
   final String title;
-  final int? productCount;
-  final bool hasMore;
   final String sortLabel;
+  final String filterLabel;
   final VoidCallback onSort;
   final VoidCallback onFilter;
   final bool hasFilter;
+  final String? subtitle;
 
   const ListingPageHeader({
     super.key,
     required this.title,
-    this.productCount,
-    this.hasMore = false,
     required this.sortLabel,
+    required this.filterLabel,
     required this.onSort,
     required this.onFilter,
     this.hasFilter = false,
+    this.subtitle,
   });
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: AppColors.surface,
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ColoredBox(
+      color: Colors.white,
       child: SafeArea(
         bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(4, 4, 16, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    onPressed: () => context.pop(),
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
-                    color: AppColors.textPrimary,
-                    tooltip: 'رجوع',
-                  ),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
-                            letterSpacing: -0.3,
-                            height: 1.2,
-                          ),
-                        ),
-                        if (productCount != null && productCount! > 0) ...[
-                          const SizedBox(height: 3),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: AppColors.hairline.withValues(alpha: 0.75)),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 6, ListingTheme.padH, 0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _HeaderIconButton(
+                      icon: Icons.arrow_back_ios_new_rounded,
+                      onTap: () => context.pop(),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            hasMore ? '$productCount+ منتج' : '$productCount منتج',
+                            title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.textMuted,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.4,
+                              height: 1.2,
                             ),
                           ),
+                          if (subtitle != null && subtitle!.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Text(
+                              subtitle!,
+                              style: ListingTheme.sectionHint.copyWith(fontSize: 12),
+                            ),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
-                  ),
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLight,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.grid_view_rounded,
-                      size: 20,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            ListingToolbar(
-              sortLabel: sortLabel,
-              onSort: onSort,
-              onFilter: onFilter,
-              hasFilter: hasFilter,
-            ),
-            const Divider(height: 1, thickness: 0.5, color: AppColors.divider),
-          ],
+              Padding(
+                padding: const EdgeInsets.fromLTRB(ListingTheme.padH, 12, ListingTheme.padH, 14),
+                child: ListingToolbar(
+                  sortLabel: sortLabel,
+                  filterLabel: filterLabel,
+                  onSort: onSort,
+                  onFilter: onFilter,
+                  hasFilter: hasFilter,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HeaderIconButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _HeaderIconButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFF3F3F4),
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: Icon(icon, size: 17, color: const Color(0xFF7A757F)),
         ),
       ),
     );

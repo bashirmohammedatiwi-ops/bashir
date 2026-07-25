@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_strings.dart';
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/scroll_perf.dart';
 import '../../../data/models/category.dart';
 
 /// شريط أفقي بدوائر للأقسام الفرعية أو الثانوية أعلى قائمة المنتجات.
-class CategoryChildrenStrip extends StatelessWidget {
+class CategoryChildrenStrip extends ConsumerWidget {
   final List<Category> children;
   final String? selectedChildId;
-  final String allLabel;
+  final String? allLabel;
+  final bool embedded;
   final void Function(Category? child) onSelect;
 
   const CategoryChildrenStrip({
@@ -18,32 +22,33 @@ class CategoryChildrenStrip extends StatelessWidget {
     required this.children,
     required this.onSelect,
     this.selectedChildId,
-    this.allLabel = 'الكل',
+    this.allLabel,
+    this.embedded = false,
   });
 
-  static const _circleSize = 58.0;
-  static const _stripHeight = 102.0;
+  static const _circleSize = 56.0;
+  static const _stripHeight = 100.0;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (children.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      color: const Color(0xFFF9F7F8),
-      padding: const EdgeInsets.only(bottom: 6),
-      child: SizedBox(
-        height: _stripHeight,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          physics: AppScrollPerf.physics,
-          cacheExtent: AppScrollPerf.horizontalCacheExtent,
-          padding: const EdgeInsets.fromLTRB(14, 10, 14, 2),
+    final lang = ref.watch(languageCodeProvider);
+    final all = allLabel ?? ref.s.all;
+
+    final strip = SizedBox(
+      height: _stripHeight,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: AppScrollPerf.physics,
+        cacheExtent: AppScrollPerf.horizontalCacheExtent,
+        padding: EdgeInsets.fromLTRB(embedded ? 12 : 14, embedded ? 4 : 10, embedded ? 12 : 14, embedded ? 8 : 2),
           itemCount: children.length + 1,
           separatorBuilder: (_, __) => const SizedBox(width: 12),
           itemBuilder: (_, index) {
             if (index == 0) {
               return _CircleChip(
-                label: allLabel,
+                label: all,
                 active: selectedChildId == null,
                 icon: Icons.apps_rounded,
                 onTap: () {
@@ -53,10 +58,11 @@ class CategoryChildrenStrip extends StatelessWidget {
               );
             }
             final child = children[index - 1];
+            final childName = child.localizedName(lang);
             return _CircleChip(
-              label: child.name,
+              label: childName,
               imageUrl: child.imageUrl,
-              fallback: child.icon ?? child.name.characters.first,
+              fallback: child.icon ?? childName.characters.first,
               active: selectedChildId == child.id,
               onTap: () {
                 HapticFeedback.selectionClick();
@@ -65,7 +71,14 @@ class CategoryChildrenStrip extends StatelessWidget {
             );
           },
         ),
-      ),
+    );
+
+    if (embedded) return strip;
+
+    return Container(
+      color: const Color(0xFFF9F7F8),
+      padding: const EdgeInsets.only(bottom: 6),
+      child: strip,
     );
   }
 }
@@ -108,15 +121,6 @@ class _CircleChip extends StatelessWidget {
                   color: active ? AppColors.primary : AppColors.border,
                   width: active ? 2 : 1,
                 ),
-                boxShadow: active
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.14),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
               ),
               child: ClipOval(
                 child: _buildInner(),

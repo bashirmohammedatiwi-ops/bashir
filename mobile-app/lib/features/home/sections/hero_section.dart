@@ -13,6 +13,7 @@ import '../home_category_filter.dart';
 import '../home_link.dart';
 import '../widgets/home_hero_header.dart';
 import '../widgets/home_banner_stage.dart';
+import '../../../core/l10n/app_strings.dart';
 import '../widgets/home_category_grid.dart';
 import '../widgets/home_quick_dock.dart';
 import '../widgets/home_section_shell.dart';
@@ -181,7 +182,7 @@ class QuickCategoryGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return HomeCategoryGrid(categories: categories, title: 'الفئات');
+    return HomeCategoryGrid(categories: categories, title: ref.s.categoriesTitle);
   }
 }
 
@@ -196,7 +197,7 @@ class CategoryGridSection extends ConsumerWidget {
     if (cats.isEmpty) return const SizedBox.shrink();
     return HomeCategoryGrid(
       categories: cats,
-      title: section.title ?? 'الفئات',
+      title: section.title ?? ref.s.categoriesTitle,
       showTitle: section.showTitle,
       showViewAll: section.showViewAll,
       onViewAll: section.showViewAll

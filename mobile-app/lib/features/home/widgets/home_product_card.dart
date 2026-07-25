@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_network_image.dart';
-import '../../../core/widgets/app_snackbar.dart';
+import '../../../core/widgets/product_card_actions.dart';
 import '../../../data/models/product.dart';
-import '../../cart/cart_provider.dart';
 import 'home_theme.dart';
 
 /// بطاقة منتج للرئيسية — معايير متجر عالمي، صورة بيضاء، إضافة سريعة.
@@ -78,7 +77,7 @@ class _ImageSection extends StatelessWidget {
       children: [
         ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg - 0.5)),
-          child: ColoredBox(color: const Color(0xFFFAFAFA)),
+          child: const ColoredBox(color: Color(0xFFFAFAFA)),
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
@@ -156,7 +155,8 @@ class _InfoSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final brand = product.brandName.trim();
+    final lang = ref.watch(languageCodeProvider);
+    final brand = product.brandNameFor(lang).trim();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(10, 7, 8, 9),
@@ -174,7 +174,7 @@ class _InfoSection extends ConsumerWidget {
           ],
           Expanded(
             child: Text(
-              product.name,
+              product.localizedName(lang),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.bodyStrong.copyWith(fontSize: 12, height: 1.28),
@@ -208,65 +208,10 @@ class _InfoSection extends ConsumerWidget {
                   ],
                 ),
               ),
-              _QuickAddButton(product: product),
+              ProductCardCartControl(product: product, compact: true),
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _QuickAddButton extends ConsumerWidget {
-  final Product product;
-
-  const _QuickAddButton({required this.product});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final enabled = product.inStock;
-
-    return Material(
-      color: Colors.transparent,
-      shape: const CircleBorder(),
-      child: Ink(
-        width: 32,
-        height: 32,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: enabled ? AppColors.primaryGradient : null,
-          color: enabled ? null : AppColors.divider,
-          boxShadow: enabled
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.22),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: enabled
-              ? () {
-                  HapticFeedback.lightImpact();
-                  if (product.shades.isNotEmpty) {
-                    context.push(
-                      '/product/${product.slug.isNotEmpty ? product.slug : product.id}',
-                    );
-                    return;
-                  }
-                  ref.read(cartProvider.notifier).add(product);
-                  AppSnackbar.success(context, 'أُضيف إلى السلة');
-                }
-              : null,
-          child: Icon(
-            Icons.add_rounded,
-            size: 18,
-            color: enabled ? Colors.white : AppColors.textMuted,
-          ),
-        ),
       ),
     );
   }
@@ -285,13 +230,6 @@ class _Badge extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: 0.25),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Text(
         label,

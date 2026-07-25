@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -106,21 +107,22 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   }
 
   void _clearCart() {
+    final s = ref.s;
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
-        title: const Text('تفريغ السلة؟'),
-        content: const Text('سيتم حذف جميع المنتجات من سلتك.'),
+        title: Text(s.clearCartTitle),
+        content: Text(s.clearCartBody),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(s.cancel)),
           TextButton(
             onPressed: () {
               ref.read(cartProvider.notifier).clear();
               _removeCoupon();
               Navigator.pop(ctx);
             },
-            child: const Text('تفريغ', style: TextStyle(color: AppColors.sale)),
+            child: Text(s.clearCart, style: const TextStyle(color: AppColors.sale)),
           ),
         ],
       ),
@@ -245,7 +247,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
 
 // ─── Header ───────────────────────────────────────────────────────────────────
 
-class _CartHeroHeader extends StatelessWidget {
+class _CartHeroHeader extends ConsumerWidget {
   final int count;
   final double topPad;
   final VoidCallback onClear;
@@ -257,7 +259,8 @@ class _CartHeroHeader extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     return Container(
       padding: EdgeInsets.fromLTRB(8, topPad + 6, 8, 20),
       decoration: BoxDecoration(
@@ -276,12 +279,12 @@ class _CartHeroHeader extends StatelessWidget {
           IconButton(
             onPressed: onClear,
             icon: const Icon(Icons.delete_sweep_outlined, color: AppColors.textSecondary),
-            tooltip: 'تفريغ السلة',
+            tooltip: s.clearCartTooltip,
           ),
           Expanded(
             child: Column(
               children: [
-                Text('سلة التسوّق', style: AppTypography.sectionTitle.copyWith(fontSize: 22)),
+                Text(s.cartTitle, style: AppTypography.sectionTitle.copyWith(fontSize: 22)),
                 const SizedBox(height: 6),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -291,7 +294,7 @@ class _CartHeroHeader extends StatelessWidget {
                     border: Border.all(color: AppColors.border),
                   ),
                   child: Text(
-                    '$count ${count == 1 ? 'منتج' : 'منتجات'}',
+                    s.itemCountLabel(count),
                     style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -321,13 +324,14 @@ class _EmptyCart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     return CustomScrollView(
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.only(top: topPad + 24),
-            child: const Center(
-              child: Text('سلة التسوّق', style: AppTypography.sectionTitle),
+            child: Center(
+              child: Text(s.cartTitle, style: AppTypography.sectionTitle),
             ),
           ),
         ),
@@ -357,13 +361,13 @@ class _EmptyCart extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 28),
-                const Text(
-                  'سلتك فارغة',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+                Text(
+                  s.cartEmptyTitle,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'اكتشفي أجمل منتجات التجميل وأضيفيها لسلتك',
+                  s.cartEmptySubtitle,
                   textAlign: TextAlign.center,
                   style: AppTypography.caption.copyWith(fontSize: 14),
                 ),
@@ -394,9 +398,9 @@ class _EmptyCart extends ConsumerWidget {
                           borderRadius: BorderRadius.circular(AppRadius.lg),
                         ),
                       ),
-                      child: const Text(
-                        'تسوّقي الآن',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                      child: Text(
+                        s.shopNow,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                       ),
                     ),
                   ),

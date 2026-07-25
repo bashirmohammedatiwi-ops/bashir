@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/navigation/notification_navigation.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/friendly_error.dart';
@@ -17,15 +18,16 @@ class NotificationsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
+    final s = ref.s;
     if (!auth.isAuthenticated) {
       return Scaffold(
-        appBar: AppBar(title: const Text('الإشعارات')),
+        appBar: AppBar(title: Text(s.notifications)),
         body: EmptyState(
           icon: Icons.notifications_off_outlined,
-          title: 'سجّل الدخول لعرض الإشعارات',
+          title: s.loginToViewNotifications,
           action: ElevatedButton(
             onPressed: () => context.push('/login'),
-            child: const Text('تسجيل الدخول'),
+            child: Text(s.login),
           ),
         ),
       );
@@ -34,7 +36,7 @@ class NotificationsScreen extends ConsumerWidget {
     final async = ref.watch(notificationsProvider);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('الإشعارات'),
+        title: Text(s.notifications),
         actions: [
           IconButton(
             tooltip: 'تعليم الكل كمقروء',

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/scroll_perf.dart';
@@ -103,7 +105,7 @@ class CategoryBrandsStripLoading extends StatelessWidget {
   }
 }
 
-class _BrandTile extends StatelessWidget {
+class _BrandTile extends ConsumerWidget {
   final Brand brand;
   final String? categoryId;
   final String? subcategoryId;
@@ -115,13 +117,15 @@ class _BrandTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageCodeProvider);
+    final name = brand.localizedName(lang);
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
           HapticFeedback.selectionClick();
-          final q = StringBuffer('brandId=${brand.id}&title=${Uri.encodeComponent(brand.name)}');
+          final q = StringBuffer('brandId=${brand.id}&title=${Uri.encodeComponent(name)}');
           if (subcategoryId != null) {
             q.write('&subcategoryId=$subcategoryId');
           } else if (categoryId != null) {
@@ -139,7 +143,7 @@ class _BrandTile extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             Text(
-              brand.name,
+              name,
               maxLines: 2,
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,

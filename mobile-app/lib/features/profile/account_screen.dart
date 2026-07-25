@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_config.dart';
+import '../../core/l10n/app_strings.dart';
+import '../../core/l10n/locale_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -18,12 +20,14 @@ class AccountScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
+    final s = ref.watch(stringsProvider);
+    final lang = ref.watch(languageCodeProvider);
     final top = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
       backgroundColor: AppColors.scaffold,
       body: !auth.isAuthenticated
-          ? _GuestAccount(topPad: top)
+          ? _GuestAccount(topPad: top, s: s)
           : ListView(
               padding: EdgeInsets.only(bottom: AppSpacing.huge + 40),
               children: [
@@ -32,42 +36,52 @@ class AccountScreen extends ConsumerWidget {
                 _QuickActions(),
                 const SizedBox(height: AppSpacing.lg),
                 _MenuGroup(
-                  title: 'مشترياتي',
+                  title: s.myPurchases,
                   children: [
-                    _tile(context, Icons.receipt_long_outlined, 'طلباتي', () => context.push('/orders')),
-                    _tile(context, Icons.favorite_border_rounded, 'المفضلة', () => context.push('/wishlist')),
-                    _tile(context, Icons.storefront_outlined, 'العلامات التجارية', () => context.push('/brands')),
+                    _tile(context, Icons.receipt_long_outlined, s.myOrders, () => context.push('/orders')),
+                    _tile(context, Icons.favorite_border_rounded, s.wishlist, () => context.push('/wishlist')),
+                    _tile(context, Icons.storefront_outlined, s.brands, () => context.push('/brands')),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.md),
                 _MenuGroup(
-                  title: 'حسابي',
+                  title: s.myAccount,
                   children: [
-                    _tile(context, Icons.location_on_outlined, 'عناويني', () => context.push('/addresses')),
-                    _tile(context, Icons.stars_outlined, 'نقاط الولاء', () => context.push('/loyalty')),
+                    _tile(context, Icons.location_on_outlined, s.addresses, () => context.push('/addresses')),
+                    _tile(context, Icons.stars_outlined, s.loyaltyPoints, () => context.push('/loyalty')),
                     _tile(
                       context,
                       Icons.notifications_none_rounded,
-                      'الإشعارات',
+                      s.notifications,
                       () => context.push('/notifications'),
                       badge: ref.watch(unreadNotificationsCountProvider),
                     ),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.md),
-                _SupportSection(),
+                _SupportSection(s: s),
                 const SizedBox(height: AppSpacing.md),
                 _MenuGroup(
-                  title: 'الإعدادات',
+                  title: s.settings,
                   children: [
-                    _tile(context, Icons.edit_outlined, 'تعديل البيانات', () => context.push('/edit-profile')),
-                    _tile(context, Icons.lock_outline_rounded, 'تغيير كلمة المرور', () => context.push('/change-password')),
-                    _tile(context, Icons.info_outline_rounded, 'عن التطبيق', () => _about(context)),
+                    _tile(context, Icons.edit_outlined, s.editProfile, () => context.push('/edit-profile')),
+                    _tile(context, Icons.lock_outline_rounded, s.changePassword, () => context.push('/change-password')),
+                    _tile(
+                      context,
+                      Icons.language_rounded,
+                      s.language,
+                      () => context.push('/language-settings'),
+                      trailing: Text(
+                        lang == 'ar' ? s.arabic : s.english,
+                        style: AppTypography.caption.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                    _tile(context, Icons.info_outline_rounded, s.aboutApp, () => _about(context, s)),
                     _tile(
                       context,
                       Icons.logout_rounded,
-                      'تسجيل الخروج',
-                      () => _logout(context, ref),
+                      s.logout,
+                      () => _logout(context, ref, s),
                       color: AppColors.sale,
                     ),
                   ],
@@ -75,7 +89,7 @@ class AccountScreen extends ConsumerWidget {
                 const SizedBox(height: AppSpacing.xl),
                 Center(
                   child: Text(
-                    '${AppConfig.storeName} • الإصدار 1.0.0',
+                    '${AppConfig.storeName} • ${s.version} 1.0.0',
                     style: AppTypography.caption,
                   ),
                 ),
@@ -91,6 +105,7 @@ class AccountScreen extends ConsumerWidget {
     VoidCallback onTap, {
     Color? color,
     int badge = 0,
+    Widget? trailing,
   }) =>
       ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg, vertical: 2),
@@ -113,6 +128,7 @@ class AccountScreen extends ConsumerWidget {
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (trailing != null) trailing,
             if (badge > 0)
               Container(
                 margin: const EdgeInsets.only(left: AppSpacing.sm),
@@ -135,29 +151,27 @@ class AccountScreen extends ConsumerWidget {
         },
       );
 
-  void _about(BuildContext context) {
+  void _about(BuildContext context, AppStrings s) {
     showAboutDialog(
       context: context,
       applicationName: AppConfig.storeName,
       applicationVersion: '1.0.0',
-      children: const [
-        Text('متجر الحياة لمستحضرات التجميل والعناية. الدفع عند الاستلام.'),
-      ],
+      children: [Text(s.aboutDescription)],
     );
   }
 
-  Future<void> _logout(BuildContext context, WidgetRef ref) async {
+  Future<void> _logout(BuildContext context, WidgetRef ref, AppStrings s) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
-        title: const Text('تسجيل الخروج'),
-        content: const Text('هل تريد تسجيل الخروج من حسابك؟'),
+        title: Text(s.logoutConfirmTitle),
+        content: Text(s.logoutConfirmBody),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(s.cancel)),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('خروج', style: TextStyle(color: AppColors.sale)),
+            child: Text(s.logout, style: const TextStyle(color: AppColors.sale)),
           ),
         ],
       ),
@@ -170,7 +184,8 @@ class AccountScreen extends ConsumerWidget {
 
 class _GuestAccount extends StatelessWidget {
   final double topPad;
-  const _GuestAccount({required this.topPad});
+  final AppStrings s;
+  const _GuestAccount({required this.topPad, required this.s});
 
   @override
   Widget build(BuildContext context) {
@@ -197,13 +212,13 @@ class _GuestAccount extends StatelessWidget {
                 child: const Icon(Icons.person_rounded, color: Colors.white, size: 28),
               ),
               const SizedBox(height: 18),
-              const Text(
-                'مرحباً بك في الحياة',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.4),
+              Text(
+                s.guestWelcome,
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: -0.4),
               ),
               const SizedBox(height: 8),
               Text(
-                'سجّلي الدخول لحفظ مفضلاتك ومتابعة طلباتك ونقاط الولاء.',
+                s.guestSubtitle,
                 style: AppTypography.body.copyWith(color: AppColors.textSecondary),
               ),
               const SizedBox(height: 22),
@@ -211,7 +226,7 @@ class _GuestAccount extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () => context.push('/login'),
-                  child: const Text('تسجيل الدخول'),
+                  child: Text(s.login),
                 ),
               ),
               const SizedBox(height: 10),
@@ -219,7 +234,7 @@ class _GuestAccount extends StatelessWidget {
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: () => context.push('/register'),
-                  child: const Text('إنشاء حساب جديد'),
+                  child: Text(s.register),
                 ),
               ),
             ],
@@ -227,17 +242,23 @@ class _GuestAccount extends StatelessWidget {
         ),
         const SizedBox(height: 20),
         _MenuGroup(
-          title: 'استكشاف',
+          title: s.explore,
           children: [
             ListTile(
               leading: const Icon(Icons.storefront_outlined, color: AppColors.primary),
-              title: const Text('العلامات التجارية', style: TextStyle(fontWeight: FontWeight.w700)),
+              title: Text(s.brands, style: const TextStyle(fontWeight: FontWeight.w700)),
               trailing: const Icon(Icons.chevron_left_rounded),
               onTap: () => context.push('/brands'),
             ),
             ListTile(
+              leading: const Icon(Icons.language_rounded, color: AppColors.primary),
+              title: Text(s.language, style: const TextStyle(fontWeight: FontWeight.w700)),
+              trailing: const Icon(Icons.chevron_left_rounded),
+              onTap: () => context.push('/language-settings'),
+            ),
+            ListTile(
               leading: const Icon(Icons.info_outline_rounded, color: AppColors.primary),
-              title: const Text('عن التطبيق', style: TextStyle(fontWeight: FontWeight.w700)),
+              title: Text(s.aboutApp, style: const TextStyle(fontWeight: FontWeight.w700)),
               trailing: const Icon(Icons.chevron_left_rounded),
               onTap: () => showAboutDialog(
                 context: context,
@@ -252,14 +273,15 @@ class _GuestAccount extends StatelessWidget {
   }
 }
 
-class _QuickActions extends StatelessWidget {
+class _QuickActions extends ConsumerWidget {
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.watch(stringsProvider);
     final actions = [
-      (Icons.receipt_long_rounded, 'طلباتي', () => context.push('/orders')),
-      (Icons.favorite_rounded, 'المفضلة', () => context.push('/wishlist')),
-      (Icons.stars_rounded, 'نقاطي', () => context.push('/loyalty')),
-      (Icons.location_on_rounded, 'عناويني', () => context.push('/addresses')),
+      (Icons.receipt_long_rounded, s.myOrders, () => context.push('/orders')),
+      (Icons.favorite_rounded, s.wishlist, () => context.push('/wishlist')),
+      (Icons.stars_rounded, s.loyaltyPoints, () => context.push('/loyalty')),
+      (Icons.location_on_rounded, s.addresses, () => context.push('/addresses')),
     ];
 
     return Padding(
@@ -346,6 +368,9 @@ class _MenuGroup extends StatelessWidget {
 }
 
 class _SupportSection extends ConsumerWidget {
+  final AppStrings s;
+  const _SupportSection({required this.s});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(homeFeedProvider).maybeWhen(
@@ -359,7 +384,7 @@ class _SupportSection extends ConsumerWidget {
     }
 
     return _MenuGroup(
-      title: 'الدعم',
+      title: s.support,
       children: [
         if (whatsapp != null && whatsapp.isNotEmpty)
           ListTile(
@@ -373,7 +398,7 @@ class _SupportSection extends ConsumerWidget {
               ),
               child: const Icon(Icons.chat_outlined, color: Color(0xFF25D366)),
             ),
-            title: const Text('تواصل عبر واتساب', style: TextStyle(fontWeight: FontWeight.w700)),
+            title: Text(s.whatsappSupport, style: const TextStyle(fontWeight: FontWeight.w700)),
             trailing: const Icon(Icons.chevron_left_rounded, color: AppColors.textMuted),
             onTap: () => openWhatsApp(whatsapp, message: 'مرحباً، أحتاج مساعدة'),
           ),
@@ -389,7 +414,7 @@ class _SupportSection extends ConsumerWidget {
               ),
               child: const Icon(Icons.phone_outlined, color: AppColors.primary),
             ),
-            title: const Text('اتصل بنا', style: TextStyle(fontWeight: FontWeight.w700)),
+            title: Text(s.callUs, style: const TextStyle(fontWeight: FontWeight.w700)),
             subtitle: Text(phone, style: AppTypography.caption),
             trailing: const Icon(Icons.chevron_left_rounded, color: AppColors.textMuted),
             onTap: () => callPhone(phone),
@@ -406,6 +431,7 @@ class _ProfileHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
+    final s = ref.watch(stringsProvider);
     if (user == null) return const SizedBox.shrink();
 
     return Container(
@@ -450,7 +476,7 @@ class _ProfileHeader extends ConsumerWidget {
                       const Icon(Icons.stars_rounded, color: Colors.white, size: 15),
                       const SizedBox(width: 5),
                       Text(
-                        '${user.points} نقطة ولاء',
+                        '${user.points} ${s.loyaltyPointsCount}',
                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 12),
                       ),
                     ],

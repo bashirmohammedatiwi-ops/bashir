@@ -4,11 +4,14 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'app.dart';
 import 'core/bootstrap/app_storage.dart';
+import 'core/theme/app_fonts.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ar', null);
+  await initializeDateFormatting('en', null);
   await initAppStorage();
+  await preloadAppFonts();
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,

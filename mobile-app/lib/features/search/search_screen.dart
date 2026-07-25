@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -81,6 +82,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.s;
     return Scaffold(
       backgroundColor: AppColors.scaffold,
       appBar: AppBar(
@@ -93,7 +95,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             autofocus: true,
             textInputAction: TextInputAction.search,
             decoration: InputDecoration(
-              hintText: 'ابحث عن منتج، علامة، تصنيف...',
+              hintText: s.searchHint,
               prefixIcon: const Icon(Icons.search_rounded),
               suffixIcon: _controller.text.isNotEmpty
                   ? IconButton(
@@ -126,15 +128,16 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildBody() {
+    final s = ref.s;
     if (_loading) return const ProductGridSkeleton(count: 6);
     if (_error != null) return ErrorView(message: _error!, onRetry: () => _search(_controller.text.trim()));
     if (!_searched) {
       final recent = ref.watch(recentlyViewedProvider);
       if (recent.isEmpty) {
-        return const EmptyState(
+        return EmptyState(
           icon: Icons.search_rounded,
-          title: 'ابحث في متجر الحياة',
-          subtitle: 'اكتب اسم المنتج أو العلامة التجارية',
+          title: s.searchInStore,
+          subtitle: s.searchInStoreHint,
         );
       }
       return ListView(
@@ -142,10 +145,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         children: [
           Row(
             children: [
-              Expanded(child: Text('شاهدت مؤخراً', style: AppTypography.sectionTitle.copyWith(fontSize: 16))),
+              Expanded(child: Text(s.recentlyViewed, style: AppTypography.sectionTitle.copyWith(fontSize: 16))),
               TextButton(
                 onPressed: () => ref.read(recentlyViewedProvider.notifier).clear(),
-                child: const Text('مسح'),
+                child: Text(s.clear),
               ),
             ],
           ),
@@ -155,7 +158,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       );
     }
     if (_results.isEmpty) {
-      return const EmptyState(icon: Icons.search_off_rounded, title: 'لا توجد نتائج');
+      return EmptyState(icon: Icons.search_off_rounded, title: s.noSearchResults);
     }
     return ProductGrid(products: _results);
   }

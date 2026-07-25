@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../data/models/home_feed.dart';
 import 'offers_theme.dart';
 
 /// رأس صفحة العروض — بسيط وأنيق.
-class OffersHero extends StatelessWidget {
+class OffersHero extends ConsumerWidget {
   final double topPad;
   final int promoCount;
   final FlashSale? flashSale;
@@ -19,7 +21,8 @@ class OffersHero extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     return Padding(
       padding: EdgeInsets.fromLTRB(AppSpacing.lg, topPad + 10, AppSpacing.lg, 12),
       child: Container(
@@ -40,12 +43,12 @@ class OffersHero extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('العروض', style: OffersTheme.display(size: 26)),
+                      Text(s.offersTitle, style: OffersTheme.display(size: 26)),
                       const SizedBox(height: 2),
                       Text(
                         promoCount > 0
-                            ? '$promoCount+ منتج بأسعار مخفّضة'
-                            : 'اكتشفي أقوى التخفيضات على منتجاتنا',
+                            ? s.promoProductsCount(promoCount)
+                            : s.discoverBestDeals,
                         style: OffersTheme.body(size: 12),
                       ),
                     ],
@@ -64,26 +67,26 @@ class OffersHero extends StatelessWidget {
                 scrollDirection: Axis.horizontal,
                 children: [
                   _QuickChip(
-                    label: 'كل العروض',
+                    label: s.allOffers,
                     selected: true,
-                    onTap: () => context.push('/products?isPromo=1&title=كل العروض'),
+                    onTap: () => context.push('/products?isPromo=1&title=${Uri.encodeComponent(s.allOffers)}'),
                   ),
                   const SizedBox(width: 8),
                   _QuickChip(
-                    label: 'الأكثر مبيعاً',
-                    onTap: () => context.push('/products?isBestSeller=1&title=الأكثر مبيعاً'),
+                    label: s.sortPopular,
+                    onTap: () => context.push('/products?isBestSeller=1&title=${Uri.encodeComponent(s.sortPopular)}'),
                   ),
                   const SizedBox(width: 8),
                   _QuickChip(
-                    label: 'وصل حديثاً',
-                    onTap: () => context.push('/products?isNew=1&title=وصل حديثاً'),
+                    label: s.newArrivals,
+                    onTap: () => context.push('/products?isNew=1&title=${Uri.encodeComponent(s.newArrivals)}'),
                   ),
                   if (flashSale != null && flashSale!.products.isNotEmpty) ...[
                     const SizedBox(width: 8),
                     _QuickChip(
-                      label: 'عرض سريع',
+                      label: s.flashSale,
                       icon: Icons.bolt_rounded,
-                      onTap: () => context.push('/products?isPromo=1&title=العرض السريع'),
+                      onTap: () => context.push('/products?isPromo=1&title=${Uri.encodeComponent(s.flashSale)}'),
                     ),
                   ],
                 ],
@@ -96,22 +99,23 @@ class OffersHero extends StatelessWidget {
   }
 }
 
-class OffersPerksRow extends StatelessWidget {
+class OffersPerksRow extends ConsumerWidget {
   const OffersPerksRow({super.key});
 
-  static const _items = [
-    (Icons.verified_outlined, 'أصلية 100%'),
-    (Icons.local_shipping_outlined, 'توصيل سريع'),
-    (Icons.replay_rounded, 'استبدال سهل'),
-  ];
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final items = [
+      (Icons.verified_outlined, s.authentic100Short),
+      (Icons.local_shipping_outlined, s.fastDelivery),
+      (Icons.replay_rounded, s.easyReturns),
+    ];
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, 8),
       child: Row(
         children: [
-          for (var i = 0; i < _items.length; i++) ...[
+          for (var i = 0; i < items.length; i++) ...[
             if (i > 0) const SizedBox(width: 8),
             Expanded(
               child: Container(
@@ -120,11 +124,11 @@ class OffersPerksRow extends StatelessWidget {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(_items[i].$1, size: 14, color: OffersTheme.accent),
+                    Icon(items[i].$1, size: 14, color: OffersTheme.accent),
                     const SizedBox(width: 5),
                     Flexible(
                       child: Text(
-                        _items[i].$2,
+                        items[i].$2,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: OffersTheme.body(size: 10, weight: FontWeight.w700),

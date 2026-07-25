@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/product_grid.dart';
@@ -32,21 +33,22 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
   Widget build(BuildContext context) {
     final auth = ref.watch(authProvider);
     final wishlist = ref.watch(wishlistProvider);
+    final s = ref.s;
 
     return Scaffold(
       backgroundColor: AppColors.scaffold,
       appBar: AppBar(
-        title: const Text('المفضلة'),
+        title: Text(s.wishlist),
         elevation: 0,
       ),
       body: !auth.isAuthenticated
           ? EmptyState(
               icon: Icons.favorite_border_rounded,
-              title: 'سجّل الدخول لعرض المفضلة',
-              subtitle: 'احفظ منتجاتك المفضلة وتابعها بسهولة',
+              title: s.loginToViewWishlist,
+              subtitle: s.wishlistEmptySubtitle,
               action: ElevatedButton(
                 onPressed: () => context.push('/login'),
-                child: const Text('تسجيل الدخول'),
+                child: Text(s.login),
               ),
             )
           : wishlist.error != null && wishlist.products.isEmpty
@@ -59,11 +61,11 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
               : wishlist.products.isEmpty
                   ? EmptyState(
                       icon: Icons.favorite_border_rounded,
-                      title: 'قائمة المفضلة فارغة',
-                      subtitle: 'أضف منتجات لتجدها هنا',
+                      title: s.wishlistIsEmpty,
+                      subtitle: s.wishlistAddHint,
                       action: ElevatedButton(
                         onPressed: () => ref.read(navIndexProvider.notifier).state = 0,
-                        child: const Text('تصفّح المنتجات'),
+                        child: Text(s.browseProductsBtn),
                       ),
                     )
                   : RefreshIndicator(

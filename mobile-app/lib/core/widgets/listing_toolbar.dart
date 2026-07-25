@@ -2,45 +2,44 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
-/// شريط ترتيب/تصفية — بسيط وأنيق.
+/// شريط ترتيب/تصفية — مسطح بدون ظلال.
 class ListingToolbar extends StatelessWidget {
   final VoidCallback onSort;
   final VoidCallback onFilter;
   final bool hasFilter;
-  final String? sortLabel;
+  final String sortLabel;
+  final String filterLabel;
 
   const ListingToolbar({
     super.key,
     required this.onSort,
     required this.onFilter,
+    required this.sortLabel,
+    required this.filterLabel,
     this.hasFilter = false,
-    this.sortLabel,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-      child: Row(
-        children: [
-          Expanded(
-            child: _ToolChip(
-              icon: Icons.sort_rounded,
-              label: sortLabel ?? 'ترتيب',
-              onTap: onSort,
-            ),
+    return Row(
+      children: [
+        Expanded(
+          child: _ToolChip(
+            icon: Icons.swap_vert_rounded,
+            label: sortLabel,
+            onTap: onSort,
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: _ToolChip(
-              icon: Icons.tune_rounded,
-              label: 'تصفية',
-              onTap: onFilter,
-              active: hasFilter,
-            ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _ToolChip(
+            icon: Icons.tune_rounded,
+            label: filterLabel,
+            onTap: onFilter,
+            active: hasFilter,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -61,20 +60,26 @@ class _ToolChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: active ? AppColors.primaryLight : const Color(0xFFF5F2F3),
-      borderRadius: BorderRadius.circular(12),
+      color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: active ? AppColors.primaryLight : const Color(0xFFF3F3F4),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: active ? AppColors.primarySoft : AppColors.hairline.withValues(alpha: 0.75),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 12),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
-                size: 16,
-                color: active ? AppColors.primary : AppColors.textSecondary,
+                size: 17,
+                color: active ? AppColors.primaryDark : const Color(0xFF7A757F),
               ),
               const SizedBox(width: 6),
               Flexible(
@@ -82,8 +87,9 @@ class _ToolChip extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 12.5,
+                    fontSize: 13,
                     fontWeight: FontWeight.w700,
                     color: active ? AppColors.primaryDark : AppColors.textPrimary,
                   ),

@@ -67,12 +67,11 @@ class HomeBannerStage extends StatelessWidget {
           width: cardW,
           height: cardH,
           decoration: BoxDecoration(
-            color: tint.bg,
+            color: HomeTheme.pearl,
             borderRadius: BorderRadius.circular(radius),
             border: layout.fullBleed
                 ? null
-                : Border.all(color: tint.border),
-            boxShadow: layout.fullBleed ? null : HomeTheme.softShadow,
+                : Border.all(color: HomeTheme.divider),
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(radius),
@@ -173,7 +172,7 @@ class _ImageOnlyLayout extends StatelessWidget {
         width: constraints.maxWidth,
         height: constraints.maxHeight,
         fit: BoxFit.contain,
-        backgroundColor: tint.bg,
+        backgroundColor: HomeTheme.pearl,
       ),
     );
   }

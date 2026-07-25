@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/app_strings.dart';
+import '../../core/l10n/locale_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -74,6 +76,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
   @override
   Widget build(BuildContext context) {
     final cats = ref.watch(categoriesProvider);
+    final s = ref.s;
 
     return Scaffold(
       backgroundColor: _CatPalette.canvas,
@@ -88,8 +91,8 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
         data: (list) {
           final parents = _parentCategories(list);
           if (parents.isEmpty) {
-            return const SafeArea(
-              child: EmptyState(icon: Icons.grid_view_rounded, title: 'لا توجد أقسام'),
+            return SafeArea(
+              child: EmptyState(icon: Icons.grid_view_rounded, title: s.noCategories),
             );
           }
 
@@ -127,6 +130,7 @@ class _CategoriesLayout extends StatefulWidget {
 
 class _CategoriesLayoutState extends State<_CategoriesLayout> {
   int _selected = 0;
+  int _slideDirection = 1;
   final _railScroll = ScrollController();
 
   @override
@@ -137,6 +141,7 @@ class _CategoriesLayoutState extends State<_CategoriesLayout> {
 
   void _selectParent(int index) {
     if (index == _selected) return;
+    _slideDirection = index > _selected ? 1 : -1;
     HapticFeedback.selectionClick();
     setState(() => _selected = index);
     _revealRailItem(index);
@@ -188,14 +193,20 @@ class _CategoriesLayoutState extends State<_CategoriesLayout> {
                       ],
                     ),
                     child: AnimatedSwitcher(
-                      duration: _CatPerf.switchDuration,
-                      switchInCurve: Curves.easeOut,
-                      switchOutCurve: Curves.easeIn,
+                      duration: const Duration(milliseconds: 240),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
                       layoutBuilder: (current, _) => current ?? const SizedBox.shrink(),
-                      transitionBuilder: (child, anim) => FadeTransition(
-                        opacity: anim.drive(CurveTween(curve: Curves.easeOut)),
-                        child: child,
-                      ),
+                      transitionBuilder: (child, anim) {
+                        final slide = Tween<Offset>(
+                          begin: Offset(_slideDirection * 0.05, 0),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic));
+                        return FadeTransition(
+                          opacity: anim,
+                          child: SlideTransition(position: slide, child: child),
+                        );
+                      },
                       child: _CategoryBody(
                         key: ValueKey(selected.id),
                         parent: selected,
@@ -213,13 +224,14 @@ class _CategoriesLayoutState extends State<_CategoriesLayout> {
   }
 }
 
-class _TopBar extends StatelessWidget {
+class _TopBar extends ConsumerWidget {
   final VoidCallback onSearch;
 
   const _TopBar({required this.onSearch});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 4, AppSpacing.lg, 10),
       child: Row(
@@ -229,7 +241,7 @@ class _TopBar extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'الأقسام',
+                  s.categoriesHeader,
                   style: AppTypography.sectionTitle.copyWith(
                     fontSize: 22,
                     fontWeight: FontWeight.w900,
@@ -238,7 +250,7 @@ class _TopBar extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'اختاري من الشريط · تصفّحي البراندات',
+                  s.categoriesBrowseHint,
                   style: AppTypography.caption.copyWith(fontSize: 11.5),
                 ),
               ],
@@ -261,7 +273,7 @@ class _TopBar extends StatelessWidget {
                   children: [
                     Icon(Icons.search_rounded, size: 18, color: AppColors.textMuted.withValues(alpha: 0.9)),
                     const SizedBox(width: 6),
-                    Text('بحث', style: AppTypography.caption.copyWith(fontSize: 12.5)),
+                    Text(s.searchShort, style: AppTypography.caption.copyWith(fontSize: 12.5)),
                   ],
                 ),
               ),
@@ -294,7 +306,7 @@ class _CategoryRail extends StatelessWidget {
         width: _kRailWidth,
         child: ListView.builder(
           controller: controller,
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
           cacheExtent: _CatPerf.railCacheExtent,
           addAutomaticKeepAlives: false,
           addRepaintBoundaries: true,
@@ -312,7 +324,7 @@ class _CategoryRail extends StatelessWidget {
   }
 }
 
-class _RailTile extends StatelessWidget {
+class _RailTile extends ConsumerWidget {
   final Category category;
   final bool active;
   final VoidCallback onTap;
@@ -324,43 +336,48 @@ class _RailTile extends StatelessWidget {
     required this.onTap,
   });
 
+  static const _iconSize = 46.0;
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageCodeProvider);
     return RepaintBoundary(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 3),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(16),
-            child: AnimatedContainer(
-              duration: _CatPerf.railAnimDuration,
-              curve: Curves.easeOutCubic,
-              decoration: BoxDecoration(
-                color: active ? _CatPalette.tileActive : Colors.transparent,
-                borderRadius: BorderRadius.circular(16),
-                border: active ? Border.all(color: AppColors.primarySoft, width: 0.8) : null,
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  if (active)
-                    Positioned(
-                      left: -4,
-                      top: 10,
-                      bottom: 10,
-                      child: Container(
-                        width: 3,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(99),
-                        ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: AnimatedContainer(
+            duration: _CatPerf.railAnimDuration,
+            curve: Curves.easeOutCubic,
+            height: _kRailItemHeight,
+            decoration: BoxDecoration(
+              color: active ? _CatPalette.tileActive : Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              border: active ? Border.all(color: AppColors.primarySoft, width: 0.8) : null,
+            ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                if (active)
+                  PositionedDirectional(
+                    start: 2,
+                    top: 14,
+                    bottom: 14,
+                    child: Container(
+                      width: 3,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(99),
                       ),
                     ),
-                  Column(
+                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6),
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       DecoratedBox(
                         decoration: BoxDecoration(
@@ -376,35 +393,38 @@ class _RailTile extends StatelessWidget {
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(13),
                           child: SizedBox(
-                            width: 48,
-                            height: 48,
-                            child: _CatImage(
-                              category: category,
-                              fallbackSize: 17,
-                              size: 48,
-                              fit: BoxFit.contain,
-                              padded: true,
+                            width: _iconSize,
+                            height: _iconSize,
+                            child: Center(
+                              child: _CatImage(
+                                category: category,
+                                lang: lang,
+                                fallbackSize: 16,
+                                size: _iconSize,
+                                fit: BoxFit.contain,
+                                padded: true,
+                              ),
                             ),
                           ),
                         ),
                       ),
                       const SizedBox(height: 5),
                       Text(
-                        category.name,
+                        category.localizedName(lang),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 9.5,
-                          height: 1.2,
+                          height: 1.15,
                           fontWeight: active ? FontWeight.w800 : FontWeight.w500,
                           color: active ? AppColors.primaryDark : AppColors.textMuted,
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -426,44 +446,52 @@ class _CategoryBody extends ConsumerStatefulWidget {
 }
 
 class _CategoryBodyState extends ConsumerState<_CategoryBody> {
-  String? _selectedSubId;
+  final _scroll = ScrollController();
 
   @override
-  void didUpdateWidget(covariant _CategoryBody oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.parent.id != widget.parent.id) _selectedSubId = null;
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToTop(animated: false));
   }
 
-  Category? get _selectedSub {
-    if (_selectedSubId == null) return null;
-    for (final s in widget.parent.children) {
-      if (s.id == _selectedSubId) return s;
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _scrollToTop({bool animated = true}) {
+    if (!_scroll.hasClients) return;
+    if (animated) {
+      _scroll.animateTo(
+        0,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+      );
+    } else {
+      _scroll.jumpTo(0);
     }
-    return null;
   }
 
   void _openAll() {
+    final lang = ref.read(languageCodeProvider);
     context.push(
-      '/products?categoryId=${widget.parent.id}&title=${Uri.encodeComponent(widget.parent.name)}',
+      '/products?categoryId=${widget.parent.id}&title=${Uri.encodeComponent(widget.parent.localizedName(lang))}',
     );
   }
 
   void _openSub(Category sub) {
+    final lang = ref.read(languageCodeProvider);
     context.push(
-      '/products?subcategoryId=${sub.id}&title=${Uri.encodeComponent(sub.name)}',
+      '/products?subcategoryId=${sub.id}&title=${Uri.encodeComponent(sub.localizedName(lang))}',
     );
-  }
-
-  void _selectSub(String? id) {
-    HapticFeedback.selectionClick();
-    setState(() => _selectedSubId = id);
   }
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(languageCodeProvider);
     final subs = widget.parent.children;
     final detailed = subs.where((c) => c.children.isNotEmpty).toList(growable: false);
-    final selectedSub = _selectedSub;
     final brandsAsync = ref.watch(categoryBrandsProvider(widget.parent.id));
 
     return RefreshIndicator(
@@ -474,7 +502,7 @@ class _CategoryBodyState extends ConsumerState<_CategoryBody> {
           await widget.onRefresh();
         },
         child: CustomScrollView(
-          key: PageStorageKey<String>('cat_body_${widget.parent.id}'),
+          controller: _scroll,
           physics: _CatPerf.scrollPhysics,
           cacheExtent: _CatPerf.bodyCacheExtent,
           slivers: [
@@ -482,9 +510,7 @@ class _CategoryBodyState extends ConsumerState<_CategoryBody> {
               child: _HeroBanner(
                 parent: widget.parent,
                 subCount: subs.length,
-                selectedSub: selectedSub,
                 onBrowseAll: _openAll,
-                onBrowseSub: selectedSub != null ? () => _openSub(selectedSub) : null,
               ),
             ),
             if (subs.isEmpty) ...[
@@ -495,33 +521,33 @@ class _CategoryBodyState extends ConsumerState<_CategoryBody> {
               _brandsSliver(brandsAsync, widget.parent.id),
             ] else ...[
               SliverToBoxAdapter(
-                child: _SubcategoryStrip(
+                child: _SubcategoryGrid(
                   subs: subs,
-                  selectedId: _selectedSubId,
-                  onSelect: _selectSub,
-                  onOpen: _openSub,
+                  onOpenAll: _openAll,
+                  onOpenSub: _openSub,
                 ),
               ),
               _brandsSliver(brandsAsync, widget.parent.id),
               if (detailed.isNotEmpty)
                 SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(14, 16, 14, 8),
+                    padding: const EdgeInsets.fromLTRB(14, 16, 14, 4),
                     child: _SectionTitle(
-                      title: 'تصفّح بالتفصيل',
-                      subtitle: '${detailed.length} مجموعة',
+                      title: ref.s.tertiaryCategory,
+                      subtitle: ref.s.groupCount(detailed.length),
                     ),
                   ),
                 ),
               if (detailed.isNotEmpty)
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
+                  padding: const EdgeInsets.fromLTRB(14, 10, 14, 0),
                   sliver: SliverList.separated(
                     itemCount: detailed.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 10),
                     itemBuilder: (_, i) => _DetailBlock(
                       key: ValueKey(detailed[i].id),
                       category: detailed[i],
+                      onOpenSub: _openSub,
                     ),
                   ),
                 ),
@@ -533,15 +559,16 @@ class _CategoryBodyState extends ConsumerState<_CategoryBody> {
   }
 
   Widget _brandsSliver(AsyncValue<List<Brand>> brandsAsync, String categoryId) {
+    final s = ref.s;
     return SliverToBoxAdapter(
       child: brandsAsync.when(
-        loading: () => const Padding(
-          padding: EdgeInsets.only(top: 8),
+        loading: () => Padding(
+          padding: const EdgeInsets.only(top: 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _SectionTitle(title: 'براندات القسم'),
-              CategoryBrandsStripLoading(),
+              _SectionTitle(title: s.sectionBrands),
+              const CategoryBrandsStripLoading(),
             ],
           ),
         ),
@@ -554,9 +581,9 @@ class _CategoryBodyState extends ConsumerState<_CategoryBody> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _SectionTitle(
-                  title: 'براندات القسم',
-                  subtitle: '${brands.length} براند',
-                  trailing: brands.length > 6 ? 'مرّري للمزيد' : null,
+                  title: s.sectionBrands,
+                  subtitle: s.brandCountLabel(brands.length),
+                  trailing: brands.length > 6 ? s.swipeForMore : null,
                 ),
                 CategoryBrandsStrip(
                   brands: brands,
@@ -571,24 +598,21 @@ class _CategoryBodyState extends ConsumerState<_CategoryBody> {
   }
 }
 
-class _HeroBanner extends StatelessWidget {
+class _HeroBanner extends ConsumerWidget {
   final Category parent;
   final int subCount;
-  final Category? selectedSub;
   final VoidCallback onBrowseAll;
-  final VoidCallback? onBrowseSub;
 
   const _HeroBanner({
     required this.parent,
     required this.subCount,
-    required this.selectedSub,
     required this.onBrowseAll,
-    this.onBrowseSub,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final showSubCta = selectedSub != null && onBrowseSub != null;
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageCodeProvider);
+    final s = ref.s;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 4),
@@ -598,104 +622,63 @@ class _HeroBanner extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: AppColors.primarySoft.withValues(alpha: 0.6)),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: SizedBox(
-                  width: 52,
-                  height: 52,
-                  child: _CatImage(
-                    category: parent,
-                    fallbackSize: 18,
-                    size: 52,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      selectedSub?.name ?? parent.name,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.3,
-                        height: 1.2,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onBrowseAll,
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: SizedBox(
+                      width: 52,
+                      height: 52,
+                      child: _CatImage(
+                        category: parent,
+                        lang: lang,
+                        fallbackSize: 18,
+                        size: 52,
+                        fit: BoxFit.cover,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      showSubCta
-                          ? 'منتجات ${selectedSub!.name}'
-                          : subCount > 0
-                              ? '$subCount قسم فرعي'
-                              : 'كل منتجات القسم',
-                      style: AppTypography.caption.copyWith(fontSize: 11.5),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Column(
-                children: [
-                  _HeroButton(
-                    label: 'الكل',
-                    filled: true,
-                    onTap: onBrowseAll,
                   ),
-                  if (showSubCta) ...[
-                    const SizedBox(height: 6),
-                    _HeroButton(
-                      label: 'منتجات',
-                      filled: false,
-                      onTap: onBrowseSub!,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          parent.localizedName(lang),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          subCount > 0
+                              ? s.subcategoryCount(subCount)
+                              : s.allSectionProducts,
+                          style: AppTypography.caption.copyWith(fontSize: 11.5),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 16,
+                    color: AppColors.primaryDark.withValues(alpha: 0.55),
+                  ),
                 ],
               ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _HeroButton extends StatelessWidget {
-  final String label;
-  final bool filled;
-  final VoidCallback onTap;
-
-  const _HeroButton({
-    required this.label,
-    required this.filled,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: filled ? AppColors.primary : Colors.white.withValues(alpha: 0.85),
-      borderRadius: BorderRadius.circular(99),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(99),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w700,
-              color: filled ? Colors.white : AppColors.primaryDark,
             ),
           ),
         ),
@@ -704,140 +687,228 @@ class _HeroButton extends StatelessWidget {
   }
 }
 
-class _SubcategoryStrip extends StatelessWidget {
+class _SubcategoryGrid extends ConsumerWidget {
   final List<Category> subs;
-  final String? selectedId;
-  final ValueChanged<String?> onSelect;
-  final ValueChanged<Category> onOpen;
+  final VoidCallback onOpenAll;
+  final ValueChanged<Category> onOpenSub;
 
-  const _SubcategoryStrip({
+  const _SubcategoryGrid({
     required this.subs,
-    required this.selectedId,
-    required this.onSelect,
-    required this.onOpen,
+    required this.onOpenAll,
+    required this.onOpenSub,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageCodeProvider);
+    final s = ref.s;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 14, 14, 0),
           child: _SectionTitle(
-            title: 'الأقسام الفرعية',
-            subtitle: 'اضغطي الاسم لفتح المنتجات',
+            title: s.subcategories,
+            subtitle: s.tapNameToOpenProducts,
           ),
         ),
-        SizedBox(
-          height: 108,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: _CatPerf.scrollPhysics,
-            padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
-            itemCount: subs.length + 1,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (_, i) {
-              if (i == 0) {
-                return _SubChip(
-                  label: 'الكل',
-                  selected: selectedId == null,
-                  icon: Icons.apps_rounded,
-                  onCircleTap: () => onSelect(null),
-                );
-              }
-              final sub = subs[i - 1];
-              return _SubChip(
-                label: sub.name,
-                selected: selectedId == sub.id,
-                category: sub,
-                onCircleTap: () => onSelect(sub.id),
-                onLabelTap: () => onOpen(sub),
+        _CircleScroller(
+          slotCount: subs.length + 1,
+          singleRowMax: 5,
+          slotBuilder: (slot) {
+            if (slot == 0) {
+              return _CircleCategoryTile(
+                label: s.all,
+                icon: Icons.apps_rounded,
+                onTap: onOpenAll,
               );
-            },
-          ),
+            }
+            final sub = subs[slot - 1];
+            return _CircleCategoryTile(
+              label: sub.localizedName(lang),
+              category: sub,
+              lang: lang,
+              onTap: () => onOpenSub(sub),
+            );
+          },
         ),
       ],
     );
   }
 }
 
-class _SubChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final Category? category;
-  final IconData? icon;
-  final VoidCallback onCircleTap;
-  final VoidCallback? onLabelTap;
+/// تمرير أفقي بدوائر — صف واحد عند القلة، صفّان عند الكثرة.
+class _CircleScroller extends StatelessWidget {
+  final int slotCount;
+  final Widget Function(int slot) slotBuilder;
+  final int singleRowMax;
+  final bool compact;
 
-  const _SubChip({
-    required this.label,
-    required this.selected,
-    required this.onCircleTap,
-    this.category,
-    this.icon,
-    this.onLabelTap,
+  const _CircleScroller({
+    required this.slotCount,
+    required this.slotBuilder,
+    this.singleRowMax = 4,
+    this.compact = false,
   });
 
-  static const _size = 56.0;
+  int get _rows => slotCount <= singleRowMax ? 1 : 2;
+
+  double get _tileHeight =>
+      compact ? _CircleCategoryTile.compactTileHeight : _CircleCategoryTile.tileHeight;
+
+  double get _height => _tileHeight * _rows + (_rows == 1 ? 12 : 20);
+
+  @override
+  Widget build(BuildContext context) {
+    if (_rows == 1) {
+      return SizedBox(
+        height: _height,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: _CatPerf.scrollPhysics,
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
+          itemCount: slotCount,
+          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          itemBuilder: (_, i) => slotBuilder(i),
+        ),
+      );
+    }
+
+    final columnCount = (slotCount + 1) ~/ 2;
+
+    return SizedBox(
+      height: _height,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: _CatPerf.scrollPhysics,
+        padding: const EdgeInsets.fromLTRB(14, 10, 14, 4),
+        itemCount: columnCount,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (_, col) {
+          return SizedBox(
+            width: _CircleCategoryTile.tileWidth,
+            child: Column(
+              children: [
+                _slotOrEmpty(col * 2),
+                const SizedBox(height: 10),
+                _slotOrEmpty(col * 2 + 1),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _slotOrEmpty(int slot) {
+    if (slot >= slotCount) {
+      return SizedBox(height: _tileHeight);
+    }
+    return slotBuilder(slot);
+  }
+}
+
+class _CircleCategoryTile extends StatelessWidget {
+  final String label;
+  final Category? category;
+  final String? lang;
+  final IconData? icon;
+  final VoidCallback onTap;
+  final bool compact;
+
+  const _CircleCategoryTile({
+    required this.label,
+    required this.onTap,
+    this.category,
+    this.lang,
+    this.icon,
+    this.compact = false,
+  });
+
+  static const circleSize = 60.0;
+  static const compactCircleSize = 52.0;
+  static const tileWidth = 78.0;
+  static const tileHeight = 96.0;
+  static const compactTileHeight = 84.0;
+
+  double get _circle => compact ? compactCircleSize : circleSize;
+  double get _width => tileWidth;
+  double get _height => compact ? compactTileHeight : tileHeight;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 72,
-      child: Column(
-        children: [
-          GestureDetector(
-            onTap: onCircleTap,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              width: _size,
-              height: _size,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: selected
-                    ? (icon != null ? AppColors.primary : AppColors.primaryLight)
-                    : _CatPalette.chipBg,
-                border: Border.all(
-                  color: selected ? AppColors.primary : AppColors.hairline,
-                  width: selected ? 2 : 1,
+      width: _width,
+      height: _height,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          borderRadius: BorderRadius.circular(14),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: _circle,
+                height: _circle,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _CatPalette.surface,
+                  border: Border.all(
+                    color: icon != null
+                        ? AppColors.primary.withValues(alpha: 0.35)
+                        : AppColors.hairline,
+                    width: icon != null ? 1.6 : 1.1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.ink.withValues(alpha: 0.06),
+                      blurRadius: compact ? 6 : 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ClipOval(
+                  child: icon != null
+                      ? ColoredBox(
+                          color: AppColors.primaryLight,
+                          child: Center(
+                            child: Icon(icon, color: AppColors.primary, size: compact ? 22 : 26),
+                          ),
+                        )
+                      : Center(
+                          child: _CatImage(
+                            category: category!,
+                            lang: lang!,
+                            fallbackSize: compact ? 16 : 18,
+                            size: _circle,
+                            fit: BoxFit.cover,
+                            padded: true,
+                          ),
+                        ),
                 ),
               ),
-              child: ClipOval(
-                child: icon != null
-                    ? Icon(icon, color: selected ? Colors.white : AppColors.textMuted, size: 22)
-                    : Padding(
-                        padding: const EdgeInsets.all(5),
-                        child: _CatImage(
-                          category: category!,
-                          fallbackSize: 16,
-                          size: _size - 10,
-                          fit: BoxFit.contain,
-                          padded: true,
-                        ),
-                      ),
+              SizedBox(height: compact ? 5 : 7),
+              Text(
+                label,
+                maxLines: 2,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: compact ? 10 : 10.5,
+                  height: 1.15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
+            ],
           ),
-          const SizedBox(height: 6),
-          GestureDetector(
-            onTap: onLabelTap ?? onCircleTap,
-            child: Text(
-              label,
-              maxLines: 2,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 10,
-                height: 1.15,
-                fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-                color: selected ? AppColors.primaryDark : AppColors.textSecondary,
-                decoration: onLabelTap != null ? TextDecoration.underline : null,
-                decorationColor: AppColors.primary.withValues(alpha: 0.35),
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -884,130 +955,156 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-class _DetailBlock extends StatelessWidget {
+class _DetailBlock extends ConsumerWidget {
   final Category category;
+  final ValueChanged<Category> onOpenSub;
 
-  const _DetailBlock({super.key, required this.category});
+  const _DetailBlock({
+    super.key,
+    required this.category,
+    required this.onOpenSub,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageCodeProvider);
+    final s = ref.s;
     final items = category.children;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: _CatPalette.chipBg.withValues(alpha: 0.55),
-        borderRadius: BorderRadius.circular(16),
+        color: _CatPalette.surface,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.hairline.withValues(alpha: 0.75)),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.ink.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            InkWell(
-              onTap: () => context.push(
-                '/products?subcategoryId=${category.id}&title=${Uri.encodeComponent(category.name)}',
-              ),
-              borderRadius: BorderRadius.circular(10),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onOpenSub(category);
+              },
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
+                padding: const EdgeInsets.fromLTRB(14, 14, 12, 12),
                 child: Row(
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: SizedBox(
-                        width: 32,
-                        height: 32,
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.primarySoft, width: 1.2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withValues(alpha: 0.08),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
                         child: _CatImage(
                           category: category,
-                          fallbackSize: 12,
-                          size: 32,
-                          fit: BoxFit.contain,
+                          lang: lang,
+                          fallbackSize: 16,
+                          size: 50,
+                          fit: BoxFit.cover,
                           padded: true,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        category.name,
-                        style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            category.localizedName(lang),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
+                              height: 1.2,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            items.isNotEmpty
+                                ? s.childGroupCount(items.length)
+                                : s.viewAllProducts,
+                            style: AppTypography.caption.copyWith(fontSize: 11.5),
+                          ),
+                        ],
                       ),
                     ),
-                    Icon(Icons.arrow_back_ios_new_rounded, size: 12, color: AppColors.primary.withValues(alpha: 0.7)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            s.viewAll,
+                            style: const TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryDark,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 10,
+                            color: AppColors.primaryDark.withValues(alpha: 0.75),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                for (final item in items)
-                  _TertiaryChip(
-                    category: item,
-                    subcategoryId: category.id,
-                  ),
-              ],
+          ),
+          if (items.isNotEmpty) ...[
+            Divider(height: 1, color: AppColors.hairline.withValues(alpha: 0.7)),
+            _CircleScroller(
+              slotCount: items.length,
+              singleRowMax: items.length <= 3 ? items.length : 4,
+              compact: items.length <= 3,
+              slotBuilder: (slot) {
+                final item = items[slot];
+                return _CircleCategoryTile(
+                  label: item.localizedName(lang),
+                  category: item,
+                  lang: lang,
+                  compact: items.length <= 3,
+                  onTap: () {
+                    context.push(
+                      '/products?subcategoryId=${category.id}&tertiaryCategoryId=${item.id}&title=${Uri.encodeComponent(item.localizedName(lang))}',
+                    );
+                  },
+                );
+              },
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TertiaryChip extends StatelessWidget {
-  final Category category;
-  final String subcategoryId;
-
-  const _TertiaryChip({required this.category, required this.subcategoryId});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: _CatPalette.surface,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          context.push(
-            '/products?subcategoryId=$subcategoryId&tertiaryCategoryId=${category.id}&title=${Uri.encodeComponent(category.name)}',
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: _CatImage(
-                    category: category,
-                    fallbackSize: 10,
-                    size: 24,
-                    fit: BoxFit.contain,
-                    padded: true,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 6),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 120),
-                child: Text(
-                  category.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                ),
-              ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
   }
@@ -1015,6 +1112,7 @@ class _TertiaryChip extends StatelessWidget {
 
 class _CatImage extends StatelessWidget {
   final Category category;
+  final String lang;
   final double fallbackSize;
   final double? size;
   final BoxFit fit;
@@ -1022,6 +1120,7 @@ class _CatImage extends StatelessWidget {
 
   const _CatImage({
     required this.category,
+    required this.lang,
     required this.fallbackSize,
     this.size,
     this.fit = BoxFit.cover,
@@ -1051,7 +1150,7 @@ class _CatImage extends StatelessWidget {
       color: _CatPalette.wash,
       child: Center(
         child: Text(
-          category.icon ?? category.name.characters.first,
+          category.icon ?? category.localizedName(lang).characters.first,
           style: TextStyle(
             fontSize: fallbackSize,
             fontWeight: FontWeight.w800,
@@ -1063,13 +1162,14 @@ class _CatImage extends StatelessWidget {
   }
 }
 
-class _NoSubsEmpty extends StatelessWidget {
+class _NoSubsEmpty extends ConsumerWidget {
   final VoidCallback onBrowse;
 
   const _NoSubsEmpty({required this.onBrowse});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -1078,9 +1178,9 @@ class _NoSubsEmpty extends StatelessWidget {
           children: [
             Icon(Icons.inventory_2_outlined, size: 40, color: AppColors.textMuted.withValues(alpha: 0.45)),
             const SizedBox(height: 12),
-            const Text('لا أقسام فرعية', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+            Text(s.noSubcategories, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
             const SizedBox(height: 4),
-            Text('تصفّحي كل المنتجات مباشرة', style: AppTypography.caption),
+            Text(s.browseAllProductsDirect, style: AppTypography.caption),
             const SizedBox(height: 16),
             FilledButton(
               onPressed: onBrowse,
@@ -1088,7 +1188,7 @@ class _NoSubsEmpty extends StatelessWidget {
                 backgroundColor: AppColors.primary,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.pill)),
               ),
-              child: const Text('عرض المنتجات'),
+              child: Text(s.viewProducts),
             ),
           ],
         ),

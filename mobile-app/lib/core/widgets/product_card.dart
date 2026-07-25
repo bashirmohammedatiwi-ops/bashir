@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/models/product.dart';
+import '../l10n/locale_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
@@ -51,8 +52,7 @@ class ProductCard extends ConsumerWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: AppColors.hairline, width: 0.7),
-            boxShadow: lite ? null : AppColors.softShadow,
+            border: Border.all(color: AppColors.hairline.withValues(alpha: 0.75), width: 0.8),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -97,7 +97,7 @@ class _ListingProductCard extends ConsumerWidget {
     required this.showRating,
   });
 
-  static const _radius = 20.0;
+  static const _radius = 18.0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -114,7 +114,7 @@ class _ListingProductCard extends ConsumerWidget {
           decoration: BoxDecoration(
             color: AppColors.surface,
             borderRadius: BorderRadius.circular(_radius),
-            boxShadow: AppColors.cardShadow,
+            border: Border.all(color: AppColors.hairline.withValues(alpha: 0.75)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -165,11 +165,7 @@ class _ListingImage extends StatelessWidget {
           borderRadius: const BorderRadius.vertical(top: Radius.circular(19.5)),
           child: DecoratedBox(
             decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFFFFF8FA), Color(0xFFFFFFFF)],
-              ),
+              color: Color(0xFFFAFAFA),
             ),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
@@ -318,35 +314,36 @@ class _ListingInfo extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageCodeProvider);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+      padding: const EdgeInsets.fromLTRB(11, 7, 11, 11),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (product.brandName.isNotEmpty)
+          if (product.brandNameFor(lang).isNotEmpty)
             Text(
-              product.brandName,
+              product.brandNameFor(lang),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textMuted,
-                letterSpacing: 0.2,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+                letterSpacing: 0.15,
               ),
             ),
-          if (product.brandName.isNotEmpty) const SizedBox(height: 3),
+          if (product.brandNameFor(lang).isNotEmpty) const SizedBox(height: 2),
           Expanded(
             child: Text(
-              product.name,
+              product.localizedName(lang),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-                height: 1.3,
+                fontWeight: FontWeight.w700,
+                height: 1.28,
                 color: AppColors.textPrimary,
-                letterSpacing: -0.15,
+                letterSpacing: -0.12,
               ),
             ),
           ),
@@ -430,7 +427,7 @@ class _ImageSection extends StatelessWidget {
         ClipRRect(
           borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg - 0.5)),
           child: ColoredBox(
-            color: Colors.white,
+            color: const Color(0xFFFAFAFA),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
               child: LayoutBuilder(
@@ -460,7 +457,7 @@ class _ImageSection extends StatelessWidget {
         if (product.hasDiscount)
           Positioned(
             top: 10,
-            right: 10,
+            left: 10,
             child: _Badge(
               label: '-${product.discountPercent}%',
               color: AppColors.sale,
@@ -470,13 +467,13 @@ class _ImageSection extends StatelessWidget {
         else if (product.isNew)
           Positioned(
             top: 10,
-            right: 10,
+            left: 10,
             child: _Badge(label: 'جديد', color: AppColors.ink, lite: lite),
           )
         else if (showPromoBadge && product.isPromo)
           Positioned(
             top: 10,
-            right: 10,
+            left: 10,
             child: _Badge(label: 'عرض', color: AppColors.primary, lite: lite),
           ),
         if (_hasShades)
@@ -603,22 +600,23 @@ class _InfoSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageCodeProvider);
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 8, 10, 11),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (product.brandName.isNotEmpty)
+          if (product.brandNameFor(lang).isNotEmpty)
             Text(
-              product.brandName.toUpperCase(),
+              product.brandNameFor(lang).toUpperCase(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.brand,
             ),
-          if (product.brandName.isNotEmpty) const SizedBox(height: 3),
+          if (product.brandNameFor(lang).isNotEmpty) const SizedBox(height: 3),
           Expanded(
             child: Text(
-              product.name,
+              product.localizedName(lang),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.bodyStrong.copyWith(fontSize: 13, height: 1.25),
@@ -691,15 +689,6 @@ class _Badge extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(AppRadius.pill),
-        boxShadow: lite
-            ? null
-            : [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
       ),
       child: Text(
         label,

@@ -1,9 +1,12 @@
 import '../../core/utils/json.dart';
+import '../../core/l10n/localized_text.dart';
 import 'media.dart';
 
 class Category {
   final String id;
   final String name;
+  final String? nameAr;
+  final String? nameEn;
   final String slug;
   final String? icon;
   final String? parentId;
@@ -19,6 +22,8 @@ class Category {
   const Category({
     required this.id,
     required this.name,
+    this.nameAr,
+    this.nameEn,
     required this.slug,
     this.icon,
     this.parentId,
@@ -35,6 +40,8 @@ class Category {
   factory Category.fromJson(Map<String, dynamic> json) => Category(
         id: asString(json['id']),
         name: asString(json['name']),
+        nameAr: json['nameAr']?.toString(),
+        nameEn: json['nameEn']?.toString(),
         slug: asString(json['slug']),
         icon: json['icon']?.toString(),
         parentId: json['parentId']?.toString(),
@@ -46,6 +53,13 @@ class Category {
         rawImageUrl: json['imageUrl']?.toString(),
         image: json['image'] is Map ? AppMedia.fromJson(asMap(json['image'])) : null,
         children: asList(json['children']).map(Category.fromJson).toList(),
+      );
+
+  String localizedName(String lang) => localizedText(
+        languageCode: lang,
+        ar: nameAr,
+        en: nameEn,
+        fallback: name,
       );
 
   String get imageUrl {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/navigation/app_navigation.dart';
 import '../../../core/utils/support_links.dart';
 import '../../../data/models/banner.dart';
@@ -114,22 +115,24 @@ void openViewAllLink(
 }
 
 void openCategoryLink(BuildContext context, Category category) {
+  final lang = ProviderScope.containerOf(context).read(languageCodeProvider);
   openSectionLink(
     context,
     linkType: category.linkType,
     linkValue: category.linkValue,
     legacyLink: category.link ??
-        '/products?categoryId=${category.id}&title=${Uri.encodeComponent(category.name)}',
+        '/products?categoryId=${category.id}&title=${Uri.encodeComponent(category.localizedName(lang))}',
   );
 }
 
 void openBrandLink(BuildContext context, Brand brand) {
+  final lang = ProviderScope.containerOf(context).read(languageCodeProvider);
   openSectionLink(
     context,
     linkType: 'brand',
     linkValue: brand.id,
     legacyLink: brand.link ??
-        '/products?brandId=${brand.id}&title=${Uri.encodeComponent(brand.name)}',
+        '/products?brandId=${brand.id}&title=${Uri.encodeComponent(brand.localizedName(lang))}',
   );
 }
 

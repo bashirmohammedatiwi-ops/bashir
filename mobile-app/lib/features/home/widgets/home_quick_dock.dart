@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../shell/main_shell.dart';
 import 'home_animations.dart';
@@ -13,17 +14,18 @@ class HomeQuickDock extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     final items = [
-      _Item(Icons.local_offer_outlined, 'العروض', () {
+      _Item(Icons.local_offer_outlined, s.quickOffers, () {
         ref.read(navIndexProvider.notifier).state = 2;
       }),
-      _Item(Icons.grid_view_rounded, 'الفئات', () {
+      _Item(Icons.grid_view_rounded, s.navCategories, () {
         ref.read(navIndexProvider.notifier).state = 1;
       }),
-      _Item(Icons.storefront_outlined, 'براندات', () {
+      _Item(Icons.storefront_outlined, s.quickBrands, () {
         context.push('/brands');
       }),
-      _Item(Icons.favorite_border_rounded, 'المفضلة', () {
+      _Item(Icons.favorite_border_rounded, s.quickWishlist, () {
         context.push('/wishlist');
       }),
     ];
@@ -82,22 +84,23 @@ class _Item extends StatelessWidget {
   }
 }
 
-class HomeTrustStrip extends StatelessWidget {
+class HomeTrustStrip extends ConsumerWidget {
   final int? freeShippingThreshold;
 
   const HomeTrustStrip({super.key, this.freeShippingThreshold});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     final threshold = freeShippingThreshold;
     final shipping = threshold != null && threshold > 0
-        ? 'شحن مجاني +${_format(threshold)}'
-        : 'توصيل سريع';
+        ? s.freeShippingPlus(_format(threshold))
+        : s.fastDelivery;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 4, HomeTheme.paddingH, 8),
       child: Text(
-        'أصلي  ·  $shipping  ·  دعم واتساب',
+        '${s.authentic}  ·  $shipping  ·  ${s.whatsappSupport}',
         textAlign: TextAlign.center,
         style: HomeTheme.body(size: 11, color: HomeTheme.inkMuted, weight: FontWeight.w500),
       ),

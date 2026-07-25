@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/locale_provider.dart';
 import '../../data/models/category.dart';
 
 String _listingQuery(Map<String, String?> params) {
@@ -66,12 +68,14 @@ void navigateListingChild({
     return;
   }
 
+  final lang = ProviderScope.containerOf(context).read(languageCodeProvider);
+
   if (subcategoryId != null) {
     navigateListing(
       context: context,
       subcategoryId: subcategoryId,
       tertiaryCategoryId: child.id,
-      title: child.name,
+      title: child.localizedName(lang),
     );
     return;
   }
@@ -80,7 +84,7 @@ void navigateListingChild({
     navigateListing(
       context: context,
       subcategoryId: child.id,
-      title: child.name,
+      title: child.localizedName(lang),
     );
   }
 }

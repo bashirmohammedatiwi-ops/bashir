@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/card_sizes.dart';
 import '../../../core/utils/formatters.dart';
@@ -15,7 +16,7 @@ import '../widgets/home_scroll_perf.dart';
 import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
 
-class ProductCarouselSection extends StatelessWidget {
+class ProductCarouselSection extends ConsumerWidget {
   final HomeSection section;
   final bool compactTop;
   final bool nested;
@@ -28,14 +29,15 @@ class ProductCarouselSection extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (section.products.isEmpty) return const SizedBox.shrink();
+    final s = ref.s;
 
     return HomeSectionShell(
       section: section,
       compactTop: compactTop,
       showTitle: nested ? false : null,
-      actionLabel: !nested && section.showViewAll ? 'عرض الكل' : null,
+      actionLabel: !nested && section.showViewAll ? s.viewAll : null,
       onAction: !nested && section.showViewAll
           ? () => openViewAllLink(
                 context,
@@ -125,12 +127,13 @@ class _FlashSaleHomeSectionState extends ConsumerState<FlashSaleHomeSection> {
       );
     }
 
+    final strings = ref.s;
     return HomeSectionShell(
       section: widget.section,
       compactTop: widget.compactTop,
-      overline: 'عروض محدودة',
+      overline: strings.limitedOffers,
       headerTrailing: countdown,
-      actionLabel: widget.section.showViewAll ? 'عرض الكل' : null,
+      actionLabel: widget.section.showViewAll ? strings.viewAll : null,
       onAction: widget.section.showViewAll
           ? () => openViewAllLink(
                 context,
@@ -149,21 +152,22 @@ class _FlashSaleHomeSectionState extends ConsumerState<FlashSaleHomeSection> {
   }
 }
 
-class PackagesHomeSection extends StatelessWidget {
+class PackagesHomeSection extends ConsumerWidget {
   final HomeSection section;
   final bool compactTop;
 
   const PackagesHomeSection({super.key, required this.section, this.compactTop = false});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (section.packages.isEmpty) return const SizedBox.shrink();
+    final s = ref.s;
 
     return HomeSectionShell(
       section: section,
       compactTop: compactTop,
-      overline: 'مجموعات',
-      actionLabel: section.showViewAll ? 'عرض الكل' : null,
+      overline: s.collections,
+      actionLabel: section.showViewAll ? s.viewAll : null,
       onAction: section.showViewAll
           ? () => openViewAllLink(
                 context,

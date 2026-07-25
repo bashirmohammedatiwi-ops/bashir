@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../../core/widgets/states.dart';
@@ -14,9 +15,10 @@ class AddressesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     return AuthGate(
-      title: 'عناويني',
-      emptyTitle: 'سجّل الدخول لإدارة عناوينك',
+      title: s.addresses,
+      emptyTitle: s.loginToManageAddresses,
       child: const _AddressesBody(),
     );
   }
@@ -28,13 +30,14 @@ class _AddressesBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final addresses = ref.watch(addressesProvider);
+    final s = ref.s;
     return Scaffold(
-      appBar: AppBar(title: const Text('عناويني')),
+      appBar: AppBar(title: Text(s.addresses)),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: AppColors.primary,
         onPressed: () => _add(context, ref),
         icon: const Icon(Icons.add),
-        label: const Text('عنوان جديد'),
+        label: Text(s.newAddress),
       ),
       body: addresses.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
@@ -94,16 +97,17 @@ class _AddressesBody extends ConsumerWidget {
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref, Address address) async {
+    final s = ref.s;
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('حذف العنوان'),
-        content: const Text('هل تريد حذف هذا العنوان؟'),
+        title: Text(s.deleteAddress),
+        content: Text(s.deleteAddressConfirm),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('إلغاء')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(s.cancel)),
           TextButton(
               onPressed: () => Navigator.pop(context, true),
-              child: const Text('حذف', style: TextStyle(color: AppColors.sale))),
+              child: Text(s.delete, style: const TextStyle(color: AppColors.sale))),
         ],
       ),
     );

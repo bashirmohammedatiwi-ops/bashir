@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n/app_strings.dart';
+import '../../core/l10n/locale_provider.dart';
 import '../../core/config/app_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -14,10 +16,9 @@ import '../../data/models/product.dart';
 import '../../data/services/api_service.dart';
 import '../catalog/catalog_providers.dart';
 import '../catalog/category_tree.dart';
-import 'listing_navigation.dart';
-import 'widgets/category_children_strip.dart';
-import 'widgets/listing_brands_strip.dart';
+import 'widgets/listing_filters_section.dart';
 import 'widgets/listing_page_header.dart';
+import 'widgets/listing_theme.dart';
 
 class ProductListingScreen extends ConsumerStatefulWidget {
   final String title;
@@ -67,14 +68,6 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
   bool _inStock = false;
   double? _minRating;
 
-  static const _sortLabels = {
-    'default': 'الأحدث',
-    'price_asc': 'السعر ↑',
-    'price_desc': 'السعر ↓',
-    'rating': 'التقييم',
-    'popular': 'الأكثر مبيعاً',
-  };
-
   @override
   void initState() {
     super.initState();
@@ -106,6 +99,25 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
         oldWidget.search != widget.search) {
       _fetch(reset: true);
     }
+  }
+
+  String _resolveTitle(String lang, AppStrings s, List<Category> roots) {
+    final categoryId =
+        widget.tertiaryCategoryId ?? widget.subcategoryId ?? widget.categoryId;
+    if (categoryId != null) {
+      final cat = findCategoryById(roots, categoryId);
+      if (cat != null) return cat.localizedName(lang);
+    }
+    if (widget.brandId != null) {
+      for (final brand in ref.watch(brandsProvider).valueOrNull ?? const []) {
+        if (brand.id == widget.brandId) return brand.localizedName(lang);
+      }
+    }
+    if (widget.isBestSeller) return s.sortPopular;
+    if (widget.isNew) return s.newArrivals;
+    if (widget.isPromo) return s.allOffers;
+    if (widget.isFeatured) return s.products;
+    return widget.title;
   }
 
   Future<void> _fetch({bool reset = false}) async {
@@ -167,16 +179,19 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.watch(stringsProvider);
+    final lang = ref.watch(languageCodeProvider);
+    final roots = ref.watch(categoriesProvider).valueOrNull ?? const <Category>[];
+    final title = _resolveTitle(lang, s, roots);
     return Scaffold(
-      backgroundColor: const Color(0xFFF9F7F8),
+      backgroundColor: ListingTheme.canvas,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           ListingPageHeader(
-            title: widget.title,
-            productCount: _firstLoad ? null : _items.length,
-            hasMore: _hasMore,
-            sortLabel: _sortLabels[_sort] ?? 'ترتيب',
+            title: title,
+            sortLabel: s.sortShortFor(_sort),
+            filterLabel: s.filter,
             onSort: _openSort,
             onFilter: _openFilter,
             hasFilter: _minPrice != null || _maxPrice != null || _inStock || _minRating != null,
@@ -188,12 +203,18 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
   }
 
   Widget _buildBody() {
+    final s = ref.watch(stringsProvider);
+    final lang = ref.watch(languageCodeProvider);
     if (_firstLoad && _loading) return const ProductGridSkeleton(count: 8);
     if (_error != null && _items.isEmpty) {
       return ErrorView(message: _error!, onRetry: () => _fetch(reset: true));
     }
     if (_items.isEmpty) {
-      return const EmptyState(icon: Icons.search_off_rounded, title: 'لا توجد منتجات مطابقة');
+      return EmptyState(
+        icon: Icons.inventory_2_outlined,
+        title: s.noProducts,
+        subtitle: s.noProductsHint,
+      );
     }
 
     final categoriesAsync = ref.watch(categoriesProvider);
@@ -220,63 +241,31 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
     );
 
     final stripParentTitle = effectiveSubId != null
-        ? (findCategoryById(roots, effectiveSubId)?.name ?? widget.title)
-        : widget.title;
+        ? (findCategoryById(roots, effectiveSubId)?.localizedName(lang) ?? _resolveTitle(lang, s, roots))
+        : _resolveTitle(lang, s, roots);
 
     final showBrandsStrip = effectiveSubId != null;
     final brandsAsync = showBrandsStrip
         ? ref.watch(subcategoryBrandsProvider(effectiveSubId))
         : null;
 
-    Widget? listingHeader;
-    if (showChildStrip || showBrandsStrip) {
-      listingHeader = Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (showChildStrip) ...[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
-              child: Text(
-                widget.subcategoryId != null ? 'القسم الثانوي' : 'القسم الفرعي',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
-              ),
-            ),
-            CategoryChildrenStrip(
-              children: childCategories,
-              selectedChildId: activeChildId,
-              onSelect: (child) => navigateListingChild(
-                context: context,
-                categoryId: widget.categoryId,
-                subcategoryId: effectiveSubId ?? widget.subcategoryId,
-                tertiaryCategoryId: widget.tertiaryCategoryId,
-                child: child,
-                parentTitle: stripParentTitle,
-              ),
-            ),
-          ],
-          if (showBrandsStrip && brandsAsync != null)
-            brandsAsync.when(
-              loading: () => const SizedBox(
-                height: 90,
-                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-              ),
-              error: (_, __) => const SizedBox.shrink(),
-              data: (brands) => ListingBrandsStrip(
-                brands: brands,
-                selectedBrandId: widget.brandId,
-                onSelect: (brandId) => navigateListingBrand(
-                  context: context,
-                  subcategoryId: effectiveSubId,
-                  tertiaryCategoryId: widget.tertiaryCategoryId,
-                  brandId: brandId,
-                  title: widget.title,
-                ),
-              ),
-            ),
-        ],
-      );
-    }
+    final filtersSection = (showChildStrip || showBrandsStrip)
+        ? ListingFiltersSection(
+            childCategories: childCategories,
+            activeChildId: activeChildId,
+            categoryId: widget.categoryId,
+            subcategoryId: widget.subcategoryId,
+            tertiaryCategoryId: widget.tertiaryCategoryId,
+            parentTitle: stripParentTitle,
+            showTertiaryLabel: widget.subcategoryId != null,
+            effectiveSubId: effectiveSubId,
+            brandsAsync: brandsAsync,
+            selectedBrandId: widget.brandId,
+            listingTitle: _resolveTitle(lang, s, roots),
+          )
+        : null;
+
+    final listingHeader = filtersSection;
 
     return RefreshIndicator(
       color: AppColors.primary,
@@ -287,7 +276,7 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
         showPromoBadge: widget.isPromo,
         showRating: true,
         listingStyle: true,
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 28),
+        padding: const EdgeInsets.fromLTRB(ListingTheme.padH, 10, ListingTheme.padH, 32),
         extraSlots: _hasMore ? 2 : 0,
         header: listingHeader,
       ),
@@ -295,59 +284,83 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
   }
 
   void _openSort() {
+    final s = ref.read(stringsProvider);
+    final options = {
+      'default': (s.sortLatest, Icons.schedule_rounded),
+      'price_asc': (s.sortPriceAsc, Icons.arrow_downward_rounded),
+      'price_desc': (s.sortPriceDesc, Icons.arrow_upward_rounded),
+      'rating': (s.sortRating, Icons.star_rounded),
+      'popular': (s.sortPopular, Icons.local_fire_department_rounded),
+    };
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-      ),
-      builder: (_) {
-        const options = {
-          'default': 'الأحدث',
-          'price_asc': 'السعر: من الأقل',
-          'price_desc': 'السعر: من الأعلى',
-          'rating': 'الأعلى تقييماً',
-          'popular': 'الأكثر مبيعاً',
-        };
-        return SafeArea(
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const SizedBox(height: 10),
               Container(
-                margin: const EdgeInsets.only(top: 10, bottom: 4),
-                width: 36,
+                width: 40,
                 height: 4,
                 decoration: BoxDecoration(
                   color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(99),
                 ),
               ),
-              const Padding(
-                padding: EdgeInsets.all(AppSpacing.lg),
-                child: Text('ترتيب حسب', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(s.sortBy, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
+                ),
               ),
               for (final entry in options.entries)
-                ListTile(
-                  leading: Icon(
-                    _sort == entry.key ? Icons.radio_button_checked : Icons.radio_button_off,
-                    color: _sort == entry.key ? AppColors.primary : AppColors.textMuted,
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Material(
+                    color: _sort == entry.key ? AppColors.primaryLight : ListingTheme.chipBg,
+                    borderRadius: BorderRadius.circular(14),
+                    child: ListTile(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      leading: Icon(
+                        entry.value.$2,
+                        color: _sort == entry.key ? AppColors.primary : AppColors.textMuted,
+                      ),
+                      title: Text(
+                        entry.value.$1,
+                        style: TextStyle(
+                          fontWeight: _sort == entry.key ? FontWeight.w800 : FontWeight.w600,
+                          color: _sort == entry.key ? AppColors.primaryDark : AppColors.textPrimary,
+                        ),
+                      ),
+                      trailing: _sort == entry.key
+                          ? const Icon(Icons.check_circle_rounded, color: AppColors.primary)
+                          : null,
+                      onTap: () {
+                        Navigator.pop(context);
+                        setState(() => _sort = entry.key);
+                        _fetch(reset: true);
+                      },
+                    ),
                   ),
-                  title: Text(entry.value),
-                  onTap: () {
-                    Navigator.pop(context);
-                    setState(() => _sort = entry.key);
-                    _fetch(reset: true);
-                  },
                 ),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(height: 12),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
   void _openFilter() {
+    final s = ref.read(stringsProvider);
     int? minP = _minPrice;
     int? maxP = _maxPrice;
     bool inStock = _inStock;
@@ -358,17 +371,18 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (_) => StatefulBuilder(
-        builder: (ctx, setSheet) => Padding(
+        builder: (ctx, setSheet) => Container(
+          decoration: const BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
           padding: EdgeInsets.only(
-            left: AppSpacing.lg,
-            right: AppSpacing.lg,
-            top: AppSpacing.lg,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.lg,
+            left: 20,
+            right: 20,
+            top: 12,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -376,25 +390,33 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
             children: [
               Center(
                 child: Container(
-                  width: 36,
+                  width: 40,
                   height: 4,
                   decoration: BoxDecoration(
                     color: AppColors.border,
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(99),
                   ),
                 ),
               ),
+              const SizedBox(height: 18),
+              Text(s.filterProducts, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
               const SizedBox(height: AppSpacing.lg),
-              const Text('تصفية', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17)),
-              const SizedBox(height: AppSpacing.lg),
-              const Text('نطاق السعر', style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(s.priceRange, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
               const SizedBox(height: AppSpacing.sm),
               Row(children: [
                 Expanded(
                   child: TextField(
                     controller: minCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(hintText: 'الأدنى'),
+                    decoration: InputDecoration(
+                      hintText: s.minPrice,
+                      filled: true,
+                      fillColor: ListingTheme.chipBg,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
@@ -402,27 +424,40 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
                   child: TextField(
                     controller: maxCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(hintText: 'الأعلى'),
+                    decoration: InputDecoration(
+                      hintText: s.maxPrice,
+                      filled: true,
+                      fillColor: ListingTheme.chipBg,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
                   ),
                 ),
               ]),
+              const SizedBox(height: 8),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 activeThumbColor: AppColors.primary,
                 value: inStock,
-                title: const Text('المتوفر فقط'),
+                title: Text(s.inStockOnly, style: const TextStyle(fontWeight: FontWeight.w600)),
                 onChanged: (v) => setSheet(() => inStock = v),
               ),
-              const Text('الحد الأدنى للتقييم', style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(s.minRating, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
               const SizedBox(height: AppSpacing.sm),
               Wrap(
                 spacing: AppSpacing.sm,
                 children: [
                   for (final r in [0.0, 3.0, 4.0, 4.5])
                     ChoiceChip(
-                      label: Text(r == 0 ? 'الكل' : '$r★'),
+                      label: Text(r == 0 ? s.all : '$r★'),
                       selected: (minR ?? 0) == r,
                       selectedColor: AppColors.primaryLight,
+                      labelStyle: TextStyle(
+                        fontWeight: (minR ?? 0) == r ? FontWeight.w800 : FontWeight.w600,
+                        color: (minR ?? 0) == r ? AppColors.primaryDark : AppColors.textSecondary,
+                      ),
                       onSelected: (_) => setSheet(() => minR = r == 0 ? null : r),
                     ),
                 ],
@@ -431,6 +466,10 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
               Row(children: [
                 Expanded(
                   child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
                     onPressed: () {
                       Navigator.pop(context);
                       setState(() {
@@ -441,12 +480,16 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
                       });
                       _fetch(reset: true);
                     },
-                    child: const Text('إعادة تعيين'),
+                    child: Text(s.reset),
                   ),
                 ),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
                     onPressed: () {
                       Navigator.pop(context);
                       setState(() {
@@ -457,7 +500,7 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
                       });
                       _fetch(reset: true);
                     },
-                    child: const Text('تطبيق'),
+                    child: Text(s.apply),
                   ),
                 ),
               ]),

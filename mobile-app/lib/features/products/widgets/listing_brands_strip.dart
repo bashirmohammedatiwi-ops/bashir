@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_strings.dart';
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/scroll_perf.dart';
 import '../../../data/models/brand.dart';
 
 /// شريط براندات أفقي لتصفية منتجات القسم الفرعي.
-class ListingBrandsStrip extends StatelessWidget {
+class ListingBrandsStrip extends ConsumerWidget {
   final List<Brand> brands;
   final String? selectedBrandId;
+  final bool embedded;
   final ValueChanged<String?> onSelect;
 
   const ListingBrandsStrip({
@@ -17,13 +21,56 @@ class ListingBrandsStrip extends StatelessWidget {
     required this.brands,
     required this.onSelect,
     this.selectedBrandId,
+    this.embedded = false,
   });
 
-  static const _logoSize = 52.0;
+  static const _logoSize = 50.0;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (brands.isEmpty) return const SizedBox.shrink();
+
+    final lang = ref.watch(languageCodeProvider);
+    final s = ref.watch(stringsProvider);
+
+    final strip = SizedBox(
+      height: _logoSize + 30,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: AppScrollPerf.physics,
+        cacheExtent: AppScrollPerf.horizontalCacheExtent,
+        padding: EdgeInsets.fromLTRB(embedded ? 12 : 14, 0, embedded ? 12 : 14, embedded ? 10 : 8),
+        itemCount: brands.length + 1,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (_, i) {
+          if (i == 0) {
+            return _BrandChip(
+              label: s.all,
+              selected: selectedBrandId == null,
+              icon: Icons.storefront_rounded,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                onSelect(null);
+              },
+            );
+          }
+          final brand = brands[i - 1];
+          final name = brand.localizedName(lang);
+          return _BrandChip(
+            label: name,
+            selected: selectedBrandId == brand.id,
+            logoUrl: brand.logoUrl,
+            initial: brand.initial ?? name.characters.first,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onSelect(brand.id);
+            },
+          );
+        },
+      ),
+    );
+
+    if (embedded) return strip;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -31,7 +78,7 @@ class ListingBrandsStrip extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
           child: Text(
-            'البراندات',
+            s.brands,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w800,
@@ -39,41 +86,7 @@ class ListingBrandsStrip extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(
-          height: _logoSize + 30,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: AppScrollPerf.physics,
-            cacheExtent: AppScrollPerf.horizontalCacheExtent,
-            padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-            itemCount: brands.length + 1,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (_, i) {
-              if (i == 0) {
-                return _BrandChip(
-                  label: 'الكل',
-                  selected: selectedBrandId == null,
-                  icon: Icons.storefront_rounded,
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    onSelect(null);
-                  },
-                );
-              }
-              final brand = brands[i - 1];
-              return _BrandChip(
-                label: brand.name,
-                selected: selectedBrandId == brand.id,
-                logoUrl: brand.logoUrl,
-                initial: brand.initial ?? brand.name.characters.first,
-                onTap: () {
-                  HapticFeedback.selectionClick();
-                  onSelect(brand.id);
-                },
-              );
-            },
-          ),
-        ),
+        strip,
       ],
     );
   }
@@ -118,15 +131,6 @@ class _BrandChip extends StatelessWidget {
                   color: selected ? AppColors.primary : AppColors.hairline,
                   width: selected ? 2 : 1,
                 ),
-                boxShadow: selected
-                    ? [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.14),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
               ),
               child: ClipOval(
                 child: icon != null

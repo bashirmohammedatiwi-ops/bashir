@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/l10n/app_strings.dart';
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/navigation/app_navigation.dart';
 import '../../../core/utils/support_links.dart';
@@ -22,13 +24,15 @@ class HomeHeroHeader extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final topPad = MediaQuery.paddingOf(context).top;
     final feed = ref.watch(homeFeedProvider).valueOrNull;
-    final storeName = (feed?.settings.storeName ?? AppConfig.storeName).trim();
+    final lang = ref.watch(languageCodeProvider);
+    final storeName = AppConfig.displayStoreName(lang);
     final whatsapp = feed?.settings.whatsapp;
     final threshold = feed?.settings.freeShippingThreshold;
     final auth = ref.watch(authProvider);
     final unread =
         auth.isAuthenticated ? ref.watch(unreadNotificationsCountProvider) : 0;
     final cartCount = ref.watch(cartProvider).count;
+    final s = ref.s;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -42,21 +46,24 @@ class HomeHeroHeader extends ConsumerWidget {
         children: [
           _BrandActionBar(
             storeName: storeName,
+            lang: lang,
             unread: unread,
             cartCount: cartCount,
             whatsapp: whatsapp,
+            s: s,
             onCart: () => openCartTab(context, ProviderScope.containerOf(context, listen: false)),
             onNotifications: () => context.push('/notifications'),
           ),
           const SizedBox(height: 16),
-          _GreetingBlock(),
+          _GreetingBlock(s: s),
           const SizedBox(height: 14),
           _SearchBar(
+            s: s,
             onSearch: () => context.push('/search'),
             onScan: () => context.push('/scan'),
           ),
           const SizedBox(height: 10),
-          _TrustPills(freeShippingThreshold: threshold),
+          _TrustPills(s: s, freeShippingThreshold: threshold),
         ],
       ),
     );
@@ -65,17 +72,21 @@ class HomeHeroHeader extends ConsumerWidget {
 
 class _BrandActionBar extends StatelessWidget {
   final String storeName;
+  final String lang;
   final int unread;
   final int cartCount;
   final String? whatsapp;
+  final AppStrings s;
   final VoidCallback onCart;
   final VoidCallback onNotifications;
 
   const _BrandActionBar({
     required this.storeName,
+    required this.lang,
     required this.unread,
     required this.cartCount,
     required this.whatsapp,
+    required this.s,
     required this.onCart,
     required this.onNotifications,
   });
@@ -84,32 +95,27 @@ class _BrandActionBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: HomeTheme.divider, width: 1.2),
-          ),
-          padding: const EdgeInsets.all(2),
-          child: ClipOval(
-            child: Image.asset('assets/images/alhayaa_logo.png', fit: BoxFit.contain),
-          ),
+        Image.asset(
+          'assets/images/app_icon_source.png',
+          width: 46,
+          height: 46,
+          fit: BoxFit.contain,
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                storeName.isNotEmpty ? storeName : AppConfig.storeName,
+                storeName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: HomeTheme.displayTitle(size: 19),
+                style: HomeTheme.brandTitle(size: 24, lang: lang),
               ),
+              const SizedBox(height: 2),
               Text(
-                'متجرك للعناية والجمال',
-                style: HomeTheme.body(size: 11, color: HomeTheme.inkMuted),
+                s.storeTagline,
+                style: HomeTheme.body(size: 11.5, color: HomeTheme.inkMuted),
               ),
             ],
           ),
@@ -130,7 +136,7 @@ class _BrandActionBar extends StatelessWidget {
           _HeaderIconButton(
             icon: Icons.chat_rounded,
             iconColor: const Color(0xFF25D366),
-            onTap: () => openWhatsApp(whatsapp, message: 'مرحباً، أحتاج مساعدة'),
+            onTap: () => openWhatsApp(whatsapp, message: s.whatsappHelpMessage),
           ),
         ],
       ],
@@ -203,16 +209,13 @@ class _HeaderIconButton extends StatelessWidget {
 }
 
 class _GreetingBlock extends StatelessWidget {
-  const _GreetingBlock();
+  final AppStrings s;
+
+  const _GreetingBlock({required this.s});
 
   @override
   Widget build(BuildContext context) {
-    final hour = DateTime.now().hour;
-    final greeting = hour < 12
-        ? 'صباح الخير'
-        : hour < 17
-            ? 'مساء الخير'
-            : 'مساء النور';
+    final greeting = s.greetingForHour(DateTime.now().hour);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -224,7 +227,7 @@ class _GreetingBlock extends StatelessWidget {
               Text(greeting, style: HomeTheme.overline),
               const SizedBox(height: 4),
               Text(
-                'ماذا تبحثين اليوم؟',
+                s.whatAreYouLookingFor,
                 style: HomeTheme.displayTitle(size: 24),
               ),
             ],
@@ -236,10 +239,11 @@ class _GreetingBlock extends StatelessWidget {
 }
 
 class _SearchBar extends StatelessWidget {
+  final AppStrings s;
   final VoidCallback onSearch;
   final VoidCallback onScan;
 
-  const _SearchBar({required this.onSearch, required this.onScan});
+  const _SearchBar({required this.s, required this.onSearch, required this.onScan});
 
   @override
   Widget build(BuildContext context) {
@@ -259,7 +263,7 @@ class _SearchBar extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'ابحثي عن منتج، براند، أو باركود…',
+                        s.searchHintHome,
                         style: HomeTheme.body(size: 13, color: HomeTheme.inkMuted),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -284,14 +288,14 @@ class _SearchBar extends StatelessWidget {
                   color: HomeTheme.accent,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.qr_code_scanner_rounded, size: 16, color: Colors.white),
-                    SizedBox(width: 5),
+                    const Icon(Icons.qr_code_scanner_rounded, size: 16, color: Colors.white),
+                    const SizedBox(width: 5),
                     Text(
-                      'مسح',
-                      style: TextStyle(
+                      s.scan,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -309,24 +313,25 @@ class _SearchBar extends StatelessWidget {
 }
 
 class _TrustPills extends StatelessWidget {
+  final AppStrings s;
   final int? freeShippingThreshold;
 
-  const _TrustPills({this.freeShippingThreshold});
+  const _TrustPills({required this.s, this.freeShippingThreshold});
 
   @override
   Widget build(BuildContext context) {
     final threshold = freeShippingThreshold;
     final shipping = threshold != null && threshold > 0
-        ? 'شحن مجاني +${_format(threshold)}'
-        : 'توصيل سريع';
+        ? s.freeShippingPlus(_format(threshold))
+        : s.fastDelivery;
 
     return Row(
       children: [
-        _pill(Icons.verified_outlined, 'أصلية'),
+        _pill(Icons.verified_outlined, s.authentic),
         const SizedBox(width: 6),
         _pill(Icons.local_shipping_outlined, shipping),
         const SizedBox(width: 6),
-        _pill(Icons.support_agent_outlined, 'دعم'),
+        _pill(Icons.support_agent_outlined, s.supportShort),
       ],
     );
   }

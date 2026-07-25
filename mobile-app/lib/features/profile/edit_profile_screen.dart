@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../../data/services/api_service.dart';
@@ -60,17 +61,18 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.s;
     return AuthGate(
-      title: 'تعديل البيانات',
-      emptyTitle: 'سجّل الدخول لتعديل بياناتك',
-      child: _buildForm(context),
+      title: s.editProfile,
+      emptyTitle: s.loginToEditProfile,
+      child: _buildForm(context, s),
     );
   }
 
-  Widget _buildForm(BuildContext context) {
+  Widget _buildForm(BuildContext context, AppStrings s) {
     final user = ref.watch(authProvider).user;
     return Scaffold(
-      appBar: AppBar(title: const Text('تعديل البيانات')),
+      appBar: AppBar(title: Text(s.editProfile)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
@@ -111,7 +113,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
               const SizedBox(height: 12),
               OutlinedButton(
                 onPressed: () => context.push('/change-password'),
-                child: const Text('تغيير كلمة المرور'),
+                child: Text(s.changePassword),
               ),
             ],
           ),

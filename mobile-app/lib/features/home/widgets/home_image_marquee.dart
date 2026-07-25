@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'gallery_photo_card.dart';
 import 'photo_shape_kit.dart';
 
 /// صور متحركة أفقياً — كل صورة بشكلها الخاص
@@ -81,7 +82,10 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
   Widget build(BuildContext context) {
     if (widget.images.isEmpty) return const SizedBox.shrink();
 
+    final isRtl = Directionality.of(context) == TextDirection.rtl;
+
     Widget row = Row(
+      textDirection: Directionality.of(context),
       mainAxisSize: MainAxisSize.min,
       children: [
         for (final img in widget.images) ...[
@@ -97,8 +101,12 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
         child: AnimatedBuilder(
           animation: _ctrl,
           builder: (_, __) => Transform.translate(
-            offset: Offset(-_ctrl.value * _loopWidth, 0),
+            offset: Offset(
+              (isRtl ? 1 : -1) * _ctrl.value * _loopWidth,
+              0,
+            ),
             child: Row(
+              textDirection: Directionality.of(context),
               mainAxisSize: MainAxisSize.min,
               children: [row, row],
             ),
@@ -118,11 +126,13 @@ class _MarqueeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final h = image.height > 0 ? image.height : defaultHeight;
-    return PhotoTile(
+    return GalleryPhotoCard(
       data: PhotoTileData(
         imageUrl: image.url,
         shape: image.shape,
-        showShadow: true,
+        showShadow: false,
+        overlayStyle: 'none',
+        borderStyle: 'none',
       ),
       width: image.width,
       height: h,

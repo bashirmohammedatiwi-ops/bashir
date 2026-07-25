@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../cache/image_cache.dart';
 import '../theme/app_colors.dart';
 
-const _fallbackAsset = 'assets/images/alhayaa_logo.png';
+const _fallbackAsset = 'assets/images/app_icon_source.png';
 
 /// صورة شبكية مع كاش محسّن وتحجيم حسب حجم العرض الفعلي.
 class AppNetworkImage extends StatelessWidget {

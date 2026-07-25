@@ -1,4 +1,5 @@
 import '../../core/config/app_config.dart';
+import '../../core/l10n/localized_text.dart';
 import '../../core/utils/json.dart';
 import 'media.dart';
 import 'brand.dart';
@@ -80,8 +81,12 @@ class Product {
   final String id;
   final String sku;
   final String name;
+  final String? nameAr;
+  final String? nameEn;
   final String slug;
   final String description;
+  final String? descriptionAr;
+  final String? descriptionEn;
   final String ingredients;
   final String howToUse;
   final int price;
@@ -108,8 +113,12 @@ class Product {
     required this.id,
     required this.sku,
     required this.name,
+    this.nameAr,
+    this.nameEn,
     required this.slug,
     this.description = '',
+    this.descriptionAr,
+    this.descriptionEn,
     this.ingredients = '',
     this.howToUse = '',
     this.price = 0,
@@ -140,8 +149,12 @@ class Product {
       id: asString(json['id']),
       sku: asString(json['sku']),
       name: asString(json['name']),
+      nameAr: json['nameAr']?.toString(),
+      nameEn: json['nameEn']?.toString(),
       slug: asString(json['slug']),
       description: asString(json['description']),
+      descriptionAr: json['descriptionAr']?.toString(),
+      descriptionEn: json['descriptionEn']?.toString(),
       ingredients: asString(json['ingredients']),
       howToUse: asString(json['howToUse']),
       price: asInt(json['price']),
@@ -189,5 +202,21 @@ class Product {
       .toList();
   bool get inStock => stock > 0;
   bool get hasDiscount => discountPercent > 0 && originalPrice > price;
+
+  String localizedName(String lang) => localizedText(
+        languageCode: lang,
+        ar: nameAr,
+        en: nameEn,
+        fallback: name,
+      );
+
+  String localizedDescription(String lang) => localizedText(
+        languageCode: lang,
+        ar: descriptionAr,
+        en: descriptionEn,
+        fallback: description,
+      );
+
+  String brandNameFor(String lang) => brand?.localizedName(lang) ?? '';
   String get brandName => brand?.name ?? '';
 }

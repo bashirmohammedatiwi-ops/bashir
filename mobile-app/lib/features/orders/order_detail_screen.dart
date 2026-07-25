@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -28,10 +29,11 @@ class OrderDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     final async = ref.watch(orderDetailProvider(orderId));
     return Scaffold(
       backgroundColor: AppColors.scaffold,
-      appBar: AppBar(title: const Text('تفاصيل الطلب'), elevation: 0),
+      appBar: AppBar(title: Text(s.orderDetails), elevation: 0),
       body: async.when(
         loading: () => const OrderDetailSkeleton(),
         error: (e, _) => ErrorView.from(
@@ -70,7 +72,7 @@ class OrderDetailScreen extends ConsumerWidget {
               ),
             const SizedBox(height: AppSpacing.md),
             SectionCard(
-              title: 'المنتجات',
+              title: s.products,
               child: Column(
                 children: [
                   for (var i = 0; i < order.items.length; i++) ...[
@@ -83,7 +85,7 @@ class OrderDetailScreen extends ConsumerWidget {
             if (order.address != null) ...[
               const SizedBox(height: AppSpacing.md),
               SectionCard(
-                title: 'عنوان التوصيل',
+                title: s.deliveryAddress,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -101,31 +103,31 @@ class OrderDetailScreen extends ConsumerWidget {
             ],
             const SizedBox(height: AppSpacing.md),
             SectionCard(
-              title: 'ملخّص الدفع',
+              title: s.paymentSummary,
               child: Column(
                 children: [
-                  SummaryRow(label: 'المجموع الفرعي', value: formatPrice(order.subtotal)),
+                  SummaryRow(label: s.subtotal, value: formatPrice(order.subtotal)),
                   if (order.discountTotal > 0)
                     SummaryRow(
-                      label: 'الخصم',
+                      label: s.discount,
                       value: '- ${formatPrice(order.discountTotal)}',
                       valueColor: AppColors.success,
                     ),
                   SummaryRow(
-                    label: 'الشحن',
-                    value: order.shippingTotal == 0 ? 'مجاني' : formatPrice(order.shippingTotal),
+                    label: s.shipping,
+                    value: order.shippingTotal == 0 ? s.free : formatPrice(order.shippingTotal),
                   ),
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
                     child: Divider(height: 1),
                   ),
-                  SummaryRow(label: 'الإجمالي', value: formatPrice(order.total), bold: true),
+                  SummaryRow(label: s.total, value: formatPrice(order.total), bold: true),
                   const SizedBox(height: AppSpacing.sm),
                   Row(
                     children: [
                       Icon(Icons.payments_outlined, size: 18, color: AppColors.textSecondary.withValues(alpha: 0.8)),
                       const SizedBox(width: AppSpacing.sm),
-                      Text('الدفع عند الاستلام', style: AppTypography.caption),
+                      Text(s.cashOnDelivery, style: AppTypography.caption),
                     ],
                   ),
                 ],
@@ -137,7 +139,7 @@ class OrderDetailScreen extends ConsumerWidget {
               child: ElevatedButton.icon(
                 onPressed: () => _reorder(context, ref, order),
                 icon: const Icon(Icons.replay_rounded),
-                label: const Text('إعادة الطلب'),
+                label: Text(s.reorder),
               ),
             ),
             if (order.status == 'PENDING' || order.status == 'CONFIRMED') ...[
@@ -149,7 +151,7 @@ class OrderDetailScreen extends ConsumerWidget {
                   side: const BorderSide(color: AppColors.sale),
                 ),
                 icon: const Icon(Icons.close_rounded),
-                label: const Text('إلغاء الطلب'),
+                label: Text(s.cancelOrder),
               ),
             ],
             const SizedBox(height: AppSpacing.sm),
@@ -161,7 +163,7 @@ class OrderDetailScreen extends ConsumerWidget {
                   ref.read(navIndexProvider.notifier).state = 0;
                   context.go('/');
                 },
-                child: const Text('متابعة التسوّق'),
+                child: Text(s.continueShopping),
               ),
             ),
             const SizedBox(height: AppSpacing.md),
@@ -210,17 +212,18 @@ class OrderDetailScreen extends ConsumerWidget {
   }
 
   Future<void> _cancel(BuildContext context, WidgetRef ref) async {
+    final s = ref.s;
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.lg)),
-        title: const Text('إلغاء الطلب'),
-        content: const Text('هل أنت متأكد من إلغاء هذا الطلب؟'),
+        title: Text(s.cancelOrder),
+        content: Text(s.cancelOrderConfirm),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('تراجع')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(s.goBack)),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('إلغاء الطلب', style: TextStyle(color: AppColors.sale)),
+            child: Text(s.cancelOrder, style: const TextStyle(color: AppColors.sale)),
           ),
         ],
       ),

@@ -8,6 +8,7 @@ import '../../features/auth/auth_provider.dart';
 import '../../core/navigation/app_navigation.dart';
 import '../../features/cart/cart_provider.dart';
 import '../../features/wishlist/wishlist_provider.dart';
+import '../l10n/locale_provider.dart';
 import '../theme/app_colors.dart';
 import 'app_snackbar.dart';
 
@@ -45,18 +46,11 @@ class ProductCardWishButton extends ConsumerWidget {
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: wished ? AppColors.primaryLight : Colors.white.withValues(alpha: 0.94),
+            color: wished ? AppColors.primaryLight : const Color(0xFFF5F5F6),
             border: Border.all(
-              color: wished ? AppColors.primarySoft : AppColors.hairline.withValues(alpha: 0.9),
+              color: wished ? AppColors.primarySoft : AppColors.hairline.withValues(alpha: 0.85),
               width: wished ? 1.2 : 0.8,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.ink.withValues(alpha: wished ? 0.08 : 0.06),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
-              ),
-            ],
           ),
           child: Icon(
             wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
@@ -91,11 +85,12 @@ class ProductCardCartControl extends ConsumerWidget {
   }
 
   void _addFirst(BuildContext context, WidgetRef ref) {
+    final lang = ref.read(languageCodeProvider);
     HapticFeedback.lightImpact();
     ref.read(cartProvider.notifier).add(product);
     AppSnackbar.cartAdded(
       context,
-      productName: product.name,
+      productName: product.localizedName(lang),
       onViewCart: () {
         openCartTab(context, ProviderScope.containerOf(context, listen: false));
       },
@@ -152,33 +147,31 @@ class _AddCartButton extends StatelessWidget {
 
   const _AddCartButton({required this.onTap, this.compact = false});
 
+  static const _bg = Color(0xFFF3F3F4);
+  static const _icon = Color(0xFF7A757F);
+
   @override
   Widget build(BuildContext context) {
     final side = compact ? 36.0 : 38.0;
+    final radius = compact ? 11.0 : 12.0;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        customBorder: RoundedRectangleBorder(borderRadius: BorderRadius.circular(side / 2)),
+        borderRadius: BorderRadius.circular(radius),
         child: Ink(
           width: side,
           height: side,
           decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(side / 2),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.28),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
+            color: _bg,
+            borderRadius: BorderRadius.circular(radius),
+            border: Border.all(color: AppColors.hairline.withValues(alpha: 0.75)),
           ),
           child: Icon(
-            Icons.add_shopping_cart_rounded,
-            color: Colors.white,
-            size: compact ? 18 : 19,
+            Icons.shopping_bag_outlined,
+            color: _icon,
+            size: compact ? 17 : 18,
           ),
         ),
       ),
@@ -194,17 +187,19 @@ class _DisabledCartButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final side = compact ? 36.0 : 38.0;
+    final radius = compact ? 11.0 : 12.0;
     return Container(
       width: side,
       height: side,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: AppColors.divider,
-        borderRadius: BorderRadius.circular(side / 2),
+        color: const Color(0xFFEBEBED),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: AppColors.hairline.withValues(alpha: 0.6)),
       ),
       child: Icon(
-        Icons.remove_shopping_cart_outlined,
-        size: compact ? 17 : 18,
+        Icons.shopping_bag_outlined,
+        size: compact ? 16 : 17,
         color: AppColors.textMuted,
       ),
     );
@@ -227,14 +222,15 @@ class _CartQtyStepper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final height = compact ? 34.0 : 36.0;
+    final radius = compact ? 11.0 : 12.0;
 
     return Container(
       height: height,
       constraints: BoxConstraints(minWidth: compact ? 92 : 96),
       decoration: BoxDecoration(
-        color: AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(height / 2),
-        border: Border.all(color: AppColors.primarySoft),
+        color: const Color(0xFFF3F3F4),
+        borderRadius: BorderRadius.circular(radius),
+        border: Border.all(color: AppColors.hairline.withValues(alpha: 0.8)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -251,7 +247,7 @@ class _CartQtyStepper extends StatelessWidget {
               style: TextStyle(
                 fontSize: compact ? 13 : 14,
                 fontWeight: FontWeight.w800,
-                color: AppColors.primaryDark,
+                color: AppColors.textPrimary,
                 height: 1,
               ),
             ),
@@ -297,14 +293,14 @@ class _StepIconButton extends StatelessWidget {
               width: filled ? size - 6 : size - 8,
               height: filled ? size - 6 : size - 8,
               decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: filled ? AppColors.primary : Colors.white.withValues(alpha: 0.85),
-                border: filled ? null : Border.all(color: AppColors.primarySoft),
+                borderRadius: BorderRadius.circular(8),
+                color: filled ? const Color(0xFF7A757F) : Colors.transparent,
+                border: filled ? null : Border.all(color: AppColors.hairline),
               ),
               child: Icon(
                 icon,
                 size: filled ? 16 : 15,
-                color: filled ? Colors.white : AppColors.primaryDark,
+                color: filled ? Colors.white : const Color(0xFF7A757F),
               ),
             ),
           ),

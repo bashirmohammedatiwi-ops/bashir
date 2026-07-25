@@ -3,12 +3,14 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/bootstrap/app_warmup.dart';
+import 'core/l10n/locale_provider.dart';
 import 'core/push/push_service.dart';
 import 'core/config/app_config.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/scroll_perf.dart';
 import 'features/auth/auth_provider.dart';
+import 'features/splash/splash_screen.dart';
 
 class AlhayaaApp extends ConsumerStatefulWidget {
   const AlhayaaApp({super.key});
@@ -20,6 +22,7 @@ class AlhayaaApp extends ConsumerStatefulWidget {
 class _AlhayaaAppState extends ConsumerState<AlhayaaApp> {
   bool _warmedUp = false;
   bool _pushInited = false;
+  bool _minSplashDone = false;
 
   static const _locales = [Locale('ar'), Locale('en')];
   static const _delegates = [
@@ -27,6 +30,14 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> {
     GlobalWidgetsLocalizations.delegate,
     GlobalCupertinoLocalizations.delegate,
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(const Duration(milliseconds: 1100), () {
+      if (mounted) setState(() => _minSplashDone = true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,28 +52,26 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> {
       WidgetsBinding.instance.addPostFrameCallback((_) => PushService.init(ref));
     }
 
-    // انتظار جاهزية الجلسة فقط — بدون شاشة ترحيب
-    if (authStatus == AuthStatus.unknown) {
+    final localeSettings = ref.watch(appLocaleProvider);
+    final locale = localeSettings.locale;
+    final direction = localeSettings.direction;
+    final booting = authStatus == AuthStatus.unknown || !localeSettings.loaded;
+    final showSplash = booting || !_minSplashDone;
+
+    if (showSplash) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: AppTheme.light,
         scrollBehavior: const AppScrollBehavior(),
-        locale: const Locale('ar'),
+        locale: locale,
         supportedLocales: _locales,
         localizationsDelegates: _delegates,
         builder: (context, child) => Directionality(
-          textDirection: TextDirection.rtl,
+          textDirection: direction,
           child: child ?? const SizedBox.shrink(),
         ),
-        home: const Scaffold(
-          backgroundColor: Colors.white,
-          body: Center(
-            child: SizedBox(
-              width: 28,
-              height: 28,
-              child: CircularProgressIndicator(strokeWidth: 2.4),
-            ),
-          ),
+        home: SplashScreen(
+          lang: localeSettings.loaded ? locale.languageCode : 'ar',
         ),
       );
     }
@@ -74,11 +83,11 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> {
       theme: AppTheme.light,
       scrollBehavior: const AppScrollBehavior(),
       routerConfig: router,
-      locale: const Locale('ar'),
+      locale: locale,
       supportedLocales: _locales,
       localizationsDelegates: _delegates,
       builder: (context, child) => Directionality(
-        textDirection: TextDirection.rtl,
+        textDirection: direction,
         child: child ?? const SizedBox.shrink(),
       ),
     );

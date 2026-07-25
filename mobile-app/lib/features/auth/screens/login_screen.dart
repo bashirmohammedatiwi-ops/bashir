@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -81,9 +82,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ],
                     ),
                     alignment: Alignment.center,
-                    child: const Text(
-                      'الحياة',
-                      style: TextStyle(color: AppColors.primary, fontSize: 20, fontWeight: FontWeight.w900),
+                    child: Text(
+                      AppConfig.storeNameAr,
+                      style: const TextStyle(color: AppColors.primary, fontSize: 18, fontWeight: FontWeight.w700),
                     ),
                   ),
                 ),

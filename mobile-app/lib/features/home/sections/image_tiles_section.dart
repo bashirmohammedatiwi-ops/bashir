@@ -207,7 +207,8 @@ class _ImageTile extends StatelessWidget {
     final tileData = PhotoTileData.fromMap(
       m,
       defaultShape: shape == 'circle' ? 'circle' : 'rounded',
-      defaultOverlay: 'gradient',
+      defaultOverlay: 'none',
+      defaultShadow: false,
     );
     if (tileData.imageUrl.isEmpty) return const SizedBox.shrink();
 
@@ -217,6 +218,7 @@ class _ImageTile extends StatelessWidget {
       data: tileData,
       width: double.infinity,
       height: h,
+      fit: PhotoShapeGeometry.parseFit(section.kind),
       expand: false,
       onTap: () => openSectionLink(
         context,

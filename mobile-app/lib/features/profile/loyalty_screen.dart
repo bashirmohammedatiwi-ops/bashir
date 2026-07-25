@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/auth_gate.dart';
@@ -14,9 +15,10 @@ class LoyaltyScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     return AuthGate(
-      title: 'نقاط الولاء',
-      emptyTitle: 'سجّل الدخول لعرض نقاطك',
+      title: s.loyaltyPoints,
+      emptyTitle: s.loginToSeePoints,
       child: const _LoyaltyBody(),
     );
   }
@@ -29,9 +31,10 @@ class _LoyaltyBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).user;
     final async = ref.watch(loyaltyProvider);
+    final s = ref.s;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('نقاط الولاء')),
+      appBar: AppBar(title: Text(s.loyaltyPoints)),
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(loyaltyProvider)),

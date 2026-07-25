@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/app_strings.dart';
+import '../../core/l10n/locale_provider.dart';
 import '../../core/navigation/app_navigation.dart';
 
 import '../../features/auth/screens/login_screen.dart';
@@ -21,22 +23,39 @@ import '../../features/profile/loyalty_screen.dart';
 import '../../features/profile/notifications_screen.dart';
 import '../../features/search/qr_scan_screen.dart';
 import '../../features/search/search_screen.dart';
+import '../../features/settings/language_picker_screen.dart';
 import '../../features/shell/main_shell.dart';
 import '../../features/wishlist/wishlist_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
+  final refresh = ValueNotifier<int>(0);
+  ref.listen(appLocaleProvider, (_, __) => refresh.value++);
+  ref.onDispose(refresh.dispose);
+
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     initialLocation: '/',
+    refreshListenable: refresh,
     redirect: (context, state) {
-      if (state.uri.path == '/cart') {
+      final localeSettings = ref.read(appLocaleProvider);
+      if (!localeSettings.loaded) return null;
+
+      final path = state.uri.path;
+      if (!localeSettings.hasChosen && path != '/language') {
+        return '/language';
+      }
+      if (localeSettings.hasChosen && path == '/language') {
+        return '/';
+      }
+
+      if (path == '/cart') {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final container = ProviderScope.containerOf(context);
           openCartTab(context, container);
         });
         return '/';
       }
-      if (state.uri.path == '/offers') {
+      if (path == '/offers') {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final container = ProviderScope.containerOf(context);
           openOffersTab(context, container);
@@ -46,6 +65,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(path: '/language', builder: (_, __) => const LanguagePickerScreen()),
       GoRoute(path: '/', builder: (_, __) => const MainShell()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
@@ -59,7 +79,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/products',
         builder: (_, s) => ProductListingScreen(
-          title: s.uri.queryParameters['title'] ?? 'المنتجات',
+          title: s.uri.queryParameters['title'] ?? ref.read(stringsProvider).products,
           categoryId: s.uri.queryParameters['categoryId'],
           subcategoryId: s.uri.queryParameters['subcategoryId'],
           tertiaryCategoryId: s.uri.queryParameters['tertiaryCategoryId'],
@@ -92,6 +112,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/edit-profile', builder: (_, __) => const EditProfileScreen()),
       GoRoute(path: '/change-password', builder: (_, __) => const ChangePasswordScreen()),
       GoRoute(path: '/wishlist', builder: (_, __) => const WishlistScreen()),
+      GoRoute(
+        path: '/language-settings',
+        builder: (_, __) => const LanguagePickerScreen(fromSettings: true),
+      ),
     ],
     errorBuilder: (_, __) => const Scaffold(
       body: Center(child: Text('الصفحة غير موجودة')),

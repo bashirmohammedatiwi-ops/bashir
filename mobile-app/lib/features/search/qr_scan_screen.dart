@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 
 /// تنسيقات الباركود الخطي للمنتجات (بدون QR).
@@ -18,14 +20,14 @@ const _barcodeFormats = <BarcodeFormat>[
 ];
 
 /// مسح باركود المنتج بالكاميرا.
-class QrScanScreen extends StatefulWidget {
+class QrScanScreen extends ConsumerStatefulWidget {
   const QrScanScreen({super.key});
 
   @override
-  State<QrScanScreen> createState() => _QrScanScreenState();
+  ConsumerState<QrScanScreen> createState() => _QrScanScreenState();
 }
 
-class _QrScanScreenState extends State<QrScanScreen> {
+class _QrScanScreenState extends ConsumerState<QrScanScreen> {
   final _controller = MobileScannerController(
     detectionSpeed: DetectionSpeed.normal,
     facing: CameraFacing.back,
@@ -73,22 +75,23 @@ class _QrScanScreenState extends State<QrScanScreen> {
       return;
     }
     context.pop();
-    context.push('/products?search=${Uri.encodeComponent(raw)}&title=نتائج المسح');
+    context.push('/products?search=${Uri.encodeComponent(raw)}&title=${Uri.encodeComponent(ref.read(stringsProvider).scanResults)}');
   }
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.s;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('مسح الباركود'),
+        title: Text(s.scanBarcode),
         actions: [
           IconButton(
-            tooltip: 'تبديل الكاميرا',
+            tooltip: s.switchCamera,
             onPressed: () => _controller.switchCamera(),
             icon: const Icon(Icons.cameraswitch_rounded),
           ),
           IconButton(
-            tooltip: 'الفلاش',
+            tooltip: s.flash,
             onPressed: () => _controller.toggleTorch(),
             icon: ValueListenableBuilder(
               valueListenable: _controller,
@@ -117,14 +120,14 @@ class _QrScanScreenState extends State<QrScanScreen> {
               ),
             ),
           ),
-          const Positioned(
+          Positioned(
             left: 0,
             right: 0,
             bottom: 32,
             child: Text(
-              'وجّه الكاميرا نحو باركود المنتج',
+              s.scanHint,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
                 shadows: [Shadow(color: Colors.black54, blurRadius: 8)],

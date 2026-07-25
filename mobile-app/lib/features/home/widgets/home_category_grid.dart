@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/app_strings.dart';
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/category.dart';
 import '../home_link.dart';
 import 'home_animations.dart';
+import 'home_brands_cta.dart';
 import 'home_section_shell.dart';
 import 'home_theme.dart';
 
 /// فئات الهيرو — تمرير أفقي على خلفية بيضاء.
-class HomeHeroCategoryStrip extends StatelessWidget {
+class HomeHeroCategoryStrip extends ConsumerWidget {
   final List<Category> categories;
 
   const HomeHeroCategoryStrip({
@@ -18,16 +22,17 @@ class HomeHeroCategoryStrip extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (categories.isEmpty) return const SizedBox.shrink();
+    final s = ref.s;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         HomeSectionHeader(
-          title: 'تسوقي حسب القسم',
+          title: s.shopByCategory,
           compact: true,
-          actionLabel: 'الكل',
+          actionLabel: s.all,
           onAction: () => context.push('/categories'),
         ),
         SizedBox(
@@ -40,13 +45,13 @@ class HomeHeroCategoryStrip extends StatelessWidget {
             itemBuilder: (_, i) => _CategoryCircleTile(category: categories[i], index: i),
           ),
         ),
-        const SizedBox(height: 8),
+        const HomeBrandsCta(),
       ],
     );
   }
 }
 
-class HomeCategoryGrid extends StatelessWidget {
+class HomeCategoryGrid extends ConsumerWidget {
   final List<Category> categories;
   final String? title;
   final bool showTitle;
@@ -63,8 +68,9 @@ class HomeCategoryGrid extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (categories.isEmpty) return const SizedBox.shrink();
+    final s = ref.s;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -72,7 +78,7 @@ class HomeCategoryGrid extends StatelessWidget {
         if (showTitle && title != null && title!.isNotEmpty)
           HomeSectionHeader(
             title: title!,
-            actionLabel: showViewAll ? 'عرض الكل' : null,
+            actionLabel: showViewAll ? s.viewAll : null,
             onAction: showViewAll
                 ? (onViewAll ?? () => context.push('/categories'))
                 : null,
@@ -93,7 +99,7 @@ class HomeCategoryGrid extends StatelessWidget {
   }
 }
 
-class _CategoryCircleTile extends StatelessWidget {
+class _CategoryCircleTile extends ConsumerWidget {
   final Category category;
   final int index;
 
@@ -102,17 +108,13 @@ class _CategoryCircleTile extends StatelessWidget {
   static const _size = 62.0;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageCodeProvider);
     final accent = HomeTheme.categoryTileColors[index % HomeTheme.categoryTileColors.length];
+    final displayName = category.localizedName(lang);
 
     return HomeTapScale(
-      onTap: () => openSectionLink(
-        context,
-        linkType: category.linkType,
-        linkValue: category.linkValue,
-        legacyLink: category.link ??
-            '/products?categoryId=${category.id}&title=${Uri.encodeComponent(category.name)}',
-      ),
+      onTap: () => openCategoryLink(context, category),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -136,7 +138,7 @@ class _CategoryCircleTile extends StatelessWidget {
                       color: accent,
                       child: Center(
                         child: Text(
-                          category.icon ?? category.name.characters.first,
+                          category.icon ?? displayName.characters.first,
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
@@ -151,7 +153,7 @@ class _CategoryCircleTile extends StatelessWidget {
           SizedBox(
             width: 68,
             child: Text(
-              category.name,
+              displayName,
               maxLines: 2,
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,

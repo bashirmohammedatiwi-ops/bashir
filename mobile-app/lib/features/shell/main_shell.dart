@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../home/widgets/home_theme.dart';
 import '../cart/cart_provider.dart';
@@ -59,6 +61,7 @@ class _MainShellState extends ConsumerState<MainShell> {
         currentIndex: index,
         cartCount: cartCount,
         onSelect: _selectTab,
+        s: ref.watch(stringsProvider),
       ),
     );
   }
@@ -71,84 +74,100 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 }
 
-/// شريط تنقل عائم — بدون blur ثقيل لسلاسة التمرير.
+/// شريط تنقل عائم — كل تبويب يُظلّل نفسه عند التفعيل (بدون مؤشر منفصل).
 class _BottomNav extends StatelessWidget {
   final int currentIndex;
   final int cartCount;
   final ValueChanged<int> onSelect;
+  final AppStrings s;
 
   const _BottomNav({
     required this.currentIndex,
     required this.cartCount,
     required this.onSelect,
+    required this.s,
   });
+
+  static const _duration = Duration(milliseconds: 280);
+  static const _curve = Curves.easeOutCubic;
 
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.paddingOf(context).bottom;
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(14, 0, 14, bottom > 0 ? 6 : 12),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.96),
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.07),
-              blurRadius: 20,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-          child: Row(
-            children: [
-              _NavItem(
-                index: 0,
-                current: currentIndex,
-                icon: Icons.home_outlined,
-                activeIcon: Icons.home_rounded,
-                label: 'الرئيسية',
-                onTap: onSelect,
+    return RepaintBoundary(
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(16, 0, 16, bottom > 0 ? 10 : 16),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(30),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.09),
+                blurRadius: 22,
+                offset: const Offset(0, 8),
               ),
-              _NavItem(
-                index: 1,
-                current: currentIndex,
-                icon: Icons.grid_view_outlined,
-                activeIcon: Icons.grid_view_rounded,
-                label: 'الفئات',
-                onTap: onSelect,
-              ),
-              _NavItem(
-                index: 2,
-                current: currentIndex,
-                icon: Icons.local_offer_outlined,
-                activeIcon: Icons.local_offer_rounded,
-                label: 'عروضنا',
-                onTap: onSelect,
-                accent: true,
-              ),
-              _NavItem(
-                index: 3,
-                current: currentIndex,
-                icon: Icons.shopping_cart_outlined,
-                activeIcon: Icons.shopping_cart_rounded,
-                label: 'السلة',
-                badge: cartCount,
-                onTap: onSelect,
-              ),
-              _NavItem(
-                index: 4,
-                current: currentIndex,
-                icon: Icons.person_outline_rounded,
-                activeIcon: Icons.person_rounded,
-                label: 'حسابي',
-                onTap: onSelect,
+              BoxShadow(
+                color: AppColors.ink.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
             ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(30),
+            child: ColoredBox(
+              color: Colors.white,
+              child: SizedBox(
+                height: 68,
+                child: Row(
+                  children: [
+                    _NavItem(
+                      index: 0,
+                      active: currentIndex == 0,
+                      icon: Icons.home_outlined,
+                      activeIcon: Icons.home_rounded,
+                      label: s.navHome,
+                      onTap: onSelect,
+                    ),
+                    _NavItem(
+                      index: 1,
+                      active: currentIndex == 1,
+                      icon: Icons.grid_view_outlined,
+                      activeIcon: Icons.grid_view_rounded,
+                      label: s.navCategories,
+                      onTap: onSelect,
+                    ),
+                    _NavItem(
+                      index: 2,
+                      active: currentIndex == 2,
+                      icon: Icons.local_offer_outlined,
+                      activeIcon: Icons.local_offer_rounded,
+                      label: s.navOffers,
+                      onTap: onSelect,
+                      isCenter: true,
+                    ),
+                    _NavItem(
+                      index: 3,
+                      active: currentIndex == 3,
+                      icon: Icons.shopping_bag_outlined,
+                      activeIcon: Icons.shopping_bag_rounded,
+                      label: s.navCart,
+                      badge: cartCount,
+                      onTap: onSelect,
+                    ),
+                    _NavItem(
+                      index: 4,
+                      active: currentIndex == 4,
+                      icon: Icons.person_outline_rounded,
+                      activeIcon: Icons.person_rounded,
+                      label: s.navAccount,
+                      onTap: onSelect,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -158,87 +177,129 @@ class _BottomNav extends StatelessWidget {
 
 class _NavItem extends StatelessWidget {
   final int index;
-  final int current;
+  final bool active;
   final IconData icon;
   final IconData activeIcon;
   final String label;
   final int badge;
-  final bool accent;
+  final bool isCenter;
   final ValueChanged<int> onTap;
 
   const _NavItem({
     required this.index,
-    required this.current,
+    required this.active,
     required this.icon,
     required this.activeIcon,
     required this.label,
     required this.onTap,
     this.badge = 0,
-    this.accent = false,
+    this.isCenter = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final active = index == current;
-    final color = active
-        ? (accent ? AppColors.primary : HomeTheme.accent)
-        : AppColors.textMuted;
+    final pillW = isCenter ? 46.0 : 42.0;
+    final pillH = isCenter ? 46.0 : 38.0;
 
     return Expanded(
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => onTap(index),
-          borderRadius: BorderRadius.circular(20),
-          child: SizedBox(
-            height: 52,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Stack(
+          splashColor: AppColors.primary.withValues(alpha: 0.07),
+          highlightColor: AppColors.primary.withValues(alpha: 0.03),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                height: pillH,
+                child: Stack(
                   clipBehavior: Clip.none,
                   alignment: Alignment.center,
                   children: [
-                    Icon(active ? activeIcon : icon, size: 22, color: color),
+                    AnimatedContainer(
+                      duration: _BottomNav._duration,
+                      curve: _BottomNav._curve,
+                      width: active ? pillW : 0,
+                      height: active ? pillH : 0,
+                      decoration: BoxDecoration(
+                        gradient: AppColors.primaryGradient,
+                        borderRadius: BorderRadius.circular(
+                          isCenter ? 99 : 13,
+                        ),
+                        boxShadow: active
+                            ? [
+                                BoxShadow(
+                                  color: AppColors.primary.withValues(alpha: 0.28),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ]
+                            : null,
+                      ),
+                    ),
+                    Icon(
+                      active ? activeIcon : icon,
+                      size: isCenter ? 22 : 20,
+                      color: active
+                          ? Colors.white
+                          : (isCenter ? AppColors.primary : AppColors.textMuted),
+                    ),
                     if (badge > 0)
                       Positioned(
-                        top: -6,
-                        right: -8,
+                        top: -2,
+                        right: 8,
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                           decoration: BoxDecoration(
                             color: AppColors.sale,
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(99),
                             border: Border.all(color: Colors.white, width: 1.5),
                           ),
                           constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                           child: Text(
                             badge > 99 ? '99+' : '$badge',
                             textAlign: TextAlign.center,
-                            style: const TextStyle(
+                            style: GoogleFonts.cairo(
                               color: Colors.white,
                               fontSize: 8,
                               fontWeight: FontWeight.w800,
+                              height: 1,
                             ),
                           ),
                         ),
                       ),
                   ],
                 ),
-                const SizedBox(height: 3),
-                Text(
+              ),
+              const SizedBox(height: 4),
+              AnimatedDefaultTextStyle(
+                duration: _BottomNav._duration,
+                curve: _BottomNav._curve,
+                style: GoogleFonts.cairo(
+                  fontSize: active ? 10 : 9.5,
+                  fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                  color: active ? AppColors.primaryDark : AppColors.textMuted,
+                  height: 1,
+                ),
+                child: Text(
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 9.5,
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                    height: 1,
-                  ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 3),
+              AnimatedContainer(
+                duration: _BottomNav._duration,
+                curve: _BottomNav._curve,
+                width: active ? 4 : 0,
+                height: active ? 4 : 0,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
           ),
         ),
       ),

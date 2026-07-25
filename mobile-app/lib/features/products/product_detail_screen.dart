@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../core/cache/image_cache.dart';
+import '../../core/l10n/app_strings.dart';
+import '../../core/l10n/locale_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -25,6 +27,7 @@ import '../catalog/catalog_providers.dart';
 import '../catalog/recently_viewed_provider.dart';
 import '../shell/main_shell.dart';
 import '../wishlist/wishlist_provider.dart';
+import 'widgets/product_detail_theme.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final String idOrSlug;
@@ -93,9 +96,11 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   }
 
   void _addToCart(Product product) {
+    final s = ref.s;
     if (product.shades.isNotEmpty && _shade == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('يرجى اختيار الدرجة أولاً')));
+        SnackBar(content: Text(s.selectShadeFirst)),
+      );
       return;
     }
     HapticFeedback.mediumImpact();
@@ -103,9 +108,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
-        content: const Text('أُضيف إلى السلة'),
+        content: Text(s.addedToCart),
         action: SnackBarAction(
-          label: 'عرض السلة',
+          label: s.viewCart,
           textColor: Colors.white,
           onPressed: () {
             context.go('/');
@@ -131,91 +136,68 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           onPageChanged: (i) => setState(() => _imageIndex = i),
         ),
         SliverToBoxAdapter(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // معلومات أساسية
-              _SectionCard(
-                child: _MainInfo(product: product, shade: _shade),
-              ),
-              // الدرجات
-              if (product.shades.isNotEmpty)
-                _SectionCard(
-                  child: _ShadeBlock(
-                    shades: product.shades,
-                    selected: _shade,
-                    onSelect: (s) => setState(() => _shade = s),
-                  ),
-                ),
-              // الكمية + النقاط
-              _SectionCard(
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        const Text('الكمية',
-                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                        const Spacer(),
-                        _QuantityStepper(
-                          quantity: _quantity,
-                          onChanged: (v) {
-                            HapticFeedback.selectionClick();
-                            setState(() => _quantity = v);
-                          },
-                        ),
-                      ],
-                    ),
-                    if (product.pointsEarned > 0) ...[
-                      const SizedBox(height: 14),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [AppColors.primaryLight, Color(0xFFFFF9FB)],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppColors.primarySoft),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.stars_rounded, color: AppColors.primary, size: 20),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'اكسبي ${product.pointsEarned} نقطة عند شراء هذا المنتج',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w700, fontSize: 12.5),
-                              ),
-                            ),
-                          ],
-                        ),
+          child: Transform.translate(
+            offset: const Offset(0, -ProductDetailTheme.overlap),
+            child: DecoratedBox(
+              decoration: ProductDetailTheme.sheetDecoration(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 10),
+                  Center(
+                    child: Container(
+                      width: 38,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.hairline,
+                        borderRadius: BorderRadius.circular(99),
                       ),
-                    ],
-                  ],
-                ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  _SectionCard(
+                    marginTop: 0,
+                    child: _MainInfo(product: product, shade: _shade),
+                  ),
+                  if (product.shades.isNotEmpty)
+                    _SectionCard(
+                      child: _ShadeBlock(
+                        shades: product.shades,
+                        selected: _shade,
+                        onSelect: (s) => setState(() => _shade = s),
+                      ),
+                    ),
+                  _SectionCard(
+                    child: _PurchaseBlock(
+                      product: product,
+                      quantity: _quantity,
+                      shade: _shade,
+                      onQuantityChanged: (v) {
+                        HapticFeedback.selectionClick();
+                        setState(() => _quantity = v);
+                      },
+                    ),
+                  ),
+                  const _TrustStrip(),
+                  if (product.localizedDescription(ref.watch(languageCodeProvider)).isNotEmpty ||
+                      product.howToUse.isNotEmpty ||
+                      product.ingredients.isNotEmpty)
+                    _SectionCard(
+                      padding: EdgeInsets.zero,
+                      child: _InfoSections(product: product),
+                    ),
+                  _SectionCard(
+                    child: _ReviewsSection(product: product),
+                  ),
+                  if (product.category != null)
+                    _SimilarProducts(
+                      categoryId: product.category!.id,
+                      excludeId: product.id,
+                    ),
+                  const SizedBox(height: 24),
+                ],
               ),
-              // شريط الثقة
-              const _TrustStrip(),
-              // الوصف والتفاصيل
-              if (product.description.isNotEmpty ||
-                  product.howToUse.isNotEmpty ||
-                  product.ingredients.isNotEmpty)
-                _SectionCard(
-                  padding: EdgeInsets.zero,
-                  child: _InfoSections(product: product),
-                ),
-              // التقييمات
-              _SectionCard(
-                child: _ReviewsSection(product: product),
-              ),
-              // منتجات مشابهة
-              if (product.category != null)
-                _SimilarProducts(
-                  categoryId: product.category!.id,
-                  excludeId: product.id,
-                ),
-              const SizedBox(height: 24),
-            ],
+            ),
           ),
         ),
       ],
@@ -247,10 +229,12 @@ class _GalleryAppBar extends ConsumerWidget {
     final galleryWidth = MediaQuery.sizeOf(context).width;
     final hasThumbs = gallery.length > 1;
 
+    final s = ref.s;
+
     return SliverAppBar(
-          pinned: true,
-      expandedHeight: hasThumbs ? 448 : 396,
-      backgroundColor: Colors.white,
+      pinned: true,
+      expandedHeight: hasThumbs ? 430 : 380,
+      backgroundColor: ProductDetailTheme.galleryBg,
       surfaceTintColor: Colors.transparent,
       leading: _CircleAction(
         icon: Icons.arrow_forward_rounded,
@@ -273,7 +257,7 @@ class _GalleryAppBar extends ConsumerWidget {
           ],
           flexibleSpace: FlexibleSpaceBar(
         background: ColoredBox(
-          color: Colors.white,
+          color: ProductDetailTheme.galleryBg,
           child: Column(
               children: [
                 Expanded(
@@ -315,10 +299,10 @@ class _GalleryAppBar extends ConsumerWidget {
                               color: AppColors.sale,
                             )
                           else if (product.isNew)
-                            const _GalleryBadge(label: 'جديد', color: AppColors.ink),
+                            _GalleryBadge(label: s.newBadge, color: AppColors.ink),
                           if (product.isBestSeller) ...[
                             const SizedBox(width: 6),
-                            const _GalleryBadge(label: 'الأكثر مبيعاً', color: AppColors.accent),
+                            _GalleryBadge(label: s.bestSeller, color: AppColors.accent),
                           ],
                         ],
                       ),
@@ -473,171 +457,168 @@ class _GalleryBadge extends StatelessWidget {
 class _SectionCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
+  final double marginTop;
 
-  const _SectionCard({required this.child, this.padding});
+  const _SectionCard({
+    required this.child,
+    this.padding,
+    this.marginTop = 10,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(AppSpacing.lg, 10, AppSpacing.lg, 0),
+      margin: EdgeInsets.fromLTRB(ProductDetailTheme.padH, marginTop, ProductDetailTheme.padH, 0),
       padding: padding ?? const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.hairline, width: 0.7),
-        boxShadow: AppColors.cardShadow,
-      ),
+      decoration: ProductDetailTheme.sectionDecoration(),
       child: child,
     );
   }
 }
 
 /// الاسم والعلامة والتقييم والسعر.
-class _MainInfo extends StatelessWidget {
+class _MainInfo extends ConsumerWidget {
   final Product product;
   final ProductShade? shade;
 
   const _MainInfo({required this.product, required this.shade});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageCodeProvider);
+    final s = ref.s;
     final price = shade?.price ?? product.price;
 
     return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-            if (product.brandName.isNotEmpty)
-              Expanded(
-                child: Text(
-                  product.brandName.toUpperCase(),
-                  style: const TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 12,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-              )
-            else
-                    const Spacer(),
-                    if (product.soldCount > 0)
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            if (product.brandNameFor(lang).isNotEmpty)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: AppColors.accentSoft,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(99),
                 ),
                 child: Text(
-                  '${formatNumber(product.soldCount)}+ عملية بيع',
+                  product.brandNameFor(lang).toUpperCase(),
                   style: const TextStyle(
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.accent,
+                    color: AppColors.primaryDark,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 11,
+                    letterSpacing: 0.5,
                   ),
+                ),
+              ),
+            const Spacer(),
+            if (product.soldCount > 0)
+              Text(
+                '${formatNumber(product.soldCount)}+ ${s.sales}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textMuted,
                 ),
               ),
           ],
         ),
-        const SizedBox(height: 7),
+        const SizedBox(height: 12),
         Text(
-          product.name,
-          style: AppTypography.sectionTitle.copyWith(fontSize: 19, height: 1.35),
+          product.localizedName(lang),
+          style: AppTypography.sectionTitle.copyWith(fontSize: 20, height: 1.35),
         ),
-        const SizedBox(height: 10),
-        if (product.rating > 0)
+        if (product.rating > 0) ...[
+          const SizedBox(height: 10),
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF8E8),
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                  border: Border.all(color: const Color(0xFFF5E3B8)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.star_rounded, color: AppColors.star, size: 15),
-                    const SizedBox(width: 3),
-                    Text(
-                      product.rating.toStringAsFixed(1),
-                      style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
-                    ),
-                  ],
-                ),
+              const Icon(Icons.star_rounded, color: AppColors.star, size: 17),
+              const SizedBox(width: 4),
+              Text(
+                product.rating.toStringAsFixed(1),
+                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13),
               ),
               const SizedBox(width: 6),
               Text(
-                '(${product.reviewCount} تقييم)',
+                s.reviewCount(product.reviewCount),
                 style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
               ),
             ],
           ),
-        const SizedBox(height: 12),
-        const Divider(height: 1, thickness: 0.6, color: AppColors.divider),
-        const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-            Text(
-              formatPrice(price),
-              style: AppTypography.priceLarge.copyWith(
-                color: product.hasDiscount ? AppColors.sale : AppColors.textPrimary,
-              ),
-            ),
-                    const SizedBox(width: 10),
-            if (product.hasDiscount) ...[
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 3),
-                child: Text(
-                  formatPrice(product.originalPrice),
-                            style: const TextStyle(
-                                color: AppColors.textMuted,
-                    decoration: TextDecoration.lineThrough,
+        ],
+        const SizedBox(height: 14),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+          decoration: ProductDetailTheme.priceBoxDecoration(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    formatPrice(price),
+                    style: AppTypography.priceLarge.copyWith(
+                      fontSize: 26,
+                      color: product.hasDiscount ? AppColors.sale : AppColors.textPrimary,
+                    ),
                   ),
-                ),
+                  if (product.hasDiscount) ...[
+                    const SizedBox(width: 10),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        formatPrice(product.originalPrice),
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          decoration: TextDecoration.lineThrough,
+                          fontSize: 13,
+                        ),
                       ),
-                    const SizedBox(width: 8),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 2),
-                child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
+                    ),
+                  ],
+                ],
+              ),
+              if (product.hasDiscount) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
                     color: AppColors.sale,
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                    borderRadius: BorderRadius.circular(99),
                   ),
                   child: Text(
-                    'وفّري ${product.discountPercent}%',
-                            style: const TextStyle(
+                    s.savePercent(product.discountPercent),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         _StockBadge(stock: shade?.stock ?? product.stock),
       ],
     );
   }
 }
 
-class _StockBadge extends StatelessWidget {
+class _StockBadge extends ConsumerWidget {
   final int stock;
   const _StockBadge({required this.stock});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     final inStock = stock > 0;
     final low = inStock && stock <= 5;
     final color = !inStock ? AppColors.sale : (low ? AppColors.warning : AppColors.success);
-    final label = !inStock ? 'غير متوفر حالياً' : (low ? 'متبقٍ $stock قطع فقط — اطلبي الآن' : 'متوفر في المخزون');
+    final label = !inStock ? s.outOfStockNow : (low ? s.lowStock(stock) : s.inStock);
 
     return Row(
       children: [
@@ -656,8 +637,62 @@ class _StockBadge extends StatelessWidget {
   }
 }
 
+/// الكمية ونقاط الولاء.
+class _PurchaseBlock extends ConsumerWidget {
+  final Product product;
+  final int quantity;
+  final ProductShade? shade;
+  final ValueChanged<int> onQuantityChanged;
+
+  const _PurchaseBlock({
+    required this.product,
+    required this.quantity,
+    required this.shade,
+    required this.onQuantityChanged,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    return Column(
+      children: [
+        Row(
+          children: [
+            Text(s.quantity, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+            const Spacer(),
+            _QuantityStepper(quantity: quantity, onChanged: onQuantityChanged),
+          ],
+        ),
+        if (product.pointsEarned > 0) ...[
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+            decoration: BoxDecoration(
+              color: AppColors.accentSoft.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.accent.withValues(alpha: 0.25)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.stars_rounded, color: AppColors.accent, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    s.earnPoints(product.pointsEarned),
+                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 /// اختيار الدرجة — دوائر ملونة مع اسم الدرجة المختارة.
-class _ShadeBlock extends StatelessWidget {
+class _ShadeBlock extends ConsumerWidget {
   final List<ProductShade> shades;
   final ProductShade? selected;
   final ValueChanged<ProductShade> onSelect;
@@ -675,14 +710,14 @@ class _ShadeBlock extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Text('اختاري الدرجة',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+            Text(s.selectShade, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
             const Spacer(),
             if (selected != null)
               Container(
@@ -820,28 +855,23 @@ class _StepBtn extends StatelessWidget {
 }
 
 /// شريط الثقة — ثلاث ركائز.
-class _TrustStrip extends StatelessWidget {
+class _TrustStrip extends ConsumerWidget {
   const _TrustStrip();
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     return Container(
-      margin: const EdgeInsets.fromLTRB(AppSpacing.lg, 10, AppSpacing.lg, 0),
-      padding: const EdgeInsets.symmetric(vertical: 13),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.blush, Color(0xFFFDF9FA)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primarySoft.withValues(alpha: 0.6)),
-      ),
-      child: const Row(
+      margin: const EdgeInsets.fromLTRB(ProductDetailTheme.padH, 10, ProductDetailTheme.padH, 0),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: ProductDetailTheme.sectionDecoration(),
+      child: Row(
         children: [
-          _TrustItem(icon: Icons.verified_rounded, label: 'منتجات\nأصلية 100%'),
-          _TrustDivider(),
-          _TrustItem(icon: Icons.local_shipping_rounded, label: 'توصيل\nسريع'),
-          _TrustDivider(),
-          _TrustItem(icon: Icons.lock_rounded, label: 'دفع\nآمن'),
+          _TrustItem(icon: Icons.verified_rounded, label: s.authentic100),
+          const _TrustDivider(),
+          _TrustItem(icon: Icons.local_shipping_rounded, label: s.fastDelivery),
+          const _TrustDivider(),
+          _TrustItem(icon: Icons.lock_rounded, label: s.securePayment),
         ],
       ),
     );
@@ -890,19 +920,21 @@ class _TrustDivider extends StatelessWidget {
 }
 
 /// أقسام المعلومات — قابلة للتوسيع بدل تبويبات مقصوصة.
-class _InfoSections extends StatelessWidget {
+class _InfoSections extends ConsumerWidget {
   final Product product;
   const _InfoSections({required this.product});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageCodeProvider);
+    final s = ref.watch(stringsProvider);
+    final desc = product.localizedDescription(lang);
     final sections = <(IconData, String, String)>[
-      if (product.description.isNotEmpty)
-        (Icons.notes_rounded, 'الوصف', product.description),
+      if (desc.isNotEmpty) (Icons.notes_rounded, s.description, desc),
       if (product.howToUse.isNotEmpty)
-        (Icons.auto_fix_high_rounded, 'طريقة الاستخدام', product.howToUse),
+        (Icons.auto_fix_high_rounded, s.howToUse, product.howToUse),
       if (product.ingredients.isNotEmpty)
-        (Icons.science_outlined, 'المكوّنات', product.ingredients),
+        (Icons.science_outlined, s.ingredients, product.ingredients),
     ];
 
     return Column(
@@ -1050,7 +1082,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
           _rating = 5;
         });
         ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('شكراً على تقييمك!')));
+            .showSnackBar(SnackBar(content: Text(ref.s.thanksForReview)));
       }
     } catch (e) {
       if (mounted) {
@@ -1067,16 +1099,17 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
     final async = ref.watch(productReviewsProvider(widget.product.id));
     final authed = ref.watch(authProvider).isAuthenticated;
     final product = widget.product;
+    final s = ref.s;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            const Expanded(
+            Expanded(
               child: Text(
-                'التقييمات',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                s.ratingsTitle,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
               ),
             ),
               TextButton.icon(
@@ -1093,7 +1126,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
               ),
               icon: Icon(_showForm ? Icons.close_rounded : Icons.rate_review_outlined, size: 17),
               label: Text(
-                _showForm ? 'إلغاء' : 'أضيفي تقييماً',
+                _showForm ? s.cancel : s.addReview,
                 style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
               ),
               ),
@@ -1137,7 +1170,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'من ${product.reviewCount} تقييم',
+                      s.fromReviews(product.reviewCount),
                       style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
                     ),
                   ],
@@ -1165,7 +1198,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
           TextField(
             controller: _commentCtrl,
             maxLines: 3,
-            decoration: const InputDecoration(hintText: 'اكتبي تجربتك مع المنتج...'),
+            decoration: InputDecoration(hintText: s.reviewHint),
           ),
           const SizedBox(height: 10),
           SizedBox(
@@ -1178,7 +1211,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                       width: 20,
                       height: 20,
                       child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('إرسال التقييم'),
+                  : Text(s.submitReview),
             ),
           ),
         ],
@@ -1198,7 +1231,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
               return Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  authed ? 'كوني أول من يقيّم هذا المنتج' : 'سجّلي الدخول لإضافة تقييم',
+                  authed ? s.beFirstToReview : s.loginToReview,
                   style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
                 ),
               );
@@ -1300,17 +1333,23 @@ class _SimilarProducts extends ConsumerWidget {
       similarProductsProvider((categoryId: categoryId, excludeId: excludeId)),
     );
 
+    final s = ref.s;
     return async.maybeWhen(
       data: (products) {
         if (products.isEmpty) return const SizedBox.shrink();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(AppSpacing.lg, 22, AppSpacing.lg, 12),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                ProductDetailTheme.padH,
+                22,
+                ProductDetailTheme.padH,
+                12,
+              ),
               child: Text(
-                'قد يعجبكِ أيضاً',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+                s.youMayAlsoLike,
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
               ),
             ),
             HorizontalProductList(
@@ -1327,8 +1366,8 @@ class _SimilarProducts extends ConsumerWidget {
   }
 }
 
-/// الشريط السفلي — الإجمالي + زر إضافة بتدرج فاخر.
-class _BottomBar extends StatelessWidget {
+/// الشريط السفلي — الإجمالي + زر إضافة.
+class _BottomBar extends ConsumerWidget {
   final Product product;
   final int quantity;
   final ProductShade? shade;
@@ -1342,22 +1381,23 @@ class _BottomBar extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     final stock = shade?.stock ?? product.stock;
     final enabled = stock > 0;
     final unitPrice = shade?.price ?? product.price;
     final total = unitPrice * quantity;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: const Border(top: BorderSide(color: AppColors.divider, width: 0.7)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, -3),
+            color: AppColors.ink.withValues(alpha: 0.07),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
           ),
         ],
       ),
@@ -1370,63 +1410,33 @@ class _BottomBar extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  quantity > 1 ? 'الإجمالي ($quantity قطع)' : 'الإجمالي',
+                  quantity > 1 ? s.totalWithQty(quantity) : s.total,
                   style: const TextStyle(fontSize: 10.5, color: AppColors.textMuted),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   formatPrice(total),
-                  style: AppTypography.price.copyWith(fontSize: 17),
+                  style: AppTypography.price.copyWith(fontSize: 18, fontWeight: FontWeight.w900),
                 ),
               ],
             ),
             const SizedBox(width: 14),
             Expanded(
-        child: SizedBox(
-                height: 50,
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(15),
-                  child: Ink(
-                    decoration: BoxDecoration(
-                      gradient: enabled ? AppColors.primaryGradient : null,
-                      color: enabled ? null : AppColors.divider,
-                      borderRadius: BorderRadius.circular(15),
-                      boxShadow: enabled
-                          ? [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.3),
-                                blurRadius: 14,
-                                offset: const Offset(0, 5),
-                              ),
-                            ]
-                          : null,
-                    ),
-                    child: InkWell(
-                      onTap: enabled ? onAdd : null,
-                      borderRadius: BorderRadius.circular(15),
-                      child: Center(
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.shopping_bag_rounded,
-                              color: enabled ? Colors.white : AppColors.textMuted,
-                              size: 19,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              enabled ? 'إضافة إلى السلة' : 'غير متوفر',
-                              style: TextStyle(
-                                color: enabled ? Colors.white : AppColors.textMuted,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 14.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
+              child: SizedBox(
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: enabled ? onAdd : null,
+                  style: ElevatedButton.styleFrom(
+                    elevation: 0,
+                    backgroundColor: enabled ? AppColors.primary : AppColors.divider,
+                    foregroundColor: enabled ? Colors.white : AppColors.textMuted,
+                    disabledBackgroundColor: AppColors.divider,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  icon: const Icon(Icons.shopping_bag_rounded, size: 20),
+                  label: Text(
+                    enabled ? s.addToCartBtn : s.outOfStock,
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5),
                   ),
                 ),
               ),

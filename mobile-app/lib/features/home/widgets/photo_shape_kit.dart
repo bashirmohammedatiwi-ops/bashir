@@ -29,7 +29,7 @@ class PhotoTileData {
     this.aspectRatio,
     this.overlayStyle,
     this.borderStyle,
-    this.showShadow = true,
+    this.showShadow = false,
     this.customWidth,
     this.customHeight,
     this.spanCols = 1,
@@ -42,8 +42,13 @@ class PhotoTileData {
     String? defaultAspect,
     String defaultOverlay = 'none',
     String defaultBorder = 'none',
-    bool defaultShadow = true,
+    bool defaultShadow = false,
+    bool galleryMode = false,
   }) {
+    final overlayFromRaw = raw['overlayStyle']?.toString().trim();
+    final borderFromRaw = raw['borderStyle']?.toString().trim();
+    final shadowFromRaw = raw['showShadow'] is bool ? raw['showShadow'] as bool : defaultShadow;
+
     return PhotoTileData(
       imageUrl: _readImageUrl(raw),
       title: _trim(raw['title']),
@@ -55,13 +60,13 @@ class PhotoTileData {
       aspectRatio: raw['aspectRatio']?.toString().trim().isNotEmpty == true
           ? raw['aspectRatio'].toString()
           : defaultAspect,
-      overlayStyle: raw['overlayStyle']?.toString().trim().isNotEmpty == true
-          ? raw['overlayStyle'].toString()
-          : defaultOverlay,
-      borderStyle: raw['borderStyle']?.toString().trim().isNotEmpty == true
-          ? raw['borderStyle'].toString()
-          : defaultBorder,
-      showShadow: raw['showShadow'] is bool ? raw['showShadow'] as bool : defaultShadow,
+      overlayStyle: galleryMode
+          ? 'none'
+          : (overlayFromRaw?.isNotEmpty == true ? overlayFromRaw : defaultOverlay),
+      borderStyle: galleryMode
+          ? 'none'
+          : (borderFromRaw?.isNotEmpty == true ? borderFromRaw : defaultBorder),
+      showShadow: galleryMode ? false : shadowFromRaw,
       customWidth: (raw['customWidth'] as num?)?.toDouble(),
       customHeight: (raw['customHeight'] as num?)?.toDouble(),
       spanCols: (raw['spanCols'] as num?)?.toInt() ?? 1,
@@ -156,9 +161,9 @@ abstract final class PhotoShapeGeometry {
 
   static BoxFit parseFit(String? kind) {
     return switch (kind) {
-      'contain' => BoxFit.contain,
+      'cover' => BoxFit.cover,
       'fill' => BoxFit.fill,
-      _ => BoxFit.cover,
+      _ => BoxFit.contain,
     };
   }
 
@@ -167,11 +172,11 @@ abstract final class PhotoShapeGeometry {
       'circle' => height / 2,
       'pill' => height / 2,
       'rect' => 8,
-      'square' => 14,
+      'square' => 12,
       'arch' => height * 0.52,
-      'banner' => 18,
-      'rounded' => 18,
-      _ => 16,
+      'banner' => 14,
+      'rounded' => 14,
+      _ => 14,
     };
   }
 
@@ -190,36 +195,12 @@ abstract final class PhotoShapeGeometry {
     return BorderRadius.circular(radius);
   }
 
-  static List<BoxShadow> shadows(String shape, bool enabled) {
-    if (!enabled) return const [];
-    if (shape == 'circle') {
-      return [
-        BoxShadow(
-          color: HomeTheme.sage.withValues(alpha: 0.18),
-          blurRadius: 18,
-          offset: const Offset(0, 6),
-          spreadRadius: -4,
-        ),
-        BoxShadow(
-          color: HomeTheme.ink.withValues(alpha: 0.06),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-      ];
-    }
-    return [
-      BoxShadow(
-        color: HomeTheme.ink.withValues(alpha: 0.1),
-        blurRadius: 20,
-        offset: const Offset(0, 8),
-        spreadRadius: -6,
-      ),
-      BoxShadow(
-        color: HomeTheme.ink.withValues(alpha: 0.04),
-        blurRadius: 4,
-        offset: const Offset(0, 1),
-      ),
-    ];
+  static List<BoxShadow> shadows(String shape, bool enabled) => const [];
+
+  static BoxBorder frameBorder(String? style) {
+    final custom = border(style);
+    if (custom != null) return custom;
+    return Border.all(color: HomeTheme.divider, width: 0.8);
   }
 
   static BoxBorder? border(String? style) {
@@ -306,6 +287,7 @@ class _PhotoTileState extends State<PhotoTile> {
       fit: widget.fit,
       width: w,
       height: h,
+      backgroundColor: HomeTheme.pearl,
     );
 
     image = _PhotoOverlay(
@@ -322,58 +304,26 @@ class _PhotoTileState extends State<PhotoTile> {
       radius: borderRadius,
     );
 
-    // حلقة داخلية للعمق
-    if (shape != 'rect') {
-      image = Stack(
-        fit: StackFit.passthrough,
-        children: [
-          image,
-          Positioned.fill(
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: borderRadius,
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.12), width: 1),
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.white.withValues(alpha: 0.14),
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.04),
-                    ],
-                    stops: const [0, 0.35, 1],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
     Widget tile = AnimatedScale(
-      scale: _pressed ? 0.97 : 1,
-      duration: const Duration(milliseconds: 140),
+      scale: _pressed ? 0.98 : 1,
+      duration: const Duration(milliseconds: 120),
       curve: Curves.easeOutCubic,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 140),
+      child: SizedBox(
         width: widget.expand ? double.infinity : w,
-        height: widget.expand ? null : h,
-        constraints: widget.expand && aspect != null
-            ? null
-            : BoxConstraints.tightFor(width: w, height: h),
-        decoration: BoxDecoration(
-          borderRadius: shape == 'circle' ? null : borderRadius,
-          shape: shape == 'circle' ? BoxShape.circle : BoxShape.rectangle,
-          boxShadow: PhotoShapeGeometry.shadows(shape, widget.data.showShadow),
-          border: PhotoShapeGeometry.border(widget.data.borderStyle),
-          color: HomeTheme.surfaceMuted,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: shape == 'circle' ? null : borderRadius,
+            shape: shape == 'circle' ? BoxShape.circle : BoxShape.rectangle,
+            color: HomeTheme.pearl,
+            border: PhotoShapeGeometry.frameBorder(widget.data.borderStyle),
+          ),
+          child: ClipRRect(
+            borderRadius: shape == 'circle' ? BorderRadius.zero : borderRadius,
+            child: aspect != null && widget.expand
+                ? AspectRatio(aspectRatio: aspect, child: image)
+                : SizedBox(width: w, height: h, child: image),
+          ),
         ),
-        clipBehavior: Clip.none,
-        child: aspect != null && widget.expand
-            ? AspectRatio(aspectRatio: aspect, child: image)
-            : SizedBox(width: w, height: h, child: image),
       ),
     );
 
@@ -438,15 +388,13 @@ class _PhotoOverlay extends StatelessWidget {
           ),
         if (hasBadge)
           Positioned(
-            top: 10,
-            right: 10,
+            top: 8,
+            right: 8,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
               decoration: BoxDecoration(
-                color: HomeTheme.sage.withValues(alpha: 0.94),
+                color: HomeTheme.accent,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
-                boxShadow: HomeTheme.whisperLift,
               ),
               child: Text(
                 badge!,
@@ -491,9 +439,6 @@ class _TextBlock extends StatelessWidget {
             style: HomeTheme.sectionTitle(size: 13).copyWith(
               color: Colors.white,
               fontWeight: FontWeight.w800,
-              shadows: [
-                Shadow(color: Colors.black.withValues(alpha: 0.4), blurRadius: 6),
-              ],
             ),
           ),
         if (subtitle != null && subtitle!.isNotEmpty) ...[

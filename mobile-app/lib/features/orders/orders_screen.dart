@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/config/app_config.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
@@ -76,12 +77,13 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.s;
     return AuthGate(
-      title: 'طلباتي',
-      emptyTitle: 'سجّل الدخول لعرض طلباتك',
+      title: s.myOrders,
+      emptyTitle: s.loginToViewOrders,
       child: Scaffold(
         backgroundColor: AppColors.scaffold,
-        appBar: AppBar(title: const Text('طلباتي'), elevation: 0),
+        appBar: AppBar(title: Text(s.myOrders), elevation: 0),
         body: _buildBody(),
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/theme/app_fonts.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_network_image.dart';
 
@@ -61,6 +62,9 @@ abstract final class HomeTheme {
     Color(0xFFF0F4F1),
     Color(0xFFFAF8F6),
   ];
+
+  static TextStyle brandTitle({double size = 22, required String lang, Color? color}) =>
+      brandTitleStyle(size: size, lang: lang, color: color ?? ink);
 
   static TextStyle displayTitle({double size = 22, Color? color}) =>
       GoogleFonts.cairo(

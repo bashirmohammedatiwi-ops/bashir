@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../../data/services/api_service.dart';
@@ -57,11 +58,12 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.s;
     return AuthGate(
-      title: 'تغيير كلمة المرور',
-      emptyTitle: 'سجّل الدخول لتغيير كلمة المرور',
+      title: s.changePassword,
+      emptyTitle: s.loginToChangePassword,
       child: Scaffold(
-        appBar: AppBar(title: const Text('تغيير كلمة المرور')),
+        appBar: AppBar(title: Text(s.changePassword)),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
           child: Form(

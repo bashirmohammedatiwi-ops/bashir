@@ -1,7 +1,9 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/ad_slots.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../data/models/home_section.dart';
@@ -115,7 +117,7 @@ class OffersSectionFrame extends StatelessWidget {
   }
 }
 
-class OffersCatalogHeader extends StatelessWidget {
+class OffersCatalogHeader extends ConsumerWidget {
   final int loadedCount;
   final bool loading;
 
@@ -126,7 +128,8 @@ class OffersCatalogHeader extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     return Padding(
       padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 20, AppSpacing.lg, 10),
       child: Row(
@@ -141,13 +144,13 @@ class OffersCatalogHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('منتجات العروض', style: OffersTheme.title(size: 18)),
+                Text(s.offerProducts, style: OffersTheme.title(size: 18)),
                 Text(
                   loading
-                      ? 'جاري التحميل…'
+                      ? s.loading
                       : loadedCount > 0
-                          ? '$loadedCount+ منتج متاح الآن'
-                          : 'لا توجد عروض حالياً',
+                          ? s.productsAvailableNow(loadedCount)
+                          : s.noOffersNow,
                   style: OffersTheme.body(size: 12),
                 ),
               ],

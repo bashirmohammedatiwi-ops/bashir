@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/brand.dart';
 import '../../../data/models/home_section.dart';
@@ -9,7 +11,7 @@ import '../widgets/home_scroll_perf.dart';
 import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
 
-class BrandHomeSection extends StatelessWidget {
+class BrandHomeSection extends ConsumerWidget {
   final HomeSection section;
   final bool compactTop;
   const BrandHomeSection({
@@ -22,13 +24,14 @@ class BrandHomeSection extends StatelessWidget {
       section.layout == 'cards' || section.type == 'BRAND_SHOWCASE';
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (section.brands.isEmpty) return const SizedBox.shrink();
+    final s = ref.s;
 
     return HomeSectionShell(
       section: section,
       compactTop: compactTop,
-      actionLabel: section.showViewAll ? 'عرض الكل' : null,
+      actionLabel: section.showViewAll ? s.viewAll : null,
       onAction: section.showViewAll
           ? () => openViewAllLink(context, query: section.viewAllQuery, fallbackQuery: '/brands')
           : null,

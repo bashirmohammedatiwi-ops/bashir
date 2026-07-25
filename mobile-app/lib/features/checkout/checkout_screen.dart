@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -164,28 +165,29 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = ref.s;
     return AuthGate(
-      title: 'إتمام الطلب',
-      emptyTitle: 'سجّل الدخول لإتمام الطلب',
-      child: _buildCheckout(),
+      title: s.checkout,
+      emptyTitle: s.loginToCheckout,
+      child: _buildCheckout(s),
     );
   }
 
-  Widget _buildCheckout() {
+  Widget _buildCheckout(AppStrings s) {
     final cart = ref.watch(cartProvider);
     if (cart.isEmpty) {
       return Scaffold(
-        appBar: AppBar(title: const Text('إتمام الطلب'), elevation: 0),
+        appBar: AppBar(title: Text(s.checkout), elevation: 0),
         body: EmptyState(
           icon: Icons.shopping_bag_outlined,
-          title: 'السلة فارغة',
-          subtitle: 'أضيفي منتجات قبل إتمام الطلب',
+          title: s.emptyCartTitle,
+          subtitle: s.emptyCartSubtitle,
           action: ElevatedButton(
             onPressed: () {
               ref.read(navIndexProvider.notifier).state = 3;
               context.go('/');
             },
-            child: const Text('الذهاب للسلة'),
+            child: Text(s.goToCart),
           ),
         ),
       );
@@ -201,11 +203,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.scaffold,
-      appBar: AppBar(title: const Text('إتمام الطلب'), elevation: 0),
+      appBar: AppBar(title: Text(s.checkout), elevation: 0),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          const SectionTitle('عنوان التوصيل'),
+          SectionTitle(s.deliveryAddress),
           addresses.when(
             loading: () => const Padding(
               padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
