@@ -662,16 +662,17 @@ export class HomeSectionResolver {
   }
 
   private async resolveBrands(payload: Payload, fallback: unknown[]) {
+    type BrandRow = { id: string } & Record<string, unknown>;
     const ids = payload.brandIds as string[] | undefined;
-    const enrich = (b: Record<string, unknown>, id: string) =>
+
+    const enrich = (b: BrandRow, index: number): BrandRow & { cardSize: string } =>
       withCardSize(
-        { ...b, link: buildAppLink("brand", id) },
-        resolveCardSize(payload, id, ids?.indexOf(id) ?? 0),
+        { ...b, link: buildAppLink("brand", b.id) },
+        resolveCardSize(payload, b.id, index),
       );
+
     if (!ids?.length) {
-      const list = (fallback as { id: string }[]).map((b, i) =>
-        enrich(b as Record<string, unknown>, b.id),
-      );
+      const list = (fallback as BrandRow[]).map((b, i) => enrich(b, i));
       return this.brands.filterStorefrontBrands(list);
     }
     const brands = await this.prisma.brand.findMany({
@@ -683,9 +684,9 @@ export class HomeSectionResolver {
       .map((id, i) => {
         const brand = map.get(id);
         if (!brand) return null;
-        return enrich(brand as Record<string, unknown>, id);
+        return enrich(brand as BrandRow, i);
       })
-      .filter(Boolean) as Record<string, unknown>[];
+      .filter((b): b is BrandRow & { cardSize: string } => b != null);
     return this.brands.filterStorefrontBrands(resolved);
   }
 
