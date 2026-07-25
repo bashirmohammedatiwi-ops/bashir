@@ -39,7 +39,7 @@ class CategoryBrandsStrip extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         physics: AppScrollPerf.physics,
         cacheExtent: AppScrollPerf.horizontalCacheExtent,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         itemCount: columns,
         separatorBuilder: (_, __) => const SizedBox(width: _colGap),
         itemBuilder: (_, col) {
@@ -81,7 +81,7 @@ class CategoryBrandsStripLoading extends StatelessWidget {
       height: 56 + 34 + 10 + 56 + 34,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
         itemCount: 4,
         separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (_, __) => const SizedBox(
