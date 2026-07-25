@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/scroll_perf.dart';
 import '../../../data/models/category.dart';
@@ -171,42 +169,6 @@ class _CircleChip extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-void navigateListingChild({
-  required BuildContext context,
-  String? categoryId,
-  String? subcategoryId,
-  required Category? child,
-  required String parentTitle,
-}) {
-  if (child == null) {
-    if (categoryId != null) {
-      context.replace(
-        '/products?categoryId=$categoryId&title=${Uri.encodeComponent(parentTitle)}',
-      );
-      return;
-    }
-    if (subcategoryId != null) {
-      context.replace(
-        '/products?subcategoryId=$subcategoryId&title=${Uri.encodeComponent(parentTitle)}',
-      );
-    }
-    return;
-  }
-
-  if (categoryId != null) {
-    context.replace(
-      '/products?subcategoryId=${child.id}&title=${Uri.encodeComponent(child.name)}',
-    );
-    return;
-  }
-
-  if (subcategoryId != null) {
-    context.replace(
-      '/products?subcategoryId=$subcategoryId&tertiaryCategoryId=${child.id}&title=${Uri.encodeComponent(child.name)}',
     );
   }
 }

@@ -14,7 +14,9 @@ import '../../data/models/product.dart';
 import '../../data/services/api_service.dart';
 import '../catalog/catalog_providers.dart';
 import '../catalog/category_tree.dart';
+import 'listing_navigation.dart';
 import 'widgets/category_children_strip.dart';
+import 'widgets/listing_brands_strip.dart';
 import 'widgets/listing_page_header.dart';
 
 class ProductListingScreen extends ConsumerStatefulWidget {
@@ -92,6 +94,18 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
     _scroll.removeListener(_onScroll);
     _scroll.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant ProductListingScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.categoryId != widget.categoryId ||
+        oldWidget.subcategoryId != widget.subcategoryId ||
+        oldWidget.tertiaryCategoryId != widget.tertiaryCategoryId ||
+        oldWidget.brandId != widget.brandId ||
+        oldWidget.search != widget.search) {
+      _fetch(reset: true);
+    }
   }
 
   Future<void> _fetch({bool reset = false}) async {
@@ -209,6 +223,61 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
         ? (findCategoryById(roots, effectiveSubId)?.name ?? widget.title)
         : widget.title;
 
+    final showBrandsStrip = effectiveSubId != null;
+    final brandsAsync = showBrandsStrip
+        ? ref.watch(subcategoryBrandsProvider(effectiveSubId))
+        : null;
+
+    Widget? listingHeader;
+    if (showChildStrip || showBrandsStrip) {
+      listingHeader = Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (showChildStrip) ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 8, 14, 0),
+              child: Text(
+                widget.subcategoryId != null ? 'القسم الثانوي' : 'القسم الفرعي',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+              ),
+            ),
+            CategoryChildrenStrip(
+              children: childCategories,
+              selectedChildId: activeChildId,
+              onSelect: (child) => navigateListingChild(
+                context: context,
+                categoryId: widget.categoryId,
+                subcategoryId: effectiveSubId ?? widget.subcategoryId,
+                tertiaryCategoryId: widget.tertiaryCategoryId,
+                child: child,
+                parentTitle: stripParentTitle,
+              ),
+            ),
+          ],
+          if (showBrandsStrip && brandsAsync != null)
+            brandsAsync.when(
+              loading: () => const SizedBox(
+                height: 90,
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              ),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (brands) => ListingBrandsStrip(
+                brands: brands,
+                selectedBrandId: widget.brandId,
+                onSelect: (brandId) => navigateListingBrand(
+                  context: context,
+                  subcategoryId: effectiveSubId,
+                  tertiaryCategoryId: widget.tertiaryCategoryId,
+                  brandId: brandId,
+                  title: widget.title,
+                ),
+              ),
+            ),
+        ],
+      );
+    }
+
     return RefreshIndicator(
       color: AppColors.primary,
       onRefresh: () => _fetch(reset: true),
@@ -220,19 +289,7 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
         listingStyle: true,
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 28),
         extraSlots: _hasMore ? 2 : 0,
-        header: showChildStrip
-            ? CategoryChildrenStrip(
-                children: childCategories,
-                selectedChildId: activeChildId,
-                onSelect: (child) => navigateListingChild(
-                  context: context,
-                  categoryId: widget.categoryId,
-                  subcategoryId: effectiveSubId,
-                  child: child,
-                  parentTitle: stripParentTitle,
-                ),
-              )
-            : null,
+        header: listingHeader,
       ),
     );
   }
