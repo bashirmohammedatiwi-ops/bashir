@@ -11,7 +11,7 @@ export type CatalogCategory = {
   parentName?: string;
 };
 
-type RawCat = {
+export type RawCat = {
   id: string;
   name?: string;
   nameAr?: string;

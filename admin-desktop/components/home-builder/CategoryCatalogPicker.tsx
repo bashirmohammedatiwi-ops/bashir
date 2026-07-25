@@ -8,11 +8,10 @@ import {
   catalogPickerItems,
   type CategoryLevel,
   type CatalogCategory,
+  type RawCat,
 } from "./category-catalog";
 
 const { Text } = Typography;
-
-type RawCat = Parameters<typeof buildCategoryCatalog>[0][number];
 
 type Props = {
   categories?: RawCat[];
