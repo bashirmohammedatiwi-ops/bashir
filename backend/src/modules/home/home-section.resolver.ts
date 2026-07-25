@@ -845,8 +845,8 @@ export class HomeSectionResolver {
       overlayStyle: (payload.overlayStyle as string) ?? "none",
       borderStyle: (payload.borderStyle as string) ?? "none",
       showShadow: payload.showShadow !== false,
-      customWidth: payload.customWidth ?? null,
-      customHeight: payload.customHeight ?? null,
+      customWidth: this.optionalNumber(payload.customWidth),
+      customHeight: this.optionalNumber(payload.customHeight),
       tileCornerRadius: Number(payload.tileCornerRadius) || undefined,
       backgroundColor: (payload.backgroundColor as string) ?? undefined,
     };
@@ -869,6 +869,12 @@ export class HomeSectionResolver {
     return map[value] ?? null;
   }
 
+  private optionalNumber(value: unknown): number | null {
+    if (value == null || value === "") return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
   private async resolveRichImageTiles(payload: Payload) {
     const defaultShape = (payload.shape as string) ?? "rounded";
     const defaultSize = (payload.size as string) ?? "md";
@@ -889,8 +895,8 @@ export class HomeSectionResolver {
         showShadow: raw.showShadow ?? payload.showShadow !== false,
         spanCols: Number(raw.spanCols) || 1,
         spanRows: Number(raw.spanRows) || 1,
-        customWidth: raw.customWidth ?? null,
-        customHeight: raw.customHeight ?? null,
+        customWidth: this.optionalNumber(raw.customWidth),
+        customHeight: this.optionalNumber(raw.customHeight),
       };
     });
   }
