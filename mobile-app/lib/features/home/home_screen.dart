@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/cache/home_image_precache.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/friendly_error.dart';
+import '../../core/utils/responsive.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../catalog/catalog_providers.dart';
@@ -49,7 +50,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               }
 
               final slots = resolveHomeSectionSlots(data);
-              final bottomPad = MediaQuery.paddingOf(context).bottom + 96;
+              final bottomPad = Responsive.shellBottomReserve(context);
 
               return RefreshIndicator(
                 color: HomeTheme.accent,

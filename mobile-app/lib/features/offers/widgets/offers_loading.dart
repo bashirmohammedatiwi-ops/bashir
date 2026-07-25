@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/shimmer_box.dart';
 import 'offers_theme.dart';
 
@@ -17,28 +16,21 @@ class OffersLoadingView extends StatelessWidget {
         slivers: [
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.fromLTRB(AppSpacing.lg, top + 10, AppSpacing.lg, 8),
-              child: const ShimmerBox(height: 132, radius: OffersTheme.headerRadius),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Row(
-                children: List.generate(
-                  3,
-                  (_) => const Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(left: 8),
-                      child: ShimmerBox(height: 40, radius: 12),
-                    ),
-                  ),
-                ),
+              padding: EdgeInsets.fromLTRB(OffersTheme.hPad, top + 12, OffersTheme.hPad, 16),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ShimmerBox(height: 28, width: 120, radius: 8),
+                  SizedBox(height: 8),
+                  ShimmerBox(height: 14, width: 180, radius: 6),
+                  SizedBox(height: 16),
+                  ShimmerBox(height: 36, radius: 999),
+                ],
               ),
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 16, AppSpacing.lg, 0),
+            padding: const EdgeInsets.fromLTRB(OffersTheme.hPad, 8, OffersTheme.hPad, 0),
             sliver: SliverGrid(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
@@ -47,7 +39,7 @@ class OffersLoadingView extends StatelessWidget {
                 childAspectRatio: 0.58,
               ),
               delegate: SliverChildBuilderDelegate(
-                (_, __) => const ShimmerBox(height: double.infinity, radius: 16),
+                (_, __) => const ShimmerBox(height: double.infinity, radius: OffersTheme.cardRadius),
                 childCount: 6,
               ),
             ),
@@ -63,9 +55,9 @@ class OffersCmsSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 4, AppSpacing.lg, 8),
-      child: const ShimmerBox(height: 160, radius: OffersTheme.cardRadius),
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(OffersTheme.hPad, 4, OffersTheme.hPad, 10),
+      child: ShimmerBox(height: 140, radius: OffersTheme.cardRadius),
     );
   }
 }

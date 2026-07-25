@@ -95,7 +95,7 @@ abstract final class Responsive {
   }
 
   static double bottomNavHeight(BuildContext context) {
-    return isCompact(context) ? 62 : 68;
+    return isCompact(context) ? 64 : 70;
   }
 
   static double navLabelSize(BuildContext context, {required bool active}) {
@@ -106,7 +106,8 @@ abstract final class Responsive {
   static double shellBottomReserve(BuildContext context, {double base = 68}) {
     final safe = MediaQuery.paddingOf(context).bottom;
     final navH = bottomNavHeight(context);
-    return navH + (safe > 0 ? 10 : 16);
+    final centerLift = isCompact(context) ? 18.0 : 22.0;
+    return navH + centerLift + (safe > 0 ? 8 : 14);
   }
 }
 

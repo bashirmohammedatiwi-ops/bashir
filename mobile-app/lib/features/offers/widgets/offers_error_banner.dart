@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_spacing.dart';
 import 'offers_theme.dart';
 
-/// تنبيه خفيف — لا يعطّل الصفحة بالكامل.
 class OffersErrorBanner extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
@@ -19,31 +17,23 @@ class OffersErrorBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, 10),
+      padding: const EdgeInsets.fromLTRB(OffersTheme.hPad, 0, OffersTheme.hPad, 10),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF5F5),
-          borderRadius: BorderRadius.circular(OffersTheme.cardRadius),
-          border: Border.all(color: const Color(0xFFF5C2C7)),
-        ),
+        decoration: OffersTheme.surfaceCard(),
         child: Row(
           children: [
-            Icon(Icons.wifi_off_rounded, size: 18, color: OffersTheme.accent.withValues(alpha: 0.85)),
+            const Icon(Icons.wifi_off_rounded, size: 18, color: OffersTheme.brand),
             const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                message,
-                style: OffersTheme.body(size: 12, color: OffersTheme.ink),
-              ),
-            ),
+            Expanded(child: Text(message, style: OffersTheme.body(size: 12, color: OffersTheme.ink))),
             TextButton(
               onPressed: loading ? null : onRetry,
+              style: TextButton.styleFrom(foregroundColor: OffersTheme.brand),
               child: loading
                   ? const SizedBox(
                       width: 16,
                       height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: OffersTheme.brand),
                     )
                   : const Text('إعادة'),
             ),

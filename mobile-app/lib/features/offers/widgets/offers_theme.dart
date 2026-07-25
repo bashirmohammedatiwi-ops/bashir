@@ -1,115 +1,67 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../../core/theme/app_colors.dart';
+import '../../cart/widgets/cart_theme.dart';
 
-/// هوية صفحة العروض — نظيفة، واضحة، بدون تعقيد.
+/// هوية صفحة العروض — بسيطة وأنيقة بألوان اللوغو.
 abstract final class OffersTheme {
-  static const canvas = Color(0xFFFBF7F5);
-  static const canvasTop = Color(0xFFFFF0F4);
-  static const surface = Color(0xFFFFFFFF);
-  static const line = Color(0xFFF0E6EA);
+  static const brand = CartTheme.brand;
+  static const brandDark = CartTheme.brandDark;
+  static const brandSoft = CartTheme.brandSoft;
+  static const brandWash = CartTheme.brandWash;
 
-  static const accent = Color(0xFFD4145A);
-  static const accentDark = Color(0xFF9E0F42);
-  static const accentSoft = Color(0xFFFFE8F0);
-  static const accentMid = Color(0xFFFFC2D6);
+  static const sale = Color(0xFFE2557A);
 
-  static const ink = Color(0xFF22181D);
-  static const inkSoft = Color(0xFF6F5A63);
-  static const inkMuted = Color(0xFF9E8A93);
+  static const canvas = brandWash;
+  static const surface = Colors.white;
+  static const line = Color(0xFFE3EDEA);
 
-  static const headerRadius = 24.0;
+  static const ink = CartTheme.charcoal;
+  static const inkSoft = Color(0xFF6B7A76);
+  static const inkMuted = Color(0xFF9AABA6);
+
+  static const hPad = 20.0;
   static const cardRadius = 16.0;
 
-  static TextStyle display({double size = 28, Color? color}) => GoogleFonts.cairo(
-        fontSize: size,
-        fontWeight: FontWeight.w900,
-        height: 1.1,
-        letterSpacing: -0.5,
-        color: color ?? ink,
-      );
-
-  static TextStyle title({double size = 17, Color? color}) => GoogleFonts.cairo(
+  static TextStyle title({double size = 18, Color? color}) => GoogleFonts.cairo(
         fontSize: size,
         fontWeight: FontWeight.w800,
-        height: 1.25,
-        color: color ?? ink,
+        height: 1.2,
+        letterSpacing: -0.2,
+        color: color ?? brand,
       );
 
   static TextStyle body({
     double size = 13,
     Color? color,
-    FontWeight weight = FontWeight.w600,
+    FontWeight weight = FontWeight.w500,
   }) =>
       GoogleFonts.cairo(
         fontSize: size,
         fontWeight: weight,
-        height: 1.4,
+        height: 1.45,
         color: color ?? inkSoft,
       );
 
   static TextStyle chip({bool selected = false}) => GoogleFonts.cairo(
-        fontSize: 12,
+        fontSize: 13,
         fontWeight: FontWeight.w700,
         color: selected ? Colors.white : ink,
         height: 1.2,
       );
 
-  static TextStyle overline({Color? color}) => GoogleFonts.cairo(
-        fontSize: 10,
-        fontWeight: FontWeight.w800,
-        letterSpacing: 1.1,
-        color: color ?? accent,
-        height: 1.2,
-      );
+  static BoxDecoration canvasDecoration() => const BoxDecoration(color: canvas);
 
-  static BoxDecoration canvasDecoration() => const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [canvasTop, canvas, canvas],
-          stops: [0, 0.22, 1],
-        ),
-      );
-
-  static BoxDecoration headerDecoration() => BoxDecoration(
+  static BoxDecoration surfaceCard() => BoxDecoration(
         color: surface,
-        borderRadius: BorderRadius.circular(headerRadius),
+        borderRadius: BorderRadius.circular(cardRadius),
         border: Border.all(color: line),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withValues(alpha: 0.06),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-            spreadRadius: -8,
-          ),
-        ],
-      );
-
-  static BoxDecoration accentBarDecoration() => BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [accent, accentDark],
-        ),
-        borderRadius: BorderRadius.circular(999),
-      );
-
-  static BoxDecoration sectionDecoration() => BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(cardRadius),
-        border: Border.all(color: AppColors.hairline.withValues(alpha: 0.75)),
-      );
-
-  static BoxDecoration flashDecoration() => BoxDecoration(
-        color: accentSoft,
-        borderRadius: BorderRadius.circular(cardRadius),
-        border: Border.all(color: accentMid.withValues(alpha: 0.55)),
       );
 
   static BoxDecoration chipDecoration({bool selected = false}) => BoxDecoration(
-        color: selected ? accent : surface,
+        color: selected ? brand : surface,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: selected ? accent : line),
+        border: Border.all(color: selected ? brand : line),
       );
 }
 
@@ -123,6 +75,63 @@ class OffersCanvas extends StatelessWidget {
     return DecoratedBox(
       decoration: OffersTheme.canvasDecoration(),
       child: child,
+    );
+  }
+}
+
+class OffersSectionHeader extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+
+  const OffersSectionHeader({
+    super.key,
+    required this.title,
+    this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(OffersTheme.hPad, 22, OffersTheme.hPad, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: OffersTheme.title(size: 17, color: OffersTheme.ink)),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(subtitle!, style: OffersTheme.body(size: 12)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class OffersPrimaryButton extends StatelessWidget {
+  final String label;
+  final VoidCallback onPressed;
+
+  const OffersPrimaryButton({super.key, required this.label, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 50,
+      child: Material(
+        color: OffersTheme.brand,
+        borderRadius: BorderRadius.circular(26),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(26),
+          child: Center(
+            child: Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

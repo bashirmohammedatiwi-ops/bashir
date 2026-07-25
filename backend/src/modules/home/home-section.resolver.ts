@@ -886,17 +886,15 @@ export class HomeSectionResolver {
       const raw = ((payload.items as Record<string, unknown>[]) ?? [])[idx] ?? {};
       return {
         ...(tile as Record<string, unknown>),
-        shape: (raw.shape as string) ?? defaultShape,
-        size: (raw.size as string) ?? defaultSize,
-        aspectRatio: (raw.aspectRatio as string) ?? defaultAspect,
+        shape: defaultShape,
+        size: defaultSize,
+        aspectRatio: defaultAspect,
         badge: raw.badge ?? "",
-        overlayStyle: (raw.overlayStyle as string) ?? defaultOverlay,
-        borderStyle: (raw.borderStyle as string) ?? defaultBorder,
-        showShadow: raw.showShadow ?? payload.showShadow !== false,
-        spanCols: Number(raw.spanCols) || 1,
-        spanRows: Number(raw.spanRows) || 1,
-        customWidth: this.optionalNumber(raw.customWidth),
-        customHeight: this.optionalNumber(raw.customHeight),
+        overlayStyle: defaultOverlay,
+        borderStyle: defaultBorder,
+        showShadow: payload.showShadow !== false,
+        spanCols: 1,
+        spanRows: 1,
       };
     });
   }
@@ -904,13 +902,21 @@ export class HomeSectionResolver {
   private async resolveMediaGallery(payload: Payload) {
     const defaultShape = (payload.shape as string) ?? "rounded";
     const defaultSize = (payload.size as string) ?? "md";
+    const defaultAspect = (payload.aspectRatio as string) ?? "auto";
+    const defaultOverlay = (payload.overlayStyle as string) ?? "none";
+    const defaultBorder = (payload.borderStyle as string) ?? "none";
     const tiles = await this.resolveImageTiles(payload);
     return tiles.map((tile, idx) => {
       const raw = ((payload.items as Record<string, unknown>[]) ?? [])[idx] ?? {};
       return {
         ...(tile as Record<string, unknown>),
-        shape: (raw.shape as string) ?? defaultShape,
-        size: (raw.size as string) ?? defaultSize,
+        shape: defaultShape,
+        size: defaultSize,
+        aspectRatio: defaultAspect,
+        badge: raw.badge ?? "",
+        overlayStyle: defaultOverlay,
+        borderStyle: defaultBorder,
+        showShadow: payload.showShadow !== false,
       };
     });
   }

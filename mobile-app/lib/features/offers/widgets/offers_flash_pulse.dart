@@ -1,19 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/app_strings.dart';
-import '../../../core/theme/app_spacing.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_feed.dart';
 import '../../home/widgets/home_scroll_perf.dart';
-import '../../home/widgets/home_theme.dart';
 import '../../shell/main_shell.dart';
 import 'offers_theme.dart';
 
-/// عرض سريع مع عدّاد تنازلي.
+/// عرض سريع — بطاقة بيضاء بسيطة مع عدّاد.
 class OffersFlashPulse extends ConsumerStatefulWidget {
   final FlashSale flashSale;
 
@@ -69,37 +68,23 @@ class _OffersFlashPulseState extends ConsumerState<OffersFlashPulse> {
   Widget build(BuildContext context) {
     ref.listen<int>(navIndexProvider, (_, next) => _syncTimer(next == 2));
     final s = ref.s;
-
     final products = widget.flashSale.products;
     if (products.isEmpty) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.lg, 0, AppSpacing.lg, 12),
+      padding: const EdgeInsets.fromLTRB(OffersTheme.hPad, 0, OffersTheme.hPad, 14),
       child: Container(
-        decoration: OffersTheme.flashDecoration(),
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+        padding: const EdgeInsets.all(14),
+        decoration: OffersTheme.surfaceCard(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: OffersTheme.accent.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.bolt_rounded, size: 18, color: OffersTheme.accent),
-                ),
-                const SizedBox(width: 10),
+                const Icon(Icons.bolt_rounded, color: OffersTheme.brand, size: 20),
+                const SizedBox(width: 8),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(s.flashSale, style: OffersTheme.title(size: 15)),
-                      Text(s.endsSoon, style: OffersTheme.body(size: 11)),
-                    ],
-                  ),
+                  child: Text(s.flashSale, style: OffersTheme.title(size: 15, color: OffersTheme.ink)),
                 ),
                 if (widget.flashSale.endsAt != null)
                   ValueListenableBuilder<Duration>(
@@ -108,25 +93,36 @@ class _OffersFlashPulseState extends ConsumerState<OffersFlashPulse> {
                       if (remaining <= Duration.zero) return const SizedBox.shrink();
                       final h = remaining.inHours.toString().padLeft(2, '0');
                       final m = (remaining.inMinutes % 60).toString().padLeft(2, '0');
-                      final s = (remaining.inSeconds % 60).toString().padLeft(2, '0');
-                      return HomeCountdownBoxes(hours: h, minutes: m, seconds: s);
+                      final sec = (remaining.inSeconds % 60).toString().padLeft(2, '0');
+                      return Text(
+                        '$h:$m:$sec',
+                        style: const TextStyle(
+                          color: OffersTheme.brand,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
+                      );
                     },
                   ),
               ],
             ),
             const SizedBox(height: 12),
             SizedBox(
-              height: 108,
+              height: 100,
               child: HomeHorizontalList(
-                height: 108,
+                height: 100,
                 padding: EdgeInsets.zero,
                 itemCount: products.length.clamp(0, 10),
                 itemBuilder: (_, i) {
                   final p = products[i];
-                  return _FlashProductChip(
+                  return _ProductThumb(
                     name: p.name,
                     imageUrl: p.coverUrl,
-                    onTap: () => context.push('/product/${p.slug.isNotEmpty ? p.slug : p.id}'),
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      context.push('/product/${p.slug.isNotEmpty ? p.slug : p.id}');
+                    },
                   );
                 },
               ),
@@ -138,12 +134,12 @@ class _OffersFlashPulseState extends ConsumerState<OffersFlashPulse> {
   }
 }
 
-class _FlashProductChip extends StatelessWidget {
+class _ProductThumb extends StatelessWidget {
   final String name;
   final String? imageUrl;
   final VoidCallback onTap;
 
-  const _FlashProductChip({
+  const _ProductThumb({
     required this.name,
     required this.imageUrl,
     required this.onTap,
@@ -158,33 +154,26 @@ class _FlashProductChip extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
-          child: Ink(
-            width: 84,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: OffersTheme.line),
-            ),
+          child: SizedBox(
+            width: 76,
             child: Column(
               children: [
                 Expanded(
                   child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+                    borderRadius: BorderRadius.circular(12),
                     child: AppNetworkImage(
                       url: imageUrl ?? '',
-                      width: double.infinity,
+                      width: 76,
                       fit: BoxFit.cover,
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(6, 4, 6, 6),
-                  child: Text(
-                    name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: OffersTheme.body(size: 9, weight: FontWeight.w700),
-                  ),
+                const SizedBox(height: 4),
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: OffersTheme.body(size: 9, weight: FontWeight.w600, color: OffersTheme.ink),
                 ),
               ],
             ),

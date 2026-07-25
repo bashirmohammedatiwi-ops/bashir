@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/app_strings.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/loyalty_summary.dart';
 import '../auth/auth_provider.dart';
+import '../cart/widgets/cart_theme.dart';
 import '../catalog/catalog_providers.dart';
+import 'widgets/account_theme.dart';
+import 'widgets/profile_ui.dart';
 
 class LoyaltyScreen extends ConsumerWidget {
   const LoyaltyScreen({super.key});
@@ -33,54 +35,30 @@ class _LoyaltyBody extends ConsumerWidget {
     final async = ref.watch(loyaltyProvider);
     final s = ref.s;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(s.loyaltyPoints)),
+    return ProfileScaffold(
+      title: s.loyaltyPoints,
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        loading: () => const Center(child: CircularProgressIndicator(color: CartTheme.brand)),
         error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(loyaltyProvider)),
         data: (summary) => ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 16, ProfileUi.hPad, 24),
           children: [
             _PointsCard(summary: summary, userName: user?.name ?? ''),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             if (summary.pointsToNext > 0)
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.trending_up_rounded, color: AppColors.primary),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        '${summary.pointsToNext} نقطة للوصول لمستوى ${summary.nextTier ?? ''}',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
+              ProfileInfoBanner(
+                icon: Icons.trending_up_rounded,
+                text: '${summary.pointsToNext} نقطة للوصول لمستوى ${summary.nextTier ?? ''}',
               ),
-            const SizedBox(height: 20),
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Text(
-                'كل 100 نقطة = ${formatPrice(1000)} خصم عند الدفع',
-                style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary),
-              ),
+            const SizedBox(height: 14),
+            ProfileInfoBanner(
+              icon: Icons.redeem_outlined,
+              text: 'كل 100 نقطة = ${formatPrice(1000)} خصم عند الدفع',
             ),
             const SizedBox(height: 24),
-            const Text('سجل النقاط', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 10),
+            ProfileSectionTitle('سجل النقاط', icon: Icons.history_rounded),
             if (summary.history.isEmpty)
-              const EmptyState(
+              const ProfileEmptyState(
                 icon: Icons.history_rounded,
                 title: 'لا يوجد سجل بعد',
                 subtitle: 'ستظهر معاملات النقاط هنا',
@@ -103,29 +81,36 @@ class _PointsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [AppColors.primary, AppColors.primaryDark]),
-        borderRadius: BorderRadius.circular(20),
-      ),
+      padding: const EdgeInsets.fromLTRB(24, 26, 24, 24),
+      decoration: AccountTheme.heroDecoration(),
       child: Column(
         children: [
-          Text(userName, style: const TextStyle(color: Colors.white70, fontSize: 13)),
-          const SizedBox(height: 8),
-          const Icon(Icons.stars_rounded, color: Colors.white, size: 44),
-          const SizedBox(height: 8),
-          Text('${summary.points}',
-              style: const TextStyle(color: Colors.white, fontSize: 44, fontWeight: FontWeight.w900)),
-          const Text('نقطة متاحة', style: TextStyle(color: Colors.white70, fontSize: 14)),
+          Text(
+            userName,
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 13, fontWeight: FontWeight.w600),
+          ),
           const SizedBox(height: 10),
+          const Icon(Icons.stars_rounded, color: Colors.white, size: 42),
+          const SizedBox(height: 8),
+          Text(
+            '${summary.points}',
+            style: const TextStyle(color: Colors.white, fontSize: 46, fontWeight: FontWeight.w900, letterSpacing: -1),
+          ),
+          Text(
+            'نقطة متاحة',
+            style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 14),
+          ),
+          const SizedBox(height: 12),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
+              color: Colors.white.withValues(alpha: 0.18),
               borderRadius: BorderRadius.circular(20),
             ),
-            child: Text('مستوى: ${summary.tierLabel}',
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+            child: Text(
+              'مستوى: ${summary.tierLabel}',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+            ),
           ),
         ],
       ),
@@ -140,28 +125,31 @@ class _HistoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final positive = item.isEarned;
+    final color = positive ? const Color(0xFF2E9E6A) : AccountTheme.danger;
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: AccountTheme.pageCard(),
       child: Row(
         children: [
-          Icon(
-            positive ? Icons.add_circle_outline : Icons.remove_circle_outline,
-            color: positive ? AppColors.success : AppColors.sale,
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(
+              positive ? Icons.add_rounded : Icons.remove_rounded,
+              color: color,
+              size: 20,
+            ),
           ),
-          const SizedBox(width: 10),
-          Expanded(child: Text(item.title, style: const TextStyle(fontWeight: FontWeight.w600))),
+          const SizedBox(width: 12),
+          Expanded(child: Text(item.title, style: ProfileUi.bodyStyle())),
           Text(
             '${positive ? '+' : ''}${item.points}',
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              color: positive ? AppColors.success : AppColors.sale,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w800, color: color, fontSize: 15),
           ),
         ],
       ),

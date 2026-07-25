@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/locale_provider.dart';
 import '../../features/auth/auth_provider.dart';
-import 'states.dart';
+import '../../features/profile/widgets/profile_ui.dart';
 
 /// يعرض محتوى الشاشة للمستخدم المسجّل، أو دعوة لتسجيل الدخول.
 class AuthGate extends ConsumerWidget {
@@ -25,15 +26,16 @@ class AuthGate extends ConsumerWidget {
     final auth = ref.watch(authProvider);
     if (auth.isAuthenticated) return child;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: EmptyState(
+    final isAr = ref.watch(languageCodeProvider) == 'ar';
+    return ProfileScaffold(
+      title: title,
+      body: ProfileEmptyState(
         icon: Icons.lock_outline_rounded,
         title: emptyTitle,
-        subtitle: emptySubtitle ?? 'سجّل الدخول للمتابعة',
-        action: ElevatedButton(
+        subtitle: emptySubtitle ?? (isAr ? 'سجّلي الدخول للمتابعة' : 'Sign in to continue'),
+        action: ProfilePrimaryButton(
+          label: isAr ? 'تسجيل الدخول' : 'Sign in',
           onPressed: () => context.push('/login'),
-          child: const Text('تسجيل الدخول'),
         ),
       ),
     );

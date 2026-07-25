@@ -194,11 +194,7 @@ abstract final class PhotoShapeGeometry {
 
   static List<BoxShadow> shadows(String shape, bool enabled) => const [];
 
-  static BoxBorder frameBorder(String? style) {
-    final custom = border(style);
-    if (custom != null) return custom;
-    return Border.all(color: HomeTheme.divider, width: 0.8);
-  }
+  static BoxBorder? frameBorder(String? style) => border(style);
 
   static BoxBorder? border(String? style) {
     if (style == null || style == 'none') return null;
@@ -211,7 +207,7 @@ abstract final class PhotoShapeGeometry {
     };
     if (width <= 0) return null;
     if (style == 'accent') {
-      return Border.all(color: HomeTheme.sage.withValues(alpha: 0.85), width: width);
+      return Border.all(color: HomeTheme.accent.withValues(alpha: 0.85), width: width);
     }
     return Border.all(color: Colors.white.withValues(alpha: 0.92), width: width);
   }

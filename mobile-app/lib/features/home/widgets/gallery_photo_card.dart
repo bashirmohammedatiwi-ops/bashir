@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/widgets/app_network_image.dart';
-import '../../../core/widgets/scroll_perf.dart';
+import '../../../data/models/home_section.dart';
 import 'home_theme.dart';
 import 'photo_shape_kit.dart';
 
-/// إعدادات العرض المشتركة — من لوحة التحكم عبر API
+/// إعدادات العرض — من لوحة التحكم على مستوى القسم فقط.
+/// كل الصور في القسم تستخدم نفس التصميم؛ لتصميم مختلف كرّر القسم.
 class GalleryRenderStyle {
   final String defaultShape;
   final String? defaultAspect;
@@ -19,21 +20,83 @@ class GalleryRenderStyle {
   final double? sectionCustomWidth;
   final double? sectionCustomHeight;
 
+  /// عند true تُتجاهل إعدادات كل صورة على حدة (shape, size, overlay…).
+  final bool uniformStyle;
+
   const GalleryRenderStyle({
     this.defaultShape = 'rounded',
     this.defaultAspect,
     this.defaultSize = 'md',
     this.defaultOverlay = 'none',
     this.defaultBorder = 'none',
-    this.defaultShadow = false,
+    this.defaultShadow = true,
     this.fit = BoxFit.cover,
     this.tileCornerRadius,
     this.sectionCustomWidth,
     this.sectionCustomHeight,
+    this.uniformStyle = true,
   });
 
-  Map<String, dynamic> enrichRaw(Map<String, dynamic> raw) {
+  factory GalleryRenderStyle.fromSection(HomeSection section) {
+    String? aspectLabel;
+    if (section.aspectRatio != null && section.aspectRatio!.isNotEmpty) {
+      aspectLabel = section.aspectRatio;
+    } else if (section.bannerAspect != null) {
+      final a = section.bannerAspect!;
+      if ((a - 1).abs() < 0.05) aspectLabel = '1:1';
+      else if ((a - 4 / 3).abs() < 0.05) aspectLabel = '4:3';
+      else if ((a - 3 / 4).abs() < 0.05) aspectLabel = '3:4';
+      else if ((a - 16 / 9).abs() < 0.05) aspectLabel = '16:9';
+    }
+
+    return GalleryRenderStyle(
+      defaultShape: section.shape ?? 'rounded',
+      defaultAspect: aspectLabel,
+      defaultSize: section.cardSize ?? 'md',
+      defaultOverlay: section.overlayStyle ?? 'none',
+      defaultBorder: section.borderStyle ?? 'none',
+      defaultShadow: section.showShadow,
+      fit: _parseFit(section.kind),
+      tileCornerRadius: section.tileCornerRadius ?? HomeTheme.galleryRadius,
+      sectionCustomWidth: section.customWidth,
+      sectionCustomHeight: section.customHeight,
+      uniformStyle: true,
+    );
+  }
+
+  static BoxFit _parseFit(String? kind) {
+    return switch (kind) {
+      'contain' => BoxFit.contain,
+      'fill' => BoxFit.fill,
+      _ => BoxFit.cover,
+    };
+  }
+
+  static const _styleKeys = [
+    'shape',
+    'size',
+    'aspectRatio',
+    'overlayStyle',
+    'borderStyle',
+    'showShadow',
+    'customWidth',
+    'customHeight',
+    'spanCols',
+    'spanRows',
+    'cardSize',
+  ];
+
+  Map<String, dynamic> _contentOnly(Map<String, dynamic> raw) {
+    if (!uniformStyle) return Map<String, dynamic>.from(raw);
     final m = Map<String, dynamic>.from(raw);
+    for (final key in _styleKeys) {
+      m.remove(key);
+    }
+    return m;
+  }
+
+  Map<String, dynamic> enrichRaw(Map<String, dynamic> raw) {
+    final m = _contentOnly(raw);
     if (m['customWidth'] == null && sectionCustomWidth != null) {
       m['customWidth'] = sectionCustomWidth;
     }
@@ -54,11 +117,23 @@ class GalleryRenderStyle {
     );
   }
 
-  String itemSize(Map<String, dynamic> raw) =>
-      raw['size']?.toString().trim().isNotEmpty == true ? raw['size'].toString() : defaultSize;
+  String itemSize(Map<String, dynamic> raw) => defaultSize;
+
+  double resolvedAspect() =>
+      PhotoShapeGeometry.parseAspect(defaultAspect) ??
+      PhotoShapeGeometry.aspectForShape(defaultShape);
+
+  double tileHeight(double fallback) =>
+      sectionCustomHeight ?? PhotoShapeGeometry.sizeHeight(defaultSize).clamp(96, fallback);
+
+  double tileWidth(double height) {
+    if (sectionCustomWidth != null && sectionCustomWidth! > 0) return sectionCustomWidth!;
+    final aspect = resolvedAspect();
+    return height * aspect;
+  }
 }
 
-/// بطاقة صورة نظيفة — قص أنيق، إطار، overlay، نص أسفل الصورة.
+/// بطاقة صورة موحّدة — نفس التصميم لكل صور القسم.
 class GalleryPhotoCard extends StatelessWidget {
   final PhotoTileData data;
   final double width;
@@ -67,6 +142,7 @@ class GalleryPhotoCard extends StatelessWidget {
   final VoidCallback? onTap;
   final bool showCaption;
   final double? cornerRadiusOverride;
+  final bool showShadow;
 
   const GalleryPhotoCard({
     super.key,
@@ -77,6 +153,7 @@ class GalleryPhotoCard extends StatelessWidget {
     this.onTap,
     this.showCaption = true,
     this.cornerRadiusOverride,
+    this.showShadow = true,
   });
 
   bool get _hasCaption =>
@@ -111,29 +188,15 @@ class GalleryPhotoCard extends StatelessWidget {
       child: image,
     );
 
-    image = PhotoShapeGeometry.shapedClip(
-      child: image,
-      shape: shape,
-      radius: borderRadius,
-    );
-
     final framedImage = Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
         color: Colors.white,
-        shape: shape == 'circle' ? BoxShape.circle : BoxShape.rectangle,
         borderRadius: shape == 'circle' ? null : borderRadius,
+        shape: shape == 'circle' ? BoxShape.circle : BoxShape.rectangle,
         border: border,
-        boxShadow: data.showShadow
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ]
-            : null,
+        boxShadow: (showShadow || data.showShadow) ? HomeTheme.galleryShadow : null,
       ),
       child: ClipRRect(
         borderRadius: shape == 'circle' ? BorderRadius.zero : borderRadius,
@@ -150,7 +213,7 @@ class GalleryPhotoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           framedImage,
-          if (showCaption && _hasCaption) ...[
+          if (showCaption && _hasCaption && (data.overlayStyle ?? 'none') == 'none') ...[
             const SizedBox(height: 6),
             if (data.title?.isNotEmpty ?? false)
               Text(
@@ -189,236 +252,12 @@ class GalleryPhotoCard extends StatelessWidget {
   }
 }
 
-/// تخطيط bento — بطاقات بأحجام وأشكال متنوعة.
-class GalleryBentoLayout extends StatelessWidget {
-  final List<Map<String, dynamic>> items;
-  final GalleryRenderStyle style;
-  final double gap;
-  final bool autoSpan;
-  final void Function(Map<String, dynamic> raw) onTap;
-
-  const GalleryBentoLayout({
-    super.key,
-    required this.items,
-    required this.style,
-    this.gap = 10,
-    this.autoSpan = true,
-    required this.onTap,
-  });
-
-  static const _cols = 4;
-  static const _rowUnit = 76.0;
-
-  static (int cols, int rows) _autoSpan(int index, String shape) {
-    if (shape == 'circle' || shape == 'square') return (1, 1);
-    return switch (index % 5) {
-      0 => (2, 2),
-      1 => (2, 1),
-      2 => (1, 2),
-      3 => (1, 1),
-      _ => (2, 1),
-    };
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final maxW = constraints.maxWidth;
-        final cellW = (maxW - gap * (_cols - 1)) / _cols;
-        final occupied = <String>{};
-        final tiles = <_BentoPlaced>[];
-
-        for (var i = 0; i < items.length; i++) {
-          final raw = items[i];
-          final data = _parse(raw);
-          var spanC = data.spanCols.clamp(1, _cols);
-          var spanR = data.spanRows.clamp(1, 3);
-          if (autoSpan && spanC == 1 && spanR == 1) {
-            final auto = _autoSpan(i, data.shape);
-            spanC = auto.$1;
-            spanR = auto.$2;
-          }
-
-          final slot = _findSlot(occupied, spanC, spanR);
-          if (slot == null) continue;
-
-          final left = slot.col * (cellW + gap);
-          final top = slot.row * (_rowUnit + gap);
-          final w = cellW * spanC + gap * (spanC - 1);
-          final h = _rowUnit * spanR + gap * (spanR - 1);
-
-          for (var r = 0; r < spanR; r++) {
-            for (var c = 0; c < spanC; c++) {
-              occupied.add('${slot.col + c},${slot.row + r}');
-            }
-          }
-
-          tiles.add(
-            _BentoPlaced(
-              left: left,
-              top: top,
-              width: w,
-              height: h,
-              data: data,
-              raw: raw,
-            ),
-          );
-        }
-
-        if (tiles.isEmpty) return const SizedBox.shrink();
-
-        final totalH = tiles.map((t) => t.top + t.height).reduce((a, b) => a > b ? a : b);
-
-        return SizedBox(
-          height: totalH,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              for (final tile in tiles)
-                PositionedDirectional(
-                  start: tile.left,
-                  top: tile.top,
-                  width: tile.width,
-                  height: tile.height,
-                  child: GalleryPhotoCard(
-                    data: tile.data,
-                    width: tile.width,
-                    height: tile.height,
-                    fit: style.fit,
-                    cornerRadiusOverride: style.tileCornerRadius,
-                    showCaption: false,
-                    onTap: () => onTap(tile.raw),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  PhotoTileData _parse(Map<String, dynamic> raw) => style.tileData(raw);
-
-  _BentoSlot? _findSlot(Set<String> occupied, int spanC, int spanR) {
-    for (var row = 0; row < 24; row++) {
-      for (var col = 0; col <= _cols - spanC; col++) {
-        if (_fits(occupied, col, row, spanC, spanR)) {
-          return _BentoSlot(col, row);
-        }
-      }
-    }
-    return null;
-  }
-
-  bool _fits(Set<String> occupied, int col, int row, int spanC, int spanR) {
-    for (var r = 0; r < spanR; r++) {
-      for (var c = 0; c < spanC; c++) {
-        if (occupied.contains('${col + c},${row + r}')) return false;
-      }
-    }
-    return true;
-  }
-}
-
-class _BentoSlot {
-  final int col;
-  final int row;
-  const _BentoSlot(this.col, this.row);
-}
-
-class _BentoPlaced {
-  final double left;
-  final double top;
-  final double width;
-  final double height;
-  final PhotoTileData data;
-  final Map<String, dynamic> raw;
-
-  const _BentoPlaced({
-    required this.left,
-    required this.top,
-    required this.width,
-    required this.height,
-    required this.data,
-    required this.raw,
-  });
-}
-
-/// تمرير أفقي — بطاقات بعرض متغير حسب الشكل.
-class GalleryHorizontalLayout extends StatelessWidget {
-  final List<Map<String, dynamic>> items;
-  final double height;
-  final double gap;
-  final GalleryRenderStyle style;
-  final double? defaultAspect;
-  final void Function(Map<String, dynamic> raw) onTap;
-
-  const GalleryHorizontalLayout({
-    super.key,
-    required this.items,
-    required this.height,
-    required this.gap,
-    required this.style,
-    required this.defaultAspect,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final direction = Directionality.of(context);
-
-    return SizedBox(
-      height: height + 28,
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: AppScrollPerf.physics,
-        child: Row(
-          textDirection: direction,
-          children: [
-            for (var i = 0; i < items.length; i++) ...[
-              if (i > 0) SizedBox(width: gap),
-              Builder(
-                builder: (context) {
-                  final raw = items[i];
-                  final data = style.tileData(raw);
-                  if (data.imageUrl.isEmpty) return const SizedBox.shrink();
-
-                  final tileH = data.customHeight ?? height;
-                  final w = PhotoShapeGeometry.tileWidth(
-                    height: tileH,
-                    shape: data.shape,
-                    size: style.itemSize(raw),
-                    data: data,
-                    defaultAspect: defaultAspect,
-                  );
-
-                  return GalleryPhotoCard(
-                    data: data,
-                    width: w,
-                    height: tileH,
-                    fit: style.fit,
-                    cornerRadiusOverride: style.tileCornerRadius,
-                    showCaption: (data.overlayStyle ?? 'none') == 'none',
-                    onTap: () => onTap(raw),
-                  );
-                },
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// شبكة منتظمة نظيفة — عمودان.
+/// شبكة منتظمة — كل البطاقات بنفس الحجم والشكل.
 class GalleryGridLayout extends StatelessWidget {
   final List<Map<String, dynamic>> items;
   final int columns;
   final double gap;
   final GalleryRenderStyle style;
-  final double? defaultAspect;
   final void Function(Map<String, dynamic> raw) onTap;
 
   const GalleryGridLayout({
@@ -427,18 +266,17 @@ class GalleryGridLayout extends StatelessWidget {
     this.columns = 2,
     required this.gap,
     required this.style,
-    required this.defaultAspect,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final aspect = defaultAspect ?? PhotoShapeGeometry.aspectForShape(style.defaultShape);
+    final aspect = style.resolvedAspect();
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final tileW = (constraints.maxWidth - gap * (columns - 1)) / columns;
-        final tileH = tileW / aspect;
+        final tileH = style.sectionCustomHeight ?? (tileW / aspect);
 
         return Wrap(
           spacing: gap,
@@ -450,14 +288,13 @@ class GalleryGridLayout extends StatelessWidget {
                 builder: (context) {
                   final data = style.tileData(raw);
                   if (data.imageUrl.isEmpty) return const SizedBox.shrink();
-                  final h = data.customHeight ?? tileH;
-                  final w = data.customWidth ?? tileW;
                   return GalleryPhotoCard(
                     data: data,
-                    width: w,
-                    height: h,
+                    width: tileW,
+                    height: tileH,
                     fit: style.fit,
                     cornerRadiusOverride: style.tileCornerRadius,
+                    showCaption: (data.overlayStyle ?? 'none') == 'none',
                     onTap: () => onTap(raw),
                   );
                 },
@@ -465,6 +302,99 @@ class GalleryGridLayout extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+}
+
+/// تمرير أفقي — بطاقات موحّدة العرض والارتفاع.
+class GalleryHorizontalLayout extends StatelessWidget {
+  final List<Map<String, dynamic>> items;
+  final double height;
+  final double gap;
+  final GalleryRenderStyle style;
+  final void Function(Map<String, dynamic> raw) onTap;
+
+  const GalleryHorizontalLayout({
+    super.key,
+    required this.items,
+    required this.height,
+    required this.gap,
+    required this.style,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tileH = style.tileHeight(height);
+    final tileW = style.tileWidth(tileH);
+    final captionExtra = style.defaultOverlay == 'none' ? 28.0 : 0.0;
+
+    return SizedBox(
+      height: tileH + captionExtra,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        padding: EdgeInsets.zero,
+        itemCount: items.length,
+        separatorBuilder: (_, __) => SizedBox(width: gap),
+        itemBuilder: (context, i) {
+          final raw = items[i];
+          final data = style.tileData(raw);
+          if (data.imageUrl.isEmpty) return const SizedBox.shrink();
+          return GalleryPhotoCard(
+            data: data,
+            width: tileW,
+            height: tileH,
+            fit: style.fit,
+            cornerRadiusOverride: style.tileCornerRadius,
+            showCaption: (data.overlayStyle ?? 'none') == 'none',
+            onTap: () => onTap(raw),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// عمود كامل العرض — صور بنفس النسبة.
+class GalleryStackLayout extends StatelessWidget {
+  final List<Map<String, dynamic>> items;
+  final double gap;
+  final GalleryRenderStyle style;
+  final void Function(Map<String, dynamic> raw) onTap;
+
+  const GalleryStackLayout({
+    super.key,
+    required this.items,
+    required this.gap,
+    required this.style,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          if (i > 0) SizedBox(height: gap),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final data = style.tileData(items[i]);
+              if (data.imageUrl.isEmpty) return const SizedBox.shrink();
+              final aspect = style.resolvedAspect();
+              final h = (constraints.maxWidth / aspect).clamp(140.0, 420.0);
+              return GalleryPhotoCard(
+                data: data,
+                width: constraints.maxWidth,
+                height: h,
+                fit: style.fit,
+                cornerRadiusOverride: style.tileCornerRadius,
+                onTap: () => onTap(items[i]),
+              );
+            },
+          ),
+        ],
+      ],
     );
   }
 }
@@ -503,10 +433,10 @@ class _GalleryOverlay extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withValues(alpha: style == 'center' ? 0.35 : 0.05),
-                    Colors.black.withValues(alpha: 0.72),
+                    Colors.black.withValues(alpha: style == 'center' ? 0.35 : 0.04),
+                    Colors.black.withValues(alpha: 0.68),
                   ],
-                  stops: const [0.0, 0.45, 1.0],
+                  stops: const [0.0, 0.5, 1.0],
                 ),
               ),
             ),

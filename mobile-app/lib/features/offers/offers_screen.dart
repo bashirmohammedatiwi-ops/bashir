@@ -6,14 +6,11 @@ import 'package:go_router/go_router.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/cache/image_cache.dart';
 import '../../core/config/app_config.dart';
-import '../../core/network/api_client.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/product_card.dart';
 import '../../core/widgets/scroll_perf.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
-import '../../data/models/home_feed.dart';
 import '../../data/models/product.dart';
 import '../../data/services/api_service.dart';
 import '../catalog/catalog_providers.dart';
@@ -183,7 +180,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
           child: showInitialSkeleton && feedData == null && feed.isLoading
               ? const OffersLoadingView()
               : RefreshIndicator(
-                  color: OffersTheme.accent,
+                  color: OffersTheme.brand,
                   backgroundColor: OffersTheme.surface,
                   edgeOffset: top + 12,
                   onRefresh: _refreshAll,
@@ -199,11 +196,10 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                           flashSale: feedData?.flashSale,
                         ),
                       ),
-                      const SliverToBoxAdapter(child: OffersPerksRow()),
                       if (feed.isLoading && feedData == null)
                         const SliverToBoxAdapter(child: OffersCmsSkeleton()),
                       if (showFlashPulse)
-                        SliverToBoxAdapter(child: OffersFlashPulse(flashSale: feedData!.flashSale)),
+                        SliverToBoxAdapter(child: OffersFlashPulse(flashSale: feedData.flashSale)),
                       SliverList(
                         delegate: SliverChildBuilderDelegate(
                           (context, index) {
@@ -243,7 +239,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                         )
                       else if (_items.isNotEmpty)
                         SliverPadding(
-                          padding: EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, bottomPad),
+                          padding: EdgeInsets.fromLTRB(OffersTheme.hPad, 0, OffersTheme.hPad, bottomPad),
                           sliver: SliverGrid(
                             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
@@ -254,7 +250,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                             delegate: SliverChildBuilderDelegate(
                               (context, i) {
                                 if (i >= _items.length) {
-                                  return const ShimmerBox(height: double.infinity, radius: 16);
+                                  return const ShimmerBox(height: double.infinity, radius: OffersTheme.cardRadius);
                                 }
                                 return RepaintBoundary(
                                   child: ProductCard(
@@ -275,14 +271,11 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                       else if (!_loadingMore && _items.isEmpty && _gridError == null)
                         SliverFillRemaining(
                           hasScrollBody: false,
-                          child: EmptyState(
-                            icon: Icons.local_offer_outlined,
+                          child: _OffersEmptyState(
                             title: s.noOffersNow,
                             subtitle: s.checkBackSoon,
-                            action: ElevatedButton(
-                              onPressed: () => context.push('/products?title=${Uri.encodeComponent(s.products)}'),
-                              child: Text(s.browseProductsBtn),
-                            ),
+                            actionLabel: s.browseProductsBtn,
+                            onAction: () => context.push('/products?title=${Uri.encodeComponent(s.products)}'),
                           ),
                         )
                       else
@@ -290,6 +283,48 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                     ],
                   ),
                 ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OffersEmptyState extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final String actionLabel;
+  final VoidCallback onAction;
+
+  const _OffersEmptyState({
+    required this.title,
+    required this.subtitle,
+    required this.actionLabel,
+    required this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: OffersTheme.brandSoft,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.local_offer_outlined, size: 40, color: OffersTheme.brand),
+            ),
+            const SizedBox(height: 18),
+            Text(title, textAlign: TextAlign.center, style: OffersTheme.title(size: 17, color: OffersTheme.ink)),
+            const SizedBox(height: 8),
+            Text(subtitle, textAlign: TextAlign.center, style: OffersTheme.body(size: 13)),
+            const SizedBox(height: 22),
+            OffersPrimaryButton(label: actionLabel, onPressed: onAction),
+          ],
         ),
       ),
     );

@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/app_strings.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/address.dart';
 import '../../data/services/api_service.dart';
+import '../cart/widgets/cart_theme.dart';
 import 'profile_providers.dart';
+import 'widgets/account_theme.dart';
 import 'widgets/address_form.dart';
+import 'widgets/profile_ui.dart';
 
 class AddressesScreen extends ConsumerWidget {
   const AddressesScreen({super.key});
@@ -31,34 +33,31 @@ class _AddressesBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final addresses = ref.watch(addressesProvider);
     final s = ref.s;
-    return Scaffold(
-      appBar: AppBar(title: Text(s.addresses)),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.primary,
-        onPressed: () => _add(context, ref),
-        icon: const Icon(Icons.add),
-        label: Text(s.newAddress),
-      ),
+    return ProfileScaffold(
+      title: s.addresses,
+      actions: [
+        IconButton(
+          onPressed: () => _add(context, ref),
+          icon: const Icon(Icons.add_rounded, color: CartTheme.brand),
+        ),
+      ],
+      floatingBottom: ProfilePrimaryButton(label: s.newAddress, onPressed: () => _add(context, ref)),
       body: addresses.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
-        error: (e, _) =>
-            ErrorView(message: e.toString(), onRetry: () => ref.invalidate(addressesProvider)),
+        loading: () => const Center(child: CircularProgressIndicator(color: CartTheme.brand)),
+        error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(addressesProvider)),
         data: (list) {
           if (list.isEmpty) {
-            return EmptyState(
+            return ProfileEmptyState(
               icon: Icons.location_on_outlined,
-              title: 'لا توجد عناوين',
-              subtitle: 'أضف عنواناً لتسهيل عملية الشراء',
-              action: ElevatedButton(
-                onPressed: () => _add(context, ref),
-                child: const Text('إضافة عنوان'),
-              ),
+              title: s.isAr ? 'لا توجد عناوين' : 'No addresses',
+              subtitle: s.isAr ? 'أضيفي عنواناً لتسهيل عملية الشراء' : 'Add an address for faster checkout',
+              action: ProfilePrimaryButton(label: s.newAddress, onPressed: () => _add(context, ref)),
             );
           }
           return ListView.separated(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 16, ProfileUi.hPad, 80),
             itemCount: list.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (_, i) => _AddressTile(
               address: list[i],
               onEdit: () => _edit(context, ref, list[i]),
@@ -101,13 +100,15 @@ class _AddressesBody extends ConsumerWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(s.deleteAddress),
         content: Text(s.deleteAddressConfirm),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: Text(s.cancel)),
           TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(s.delete, style: const TextStyle(color: AppColors.sale))),
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(s.delete, style: const TextStyle(color: AccountTheme.danger)),
+          ),
         ],
       ),
     );
@@ -132,46 +133,68 @@ class _AddressTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: address.isDefault ? AppColors.primary : AppColors.border),
+      padding: const EdgeInsets.all(16),
+      decoration: AccountTheme.pageCard(
+        color: address.isDefault ? CartTheme.brandWash : Colors.white,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.location_on_rounded, color: AppColors.primary, size: 20),
-              const SizedBox(width: 6),
-              Text(address.fullName, style: const TextStyle(fontWeight: FontWeight.w800)),
-              if (address.isDefault) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                      color: AppColors.primaryLight, borderRadius: BorderRadius.circular(8)),
-                  child: const Text('افتراضي',
-                      style: TextStyle(
-                          color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w700)),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AccountTheme.addresses.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              ],
-              const Spacer(),
-              IconButton(
-                  onPressed: onEdit,
-                  icon: const Icon(Icons.edit_outlined, size: 20),
-                  visualDensity: VisualDensity.compact),
-              IconButton(
-                  onPressed: onDelete,
-                  icon: const Icon(Icons.delete_outline, size: 20, color: AppColors.sale),
-                  visualDensity: VisualDensity.compact),
+                child: const Icon(Icons.location_on_rounded, color: AccountTheme.addresses, size: 20),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(address.fullName, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                    Text(address.phone, style: ProfileUi.captionStyle()),
+                  ],
+                ),
+              ),
+              if (address.isDefault)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: CartTheme.brandSoft,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'افتراضي',
+                    style: TextStyle(color: CartTheme.brand, fontSize: 11, fontWeight: FontWeight.w700),
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 4),
-          Text(address.phone, style: const TextStyle(color: AppColors.textSecondary)),
-          const SizedBox(height: 2),
-          Text(address.summary, style: const TextStyle(color: AppColors.textSecondary, height: 1.4)),
+          const SizedBox(height: 10),
+          Text(address.summary, style: ProfileUi.captionStyle()),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton.icon(
+                onPressed: onEdit,
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('تعديل'),
+                style: TextButton.styleFrom(foregroundColor: CartTheme.brand),
+              ),
+              TextButton.icon(
+                onPressed: onDelete,
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: const Text('حذف'),
+                style: TextButton.styleFrom(foregroundColor: AccountTheme.danger),
+              ),
+            ],
+          ),
         ],
       ),
     );

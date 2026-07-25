@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_fonts.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../cart/widgets/cart_theme.dart';
 import '../../../core/widgets/app_network_image.dart';
 
-/// نظام تصميم الرئيسية — خلفية بيضاء، نظيفة، عصرية.
+/// نظام تصميم الرئيسية — أنيق ومتناسق مع ألوان اللوغو.
 abstract final class HomeTheme {
   static const paddingH = 16.0;
-  static const sectionGap = 20.0;
-  static const compactGap = 10.0;
+  static const sectionGap = 22.0;
+  static const compactGap = 12.0;
   static const itemGap = 10.0;
-  static const cardRadius = 14.0;
-  static const tileRadius = 12.0;
+  static const cardRadius = 16.0;
+  static const tileRadius = 14.0;
+  static const galleryRadius = 16.0;
   static const squircle = 14.0;
   static const pillRadius = 999.0;
 
@@ -24,33 +25,32 @@ abstract final class HomeTheme {
   static const bannerInset = 16.0;
   static const bannerRadius = 16.0;
 
-  // خلفية بيضاء بالكامل
-  static const canvas = Color(0xFFFFFFFF);
-  static const canvasWarm = Color(0xFFFFFFFF);
-  static const surface = Color(0xFFFFFFFF);
-  static const surfaceMuted = Color(0xFFF3F4F6);
-  static const pearl = Color(0xFFFAFAFA);
-  static const champagne = Color(0xFFF5F5F5);
+  static const canvas = Color(0xFFF6FAF9);
+  static const canvasWarm = Color(0xFFFAFCFB);
+  static const surface = Colors.white;
+  static const surfaceMuted = CartTheme.brandWash;
+  static const pearl = Color(0xFFF8FBFA);
+  static const champagne = CartTheme.brandSoft;
 
-  static const accent = AppColors.primary;
-  static const accentDark = AppColors.primaryDark;
-  static const accentLight = AppColors.primaryLight;
-  static const accentMid = Color(0xFFFCE4EC);
+  static const accent = CartTheme.brand;
+  static const accentDark = CartTheme.brandDark;
+  static const accentLight = CartTheme.brandSoft;
+  static const accentMid = Color(0xFFD4EDE8);
 
-  static const sage = Color(0xFF627058);
-  static const sageDark = Color(0xFF4E5A47);
-  static const sageLight = Color(0xFFF5F7F4);
-  static const sageMid = Color(0xFFE8EDE5);
+  static const sage = CartTheme.brand;
+  static const sageDark = CartTheme.brandDark;
+  static const sageLight = CartTheme.brandSoft;
+  static const sageMid = CartTheme.brandWash;
 
   static const roseWash = Color(0xFFFFF5F8);
-  static const sand = Color(0xFFFAFAFA);
-  static const lavender = Color(0xFFF8F7FC);
+  static const sand = pearl;
+  static const lavender = CartTheme.brandWash;
   static const blush = Color(0xFFFFF8FA);
 
-  static const ink = Color(0xFF1A1A1A);
-  static const inkSoft = Color(0xFF6B7280);
-  static const inkMuted = Color(0xFF9CA3AF);
-  static const divider = Color(0xFFF0F0F0);
+  static const ink = CartTheme.charcoal;
+  static const inkSoft = Color(0xFF6B7A76);
+  static const inkMuted = Color(0xFF9AABA6);
+  static const divider = Color(0xFFE3EDEA);
 
   static const categoryTileColors = [
     roseWash,
@@ -153,20 +153,34 @@ abstract final class HomeTheme {
         ),
       ];
 
-  static List<BoxShadow> get softShadow => [
+  static List<BoxShadow> get galleryShadow => [
         BoxShadow(
-          color: ink.withValues(alpha: 0.05),
-          blurRadius: 16,
-          offset: const Offset(0, 4),
-          spreadRadius: -4,
+          color: CartTheme.brand.withValues(alpha: 0.1),
+          blurRadius: 14,
+          offset: const Offset(0, 5),
+          spreadRadius: -2,
+        ),
+        BoxShadow(
+          color: ink.withValues(alpha: 0.04),
+          blurRadius: 6,
+          offset: const Offset(0, 2),
         ),
       ];
+
+  static List<BoxShadow> get softShadow => galleryShadow;
 
   static List<BoxShadow> get softLift => softShadow;
   static List<BoxShadow> get cardShadow => whisperLift;
   static List<BoxShadow> get stageShadow => softShadow;
 
-  static BoxDecoration canvasDecoration() => const BoxDecoration(color: canvas);
+  static BoxDecoration canvasDecoration() => const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [canvasWarm, canvas, canvas],
+          stops: [0, 0.25, 1],
+        ),
+      );
 
   static BoxDecoration heroHeaderDecoration() => const BoxDecoration(color: canvas);
 
@@ -232,7 +246,10 @@ class HomeCanvasBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(color: HomeTheme.canvas, child: child);
+    return DecoratedBox(
+      decoration: HomeTheme.canvasDecoration(),
+      child: child,
+    );
   }
 }
 

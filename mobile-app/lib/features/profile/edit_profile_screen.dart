@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/widgets/auth_gate.dart';
 import '../../core/utils/phone_util.dart';
+import '../../core/widgets/auth_gate.dart';
 import '../../data/services/api_service.dart';
 import '../auth/auth_provider.dart';
+import '../auth/widgets/auth_shell.dart';
+import '../cart/widgets/cart_theme.dart';
+import 'widgets/profile_ui.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -46,14 +48,12 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           );
       await ref.read(authProvider.notifier).refreshUser();
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text('تم حفظ التغييرات')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ التغييرات')));
         context.pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: AppColors.sale));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -72,55 +72,85 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Widget _buildForm(BuildContext context, AppStrings s) {
     final user = ref.watch(authProvider).user;
-    return Scaffold(
-      appBar: AppBar(title: Text(s.editProfile)),
+    return ProfileScaffold(
+      title: s.editProfile,
+      floatingBottom: ProfilePrimaryButton(
+        label: s.save,
+        onPressed: _loading ? null : _save,
+        loading: _loading,
+      ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 16, ProfileUi.hPad, 24),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextFormField(
-                controller: _name,
-                decoration: const InputDecoration(
-                    labelText: 'الاسم الكامل', prefixIcon: Icon(Icons.person_outline)),
-                validator: (v) => (v == null || v.trim().length < 2) ? 'أدخل اسمك' : null,
+              Center(
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 36,
+                      backgroundColor: CartTheme.brandSoft,
+                      child: Text(
+                        (user?.name.isNotEmpty == true) ? user!.name[0] : '؟',
+                        style: const TextStyle(
+                          color: CartTheme.brand,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      user?.name ?? '',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: CartTheme.charcoal),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              ProfileSurfaceCard(
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    authLabeledField(
+                      label: s.fullName,
+                      field: TextFormField(
+                        controller: _name,
+                        decoration: authFieldDecoration(label: s.fullName),
+                        validator: (v) => (v == null || v.trim().length < 2) ? s.enterYourName : null,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    if (user?.email != null && user!.email!.isNotEmpty) ...[
+                      ProfileFieldLabel(s.isAr ? 'البريد الإلكتروني' : 'Email', optional: true),
+                      TextFormField(
+                        initialValue: user.email,
+                        enabled: false,
+                        decoration: profileFieldDecoration(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    authLabeledField(
+                      label: s.phoneNumber,
+                      field: TextFormField(
+                        controller: _phone,
+                        keyboardType: TextInputType.phone,
+                        decoration: authFieldDecoration(label: s.phoneNumber, hint: '07701234567'),
+                        validator: (v) => validateIraqiPhone(v),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 14),
-              if (user?.email != null && user!.email!.isNotEmpty) ...[
-                TextFormField(
-                  initialValue: user.email,
-                  enabled: false,
-                  decoration: const InputDecoration(
-                      labelText: 'البريد الإلكتروني', prefixIcon: Icon(Icons.email_outlined)),
-                ),
-                const SizedBox(height: 14),
-              ],
-              TextFormField(
-                controller: _phone,
-                keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(
-                    labelText: 'رقم الهاتف',
-                    hintText: '07701234567',
-                    prefixIcon: Icon(Icons.phone_outlined)),
-                validator: (v) => validateIraqiPhone(v),
-              ),
-              const SizedBox(height: 28),
-              ElevatedButton(
-                onPressed: _loading ? null : _save,
-                child: _loading
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.4))
-                    : const Text('حفظ التغييرات'),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton(
+              ProfileOutlineButton(
+                label: s.changePassword,
                 onPressed: () => context.push('/change-password'),
-                child: Text(s.changePassword),
               ),
+              const SizedBox(height: 80),
             ],
           ),
         ),

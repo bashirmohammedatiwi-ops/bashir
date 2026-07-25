@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../../data/services/api_service.dart';
+import '../auth/widgets/auth_shell.dart';
+import '../cart/widgets/cart_theme.dart';
+import 'widgets/profile_ui.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -47,9 +49,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
       context.pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: AppColors.sale),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -62,78 +62,105 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     return AuthGate(
       title: s.changePassword,
       emptyTitle: s.loginToChangePassword,
-      child: Scaffold(
-        appBar: AppBar(title: Text(s.changePassword)),
+      child: ProfileScaffold(
+        title: s.changePassword,
+        floatingBottom: ProfilePrimaryButton(
+          label: s.save,
+          onPressed: _loading ? null : _submit,
+          loading: _loading,
+        ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 16, ProfileUi.hPad, 24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  'أدخل كلمة المرور الحالية ثم اختر كلمة مرور جديدة (6 أحرف على الأقل).',
-                  style: TextStyle(color: AppColors.textSecondary, height: 1.5),
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      color: CartTheme.brandSoft,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: CartTheme.brand.withValues(alpha: 0.12),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.lock_outline_rounded, size: 36, color: CartTheme.brand),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ProfileInfoBanner(
+                  icon: Icons.info_outline_rounded,
+                  text: s.isAr
+                      ? 'أدخلي كلمة المرور الحالية ثم اختاري كلمة مرور جديدة (6 أحرف على الأقل).'
+                      : 'Enter your current password, then choose a new one (at least 6 characters).',
                 ),
                 const SizedBox(height: 20),
-                TextFormField(
-                  controller: _current,
-                  obscureText: _obscureCurrent,
-                  decoration: InputDecoration(
-                    labelText: 'كلمة المرور الحالية',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscureCurrent ? Icons.visibility_off : Icons.visibility),
-                      onPressed: () => setState(() => _obscureCurrent = !_obscureCurrent),
-                    ),
+                ProfileSurfaceCard(
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      authLabeledField(
+                        label: s.isAr ? 'كلمة المرور الحالية' : 'Current password',
+                        field: TextFormField(
+                          controller: _current,
+                          obscureText: _obscureCurrent,
+                          decoration: authFieldDecoration(
+                            label: '',
+                            suffix: IconButton(
+                              icon: Icon(_obscureCurrent ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                              onPressed: () => setState(() => _obscureCurrent = !_obscureCurrent),
+                            ),
+                          ),
+                          validator: (v) => (v == null || v.length < 6) ? s.passwordMin6 : null,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      authLabeledField(
+                        label: s.isAr ? 'كلمة المرور الجديدة' : 'New password',
+                        field: TextFormField(
+                          controller: _next,
+                          obscureText: _obscureNext,
+                          decoration: authFieldDecoration(
+                            label: '',
+                            suffix: IconButton(
+                              icon: Icon(_obscureNext ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                              onPressed: () => setState(() => _obscureNext = !_obscureNext),
+                            ),
+                          ),
+                          validator: (v) => (v == null || v.length < 6) ? s.passwordMin6 : null,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      authLabeledField(
+                        label: s.isAr ? 'تأكيد كلمة المرور' : 'Confirm password',
+                        field: TextFormField(
+                          controller: _confirm,
+                          obscureText: _obscureConfirm,
+                          decoration: authFieldDecoration(
+                            label: '',
+                            suffix: IconButton(
+                              icon: Icon(_obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                              onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                            ),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) return s.isAr ? 'أكّدي كلمة المرور' : 'Confirm password';
+                            if (v != _next.text) return s.isAr ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match';
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
                   ),
-                  validator: (v) =>
-                      (v == null || v.length < 6) ? 'أدخل كلمة المرور الحالية' : null,
                 ),
-                const SizedBox(height: 14),
-                TextFormField(
-                  controller: _next,
-                  obscureText: _obscureNext,
-                  decoration: InputDecoration(
-                    labelText: 'كلمة المرور الجديدة',
-                    prefixIcon: const Icon(Icons.lock_reset_rounded),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscureNext ? Icons.visibility_off : Icons.visibility),
-                      onPressed: () => setState(() => _obscureNext = !_obscureNext),
-                    ),
-                  ),
-                  validator: (v) =>
-                      (v == null || v.length < 6) ? '6 أحرف على الأقل' : null,
-                ),
-                const SizedBox(height: 14),
-                TextFormField(
-                  controller: _confirm,
-                  obscureText: _obscureConfirm,
-                  decoration: InputDecoration(
-                    labelText: 'تأكيد كلمة المرور الجديدة',
-                    prefixIcon: const Icon(Icons.lock_reset_outlined),
-                    suffixIcon: IconButton(
-                      icon: Icon(_obscureConfirm ? Icons.visibility_off : Icons.visibility),
-                      onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
-                    ),
-                  ),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'أكّد كلمة المرور';
-                    if (v != _next.text) return 'كلمتا المرور غير متطابقتين';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 28),
-                ElevatedButton(
-                  onPressed: _loading ? null : _submit,
-                  child: _loading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.4),
-                        )
-                      : const Text('حفظ كلمة المرور'),
-                ),
+                const SizedBox(height: 80),
               ],
             ),
           ),

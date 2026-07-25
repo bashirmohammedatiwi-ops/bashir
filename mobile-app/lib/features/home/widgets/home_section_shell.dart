@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_section.dart';
+import '../../cart/widgets/cart_theme.dart';
 import '../home_link.dart';
 import 'home_theme.dart';
 
@@ -143,11 +144,11 @@ class HomeSectionHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 3,
+            width: 4,
             height: compact ? 28 : 34,
-            margin: const EdgeInsets.only(left: 10, top: 2),
+            margin: const EdgeInsetsDirectional.only(end: 12, top: 2),
             decoration: BoxDecoration(
-              color: HomeTheme.accent,
+              gradient: CartTheme.brandGradient,
               borderRadius: BorderRadius.circular(99),
             ),
           ),
