@@ -840,7 +840,7 @@ export class HomeSectionResolver {
       display: (payload.display as string) ?? "scroll",
       shape: (payload.shape as string) ?? "rounded",
       cardSize: (payload.size as string) ?? "md",
-      imageHeight: rowHeightPx ?? Number(payload.height) || 160,
+      imageHeight: rowHeightPx ?? (Number(payload.height) || 160),
       rowHeight,
       tilesPerView: this.optionalNumber(payload.tilesPerView) ?? 2.5,
       marqueeSpeed: Number(payload.marqueeSpeed) || 5,
