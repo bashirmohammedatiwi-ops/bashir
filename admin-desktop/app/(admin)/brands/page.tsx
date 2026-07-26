@@ -2,7 +2,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CloudSyncOutlined, PlusOutlined } from "@ant-design/icons";
 import {
-  Avatar,
   Button,
   Form,
   Input,
@@ -291,7 +290,7 @@ export default function BrandsPage() {
     <div className="brands-page alhayaa-page">
       <PageHeader
         title="البراندات"
-        subtitle="جدول ترتيب البراندات — منتجات التطبيق تُعرض مجمّعة حسب ترتيب البراند (انقر على الصف للتعديل)"
+        subtitle="شبكة 5 أعمدة — انقر على البطاقة للتعديل، واسحب لإعادة الترتيب"
         extra={
           <Space wrap>
             <Button icon={<CloudSyncOutlined />} loading={syncFromCatalog.isPending} onClick={() => syncFromCatalog.mutate()}>
@@ -382,32 +381,9 @@ export default function BrandsPage() {
         </div>
       </section>
 
-      {localBrands.length > 0 ? (
-        <section className="bp-preview-card">
-          <h3 className="bp-preview-title">معاينة ترتيب التطبيق</h3>
-          <div className="bp-preview-strip">
-            {localBrands.map((brand) => {
-              const src = mediaThumb(brand.logo);
-              return (
-                <div key={brand.id} className="bp-preview-chip">
-                  {src ? (
-                    <Avatar shape="circle" size={50} src={src} />
-                  ) : (
-                    <Avatar shape="circle" size={50} style={{ background: brand.bgColorHex || "#ece8f0", color: "#4a2466" }}>
-                      {brand.initial || brand.name.charAt(0)}
-                    </Avatar>
-                  )}
-                  <span>{brand.name}</span>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      ) : null}
-
       <section className="bp-list-card">
         <div className="bp-list-card-head">
-          <h3>جدول البراندات ({localBrands.length})</h3>
+          <h3>شبكة البراندات — 5 أعمدة ({localBrands.length})</h3>
           {reorder.isPending ? <span className="bp-filter-label">جاري الحفظ...</span> : null}
         </div>
         <BrandsSortableList
