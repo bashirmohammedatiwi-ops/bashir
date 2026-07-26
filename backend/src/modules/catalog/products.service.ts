@@ -145,7 +145,7 @@ export class ProductsService {
         images: { orderBy: { position: "asc" }, include: { media: true } },
         shades: { orderBy: { position: "asc" }, include: { image: true } },
         variants: { orderBy: { position: "asc" } },
-        reviews: { take: 10, orderBy: { createdAt: "desc" } },
+        reviews: { where: { approved: true }, take: 10, orderBy: { createdAt: "desc" } },
         skinConcerns: { include: { concern: true } },
       },
     });

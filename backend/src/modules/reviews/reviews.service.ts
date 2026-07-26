@@ -44,9 +44,10 @@ export class ReviewsService {
         userName: dto.userName ?? user?.name ?? "عميل",
         rating: dto.rating,
         comment: dto.comment,
-        approved: false,
+        approved: true,
       },
     });
+    await this.recalcProductRating(dto.productId);
     return review;
   }
 
