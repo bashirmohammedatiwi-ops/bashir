@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../navigation/app_navigation.dart';
 import '../navigation/notification_navigation.dart';
 import '../utils/media_url.dart';
+import 'firebase_init.dart';
 import 'foreground_notification_banner.dart';
 import '../../data/services/api_service.dart';
 import '../../features/auth/auth_provider.dart';
@@ -16,7 +16,7 @@ import '../../features/profile/profile_providers.dart';
 /// معالجة الإشعارات في الخلفية (مطلوب لـ FCM).
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(options: _firebaseOptionsFromEnv());
+  await initFirebaseApp();
 }
 
 class PushService {
@@ -25,14 +25,19 @@ class PushService {
   static String? _token;
   static bool _initialized = false;
 
-  static bool get isConfigured => _firebaseOptionsFromEnv().apiKey.isNotEmpty;
-
   static Future<void> init(WidgetRef ref) async {
-    if (_initialized || !isConfigured) return;
+    if (_initialized) return;
+
+    try {
+      await initFirebaseApp();
+    } catch (e) {
+      debugPrint('[PushService] Firebase not configured: $e');
+      return;
+    }
+
     _initialized = true;
 
     try {
-      await Firebase.initializeApp(options: _firebaseOptionsFromEnv());
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
       final messaging = FirebaseMessaging.instance;
@@ -58,7 +63,6 @@ class PushService {
 
       ref.listen(authProvider, (prev, next) async {
         if (_token == null) return;
-        // عند تسجيل الدخول نربط التوكن بالحساب — لا نلغي التسجيل عند الخروج
         if (next.isAuthenticated && prev?.isAuthenticated != true) {
           await _registerToken(ref, _token!);
         }
@@ -129,14 +133,4 @@ class PushService {
     ForegroundNotificationBanner.dismiss();
     openPushPayload(ctx, data);
   }
-}
-
-FirebaseOptions _firebaseOptionsFromEnv() {
-  return FirebaseOptions(
-    apiKey: const String.fromEnvironment('FIREBASE_API_KEY', defaultValue: ''),
-    appId: const String.fromEnvironment('FIREBASE_APP_ID', defaultValue: ''),
-    messagingSenderId: const String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID', defaultValue: ''),
-    projectId: const String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: ''),
-    iosBundleId: const String.fromEnvironment('FIREBASE_IOS_BUNDLE_ID', defaultValue: 'com.alhayaa.alhayaa'),
-  );
 }
