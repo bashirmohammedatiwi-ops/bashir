@@ -35,6 +35,32 @@ class LegalDocumentScreen extends ConsumerWidget {
             s.isAr ? 'آخر تحديث: يوليو 2026' : 'Last updated: July 2026',
             style: TextStyle(color: CartTheme.charcoal.withValues(alpha: 0.5), fontSize: 12),
           ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: CartTheme.brand.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: CartTheme.brand.withValues(alpha: 0.15)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Icons.info_outline_rounded, size: 18, color: CartTheme.brand.withValues(alpha: 0.85)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    s.legalInAppNotice,
+                    style: TextStyle(
+                      fontSize: 13,
+                      height: 1.5,
+                      color: CartTheme.charcoal.withValues(alpha: 0.78),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           const SizedBox(height: 20),
           Text(
             body,
@@ -48,12 +74,12 @@ class LegalDocumentScreen extends ConsumerWidget {
           TextButton.icon(
             onPressed: () {
               final url = type == LegalDocumentType.privacy
-                  ? AppConfig.privacyPolicyUrl
-                  : AppConfig.termsOfServiceUrl;
+                  ? AppConfig.privacyPolicyUrlFor(s.lang)
+                  : AppConfig.termsOfServiceUrlFor(s.lang);
               openExternalUrl(url);
             },
             icon: const Icon(Icons.open_in_new_rounded, size: 18),
-            label: Text(s.isAr ? 'عرض النسخة على الموقع' : 'View on website'),
+            label: Text(s.viewOnWebsite),
           ),
         ],
       ),

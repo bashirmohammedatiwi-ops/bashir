@@ -136,8 +136,15 @@ class AppConfig {
       '$mediaBaseUrl/placeholder/product.webp';
 
   /// روابط قانونية — للمتاجر وداخل التطبيق.
-  static String get privacyPolicyUrl => webUrl('/privacy');
-  static String get termsOfServiceUrl => webUrl('/terms');
+  static String privacyPolicyUrlFor(String lang) =>
+      webUrl(lang == 'en' ? '/en/privacy' : '/privacy');
+
+  static String termsOfServiceUrlFor(String lang) =>
+      webUrl(lang == 'en' ? '/en/terms' : '/terms');
+
+  static String get privacyPolicyUrl => privacyPolicyUrlFor('ar');
+
+  static String get termsOfServiceUrl => termsOfServiceUrlFor('ar');
   static String get supportEmail => 'support@$appDomain';
 
   /// مهلة الاتصال الأولى — أقصر لعدم انتظار الشبكة البطيئة.

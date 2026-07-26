@@ -47,6 +47,8 @@ export function SiteFooter() {
           <ul>
             <li><Link href="/privacy/">سياسة الخصوصية</Link></li>
             <li><Link href="/terms/">شروط الاستخدام</Link></li>
+            <li><Link href="/en/privacy/">Privacy Policy (EN)</Link></li>
+            <li><Link href="/en/terms/">Terms of Service (EN)</Link></li>
           </ul>
         </div>
         <div>

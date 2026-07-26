@@ -511,6 +511,10 @@ class AppStrings {
   String get privacyPolicy => isAr ? 'سياسة الخصوصية' : 'Privacy Policy';
   String get termsOfService => isAr ? 'شروط الاستخدام' : 'Terms of Service';
   String get legalSection => isAr ? 'القانونية' : 'Legal';
+  String get legalInAppNotice => isAr
+      ? 'النص أدناه معروض داخل التطبيق حسب لغتك. يمكنك أيضاً فتح النسخة الرسمية على موقعنا بنفس اللغة.'
+      : 'The text below is shown in the app in your language. You can also open the official website version in the same language.';
+  String get viewOnWebsite => isAr ? 'فتح على الموقع (نفس اللغة)' : 'Open on website (same language)';
   String get agreeToTermsLabel => isAr
       ? 'أوافق على شروط الاستخدام وسياسة الخصوصية'
       : 'I agree to the Terms of Service and Privacy Policy';

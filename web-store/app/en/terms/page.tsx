@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { LegalDocument } from "@/components/legal/LegalDocument";
 import { legalPageCopy, termsSections } from "@/lib/legal";
 
-const copy = legalPageCopy.terms.ar;
+const copy = legalPageCopy.terms.en;
 
 export const metadata: Metadata = {
   title: copy.title,
@@ -16,6 +16,6 @@ export const metadata: Metadata = {
   },
 };
 
-export default function TermsPage() {
-  return <LegalDocument lang="ar" variant="terms" sections={termsSections.ar} />;
+export default function TermsPageEn() {
+  return <LegalDocument lang="en" variant="terms" sections={termsSections.en} />;
 }

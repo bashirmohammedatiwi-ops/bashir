@@ -477,6 +477,12 @@ button { font: inherit; }
   font-weight: 900; color: var(--charcoal);
 }
 .legal-hero-meta { margin: 0; color: var(--muted); font-size: 0.92rem; font-weight: 600; }
+.legal-lang-switch { margin: 10px 0 0; font-size: 0.9rem; font-weight: 700; }
+.legal-lang-switch a {
+  color: var(--brand-dark); text-decoration: underline; text-underline-offset: 3px;
+}
+.legal-doc[dir="ltr"] .legal-bullets li { padding: 8px 0 8px 18px; }
+.legal-doc[dir="ltr"] .legal-bullets li::before { right: auto; left: 0; }
 .legal-body { display: grid; gap: 24px; }
 .legal-grid {
   display: grid; gap: 16px;

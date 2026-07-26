@@ -22,7 +22,11 @@
           { "/": "/cart" },
           { "/": "/about" },
           { "/": "/privacy" },
-          { "/": "/terms" }
+          { "/": "/en/privacy" },
+          { "/": "/en/privacy/*" },
+          { "/": "/terms" },
+          { "/": "/en/terms" },
+          { "/": "/en/terms/*" }
         ]
       }
     ]
