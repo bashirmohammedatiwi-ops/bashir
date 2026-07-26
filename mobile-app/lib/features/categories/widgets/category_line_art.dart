@@ -126,7 +126,7 @@ class _ArtBody extends StatelessWidget {
           width: size,
           height: size,
           fit: BoxFit.contain,
-          fadeInDuration: CategoriesTheme.imageFadeIn,
+          fadeInDuration: Duration.zero,
           fadeOutDuration: Duration.zero,
           memCacheWidth: pixelW,
           filterQuality: FilterQuality.medium,

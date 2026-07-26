@@ -33,7 +33,11 @@ async function bootstrap() {
     { bufferLogs: true },
   );
 
-  await app.register(helmet, { contentSecurityPolicy: false });
+  await app.register(helmet, {
+    contentSecurityPolicy: false,
+    // HSTS only after HTTPS is live — otherwise browsers force https:// and break HTTP-only deploys
+    hsts: process.env.ENABLE_HSTS === "1",
+  });
   await app.register(multipart, {
     limits: { fileSize: 20 * 1024 * 1024 },
   });
@@ -56,11 +60,26 @@ async function bootstrap() {
   const allowAllOrigins = corsOrigins.includes("*");
   const isDev = process.env.NODE_ENV !== "production";
 
+  const expandCorsOrigins = (origins: string[]): string[] => {
+    const expanded = new Set(origins);
+    for (const origin of origins) {
+      try {
+        const url = new URL(origin);
+        if (url.protocol === "https:") expanded.add(`http://${url.host}`);
+        if (url.protocol === "http:") expanded.add(`https://${url.host}`);
+      } catch {
+        /* ignore invalid origin */
+      }
+    }
+    return [...expanded];
+  };
+  const allowedOrigins = allowAllOrigins ? ["*"] : expandCorsOrigins(corsOrigins);
+
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       if (allowAllOrigins) return callback(null, true);
-      if (corsOrigins.includes(origin)) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
       if (isDev && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
         return callback(null, true);
       }

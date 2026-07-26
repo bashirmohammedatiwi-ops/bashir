@@ -5,7 +5,7 @@ import * as os from "os";
 
 const isDev = !app.isPackaged;
 const APP_SCHEME = "app";
-const VPS_ORIGIN = "http://187.127.88.146";
+const VPS_ORIGIN = "https://deemaalhayat.com";
 
 type CachedAsset = {
   body: Buffer;

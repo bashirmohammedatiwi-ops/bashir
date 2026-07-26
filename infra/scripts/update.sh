@@ -107,6 +107,27 @@ ensure_api_ready() {
   return 1
 }
 
+maybe_enable_https() {
+  local domain="${DOMAIN:-}"
+  [[ -z "$domain" ]] && return 0
+  [[ "$domain" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && return 0
+  [[ -z "${CERTBOT_EMAIL:-}" ]] && return 0
+
+  local cert_path="/etc/letsencrypt/live/${domain}/fullchain.pem"
+  if $COMPOSE exec -T nginx test -f "$cert_path" 2>/dev/null; then
+    return 0
+  fi
+
+  echo "==> Requesting Let's Encrypt certificate for ${domain}..."
+  $COMPOSE run --rm --entrypoint certbot certbot certonly \
+    --webroot -w /var/www/certbot \
+    -d "$domain" \
+    --email "$CERTBOT_EMAIL" \
+    --agree-tos \
+    --no-eff-email \
+    --non-interactive || echo "WARN: certbot failed — staying on HTTP until DNS/ports are fixed"
+}
+
 ensure_catalog_hub_ready() {
   local i
   for i in $(seq 1 20); do
@@ -191,6 +212,7 @@ if ! ensure_api_ready; then
 fi
 
 echo "==> Build admin web panel (atomic)..."
+maybe_enable_https
 ./scripts/build-admin-web.sh
 chmod -R a+rX admin-static
 

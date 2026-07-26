@@ -20,24 +20,14 @@ if [[ -f "$INFRA_ROOT/.env" ]]; then
   set +a
 fi
 
-API_BASE="${NEXT_PUBLIC_API_BASE:-}"
-MEDIA_BASE="${NEXT_PUBLIC_MEDIA_BASE:-}"
-
-if [[ -z "$API_BASE" && -n "${DOMAIN:-}" ]]; then
-  if [[ -f "$INFRA_ROOT/nginx/default.conf" ]] && grep -q "ssl_certificate" "$INFRA_ROOT/nginx/default.conf"; then
-    API_BASE="https://${DOMAIN}/api/v1"
-    MEDIA_BASE="https://${DOMAIN}/media"
-  else
-    API_BASE="http://${DOMAIN}/api/v1"
-    MEDIA_BASE="http://${DOMAIN}/media"
-  fi
-fi
-
-API_BASE="${API_BASE:-http://localhost:8080/api/v1}"
-MEDIA_BASE="${MEDIA_BASE:-http://localhost:8080/media}"
+API_BASE="${NEXT_PUBLIC_API_BASE:-/api/v1}"
+MEDIA_BASE="${NEXT_PUBLIC_MEDIA_BASE:-/media}"
 VPS_ORIGIN="${API_BASE%/api/v1}"
 VPS_ORIGIN="${VPS_ORIGIN%/api}"
-CATALOG_HUB_URL="${NEXT_PUBLIC_CATALOG_HUB_URL:-${VPS_ORIGIN}/catalog-hub}"
+if [[ "$API_BASE" == /* ]]; then
+  VPS_ORIGIN="(same host as admin)"
+fi
+CATALOG_HUB_URL="${NEXT_PUBLIC_CATALOG_HUB_URL:-/catalog-hub}"
 
 GIT_SHA="$(git -C "$ADMIN_ROOT/.." rev-parse --short HEAD 2>/dev/null || echo "unknown")"
 BUILD_TIME="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"

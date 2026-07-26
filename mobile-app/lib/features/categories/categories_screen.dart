@@ -28,20 +28,13 @@ class CategoriesScreen extends ConsumerStatefulWidget {
 }
 
 class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
-  bool _didForceRefresh = false;
   bool _navForward = true;
   final _path = <Category>[];
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (_didForceRefresh || !mounted) return;
-      _didForceRefresh = true;
-      try {
-        await refreshCategories(ref);
-      } catch (_) {}
-    });
+    // يعتمد على warmupAppData + كاش API — بدون إعادة جلب إجباري عند كل فتح.
   }
 
   Future<void> _onRefresh() async {
