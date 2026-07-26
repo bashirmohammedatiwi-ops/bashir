@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/providers/app_info_provider.dart';
 import '../../core/utils/phone_util.dart';
 import '../../core/utils/responsive.dart';
 import '../../core/utils/support_links.dart';
@@ -12,6 +13,7 @@ import '../auth/auth_provider.dart';
 import '../cart/widgets/cart_theme.dart';
 import '../catalog/catalog_providers.dart';
 import 'profile_providers.dart';
+import '../settings/legal_document_screen.dart';
 import 'widgets/account_theme.dart';
 import 'widgets/profile_ui.dart';
 
@@ -22,6 +24,7 @@ class AccountScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
     final s = ref.watch(stringsProvider);
+    final version = ref.watch(appVersionLabelProvider);
     final top = MediaQuery.paddingOf(context).top;
     final bottomPad = Responsive.shellBottomReserve(context) + 16;
 
@@ -106,7 +109,25 @@ class AccountScreen extends ConsumerWidget {
                       icon: Icons.info_outline_rounded,
                       title: s.aboutApp,
                       iconColor: AccountTheme.settings,
-                      onTap: () => _about(context, s),
+                      onTap: () => _about(context, ref, s),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AccountTheme.sectionGap),
+                ProfileSectionTitle(s.legalSection, icon: Icons.gavel_outlined),
+                ProfileMenuCard(
+                  children: [
+                    ProfileMenuTile(
+                      icon: Icons.privacy_tip_outlined,
+                      title: s.privacyPolicy,
+                      iconColor: AccountTheme.settings,
+                      onTap: () => openLegalDocument(context, LegalDocumentType.privacy),
+                    ),
+                    ProfileMenuTile(
+                      icon: Icons.description_outlined,
+                      title: s.termsOfService,
+                      iconColor: AccountTheme.settings,
+                      onTap: () => openLegalDocument(context, LegalDocumentType.terms),
                     ),
                   ],
                 ),
@@ -129,7 +150,7 @@ class AccountScreen extends ConsumerWidget {
                 const SizedBox(height: 4),
                 Center(
                   child: Text(
-                    '${AppConfig.storeName} • ${s.version} 1.0.0',
+                    '${AppConfig.displayStoreName(s.lang)} • ${s.version} $version',
                     style: ProfileUi.captionStyle(),
                   ),
                 ),
@@ -138,12 +159,35 @@ class AccountScreen extends ConsumerWidget {
     );
   }
 
-  void _about(BuildContext context, AppStrings s) {
+  void _about(BuildContext context, WidgetRef ref, AppStrings s) {
+    final version = ref.read(appVersionLabelProvider);
     showAboutDialog(
       context: context,
-      applicationName: AppConfig.storeName,
-      applicationVersion: '1.0.0',
-      children: [Text(s.aboutDescription)],
+      applicationName: AppConfig.displayStoreName(s.lang),
+      applicationVersion: version,
+      children: [
+        Text(s.aboutDescription),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          children: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                openLegalDocument(context, LegalDocumentType.privacy);
+              },
+              child: Text(s.privacyPolicy),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                openLegalDocument(context, LegalDocumentType.terms);
+              },
+              child: Text(s.termsOfService),
+            ),
+          ],
+        ),
+      ],
     );
   }
 

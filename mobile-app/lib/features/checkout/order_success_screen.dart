@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -14,6 +15,7 @@ class OrderSuccessScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     final order = ref.watch(orderDetailProvider(orderId));
     return Scaffold(
       backgroundColor: AppColors.scaffold,
@@ -51,7 +53,7 @@ class OrderSuccessScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.xxl),
               Text(
-                'تم استلام طلبك بنجاح!',
+                s.orderPlacedSuccess,
                 textAlign: TextAlign.center,
                 style: AppTypography.sectionTitle.copyWith(fontSize: 24),
               ),
@@ -64,7 +66,7 @@ class OrderSuccessScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
                   child: Text(
-                    'رقم الطلب: ${o.orderNumber}',
+                    s.orderNumberLabel(o.orderNumber),
                     style: AppTypography.body.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -72,7 +74,7 @@ class OrderSuccessScreen extends ConsumerWidget {
               ),
               const SizedBox(height: AppSpacing.lg),
               Text(
-                'سيتواصل معك فريقنا لتأكيد الطلب.\nالدفع عند الاستلام نقداً.',
+                s.orderPlacedCodNote,
                 textAlign: TextAlign.center,
                 style: AppTypography.caption.copyWith(fontSize: 14, color: AppColors.textSecondary, height: 1.6),
               ),
@@ -85,7 +87,7 @@ class OrderSuccessScreen extends ConsumerWidget {
                     HapticFeedback.selectionClick();
                     context.pushReplacement('/orders/$orderId');
                   },
-                  child: const Text('تتبّع الطلب'),
+                  child: Text(s.trackOrder),
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -97,7 +99,7 @@ class OrderSuccessScreen extends ConsumerWidget {
                     HapticFeedback.selectionClick();
                     context.go('/');
                   },
-                  child: const Text('متابعة التسوّق'),
+                  child: Text(s.continueShopping),
                 ),
               ),
               const SizedBox(height: AppSpacing.md),

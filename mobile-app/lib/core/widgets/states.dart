@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../l10n/app_strings.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
@@ -55,20 +57,20 @@ class EmptyState extends StatelessWidget {
   }
 }
 
-class ErrorView extends StatelessWidget {
+class ErrorView extends ConsumerWidget {
   final String message;
   final VoidCallback? onRetry;
   const ErrorView({super.key, required this.message, this.onRetry});
 
-  /// يمرّر الخطأ عبر [friendlyError] تلقائياً.
   factory ErrorView.from(Object? error, {VoidCallback? onRetry}) {
     return ErrorView(message: friendlyError(error), onRetry: onRetry);
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     final text = message.contains('Exception') || message.contains('Error:')
-        ? friendlyError(message)
+        ? friendlyError(message, lang: s.lang)
         : message;
 
     return Center(
@@ -79,7 +81,7 @@ class ErrorView extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.scaffold,
                 shape: BoxShape.circle,
               ),
@@ -87,7 +89,7 @@ class ErrorView extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
-              'تعذّر التحميل',
+              s.loadFailed,
               style: AppTypography.sectionTitle.copyWith(fontSize: 16),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -97,7 +99,7 @@ class ErrorView extends StatelessWidget {
               OutlinedButton.icon(
                 onPressed: onRetry,
                 icon: const Icon(Icons.refresh_rounded, size: 20),
-                label: const Text('إعادة المحاولة'),
+                label: Text(s.retryAction),
                 style: OutlinedButton.styleFrom(minimumSize: const Size(180, 48)),
               ),
             ],

@@ -116,6 +116,11 @@ class AppConfig {
   static String get productPlaceholderUrl =>
       '$mediaBaseUrl/placeholder/product.webp';
 
+  /// روابط قانونية — للمتاجر وداخل التطبيق.
+  static String get privacyPolicyUrl => webUrl('/privacy');
+  static String get termsOfServiceUrl => webUrl('/terms');
+  static String get supportEmail => 'support@$appDomain';
+
   /// مهلة الاتصال الأولى — أقصر لعدم انتظار الشبكة البطيئة.
   static const Duration connectTimeout = Duration(seconds: 12);
   static const Duration receiveTimeout = Duration(seconds: 25);

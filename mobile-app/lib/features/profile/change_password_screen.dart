@@ -44,7 +44,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
           );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم تغيير كلمة المرور بنجاح')),
+        SnackBar(content: Text(ref.s.passwordChangedSuccess)),
       );
       context.pop();
     } catch (e) {
@@ -96,9 +96,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 const SizedBox(height: 16),
                 ProfileInfoBanner(
                   icon: Icons.info_outline_rounded,
-                  text: s.isAr
-                      ? 'أدخلي كلمة المرور الحالية ثم اختاري كلمة مرور جديدة (6 أحرف على الأقل).'
-                      : 'Enter your current password, then choose a new one (at least 6 characters).',
+                  text: s.changePasswordInstructions,
                 ),
                 const SizedBox(height: 20),
                 ProfileSurfaceCard(
@@ -107,7 +105,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       authLabeledField(
-                        label: s.isAr ? 'كلمة المرور الحالية' : 'Current password',
+                        label: s.currentPassword,
                         field: TextFormField(
                           controller: _current,
                           obscureText: _obscureCurrent,
@@ -123,7 +121,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       ),
                       const SizedBox(height: 16),
                       authLabeledField(
-                        label: s.isAr ? 'كلمة المرور الجديدة' : 'New password',
+                        label: s.newPassword,
                         field: TextFormField(
                           controller: _next,
                           obscureText: _obscureNext,
@@ -139,7 +137,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       ),
                       const SizedBox(height: 16),
                       authLabeledField(
-                        label: s.isAr ? 'تأكيد كلمة المرور' : 'Confirm password',
+                        label: s.confirmPassword,
                         field: TextFormField(
                           controller: _confirm,
                           obscureText: _obscureConfirm,
@@ -151,8 +149,8 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                             ),
                           ),
                           validator: (v) {
-                            if (v == null || v.isEmpty) return s.isAr ? 'أكّدي كلمة المرور' : 'Confirm password';
-                            if (v != _next.text) return s.isAr ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match';
+                            if (v == null || v.isEmpty) return s.confirmPasswordRequired;
+                            if (v != _next.text) return s.passwordsDoNotMatch;
                             return null;
                           },
                         ),

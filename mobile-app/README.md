@@ -1,17 +1,65 @@
-# alhayaa
+# ديما الحياة — تطبيق Flutter
 
-A new Flutter project.
+متجر مستحضرات التجميل والعناية. يتصل بـ `https://deemaalhayat.com/api/v1`.
 
-## Getting Started
+## المتطلبات
 
-This project is a starting point for a Flutter application.
+- Flutter SDK 3.9+
+- Android Studio / Xcode (للنشر على المتاجر)
 
-A few resources to get you started if this is your first Flutter project:
+## التشغيل المحلي
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+```bash
+cd mobile-app
+flutter pub get
+flutter run
+```
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+للاتصال بخادم محلي:
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1
+```
+
+## بناء الإصدار للمتاجر
+
+### Android (Google Play)
+
+1. أنشئ keystore:
+   ```bash
+   keytool -genkey -v -keystore android/upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+   ```
+2. انسخ `android/key.properties.example` إلى `android/key.properties` واملأ القيم.
+3. ابنِ:
+   ```bash
+   flutter build appbundle --release
+   ```
+4. الملف: `build/app/outputs/bundle/release/app-release.aab`
+
+### iOS (App Store)
+
+1. افتح `ios/Runner.xcworkspace` في Xcode.
+2. اضبط Team و Signing.
+3. `flutter build ipa --release`
+
+## معلومات المتجر
+
+| الحقل | القيمة |
+|-------|--------|
+| اسم التطبيق | ديما الحياة |
+| Bundle ID | `com.alhayaa.alhayaa` |
+| سياسة الخصوصية | https://deemaalhayat.com/privacy |
+| شروط الاستخدام | https://deemaalhayat.com/terms |
+| الدفع | الدفع عند الاستلام (COD) |
+| حذف الحساب | حسابي → حذف الحساب |
+| اللغات | العربية، الإنجليزية |
+
+## Firebase (اختياري — للإشعارات)
+
+أضف `google-services.json` (Android) و `GoogleService-Info.plist` (iOS) ثم عيّن متغيرات البيئة عند البناء (راجع `lib/core/push/push_service.dart`).
+
+بدون Firebase يعمل التطبيق كاملاً باستثناء الإشعارات الفورية.
+
+## الإصدار
+
+يُحدَّد في `pubspec.yaml` (`version: 1.0.0+1`). يظهر تلقائياً في شاشة «حسابي».

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/navigation/notification_navigation.dart';
 import '../../core/utils/friendly_error.dart';
+import '../../core/widgets/states.dart';
 import '../../data/models/notification.dart';
 import '../../data/services/api_service.dart';
 import '../auth/auth_provider.dart';
@@ -36,7 +37,7 @@ class NotificationsScreen extends ConsumerWidget {
       title: s.notifications,
       actions: [
         IconButton(
-          tooltip: s.isAr ? 'تعليم الكل كمقروء' : 'Mark all read',
+          tooltip: s.markAllRead,
           onPressed: () async {
             await ref.read(apiServiceProvider).markAllNotificationsRead();
             ref.invalidate(notificationsProvider);
@@ -52,10 +53,10 @@ class NotificationsScreen extends ConsumerWidget {
         ),
         data: (list) {
           if (list.isEmpty) {
-            return const ProfileEmptyState(
+            return ProfileEmptyState(
               icon: Icons.notifications_none_rounded,
-              title: 'لا توجد إشعارات',
-              subtitle: 'ستصلك الإشعارات هنا',
+              title: s.noNotifications,
+              subtitle: s.notificationsEmptySubtitle,
             );
           }
           return RefreshIndicator(
@@ -159,23 +160,6 @@ class _NotificationTile extends ConsumerWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-class ErrorView extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-
-  const ErrorView({super.key, required this.message, required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return ProfileEmptyState(
-      icon: Icons.error_outline_rounded,
-      title: 'حدث خطأ',
-      subtitle: message,
-      action: ProfilePrimaryButton(label: 'إعادة المحاولة', onPressed: onRetry),
     );
   }
 }

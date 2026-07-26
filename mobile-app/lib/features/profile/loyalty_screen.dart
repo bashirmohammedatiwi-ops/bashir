@@ -48,20 +48,22 @@ class _LoyaltyBody extends ConsumerWidget {
             if (summary.pointsToNext > 0)
               ProfileInfoBanner(
                 icon: Icons.trending_up_rounded,
-                text: '${summary.pointsToNext} نقطة للوصول لمستوى ${summary.nextTier ?? ''}',
+                text: s.pointsToNextTier(summary.pointsToNext, summary.nextTier ?? ''),
               ),
             const SizedBox(height: 14),
             ProfileInfoBanner(
               icon: Icons.redeem_outlined,
-              text: 'كل 100 نقطة = ${formatPrice(1000)} خصم عند الدفع',
+              text: s.isAr
+                  ? 'كل 100 نقطة = ${formatPrice(1000)} خصم عند الدفع'
+                  : 'Every 100 points = ${formatPrice(1000)} discount at checkout',
             ),
             const SizedBox(height: 24),
-            ProfileSectionTitle('سجل النقاط', icon: Icons.history_rounded),
+            ProfileSectionTitle(s.pointsHistory, icon: Icons.history_rounded),
             if (summary.history.isEmpty)
-              const ProfileEmptyState(
+              ProfileEmptyState(
                 icon: Icons.history_rounded,
-                title: 'لا يوجد سجل بعد',
-                subtitle: 'ستظهر معاملات النقاط هنا',
+                title: s.noHistoryYet,
+                subtitle: s.pointsWillAppearHere,
               )
             else
               for (final h in summary.history) _HistoryTile(item: h),

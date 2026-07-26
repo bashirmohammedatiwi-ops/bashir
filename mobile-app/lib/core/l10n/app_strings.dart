@@ -482,6 +482,53 @@ class AppStrings {
       ? 'سيتواصل معك فريقنا لتأكيد الطلب.\nالدفع عند الاستلام نقداً.'
       : 'Our team will contact you to confirm.\nCash on delivery.';
   String get trackOrder => isAr ? 'تتبّع الطلب' : 'Track order';
+  String get codPaymentSubtitle =>
+      isAr ? 'ادفع نقداً عند استلام الطلب' : 'Pay in cash when you receive your order';
+  String couponAppliedShort(String code) =>
+      isAr ? 'تم تطبيق $code' : 'Applied $code';
+
+  // ─── Errors & legal (store review) ────────────────────────────────────────
+  String get loadFailed => isAr ? 'تعذّر التحميل' : 'Could not load';
+  String get retryAction => isAr ? 'إعادة المحاولة' : 'Try again';
+  String get pageNotFound => isAr ? 'الصفحة غير موجودة' : 'Page not found';
+  String get goHome => isAr ? 'الرئيسية' : 'Home';
+  String get privacyPolicy => isAr ? 'سياسة الخصوصية' : 'Privacy Policy';
+  String get termsOfService => isAr ? 'شروط الاستخدام' : 'Terms of Service';
+  String get legalSection => isAr ? 'القانونية' : 'Legal';
+  String get agreeToTermsLabel => isAr
+      ? 'أوافق على شروط الاستخدام وسياسة الخصوصية'
+      : 'I agree to the Terms of Service and Privacy Policy';
+  String get mustAcceptTerms =>
+      isAr ? 'يجب الموافقة على الشروط للمتابعة' : 'You must accept the terms to continue';
+  String get andWord => isAr ? 'و' : 'and';
+  String get noNotifications => isAr ? 'لا توجد إشعارات' : 'No notifications';
+  String get notificationsEmptySubtitle =>
+      isAr ? 'ستصلك الإشعارات هنا' : 'Notifications will appear here';
+  String get markAllRead => isAr ? 'تعليم الكل كمقروء' : 'Mark all as read';
+  String get errorOccurred => isAr ? 'حدث خطأ' : 'Something went wrong';
+  String get passwordChangedSuccess =>
+      isAr ? 'تم تغيير كلمة المرور بنجاح' : 'Password changed successfully';
+  String get changePasswordInstructions => isAr
+      ? 'أدخلي كلمة المرور الحالية ثم اختاري كلمة مرور جديدة (6 أحرف على الأقل).'
+      : 'Enter your current password, then choose a new one (at least 6 characters).';
+  String get currentPassword => isAr ? 'كلمة المرور الحالية' : 'Current password';
+  String get newPassword => isAr ? 'كلمة المرور الجديدة' : 'New password';
+  String get confirmPassword => isAr ? 'تأكيد كلمة المرور' : 'Confirm password';
+  String get confirmPasswordRequired =>
+      isAr ? 'أكّدي كلمة المرور' : 'Confirm your password';
+  String get passwordsDoNotMatch =>
+      isAr ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match';
+  String get noAddresses => isAr ? 'لا توجد عناوين' : 'No addresses';
+  String get noAddressesHint => isAr
+      ? 'أضيفي عنواناً لتسهيل عملية الشراء'
+      : 'Add an address for faster checkout';
+  String get edit => isAr ? 'تعديل' : 'Edit';
+  String get quantityLabel => isAr ? 'الكمية' : 'Quantity';
+  String get addMoreForFreeShipping => isAr ? 'أضف المزيد' : 'Add more';
+  String get profileUpdated => isAr ? 'تم تحديث البيانات' : 'Profile updated';
+  String get noAddressesSaved => isAr ? 'لا توجد عناوين محفوظة' : 'No saved addresses';
+  String get setAsDefault => isAr ? 'تعيين كافتراضي' : 'Set as default';
+  String get defaultAddress => isAr ? 'العنوان الافتراضي' : 'Default address';
 
   String tierLabel(String tier) => switch (tier) {
         'platinum' => isAr ? 'بلاتيني' : 'Platinum',

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import 'checkout_theme.dart';
 
 class CheckoutCouponCard extends StatelessWidget {
+  final AppStrings s;
   final TextEditingController controller;
   final String? error;
   final String? appliedCode;
@@ -12,6 +14,7 @@ class CheckoutCouponCard extends StatelessWidget {
 
   const CheckoutCouponCard({
     super.key,
+    required this.s,
     required this.controller,
     required this.error,
     required this.appliedCode,
@@ -27,9 +30,9 @@ class CheckoutCouponCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const CheckoutSectionHeader(
+          CheckoutSectionHeader(
             icon: Icons.local_offer_outlined,
-            title: 'كود الخصم',
+            title: s.discountCodeLabel,
           ),
           Row(
             children: [
@@ -37,7 +40,7 @@ class CheckoutCouponCard extends StatelessWidget {
                 child: TextField(
                   controller: controller,
                   decoration: CheckoutTheme.fieldDecoration(
-                    label: 'أدخل الكود',
+                    label: s.enterCode,
                     hint: 'SAVE10',
                     icon: Icons.confirmation_number_outlined,
                   ).copyWith(errorText: error),
@@ -56,12 +59,12 @@ class CheckoutCouponCard extends StatelessWidget {
                     child: InkWell(
                       onTap: onApply,
                       borderRadius: BorderRadius.circular(14),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 18),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
                         child: Center(
                           child: Text(
-                            'تطبيق',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+                            s.applyBtn,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
                           ),
                         ),
                       ),
@@ -78,7 +81,7 @@ class CheckoutCouponCard extends StatelessWidget {
                 const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 18),
                 const SizedBox(width: 6),
                 Text(
-                  'تم تطبيق $appliedCode',
+                  s.couponAppliedShort(appliedCode!),
                   style: const TextStyle(color: AppColors.success, fontWeight: FontWeight.w700, fontSize: 13),
                 ),
               ],
@@ -91,11 +94,13 @@ class CheckoutCouponCard extends StatelessWidget {
 }
 
 class CheckoutPaymentCard extends StatelessWidget {
+  final AppStrings s;
   final String paymentMethod;
   final ValueChanged<String> onChanged;
 
   const CheckoutPaymentCard({
     super.key,
+    required this.s,
     required this.paymentMethod,
     required this.onChanged,
   });
@@ -109,25 +114,25 @@ class CheckoutPaymentCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const CheckoutSectionHeader(
+          CheckoutSectionHeader(
             icon: Icons.payments_outlined,
-            title: 'طريقة الدفع',
+            title: s.paymentMethod,
           ),
           _Option(
-            title: 'الدفع عند الاستلام',
-            subtitle: 'ادفع نقداً عند استلام الطلب',
+            title: s.cashOnDelivery,
+            subtitle: s.codPaymentSubtitle,
             icon: Icons.money_rounded,
             selected: paymentMethod == 'COD',
             onTap: () => onChanged('COD'),
           ),
           const SizedBox(height: 10),
           _Option(
-            title: 'بطاقة ائتمان / مدى',
-            subtitle: 'قريباً — سيتم تفعيل الدفع الإلكتروني',
+            title: s.cardPayment,
+            subtitle: s.cardPaymentSoon,
             icon: Icons.credit_card_rounded,
             selected: false,
             enabled: false,
-            badge: 'قريباً',
+            badge: s.cardComingSoon,
             onTap: () {},
           ),
         ],
@@ -220,6 +225,7 @@ class _Option extends StatelessWidget {
 }
 
 class CheckoutLoyaltyCard extends StatelessWidget {
+  final AppStrings s;
   final int points;
   final bool useLoyalty;
   final int loyaltyDiscount;
@@ -227,6 +233,7 @@ class CheckoutLoyaltyCard extends StatelessWidget {
 
   const CheckoutLoyaltyCard({
     super.key,
+    required this.s,
     required this.points,
     required this.useLoyalty,
     required this.loyaltyDiscount,
@@ -242,11 +249,11 @@ class CheckoutLoyaltyCard extends StatelessWidget {
       child: SwitchListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 8),
         activeThumbColor: CheckoutTheme.brand,
-        title: Text('استخدم $points نقطة ولاء', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+        title: Text(s.loyaltyUseTitle(points), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
         subtitle: Text(
           useLoyalty && loyaltyDiscount > 0
-              ? 'خصم ${formatPrice(loyaltyDiscount)} (100 نقطة = ${formatPrice(1000)})'
-              : '100 نقطة = ${formatPrice(1000)}',
+              ? s.loyaltyDiscountHint(formatPrice(loyaltyDiscount), formatPrice(1000))
+              : s.loyaltyPointsRule,
           style: TextStyle(fontSize: 12, color: CheckoutTheme.charcoal.withValues(alpha: 0.55)),
         ),
         value: useLoyalty,
@@ -257,9 +264,10 @@ class CheckoutLoyaltyCard extends StatelessWidget {
 }
 
 class CheckoutNotesCard extends StatelessWidget {
+  final AppStrings s;
   final TextEditingController controller;
 
-  const CheckoutNotesCard({super.key, required this.controller});
+  const CheckoutNotesCard({super.key, required this.s, required this.controller});
 
   @override
   Widget build(BuildContext context) {
@@ -270,16 +278,16 @@ class CheckoutNotesCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const CheckoutSectionHeader(
+          CheckoutSectionHeader(
             icon: Icons.sticky_note_2_outlined,
-            title: 'ملاحظات الطلب',
-            subtitle: 'تعليمات إضافية للتوصيل (اختياري)',
+            title: s.orderNotes,
+            subtitle: s.orderNotesHint,
           ),
           TextField(
             controller: controller,
             maxLines: 2,
             decoration: CheckoutTheme.fieldDecoration(
-              label: 'ملاحظات',
+              label: s.notes,
               icon: Icons.edit_note_outlined,
             ),
           ),
@@ -290,6 +298,7 @@ class CheckoutNotesCard extends StatelessWidget {
 }
 
 class CheckoutSummaryCard extends StatelessWidget {
+  final AppStrings s;
   final int subtotal;
   final int discount;
   final int loyaltyDiscount;
@@ -299,6 +308,7 @@ class CheckoutSummaryCard extends StatelessWidget {
 
   const CheckoutSummaryCard({
     super.key,
+    required this.s,
     required this.subtotal,
     required this.discount,
     required this.loyaltyDiscount,
@@ -316,21 +326,21 @@ class CheckoutSummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const CheckoutSectionHeader(icon: Icons.receipt_long_outlined, title: 'ملخّص الطلب'),
-          _Row(label: 'المجموع الفرعي', value: formatPrice(subtotal)),
-          if (discount > 0) _Row(label: 'خصم الكوبون', value: '- ${formatPrice(discount)}', valueColor: AppColors.success),
+          CheckoutSectionHeader(icon: Icons.receipt_long_outlined, title: s.orderSummary),
+          _Row(label: s.subtotal, value: formatPrice(subtotal)),
+          if (discount > 0) _Row(label: s.couponDiscount, value: '- ${formatPrice(discount)}', valueColor: AppColors.success),
           if (loyaltyDiscount > 0)
-            _Row(label: 'نقاط الولاء', value: '- ${formatPrice(loyaltyDiscount)}', valueColor: AppColors.success),
+            _Row(label: s.useLoyaltyPoints, value: '- ${formatPrice(loyaltyDiscount)}', valueColor: AppColors.success),
           _Row(
-            label: 'الشحن',
-            value: shippingLoading ? '...' : (shipping == 0 ? 'مجاني' : formatPrice(shipping)),
+            label: s.shipping,
+            value: shippingLoading ? '...' : (shipping == 0 ? s.free : formatPrice(shipping)),
             valueColor: !shippingLoading && shipping == 0 ? AppColors.success : null,
           ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Divider(height: 1, color: CheckoutTheme.brandSoft),
           ),
-          _Row(label: 'الإجمالي', value: formatPrice(total), bold: true),
+          _Row(label: s.total, value: formatPrice(total), bold: true),
         ],
       ),
     );
@@ -380,12 +390,14 @@ class _Row extends StatelessWidget {
 }
 
 class CheckoutBottomBar extends StatelessWidget {
+  final AppStrings s;
   final int total;
   final bool placing;
   final VoidCallback onPlace;
 
   const CheckoutBottomBar({
     super.key,
+    required this.s,
     required this.total,
     required this.placing,
     required this.onPlace,
@@ -433,9 +445,9 @@ class CheckoutBottomBar extends StatelessWidget {
                       : Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text(
-                              'تأكيد الطلب',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
+                            Text(
+                              s.confirmOrder,
+                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16),
                             ),
                             const SizedBox(width: 10),
                             Container(
@@ -462,10 +474,16 @@ class CheckoutBottomBar extends StatelessWidget {
 }
 
 class CheckoutShippingBanner extends StatelessWidget {
+  final AppStrings s;
   final String? error;
   final VoidCallback onRetry;
 
-  const CheckoutShippingBanner({super.key, required this.error, required this.onRetry});
+  const CheckoutShippingBanner({
+    super.key,
+    required this.s,
+    required this.error,
+    required this.onRetry,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -483,7 +501,7 @@ class CheckoutShippingBanner extends StatelessWidget {
           const Icon(Icons.local_shipping_outlined, color: AppColors.sale, size: 18),
           const SizedBox(width: 8),
           Expanded(child: Text(error!, style: const TextStyle(fontSize: 12))),
-          TextButton(onPressed: onRetry, child: const Text('إعادة')),
+          TextButton(onPressed: onRetry, child: Text(s.retry)),
         ],
       ),
     );

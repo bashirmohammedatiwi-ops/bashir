@@ -61,7 +61,7 @@ chmod -R a+rX "$STAGING_DIR"
 verify_admin_static() {
   local dir="$1"
   local missing=0
-  for rel in index.html login/index.html catalog-import/index.html products/index.html; do
+  for rel in index.html login/index.html catalog-import/index.html products/index.html privacy/index.html terms/index.html; do
     if [[ ! -f "$dir/$rel" ]]; then
       echo "ERROR: missing $dir/$rel"
       missing=1

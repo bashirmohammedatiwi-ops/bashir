@@ -293,6 +293,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       body: Column(
         children: [
           CheckoutHeader(
+            s: s,
             itemCount: cart.count,
             onBack: () => context.pop(),
           ),
@@ -333,8 +334,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     onShippingChanged: _refreshShipping,
                   ),
                   const SizedBox(height: 14),
-                  CheckoutShippingBanner(error: _shippingError, onRetry: _refreshShipping),
+                  CheckoutShippingBanner(s: s, error: _shippingError, onRetry: _refreshShipping),
                   CheckoutCouponCard(
+                    s: s,
                     controller: _couponCtrl,
                     error: _couponError,
                     appliedCode: _coupon?.code,
@@ -342,14 +344,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
                   const SizedBox(height: 14),
                   CheckoutPaymentCard(
+                    s: s,
                     paymentMethod: _paymentMethod,
                     onChanged: (v) => setState(() => _paymentMethod = v),
                   ),
                   const SizedBox(height: 14),
-                  CheckoutNotesCard(controller: _notesCtrl),
+                  CheckoutNotesCard(s: s, controller: _notesCtrl),
                   if (points >= 100) ...[
                     const SizedBox(height: 14),
                     CheckoutLoyaltyCard(
+                      s: s,
                       points: points,
                       useLoyalty: _useLoyalty,
                       loyaltyDiscount: loyaltyDiscount,
@@ -358,6 +362,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ],
                   const SizedBox(height: 14),
                   CheckoutSummaryCard(
+                    s: s,
                     subtotal: subtotal,
                     discount: discount,
                     loyaltyDiscount: loyaltyDiscount,
@@ -373,6 +378,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ],
       ),
       bottomNavigationBar: CheckoutBottomBar(
+        s: s,
         total: total,
         placing: _placing,
         onPlace: _placeOrder,

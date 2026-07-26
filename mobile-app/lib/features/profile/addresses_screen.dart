@@ -49,8 +49,8 @@ class _AddressesBody extends ConsumerWidget {
           if (list.isEmpty) {
             return ProfileEmptyState(
               icon: Icons.location_on_outlined,
-              title: s.isAr ? 'لا توجد عناوين' : 'No addresses',
-              subtitle: s.isAr ? 'أضيفي عنواناً لتسهيل عملية الشراء' : 'Add an address for faster checkout',
+              title: s.noAddresses,
+              subtitle: s.noAddressesHint,
               action: ProfilePrimaryButton(label: s.newAddress, onPressed: () => _add(context, ref)),
             );
           }

@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import 'checkout_theme.dart';
 
 class CheckoutHeader extends StatelessWidget {
+  final AppStrings s;
   final int itemCount;
   final VoidCallback onBack;
 
   const CheckoutHeader({
     super.key,
+    required this.s,
     required this.itemCount,
     required this.onBack,
   });
@@ -26,10 +29,10 @@ class CheckoutHeader extends StatelessWidget {
                 onPressed: onBack,
                 icon: const Icon(Icons.arrow_forward_rounded, color: CheckoutTheme.charcoal),
               ),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'إتمام الطلب',
-                  style: TextStyle(
+                  s.checkout,
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w900,
                     color: CheckoutTheme.charcoal,
@@ -43,7 +46,7 @@ class CheckoutHeader extends StatelessWidget {
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  '$itemCount منتج',
+                  s.itemCountLabel(itemCount),
                   style: const TextStyle(
                     color: CheckoutTheme.brandDark,
                     fontWeight: FontWeight.w800,
@@ -56,11 +59,11 @@ class CheckoutHeader extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              _StepDot(active: true, label: 'التوصيل'),
-              _StepLine(active: true),
-              _StepDot(active: true, label: 'الدفع'),
-              _StepLine(active: false),
-              _StepDot(active: false, label: 'تأكيد'),
+              _StepDot(active: true, label: s.deliveryStep),
+              const _StepLine(active: true),
+              _StepDot(active: true, label: s.paymentStep),
+              const _StepLine(active: false),
+              _StepDot(active: false, label: s.confirmStep),
             ],
           ),
         ],
