@@ -105,6 +105,9 @@ server {
         default_type application/octet-stream;
     }
 
+    location = /login { return 301 /admin/login/; }
+    location ^~ /login/ { return 301 /admin/login/; }
+
     location /admin/ {
         root /var/www/alhayaa;
         try_files $uri $uri/ /admin/index.html;

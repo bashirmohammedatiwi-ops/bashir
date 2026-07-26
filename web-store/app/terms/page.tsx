@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
-import { LEGAL_UPDATED, termsOfServiceAr } from "@/lib/legal";
+import { LegalDocument } from "@/components/legal/LegalDocument";
+import { LEGAL_UPDATED, termsSectionsAr } from "@/lib/legal";
 
 export const metadata: Metadata = {
   title: "شروط الاستخدام",
@@ -9,10 +10,11 @@ export const metadata: Metadata = {
 
 export default function TermsPage() {
   return (
-    <article className="legal-page">
-      <h1>شروط الاستخدام</h1>
-      <p className="updated">آخر تحديث: {LEGAL_UPDATED}</p>
-      <div className="body">{termsOfServiceAr}</div>
-    </article>
+    <LegalDocument
+      variant="terms"
+      title="شروط الاستخدام"
+      updated={LEGAL_UPDATED}
+      sections={termsSectionsAr}
+    />
   );
 }

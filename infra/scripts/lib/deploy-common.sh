@@ -231,6 +231,7 @@ ensure_nginx_responding() {
   fi
 
   ensure_admin_serving
+  ensure_store_serving || echo "WARN: Store site check failed — run ./scripts/build-store-web.sh && docker compose -f docker-compose.prod.yml up -d --force-recreate nginx"
 }
 
 build_admin_web_panel() {
@@ -261,6 +262,36 @@ build_store_web_panel() {
   maybe_enable_https
   "$infra/scripts/build-store-web.sh"
   ensure_store_static_permissions
+}
+
+ensure_store_serving() {
+  local tries=0
+  local url code
+  local -a curl_extra=()
+
+  if ssl_cert_exists && [[ -n "${DOMAIN:-}" ]]; then
+    curl_extra=(-k -H "Host:${DOMAIN}")
+    url="https://127.0.0.1/privacy/"
+  else
+    url="http://127.0.0.1/privacy/"
+  fi
+
+  ensure_store_static_permissions || return 1
+
+  while [[ $tries -lt 4 ]]; do
+    code="$(_http_code "$url" -L "${curl_extra[@]}")"
+    if [[ "$code" == "200" ]]; then
+      echo "==> Store website serving OK (HTTP $code)"
+      return 0
+    fi
+    echo "WARN: Store /privacy/ returned HTTP $code — rebuild store + recreate nginx (attempt $((tries + 1))/4)"
+    build_store_web_panel || true
+    reload_nginx_stack || true
+    sleep 3
+    tries=$((tries + 1))
+  done
+  echo "ERROR: Store website still not reachable"
+  return 1
 }
 
 public_scheme() {
