@@ -48,14 +48,17 @@ export function mediaUrl(path?: string | null): string | null {
   return `${base}${normalized.startsWith("/") ? normalized : `/${normalized}`}`;
 }
 
-type MediaLike = {
+export type MediaRecord = {
+  id?: string;
   variants?: Record<string, { formats?: Record<string, string> }>;
   publicUrlBase?: string;
   originalUrl?: string;
   originalUrlJpg?: string;
   filename?: string;
   mime?: string;
-} | null;
+};
+
+type MediaLike = MediaRecord | null | undefined;
 
 function pickFormat(formats?: Record<string, string> | null): string | null {
   if (!formats) return null;

@@ -10,7 +10,7 @@ import {
 } from "@ant-design/icons";
 import { Avatar, Button, Collapse, Empty, Popconfirm, Space, Spin, Switch, Tag, Typography } from "antd";
 import { useCallback, useState } from "react";
-import { mediaThumb } from "@/lib/mediaUrl";
+import { mediaThumb, type MediaRecord } from "@/lib/mediaUrl";
 
 const { Text } = Typography;
 
@@ -21,7 +21,7 @@ export type BrandRow = {
   initial?: string;
   bgColorHex?: string;
   logoId?: string | null;
-  logo?: { id?: string; url?: string } | null;
+  logo?: MediaRecord | null;
   productCount?: number;
   isFeatured?: boolean;
   isActive?: boolean;
