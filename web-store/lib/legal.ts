@@ -1,57 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+export const LEGAL_UPDATED = "يوليو 2026";
 
-import '../../core/config/app_config.dart';
-import '../../core/l10n/app_strings.dart';
-import '../../core/utils/legal_links.dart';
-import '../cart/widgets/cart_theme.dart';
-import '../profile/widgets/profile_ui.dart';
-
-enum LegalDocumentType { privacy, terms }
-
-class LegalDocumentScreen extends ConsumerWidget {
-  final LegalDocumentType type;
-
-  const LegalDocumentScreen({super.key, required this.type});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = ref.s;
-    final title = type == LegalDocumentType.privacy ? s.privacyPolicy : s.termsOfService;
-    final body = type == LegalDocumentType.privacy ? _privacyBody(s) : _termsBody(s);
-
-    return ProfileScaffold(
-      title: title,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 16, ProfileUi.hPad, 32),
-        children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: CartTheme.charcoal),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            s.isAr ? 'آخر تحديث: يوليو 2026' : 'Last updated: July 2026',
-            style: TextStyle(color: CartTheme.charcoal.withValues(alpha: 0.5), fontSize: 12),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            body,
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.65,
-              color: CartTheme.charcoal.withValues(alpha: 0.85),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static String _privacyBody(AppStrings s) {
-    if (s.isAr) {
-      return '''
-نحن في ديما الحياة نحترم خصوصيتك. توضّح هذه السياسة البيانات التي نجمعها وكيف نستخدمها.
+export const privacyPolicyAr = `نحن في ديما الحياة نحترم خصوصيتك. توضّح هذه السياسة البيانات التي نجمعها وكيف نستخدمها.
 
 البيانات التي نجمعها
 • الاسم ورقم الهاتف عند إنشاء الحساب أو إتمام الطلب.
@@ -75,11 +24,9 @@ class LegalDocumentScreen extends ConsumerWidget {
 
 التواصل
 البريد: support@deemaalhayat.com
-الموقع: https://deemaalhayat.com
-''';
-    }
-    return '''
-At deema alhayat we respect your privacy. This policy explains what we collect and how we use it.
+الموقع: https://deemaalhayat.com`;
+
+export const privacyPolicyEn = `At deema alhayat we respect your privacy. This policy explains what we collect and how we use it.
 
 Data we collect
 • Name and phone number when you register or place an order.
@@ -103,17 +50,12 @@ You may update or delete your account in the app, or contact us through support 
 
 Contact
 Email: support@deemaalhayat.com
-Website: https://deemaalhayat.com
-''';
-  }
+Website: https://deemaalhayat.com`;
 
-  static String _termsBody(AppStrings s) {
-    if (s.isAr) {
-      return '''
-باستخدام تطبيق ديما الحياة فإنك توافقين على الشروط التالية:
+export const termsOfServiceAr = `باستخدام تطبيق وموقع ديما الحياة فإنك توافقين على الشروط التالية:
 
 الخدمة
-التطبيق يتيح تصفح المنتجات وطلبها مع الدفع عند الاستلام (COD) ما لم يُفعّل لاحقاً الدفع الإلكتروني.
+المنصة تتيح تصفح المنتجات وطلبها مع الدفع عند الاستلام (COD) ما لم يُفعّل لاحقاً الدفع الإلكتروني.
 
 الحساب
 • يجب تقديم معلومات صحيحة (الاسم، الهاتف، العنوان).
@@ -137,14 +79,12 @@ Website: https://deemaalhayat.com
 القانون الحاكم
 تخضع هذه الشروط للقوانين المعمول بها في جمهورية العراق.
 
-التواصل: support@deemaalhayat.com
-''';
-    }
-    return '''
-By using the deema alhayat app you agree to these terms:
+التواصل: support@deemaalhayat.com`;
+
+export const termsOfServiceEn = `By using the deema alhayat app and website you agree to these terms:
 
 Service
-The app lets you browse and order products with cash on delivery (COD) unless online payment is enabled later.
+The platform lets you browse and order products with cash on delivery (COD) unless online payment is enabled later.
 
 Account
 • Provide accurate information (name, phone, address).
@@ -168,14 +108,4 @@ You may delete your account in the app. Past order records may be retained for l
 Governing law
 These terms are governed by applicable laws in the Republic of Iraq.
 
-Contact: support@deemaalhayat.com
-''';
-  }
-}
-
-void openLegalDocument(BuildContext context, LegalDocumentType type) {
-  final url = type == LegalDocumentType.privacy
-      ? AppConfig.privacyPolicyUrl
-      : AppConfig.termsOfServiceUrl;
-  openExternalUrl(url);
-}
+Contact: support@deemaalhayat.com`;

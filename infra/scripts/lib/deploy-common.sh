@@ -196,9 +196,9 @@ ensure_admin_serving() {
 
   if ssl_cert_exists && [[ -n "${DOMAIN:-}" ]]; then
     curl_extra=(-k -H "Host:${DOMAIN}")
-    url="https://127.0.0.1/login/"
+    url="https://127.0.0.1/admin/login/"
   else
-    url="http://127.0.0.1/login/"
+    url="http://127.0.0.1/admin/login/"
   fi
 
   ensure_admin_static_permissions || true
@@ -241,6 +241,28 @@ build_admin_web_panel() {
   ensure_admin_static_permissions
 }
 
+ensure_store_static_permissions() {
+  local infra="$(_infra_root)"
+  local dir="$infra/store-static"
+
+  if [[ ! -d "$dir" ]]; then
+    echo "WARN: store-static missing — run ./scripts/build-store-web.sh"
+    return 1
+  fi
+
+  chmod -R a+rX "$dir"
+  chmod a+x "$infra" 2>/dev/null || true
+  echo "==> store-static permissions OK"
+}
+
+build_store_web_panel() {
+  local infra="$(_infra_root)"
+  chmod +x "$infra/scripts/build-store-web.sh"
+  maybe_enable_https
+  "$infra/scripts/build-store-web.sh"
+  ensure_store_static_permissions
+}
+
 public_scheme() {
   if ssl_cert_exists; then
     echo "https"
@@ -253,7 +275,9 @@ print_stack_urls() {
   local domain="${DOMAIN:-localhost}"
   local scheme
   scheme="$(public_scheme)"
-  echo "  Admin:   ${scheme}://${domain}/login/"
+  echo "  Store:   ${scheme}://${domain}/"
+  echo "  Admin:   ${scheme}://${domain}/admin/login/"
+  echo "  Privacy: ${scheme}://${domain}/privacy/"
   echo "  API:     ${scheme}://${domain}/api/v1/health"
   echo "  Ready:   ${scheme}://${domain}/api/v1/health/ready"
   echo "  Media:   ${scheme}://${domain}/media/"
@@ -265,14 +289,14 @@ detect_verify_base() {
   local code
 
   if ssl_cert_exists; then
-    code="$(_http_code "https://127.0.0.1/login/" -k -H "Host:${domain}" -L)"
+    code="$(_http_code "https://127.0.0.1/admin/login/" -k -H "Host:${domain}" -L)"
     if [[ "$code" == "200" ]]; then
       echo "https://${domain}"
       return
     fi
   fi
 
-  code="$(_http_code "http://127.0.0.1/login/" -L)"
+  code="$(_http_code "http://127.0.0.1/admin/login/" -L)"
   if [[ "$code" == "200" ]]; then
     echo "http://127.0.0.1"
     return

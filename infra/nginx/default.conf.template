@@ -105,8 +105,17 @@ server {
         default_type application/octet-stream;
     }
 
+    location /admin/ {
+        root /var/www/alhayaa;
+        try_files $uri $uri/ /admin/index.html;
+    }
+
+    location = /admin {
+        return 301 /admin/;
+    }
+
     location / {
-        root /var/www/alhayaa/admin;
+        root /var/www/alhayaa/store;
         index index.html;
         try_files $uri $uri/ $uri/index.html /index.html =404;
 

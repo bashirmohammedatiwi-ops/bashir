@@ -150,6 +150,9 @@ if ! ensure_api_ready; then
   }
 fi
 
+echo "==> Build customer web store (atomic)..."
+build_store_web_panel
+
 echo "==> Build admin web panel (atomic)..."
 build_admin_web_panel
 

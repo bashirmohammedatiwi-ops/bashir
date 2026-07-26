@@ -67,6 +67,20 @@ check_json() {
 run_checks() {
   FAILED=0
 
+  if [[ ! -f store-static/index.html ]]; then
+    echo "FAIL store-static/index.html missing"
+    FAILED=1
+  else
+    echo "OK  store-static/index.html"
+  fi
+
+  if [[ ! -f store-static/privacy/index.html ]]; then
+    echo "FAIL store-static/privacy/index.html missing"
+    FAILED=1
+  else
+    echo "OK  store-static/privacy/index.html"
+  fi
+
   if [[ ! -f admin-static/index.html ]]; then
     echo "FAIL admin-static/index.html missing"
     FAILED=1
@@ -97,9 +111,10 @@ run_checks() {
 
   check_json "API ready" "$API_BASE/api/v1/health/ready" '"ready":true'
   check_json "Catalog hub" "$API_BASE/catalog-hub/api/health" '"ok":true'
-  check_http "Admin home" "$ADMIN_BASE/"
-  check_http "Admin login" "$ADMIN_BASE/login/"
-  check_http "Admin products" "$ADMIN_BASE/products/"
+  check_http "Store home" "$ADMIN_BASE/"
+  check_http "Privacy policy" "$ADMIN_BASE/privacy/"
+  check_http "Admin login" "$ADMIN_BASE/admin/login/"
+  check_http "Admin products" "$ADMIN_BASE/admin/products/"
 
   if $COMPOSE exec -T api wget -qO- http://127.0.0.1:3000/api/v1/health/ready 2>/dev/null | grep -q '"ready":true'; then
     echo "OK  API container ready"

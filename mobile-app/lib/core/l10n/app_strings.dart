@@ -80,6 +80,15 @@ class AppStrings {
   String get editProfile => isAr ? 'تعديل البيانات' : 'Edit Profile';
   String get changePassword => isAr ? 'تغيير كلمة المرور' : 'Change Password';
   String get aboutApp => isAr ? 'عن التطبيق' : 'About';
+  String get openSourceLicenses => isAr ? 'تراخيص مفتوحة المصدر' : 'Open Source Licenses';
+  String get licensesSubtitle => isAr
+      ? 'المكتبات المستخدمة في التطبيق وتراخيصها'
+      : 'Libraries used in this app and their licenses';
+  String get searchPackages => isAr ? 'ابحثي عن مكتبة...' : 'Search packages...';
+  String get noPackagesFound => isAr ? 'لا توجد نتائج' : 'No packages found';
+  String packageCount(int n) => isAr ? '$n مكتبة' : '$n packages';
+  String get website => isAr ? 'الموقع' : 'Website';
+  String get visitWebsite => isAr ? 'زيارة الموقع' : 'Visit website';
   String get logout => isAr ? 'تسجيل الخروج' : 'Log Out';
   String get logoutConfirmTitle => isAr ? 'تسجيل الخروج' : 'Log Out';
   String get logoutConfirmBody =>

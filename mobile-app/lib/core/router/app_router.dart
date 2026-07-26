@@ -23,8 +23,10 @@ import '../../features/profile/loyalty_screen.dart';
 import '../../features/profile/notifications_screen.dart';
 import '../../features/search/qr_scan_screen.dart';
 import '../../features/search/search_screen.dart';
+import '../../features/settings/about_app_screen.dart';
 import '../../features/settings/language_picker_screen.dart';
 import '../../features/settings/legal_document_screen.dart';
+import '../../features/settings/open_source_licenses_screen.dart';
 import '../../features/shell/main_shell.dart';
 import '../../features/wishlist/wishlist_screen.dart';
 
@@ -132,6 +134,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/terms',
         builder: (_, __) => const LegalDocumentScreen(type: LegalDocumentType.terms),
       ),
+      GoRoute(path: '/about', builder: (_, __) => const AboutAppScreen()),
+      GoRoute(path: '/licenses', builder: (_, __) => const OpenSourceLicensesScreen()),
     ],
     errorBuilder: (context, state) => Consumer(
       builder: (context, ref, _) {

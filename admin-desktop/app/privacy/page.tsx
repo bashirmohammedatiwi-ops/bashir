@@ -8,16 +8,14 @@ export default function PrivacyPage() {
   return (
     <main style={{ maxWidth: 720, margin: "0 auto", padding: "32px 20px", lineHeight: 1.7, fontFamily: "system-ui, sans-serif" }}>
       <h1>سياسة الخصوصية</h1>
-      <p>آخر تحديث: يوليو 2026</p>
       <p>
-        نحن في ديما الحياة نحترم خصوصيتك. نجمع الاسم ورقم الهاتف والعناوين وسجل الطلبات لتقديم الخدمة.
-        لا نبيع بياناتك الشخصية. يمكنك حذف حسابك من تطبيق الهاتف (حسابي → حذف الحساب).
+        تم نقل سياسة الخصوصية إلى موقع المتجر:
       </p>
       <p>
-        للتواصل: <a href="mailto:support@deemaalhayat.com">support@deemaalhayat.com</a>
+        <a href="/privacy/">فتح سياسة الخصوصية على deemaalhayat.com</a>
       </p>
       <p>
-        <a href="/">العودة للوحة التحكم</a>
+        <a href="/admin/">العودة للوحة التحكم</a>
       </p>
     </main>
   );

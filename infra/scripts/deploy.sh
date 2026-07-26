@@ -54,6 +54,9 @@ echo "==> Enabling HTTPS Nginx config..."
 reload_nginx_stack
 sync_hsts_with_ssl
 
+echo "==> Building customer web store..."
+build_store_web_panel
+
 echo "==> Building admin web panel..."
 build_admin_web_panel
 reload_nginx_stack

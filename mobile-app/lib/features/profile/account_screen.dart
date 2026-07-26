@@ -109,7 +109,7 @@ class AccountScreen extends ConsumerWidget {
                       icon: Icons.info_outline_rounded,
                       title: s.aboutApp,
                       iconColor: AccountTheme.settings,
-                      onTap: () => _about(context, ref, s),
+                      onTap: () => context.push('/about'),
                     ),
                   ],
                 ),
@@ -156,38 +156,6 @@ class AccountScreen extends ConsumerWidget {
                 ),
               ],
             ),
-    );
-  }
-
-  void _about(BuildContext context, WidgetRef ref, AppStrings s) {
-    final version = ref.read(appVersionLabelProvider);
-    showAboutDialog(
-      context: context,
-      applicationName: AppConfig.displayStoreName(s.lang),
-      applicationVersion: version,
-      children: [
-        Text(s.aboutDescription),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          children: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                openLegalDocument(context, LegalDocumentType.privacy);
-              },
-              child: Text(s.privacyPolicy),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                openLegalDocument(context, LegalDocumentType.terms);
-              },
-              child: Text(s.termsOfService),
-            ),
-          ],
-        ),
-      ],
     );
   }
 
@@ -364,11 +332,7 @@ class _GuestView extends StatelessWidget {
               icon: Icons.info_outline_rounded,
               title: s.aboutApp,
               iconColor: AccountTheme.settings,
-              onTap: () => showAboutDialog(
-                context: context,
-                applicationName: AppConfig.storeName,
-                applicationVersion: '1.0.0',
-              ),
+              onTap: () => context.push('/about'),
             ),
           ],
         ),
