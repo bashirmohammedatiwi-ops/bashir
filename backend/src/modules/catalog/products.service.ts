@@ -11,6 +11,7 @@ import { InventorySyncService } from "../sync/inventory-sync.service";
 import { SettingsService } from "../settings/settings.service";
 import { withPlaceholderImages, activeWithoutRealImagesWhere, hasRealProductImagesWhere } from "../../common/product-placeholder.util";
 import { rewriteProductMediaUrls } from "../../common/media-url.util";
+import { PRODUCT_ORDER_BY_BRAND } from "../../common/product-order.util";
 import { sortShadesByNumber } from "../../common/shade-sort.util";
 
 const productRelationsFull = {
@@ -605,8 +606,10 @@ export class ProductsService {
         return { createdAt: "asc" };
       case "latest":
         return { createdAt: "desc" };
+      case "brand":
+        return PRODUCT_ORDER_BY_BRAND;
       default:
-        return [{ brand: { position: "asc" } }, { createdAt: "desc" }];
+        return PRODUCT_ORDER_BY_BRAND;
     }
   }
 }

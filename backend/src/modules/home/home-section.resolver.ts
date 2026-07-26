@@ -7,6 +7,7 @@ import { SettingsService } from "../settings/settings.service";
 
 import { buildAppLink, withResolvedLink } from "../../common/link-target.util";
 import { withPlaceholderImages, hasRealProductImagesWhere } from "../../common/product-placeholder.util";
+import { PRODUCT_ORDER_BY_BRAND } from "../../common/product-order.util";
 import { resolveCardSize, sectionStyleFromPayload, withCardSize } from "./card-sizes.util";
 
 const productInclude = {
@@ -1040,7 +1041,7 @@ export class HomeSectionResolver {
     const orderBy =
       filter === "bestSeller"
         ? { soldCount: "desc" as const }
-        : { createdAt: "desc" as const };
+        : PRODUCT_ORDER_BY_BRAND;
 
     const products = await this.prisma.product.findMany({
       where,

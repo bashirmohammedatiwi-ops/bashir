@@ -103,8 +103,9 @@ export default function BrandsPage() {
       setLocalBrands(ids.map((id) => byId.get(id)).filter(Boolean) as BrandRow[]);
     },
     onSuccess: () => {
-      message.success("تم حفظ ترتيب البراندات");
+      message.success("تم حفظ ترتيب البراندات — سيتغيّر ترتيب المنتجات في التطبيق");
       qc.invalidateQueries({ queryKey: ["brands"] });
+      qc.invalidateQueries({ queryKey: ["products"] });
     },
     onError: () => {
       message.error("تعذّر حفظ الترتيب");
@@ -290,7 +291,7 @@ export default function BrandsPage() {
     <div className="brands-page alhayaa-page">
       <PageHeader
         title="البراندات"
-        subtitle="رتّب البراندات بالسحب — نفس الترتيب يظهر في تطبيق الهاتف"
+        subtitle="جدول ترتيب البراندات — منتجات التطبيق تُعرض مجمّعة حسب ترتيب البراند (انقر على الصف للتعديل)"
         extra={
           <Space wrap>
             <Button icon={<CloudSyncOutlined />} loading={syncFromCatalog.isPending} onClick={() => syncFromCatalog.mutate()}>
@@ -406,7 +407,7 @@ export default function BrandsPage() {
 
       <section className="bp-list-card">
         <div className="bp-list-card-head">
-          <h3>ترتيب البراندات ({localBrands.length})</h3>
+          <h3>جدول البراندات ({localBrands.length})</h3>
           {reorder.isPending ? <span className="bp-filter-label">جاري الحفظ...</span> : null}
         </div>
         <BrandsSortableList

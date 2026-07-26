@@ -4,16 +4,14 @@ import {
   ArrowDownOutlined,
   ArrowUpOutlined,
   DeleteOutlined,
-  EditOutlined,
   HolderOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
-import { Avatar, Button, Collapse, Empty, Popconfirm, Space, Spin, Switch, Tag, Typography } from "antd";
-import { useCallback, useState } from "react";
+import { Avatar, Button, Empty, Popconfirm, Space, Spin, Table, Tag, Tooltip } from "antd";
+import type { TableColumnsType } from "antd";
+import { useCallback, useMemo, useState, type MouseEvent } from "react";
 import type { BrandCollection, BrandRow } from "@/lib/brandTypes";
 import { mediaThumb } from "@/lib/mediaUrl";
-
-const { Text } = Typography;
 
 export type { BrandCollection, BrandRow } from "@/lib/brandTypes";
 
@@ -30,6 +28,10 @@ type Props = {
   onEditCollection: (brand: BrandRow, collection: BrandCollection) => void;
   onDeleteCollection: (collectionId: string) => void;
 };
+
+function stopRowClick(e: MouseEvent) {
+  e.stopPropagation();
+}
 
 export function BrandsSortableList({
   brands,
@@ -79,6 +81,112 @@ export function BrandsSortableList({
     [brands, dragId, onReorder],
   );
 
+  const columns: TableColumnsType<BrandRow> = useMemo(
+    () => [
+      {
+        title: "",
+        width: 44,
+        render: (_: unknown, row: BrandRow) => (
+          <button
+            type="button"
+            className="bp-drag-handle"
+            aria-label="سحب للترتيب"
+            draggable={!reordering}
+            onMouseDown={stopRowClick}
+            onClick={stopRowClick}
+            onDragStart={(e) => {
+              e.stopPropagation();
+              setDragId(row.id);
+            }}
+            onDragEnd={() => {
+              setDragId(null);
+              setOverId(null);
+            }}
+          >
+            <HolderOutlined />
+          </button>
+        ),
+      },
+      {
+        title: "#",
+        width: 88,
+        render: (_: unknown, row: BrandRow, idx: number) => (
+          <Space size={4} onClick={stopRowClick}>
+            <span className="bp-rank">{idx + 1}</span>
+            <Button
+              size="small"
+              type="text"
+              icon={<ArrowUpOutlined />}
+              disabled={idx === 0 || reordering}
+              onClick={() => move(row.id, -1)}
+            />
+            <Button
+              size="small"
+              type="text"
+              icon={<ArrowDownOutlined />}
+              disabled={idx === brands.length - 1 || reordering}
+              onClick={() => move(row.id, 1)}
+            />
+          </Space>
+        ),
+      },
+      {
+        title: "الشعار",
+        width: 72,
+        render: (_: unknown, row: BrandRow) => {
+          const src = mediaThumb(row.logo);
+          return src ? (
+            <Avatar shape="square" size={44} src={src} style={{ background: row.bgColorHex || "#f5f5f5" }} />
+          ) : (
+            <Avatar shape="square" size={44} style={{ background: row.bgColorHex || "#ece8f0", color: "#4a2466" }}>
+              {row.initial || row.name.charAt(0)}
+            </Avatar>
+          );
+        },
+      },
+      {
+        title: "البراند",
+        render: (_: unknown, row: BrandRow) => (
+          <div className="bp-table-brand-cell">
+            <strong>{row.name}</strong>
+            <span className="bp-table-brand-slug">{row.slug || "—"}</span>
+          </div>
+        ),
+      },
+      {
+        title: productCountLabel,
+        width: 110,
+        align: "center",
+        render: (_: unknown, row: BrandRow) => <strong>{row.productCount ?? 0}</strong>,
+      },
+      {
+        title: "الحالة",
+        width: 130,
+        render: (_: unknown, row: BrandRow) => (
+          <Space size={4} wrap>
+            {row.isFeatured ? <Tag color="gold">مميز</Tag> : null}
+            {row.isActive === false ? <Tag>غير نشط</Tag> : <Tag color="green">نشط</Tag>}
+          </Space>
+        ),
+      },
+      {
+        title: "إجراءات",
+        width: 120,
+        render: (_: unknown, row: BrandRow) => (
+          <Space size={4} onClick={stopRowClick}>
+            <Tooltip title="إضافة خط">
+              <Button size="small" icon={<PlusOutlined />} onClick={() => onAddCollection(row)} />
+            </Tooltip>
+            <Tooltip title="حذف">
+              <Button size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(row)} />
+            </Tooltip>
+          </Space>
+        ),
+      },
+    ],
+    [brands.length, move, onAddCollection, onDelete, productCountLabel, reordering],
+  );
+
   if (loading) {
     return (
       <div className="bp-list-loading">
@@ -88,127 +196,83 @@ export function BrandsSortableList({
   }
 
   if (!brands.length) {
-    return <Empty description="لا توجد براندات مطابقة للفلاتر" />;
+    return <Empty description="لا توجد براندات مطابقة للفلاتر" style={{ padding: 32 }} />;
   }
 
   return (
-    <div className={`bp-sortable-list${reordering ? " is-saving" : ""}`}>
-      {partialOrder ? (
-        <p className="bp-partial-hint">
-          السحب يعيد ترتيب البراندات الظاهرة فقط ضمن ترتيب التطبيق العام — البراندات المخفية بالفلاتر تبقى في
-          مواقعها.
-        </p>
-      ) : (
-        <p className="bp-partial-hint">اسحب البطاقات أو استخدم الأسهم لتغيير ترتيب البراندات في التطبيق.</p>
-      )}
-      {brands.map((brand, idx) => {
-        const src = mediaThumb(brand.logo);
-        const isOver = overId === brand.id && dragId !== brand.id;
-        const isDragging = dragId === brand.id;
-        const collections = brand.collections ?? [];
-
-        return (
-          <article
-            key={brand.id}
-            className={`bp-brand-card${isOver ? " is-over" : ""}${isDragging ? " is-dragging" : ""}${
-              brand.isActive === false ? " is-inactive" : ""
-            }`}
-            draggable={!reordering}
-            onDragStart={() => setDragId(brand.id)}
-            onDragEnd={() => {
-              setDragId(null);
-              setOverId(null);
-            }}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setOverId(brand.id);
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              onDrop(brand.id);
-            }}
-          >
-            <div className="bp-brand-card-main">
-              <button type="button" className="bp-drag-handle" aria-label="سحب للترتيب">
-                <HolderOutlined />
-              </button>
-              <div className="bp-rank">{idx + 1}</div>
-              {src ? (
-                <Avatar shape="square" size={52} src={src} className="bp-logo" style={{ background: brand.bgColorHex || "#f5f5f5" }} />
-              ) : (
-                <Avatar shape="square" size={52} className="bp-logo" style={{ background: brand.bgColorHex || "#ece8f0", color: "#4a2466" }}>
-                  {brand.initial || (brand.name || "?").charAt(0)}
-                </Avatar>
-              )}
-              <div className="bp-brand-meta">
-                <div className="bp-brand-title-row">
-                  <Text strong className="bp-brand-name">
-                    {brand.name}
-                  </Text>
-                  {brand.isFeatured ? <Tag color="gold">مميز</Tag> : null}
-                  {brand.isActive === false ? <Tag>غير نشط</Tag> : null}
+    <div className={`bp-table-wrap${reordering ? " is-saving" : ""}`}>
+      <p className="bp-partial-hint">
+        {partialOrder
+          ? "السحب يعيد ترتيب البراندات الظاهرة ضمن الترتيب العام — منتجات التطبيق تُجمَّع حسب ترتيب البراند."
+          : "اسحب من ⋮⋮ أو استخدم الأسهم — انقر على الصف لتعديل البراند. ترتيب المنتجات في التطبيق يتبع هذا الترتيب."}
+      </p>
+      <Table<BrandRow>
+        rowKey="id"
+        size="middle"
+        pagination={false}
+        columns={columns}
+        dataSource={brands}
+        className="bp-brands-table"
+        onRow={(row) => ({
+          className: [
+            "bp-table-row",
+            dragId === row.id ? "is-dragging" : "",
+            overId === row.id && dragId !== row.id ? "is-over" : "",
+            row.isActive === false ? "is-inactive" : "",
+          ]
+            .filter(Boolean)
+            .join(" "),
+          onClick: (e) => {
+            const el = e.target as HTMLElement;
+            if (
+              el.closest(
+                ".bp-drag-handle, button, a, .ant-popconfirm, .ant-table-row-expand-icon-cell, .ant-table-expanded-row",
+              )
+            ) {
+              return;
+            }
+            onEdit(row);
+          },
+          onDragOver: (e) => {
+            e.preventDefault();
+            setOverId(row.id);
+          },
+          onDrop: (e) => {
+            e.preventDefault();
+            onDrop(row.id);
+          },
+        })}
+        expandable={{
+          rowExpandable: (row) => (row.collections?.length ?? 0) > 0,
+          expandedRowRender: (row) => (
+            <div className="bp-collections-list">
+              {(row.collections ?? []).map((col) => (
+                <div key={col.id} className="bp-collection-row">
+                  <span className="bp-collection-name">↳ {col.name}</span>
+                  <Tag color={col.isActive === false ? "default" : "cyan"}>
+                    {col.isActive === false ? "متوقف" : "نشط"}
+                  </Tag>
+                  <Space size={4}>
+                    <Button size="small" onClick={() => onEditCollection(row, col)}>
+                      تعديل
+                    </Button>
+                    <Popconfirm
+                      title="حذف الخط؟"
+                      okText="حذف"
+                      cancelText="إلغاء"
+                      onConfirm={() => onDeleteCollection(col.id)}
+                    >
+                      <Button size="small" danger>
+                        حذف
+                      </Button>
+                    </Popconfirm>
+                  </Space>
                 </div>
-                <Text type="secondary" className="bp-brand-sub">
-                  {brand.slug || "—"} · {brand.productCount ?? 0} {productCountLabel}
-                  {collections.length ? ` · ${collections.length} خط` : ""}
-                </Text>
-              </div>
-              <Space size={4} className="bp-brand-actions" wrap>
-                <Button size="small" icon={<ArrowUpOutlined />} disabled={idx === 0 || reordering} onClick={() => move(brand.id, -1)} />
-                <Button
-                  size="small"
-                  icon={<ArrowDownOutlined />}
-                  disabled={idx === brands.length - 1 || reordering}
-                  onClick={() => move(brand.id, 1)}
-                />
-                <Button size="small" icon={<PlusOutlined />} onClick={() => onAddCollection(brand)}>
-                  خط
-                </Button>
-                <Button size="small" icon={<EditOutlined />} onClick={() => onEdit(brand)}>
-                  تعديل
-                </Button>
-                <Button size="small" danger icon={<DeleteOutlined />} onClick={() => onDelete(brand)}>
-                  حذف
-                </Button>
-              </Space>
+              ))}
             </div>
-            {collections.length ? (
-              <Collapse
-                ghost
-                className="bp-collections-collapse"
-                items={[
-                  {
-                    key: "collections",
-                    label: `خطوط المنتجات (${collections.length})`,
-                    children: (
-                      <div className="bp-collections-list">
-                        {collections.map((col) => (
-                          <div key={col.id} className="bp-collection-row">
-                            <span className="bp-collection-name">↳ {col.name}</span>
-                            <Tag color={col.isActive === false ? "default" : "cyan"}>
-                              {col.isActive === false ? "متوقف" : "نشط"}
-                            </Tag>
-                            <Space size={4}>
-                              <Button size="small" onClick={() => onEditCollection(brand, col)}>
-                                تعديل
-                              </Button>
-                              <Popconfirm title="حذف الخط؟" okText="حذف" cancelText="إلغاء" onConfirm={() => onDeleteCollection(col.id)}>
-                                <Button size="small" danger>
-                                  حذف
-                                </Button>
-                              </Popconfirm>
-                            </Space>
-                          </div>
-                        ))}
-                      </div>
-                    ),
-                  },
-                ]}
-              />
-            ) : null}
-          </article>
-        );
-      })}
+          ),
+        }}
+      />
     </div>
   );
 }
