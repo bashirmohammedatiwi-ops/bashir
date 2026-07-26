@@ -7,13 +7,16 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { fetchProduct } from "@/lib/api";
 import { formatPrice, localizedName } from "@/lib/format";
 import { productImageUrl, resolveMediaUrl } from "@/lib/mediaUrl";
+import { brandHref, categoryHref } from "@/lib/storePaths";
 
-export function ProductDetailClient({ slug }: { slug: string }) {
+export function ProductDetailView({ slug }: { slug: string }) {
   const { data: product, isLoading, isError } = useQuery({
     queryKey: ["product", slug],
     queryFn: () => fetchProduct(slug),
+    enabled: !!slug,
   });
 
+  if (!slug) return <p className="empty-state container">لم يُحدَّد منتج.</p>;
   if (isLoading) return <LoadingState />;
   if (isError || !product) {
     return <p className="empty-state container">المنتج غير موجود.</p>;
@@ -41,11 +44,11 @@ export function ProductDetailClient({ slug }: { slug: string }) {
       <div className="product-info">
         {product.brand && (
           <p className="meta">
-            <Link href={`/brands/${product.brand.slug}/`}>{localizedName(product.brand)}</Link>
+            <Link href={brandHref(product.brand.slug)}>{localizedName(product.brand)}</Link>
             {product.category ? (
               <>
                 {" · "}
-                <Link href={`/categories/${product.category.slug}/`}>{localizedName(product.category)}</Link>
+                <Link href={categoryHref(product.category.slug)}>{localizedName(product.category)}</Link>
               </>
             ) : null}
           </p>

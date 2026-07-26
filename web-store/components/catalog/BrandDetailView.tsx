@@ -7,8 +7,12 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { fetchBrand, fetchProducts } from "@/lib/api";
 import { localizedName } from "@/lib/format";
 
-export function BrandDetailClient({ slug }: { slug: string }) {
-  const brandQ = useQuery({ queryKey: ["brand", slug], queryFn: () => fetchBrand(slug) });
+export function BrandDetailView({ slug }: { slug: string }) {
+  const brandQ = useQuery({
+    queryKey: ["brand", slug],
+    queryFn: () => fetchBrand(slug),
+    enabled: !!slug,
+  });
   const brandId = brandQ.data?.id;
   const productsQ = useQuery({
     queryKey: ["products", "brand", brandId],
@@ -16,6 +20,7 @@ export function BrandDetailClient({ slug }: { slug: string }) {
     enabled: !!brandId,
   });
 
+  if (!slug) return <p className="empty-state container">لم يُحدَّد براند.</p>;
   if (brandQ.isLoading) return <LoadingState />;
 
   const brand = brandQ.data;

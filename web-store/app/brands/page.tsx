@@ -7,6 +7,7 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { fetchBrands } from "@/lib/api";
 import { localizedName } from "@/lib/format";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
+import { brandHref } from "@/lib/storePaths";
 
 export default function BrandsPage() {
   const { data, isLoading, isError } = useQuery({
@@ -27,7 +28,7 @@ export default function BrandsPage() {
         {(data ?? []).map((b) => {
           const img = resolveMediaUrl(b.logo?.thumb || b.logo?.full || b.logo?.url);
           return (
-            <Link key={b.id} href={`/brands/${b.slug}/`} className="tile-card">
+            <Link key={b.id} href={brandHref(b.slug)} className="tile-card">
               {img ? <img src={img} alt={localizedName(b)} /> : null}
               <div>{localizedName(b)}</div>
             </Link>

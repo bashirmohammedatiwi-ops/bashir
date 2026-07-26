@@ -7,6 +7,7 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { fetchCategories } from "@/lib/api";
 import { localizedName } from "@/lib/format";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
+import { categoryHref } from "@/lib/storePaths";
 
 export default function CategoriesPage() {
   const { data, isLoading, isError } = useQuery({
@@ -27,7 +28,7 @@ export default function CategoriesPage() {
         {(data ?? []).map((c) => {
           const img = resolveMediaUrl(c.image?.thumb || c.image?.full || c.image?.url);
           return (
-            <Link key={c.id} href={`/categories/${c.slug}/`} className="tile-card">
+            <Link key={c.id} href={categoryHref(c.slug)} className="tile-card">
               {img ? <img src={img} alt={localizedName(c)} /> : null}
               <div>{localizedName(c)}</div>
             </Link>

@@ -7,8 +7,12 @@ import { LoadingState } from "@/components/ui/LoadingState";
 import { fetchCategory, fetchProducts } from "@/lib/api";
 import { localizedName } from "@/lib/format";
 
-export function CategoryDetailClient({ slug }: { slug: string }) {
-  const categoryQ = useQuery({ queryKey: ["category", slug], queryFn: () => fetchCategory(slug) });
+export function CategoryDetailView({ slug }: { slug: string }) {
+  const categoryQ = useQuery({
+    queryKey: ["category", slug],
+    queryFn: () => fetchCategory(slug),
+    enabled: !!slug,
+  });
   const categoryId = categoryQ.data?.id;
   const productsQ = useQuery({
     queryKey: ["products", "category", categoryId],
@@ -16,6 +20,7 @@ export function CategoryDetailClient({ slug }: { slug: string }) {
     enabled: !!categoryId,
   });
 
+  if (!slug) return <p className="empty-state container">لم يُحدَّد قسم.</p>;
   if (categoryQ.isLoading) return <LoadingState />;
 
   const category = categoryQ.data;

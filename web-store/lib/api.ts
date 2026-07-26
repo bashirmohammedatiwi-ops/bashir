@@ -60,29 +60,3 @@ export async function fetchBrand(slug: string): Promise<Brand> {
   const { data } = await client().get<Brand>(`/brands/${encodeURIComponent(slug)}`);
   return data;
 }
-
-export async function fetchAllProductSlugs(): Promise<string[]> {
-  const slugs: string[] = [];
-  let page = 1;
-  const limit = 100;
-  for (;;) {
-    const res = await fetchProducts({ page, limit });
-    for (const p of res.data) {
-      if (p.slug) slugs.push(p.slug);
-    }
-    const totalPages = res.meta?.totalPages ?? 1;
-    if (page >= totalPages || res.data.length === 0) break;
-    page += 1;
-  }
-  return slugs;
-}
-
-export async function fetchAllCategorySlugs(): Promise<string[]> {
-  const cats = await fetchCategories();
-  return cats.map((c) => c.slug).filter(Boolean);
-}
-
-export async function fetchAllBrandSlugs(): Promise<string[]> {
-  const brands = await fetchBrands();
-  return brands.map((b) => b.slug).filter(Boolean);
-}

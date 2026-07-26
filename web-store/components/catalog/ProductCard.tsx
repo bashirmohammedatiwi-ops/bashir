@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { formatPrice, localizedName } from "@/lib/format";
 import { productImageUrl } from "@/lib/mediaUrl";
+import { productHref } from "@/lib/storePaths";
 import type { Product } from "@/lib/types";
 
 export function ProductCard({ product }: { product: Product }) {
@@ -9,7 +10,7 @@ export function ProductCard({ product }: { product: Product }) {
   const hasDiscount = (product.discountPercent ?? 0) > 0;
 
   return (
-    <Link href={`/products/${product.slug}/`} className="product-card">
+    <Link href={productHref(product.slug)} className="product-card">
       <div className="product-image-wrap">
         {img ? (
           <img src={img} alt={localizedName(product)} loading="lazy" />

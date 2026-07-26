@@ -4,6 +4,7 @@ import { ProductGrid } from "@/components/catalog/ProductGrid";
 import { resolveMediaUrl } from "@/lib/mediaUrl";
 import type { Banner, Brand, Category, Product } from "@/lib/types";
 import { localizedName } from "@/lib/format";
+import { brandHref, categoryHref } from "@/lib/storePaths";
 
 export function BannerCarousel({ banners }: { banners: Banner[] }) {
   if (!banners.length) return null;
@@ -44,7 +45,7 @@ export function CategoryStrip({ categories }: { categories: Category[] }) {
       </div>
       <div className="chip-row">
         {categories.slice(0, 12).map((c) => (
-          <Link key={c.id} href={`/categories/${c.slug}/`} className="chip">
+          <Link key={c.id} href={categoryHref(c.slug)} className="chip">
             {localizedName(c)}
           </Link>
         ))}
@@ -65,7 +66,7 @@ export function BrandStrip({ brands }: { brands: Brand[] }) {
         {brands.slice(0, 10).map((b) => {
           const logo = resolveMediaUrl(b.logo?.thumb || b.logo?.full || b.logo?.url);
           return (
-            <Link key={b.id} href={`/brands/${b.slug}/`} className="brand-pill">
+            <Link key={b.id} href={brandHref(b.slug)} className="brand-pill">
               {logo ? <img src={logo} alt={localizedName(b)} /> : <span>{localizedName(b)}</span>}
             </Link>
           );
