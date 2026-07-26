@@ -606,7 +606,7 @@ export class ProductsService {
       case "latest":
         return { createdAt: "desc" };
       default:
-        return [{ brand: { position: "asc" } }, { position: "asc" }, { createdAt: "desc" }];
+        return [{ brand: { position: "asc" } }, { createdAt: "desc" }];
     }
   }
 }
