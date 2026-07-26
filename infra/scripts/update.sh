@@ -163,7 +163,8 @@ sync_hsts_with_ssl
 ensure_certbot_renew_loop
 
 ensure_nginx_responding || {
-  echo "WARN: Post-update nginx/admin check failed — see logs above"
+  echo "ERROR: Nginx/store/admin checks failed after update."
+  exit 1
 }
 
 echo "==> Verify..."

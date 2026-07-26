@@ -81,6 +81,27 @@ run_checks() {
     echo "OK  store-static/privacy/index.html"
   fi
 
+  if [[ ! -f store-static/en/privacy/index.html ]]; then
+    echo "FAIL store-static/en/privacy/index.html missing"
+    FAILED=1
+  else
+    echo "OK  store-static/en/privacy/index.html"
+  fi
+
+  if [[ ! -f store-static/terms/index.html ]]; then
+    echo "FAIL store-static/terms/index.html missing"
+    FAILED=1
+  else
+    echo "OK  store-static/terms/index.html"
+  fi
+
+  if [[ ! -f store-static/en/terms/index.html ]]; then
+    echo "FAIL store-static/en/terms/index.html missing"
+    FAILED=1
+  else
+    echo "OK  store-static/en/terms/index.html"
+  fi
+
   if [[ ! -f admin-static/index.html ]]; then
     echo "FAIL admin-static/index.html missing"
     FAILED=1
@@ -112,7 +133,10 @@ run_checks() {
   check_json "API ready" "$API_BASE/api/v1/health/ready" '"ready":true'
   check_json "Catalog hub" "$API_BASE/catalog-hub/api/health" '"ok":true'
   check_http "Store home" "$ADMIN_BASE/"
-  check_http "Privacy policy" "$ADMIN_BASE/privacy/"
+  check_http "Privacy (AR)" "$ADMIN_BASE/privacy/"
+  check_http "Privacy (EN)" "$ADMIN_BASE/en/privacy/"
+  check_http "Terms (AR)" "$ADMIN_BASE/terms/"
+  check_http "Terms (EN)" "$ADMIN_BASE/en/terms/"
   check_http "Admin login" "$ADMIN_BASE/admin/login/"
   check_http "Admin products" "$ADMIN_BASE/admin/products/"
 
@@ -133,10 +157,14 @@ run_checks
 
 if [[ "$FAILED" -ne 0 ]]; then
   echo ""
-  echo "Verification failed — auto-repair (permissions + nginx recreate)..."
+  echo "Verification failed — auto-repair (permissions + rebuild store/admin + nginx recreate)..."
   ensure_admin_static_permissions || true
+  ensure_store_static_permissions || true
+  build_store_web_panel || true
+  build_admin_web_panel || true
   reload_nginx_stack || true
   ensure_admin_serving || true
+  ensure_store_serving || true
   run_checks
 fi
 

@@ -32,30 +32,24 @@ echo "    Commit: $GIT_SHA @ $BUILD_TIME"
 echo "    API:    $API_BASE (build fetch: $BUILD_API)"
 echo "    Media:  $MEDIA_BASE"
 
-cd "$STORE_ROOT"
-
-if [[ -f package-lock.json ]]; then
-  npm ci --legacy-peer-deps
-else
-  npm install --legacy-peer-deps
-fi
-
-NEXT_PUBLIC_API_BASE="$API_BASE" \
-NEXT_PUBLIC_MEDIA_BASE="$MEDIA_BASE" \
-STORE_BUILD_API_BASE="$BUILD_API" \
-NEXT_PUBLIC_BUILD_SHA="$GIT_SHA" \
-NEXT_PUBLIC_BUILD_TIME="$BUILD_TIME" \
-npm run build
-
-rm -rf "$STAGING_DIR"
-mkdir -p "$STAGING_DIR"
-cp -r out/. "$STAGING_DIR/"
-chmod -R a+rX "$STAGING_DIR"
-
 verify_store_static() {
   local dir="$1"
   local missing=0
-  for rel in index.html products/index.html product/index.html package/index.html offers/index.html categories/index.html category/index.html brands/index.html brand/index.html privacy/index.html terms/index.html; do
+  local rel
+  for rel in \
+    index.html \
+    products/index.html \
+    product/index.html \
+    package/index.html \
+    offers/index.html \
+    categories/index.html \
+    category/index.html \
+    brands/index.html \
+    brand/index.html \
+    privacy/index.html \
+    terms/index.html \
+    en/privacy/index.html \
+    en/terms/index.html; do
     if [[ ! -f "$dir/$rel" ]]; then
       echo "ERROR: missing $dir/$rel"
       missing=1
@@ -66,6 +60,52 @@ verify_store_static() {
   fi
   echo "OK  store static pages verified under $dir"
 }
+
+run_store_npm_build() {
+  local install_cmd build_cmd
+  if [[ -f "$STORE_ROOT/package-lock.json" ]]; then
+    install_cmd="npm ci --legacy-peer-deps"
+  else
+    install_cmd="npm install --legacy-peer-deps"
+  fi
+  build_cmd="NEXT_PUBLIC_API_BASE=\"$API_BASE\" NEXT_PUBLIC_MEDIA_BASE=\"$MEDIA_BASE\" STORE_BUILD_API_BASE=\"$BUILD_API\" NEXT_PUBLIC_BUILD_SHA=\"$GIT_SHA\" NEXT_PUBLIC_BUILD_TIME=\"$BUILD_TIME\" npm run build"
+
+  if command -v npm >/dev/null 2>&1; then
+    cd "$STORE_ROOT"
+    eval "$install_cmd"
+    eval "$build_cmd"
+    return 0
+  fi
+
+  echo "==> npm not found on host — building with node:20-alpine Docker image"
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "ERROR: neither npm nor docker available — install Node.js 20+ or Docker on the VPS"
+    exit 1
+  fi
+
+  docker run --rm \
+    -v "$STORE_ROOT:/app" \
+    -w /app \
+    -e NEXT_PUBLIC_API_BASE="$API_BASE" \
+    -e NEXT_PUBLIC_MEDIA_BASE="$MEDIA_BASE" \
+    -e STORE_BUILD_API_BASE="$BUILD_API" \
+    -e NEXT_PUBLIC_BUILD_SHA="$GIT_SHA" \
+    -e NEXT_PUBLIC_BUILD_TIME="$BUILD_TIME" \
+    node:20-alpine \
+    sh -c "$install_cmd && npm run build"
+}
+
+run_store_npm_build
+
+if [[ ! -d "$STORE_ROOT/out" ]]; then
+  echo "ERROR: Next.js export did not produce web-store/out"
+  exit 1
+fi
+
+rm -rf "$STAGING_DIR"
+mkdir -p "$STAGING_DIR"
+cp -r "$STORE_ROOT/out/." "$STAGING_DIR/"
+chmod -R a+rX "$STAGING_DIR"
 
 if ! verify_store_static "$STAGING_DIR"; then
   echo "ERROR: Next.js export incomplete — keeping previous store-static (if any)"

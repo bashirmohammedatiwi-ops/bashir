@@ -231,7 +231,10 @@ ensure_nginx_responding() {
   fi
 
   ensure_admin_serving
-  ensure_store_serving || echo "WARN: Store site check failed — run ./scripts/build-store-web.sh && docker compose -f docker-compose.prod.yml up -d --force-recreate nginx"
+  ensure_store_serving || {
+    echo "ERROR: Customer store not serving — App Store privacy URLs will fail until fixed."
+    return 1
+  }
 }
 
 build_admin_web_panel() {
@@ -308,7 +311,8 @@ print_stack_urls() {
   scheme="$(public_scheme)"
   echo "  Store:   ${scheme}://${domain}/"
   echo "  Admin:   ${scheme}://${domain}/admin/login/"
-  echo "  Privacy: ${scheme}://${domain}/privacy/"
+  echo "  Privacy: ${scheme}://${domain}/privacy/ (AR) · ${scheme}://${domain}/en/privacy/ (EN)"
+  echo "  Terms:   ${scheme}://${domain}/terms/ (AR) · ${scheme}://${domain}/en/terms/ (EN)"
   echo "  API:     ${scheme}://${domain}/api/v1/health"
   echo "  Ready:   ${scheme}://${domain}/api/v1/health/ready"
   echo "  Media:   ${scheme}://${domain}/media/"
