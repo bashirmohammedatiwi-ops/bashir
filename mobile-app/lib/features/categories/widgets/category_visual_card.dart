@@ -5,17 +5,21 @@ import '../../../data/models/category.dart';
 import 'categories_theme.dart';
 import 'category_line_art.dart';
 
-/// بطاقة قسم — اسم أعلى ثم صورة في الأسفل (بدون تداخل).
+/// بطاقة قسم — اسم ثابت أعلى والصورة في الزاوية السفلية.
 class CategoryVisualCard extends StatelessWidget {
   final Category category;
   final String lang;
   final VoidCallback onTap;
+  final Widget? footer;
+  final double? aspectRatio;
 
   const CategoryVisualCard({
     super.key,
     required this.category,
     required this.lang,
     required this.onTap,
+    this.footer,
+    this.aspectRatio,
   });
 
   @override
@@ -23,48 +27,48 @@ class CategoryVisualCard extends StatelessWidget {
     final name = category.localizedName(lang);
 
     return AspectRatio(
-      aspectRatio: CategoriesTheme.cardAspectRatio,
+      aspectRatio: aspectRatio ?? CategoriesTheme.cardAspectRatio,
       child: CategoriesFramedSurface(
         onTap: _tap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                CategoriesTheme.titlePad,
-                10,
-                CategoriesTheme.titlePad,
-                6,
-              ),
-              child: Text(
-                name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: CategoriesTheme.titleSize,
-                  fontWeight: FontWeight.w700,
-                  height: 1.2,
-                  letterSpacing: -0.15,
-                  color: CategoriesTheme.titleColor,
-                ),
-              ),
-            ),
-            Expanded(
+            SizedBox(
+              height: CategoriesTheme.titleZoneHeight,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: ColoredBox(
-                    color: CategoriesTheme.imageBg,
-                    child: CategoryLineArt(
-                      category: category,
-                      expand: true,
-                      alignCorner: true,
+                padding: const EdgeInsets.fromLTRB(
+                  CategoriesTheme.titlePad,
+                  10,
+                  CategoriesTheme.titlePad,
+                  0,
+                ),
+                child: Align(
+                  alignment: AlignmentDirectional.topStart,
+                  child: Text(
+                    name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: CategoriesTheme.titleSize,
+                      fontWeight: FontWeight.w700,
+                      height: 1.15,
+                      letterSpacing: -0.15,
+                      color: CategoriesTheme.titleColor,
                     ),
                   ),
                 ),
               ),
             ),
+            Expanded(
+              child: ClipRect(
+                child: CategoryLineArt(
+                  category: category,
+                  expand: true,
+                  alignCorner: true,
+                ),
+              ),
+            ),
+            footer ?? const SizedBox.shrink(),
           ],
         ),
       ),

@@ -126,6 +126,16 @@ class AppStrings {
   String get tapNameToOpenProducts =>
       isAr ? 'اضغطي على الدائرة لفتح القسم' : 'Tap a circle to open the category';
   String childGroupCount(int n) => isAr ? '$n قسم فرعي' : '$n sub-items';
+  String tertiaryCountLabel(int n) => isAr ? '$n قسم ثانوي' : '$n sub-sections';
+  String tertiarySectionsBarCount(int n) =>
+      isAr ? 'الأقسام الثانوية · $n' : 'Sub-sections · $n';
+  String get browseTertiarySections =>
+      isAr ? 'تصفّحي الأقسام الثانوية' : 'Browse sub-sections';
+  String get selectTertiarySection =>
+      isAr ? 'اختر قسمًا ثانويًا' : 'Choose a sub-section';
+  String get tertiarySectionsHint => isAr
+      ? 'اضغطي على «الأقسام الثانوية» أسفل البطاقة لعرض التفاصيل'
+      : 'Tap «Sub-sections» below a card to see details';
   String get viewAllProducts => isAr ? 'عرض الكل' : 'View all';
   String get noSubcategories => isAr ? 'لا أقسام فرعية' : 'No subcategories';
   String get browseAllProductsDirect =>

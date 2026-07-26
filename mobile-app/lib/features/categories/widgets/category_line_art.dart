@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
@@ -50,19 +52,40 @@ class CategoryLineArt extends StatelessWidget {
     if (expand) {
       return LayoutBuilder(
         builder: (context, constraints) {
-          final artSize = (constraints.maxWidth * CategoriesTheme.iconScale)
-              .clamp(56.0, constraints.maxHeight * 0.92);
-          return Align(
-            alignment: alignCorner ? AlignmentDirectional.bottomEnd : Alignment.center,
-            child: Padding(
-              padding: EdgeInsetsDirectional.only(
-                end: alignCorner ? 4 : 0,
-                bottom: alignCorner ? 4 : 0,
-              ),
-              child: _ArtBody(
-                category: category,
-                size: artSize,
-                alignCorner: alignCorner,
+          final maxW = constraints.maxWidth;
+          final maxH = constraints.maxHeight;
+          if (maxW <= 0 || maxH <= 0) return const SizedBox.shrink();
+
+          final artSize = alignCorner
+              ? math.min(
+                  maxW * CategoriesTheme.iconScale,
+                  maxH * CategoriesTheme.iconHeightScale,
+                )
+              : math.min(maxW, maxH) * CategoriesTheme.iconScale;
+          final alignment =
+              alignCorner ? AlignmentDirectional.bottomEnd : Alignment.center;
+
+          return ClipRect(
+            child: SizedBox(
+              width: maxW,
+              height: maxH,
+              child: Align(
+                alignment: alignment,
+                child: Padding(
+                  padding: EdgeInsetsDirectional.only(
+                    end: alignCorner ? 2 : 0,
+                    bottom: alignCorner ? 2 : 0,
+                  ),
+                  child: SizedBox(
+                    width: artSize,
+                    height: artSize,
+                    child: _ArtBody(
+                      category: category,
+                      size: artSize,
+                      alignCorner: false,
+                    ),
+                  ),
+                ),
               ),
             ),
           );
@@ -180,11 +203,11 @@ class _ArtBody extends StatelessWidget {
       color = const Color(0xFFFB8C00);
     } else {
       final h = category.id.hashCode.abs();
-      icon = _icons[h % _icons.length];
-      color = _palette[h % _palette.length];
+      icon = CategoryLineArt._icons[h % CategoryLineArt._icons.length];
+      color = CategoryLineArt._palette[h % CategoryLineArt._palette.length];
     }
 
-    return _ArtSpec(icon: icon, color: color);
+    return _ArtSpec(icon: icon, color: color!);
   }
 
   bool _has(String key, String a, String b, [String? c, String? d]) {

@@ -109,15 +109,19 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
 
             return AnimatedSwitcher(
               duration: CategoriesTheme.transition,
-              switchInCurve: CategoriesTheme.curveIn,
-              switchOutCurve: CategoriesTheme.curveOut,
+              reverseDuration: CategoriesTheme.transitionReverse,
+              switchInCurve: CategoriesTheme.navSlideIn,
+              switchOutCurve: CategoriesTheme.navSlideOut,
               layoutBuilder: (currentChild, previousChildren) {
                 return Stack(
                   alignment: Alignment.topCenter,
                   fit: StackFit.expand,
+                  clipBehavior: Clip.hardEdge,
                   children: [
-                    ...previousChildren,
-                    if (currentChild != null) currentChild,
+                    for (final child in previousChildren)
+                      RepaintBoundary(child: child),
+                    if (currentChild != null)
+                      RepaintBoundary(child: currentChild),
                   ],
                 );
               },
@@ -250,12 +254,7 @@ class _CategoryExplorerState extends ConsumerState<_CategoryExplorer> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scroll.hasClients) return;
-      _scroll.animateTo(
-        0,
-        duration: const Duration(milliseconds: 220),
-        curve: CategoriesTheme.curve,
-      );
+      if (_scroll.hasClients) _scroll.jumpTo(0);
     });
   }
 
@@ -310,10 +309,10 @@ class _CategoryExplorerState extends ConsumerState<_CategoryExplorer> {
       edgeOffset: top + 56,
       onRefresh: widget.onRefresh,
       child: CustomScrollView(
-        controller: _scroll,
-        physics: HomeScrollPerf.physics,
-        cacheExtent: HomeScrollPerf.verticalCacheExtent,
-        slivers: [
+          controller: _scroll,
+          physics: HomeScrollPerf.physics,
+          cacheExtent: HomeScrollPerf.verticalCacheExtent,
+          slivers: [
           SliverAppBar(
             pinned: true,
             elevation: 0,
@@ -357,45 +356,30 @@ class _CategoryExplorerState extends ConsumerState<_CategoryExplorer> {
             ),
           ),
           if (_children.isNotEmpty) ...[
+            SliverToBoxAdapter(
+              child: SubcategoryExplorerHeader(
+                category: widget.category,
+                lang: lang,
+                subCount: children.length,
+                onViewAll: () => _openProducts(),
+                hasTertiarySections: children.any((c) => c.children.isNotEmpty),
+              ),
+            ),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(CategoriesTheme.pad, 0, CategoriesTheme.pad, 0),
-              sliver: SliverList(
+              sliver: SliverGrid(
+                gridDelegate: CategoriesTheme.subGridDelegate,
                 delegate: SliverChildBuilderDelegate(
-                  (context, row) {
-                    final leftIndex = row * 2;
-                    final rightIndex = leftIndex + 1;
-                    final left = children[leftIndex];
-                    final right = rightIndex < children.length ? children[rightIndex] : null;
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: CategoriesTheme.gap),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: SubcategoryGridCell(
-                              subcategory: left,
-                              lang: lang,
-                              onOpenSub: () => _openProducts(sub: left),
-                              onOpenTertiary: (t) => _openProducts(sub: left, tertiary: t),
-                            ),
-                          ),
-                          const SizedBox(width: CategoriesTheme.gap),
-                          Expanded(
-                            child: right == null
-                                ? const SizedBox.shrink()
-                                : SubcategoryGridCell(
-                                    subcategory: right,
-                                    lang: lang,
-                                    onOpenSub: () => _openProducts(sub: right),
-                                    onOpenTertiary: (t) => _openProducts(sub: right, tertiary: t),
-                                  ),
-                          ),
-                        ],
-                      ),
+                  (context, i) {
+                    final sub = children[i];
+                    return SubcategoryGridCell(
+                      subcategory: sub,
+                      lang: lang,
+                      onOpenSub: () => _openProducts(sub: sub),
+                      onOpenTertiary: (t) => _openProducts(sub: sub, tertiary: t),
                     );
                   },
-                  childCount: (children.length + 1) ~/ 2,
+                  childCount: children.length,
                 ),
               ),
             ),
@@ -655,20 +639,38 @@ class _CategoriesNavTransition extends StatelessWidget {
   Widget build(BuildContext context) {
     final isRtl = Directionality.of(context) == TextDirection.rtl;
     final dx = forward ? (isRtl ? -1.0 : 1.0) : (isRtl ? 1.0 : -1.0);
-    final curved = CurvedAnimation(
-      parent: animation,
-      curve: CategoriesTheme.curveIn,
-      reverseCurve: CategoriesTheme.curveOut,
-    );
-    return SlideTransition(
-      position: Tween<Offset>(
-        begin: Offset(dx * 0.11, 0.012),
-        end: Offset.zero,
-      ).animate(curved),
-      child: FadeTransition(
-        opacity: Tween<double>(begin: 0.88, end: 1).animate(curved),
-        child: child,
-      ),
+    final width = MediaQuery.sizeOf(context).width;
+
+    return AnimatedBuilder(
+      animation: animation,
+      child: child,
+      builder: (context, child) {
+        final exiting = animation.status == AnimationStatus.reverse;
+        final curve = exiting ? CategoriesTheme.navSlideOut : CategoriesTheme.navSlideIn;
+        final t = curve.transform(animation.value);
+
+        final double slideX;
+        final double opacity;
+
+        if (exiting) {
+          slideX = -dx * CategoriesTheme.navExitDistance * (1 - t);
+          opacity = 0.9 + (0.1 * t);
+        } else {
+          slideX = dx * CategoriesTheme.navEnterDistance * (1 - t);
+          opacity = 1.0;
+        }
+
+        return ColoredBox(
+          color: CategoriesTheme.canvas,
+          child: Transform.translate(
+            offset: Offset(slideX * width, 0),
+            child: Opacity(
+              opacity: opacity.clamp(0.9, 1.0),
+              child: child,
+            ),
+          ),
+        );
+      },
     );
   }
 }

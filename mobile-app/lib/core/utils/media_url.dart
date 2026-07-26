@@ -4,10 +4,13 @@ import '../config/app_config.dart';
 String resolveMediaUrl(String? raw) {
   final value = (raw ?? '').trim();
   if (value.isEmpty) return '';
-  if (value.startsWith('http://') || value.startsWith('https://')) return value;
 
-  final base = AppConfig.mediaBaseUrl; // .../media
-  final origin = base.replaceAll(RegExp(r'/media/?$'), '');
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    return AppConfig.normalizeAppUrl(value);
+  }
+
+  final base = AppConfig.mediaBaseUrl;
+  final origin = AppConfig.webOrigin;
 
   if (value.startsWith('/media')) return '$origin$value';
   if (value.startsWith('/')) return '$origin$value';

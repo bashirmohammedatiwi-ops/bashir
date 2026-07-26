@@ -1,11 +1,15 @@
-/** Production VPS API — baked in at build time via .env.production */
+/** Production API — same domain & paths as web (`/api/v1`, `/media`, …) */
+export const APP_DOMAIN = "deemaalhayat.com";
+export const APP_ORIGIN = `https://${APP_DOMAIN}`;
+
 export const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ?? "http://187.127.88.146/api/v1";
+  process.env.NEXT_PUBLIC_API_BASE ?? `${APP_ORIGIN}/api/v1`;
 
 export const VPS_ORIGIN = API_BASE.replace(/\/api\/v1\/?$/, "");
 
 export const MEDIA_BASE =
-  process.env.NEXT_PUBLIC_MEDIA_BASE?.replace(/\/$/, "") ?? VPS_ORIGIN;
+  process.env.NEXT_PUBLIC_MEDIA_BASE?.replace(/\/$/, "") ??
+  `${APP_ORIGIN}/media`;
 
 /** عنوان catalog-hub — يُحسب وقت التشغيل ليتوافق مع نفس أصل لوحة الإدارة */
 export function getCatalogHubUrl(): string {

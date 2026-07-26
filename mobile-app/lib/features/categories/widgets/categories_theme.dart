@@ -6,26 +6,44 @@ abstract final class CategoriesTheme {
   static const gap = 12.0;
 
   static const cardRadius = 6.0;
-  /// بطاقة أطول قليلاً: اسم أعلى + صورة أسفل.
-  static const cardAspectRatio = 0.92;
+  static const cardAspectRatio = 1.48;
+  static const subCardAspectRatio = 1.22;
   static const titlePad = 12.0;
-  static const titleSize = 13.5;
-  static const iconScale = 0.78;
+  static const titleSize = 14.0;
+  static const titleZoneHeight = 34.0;
+  static const subFooterHeight = 28.0;
+  static const iconScale = 0.97;
+  static const iconHeightScale = 1.0;
+
+  static SliverGridDelegate get subGridDelegate =>
+      const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: gap,
+        crossAxisSpacing: gap,
+        childAspectRatio: subCardAspectRatio,
+      );
 
   static const chipRadius = 4.0;
   static const cardBorderWidth = 1.0;
 
   static const canvas = Color(0xFFFFFFFF);
   static const surface = Color(0xFFFFFFFF);
-  static const imageBg = Color(0xFFF5F5F5);
+  static const imageBg = Color(0xFFF7F7F7);
   static const cardBorderColor = Color(0xFFE6E6E6);
   static const titleColor = Color(0xFF000000);
 
-  static const transition = Duration(milliseconds: 260);
+  static const transition = Duration(milliseconds: 320);
+  static const transitionReverse = Duration(milliseconds: 280);
   static const imageFadeIn = Duration(milliseconds: 280);
   static const curve = Curves.easeOutCubic;
   static const curveIn = Curves.easeOutCubic;
   static const curveOut = Curves.easeInCubic;
+
+  /// حركة التنقّل بين الجذر والأقسام الفرعية.
+  static const navEnterDistance = 0.10;
+  static const navExitDistance = 0.04;
+  static const navSlideIn = Cubic(0.22, 1.0, 0.36, 1.0);
+  static const navSlideOut = Cubic(0.4, 0.0, 0.78, 1.0);
 
   /// بلور منتشر خفيف جداً حول البطاقة.
   static List<BoxShadow> cardGlow({double radius = cardRadius}) => [
