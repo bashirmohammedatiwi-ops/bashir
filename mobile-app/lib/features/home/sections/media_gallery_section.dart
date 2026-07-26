@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/utils/media_url.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../home_link.dart';
 import '../widgets/home_image_marquee.dart';
@@ -194,17 +195,10 @@ class MediaGallerySection extends StatelessWidget {
   }
 
   String _imageUrl(Map<String, dynamic> m) {
-    final direct = m['imageUrl']?.toString();
-    if (direct != null && direct.isNotEmpty) return direct;
-    final image = m['image'];
-    if (image is Map) {
-      final map = Map<String, dynamic>.from(image);
-      for (final key in ['url', 'full', 'hero', 'thumb']) {
-        final v = map[key]?.toString();
-        if (v != null && v.isNotEmpty) return v;
-      }
-    }
-    return '';
+    return resolveImageFromPayload(
+      directUrl: m['imageUrl']?.toString(),
+      image: m['image'] is Map ? Map<String, dynamic>.from(m['image'] as Map) : null,
+    );
   }
 
   double _sizeHeight(String size) {

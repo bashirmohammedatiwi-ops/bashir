@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/utils/json.dart';
+import '../../../core/utils/media_url.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/widgets/app_network_image.dart';
@@ -76,17 +79,10 @@ class PhotoTileData {
   }
 
   static String _readImageUrl(Map<String, dynamic> m) {
-    final direct = m['imageUrl']?.toString();
-    if (direct != null && direct.isNotEmpty) return direct;
-    final image = m['image'];
-    if (image is Map) {
-      final map = Map<String, dynamic>.from(image);
-      for (final key in ['url', 'full', 'hero', 'thumb']) {
-        final v = map[key]?.toString();
-        if (v != null && v.isNotEmpty) return v;
-      }
-    }
-    return '';
+    return resolveImageFromPayload(
+      directUrl: m['imageUrl']?.toString(),
+      image: m['image'] is Map ? asMap(m['image']) : null,
+    );
   }
 }
 

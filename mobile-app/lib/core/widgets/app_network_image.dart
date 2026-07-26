@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../cache/image_cache.dart';
 import '../theme/app_colors.dart';
+import '../utils/media_url.dart';
 
 const _fallbackAsset = 'assets/images/app_icon_source.png';
 
@@ -34,8 +35,9 @@ class AppNetworkImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedUrl = resolveMediaUrl(url);
     Widget child;
-    if (url.isEmpty) {
+    if (resolvedUrl.isEmpty) {
       child = _fallback();
     } else {
       final pixelW = cachePixelWidth(context, width);
@@ -44,7 +46,7 @@ class AppNetworkImage extends StatelessWidget {
           : null;
 
       final image = CachedNetworkImage(
-        imageUrl: url,
+        imageUrl: resolvedUrl,
         cacheManager: AppImageCacheManager.instance,
         width: backgroundColor == null ? width : null,
         height: backgroundColor == null ? height : null,
@@ -158,6 +160,7 @@ class ProductCoverImage extends StatelessWidget {
           );
         }
 
+        final resolvedUrl = resolveMediaUrl(url);
         final pixelW = cachePixelWidth(context, w);
         final pixelH = h != null && h.isFinite
             ? (h * MediaQuery.devicePixelRatioOf(context)).ceil()
@@ -171,7 +174,7 @@ class ProductCoverImage extends StatelessWidget {
             children: [
               const ColoredBox(color: wellColor),
               CachedNetworkImage(
-                imageUrl: url,
+                imageUrl: resolvedUrl,
                 cacheManager: AppImageCacheManager.instance,
                 fit: fit,
                 fadeInDuration: const Duration(milliseconds: 60),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/utils/json.dart';
+import '../../../core/utils/media_url.dart';
 import '../../../data/models/home_section.dart';
 import '../home_link.dart';
 import '../widgets/circle_tile.dart';
@@ -76,7 +78,10 @@ Widget _buildTile(BuildContext context, dynamic data) {
   return CircleTile(
     title: m['title']?.toString() ?? '',
     subtitle: m['subtitle']?.toString(),
-    imageUrl: m['imageUrl']?.toString(),
+    imageUrl: resolveImageFromPayload(
+      directUrl: m['imageUrl']?.toString(),
+      image: m['image'] is Map ? asMap(m['image']) : null,
+    ),
     cardSize: m['cardSize']?.toString(),
     onTap: () => openSectionLink(
       context,

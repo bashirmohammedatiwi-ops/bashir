@@ -79,10 +79,16 @@ class AppConfig {
     final uri = Uri.tryParse(trimmed);
     if (uri == null || !uri.hasScheme) return trimmed;
 
-    if (!_shouldRewriteHost(uri.host)) return trimmed;
+    if (!_shouldRewriteHost(uri.host)) {
+      if (uri.scheme == 'http') {
+        return uri.replace(scheme: 'https').toString();
+      }
+      return trimmed;
+    }
 
     final path = uri.path.isEmpty ? '/' : uri.path;
-    final buffer = StringBuffer('$webOrigin$path');
+    final normalizedPath = path.replaceAll('/media/media/', '/media/');
+    final buffer = StringBuffer('${appOrigin}$normalizedPath');
     if (uri.hasQuery) buffer.write('?${uri.query}');
     if (uri.hasFragment) buffer.write('#${uri.fragment}');
     return buffer.toString();

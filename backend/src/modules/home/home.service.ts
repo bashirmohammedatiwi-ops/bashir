@@ -3,6 +3,7 @@ import { CmsPageKey } from "@prisma/client";
 import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { PrismaService } from "../../common/prisma.service";
 import { withPlaceholderImages, hasRealProductImagesWhere } from "../../common/product-placeholder.util";
+import { rewriteMediaRecord } from "../../common/media-url.util";
 import { BrandsService } from "../catalog/brands.service";
 import { CategoriesService } from "../catalog/categories.service";
 import { SettingsService } from "../settings/settings.service";
@@ -157,11 +158,17 @@ export class HomeService {
 
     return {
       sections,
-      banners,
+      banners: banners.map((b) => ({
+        ...b,
+        image: rewriteMediaRecord(b.image as Record<string, unknown> | null | undefined),
+      })),
       categories,
       brands,
       packages,
-      skinConcerns,
+      skinConcerns: skinConcerns.map((c) => ({
+        ...c,
+        image: rewriteMediaRecord(c.image as Record<string, unknown> | null | undefined),
+      })),
       homeBlocks,
       flashSale: {
         endsAt: flashEndsAt,

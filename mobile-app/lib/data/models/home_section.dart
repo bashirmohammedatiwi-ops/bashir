@@ -1,4 +1,5 @@
 import '../../core/utils/json.dart';
+import '../../core/utils/media_url.dart';
 import 'banner.dart';
 import 'brand.dart';
 import 'category.dart';
@@ -114,7 +115,7 @@ class HomePackage {
       slug: asString(json['slug']),
       price: asInt(json['price']),
       originalPrice: json['originalPrice'] != null ? asInt(json['originalPrice']) : null,
-      coverUrl: url.isNotEmpty ? url : null,
+      coverUrl: url.isNotEmpty ? resolveMediaUrl(url) : null,
       link: json['link']?.toString(),
       cardSize: json['cardSize']?.toString(),
     );

@@ -1,4 +1,5 @@
 import '../../core/utils/json.dart';
+import '../../core/utils/media_url.dart';
 import '../../core/utils/formatters.dart';
 import 'address.dart';
 
@@ -41,7 +42,7 @@ class OrderItem {
       quantity: asInt(json['quantity'], 1),
       unitPrice: asInt(json['unitPrice']),
       totalPrice: asInt(json['totalPrice']),
-      imageUrl: img,
+      imageUrl: resolveMediaUrl(img),
     );
   }
 }

@@ -1,4 +1,5 @@
 import '../../core/utils/json.dart';
+import '../../core/utils/media_url.dart';
 import '../../core/l10n/localized_text.dart';
 import 'media.dart';
 
@@ -63,7 +64,9 @@ class Category {
       );
 
   String get imageUrl {
-    if (rawImageUrl != null && rawImageUrl!.isNotEmpty) return rawImageUrl!;
+    if (rawImageUrl != null && rawImageUrl!.isNotEmpty) {
+      return resolveMediaUrl(rawImageUrl);
+    }
     return image?.thumb ?? '';
   }
 }

@@ -6,6 +6,7 @@ import { CategoriesService } from "../catalog/categories.service";
 import { SettingsService } from "../settings/settings.service";
 
 import { buildAppLink, withResolvedLink } from "../../common/link-target.util";
+import { rewriteMediaRecord, rewriteMediaUrl } from "../../common/media-url.util";
 import { withPlaceholderImages, hasRealProductImagesWhere } from "../../common/product-placeholder.util";
 import { PRODUCT_ORDER_BY_BRAND } from "../../common/product-order.util";
 import { resolveCardSize, sectionStyleFromPayload, withCardSize } from "./card-sizes.util";
@@ -971,9 +972,9 @@ export class HomeSectionResolver {
       variants?.medium?.formats?.jpg ??
       variants?.thumb?.formats?.webp ??
       null;
-    if (rel) return rel;
+    if (rel) return rewriteMediaUrl(rel);
     if (media.publicUrlBase && media.filename) {
-      return `${media.publicUrlBase}/${media.filename}.webp`;
+      return rewriteMediaUrl(`${media.publicUrlBase}/${media.filename}.webp`);
     }
     return null;
   }
