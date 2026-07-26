@@ -62,6 +62,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         });
         return '/';
       }
+      if (path == '/categories' || path == '/categories-tab') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final container = ProviderScope.containerOf(context);
+          openCategoriesTab(context, container);
+        });
+        return '/';
+      }
       return null;
     },
     routes: [

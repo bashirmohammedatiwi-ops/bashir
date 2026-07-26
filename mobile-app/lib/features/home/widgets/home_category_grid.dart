@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
+import '../../../core/navigation/app_navigation.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/category.dart';
 import '../home_link.dart';
@@ -26,6 +26,8 @@ class HomeHeroCategoryStrip extends ConsumerWidget {
     if (categories.isEmpty) return const SizedBox.shrink();
     final s = ref.s;
 
+    final container = ProviderScope.containerOf(context, listen: false);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -33,7 +35,7 @@ class HomeHeroCategoryStrip extends ConsumerWidget {
           title: s.shopByCategory,
           compact: true,
           actionLabel: s.all,
-          onAction: () => context.push('/categories'),
+          onAction: () => openCategoriesTab(context, container),
         ),
         SizedBox(
           height: 108,
@@ -71,6 +73,7 @@ class HomeCategoryGrid extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (categories.isEmpty) return const SizedBox.shrink();
     final s = ref.s;
+    final container = ProviderScope.containerOf(context, listen: false);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -80,7 +83,7 @@ class HomeCategoryGrid extends ConsumerWidget {
             title: title!,
             actionLabel: showViewAll ? s.viewAll : null,
             onAction: showViewAll
-                ? (onViewAll ?? () => context.push('/categories'))
+                ? (onViewAll ?? () => openCategoriesTab(context, container))
                 : null,
             compact: true,
           ),

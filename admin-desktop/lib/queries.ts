@@ -77,6 +77,16 @@ export const mutations = {
   createCategory: (data: any) => api.post("/categories", data).then((r) => r.data?.data ?? r.data),
   updateCategory: (id: string, data: any) =>
     api.patch(`/categories/${id}`, data).then((r) => r.data?.data ?? r.data),
+  /** يوجّه تلقائياً حسب مستوى القسم (رئيسي / فرعي / ثانوي). */
+  saveCategory: (id: string, data: any, level?: "root" | "sub" | "tertiary") => {
+    if (level === "sub") {
+      return api.patch(`/subcategories/${id}`, data).then((r) => r.data?.data ?? r.data);
+    }
+    if (level === "tertiary") {
+      return api.patch(`/tertiary-sections/${id}`, data).then((r) => r.data?.data ?? r.data);
+    }
+    return api.patch(`/categories/${id}`, data).then((r) => r.data?.data ?? r.data);
+  },
   deleteCategory: (id: string) => api.delete(`/categories/${id}`).then((r) => r.data),
 
   createSubcategory: (data: any) =>

@@ -20,6 +20,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { MediaPicker } from "@/components/MediaPicker";
 import { slugify } from "@/lib/slugify";
 import { mediaThumb } from "@/lib/mediaUrl";
+import { apiErrorMessage } from "@/lib/apiError";
 import { mutations, queries } from "@/lib/queries";
 
 export default function CategoriesPage() {
@@ -42,6 +43,9 @@ export default function CategoriesPage() {
       setOpen(false);
       qc.invalidateQueries({ queryKey: ["categories"] });
       qc.invalidateQueries({ queryKey: ["categories-full"] });
+    },
+    onError: (e) => {
+      message.error(apiErrorMessage(e, "فشل الحفظ"));
     },
   });
 

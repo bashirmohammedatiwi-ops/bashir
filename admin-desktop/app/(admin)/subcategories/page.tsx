@@ -60,7 +60,7 @@ export default function SubcategoriesPage() {
   );
 
   const upsert = useMutation({
-    mutationFn: async (values: any) => {
+    mutationFn: async ({ values, editId }: { values: any; editId?: string }) => {
       const nameAr = (values.nameAr || values.name || "").trim();
       const payload = {
         ...values,
@@ -69,8 +69,8 @@ export default function SubcategoriesPage() {
         nameEn: values.nameEn?.trim() || undefined,
         slug: values.slug?.trim() || slugify(nameAr || values.nameEn, "section"),
       };
-      return editing?.id
-        ? mutations.updateSubcategory(editing.id, payload)
+      return editId
+        ? mutations.updateSubcategory(editId, payload)
         : mutations.createSubcategory(payload);
     },
     onSuccess: () => {
@@ -275,7 +275,11 @@ export default function SubcategoriesPage() {
         destroyOnHidden
         width={520}
       >
-        <Form layout="vertical" form={form} onFinish={(v) => upsert.mutate(v)}>
+        <Form
+          layout="vertical"
+          form={form}
+          onFinish={(v) => upsert.mutate({ values: v, editId: editing?.id })}
+        >
           <Form.Item
             name="parentId"
             label="القسم"

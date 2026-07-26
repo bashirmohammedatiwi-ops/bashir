@@ -111,7 +111,9 @@ class AppStrings {
   String get noCategories => isAr ? 'لا توجد أقسام' : 'No categories';
   String get categoriesHeader => isAr ? 'الأقسام' : 'Categories';
   String get categoriesBrowseHint =>
-      isAr ? 'اختاري من الشريط · تصفّحي البراندات' : 'Pick from the rail · browse brands';
+      isAr ? 'اكتشفي ما يناسبك بصرياً وسهولة' : 'Discover what suits you — visually and easily';
+  String get categoriesSearchPlaceholder =>
+      isAr ? 'ابحثي عن قسم أو منتج...' : 'Search for a category or product...';
   String get searchShort => isAr ? 'بحث' : 'Search';
   String get browseInDetail => isAr ? 'تصفّح بالتفصيل' : 'Browse in detail';
   String groupCount(int n) => isAr ? '$n مجموعة' : '$n groups';

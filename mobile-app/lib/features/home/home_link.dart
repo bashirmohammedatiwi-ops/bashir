@@ -70,7 +70,7 @@ void openSectionLink(
     return;
   }
   if (legacy.isNotEmpty) {
-    if (legacy == '/categories-tab') {
+    if (legacy == '/categories-tab' || legacy == '/categories') {
       openCategoriesTab(context, ProviderScope.containerOf(context, listen: false));
       return;
     }
@@ -99,7 +99,7 @@ void openBannerLink(BuildContext context, AppBanner banner) {
   );
 }
 
-/// «عرض الكل» — يدعم query أو مسار كامل (/brands)
+/// «عرض الكل» — يدعم query أو مسار كامل (/brands, /categories-tab)
 void openViewAllLink(
   BuildContext context, {
   String? query,
@@ -107,6 +107,10 @@ void openViewAllLink(
 }) {
   final raw = (query ?? fallbackQuery ?? '').trim();
   if (raw.isEmpty) return;
+  if (raw == '/categories' || raw == '/categories-tab') {
+    openCategoriesTab(context, ProviderScope.containerOf(context, listen: false));
+    return;
+  }
   if (raw.startsWith('/')) {
     context.push(raw);
     return;

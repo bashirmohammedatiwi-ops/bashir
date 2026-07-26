@@ -461,7 +461,24 @@ export class CategoriesService {
   }
 
   async update(id: string, data: any) {
-    await this.ensureRootSection(id);
+    const existing = await this.prisma.category.findUnique({
+      where: { id },
+      select: { id: true, parentId: true },
+    });
+    if (!existing) throw new NotFoundException("Category not found");
+
+    if (existing.parentId) {
+      const parent = await this.prisma.category.findUnique({
+        where: { id: existing.parentId },
+        select: { parentId: true },
+      });
+      if (!parent) throw new NotFoundException("Category not found");
+      if (!parent.parentId) {
+        return this.updateSubcategory(id, data as UpdateSubcategoryDto);
+      }
+      return this.updateTertiarySection(id, data as UpdateTertiarySectionDto);
+    }
+
     if (data.parentId) {
       throw new BadRequestException("Use PATCH /subcategories/:id for sub-sections");
     }
