@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/l10n/app_strings.dart';
-import '../../core/utils/legal_links.dart';
+import '../../core/utils/support_links.dart';
 import '../cart/widgets/cart_theme.dart';
 import '../profile/widgets/profile_ui.dart';
 
@@ -43,6 +44,17 @@ class LegalDocumentScreen extends ConsumerWidget {
               color: CartTheme.charcoal.withValues(alpha: 0.85),
             ),
           ),
+          const SizedBox(height: 24),
+          TextButton.icon(
+            onPressed: () {
+              final url = type == LegalDocumentType.privacy
+                  ? AppConfig.privacyPolicyUrl
+                  : AppConfig.termsOfServiceUrl;
+              openExternalUrl(url);
+            },
+            icon: const Icon(Icons.open_in_new_rounded, size: 18),
+            label: Text(s.isAr ? 'عرض النسخة على الموقع' : 'View on website'),
+          ),
         ],
       ),
     );
@@ -57,7 +69,7 @@ class LegalDocumentScreen extends ConsumerWidget {
 • الاسم ورقم الهاتف عند إنشاء الحساب أو إتمام الطلب.
 • عناوين التوصيل التي تضيفينها.
 • سجل الطلبات والمفضلة ونقاط الولاء المرتبطة بحسابك.
-• رمز الجهاز لإشعارات الطلبات (إن فعّلتِ الإشعارات).
+• إشعارات داخل التطبيق (قائمة حسابي) عند تسجيل الدخول.
 
 كيف نستخدم البيانات
 • معالجة الطلبات والتوصيل والدعم.
@@ -85,7 +97,7 @@ Data we collect
 • Name and phone number when you register or place an order.
 • Delivery addresses you save.
 • Order history, wishlist, and loyalty points linked to your account.
-• Device token for order notifications (if you enable push).
+• In-app notifications (Account → Notifications) when signed in.
 
 How we use data
 • Process orders, delivery, and customer support.
@@ -174,8 +186,6 @@ Contact: support@deemaalhayat.com
 }
 
 void openLegalDocument(BuildContext context, LegalDocumentType type) {
-  final url = type == LegalDocumentType.privacy
-      ? AppConfig.privacyPolicyUrl
-      : AppConfig.termsOfServiceUrl;
-  openExternalUrl(url);
+  final path = type == LegalDocumentType.privacy ? '/privacy' : '/terms';
+  context.push(path);
 }

@@ -76,6 +76,7 @@ class AppStrings {
   String get support => isAr ? 'الدعم' : 'Support';
   String get whatsappSupport => isAr ? 'تواصل عبر واتساب' : 'Contact via WhatsApp';
   String get callUs => isAr ? 'اتصل بنا' : 'Call Us';
+  String get emailSupport => isAr ? 'راسلينا بالبريد' : 'Email us';
   String get settings => isAr ? 'الإعدادات' : 'Settings';
   String get editProfile => isAr ? 'تعديل البيانات' : 'Edit Profile';
   String get changePassword => isAr ? 'تغيير كلمة المرور' : 'Change Password';
@@ -220,7 +221,7 @@ class AppStrings {
   String get inStock => isAr ? 'متوفر في المخزون' : 'In stock';
   String get selectShade => isAr ? 'اختاري الدرجة' : 'Select shade';
   String get authentic100 => isAr ? 'منتجات\nأصلية 100%' : '100%\nAuthentic';
-  String get securePayment => isAr ? 'دفع\nآمن' : 'Secure\nPayment';
+  String get securePayment => isAr ? 'دفع\nعند الاستلام' : 'Cash on\nDelivery';
   String get thanksForReview => isAr ? 'شكراً على تقييمك!' : 'Thanks for your review!';
   String get ratingsTitle => isAr ? 'التقييمات' : 'Ratings';
   String get addReview => isAr ? 'أضيفي تقييماً' : 'Add a review';

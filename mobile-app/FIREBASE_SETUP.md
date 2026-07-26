@@ -1,5 +1,10 @@
 # إعداد Firebase Cloud Messaging (FCM)
 
+> **ملاحظة:** الإصدار **1.0** يرسل الإشعارات **داخل التطبيق فقط** (`pushNotificationsEnabled = false`).
+> هذا الدليل لتفعيل **Push على شاشة الهاتف** في التحديث **1.1+**.
+
+في التحديث 1.1 (عند تفعيل إشعارات Push): أعد `aps-environment` و`UIBackgroundModes` في iOS، و`POST_NOTIFICATIONS` في Android، واضبط `AppConfig.pushNotificationsEnabled = true`.
+
 Push يحتاج **3 أجزاء** تعمل معاً:
 
 ```

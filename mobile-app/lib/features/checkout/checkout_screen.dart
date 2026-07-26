@@ -191,10 +191,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _placeOrder() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_paymentMethod == 'CARD') {
-      AppSnackbar.show(context, 'الدفع بالبطاقة قيد التفعيل — اختر الدفع عند الاستلام حالياً');
-      return;
-    }
     HapticFeedback.mediumImpact();
     setState(() => _placing = true);
     try {

@@ -40,25 +40,46 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1
 
 1. افتح `ios/Runner.xcworkspace` في Xcode على Mac.
 2. Team: `629ARMBUX8` — Bundle ID: `com.alhayaa.alhayaa`.
-3. (اختياري للإشعارات) انسخ `ios/GoogleService-Info.plist.example` إلى `ios/Runner/GoogleService-Info.plist` واملأه من Firebase.
-4. ابنِ وارفع:
+3. ابنِ وارفع:
    ```bash
-   flutter build ipa --release \
-     --export-options-plist=ios/ExportOptions.plist \
-     --dart-define=FIREBASE_API_KEY=... \
-     --dart-define=FIREBASE_APP_ID=... \
-     --dart-define=FIREBASE_MESSAGING_SENDER_ID=... \
-     --dart-define=FIREBASE_PROJECT_ID=...
+   flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
    ```
-5. أو من Xcode: Product → Archive → Distribute App.
+4. أو من Xcode: Product → Archive → Distribute App.
 
-**جاهز في المستودع:** `PrivacyInfo.xcprivacy`، `ITSAppUsesNonExemptEncryption`، entitlements للروابط والإشعارات، `ExportOptions.plist`.
+> **الإصدار 1.0:** إشعارات Push على شاشة الهاتف **مؤجّلة للتحديث 1.1**. قائمة الإشعارات داخل التطبيق (حسابي) تعمل بدون Firebase.
+
+**جاهز في المستودع:** `PrivacyInfo.xcprivacy`، `ITSAppUsesNonExemptEncryption`، Universal Links، `ExportOptions.plist`.
 
 **على السيرفر (بعد `git pull` + `./scripts/update.sh`):**
 - `https://deemaalhayat.com/.well-known/apple-app-site-association`
 - `https://deemaalhayat.com/.well-known/assetlinks.json` — شغّل `infra/scripts/generate-android-assetlinks.sh` بمفتاح الإصدار ثم أعد النشر.
 
-**يدوياً في App Store Connect:** لقطات شاشة، وصف، فئة، بيانات الخصوصية، حساب تجريبي للمراجعة.
+**يدوياً في App Store Connect:** لقطات شاشة iPhone 6.7"، وصف عربي/إنجليزي، فئة Shopping، بيانات الخصوصية (بدون تتبع، بدون Push في v1)، حساب تجريبي.
+
+### قائمة مراجعة App Store (v1.0)
+
+| البند | الحالة |
+|-------|--------|
+| Bundle ID `com.alhayaa.alhayaa` | جاهز |
+| Privacy Manifest + لا تتبع | جاهز |
+| حذف الحساب داخل التطبيق | جاهز |
+| COD فقط — لا IAP | جاهز |
+| Push معطّل | جاهز |
+| الخصوصية/الشروط داخل التطبيق (عربي + إنجليزي) | جاهز |
+| دعم: بريد + واتساب/هاتف | جاهز |
+| iPhone فقط (لا لقطات iPad) | جاهز |
+| Associated Domains على Apple Developer | **يدوي على Mac** |
+| بناء IPA ورفعه | **يدوي على Mac** |
+
+**ملاحظات للمراجع (Review Notes):**
+```
+Demo account: [PHONE] / [PASSWORD]
+v1.0: Cash on delivery only — no in-app purchases.
+Push notifications disabled. Browse without login; checkout requires sign-in.
+Account deletion: Account → Delete Account.
+Camera used only for QR/barcode product scan.
+Support: support@deemaalhayat.com
+```
 
 ## معلومات المتجر
 
@@ -72,11 +93,12 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1
 | حذف الحساب | حسابي → حذف الحساب |
 | اللغات | العربية، الإنجليزية |
 
-## Firebase (اختياري — للإشعارات)
+## Firebase / Push (التحديث 1.1)
 
-أضف `google-services.json` (Android) و `GoogleService-Info.plist` (iOS) ثم عيّن متغيرات البيئة عند البناء (راجع `lib/core/push/push_service.dart`).
+> **الإصدار الحالي 1.0:** `AppConfig.pushNotificationsEnabled = false` — لا يُطلب إذن إشعارات ولا Push على شاشة الهاتف.
+> قائمة الإشعارات داخل التطبيق (من السيرفر) تعمل بدون Firebase.
 
-بدون Firebase يعمل التطبيق كاملاً باستثناء الإشعارات الفورية.
+لتفعيل Push في تحديث لاحق، راجع `FIREBASE_SETUP.md` واضبط `pushNotificationsEnabled = true`.
 
 ## الإصدار
 

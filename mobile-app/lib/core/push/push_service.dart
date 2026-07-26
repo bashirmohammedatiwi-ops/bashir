@@ -12,6 +12,7 @@ import 'foreground_notification_banner.dart';
 import '../../data/services/api_service.dart';
 import '../../features/auth/auth_provider.dart';
 import '../../features/profile/profile_providers.dart';
+import '../config/app_config.dart';
 
 /// معالجة الإشعارات في الخلفية (مطلوب لـ FCM).
 @pragma('vm:entry-point')
@@ -26,6 +27,7 @@ class PushService {
   static bool _initialized = false;
 
   static Future<void> init(WidgetRef ref) async {
+    if (!AppConfig.pushNotificationsEnabled) return;
     if (_initialized) return;
 
     try {

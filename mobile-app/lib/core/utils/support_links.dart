@@ -14,6 +14,21 @@ Future<bool> callPhone(String? phone) async {
   return launchUrl(Uri.parse('tel:$raw'));
 }
 
+Future<bool> openEmail(String email, {String? subject, String? body}) async {
+  final trimmed = email.trim();
+  if (trimmed.isEmpty) return false;
+  final params = <String, String>{};
+  if (subject != null && subject.isNotEmpty) params['subject'] = subject;
+  if (body != null && body.isNotEmpty) params['body'] = body;
+  final uri = Uri(
+    scheme: 'mailto',
+    path: trimmed,
+    queryParameters: params.isEmpty ? null : params,
+  );
+  if (!await canLaunchUrl(uri)) return false;
+  return launchUrl(uri);
+}
+
 Future<bool> openExternalUrl(String url) async {
   final trimmed = url.trim();
   if (trimmed.isEmpty) return false;

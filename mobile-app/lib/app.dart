@@ -48,7 +48,9 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> {
     }
 
     final authStatus = ref.watch(authProvider).status;
-    if (!_pushInited && authStatus != AuthStatus.unknown) {
+    if (AppConfig.pushNotificationsEnabled &&
+        !_pushInited &&
+        authStatus != AuthStatus.unknown) {
       _pushInited = true;
       WidgetsBinding.instance.addPostFrameCallback((_) => PushService.init(ref));
     }

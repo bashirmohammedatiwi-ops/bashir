@@ -5,6 +5,10 @@ class AppConfig {
   /// الدومين الرسمي للمتجر (ويب + تطبيق).
   static const String appDomain = 'deemaalhayat.com';
 
+  /// إشعارات Push على شاشة الهاتف — مؤجّلة للتحديث القادم (1.1).
+  /// الإشعارات داخل التطبيق (قائمة حسابي) تعمل بدون Firebase.
+  static const bool pushNotificationsEnabled = false;
+
   static const String appScheme = 'https';
 
   /// أصل الموقع: `https://deemaalhayat.com`

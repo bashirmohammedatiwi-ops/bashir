@@ -7,15 +7,13 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/providers/app_info_provider.dart';
 import '../../core/utils/phone_util.dart';
 import '../../core/utils/responsive.dart';
-import '../../core/utils/support_links.dart';
 import '../../core/widgets/language_toggle_bar.dart';
 import '../auth/auth_provider.dart';
-import '../cart/widgets/cart_theme.dart';
-import '../catalog/catalog_providers.dart';
 import 'profile_providers.dart';
 import '../settings/legal_document_screen.dart';
 import 'widgets/account_theme.dart';
 import 'widgets/profile_ui.dart';
+import 'widgets/support_contact_section.dart';
 
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
@@ -88,7 +86,7 @@ class AccountScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: AccountTheme.sectionGap),
-                _SupportSection(s: s),
+                SupportContactSection(s: s),
                 const SizedBox(height: AccountTheme.sectionGap),
                 ProfileSectionTitle(s.isAr ? 'الحساب' : 'Account', icon: Icons.person_outline_rounded),
                 ProfileMenuCard(
@@ -227,49 +225,7 @@ class _ProfileHero extends ConsumerWidget {
   }
 }
 
-class _SupportSection extends ConsumerWidget {
-  final AppStrings s;
-  const _SupportSection({required this.s});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(homeFeedProvider).maybeWhen(data: (d) => d.settings, orElse: () => null);
-    final whatsapp = settings?.whatsapp;
-    final phone = settings?.supportPhone;
-    if ((whatsapp == null || whatsapp.isEmpty) && (phone == null || phone.isEmpty)) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ProfileSectionTitle(s.isAr ? 'الدعم' : 'Support', icon: Icons.support_agent_outlined),
-        ProfileMenuCard(
-          children: [
-            if (whatsapp != null && whatsapp.isNotEmpty)
-              ProfileMenuTile(
-                icon: Icons.chat_outlined,
-                title: s.whatsappSupport,
-                subtitle: s.isAr ? 'تواصلي معنا مباشرة' : 'Chat with us',
-                iconColor: const Color(0xFF25D366),
-                onTap: () => openWhatsApp(whatsapp, message: s.whatsappHelpMessage),
-              ),
-            if (phone != null && phone.isNotEmpty)
-              ProfileMenuTile(
-                icon: Icons.phone_outlined,
-                title: s.callUs,
-                subtitle: phone,
-                iconColor: CartTheme.brand,
-                onTap: () => callPhone(phone),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _GuestView extends StatelessWidget {
+class _GuestView extends ConsumerWidget {
   final AppStrings s;
   final double top;
   final double bottomPad;
@@ -277,7 +233,7 @@ class _GuestView extends StatelessWidget {
   const _GuestView({required this.s, required this.top, required this.bottomPad});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return ListView(
       padding: EdgeInsets.fromLTRB(ProfileUi.hPad, top + 10, ProfileUi.hPad, bottomPad),
       children: [
@@ -336,6 +292,8 @@ class _GuestView extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: AccountTheme.sectionGap),
+        SupportContactSection(s: s),
         const SizedBox(height: AccountTheme.sectionGap),
         ProfileSectionTitle(s.legalSection, icon: Icons.gavel_outlined),
         ProfileMenuCard(

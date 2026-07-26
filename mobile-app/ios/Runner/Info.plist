@@ -48,9 +48,11 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>UIBackgroundModes</key>
+	<key>LSApplicationQueriesSchemes</key>
 	<array>
-		<string>remote-notification</string>
+		<string>mailto</string>
+		<string>tel</string>
+		<string>https</string>
 	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>

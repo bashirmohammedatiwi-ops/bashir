@@ -883,7 +883,7 @@ class _TrustStrip extends ConsumerWidget {
           const _TrustDivider(),
           _TrustItem(icon: Icons.local_shipping_rounded, label: s.fastDelivery),
           const _TrustDivider(),
-          _TrustItem(icon: Icons.lock_rounded, label: s.securePayment),
+          _TrustItem(icon: Icons.money_rounded, label: s.securePayment),
         ],
       ),
     );

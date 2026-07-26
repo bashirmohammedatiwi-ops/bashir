@@ -11,6 +11,7 @@ import '../../core/utils/support_links.dart';
 import '../cart/widgets/cart_theme.dart';
 import '../profile/widgets/account_theme.dart';
 import '../profile/widgets/profile_ui.dart';
+import '../profile/widgets/support_contact_section.dart';
 import 'legal_document_screen.dart';
 
 class AboutAppScreen extends ConsumerWidget {
@@ -52,6 +53,8 @@ class AboutAppScreen extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: AccountTheme.sectionGap),
+          SupportContactSection(s: s),
           const SizedBox(height: AccountTheme.sectionGap),
           ProfileSectionTitle(s.website, icon: Icons.language_rounded),
           ProfileMenuCard(
