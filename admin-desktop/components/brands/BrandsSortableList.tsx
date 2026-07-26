@@ -10,31 +10,12 @@ import {
 } from "@ant-design/icons";
 import { Avatar, Button, Collapse, Empty, Popconfirm, Space, Spin, Switch, Tag, Typography } from "antd";
 import { useCallback, useState } from "react";
-import { mediaThumb, type MediaRecord } from "@/lib/mediaUrl";
+import type { BrandCollection, BrandRow } from "@/lib/brandTypes";
+import { mediaThumb } from "@/lib/mediaUrl";
 
 const { Text } = Typography;
 
-export type BrandRow = {
-  id: string;
-  name: string;
-  slug?: string;
-  initial?: string;
-  bgColorHex?: string;
-  logoId?: string | null;
-  logo?: MediaRecord | null;
-  productCount?: number;
-  isFeatured?: boolean;
-  isActive?: boolean;
-  position?: number;
-  collections?: Array<{
-    id: string;
-    name: string;
-    slug?: string;
-    position?: number;
-    isActive?: boolean;
-    description?: string;
-  }>;
-};
+export type { BrandCollection, BrandRow } from "@/lib/brandTypes";
 
 type Props = {
   brands: BrandRow[];
@@ -46,7 +27,7 @@ type Props = {
   onEdit: (brand: BrandRow) => void;
   onDelete: (brand: BrandRow) => void;
   onAddCollection: (brand: BrandRow) => void;
-  onEditCollection: (brand: BrandRow, collection: BrandRow["collections"][number]) => void;
+  onEditCollection: (brand: BrandRow, collection: BrandCollection) => void;
   onDeleteCollection: (collectionId: string) => void;
 };
 

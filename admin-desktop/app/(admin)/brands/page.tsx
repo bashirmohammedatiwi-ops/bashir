@@ -15,7 +15,8 @@ import {
   message,
 } from "antd";
 import { useEffect, useMemo, useState } from "react";
-import { BrandsSortableList, type BrandRow } from "@/components/brands/BrandsSortableList";
+import { BrandsSortableList } from "@/components/brands/BrandsSortableList";
+import type { BrandCollection, BrandRow } from "@/lib/brandTypes";
 import { MediaPicker } from "@/components/MediaPicker";
 import { PageHeader } from "@/components/PageHeader";
 import { fetchCatalogBrands } from "@/lib/catalogImport";
@@ -245,7 +246,7 @@ export default function BrandsPage() {
     setColOpen(true);
   }
 
-  function openEditCollection(brand: BrandRow, col: NonNullable<BrandRow["collections"]>[number]) {
+  function openEditCollection(brand: BrandRow, col: BrandCollection) {
     setBrandForCol(brand);
     setEditingCol({ ...col, brandId: brand.id, brandName: brand.name });
     colForm.setFieldsValue({

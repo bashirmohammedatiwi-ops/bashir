@@ -9,7 +9,7 @@
     "dev:electron": "wait-on http://localhost:3001 && tsc -p tsconfig.electron.json && electron .",
     "dev": "concurrently \"npm:dev:next\" \"npm:dev:electron\"",
     "build:next": "next build",
-    "build:web": "next build",
+    "build:web": "npm run lint && next build",
     "build:electron": "tsc -p tsconfig.electron.json",
     "build": "npm run build:next && npm run build:electron",
     "preview:web": "npx --yes serve out -p 3001 -s",
