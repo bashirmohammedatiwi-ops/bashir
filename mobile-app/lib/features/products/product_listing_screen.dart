@@ -286,7 +286,8 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
   void _openSort() {
     final s = ref.read(stringsProvider);
     final options = {
-      'default': (s.sortLatest, Icons.schedule_rounded),
+      'default': (s.sortByBrand, Icons.layers_rounded),
+      'latest': (s.sortLatest, Icons.schedule_rounded),
       'price_asc': (s.sortPriceAsc, Icons.arrow_downward_rounded),
       'price_desc': (s.sortPriceDesc, Icons.arrow_upward_rounded),
       'rating': (s.sortRating, Icons.star_rounded),

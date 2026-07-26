@@ -141,20 +141,96 @@ export class BrandsService {
     private readonly settings: SettingsService,
   ) {}
 
-  async list(opts?: { featuredOnly?: boolean; all?: boolean; storefront?: boolean }) {
-    // واجهة المتجر: إخفاء البراندات الفارغة إذا فُعّل الخيار من الإعدادات
-    let productsFilter: Prisma.BrandWhereInput["products"];
+  private categoryProductScope(
+    categoryId?: string,
+    subcategoryId?: string,
+    tertiaryCategoryId?: string,
+  ): Prisma.ProductWhereInput | null {
+    const cat = categoryId?.trim();
+    const sub = subcategoryId?.trim();
+    const tertiary = tertiaryCategoryId?.trim();
+    if (!cat && !sub && !tertiary) return null;
+
+    if (tertiary) {
+      return {
+        OR: [
+          { tertiaryCategoryId: tertiary },
+          { tertiaryCategories: { some: { id: tertiary } } },
+        ],
+      };
+    }
+    if (sub) {
+      return {
+        OR: [
+          { subcategoryId: sub },
+          { subcategories: { some: { id: sub } } },
+          { tertiaryCategory: { parentId: sub } },
+          { tertiaryCategories: { some: { parentId: sub } } },
+        ],
+      };
+    }
+    return {
+      OR: [
+        { categoryId: cat },
+        { subcategory: { parentId: cat } },
+        { subcategories: { some: { parentId: cat } } },
+        { tertiaryCategory: { parent: { parentId: cat } } },
+        { tertiaryCategories: { some: { parent: { parentId: cat } } } },
+      ],
+    };
+  }
+
+  async list(opts?: {
+    featuredOnly?: boolean;
+    all?: boolean;
+    storefront?: boolean;
+    activeProductsOnly?: boolean;
+    categoryId?: string;
+    subcategoryId?: string;
+    tertiaryCategoryId?: string;
+  }) {
+    const categoryId = opts?.categoryId?.trim();
+    const subcategoryId = opts?.subcategoryId?.trim();
+    const tertiaryCategoryId = opts?.tertiaryCategoryId?.trim();
+    const hasCategoryScope = Boolean(categoryId || subcategoryId || tertiaryCategoryId);
+
+    const productWhere: Prisma.ProductWhereInput = {};
+    let hasProductScope = false;
+
+    const categoryScope = this.categoryProductScope(categoryId, subcategoryId, tertiaryCategoryId);
+    if (categoryScope) {
+      Object.assign(productWhere, categoryScope);
+      hasProductScope = true;
+    }
+
+    const legacyCategoryList = hasCategoryScope && !opts?.all;
+    if (opts?.activeProductsOnly || opts?.storefront || legacyCategoryList) {
+      productWhere.isActive = true;
+      hasProductScope = true;
+    }
+
+    let storefrontSettings: Record<string, unknown> | null = null;
     if (opts?.storefront) {
-      const s = (await this.settings.getAll()) as Record<string, unknown>;
-      if (s.hideEmptyBrands) {
-        productsFilter = {
-          some: {
-            isActive: true,
-            ...(s.hideOutOfStock ? { stock: { gt: 0 } } : {}),
-          },
-        };
+      storefrontSettings = (await this.settings.getAll()) as Record<string, unknown>;
+      if (storefrontSettings.hideOutOfStock) {
+        productWhere.stock = { gt: 0 };
+        hasProductScope = true;
       }
     }
+
+    let productsFilter: Prisma.BrandWhereInput["products"];
+    if (hasProductScope) {
+      productsFilter = { some: productWhere };
+    } else if (opts?.storefront && storefrontSettings?.hideEmptyBrands) {
+      productsFilter = {
+        some: {
+          isActive: true,
+          ...(storefrontSettings.hideOutOfStock ? { stock: { gt: 0 } } : {}),
+        },
+      };
+    }
+
+    const countWhere = hasProductScope ? productWhere : undefined;
 
     const rows = await this.prisma.brand.findMany({
       where: {
@@ -169,7 +245,12 @@ export class BrandsService {
           where: opts?.all ? undefined : { isActive: true },
           orderBy: { position: "asc" },
         },
-        _count: { select: { products: true, collections: true } },
+        _count: {
+          select: {
+            products: countWhere ? { where: countWhere } : true,
+            collections: true,
+          },
+        },
       },
     });
     return rows.map(mapBrand);
@@ -181,53 +262,39 @@ export class BrandsService {
     subcategoryId?: string;
     storefront?: boolean;
   }) {
-    const categoryId = opts.categoryId?.trim();
-    const subcategoryId = opts.subcategoryId?.trim();
-    if (!categoryId && !subcategoryId) return [];
-
-    const s = opts.storefront ? ((await this.settings.getAll()) as Record<string, unknown>) : {};
-    const productWhere: Prisma.ProductWhereInput = {
-      isActive: true,
-      ...(s.hideOutOfStock ? { stock: { gt: 0 } } : {}),
-      ...(subcategoryId
-        ? {
-            OR: [
-              { subcategoryId },
-              { subcategories: { some: { id: subcategoryId } } },
-              { tertiaryCategory: { parentId: subcategoryId } },
-              { tertiaryCategories: { some: { parentId: subcategoryId } } },
-            ],
-          }
-        : categoryId
-          ? {
-              OR: [
-                { categoryId },
-                { subcategory: { parentId: categoryId } },
-                { subcategories: { some: { parentId: categoryId } } },
-                { tertiaryCategory: { parent: { parentId: categoryId } } },
-                { tertiaryCategories: { some: { parent: { parentId: categoryId } } } },
-              ],
-            }
-          : {}),
-    };
-
-    const brandRows = await this.prisma.product.findMany({
-      where: productWhere,
-      select: { brandId: true },
-      distinct: ["brandId"],
+    return this.list({
+      categoryId: opts.categoryId,
+      subcategoryId: opts.subcategoryId,
+      storefront: opts.storefront,
     });
-    const brandIds = brandRows.map((r) => r.brandId).filter(Boolean) as string[];
-    if (!brandIds.length) return [];
+  }
 
-    const rows = await this.prisma.brand.findMany({
-      where: { id: { in: brandIds }, isActive: true },
+  /** حفظ ترتيب البراندات — يدعم إعادة ترتيب قائمة جزئية (مع الفلاتر) عبر دمجها في الترتيب العام. */
+  async reorder(orderedIds: string[]) {
+    const ids = [...new Set((orderedIds ?? []).map((id) => String(id || "").trim()).filter(Boolean))];
+    if (!ids.length) throw new BadRequestException("ids required");
+
+    const all = await this.prisma.brand.findMany({
       orderBy: [{ position: "asc" }, { name: "asc" }],
-      include: {
-        logo: true,
-        _count: { select: { products: true } },
-      },
+      select: { id: true },
     });
-    return rows.map(mapBrand);
+    const allIds = all.map((b) => b.id);
+    const known = new Set(allIds);
+    for (const id of ids) {
+      if (!known.has(id)) throw new BadRequestException(`Unknown brand: ${id}`);
+    }
+
+    let merged = ids;
+    if (ids.length !== allIds.length) {
+      const subset = new Set(ids);
+      let cursor = 0;
+      merged = allIds.map((id) => (subset.has(id) ? ids[cursor++]! : id));
+    }
+
+    await this.prisma.$transaction(
+      merged.map((id, position) => this.prisma.brand.update({ where: { id }, data: { position } })),
+    );
+    return { success: true, count: merged.length };
   }
 
   /** إخفاء البراندات بدون منتجات ظاهرة — لوحة التحكم → إعدادات المتجر. */

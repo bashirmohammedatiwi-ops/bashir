@@ -591,7 +591,7 @@ export class ProductsService {
     return null;
   }
 
-  private buildOrderBy(sort?: string): Prisma.ProductOrderByWithRelationInput {
+  private buildOrderBy(sort?: string): Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[] {
     switch (sort) {
       case "price_asc":
         return { price: "asc" };
@@ -603,8 +603,10 @@ export class ProductsService {
         return { soldCount: "desc" };
       case "oldest":
         return { createdAt: "asc" };
-      default:
+      case "latest":
         return { createdAt: "desc" };
+      default:
+        return [{ brand: { position: "asc" } }, { position: "asc" }, { createdAt: "desc" }];
     }
   }
 }

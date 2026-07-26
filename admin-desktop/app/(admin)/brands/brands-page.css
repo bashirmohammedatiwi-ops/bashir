@@ -1,0 +1,268 @@
+.brands-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bp-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.bp-stat {
+  background: #fff;
+  border: 1px solid #ebe6f0;
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+
+.bp-stat strong {
+  display: block;
+  font-size: 22px;
+  color: #4a2466;
+  line-height: 1.1;
+}
+
+.bp-stat span {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #7a7084;
+}
+
+.bp-toolbar {
+  background: #fff;
+  border: 1px solid #ebe6f0;
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bp-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.bp-filter-label {
+  font-size: 13px;
+  color: #5c5368;
+  white-space: nowrap;
+}
+
+.bp-preview-card {
+  background: linear-gradient(180deg, #fff 0%, #faf8fc 100%);
+  border: 1px solid #ebe6f0;
+  border-radius: 16px;
+  padding: 14px 16px;
+}
+
+.bp-preview-title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4a2466;
+}
+
+.bp-preview-strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.bp-preview-chip {
+  flex: 0 0 auto;
+  width: 68px;
+  text-align: center;
+}
+
+.bp-preview-chip .ant-avatar {
+  border: 2px solid #e8e2ee;
+}
+
+.bp-preview-chip span {
+  display: block;
+  margin-top: 5px;
+  font-size: 10px;
+  line-height: 1.2;
+  color: #6e6478;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bp-list-card {
+  background: #fff;
+  border: 1px solid #ebe6f0;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.bp-list-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f0ebf4;
+}
+
+.bp-list-card-head h3 {
+  margin: 0;
+  font-size: 15px;
+  color: #2a2230;
+}
+
+.bp-list-loading {
+  display: grid;
+  place-items: center;
+  min-height: 220px;
+}
+
+.bp-sortable-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+}
+
+.bp-sortable-list.is-saving {
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.bp-partial-hint {
+  margin: 0 0 4px;
+  padding: 0 4px;
+  font-size: 12px;
+  color: #7a7084;
+}
+
+.bp-brand-card {
+  border: 1px solid #ebe6f0;
+  border-radius: 14px;
+  background: #fff;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.bp-brand-card.is-over {
+  border-color: #e1306c;
+  box-shadow: 0 0 0 2px rgba(225, 48, 108, 0.12);
+}
+
+.bp-brand-card.is-dragging {
+  opacity: 0.55;
+}
+
+.bp-brand-card.is-inactive {
+  opacity: 0.72;
+}
+
+.bp-brand-card-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  flex-wrap: wrap;
+}
+
+.bp-drag-handle {
+  border: none;
+  background: #f5f1f8;
+  color: #9a8faa;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  cursor: grab;
+}
+
+.bp-drag-handle:active {
+  cursor: grabbing;
+}
+
+.bp-rank {
+  min-width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #f3edf8;
+  color: #4a2466;
+  font-size: 12px;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+}
+
+.bp-logo {
+  flex-shrink: 0;
+}
+
+.bp-brand-meta {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.bp-brand-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.bp-brand-name {
+  font-size: 15px !important;
+}
+
+.bp-brand-sub {
+  font-size: 12px !important;
+}
+
+.bp-brand-actions {
+  margin-inline-start: auto;
+}
+
+.bp-collections-collapse {
+  border-top: 1px dashed #efe9f4;
+}
+
+.bp-collections-collapse .ant-collapse-header {
+  padding: 8px 16px !important;
+  font-size: 12px !important;
+  color: #6e6478 !important;
+}
+
+.bp-collections-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 16px 12px;
+}
+
+.bp-collection-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #faf8fc;
+}
+
+.bp-collection-name {
+  flex: 1 1 140px;
+  font-size: 13px;
+  color: #4a4054;
+}
+
+@media (max-width: 768px) {
+  .bp-brand-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

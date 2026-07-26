@@ -26,7 +26,23 @@ export const queries = {
     api
       .get("/tertiary-sections", { params: { all: 1, ...params } })
       .then((r) => r.data?.data ?? r.data),
-  brands: () => api.get("/brands", { params: { all: 1 } }).then((r) => r.data?.data ?? r.data),
+  brands: (params?: {
+    activeOnly?: boolean;
+    categoryId?: string;
+    subcategoryId?: string;
+    tertiaryCategoryId?: string;
+  }) =>
+    api
+      .get("/brands", {
+        params: {
+          all: 1,
+          ...(params?.activeOnly ? { activeOnly: 1 } : {}),
+          ...(params?.categoryId ? { categoryId: params.categoryId } : {}),
+          ...(params?.subcategoryId ? { subcategoryId: params.subcategoryId } : {}),
+          ...(params?.tertiaryCategoryId ? { tertiaryCategoryId: params.tertiaryCategoryId } : {}),
+        },
+      })
+      .then((r) => r.data?.data ?? r.data),
   orders: (params?: any) =>
     api.get("/orders", { params: { preview: 1, ...params } }).then((r) => r.data),
   order: (id: string) => api.get(`/orders/${id}`).then((r) => r.data?.data ?? r.data),
@@ -104,6 +120,8 @@ export const mutations = {
   createBrand: (data: any) => api.post("/brands", data).then((r) => r.data?.data ?? r.data),
   updateBrand: (id: string, data: any) =>
     api.patch(`/brands/${id}`, data).then((r) => r.data?.data ?? r.data),
+  reorderBrands: (ids: string[]) =>
+    api.post("/brands/reorder", { ids }).then((r) => r.data?.data ?? r.data),
   deleteBrand: (id: string, opts?: { reassignTo?: string }) =>
     api
       .delete(`/brands/${id}`, {

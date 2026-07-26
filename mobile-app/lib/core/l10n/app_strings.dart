@@ -170,6 +170,7 @@ class AppStrings {
   String get brandCount => isAr ? 'براند' : 'brands';
 
   // Sort labels
+  String get sortByBrand => isAr ? 'ترتيب البراندات' : 'Brand order';
   String get sortLatest => isAr ? 'الأحدث' : 'Latest';
   String get sortPriceAsc => isAr ? 'السعر: من الأقل' : 'Price: Low to High';
   String get sortPriceDesc => isAr ? 'السعر: من الأعلى' : 'Price: High to Low';
@@ -381,7 +382,8 @@ class AppStrings {
   String get defaultLabel => isAr ? 'افتراضي' : 'Default';
 
   String sortLabelFor(String key) => switch (key) {
-        'default' => sortLatest,
+        'default' => sortByBrand,
+        'latest' => sortLatest,
         'price_asc' => sortPriceAsc,
         'price_desc' => sortPriceDesc,
         'rating' => sortRating,
@@ -390,7 +392,8 @@ class AppStrings {
       };
 
   String sortShortFor(String key) => switch (key) {
-        'default' => sortLatest,
+        'default' => sortByBrand,
+        'latest' => sortLatest,
         'price_asc' => sortPriceUp,
         'price_desc' => sortPriceDown,
         'rating' => sortRatingShort,

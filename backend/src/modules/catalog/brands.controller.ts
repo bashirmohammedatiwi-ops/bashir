@@ -28,19 +28,18 @@ export class BrandsController {
     @Req() req: any,
     @Query("featured") featured?: string,
     @Query("all") all?: string,
+    @Query("activeOnly") activeOnly?: string,
     @Query("categoryId") categoryId?: string,
     @Query("subcategoryId") subcategoryId?: string,
+    @Query("tertiaryCategoryId") tertiaryCategoryId?: string,
   ) {
-    if (categoryId || subcategoryId) {
-      return this.service.listForCategory({
-        categoryId: categoryId || undefined,
-        subcategoryId: subcategoryId || undefined,
-        storefront: !isAdminViewRequest(req),
-      });
-    }
     return this.service.list({
       featuredOnly: featured === "1",
       all: all === "1",
+      activeProductsOnly: activeOnly === "1",
+      categoryId: categoryId || undefined,
+      subcategoryId: subcategoryId || undefined,
+      tertiaryCategoryId: tertiaryCategoryId || undefined,
       storefront: !isAdminViewRequest(req),
     });
   }
@@ -94,6 +93,12 @@ export class BrandsController {
     },
   ) {
     return this.service.syncFromCatalog(body);
+  }
+
+  @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  @Post("reorder")
+  reorder(@Body() body: { ids: string[] }) {
+    return this.service.reorder(body.ids ?? []);
   }
 
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)

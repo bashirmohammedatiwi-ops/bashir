@@ -1,38 +1,77 @@
 "use client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { CloudSyncOutlined, PlusOutlined } from "@ant-design/icons";
 import {
   Avatar,
   Button,
-  Card,
   Form,
   Input,
-  InputNumber,
   Modal,
   Popconfirm,
   Progress,
   Select,
   Space,
   Switch,
-  Table,
-  Tag,
   message,
 } from "antd";
-import { CloudSyncOutlined } from "@ant-design/icons";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { BrandsSortableList, type BrandRow } from "@/components/brands/BrandsSortableList";
 import { MediaPicker } from "@/components/MediaPicker";
+import { PageHeader } from "@/components/PageHeader";
 import { fetchCatalogBrands } from "@/lib/catalogImport";
 import { mediaThumb } from "@/lib/mediaUrl";
 import { mutations, queries } from "@/lib/queries";
 import { slugify } from "@/lib/slugify";
+import "./brands-page.css";
 
 const SYNC_BATCH = 40;
 
 export default function BrandsPage() {
+  const [activeOnly, setActiveOnly] = useState(true);
+  const [filterCategoryId, setFilterCategoryId] = useState<string | undefined>();
+  const [filterSubcategoryId, setFilterSubcategoryId] = useState<string | undefined>();
+  const [filterTertiaryCategoryId, setFilterTertiaryCategoryId] = useState<string | undefined>();
+
+  const brandFilters = useMemo(
+    () => ({
+      activeOnly,
+      categoryId: filterCategoryId,
+      subcategoryId: filterSubcategoryId,
+      tertiaryCategoryId: filterTertiaryCategoryId,
+    }),
+    [activeOnly, filterCategoryId, filterSubcategoryId, filterTertiaryCategoryId],
+  );
+
+  const hasFilters = Boolean(
+    activeOnly || filterCategoryId || filterSubcategoryId || filterTertiaryCategoryId,
+  );
+  const partialOrder = Boolean(filterCategoryId || filterSubcategoryId || filterTertiaryCategoryId);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["brands"],
-    queryFn: queries.brands,
+    queryKey: ["brands", brandFilters],
+    queryFn: () => queries.brands(brandFilters),
   });
+  const { data: allBrands } = useQuery({
+    queryKey: ["brands", "all"],
+    queryFn: () => queries.brands(),
+  });
+  const { data: categoriesData } = useQuery({
+    queryKey: ["categories"],
+    queryFn: queries.categories,
+  });
+  const { data: filterSubcategories } = useQuery({
+    queryKey: ["subcategories", filterCategoryId],
+    queryFn: () => queries.subcategories({ parentId: filterCategoryId }),
+    enabled: !!filterCategoryId,
+  });
+  const { data: filterTertiarySections } = useQuery({
+    queryKey: ["tertiary-sections", filterSubcategoryId],
+    queryFn: () => queries.tertiarySections({ parentId: filterSubcategoryId }),
+    enabled: !!filterSubcategoryId,
+  });
+
   const qc = useQueryClient();
+  const [localBrands, setLocalBrands] = useState<BrandRow[]>([]);
   const [open, setOpen] = useState(false);
   const [colOpen, setColOpen] = useState(false);
   const [editing, setEditing] = useState<any | null>(null);
@@ -44,11 +83,37 @@ export default function BrandsPage() {
   const [form] = Form.useForm();
   const [colForm] = Form.useForm();
 
+  useEffect(() => {
+    setLocalBrands((data as BrandRow[]) ?? []);
+  }, [data]);
+
+  const stats = useMemo(() => {
+    const rows = (allBrands as BrandRow[]) ?? [];
+    const active = rows.filter((b) => b.isActive !== false).length;
+    const featured = rows.filter((b) => b.isFeatured).length;
+    const withProducts = rows.filter((b) => (b.productCount ?? 0) > 0).length;
+    return { total: rows.length, active, featured, withProducts, visible: localBrands.length };
+  }, [allBrands, localBrands.length]);
+
+  const reorder = useMutation({
+    mutationFn: (ids: string[]) => mutations.reorderBrands(ids),
+    onMutate: (ids) => {
+      const byId = new Map(localBrands.map((b) => [b.id, b]));
+      setLocalBrands(ids.map((id) => byId.get(id)).filter(Boolean) as BrandRow[]);
+    },
+    onSuccess: () => {
+      message.success("تم حفظ ترتيب البراندات");
+      qc.invalidateQueries({ queryKey: ["brands"] });
+    },
+    onError: () => {
+      message.error("تعذّر حفظ الترتيب");
+      qc.invalidateQueries({ queryKey: ["brands"] });
+    },
+  });
+
   const upsert = useMutation({
     mutationFn: async (values: any) =>
-      editing?.id
-        ? mutations.updateBrand(editing.id, values)
-        : mutations.createBrand(values),
+      editing?.id ? mutations.updateBrand(editing.id, values) : mutations.createBrand(values),
     onSuccess: () => {
       message.success(editing ? "تم التحديث" : "تم الإنشاء");
       setOpen(false);
@@ -109,12 +174,12 @@ export default function BrandsPage() {
         setSyncProgress({ done: Math.min(i + chunk.length, rows.length), total: rows.length });
       }
 
-      return { created, matched, logosAttached, total: rows.length, withLogo: catalog.withLogo, withRealLogo: catalog.withRealLogo };
+      return { created, matched, logosAttached, total: rows.length };
     },
     onSuccess: (stats) => {
       setSyncProgress(null);
       message.success({
-        content: `تمت المزامنة: ${stats.created} جديد · ${stats.matched} موجود · ${stats.logosAttached} شعار · من ${stats.total} براند`,
+        content: `تمت المزامنة: ${stats.created} جديد · ${stats.matched} موجود · ${stats.logosAttached} شعار`,
         key: "brand-sync",
         duration: 6,
       });
@@ -151,45 +216,28 @@ export default function BrandsPage() {
     },
   });
 
-  const tableData = useMemo(() => {
-    const rows: any[] = [];
-    for (const brand of data ?? []) {
-      rows.push({ ...brand, rowType: "brand" });
-      for (const col of brand.collections ?? []) {
-        rows.push({
-          ...col,
-          rowType: "collection",
-          brandName: brand.name,
-          brandId: brand.id,
-        });
-      }
-    }
-    return rows;
-  }, [data]);
-
   function openCreateBrand() {
     setEditing(null);
     form.resetFields();
-    form.setFieldsValue({ isFeatured: false, isActive: true, position: 0 });
+    form.setFieldsValue({ isFeatured: false, isActive: true });
     setOpen(true);
   }
 
-  function openEditBrand(row: any) {
+  function openEditBrand(row: BrandRow) {
     setEditing(row);
     form.setFieldsValue({
       name: row.name,
       slug: row.slug,
       initial: row.initial,
       bgColorHex: row.bgColorHex,
-      logoId: row.logoId ?? row.logo?.id,
-      position: row.position,
+      logoId: (row as any).logoId ?? row.logo?.id,
       isFeatured: row.isFeatured,
       isActive: row.isActive,
     });
     setOpen(true);
   }
 
-  function openCreateCollection(brand: any) {
+  function openCreateCollection(brand: BrandRow) {
     setBrandForCol(brand);
     setEditingCol(null);
     colForm.resetFields();
@@ -197,173 +245,183 @@ export default function BrandsPage() {
     setColOpen(true);
   }
 
-  function openEditCollection(row: any) {
-    setBrandForCol({ id: row.brandId, name: row.brandName });
-    setEditingCol(row);
+  function openEditCollection(brand: BrandRow, col: NonNullable<BrandRow["collections"]>[number]) {
+    setBrandForCol(brand);
+    setEditingCol({ ...col, brandId: brand.id, brandName: brand.name });
     colForm.setFieldsValue({
-      name: row.name,
-      slug: row.slug,
-      description: row.description,
-      position: row.position,
-      isActive: row.isActive,
+      name: col.name,
+      slug: col.slug,
+      description: (col as any).description,
+      position: col.position,
+      isActive: col.isActive,
     });
     setColOpen(true);
   }
 
+  function handleDeleteBrand(brand: BrandRow) {
+    if ((brand.productCount ?? 0) > 0) {
+      setDeleteTarget(brand);
+      setReassignTo(undefined);
+      return;
+    }
+    Modal.confirm({
+      title: "حذف البراند؟",
+      okText: "حذف",
+      cancelText: "إلغاء",
+      okButtonProps: { danger: true },
+      onOk: () => remove.mutateAsync({ id: brand.id }),
+    });
+  }
+
+  function resetFilters() {
+    setActiveOnly(true);
+    setFilterCategoryId(undefined);
+    setFilterSubcategoryId(undefined);
+    setFilterTertiaryCategoryId(undefined);
+  }
+
+  const productCountLabel =
+    activeOnly || filterCategoryId || filterSubcategoryId || filterTertiaryCategoryId
+      ? "منتج (مفلتر)"
+      : "منتج";
+
   return (
-     <>
-      <Space direction="vertical" size={12} style={{ width: "100%" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <h2 style={{ margin: 0 }}>البراندات وخطوط المنتجات</h2>
+    <div className="brands-page alhayaa-page">
+      <PageHeader
+        title="البراندات"
+        subtitle="رتّب البراندات بالسحب — نفس الترتيب يظهر في تطبيق الهاتف"
+        extra={
           <Space wrap>
-            <Button
-              icon={<CloudSyncOutlined />}
-              loading={syncFromCatalog.isPending}
-              onClick={() => syncFromCatalog.mutate()}
-            >
+            <Button icon={<CloudSyncOutlined />} loading={syncFromCatalog.isPending} onClick={() => syncFromCatalog.mutate()}>
               مزامنة من الكتالوج
             </Button>
-            <Button type="primary" onClick={openCreateBrand}>
-              + براند جديد
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateBrand}>
+              براند جديد
             </Button>
           </Space>
+        }
+      />
+
+      <div className="bp-stats">
+        <div className="bp-stat">
+          <strong>{stats.total}</strong>
+          <span>إجمالي البراندات</span>
         </div>
-        {syncProgress ? (
-          <Card size="small">
-            <div style={{ marginBottom: 8 }}>
-              جاري المزامنة ({syncProgress.done}/{syncProgress.total}) — دمج الشعارات من كل المتاجر بدون تكرار
-            </div>
-            <Progress
-              percent={syncProgress.total ? Math.round((syncProgress.done / syncProgress.total) * 100) : 0}
-              status="active"
-            />
-          </Card>
-        ) : null}
-        <Card styles={{ body: { padding: 0 } }}>
-          <Table
-            rowKey={(r) => (r.rowType === "collection" ? `col-${r.id}` : r.id)}
-            loading={isLoading}
-            dataSource={tableData}
-            pagination={false}
-            columns={[
-              {
-                title: "الشعار",
-                width: 64,
-                render: (_: any, r: any) => {
-                  if (r.rowType !== "brand") return null;
-                  const src = mediaThumb(r.logo);
-                  return src ? (
-                    <Avatar shape="square" size={40} src={src} style={{ background: r.bgColorHex || "#f5f5f5" }} />
-                  ) : (
-                    <Avatar shape="square" size={40} style={{ background: r.bgColorHex || "#eee", color: "#555" }}>
-                      {r.initial || (r.name || "?").charAt(0)}
-                    </Avatar>
-                  );
-                },
-              },
-              {
-                title: "الاسم",
-                dataIndex: "name",
-                render: (v, r: any) =>
-                  r.rowType === "collection" ? (
-                    <span style={{ paddingInlineStart: 24, color: "#555" }}>↳ {v}</span>
-                  ) : (
-                    <strong>{v}</strong>
-                  ),
-              },
-              {
-                title: "النوع",
-                width: 120,
-                render: (_: any, r: any) =>
-                  r.rowType === "collection" ? (
-                    <Tag color="cyan">خط/مجموعة</Tag>
-                  ) : (
-                    <Tag color="gold">براند</Tag>
-                  ),
-              },
-              { title: "Slug", dataIndex: "slug", width: 160 },
-              {
-                title: "الحرف",
-                dataIndex: "initial",
-                width: 70,
-                render: (v, r: any) => (r.rowType === "brand" ? v : "—"),
-              },
-              {
-                title: "المنتجات",
-                width: 90,
-                render: (_: any, r: any) => (r.rowType === "brand" ? r.productCount ?? 0 : "—"),
-              },
-              {
-                title: "مميز",
-                width: 80,
-                render: (_: any, r: any) =>
-                  r.rowType === "brand" ? (
-                    <Tag color={r.isFeatured ? "gold" : "default"}>
-                      {r.isFeatured ? "نعم" : "لا"}
-                    </Tag>
-                  ) : (
-                    "—"
-                  ),
-              },
-              { title: "ترتيب", dataIndex: "position", width: 70 },
-              {
-                title: "إجراءات",
-                width: 260,
-                render: (_: any, r: any) =>
-                  r.rowType === "brand" ? (
-                    <Space wrap>
-                      <Button size="small" onClick={() => openCreateCollection(r)}>
-                        + خط
-                      </Button>
-                      <Button size="small" onClick={() => openEditBrand(r)}>
-                        تعديل
-                      </Button>
-                      {(r.productCount ?? 0) > 0 ? (
-                        <Button
-                          size="small"
-                          danger
-                          onClick={() => {
-                            setDeleteTarget(r);
-                            setReassignTo(undefined);
-                          }}
-                        >
-                          حذف
-                        </Button>
-                      ) : (
-                        <Popconfirm
-                          title="حذف البراند؟"
-                          okText="حذف"
-                          cancelText="إلغاء"
-                          onConfirm={() => remove.mutate({ id: r.id })}
-                        >
-                          <Button size="small" danger loading={remove.isPending}>
-                            حذف
-                          </Button>
-                        </Popconfirm>
-                      )}
-                    </Space>
-                  ) : (
-                    <Space>
-                      <Button size="small" onClick={() => openEditCollection(r)}>
-                        تعديل
-                      </Button>
-                      <Popconfirm
-                        title="حذف الخط؟"
-                        okText="حذف"
-                        cancelText="إلغاء"
-                        onConfirm={() => removeCol.mutate(r.id)}
-                      >
-                        <Button size="small" danger>
-                          حذف
-                        </Button>
-                      </Popconfirm>
-                    </Space>
-                  ),
-              },
-            ]}
+        <div className="bp-stat">
+          <strong>{stats.visible}</strong>
+          <span>ظاهر بالفلاتر</span>
+        </div>
+        <div className="bp-stat">
+          <strong>{stats.withProducts}</strong>
+          <span>بها منتجات</span>
+        </div>
+        <div className="bp-stat">
+          <strong>{stats.featured}</strong>
+          <span>مميزة</span>
+        </div>
+      </div>
+
+      {syncProgress ? (
+        <div className="bp-toolbar">
+          <div>جاري المزامنة ({syncProgress.done}/{syncProgress.total})</div>
+          <Progress
+            percent={syncProgress.total ? Math.round((syncProgress.done / syncProgress.total) * 100) : 0}
+            status="active"
           />
-        </Card>
-      </Space>
+        </div>
+      ) : null}
+
+      <section className="bp-toolbar">
+        <div className="bp-toolbar-row">
+          <Switch checked={activeOnly} onChange={setActiveOnly} checkedChildren="نشط" unCheckedChildren="الكل" />
+          <span className="bp-filter-label">براندات بمنتجات نشطة فقط</span>
+        </div>
+        <div className="bp-toolbar-row">
+          <Select
+            allowClear
+            placeholder="القسم"
+            style={{ minWidth: 170 }}
+            value={filterCategoryId}
+            options={(categoriesData ?? []).map((c: any) => ({ value: c.id, label: c.name }))}
+            showSearch
+            optionFilterProp="label"
+            onChange={(v) => {
+              setFilterCategoryId(v);
+              setFilterSubcategoryId(undefined);
+              setFilterTertiaryCategoryId(undefined);
+            }}
+          />
+          <Select
+            allowClear
+            placeholder="قسم فرعي"
+            style={{ minWidth: 170 }}
+            value={filterSubcategoryId}
+            disabled={!filterCategoryId}
+            options={(filterSubcategories ?? []).map((s: any) => ({ value: s.id, label: s.name }))}
+            showSearch
+            optionFilterProp="label"
+            onChange={(v) => {
+              setFilterSubcategoryId(v);
+              setFilterTertiaryCategoryId(undefined);
+            }}
+          />
+          <Select
+            allowClear
+            placeholder="قسم ثانوي"
+            style={{ minWidth: 170 }}
+            value={filterTertiaryCategoryId}
+            disabled={!filterSubcategoryId}
+            options={(filterTertiarySections ?? []).map((t: any) => ({ value: t.id, label: t.name }))}
+            showSearch
+            optionFilterProp="label"
+            onChange={setFilterTertiaryCategoryId}
+          />
+          {hasFilters ? <Button onClick={resetFilters}>إعادة تعيين الفلاتر</Button> : null}
+        </div>
+      </section>
+
+      {localBrands.length > 0 ? (
+        <section className="bp-preview-card">
+          <h3 className="bp-preview-title">معاينة ترتيب التطبيق</h3>
+          <div className="bp-preview-strip">
+            {localBrands.map((brand) => {
+              const src = mediaThumb(brand.logo);
+              return (
+                <div key={brand.id} className="bp-preview-chip">
+                  {src ? (
+                    <Avatar shape="circle" size={50} src={src} />
+                  ) : (
+                    <Avatar shape="circle" size={50} style={{ background: brand.bgColorHex || "#ece8f0", color: "#4a2466" }}>
+                      {brand.initial || brand.name.charAt(0)}
+                    </Avatar>
+                  )}
+                  <span>{brand.name}</span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+
+      <section className="bp-list-card">
+        <div className="bp-list-card-head">
+          <h3>ترتيب البراندات ({localBrands.length})</h3>
+          {reorder.isPending ? <span className="bp-filter-label">جاري الحفظ...</span> : null}
+        </div>
+        <BrandsSortableList
+          brands={localBrands}
+          loading={isLoading}
+          reordering={reorder.isPending}
+          partialOrder={partialOrder}
+          productCountLabel={productCountLabel}
+          onReorder={(ids) => reorder.mutate(ids)}
+          onEdit={openEditBrand}
+          onDelete={handleDeleteBrand}
+          onAddCollection={openCreateCollection}
+          onEditCollection={openEditCollection}
+          onDeleteCollection={(id) => removeCol.mutate(id)}
+        />
+      </section>
 
       <Modal
         title={`حذف البراند: ${deleteTarget?.name || ""}`}
@@ -387,8 +445,7 @@ export default function BrandsPage() {
         destroyOnHidden
       >
         <p style={{ marginBottom: 12 }}>
-          هذا البراند مرتبط بـ <strong>{deleteTarget?.productCount ?? 0}</strong> منتج.
-          اختر برانداً لنقل المنتجات إليه ثم احذف البراند.
+          هذا البراند مرتبط بـ <strong>{deleteTarget?.productCount ?? 0}</strong> منتج. اختر برانداً لنقل المنتجات إليه.
         </p>
         <Select
           style={{ width: "100%" }}
@@ -397,7 +454,7 @@ export default function BrandsPage() {
           placeholder="انقل المنتجات إلى..."
           value={reassignTo}
           onChange={setReassignTo}
-          options={(data || [])
+          options={(allBrands || [])
             .filter((b: any) => b.id !== deleteTarget?.id)
             .map((b: any) => ({
               value: b.id,
@@ -432,9 +489,6 @@ export default function BrandsPage() {
           <Form.Item name="logoId" label="الشعار">
             <MediaPicker />
           </Form.Item>
-          <Form.Item name="position" label="الترتيب">
-            <InputNumber style={{ width: "100%" }} min={0} />
-          </Form.Item>
           <Form.Item name="isFeatured" label="مميز" valuePropName="checked">
             <Switch />
           </Form.Item>
@@ -445,11 +499,7 @@ export default function BrandsPage() {
       </Modal>
 
       <Modal
-        title={
-          editingCol
-            ? "تعديل الخط"
-            : `خط جديد — ${brandForCol?.name ?? ""}`
-        }
+        title={editingCol ? "تعديل الخط" : `خط جديد — ${brandForCol?.name ?? ""}`}
         open={colOpen}
         onCancel={() => setColOpen(false)}
         onOk={() => colForm.submit()}
@@ -478,14 +528,13 @@ export default function BrandsPage() {
             <Input.TextArea rows={2} />
           </Form.Item>
           <Form.Item name="position" label="الترتيب">
-            <InputNumber style={{ width: "100%" }} min={0} />
+            <Input type="number" min={0} />
           </Form.Item>
           <Form.Item name="isActive" label="نشط" valuePropName="checked" initialValue={true}>
             <Switch />
           </Form.Item>
         </Form>
       </Modal>
-    
-    </>
+    </div>
   );
 }
