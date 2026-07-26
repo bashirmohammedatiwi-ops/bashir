@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -44,50 +46,45 @@ class HomeMarqueeImage {
 }
 
 class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerProviderStateMixin {
+  final GlobalKey _periodKey = GlobalKey();
   late AnimationController _ctrl;
-  double _segmentWidth = 1;
-  double? _lastViewportWidth;
-  int? _lastImageCount;
-  double? _lastSpeed;
-  double? _lastGap;
 
-  double _calcSegmentWidth() {
+  double _periodWidth = 0;
+
+  double get _pxPerSec => 24 + widget.speed.clamp(1, 10) * 10;
+
+  double _estimatePeriodWidth() {
     if (widget.images.isEmpty) return 1;
     return widget.images.fold<double>(0, (sum, img) => sum + img.width + widget.gap);
   }
 
-  /// نكرّر المقطع حتى يملأ الشاشة + مقطع إضافي — يمنع الفراغ عند قلة الصور.
-  int _copyCount(double viewportWidth, double segmentWidth) {
-    final needed = (viewportWidth / segmentWidth).ceil() + 2;
-    return needed.clamp(2, 32);
+  /// عدد التكرارات اللازمة لتغطية الشاشة بالكامل أثناء الحلقة.
+  int _copyCount(double viewportWidth, double period) {
+    if (period <= 0) return 4;
+    return math.max(3, (viewportWidth / period).ceil() + 2);
   }
 
-  void _syncAnimation(double viewportWidth) {
+  void _measureAndStart() {
     if (!mounted || widget.images.isEmpty) return;
 
-    final segmentWidth = _calcSegmentWidth();
-    if (segmentWidth <= 0) return;
-
-    final imageCount = widget.images.length;
-    final speed = widget.speed;
-    final gap = widget.gap;
-    if (_lastViewportWidth == viewportWidth &&
-        _lastImageCount == imageCount &&
-        _lastSpeed == speed &&
-        _lastGap == gap &&
-        (_segmentWidth - segmentWidth).abs() < 0.5 &&
-        _ctrl.isAnimating) {
+    final box = _periodKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _measureAndStart());
       return;
     }
 
-    _lastViewportWidth = viewportWidth;
-    _lastImageCount = imageCount;
-    _lastSpeed = speed;
-    _lastGap = gap;
-    _segmentWidth = segmentWidth;
+    final measured = box.size.width;
+    if (measured <= 0) return;
 
-    final pxPerSec = 24 + speed.clamp(1, 10) * 10;
-    final ms = ((segmentWidth / pxPerSec) * 1000).round().clamp(5000, 120000);
+    final changed = (measured - _periodWidth).abs() > 0.5;
+    if (changed) {
+      setState(() => _periodWidth = measured);
+    }
+
+    final ms = ((_periodWidth > 0 ? _periodWidth : measured) / _pxPerSec * 1000)
+        .round()
+        .clamp(6000, 120000);
+
     _ctrl
       ..stop()
       ..duration = Duration(milliseconds: ms)
@@ -98,16 +95,19 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
   void initState() {
     super.initState();
     _ctrl = AnimationController(vsync: this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureAndStart());
   }
 
   @override
   void didUpdateWidget(HomeImageMarquee old) {
     super.didUpdateWidget(old);
     if (old.images != widget.images ||
-        old.speed != widget.speed ||
         old.gap != widget.gap ||
-        old.height != widget.height) {
-      _lastViewportWidth = null;
+        old.height != widget.height ||
+        old.speed != widget.speed) {
+      _periodWidth = 0;
+      _ctrl.stop();
+      WidgetsBinding.instance.addPostFrameCallback((_) => _measureAndStart());
     }
   }
 
@@ -117,16 +117,21 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
     super.dispose();
   }
 
-  Widget _buildSegment(TextDirection direction) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      textDirection: direction,
-      children: [
-        for (final img in widget.images) ...[
-          _MarqueeTile(image: img, defaultHeight: widget.height),
-          SizedBox(width: widget.gap),
-        ],
+  List<Widget> _tileWidgets() {
+    return [
+      for (final img in widget.images) ...[
+        _MarqueeTile(image: img, defaultHeight: widget.height),
+        SizedBox(width: widget.gap),
       ],
+    ];
+  }
+
+  Widget _period({Key? key}) {
+    return Row(
+      key: key,
+      mainAxisSize: MainAxisSize.min,
+      textDirection: TextDirection.ltr,
+      children: _tileWidgets(),
     );
   }
 
@@ -134,20 +139,15 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
   Widget build(BuildContext context) {
     if (widget.images.isEmpty) return const SizedBox.shrink();
 
-    final direction = Directionality.of(context);
-    final isRtl = direction == TextDirection.rtl;
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final viewportW = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
-        final segmentWidth = _calcSegmentWidth();
-        final copies = _copyCount(viewportW, segmentWidth);
+        final period = _periodWidth > 0 ? _periodWidth : _estimatePeriodWidth();
+        final copies = _copyCount(viewportW, period);
 
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) _syncAnimation(viewportW);
-        });
+        WidgetsBinding.instance.addPostFrameCallback((_) => _measureAndStart());
 
         return ClipRect(
           child: SizedBox(
@@ -156,14 +156,17 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
             child: AnimatedBuilder(
               animation: _ctrl,
               builder: (_, __) {
-                final dx = (isRtl ? 1 : -1) * _ctrl.value * _segmentWidth;
+                final loop = _periodWidth > 0 ? _periodWidth : period;
+                // نفس منطق شريط النص — تمرير سلس وحلقة دائرية
+                final dx = -_ctrl.value * loop;
                 return Transform.translate(
                   offset: Offset(dx, 0),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    textDirection: direction,
+                    textDirection: TextDirection.ltr,
                     children: [
-                      for (var i = 0; i < copies; i++) _buildSegment(direction),
+                      for (var i = 0; i < copies; i++)
+                        _period(key: i == 0 ? _periodKey : null),
                     ],
                   ),
                 );
