@@ -1,21 +1,23 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { ProductGrid } from "@/components/catalog/ProductGrid";
 import {
   BannerCarousel,
   BrandStrip,
+  CareHubSection,
   CategoryGrid,
+  CircleTilesSection,
   FlashSaleSection,
+  ImageMarqueeSection,
+  PackagesSection,
   ProductSection,
   PromoStrip,
   SectionShell,
   SkinConcernsStrip,
 } from "@/components/home/HomeSections";
-import { bannerImageUrl, categoryImageUrl, imageFromUnknown } from "@/lib/mediaUrl";
+import { bannerLinkHref, sectionLinkHref, viewAllHref } from "@/lib/links";
+import { bannerImageUrl, imageFromUnknown } from "@/lib/mediaUrl";
 import type { Banner, HomeSection, Product } from "@/lib/types";
-import { categoryHref, productHref } from "@/lib/storePaths";
-import { localizedName } from "@/lib/format";
 
 function sectionVisible(section: HomeSection): boolean {
   if (section.type === "PROMO_STRIP") {
@@ -30,17 +32,10 @@ function sectionVisible(section: HomeSection): boolean {
     section.categories?.length ||
     section.products?.length ||
     section.brands?.length ||
+    section.packages?.length ||
     section.skinConcerns?.length ||
     section.items?.length
   );
-}
-
-function bannerLink(b: Banner): string | undefined {
-  if (b.linkUrl) return b.linkUrl;
-  if (b.link) return b.link;
-  if (b.linkType === "product" && b.linkValue) return productHref(b.linkValue);
-  if (b.linkType === "category" && b.linkValue) return categoryHref(b.linkValue);
-  return undefined;
 }
 
 function BannerGrid({ banners, columns }: { banners: Banner[]; columns: number }) {
@@ -49,7 +44,7 @@ function BannerGrid({ banners, columns }: { banners: Banner[]; columns: number }
     <div className={`banner-grid cols-${columns}`}>
       {banners.map((b) => {
         const img = bannerImageUrl(b);
-        const href = bannerLink(b);
+        const href = bannerLinkHref(b);
         const card = (
           <div className="banner-card" style={b.backgroundColor ? { background: b.backgroundColor } : undefined}>
             {img ? <img src={img} alt={b.title || "عرض"} /> : <div className="banner-fallback" />}
@@ -81,46 +76,19 @@ function ImageTilesSection({ section }: { section: HomeSection }) {
       <div className="image-tiles-grid">
         {items.map((item, idx) => {
           const img = imageFromUnknown(item.image ?? item.imageUrl);
-          const href = typeof item.link === "string" ? item.link : undefined;
+          const href = sectionLinkHref(item);
           const tile = (
             <div className="image-tile">
-              {img ? <img src={img} alt={String(item.title ?? "")} /> : <div className="banner-fallback" />}
-              {item.title ? <span>{String(item.title)}</span> : null}
+              {img ? <img src={img} alt={item.title || ""} /> : <div className="banner-fallback" />}
+              {item.title ? <span>{item.title}</span> : null}
             </div>
           );
           return href ? (
-            <a key={String(item.id ?? idx)} href={href}>
+            <Link key={item.id || String(idx)} href={href}>
               {tile}
-            </a>
-          ) : (
-            <div key={String(item.id ?? idx)}>{tile}</div>
-          );
-        })}
-      </div>
-    </SectionShell>
-  );
-}
-
-function CircleTilesSection({ section }: { section: HomeSection }) {
-  const items = section.categories?.length ? section.categories : (section.items as unknown as HomeSection["categories"]) ?? [];
-  if (!items?.length) return null;
-  return (
-    <SectionShell
-      title={section.title}
-      subtitle={section.subtitle}
-      showTitle={section.showTitle}
-      moreHref={section.showViewAll ? section.viewAllQuery || "/categories/" : undefined}
-    >
-      <div className="circle-tiles-row">
-        {items.map((c) => {
-          const img = categoryImageUrl(c);
-          return (
-            <Link key={c.id} href={categoryHref(c.slug)} className="circle-tile">
-              <div className="circle-tile-img">
-                {img ? <img src={img} alt={localizedName(c)} /> : <span>{localizedName(c).slice(0, 1)}</span>}
-              </div>
-              <span>{localizedName(c)}</span>
             </Link>
+          ) : (
+            <div key={item.id || String(idx)}>{tile}</div>
           );
         })}
       </div>
@@ -129,6 +97,9 @@ function CircleTilesSection({ section }: { section: HomeSection }) {
 }
 
 function renderSection(section: HomeSection): ReactNode {
+  const more = section.showViewAll ? viewAllHref(section.viewAllQuery) : undefined;
+  const productLayout = section.layout === "carousel" ? "carousel" : "grid";
+
   switch (section.type) {
     case "HERO_BANNER":
       return section.banners?.length ? (
@@ -148,7 +119,7 @@ function renderSection(section: HomeSection): ReactNode {
           categories={section.categories}
           title={section.showTitle ? section.title ?? "الأقسام" : undefined}
           subtitle={section.subtitle}
-          moreHref={section.showViewAll ? section.viewAllQuery || "/categories/" : undefined}
+          moreHref={more}
           variant={section.type === "MAKEUP_CATEGORIES" ? "makeup" : "grid"}
         />
       ) : null;
@@ -159,7 +130,8 @@ function renderSection(section: HomeSection): ReactNode {
           title={section.title ?? "منتجات"}
           subtitle={section.subtitle}
           products={section.products}
-          moreHref={section.showViewAll ? section.viewAllQuery || "/products/" : undefined}
+          moreHref={more}
+          layout={productLayout}
         />
       ) : null;
 
@@ -170,7 +142,7 @@ function renderSection(section: HomeSection): ReactNode {
           subtitle={section.subtitle}
           products={section.products}
           endsAt={section.endsAt}
-          moreHref={section.showViewAll ? section.viewAllQuery || "/products/" : undefined}
+          moreHref={more}
         />
       ) : null;
 
@@ -181,9 +153,23 @@ function renderSection(section: HomeSection): ReactNode {
           brands={section.brands}
           title={section.title ?? "البراندات"}
           subtitle={section.subtitle}
-          moreHref={section.showViewAll ? section.viewAllQuery || "/brands/" : undefined}
+          moreHref={more ?? "/brands/"}
         />
       ) : null;
+
+    case "PACKAGES":
+    case "ROUTINE_CAROUSEL":
+      return section.packages?.length ? (
+        <PackagesSection
+          title={section.title ?? "الباقات"}
+          subtitle={section.subtitle}
+          packages={section.packages}
+          moreHref={more}
+        />
+      ) : null;
+
+    case "CARE_HUB":
+      return <CareHubSection section={section} />;
 
     case "BANNER_CAROUSEL":
       return section.banners?.length ? <BannerCarousel banners={section.banners} variant="carousel" /> : null;
@@ -213,14 +199,55 @@ function renderSection(section: HomeSection): ReactNode {
     case "IMAGE_COLLAGE":
       return <ImageTilesSection section={section} />;
 
+    case "IMAGE_MARQUEE":
+      return section.items?.length ? (
+        <ImageMarqueeSection
+          title={section.title}
+          subtitle={section.subtitle}
+          items={section.items}
+          showTitle={section.showTitle}
+        />
+      ) : null;
+
     case "CIRCLE_TILES":
-      return <CircleTilesSection section={section} />;
+      return section.items?.length ? (
+        <CircleTilesSection
+          title={section.title}
+          subtitle={section.subtitle}
+          items={section.items}
+          moreHref={more}
+          showTitle={section.showTitle}
+        />
+      ) : section.categories?.length ? (
+        <CategoryGrid
+          categories={section.categories}
+          title={section.showTitle ? section.title ?? undefined : undefined}
+          subtitle={section.subtitle}
+          moreHref={more}
+          variant="grid"
+        />
+      ) : null;
 
     case "SECTION_GROUP":
       return (
-        <div className="section-group">
+        <div
+          className={`section-group ${section.frameShadow !== false ? "has-shadow" : ""}`}
+          style={{
+            background: section.backgroundColor,
+            borderColor: section.borderColor,
+            borderRadius: section.borderRadius ? `${section.borderRadius}px` : undefined,
+            paddingInline: section.framePaddingH ? `${section.framePaddingH}px` : undefined,
+            color: section.titleColor,
+          }}
+        >
+          {section.showTitle !== false && section.title ? (
+            <div className="section-group-title">
+              <h2>{section.title}</h2>
+              {section.subtitle ? <p>{section.subtitle}</p> : null}
+            </div>
+          ) : null}
           {(section.children ?? []).filter(sectionVisible).map((child) => (
-            <HomeCmsSection key={child.id} section={child} />
+            <HomeCmsSection key={child.id} section={child} nested />
           ))}
         </div>
       );
@@ -232,7 +259,18 @@ function renderSection(section: HomeSection): ReactNode {
             title={section.title ?? "منتجات"}
             subtitle={section.subtitle}
             products={section.products as Product[]}
-            moreHref={section.showViewAll ? section.viewAllQuery || "/products/" : undefined}
+            moreHref={more}
+            layout={productLayout}
+          />
+        );
+      }
+      if (section.packages?.length) {
+        return (
+          <PackagesSection
+            title={section.title ?? "الباقات"}
+            subtitle={section.subtitle}
+            packages={section.packages}
+            moreHref={more}
           />
         );
       }
@@ -240,17 +278,21 @@ function renderSection(section: HomeSection): ReactNode {
   }
 }
 
-export function HomeCmsSection({ section }: { section: HomeSection }) {
+export function HomeCmsSection({ section, nested }: { section: HomeSection; nested?: boolean }) {
   if (!sectionVisible(section)) return null;
   const content = renderSection(section);
   if (!content) return null;
 
-  const style = section.backgroundColor ? { background: section.backgroundColor } : undefined;
-  const isFullBleed = section.type === "HERO_BANNER" || section.type === "PROMO_STRIP";
+  const style = section.backgroundColor && section.type !== "SECTION_GROUP"
+    ? { background: section.backgroundColor }
+    : undefined;
+  const isFullBleed =
+    !nested &&
+    (section.type === "HERO_BANNER" || section.type === "PROMO_STRIP" || section.type === "BANNER_CAROUSEL");
 
   return (
     <div className="cms-section" style={style}>
-      {isFullBleed ? content : <div className="container">{content}</div>}
+      {isFullBleed || nested ? content : <div className="container">{content}</div>}
     </div>
   );
 }

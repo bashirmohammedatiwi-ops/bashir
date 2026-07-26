@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { Providers } from "@/components/Providers";
+import { StoreProvider } from "@/components/StoreProvider";
 import { StoreShell } from "@/components/layout/StoreShell";
 import { displayStoreName } from "@/lib/config";
 
@@ -21,7 +22,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="ar" dir="rtl">
       <body>
         <Providers>
-          <StoreShell>{children}</StoreShell>
+          <StoreProvider>
+            <StoreShell>{children}</StoreShell>
+          </StoreProvider>
         </Providers>
       </body>
     </html>

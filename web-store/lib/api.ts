@@ -1,7 +1,7 @@
 import axios from "axios";
 
 import { API_BASE } from "./config";
-import type { Brand, Category, HomeFeed, Paginated, Product } from "./types";
+import type { Brand, Category, HomeFeed, Paginated, Product, StorePackage } from "./types";
 
 function apiBaseForContext(): string {
   if (typeof window !== "undefined") return API_BASE;
@@ -31,8 +31,25 @@ export async function fetchProducts(params?: {
   search?: string;
   categoryId?: string;
   brandId?: string;
+  subcategoryId?: string;
+  tertiaryCategoryId?: string;
+  concernSlug?: string;
+  isNew?: boolean;
+  isFeatured?: boolean;
+  isBestSeller?: boolean;
+  isPromo?: boolean;
 }): Promise<Paginated<Product>> {
   const { data } = await client().get<Paginated<Product>>("/products", { params });
+  return data;
+}
+
+export async function fetchOffers(): Promise<HomeFeed> {
+  const { data } = await client().get<HomeFeed>("/offers");
+  return data;
+}
+
+export async function fetchPackage(slugOrId: string): Promise<StorePackage> {
+  const { data } = await client().get<StorePackage>(`/packages/slug/${encodeURIComponent(slugOrId)}`);
   return data;
 }
 

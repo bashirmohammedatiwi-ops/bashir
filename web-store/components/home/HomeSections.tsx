@@ -3,16 +3,26 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import { ProductCarousel } from "@/components/catalog/ProductCarousel";
+import { PackageCarousel } from "@/components/catalog/PackageCard";
 import { ProductGrid } from "@/components/catalog/ProductGrid";
+import { bannerLinkHref, sectionLinkHref, viewAllHref } from "@/lib/links";
 import { bannerImageUrl, brandLogoUrl, categoryImageUrl, imageFromUnknown } from "@/lib/mediaUrl";
-import type { Banner, Brand, Category, Product, PromoStrip as PromoStripType } from "@/lib/types";
+import type {
+  Banner,
+  Brand,
+  Category,
+  CircleTileItem,
+  Product,
+  PromoStrip as PromoStripType,
+  StorePackage,
+} from "@/lib/types";
 import { localizedName } from "@/lib/format";
 import { brandHref, categoryHref } from "@/lib/storePaths";
+import { viewAllHref } from "@/lib/links";
 
 function bannerHref(b: Banner): string | undefined {
-  if (b.linkUrl) return b.linkUrl;
-  if (b.link) return b.link;
-  return undefined;
+  return bannerLinkHref(b);
 }
 
 export function SectionShell({
@@ -39,7 +49,7 @@ export function SectionShell({
             {showTitle && title ? <h2>{title}</h2> : null}
             {subtitle ? <p className="section-sub">{subtitle}</p> : null}
           </div>
-          {moreHref ? <Link href={moreHref} className="section-more">عرض الكل</Link> : null}
+          {moreHref ? <Link href={viewAllHref(moreHref)} className="section-more">عرض الكل</Link> : null}
         </div>
       ) : null}
       {children}
@@ -212,16 +222,18 @@ export function ProductSection({
   subtitle,
   products,
   moreHref,
+  layout = "grid",
 }: {
   title: string;
   subtitle?: string | null;
   products: Product[];
   moreHref?: string;
+  layout?: "grid" | "carousel";
 }) {
   if (!products.length) return null;
   return (
     <SectionShell title={title} subtitle={subtitle} moreHref={moreHref}>
-      <ProductGrid products={products} />
+      {layout === "carousel" ? <ProductCarousel products={products} /> : <ProductGrid products={products} />}
     </SectionShell>
   );
 }
@@ -277,16 +289,19 @@ export function FlashSaleSection({
 }
 
 export function PromoStrip({ strip }: { strip: PromoStripType }) {
-  const text = strip.text?.trim() || strip.items?.filter(Boolean).join(" · ") || "";
+  const text = strip.text?.trim() || strip.items?.filter(Boolean).join(strip.items?.length ? " · " : "") || "";
   if (!text) return null;
   const style = {
     background: strip.backgroundColor || undefined,
     color: strip.textColor || undefined,
   };
-  const inner = <span className="promo-strip-text">{text}</span>;
+  const href = sectionLinkHref(strip);
+  const inner = (
+    <span className={`promo-strip-text ${strip.marquee !== false ? "is-marquee" : ""}`}>{text}</span>
+  );
   return (
     <div className="promo-strip" style={style}>
-      {strip.link ? <a href={strip.link}>{inner}</a> : inner}
+      {href ? <a href={href}>{inner}</a> : inner}
     </div>
   );
 }
@@ -339,5 +354,134 @@ export function TrustBar() {
         <span>مساعدة سريعة</span>
       </div>
     </section>
+  );
+}
+
+export function PackagesSection({
+  title,
+  subtitle,
+  packages,
+  moreHref,
+}: {
+  title?: string;
+  subtitle?: string | null;
+  packages: StorePackage[];
+  moreHref?: string;
+}) {
+  if (!packages.length) return null;
+  return (
+    <SectionShell title={title ?? "الباقات"} subtitle={subtitle} moreHref={moreHref}>
+      <PackageCarousel packages={packages} />
+    </SectionShell>
+  );
+}
+
+export function CircleTilesSection({
+  title,
+  subtitle,
+  items,
+  moreHref,
+  showTitle,
+}: {
+  title?: string | null;
+  subtitle?: string | null;
+  items: CircleTileItem[];
+  moreHref?: string;
+  showTitle?: boolean;
+}) {
+  if (!items.length) return null;
+  return (
+    <SectionShell title={title} subtitle={subtitle} showTitle={showTitle} moreHref={moreHref}>
+      <div className="circle-tiles-row">
+        {items.map((item) => {
+          const img = imageFromUnknown(item.image ?? item.imageUrl);
+          const href = sectionLinkHref(item);
+          const tile = (
+            <div className="circle-tile">
+              <div className="circle-tile-img">
+                {img ? <img src={img} alt={item.title || ""} /> : <span>{(item.title || "?").slice(0, 1)}</span>}
+              </div>
+              <span>{item.title}</span>
+            </div>
+          );
+          return href ? (
+            <Link key={item.id} href={href}>{tile}</Link>
+          ) : (
+            <div key={item.id}>{tile}</div>
+          );
+        })}
+      </div>
+    </SectionShell>
+  );
+}
+
+export function ImageMarqueeSection({
+  title,
+  subtitle,
+  items,
+  showTitle,
+}: {
+  title?: string | null;
+  subtitle?: string | null;
+  items: CircleTileItem[];
+  showTitle?: boolean;
+}) {
+  if (!items.length) return null;
+  const doubled = [...items, ...items];
+  return (
+    <SectionShell title={title} subtitle={subtitle} showTitle={showTitle}>
+      <div className="image-marquee">
+        <div className="image-marquee-track">
+          {doubled.map((item, idx) => {
+            const img = imageFromUnknown(item.image ?? item.imageUrl);
+            return (
+              <div key={`${item.id}-${idx}`} className="image-marquee-item">
+                {img ? <img src={img} alt={item.title || ""} /> : <div className="banner-fallback" />}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </SectionShell>
+  );
+}
+
+export function CareHubSection({
+  section,
+}: {
+  section: {
+    title?: string | null;
+    subtitle?: string | null;
+    showTitle?: boolean;
+    showViewAll?: boolean;
+    viewAllQuery?: string;
+    skinConcerns?: Array<{ id: string; name?: string; nameAr?: string; imageUrl?: string; image?: unknown; link?: string }>;
+    categories?: Category[];
+    products?: Product[];
+    packages?: StorePackage[];
+  };
+}) {
+  const moreHref = section.showViewAll ? viewAllHref(section.viewAllQuery) : undefined;
+  return (
+    <div className="care-hub">
+      <SectionShell
+        title={section.showTitle ? section.title ?? "العناية" : undefined}
+        subtitle={section.subtitle}
+        moreHref={moreHref}
+      >
+        {section.skinConcerns?.length ? (
+          <SkinConcernsStrip concerns={section.skinConcerns} />
+        ) : null}
+        {section.categories?.length ? (
+          <CategoryGrid categories={section.categories} variant="makeup" />
+        ) : null}
+        {section.packages?.length ? (
+          <PackageCarousel packages={section.packages} />
+        ) : null}
+        {section.products?.length ? (
+          <ProductCarousel products={section.products} />
+        ) : null}
+      </SectionShell>
+    </div>
   );
 }

@@ -55,7 +55,7 @@ chmod -R a+rX "$STAGING_DIR"
 verify_store_static() {
   local dir="$1"
   local missing=0
-  for rel in index.html products/index.html product/index.html categories/index.html category/index.html brands/index.html brand/index.html privacy/index.html terms/index.html; do
+  for rel in index.html products/index.html product/index.html package/index.html offers/index.html categories/index.html category/index.html brands/index.html brand/index.html privacy/index.html terms/index.html; do
     if [[ ! -f "$dir/$rel" ]]; then
       echo "ERROR: missing $dir/$rel"
       missing=1

@@ -3,24 +3,26 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { displayStoreName } from "@/lib/config";
+import { useStore } from "@/components/StoreProvider";
 
 const links = [
   { href: "/", label: "الرئيسية" },
   { href: "/products/", label: "المنتجات" },
   { href: "/categories/", label: "الأقسام" },
   { href: "/brands/", label: "البراندات" },
+  { href: "/offers/", label: "العروض" },
 ];
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const { storeName } = useStore();
 
   return (
     <header className="site-header">
       <div className="container header-inner">
         <Link href="/" className="brand" onClick={() => setOpen(false)}>
-          <img src="/logo.png" alt={displayStoreName("ar")} className="brand-logo" />
-          <span className="brand-name">{displayStoreName("ar")}</span>
+          <img src="/logo.png" alt={storeName} className="brand-logo" />
+          <span className="brand-name">{storeName}</span>
         </Link>
 
         <button

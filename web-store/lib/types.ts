@@ -67,9 +67,35 @@ export type PromoStrip = {
   text?: string;
   items?: string[];
   link?: string | null;
+  linkType?: string | null;
+  linkValue?: string | null;
   backgroundColor?: string | null;
   textColor?: string | null;
   marquee?: boolean;
+  marqueeSpeed?: number;
+};
+
+export type CircleTileItem = {
+  id: string;
+  title?: string;
+  subtitle?: string;
+  imageUrl?: string;
+  image?: Media | null;
+  link?: string | null;
+  linkType?: string | null;
+  linkValue?: string | null;
+};
+
+export type StorePackage = {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  price: number;
+  originalPrice?: number | null;
+  coverImage?: Media | null;
+  items?: Array<{ product?: Product | null }>;
+  link?: string | null;
 };
 
 export type HomeSection = {
@@ -85,13 +111,19 @@ export type HomeSection = {
   headerImageUrl?: string;
   endsAt?: string | null;
   backgroundColor?: string;
+  titleColor?: string;
+  borderColor?: string;
+  borderRadius?: number;
+  framePaddingH?: number;
+  frameShadow?: boolean;
   banners?: Banner[];
   categories?: Category[];
   products?: Product[];
   brands?: Brand[];
+  packages?: StorePackage[];
   promoStrip?: PromoStrip;
-  skinConcerns?: Array<{ id: string; name?: string; nameAr?: string; imageUrl?: string; image?: Media }>;
-  items?: Array<Record<string, unknown>>;
+  skinConcerns?: Array<{ id: string; name?: string; nameAr?: string; imageUrl?: string; image?: Media; link?: string }>;
+  items?: CircleTileItem[];
   children?: HomeSection[];
 };
 
