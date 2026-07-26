@@ -19,7 +19,6 @@ import type {
 } from "@/lib/types";
 import { localizedName } from "@/lib/format";
 import { brandHref, categoryHref } from "@/lib/storePaths";
-import { viewAllHref } from "@/lib/links";
 
 function bannerHref(b: Banner): string | undefined {
   return bannerLinkHref(b);
