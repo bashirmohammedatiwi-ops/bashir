@@ -66,7 +66,7 @@ export default function BannersPage() {
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: queries.categoriesFull });
   const { data: subcategories } = useQuery({ queryKey: ["subcategories-all"], queryFn: () => queries.subcategories() });
   const { data: tertiary } = useQuery({ queryKey: ["tertiary-all"], queryFn: () => queries.tertiarySections() });
-  const { data: brands } = useQuery({ queryKey: ["brands"], queryFn: queries.brands });
+  const { data: brands } = useQuery({ queryKey: ["brands"], queryFn: () => queries.brands() });
   const { data: products } = useQuery({
     queryKey: ["products-lite-banners"],
     queryFn: () => queries.products({ limit: 200 }),

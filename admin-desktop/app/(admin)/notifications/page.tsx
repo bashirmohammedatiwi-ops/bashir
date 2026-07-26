@@ -94,7 +94,7 @@ export default function NotificationsPage() {
 
   const { data: brandsData } = useQuery({
     queryKey: ["brands", "notify-link"],
-    queryFn: queries.brands,
+    queryFn: () => queries.brands(),
     enabled: linkType === "BRAND",
   });
 

@@ -94,7 +94,7 @@ export function PageBuilderStudio({
   const { data: categories } = useQuery({ queryKey: ["categories"], queryFn: queries.categoriesFull });
   const { data: subcategories } = useQuery({ queryKey: ["subcategories-all"], queryFn: () => queries.subcategories() });
   const { data: tertiary } = useQuery({ queryKey: ["tertiary-all"], queryFn: () => queries.tertiarySections() });
-  const { data: brands } = useQuery({ queryKey: ["brands"], queryFn: queries.brands });
+  const { data: brands } = useQuery({ queryKey: ["brands"], queryFn: () => queries.brands() });
   const { data: packages } = useQuery({ queryKey: ["packages"], queryFn: queries.packages });
   const { data: products } = useQuery({ queryKey: ["products-lite"], queryFn: () => queries.products({ limit: 300 }) });
   const { data: skinConcerns } = useQuery({ queryKey: ["skin-concerns"], queryFn: () => queries.skinConcerns(true) });

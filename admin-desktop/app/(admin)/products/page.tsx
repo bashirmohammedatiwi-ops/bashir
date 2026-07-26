@@ -113,7 +113,7 @@ export default function ProductsPage() {
   });
   const { data: brandsData } = useQuery({
     queryKey: ["brands"],
-    queryFn: queries.brands,
+    queryFn: () => queries.brands(),
     staleTime: 5 * 60_000,
   });
   const { data: mediaStats } = useQuery({

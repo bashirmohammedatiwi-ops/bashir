@@ -264,7 +264,7 @@ export default function CatalogImportPage() {
   }, []);
 
   const { data: categoriesData = [] } = useQuery({ queryKey: ["categories"], queryFn: queries.categories });
-  const { data: brandsData = [] } = useQuery({ queryKey: ["brands"], queryFn: queries.brands });
+  const { data: brandsData = [] } = useQuery({ queryKey: ["brands"], queryFn: () => queries.brands() });
   const { data: catalogBrandsData = { brands: [] } } = useQuery({
     queryKey: ["catalog-brands"],
     queryFn: () => fetchCatalogBrands(false),
@@ -719,7 +719,7 @@ export default function CatalogImportPage() {
         try {
           brandId = await ensureBrandId(brandsData, product.brandAr, product.brandEn, catalogBrandsData);
           if (brandId) {
-            void qc.fetchQuery({ queryKey: ["brands"], queryFn: queries.brands });
+            void qc.fetchQuery({ queryKey: ["brands"], queryFn: () => queries.brands() });
           }
         } catch (brandErr) {
           if (!isStale()) {
@@ -782,7 +782,7 @@ export default function CatalogImportPage() {
       if (!brandId && (preview.brandAr || preview.brandEn)) {
         brandId = await ensureBrandId(brandsData, preview.brandAr, preview.brandEn, catalogBrandsData);
         if (brandId) {
-          await qc.fetchQuery({ queryKey: ["brands"], queryFn: queries.brands });
+          await qc.fetchQuery({ queryKey: ["brands"], queryFn: () => queries.brands() });
           form.setFieldsValue({ brandId });
         }
       }
