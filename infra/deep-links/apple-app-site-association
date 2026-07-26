@@ -1,0 +1,32 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["629ARMBUX8.com.alhayaa.alhayaa"],
+        "components": [
+          { "/": "/product/*" },
+          { "/": "/product" },
+          { "/": "/category/*" },
+          { "/": "/category" },
+          { "/": "/brand/*" },
+          { "/": "/brand" },
+          { "/": "/package/*" },
+          { "/": "/package" },
+          { "/": "/products" },
+          { "/": "/products/*" },
+          { "/": "/offers" },
+          { "/": "/offers/*" },
+          { "/": "/categories" },
+          { "/": "/categories/*" },
+          { "/": "/cart" },
+          { "/": "/privacy" },
+          { "/": "/terms" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": ["629ARMBUX8.com.alhayaa.alhayaa"]
+  }
+}

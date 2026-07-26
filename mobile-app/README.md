@@ -38,9 +38,27 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1
 
 ### iOS (App Store)
 
-1. افتح `ios/Runner.xcworkspace` في Xcode.
-2. اضبط Team و Signing.
-3. `flutter build ipa --release`
+1. افتح `ios/Runner.xcworkspace` في Xcode على Mac.
+2. Team: `629ARMBUX8` — Bundle ID: `com.alhayaa.alhayaa`.
+3. (اختياري للإشعارات) انسخ `ios/GoogleService-Info.plist.example` إلى `ios/Runner/GoogleService-Info.plist` واملأه من Firebase.
+4. ابنِ وارفع:
+   ```bash
+   flutter build ipa --release \
+     --export-options-plist=ios/ExportOptions.plist \
+     --dart-define=FIREBASE_API_KEY=... \
+     --dart-define=FIREBASE_APP_ID=... \
+     --dart-define=FIREBASE_MESSAGING_SENDER_ID=... \
+     --dart-define=FIREBASE_PROJECT_ID=...
+   ```
+5. أو من Xcode: Product → Archive → Distribute App.
+
+**جاهز في المستودع:** `PrivacyInfo.xcprivacy`، `ITSAppUsesNonExemptEncryption`، entitlements للروابط والإشعارات، `ExportOptions.plist`.
+
+**على السيرفر (بعد `git pull` + `./scripts/update.sh`):**
+- `https://deemaalhayat.com/.well-known/apple-app-site-association`
+- `https://deemaalhayat.com/.well-known/assetlinks.json` — شغّل `infra/scripts/generate-android-assetlinks.sh` بمفتاح الإصدار ثم أعد النشر.
+
+**يدوياً في App Store Connect:** لقطات شاشة، وصف، فئة، بيانات الخصوصية، حساب تجريبي للمراجعة.
 
 ## معلومات المتجر
 

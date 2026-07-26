@@ -25,6 +25,18 @@ server {
         allow all;
     }
 
+    location = /.well-known/apple-app-site-association {
+        default_type application/json;
+        alias /var/www/alhayaa/deep-links/apple-app-site-association;
+        add_header Cache-Control "public, max-age=3600" always;
+    }
+
+    location = /.well-known/assetlinks.json {
+        default_type application/json;
+        alias /var/www/alhayaa/deep-links/assetlinks.json;
+        add_header Cache-Control "public, max-age=3600" always;
+    }
+
     location / {
         return 301 https://$host$request_uri;
     }
@@ -107,6 +119,18 @@ server {
 
     location = /login { return 301 /admin/login/; }
     location ^~ /login/ { return 301 /admin/login/; }
+
+    location = /.well-known/apple-app-site-association {
+        default_type application/json;
+        alias /var/www/alhayaa/deep-links/apple-app-site-association;
+        add_header Cache-Control "public, max-age=3600" always;
+    }
+
+    location = /.well-known/assetlinks.json {
+        default_type application/json;
+        alias /var/www/alhayaa/deep-links/assetlinks.json;
+        add_header Cache-Control "public, max-age=3600" always;
+    }
 
     location /admin/ {
         root /var/www/alhayaa;

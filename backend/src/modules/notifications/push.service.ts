@@ -14,6 +14,7 @@ export type PushSendResult = {
   sent: number;
   failed: number;
   skipped: boolean;
+  invalidTokens: string[];
   error?: string;
 };
 
@@ -61,19 +62,31 @@ export class PushService implements OnModuleInit {
     }
   }
 
+  private stringifyData(data: Record<string, string>): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value == null) continue;
+      out[key] = String(value);
+    }
+    return out;
+  }
+
   async sendToTokens(tokens: string[], payload: PushPayload): Promise<PushSendResult> {
     if (!tokens.length) {
-      return { sent: 0, failed: 0, skipped: true, error: "No device tokens" };
+      return { sent: 0, failed: 0, skipped: true, invalidTokens: [], error: "No device tokens" };
     }
 
     if (!this.enabled || !this.messaging) {
-      return { sent: 0, failed: 0, skipped: true, error: "Firebase not configured" };
+      return { sent: 0, failed: 0, skipped: true, invalidTokens: [], error: "Firebase not configured" };
     }
 
     const unique = [...new Set(tokens.filter(Boolean))];
     const CHUNK = 500;
     let sent = 0;
     let failed = 0;
+    const invalidTokens: string[] = [];
+    const data = this.stringifyData(payload.data);
+    const imageUrl = payload.imageUrl?.trim() || undefined;
 
     for (let i = 0; i < unique.length; i += CHUNK) {
       const batch = unique.slice(i, i + CHUNK);
@@ -83,22 +96,46 @@ export class PushService implements OnModuleInit {
           notification: {
             title: payload.title,
             body: payload.body,
-            ...(payload.imageUrl ? { imageUrl: payload.imageUrl } : {}),
+            ...(imageUrl ? { imageUrl } : {}),
           },
-          data: payload.data,
-          android: { priority: "high" },
+          data,
+          android: {
+            priority: "high",
+            notification: {
+              channelId: "alhayaa_notifications",
+              sound: "default",
+              ...(imageUrl ? { imageUrl } : {}),
+            },
+          },
           apns: {
-            payload: { aps: { sound: "default" } },
+            payload: {
+              aps: {
+                sound: "default",
+                ...(imageUrl ? { mutableContent: true } : {}),
+              },
+            },
+            ...(imageUrl ? { fcmOptions: { imageUrl } } : {}),
           },
         });
         sent += response.successCount;
         failed += response.failureCount;
+
+        response.responses.forEach((res, idx) => {
+          if (res.success) return;
+          const code = res.error?.code ?? "";
+          if (
+            code === "messaging/registration-token-not-registered" ||
+            code === "messaging/invalid-registration-token"
+          ) {
+            invalidTokens.push(batch[idx]);
+          }
+        });
       } catch (err) {
         failed += batch.length;
         this.logger.error(`FCM batch failed: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
 
-    return { sent, failed, skipped: false };
+    return { sent, failed, skipped: false, invalidTokens };
   }
 }

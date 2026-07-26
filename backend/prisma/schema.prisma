@@ -88,6 +88,8 @@ enum NotificationLinkType {
   BRAND
   PACKAGE
   EXTERNAL_URL
+  ORDER
+  OFFERS
 }
 
 enum NotificationTargetType {
@@ -156,6 +158,7 @@ model User {
   reviews         Review[]
   wishlist        Wishlist[]
   notifications   Notification[]
+  notificationReads NotificationRead[]
   deviceTokens    DeviceToken[]
   auditLogs       AuditLog[]
   loyaltyHistory  LoyaltyHistory[]
@@ -754,11 +757,24 @@ model Notification {
   createdAt       DateTime                 @default(now())
 
   user            User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reads           NotificationRead[]
 
   @@index([userId])
   @@index([createdAt])
   @@index([pushStatus])
   @@index([linkType])
+}
+
+model NotificationRead {
+  notificationId  String
+  userId          String
+  readAt          DateTime   @default(now())
+
+  notification    Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([notificationId, userId])
+  @@index([userId])
 }
 
 model LoyaltyHistory {

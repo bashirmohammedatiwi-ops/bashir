@@ -8,6 +8,7 @@ import {
 } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
 import { paginate } from "../../common/dto/pagination.dto";
+import { mediaRecordToUrl } from "../../common/media-url.util";
 import { SendNotificationDto } from "./dto/notification.dto";
 import { PushService } from "./push.service";
 
@@ -17,6 +18,7 @@ type LinkMeta = {
   linkSlug: string | null;
   linkLabel: string | null;
   externalUrl: string | null;
+  imageUrl: string | null;
 };
 
 @Injectable()
@@ -38,10 +40,20 @@ export class NotificationsService {
         take: limit,
       }),
     ]);
+
+    const broadcastIds = items.filter((n) => n.userId === null).map((n) => n.id);
+    const readRows = broadcastIds.length
+      ? await this.prisma.notificationRead.findMany({
+          where: { userId, notificationId: { in: broadcastIds } },
+          select: { notificationId: true },
+        })
+      : [];
+    const readSet = new Set(readRows.map((r) => r.notificationId));
+
     return paginate(
       items.map((n) => ({
         ...n,
-        isRead: !!n.readAt,
+        isRead: n.userId === userId ? !!n.readAt : readSet.has(n.id),
         time: n.createdAt,
       })),
       total,
@@ -51,18 +63,45 @@ export class NotificationsService {
   }
 
   async markRead(userId: string, id: string) {
-    await this.prisma.notification.updateMany({
-      where: { id, OR: [{ userId }, { userId: null }] },
-      data: { readAt: new Date() },
+    const notification = await this.prisma.notification.findFirst({
+      where: { id, OR: [{ userId }, { userId: null, targetType: NotificationTargetType.ALL }] },
     });
+    if (!notification) throw new NotFoundException("Notification not found");
+
+    if (notification.userId === userId) {
+      await this.prisma.notification.update({
+        where: { id },
+        data: { readAt: new Date() },
+      });
+    } else {
+      await this.prisma.notificationRead.upsert({
+        where: { notificationId_userId: { notificationId: id, userId } },
+        create: { notificationId: id, userId },
+        update: { readAt: new Date() },
+      });
+    }
     return { success: true };
   }
 
   async markAllRead(userId: string) {
-    await this.prisma.notification.updateMany({
-      where: { OR: [{ userId }, { userId: null }], readAt: null },
-      data: { readAt: new Date() },
+    const now = new Date();
+    const broadcasts = await this.prisma.notification.findMany({
+      where: { userId: null, targetType: NotificationTargetType.ALL },
+      select: { id: true },
     });
+
+    if (broadcasts.length) {
+      await this.prisma.notificationRead.createMany({
+        data: broadcasts.map((n) => ({ notificationId: n.id, userId, readAt: now })),
+        skipDuplicates: true,
+      });
+    }
+
+    await this.prisma.notification.updateMany({
+      where: { userId, readAt: null },
+      data: { readAt: now },
+    });
+
     return { success: true };
   }
 
@@ -102,6 +141,7 @@ export class NotificationsService {
     linkId?: string;
     linkSlug?: string;
     linkLabel?: string;
+    imageUrl?: string;
     sendPush?: boolean;
   }) {
     const extra =
@@ -109,16 +149,21 @@ export class NotificationsService {
         ? (data.data as Record<string, string>)
         : undefined;
 
+    const orderId = extra?.orderId;
+    const isOrder = (data.type as string) === "ORDER" || !!orderId;
+
     return this.send({
       type: data.type,
       title: data.title,
       body: data.body,
       targetType: data.userId ? NotificationTargetType.USER : NotificationTargetType.ALL,
       userId: data.userId,
-      linkType: data.linkType ?? NotificationLinkType.NONE,
-      linkId: data.linkId,
+      linkType: isOrder
+        ? NotificationLinkType.ORDER
+        : (data.linkType ?? NotificationLinkType.NONE),
+      linkId: data.linkId ?? orderId,
       externalUrl: undefined,
-      imageUrl: undefined,
+      imageUrl: data.imageUrl,
       scheduledAt: undefined,
       sendPush: data.sendPush ?? !!data.userId,
       data: extra,
@@ -132,8 +177,9 @@ export class NotificationsService {
     }
 
     const link = await this.resolveLink(dto);
+    const imageUrl = dto.imageUrl?.trim() || link.imageUrl || null;
     const dataPayload = {
-      ...this.buildDataPayload(link),
+      ...this.buildDataPayload(link, imageUrl),
       ...(dto.data ?? {}),
     };
 
@@ -149,7 +195,7 @@ export class NotificationsService {
         linkSlug: link.linkSlug,
         linkLabel: link.linkLabel,
         externalUrl: link.externalUrl,
-        imageUrl: dto.imageUrl?.trim() || null,
+        imageUrl,
         targetType,
         pushStatus: NotificationPushStatus.PENDING,
         scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : null,
@@ -209,9 +255,18 @@ export class NotificationsService {
         linkType: notification.linkType,
         ...(notification.linkId ? { linkId: notification.linkId } : {}),
         ...(notification.linkSlug ? { linkSlug: notification.linkSlug } : {}),
+        ...(notification.linkLabel ? { linkLabel: notification.linkLabel } : {}),
         ...(notification.externalUrl ? { externalUrl: notification.externalUrl } : {}),
+        ...(notification.imageUrl ? { imageUrl: notification.imageUrl } : {}),
       },
     });
+
+    if (pushResult.invalidTokens.length) {
+      await this.prisma.deviceToken.updateMany({
+        where: { token: { in: pushResult.invalidTokens } },
+        data: { isActive: false },
+      });
+    }
 
     let pushStatus: NotificationPushStatus;
     if (pushResult.skipped) {
@@ -236,12 +291,13 @@ export class NotificationsService {
     });
   }
 
-  private buildDataPayload(link: LinkMeta): Record<string, string> {
+  private buildDataPayload(link: LinkMeta, imageUrl?: string | null): Record<string, string> {
     const payload: Record<string, string> = { linkType: link.linkType };
     if (link.linkId) payload.linkId = link.linkId;
     if (link.linkSlug) payload.linkSlug = link.linkSlug;
     if (link.linkLabel) payload.linkLabel = link.linkLabel;
     if (link.externalUrl) payload.externalUrl = link.externalUrl;
+    if (imageUrl) payload.imageUrl = imageUrl;
     return payload;
   }
 
@@ -249,7 +305,25 @@ export class NotificationsService {
     const linkType = dto.linkType ?? NotificationLinkType.NONE;
 
     if (linkType === NotificationLinkType.NONE) {
-      return { linkType, linkId: null, linkSlug: null, linkLabel: null, externalUrl: null };
+      return {
+        linkType,
+        linkId: null,
+        linkSlug: null,
+        linkLabel: null,
+        externalUrl: null,
+        imageUrl: null,
+      };
+    }
+
+    if (linkType === NotificationLinkType.OFFERS) {
+      return {
+        linkType,
+        linkId: null,
+        linkSlug: "offers",
+        linkLabel: "العروض",
+        externalUrl: null,
+        imageUrl: null,
+      };
     }
 
     if (linkType === NotificationLinkType.EXTERNAL_URL) {
@@ -261,6 +335,24 @@ export class NotificationsService {
         linkSlug: null,
         linkLabel: url,
         externalUrl: url,
+        imageUrl: null,
+      };
+    }
+
+    if (linkType === NotificationLinkType.ORDER) {
+      if (!dto.linkId) throw new BadRequestException("linkId is required for ORDER link");
+      const order = await this.prisma.order.findUnique({
+        where: { id: dto.linkId },
+        select: { id: true, orderNumber: true },
+      });
+      if (!order) throw new BadRequestException("Order not found");
+      return {
+        linkType,
+        linkId: order.id,
+        linkSlug: order.orderNumber,
+        linkLabel: `طلب ${order.orderNumber}`,
+        externalUrl: null,
+        imageUrl: null,
       };
     }
 
@@ -270,7 +362,12 @@ export class NotificationsService {
       case NotificationLinkType.PRODUCT: {
         const product = await this.prisma.product.findUnique({
           where: { id: dto.linkId },
-          select: { id: true, name: true, slug: true },
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            images: { take: 1, orderBy: { position: "asc" }, include: { media: true } },
+          },
         });
         if (!product) throw new BadRequestException("Product not found");
         return {
@@ -279,12 +376,13 @@ export class NotificationsService {
           linkSlug: product.slug,
           linkLabel: product.name,
           externalUrl: null,
+          imageUrl: mediaRecordToUrl(product.images[0]?.media ?? null, true),
         };
       }
       case NotificationLinkType.CATEGORY: {
         const category = await this.prisma.category.findUnique({
           where: { id: dto.linkId },
-          select: { id: true, name: true, slug: true },
+          select: { id: true, name: true, slug: true, image: true },
         });
         if (!category) throw new BadRequestException("Category not found");
         return {
@@ -293,12 +391,13 @@ export class NotificationsService {
           linkSlug: category.slug,
           linkLabel: category.name,
           externalUrl: null,
+          imageUrl: mediaRecordToUrl(category.image, true),
         };
       }
       case NotificationLinkType.BRAND: {
         const brand = await this.prisma.brand.findUnique({
           where: { id: dto.linkId },
-          select: { id: true, name: true, slug: true },
+          select: { id: true, name: true, slug: true, logo: true },
         });
         if (!brand) throw new BadRequestException("Brand not found");
         return {
@@ -307,13 +406,13 @@ export class NotificationsService {
           linkSlug: brand.slug,
           linkLabel: brand.name,
           externalUrl: null,
+          imageUrl: mediaRecordToUrl(brand.logo, true),
         };
       }
       case NotificationLinkType.PACKAGE: {
-        if (!dto.linkId) throw new BadRequestException("linkId is required for PACKAGE link");
         const pkg = await this.prisma.package.findFirst({
           where: { OR: [{ id: dto.linkId }, { slug: dto.linkId }] },
-          select: { id: true, name: true, slug: true },
+          select: { id: true, name: true, slug: true, coverImage: true },
         });
         if (!pkg) throw new BadRequestException("Package not found");
         return {
@@ -322,10 +421,18 @@ export class NotificationsService {
           linkSlug: pkg.slug ?? pkg.id,
           linkLabel: pkg.name,
           externalUrl: null,
+          imageUrl: mediaRecordToUrl(pkg.coverImage, true),
         };
       }
       default:
-        return { linkType: NotificationLinkType.NONE, linkId: null, linkSlug: null, linkLabel: null, externalUrl: null };
+        return {
+          linkType: NotificationLinkType.NONE,
+          linkId: null,
+          linkSlug: null,
+          linkLabel: null,
+          externalUrl: null,
+          imageUrl: null,
+        };
     }
   }
 

@@ -268,6 +268,8 @@ export class OrdersService {
       type: "ORDER" as any,
       title: "تم استلام طلبك",
       body: `طلبك ${order.orderNumber} قيد المراجعة`,
+      linkType: "ORDER" as any,
+      linkId: order.id,
       data: { orderId: order.id },
     });
 
@@ -296,6 +298,8 @@ export class OrdersService {
       type: "ORDER" as any,
       title: "تحديث حالة الطلب",
       body: `طلب ${order.orderNumber}: ${dto.status}`,
+      linkType: "ORDER" as any,
+      linkId: id,
       data: { orderId: id, status: dto.status },
     });
     return updated;

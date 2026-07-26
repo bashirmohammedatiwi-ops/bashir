@@ -20,6 +20,7 @@ function isImageFile(f: File) {
 type Props = {
   value?: string | null;
   onChange?: (id: string | null) => void;
+  onPickUrl?: (url: string | null) => void;
   label?: string;
   purpose?: string;
   previewUrl?: string | null;
@@ -28,6 +29,7 @@ type Props = {
 export function MediaPicker({
   value,
   onChange,
+  onPickUrl,
   label = "اختر صورة",
   purpose = "GENERAL",
   previewUrl,
@@ -63,6 +65,7 @@ export function MediaPicker({
         const url = media.previewUrl ?? mediaThumb(media, "medium") ?? mediaThumb(media);
         setLocalPreview(url);
         onChange?.(media.id);
+        onPickUrl?.(url ?? null);
         message.success("تم رفع الصورة");
       } catch (e: unknown) {
         const err = e as { message?: string };
@@ -71,7 +74,7 @@ export function MediaPicker({
         setUploading(false);
       }
     },
-    [onChange, purpose],
+    [onChange, onPickUrl, purpose],
   );
 
   const uploadFiles = useCallback(
@@ -211,6 +214,7 @@ export function MediaPicker({
                 onClick={() => {
                   setLocalPreview(null);
                   onChange?.(null);
+                  onPickUrl?.(null);
                 }}
               >
                 إزالة
@@ -251,12 +255,14 @@ export function MediaPicker({
                   onClick={() => {
                     setLocalPreview(url);
                     onChange?.(m.id);
+                    onPickUrl?.(url ?? null);
                     setOpen(false);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       setLocalPreview(url);
                       onChange?.(m.id);
+                      onPickUrl?.(url ?? null);
                       setOpen(false);
                     }
                   }}

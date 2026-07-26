@@ -30,7 +30,13 @@ export class SendNotificationDto {
   @IsUUID() userId?: string;
 
   @IsOptional() @IsEnum(NotificationLinkType) linkType?: NotificationLinkType;
-  @ValidateIf((o) => o.linkType && o.linkType !== NotificationLinkType.NONE && o.linkType !== NotificationLinkType.EXTERNAL_URL)
+  @ValidateIf(
+    (o) =>
+      o.linkType &&
+      o.linkType !== NotificationLinkType.NONE &&
+      o.linkType !== NotificationLinkType.EXTERNAL_URL &&
+      o.linkType !== NotificationLinkType.OFFERS,
+  )
   @IsUUID() linkId?: string;
   @ValidateIf((o) => o.linkType === NotificationLinkType.EXTERNAL_URL)
   @IsString() externalUrl?: string;

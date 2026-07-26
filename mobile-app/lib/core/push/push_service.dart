@@ -2,14 +2,16 @@ import 'dart:io';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../navigation/app_navigation.dart';
 import '../navigation/notification_navigation.dart';
+import '../utils/media_url.dart';
+import 'foreground_notification_banner.dart';
 import '../../data/services/api_service.dart';
 import '../../features/auth/auth_provider.dart';
+import '../../features/profile/profile_providers.dart';
 
 /// معالجة الإشعارات في الخلفية (مطلوب لـ FCM).
 @pragma('vm:entry-point')
@@ -64,6 +66,10 @@ class PushService {
         }
       });
 
+      FirebaseMessaging.onMessage.listen((message) {
+        _handleForegroundMessage(ref, message);
+      });
+
       FirebaseMessaging.onMessageOpenedApp.listen((message) {
         _openFromMessage(message.data);
       });
@@ -79,9 +85,35 @@ class PushService {
     }
   }
 
+  static void _handleForegroundMessage(WidgetRef ref, RemoteMessage message) {
+    ref.invalidate(notificationsProvider);
+
+    final notification = message.notification;
+    final data = Map<String, dynamic>.from(message.data);
+    final title = notification?.title ?? data['title']?.toString() ?? '';
+    final body = notification?.body ?? data['body']?.toString() ?? '';
+    if (title.isEmpty && body.isEmpty) return;
+
+    final imageUrl = resolveMediaUrl(
+      notification?.android?.imageUrl ??
+          notification?.apple?.imageUrl ??
+          data['imageUrl']?.toString(),
+    );
+
+    if (Platform.isAndroid) {
+      ForegroundNotificationBanner.show(
+        title: title,
+        body: body,
+        imageUrl: imageUrl,
+        payload: data,
+      );
+    }
+  }
+
   static void _openFromMessage(Map<String, dynamic> data) {
     final ctx = rootNavigatorKey.currentContext;
     if (ctx == null || !ctx.mounted) return;
+    ForegroundNotificationBanner.dismiss();
     openPushPayload(ctx, data);
   }
 

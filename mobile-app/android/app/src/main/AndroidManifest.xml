@@ -33,6 +33,7 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="https" android:host="deemaalhayat.com"/>
+                <data android:scheme="https" android:host="www.deemaalhayat.com"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
@@ -40,6 +41,9 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="alhayaa_notifications" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

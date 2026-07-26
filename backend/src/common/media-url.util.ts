@@ -79,6 +79,38 @@ export function rewriteMediaRecord<T extends Record<string, unknown> | null | un
   return next as T;
 }
 
+type MediaLike = {
+  publicUrlBase?: string | null;
+  filename?: string | null;
+  originalUrl?: string | null;
+  originalUrlJpg?: string | null;
+  variants?: VariantsRecord;
+};
+
+export function mediaRecordToUrl(media?: MediaLike | null, preferLarge = false): string | null {
+  if (!media) return null;
+  const rewritten = rewriteMediaRecord(media as Record<string, unknown>) as MediaLike;
+
+  if (rewritten.originalUrl) return rewritten.originalUrl;
+  if (rewritten.originalUrlJpg) return rewritten.originalUrlJpg;
+
+  const order = preferLarge
+    ? (["large", "medium", "small", "thumb"] as const)
+    : (["medium", "large", "small", "thumb"] as const);
+  for (const key of order) {
+    const formats = rewritten.variants?.[key]?.formats;
+    if (!formats) continue;
+    const path = formats.webp ?? formats.jpg ?? formats.avif;
+    if (path) return rewriteMediaUrl(path);
+  }
+
+  if (rewritten.publicUrlBase && rewritten.filename) {
+    return rewriteMediaUrl(`${rewritten.publicUrlBase}/${rewritten.filename}.webp`);
+  }
+
+  return null;
+}
+
 export function rewriteProductMediaUrls<
   T extends {
     images?: Array<{ media?: unknown }>;

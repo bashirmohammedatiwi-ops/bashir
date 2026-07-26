@@ -8,7 +8,9 @@
 2. أضف تطبيق Android: `com.alhayaa.alhayaa`
 3. (اختياري) أضف تطبيق iOS: `com.alhayaa.alhayaa`
 
-## 2. مفاتيح التطبيق (بدون google-services.json)
+## 2. مفاتيح التطبيق
+
+### Android (بدون google-services.json في المستودع)
 
 مرّر القيم عند التشغيل أو البناء:
 
@@ -19,6 +21,15 @@ flutter run \
   --dart-define=FIREBASE_MESSAGING_SENDER_ID=123456789 \
   --dart-define=FIREBASE_PROJECT_ID=alhayaa-xxxxx
 ```
+
+### iOS
+
+1. من Firebase Console حمّل `GoogleService-Info.plist` للتطبيق `com.alhayaa.alhayaa`.
+2. ضعه في `ios/Runner/GoogleService-Info.plist` (غير مُتتبَّع في git — راجع `GoogleService-Info.plist.example`).
+3. فعّل **Push Notifications** و **Background Modes → Remote notifications** في Xcode (الملفات جاهزة: `Runner.entitlements` + `Info.plist`).
+4. ابنِ بنفس `--dart-define` أعلاه مع `FIREBASE_APP_ID` لنسخة iOS من Firebase.
+
+بدون الملف أو `--dart-define`: التطبيق يعمل؛ الإشعارات الفورية فقط تُتخطّى.
 
 ## 3. خادم NestJS
 

@@ -143,6 +143,7 @@ services:
       - mediadata:/var/www/alhayaa/uploads:ro
       - ./admin-static:/var/www/alhayaa/admin:ro
       - ./store-static:/var/www/alhayaa/store:ro
+      - ./deep-links:/var/www/alhayaa/deep-links:ro
       - certbot_www:/var/www/certbot:ro
       - certbot_certs:/etc/letsencrypt:ro
     networks:
