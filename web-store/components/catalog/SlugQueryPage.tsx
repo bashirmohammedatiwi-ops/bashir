@@ -1,20 +1,33 @@
 "use client";
 
-import { Suspense, type ReactNode } from "react";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
+import { BrandDetailView } from "@/components/catalog/BrandDetailView";
+import { CategoryDetailView } from "@/components/catalog/CategoryDetailView";
+import { ProductDetailView } from "@/components/catalog/ProductDetailView";
 import { LoadingState } from "@/components/ui/LoadingState";
 
-export function SlugQueryPage({ render }: { render: (slug: string) => ReactNode }) {
+type SlugPageKind = "product" | "category" | "brand";
+
+export function SlugQueryPage({ kind }: { kind: SlugPageKind }) {
   return (
     <Suspense fallback={<LoadingState />}>
-      <SlugQueryInner render={render} />
+      <SlugQueryInner kind={kind} />
     </Suspense>
   );
 }
 
-function SlugQueryInner({ render }: { render: (slug: string) => ReactNode }) {
+function SlugQueryInner({ kind }: { kind: SlugPageKind }) {
   const params = useSearchParams();
   const slug = params.get("slug")?.trim() ?? "";
-  return <>{render(slug)}</>;
+
+  switch (kind) {
+    case "product":
+      return <ProductDetailView slug={slug} />;
+    case "category":
+      return <CategoryDetailView slug={slug} />;
+    case "brand":
+      return <BrandDetailView slug={slug} />;
+  }
 }
