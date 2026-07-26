@@ -842,7 +842,7 @@ export class HomeSectionResolver {
       cardSize: (payload.size as string) ?? "md",
       imageHeight: rowHeightPx ?? (Number(payload.height) || 160),
       rowHeight,
-      tilesPerView: this.optionalNumber(payload.tilesPerView) ?? 2.5,
+      tilesPerView: this.optionalNumber(payload.tilesPerView) ?? undefined,
       marqueeSpeed: Number(payload.marqueeSpeed) || 5,
       marqueeGap: Number(payload.gap) ?? 12,
       sectionLayout: payload.columns != null ? String(payload.columns) : undefined,

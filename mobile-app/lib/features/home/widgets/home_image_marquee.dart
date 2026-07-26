@@ -198,6 +198,7 @@ class _MarqueeTile extends StatelessWidget {
       ),
       width: image.width,
       height: h,
+      showCaption: false,
       onTap: image.onTap != null
           ? () {
               HapticFeedback.selectionClick();
