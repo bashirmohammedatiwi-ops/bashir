@@ -111,7 +111,7 @@ export class ProductsService {
 
     const where: Prisma.ProductWhereInput = { AND: andFilters };
 
-    const orderBy = this.buildOrderBy(q.sort);
+    const orderBy = this.buildOrderBy(q.sort, storefront);
 
     const [total, items] = await this.prisma.$transaction([
       this.prisma.product.count({ where }),
@@ -592,7 +592,10 @@ export class ProductsService {
     return null;
   }
 
-  private buildOrderBy(sort?: string): Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[] {
+  private buildOrderBy(
+    sort?: string,
+    storefront = false,
+  ): Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[] {
     switch (sort) {
       case "price_asc":
         return { price: "asc" };
@@ -609,7 +612,7 @@ export class ProductsService {
       case "brand":
         return PRODUCT_ORDER_BY_BRAND;
       default:
-        return PRODUCT_ORDER_BY_BRAND;
+        return storefront ? PRODUCT_ORDER_BY_BRAND : { createdAt: "desc" };
     }
   }
 }

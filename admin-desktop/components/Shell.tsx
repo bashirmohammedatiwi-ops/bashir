@@ -10,6 +10,14 @@ import { VPS_ORIGIN } from "@/lib/config";
 
 type NavItem = { href: string; label: string; short: string };
 
+function navItemActive(pathname: string | null, href: string): boolean {
+  if (!pathname) return false;
+  const p = pathname.replace(/\/$/, "") || "/";
+  const h = href.replace(/\/$/, "") || "/";
+  if (h === "/products") return p === "/products";
+  return p === h || p.startsWith(`${h}/`);
+}
+
 const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   {
     title: "الرئيسية",
@@ -24,6 +32,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     title: "المنتجات",
     items: [
       { href: "/products", label: "المنتجات", short: "م" },
+      { href: "/products/app-order", label: "ترتيب التطبيق", short: "تر" },
       { href: "/catalog-import", label: "استيراد الكتالوج", short: "كت" },
       { href: "/skin-concerns", label: "دليل البشرة", short: "ب" },
       { href: "/skin-routines", label: "روتين البشرة", short: "ر" },
@@ -154,7 +163,7 @@ export const Shell = memo(function Shell({ children }: { children: React.ReactNo
                   key={item.href}
                   item={item}
                   collapsed={collapsed}
-                  active={!!pathname?.startsWith(item.href)}
+                  active={navItemActive(pathname, item.href)}
                 />
               ))}
             </div>
