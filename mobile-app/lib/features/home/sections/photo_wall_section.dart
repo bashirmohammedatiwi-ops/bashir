@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import '../../../data/models/home_section.dart';
 import '../home_link.dart';
 import '../widgets/gallery_photo_card.dart';
+import '../widgets/gallery_tile_sizer.dart';
 import '../widgets/home_image_marquee.dart';
 import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
-import '../widgets/photo_shape_kit.dart';
 
 /// معرض صور — تصميم موحّد لكل الصور حسب إعدادات القسم من لوحة التحكم.
 class PhotoWallSection extends StatelessWidget {
@@ -22,7 +22,6 @@ class PhotoWallSection extends StatelessWidget {
 
     final style = _style;
     final display = _resolveDisplay(section.display ?? section.layout ?? section.sectionLayout);
-    final height = section.imageHeight ?? PhotoShapeGeometry.sizeHeight(style.defaultSize);
     final gap = section.marqueeGap ?? HomeTheme.itemGap;
     final padH = section.fullBleed ? 0.0 : HomeTheme.paddingH;
     final columns = _columns(section);
@@ -40,25 +39,32 @@ class PhotoWallSection extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: padH),
         child: switch (display) {
-          'marquee' => _marquee(items, height, gap, style, onTap),
+          'marquee' => _marquee(items, gap, style, onTap),
           'grid' || 'bento' || 'mosaic' || 'stagger' => GalleryGridLayout(
+              section: section,
               items: items,
               gap: gap,
               style: style,
               columns: columns,
               onTap: onTap,
             ),
-          'stack' => GalleryStackLayout(items: items, gap: gap, style: style, onTap: onTap),
-          'scroll' || 'carousel' => GalleryHorizontalLayout(
+          'stack' => GalleryStackLayout(
+              section: section,
               items: items,
-              height: height,
+              gap: gap,
+              style: style,
+              onTap: onTap,
+            ),
+          'scroll' || 'carousel' => GalleryHorizontalLayout(
+              section: section,
+              items: items,
               gap: gap,
               style: style,
               onTap: onTap,
             ),
           _ => GalleryHorizontalLayout(
+              section: section,
               items: items,
-              height: height,
               gap: gap,
               style: style,
               onTap: onTap,
@@ -95,39 +101,49 @@ class PhotoWallSection extends StatelessWidget {
 
   Widget _marquee(
     List<Map<String, dynamic>> items,
-    double height,
     double gap,
     GalleryRenderStyle style,
     void Function(Map<String, dynamic>) onTap,
   ) {
-    final tileH = style.tileHeight(height);
-    final tileW = style.tileWidth(tileH);
     final shape = style.defaultShape;
     final radius = style.tileCornerRadius ?? HomeTheme.galleryRadius;
 
-    final images = <HomeMarqueeImage>[];
-    for (final raw in items) {
-      final data = style.tileData(raw);
-      if (data.imageUrl.isEmpty) continue;
-      images.add(
-        HomeMarqueeImage(
-          url: data.imageUrl,
-          width: tileW,
-          height: tileH,
-          shape: shape,
-          onTap: () => onTap(raw),
-        ),
-      );
-    }
-    if (images.isEmpty) return const SizedBox.shrink();
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final sizer = GalleryTileSizer.forSection(
+          viewportWidth: constraints.maxWidth,
+          gap: gap,
+          section: section,
+          aspectRatio: GalleryTileSizer.resolveAspect(section, defaultAspect: style.defaultAspect),
+        );
+        final tileH = sizer.tileHeight;
+        final tileW = sizer.tileWidth;
 
-    return HomeImageMarquee(
-      images: images,
-      height: tileH,
-      speed: section.marqueeSpeed ?? 5,
-      gap: gap,
-      radius: radius,
-      startFromEndInRtl: true,
+        final images = <HomeMarqueeImage>[];
+        for (final raw in items) {
+          final data = style.tileData(raw);
+          if (data.imageUrl.isEmpty) continue;
+          images.add(
+            HomeMarqueeImage(
+              url: data.imageUrl,
+              width: tileW,
+              height: tileH,
+              shape: shape,
+              onTap: () => onTap(raw),
+            ),
+          );
+        }
+        if (images.isEmpty) return const SizedBox.shrink();
+
+        return HomeImageMarquee(
+          images: images,
+          height: tileH,
+          speed: section.marqueeSpeed ?? 5,
+          gap: gap,
+          radius: radius,
+          startFromEndInRtl: true,
+        );
+      },
     );
   }
 }

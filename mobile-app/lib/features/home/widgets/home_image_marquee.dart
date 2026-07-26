@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'gallery_photo_card.dart';
 import 'photo_shape_kit.dart';
 
-/// صور متحركة أفقياً — كل صورة بشكلها الخاص
+/// صور متحركة أفقياً — حلقة لا نهائية بدون فراغات.
 class HomeImageMarquee extends StatefulWidget {
   final List<HomeMarqueeImage> images;
   final double height;
@@ -45,33 +45,70 @@ class HomeMarqueeImage {
 
 class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
-  double _loopWidth = 400;
+  double _segmentWidth = 1;
+  double? _lastViewportWidth;
+  int? _lastImageCount;
+  double? _lastSpeed;
+  double? _lastGap;
+
+  double _calcSegmentWidth() {
+    if (widget.images.isEmpty) return 1;
+    return widget.images.fold<double>(0, (sum, img) => sum + img.width + widget.gap);
+  }
+
+  /// نكرّر المقطع حتى يملأ الشاشة + مقطع إضافي — يمنع الفراغ عند قلة الصور.
+  int _copyCount(double viewportWidth, double segmentWidth) {
+    final needed = (viewportWidth / segmentWidth).ceil() + 2;
+    return needed.clamp(2, 32);
+  }
+
+  void _syncAnimation(double viewportWidth) {
+    if (!mounted || widget.images.isEmpty) return;
+
+    final segmentWidth = _calcSegmentWidth();
+    if (segmentWidth <= 0) return;
+
+    final imageCount = widget.images.length;
+    final speed = widget.speed;
+    final gap = widget.gap;
+    if (_lastViewportWidth == viewportWidth &&
+        _lastImageCount == imageCount &&
+        _lastSpeed == speed &&
+        _lastGap == gap &&
+        (_segmentWidth - segmentWidth).abs() < 0.5 &&
+        _ctrl.isAnimating) {
+      return;
+    }
+
+    _lastViewportWidth = viewportWidth;
+    _lastImageCount = imageCount;
+    _lastSpeed = speed;
+    _lastGap = gap;
+    _segmentWidth = segmentWidth;
+
+    final pxPerSec = 24 + speed.clamp(1, 10) * 10;
+    final ms = ((segmentWidth / pxPerSec) * 1000).round().clamp(5000, 120000);
+    _ctrl
+      ..stop()
+      ..duration = Duration(milliseconds: ms)
+      ..repeat();
+  }
 
   @override
   void initState() {
     super.initState();
     _ctrl = AnimationController(vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _restart());
   }
 
   @override
   void didUpdateWidget(HomeImageMarquee old) {
     super.didUpdateWidget(old);
-    if (old.images != widget.images || old.speed != widget.speed) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _restart());
+    if (old.images != widget.images ||
+        old.speed != widget.speed ||
+        old.gap != widget.gap ||
+        old.height != widget.height) {
+      _lastViewportWidth = null;
     }
-  }
-
-  void _restart() {
-    if (!mounted || widget.images.isEmpty) return;
-    final total = widget.images.fold<double>(0, (sum, img) => sum + img.width + widget.gap) + widget.gap;
-    final pxPerSec = 24 + widget.speed.clamp(1, 10) * 10;
-    final ms = ((total / pxPerSec) * 1000).round().clamp(5000, 120000);
-    setState(() => _loopWidth = total);
-    _ctrl
-      ..stop()
-      ..duration = Duration(milliseconds: ms)
-      ..repeat();
   }
 
   @override
@@ -80,17 +117,10 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    if (widget.images.isEmpty) return const SizedBox.shrink();
-
-    final direction = Directionality.of(context);
-    final isRtl = direction == TextDirection.rtl;
-    final startFromEnd = widget.startFromEndInRtl && isRtl;
-
-    Widget row = Row(
-      textDirection: direction,
+  Widget _buildSegment(TextDirection direction) {
+    return Row(
       mainAxisSize: MainAxisSize.min,
+      textDirection: direction,
       children: [
         for (final img in widget.images) ...[
           _MarqueeTile(image: img, defaultHeight: widget.height),
@@ -98,32 +128,50 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
         ],
       ],
     );
+  }
 
-    final loop = Row(
-      textDirection: direction,
-      mainAxisSize: MainAxisSize.min,
-      children: [row, row],
-    );
+  @override
+  Widget build(BuildContext context) {
+    if (widget.images.isEmpty) return const SizedBox.shrink();
 
-    return ClipRect(
-      child: SizedBox(
-        height: widget.height,
-        child: AnimatedBuilder(
-          animation: _ctrl,
-          builder: (_, __) => Transform.translate(
-            offset: Offset(
-              (isRtl ? 1 : -1) * _ctrl.value * _loopWidth,
-              0,
+    final direction = Directionality.of(context);
+    final isRtl = direction == TextDirection.rtl;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final viewportW = constraints.maxWidth.isFinite
+            ? constraints.maxWidth
+            : MediaQuery.sizeOf(context).width;
+        final segmentWidth = _calcSegmentWidth();
+        final copies = _copyCount(viewportW, segmentWidth);
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _syncAnimation(viewportW);
+        });
+
+        return ClipRect(
+          child: SizedBox(
+            height: widget.height,
+            width: viewportW,
+            child: AnimatedBuilder(
+              animation: _ctrl,
+              builder: (_, __) {
+                final dx = (isRtl ? 1 : -1) * _ctrl.value * _segmentWidth;
+                return Transform.translate(
+                  offset: Offset(dx, 0),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    textDirection: direction,
+                    children: [
+                      for (var i = 0; i < copies; i++) _buildSegment(direction),
+                    ],
+                  ),
+                );
+              },
             ),
-            child: startFromEnd
-                ? Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: loop,
-                  )
-                : loop,
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

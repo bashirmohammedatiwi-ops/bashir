@@ -163,6 +163,8 @@ class HomeSection {
   final bool showShadow;
   final double? customWidth;
   final double? customHeight;
+  final double? tilesPerView;
+  final String? rowHeight;
   final double? tileCornerRadius;
   final List<HomeSection> children;
   final double? borderRadius;
@@ -212,6 +214,8 @@ class HomeSection {
     this.showShadow = false,
     this.customWidth,
     this.customHeight,
+    this.tilesPerView,
+    this.rowHeight,
     this.tileCornerRadius,
     this.children = const [],
     this.borderRadius,
@@ -271,6 +275,8 @@ class HomeSection {
         showShadow: json['showShadow'] == true,
         customWidth: json['customWidth'] != null ? (json['customWidth'] as num).toDouble() : null,
         customHeight: json['customHeight'] != null ? (json['customHeight'] as num).toDouble() : null,
+        tilesPerView: json['tilesPerView'] != null ? (json['tilesPerView'] as num).toDouble() : null,
+        rowHeight: json['rowHeight']?.toString(),
         tileCornerRadius: json['tileCornerRadius'] != null
             ? (json['tileCornerRadius'] as num).toDouble()
             : null,

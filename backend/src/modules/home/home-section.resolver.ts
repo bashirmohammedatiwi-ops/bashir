@@ -77,6 +77,8 @@ export interface ResolvedHomeSection {
   showShadow?: boolean;
   customWidth?: number | null;
   customHeight?: number | null;
+  tilesPerView?: number | null;
+  rowHeight?: string;
   tileCornerRadius?: number;
   children?: ResolvedHomeSection[];
   borderRadius?: number;
@@ -831,12 +833,16 @@ export class HomeSectionResolver {
 
   private photoSectionMeta(payload: Payload) {
     const aspect = this.aspectRatioNumber((payload.aspectRatio as string) ?? "auto");
+    const rowHeight = (payload.rowHeight as string) || "auto";
+    const rowHeightPx = this.rowHeightPixels(rowHeight);
     return {
       layout: (payload.display as string) ?? "scroll",
       display: (payload.display as string) ?? "scroll",
       shape: (payload.shape as string) ?? "rounded",
       cardSize: (payload.size as string) ?? "md",
-      imageHeight: Number(payload.height) || 160,
+      imageHeight: rowHeightPx ?? Number(payload.height) || 160,
+      rowHeight,
+      tilesPerView: this.optionalNumber(payload.tilesPerView) ?? 2.5,
       marqueeSpeed: Number(payload.marqueeSpeed) || 5,
       marqueeGap: Number(payload.gap) ?? 12,
       sectionLayout: payload.columns != null ? String(payload.columns) : undefined,
@@ -852,6 +858,16 @@ export class HomeSectionResolver {
       tileCornerRadius: Number(payload.tileCornerRadius) || undefined,
       backgroundColor: (payload.backgroundColor as string) ?? undefined,
     };
+  }
+
+  private rowHeightPixels(value: string): number | null {
+    const map: Record<string, number> = {
+      compact: 96,
+      normal: 140,
+      tall: 180,
+      xl: 220,
+    };
+    return map[value] ?? null;
   }
 
   private aspectRatioNumber(value?: string | null): number | null {

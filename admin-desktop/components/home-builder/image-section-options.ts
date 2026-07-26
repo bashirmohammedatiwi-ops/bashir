@@ -80,3 +80,25 @@ export function aspectRatioNumber(value?: string | null): number | null {
 export function defaultHeightForSize(size?: string | null): number {
   return IMAGE_SIZE_OPTIONS.find((o) => o.value === size)?.height ?? 128;
 }
+
+/** عدد الصور الظاهرة في عرض الشاشة (تمرير / marquee) */
+export const TILES_PER_VIEW_OPTIONS = [
+  { value: 1, label: "صورة واحدة — كامل العرض" },
+  { value: 1.5, label: "صورة + معاينة التالية" },
+  { value: 2, label: "صورتان في الصف" },
+  { value: 2.5, label: "صورتان + معاينة" },
+  { value: 3, label: "ثلاث صور في الصف" },
+] as const;
+
+/** ارتفاع الصف — يتكيّف مع الشاشة عند اختيار «تلقائي» */
+export const ROW_HEIGHT_OPTIONS = [
+  { value: "auto", label: "تلقائي (من نسبة العرض)", height: null },
+  { value: "compact", label: "منخفض (~96px)", height: 96 },
+  { value: "normal", label: "متوسط (~140px)", height: 140 },
+  { value: "tall", label: "عالي (~180px)", height: 180 },
+  { value: "xl", label: "كبير جداً (~220px)", height: 220 },
+] as const;
+
+export function rowHeightPixels(value?: string | null): number | null {
+  return ROW_HEIGHT_OPTIONS.find((o) => o.value === value)?.height ?? null;
+}

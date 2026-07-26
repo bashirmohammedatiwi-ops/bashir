@@ -4,7 +4,7 @@ import { getCached, setCached } from "../../common/memory-cache.util";
 import { PrismaService } from "../../common/prisma.service";
 
 export const DEFAULT_STORE_SETTINGS = {
-  storeName: "الحياة",
+  storeName: "ديما الحياة",
   currency: "د.ع",
   whatsapp: "+9647700000000",
   supportPhone: "+9647700000000",

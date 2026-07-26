@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_section.dart';
+import 'gallery_tile_sizer.dart';
 import 'home_theme.dart';
 import 'photo_shape_kit.dart';
 
@@ -254,6 +255,7 @@ class GalleryPhotoCard extends StatelessWidget {
 
 /// شبكة منتظمة — كل البطاقات بنفس الحجم والشكل.
 class GalleryGridLayout extends StatelessWidget {
+  final HomeSection section;
   final List<Map<String, dynamic>> items;
   final int columns;
   final double gap;
@@ -262,6 +264,7 @@ class GalleryGridLayout extends StatelessWidget {
 
   const GalleryGridLayout({
     super.key,
+    required this.section,
     required this.items,
     this.columns = 2,
     required this.gap,
@@ -271,12 +274,17 @@ class GalleryGridLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final aspect = style.resolvedAspect();
-
     return LayoutBuilder(
       builder: (context, constraints) {
-        final tileW = (constraints.maxWidth - gap * (columns - 1)) / columns;
-        final tileH = style.sectionCustomHeight ?? (tileW / aspect);
+        final sizer = GalleryTileSizer.forSection(
+          viewportWidth: constraints.maxWidth,
+          gap: gap,
+          section: section,
+          aspectRatio: GalleryTileSizer.resolveAspect(section, defaultAspect: style.defaultAspect),
+          gridColumns: columns,
+        );
+        final tileW = sizer.tileWidth;
+        final tileH = sizer.tileHeight;
 
         return Wrap(
           spacing: gap,
@@ -308,16 +316,16 @@ class GalleryGridLayout extends StatelessWidget {
 
 /// تمرير أفقي — بطاقات موحّدة العرض والارتفاع.
 class GalleryHorizontalLayout extends StatelessWidget {
+  final HomeSection section;
   final List<Map<String, dynamic>> items;
-  final double height;
   final double gap;
   final GalleryRenderStyle style;
   final void Function(Map<String, dynamic> raw) onTap;
 
   const GalleryHorizontalLayout({
     super.key,
+    required this.section,
     required this.items,
-    required this.height,
     required this.gap,
     required this.style,
     required this.onTap,
@@ -325,39 +333,50 @@ class GalleryHorizontalLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tileH = style.tileHeight(height);
-    final tileW = style.tileWidth(tileH);
-    final captionExtra = style.defaultOverlay == 'none' ? 28.0 : 0.0;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final sizer = GalleryTileSizer.forSection(
+          viewportWidth: constraints.maxWidth,
+          gap: gap,
+          section: section,
+          aspectRatio: GalleryTileSizer.resolveAspect(section, defaultAspect: style.defaultAspect),
+        );
+        final tileH = sizer.tileHeight;
+        final tileW = sizer.tileWidth;
+        final captionExtra = style.defaultOverlay == 'none' ? 28.0 : 0.0;
 
-    return SizedBox(
-      height: tileH + captionExtra,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-        padding: EdgeInsets.zero,
-        itemCount: items.length,
-        separatorBuilder: (_, __) => SizedBox(width: gap),
-        itemBuilder: (context, i) {
-          final raw = items[i];
-          final data = style.tileData(raw);
-          if (data.imageUrl.isEmpty) return const SizedBox.shrink();
-          return GalleryPhotoCard(
-            data: data,
-            width: tileW,
-            height: tileH,
-            fit: style.fit,
-            cornerRadiusOverride: style.tileCornerRadius,
-            showCaption: (data.overlayStyle ?? 'none') == 'none',
-            onTap: () => onTap(raw),
-          );
-        },
-      ),
+        return SizedBox(
+          height: tileH + captionExtra,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+            padding: EdgeInsets.zero,
+            itemCount: items.length,
+            separatorBuilder: (_, __) => SizedBox(width: gap),
+            itemBuilder: (context, i) {
+              final raw = items[i];
+              final data = style.tileData(raw);
+              if (data.imageUrl.isEmpty) return const SizedBox.shrink();
+              return GalleryPhotoCard(
+                data: data,
+                width: tileW,
+                height: tileH,
+                fit: style.fit,
+                cornerRadiusOverride: style.tileCornerRadius,
+                showCaption: (data.overlayStyle ?? 'none') == 'none',
+                onTap: () => onTap(raw),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
 
 /// عمود كامل العرض — صور بنفس النسبة.
 class GalleryStackLayout extends StatelessWidget {
+  final HomeSection section;
   final List<Map<String, dynamic>> items;
   final double gap;
   final GalleryRenderStyle style;
@@ -365,6 +384,7 @@ class GalleryStackLayout extends StatelessWidget {
 
   const GalleryStackLayout({
     super.key,
+    required this.section,
     required this.items,
     required this.gap,
     required this.style,
@@ -373,28 +393,37 @@ class GalleryStackLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        for (var i = 0; i < items.length; i++) ...[
-          if (i > 0) SizedBox(height: gap),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final data = style.tileData(items[i]);
-              if (data.imageUrl.isEmpty) return const SizedBox.shrink();
-              final aspect = style.resolvedAspect();
-              final h = (constraints.maxWidth / aspect).clamp(140.0, 420.0);
-              return GalleryPhotoCard(
-                data: data,
-                width: constraints.maxWidth,
-                height: h,
-                fit: style.fit,
-                cornerRadiusOverride: style.tileCornerRadius,
-                onTap: () => onTap(items[i]),
-              );
-            },
-          ),
-        ],
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final sizer = GalleryTileSizer.forSection(
+          viewportWidth: constraints.maxWidth,
+          gap: gap,
+          section: section,
+          aspectRatio: GalleryTileSizer.resolveAspect(section, defaultAspect: style.defaultAspect),
+        );
+
+        return Column(
+          children: [
+            for (var i = 0; i < items.length; i++) ...[
+              if (i > 0) SizedBox(height: gap),
+              Builder(
+                builder: (context) {
+                  final data = style.tileData(items[i]);
+                  if (data.imageUrl.isEmpty) return const SizedBox.shrink();
+                  return GalleryPhotoCard(
+                    data: data,
+                    width: constraints.maxWidth,
+                    height: sizer.tileHeight,
+                    fit: style.fit,
+                    cornerRadiusOverride: style.tileCornerRadius,
+                    onTap: () => onTap(items[i]),
+                  );
+                },
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }

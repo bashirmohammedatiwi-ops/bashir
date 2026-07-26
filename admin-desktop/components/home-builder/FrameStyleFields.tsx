@@ -8,7 +8,8 @@ import {
   IMAGE_FIT_OPTIONS,
   IMAGE_OVERLAY_OPTIONS,
   IMAGE_SHAPE_OPTIONS,
-  IMAGE_SIZE_OPTIONS,
+  ROW_HEIGHT_OPTIONS,
+  TILES_PER_VIEW_OPTIONS,
 } from "./image-section-options";
 import { ShapePreviewChip } from "./ShapePreviewChip";
 
@@ -74,8 +75,6 @@ export const MEDIA_DISPLAY_OPTIONS = IMAGE_DISPLAY_OPTIONS.filter((o) =>
 
 export const MEDIA_SHAPE_OPTIONS = IMAGE_SHAPE_OPTIONS.slice(0, 5).map(({ value, label }) => ({ value, label }));
 
-export const MEDIA_SIZE_OPTIONS = IMAGE_SIZE_OPTIONS.slice(0, 6).map(({ value, label }) => ({ value, label }));
-
 export function PhotoWallStyleFields({ collage = false }: { collage?: boolean }) {
   return (
     <div className="hb-photo-wall-style">
@@ -101,13 +100,21 @@ export function PhotoWallStyleFields({ collage = false }: { collage?: boolean })
           getFieldValue(["payload", "aspectRatio"]) === "custom" ? (
             <Row gutter={12}>
               <Col span={12}>
-                <Form.Item name={["payload", "customWidth"]} label="عرض مخصص (px)">
-                  <InputNumber min={48} max={900} style={{ width: "100%" }} placeholder="180" />
+                <Form.Item
+                  name={["payload", "customWidth"]}
+                  label="نسبة العرض"
+                  extra="للنسبة فقط — ليس بالبكسل"
+                >
+                  <InputNumber min={1} max={99} style={{ width: "100%" }} placeholder="16" />
                 </Form.Item>
               </Col>
               <Col span={12}>
-                <Form.Item name={["payload", "customHeight"]} label="ارتفاع مخصص (px)">
-                  <InputNumber min={48} max={900} style={{ width: "100%" }} placeholder="240" />
+                <Form.Item
+                  name={["payload", "customHeight"]}
+                  label="نسبة الارتفاع"
+                  extra="للنسبة فقط — ليس بالبكسل"
+                >
+                  <InputNumber min={1} max={99} style={{ width: "100%" }} placeholder="9" />
                 </Form.Item>
               </Col>
             </Row>
@@ -115,18 +122,27 @@ export function PhotoWallStyleFields({ collage = false }: { collage?: boolean })
         }
       </Form.Item>
 
-      <Row gutter={12}>
-        <Col xs={24} sm={12}>
-          <Form.Item name={["payload", "size"]} label="حجم الصورة" initialValue="md">
-            <Select options={IMAGE_SIZE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
-          </Form.Item>
-        </Col>
-        <Col xs={24} sm={12}>
-          <Form.Item name={["payload", "height"]} label="ارتفاع الصف (px)" initialValue={160}>
-            <InputNumber min={48} max={480} style={{ width: "100%" }} />
-          </Form.Item>
-        </Col>
-      </Row>
+      <Form.Item noStyle shouldUpdate={(prev, cur) => prev?.payload?.display !== cur?.payload?.display}>
+        {({ getFieldValue }) => {
+          const display = getFieldValue(["payload", "display"]);
+          const isHorizontal = ["scroll", "marquee", "carousel"].includes(display);
+          if (!isHorizontal) return null;
+          return (
+            <Form.Item
+              name={["payload", "tilesPerView"]}
+              label="عدد الصور الظاهرة"
+              initialValue={2.5}
+              extra="يُحسب العرض تلقائياً حسب حجم شاشة الهاتف"
+            >
+              <Select options={TILES_PER_VIEW_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
+            </Form.Item>
+          );
+        }}
+      </Form.Item>
+
+      <Form.Item name={["payload", "rowHeight"]} label="ارتفاع الصف" initialValue="auto">
+        <Select options={ROW_HEIGHT_OPTIONS.map((o) => ({ value: o.value, label: o.label }))} />
+      </Form.Item>
 
       <Row gutter={12}>
         <Col xs={24} sm={12}>
