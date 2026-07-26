@@ -65,15 +65,17 @@ export function BannerCarousel({
 }) {
   const [active, setActive] = useState(0);
   const items = banners.slice(0, variant === "hero" ? 6 : 8);
-  if (!items.length) return null;
 
   useEffect(() => {
+    if (!items.length) return;
     if (variant !== "carousel" && variant !== "hero") return;
     const timer = setInterval(() => {
       setActive((i) => (i + 1) % items.length);
     }, 5000);
     return () => clearInterval(timer);
   }, [items.length, variant]);
+
+  if (!items.length) return null;
 
   if (variant === "carousel" || variant === "hero") {
     const b = items[active];

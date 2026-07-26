@@ -17,7 +17,7 @@ import {
 } from "@/components/home/HomeSections";
 import { bannerLinkHref, sectionLinkHref, viewAllHref } from "@/lib/links";
 import { bannerImageUrl, imageFromUnknown } from "@/lib/mediaUrl";
-import type { Banner, HomeSection, Product } from "@/lib/types";
+import type { Banner, CircleTileItem, HomeSection, Product } from "@/lib/types";
 
 function sectionVisible(section: HomeSection): boolean {
   if (section.type === "PROMO_STRIP") {
@@ -69,7 +69,9 @@ function BannerGrid({ banners, columns }: { banners: Banner[]; columns: number }
 }
 
 function ImageTilesSection({ section }: { section: HomeSection }) {
-  const items = section.items ?? [];
+  const items = (section.items ?? []).filter(
+    (item): item is CircleTileItem => item != null && typeof item === "object",
+  );
   if (!items.length) return null;
   return (
     <SectionShell title={section.title} subtitle={section.subtitle} showTitle={section.showTitle}>

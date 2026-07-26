@@ -20,9 +20,18 @@ function client() {
   });
 }
 
+/** يفكّ غلاف Nest `{ data: T }` — نفس منطق تطبيق الهاتف ولوحة التحكم. */
+function unwrap<T>(body: T | { data?: T }): T {
+  if (body != null && typeof body === "object" && "data" in body) {
+    const inner = (body as { data?: T }).data;
+    if (inner !== undefined) return inner;
+  }
+  return body as T;
+}
+
 export async function fetchHome(): Promise<HomeFeed> {
-  const { data } = await client().get<HomeFeed>("/home");
-  return data;
+  const { data } = await client().get("/home");
+  return unwrap<HomeFeed>(data);
 }
 
 export async function fetchProducts(params?: {
@@ -39,41 +48,41 @@ export async function fetchProducts(params?: {
   isBestSeller?: boolean;
   isPromo?: boolean;
 }): Promise<Paginated<Product>> {
-  const { data } = await client().get<Paginated<Product>>("/products", { params });
-  return data;
+  const { data } = await client().get("/products", { params });
+  return unwrap<Paginated<Product>>(data);
 }
 
 export async function fetchOffers(): Promise<HomeFeed> {
-  const { data } = await client().get<HomeFeed>("/offers");
-  return data;
+  const { data } = await client().get("/offers");
+  return unwrap<HomeFeed>(data);
 }
 
 export async function fetchPackage(slugOrId: string): Promise<StorePackage> {
-  const { data } = await client().get<StorePackage>(`/packages/slug/${encodeURIComponent(slugOrId)}`);
-  return data;
+  const { data } = await client().get(`/packages/slug/${encodeURIComponent(slugOrId)}`);
+  return unwrap<StorePackage>(data);
 }
 
 export async function fetchProduct(slugOrId: string): Promise<Product> {
-  const { data } = await client().get<Product>(`/products/${encodeURIComponent(slugOrId)}`);
-  return data;
+  const { data } = await client().get(`/products/${encodeURIComponent(slugOrId)}`);
+  return unwrap<Product>(data);
 }
 
 export async function fetchCategories(): Promise<Category[]> {
-  const { data } = await client().get<Category[]>("/categories");
-  return data;
+  const { data } = await client().get("/categories");
+  return unwrap<Category[]>(data);
 }
 
 export async function fetchCategory(slug: string): Promise<Category> {
-  const { data } = await client().get<Category>(`/categories/${encodeURIComponent(slug)}`);
-  return data;
+  const { data } = await client().get(`/categories/${encodeURIComponent(slug)}`);
+  return unwrap<Category>(data);
 }
 
 export async function fetchBrands(): Promise<Brand[]> {
-  const { data } = await client().get<Brand[]>("/brands");
-  return data;
+  const { data } = await client().get("/brands");
+  return unwrap<Brand[]>(data);
 }
 
 export async function fetchBrand(slug: string): Promise<Brand> {
-  const { data } = await client().get<Brand>(`/brands/${encodeURIComponent(slug)}`);
-  return data;
+  const { data } = await client().get(`/brands/${encodeURIComponent(slug)}`);
+  return unwrap<Brand>(data);
 }
