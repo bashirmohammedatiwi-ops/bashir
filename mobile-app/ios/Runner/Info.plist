@@ -27,7 +27,7 @@
 		</dict>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>نحتاج الكاميرا لمسح رموز QR والباركود للمنتجات</string>
+	<string>Camera access is required to scan QR codes and barcodes for products.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

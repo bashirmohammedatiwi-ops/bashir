@@ -125,16 +125,6 @@ class CheckoutPaymentCard extends StatelessWidget {
             selected: paymentMethod == 'COD',
             onTap: () => onChanged('COD'),
           ),
-          const SizedBox(height: 10),
-          _Option(
-            title: s.cardPayment,
-            subtitle: s.cardPaymentSoon,
-            icon: Icons.credit_card_rounded,
-            selected: false,
-            enabled: false,
-            badge: s.cardComingSoon,
-            onTap: () {},
-          ),
         ],
       ),
     );
@@ -146,8 +136,6 @@ class _Option extends StatelessWidget {
   final String subtitle;
   final IconData icon;
   final bool selected;
-  final bool enabled;
-  final String? badge;
   final VoidCallback onTap;
 
   const _Option({
@@ -156,67 +144,52 @@ class _Option extends StatelessWidget {
     required this.icon,
     required this.selected,
     required this.onTap,
-    this.enabled = true,
-    this.badge,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: enabled ? 1 : 0.55,
-      child: Material(
-        color: selected ? CheckoutTheme.brandWash : Colors.transparent,
+    return Material(
+      color: selected ? CheckoutTheme.brandWash : Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          onTap: enabled ? onTap : null,
-          borderRadius: BorderRadius.circular(14),
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: selected ? CheckoutTheme.brand : CheckoutTheme.brandSoft,
-                width: selected ? 1.5 : 1,
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? CheckoutTheme.brand : CheckoutTheme.brandSoft,
+              width: selected ? 1.5 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: selected ? CheckoutTheme.brandSoft : CheckoutTheme.brandWash,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: CheckoutTheme.brandDark, size: 22),
               ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: selected ? CheckoutTheme.brandSoft : CheckoutTheme.brandWash,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(icon, color: CheckoutTheme.brandDark, size: 22),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
+                    const SizedBox(height: 2),
+                    Text(subtitle, style: TextStyle(color: CheckoutTheme.charcoal.withValues(alpha: 0.55), fontSize: 12)),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(title, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-                      const SizedBox(height: 2),
-                      Text(subtitle, style: TextStyle(color: CheckoutTheme.charcoal.withValues(alpha: 0.55), fontSize: 12)),
-                    ],
-                  ),
-                ),
-                if (badge != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.warning.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(badge!, style: const TextStyle(color: AppColors.warning, fontSize: 11, fontWeight: FontWeight.w800)),
-                  )
-                else
-                  Icon(
-                    selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
-                    color: selected ? CheckoutTheme.brand : CheckoutTheme.charcoal.withValues(alpha: 0.35),
-                  ),
-              ],
-            ),
+              ),
+              Icon(
+                selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                color: selected ? CheckoutTheme.brand : CheckoutTheme.charcoal.withValues(alpha: 0.35),
+              ),
+            ],
           ),
         ),
       ),

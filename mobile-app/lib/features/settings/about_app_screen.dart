@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -54,13 +56,14 @@ class AboutAppScreen extends ConsumerWidget {
           ProfileSectionTitle(s.website, icon: Icons.language_rounded),
           ProfileMenuCard(
             children: [
-              ProfileMenuTile(
-                icon: Icons.shop_rounded,
-                title: s.rateOnPlayStore,
-                subtitle: 'Google Play',
-                iconColor: CartTheme.brand,
-                onTap: () => openExternalUrl(AppConfig.playStoreUrl),
-              ),
+              if (!Platform.isIOS)
+                ProfileMenuTile(
+                  icon: Icons.shop_rounded,
+                  title: s.rateOnPlayStore,
+                  subtitle: 'Google Play',
+                  iconColor: CartTheme.brand,
+                  onTap: () => openExternalUrl(AppConfig.playStoreUrl),
+                ),
               ProfileMenuTile(
                 icon: Icons.public_rounded,
                 title: AppConfig.appDomain,
