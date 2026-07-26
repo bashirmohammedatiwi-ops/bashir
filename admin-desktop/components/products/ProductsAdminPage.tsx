@@ -37,7 +37,7 @@ import { displayProductName } from "@/lib/productName";
 import { mutations, queries } from "@/lib/queries";
 import { formatBytes } from "@/lib/formatBytes";
 import { useBarcodeInventorySync } from "@/hooks/useBarcodeInventorySync";
-import "../app/(admin)/products/products-page.css";
+import "./products-page.css";
 
 const ProductFormDrawer = dynamic(
   () =>
