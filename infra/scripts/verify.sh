@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+INFRA_ROOT="$ROOT"
 cd "$ROOT"
 
 if [[ ! -f .env ]]; then
@@ -15,27 +16,27 @@ source .env
 set +a
 
 COMPOSE="docker compose -f docker-compose.prod.yml"
+# shellcheck source=lib/deploy-common.sh
+source "$ROOT/scripts/lib/deploy-common.sh"
+
 FAILED=0
 
-# على السيرفر نفسه — localhost أدق من IP العام (قد يُرفض hairpin NAT)
-BASE="http://127.0.0.1"
-if ! curl -fsS --max-time 3 -o /dev/null "${BASE}/" 2>/dev/null \
-  && ! curl -fsS --max-time 3 -o /dev/null "http://${DOMAIN:-localhost}/" 2>/dev/null; then
-  BASE="http://${DOMAIN:-localhost}"
+if ssl_cert_exists && [[ -n "${DOMAIN:-}" ]]; then
+  API_BASE="https://${DOMAIN}"
+  ADMIN_BASE="https://${DOMAIN}"
+  CURL_TLS=(-k)
+else
+  API_BASE="$(detect_verify_base)"
+  ADMIN_BASE="$API_BASE"
+  CURL_TLS=()
 fi
-if curl -fsS --max-time 3 -o /dev/null "http://127.0.0.1/" 2>/dev/null; then
-  BASE="http://127.0.0.1"
-fi
-
-ADMIN_BASE="$BASE"
-API_BASE="$BASE"
 
 check_http() {
   local name="$1"
   local url="$2"
   local code
 
-  code="$(curl -sS --max-time 15 -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")"
+  code="$(curl -sS --max-time 15 -o /dev/null -w "%{http_code}" -L "${CURL_TLS[@]}" "$url" 2>/dev/null || echo "000")"
   if [[ "$code" == "200" ]]; then
     echo "OK  $name"
   else
@@ -50,11 +51,11 @@ check_json() {
   local expect="$3"
   local body code
 
-  body="$(curl -sS --max-time 15 "$url" 2>/dev/null || true)"
+  body="$(curl -sS --max-time 15 -L "${CURL_TLS[@]}" "$url" 2>/dev/null || true)"
   if echo "$body" | grep -q "$expect"; then
     echo "OK  $name"
   else
-    code="$(curl -sS --max-time 15 -o /dev/null -w "%{http_code}" "$url" 2>/dev/null || echo "000")"
+    code="$(curl -sS --max-time 15 -o /dev/null -w "%{http_code}" -L "${CURL_TLS[@]}" "$url" 2>/dev/null || echo "000")"
     echo "FAIL $name ($url) HTTP $code"
     if [[ -n "$body" ]]; then
       echo "      $(echo "$body" | tr '\n' ' ' | head -c 160)"
@@ -63,57 +64,79 @@ check_json() {
   fi
 }
 
+run_checks() {
+  FAILED=0
+
+  if [[ ! -f admin-static/index.html ]]; then
+    echo "FAIL admin-static/index.html missing"
+    FAILED=1
+  else
+    echo "OK  admin-static/index.html"
+  fi
+
+  if [[ ! -f admin-static/login/index.html ]]; then
+    echo "FAIL admin-static/login/index.html missing"
+    FAILED=1
+  else
+    echo "OK  admin-static/login/index.html"
+  fi
+
+  if [[ ! -f admin-static/products/index.html ]]; then
+    echo "FAIL admin-static/products/index.html missing"
+    FAILED=1
+  else
+    echo "OK  admin-static/products/index.html"
+  fi
+
+  if $COMPOSE exec -T api wget -qO- http://127.0.0.1:3000/api/v1/health 2>/dev/null | grep -q '"status":"ok"'; then
+    echo "OK  API health (container)"
+  else
+    echo "FAIL API health (container)"
+    FAILED=1
+  fi
+
+  check_json "API ready" "$API_BASE/api/v1/health/ready" '"ready":true'
+  check_json "Catalog hub" "$API_BASE/catalog-hub/api/health" '"ok":true'
+  check_http "Admin home" "$ADMIN_BASE/"
+  check_http "Admin login" "$ADMIN_BASE/login/"
+  check_http "Admin products" "$ADMIN_BASE/products/"
+
+  if $COMPOSE exec -T api wget -qO- http://127.0.0.1:3000/api/v1/health/ready 2>/dev/null | grep -q '"ready":true'; then
+    echo "OK  API container ready"
+  else
+    echo "FAIL API container not ready"
+    FAILED=1
+  fi
+}
+
 echo "==> Verifying Alhayaa stack..."
-echo "    Admin checks via: $ADMIN_BASE"
-echo "    API checks via:   $API_BASE"
+echo "    Scheme:  $(public_scheme)"
+echo "    Admin:   $ADMIN_BASE"
+echo "    API:     $API_BASE"
 
-if [[ ! -f admin-static/index.html ]]; then
-  echo "FAIL admin-static/index.html missing"
-  FAILED=1
-else
-  echo "OK  admin-static/index.html"
-fi
+run_checks
 
-if [[ ! -f admin-static/products/index.html ]]; then
-  echo "FAIL admin-static/products/index.html missing"
-  FAILED=1
-else
-  echo "OK  admin-static/products/index.html"
-fi
-
-check_json "API health" "$API_BASE/api/v1/health" '"status":"ok"'
-check_json "API ready" "$API_BASE/api/v1/health/ready" '"ready":true'
-check_json "Catalog hub" "$API_BASE/catalog-hub/api/health" '"ok":true'
-check_json "Catalog import" "$API_BASE/catalog-hub/api/import/niceone/products/31510" '"sourceStore":"niceone"'
-check_http "Admin home" "$ADMIN_BASE/"
-check_http "Admin login" "$ADMIN_BASE/login/"
-check_http "Admin products" "$ADMIN_BASE/products/"
-
-if $COMPOSE exec -T api wget -qO- http://127.0.0.1:3000/api/v1/health/ready 2>/dev/null | grep -q '"ready":true'; then
-  echo "OK  API container ready"
-else
-  echo "FAIL API container not ready"
-  FAILED=1
+if [[ "$FAILED" -ne 0 ]]; then
+  echo ""
+  echo "Verification failed — auto-repair (permissions + nginx recreate)..."
+  ensure_admin_static_permissions || true
+  reload_nginx_stack || true
+  ensure_admin_serving || true
+  run_checks
 fi
 
 if [[ "$FAILED" -ne 0 ]]; then
   echo ""
-  echo "Verification failed."
+  echo "Verification still failing."
   echo ""
   echo "==> Nginx diagnostics (last 40 lines):"
   $COMPOSE logs nginx --tail=40 2>/dev/null || true
   echo ""
   echo "==> Nginx config test:"
   $COMPOSE exec -T nginx nginx -t 2>&1 || true
-  echo ""
-  echo "Quick fix (IP / no SSL):"
-  echo "  cp nginx/default.bootstrap.conf nginx/default.conf"
-  echo "  docker compose -f docker-compose.prod.yml up -d --force-recreate nginx"
-  echo "  curl -s http://127.0.0.1/api/v1/health"
   exit 1
 fi
 
 echo ""
 echo "All checks passed."
-echo "  Admin: http://${DOMAIN:-localhost}/"
-echo "  API:   $API_BASE/api/v1/health"
+print_stack_urls

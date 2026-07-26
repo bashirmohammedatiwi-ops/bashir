@@ -3,6 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+INFRA_ROOT="$ROOT"
 cd "$ROOT"
 REPO_ROOT="$(cd "$ROOT/.." && pwd)"
 
@@ -17,50 +18,8 @@ source .env
 set +a
 
 COMPOSE="docker compose -f docker-compose.prod.yml"
-
-render_nginx() {
-  local domain="${DOMAIN:-}"
-
-  # IP-only VPS: always use HTTP bootstrap config
-  if [[ "$domain" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    cp nginx/default.bootstrap.conf nginx/default.conf
-    return
-  fi
-
-  if [[ -f nginx/default.conf.template ]] && [[ -n "$domain" ]]; then
-    local use_ssl=false
-    if $COMPOSE ps --status running nginx 2>/dev/null | grep -q nginx \
-      && $COMPOSE exec -T nginx test -f "/etc/letsencrypt/live/${domain}/fullchain.pem" 2>/dev/null; then
-      use_ssl=true
-    fi
-    if [[ "$use_ssl" == "true" ]]; then
-      sed "s/DOMAIN_PLACEHOLDER/${domain}/g" nginx/default.conf.template > nginx/default.conf
-    else
-      cp nginx/default.bootstrap.conf nginx/default.conf
-    fi
-  else
-    cp nginx/default.bootstrap.conf nginx/default.conf
-  fi
-}
-
-ensure_nginx_responding() {
-  if curl -fsS --max-time 5 -o /dev/null "http://127.0.0.1/api/v1/health" 2>/dev/null; then
-    return 0
-  fi
-
-  echo "WARN: Nginx not responding on :80 — reset to HTTP bootstrap and recreate..."
-  cp nginx/default.bootstrap.conf nginx/default.conf
-  $COMPOSE up -d --force-recreate nginx
-  sleep 3
-
-  if ! $COMPOSE exec -T nginx nginx -t 2>/dev/null; then
-    echo "ERROR: nginx config invalid. Logs:"
-    $COMPOSE logs nginx --tail=30
-    return 1
-  fi
-
-  curl -fsS --max-time 8 -o /dev/null "http://127.0.0.1/" 2>/dev/null
-}
+# shellcheck source=lib/deploy-common.sh
+source "$ROOT/scripts/lib/deploy-common.sh"
 
 sync_repo() {
   if [[ ! -d "$REPO_ROOT/.git" ]]; then
@@ -71,8 +30,7 @@ sync_repo() {
   echo "==> Pull latest code..."
   git -C "$REPO_ROOT" fetch origin main
 
-  # فرض تطابق سكربتات infra مع GitHub (يحل تعارض pull على VPS)
-  if ! git -C "$REPO_ROOT" diff --quiet HEAD origin/main -- infra/scripts infra/nginx 2>/dev/null \
+  if ! git -C "$REPO_ROOT" diff --quiet HEAD origin/main -- infra/scripts 2>/dev/null \
     || ! git -C "$REPO_ROOT" diff --quiet -- infra/scripts infra/nginx 2>/dev/null; then
     echo "    Resetting infra/scripts + infra/nginx to origin/main..."
     git -C "$REPO_ROOT" checkout origin/main -- infra/scripts infra/nginx 2>/dev/null || true
@@ -88,7 +46,7 @@ sync_repo() {
 ensure_deploy_scripts() {
   if [[ ! -f "$ROOT/scripts/sync-catalog-hub-data.sh" ]]; then
     echo "==> Creating missing sync-catalog-hub-data.sh (v2 no-op)..."
-    cat > "$ROOT/scripts/sync-catalog-hub-data.sh" << 'EOF'
+    cat >"$ROOT/scripts/sync-catalog-hub-data.sh" <<'EOF'
 #!/usr/bin/env bash
 echo "==> catalog-hub v2: no seed data sync required (skipped)"
 EOF
@@ -107,27 +65,6 @@ ensure_api_ready() {
   return 1
 }
 
-maybe_enable_https() {
-  local domain="${DOMAIN:-}"
-  [[ -z "$domain" ]] && return 0
-  [[ "$domain" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && return 0
-  [[ -z "${CERTBOT_EMAIL:-}" ]] && return 0
-
-  local cert_path="/etc/letsencrypt/live/${domain}/fullchain.pem"
-  if $COMPOSE exec -T nginx test -f "$cert_path" 2>/dev/null; then
-    return 0
-  fi
-
-  echo "==> Requesting Let's Encrypt certificate for ${domain}..."
-  $COMPOSE run --rm --entrypoint certbot certbot certonly \
-    --webroot -w /var/www/certbot \
-    -d "$domain" \
-    --email "$CERTBOT_EMAIL" \
-    --agree-tos \
-    --no-eff-email \
-    --non-interactive || echo "WARN: certbot failed — staying on HTTP until DNS/ports are fixed"
-}
-
 ensure_catalog_hub_ready() {
   local i
   for i in $(seq 1 20); do
@@ -139,9 +76,6 @@ ensure_catalog_hub_ready() {
   return 1
 }
 
-# يحل: container name already in use (حاوية قديمة من compose سابق).
-# تُزيل الحاوية فقط إن لم يكن compose الحالي يعرفها (empty managed) —
-# لا تقارن معرّفات لأن docker ps يُرجع short-ID بينما compose يُرجع full-ID.
 resolve_stale_compose_containers() {
   echo "==> Resolve stale Docker containers..."
   local svc name cid managed
@@ -160,14 +94,13 @@ resolve_stale_compose_containers() {
 echo "==> Alhayaa full update"
 echo "    Domain: ${DOMAIN:-localhost}"
 
-# منع إعادة بيانات الاختبار عند إعادة البناء
 if [[ -f .env ]]; then
   if grep -q '^SEED_DEMO=1' .env 2>/dev/null; then
     sed -i 's/^SEED_DEMO=1/SEED_DEMO=0/' .env
     echo "==> Forced SEED_DEMO=0 (demo brands/products disabled)"
   fi
   if ! grep -q '^SEED_DEMO=' .env 2>/dev/null; then
-    echo 'SEED_DEMO=0' >> .env
+    echo 'SEED_DEMO=0' >>.env
   fi
   if grep -q '^RUN_SEED=1' .env 2>/dev/null; then
     echo "==> NOTE: RUN_SEED=1 is set — will only ensure admin user (no demo data)."
@@ -179,7 +112,13 @@ sync_repo
 
 ensure_deploy_scripts
 
-chmod +x scripts/*.sh
+chmod +x scripts/*.sh scripts/lib/*.sh 2>/dev/null || true
+
+ensure_env_production_defaults
+set -a
+# shellcheck disable=SC1091
+source .env
+set +a
 
 render_nginx
 
@@ -212,17 +151,19 @@ if ! ensure_api_ready; then
 fi
 
 echo "==> Build admin web panel (atomic)..."
-maybe_enable_https
-./scripts/build-admin-web.sh
-chmod -R a+rX admin-static
+build_admin_web_panel
 
-echo "==> Reload Nginx..."
-render_nginx
-$COMPOSE up -d --force-recreate --remove-orphans nginx
-ensure_nginx_responding || echo "WARN: Nginx still not reachable on 127.0.0.1 — run: docker compose -f docker-compose.prod.yml logs nginx --tail=50"
+echo "==> Enable HTTPS + reload Nginx..."
+maybe_enable_https
+reload_nginx_stack
+sync_hsts_with_ssl
+ensure_certbot_renew_loop
+
+ensure_nginx_responding || {
+  echo "WARN: Post-update nginx/admin check failed — see logs above"
+}
 
 echo "==> Verify..."
-# انتظر جهوزية API الفعلية بدل sleep ثابت
 ensure_api_ready || true
 ./scripts/verify.sh
 
@@ -232,6 +173,4 @@ chmod +x scripts/docker-cleanup.sh
 
 echo ""
 echo "Update complete."
-echo "  Admin:   http://${DOMAIN:-localhost}/"
-echo "  API:     http://${DOMAIN:-localhost}/api/v1/health"
-echo "  Catalog: http://${DOMAIN:-localhost}/catalog-hub/api/health"
+print_stack_urls

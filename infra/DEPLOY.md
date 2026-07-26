@@ -123,8 +123,8 @@ Copy-Item .env.example .env
 | Nginx لا يبدأ بعد SSL | تأكد أن `DOMAIN` في `.env` يطابق DNS وأن certbot نجح |
 | `migration failed` | `docker compose -f docker-compose.prod.yml logs api` |
 | الصور لا تظهر | تحقق من `MEDIA_PUBLIC_BASE_URL=https://DOMAIN/media` |
-| Admin لا يتصل | حدّث `NEXT_PUBLIC_API_BASE` وأعد بناء الويب (`./scripts/build-admin-web.sh`) أو exe |
-| لوحة الويب فارغة | شغّل `./scripts/build-admin-web.sh` ثم أعد تشغيل nginx |
+| Admin لا يتصل / 403 | `./scripts/update.sh` — يصلح الصلاحيات ويعيد بناء اللوحة وnginx تلقائياً |
+| لوحة الويب فارغة أو 403 | `./scripts/update.sh` أو `./scripts/build-admin-web.sh` ثم `docker compose -f docker-compose.prod.yml up -d --force-recreate nginx` |
 | بطء الصور | تأكد أن الطلبات تذهب إلى `/media/` وليس عبر API |
 
 ## النسخ الاحتياطي

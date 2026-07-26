@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+INFRA_ROOT="$ROOT"
 cd "$ROOT"
 
 if [[ ! -f .env ]]; then
@@ -10,6 +11,7 @@ if [[ ! -f .env ]]; then
 fi
 
 set -a
+# shellcheck disable=SC1091
 source .env
 set +a
 
@@ -20,21 +22,22 @@ set +a
 : "${JWT_REFRESH_SECRET:?Set JWT_REFRESH_SECRET in .env}"
 
 COMPOSE="docker compose -f docker-compose.prod.yml"
+# shellcheck source=lib/deploy-common.sh
+source "$ROOT/scripts/lib/deploy-common.sh"
 
-render_nginx() {
-  local mode="${1:-bootstrap}"
-  if [[ "$mode" == "bootstrap" ]]; then
-    cp nginx/default.bootstrap.conf nginx/default.conf
-  else
-    sed "s/DOMAIN_PLACEHOLDER/${DOMAIN}/g" nginx/default.conf.template > nginx/default.conf
-  fi
-}
+chmod +x scripts/*.sh scripts/lib/*.sh 2>/dev/null || true
+
+ensure_env_production_defaults
+set -a
+# shellcheck disable=SC1091
+source .env
+set +a
 
 echo "==> Rendering Nginx (bootstrap)..."
-render_nginx bootstrap
+cp nginx/default.bootstrap.conf nginx/default.conf
 
 echo "==> Building and starting stack..."
-$COMPOSE up -d --build postgres redis api nginx
+$COMPOSE up -d --build postgres redis api nginx catalog-hub
 
 echo "==> Waiting for API..."
 for i in $(seq 1 30); do
@@ -45,29 +48,18 @@ for i in $(seq 1 30); do
   sleep 2
 done
 
-CERT_PATH="/etc/letsencrypt/live/${DOMAIN}/fullchain.pem"
-if ! $COMPOSE exec -T nginx test -f "$CERT_PATH" 2>/dev/null; then
-  echo "==> Requesting Let's Encrypt certificate for ${DOMAIN}..."
-  $COMPOSE run --rm --entrypoint certbot certbot certonly \
-    --webroot -w /var/www/certbot \
-    -d "$DOMAIN" \
-    --email "$CERTBOT_EMAIL" \
-    --agree-tos \
-    --no-eff-email \
-    --non-interactive
-fi
+maybe_enable_https
 
 echo "==> Enabling HTTPS Nginx config..."
-render_nginx ssl
-$COMPOSE up -d nginx
+reload_nginx_stack
+sync_hsts_with_ssl
 
 echo "==> Building admin web panel..."
-chmod +x scripts/build-admin-web.sh
-./scripts/build-admin-web.sh
-$COMPOSE up -d nginx
+build_admin_web_panel
+reload_nginx_stack
+ensure_certbot_renew_loop
 
-echo "==> Starting certbot renew loop (optional profile)..."
-$COMPOSE --profile certbot up -d certbot 2>/dev/null || true
+ensure_nginx_responding || echo "WARN: Admin/nginx check failed — run ./scripts/verify.sh"
 
 if [[ "${RUN_SEED:-0}" == "1" ]]; then
   echo ""
@@ -77,10 +69,7 @@ fi
 
 echo ""
 echo "Deploy complete."
-echo "  API:   https://${DOMAIN}/api/v1/health"
-echo "  Ready: https://${DOMAIN}/api/v1/health/ready"
-echo "  Media: https://${DOMAIN}/media/"
-echo "  Admin: https://${DOMAIN}/"
+print_stack_urls
 echo ""
 echo "Desktop exe (optional):"
 echo "  cd admin-desktop && cp .env.production.example .env.production"

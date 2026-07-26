@@ -94,6 +94,9 @@ if ! mv "$STAGING_DIR" "$OUT_DIR"; then
 fi
 rm -rf "$BACKUP_DIR"
 
+chmod -R a+rX "$OUT_DIR"
+chmod a+x "$INFRA_ROOT" 2>/dev/null || true
+
 verify_admin_static "$OUT_DIR"
 
 echo "==> Admin web build ready: infra/admin-static/"
