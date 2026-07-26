@@ -55,6 +55,13 @@ class AboutAppScreen extends ConsumerWidget {
           ProfileMenuCard(
             children: [
               ProfileMenuTile(
+                icon: Icons.shop_rounded,
+                title: s.rateOnPlayStore,
+                subtitle: 'Google Play',
+                iconColor: CartTheme.brand,
+                onTap: () => openExternalUrl(AppConfig.playStoreUrl),
+              ),
+              ProfileMenuTile(
                 icon: Icons.public_rounded,
                 title: AppConfig.appDomain,
                 subtitle: s.visitWebsite,

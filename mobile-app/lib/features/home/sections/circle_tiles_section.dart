@@ -15,7 +15,19 @@ class CircleTilesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = section.items;
+    var items = section.items;
+    if (items.isEmpty && section.categories.isNotEmpty) {
+      items = section.categories
+          .map((c) => {
+                'id': c.id,
+                'title': c.nameAr ?? c.name,
+                'imageUrl': c.imageUrl,
+                'linkType': c.linkType ?? 'category',
+                'linkValue': c.linkValue ?? c.id,
+                'link': c.link ?? '/products?categoryId=${c.id}',
+              })
+          .toList();
+    }
     if (items.isEmpty) return const SizedBox.shrink();
 
     final layout = section.sectionLayout ?? section.layout ?? 'row';

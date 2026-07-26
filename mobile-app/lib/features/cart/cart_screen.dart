@@ -167,68 +167,68 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           : Padding(
               padding: EdgeInsets.only(bottom: navReserve),
               child: Column(
-                children: [
+              children: [
                   Expanded(
                     child: CustomScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      slivers: [
-                        SliverToBoxAdapter(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
                           child: CartHeader(
-                            count: cart.count,
+                        count: cart.count,
                             total: total,
-                            topPad: topPad,
-                            onClear: _clearCart,
-                          ),
-                        ),
-                        SliverToBoxAdapter(
+                        topPad: topPad,
+                        onClear: _clearCart,
+                      ),
+                    ),
+                    SliverToBoxAdapter(
                           child: CartShippingBanner(
-                            subtotal: cart.subtotal,
-                            threshold: threshold,
-                            freeShippingCoupon: freeShipping,
-                            onBrowse: () {
-                              context.go('/');
-                              ref.read(navIndexProvider.notifier).state = 0;
-                            },
-                          ),
-                        ),
+                        subtotal: cart.subtotal,
+                        threshold: threshold,
+                        freeShippingCoupon: freeShipping,
+                        onBrowse: () {
+                          context.go('/');
+                          ref.read(navIndexProvider.notifier).state = 0;
+                        },
+                      ),
+                    ),
                         SliverToBoxAdapter(
                           child: CartSectionLabel(title: ref.s.yourProducts),
                         ),
-                        SliverPadding(
+                    SliverPadding(
                           padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 0, CartTheme.hPad, 0),
-                          sliver: SliverList.separated(
-                            itemCount: cart.items.length,
+                      sliver: SliverList.separated(
+                        itemCount: cart.items.length,
                             separatorBuilder: (_, __) => const SizedBox(height: CartTheme.itemGap),
                             itemBuilder: (_, i) => CartItemCard(item: cart.items[i]),
-                          ),
-                        ),
-                        SliverToBoxAdapter(
+                      ),
+                    ),
+                    SliverToBoxAdapter(
                           child: Padding(
                             padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 6, CartTheme.hPad, 0),
                             child: Container(
                               padding: const EdgeInsets.all(14),
                               decoration: CartTheme.cardDecoration(color: CartTheme.brandWash.withValues(alpha: 0.45)),
                               child: CartCouponSection(
-                                controller: _couponCtrl,
-                                focusNode: _couponFocus,
-                                error: _couponError,
-                                loading: _couponLoading,
-                                applied: coupon,
-                                discount: discount,
-                                onApply: _applyCoupon,
-                                onRemove: _removeCoupon,
-                              ),
-                            ),
-                          ),
-                        ),
-                        feed.maybeWhen(
-                          data: (d) {
-                            final recs = d.bestSellers.take(8).toList();
-                            if (recs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+                        controller: _couponCtrl,
+                        focusNode: _couponFocus,
+                        error: _couponError,
+                        loading: _couponLoading,
+                        applied: coupon,
+                        discount: discount,
+                        onApply: _applyCoupon,
+                        onRemove: _removeCoupon,
+                      ),
+                    ),
+                      ),
+                    ),
+                    feed.maybeWhen(
+                      data: (d) {
+                        final recs = d.bestSellers.take(8).toList();
+                        if (recs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
                             return SliverToBoxAdapter(child: CartRecommendations(products: recs));
-                          },
-                          orElse: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
-                        ),
+                      },
+                      orElse: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
+                    ),
                         const SliverToBoxAdapter(child: SizedBox(height: 12)),
                       ],
                     ),
@@ -243,7 +243,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   ),
                 ],
               ),
-            ),
+      ),
     );
   }
 }

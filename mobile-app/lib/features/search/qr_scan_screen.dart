@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import '../../core/navigation/deep_link_redirect.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 
@@ -59,23 +60,16 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
   }
 
   void _navigateForCode(BuildContext context, String raw) {
-    final uri = Uri.tryParse(raw);
-    if (uri != null && uri.pathSegments.contains('product')) {
-      final idx = uri.pathSegments.indexOf('product');
-      if (idx >= 0 && idx + 1 < uri.pathSegments.length) {
-        final slug = uri.pathSegments[idx + 1];
-        context.pop();
-        context.push('/product/$slug');
-        return;
-      }
-    }
-    if (RegExp(r'^[0-9a-f-]{36}$', caseSensitive: false).hasMatch(raw)) {
+    final route = resolveScannedLink(raw);
+    if (route != null) {
       context.pop();
-      context.push('/product/$raw');
+      context.push(route);
       return;
     }
     context.pop();
-    context.push('/products?search=${Uri.encodeComponent(raw)}&title=${Uri.encodeComponent(ref.read(stringsProvider).scanResults)}');
+    context.push(
+      '/products?search=${Uri.encodeComponent(raw)}&title=${Uri.encodeComponent(ref.read(stringsProvider).scanResults)}',
+    );
   }
 
   @override

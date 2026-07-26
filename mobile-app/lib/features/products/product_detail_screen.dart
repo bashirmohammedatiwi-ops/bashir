@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../core/cache/image_cache.dart';
+import '../../core/config/app_config.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../core/theme/app_colors.dart';
@@ -241,6 +242,17 @@ class _GalleryAppBar extends ConsumerWidget {
         onTap: () => context.pop(),
       ),
           actions: [
+        _CircleAction(
+          icon: Icons.ios_share_rounded,
+          onTap: () {
+            final slug = product.slug.isNotEmpty ? product.slug : product.id;
+            final url = AppConfig.productShareUrl(slug);
+            Clipboard.setData(ClipboardData(text: url));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(s.linkCopied), behavior: SnackBarBehavior.floating),
+            );
+          },
+        ),
         _CircleAction(
           icon: wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
           color: wished ? AppColors.sale : AppColors.textPrimary,

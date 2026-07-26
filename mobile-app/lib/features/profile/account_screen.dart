@@ -337,6 +337,24 @@ class _GuestView extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AccountTheme.sectionGap),
+        ProfileSectionTitle(s.legalSection, icon: Icons.gavel_outlined),
+        ProfileMenuCard(
+          children: [
+            ProfileMenuTile(
+              icon: Icons.privacy_tip_outlined,
+              title: s.privacyPolicy,
+              iconColor: AccountTheme.settings,
+              onTap: () => openLegalDocument(context, LegalDocumentType.privacy),
+            ),
+            ProfileMenuTile(
+              icon: Icons.description_outlined,
+              title: s.termsOfService,
+              iconColor: AccountTheme.settings,
+              onTap: () => openLegalDocument(context, LegalDocumentType.terms),
+            ),
+          ],
+        ),
+        const SizedBox(height: AccountTheme.sectionGap),
         ProfileSectionTitle(s.language, icon: Icons.language_rounded),
         ProfileSurfaceCard(
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),

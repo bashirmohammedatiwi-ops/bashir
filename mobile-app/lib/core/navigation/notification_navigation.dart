@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/l10n/app_strings.dart';
 import '../../data/models/notification.dart';
 import '../../features/home/home_link.dart';
 import '../utils/support_links.dart';
@@ -11,6 +13,7 @@ void openNotificationLink(BuildContext context, AppNotification notification) {
   final linkId = notification.linkId?.trim() ?? '';
   final linkSlug = notification.linkSlug?.trim() ?? '';
   final externalUrl = notification.externalUrl?.trim() ?? '';
+  final s = ProviderScope.containerOf(context).read(stringsProvider);
 
   if (linkType == 'EXTERNAL_URL' && externalUrl.isNotEmpty) {
     openExternalUrl(externalUrl);
@@ -23,13 +26,25 @@ void openNotificationLink(BuildContext context, AppNotification notification) {
     return;
   }
 
-  if (linkType == 'CATEGORY' && linkId.isNotEmpty) {
-    context.push('/products?categoryId=$linkId&title=التصنيف');
+  if (linkType == 'CATEGORY') {
+    if (linkSlug.isNotEmpty) {
+      context.push('/category/$linkSlug');
+      return;
+    }
+    if (linkId.isNotEmpty) {
+      context.push('/products?categoryId=$linkId&title=${Uri.encodeComponent(s.categoriesTitle)}');
+    }
     return;
   }
 
-  if (linkType == 'BRAND' && linkId.isNotEmpty) {
-    context.push('/products?brandId=$linkId&title=العلامة');
+  if (linkType == 'BRAND') {
+    if (linkSlug.isNotEmpty) {
+      context.push('/brand/$linkSlug');
+      return;
+    }
+    if (linkId.isNotEmpty) {
+      context.push('/products?brandId=$linkId&title=${Uri.encodeComponent(s.brands)}');
+    }
     return;
   }
 

@@ -159,6 +159,18 @@ class ApiService {
     }
   }
 
+  Future<Category> getCategoryBySlug(String slug) async {
+    try {
+      final r = await _dio.get(
+        '/categories/${Uri.encodeComponent(slug)}',
+        options: Options(extra: {'auth': false}),
+      );
+      return Category.fromJson(asMap(_data(r)));
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
   // ---- BRANDS ----
   Future<List<Brand>> getBrands({
     bool featured = false,
@@ -190,6 +202,18 @@ class ApiService {
         serialize: (list) => list,
       );
       return raw.map((e) => Brand.fromJson(asMap(e))).toList();
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  Future<Brand> getBrandBySlug(String slug) async {
+    try {
+      final r = await _dio.get(
+        '/brands/${Uri.encodeComponent(slug)}',
+        options: Options(extra: {'auth': false}),
+      );
+      return Brand.fromJson(asMap(_data(r)));
     } catch (e) {
       _throw(e);
     }

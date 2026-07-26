@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/navigation/deep_link_redirect.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../core/navigation/app_navigation.dart';
@@ -16,6 +17,7 @@ import '../../features/orders/orders_screen.dart';
 import '../../features/packages/package_detail_screen.dart';
 import '../../features/products/product_detail_screen.dart';
 import '../../features/products/product_listing_screen.dart';
+import '../../features/products/slug_listing_screen.dart';
 import '../../features/profile/addresses_screen.dart';
 import '../../features/profile/change_password_screen.dart';
 import '../../features/profile/edit_profile_screen.dart';
@@ -49,6 +51,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       if (localeSettings.hasChosen && path == '/language') {
         return '/';
+      }
+
+      final mapped = resolveDeepLink(state.uri);
+      if (mapped != null) {
+        final current = state.uri.hasQuery ? '$path?${state.uri.query}' : path;
+        if (mapped != current && mapped != path) return mapped;
       }
 
       if (path == '/cart') {
@@ -85,6 +93,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/product/:id',
         builder: (_, s) => ProductDetailScreen(idOrSlug: s.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/category/:slug',
+        builder: (_, s) => CategorySlugListingScreen(slug: s.pathParameters['slug']!),
+      ),
+      GoRoute(
+        path: '/brand/:slug',
+        builder: (_, s) => BrandSlugListingScreen(slug: s.pathParameters['slug']!),
       ),
       GoRoute(
         path: '/products',

@@ -118,6 +118,15 @@ class AppConfig {
 
   static const String currency = 'د.ع';
 
+  static const String playStorePackageId = 'com.alhayaa.alhayaa';
+
+  static String get playStoreUrl =>
+      'https://play.google.com/store/apps/details?id=$playStorePackageId';
+
+  /// رابط مشاركة منتج على الموقع (نفس صيغة المتجر الإلكتروني).
+  static String productShareUrl(String slug) =>
+      webUrl('/product/?slug=${Uri.encodeComponent(slug)}');
+
   /// صورة بديلة للمنتجات بدون صور (من السيرفر).
   static String get productPlaceholderUrl =>
       '$mediaBaseUrl/placeholder/product.webp';

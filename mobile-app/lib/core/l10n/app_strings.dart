@@ -89,6 +89,9 @@ class AppStrings {
   String packageCount(int n) => isAr ? '$n مكتبة' : '$n packages';
   String get website => isAr ? 'الموقع' : 'Website';
   String get visitWebsite => isAr ? 'زيارة الموقع' : 'Visit website';
+  String get rateOnPlayStore => isAr ? 'قيّمي التطبيق' : 'Rate on Play Store';
+  String get shareProduct => isAr ? 'مشاركة المنتج' : 'Share product';
+  String get linkCopied => isAr ? 'تم نسخ الرابط' : 'Link copied';
   String get logout => isAr ? 'تسجيل الخروج' : 'Log Out';
   String get logoutConfirmTitle => isAr ? 'تسجيل الخروج' : 'Log Out';
   String get logoutConfirmBody =>
