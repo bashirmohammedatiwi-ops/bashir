@@ -25,8 +25,7 @@ Future<bool> openEmail(String email, {String? subject, String? body}) async {
     path: trimmed,
     queryParameters: params.isEmpty ? null : params,
   );
-  if (!await canLaunchUrl(uri)) return false;
-  return launchUrl(uri);
+  return _launchUri(uri);
 }
 
 Future<bool> openExternalUrl(String url) async {
@@ -35,6 +34,20 @@ Future<bool> openExternalUrl(String url) async {
   final uri = Uri.tryParse(trimmed);
   if (uri == null) return false;
   final normalized = uri.hasScheme ? uri : Uri.parse('https://$trimmed');
-  if (!await canLaunchUrl(normalized)) return false;
-  return launchUrl(normalized, mode: LaunchMode.externalApplication);
+  return _launchUri(normalized, external: true);
+}
+
+Future<bool> _launchUri(Uri uri, {bool external = false}) async {
+  final mode = external ? LaunchMode.externalApplication : LaunchMode.platformDefault;
+  try {
+    final launched = await launchUrl(uri, mode: mode);
+    if (launched) return true;
+  } catch (_) {
+    // canLaunchUrl often returns false on Android despite a working browser.
+  }
+  try {
+    return await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } catch (_) {
+    return false;
+  }
 }

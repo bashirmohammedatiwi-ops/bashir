@@ -137,10 +137,10 @@ class AppConfig {
 
   /// روابط قانونية — للمتاجر وداخل التطبيق.
   static String privacyPolicyUrlFor(String lang) =>
-      webUrl(lang == 'en' ? '/en/privacy' : '/privacy');
+      webUrl(lang == 'en' ? '/en/privacy/' : '/privacy/');
 
   static String termsOfServiceUrlFor(String lang) =>
-      webUrl(lang == 'en' ? '/en/terms' : '/terms');
+      webUrl(lang == 'en' ? '/en/terms/' : '/terms/');
 
   static String get privacyPolicyUrl => privacyPolicyUrlFor('ar');
 

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/l10n/app_strings.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../core/utils/support_links.dart';
 import '../cart/widgets/cart_theme.dart';
 import '../profile/widgets/profile_ui.dart';
@@ -72,11 +73,13 @@ class LegalDocumentScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
           TextButton.icon(
-            onPressed: () {
+            onPressed: () async {
               final url = type == LegalDocumentType.privacy
                   ? AppConfig.privacyPolicyUrlFor(s.lang)
                   : AppConfig.termsOfServiceUrlFor(s.lang);
-              openExternalUrl(url);
+              final ok = await openExternalUrl(url);
+              if (!context.mounted) return;
+              if (!ok) AppSnackbar.error(context, s.linkOpenFailed);
             },
             icon: const Icon(Icons.open_in_new_rounded, size: 18),
             label: Text(s.viewOnWebsite),

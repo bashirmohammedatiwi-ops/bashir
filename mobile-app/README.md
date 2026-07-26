@@ -87,8 +87,8 @@ Support: support@deemaalhayat.com
 |-------|--------|
 | اسم التطبيق | ديما الحياة |
 | Bundle ID | `com.alhayaa.alhayaa` |
-| سياسة الخصوصية | https://deemaalhayat.com/privacy |
-| شروط الاستخدام | https://deemaalhayat.com/terms |
+| سياسة الخصوصية | https://deemaalhayat.com/privacy (عربي) · https://deemaalhayat.com/en/privacy (English) |
+| شروط الاستخدام | https://deemaalhayat.com/terms (عربي) · https://deemaalhayat.com/en/terms (English) |
 | الدفع | الدفع عند الاستلام (COD) |
 | حذف الحساب | حسابي → حذف الحساب |
 | اللغات | العربية، الإنجليزية |

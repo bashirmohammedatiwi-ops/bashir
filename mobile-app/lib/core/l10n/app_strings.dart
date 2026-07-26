@@ -512,9 +512,11 @@ class AppStrings {
   String get termsOfService => isAr ? 'شروط الاستخدام' : 'Terms of Service';
   String get legalSection => isAr ? 'القانونية' : 'Legal';
   String get legalInAppNotice => isAr
-      ? 'النص أدناه معروض داخل التطبيق حسب لغتك. يمكنك أيضاً فتح النسخة الرسمية على موقعنا بنفس اللغة.'
-      : 'The text below is shown in the app in your language. You can also open the official website version in the same language.';
-  String get viewOnWebsite => isAr ? 'فتح على الموقع (نفس اللغة)' : 'Open on website (same language)';
+      ? 'النص أدناه معروض داخل التطبيق. يمكنك أيضاً فتح النسخة الرسمية على موقعنا.'
+      : 'The text below is shown in the app. You can also open the official version on our website.';
+  String get viewOnWebsite => isAr ? 'فتح على الموقع' : 'Open on website';
+  String get linkOpenFailed =>
+      isAr ? 'تعذّر فتح الرابط — تحققي من الاتصال بالإنترنت' : 'Could not open the link — check your internet connection';
   String get agreeToTermsLabel => isAr
       ? 'أوافق على شروط الاستخدام وسياسة الخصوصية'
       : 'I agree to the Terms of Service and Privacy Policy';
