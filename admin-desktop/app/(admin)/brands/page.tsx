@@ -230,7 +230,7 @@ export default function BrandsPage() {
       slug: row.slug,
       initial: row.initial,
       bgColorHex: row.bgColorHex,
-      logoId: (row as any).logoId ?? row.logo?.id,
+      logoId: row.logoId ?? row.logo?.id,
       isFeatured: row.isFeatured,
       isActive: row.isActive,
     });
@@ -251,7 +251,7 @@ export default function BrandsPage() {
     colForm.setFieldsValue({
       name: col.name,
       slug: col.slug,
-      description: (col as any).description,
+      description: col.description,
       position: col.position,
       isActive: col.isActive,
     });

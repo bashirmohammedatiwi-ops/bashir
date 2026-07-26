@@ -20,7 +20,8 @@ export type BrandRow = {
   slug?: string;
   initial?: string;
   bgColorHex?: string;
-  logo?: { url?: string } | null;
+  logoId?: string | null;
+  logo?: { id?: string; url?: string } | null;
   productCount?: number;
   isFeatured?: boolean;
   isActive?: boolean;
@@ -31,6 +32,7 @@ export type BrandRow = {
     slug?: string;
     position?: number;
     isActive?: boolean;
+    description?: string;
   }>;
 };
 
