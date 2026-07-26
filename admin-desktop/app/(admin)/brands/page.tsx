@@ -487,7 +487,7 @@ export default function BrandsPage() {
             <Input placeholder="#4a2466" />
           </Form.Item>
           <Form.Item name="logoId" label="الشعار">
-            <MediaPicker />
+            <MediaPicker purpose="BRAND" previewUrl={editing ? mediaThumb(editing.logo) : undefined} />
           </Form.Item>
           <Form.Item name="isFeatured" label="مميز" valuePropName="checked">
             <Switch />
