@@ -18,7 +18,7 @@ export function SiteFooter() {
             <p>تسوّقي بسهولة، تتبّعي طلباتك، واستمتعي بعروض حصرية.</p>
           </div>
           <a
-            href="https://play.google.com/store/apps/details?id=com.alhayaa.alhayaa"
+            href="https://play.google.com/store/apps/details?id=com.deemaalhayat.app"
             className="btn btn-primary"
             target="_blank"
             rel="noopener noreferrer"

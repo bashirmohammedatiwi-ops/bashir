@@ -46,7 +46,7 @@ export function SiteHeader() {
         </nav>
 
         <a
-          href="https://play.google.com/store/apps/details?id=com.alhayaa.alhayaa"
+          href="https://play.google.com/store/apps/details?id=com.deemaalhayat.app"
           className="app-badge"
           target="_blank"
           rel="noopener noreferrer"

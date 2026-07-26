@@ -39,7 +39,7 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1
 ### iOS (App Store)
 
 1. افتح `ios/Runner.xcworkspace` في Xcode على Mac.
-2. Team: `629ARMBUX8` — Bundle ID: `com.alhayaa.alhayaa`.
+2. Team: `629ARMBUX8` — Bundle ID: `com.deemaalhayat.app`.
 3. ابنِ وارفع:
    ```bash
    flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
@@ -60,7 +60,7 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1
 
 | البند | الحالة |
 |-------|--------|
-| Bundle ID `com.alhayaa.alhayaa` | جاهز |
+| Bundle ID `com.deemaalhayat.app` | جاهز |
 | Privacy Manifest + لا تتبع | جاهز |
 | حذف الحساب داخل التطبيق | جاهز |
 | COD فقط — لا IAP | جاهز |
@@ -86,7 +86,7 @@ Support: support@deemaalhayat.com
 | الحقل | القيمة |
 |-------|--------|
 | اسم التطبيق | ديما الحياة |
-| Bundle ID | `com.alhayaa.alhayaa` |
+| Bundle ID | `com.deemaalhayat.app` |
 | سياسة الخصوصية | https://deemaalhayat.com/privacy (عربي) · https://deemaalhayat.com/en/privacy (English) |
 | شروط الاستخدام | https://deemaalhayat.com/terms (عربي) · https://deemaalhayat.com/en/terms (English) |
 | الدفع | الدفع عند الاستلام (COD) |

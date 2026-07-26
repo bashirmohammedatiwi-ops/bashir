@@ -1,4 +1,4 @@
-package com.alhayaa.alhayaa
+package com.deemaalhayat.app
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -17,8 +17,8 @@ Push يحتاج **3 أجزاء** تعمل معاً:
 
 1. افتح [Firebase Console](https://console.firebase.google.com/)
 2. أنشئ مشروعاً (أو استخدم موجوداً)
-3. أضف تطبيق **Android**: `com.alhayaa.alhayaa`
-4. أضف تطبيق **iOS**: `com.alhayaa.alhayaa`
+3. أضف تطبيق **Android**: `com.deemaalhayat.app`
+4. أضف تطبيق **iOS**: `com.deemaalhayat.app`
 
 ### Android
 - حمّل `google-services.json`
@@ -44,7 +44,7 @@ Push يحتاج **3 أجزاء** تعمل معاً:
    - Team ID: `629ARMBUX8`
    - ملف `.p8`
 
-6. على App ID `com.alhayaa.alhayaa` فعّل:
+6. على App ID `com.deemaalhayat.app` فعّل:
    - **Push Notifications**
    - **Associated Domains**
 

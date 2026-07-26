@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appIDs": ["629ARMBUX8.com.alhayaa.alhayaa"],
+        "appIDs": ["629ARMBUX8.com.deemaalhayat.app"],
         "components": [
           { "/": "/product/*" },
           { "/": "/product" },
@@ -32,6 +32,6 @@
     ]
   },
   "webcredentials": {
-    "apps": ["629ARMBUX8.com.alhayaa.alhayaa"]
+    "apps": ["629ARMBUX8.com.deemaalhayat.app"]
   }
 }

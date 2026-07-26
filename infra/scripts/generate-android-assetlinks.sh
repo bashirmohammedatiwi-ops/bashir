@@ -30,7 +30,7 @@ cat >"$OUT" <<EOF
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.alhayaa.alhayaa",
+      "package_name": "com.deemaalhayat.app",
       "sha256_cert_fingerprints": [
         "$SHA"
       ]

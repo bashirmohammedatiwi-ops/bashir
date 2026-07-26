@@ -21,6 +21,6 @@ FirebaseOptions _firebaseOptionsFromEnv() {
     appId: const String.fromEnvironment('FIREBASE_APP_ID', defaultValue: ''),
     messagingSenderId: const String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID', defaultValue: ''),
     projectId: const String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: ''),
-    iosBundleId: const String.fromEnvironment('FIREBASE_IOS_BUNDLE_ID', defaultValue: 'com.alhayaa.alhayaa'),
+    iosBundleId: const String.fromEnvironment('FIREBASE_IOS_BUNDLE_ID', defaultValue: 'com.deemaalhayat.app'),
   );
 }

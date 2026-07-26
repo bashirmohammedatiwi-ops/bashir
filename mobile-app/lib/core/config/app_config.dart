@@ -122,7 +122,10 @@ class AppConfig {
 
   static const String currency = 'د.ع';
 
-  static const String playStorePackageId = 'com.alhayaa.alhayaa';
+  /// Bundle ID / Application ID — iOS و Android.
+  static const String appBundleId = 'com.deemaalhayat.app';
+
+  static const String playStorePackageId = appBundleId;
 
   static String get playStoreUrl =>
       'https://play.google.com/store/apps/details?id=$playStorePackageId';
