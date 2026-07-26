@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Role } from "@prisma/client";
+import { Public } from "../../common/decorators/public.decorator";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -54,6 +55,12 @@ export class NotificationsController {
   @Roles(Role.CUSTOMER, Role.ADMIN, Role.SUPER_ADMIN)
   markRead(@CurrentUser() user: any, @Param("id") id: string) {
     return this.notifications.markRead(user.id, id);
+  }
+
+  @Public()
+  @Post("devices/guest")
+  registerGuestDevice(@Body() dto: RegisterDeviceDto) {
+    return this.notifications.registerGuestDevice(dto.token, dto.platform ?? "android");
   }
 
   @Post("devices")

@@ -47,22 +47,20 @@ class PushService {
       }
 
       _token = await messaging.getToken();
-      if (_token != null && ref.read(authProvider).isAuthenticated) {
-        await _register(ref, _token!);
+      if (_token != null) {
+        await _registerToken(ref, _token!);
       }
 
       messaging.onTokenRefresh.listen((token) async {
         _token = token;
-        if (ref.read(authProvider).isAuthenticated) {
-          await _register(ref, token);
-        }
+        await _registerToken(ref, token);
       });
 
       ref.listen(authProvider, (prev, next) async {
-        if (next.isAuthenticated && _token != null) {
-          await _register(ref, _token!);
-        } else if (prev?.isAuthenticated == true && _token != null) {
-          await _unregister(ref, _token!);
+        if (_token == null) return;
+        // عند تسجيل الدخول نربط التوكن بالحساب — لا نلغي التسجيل عند الخروج
+        if (next.isAuthenticated && prev?.isAuthenticated != true) {
+          await _registerToken(ref, _token!);
         }
       });
 
@@ -85,8 +83,25 @@ class PushService {
     }
   }
 
+  static Future<void> _registerToken(WidgetRef ref, String token) async {
+    try {
+      final api = ref.read(apiServiceProvider);
+      final platform = Platform.isIOS ? 'ios' : 'android';
+      final authed = ref.read(authProvider).isAuthenticated;
+      if (authed) {
+        await api.registerDevice(token: token, platform: platform);
+      } else {
+        await api.registerGuestDevice(token: token, platform: platform);
+      }
+    } catch (e) {
+      debugPrint('[PushService] register failed: $e');
+    }
+  }
+
   static void _handleForegroundMessage(WidgetRef ref, RemoteMessage message) {
-    ref.invalidate(notificationsProvider);
+    if (ref.read(authProvider).isAuthenticated) {
+      ref.invalidate(notificationsProvider);
+    }
 
     final notification = message.notification;
     final data = Map<String, dynamic>.from(message.data);
@@ -100,14 +115,12 @@ class PushService {
           data['imageUrl']?.toString(),
     );
 
-    if (Platform.isAndroid) {
-      ForegroundNotificationBanner.show(
-        title: title,
-        body: body,
-        imageUrl: imageUrl,
-        payload: data,
-      );
-    }
+    ForegroundNotificationBanner.show(
+      title: title,
+      body: body,
+      imageUrl: imageUrl,
+      payload: data,
+    );
   }
 
   static void _openFromMessage(Map<String, dynamic> data) {
@@ -115,21 +128,6 @@ class PushService {
     if (ctx == null || !ctx.mounted) return;
     ForegroundNotificationBanner.dismiss();
     openPushPayload(ctx, data);
-  }
-
-  static Future<void> _register(WidgetRef ref, String token) async {
-    try {
-      final platform = Platform.isIOS ? 'ios' : 'android';
-      await ref.read(apiServiceProvider).registerDevice(token: token, platform: platform);
-    } catch (e) {
-      debugPrint('[PushService] register failed: $e');
-    }
-  }
-
-  static Future<void> _unregister(WidgetRef ref, String token) async {
-    try {
-      await ref.read(apiServiceProvider).unregisterDevice(token: token);
-    } catch (_) {}
   }
 }
 

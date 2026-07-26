@@ -675,6 +675,18 @@ class ApiService {
     } catch (_) {}
   }
 
+  Future<void> registerGuestDevice({required String token, required String platform}) async {
+    try {
+      await _dio.post(
+        '/notifications/devices/guest',
+        data: {'token': token, 'platform': platform},
+        options: Options(extra: {'auth': false}),
+      );
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
   Future<void> registerDevice({required String token, required String platform}) async {
     try {
       await _dio.post('/notifications/devices', data: {

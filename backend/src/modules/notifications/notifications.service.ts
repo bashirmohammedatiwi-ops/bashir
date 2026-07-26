@@ -12,6 +12,13 @@ import { mediaRecordToUrl } from "../../common/media-url.util";
 import { SendNotificationDto } from "./dto/notification.dto";
 import { PushService } from "./push.service";
 
+/** إشعارات النظام التلقائية — لا تُعرض في قائمة التطبيق */
+const AUTOMATIC_NOTIFICATION_TYPES: NotificationType[] = [
+  NotificationType.ORDER,
+  NotificationType.RESTOCK,
+  NotificationType.LOW_STOCK,
+];
+
 type LinkMeta = {
   linkType: NotificationLinkType;
   linkId: string | null;
@@ -29,7 +36,23 @@ export class NotificationsService {
   ) {}
 
   async listForUser(userId: string, page = 1, limit = 20) {
-    const where = { OR: [{ userId }, { userId: null, targetType: NotificationTargetType.ALL }] };
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { createdAt: true },
+    });
+    if (!user) throw new NotFoundException("User not found");
+
+    const where: Prisma.NotificationWhereInput = {
+      type: { notIn: AUTOMATIC_NOTIFICATION_TYPES },
+      OR: [
+        { userId },
+        {
+          userId: null,
+          targetType: NotificationTargetType.ALL,
+          createdAt: { gte: user.createdAt },
+        },
+      ],
+    };
     const skip = (page - 1) * limit;
     const [total, items] = await this.prisma.$transaction([
       this.prisma.notification.count({ where }),
@@ -84,9 +107,20 @@ export class NotificationsService {
   }
 
   async markAllRead(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { createdAt: true },
+    });
+    if (!user) throw new NotFoundException("User not found");
+
     const now = new Date();
     const broadcasts = await this.prisma.notification.findMany({
-      where: { userId: null, targetType: NotificationTargetType.ALL },
+      where: {
+        userId: null,
+        targetType: NotificationTargetType.ALL,
+        createdAt: { gte: user.createdAt },
+        type: { notIn: AUTOMATIC_NOTIFICATION_TYPES },
+      },
       select: { id: true },
     });
 
@@ -103,6 +137,24 @@ export class NotificationsService {
     });
 
     return { success: true };
+  }
+
+  /** تسجيل جهاز بدون حساب — لاستقبال Push العام لكل من ثبّت التطبيق */
+  async registerGuestDevice(token: string, platform = "android") {
+    const clean = token.trim();
+    if (!clean) throw new BadRequestException("Device token is required");
+
+    const existing = await this.prisma.deviceToken.findUnique({ where: { token: clean } });
+    if (existing) {
+      return this.prisma.deviceToken.update({
+        where: { token: clean },
+        data: { platform, isActive: true, lastUsedAt: new Date() },
+      });
+    }
+
+    return this.prisma.deviceToken.create({
+      data: { token: clean, platform, isActive: true },
+    });
   }
 
   async registerDevice(userId: string, token: string, platform = "android") {

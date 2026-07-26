@@ -1,11 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import {
-  NotificationLinkType,
-  NotificationTargetType,
-  NotificationType,
-} from "@prisma/client";
+import { NotificationType } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
-import { NotificationsService } from "../notifications/notifications.service";
 import { SettingsService } from "../settings/settings.service";
 
 type StockSettings = {
@@ -25,7 +20,6 @@ export class StockAlertService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly settings: SettingsService,
-    private readonly notifications: NotificationsService,
   ) {}
 
   async getStockSettings(): Promise<StockSettings> {
@@ -154,21 +148,8 @@ export class StockAlertService {
       if (duplicate) return false;
     }
 
-    await this.notifications.send({
-      type: input.type,
-      title: input.title,
-      body: input.body,
-      targetType: NotificationTargetType.ALL,
-      linkType: NotificationLinkType.PRODUCT,
-      linkId: input.productId,
-      sendPush: input.cfg.stockAlertPushEnabled,
-      data: {
-        barcode: input.barcode,
-        stockAlert: input.type,
-      },
-    });
-
-    return true;
+    // إشعارات المخزون التلقائية معطّلة — الإرسال اليدوي فقط من لوحة التحكم
+    return false;
   }
 
   private async findProductByBarcode(barcode: string) {

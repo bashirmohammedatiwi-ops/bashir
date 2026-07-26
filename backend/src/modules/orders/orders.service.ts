@@ -9,7 +9,6 @@ import { PrismaService } from "../../common/prisma.service";
 import { SettingsService } from "../settings/settings.service";
 import { ShippingService } from "../shipping/shipping.service";
 import { LoyaltyService } from "../loyalty/loyalty.service";
-import { NotificationsService } from "../notifications/notifications.service";
 import { paginate } from "../../common/dto/pagination.dto";
 import {
   CreateOrderDto,
@@ -24,7 +23,6 @@ export class OrdersService {
     private readonly settings: SettingsService,
     private readonly shipping: ShippingService,
     private readonly loyalty: LoyaltyService,
-    private readonly notifications: NotificationsService,
   ) {}
 
   async list(q: QueryOrdersDto) {
@@ -263,16 +261,6 @@ export class OrdersService {
       await this.loyalty.addPoints(userId, 50, "مكافأة أول طلب", order.id);
     }
 
-    await this.notifications.create({
-      userId,
-      type: "ORDER" as any,
-      title: "تم استلام طلبك",
-      body: `طلبك ${order.orderNumber} قيد المراجعة`,
-      linkType: "ORDER" as any,
-      linkId: order.id,
-      data: { orderId: order.id },
-    });
-
     return order;
   }
 
@@ -293,15 +281,6 @@ export class OrdersService {
         },
       });
     }
-    await this.notifications.create({
-      userId: order.userId,
-      type: "ORDER" as any,
-      title: "تحديث حالة الطلب",
-      body: `طلب ${order.orderNumber}: ${dto.status}`,
-      linkType: "ORDER" as any,
-      linkId: id,
-      data: { orderId: id, status: dto.status },
-    });
     return updated;
   }
 

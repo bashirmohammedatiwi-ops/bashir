@@ -12,7 +12,6 @@ import '../../data/services/api_service.dart';
 import '../auth/auth_provider.dart';
 import '../cart/widgets/cart_theme.dart';
 import 'profile_providers.dart';
-import 'widgets/account_theme.dart';
 import 'widgets/profile_ui.dart';
 
 class NotificationsScreen extends ConsumerWidget {
@@ -34,17 +33,20 @@ class NotificationsScreen extends ConsumerWidget {
     }
 
     final async = ref.watch(notificationsProvider);
+    final unread = ref.watch(unreadNotificationsCountProvider);
+
     return ProfileScaffold(
       title: s.notifications,
       actions: [
-        IconButton(
-          tooltip: s.markAllRead,
-          onPressed: () async {
-            await ref.read(apiServiceProvider).markAllNotificationsRead();
-            ref.invalidate(notificationsProvider);
-          },
-          icon: const Icon(Icons.done_all_rounded, color: CartTheme.brand),
-        ),
+        if (unread > 0)
+          IconButton(
+            tooltip: s.markAllRead,
+            onPressed: () async {
+              await ref.read(apiServiceProvider).markAllNotificationsRead();
+              ref.invalidate(notificationsProvider);
+            },
+            icon: const Icon(Icons.done_all_rounded, color: CartTheme.brand),
+          ),
       ],
       body: async.when(
         loading: () => const Center(child: CircularProgressIndicator(color: CartTheme.brand)),
@@ -63,11 +65,70 @@ class NotificationsScreen extends ConsumerWidget {
           return RefreshIndicator(
             color: CartTheme.brand,
             onRefresh: () async => ref.invalidate(notificationsProvider),
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 16, ProfileUi.hPad, 24),
-              itemCount: list.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (_, i) => _NotificationTile(notification: list[i]),
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+              slivers: [
+                if (unread > 0)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 12, ProfileUi.hPad, 4),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              CartTheme.brand.withValues(alpha: 0.12),
+                              CartTheme.brand.withValues(alpha: 0.04),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: CartTheme.brand.withValues(alpha: 0.18)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: CartTheme.brand,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '$unread',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                unread == 1 ? 'إشعار جديد' : '$unread إشعارات جديدة',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14,
+                                  color: CartTheme.charcoal,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 8, ProfileUi.hPad, 28),
+                  sliver: SliverList.separated(
+                    itemCount: list.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 14),
+                    itemBuilder: (_, i) => _NotificationCard(notification: list[i]),
+                  ),
+                ),
+              ],
             ),
           );
         },
@@ -76,19 +137,22 @@ class NotificationsScreen extends ConsumerWidget {
   }
 }
 
-class _NotificationTile extends ConsumerWidget {
+class _NotificationCard extends ConsumerWidget {
   final AppNotification notification;
-  const _NotificationTile({required this.notification});
+  const _NotificationCard({required this.notification});
+
+  Color get _accent => switch (notification.type.toUpperCase()) {
+        'OFFER' || 'PROMO' => const Color(0xFFE91E8C),
+        'NEW_ARRIVAL' => const Color(0xFF7C3AED),
+        'REMINDER' => const Color(0xFFF59E0B),
+        _ => CartTheme.brand,
+      };
 
   IconData get _icon => switch (notification.type.toUpperCase()) {
-        'ORDER' => Icons.receipt_long_rounded,
         'OFFER' || 'PROMO' => Icons.local_offer_rounded,
-        'NEW_ARRIVAL' => Icons.new_releases_rounded,
-        'RESTOCK' => Icons.inventory_2_rounded,
-        'LOW_STOCK' => Icons.warning_amber_rounded,
-        'REMINDER' => Icons.alarm_rounded,
-        'LOYALTY' => Icons.stars_rounded,
-        _ => Icons.notifications_rounded,
+        'NEW_ARRIVAL' => Icons.auto_awesome_rounded,
+        'REMINDER' => Icons.campaign_rounded,
+        _ => Icons.notifications_active_rounded,
       };
 
   Future<void> _open(BuildContext context, WidgetRef ref) async {
@@ -103,123 +167,214 @@ class _NotificationTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final imageUrl = notification.resolvedImageUrl;
     final linkHint = notification.linkHint;
+    final unread = !notification.read;
 
     return Material(
-      color: notification.read ? Colors.white : CartTheme.brandWash,
-      borderRadius: BorderRadius.circular(ProfileUi.cardRadius),
-      clipBehavior: Clip.antiAlias,
+      color: Colors.transparent,
       child: InkWell(
         onTap: () => _open(context, ref),
-        child: Container(
+        borderRadius: BorderRadius.circular(20),
+        child: Ink(
           decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: notification.read ? ProfileUi.fieldBorder : CartTheme.brand.withValues(alpha: 0.25),
+              color: unread ? _accent.withValues(alpha: 0.35) : ProfileUi.fieldBorder,
+              width: unread ? 1.2 : 1,
             ),
-            boxShadow: notification.read ? null : CartTheme.softShadow,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (imageUrl != null && imageUrl.isNotEmpty)
-                CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  height: 140,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorWidget: (_, __, ___) => Container(
-                    height: 140,
-                    color: CartTheme.brandWash,
-                    child: Icon(_icon, color: CartTheme.brand, size: 36),
-                  ),
-                ),
-              Padding(
-                padding: const EdgeInsets.all(14),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (imageUrl == null || imageUrl.isEmpty)
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: AccountTheme.notifications.withValues(alpha: 0.14),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(_icon, color: AccountTheme.notifications, size: 22),
-                      ),
-                    if (imageUrl == null || imageUrl.isEmpty) const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  notification.title,
-                                  style: TextStyle(
-                                    fontWeight: notification.read ? FontWeight.w600 : FontWeight.w800,
-                                    fontSize: 15,
-                                    color: CartTheme.charcoal,
-                                  ),
-                                ),
-                              ),
-                              if (!notification.read)
-                                Container(
-                                  width: 8,
-                                  height: 8,
-                                  decoration: const BoxDecoration(color: CartTheme.brand, shape: BoxShape.circle),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(notification.body, style: ProfileUi.captionStyle()),
-                          if (linkHint != null) ...[
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: CartTheme.brand.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.link_rounded, size: 12, color: CartTheme.brand),
-                                  const SizedBox(width: 4),
-                                  Flexible(
-                                    child: Text(
-                                      linkHint,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: CartTheme.brand,
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                          const SizedBox(height: 6),
-                          Text(
-                            notification.timeLabel,
-                            style: TextStyle(
-                              color: CartTheme.charcoal.withValues(alpha: 0.35),
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+            boxShadow: [
+              BoxShadow(
+                color: unread ? _accent.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.04),
+                blurRadius: unread ? 18 : 10,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(19),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(width: 4, color: unread ? _accent : Colors.transparent),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (imageUrl != null && imageUrl.isNotEmpty)
+                          Stack(
+                            children: [
+                              CachedNetworkImage(
+                                imageUrl: imageUrl,
+                                height: 152,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorWidget: (_, __, ___) => Container(
+                                  height: 152,
+                                  color: CartTheme.brandWash,
+                                  child: Icon(_icon, color: _accent, size: 40),
+                                ),
+                              ),
+                              Positioned(
+                                top: 10,
+                                right: 10,
+                                child: _TypeChip(icon: _icon, label: _typeLabel, color: _accent),
+                              ),
+                            ],
+                          ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (imageUrl == null || imageUrl.isEmpty) ...[
+                                    Container(
+                                      width: 42,
+                                      height: 42,
+                                      decoration: BoxDecoration(
+                                        color: _accent.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(_icon, color: _accent, size: 22),
+                                    ),
+                                    const SizedBox(width: 12),
+                                  ],
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          notification.title,
+                                          style: TextStyle(
+                                            fontWeight: unread ? FontWeight.w900 : FontWeight.w700,
+                                            fontSize: 16,
+                                            height: 1.25,
+                                            color: CartTheme.charcoal,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          notification.body,
+                                          style: TextStyle(
+                                            color: CartTheme.charcoal.withValues(alpha: 0.68),
+                                            fontSize: 13.5,
+                                            height: 1.45,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (unread)
+                                    Container(
+                                      width: 9,
+                                      height: 9,
+                                      margin: const EdgeInsets.only(top: 6, left: 4),
+                                      decoration: BoxDecoration(color: _accent, shape: BoxShape.circle),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  if (linkHint != null)
+                                    Expanded(
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: _accent.withValues(alpha: 0.08),
+                                          borderRadius: BorderRadius.circular(999),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(Icons.open_in_new_rounded, size: 13, color: _accent),
+                                            const SizedBox(width: 5),
+                                            Flexible(
+                                              child: Text(
+                                                linkHint,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  color: _accent,
+                                                  fontSize: 11.5,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    const Spacer(),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    notification.timeLabel,
+                                    style: TextStyle(
+                                      color: CartTheme.charcoal.withValues(alpha: 0.38),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.chevron_left_rounded,
+                                    size: 20,
+                                    color: CartTheme.charcoal.withValues(alpha: 0.28),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
+      ),
+    );
+  }
+
+  String get _typeLabel => switch (notification.type.toUpperCase()) {
+        'OFFER' || 'PROMO' => 'عرض',
+        'NEW_ARRIVAL' => 'جديد',
+        'REMINDER' => 'تذكير',
+        _ => 'إشعار',
+      };
+}
+
+class _TypeChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _TypeChip({required this.icon, required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: Colors.white),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+          ),
+        ],
       ),
     );
   }
