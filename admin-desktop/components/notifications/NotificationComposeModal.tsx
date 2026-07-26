@@ -117,6 +117,13 @@ type Props = {
   onClose: () => void;
 };
 
+type LinkOption = {
+  value: string;
+  label: string;
+  thumb: string | null;
+  row: Record<string, unknown>;
+};
+
 export function NotificationComposeModal({ open, onClose }: Props) {
   const [form] = Form.useForm();
   const qc = useQueryClient();
@@ -166,18 +173,18 @@ export function NotificationComposeModal({ open, onClose }: Props) {
     return [];
   }, [linkType, productsData, categoriesData, brandsData, packagesData]);
 
-  const linkOptions = useMemo(
+  const linkOptions = useMemo<LinkOption[]>(
     () =>
-      linkRows.map((row: any) => ({
-        value: row.id,
-        label: row.name,
+      linkRows.map((row: Record<string, unknown>) => ({
+        value: String(row.id),
+        label: String(row.name ?? ""),
         thumb: entityThumb(linkType, row),
         row,
       })),
     [linkRows, linkType],
   );
 
-  const selectedLink = linkOptions.find((o) => o.value === linkId);
+  const selectedLink = linkOptions.find((o: LinkOption) => o.value === linkId);
   const previewImage = imageUrl || (autoImage !== false ? selectedLink?.thumb : null);
   const previewLinkLabel =
     linkType === "OFFERS"
