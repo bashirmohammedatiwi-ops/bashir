@@ -1,15 +1,18 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import Link from "next/link";
 
 import { LoadingState } from "@/components/ui/LoadingState";
 import { fetchProduct } from "@/lib/api";
 import { formatPrice, localizedName } from "@/lib/format";
-import { productImageUrl, resolveMediaUrl } from "@/lib/mediaUrl";
+import { productGalleryUrls, productImageUrl } from "@/lib/mediaUrl";
 import { brandHref, categoryHref } from "@/lib/storePaths";
 
 export function ProductDetailView({ slug }: { slug: string }) {
+  const [activeImage, setActiveImage] = useState(0);
+
   const { data: product, isLoading, isError } = useQuery({
     queryKey: ["product", slug],
     queryFn: () => fetchProduct(slug),
@@ -22,51 +25,72 @@ export function ProductDetailView({ slug }: { slug: string }) {
     return <p className="empty-state container">المنتج غير موجود.</p>;
   }
 
-  const mainImg = productImageUrl(product);
-  const extraImages = (product.images ?? [])
-    .map((i) => resolveMediaUrl(i.media?.full || i.media?.thumb))
-    .filter(Boolean);
+  const gallery = productGalleryUrls(product);
+  const mainImg = gallery[activeImage] || productImageUrl(product);
 
   return (
     <div className="container product-detail">
-      <div>
+      <div className="product-detail-gallery">
         <div className="product-gallery">
-          {mainImg ? <img src={mainImg} alt={localizedName(product)} /> : <div className="product-placeholder">صورة</div>}
+          {mainImg ? (
+            <img src={mainImg} alt={localizedName(product)} />
+          ) : (
+            <div className="product-placeholder">صورة</div>
+          )}
         </div>
-        {extraImages.length > 1 && (
-          <div className="chip-row" style={{ marginTop: 12 }}>
-            {extraImages.slice(0, 6).map((src) => (
-              <img key={src} src={src} alt="" style={{ width: 64, height: 64, borderRadius: 12, objectFit: "cover" }} />
+        {gallery.length > 1 ? (
+          <div className="gallery-thumbs">
+            {gallery.map((src, idx) => (
+              <button
+                key={src}
+                type="button"
+                className={idx === activeImage ? "is-active" : ""}
+                onClick={() => setActiveImage(idx)}
+              >
+                <img src={src} alt="" />
+              </button>
             ))}
           </div>
-        )}
+        ) : null}
       </div>
+
       <div className="product-info">
-        {product.brand && (
-          <p className="meta">
+        <div className="product-breadcrumb">
+          {product.brand ? (
             <Link href={brandHref(product.brand.slug)}>{localizedName(product.brand)}</Link>
-            {product.category ? (
-              <>
-                {" · "}
-                <Link href={categoryHref(product.category.slug)}>{localizedName(product.category)}</Link>
-              </>
-            ) : null}
-          </p>
-        )}
+          ) : null}
+          {product.category ? (
+            <>
+              {product.brand ? <span> · </span> : null}
+              <Link href={categoryHref(product.category.slug)}>{localizedName(product.category)}</Link>
+            </>
+          ) : null}
+        </div>
+
         <h1>{localizedName(product)}</h1>
+
+        <div className="product-badges-row">
+          {product.isNew ? <span className="pill new">جديد</span> : null}
+          {(product.discountPercent ?? 0) > 0 ? (
+            <span className="pill sale">-{product.discountPercent}%</span>
+          ) : null}
+        </div>
+
         <div className="price-lg">
           {formatPrice(product.price)}
           {(product.discountPercent ?? 0) > 0 && product.originalPrice ? (
-            <span className="price-old" style={{ marginInlineStart: 10 }}>
-              {formatPrice(product.originalPrice)}
-            </span>
+            <span className="price-old">{formatPrice(product.originalPrice)}</span>
           ) : null}
         </div>
+
         {(product.stock ?? 0) <= 0 ? (
           <p className="out-of-stock">نفدت الكمية حالياً</p>
         ) : (
-          <p className="cod-note">للطلب: حمّلي تطبيق ديما الحياة وأضيفي المنتج للسلة — الدفع عند الاستلام.</p>
+          <p className="cod-note">
+            للطلب: حمّلي تطبيق ديما الحياة وأضيفي المنتج للسلة — الدفع عند الاستلام.
+          </p>
         )}
+
         {product.descriptionAr || product.description ? (
           <div className="desc">{product.descriptionAr || product.description}</div>
         ) : null}

@@ -17,29 +17,45 @@ export default function ProductsPage() {
   });
 
   const products = useMemo(() => data?.data ?? [], [data]);
+  const total = data?.meta?.total;
 
   return (
-    <div className="container">
-      <div className="page-head">
-        <h1>المنتجات</h1>
-        <p>تصفّحي كل المنتجات المتوفرة في المتجر.</p>
+    <>
+      <div className="page-banner">
+        <div className="container">
+          <h1>المنتجات</h1>
+          <p>تصفّحي كل المنتجات المتوفرة في المتجر.</p>
+        </div>
       </div>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          setQuery(search.trim());
-        }}
-      >
-        <input
-          className="search-bar"
-          placeholder="ابحثي عن منتج..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </form>
-      {isLoading ? <LoadingState /> : null}
-      {isError ? <p className="empty-state">تعذّر تحميل المنتجات.</p> : null}
-      {!isLoading && !isError ? <ProductGrid products={products} /> : null}
-    </div>
+      <div className="container">
+        <form
+          className="search-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setQuery(search.trim());
+          }}
+        >
+          <input
+            className="search-bar"
+            placeholder="ابحثي عن منتج، براند، أو قسم..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <button type="submit" className="btn btn-primary">بحث</button>
+        </form>
+
+        {total != null ? <p className="results-meta">{total} منتج</p> : null}
+
+        {isLoading ? <LoadingState /> : null}
+        {isError ? <p className="empty-state">تعذّر تحميل المنتجات.</p> : null}
+        {!isLoading && !isError ? (
+          products.length ? (
+            <ProductGrid products={products} />
+          ) : (
+            <p className="empty-state">لا توجد منتجات مطابقة.</p>
+          )
+        ) : null}
+      </div>
+    </>
   );
 }

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { fetchBrands } from "@/lib/api";
 import { localizedName } from "@/lib/format";
-import { resolveMediaUrl } from "@/lib/mediaUrl";
+import { brandLogoUrl } from "@/lib/mediaUrl";
 import { brandHref } from "@/lib/storePaths";
 
 export default function BrandsPage() {
@@ -19,22 +19,32 @@ export default function BrandsPage() {
   if (isError) return <p className="empty-state container">تعذّر تحميل البراندات.</p>;
 
   return (
-    <div className="container">
-      <div className="page-head">
-        <h1>البراندات</h1>
-        <p>تسوّقي حسب العلامة التجارية.</p>
+    <>
+      <div className="page-banner">
+        <div className="container">
+          <h1>البراندات</h1>
+          <p>تسوّقي حسب العلامة التجارية المفضّلة لديكِ.</p>
+        </div>
       </div>
-      <div className="brand-grid">
-        {(data ?? []).map((b) => {
-          const img = resolveMediaUrl(b.logo?.thumb || b.logo?.full || b.logo?.url);
-          return (
-            <Link key={b.id} href={brandHref(b.slug)} className="tile-card">
-              {img ? <img src={img} alt={localizedName(b)} /> : null}
-              <div>{localizedName(b)}</div>
-            </Link>
-          );
-        })}
+      <div className="container">
+        <div className="brand-showcase-row page-grid">
+          {(data ?? []).map((b) => {
+            const img = brandLogoUrl(b);
+            return (
+              <Link key={b.id} href={brandHref(b.slug)} className="brand-showcase-card">
+                <div className="brand-showcase-logo">
+                  {img ? (
+                    <img src={img} alt={localizedName(b)} loading="lazy" />
+                  ) : (
+                    <span>{localizedName(b).slice(0, 2)}</span>
+                  )}
+                </div>
+                <span>{localizedName(b)}</span>
+              </Link>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

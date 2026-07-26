@@ -6,6 +6,7 @@ import { ProductGrid } from "@/components/catalog/ProductGrid";
 import { LoadingState } from "@/components/ui/LoadingState";
 import { fetchBrand, fetchProducts } from "@/lib/api";
 import { localizedName } from "@/lib/format";
+import { brandLogoUrl } from "@/lib/mediaUrl";
 
 export function BrandDetailView({ slug }: { slug: string }) {
   const brandQ = useQuery({
@@ -26,13 +27,29 @@ export function BrandDetailView({ slug }: { slug: string }) {
   const brand = brandQ.data;
   if (!brand) return <p className="empty-state container">البراند غير موجود.</p>;
 
+  const logo = brandLogoUrl(brand);
+
   return (
-    <div className="container">
-      <div className="page-head">
-        <h1>{localizedName(brand)}</h1>
-        <p>منتجات {localizedName(brand)}</p>
+    <>
+      <div className="detail-hero">
+        <div className="container detail-hero-inner">
+          {logo ? (
+            <div className="detail-hero-media is-brand">
+              <img src={logo} alt={localizedName(brand)} />
+            </div>
+          ) : (
+            <div className="detail-hero-fallback">{localizedName(brand).slice(0, 2)}</div>
+          )}
+          <div>
+            <p className="detail-hero-kicker">براند</p>
+            <h1>{localizedName(brand)}</h1>
+            <p>منتجات {localizedName(brand)}</p>
+          </div>
+        </div>
       </div>
-      {productsQ.isLoading ? <LoadingState /> : <ProductGrid products={productsQ.data?.data ?? []} />}
-    </div>
+      <div className="container">
+        {productsQ.isLoading ? <LoadingState /> : <ProductGrid products={productsQ.data?.data ?? []} />}
+      </div>
+    </>
   );
 }
