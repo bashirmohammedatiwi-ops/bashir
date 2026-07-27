@@ -5,9 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'gallery_photo_card.dart';
+import '../home_link.dart';
 import 'photo_shape_kit.dart';
 
-/// صور متحركة أفقياً — حلقة لا نهائية بدون فراغات.
+/// صور متحركة أفقياً — حلقة سينمائية مع سحب يدوي واستئناف فوري.
 class HomeImageMarquee extends StatefulWidget {
   final List<HomeMarqueeImage> images;
   final double height;
@@ -35,23 +36,31 @@ class HomeMarqueeImage {
   final double width;
   final double height;
   final String shape;
-  final VoidCallback? onTap;
+  final Map<String, dynamic> item;
+  final String? navPath;
 
   const HomeMarqueeImage({
     required this.url,
     required this.width,
+    required this.item,
+    this.navPath,
     this.height = 120,
     this.shape = 'rounded',
-    this.onTap,
   });
+
+  String get linkSignature =>
+      '${navPath ?? ''}_${item['link']}_${item['linkType']}_${item['linkValue']}_${item['targetType']}_${item['targetId']}';
 }
 
-class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerProviderStateMixin {
+class _HomeImageMarqueeState extends State<HomeImageMarquee>
+    with SingleTickerProviderStateMixin {
   final GlobalKey _periodKey = GlobalKey();
-  late AnimationController _ctrl;
+  late final AnimationController _ctrl;
   Timer? _resumeTimer;
 
   double _periodWidth = 0;
+  bool _measurePending = false;
+  bool _userDragging = false;
   int _activePointers = 0;
 
   double get _pxPerSec => 24 + widget.speed.clamp(1, 10) * 10;
@@ -61,10 +70,54 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
     return widget.images.fold<double>(0, (sum, img) => sum + img.width + widget.gap);
   }
 
-  /// عدد التكرارات اللازمة لتغطية الشاشة بالكامل أثناء الحلقة.
+  double get _activePeriod =>
+      _periodWidth > 0 ? _periodWidth : _estimatePeriodWidth();
+
   int _copyCount(double viewportWidth, double period) {
     if (period <= 0) return 4;
     return math.max(3, (viewportWidth / period).ceil() + 2);
+  }
+
+  static bool _imagesChanged(List<HomeMarqueeImage> a, List<HomeMarqueeImage> b) {
+    if (a.length != b.length) return true;
+    for (var i = 0; i < a.length; i++) {
+      final x = a[i];
+      final y = b[i];
+      if (x.url != y.url ||
+          x.width != y.width ||
+          x.height != y.height ||
+          x.shape != y.shape ||
+          x.linkSignature != y.linkSignature) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  double _wrapPixels(double px, double period) {
+    if (period <= 0) return 0;
+    var v = px % period;
+    if (v < 0) v += period;
+    return v;
+  }
+
+  void _scheduleMeasure() {
+    if (_measurePending) return;
+    _measurePending = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _measurePending = false;
+      _measureAndStart();
+    });
+  }
+
+  void _applyLoopDuration({required double period, bool preserveProgress = true}) {
+    final ms = (period / _pxPerSec * 1000).round().clamp(6000, 120000);
+    final progress = preserveProgress ? _ctrl.value : 0.0;
+    _ctrl
+      ..stop()
+      ..duration = Duration(milliseconds: ms)
+      ..value = progress
+      ..repeat();
   }
 
   void _measureAndStart() {
@@ -72,76 +125,106 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
 
     final box = _periodKey.currentContext?.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _measureAndStart());
+      _scheduleMeasure();
       return;
     }
 
     final measured = box.size.width;
     if (measured <= 0) return;
 
-    final changed = (measured - _periodWidth).abs() > 0.5;
-    if (changed) {
+    final periodChanged =
+        _periodWidth <= 0 || (measured - _periodWidth).abs() > 0.5;
+    if (periodChanged) {
       setState(() => _periodWidth = measured);
     }
 
-    final ms = ((_periodWidth > 0 ? _periodWidth : measured) / _pxPerSec * 1000)
-        .round()
-        .clamp(6000, 120000);
+    if (!_ctrl.isAnimating && !_userDragging) {
+      _applyLoopDuration(period: measured, preserveProgress: false);
+    } else if (periodChanged && !_userDragging) {
+      _applyLoopDuration(period: measured);
+    }
+  }
 
-    _ctrl
-      ..stop()
-      ..duration = Duration(milliseconds: ms)
-      ..repeat();
+  void _pauseMotion() {
+    _resumeTimer?.cancel();
+    if (_ctrl.isAnimating) _ctrl.stop();
+  }
+
+  void _resumeMotion({Duration delay = Duration.zero}) {
+    _resumeTimer?.cancel();
+    if (delay == Duration.zero) {
+      if (!mounted || _periodWidth <= 0 || _userDragging) return;
+      if (!_ctrl.isAnimating) _ctrl.repeat();
+      return;
+    }
+    _resumeTimer = Timer(delay, () {
+      if (!mounted || _periodWidth <= 0 || _userDragging) return;
+      if (!_ctrl.isAnimating) _ctrl.repeat();
+    });
+  }
+
+  void _onPointerDown(PointerDownEvent _) {
+    _activePointers++;
+    _pauseMotion();
+  }
+
+  void _onPointerUp(PointerUpEvent _) {
+    _activePointers = math.max(0, _activePointers - 1);
+    if (_activePointers == 0 && !_userDragging) {
+      _resumeMotion();
+    }
+  }
+
+  void _onPointerCancel(PointerCancelEvent _) {
+    _activePointers = math.max(0, _activePointers - 1);
+    if (_activePointers == 0 && !_userDragging) {
+      _resumeMotion();
+    }
+  }
+
+  void _onHorizontalDragStart(DragStartDetails _) {
+    _userDragging = true;
+    _pauseMotion();
+  }
+
+  void _onHorizontalDragUpdate(DragUpdateDetails details) {
+    final period = _activePeriod;
+    if (period <= 0) return;
+    final px = _wrapPixels(_ctrl.value * period - details.delta.dx, period);
+    _ctrl.value = px / period;
+  }
+
+  void _onHorizontalDragEnd(DragEndDetails _) {
+    _userDragging = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _resumeMotion();
+    });
+  }
+
+  void _onHorizontalDragCancel() {
+    _userDragging = false;
+    _resumeMotion();
   }
 
   @override
   void initState() {
     super.initState();
     _ctrl = AnimationController(vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measureAndStart());
+    _scheduleMeasure();
   }
 
   @override
   void didUpdateWidget(HomeImageMarquee old) {
     super.didUpdateWidget(old);
-    if (old.images != widget.images ||
+    if (_imagesChanged(old.images, widget.images) ||
         old.gap != widget.gap ||
         old.height != widget.height ||
         old.speed != widget.speed) {
       _periodWidth = 0;
+      _userDragging = false;
       _ctrl.stop();
-      WidgetsBinding.instance.addPostFrameCallback((_) => _measureAndStart());
+      _scheduleMeasure();
     }
-  }
-
-  void _pauseForInteraction() {
-    _resumeTimer?.cancel();
-    if (_ctrl.isAnimating) {
-      _ctrl.stop();
-    }
-  }
-
-  void _scheduleResume() {
-    _resumeTimer?.cancel();
-    _resumeTimer = Timer(const Duration(milliseconds: 900), () {
-      if (!mounted || _activePointers > 0 || _periodWidth <= 0) return;
-      _ctrl.repeat();
-    });
-  }
-
-  void _onPointerDown(PointerDownEvent _) {
-    _activePointers++;
-    _pauseForInteraction();
-  }
-
-  void _onPointerUp(PointerUpEvent _) {
-    _activePointers = math.max(0, _activePointers - 1);
-    if (_activePointers == 0) _scheduleResume();
-  }
-
-  void _onPointerCancel(PointerCancelEvent _) {
-    _activePointers = math.max(0, _activePointers - 1);
-    if (_activePointers == 0) _scheduleResume();
   }
 
   @override
@@ -154,7 +237,10 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
   List<Widget> _tileWidgets() {
     return [
       for (final img in widget.images) ...[
-        _MarqueeTile(image: img, defaultHeight: widget.height),
+        _MarqueeTile(
+          image: img,
+          defaultHeight: widget.height,
+        ),
         SizedBox(width: widget.gap),
       ],
     ];
@@ -173,43 +259,50 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
   Widget build(BuildContext context) {
     if (widget.images.isEmpty) return const SizedBox.shrink();
 
+    if (_periodWidth <= 0) _scheduleMeasure();
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final viewportW = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
-        final period = _periodWidth > 0 ? _periodWidth : _estimatePeriodWidth();
+        final period = _activePeriod;
         final copies = _copyCount(viewportW, period);
 
-        WidgetsBinding.instance.addPostFrameCallback((_) => _measureAndStart());
-
-        return Listener(
-          behavior: HitTestBehavior.translucent,
-          onPointerDown: _onPointerDown,
-          onPointerUp: _onPointerUp,
-          onPointerCancel: _onPointerCancel,
+        return RepaintBoundary(
           child: ClipRect(
-            child: SizedBox(
-              height: widget.height,
-              width: viewportW,
-              child: AnimatedBuilder(
-                animation: _ctrl,
-                builder: (_, __) {
-                  final loop = _periodWidth > 0 ? _periodWidth : period;
-                  // نفس منطق شريط النص — تمرير سلس وحلقة دائرية
-                  final dx = -_ctrl.value * loop;
-                  return Transform.translate(
-                    offset: Offset(dx, 0),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      textDirection: TextDirection.ltr,
-                      children: [
-                        for (var i = 0; i < copies; i++)
-                          _period(key: i == 0 ? _periodKey : null),
-                      ],
-                    ),
-                  );
-                },
+            child: Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: _onPointerDown,
+              onPointerUp: _onPointerUp,
+              onPointerCancel: _onPointerCancel,
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onHorizontalDragStart: _onHorizontalDragStart,
+                onHorizontalDragUpdate: _onHorizontalDragUpdate,
+                onHorizontalDragEnd: _onHorizontalDragEnd,
+                onHorizontalDragCancel: _onHorizontalDragCancel,
+                child: SizedBox(
+                  height: widget.height,
+                  width: viewportW,
+                  child: AnimatedBuilder(
+                    animation: _ctrl,
+                    builder: (_, __) {
+                      final loop = _activePeriod;
+                      return Transform.translate(
+                        offset: Offset(-_ctrl.value * loop, 0),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          textDirection: TextDirection.ltr,
+                          children: [
+                            for (var i = 0; i < copies; i++)
+                              _period(key: i == 0 ? _periodKey : null),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
           ),
@@ -223,7 +316,20 @@ class _MarqueeTile extends StatelessWidget {
   final HomeMarqueeImage image;
   final double defaultHeight;
 
-  const _MarqueeTile({required this.image, required this.defaultHeight});
+  const _MarqueeTile({
+    required this.image,
+    required this.defaultHeight,
+  });
+
+  void _handleTap(BuildContext context) {
+    HapticFeedback.selectionClick();
+    final path = image.navPath;
+    if (path != null && path.isNotEmpty) {
+      navigateSectionPath(context, path);
+      return;
+    }
+    openSectionItemLink(context, image.item);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -242,14 +348,9 @@ class _MarqueeTile extends StatelessWidget {
       onTap: null,
     );
 
-    if (image.onTap == null) return card;
-
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () {
-        HapticFeedback.selectionClick();
-        image.onTap!();
-      },
+      onTap: () => _handleTap(context),
       child: card,
     );
   }

@@ -16,6 +16,161 @@ final _uuidRe = RegExp(
 
 bool _isUuid(String value) => _uuidRe.hasMatch(value.trim());
 
+String? _trimField(dynamic value) {
+  if (value == null) return null;
+  final s = value.toString().trim();
+  return s.isEmpty ? null : s;
+}
+
+String? _readLinkType(Map<String, dynamic> raw) =>
+    _trimField(raw['linkType']) ?? _trimField(raw['targetType']);
+
+String? _readLinkValue(Map<String, dynamic> raw) {
+  final direct = _trimField(raw['linkValue']) ??
+      _trimField(raw['targetId']) ??
+      _trimField(raw['productId']) ??
+      _trimField(raw['brandId']) ??
+      _trimField(raw['categoryId']) ??
+      _trimField(raw['subcategoryId']) ??
+      _trimField(raw['tertiaryCategoryId']) ??
+      _trimField(raw['packageId']) ??
+      _trimField(raw['concernSlug']) ??
+      _trimField(raw['slug']) ??
+      _trimField(raw['value']);
+
+  if (direct != null) return direct;
+
+  final target = raw['target'];
+  if (target is Map) {
+    final m = Map<String, dynamic>.from(target);
+    return _trimField(m['id']) ??
+        _trimField(m['slug']) ??
+        _trimField(m['value']);
+  }
+  return null;
+}
+
+String? _normalizeAppPath(String raw) {
+  final p = raw.trim();
+  if (p.isEmpty) return null;
+  if (p.startsWith('http://') || p.startsWith('https://')) return p;
+  if (p.startsWith('/')) return p;
+  if (p.contains('?') || p.startsWith('products')) return '/$p';
+  return null;
+}
+
+void navigateSectionPath(BuildContext context, String path) {
+  final normalized = _normalizeAppPath(path);
+  if (normalized == null) return;
+  if (normalized.startsWith('http://') || normalized.startsWith('https://')) {
+    openExternalUrl(normalized);
+    return;
+  }
+  _pushAppPath(context, normalized);
+}
+
+String? _readLegacyLink(Map<String, dynamic> raw) =>
+    _trimField(raw['link']) ?? _trimField(raw['href']) ?? _trimField(raw['url']);
+
+/// يبني مسار التطبيق — نفس منطق الـ API ولوحة التحكم.
+String? buildSectionItemPath({
+  String? linkType,
+  String? linkValue,
+  String? legacyLink,
+}) {
+  final type = (linkType ?? '').trim();
+  final value = (linkValue ?? '').trim();
+  final legacy = (legacyLink ?? '').trim();
+
+  if (type == 'product' && value.isNotEmpty) {
+    return '/product/${Uri.encodeComponent(value)}';
+  }
+  if (type == 'category' && value.isNotEmpty) {
+    return '/products?categoryId=${Uri.encodeComponent(value)}';
+  }
+  if (type == 'subcategory' && value.isNotEmpty) {
+    return '/products?subcategoryId=${Uri.encodeComponent(value)}';
+  }
+  if (type == 'tertiary' && value.isNotEmpty) {
+    return '/products?tertiaryCategoryId=${Uri.encodeComponent(value)}';
+  }
+  if (type == 'brand' && value.isNotEmpty) {
+    if (_isUuid(value)) {
+      return '/products?brandId=${Uri.encodeComponent(value)}';
+    }
+    return '/brand/${Uri.encodeComponent(value)}';
+  }
+  if (type == 'package' && value.isNotEmpty) {
+    return '/package/${Uri.encodeComponent(value)}';
+  }
+  if (type == 'skinConcern' && value.isNotEmpty) {
+    return '/products?concernSlug=${Uri.encodeComponent(value)}';
+  }
+  if (type == 'search' && value.isNotEmpty) {
+    return '/search?q=${Uri.encodeComponent(value)}';
+  }
+  if (type == 'offers') return '/products?isPromo=1&title=العروض';
+  if (type == 'categoriesTab') return '/categories-tab';
+  if (type == 'products' && value.isNotEmpty) {
+    return value.startsWith('/') ? value : '/products?$value';
+  }
+  if (type == 'url' && value.isNotEmpty) return value;
+  if (legacy.isNotEmpty) return legacy;
+  if (value.startsWith('/')) return value;
+  return null;
+}
+
+/// يستخرج أفضل مسار للتنقّل من عنصر القسم.
+String? resolveSectionItemPath(Map<String, dynamic> raw) {
+  final legacy = _readLegacyLink(raw);
+  if (legacy != null) {
+    final normalized = _normalizeAppPath(legacy);
+    if (normalized != null) return normalized;
+  }
+
+  final type = _readLinkType(raw);
+  final value = _readLinkValue(raw);
+
+  final built = buildSectionItemPath(
+    linkType: type,
+    linkValue: value,
+    legacyLink: legacy,
+  );
+  if (built != null) {
+    return _normalizeAppPath(built) ?? built;
+  }
+
+  if (type == 'offers' || type == 'categoriesTab') {
+    return buildSectionItemPath(linkType: type, linkValue: '');
+  }
+
+  return null;
+}
+
+/// هل عنصر القسم يحتوي رابطاً قابلاً للتنقّل؟
+bool sectionItemHasLink(Map<String, dynamic> raw) =>
+    resolveSectionItemPath(raw) != null;
+
+void openSectionItemLink(BuildContext context, Map<String, dynamic> raw) {
+  final path = resolveSectionItemPath(raw);
+  if (path != null) {
+    navigateSectionPath(context, path);
+    return;
+  }
+
+  final type = _readLinkType(raw);
+  final value = _readLinkValue(raw);
+  if (type == null || type.isEmpty) return;
+
+  openSectionLink(
+    context,
+    linkType: type,
+    linkValue: value,
+    legacyLink: _readLegacyLink(raw),
+    resolvedLink: _readLegacyLink(raw),
+  );
+}
+
 void _pushAppPath(BuildContext context, String rawPath) {
   final path = rawPath.trim();
   if (path.isEmpty) return;
@@ -57,9 +212,31 @@ void openSectionLink(
   String? legacyLink,
   String? resolvedLink,
 }) {
+  final built = buildSectionItemPath(
+    linkType: linkType,
+    linkValue: linkValue,
+    legacyLink: resolvedLink ?? legacyLink,
+  );
+  if (built != null) {
+    if (built.startsWith('http://') || built.startsWith('https://')) {
+      openExternalUrl(built);
+      return;
+    }
+    _pushAppPath(context, built.startsWith('/') ? built : '/$built');
+    return;
+  }
+
   final direct = (resolvedLink ?? legacyLink ?? '').trim();
+  if (direct.startsWith('http://') || direct.startsWith('https://')) {
+    openExternalUrl(direct);
+    return;
+  }
   if (direct.startsWith('/')) {
     _pushAppPath(context, direct);
+    return;
+  }
+  if (direct.contains('?') || direct.startsWith('products')) {
+    _pushAppPath(context, direct.startsWith('/') ? direct : '/$direct');
     return;
   }
 
@@ -120,7 +297,11 @@ void openSectionLink(
     return;
   }
   if (type == 'url' && value.isNotEmpty) {
-    openExternalUrl(value);
+    if (value.startsWith('http://') || value.startsWith('https://')) {
+      openExternalUrl(value);
+    } else {
+      _pushAppPath(context, value.startsWith('/') ? value : '/$value');
+    }
     return;
   }
   if (value.startsWith('/')) {

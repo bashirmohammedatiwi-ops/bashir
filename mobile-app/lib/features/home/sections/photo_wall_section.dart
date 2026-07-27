@@ -26,13 +26,7 @@ class PhotoWallSection extends StatelessWidget {
     final padH = section.fullBleed ? 0.0 : HomeTheme.paddingH;
     final columns = _columns(section);
 
-    void onTap(Map<String, dynamic> raw) => openSectionLink(
-          context,
-          linkType: raw['linkType']?.toString(),
-          linkValue: raw['linkValue']?.toString(),
-          legacyLink: raw['link']?.toString(),
-          resolvedLink: raw['link']?.toString(),
-        );
+    void onTap(Map<String, dynamic> raw) => openSectionItemLink(context, raw);
 
     return HomeSectionShell(
       section: section,
@@ -40,7 +34,7 @@ class PhotoWallSection extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: padH),
         child: switch (display) {
-          'marquee' => _marquee(items, gap, style, onTap),
+          'marquee' => _marquee(items, gap, style),
           'grid' || 'bento' || 'mosaic' || 'stagger' => GalleryGridLayout(
               section: section,
               items: items,
@@ -104,7 +98,6 @@ class PhotoWallSection extends StatelessWidget {
     List<Map<String, dynamic>> items,
     double gap,
     GalleryRenderStyle style,
-    void Function(Map<String, dynamic>) onTap,
   ) {
     final shape = style.defaultShape;
     final radius = style.tileCornerRadius ?? HomeTheme.galleryRadius;
@@ -130,13 +123,15 @@ class PhotoWallSection extends StatelessWidget {
               width: tileW,
               height: tileH,
               shape: shape,
-              onTap: () => onTap(raw),
+              item: raw,
+              navPath: resolveSectionItemPath(raw),
             ),
           );
         }
         if (images.isEmpty) return const SizedBox.shrink();
 
         return HomeImageMarquee(
+          key: ValueKey('marquee-${section.id}-${images.length}-${images.first.url}'),
           images: images,
           height: tileH,
           speed: section.marqueeSpeed ?? 5,

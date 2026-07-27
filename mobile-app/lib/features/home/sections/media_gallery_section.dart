@@ -73,7 +73,9 @@ class MediaGallerySection extends StatelessWidget {
         HomeMarqueeImage(
           url: url,
           width: w,
-          onTap: () => _openLink(context, m),
+          height: height,
+          item: m,
+          navPath: resolveSectionItemPath(m),
         ),
       );
     }
@@ -186,12 +188,7 @@ class MediaGallerySection extends StatelessWidget {
   }
 
   void _openLink(BuildContext context, Map<String, dynamic> m) {
-    openSectionLink(
-      context,
-      linkType: m['linkType']?.toString(),
-      linkValue: m['linkValue']?.toString(),
-      legacyLink: m['link']?.toString(),
-    );
+    openSectionItemLink(context, m);
   }
 
   String _imageUrl(Map<String, dynamic> m) {

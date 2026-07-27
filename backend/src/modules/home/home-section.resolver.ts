@@ -962,7 +962,7 @@ export class HomeSectionResolver {
       const imageUrl = media ? this.mediaPublicUrl(media) : null;
       const size = resolveCardSize(payload, `tile-${idx}`, idx, item.cardSize);
       return withCardSize(
-        {
+        withResolvedLink({
           id: `tile-${idx}`,
           title: item.title ?? "",
           subtitle: item.subtitle ?? "",
@@ -971,7 +971,7 @@ export class HomeSectionResolver {
           linkType: item.linkType,
           linkValue: item.linkValue,
           link: buildAppLink(item.linkType, item.linkValue, item.link),
-        },
+        }),
         size,
       );
     });
