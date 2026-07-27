@@ -118,20 +118,21 @@ class PhotoWallSection extends StatelessWidget {
           final data = style.tileData(raw);
           if (data.imageUrl.isEmpty) continue;
           images.add(
-            HomeMarqueeImage(
+            HomeMarqueeImage.fromItem(
               url: data.imageUrl,
               width: tileW,
               height: tileH,
               shape: shape,
-              item: raw,
-              navPath: resolveSectionItemPath(raw),
+              raw: raw,
             ),
           );
         }
         if (images.isEmpty) return const SizedBox.shrink();
 
         return HomeImageMarquee(
-          key: ValueKey('marquee-${section.id}-${images.length}-${images.first.url}'),
+          key: ValueKey(
+            'marquee-${section.id}-${images.map((e) => '${e.url}:${e.linkSignature}').join('|')}',
+          ),
           images: images,
           height: tileH,
           speed: section.marqueeSpeed ?? 5,

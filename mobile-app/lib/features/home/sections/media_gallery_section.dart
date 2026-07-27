@@ -70,12 +70,12 @@ class MediaGallerySection extends StatelessWidget {
       if (url.isEmpty) continue;
       final w = _tileWidth(height, m['shape']?.toString() ?? defaultShape, m['size']?.toString() ?? defaultSize);
       images.add(
-        HomeMarqueeImage(
+        HomeMarqueeImage.fromItem(
           url: url,
           width: w,
           height: height,
-          item: m,
-          navPath: resolveSectionItemPath(m),
+          shape: defaultShape,
+          raw: m,
         ),
       );
     }

@@ -902,8 +902,15 @@ export class HomeSectionResolver {
     const tiles = await this.resolveImageTiles(payload);
     return tiles.map((tile, idx) => {
       const raw = ((payload.items as Record<string, unknown>[]) ?? [])[idx] ?? {};
-      return {
-        ...(tile as Record<string, unknown>),
+      const tileRec = tile as Record<string, unknown>;
+      const linkType = (tileRec.linkType ?? raw.linkType) as string | undefined;
+      const linkValue = (tileRec.linkValue ?? raw.linkValue) as string | undefined;
+      const legacyLink = (tileRec.link ?? raw.link) as string | undefined;
+      return withResolvedLink({
+        ...tileRec,
+        linkType,
+        linkValue,
+        link: buildAppLink(linkType, linkValue, legacyLink),
         shape: defaultShape,
         size: defaultSize,
         aspectRatio: defaultAspect,
@@ -913,7 +920,7 @@ export class HomeSectionResolver {
         showShadow: payload.showShadow !== false,
         spanCols: 1,
         spanRows: 1,
-      };
+      });
     });
   }
 

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,7 +7,7 @@ import 'gallery_photo_card.dart';
 import '../home_link.dart';
 import 'photo_shape_kit.dart';
 
-/// صور متحركة أفقياً — حلقة سينمائية مع سحب يدوي واستئناف فوري.
+/// صور متحركة أفقياً — حلقة سينمائية مع سحب يدوي ونقر موثوق لكل الصور.
 class HomeImageMarquee extends StatefulWidget {
   final List<HomeMarqueeImage> images;
   final double height;
@@ -38,18 +37,54 @@ class HomeMarqueeImage {
   final String shape;
   final Map<String, dynamic> item;
   final String? navPath;
+  final String? linkType;
+  final String? linkValue;
+  final String? link;
 
   const HomeMarqueeImage({
     required this.url,
     required this.width,
     required this.item,
     this.navPath,
+    this.linkType,
+    this.linkValue,
+    this.link,
     this.height = 120,
     this.shape = 'rounded',
   });
 
+  factory HomeMarqueeImage.fromItem({
+    required String url,
+    required double width,
+    required double height,
+    required String shape,
+    required Map<String, dynamic> raw,
+  }) {
+    final item = Map<String, dynamic>.from(raw);
+    return HomeMarqueeImage(
+      url: url,
+      width: width,
+      height: height,
+      shape: shape,
+      item: item,
+      navPath: resolveSectionItemPath(item),
+      linkType: item['linkType']?.toString(),
+      linkValue: item['linkValue']?.toString(),
+      link: item['link']?.toString(),
+    );
+  }
+
   String get linkSignature =>
-      '${navPath ?? ''}_${item['link']}_${item['linkType']}_${item['linkValue']}_${item['targetType']}_${item['targetId']}';
+      '${navPath ?? ''}_${link ?? ''}_${linkType ?? ''}_${linkValue ?? ''}';
+
+  void openLink(BuildContext context) {
+    HapticFeedback.selectionClick();
+    if (navPath != null && navPath!.isNotEmpty) {
+      navigateSectionPath(context, navPath!);
+      return;
+    }
+    openSectionItemLink(context, item);
+  }
 }
 
 class _HomeImageMarqueeState extends State<HomeImageMarquee>
@@ -61,7 +96,8 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
   double _periodWidth = 0;
   bool _measurePending = false;
   bool _userDragging = false;
-  int _activePointers = 0;
+  Offset? _pointerDown;
+  static const _dragSlop = 12.0;
 
   double get _pxPerSec => 24 + widget.speed.clamp(1, 10) * 10;
 
@@ -72,11 +108,6 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
 
   double get _activePeriod =>
       _periodWidth > 0 ? _periodWidth : _estimatePeriodWidth();
-
-  int _copyCount(double viewportWidth, double period) {
-    if (period <= 0) return 4;
-    return math.max(3, (viewportWidth / period).ceil() + 2);
-  }
 
   static bool _imagesChanged(List<HomeMarqueeImage> a, List<HomeMarqueeImage> b) {
     if (a.length != b.length) return true;
@@ -150,59 +181,50 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
     if (_ctrl.isAnimating) _ctrl.stop();
   }
 
-  void _resumeMotion({Duration delay = Duration.zero}) {
+  void _resumeMotion() {
     _resumeTimer?.cancel();
-    if (delay == Duration.zero) {
-      if (!mounted || _periodWidth <= 0 || _userDragging) return;
-      if (!_ctrl.isAnimating) _ctrl.repeat();
-      return;
-    }
-    _resumeTimer = Timer(delay, () {
-      if (!mounted || _periodWidth <= 0 || _userDragging) return;
-      if (!_ctrl.isAnimating) _ctrl.repeat();
-    });
+    if (!mounted || _periodWidth <= 0 || _userDragging) return;
+    if (!_ctrl.isAnimating) _ctrl.repeat();
   }
 
-  void _onPointerDown(PointerDownEvent _) {
-    _activePointers++;
+  void _onPointerDown(PointerDownEvent event) {
+    _pointerDown = event.position;
+    _userDragging = false;
     _pauseMotion();
   }
 
-  void _onPointerUp(PointerUpEvent _) {
-    _activePointers = math.max(0, _activePointers - 1);
-    if (_activePointers == 0 && !_userDragging) {
-      _resumeMotion();
+  void _onPointerMove(PointerMoveEvent event) {
+    if (_pointerDown == null) return;
+
+    final deltaFromDown = event.position - _pointerDown!;
+    if (!_userDragging) {
+      if (deltaFromDown.dx.abs() < _dragSlop) return;
+      if (deltaFromDown.dx.abs() <= deltaFromDown.dy.abs()) return;
+      _userDragging = true;
     }
-  }
 
-  void _onPointerCancel(PointerCancelEvent _) {
-    _activePointers = math.max(0, _activePointers - 1);
-    if (_activePointers == 0 && !_userDragging) {
-      _resumeMotion();
-    }
-  }
-
-  void _onHorizontalDragStart(DragStartDetails _) {
-    _userDragging = true;
-    _pauseMotion();
-  }
-
-  void _onHorizontalDragUpdate(DragUpdateDetails details) {
     final period = _activePeriod;
     if (period <= 0) return;
-    final px = _wrapPixels(_ctrl.value * period - details.delta.dx, period);
+    final px = _wrapPixels(_ctrl.value * period + event.delta.dx, period);
     _ctrl.value = px / period;
   }
 
-  void _onHorizontalDragEnd(DragEndDetails _) {
+  void _onPointerUp(PointerUpEvent event) {
+    final wasDragging = _userDragging;
     _userDragging = false;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _resumeMotion();
-    });
+    _pointerDown = null;
+
+    if (wasDragging) {
+      _resumeMotion();
+      return;
+    }
+
+    _resumeMotion();
   }
 
-  void _onHorizontalDragCancel() {
+  void _onPointerCancel(PointerCancelEvent event) {
     _userDragging = false;
+    _pointerDown = null;
     _resumeMotion();
   }
 
@@ -222,6 +244,7 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
         old.speed != widget.speed) {
       _periodWidth = 0;
       _userDragging = false;
+      _pointerDown = null;
       _ctrl.stop();
       _scheduleMeasure();
     }
@@ -266,42 +289,35 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
         final viewportW = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
-        final period = _activePeriod;
-        final copies = _copyCount(viewportW, period);
 
         return RepaintBoundary(
           child: ClipRect(
+            clipBehavior: Clip.hardEdge,
             child: Listener(
               behavior: HitTestBehavior.translucent,
               onPointerDown: _onPointerDown,
+              onPointerMove: _onPointerMove,
               onPointerUp: _onPointerUp,
               onPointerCancel: _onPointerCancel,
-              child: GestureDetector(
-                behavior: HitTestBehavior.translucent,
-                onHorizontalDragStart: _onHorizontalDragStart,
-                onHorizontalDragUpdate: _onHorizontalDragUpdate,
-                onHorizontalDragEnd: _onHorizontalDragEnd,
-                onHorizontalDragCancel: _onHorizontalDragCancel,
-                child: SizedBox(
-                  height: widget.height,
-                  width: viewportW,
-                  child: AnimatedBuilder(
-                    animation: _ctrl,
-                    builder: (_, __) {
-                      final loop = _activePeriod;
-                      return Transform.translate(
-                        offset: Offset(-_ctrl.value * loop, 0),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          textDirection: TextDirection.ltr,
-                          children: [
-                            for (var i = 0; i < copies; i++)
-                              _period(key: i == 0 ? _periodKey : null),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+              child: SizedBox(
+                height: widget.height,
+                width: viewportW,
+                child: AnimatedBuilder(
+                  animation: _ctrl,
+                  builder: (_, __) {
+                    final loop = _activePeriod;
+                    return Transform.translate(
+                      offset: Offset(-_ctrl.value * loop, 0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        textDirection: TextDirection.ltr,
+                        children: [
+                          _period(key: _periodKey),
+                          _period(),
+                        ],
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -321,37 +337,25 @@ class _MarqueeTile extends StatelessWidget {
     required this.defaultHeight,
   });
 
-  void _handleTap(BuildContext context) {
-    HapticFeedback.selectionClick();
-    final path = image.navPath;
-    if (path != null && path.isNotEmpty) {
-      navigateSectionPath(context, path);
-      return;
-    }
-    openSectionItemLink(context, image.item);
-  }
-
   @override
   Widget build(BuildContext context) {
     final h = image.height > 0 ? image.height : defaultHeight;
-    final card = GalleryPhotoCard(
-      data: PhotoTileData(
-        imageUrl: image.url,
-        shape: image.shape,
-        showShadow: false,
-        overlayStyle: 'none',
-        borderStyle: 'none',
-      ),
-      width: image.width,
-      height: h,
-      showCaption: false,
-      onTap: null,
-    );
-
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: () => _handleTap(context),
-      child: card,
+      onTap: () => image.openLink(context),
+      child: GalleryPhotoCard(
+        data: PhotoTileData(
+          imageUrl: image.url,
+          shape: image.shape,
+          showShadow: false,
+          overlayStyle: 'none',
+          borderStyle: 'none',
+        ),
+        width: image.width,
+        height: h,
+        showCaption: false,
+        onTap: null,
+      ),
     );
   }
 }
