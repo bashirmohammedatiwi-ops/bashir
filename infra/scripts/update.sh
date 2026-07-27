@@ -150,6 +150,9 @@ if ! ensure_api_ready; then
   }
 fi
 
+echo "==> Link skin guide products (8 per concern)..."
+$COMPOSE exec -T api npm run link:skin-concerns || true
+
 echo "==> Build customer web store (atomic)..."
 build_store_web_panel
 

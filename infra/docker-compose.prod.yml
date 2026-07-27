@@ -79,6 +79,8 @@ services:
       RUN_SEED: ${RUN_SEED:-0}
       SEED_DEMO: ${SEED_DEMO:-0}
       ENABLE_HSTS: ${ENABLE_HSTS:-0}
+      DEEPL_API_KEY: ${DEEPL_API_KEY:-}
+      GOOGLE_TRANSLATE_API_KEY: ${GOOGLE_TRANSLATE_API_KEY:-}
     volumes:
       - mediadata:/data/uploads
     expose:

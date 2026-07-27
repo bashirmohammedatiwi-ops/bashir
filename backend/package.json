@@ -17,7 +17,9 @@
     "dedupe:images": "npx tsx prisma/scripts/dedupe-product-images.ts",
     "dedupe:images:scan": "npx tsx prisma/scripts/dedupe-product-images.ts --scan",
     "reprocess:media-bg": "npx tsx scripts/reprocess-media-white-bg.ts",
-    "backfill:cms-translations": "npx tsx scripts/backfill-cms-translations.ts"
+    "backfill:cms-translations": "npx tsx scripts/backfill-cms-translations.ts",
+    "link:skin-concerns": "npx tsx scripts/link-skin-concern-products.ts",
+    "generate:skin-concerns": "npx tsx scripts/generate-skin-concern-assignments.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
