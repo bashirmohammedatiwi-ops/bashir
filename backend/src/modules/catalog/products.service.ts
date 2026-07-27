@@ -70,7 +70,7 @@ export class ProductsService {
 
     const andFilters: Prisma.ProductWhereInput[] = [
       {
-        isActive: q.status === "all" ? undefined : true,
+        isActive: storefront ? true : q.status === "all" ? undefined : true,
         brandId,
         isFeatured: q.isFeatured,
         isNew: q.isNew,

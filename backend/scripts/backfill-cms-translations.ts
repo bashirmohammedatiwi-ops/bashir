@@ -1,12 +1,12 @@
 /**
  * يملأ حقول الإنجليزية تلقائياً للمحتوى العربي الحالي في HomeBlock و Banner.
- * Usage: npx tsx scripts/backfill-cms-translations.ts
- * On server: docker compose exec api npx tsx scripts/backfill-cms-translations.ts
+ * Usage (local): npm run build && npm run backfill:cms-translations
+ * On server: docker compose exec api npm run backfill:cms-translations
  */
 import { PrismaClient } from "@prisma/client";
-import { CmsBilingualService } from "../src/common/cms-bilingual.service";
-import { RedisCacheService } from "../src/common/redis-cache.service";
-import { TranslationService } from "../src/common/translation.service";
+import { CmsBilingualService } from "../dist/common/cms-bilingual.service";
+import { RedisCacheService } from "../dist/common/redis-cache.service";
+import { TranslationService } from "../dist/common/translation.service";
 
 const prisma = new PrismaClient();
 const redis = new RedisCacheService();

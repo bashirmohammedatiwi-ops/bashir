@@ -98,7 +98,8 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
   bool _measurePending = false;
   bool _userDragging = false;
   Offset? _pointerDown;
-  static const _dragSlop = 10.0;
+  ScrollHoldController? _scrollHold;
+  static const _dragSlop = 8.0;
 
   double get _pxPerSec => 24 + widget.speed.clamp(1, 10) * 10;
 
@@ -110,7 +111,7 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
   double get _activePeriod =>
       _periodWidth > 0 ? _periodWidth : _estimatePeriodWidth();
 
-  /// تكرارات كافية لتغطية العرض + ضمان hit-test لكل البلاطات أثناء الحلقة.
+  /// تكرارات كافية لتغطية العرض أثناء الحلقة.
   int _copyCount(double viewportWidth, double period) {
     if (period <= 0) return 4;
     return math.max(3, (viewportWidth / period).ceil() + 2);
@@ -194,7 +195,25 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
     if (!_ctrl.isAnimating) _ctrl.repeat();
   }
 
-  /// Listener فقط — لا يدخل مسابقة الإيماءات فيمنع onTap على البلاطات.
+  void _releaseScrollHold() {
+    _scrollHold?.cancel();
+    _scrollHold = null;
+  }
+
+  /// يحسب أي صورة وُجد النقر عليها حسب موضع الإزاحة الحالي.
+  HomeMarqueeImage? _imageAtLocalX(double localX) {
+    final period = _activePeriod;
+    if (period <= 0 || widget.images.isEmpty) return null;
+
+    final wrapped = _wrapPixels(localX + _ctrl.value * period, period);
+    var x = 0.0;
+    for (final image in widget.images) {
+      if (wrapped >= x && wrapped < x + image.width) return image;
+      x += image.width + widget.gap;
+    }
+    return null;
+  }
+
   void _onPointerDown(PointerDownEvent event) {
     _pointerDown = event.position;
     _userDragging = false;
@@ -206,10 +225,15 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
 
     final deltaFromDown = event.position - _pointerDown!;
     if (!_userDragging) {
-      if (deltaFromDown.dx.abs() < _dragSlop) return;
+      if (deltaFromDown.dx.abs() < _dragSlop && deltaFromDown.dy.abs() < _dragSlop) {
+        return;
+      }
       if (deltaFromDown.dx.abs() <= deltaFromDown.dy.abs()) return;
       _userDragging = true;
+      _scrollHold = Scrollable.maybeOf(context)?.position.hold(() {});
     }
+
+    if (!_userDragging) return;
 
     final period = _activePeriod;
     if (period <= 0) return;
@@ -218,6 +242,14 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
   }
 
   void _onPointerUp(PointerUpEvent event) {
+    if (!_userDragging && _pointerDown != null) {
+      final moved = (event.position - _pointerDown!).distance;
+      if (moved <= _dragSlop) {
+        final image = _imageAtLocalX(event.localPosition.dx);
+        image?.openLink(context);
+      }
+    }
+    _releaseScrollHold();
     _userDragging = false;
     _pointerDown = null;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -226,6 +258,7 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
   }
 
   void _onPointerCancel(PointerCancelEvent event) {
+    _releaseScrollHold();
     _userDragging = false;
     _pointerDown = null;
     _resumeMotion();
@@ -248,6 +281,7 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
       _periodWidth = 0;
       _userDragging = false;
       _pointerDown = null;
+      _releaseScrollHold();
       _ctrl.stop();
       _scheduleMeasure();
     }
@@ -256,6 +290,7 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
   @override
   void dispose() {
     _resumeTimer?.cancel();
+    _releaseScrollHold();
     _ctrl.dispose();
     super.dispose();
   }
@@ -299,35 +334,43 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
         return RepaintBoundary(
           child: ClipRect(
             clipBehavior: Clip.hardEdge,
-            child: Listener(
-              behavior: HitTestBehavior.translucent,
-              onPointerDown: _onPointerDown,
-              onPointerMove: _onPointerMove,
-              onPointerUp: _onPointerUp,
-              onPointerCancel: _onPointerCancel,
-              child: SizedBox(
-                height: widget.height,
-                width: viewportW,
-                child: AnimatedBuilder(
-                  animation: _ctrl,
-                  builder: (_, __) {
-                    final loop = _activePeriod;
-                    return Transform.translate(
-                      offset: Offset(-_ctrl.value * loop, 0),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        textDirection: TextDirection.ltr,
-                        children: [
-                          for (var i = 0; i < copies; i++)
-                            _period(
-                              key: i == 0 ? _periodKey : ValueKey('period-$i'),
-                              periodIndex: i,
-                            ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+            child: SizedBox(
+              height: widget.height,
+              width: viewportW,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  IgnorePointer(
+                    child: AnimatedBuilder(
+                      animation: _ctrl,
+                      builder: (_, __) {
+                        final loop = _activePeriod;
+                        return Transform.translate(
+                          offset: Offset(-_ctrl.value * loop, 0),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            textDirection: TextDirection.ltr,
+                            children: [
+                              for (var i = 0; i < copies; i++)
+                                _period(
+                                  key: i == 0 ? _periodKey : ValueKey('period-$i'),
+                                  periodIndex: i,
+                                ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  Listener(
+                    behavior: HitTestBehavior.translucent,
+                    onPointerDown: _onPointerDown,
+                    onPointerMove: _onPointerMove,
+                    onPointerUp: _onPointerUp,
+                    onPointerCancel: _onPointerCancel,
+                    child: const SizedBox.expand(),
+                  ),
+                ],
               ),
             ),
           ),
@@ -361,7 +404,6 @@ class _MarqueeTile extends StatelessWidget {
       width: image.width,
       height: h,
       showCaption: false,
-      onTap: () => image.openLink(context),
     );
   }
 }

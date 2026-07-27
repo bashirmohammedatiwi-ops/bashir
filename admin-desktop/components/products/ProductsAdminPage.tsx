@@ -153,7 +153,8 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
   const toggleActive = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
       mutations.updateProduct(id, { isActive }),
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
+      message.success(vars.isActive ? "تم تفعيل المنتج" : "تم إيقاف المنتج — لن يظهر في التطبيق");
       qc.invalidateQueries({ queryKey: ["products"] });
     },
     onError: () => message.error("تعذّر تحديث حالة المنتج"),
