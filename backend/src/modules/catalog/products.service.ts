@@ -750,7 +750,11 @@ export class ProductsService {
     return merged.filter(Boolean);
   }
 
-  private buildCategoryFilter(q: QueryProductsDto): Prisma.ProductWhereInput | null {
+  private buildCategoryFilter(q: {
+    categoryId?: string;
+    subcategoryId?: string;
+    tertiaryCategoryId?: string;
+  }): Prisma.ProductWhereInput | null {
     if (q.tertiaryCategoryId) {
       return {
         OR: [
