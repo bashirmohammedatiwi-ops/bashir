@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -6,6 +9,8 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../core/navigation/deep_link_redirect.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/barcode_util.dart';
+import '../../data/services/api_service.dart';
 
 /// تنسيقات الباركود الخطي للمنتجات (بدون QR).
 const _barcodeFormats = <BarcodeFormat>[
@@ -28,22 +33,37 @@ class QrScanScreen extends ConsumerStatefulWidget {
   ConsumerState<QrScanScreen> createState() => _QrScanScreenState();
 }
 
-class _QrScanScreenState extends ConsumerState<QrScanScreen> {
+class _QrScanScreenState extends ConsumerState<QrScanScreen> with WidgetsBindingObserver {
   final _controller = MobileScannerController(
-    detectionSpeed: DetectionSpeed.normal,
+    detectionSpeed: DetectionSpeed.noDuplicates,
     facing: CameraFacing.back,
     formats: _barcodeFormats,
   );
-  bool _handled = false;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _busy = false;
+      unawaited(_controller.start());
+    }
+  }
+
   void _onDetect(BarcodeCapture capture) {
-    if (_handled) return;
+    if (_busy) return;
     if (capture.barcodes.isEmpty) return;
 
     final barcode = capture.barcodes.firstWhere(
@@ -55,20 +75,41 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
 
     final raw = barcode.rawValue?.trim();
     if (raw == null || raw.isEmpty) return;
-    _handled = true;
-    _navigateForCode(context, raw);
+
+    _busy = true;
+    unawaited(_navigateForCode(raw));
   }
 
-  void _navigateForCode(BuildContext context, String raw) {
+  Future<void> _navigateForCode(String raw) async {
     final route = resolveScannedLink(raw);
     if (route != null) {
+      if (!mounted) return;
+      HapticFeedback.mediumImpact();
       context.pop();
       context.push(route);
       return;
     }
+
+    final normalized = normalizeBarcode(raw);
+    final lookupCode = normalized.isNotEmpty ? normalized : raw;
+
+    try {
+      final hit = await ref.read(apiServiceProvider).lookupProductByBarcode(lookupCode);
+      if (!mounted) return;
+      if (hit != null) {
+        HapticFeedback.mediumImpact();
+        context.pop();
+        context.push('/product/${hit.productSlug}');
+        return;
+      }
+    } catch (_) {
+      if (!mounted) return;
+    }
+
+    if (!mounted) return;
     context.pop();
     context.push(
-      '/products?search=${Uri.encodeComponent(raw)}&title=${Uri.encodeComponent(ref.read(stringsProvider).scanResults)}',
+      '/products?search=${Uri.encodeComponent(lookupCode)}&title=${Uri.encodeComponent(ref.read(stringsProvider).scanResults)}',
     );
   }
 
@@ -114,6 +155,11 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> {
               ),
             ),
           ),
+          if (_busy)
+            const ColoredBox(
+              color: Color(0x66000000),
+              child: Center(child: CircularProgressIndicator(color: Colors.white)),
+            ),
           Positioned(
             left: 0,
             right: 0,

@@ -8,6 +8,7 @@ import '../../core/network/api_exception.dart';
 import '../../core/utils/json.dart';
 import '../../core/utils/phone_util.dart';
 import '../models/address.dart';
+import '../models/barcode_lookup.dart';
 import '../models/brand.dart';
 import '../models/category.dart';
 import '../models/coupon.dart';
@@ -332,6 +333,20 @@ class ApiService {
       if (concernSlug != null && concernSlug.isNotEmpty) 'cn$concernSlug',
     ];
     return parts.join('_');
+  }
+
+  Future<BarcodeLookupResult?> lookupProductByBarcode(String raw) async {
+    try {
+      final r = await _dio.get(
+        '/products/lookup/barcode',
+        queryParameters: {'code': raw},
+        options: Options(extra: {'auth': false}),
+      );
+      return BarcodeLookupResult.fromJson(asMap(_data(r)));
+    } on DioException catch (e) {
+      if (e.response?.statusCode == 404) return null;
+      _throw(e);
+    }
   }
 
   Future<Product> getProduct(String idOrSlug, {bool forceRefresh = false}) async {

@@ -25,7 +25,7 @@ class ShellNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottom = MediaQuery.paddingOf(context).bottom;
+    final bottomGap = Responsive.shellNavBottomGap(context);
     final barHeight = Responsive.bottomNavHeight(context);
 
     final items = [
@@ -38,7 +38,7 @@ class ShellNavBar extends StatelessWidget {
 
     return RepaintBoundary(
       child: Padding(
-        padding: EdgeInsets.fromLTRB(12, 0, 12, bottom > 0 ? 6 : 10),
+        padding: EdgeInsets.fromLTRB(12, 0, 12, bottomGap),
         child: DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
@@ -192,6 +192,5 @@ class _Badge extends StatelessWidget {
 
 /// ارتفاع الشريط + الهامش للمحتوى القابل للتمرير.
 double shellNavOuterHeight(BuildContext context) {
-  final bottom = MediaQuery.paddingOf(context).bottom;
-  return Responsive.bottomNavHeight(context) + (bottom > 0 ? 6 : 10) + 4;
+  return Responsive.bottomNavHeight(context) + Responsive.shellNavBottomGap(context);
 }

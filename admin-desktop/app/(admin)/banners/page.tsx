@@ -76,7 +76,7 @@ export default function BannersPage() {
     subcategories: subcategories ?? [],
     tertiary: tertiary ?? [],
     brands: brands ?? [],
-    products: products?.items ?? products ?? [],
+    products: products?.data ?? [],
   };
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);

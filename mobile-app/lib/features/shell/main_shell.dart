@@ -58,11 +58,15 @@ class _MainShellState extends ConsumerState<MainShell> {
           ),
         ],
       ),
-      bottomNavigationBar: ShellNavBar(
-        currentIndex: index,
-        cartCount: cartCount,
-        onSelect: _selectTab,
-        strings: ref.watch(stringsProvider),
+      bottomNavigationBar: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.only(bottom: 4),
+        child: ShellNavBar(
+          currentIndex: index,
+          cartCount: cartCount,
+          onSelect: _selectTab,
+          strings: ref.watch(stringsProvider),
+        ),
       ),
     );
   }

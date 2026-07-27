@@ -291,7 +291,7 @@ class _SearchBar extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.qr_code_scanner_rounded, size: 16, color: Colors.white),
+                    const Icon(Icons.barcode_reader, size: 16, color: Colors.white),
                     const SizedBox(width: 5),
                     Text(
                       s.scan,

@@ -156,7 +156,7 @@ class _SearchPill extends StatelessWidget {
             ),
           ),
           _MiniAction(
-            icon: Icons.qr_code_scanner_rounded,
+            icon: Icons.barcode_reader,
             onTap: onScan,
           ),
           _MiniAction(

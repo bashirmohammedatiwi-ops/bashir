@@ -1,4 +1,5 @@
 import { api } from "./api";
+import { unwrapPaginated } from "./paginated";
 import { uploadMediaFile } from "./uploadMedia";
 
 export const queries = {
@@ -6,7 +7,7 @@ export const queries = {
   products: (params?: any) =>
     api
       .get("/products", { params: { status: "all", lite: 1, ...params } })
-      .then((r) => r.data),
+      .then((r) => unwrapPaginated(r.data?.data ?? r.data)),
   product: (id: string) => api.get(`/products/${id}`).then((r) => r.data?.data ?? r.data),
   productBarcodeCheck: (barcode: string) =>
     api

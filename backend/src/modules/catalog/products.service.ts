@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
+import { barcodeLookupCandidates } from "../../common/barcode.util";
 import { PrismaService } from "../../common/prisma.service";
 import { resolveProductNames } from "../../common/product-names.util";
 import { resolveProductDescriptions } from "../../common/product-descriptions.util";
@@ -96,17 +97,24 @@ export class ProductsService {
     }
 
     if (q.search) {
-      andFilters.push({
-        OR: [
-          { name: { contains: q.search, mode: "insensitive" } },
-          { nameAr: { contains: q.search, mode: "insensitive" } },
-          { nameEn: { contains: q.search, mode: "insensitive" } },
-          { sku: { contains: q.search, mode: "insensitive" } },
-          { barcode: { contains: q.search, mode: "insensitive" } },
-          { tags: { contains: q.search, mode: "insensitive" } },
-          { slug: { contains: q.search, mode: "insensitive" } },
-        ],
-      });
+      const barcodeCandidates = barcodeLookupCandidates(q.search);
+      const orFilters: Prisma.ProductWhereInput[] = [
+        { name: { contains: q.search, mode: "insensitive" } },
+        { nameAr: { contains: q.search, mode: "insensitive" } },
+        { nameEn: { contains: q.search, mode: "insensitive" } },
+        { sku: { contains: q.search, mode: "insensitive" } },
+        { barcode: { contains: q.search, mode: "insensitive" } },
+        { tags: { contains: q.search, mode: "insensitive" } },
+        { slug: { contains: q.search, mode: "insensitive" } },
+      ];
+      if (barcodeCandidates.length) {
+        orFilters.unshift(
+          { barcode: { in: barcodeCandidates } },
+          { sku: { in: barcodeCandidates } },
+          { shades: { some: { barcode: { in: barcodeCandidates } } } },
+        );
+      }
+      andFilters.push({ OR: orFilters });
     }
 
     const where: Prisma.ProductWhereInput = { AND: andFilters };
@@ -419,36 +427,89 @@ export class ProductsService {
     return { hidden: result.count };
   }
 
+  async lookupByBarcode(raw: string, storefront = false) {
+    const hit = await this.resolveBarcodeHit(raw, { storefrontOnly: storefront });
+    if (!hit) throw new NotFoundException("Product not found");
+    return hit;
+  }
+
   async checkBarcode(barcode?: string) {
-    const code = barcode?.trim();
-    if (!code) return { exists: false, product: null, matchedShadeName: null };
+    const hit = await this.resolveBarcodeHit(barcode ?? "");
+    if (!hit) return { exists: false, product: null, matchedShadeName: null };
+    return {
+      exists: true,
+      product: hit.product,
+      matchedShadeName: hit.matchedShade?.name ?? null,
+    };
+  }
+
+  private async resolveBarcodeHit(
+    raw: string,
+    opts: { storefrontOnly?: boolean } = {},
+  ) {
+    const candidates = barcodeLookupCandidates(raw);
+    if (!candidates.length) return null;
+
+    const productWhere: Prisma.ProductWhereInput = opts.storefrontOnly
+      ? { isActive: true }
+      : {};
 
     const productSelect = {
       id: true,
+      slug: true,
       name: true,
       nameAr: true,
+      nameEn: true,
       sku: true,
       barcode: true,
       isActive: true,
     } as const;
 
-    const byProduct = await this.prisma.product.findUnique({
-      where: { barcode: code },
+    const products = await this.prisma.product.findMany({
+      where: { barcode: { in: candidates }, ...productWhere },
       select: productSelect,
     });
-    if (byProduct) {
-      return { exists: true, product: byProduct, matchedShadeName: null };
+    const productByBarcode = new Map(
+      products.flatMap((product) =>
+        product.barcode ? [[product.barcode, product] as const] : [],
+      ),
+    );
+    for (const code of candidates) {
+      const product = productByBarcode.get(code);
+      if (product) {
+        return { barcode: code, product, matchedShade: null };
+      }
     }
 
-    const byShade = await this.prisma.productShade.findFirst({
-      where: { barcode: code },
-      select: { name: true, product: { select: productSelect } },
+    const shades = await this.prisma.productShade.findMany({
+      where: {
+        barcode: { in: candidates },
+        product: productWhere,
+      },
+      select: {
+        id: true,
+        name: true,
+        barcode: true,
+        product: { select: productSelect },
+      },
     });
-    if (byShade?.product) {
-      return { exists: true, product: byShade.product, matchedShadeName: byShade.name };
+    const shadeByBarcode = new Map(
+      shades.flatMap((shade) =>
+        shade.barcode ? [[shade.barcode, shade] as const] : [],
+      ),
+    );
+    for (const code of candidates) {
+      const shade = shadeByBarcode.get(code);
+      if (shade?.product) {
+        return {
+          barcode: code,
+          product: shade.product,
+          matchedShade: { id: shade.id, name: shade.name },
+        };
+      }
     }
 
-    return { exists: false, product: null, matchedShadeName: null };
+    return null;
   }
 
   async remove(id: string) {

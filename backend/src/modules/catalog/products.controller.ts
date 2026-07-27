@@ -31,6 +31,13 @@ export class ProductsController {
     return this.products.list(q, !isAdminViewRequest(req));
   }
 
+  // بحث منتج بالباركود للمتجر — يجب أن يسبق مسار :idOrSlug
+  @Public()
+  @Get("lookup/barcode")
+  lookupByBarcode(@Query("code") code: string) {
+    return this.products.lookupByBarcode(code, true);
+  }
+
   // فحص وجود منتج بنفس الباركود (للوحة التحكم) — يجب أن يسبق مسار :idOrSlug
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)

@@ -2379,6 +2379,45 @@
   margin-bottom: 8px;
 }
 
+.hb-photo-wall-link-block {
+  padding: 10px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.hb-photo-wall-link-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #444;
+}
+
+.hb-photo-wall-link-tag {
+  margin-inline-start: auto;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hb-photo-wall-link-path {
+  display: block;
+  margin-top: 6px;
+  font-size: 11px;
+}
+
+.hb-photo-wall-more {
+  margin-top: 6px;
+}
+
+.hb-smart-link-minimal .hb-smart-link-current {
+  display: none;
+}
+
 .hb-bulk-media-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));

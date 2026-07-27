@@ -107,7 +107,7 @@ export function PageBuilderStudio({
       tertiary: tertiary ?? [],
       brands: brands ?? [],
       packages: packages ?? [],
-      products: products?.items ?? products ?? [],
+      products: products?.data ?? [],
       skinConcerns: skinConcerns ?? [],
     }),
     [banners, categories, subcategories, tertiary, brands, packages, products, skinConcerns],

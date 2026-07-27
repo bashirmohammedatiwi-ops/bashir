@@ -4,6 +4,7 @@ import { Select, Spin, Typography } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { queries } from "@/lib/queries";
+import { paginatedItems } from "@/lib/paginated";
 
 type ProductRow = {
   id: string;
@@ -71,14 +72,14 @@ export function ProductSearchSelect({
     staleTime: 30_000,
   });
 
-  const searchItems: ProductRow[] = searchResult?.items ?? searchResult ?? [];
+  const searchItems: ProductRow[] = paginatedItems(searchResult);
 
   const { data: resolvedProduct } = useQuery({
     queryKey: ["product-resolve", value],
     queryFn: async () => {
       if (!value) return null;
       const list = await queries.products({ search: value, limit: 5, lite: 1, status: "all" });
-      const items: ProductRow[] = list?.items ?? list ?? [];
+      const items: ProductRow[] = paginatedItems(list);
       return items.find((p) => productKey(p) === value || p.id === value || p.slug === value) ?? null;
     },
     enabled: Boolean(value) && debounced.length < 2,

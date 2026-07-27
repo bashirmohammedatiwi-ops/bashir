@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 /// أحجام الشاشة الشائعة في الهواتف والأجهزة اللوحية الصغيرة.
@@ -98,16 +100,25 @@ abstract final class Responsive {
     return isCompact(context) ? 60 : 64;
   }
 
+  /// هامش أسفل شريط التنقل — يتكيّف مع أزرار/إيماءات النظام.
+  static double shellNavBottomGap(BuildContext context) {
+    final viewPadding = MediaQuery.viewPaddingOf(context).bottom;
+    final padding = MediaQuery.paddingOf(context).bottom;
+    // إذا SafeArea طبّق الهامش بالفعل نكتفي بهامش جمالي صغير.
+    if (padding > 0) return math.max(padding, 8);
+    if (viewPadding > 0) return viewPadding + 8;
+    // بعض أجهزة Android بأزرار ثلاثية لا تُبلّغ inset — احتياط آمن.
+    return 16;
+  }
+
   static double navLabelSize(BuildContext context, {required bool active}) {
     if (isCompact(context)) return active ? 9 : 8;
     return active ? 10 : 9;
   }
 
   static double shellBottomReserve(BuildContext context, {double base = 68}) {
-    final safe = MediaQuery.paddingOf(context).bottom;
     final navH = bottomNavHeight(context);
-    final outerPad = safe > 0 ? 6.0 : 10.0;
-    return navH + outerPad + 12;
+    return navH + shellNavBottomGap(context) + 12;
   }
 }
 

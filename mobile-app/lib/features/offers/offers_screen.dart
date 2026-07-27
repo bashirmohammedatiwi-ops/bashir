@@ -7,6 +7,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/cache/image_cache.dart';
 import '../../core/config/app_config.dart';
 import '../../core/utils/friendly_error.dart';
+import '../../core/utils/responsive.dart';
 import '../../core/widgets/product_card.dart';
 import '../../core/widgets/scroll_perf.dart';
 import '../../core/widgets/shimmer_box.dart';
@@ -158,7 +159,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
     final feed = ref.watch(offersFeedProvider);
     final feedData = feed.valueOrNull;
     final top = MediaQuery.paddingOf(context).top;
-    final bottomPad = MediaQuery.paddingOf(context).bottom + 108;
+    final bottomPad = Responsive.shellBottomReserve(context);
 
     final slots = feedData != null ? resolveOffersSectionSlots(feedData) : const <HomeSectionSlot>[];
     final promoCount = feedData != null

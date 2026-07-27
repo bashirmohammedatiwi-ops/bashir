@@ -4,6 +4,7 @@ import { AutoComplete, Form, Input, Space, Tag, Typography } from "antd";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { queries } from "@/lib/queries";
+import { paginatedItems } from "@/lib/paginated";
 import {
   LINK_TARGET_TYPES,
   LinkTargetType,
@@ -42,6 +43,7 @@ type Props = {
   showQuickBar?: boolean;
   showPreview?: boolean;
   showAdvanced?: boolean;
+  minimal?: boolean;
 };
 
 function namePath(prefix: (string | number)[], field: string) {
@@ -205,6 +207,7 @@ export function SmartLinkPicker({
   showQuickBar = !compact,
   showPreview = !compact,
   showAdvanced = !compact,
+  minimal = false,
 }: Props) {
   const form = Form.useFormInstance();
   const linkType = Form.useWatch(namePath(prefix, "linkType"), form) as string | undefined;
@@ -235,7 +238,7 @@ export function SmartLinkPicker({
     staleTime: 30_000,
   });
 
-  const remoteProducts: any[] = searchResult?.items ?? searchResult ?? [];
+  const remoteProducts: any[] = paginatedItems(searchResult);
 
   const options = useMemo(() => {
     const q = norm(debounced);
@@ -301,10 +304,10 @@ export function SmartLinkPicker({
   };
 
   return (
-    <div className={`hb-smart-link${compact ? " hb-smart-link-compact" : ""}`}>
+    <div className={`hb-smart-link${compact ? " hb-smart-link-compact" : ""}${minimal ? " hb-smart-link-minimal" : ""}`}>
       {showQuickBar && <QuickLinkBar prefix={prefix} />}
 
-      {(linkType || legacyLink) && (
+      {!minimal && (linkType || legacyLink) && (
         <div className="hb-smart-link-current">
           <Space wrap size={[6, 6]}>
             <Tag color={currentPath ? "blue" : "default"} className="hb-smart-link-current-tag">
@@ -332,7 +335,7 @@ export function SmartLinkPicker({
           const hit = (option as { hit?: SearchHit }).hit;
           if (hit) applyHit(hit);
         }}
-        placeholder="ابحث: منتج، باركود، قسم، براند، باقة..."
+        placeholder={minimal ? "ابحث: منتج، قسم، براند..." : "ابحث: منتج، باركود، قسم، براند، باقة..."}
         notFoundContent={
           isFetching
             ? "جاري البحث..."
@@ -346,9 +349,11 @@ export function SmartLinkPicker({
         popupMatchSelectWidth={compact ? 420 : 560}
       />
 
-      <Typography.Text type="secondary" style={{ fontSize: 11, display: "block", marginTop: 4 }}>
-        بحث موحّد في المنتجات (اسم / SKU / باركود) + الأقسام والبراندات — يعمل في كل أقسام الصفحة
-      </Typography.Text>
+      {!minimal && (
+        <Typography.Text type="secondary" style={{ fontSize: 11, display: "block", marginTop: 4 }}>
+          بحث موحّد في المنتجات (اسم / SKU / باركود) + الأقسام والبراندات — يعمل في كل أقسام الصفحة
+        </Typography.Text>
+      )}
 
       {showPreview && <LinkPreviewChip prefix={prefix} entities={entities} />}
 
