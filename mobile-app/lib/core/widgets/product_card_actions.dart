@@ -75,6 +75,12 @@ class ProductCardCartControl extends ConsumerWidget {
   });
 
   int _qty(CartState cart) {
+    final sole = product.soleDisplayableShade;
+    if (sole != null) {
+      return cart.items
+          .where((e) => e.productId == product.id && e.shadeId == sole.id)
+          .fold(0, (sum, e) => sum + e.quantity);
+    }
     return cart.items
         .where((e) => e.productId == product.id && e.shadeId == null)
         .fold(0, (sum, e) => sum + e.quantity);
@@ -87,7 +93,10 @@ class ProductCardCartControl extends ConsumerWidget {
   void _addFirst(BuildContext context, WidgetRef ref) {
     final lang = ref.read(languageCodeProvider);
     HapticFeedback.lightImpact();
-    ref.read(cartProvider.notifier).add(product);
+    ref.read(cartProvider.notifier).add(
+          product,
+          shade: product.soleDisplayableShade,
+        );
     AppSnackbar.cartAdded(
       context,
       productName: product.localizedName(lang),

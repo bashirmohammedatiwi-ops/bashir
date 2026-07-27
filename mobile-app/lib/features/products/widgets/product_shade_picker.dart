@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/product.dart';
 import 'product_detail_theme.dart';
 
@@ -111,9 +110,11 @@ class _ShadeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final thumb = shade.image?.thumb ?? shade.image?.full ?? '';
     final start = hex(shade.colorHex);
     final end = hex(shade.colorHexEnd ?? shade.colorHex);
+    final hasGradient = shade.colorHexEnd != null &&
+        shade.colorHexEnd!.trim().isNotEmpty &&
+        shade.colorHexEnd!.toLowerCase() != shade.colorHex.toLowerCase();
 
     return GestureDetector(
       onTap: onTap,
@@ -148,11 +149,14 @@ class _ShadeTile extends StatelessWidget {
                 height: 46,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [start, end],
-                  ),
+                  color: hasGradient ? null : start,
+                  gradient: hasGradient
+                      ? LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [start, end],
+                        )
+                      : null,
                   border: Border.all(color: Colors.white, width: 2),
                   boxShadow: [
                     BoxShadow(
@@ -162,13 +166,9 @@ class _ShadeTile extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: thumb.isNotEmpty
-                    ? ClipOval(
-                        child: ProductCoverImage(url: thumb, fit: BoxFit.cover),
-                      )
-                    : active
-                        ? const Icon(Icons.check_rounded, color: Colors.white, size: 20)
-                        : null,
+                child: active
+                    ? const Icon(Icons.check_rounded, color: Colors.white, size: 20)
+                    : null,
               ),
               const SizedBox(height: 6),
               Text(

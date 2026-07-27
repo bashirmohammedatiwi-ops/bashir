@@ -234,5 +234,18 @@ class Product {
   List<ProductShade> get displayableShades =>
       shades.where((s) => s.hasBarcode).toList(growable: false);
 
-  bool get hasDisplayableShades => displayableShades.isNotEmpty;
+  /// منتج بدرجة لون واحدة فقط (يُعامل كمنتج عادي في القوائم).
+  ProductShade? get soleDisplayableShade =>
+      displayableShades.length == 1 ? displayableShades.first : null;
+
+  /// أكثر من درجة — يُعرض اختيار التدرج للمستخدم.
+  bool get hasMultipleDisplayableShades => displayableShades.length > 1;
+
+  bool get hasDisplayableShades => hasMultipleDisplayableShades;
+
+  /// الدرجة المستخدمة في السلة: المختارة أو الوحيدة إن وُجدت.
+  ProductShade? shadeForCart({ProductShade? selected}) {
+    if (hasMultipleDisplayableShades) return selected;
+    return soleDisplayableShade ?? selected;
+  }
 }

@@ -99,14 +99,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
   void _addToCart(Product product) {
     final s = ref.s;
-    if (product.displayableShades.isNotEmpty && _shade == null) {
+    final shade = product.shadeForCart(selected: _shade);
+    if (product.hasMultipleDisplayableShades && shade == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(s.selectShadeFirst)),
       );
       return;
     }
     HapticFeedback.mediumImpact();
-    ref.read(cartProvider.notifier).add(product, quantity: _quantity, shade: _shade);
+    ref.read(cartProvider.notifier).add(product, quantity: _quantity, shade: shade);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
@@ -133,7 +134,17 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     return urls;
   }
 
-  void _syncShadeSelection(List<ProductShade> shades) {
+  void _syncShadeSelection(Product product) {
+    final shades = product.displayableShades;
+    if (!product.hasMultipleDisplayableShades) {
+      final sole = product.soleDisplayableShade;
+      if (_shade?.id != sole?.id) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) setState(() => _shade = sole);
+        });
+      }
+      return;
+    }
     if (shades.isEmpty) {
       if (_shade != null) setState(() => _shade = null);
       return;
@@ -147,7 +158,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
   Widget _buildContent(Product product) {
     final shades = product.displayableShades;
-    _syncShadeSelection(shades);
+    _syncShadeSelection(product);
     _precacheGallery(context, product);
     final gallery = _galleryUrls(product, _shade);
     final zoomableUrls = gallery.where((u) => u.trim().isNotEmpty).toList();
@@ -191,7 +202,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       setState(() => _quantity = v);
                     },
                   ),
-                  if (shades.isNotEmpty)
+                  if (product.hasMultipleDisplayableShades)
                     Container(
                       margin: EdgeInsets.fromLTRB(
                         ProductDetailTheme.padH,

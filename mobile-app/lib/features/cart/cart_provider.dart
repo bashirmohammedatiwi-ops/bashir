@@ -96,7 +96,16 @@ class CartNotifier extends StateNotifier<CartState> {
   }
 
   bool incrementProduct(Product product) {
-    if (product.shades.isNotEmpty) return false;
+    if (product.hasMultipleDisplayableShades) return false;
+    final sole = product.soleDisplayableShade;
+    if (sole != null) {
+      for (final item in state.items) {
+        if (item.productId == product.id && item.shadeId == sole.id) {
+          return increment(item.key);
+        }
+      }
+      return add(product, shade: sole);
+    }
     final existing = firstItemForProduct(product.id);
     if (existing != null && existing.shadeId == null) {
       return increment(existing.key);

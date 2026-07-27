@@ -150,7 +150,7 @@ class _ListingImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final visibleShades = product.displayableShades;
-    final hasShades = visibleShades.isNotEmpty;
+    final hasShades = product.hasMultipleDisplayableShades;
     final badge = product.hasDiscount
         ? '-${product.discountPercent}%'
         : product.isNew
@@ -418,7 +418,7 @@ class _ImageSection extends StatelessWidget {
     this.lite = false,
   });
 
-  bool get _hasShades => product.displayableShades.isNotEmpty;
+  bool get _hasShades => product.hasMultipleDisplayableShades;
 
   @override
   Widget build(BuildContext context) {
@@ -581,12 +581,19 @@ class _ShadeDot extends StatelessWidget {
   Widget build(BuildContext context) {
     final start = _hex(shade.colorHex);
     final end = _hex(shade.colorHexEnd ?? shade.colorHex);
+    final hasGradient = shade.colorHexEnd != null &&
+        shade.colorHexEnd!.trim().isNotEmpty &&
+        shade.colorHexEnd!.toLowerCase() != shade.colorHex.toLowerCase();
+
     return Container(
       width: 12,
       height: 12,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(colors: [start, end]),
+        color: hasGradient ? null : start,
+        gradient: hasGradient
+            ? LinearGradient(colors: [start, end])
+            : null,
         border: Border.all(color: Colors.white, width: 1.5),
       ),
     );
