@@ -31,6 +31,7 @@ class PhotoWallSection extends StatelessWidget {
           linkType: raw['linkType']?.toString(),
           linkValue: raw['linkValue']?.toString(),
           legacyLink: raw['link']?.toString(),
+          resolvedLink: raw['link']?.toString(),
         );
 
     return HomeSectionShell(

@@ -144,7 +144,7 @@ function localHits(
       out.push({
         key: `brand:${b.slug || b.id}`,
         linkType: "brand",
-        linkValue: b.slug || b.id,
+        linkValue: b.id,
         icon: "🏷️",
         label,
         searchText,
@@ -159,7 +159,7 @@ function localHits(
       out.push({
         key: `package:${p.slug || p.id}`,
         linkType: "package",
-        linkValue: p.slug || p.id,
+        linkValue: p.id || p.slug,
         icon: "🎁",
         label,
         searchText,

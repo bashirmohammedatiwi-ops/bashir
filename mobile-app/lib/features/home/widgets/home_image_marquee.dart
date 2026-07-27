@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -48,8 +49,10 @@ class HomeMarqueeImage {
 class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerProviderStateMixin {
   final GlobalKey _periodKey = GlobalKey();
   late AnimationController _ctrl;
+  Timer? _resumeTimer;
 
   double _periodWidth = 0;
+  int _activePointers = 0;
 
   double get _pxPerSec => 24 + widget.speed.clamp(1, 10) * 10;
 
@@ -111,8 +114,39 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
     }
   }
 
+  void _pauseForInteraction() {
+    _resumeTimer?.cancel();
+    if (_ctrl.isAnimating) {
+      _ctrl.stop();
+    }
+  }
+
+  void _scheduleResume() {
+    _resumeTimer?.cancel();
+    _resumeTimer = Timer(const Duration(milliseconds: 900), () {
+      if (!mounted || _activePointers > 0 || _periodWidth <= 0) return;
+      _ctrl.repeat();
+    });
+  }
+
+  void _onPointerDown(PointerDownEvent _) {
+    _activePointers++;
+    _pauseForInteraction();
+  }
+
+  void _onPointerUp(PointerUpEvent _) {
+    _activePointers = math.max(0, _activePointers - 1);
+    if (_activePointers == 0) _scheduleResume();
+  }
+
+  void _onPointerCancel(PointerCancelEvent _) {
+    _activePointers = math.max(0, _activePointers - 1);
+    if (_activePointers == 0) _scheduleResume();
+  }
+
   @override
   void dispose() {
+    _resumeTimer?.cancel();
     _ctrl.dispose();
     super.dispose();
   }
@@ -149,28 +183,34 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee> with SingleTickerPr
 
         WidgetsBinding.instance.addPostFrameCallback((_) => _measureAndStart());
 
-        return ClipRect(
-          child: SizedBox(
-            height: widget.height,
-            width: viewportW,
-            child: AnimatedBuilder(
-              animation: _ctrl,
-              builder: (_, __) {
-                final loop = _periodWidth > 0 ? _periodWidth : period;
-                // نفس منطق شريط النص — تمرير سلس وحلقة دائرية
-                final dx = -_ctrl.value * loop;
-                return Transform.translate(
-                  offset: Offset(dx, 0),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    textDirection: TextDirection.ltr,
-                    children: [
-                      for (var i = 0; i < copies; i++)
-                        _period(key: i == 0 ? _periodKey : null),
-                    ],
-                  ),
-                );
-              },
+        return Listener(
+          behavior: HitTestBehavior.translucent,
+          onPointerDown: _onPointerDown,
+          onPointerUp: _onPointerUp,
+          onPointerCancel: _onPointerCancel,
+          child: ClipRect(
+            child: SizedBox(
+              height: widget.height,
+              width: viewportW,
+              child: AnimatedBuilder(
+                animation: _ctrl,
+                builder: (_, __) {
+                  final loop = _periodWidth > 0 ? _periodWidth : period;
+                  // نفس منطق شريط النص — تمرير سلس وحلقة دائرية
+                  final dx = -_ctrl.value * loop;
+                  return Transform.translate(
+                    offset: Offset(dx, 0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      textDirection: TextDirection.ltr,
+                      children: [
+                        for (var i = 0; i < copies; i++)
+                          _period(key: i == 0 ? _periodKey : null),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         );
@@ -188,7 +228,7 @@ class _MarqueeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final h = image.height > 0 ? image.height : defaultHeight;
-    return GalleryPhotoCard(
+    final card = GalleryPhotoCard(
       data: PhotoTileData(
         imageUrl: image.url,
         shape: image.shape,
@@ -199,12 +239,18 @@ class _MarqueeTile extends StatelessWidget {
       width: image.width,
       height: h,
       showCaption: false,
-      onTap: image.onTap != null
-          ? () {
-              HapticFeedback.selectionClick();
-              image.onTap!();
-            }
-          : null,
+      onTap: null,
+    );
+
+    if (image.onTap == null) return card;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        image.onTap!();
+      },
+      child: card,
     );
   }
 }

@@ -81,6 +81,17 @@ function simpleOptions(items: any[], extra?: (item: any) => string): SearchOptio
   return (items ?? []).map((item) => {
     const name = item.name ?? item.slug ?? item.id;
     return {
+      value: item.id,
+      label: extra ? extra(item) : name,
+      searchLabel: [name, item.slug, item.id].filter(Boolean).join(" "),
+    };
+  });
+}
+
+function slugOptions(items: any[], extra?: (item: any) => string): SearchOption[] {
+  return (items ?? []).map((item) => {
+    const name = item.name ?? item.slug ?? item.id;
+    return {
       value: item.slug || item.id,
       label: extra ? extra(item) : name,
       searchLabel: [name, item.slug, item.id].filter(Boolean).join(" "),
@@ -244,7 +255,7 @@ function LinkValueField({
           showSearch
           filterOption={filterOption}
           placeholder="ابحث واختر مشكلة البشرة"
-          options={simpleOptions(entities.skinConcerns ?? [])}
+          options={slugOptions(entities.skinConcerns ?? [])}
         />
       </Form.Item>
     );

@@ -28,8 +28,8 @@ test("categoriesTab link", () => {
 });
 
 test("withResolvedLink adds link", () => {
-  const out = withResolvedLink({ linkType: "brand", linkValue: "x" });
-  assert.equal(out.link, "/products?brandId=x");
+  const out = withResolvedLink({ linkType: "brand", linkValue: "nike" });
+  assert.equal(out.link, "/brand/nike");
 });
 
 console.log("link-target.util: all tests passed");

@@ -62,7 +62,7 @@ function simpleOptions(items: any[], extra?: (item: any) => string): SearchOptio
   return (items ?? []).map((item) => {
     const name = item.name ?? item.slug ?? item.id;
     return {
-      value: item.slug || item.id,
+      value: item.id,
       label: extra ? extra(item) : name,
       searchLabel: [name, item.slug, item.id].filter(Boolean).join(" "),
     };

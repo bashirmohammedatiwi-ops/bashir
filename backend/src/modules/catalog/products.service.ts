@@ -14,6 +14,7 @@ import { withPlaceholderImages, activeWithoutRealImagesWhere, hasRealProductImag
 import { rewriteProductMediaUrls } from "../../common/media-url.util";
 import { PRODUCT_ORDER_BY_BRAND } from "../../common/product-order.util";
 import { sortShadesByNumber } from "../../common/shade-sort.util";
+import { resolveBrandId, resolveCategoryId } from "../../common/entity-resolve.util";
 import {
   dedupeKeysForMedia,
   partitionDuplicateProductImages,
@@ -60,10 +61,17 @@ export class ProductsService {
   ) {}
 
   async list(q: QueryProductsDto, storefront = false) {
+    const [brandId, categoryId, subcategoryId, tertiaryCategoryId] = await Promise.all([
+      resolveBrandId(this.prisma, q.brandId),
+      resolveCategoryId(this.prisma, q.categoryId),
+      resolveCategoryId(this.prisma, q.subcategoryId),
+      resolveCategoryId(this.prisma, q.tertiaryCategoryId),
+    ]);
+
     const andFilters: Prisma.ProductWhereInput[] = [
       {
         isActive: q.status === "all" ? undefined : true,
-        brandId: q.brandId,
+        brandId,
         isFeatured: q.isFeatured,
         isNew: q.isNew,
         isBestSeller: q.isBestSeller,
@@ -87,7 +95,12 @@ export class ProductsService {
       },
     ];
 
-    const categoryFilter = this.buildCategoryFilter(q);
+    const categoryFilter = this.buildCategoryFilter({
+      ...q,
+      categoryId,
+      subcategoryId,
+      tertiaryCategoryId,
+    });
     if (categoryFilter) andFilters.push(categoryFilter);
 
     // فلاتر ظهور واجهة المتجر (لا تُطبَّق على لوحة التحكم)

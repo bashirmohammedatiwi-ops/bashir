@@ -1,3 +1,10 @@
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+export function isUuid(value: string) {
+  return UUID_RE.test(value.trim());
+}
+
 /** يبني مسار التطبيق من نوع الرابط وقيمته. */
 export function buildAppLink(
   linkType?: string | null,
@@ -6,13 +13,24 @@ export function buildAppLink(
 ): string | undefined {
   const type = (linkType ?? "").trim();
   const value = (linkValue ?? "").trim();
-  if (type === "product" && value) return `/product/${value}`;
-  if (type === "category" && value) return `/products?categoryId=${encodeURIComponent(value)}`;
-  if (type === "subcategory" && value) return `/products?subcategoryId=${encodeURIComponent(value)}`;
-  if (type === "tertiary" && value) return `/products?tertiaryCategoryId=${encodeURIComponent(value)}`;
-  if (type === "brand" && value) return `/products?brandId=${encodeURIComponent(value)}`;
+  if (type === "product" && value) return `/product/${encodeURIComponent(value)}`;
+  if (type === "category" && value) {
+    return `/products?categoryId=${encodeURIComponent(value)}`;
+  }
+  if (type === "subcategory" && value) {
+    return `/products?subcategoryId=${encodeURIComponent(value)}`;
+  }
+  if (type === "tertiary" && value) {
+    return `/products?tertiaryCategoryId=${encodeURIComponent(value)}`;
+  }
+  if (type === "brand" && value) {
+    if (isUuid(value)) return `/products?brandId=${encodeURIComponent(value)}`;
+    return `/brand/${encodeURIComponent(value)}`;
+  }
   if (type === "package" && value) return `/package/${encodeURIComponent(value)}`;
-  if (type === "skinConcern" && value) return `/products?concernSlug=${encodeURIComponent(value)}`;
+  if (type === "skinConcern" && value) {
+    return `/products?concernSlug=${encodeURIComponent(value)}`;
+  }
   if (type === "search" && value) return `/search?q=${encodeURIComponent(value)}`;
   if (type === "offers") return "/products?isPromo=1&title=العروض";
   if (type === "categoriesTab") return "/categories-tab";

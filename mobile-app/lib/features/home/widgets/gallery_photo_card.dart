@@ -357,14 +357,21 @@ class GalleryHorizontalLayout extends StatelessWidget {
               final raw = items[i];
               final data = style.tileData(raw);
               if (data.imageUrl.isEmpty) return const SizedBox.shrink();
-              return GalleryPhotoCard(
-                data: data,
-                width: tileW,
-                height: tileH,
-                fit: style.fit,
-                cornerRadiusOverride: style.tileCornerRadius,
-                showCaption: (data.overlayStyle ?? 'none') == 'none',
-                onTap: () => onTap(raw),
+              return GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  onTap(raw);
+                },
+                child: GalleryPhotoCard(
+                  data: data,
+                  width: tileW,
+                  height: tileH,
+                  fit: style.fit,
+                  cornerRadiusOverride: style.tileCornerRadius,
+                  showCaption: (data.overlayStyle ?? 'none') == 'none',
+                  onTap: null,
+                ),
               );
             },
           ),

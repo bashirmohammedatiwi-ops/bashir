@@ -10,38 +10,92 @@ import '../../../data/models/brand.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/home_section.dart';
 
+final _uuidRe = RegExp(
+  r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$',
+);
+
+bool _isUuid(String value) => _uuidRe.hasMatch(value.trim());
+
+void _pushAppPath(BuildContext context, String rawPath) {
+  final path = rawPath.trim();
+  if (path.isEmpty) return;
+
+  if (path == '/categories-tab' || path == '/categories') {
+    openCategoriesTab(context, ProviderScope.containerOf(context, listen: false));
+    return;
+  }
+  if (path == '/cart') {
+    openCartTab(context, ProviderScope.containerOf(context, listen: false));
+    return;
+  }
+  if (path == '/offers' || path.startsWith('/offers')) {
+    openOffersTab(context, ProviderScope.containerOf(context, listen: false));
+    return;
+  }
+
+  final uri = Uri.tryParse(path);
+  if (uri != null && uri.path == '/products') {
+    final brandId = uri.queryParameters['brandId'];
+    if (brandId != null && brandId.isNotEmpty && !_isUuid(brandId)) {
+      context.push('/brand/${Uri.encodeComponent(brandId)}');
+      return;
+    }
+    final categoryId = uri.queryParameters['categoryId'];
+    if (categoryId != null && categoryId.isNotEmpty && !_isUuid(categoryId)) {
+      context.push('/category/${Uri.encodeComponent(categoryId)}');
+      return;
+    }
+  }
+
+  context.push(path);
+}
+
 void openSectionLink(
   BuildContext context, {
   String? linkType,
   String? linkValue,
   String? legacyLink,
+  String? resolvedLink,
 }) {
+  final direct = (resolvedLink ?? legacyLink ?? '').trim();
+  if (direct.startsWith('/')) {
+    _pushAppPath(context, direct);
+    return;
+  }
+
   final type = (linkType ?? '').trim();
   final value = (linkValue ?? '').trim();
-  final legacy = (legacyLink ?? '').trim();
 
   if (type == 'product' && value.isNotEmpty) {
-    context.push('/product/$value');
+    context.push('/product/${Uri.encodeComponent(value)}');
     return;
   }
   if (type == 'category' && value.isNotEmpty) {
-    context.push('/products?categoryId=$value');
+    if (_isUuid(value)) {
+      context.push('/products?categoryId=${Uri.encodeComponent(value)}');
+    } else {
+      context.push('/category/${Uri.encodeComponent(value)}');
+    }
     return;
   }
   if (type == 'subcategory' && value.isNotEmpty) {
-    context.push('/products?subcategoryId=$value');
+    context.push('/products?subcategoryId=${Uri.encodeComponent(value)}');
     return;
   }
   if (type == 'tertiary' && value.isNotEmpty) {
-    context.push('/products?tertiaryCategoryId=$value');
+    context.push('/products?tertiaryCategoryId=${Uri.encodeComponent(value)}');
     return;
   }
   if (type == 'brand' && value.isNotEmpty) {
-    context.push('/products?brandId=$value');
+    if (_isUuid(value)) {
+      context.push('/products?brandId=${Uri.encodeComponent(value)}');
+    } else {
+      context.push('/brand/${Uri.encodeComponent(value)}');
+    }
     return;
   }
   if (type == 'package' && value.isNotEmpty) {
-    context.push('/package/$value');
+    context.push('/package/${Uri.encodeComponent(value)}');
     return;
   }
   if (type == 'skinConcern' && value.isNotEmpty) {
@@ -62,31 +116,15 @@ void openSectionLink(
   }
   if (type == 'products' && value.isNotEmpty) {
     final path = value.startsWith('/') ? value : '/products?$value';
-    context.push(path);
+    _pushAppPath(context, path);
     return;
   }
   if (type == 'url' && value.isNotEmpty) {
     openExternalUrl(value);
     return;
   }
-  if (legacy.isNotEmpty) {
-    if (legacy == '/categories-tab' || legacy == '/categories') {
-      openCategoriesTab(context, ProviderScope.containerOf(context, listen: false));
-      return;
-    }
-    if (legacy == '/cart') {
-      openCartTab(context, ProviderScope.containerOf(context, listen: false));
-      return;
-    }
-    if (legacy == '/offers' || legacy.startsWith('/offers')) {
-      openOffersTab(context, ProviderScope.containerOf(context, listen: false));
-      return;
-    }
-    context.push(legacy);
-    return;
-  }
   if (value.startsWith('/')) {
-    context.push(value);
+    _pushAppPath(context, value);
   }
 }
 
@@ -96,6 +134,7 @@ void openBannerLink(BuildContext context, AppBanner banner) {
     linkType: banner.linkType,
     linkValue: banner.linkValue,
     legacyLink: banner.link,
+    resolvedLink: banner.link,
   );
 }
 
@@ -107,15 +146,7 @@ void openViewAllLink(
 }) {
   final raw = (query ?? fallbackQuery ?? '').trim();
   if (raw.isEmpty) return;
-  if (raw == '/categories' || raw == '/categories-tab') {
-    openCategoriesTab(context, ProviderScope.containerOf(context, listen: false));
-    return;
-  }
-  if (raw.startsWith('/')) {
-    context.push(raw);
-    return;
-  }
-  context.push('/products?$raw');
+  _pushAppPath(context, raw.startsWith('/') ? raw : '/products?$raw');
 }
 
 void openCategoryLink(BuildContext context, Category category) {
