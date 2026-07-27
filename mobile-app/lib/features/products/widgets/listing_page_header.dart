@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/app_search_scan_bar.dart';
 import '../../../core/widgets/listing_toolbar.dart';
 import 'listing_theme.dart';
 
-/// رأس صفحة المنتجات — نظيف بدون عداد.
+/// رأس صفحة المنتجات — بحث + باركود + فلاتر.
 class ListingPageHeader extends ConsumerWidget {
   final String title;
   final String sortLabel;
@@ -29,14 +31,24 @@ class ListingPageHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+
     return ColoredBox(
-      color: Colors.white,
+      color: ListingTheme.headerBg,
       child: SafeArea(
         bottom: false,
         child: DecoratedBox(
           decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppColors.primaryLight.withValues(alpha: 0.45),
+                ListingTheme.headerBg,
+              ],
+            ),
             border: Border(
-              bottom: BorderSide(color: AppColors.hairline.withValues(alpha: 0.75)),
+              bottom: BorderSide(color: AppColors.hairline.withValues(alpha: 0.7)),
             ),
           ),
           child: Column(
@@ -61,10 +73,11 @@ class ListingPageHeader extends ConsumerWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 20,
+                              fontSize: 19,
                               fontWeight: FontWeight.w900,
                               letterSpacing: -0.4,
                               height: 1.2,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           if (subtitle != null && subtitle!.isNotEmpty) ...[
@@ -81,7 +94,18 @@ class ListingPageHeader extends ConsumerWidget {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(ListingTheme.padH, 12, ListingTheme.padH, 14),
+                padding: const EdgeInsets.fromLTRB(ListingTheme.padH, 12, ListingTheme.padH, 10),
+                child: AppSearchScanBar(
+                  hint: s.searchHintHome,
+                  scanLabel: s.scan,
+                  fillColor: Colors.white,
+                  borderColor: AppColors.primarySoft,
+                  onSearchTap: () => context.push('/search'),
+                  onScanTap: () => context.push('/scan'),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(ListingTheme.padH, 0, ListingTheme.padH, 14),
                 child: ListingToolbar(
                   sortLabel: sortLabel,
                   filterLabel: filterLabel,
@@ -107,15 +131,17 @@ class _HeaderIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: const Color(0xFFF3F3F4),
-      shape: const CircleBorder(),
+      color: Colors.white,
+      shape: CircleBorder(
+        side: BorderSide(color: AppColors.hairline.withValues(alpha: 0.8)),
+      ),
       child: InkWell(
         onTap: onTap,
         customBorder: const CircleBorder(),
         child: SizedBox(
           width: 40,
           height: 40,
-          child: Icon(icon, size: 17, color: const Color(0xFF7A757F)),
+          child: Icon(icon, size: 17, color: AppColors.textSecondary),
         ),
       ),
     );

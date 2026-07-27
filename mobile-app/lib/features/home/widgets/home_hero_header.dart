@@ -8,6 +8,7 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/navigation/app_navigation.dart';
+import '../../../core/widgets/app_search_scan_bar.dart';
 import '../../../core/utils/support_links.dart';
 import '../../auth/auth_provider.dart';
 import '../../cart/cart_provider.dart';
@@ -55,10 +56,13 @@ class HomeHeroHeader extends ConsumerWidget {
             onNotifications: () => context.push('/notifications'),
           ),
           const SizedBox(height: 16),
-          _SearchBar(
-            s: s,
-            onSearch: () => context.push('/search'),
-            onScan: () => context.push('/scan'),
+          AppSearchScanBar(
+            hint: s.searchHintHome,
+            scanLabel: s.scan,
+            fillColor: Colors.white,
+            borderColor: HomeTheme.divider,
+            onSearchTap: () => context.push('/search'),
+            onScanTap: () => context.push('/scan'),
           ),
           const SizedBox(height: 10),
           _TrustPills(s: s, freeShippingThreshold: threshold),
@@ -201,80 +205,6 @@ class _HeaderIconButton extends StatelessWidget {
               ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _SearchBar extends StatelessWidget {
-  final AppStrings s;
-  final VoidCallback onSearch;
-  final VoidCallback onScan;
-
-  const _SearchBar({required this.s, required this.onSearch, required this.onScan});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 50,
-      decoration: HomeTheme.heroSearchDecoration(),
-      child: Row(
-        children: [
-          Expanded(
-            child: HomeTapScale(
-              onTap: onSearch,
-              child: Padding(
-                padding: const EdgeInsetsDirectional.only(start: 14, end: 8),
-                child: Row(
-                  children: [
-                    Icon(Icons.search_rounded, size: 20, color: HomeTheme.inkMuted),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        s.searchHintHome,
-                        style: HomeTheme.body(size: 13, color: HomeTheme.inkMuted),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(end: 6),
-            child: HomeTapScale(
-              onTap: () {
-                HapticFeedback.lightImpact();
-                onScan();
-              },
-              child: Container(
-                height: 38,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: HomeTheme.accent,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.barcode_reader, size: 16, color: Colors.white),
-                    const SizedBox(width: 5),
-                    Text(
-                      s.scan,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

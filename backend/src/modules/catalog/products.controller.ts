@@ -63,6 +63,14 @@ export class ProductsController {
     return this.products.hideActiveWithoutImages();
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
+  @Post("dedupe-images")
+  dedupeImages() {
+    return this.products.dedupeAllProductImages();
+  }
+
   @Public()
   @Get(":idOrSlug")
   findOne(@Param("idOrSlug") idOrSlug: string) {

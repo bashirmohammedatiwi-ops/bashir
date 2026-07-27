@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AppstoreOutlined,
   CloudDownloadOutlined,
+  ClearOutlined,
   EyeInvisibleOutlined,
   PlusOutlined,
   SearchOutlined,
@@ -175,6 +176,27 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message
         ?? "تعذّر إخفاء المنتجات بدون صور";
       message.error(typeof msg === "string" ? msg : "تعذّر إخفاء المنتجات بدون صور");
+    },
+  });
+
+  const dedupeImages = useMutation({
+    mutationFn: mutations.dedupeProductImages,
+    onSuccess: (result: { removed?: number; productsAffected?: number }) => {
+      const removed = Number(result?.removed ?? 0);
+      const affected = Number(result?.productsAffected ?? 0);
+      message.success(
+        removed > 0
+          ? `تم حذف ${removed.toLocaleString("ar-IQ")} صورة مكررة من ${affected.toLocaleString("ar-IQ")} منتج`
+          : "لا توجد صور مكررة — كل المنتجات نظيفة",
+      );
+      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["media-stats"] });
+    },
+    onError: (err: unknown) => {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        ?? "تعذّر تنظيف الصور المكررة";
+      message.error(typeof msg === "string" ? msg : "تعذّر تنظيف الصور المكررة");
     },
   });
 
@@ -513,6 +535,21 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
         subtitle={`${pageSubtitle ? `${pageSubtitle} — ` : ""}${total.toLocaleString("ar-IQ")} منتج${isFetching && !isLoading ? " — جاري التحديث..." : ""}`}
         extra={
           <Space wrap>
+            <Popconfirm
+              title="حذف الصور المكررة من كل المنتجات؟"
+              description="يُزال التكرار (نفس الملف أو نفس الصورة) من معرض كل منتج ويُعاد ترتيب الصور. لا يُحذف المنتج."
+              onConfirm={() => dedupeImages.mutate()}
+              okText="تنظيف الآن"
+              cancelText="إلغاء"
+            >
+              <Button
+                size="large"
+                icon={<ClearOutlined />}
+                loading={dedupeImages.isPending}
+              >
+                حذف الصور المكررة
+              </Button>
+            </Popconfirm>
             <Popconfirm
               title="إيقاف المنتجات بدون صور؟"
               description={

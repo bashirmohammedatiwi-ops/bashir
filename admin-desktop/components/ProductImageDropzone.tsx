@@ -90,8 +90,25 @@ export function ProductImageDropzone({
       });
       setUploading(0);
       if (added.length) {
-        onChange([...items, ...added]);
-        message.success(`تم رفع ${added.length} صورة`);
+        const merged = [...items];
+        const existingIds = new Set(items.map((i) => i.id));
+        let skipped = 0;
+        for (const item of added) {
+          if (existingIds.has(item.id)) {
+            skipped += 1;
+            continue;
+          }
+          existingIds.add(item.id);
+          merged.push(item);
+        }
+        onChange(merged);
+        if (skipped > 0) {
+          message.info(`تم تخطي ${skipped} صورة مكررة`);
+        }
+        const uploaded = added.length - skipped;
+        if (uploaded > 0) {
+          message.success(`تم رفع ${uploaded} صورة`);
+        }
       }
     },
     [items, onChange, max, purpose],

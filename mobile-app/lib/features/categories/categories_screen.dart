@@ -8,6 +8,7 @@ import '../../core/l10n/locale_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/friendly_error.dart';
+import '../../core/widgets/app_search_scan_bar.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/brand.dart';
@@ -130,6 +131,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                       parents: parents,
                       onRefresh: _onRefresh,
                       onSearch: () => context.push('/search'),
+                      onScan: () => context.push('/scan'),
                       onOpen: _push,
                     )
                   : _CategoryExplorer(
@@ -139,6 +141,7 @@ class _CategoriesScreenState extends ConsumerState<CategoriesScreen> {
                       onBack: _pop,
                       onRefresh: _onRefresh,
                       onSearch: () => context.push('/search'),
+                      onScan: () => context.push('/scan'),
                       onOpenChild: _push,
                       onResetToRoot: _reset,
                     ),
@@ -156,6 +159,7 @@ class _CategoriesRoot extends ConsumerWidget {
   final List<Category> parents;
   final Future<void> Function() onRefresh;
   final VoidCallback onSearch;
+  final VoidCallback onScan;
   final ValueChanged<Category> onOpen;
 
   const _CategoriesRoot({
@@ -163,6 +167,7 @@ class _CategoriesRoot extends ConsumerWidget {
     required this.parents,
     required this.onRefresh,
     required this.onSearch,
+    required this.onScan,
     required this.onOpen,
   });
 
@@ -184,6 +189,7 @@ class _CategoriesRoot extends ConsumerWidget {
               padding: EdgeInsets.fromLTRB(CategoriesTheme.pad, top + 8, CategoriesTheme.pad, 0),
               child: _CategoriesHeader(
                 onSearch: onSearch,
+                onScan: onScan,
               ),
             ),
           ),
@@ -223,6 +229,7 @@ class _CategoryExplorer extends ConsumerStatefulWidget {
   final VoidCallback onBack;
   final Future<void> Function() onRefresh;
   final VoidCallback onSearch;
+  final VoidCallback onScan;
   final ValueChanged<Category> onOpenChild;
   final VoidCallback onResetToRoot;
 
@@ -233,6 +240,7 @@ class _CategoryExplorer extends ConsumerStatefulWidget {
     required this.onBack,
     required this.onRefresh,
     required this.onSearch,
+    required this.onScan,
     required this.onOpenChild,
     required this.onResetToRoot,
   });
@@ -343,9 +351,11 @@ class _CategoryExplorerState extends ConsumerState<_CategoryExplorer> {
           SliverToBoxAdapter(
             child: Padding(
               padding: EdgeInsets.fromLTRB(CategoriesTheme.pad, 8, CategoriesTheme.pad, 12),
-              child: _SearchBarHint(
-                onTap: widget.onSearch,
+              child: AppSearchScanBar(
                 hint: s.categoriesSearchPlaceholder,
+                scanLabel: s.scan,
+                onSearchTap: widget.onSearch,
+                onScanTap: widget.onScan,
               ),
             ),
           ),
@@ -433,8 +443,9 @@ class _CategoryExplorerState extends ConsumerState<_CategoryExplorer> {
 
 class _CategoriesHeader extends ConsumerWidget {
   final VoidCallback onSearch;
+  final VoidCallback onScan;
 
-  const _CategoriesHeader({required this.onSearch});
+  const _CategoriesHeader({required this.onSearch, required this.onScan});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -442,7 +453,12 @@ class _CategoriesHeader extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _SearchBarHint(onTap: onSearch, hint: s.categoriesSearchPlaceholder),
+        AppSearchScanBar(
+          hint: s.categoriesSearchPlaceholder,
+          scanLabel: s.scan,
+          onSearchTap: onSearch,
+          onScanTap: onScan,
+        ),
         const SizedBox(height: 14),
         Row(
           children: [
@@ -454,39 +470,6 @@ class _CategoriesHeader extends ConsumerWidget {
           ],
         ),
       ],
-    );
-  }
-}
-
-class _SearchBarHint extends StatelessWidget {
-  final VoidCallback onTap;
-  final String hint;
-
-  const _SearchBarHint({required this.onTap, required this.hint});
-
-  @override
-  Widget build(BuildContext context) {
-    return CategoriesFramedSurface(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-        child: Row(
-          children: [
-            Icon(Icons.search, size: 20, color: AppColors.textMuted.withValues(alpha: 0.7)),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                hint,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.textMuted.withValues(alpha: 0.85),
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

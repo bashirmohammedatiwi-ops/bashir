@@ -29,6 +29,7 @@ import '../catalog/recently_viewed_provider.dart';
 import '../shell/main_shell.dart';
 import '../wishlist/wishlist_provider.dart';
 import 'widgets/product_detail_theme.dart';
+import 'widgets/product_shade_picker.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final String idOrSlug;
@@ -98,7 +99,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
 
   void _addToCart(Product product) {
     final s = ref.s;
-    if (product.shades.isNotEmpty && _shade == null) {
+    if (product.displayableShades.isNotEmpty && _shade == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(s.selectShadeFirst)),
       );
@@ -121,9 +122,34 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       ));
   }
 
+  List<String> _galleryUrls(Product product, ProductShade? shade) {
+    final urls = <String>[];
+    final shadeUrl = shade?.image?.full ?? shade?.image?.thumb ?? '';
+    if (shadeUrl.isNotEmpty) urls.add(shadeUrl);
+    for (final u in product.galleryUrls) {
+      if (u.isNotEmpty && !urls.contains(u)) urls.add(u);
+    }
+    if (urls.isEmpty) urls.add('');
+    return urls;
+  }
+
+  void _syncShadeSelection(List<ProductShade> shades) {
+    if (shades.isEmpty) {
+      if (_shade != null) setState(() => _shade = null);
+      return;
+    }
+    if (_shade != null && shades.any((s) => s.id == _shade!.id)) return;
+    final pick = shades.firstWhere((s) => s.inStock, orElse: () => shades.first);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _shade = pick);
+    });
+  }
+
   Widget _buildContent(Product product) {
+    final shades = product.displayableShades;
+    _syncShadeSelection(shades);
     _precacheGallery(context, product);
-    final gallery = product.galleryUrls.isNotEmpty ? product.galleryUrls : [''];
+    final gallery = _galleryUrls(product, _shade);
     final zoomableUrls = gallery.where((u) => u.trim().isNotEmpty).toList();
 
     return CustomScrollView(
@@ -165,11 +191,20 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       setState(() => _quantity = v);
                     },
                   ),
-                  if (product.shades.isNotEmpty)
-                    _SectionCard(
-                      child: _ShadeBlock(
-                        shades: product.shades,
+                  if (shades.isNotEmpty)
+                    Container(
+                      margin: EdgeInsets.fromLTRB(
+                        ProductDetailTheme.padH,
+                        ProductDetailTheme.sectionGap,
+                        ProductDetailTheme.padH,
+                        0,
+                      ),
+                      padding: const EdgeInsets.all(16),
+                      decoration: ProductDetailTheme.shadeSectionDecoration(),
+                      child: ProductShadePicker(
+                        shades: shades,
                         selected: _shade,
+                        strings: ref.s,
                         onSelect: (s) => setState(() => _shade = s),
                       ),
                     ),
@@ -228,7 +263,7 @@ class _GalleryAppBar extends ConsumerWidget {
 
     return SliverAppBar(
       pinned: true,
-      expandedHeight: hasThumbs ? 430 : 380,
+      expandedHeight: hasThumbs ? 420 : 370,
       backgroundColor: ProductDetailTheme.galleryBg,
       surfaceTintColor: Colors.transparent,
       leading: _CircleAction(
@@ -262,8 +297,17 @@ class _GalleryAppBar extends ConsumerWidget {
         const SizedBox(width: 8),
           ],
           flexibleSpace: FlexibleSpaceBar(
-        background: ColoredBox(
-          color: ProductDetailTheme.galleryBg,
+        background: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                AppColors.primaryLight.withValues(alpha: 0.35),
+                ProductDetailTheme.galleryBg,
+              ],
+            ),
+          ),
           child: Column(
               children: [
                 Expanded(
@@ -696,104 +740,6 @@ class _StockBadge extends ConsumerWidget {
           label,
           style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12.5),
         ),
-      ],
-    );
-  }
-}
-
-/// اختيار الدرجة — دوائر ملونة مع اسم الدرجة المختارة.
-class _ShadeBlock extends ConsumerWidget {
-  final List<ProductShade> shades;
-  final ProductShade? selected;
-  final ValueChanged<ProductShade> onSelect;
-
-  const _ShadeBlock({
-    required this.shades,
-    required this.selected,
-    required this.onSelect,
-  });
-
-  Color _color(String hex) {
-    final h = hex.replaceAll('#', '');
-    final v = h.length == 6 ? 'FF$h' : h;
-    return Color(int.tryParse(v, radix: 16) ?? 0xFFCCCCCC);
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final s = ref.s;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(s.selectShade, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-            const Spacer(),
-            if (selected != null)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-                child: Text(
-                  selected!.name,
-                  style: const TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-      spacing: 10,
-      runSpacing: 10,
-      children: [
-        for (final s in shades)
-          GestureDetector(
-                onTap: s.inStock
-                    ? () {
-                        HapticFeedback.selectionClick();
-                        onSelect(s);
-                      }
-                    : null,
-            child: Opacity(
-                  opacity: s.inStock ? 1 : 0.35,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    width: 44,
-                    height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(colors: [
-                    _color(s.colorHex),
-                    _color(s.colorHexEnd ?? s.colorHex),
-                  ]),
-                  border: Border.all(
-                    color: selected?.id == s.id ? AppColors.primary : AppColors.border,
-                        width: selected?.id == s.id ? 2.5 : 1,
-                      ),
-                      boxShadow: selected?.id == s.id
-                          ? [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.25),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ]
-                          : null,
-                ),
-                child: selected?.id == s.id
-                        ? const Icon(Icons.check_rounded, color: Colors.white, size: 18)
-                    : null,
-              ),
-            ),
-              ),
-          ],
-          ),
       ],
     );
   }

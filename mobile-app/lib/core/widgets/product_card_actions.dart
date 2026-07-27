@@ -103,7 +103,7 @@ class ProductCardCartControl extends ConsumerWidget {
       return _DisabledCartButton(compact: compact);
     }
 
-    final hasShades = product.shades.isNotEmpty || product.shadeCount > 0;
+    final hasShades = product.hasDisplayableShades;
     if (hasShades) {
       return _AddCartButton(
         compact: compact,

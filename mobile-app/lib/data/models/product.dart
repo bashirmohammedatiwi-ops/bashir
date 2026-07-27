@@ -26,6 +26,7 @@ class ProductShade {
   final String name;
   final String colorHex;
   final String? colorHexEnd;
+  final String? barcode;
   final int? price;
   final int stock;
   final AppMedia? image;
@@ -35,6 +36,7 @@ class ProductShade {
     required this.name,
     required this.colorHex,
     this.colorHexEnd,
+    this.barcode,
     this.price,
     this.stock = 0,
     this.image,
@@ -45,11 +47,13 @@ class ProductShade {
         name: asString(json['name']),
         colorHex: asString(json['colorHex'], '#CCCCCC'),
         colorHexEnd: json['colorHexEnd']?.toString(),
+        barcode: json['barcode']?.toString(),
         price: json['price'] != null ? asInt(json['price']) : null,
         stock: asInt(json['stock']),
         image: json['image'] is Map ? AppMedia.fromJson(asMap(json['image'])) : null,
       );
 
+  bool get hasBarcode => barcode != null && barcode!.trim().isNotEmpty;
   bool get inStock => stock > 0;
 }
 
@@ -184,7 +188,7 @@ class Product {
       final url = img.url.isNotEmpty ? img.url : img.fullUrl;
       if (url.isNotEmpty) return url;
     }
-    for (final shade in shades) {
+    for (final shade in displayableShades) {
       final url = shade.image?.thumb ?? shade.image?.full ?? '';
       if (url.isNotEmpty) return url;
     }
@@ -219,4 +223,10 @@ class Product {
 
   String brandNameFor(String lang) => brand?.localizedName(lang) ?? '';
   String get brandName => brand?.name ?? '';
+
+  /// تدرجات لها باركود — تُعرض في التطبيق فقط.
+  List<ProductShade> get displayableShades =>
+      shades.where((s) => s.hasBarcode).toList(growable: false);
+
+  bool get hasDisplayableShades => displayableShades.isNotEmpty;
 }

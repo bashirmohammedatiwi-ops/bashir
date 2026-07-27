@@ -149,7 +149,8 @@ class _ListingImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasShades = product.shades.isNotEmpty || product.shadeCount > 0;
+    final visibleShades = product.displayableShades;
+    final hasShades = visibleShades.isNotEmpty;
     final badge = product.hasDiscount
         ? '-${product.discountPercent}%'
         : product.isNew
@@ -199,8 +200,8 @@ class _ListingImage extends StatelessWidget {
             left: 10,
             bottom: 10,
             child: _ListingShades(
-              shades: product.shades,
-              totalCount: product.shades.isNotEmpty ? product.shades.length : product.shadeCount,
+              shades: visibleShades,
+              totalCount: visibleShades.length,
             ),
           ),
         if (!product.inStock)
@@ -417,7 +418,7 @@ class _ImageSection extends StatelessWidget {
     this.lite = false,
   });
 
-  bool get _hasShades => product.shades.isNotEmpty || product.shadeCount > 0;
+  bool get _hasShades => product.displayableShades.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -481,8 +482,8 @@ class _ImageSection extends StatelessWidget {
             right: 10,
             bottom: 10,
             child: _ShadeIndicator(
-              shades: product.shades,
-              totalCount: product.shades.isNotEmpty ? product.shades.length : product.shadeCount,
+              shades: product.displayableShades,
+              totalCount: product.displayableShades.length,
             ),
           ),
         if (!product.inStock)

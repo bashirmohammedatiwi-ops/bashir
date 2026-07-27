@@ -4,12 +4,13 @@ import '../../../core/theme/app_colors.dart';
 
 /// ثيم موحّد لصفحة قائمة المنتجات.
 abstract final class ListingTheme {
-  static const canvas = Color(0xFFFAFAFA);
-  static const card = Color(0xFFFFFFFF);
-  static const wash = Color(0xFFFFF8FA);
+  static const canvas = AppColors.scaffold;
+  static const headerBg = Color(0xFFFFFBFC);
+  static const card = Colors.white;
+  static const wash = AppColors.primaryLight;
   static const chipBg = Color(0xFFF3F0F2);
 
-  static const cardRadius = 22.0;
+  static const cardRadius = 20.0;
   static const chipRadius = 14.0;
   static const padH = 16.0;
 
@@ -17,6 +18,7 @@ abstract final class ListingTheme {
         color: card,
         borderRadius: BorderRadius.circular(cardRadius),
         border: Border.all(color: AppColors.hairline.withValues(alpha: 0.75)),
+        boxShadow: AppColors.cardShadow,
       );
 
   static TextStyle sectionTitle = const TextStyle(

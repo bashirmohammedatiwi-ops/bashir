@@ -162,11 +162,6 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
     final bottomPad = Responsive.shellBottomReserve(context);
 
     final slots = feedData != null ? resolveOffersSectionSlots(feedData) : const <HomeSectionSlot>[];
-    final promoCount = feedData != null
-        ? (feedData.promoProducts.isNotEmpty
-            ? feedData.promoProducts.length
-            : feedData.flashSale.products.length)
-        : _items.length;
     final showFlashPulse = feedData != null &&
         feedData.flashSale.products.isNotEmpty &&
         !_hasFlashSection(slots);
@@ -193,7 +188,6 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                       SliverToBoxAdapter(
                         child: OffersHero(
                           topPad: top,
-                          promoCount: promoCount,
                           flashSale: feedData?.flashSale,
                         ),
                       ),
@@ -222,12 +216,6 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                           childCount: slots.length,
                           addAutomaticKeepAlives: false,
                           addRepaintBoundaries: true,
-                        ),
-                      ),
-                      SliverToBoxAdapter(
-                        child: OffersCatalogHeader(
-                          loadedCount: _items.length,
-                          loading: _loadingMore && _items.isEmpty,
                         ),
                       ),
                       if (_gridError != null && _items.isEmpty)

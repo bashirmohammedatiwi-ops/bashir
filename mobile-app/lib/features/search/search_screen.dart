@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -88,6 +89,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       appBar: AppBar(
         titleSpacing: 0,
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: () {
+              HapticFeedback.lightImpact();
+              context.push('/scan');
+            },
+            icon: const Icon(Icons.barcode_reader),
+            tooltip: s.scan,
+          ),
+          const SizedBox(width: 4),
+        ],
         title: Padding(
           padding: const EdgeInsets.only(left: AppSpacing.md),
           child: TextField(

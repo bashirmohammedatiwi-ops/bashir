@@ -54,6 +54,7 @@ export const queries = {
   homeBlocks: () => api.get("/home-blocks?active=0&page=home").then((r) => r.data?.data ?? r.data),
   offersBlocks: () => api.get("/home-blocks?active=0&page=offers").then((r) => r.data?.data ?? r.data),
   media: (params?: any) => api.get("/media", { params }).then((r) => r.data),
+  mediaById: (id: string) => api.get(`/media/${id}`).then((r) => r.data?.data ?? r.data),
   mediaStats: () => api.get("/media/stats").then((r) => r.data?.data ?? r.data),
   users: (params?: any) => api.get("/users", { params }).then((r) => r.data),
   user: (id: string) => api.get(`/users/${id}`).then((r) => r.data?.data ?? r.data),
@@ -90,6 +91,8 @@ export const mutations = {
   deleteProduct: (id: string) => api.delete(`/products/${id}`).then((r) => r.data),
   hideProductsWithoutImages: () =>
     api.post("/products/hide-without-images").then((r) => r.data?.data ?? r.data),
+  dedupeProductImages: () =>
+    api.post("/products/dedupe-images").then((r) => r.data?.data ?? r.data),
 
   createCategory: (data: any) => api.post("/categories", data).then((r) => r.data?.data ?? r.data),
   updateCategory: (id: string, data: any) =>

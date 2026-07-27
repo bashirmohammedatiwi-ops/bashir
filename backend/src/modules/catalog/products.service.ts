@@ -206,7 +206,7 @@ export class ProductsService {
     // الحقلان المفردان يبقيان للتوافق (أول عنصر من كل قائمة)
     const subcategoryId = subcategoryIds[0] ?? null;
     const tertiaryCategoryId = tertiaryCategoryIds[0] ?? null;
-    const imageIds = this.uniqueImageIds(dto.imageIds);
+    const imageIds = await this.dedupeImageIds(dto.imageIds);
 
     try {
       const product = await this.prisma.product.create({
@@ -331,7 +331,7 @@ export class ProductsService {
     if (dto.variants) {
       await this.prisma.productVariant.deleteMany({ where: { productId: id } });
     }
-    const imageIds = dto.imageIds ? this.uniqueImageIds(dto.imageIds) : undefined;
+    const imageIds = dto.imageIds ? await this.dedupeImageIds(dto.imageIds) : undefined;
     try {
       await this.prisma.product.update({
         where: { id },
@@ -425,6 +425,24 @@ export class ProductsService {
     });
     await this.homeFeedCache.invalidateAll();
     return { hidden: result.count };
+  }
+
+  /** إزالة الصور المكررة من كل المنتجات (نفس mediaId أو نفس hash). */
+  async dedupeAllProductImages() {
+    const products = await this.prisma.product.findMany({ select: { id: true } });
+    let removed = 0;
+    let productsAffected = 0;
+
+    for (const { id: productId } of products) {
+      const n = await this.dedupeProductImages(productId);
+      if (n > 0) {
+        removed += n;
+        productsAffected += 1;
+      }
+    }
+
+    if (removed > 0) await this.homeFeedCache.invalidateAll();
+    return { removed, productsAffected };
   }
 
   async lookupByBarcode(raw: string, storefront = false) {
@@ -524,16 +542,71 @@ export class ProductsService {
     if (!exists) throw new NotFoundException("Product not found");
   }
 
-  private uniqueImageIds(imageIds?: string[]) {
-    const seen = new Set<string>();
-    const unique: string[] = [];
+  private async dedupeImageIds(imageIds?: string[]) {
+    const trimmed: string[] = [];
+    const seenIds = new Set<string>();
     for (const id of imageIds ?? []) {
       const mediaId = id?.trim();
-      if (!mediaId || seen.has(mediaId)) continue;
-      seen.add(mediaId);
+      if (!mediaId || seenIds.has(mediaId)) continue;
+      seenIds.add(mediaId);
+      trimmed.push(mediaId);
+    }
+    if (!trimmed.length) return [];
+
+    const media = await this.prisma.media.findMany({
+      where: { id: { in: trimmed } },
+      select: { id: true, hash: true },
+    });
+    const hashById = new Map(media.map((m) => [m.id, m.hash]));
+    const seenHash = new Set<string>();
+    const unique: string[] = [];
+    for (const mediaId of trimmed) {
+      const hash = hashById.get(mediaId);
+      if (!hash) continue;
+      if (seenHash.has(hash)) continue;
+      seenHash.add(hash);
       unique.push(mediaId);
     }
     return unique;
+  }
+
+  private async dedupeProductImages(productId: string) {
+    const images = await this.prisma.productImage.findMany({
+      where: { productId },
+      orderBy: { position: "asc" },
+      include: { media: { select: { hash: true } } },
+    });
+    if (images.length <= 1) return 0;
+
+    const seenMedia = new Set<string>();
+    const seenHash = new Set<string>();
+    const keep: typeof images = [];
+    const removeIds: string[] = [];
+
+    for (const img of images) {
+      const hash = img.media.hash;
+      if (seenMedia.has(img.mediaId) || seenHash.has(hash)) {
+        removeIds.push(img.id);
+        continue;
+      }
+      seenMedia.add(img.mediaId);
+      seenHash.add(hash);
+      keep.push(img);
+    }
+
+    if (!removeIds.length) return 0;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.productImage.deleteMany({ where: { id: { in: removeIds } } });
+      for (let i = 0; i < keep.length; i++) {
+        await tx.productImage.update({
+          where: { id: keep[i].id },
+          data: { position: i, isPrimary: i === 0 },
+        });
+      }
+    });
+
+    return removeIds.length;
   }
 
   private mapProductWriteError(error: unknown) {

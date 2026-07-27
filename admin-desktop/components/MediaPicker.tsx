@@ -48,9 +48,16 @@ export function MediaPicker({
     enabled: open,
   });
 
+  const { data: fetchedById } = useQuery({
+    queryKey: ["media-by-id", value],
+    queryFn: () => queries.mediaById(value!),
+    enabled: !!value && !localPreview && !previewUrl,
+    staleTime: 5 * 60_000,
+  });
+
   const items = data?.data ?? [];
   const total = data?.meta?.total ?? items.length;
-  const selected = items.find((m: any) => m.id === value);
+  const selected = items.find((m: any) => m.id === value) ?? fetchedById;
   const thumb = localPreview || previewUrl || mediaThumb(selected) || undefined;
 
   const uploadFile = useCallback(

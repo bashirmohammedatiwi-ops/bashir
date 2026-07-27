@@ -21,10 +21,10 @@ class OffersLoadingView extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   ShimmerBox(height: 28, width: 120, radius: 8),
-                  SizedBox(height: 8),
-                  ShimmerBox(height: 14, width: 180, radius: 6),
                   SizedBox(height: 16),
-                  ShimmerBox(height: 36, radius: 999),
+                  ShimmerBox(height: 48, radius: 14),
+                  SizedBox(height: 14),
+                  ShimmerBox(height: 34, radius: 999),
                 ],
               ),
             ),

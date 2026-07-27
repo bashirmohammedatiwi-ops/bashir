@@ -1,18 +1,12 @@
 import { shadeToPayload } from "@/components/ProductShadesEditor";
 import type { ImageItem } from "@/components/ProductImageDropzone";
+import { dedupeImageItems } from "@/lib/productFormHelpers";
 import { normalizeBarcode } from "@/lib/barcode";
 import { slugSourceName } from "@/lib/productName";
 import { slugify } from "./slugify";
 
 function uniqueImageIds(images: ImageItem[]): string[] {
-  const seen = new Set<string>();
-  const ids: string[] = [];
-  for (const image of images) {
-    if (!image.id || seen.has(image.id)) continue;
-    seen.add(image.id);
-    ids.push(image.id);
-  }
-  return ids;
+  return dedupeImageItems(images).map((image) => image.id);
 }
 
 export function buildProductPayload(

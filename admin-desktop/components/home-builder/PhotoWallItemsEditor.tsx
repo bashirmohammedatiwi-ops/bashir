@@ -6,7 +6,7 @@ import { useState } from "react";
 import { MediaPicker } from "@/components/MediaPicker";
 import { BulkMediaPicker } from "./BulkMediaPicker";
 import { PhotoItemStyleFields } from "./PhotoItemStyleFields";
-import { SmartLinkPicker } from "./SmartLinkPicker";
+import { CascadingLinkPicker } from "./CascadingLinkPicker";
 import { buildAppLinkPath, linkTargetLabel, summarizeItemLinks } from "./link-target";
 import type { EditorEntities } from "./SectionPayloadEditor";
 
@@ -71,7 +71,7 @@ export function PhotoWallItemsEditor({ entities, collage = false }: Props) {
         type="info"
         showIcon
         message={collage ? "فسيفساء Bento" : "معرض صور متقدم"}
-        description="اختر الصورة ثم ابحث في حقل واحد: منتج، قسم، براند، أو عروض. الشكل الافتراضي من تبويب «التصميم»."
+        description="اختر الصورة ثم حدّد نوع الربط (قسم، منتج، براند...) واختر الهدف من القائمة. الشكل الافتراضي من تبويب «التصميم»."
         style={{ marginBottom: 12 }}
       />
 
@@ -132,13 +132,9 @@ export function PhotoWallItemsEditor({ entities, collage = false }: Props) {
                             <Tag>بدون رابط</Tag>
                           )}
                         </div>
-                        <SmartLinkPicker
+                        <CascadingLinkPicker
                           prefix={["payload", "items", name]}
                           entities={lists}
-                          compact
-                          minimal
-                          showQuickBar={false}
-                          showPreview={false}
                         />
                         {link?.path ? (
                           <Typography.Text type="secondary" dir="ltr" className="hb-photo-wall-link-path">

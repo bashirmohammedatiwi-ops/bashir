@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,66 +7,18 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_feed.dart';
 import '../../home/widgets/home_scroll_perf.dart';
-import '../../shell/main_shell.dart';
 import 'offers_theme.dart';
 
-/// عرض سريع — بطاقة بيضاء بسيطة مع عدّاد.
-class OffersFlashPulse extends ConsumerStatefulWidget {
+/// عرض سريع — بطاقة أنيقة بدون عدّاد.
+class OffersFlashPulse extends ConsumerWidget {
   final FlashSale flashSale;
 
   const OffersFlashPulse({super.key, required this.flashSale});
 
   @override
-  ConsumerState<OffersFlashPulse> createState() => _OffersFlashPulseState();
-}
-
-class _OffersFlashPulseState extends ConsumerState<OffersFlashPulse> {
-  Timer? _timer;
-  final _remaining = ValueNotifier<Duration>(Duration.zero);
-
-  @override
-  void initState() {
-    super.initState();
-    _tick();
-    _startTimer();
-  }
-
-  void _startTimer() {
-    _timer?.cancel();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
-  }
-
-  void _syncTimer(bool active) {
-    if (active) {
-      if (_timer == null || !(_timer?.isActive ?? false)) {
-        _tick();
-        _startTimer();
-      }
-    } else {
-      _timer?.cancel();
-      _timer = null;
-    }
-  }
-
-  void _tick() {
-    final end = widget.flashSale.endsAt;
-    if (end == null) return;
-    final diff = end.difference(DateTime.now());
-    _remaining.value = diff.isNegative ? Duration.zero : diff;
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    _remaining.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    ref.listen<int>(navIndexProvider, (_, next) => _syncTimer(next == 2));
+  Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.s;
-    final products = widget.flashSale.products;
+    final products = flashSale.products;
     if (products.isEmpty) return const SizedBox.shrink();
 
     return Padding(
@@ -81,30 +31,18 @@ class _OffersFlashPulseState extends ConsumerState<OffersFlashPulse> {
           children: [
             Row(
               children: [
-                const Icon(Icons.bolt_rounded, color: OffersTheme.brand, size: 20),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: OffersTheme.brandSoft,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.bolt_rounded, color: OffersTheme.brand, size: 18),
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(s.flashSale, style: OffersTheme.title(size: 15, color: OffersTheme.ink)),
                 ),
-                if (widget.flashSale.endsAt != null)
-                  ValueListenableBuilder<Duration>(
-                    valueListenable: _remaining,
-                    builder: (_, remaining, __) {
-                      if (remaining <= Duration.zero) return const SizedBox.shrink();
-                      final h = remaining.inHours.toString().padLeft(2, '0');
-                      final m = (remaining.inMinutes % 60).toString().padLeft(2, '0');
-                      final sec = (remaining.inSeconds % 60).toString().padLeft(2, '0');
-                      return Text(
-                        '$h:$m:$sec',
-                        style: const TextStyle(
-                          color: OffersTheme.brand,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 13,
-                          fontFeatures: [FontFeature.tabularFigures()],
-                        ),
-                      );
-                    },
-                  ),
               ],
             ),
             const SizedBox(height: 12),
@@ -148,24 +86,22 @@ class _ProductThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 10),
+      padding: const EdgeInsets.only(left: 8),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: SizedBox(
-            width: 76,
+            width: 72,
             child: Column(
               children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: AppNetworkImage(
-                      url: imageUrl ?? '',
-                      width: 76,
-                      fit: BoxFit.cover,
-                    ),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 72,
+                    height: 72,
+                    child: ProductCoverImage(url: imageUrl ?? '', fit: BoxFit.contain),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -173,7 +109,8 @@ class _ProductThumb extends StatelessWidget {
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: OffersTheme.body(size: 9, weight: FontWeight.w600, color: OffersTheme.ink),
+                  textAlign: TextAlign.center,
+                  style: OffersTheme.body(size: 9.5, weight: FontWeight.w700),
                 ),
               ],
             ),
