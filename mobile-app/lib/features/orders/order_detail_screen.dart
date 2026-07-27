@@ -17,7 +17,9 @@ import '../../core/widgets/states.dart';
 import '../../data/models/order.dart';
 import '../../data/models/product.dart';
 import '../../data/services/api_service.dart';
+import '../auth/auth_provider.dart';
 import '../cart/cart_provider.dart';
+import '../catalog/catalog_providers.dart';
 import '../profile/profile_providers.dart';
 import '../shell/main_shell.dart';
 
@@ -113,6 +115,12 @@ class OrderDetailScreen extends ConsumerWidget {
                       value: '- ${formatPrice(order.discountTotal)}',
                       valueColor: AppColors.success,
                     ),
+                  if (order.loyaltySpent > 0)
+                    SummaryRow(
+                      label: s.loyaltyPointsUsed(order.loyaltySpent),
+                      value: '- ${formatPrice((order.loyaltySpent ~/ 100) * 1000)}',
+                      valueColor: AppColors.success,
+                    ),
                   SummaryRow(
                     label: s.shipping,
                     value: order.shippingTotal == 0 ? s.free : formatPrice(order.shippingTotal),
@@ -122,6 +130,22 @@ class OrderDetailScreen extends ConsumerWidget {
                     child: Divider(height: 1),
                   ),
                   SummaryRow(label: s.total, value: formatPrice(order.total), bold: true),
+                  if (order.loyaltyEarned > 0) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    Row(
+                      children: [
+                        const Icon(Icons.stars_rounded, size: 18, color: AppColors.accent),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(
+                          s.loyaltyPointsEarned(order.loyaltyEarned),
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.accent,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: AppSpacing.sm),
                   Row(
                     children: [
@@ -233,7 +257,9 @@ class OrderDetailScreen extends ConsumerWidget {
       await ref.read(apiServiceProvider).cancelOrder(orderId);
       ref.invalidate(orderDetailProvider(orderId));
       ref.invalidate(ordersProvider);
-      if (context.mounted) AppSnackbar.success(context, 'تم إلغاء الطلب');
+      ref.invalidate(loyaltyProvider);
+      ref.read(authProvider.notifier).refreshUser();
+      if (context.mounted) AppSnackbar.success(context, 'تم إلغاء الطلب وتحديث نقاط الولاء');
     } catch (e) {
       if (context.mounted) AppSnackbar.error(context, friendlyError(e));
     }

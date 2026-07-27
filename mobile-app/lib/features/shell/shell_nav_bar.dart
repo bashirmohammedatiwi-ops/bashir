@@ -6,7 +6,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/utils/responsive.dart';
 import '../cart/widgets/cart_theme.dart';
 
-/// شريط تنقل سفلي — 5 تبويبات متساوية، بسيط ومستقر.
+/// شريط تنقل سفلي عائم — يلتصق بأسفل الشاشة فوق أزرار النظام مباشرة.
 class ShellNavBar extends StatelessWidget {
   final int currentIndex;
   final int cartCount;
@@ -25,8 +25,8 @@ class ShellNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomGap = Responsive.shellNavBottomGap(context);
     final barHeight = Responsive.bottomNavHeight(context);
+    final systemInset = Responsive.systemBottomInset(context);
 
     final items = [
       _NavItemData(0, Icons.home_outlined, Icons.home_rounded, strings.navHome),
@@ -37,35 +37,44 @@ class ShellNavBar extends StatelessWidget {
     ];
 
     return RepaintBoundary(
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(12, 0, 12, bottomGap),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: CartTheme.softShadow,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Material(
-              color: Colors.white,
-              child: SizedBox(
-                height: barHeight,
-                child: Row(
-                  children: [
-                    for (final item in items)
-                      _NavTab(
-                        item: item,
-                        active: currentIndex == item.index,
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          onSelect(item.index);
-                        },
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, Responsive.shellNavVisualGap),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: CartTheme.softShadow,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Material(
+                    color: Colors.white,
+                    child: SizedBox(
+                      height: barHeight,
+                      child: Row(
+                        children: [
+                          for (final item in items)
+                            _NavTab(
+                              item: item,
+                              active: currentIndex == item.index,
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                onSelect(item.index);
+                              },
+                            ),
+                        ],
                       ),
-                  ],
+                    ),
+                  ),
                 ),
               ),
             ),
-          ),
+            SizedBox(height: systemInset),
+          ],
         ),
       ),
     );
@@ -190,7 +199,7 @@ class _Badge extends StatelessWidget {
   }
 }
 
-/// ارتفاع الشريط + الهامش للمحتوى القابل للتمرير.
+/// ارتفاع الشريط + منطقة النظام — للمحتوى خارج الـ shell إن لزم.
 double shellNavOuterHeight(BuildContext context) {
-  return Responsive.bottomNavHeight(context) + Responsive.shellNavBottomGap(context);
+  return Responsive.shellNavDockHeight(context);
 }

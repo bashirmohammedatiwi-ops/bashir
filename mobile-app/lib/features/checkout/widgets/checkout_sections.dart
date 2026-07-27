@@ -202,6 +202,7 @@ class CheckoutLoyaltyCard extends StatelessWidget {
   final int points;
   final bool useLoyalty;
   final int loyaltyDiscount;
+  final bool enabled;
   final ValueChanged<bool> onChanged;
 
   const CheckoutLoyaltyCard({
@@ -210,6 +211,7 @@ class CheckoutLoyaltyCard extends StatelessWidget {
     required this.points,
     required this.useLoyalty,
     required this.loyaltyDiscount,
+    this.enabled = true,
     required this.onChanged,
   });
 
@@ -224,13 +226,15 @@ class CheckoutLoyaltyCard extends StatelessWidget {
         activeThumbColor: CheckoutTheme.brand,
         title: Text(s.loyaltyUseTitle(points), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
         subtitle: Text(
-          useLoyalty && loyaltyDiscount > 0
-              ? s.loyaltyDiscountHint(formatPrice(loyaltyDiscount), formatPrice(1000))
-              : s.loyaltyPointsRule,
+          !enabled
+              ? s.loyaltyPointsNeedMore
+              : useLoyalty && loyaltyDiscount > 0
+                  ? s.loyaltyDiscountHint(formatPrice(loyaltyDiscount), formatPrice(1000))
+                  : s.loyaltyPointsRule,
           style: TextStyle(fontSize: 12, color: CheckoutTheme.charcoal.withValues(alpha: 0.55)),
         ),
-        value: useLoyalty,
-        onChanged: onChanged,
+        value: enabled && useLoyalty,
+        onChanged: enabled ? onChanged : null,
       ),
     );
   }

@@ -81,6 +81,51 @@ export class LoyaltyService {
     return spent;
   }
 
+  async deductPoints(userId: string, points: number, title: string, orderId?: string) {
+    if (points <= 0) return 0;
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    const available = user?.loyaltyPoints ?? 0;
+    const deducted = Math.min(points, Math.max(0, available));
+    if (deducted <= 0) return 0;
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { loyaltyPoints: { decrement: deducted } },
+      }),
+      this.prisma.loyaltyHistory.create({
+        data: { userId, title, points: -deducted, isEarned: false, orderId },
+      }),
+    ]);
+    return deducted;
+  }
+
+  /** عكس نقاط الطلب عند الإلغاء — مرة واحدة فقط لكل طلب. */
+  async reverseForCancelledOrder(
+    userId: string,
+    orderId: string,
+    loyaltySpent: number,
+    loyaltyEarned: number,
+  ) {
+    const already = await this.prisma.loyaltyHistory.findFirst({
+      where: { orderId, title: { contains: "إلغاء الطلب" } },
+    });
+    if (already) return;
+
+    if (loyaltySpent > 0) {
+      await this.addPoints(userId, loyaltySpent, "استرجاع نقاط - إلغاء الطلب", orderId);
+    }
+    if (loyaltyEarned > 0) {
+      await this.deductPoints(userId, loyaltyEarned, "خصم نقاط مكتسبة - إلغاء الطلب", orderId);
+    }
+
+    const bonus = await this.prisma.loyaltyHistory.findFirst({
+      where: { userId, orderId, title: "مكافأة أول طلب", isEarned: true },
+    });
+    if (bonus && bonus.points > 0) {
+      await this.deductPoints(userId, bonus.points, "خصم مكافأة أول طلب - إلغاء الطلب", orderId);
+    }
+  }
+
   adminHistory(userId: string) {
     return this.prisma.loyaltyHistory.findMany({
       where: { userId },

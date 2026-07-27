@@ -13,6 +13,7 @@ import '../../core/widgets/states.dart';
 import '../../data/models/brand.dart';
 import '../../data/models/category.dart';
 import '../catalog/catalog_providers.dart';
+import '../../core/utils/responsive.dart';
 import '../home/widgets/home_scroll_perf.dart';
 import 'widgets/categories_theme.dart';
 import 'widgets/category_brands_strip.dart';
@@ -187,11 +188,11 @@ class _CategoriesRoot extends ConsumerWidget {
             ),
           ),
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
+            padding: EdgeInsets.fromLTRB(
               CategoriesTheme.pad,
               8,
               CategoriesTheme.pad,
-              110,
+              Responsive.shellBottomReserve(context),
             ),
             sliver: SliverGrid(
               gridDelegate: CategoriesTheme.gridDelegate,
@@ -382,7 +383,7 @@ class _CategoryExplorerState extends ConsumerState<_CategoryExplorer> {
               child: _NoSubsEmpty(onBrowse: () => _openProducts()),
             ),
           _brandsSliver(brandsAsync, widget.category.id),
-          const SliverToBoxAdapter(child: SizedBox(height: 110)),
+          SliverToBoxAdapter(child: SizedBox(height: Responsive.shellBottomReserve(context))),
         ],
       ),
     );

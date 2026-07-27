@@ -100,15 +100,24 @@ abstract final class Responsive {
     return isCompact(context) ? 60 : 64;
   }
 
-  /// هامش أسفل شريط التنقل — يتكيّف مع أزرار/إيماءات النظام.
-  static double shellNavBottomGap(BuildContext context) {
-    final viewPadding = MediaQuery.viewPaddingOf(context).bottom;
-    final padding = MediaQuery.paddingOf(context).bottom;
-    // إذا SafeArea طبّق الهامش بالفعل نكتفي بهامش جمالي صغير.
-    if (padding > 0) return math.max(padding, 8);
-    if (viewPadding > 0) return viewPadding + 8;
-    // بعض أجهزة Android بأزرار ثلاثية لا تُبلّغ inset — احتياط آمن.
-    return 16;
+  /// ارتفاع منطقة أزرار/إيماءات النظام السفلية.
+  static double systemBottomInset(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final inset = math.max(mq.viewPadding.bottom, mq.padding.bottom);
+    if (inset > 0) return inset;
+
+    // edge-to-edge على أندرويد: بعض الأجهزة بأزرار ثلاثية لا تبلّغ inset
+    if (Theme.of(context).platform == TargetPlatform.android) return 48;
+
+    return 0;
+  }
+
+  /// هامش بصري صغير بين الشريط ومنطقة النظام.
+  static const double shellNavVisualGap = 6;
+
+  /// ارتفاع منطقة الشريط السفلي كاملة (شريط + هامش + أزرار النظام).
+  static double shellNavDockHeight(BuildContext context) {
+    return bottomNavHeight(context) + shellNavVisualGap + systemBottomInset(context);
   }
 
   static double navLabelSize(BuildContext context, {required bool active}) {
@@ -116,9 +125,10 @@ abstract final class Responsive {
     return active ? 10 : 9;
   }
 
+  /// حشوة أسفل المحتوى القابل للتمرير داخل الـ shell.
+  /// الشريط خارج الـ body — لا نحجز ارتفاعه مرتين.
   static double shellBottomReserve(BuildContext context, {double base = 68}) {
-    final navH = bottomNavHeight(context);
-    return navH + shellNavBottomGap(context) + 12;
+    return 20;
   }
 }
 

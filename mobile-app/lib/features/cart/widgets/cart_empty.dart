@@ -14,11 +14,7 @@ class CartEmptyView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.s;
-    final navReserve = CartTheme.shellNavReserve(context);
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: navReserve),
-      child: CustomScrollView(
+    return CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverToBoxAdapter(
@@ -119,7 +115,6 @@ class CartEmptyView extends ConsumerWidget {
             ),
           ),
         ],
-      ),
     );
   }
 }

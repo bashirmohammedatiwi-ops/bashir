@@ -58,6 +58,7 @@ class AppOrder {
   final int shippingTotal;
   final int total;
   final int loyaltyEarned;
+  final int loyaltySpent;
   final String deliveryOption;
   final String? notes;
   final DateTime? createdAt;
@@ -76,6 +77,7 @@ class AppOrder {
     this.shippingTotal = 0,
     this.total = 0,
     this.loyaltyEarned = 0,
+    this.loyaltySpent = 0,
     this.deliveryOption = 'STANDARD',
     this.notes,
     this.createdAt,
@@ -98,6 +100,7 @@ class AppOrder {
       shippingTotal: asInt(json['shippingTotal']),
       total: asInt(json['total']),
       loyaltyEarned: asInt(json['loyaltyEarned']),
+      loyaltySpent: asInt(json['loyaltySpent']),
       deliveryOption: asString(json['deliveryOption'], 'STANDARD'),
       notes: json['notes']?.toString(),
       createdAt: parseDate(json['createdAt']),

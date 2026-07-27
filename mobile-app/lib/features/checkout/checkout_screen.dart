@@ -19,6 +19,7 @@ import '../auth/auth_provider.dart';
 import '../cart/cart_provider.dart';
 import '../cart/coupon_provider.dart';
 import '../shell/main_shell.dart';
+import '../catalog/catalog_providers.dart';
 import '../profile/profile_providers.dart';
 import 'widgets/checkout_delivery_card.dart';
 import 'widgets/checkout_header.dart';
@@ -208,6 +209,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ref.read(cartProvider.notifier).clear();
       ref.read(appliedCouponProvider.notifier).state = null;
       ref.invalidate(ordersProvider);
+      ref.invalidate(loyaltyProvider);
       ref.read(authProvider.notifier).refreshUser();
       if (mounted) context.pushReplacement('/order-success/${order.id}');
     } catch (e) {
@@ -346,13 +348,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ),
                   const SizedBox(height: 14),
                   CheckoutNotesCard(s: s, controller: _notesCtrl),
-                  if (points >= 100) ...[
+                  if (points > 0) ...[
                     const SizedBox(height: 14),
                     CheckoutLoyaltyCard(
                       s: s,
                       points: points,
                       useLoyalty: _useLoyalty,
                       loyaltyDiscount: loyaltyDiscount,
+                      enabled: points >= 100,
                       onChanged: (v) => _toggleLoyalty(v, points, beforeLoyalty),
                     ),
                   ],

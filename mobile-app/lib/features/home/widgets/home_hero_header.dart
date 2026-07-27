@@ -55,8 +55,6 @@ class HomeHeroHeader extends ConsumerWidget {
             onNotifications: () => context.push('/notifications'),
           ),
           const SizedBox(height: 16),
-          _GreetingBlock(s: s),
-          const SizedBox(height: 14),
           _SearchBar(
             s: s,
             onSearch: () => context.push('/search'),
@@ -204,36 +202,6 @@ class _HeaderIconButton extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _GreetingBlock extends StatelessWidget {
-  final AppStrings s;
-
-  const _GreetingBlock({required this.s});
-
-  @override
-  Widget build(BuildContext context) {
-    final greeting = s.greetingForHour(DateTime.now().hour);
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(greeting, style: HomeTheme.overline),
-              const SizedBox(height: 4),
-              Text(
-                s.whatAreYouLookingFor,
-                style: HomeTheme.displayTitle(size: 24),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

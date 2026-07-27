@@ -158,15 +158,12 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final freeShipping = coupon?.freeShipping ?? false;
     final total = (cart.subtotal - discount).clamp(0, 1 << 31);
     final topPad = MediaQuery.paddingOf(context).top;
-    final navReserve = CartTheme.shellNavReserve(context);
 
     return Scaffold(
       backgroundColor: CartTheme.bg,
       body: cart.isEmpty
           ? CartEmptyView(topPad: topPad)
-          : Padding(
-              padding: EdgeInsets.only(bottom: navReserve),
-              child: Column(
+          : Column(
               children: [
                   Expanded(
                     child: CustomScrollView(
@@ -243,7 +240,6 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   ),
                 ],
               ),
-      ),
     );
   }
 }

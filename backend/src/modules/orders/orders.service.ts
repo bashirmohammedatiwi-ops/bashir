@@ -197,7 +197,21 @@ export class OrdersService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     const maxLoyalty = user?.loyaltyPoints ?? 0;
     const loyaltyPointsRequested = dto.loyaltySpent ?? 0;
-    const loyaltyPointsUsed = Math.min(loyaltyPointsRequested, maxLoyalty);
+    if (loyaltyPointsRequested > 0) {
+      if (loyaltyPointsRequested % 100 !== 0) {
+        throw new BadRequestException("نقاط الولاء يجب أن تكون بمضاعفات 100");
+      }
+      if (loyaltyPointsRequested > maxLoyalty) {
+        throw new BadRequestException("رصيد نقاط الولاء غير كافٍ");
+      }
+    }
+    const orderBeforeLoyalty = Math.max(0, subtotal - discountTotal + shippingTotal);
+    const maxByTotal = Math.floor(orderBeforeLoyalty / 1000) * 100;
+    const loyaltyPointsUsed = Math.min(
+      loyaltyPointsRequested,
+      maxLoyalty,
+      maxByTotal,
+    );
     const loyaltyDiscount = Math.floor(loyaltyPointsUsed / 100) * 1000;
     const total = Math.max(0, subtotal - discountTotal + shippingTotal - loyaltyDiscount);
     const loyaltyEarned = Math.floor(total / 1000);
@@ -270,6 +284,14 @@ export class OrdersService {
       where: { id },
       data: { status: dto.status, paymentStatus: dto.paymentStatus },
     });
+    if (dto.status === OrderStatus.CANCELLED && order.status !== OrderStatus.CANCELLED) {
+      await this.loyalty.reverseForCancelledOrder(
+        order.userId,
+        order.id,
+        order.loyaltySpent,
+        order.loyaltyEarned,
+      );
+    }
     if (actorId) {
       await this.prisma.auditLog.create({
         data: {
@@ -301,6 +323,14 @@ export class OrdersService {
         where: { id },
         data: { status: OrderStatus.CANCELLED },
       });
+    }).then(async (updated) => {
+      await this.loyalty.reverseForCancelledOrder(
+        order.userId,
+        order.id,
+        order.loyaltySpent,
+        order.loyaltyEarned,
+      );
+      return updated;
     });
   }
 

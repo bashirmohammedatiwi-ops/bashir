@@ -490,8 +490,15 @@ class AppStrings {
       ? 'خصم $discount (100 نقطة = $per100)'
       : '$discount off (100 pts = $per100)';
   String get loyaltyPointsRule => isAr
-      ? '100 نقطة = خصم عند الدفع'
-      : '100 points = discount at checkout';
+      ? '100 نقطة = خصم 1,000 د.ع من الفاتورة'
+      : '100 points = 1,000 IQD off your order';
+  String get loyaltyPointsNeedMore => isAr
+      ? 'تحتاج 100 نقطة على الأقل للاستخدام'
+      : 'You need at least 100 points to redeem';
+  String loyaltyPointsUsed(int points) =>
+      isAr ? 'نقاط مستخدمة ($points)' : 'Points used ($points)';
+  String loyaltyPointsEarned(int points) =>
+      isAr ? 'نقاط مكتسبة (+$points)' : 'Points earned (+$points)';
   String get orderPlacedSuccess => isAr ? 'تم استلام طلبك بنجاح!' : 'Your order was placed successfully!';
   String orderNumberLabel(String num) => isAr ? 'رقم الطلب: $num' : 'Order #$num';
   String get orderPlacedCodNote => isAr
