@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 /// أحجام الشاشة الشائعة في الهواتف والأجهزة اللوحية الصغيرة.
@@ -97,32 +95,25 @@ abstract final class Responsive {
   }
 
   static double bottomNavHeight(BuildContext context) {
-    return isCompact(context) ? 60 : 64;
+    return isCompact(context) ? 62 : 66;
   }
 
-  /// ارتفاع منطقة أزرار/إيماءات النظام السفلية.
+  /// ارتفاع منطقة أزرار/إيماءات النظام السفلية (بدون تخمين إضافي).
   static double systemBottomInset(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final inset = math.max(mq.viewPadding.bottom, mq.padding.bottom);
-    if (inset > 0) return inset;
-
-    // edge-to-edge على أندرويد: بعض الأجهزة بأزرار ثلاثية لا تبلّغ inset
-    if (Theme.of(context).platform == TargetPlatform.android) return 48;
-
-    return 0;
+    return MediaQuery.viewPaddingOf(context).bottom;
   }
 
-  /// هامش بصري صغير بين الشريط ومنطقة النظام.
-  static const double shellNavVisualGap = 6;
+  /// هامش بصري بين الشريط ومنطقة النظام — الشريط يلتصق بالأسفل مباشرة.
+  static const double shellNavVisualGap = 0;
 
-  /// ارتفاع منطقة الشريط السفلي كاملة (شريط + هامش + أزرار النظام).
+  /// ارتفاع منطقة الشريط السفلي كاملة (شريط + أزرار النظام داخله).
   static double shellNavDockHeight(BuildContext context) {
-    return bottomNavHeight(context) + shellNavVisualGap + systemBottomInset(context);
+    return bottomNavHeight(context) + systemBottomInset(context);
   }
 
   static double navLabelSize(BuildContext context, {required bool active}) {
-    if (isCompact(context)) return active ? 9 : 8;
-    return active ? 10 : 9;
+    if (isCompact(context)) return active ? 10 : 9;
+    return active ? 11 : 10;
   }
 
   /// حشوة أسفل المحتوى القابل للتمرير داخل الـ shell.

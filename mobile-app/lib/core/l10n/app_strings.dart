@@ -53,6 +53,8 @@ class AppStrings {
   String freeShippingPlus(String amount) =>
       isAr ? 'شحن مجاني +$amount' : 'Free shipping +$amount';
   String get shopByCategory => isAr ? 'تسوقي حسب القسم' : 'Shop by Category';
+  String get shopBySkinConcern => isAr ? 'تسوقي حسب مشكلتك' : 'Shop by Skin Concern';
+  String get skinGuideOverline => isAr ? 'دليل البشرة' : 'Skin Guide';
   String get viewAll => isAr ? 'عرض الكل' : 'View All';
   String get categoriesTitle => isAr ? 'الفئات' : 'Categories';
   String get quickOffers => isAr ? 'العروض' : 'Offers';
@@ -90,7 +92,6 @@ class AppStrings {
   String packageCount(int n) => isAr ? '$n مكتبة' : '$n packages';
   String get website => isAr ? 'الموقع' : 'Website';
   String get visitWebsite => isAr ? 'زيارة الموقع' : 'Visit website';
-  String get rateOnPlayStore => isAr ? 'قيّمي التطبيق' : 'Rate on Play Store';
   String get shareProduct => isAr ? 'مشاركة المنتج' : 'Share product';
   String get linkCopied => isAr ? 'تم نسخ الرابط' : 'Link copied';
   String get logout => isAr ? 'تسجيل الخروج' : 'Log Out';

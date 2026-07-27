@@ -16,6 +16,7 @@ class Category {
   final String? linkType;
   final String? linkValue;
   final String? description;
+  final String? descriptionEn;
   final String? rawImageUrl;
   final AppMedia? image;
   final List<Category> children;
@@ -33,6 +34,7 @@ class Category {
     this.linkType,
     this.linkValue,
     this.description,
+    this.descriptionEn,
     this.rawImageUrl,
     this.image,
     this.children = const [],
@@ -51,6 +53,7 @@ class Category {
         linkType: json['linkType']?.toString(),
         linkValue: json['linkValue']?.toString(),
         description: json['description']?.toString(),
+        descriptionEn: json['descriptionEn']?.toString(),
         rawImageUrl: json['imageUrl']?.toString(),
         image: json['image'] is Map ? AppMedia.fromJson(asMap(json['image'])) : null,
         children: asList(json['children']).map(Category.fromJson).toList(),
@@ -61,6 +64,13 @@ class Category {
         ar: nameAr,
         en: nameEn,
         fallback: name,
+      );
+
+  String localizedDescription(String lang) => localizedText(
+        languageCode: lang,
+        ar: description,
+        en: descriptionEn,
+        fallback: '',
       );
 
   String get imageUrl {

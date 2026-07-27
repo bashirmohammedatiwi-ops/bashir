@@ -1,0 +1,902 @@
+{
+  "imported": {
+    "4250338494415": {
+      "id": "fb1d9895-7f9d-4296-ac6f-efe0fdbfdf2e",
+      "facesId": "130812467601",
+      "leaf": "makeup",
+      "stock": 166,
+      "nameAr": "إيسينس - مسكارا جيت بيج لرموش كثيفة مقاومة للماء",
+      "nameEn": "Essence Get Big! Lashes Volume Boost Waterproof",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "be0ba95f-62a6-4245-8012-5f6943ea5cab"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "eyes",
+      "at": 1785070319818
+    },
+    "8809576261752": {
+      "id": "0239648e-ee0e-46cb-8704-1d0fd58fa1dd",
+      "facesId": "545416816922",
+      "leaf": "men-beauty-products",
+      "stock": 73,
+      "nameAr": "سكِن 1004 - سيروم الوجه للترطيب المكثف بالبروبيو سيكا سنتيلا",
+      "nameEn": "Skin1004 Madagascar Centella Probio-Cica Intensive Ampoule",
+      "kind": "care",
+      "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "subcategoryIds": [
+        "07661898-571a-4a88-aa6c-76dcdbf53029",
+        "09146169-f9c4-4649-a365-ca1b8cda365f",
+        "7d2bfaec-d963-404b-b9b5-04b64a82bf29"
+      ],
+      "tertiaryCategoryIds": [
+        "21801439-d0e9-4106-b5e8-dfdd70ffeb8d",
+        "2cf78dfc-8e8f-4f48-b75f-59eb445ba269"
+      ],
+      "careLeaf": "care/face-care/face-moisturizer",
+      "makeupSub": null,
+      "at": 1785070324225
+    },
+    "8809738315866": {
+      "id": "afab3ef7-98fe-45fb-a1f2-8c698c2d6270",
+      "facesId": "520016594090",
+      "leaf": "men-beauty-products",
+      "stock": 65,
+      "nameAr": "بيوتي اوف جيسون - زيت التنظيف بالجنسنغ",
+      "nameEn": "Beauty Of Joseon Ginseng",
+      "kind": "care",
+      "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "subcategoryIds": [
+        "07661898-571a-4a88-aa6c-76dcdbf53029",
+        "09146169-f9c4-4649-a365-ca1b8cda365f",
+        "7d2bfaec-d963-404b-b9b5-04b64a82bf29"
+      ],
+      "tertiaryCategoryIds": [
+        "05028a17-da64-4c66-b25f-73c758acc2f8",
+        "2cf78dfc-8e8f-4f48-b75f-59eb445ba269"
+      ],
+      "careLeaf": "care/face-care/cleansers--toners",
+      "makeupSub": null,
+      "at": 1785070331769
+    },
+    "4059729277084": {
+      "id": "a8e2fd41-7649-4b5a-8cb0-ae1d8d4a7080",
+      "facesId": "pm130915542704",
+      "leaf": "makeup",
+      "stock": 22,
+      "nameAr": "كاتريس - خافي العيوب عالي التغطية ترو سكين - 10 Cool Cashmere",
+      "nameEn": "Catrice True Skin High Cover Concealer - 10 Cool Cashmere",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785070342395
+    },
+    "4059729371652": {
+      "id": "327bc49d-0f86-47a6-9b04-50d78465b7d6",
+      "facesId": "pm130817019775",
+      "leaf": "makeup",
+      "stock": 13,
+      "nameAr": "إيسينس - قلم شفاه سائل مت يدوم لمدة 8 ساعات - 01 Cinnamon Spice",
+      "nameEn": "Essence 8H Matte - 01 Cinnamon Spice",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "56da5b82-c847-4e9b-9cea-cc901236189f"
+      ],
+      "tertiaryCategoryIds": [
+        "b53dd3be-ae16-47a4-a306-238f2060b8d8"
+      ],
+      "careLeaf": null,
+      "makeupSub": "lips",
+      "at": 1785070366368
+    },
+    "6931611300262": {
+      "id": "ba7751e7-e4f6-4725-a349-2cceccdc6a78",
+      "facesId": "pm606517386313",
+      "leaf": "makeup",
+      "stock": 12,
+      "nameAr": "شيجلام - احمر خدود سائل بلون مزدهر - Rose Ritual",
+      "nameEn": "Sheglam Color Bloom Liquid - Rose Ritual",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785070380608
+    },
+    "3423478509351": {
+      "id": "7b54258d-cd25-443c-bc54-28cb991c7cea",
+      "facesId": "PM_ISSEY_MIYAKE_Wood_And_Wood_EDP",
+      "leaf": "men-beauty-products",
+      "stock": 12,
+      "nameAr": "ايسي مياكي - عطر وود آند وود أو دو بارفان - 100مل",
+      "nameEn": "Issey Miyake Wood & Wood Eau De Parfum - 100ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785070394230
+    },
+    "4059729191731": {
+      "id": "d816a7e0-97a0-4473-9356-f0185cb5447e",
+      "facesId": "130914529967",
+      "leaf": "makeup",
+      "stock": 11,
+      "nameAr": "كاتريس - لاينر اسود إتس إيزي",
+      "nameEn": "Catrice It's Easy Black Liner 010",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785070404441
+    },
+    "6973072802992": {
+      "id": "b2d9f74f-3e62-4f06-bd26-e291747944df",
+      "facesId": "606517386363",
+      "leaf": "makeup",
+      "stock": 11,
+      "nameAr": "شيجلام - كحل الكريمي أونلاين",
+      "nameEn": "Sheglam On-Line Creamy",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "be0ba95f-62a6-4245-8012-5f6943ea5cab"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "eyes",
+      "at": 1785070408701
+    },
+    "4059729191397": {
+      "id": "592c4187-faf9-4462-92cc-d3fe498a6707",
+      "facesId": "130914529968",
+      "leaf": "makeup",
+      "stock": 11,
+      "nameAr": "كاتريس - لاينر تاتو ضد الماء إتس إيزي",
+      "nameEn": "Catrice It's Easy Tattoo Liner Waterproof",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785070416662
+    },
+    "6971053496109": {
+      "id": "72b7ff9e-7579-42bb-900f-dc073cbca710",
+      "facesId": "pm606517386328",
+      "leaf": "makeup",
+      "stock": 11,
+      "nameAr": "شيجلام - احمر شفاه يدوم طويلا مطفي - High Key",
+      "nameEn": "Sheglam Dynamatte Boom Long-Lasting Matte - High Key",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "56da5b82-c847-4e9b-9cea-cc901236189f"
+      ],
+      "tertiaryCategoryIds": [
+        "eaa06284-281e-475f-937b-b01ee24192df"
+      ],
+      "careLeaf": null,
+      "makeupSub": "lips",
+      "at": 1785070428257
+    },
+    "8809416470030": {
+      "id": "ad0d825e-dc97-4694-9821-9bc98c044d25",
+      "facesId": "376014559065",
+      "leaf": "skincare",
+      "stock": 11,
+      "nameAr": "كوسركس - تونر معالج منقي AHA/BHA",
+      "nameEn": "Cosrx AHA/BHA Clarifying Treatment",
+      "kind": "care",
+      "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "subcategoryIds": [
+        "07661898-571a-4a88-aa6c-76dcdbf53029",
+        "09146169-f9c4-4649-a365-ca1b8cda365f",
+        "7d2bfaec-d963-404b-b9b5-04b64a82bf29"
+      ],
+      "tertiaryCategoryIds": [
+        "21801439-d0e9-4106-b5e8-dfdd70ffeb8d",
+        "2cf78dfc-8e8f-4f48-b75f-59eb445ba269"
+      ],
+      "careLeaf": "care/face-care/face-moisturizer",
+      "makeupSub": null,
+      "at": 1785070433330
+    },
+    "6294015131017": {
+      "id": "61a8873d-47b9-43d9-b434-a98ef25b5968",
+      "facesId": "551917133991",
+      "leaf": "perfume",
+      "stock": 10,
+      "nameAr": "ارماف - كلوب دو نوي إنتنس",
+      "nameEn": "ARMAF Club De Nuit Intense Parfum",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785070436686
+    },
+    "4059729276698": {
+      "id": "47d76588-dcb1-4c14-9550-8fe900bbcbbd",
+      "facesId": "PM_CATRICE_Plumping_Lip_Liner",
+      "leaf": "makeup",
+      "stock": 10,
+      "nameAr": "كاتريس - محدد ومكبر شفاه - 040 Starring Role",
+      "nameEn": "Catrice Plumping - 040 Starring Role",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "56da5b82-c847-4e9b-9cea-cc901236189f"
+      ],
+      "tertiaryCategoryIds": [
+        "eaa06284-281e-475f-937b-b01ee24192df"
+      ],
+      "careLeaf": null,
+      "makeupSub": "lips",
+      "at": 1785070457219
+    },
+    "3348901700931": {
+      "id": "2919a082-f8e7-45ce-a86b-b8a45ebdd090",
+      "facesId": "pm009116394441",
+      "leaf": "perfume",
+      "stock": 9,
+      "nameAr": "ديور - عطر جادور لور - 80ML",
+      "nameEn": "Dior J’adore l’Or - 80ML",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785070463514
+    },
+    "3349668576173": {
+      "id": "bf7eb31a-5fce-47e3-9900-1f54d0536194",
+      "facesId": "PM_PACO_RABANNE_Pure_XS_EDT",
+      "leaf": "perfume",
+      "stock": 8,
+      "nameAr": "رابان - بيور إكس آس أو دو تواليت - 100مل",
+      "nameEn": "Rabanne Pure XS Eau De Toilette - 100ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785070471502
+    },
+    "4059729356239": {
+      "id": "429ff8fe-ba30-4150-94d6-e5a9c9e47963",
+      "facesId": "130916160360",
+      "leaf": "makeup",
+      "stock": 8,
+      "nameAr": "كاتريس - كحل كاجال مقاوم للماء",
+      "nameEn": "Catrice Kohl Kajal Waterproof",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "be0ba95f-62a6-4245-8012-5f6943ea5cab"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "eyes",
+      "at": 1785070482941
+    },
+    "4250947528426": {
+      "id": "f2e65f11-a3a7-48f8-bd42-0a00d2b698f5",
+      "facesId": "pm130812467716",
+      "leaf": "makeup",
+      "stock": 6,
+      "nameAr": "إيسينس - مسكارا مكثفة للحواجب - 02 Browny Brows",
+      "nameEn": "Essence Make Me Brow - 02 Browny Brows",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "be0ba95f-62a6-4245-8012-5f6943ea5cab"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "eyes",
+      "at": 1785070491850
+    },
+    "4059729593658": {
+      "id": "37c90d83-7e4d-4e95-b606-6203627c6dfe",
+      "facesId": "pm130817962175",
+      "leaf": "makeup",
+      "stock": 6,
+      "nameAr": "إيسينس - ملمّع الشفاه جوسي بومب - 01 Sweet Strawberry",
+      "nameEn": "Essence Juicy Bomb Plumping - 01 Sweet Strawberry",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "56da5b82-c847-4e9b-9cea-cc901236189f"
+      ],
+      "tertiaryCategoryIds": [
+        "eaa06284-281e-475f-937b-b01ee24192df"
+      ],
+      "careLeaf": null,
+      "makeupSub": "lips",
+      "at": 1785070506177
+    },
+    "4059729584847": {
+      "id": "a20ae763-fd15-4e31-8959-f35072af6664",
+      "facesId": "pm130817962180",
+      "leaf": "makeup",
+      "stock": 6,
+      "nameAr": "إيسينس - كريم الشفاه غير اللامع بلير سوفليه - 01 Deep Scroll",
+      "nameEn": "Essence Blur Soufflé Matte Lip Cream - 01 Deep Scroll",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "56da5b82-c847-4e9b-9cea-cc901236189f"
+      ],
+      "tertiaryCategoryIds": [
+        "eaa06284-281e-475f-937b-b01ee24192df"
+      ],
+      "careLeaf": null,
+      "makeupSub": "lips",
+      "at": 1785070526949
+    },
+    "4059729280961": {
+      "id": "53003e42-7b29-4ff1-aa12-76a3d55d281c",
+      "facesId": "130915304788",
+      "leaf": "makeup",
+      "stock": 6,
+      "nameAr": "كاتريس - مسكارا ديب جو بيج جو بولد",
+      "nameEn": "Catrice Go Big. Go Bold. Deep Black Mascara",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "be0ba95f-62a6-4245-8012-5f6943ea5cab"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "eyes",
+      "at": 1785070537051
+    },
+    "4059729281005": {
+      "id": "6cf7eccb-bc63-490d-a5bd-9220648fafc5",
+      "facesId": "130915304789",
+      "leaf": "makeup",
+      "stock": 6,
+      "nameAr": "كاتريس - مسكارا اكستريم مقاومة للماء جو بيج جو بولد",
+      "nameEn": "Catrice Go Big. Go Bold. Waterproof Mascara",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "be0ba95f-62a6-4245-8012-5f6943ea5cab"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "eyes",
+      "at": 1785070547992
+    },
+    "6971479468223": {
+      "id": "0f817717-b7de-4a86-88ec-f741d1d669a0",
+      "facesId": "606517386308",
+      "leaf": "makeup",
+      "stock": 6,
+      "nameAr": "شيجلام - برايمر غود جريب المرطب",
+      "nameEn": "Sheglam Good Grip Hydrating Primer-Good Grip",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785070552068
+    },
+    "3760265194841": {
+      "id": "88b4197c-ead3-43db-ad29-7f8d1c2794e5",
+      "facesId": "058517177681",
+      "leaf": "men-beauty-products",
+      "stock": 6,
+      "nameAr": "مانسيرا - تشيري تشيري",
+      "nameEn": "Mancera Cherry Cherry",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "92a95f2e-d855-4943-9875-b85e684f746a",
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785070556863
+    },
+    "4250035271616": {
+      "id": "0b0ea03c-2725-439a-be64-6b2bca06bc0e",
+      "facesId": "pm130812467576",
+      "leaf": "makeup",
+      "stock": 5,
+      "nameAr": "إيسينس - بودرة وجه مضغوطة من دون لمعان مت - 04 Perfect Beige",
+      "nameEn": "Essence Mattifying Compact - 04 Perfect Beige",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785070567438
+    },
+    "4250947501382": {
+      "id": "af7a953f-7b0c-431e-bd7f-35c64f33730d",
+      "facesId": "130812467614",
+      "leaf": "makeup",
+      "stock": 5,
+      "nameAr": "إيسينس - مبراة مزدوجة",
+      "nameEn": "Essence Duo Sharpener",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785070570655
+    },
+    "4059729585196": {
+      "id": "e22e36af-c4b4-42c2-a915-add77419d91e",
+      "facesId": "pm130817962153",
+      "leaf": "makeup",
+      "stock": 5,
+      "nameAr": "إيسينس - بوتلاين سوفت جلايد ليب بينسل - 01_like_to_mauve_it",
+      "nameEn": "Essence Poutline Soft Glide - 01_like_to_mauve_it",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "56da5b82-c847-4e9b-9cea-cc901236189f"
+      ],
+      "tertiaryCategoryIds": [
+        "eaa06284-281e-475f-937b-b01ee24192df"
+      ],
+      "careLeaf": null,
+      "makeupSub": "lips",
+      "at": 1785070579654
+    },
+    "4059729422064": {
+      "id": "0ca4dc39-df46-40d2-a41a-5f5774667268",
+      "facesId": "pm130817247904",
+      "leaf": "makeup",
+      "stock": 5,
+      "nameAr": "إيسينس - زيت شفاه هيدرا كيس - 01 Kiss From A Rose",
+      "nameEn": "Essence Hydra Kiss Lip Oil - 01 Kiss From A Rose",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "56da5b82-c847-4e9b-9cea-cc901236189f"
+      ],
+      "tertiaryCategoryIds": [
+        "b53dd3be-ae16-47a4-a306-238f2060b8d8"
+      ],
+      "careLeaf": null,
+      "makeupSub": "lips",
+      "at": 1785070592591
+    },
+    "4059729585127": {
+      "id": "e18c3460-0393-4fc4-a8e5-30e0b2581afb",
+      "facesId": "pm130817962163",
+      "leaf": "makeup",
+      "stock": 5,
+      "nameAr": "إيسينس - وات ذا فيك! مُلمع لتكبير الشفاه - 100 Sheer Genius",
+      "nameEn": "Essence What The Fake! Plumping - 100 Sheer Genius",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "56da5b82-c847-4e9b-9cea-cc901236189f"
+      ],
+      "tertiaryCategoryIds": [
+        "eaa06284-281e-475f-937b-b01ee24192df"
+      ],
+      "careLeaf": null,
+      "makeupSub": "lips",
+      "at": 1785070608411
+    },
+    "6957317600970": {
+      "id": "fcde43ce-469a-43ed-a810-a8943b25941f",
+      "facesId": "606517386307",
+      "leaf": "makeup",
+      "stock": 5,
+      "nameAr": "شيجلام - زيت شفاه مرطب جيلي واو-بيري انفولفد",
+      "nameEn": "Sheglam Jelly Wow Hydrating Lip Oil (Berry Involved)",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "56da5b82-c847-4e9b-9cea-cc901236189f"
+      ],
+      "tertiaryCategoryIds": [
+        "b53dd3be-ae16-47a4-a306-238f2060b8d8"
+      ],
+      "careLeaf": null,
+      "makeupSub": "lips",
+      "at": 1785070615847
+    },
+    "4059729584519": {
+      "id": "18490a29-1bc7-4ab1-804d-8a4a347d5b72",
+      "facesId": "130817962194",
+      "leaf": "makeup",
+      "stock": 5,
+      "nameAr": "إيسينس - سيلكي بلير ترانسلوسينت لوس سيتينغ باودر",
+      "nameEn": "Essence Silky Blur Translucent Loose Setting",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785070620747
+    },
+    "3474636400218": {
+      "id": "5fd1011a-5d54-4ff4-a587-902737ceddfc",
+      "facesId": "018114574490",
+      "leaf": "bestsellers",
+      "stock": 5,
+      "nameAr": "كيراستاس - ديسبلن ماسك الشعر ماسكيراتين 200مل",
+      "nameEn": "Kerastase Discipline Maskeratine Hair Mask 200ml",
+      "kind": "care",
+      "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "subcategoryIds": [
+        "150a633e-80a7-4cb3-8f2d-8eab90a99190"
+      ],
+      "tertiaryCategoryIds": [
+        "ab7c66e4-4df6-474f-b9d2-dd059dd60bfc"
+      ],
+      "careLeaf": "care/hair-care/shampoo-conditioners",
+      "makeupSub": null,
+      "at": 1785070626491
+    },
+    "4059729254368": {
+      "id": "2c83a494-3f98-4839-82ab-24cd46ae8530",
+      "facesId": "130815007134",
+      "leaf": "makeup",
+      "stock": 4,
+      "nameAr": "إيسينس - قلم كحل سائل 24ever",
+      "nameEn": "Essence 24Ever Ink Liner",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "be0ba95f-62a6-4245-8012-5f6943ea5cab"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "eyes",
+      "at": 1785070638180
+    },
+    "4059729274953": {
+      "id": "37cd0e72-d66c-46a1-a9c9-fe20af8ebfbc",
+      "facesId": "130915304760",
+      "leaf": "makeup",
+      "stock": 4,
+      "nameAr": "كاتريس - لاينر برش مقاوم للماء",
+      "nameEn": "Catrice 24h Brush Liner Waterproof",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785070647542
+    },
+    "4059729419606": {
+      "id": "1093499d-21b7-4b5d-9954-433863d4ef0c",
+      "facesId": "pm130916625690",
+      "leaf": "makeup",
+      "stock": 4,
+      "nameAr": "كاتريس - زيت شفاه ملون غلوسن غلو - 10 Keep it Juicy",
+      "nameEn": "Catrice Glossin' Glow Tinted Lip Oil - 10 Keep it Juicy",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "56da5b82-c847-4e9b-9cea-cc901236189f"
+      ],
+      "tertiaryCategoryIds": [
+        "5c279f28-2833-42d7-9211-8f72f2c4522f"
+      ],
+      "careLeaf": null,
+      "makeupSub": "lips",
+      "at": 1785070667815
+    },
+    "4059729583444": {
+      "id": "087cba04-590b-49ac-b432-2b223dd17e97",
+      "facesId": "pm130817962146",
+      "leaf": "makeup",
+      "stock": 4,
+      "nameAr": "إيسينس - ظلال عيون أحادية غير لامعة - 02 Neutral Brown",
+      "nameEn": "Essence Mono Eyeshadow Matte - 02 Neutral Brown",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "be0ba95f-62a6-4245-8012-5f6943ea5cab"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "eyes",
+      "at": 1785070676958
+    },
+    "4250587791488": {
+      "id": "803ae8f5-161f-49db-8102-5e3a6df83515",
+      "facesId": "130914754138",
+      "leaf": "makeup",
+      "stock": 4,
+      "nameAr": "كاتريس - لاصق الرموش 010",
+      "nameEn": "Catrice Lash Glue 010",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "be0ba95f-62a6-4245-8012-5f6943ea5cab"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "eyes",
+      "at": 1785070684013
+    },
+    "4059729521439": {
+      "id": "b7b6b970-137e-4931-8cd0-e137a80e926f",
+      "facesId": "pm130817248811",
+      "leaf": "makeup",
+      "stock": 4,
+      "nameAr": "إيسينس - لاين اند ستاين! تاتو ليب لاينر - 03_make_a_mauve",
+      "nameEn": "Essence LINE N' Stain! Tattoo - 03_make_a_mauve",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "56da5b82-c847-4e9b-9cea-cc901236189f"
+      ],
+      "tertiaryCategoryIds": [
+        "eaa06284-281e-475f-937b-b01ee24192df"
+      ],
+      "careLeaf": null,
+      "makeupSub": "lips",
+      "at": 1785070693646
+    },
+    "4059729583284": {
+      "id": "d5e53f9d-5f6d-44df-a864-6241e3b8e203",
+      "facesId": "pm130817962142",
+      "leaf": "makeup",
+      "stock": 4,
+      "nameAr": "إيسينس - قلم حواجب دقيق - 02 Taupe",
+      "nameEn": "Essence Micro Precise - 02 Taupe",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "be0ba95f-62a6-4245-8012-5f6943ea5cab"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "eyes",
+      "at": 1785070704757
+    },
+    "8057971188116": {
+      "id": "4840d04e-2948-455c-96b6-318a7c8c76f3",
+      "facesId": "pm009417202437",
+      "leaf": "men-beauty-products",
+      "stock": 4,
+      "nameAr": "دولتشي أند غابانا - عطر لايت بلو - 100ml",
+      "nameEn": "Dolce & Gabbana Light Blue Capri In Love - 100ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785070721890
+    },
+    "3605972793713": {
+      "id": "4132561f-f8db-4938-9a6d-2bcc9cd1865a",
+      "facesId": "027216591491",
+      "leaf": "men-beauty-products",
+      "stock": 4,
+      "nameAr": "رالف لورين - Polo Cologne Intense",
+      "nameEn": "Ralph Lauren Polo Cologne Intense",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785070726321
+    },
+    "3614274024760": {
+      "id": "6a37748f-5bc9-4c77-ab8e-9faa8654ec3d",
+      "facesId": "pm032816813191",
+      "leaf": "perfume",
+      "stock": 3,
+      "nameAr": "فالنتينو - عطر بورن إن روما غرين سترافغانزا - 100 ML",
+      "nameEn": "Valentino Born In Roma Donna Green Stravaganza - 100 ML",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785070735300
+    },
+    "4059729518620": {
+      "id": "e1374a2f-4b95-4dcb-9115-a983a8ae3f73",
+      "facesId": "pm130817962161",
+      "leaf": "makeup",
+      "stock": 3,
+      "nameAr": "إيسينس - علاج الشفاه اللامع فائق الببتيد - 02 Pinkified",
+      "nameEn": "Essence The Super Peptide Glossy Lip Treatment - 02 Pinkified",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "56da5b82-c847-4e9b-9cea-cc901236189f"
+      ],
+      "tertiaryCategoryIds": [
+        "b53dd3be-ae16-47a4-a306-238f2060b8d8"
+      ],
+      "careLeaf": null,
+      "makeupSub": "lips",
+      "at": 1785070746307
+    },
+    "3616302038138": {
+      "id": "5747ed87-bf84-4c4c-819d-36f7f15159e3",
+      "facesId": "PM_CHLOE_Rose_Naturelle_Intense_Eau_de_Parfum",
+      "leaf": "perfume",
+      "stock": 2,
+      "nameAr": "كلوي - أو دو بارفان أنتنس روز ناتوريل أنتنس - 100مل",
+      "nameEn": "Chloe Chloé Rose Naturelle Intense Eau de Parfum - 100ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785070755760
+    },
+    "4059729327475": {
+      "id": "fbd6009f-642b-4863-9433-a514cc6a6215",
+      "facesId": "130915542739",
+      "leaf": "makeup",
+      "stock": 2,
+      "nameAr": "كاتريس - لوس بانانا باودر",
+      "nameEn": "Catrice Loose Banana",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785070763648
+    },
+    "4059729491145": {
+      "id": "c4c3778d-c0ca-4117-9fbb-1707529731ff",
+      "facesId": "130817019784",
+      "leaf": "makeup",
+      "stock": 2,
+      "nameAr": "إيسينس - ووندر فل برايمر 5 في 1",
+      "nameEn": "Essence Wonder Full 5 In 1",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785070772865
+    },
+    "3145891322101": {
+      "id": "9a5d69cc-ca75-4037-a4bc-6b742f336fcf",
+      "facesId": "PM_Chanel_Poudreuniverselle",
+      "leaf": "makeup",
+      "stock": 2,
+      "nameAr": "شانيل - Poudre Universelle Libre بودرة حرّة لمظهر طبيعي - 10 beige",
+      "nameEn": "Chanel Poudre Universelle Libre Natural Finish Loose - 10 beige",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785070786174
+    },
+    "4059729583482": {
+      "id": "414e3ce9-24e8-4a10-b889-e248effde3b5",
+      "facesId": "130817962148",
+      "leaf": "makeup",
+      "stock": 2,
+      "nameAr": "إيسينس - لؤلؤي أحادي ظلال العيون",
+      "nameEn": "Essence Mono Eyeshadow Pearly",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "be0ba95f-62a6-4245-8012-5f6943ea5cab"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "eyes",
+      "at": 1785070793589
+    },
+    "4059729583420": {
+      "id": "fa451c32-6fb0-467a-8b0d-6e2c203f08dc",
+      "facesId": "130817962193",
+      "leaf": "makeup",
+      "stock": 2,
+      "nameAr": "إيسينس - مسكارا جيت بيج لرموش كثيفة",
+      "nameEn": "Essence Get Big! Lashes Curl Boost",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "be0ba95f-62a6-4245-8012-5f6943ea5cab"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "eyes",
+      "at": 1785070798439
+    },
+    "3145891642025": {
+      "id": "dc566f2a-ab17-4669-8471-dc3b17484aee",
+      "facesId": "PM_Chanel_4ombre",
+      "leaf": "makeup",
+      "stock": 2,
+      "nameAr": "شانيل - LES 4 OMBRES - 202 tissé camélia",
+      "nameEn": "Chanel LES 4 OMBRES - 202 tissé camélia",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785070826768
+    }
+  },
+  "skipped": {
+    "8057971180448": {
+      "reason": "missing bilingual description",
+      "at": 1785070344070
+    }
+  }
+}

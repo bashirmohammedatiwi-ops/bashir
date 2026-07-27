@@ -125,11 +125,6 @@ class AppConfig {
   /// Bundle ID / Application ID — iOS و Android.
   static const String appBundleId = 'com.deemaalhayat.app';
 
-  static const String playStorePackageId = appBundleId;
-
-  static String get playStoreUrl =>
-      'https://play.google.com/store/apps/details?id=$playStorePackageId';
-
   /// رابط مشاركة منتج على الموقع (نفس صيغة المتجر الإلكتروني).
   static String productShareUrl(String slug) =>
       webUrl('/product/?slug=${Uri.encodeComponent(slug)}');

@@ -1,0 +1,24 @@
+[
+  {
+    "barcode": "6287020281075",
+    "niceoneId": "25391",
+    "leaf": "makeup",
+    "pos": {
+      "barcode": "6287020281075",
+      "pos": {
+        "price": 50000,
+        "originalPrice": 50000,
+        "discountPercent": 0,
+        "stock": 6,
+        "name": "IBRAHEEM ALQURASHI SPANISH TOBACCO 100ml",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:48.248Z"
+      },
+      "inApp": null
+    },
+    "brandAr": "",
+    "brandEn": "",
+    "nameAr": "",
+    "nameEn": ""
+  }
+]

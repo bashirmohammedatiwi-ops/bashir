@@ -17,6 +17,10 @@ export const SUBCATEGORIES = {
   bodyPerfume: '453c027d-0022-455b-91a9-d4299479ec62',
   giftSetPerfume: '13754665-184a-48c6-8dd3-b36b9c0e5f28',
   miniPerfume: '59c4dabd-4e87-46e8-a6ce-e5e51a7e901b',
+  // Premium
+  luxuryMakeup: 'd12c04fd-ad76-420c-81b0-708c020b346b',
+  luxuryPerfume: '764abc71-a54c-4aec-9cd8-9869b9afdd0d',
+  luxuryCare: '8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a',
   // Makeup
   lips: '56da5b82-c847-4e9b-9cea-cc901236189f',
   face: '2bbecee1-084d-446c-b4fd-65f769130de9',

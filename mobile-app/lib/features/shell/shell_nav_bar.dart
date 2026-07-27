@@ -5,8 +5,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/utils/responsive.dart';
 import '../cart/widgets/cart_theme.dart';
+import '../home/widgets/home_theme.dart';
 
-/// شريط تنقل سفلي عائم — يلتصق بأسفل الشاشة فوق أزرار النظام مباشرة.
+/// شريط تنقل سفلي — ملتصق بأسفل الشاشة، الخلفية تمتد لمنطقة النظام.
 class ShellNavBar extends StatelessWidget {
   final int currentIndex;
   final int cartCount;
@@ -37,44 +38,42 @@ class ShellNavBar extends StatelessWidget {
     ];
 
     return RepaintBoundary(
-      child: Material(
-        color: Colors.transparent,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, Responsive.shellNavVisualGap),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: CartTheme.softShadow,
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: Material(
-                    color: Colors.white,
-                    child: SizedBox(
-                      height: barHeight,
-                      child: Row(
-                        children: [
-                          for (final item in items)
-                            _NavTab(
-                              item: item,
-                              active: currentIndex == item.index,
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                onSelect(item.index);
-                              },
-                            ),
-                        ],
-                      ),
-                    ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: HomeTheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          border: Border(
+            top: BorderSide(color: CartTheme.brandSoft),
+          ),
+          boxShadow: CartTheme.dockShadow,
+        ),
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          child: Material(
+            color: HomeTheme.surface,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  height: barHeight,
+                  child: Row(
+                    children: [
+                      for (final item in items)
+                        _NavTab(
+                          item: item,
+                          active: currentIndex == item.index,
+                          onTap: () {
+                            HapticFeedback.selectionClick();
+                            onSelect(item.index);
+                          },
+                        ),
+                    ],
                   ),
                 ),
-              ),
+                if (systemInset > 0) SizedBox(height: systemInset),
+              ],
             ),
-            SizedBox(height: systemInset),
-          ],
+          ),
         ),
       ),
     );
@@ -105,62 +104,84 @@ class _NavTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = Responsive.isCompact(context);
-    final color = active ? CartTheme.brand : CartTheme.charcoal.withValues(alpha: 0.4);
+    final iconSize = compact ? 22.0 : 23.0;
+    final inactiveColor = CartTheme.charcoal.withValues(alpha: 0.38);
+    final activeColor = CartTheme.brandDark;
 
     return Expanded(
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+          splashColor: CartTheme.brandSoft,
+          highlightColor: CartTheme.brandWash,
+          child: Stack(
+            alignment: Alignment.topCenter,
             children: [
-              AnimatedContainer(
-                duration: ShellNavBar._duration,
-                curve: Curves.easeOutCubic,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                decoration: BoxDecoration(
-                  color: active ? CartTheme.brandSoft : Colors.transparent,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Stack(
-                  clipBehavior: Clip.none,
-                  alignment: Alignment.center,
-                  children: [
-                    Icon(
-                      active ? item.activeIcon : item.icon,
-                      size: compact ? 21 : 22,
-                      color: color,
+              if (active)
+                Positioned(
+                  top: 0,
+                  left: 10,
+                  right: 10,
+                  child: Container(
+                    height: 3,
+                    decoration: BoxDecoration(
+                      gradient: CartTheme.brandGradient,
+                      borderRadius: BorderRadius.circular(99),
                     ),
-                    if (item.badge > 0)
-                      Positioned(
-                        top: -4,
-                        right: -6,
-                        child: _Badge(count: item.badge),
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.only(top: 7),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AnimatedContainer(
+                      duration: ShellNavBar._duration,
+                      curve: Curves.easeOutCubic,
+                      width: compact ? 42 : 44,
+                      height: compact ? 30 : 32,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: active ? CartTheme.brandSoft : Colors.transparent,
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            active ? item.activeIcon : item.icon,
+                            size: iconSize,
+                            color: active ? activeColor : inactiveColor,
+                          ),
+                          if (item.badge > 0)
+                            Positioned(
+                              top: -5,
+                              right: -4,
+                              child: _Badge(count: item.badge),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    AnimatedDefaultTextStyle(
+                      duration: ShellNavBar._duration,
+                      curve: Curves.easeOutCubic,
+                      style: GoogleFonts.cairo(
+                        fontSize: Responsive.navLabelSize(context, active: active),
+                        fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                        color: active ? activeColor : inactiveColor,
+                        height: 1.05,
+                      ),
+                      child: Text(
+                        item.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
                   ],
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                item.label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.cairo(
-                  fontSize: Responsive.navLabelSize(context, active: active),
-                  fontWeight: active ? FontWeight.w800 : FontWeight.w600,
-                  color: active ? CartTheme.brandDark : CartTheme.charcoal.withValues(alpha: 0.45),
-                  height: 1,
-                ),
-              ),
-              const SizedBox(height: 3),
-              AnimatedContainer(
-                duration: ShellNavBar._duration,
-                width: active ? 4 : 0,
-                height: active ? 4 : 0,
-                decoration: const BoxDecoration(
-                  color: CartTheme.brand,
-                  shape: BoxShape.circle,
                 ),
               ),
             ],
@@ -181,7 +202,7 @@ class _Badge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
       constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFE2557A),
+        gradient: CartTheme.brandGradient,
         borderRadius: BorderRadius.circular(99),
         border: Border.all(color: Colors.white, width: 1.5),
       ),

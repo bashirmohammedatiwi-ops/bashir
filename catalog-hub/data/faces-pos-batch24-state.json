@@ -1,0 +1,867 @@
+{
+  "imported": {
+    "6971479464676": {
+      "id": "9787a5c2-239d-45c0-b36a-2f81489afa89",
+      "facesId": "606517386336",
+      "leaf": "bestsellers",
+      "stock": 27,
+      "nameAr": "شيجلام - برايمر تصحيح ألوان - وردي",
+      "nameEn": "Sheglam Birthday Skin Primer Invisible Pore Color Correcting Pink",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785074174369
+    },
+    "6294015164176": {
+      "id": "2bc7ed2a-892e-45dd-b128-b07ec4206dfd",
+      "facesId": "551916817086",
+      "leaf": "bestsellers",
+      "stock": 22,
+      "nameAr": "ارماف - عطر كلوب دي نوي ريد أنتولد",
+      "nameEn": "ARMAF Club De Nuit Red Untold",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785074180110
+    },
+    "3423222119485": {
+      "id": "4ab8b162-13e3-4d96-b44b-3f69039262a5",
+      "facesId": "pm015617334219",
+      "leaf": "perfume",
+      "stock": 14,
+      "nameAr": "ايسي مياكي - لو سيل ديسي - 100 مل",
+      "nameEn": "Issey Miyake Le Sel D'Issey - 100ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785074196207
+    },
+    "768614102021": {
+      "id": "6693d8a8-0a80-4ecd-9ddc-836b3afce616",
+      "facesId": "PM_SHISEIDO_Zen_EDP",
+      "leaf": "perfume",
+      "stock": 13,
+      "nameAr": "شيسيدو - عطر زين أو دو برفان - 100مل",
+      "nameEn": "Shiseido Zen Eau de Parfum - 100ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785074204457
+    },
+    "6294015164152": {
+      "id": "978a1e1f-db5b-4936-a237-22885731fe61",
+      "facesId": "551916817083",
+      "leaf": "bestsellers",
+      "stock": 11,
+      "nameAr": "ارماف - عطر كلوب دي نوي بلو أيكونيك",
+      "nameEn": "ARMAF Club De Nuit Blue Iconic",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785074211579
+    },
+    "6971053493689": {
+      "id": "9e3a6021-93ed-4dd0-a0c2-109d160baa97",
+      "facesId": "606517386319",
+      "leaf": "bestsellers",
+      "stock": 11,
+      "nameAr": "شيجلام - ماسكارا سوداء مضادة للماء",
+      "nameEn": "Sheglam All In One Volume & Length Mascara WP Black 8g",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "be0ba95f-62a6-4245-8012-5f6943ea5cab"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "eyes",
+      "at": 1785074216336
+    },
+    "079625042702": {
+      "id": "f69f31ac-0920-4d5a-a2c3-3cb04db9a823",
+      "facesId": "164717025047",
+      "leaf": "skincare",
+      "stock": 9,
+      "nameAr": "ريل تكنينك - مجموعة فرشاة ثنائية للعناية بالبشرة",
+      "nameEn": "Real Techniques Skincare Brush Duo",
+      "kind": "care",
+      "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "subcategoryIds": [
+        "07661898-571a-4a88-aa6c-76dcdbf53029",
+        "09146169-f9c4-4649-a365-ca1b8cda365f"
+      ],
+      "tertiaryCategoryIds": [
+        "21801439-d0e9-4106-b5e8-dfdd70ffeb8d"
+      ],
+      "careLeaf": "care/face-care/face-moisturizer",
+      "makeupSub": null,
+      "at": 1785074229524
+    },
+    "6295199800959": {
+      "id": "e9affaf9-0b09-4241-9896-cd7b08b5e3b3",
+      "facesId": "551917349829",
+      "leaf": "bestsellers",
+      "stock": 7,
+      "nameAr": "ارماف - عطر ديلايتس يم يم",
+      "nameEn": "ARMAF Delights Yum Yum",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785074237475
+    },
+    "4250587773200": {
+      "id": "3b6aa030-8ec8-40fd-97d5-2ac65e2137b8",
+      "facesId": "130812467892",
+      "leaf": "bestsellers",
+      "stock": 6,
+      "nameAr": "إيسينس - بودرة وجه مضغوطة من دون لمعان مت - 11 بيج",
+      "nameEn": "Essence Mattifying Compact - 11 Pastel Beige",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785074245682
+    },
+    "3614274258073": {
+      "id": "fb83f448-7244-4032-901a-4a8a331595f4",
+      "facesId": "pm002117217839",
+      "leaf": "men-beauty-products",
+      "stock": 6,
+      "nameAr": "أزارو - عطر وونتد فوريفر إليكسير - 100 مل",
+      "nameEn": "Azzaro Wanted Forever Elixir - 100ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785074254403
+    },
+    "4059729446640": {
+      "id": "ce395033-b839-4539-acb9-014ea5451266",
+      "facesId": "pm130817019774",
+      "leaf": "bestsellers",
+      "stock": 5,
+      "nameAr": "إيسينس - ستاي & بلاي جيل ايلاينر بوت - 01 أسود",
+      "nameEn": "Essence Stay & Play Pot Gel - 01 Black",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785074276310
+    },
+    "3439600055726": {
+      "id": "ec066ceb-8938-4386-b8b8-d4304d0f4c07",
+      "facesId": "031215344140",
+      "leaf": "men-beauty-products",
+      "stock": 5,
+      "nameAr": "موغلر - عطر أ*مين أو دو تواليت 100مل",
+      "nameEn": "Mugler A*MEN Eau de Toilette 100ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "8dca642a-1194-4101-b5cc-486ca1664e89"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785074279195
+    },
+    "3349668641833": {
+      "id": "d5062895-b376-4014-ace1-f9a463d24417",
+      "facesId": "pm025417170242",
+      "leaf": "men-beauty-products",
+      "stock": 4,
+      "nameAr": "رابان - عطر إنفيكتوس فيكتوري أبسولو بارفان إنتنس - 100 مل",
+      "nameEn": "Rabanne Invictus Victory Absolu Parfum Intense - 100ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785074298308
+    },
+    "4059729222978": {
+      "id": "ba17f9ba-d96c-42d4-98fd-3d88111f01ca",
+      "facesId": "pm130917019836",
+      "leaf": "bestsellers",
+      "stock": 3,
+      "nameAr": "كاتريس - برايمر دريم 10 في 4 - 010",
+      "nameEn": "Catrice Ten!sational 10 in 1 Dream Primer - 010",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785074315600
+    },
+    "8435415091169": {
+      "id": "5106b3da-38ba-424f-a022-fa26ecf70c15",
+      "facesId": "017216937877",
+      "leaf": "perfume",
+      "stock": 3,
+      "nameAr": "جان بول غوتييه - عطر ديفاين إنتنس",
+      "nameEn": "Jean Paul Gaultier Divine Intense",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785074325969
+    },
+    "3423478807655": {
+      "id": "c3e5de21-1870-423f-9523-46e700f12226",
+      "facesId": "PM_NARCISO_RODRIGUEZ_Bleu_Noir_EDP",
+      "leaf": "men-beauty-products",
+      "stock": 3,
+      "nameAr": "نارسيسو رودريغز - عطر بلو نوار فور هيم أو دو برفان - 100مل",
+      "nameEn": "Narciso Rodriguez For him Bleu Noir Eau de Parfum - 100ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785074335147
+    },
+    "3145891164602": {
+      "id": "c4baae0c-e5ab-4c3f-8975-81a1efeaf928",
+      "facesId": "PM_Chanel_demoisel_EDT",
+      "leaf": "bestsellers",
+      "stock": 2,
+      "nameAr": "شانيل - 100مل",
+      "nameEn": "Chanel COCO MADEMOISELLE - 100ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785074341961
+    },
+    "3145891265705": {
+      "id": "a2afee98-324e-4568-83f5-a0fe6488dd6e",
+      "facesId": "PM_Chanel_vive_EDT",
+      "leaf": "bestsellers",
+      "stock": 2,
+      "nameAr": "شانيل - 150 مل",
+      "nameEn": "Chanel CHANCE EAU VIVE - 150ml",
+      "kind": "care",
+      "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "subcategoryIds": [
+        "07661898-571a-4a88-aa6c-76dcdbf53029",
+        "09146169-f9c4-4649-a365-ca1b8cda365f"
+      ],
+      "tertiaryCategoryIds": [
+        "21801439-d0e9-4106-b5e8-dfdd70ffeb8d"
+      ],
+      "careLeaf": "care/face-care/face-moisturizer",
+      "makeupSub": null,
+      "at": 1785074350686
+    },
+    "6294015102642": {
+      "id": "c63f651c-8381-4e2d-924c-bc605e47589a",
+      "facesId": "551917133993",
+      "leaf": "bestsellers",
+      "stock": 2,
+      "nameAr": "ارماف - كلوب دي نوي أوربان مان",
+      "nameEn": "ARMAF Club De Nuit Urban Man",
+      "kind": "care",
+      "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "subcategoryIds": [
+        "07661898-571a-4a88-aa6c-76dcdbf53029",
+        "09146169-f9c4-4649-a365-ca1b8cda365f"
+      ],
+      "tertiaryCategoryIds": [
+        "21801439-d0e9-4106-b5e8-dfdd70ffeb8d"
+      ],
+      "careLeaf": "care/face-care/face-moisturizer",
+      "makeupSub": null,
+      "at": 1785074354921
+    },
+    "4059729419590": {
+      "id": "8cf48c47-05f2-4791-a674-0f56f7bfe608",
+      "facesId": "130916625688",
+      "leaf": "bestsellers",
+      "stock": 2,
+      "nameAr": "كاتريس - بلسم الشفاه غلتر غلام غلو",
+      "nameEn": "Catrice Glitter Glam Glow Lip Balm",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "56da5b82-c847-4e9b-9cea-cc901236189f"
+      ],
+      "tertiaryCategoryIds": [
+        "eaa06284-281e-475f-937b-b01ee24192df"
+      ],
+      "careLeaf": null,
+      "makeupSub": "lips",
+      "at": 1785074369082
+    },
+    "3474636397983": {
+      "id": "f47ab47a-b641-4346-9200-4d4cb9543f99",
+      "facesId": "018114574487",
+      "leaf": "bestsellers",
+      "stock": 2,
+      "nameAr": "كيراستاس - ريزيستانس ماسك الشعر ماسك ثيرابيست 200مل",
+      "nameEn": "Kerastase Resistance Masque Therapiste Hair Mask 200ml",
+      "kind": "care",
+      "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "subcategoryIds": [
+        "150a633e-80a7-4cb3-8f2d-8eab90a99190"
+      ],
+      "tertiaryCategoryIds": [
+        "25b4613e-cbf3-47cc-98b1-c94b398d51f4"
+      ],
+      "careLeaf": "care/hair-care/shampoo-conditioners",
+      "makeupSub": null,
+      "at": 1785074373596
+    },
+    "3616305040633": {
+      "id": "50aafac8-436f-4132-9353-054cd70d4431",
+      "facesId": "pm014817156755",
+      "leaf": "men-beauty-products",
+      "stock": 2,
+      "nameAr": "هيوغو بوس - ذا سنت إلكسير إنتنس - 100 مل",
+      "nameEn": "Hugo Boss The Scent Elixir Intense - 100ml",
+      "kind": "care",
+      "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "subcategoryIds": [
+        "01300f8f-9b4d-4d15-904c-e045383c9b97"
+      ],
+      "tertiaryCategoryIds": [
+        "1a192be8-a3b7-453b-81ae-b840a69227e9"
+      ],
+      "careLeaf": "care/men-care/shaving-grooming",
+      "makeupSub": null,
+      "at": 1785074387615
+    },
+    "3605972975850": {
+      "id": "1f83702d-1209-454a-8121-84090b054e22",
+      "facesId": "pm051517217952",
+      "leaf": "men-beauty-products",
+      "stock": 2,
+      "nameAr": "رالف لورين - عطر بولو 67 - 125 مل",
+      "nameEn": "Ralph Lauren Polo 67 - 125ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785074399273
+    },
+    "3616305186621": {
+      "id": "8a31e369-27d3-48c5-b871-159aa4806144",
+      "facesId": "014817156739",
+      "leaf": "men-beauty-products",
+      "stock": 2,
+      "nameAr": "هيوغو بوس - ذا كولكشن وايلد فايوليت",
+      "nameEn": "Hugo Boss The Collection Fearless Pepper",
+      "kind": "care",
+      "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "subcategoryIds": [
+        "01300f8f-9b4d-4d15-904c-e045383c9b97"
+      ],
+      "tertiaryCategoryIds": [
+        "1a192be8-a3b7-453b-81ae-b840a69227e9"
+      ],
+      "careLeaf": "care/men-care/shaving-grooming",
+      "makeupSub": null,
+      "at": 1785074413267
+    },
+    "020714776114": {
+      "id": "5d28cffc-b252-40a9-89f3-68c516884365",
+      "facesId": "007513083978",
+      "leaf": "bestsellers",
+      "stock": 25,
+      "nameAr": "كلينيك - مستحضر الحماية من الشمس فيس صن50 بفلتر 30مل",
+      "nameEn": "Clinique Face Sun SPF 50 Sunscreen 30ml",
+      "kind": "care",
+      "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "subcategoryIds": [
+        "25dc8086-bffa-47af-aaf7-64d503e58a9f",
+        "07661898-571a-4a88-aa6c-76dcdbf53029",
+        "7d2bfaec-d963-404b-b9b5-04b64a82bf29"
+      ],
+      "tertiaryCategoryIds": [
+        "ad2a9e6b-5e20-4393-849a-e5e6c6cc97e2"
+      ],
+      "careLeaf": "care/sun-care/sunscreen",
+      "makeupSub": null,
+      "at": 1785075133309
+    },
+    "8011003993826": {
+      "id": "47af59b3-f745-41b8-82c0-d4a737d6a72f",
+      "facesId": "PM_VERSACE_Bright_Crystal",
+      "leaf": "bestsellers",
+      "stock": 17,
+      "nameAr": "فيرزاتشي - برايت كريستال أو دو تواليت - 90مل",
+      "nameEn": "Versace Bright Crystal Eau De Toilette - 90ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785075143037
+    },
+    "3274872487383": {
+      "id": "f3d5ab98-be6c-4a50-a9f2-0778dffed670",
+      "facesId": "013117163163",
+      "leaf": "bestsellers",
+      "stock": 12,
+      "nameAr": "جيفنشي - عطر جنتلمان أونلي",
+      "nameEn": "Givenchy Gentleman Only",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785075147459
+    },
+    "3349668627530": {
+      "id": "57ad735b-5893-4bed-9cfb-556b459bacc8",
+      "facesId": "pm025416808812",
+      "leaf": "bestsellers",
+      "stock": 7,
+      "nameAr": "رابان - إنفيكتوس 2024 - 100 مل",
+      "nameEn": "Rabanne Invictus 2024 Parfum - 100ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785075154297
+    },
+    "3423222010133": {
+      "id": "04282c32-5c71-4625-83f1-a33dfaa1e23d",
+      "facesId": "PM_ISSEY_MIYAKE_fusion_edti",
+      "leaf": "bestsellers",
+      "stock": 7,
+      "nameAr": "ايسي مياكي - عطر فيوجن إكسترام أو دو تواليت إنتنس - 100مل",
+      "nameEn": "Issey Miyake Fusion d'Issey Extreme Eau de Toilette Intense - 100ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785075169637
+    },
+    "3360377022928": {
+      "id": "ff54c07c-70fe-45a0-affb-18b6dadf87bf",
+      "facesId": "PM_RALPH_LAUREN_polo_blue_edt",
+      "leaf": "bestsellers",
+      "stock": 7,
+      "nameAr": "رالف لورين - بولو بلو أو دو تواليت - 125مل",
+      "nameEn": "Ralph Lauren Polo Blue Eau De Toilette - 125ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785075181232
+    },
+    "8011003876280": {
+      "id": "d374c683-8f29-48ec-9418-31f11d835e61",
+      "facesId": "PM_VERSACE_Dylan_Purple_EDP",
+      "leaf": "bestsellers",
+      "stock": 6,
+      "nameAr": "فيرزاتشي - عطر ديلان بيربل نات سبراي 50 مل - 100مل",
+      "nameEn": "Versace Dylan Purple EDP Nat Spray 50 Ml - 100ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785075191714
+    },
+    "3616305186119": {
+      "id": "1a36b59a-98f6-432d-96b4-78928ecacf81",
+      "facesId": "pm006817156737",
+      "leaf": "bestsellers",
+      "stock": 6,
+      "nameAr": "كلوي - نوماد لوميير ديجيبت - 75 مل",
+      "nameEn": "Chloe Nomade Lumière d'Égypte - 75ML",
+      "kind": "care",
+      "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "subcategoryIds": [
+        "07661898-571a-4a88-aa6c-76dcdbf53029",
+        "09146169-f9c4-4649-a365-ca1b8cda365f"
+      ],
+      "tertiaryCategoryIds": [
+        "21801439-d0e9-4106-b5e8-dfdd70ffeb8d"
+      ],
+      "careLeaf": "care/face-care/face-moisturizer",
+      "makeupSub": null,
+      "at": 1785075212214
+    },
+    "3614229395709": {
+      "id": "8dc0f04b-bf5c-426a-84a2-a54a0bb3375c",
+      "facesId": "PM_CHLOE_Nomade_Naturelle_EDP",
+      "leaf": "bestsellers",
+      "stock": 6,
+      "nameAr": "كلوي - عطر نوماد أو دو برفان ناتشوريل - 75مل",
+      "nameEn": "Chloe Nomade Eau de Parfum Naturelle - 75ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785075223513
+    },
+    "3423470300161": {
+      "id": "6f8946be-da21-462d-948b-f79b2d52c0f7",
+      "facesId": "PM_ISSEY_MIYAKE_LEau_DIssey_EDT",
+      "leaf": "bestsellers",
+      "stock": 6,
+      "nameAr": "ايسي مياكي - بخاخ لو ديسي أو دو تواليت - 100مل",
+      "nameEn": "Issey Miyake L'Eau D'Issey Spray Eau De Toilette - 100ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785075231689
+    },
+    "3605973038189": {
+      "id": "c4630bcb-bc07-4a02-9132-783f5808699a",
+      "facesId": "pm027217386051",
+      "leaf": "bestsellers",
+      "stock": 6,
+      "nameAr": "رالف لورين - رالفز كلوب نيويورك - 110 مل",
+      "nameEn": "Ralph Lauren Ralph's Club New York - 110ml",
+      "kind": "care",
+      "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "subcategoryIds": [
+        "07661898-571a-4a88-aa6c-76dcdbf53029",
+        "09146169-f9c4-4649-a365-ca1b8cda365f"
+      ],
+      "tertiaryCategoryIds": [
+        "21801439-d0e9-4106-b5e8-dfdd70ffeb8d"
+      ],
+      "careLeaf": "care/face-care/face-moisturizer",
+      "makeupSub": null,
+      "at": 1785075237844
+    },
+    "8011003890699": {
+      "id": "f74ed6fa-261a-412d-8f56-64dcb85ef8d1",
+      "facesId": "pm033317748056",
+      "leaf": "bestsellers",
+      "stock": 4,
+      "nameAr": "فيرزاتشي - ديلان بلاش بينك بور فيم - 100 مل",
+      "nameEn": "Versace Dylan Blush Pink Pour Femme - 100ML",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785075245181
+    },
+    "3349668641772": {
+      "id": "eb066b8a-b3d2-400b-b2ba-7a7214b698de",
+      "facesId": "pm025417247899",
+      "leaf": "bestsellers",
+      "stock": 4,
+      "nameAr": "رابان - عطر أوليمبيا أبسولو بارفان إنتنس - 80 مل",
+      "nameEn": "Rabanne Olympéa Absolu Parfum Intense - 80ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785075264096
+    },
+    "850049716321": {
+      "id": "cc448f09-690d-482f-8501-0b60f65c4a0a",
+      "facesId": "pm023316937788",
+      "leaf": "bestsellers",
+      "stock": 4,
+      "nameAr": "مايكل كورس - بور فام - 100 مل",
+      "nameEn": "Michael Kors Pour Femme - 100ML",
+      "kind": "care",
+      "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "subcategoryIds": [
+        "07661898-571a-4a88-aa6c-76dcdbf53029",
+        "09146169-f9c4-4649-a365-ca1b8cda365f"
+      ],
+      "tertiaryCategoryIds": [
+        "21801439-d0e9-4106-b5e8-dfdd70ffeb8d"
+      ],
+      "careLeaf": "care/face-care/face-moisturizer",
+      "makeupSub": null,
+      "at": 1785075272993
+    },
+    "3616305616210": {
+      "id": "4ecddee2-ece9-4a84-897c-fb32f419a19a",
+      "facesId": "014817007218",
+      "leaf": "bestsellers",
+      "stock": 4,
+      "nameAr": "هيوغو بوس - ألايف أبسولو انتنس",
+      "nameEn": "Hugo Boss Alive Absolu Intense",
+      "kind": "care",
+      "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "subcategoryIds": [
+        "07661898-571a-4a88-aa6c-76dcdbf53029",
+        "09146169-f9c4-4649-a365-ca1b8cda365f"
+      ],
+      "tertiaryCategoryIds": [
+        "21801439-d0e9-4106-b5e8-dfdd70ffeb8d"
+      ],
+      "careLeaf": "care/face-care/face-moisturizer",
+      "makeupSub": null,
+      "at": 1785075281513
+    },
+    "8435137782949": {
+      "id": "87636832-57d9-435c-96d3-d373a53f8bd3",
+      "facesId": "027014038456",
+      "leaf": "bestsellers",
+      "stock": 3,
+      "nameAr": "برادا - لونا روسا بلاك أو دو برفان 100مل",
+      "nameEn": "Prada Luna Rossa Black Eau De Parfum 100ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785075283896
+    },
+    "3349668599417": {
+      "id": "670c04cf-89d6-466a-a33d-3f5e0d2eec79",
+      "facesId": "PM_PACO_ROBANNE_Olympea_Solar_EDP",
+      "leaf": "bestsellers",
+      "stock": 3,
+      "nameAr": "رابان - عطر أوليمبيا سولار أو دو برفان - 80مل",
+      "nameEn": "paco_rabanne Olympea Solar Eau de Parfum - 80ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785075302650
+    },
+    "3605971512575": {
+      "id": "c000a744-d6b5-4454-a302-14d69a5b2d8f",
+      "facesId": "PM_RALPH_LAUREN_Ralph_Club_EDP",
+      "leaf": "bestsellers",
+      "stock": 3,
+      "nameAr": "رالف لورين - عطر رالف كلاب أو دو بارفان - 100مل",
+      "nameEn": "Ralph Lauren Ralph's Club Eau de Parfum - 100ml",
+      "kind": "perfume",
+      "categoryId": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "subcategoryIds": [
+        "1ba9f472-af81-4708-9304-07f3435b6b24"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": null,
+      "at": 1785075311902
+    },
+    "3700550218142": {
+      "id": "f036ebe2-8fd8-4adf-b8aa-b2b4670eaa93",
+      "facesId": "274615025241",
+      "leaf": "bestsellers",
+      "stock": 3,
+      "nameAr": "كيليان باريس - مون لايت إن هيفن",
+      "nameEn": "Kilian Paris Moonlight In Heaven",
+      "kind": "care",
+      "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "subcategoryIds": [
+        "07661898-571a-4a88-aa6c-76dcdbf53029",
+        "09146169-f9c4-4649-a365-ca1b8cda365f"
+      ],
+      "tertiaryCategoryIds": [
+        "21801439-d0e9-4106-b5e8-dfdd70ffeb8d"
+      ],
+      "careLeaf": "care/face-care/face-moisturizer",
+      "makeupSub": null,
+      "at": 1785075316644
+    },
+    "6931611300286": {
+      "id": "16b1cded-e514-4e9e-b98d-38aa166625ea",
+      "facesId": "pm606517386342",
+      "leaf": "bestsellers",
+      "stock": 16,
+      "nameAr": "شيجلام - هاي لايت سائل - بيليني برانش",
+      "nameEn": "Sheglam Glow Bloom Liquid Highlighter Bellini Brunch - Tea Cake",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785077021896
+    },
+    "6973474683441": {
+      "id": "6efb5062-b441-48e8-ae18-41bd9906a86b",
+      "facesId": "pm606517386356",
+      "leaf": "bestsellers",
+      "stock": 9,
+      "nameAr": "شيجلام - كونسيلر عالي التغطية - شل",
+      "nameEn": "Sheglam Complexion Boost Concealer Shell",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785077031611
+    },
+    "3605972835796": {
+      "id": "d554fff3-5b53-41d8-96f0-15b1fc3fca30",
+      "facesId": "027216591493",
+      "leaf": "men-beauty-products",
+      "stock": 5,
+      "nameAr": "رالف لورين",
+      "nameEn": "Ralph Lauren Polo Oud",
+      "kind": "care",
+      "categoryId": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "subcategoryIds": [
+        "01300f8f-9b4d-4d15-904c-e045383c9b97"
+      ],
+      "tertiaryCategoryIds": [
+        "1a192be8-a3b7-453b-81ae-b840a69227e9"
+      ],
+      "careLeaf": "care/men-care/shaving-grooming",
+      "makeupSub": null,
+      "at": 1785077037248
+    },
+    "8059385014876": {
+      "id": "cf01ff8b-6a60-41fa-8592-a04c647ac04b",
+      "facesId": "407816984851",
+      "leaf": "bestsellers",
+      "stock": 2,
+      "nameAr": "كيكو ميلانو - فلفت تتش كريمي ستيك - 05",
+      "nameEn": "Kiko Milano Velvet Touch Creamy Stick - 05",
+      "kind": "makeup",
+      "categoryId": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "subcategoryIds": [
+        "2bbecee1-084d-446c-b4fd-65f769130de9"
+      ],
+      "tertiaryCategoryIds": [],
+      "careLeaf": null,
+      "makeupSub": "face",
+      "at": 1785077859530
+    }
+  },
+  "skipped": {
+    "6931611300286": {
+      "reason": "arabic name has latin",
+      "at": 1785074184890
+    },
+    "8057971180448": {
+      "reason": "missing bilingual description",
+      "at": 1785077023604
+    },
+    "6973474683441": {
+      "reason": "arabic name has latin",
+      "at": 1785074220853
+    },
+    "3605972835796": {
+      "reason": "arabic name has latin",
+      "at": 1785074281153
+    },
+    "3145891232509": {
+      "reason": "arabic name has latin",
+      "at": 1785077038904
+    },
+    "3145891137408": {
+      "reason": "arabic name has latin",
+      "at": 1785077040766
+    }
+  }
+}

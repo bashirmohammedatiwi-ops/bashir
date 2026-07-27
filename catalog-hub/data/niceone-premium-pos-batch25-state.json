@@ -1,0 +1,110 @@
+{
+  "imported": {
+    "3614272629387": {
+      "id": "95d25b68-f56d-4419-99b0-f95ab3d2cef2",
+      "niceoneId": "11190",
+      "leaf": "premium/luxury-perfumes",
+      "stock": 4,
+      "nameAr": "لانكوم - عطر آيدول أو دو بارفان - 75 مل",
+      "nameEn": "Lancome Idole Eau de Parfum 75ml",
+      "kind": "perfume",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "764abc71-a54c-4aec-9cd8-9869b9afdd0d"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785077744878
+    },
+    "6294018401919": {
+      "id": "9b75aa1c-a550-4917-a169-f301d31c595b",
+      "niceoneId": "26566",
+      "leaf": "premium/luxury-makeup",
+      "stock": 13,
+      "nameAr": "هودا بيوتي - مصحح لون فو فيلتر - وردي",
+      "nameEn": "Huda Beauty FauxFilter Color Corrector Pink Pomelo",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785077747473
+    },
+    "846733030347": {
+      "id": "e7124b43-98b8-490d-b94c-d7da6e7897a8",
+      "niceoneId": "18225",
+      "leaf": "premium/luxury-makeup",
+      "stock": 12,
+      "nameAr": "تارت - كونسيلر شيب تيب - 34",
+      "nameEn": "Tarte Shape Tape Concealer 34S",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785077749759
+    },
+    "5045252668085": {
+      "id": "aededad0-f878-4a1d-91aa-6595632428b3",
+      "niceoneId": "6170",
+      "leaf": "premium/luxury-perfumes",
+      "stock": 6,
+      "nameAr": "بربري - عطر لندن للنساء أو دو بارفان - 100 مل",
+      "nameEn": "Burberry London for Women Eau de Parfum 100ml",
+      "kind": "perfume",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "764abc71-a54c-4aec-9cd8-9869b9afdd0d"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785077752179
+    },
+    "3548752185271": {
+      "id": "bb9d02d7-44a3-443b-9452-710cd05326a6",
+      "niceoneId": "21399",
+      "leaf": "premium/luxury-makeup",
+      "stock": 3,
+      "nameAr": "ميك أب فور إيفر - كريم أساس إتش دي سكن - 328",
+      "nameEn": "Make Up For Ever HD Skin Foundation 328",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785077754360
+    },
+    "3548752185264": {
+      "id": "caa94895-ff8d-4fcd-9a24-5c859021a090",
+      "niceoneId": "21399",
+      "leaf": "premium/luxury-makeup",
+      "stock": 2,
+      "nameAr": "ميك أب فور إيفر - كريم أساس إتش دي سكن - 325",
+      "nameEn": "Make Up For Ever HD Skin Foundation 325",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785077755037
+    },
+    "602004106681": {
+      "id": "2becc42a-985a-4fdb-bdf1-b10b7340aacc",
+      "niceoneId": "11687",
+      "leaf": "premium/luxury-makeup",
+      "stock": 3,
+      "nameAr": "بنفت - تينت الشفاه والخدود بيني تينت - 6 مل",
+      "nameEn": "Benefit Benetint Lip & Cheek Tint 6ml",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785077785550
+    }
+  },
+  "skipped": {}
+}

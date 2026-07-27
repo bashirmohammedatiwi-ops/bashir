@@ -1,0 +1,1176 @@
+{
+  "imported": {
+    "22530206": {
+      "id": "584d107f-27c5-4d6e-bdfc-157eb40926ec",
+      "niceoneId": "22717",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "هودا بيوتي - بودرة تثبيت ايزي بيك من هدى بيوتي - كب كيك",
+      "nameEn": "HUDA BEAUTY Easy Bake Loose Powder - Cupcake",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080220071
+    },
+    "35059609": {
+      "id": "ea98a133-9f2d-4675-9334-1fe24417b652",
+      "niceoneId": "21942",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "أوربان ديكاي - بخاخ مثبت المكياج أول نايتر من اربن ديكاي - 118مل",
+      "nameEn": "URBAN DECAY All Nighter Makeup Setting Spray -118ml",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080235156
+    },
+    "37650216": {
+      "id": "b854efd4-0d06-42f6-9180-a9a6a9a0dd44",
+      "niceoneId": "20670",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "شارلوت تيلبري - شارلوت تلبوري كريم أساس هوليوود فلوليس فلتر - 3",
+      "nameEn": "Charlotte Tilbury Hollywood Flawless Filter - 3",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080243362
+    },
+    "49409166": {
+      "id": "ef2df40c-5167-467a-b536-6adbd9d62a1c",
+      "niceoneId": "22342",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "فنتي بيوتي - قلوس ملمع ومكبر شفاه بومب هيت من فنتي بيوتي - فسي هيت 02",
+      "nameEn": "FENTY BEAUTY Gloss Bomb Heat - Fussy Heat 02",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080397646
+    },
+    "53776905": {
+      "id": "14ab0310-de3a-4178-8658-0de16ee1462c",
+      "niceoneId": "22718",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "هودا بيوتي - بودرة تثبيت ايزي بيك من هدى بيوتي - بنانا برد",
+      "nameEn": "HUDA BEAUTY Easy Bake Loose Powder - Banana Bread",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080231476
+    },
+    "70711251": {
+      "id": "d2482c51-9e22-4605-b09d-c2079a08b3d6",
+      "niceoneId": "2698",
+      "leaf": "premium/luxury-perfumes",
+      "nameAr": "بربري - ماي بربري للنساء - 90مل - او دي بارفيوم",
+      "nameEn": "BURBERRY My Burberry For Women - 90ml - Eau De Parfum",
+      "kind": "perfume",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "764abc71-a54c-4aec-9cd8-9869b9afdd0d"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080177602
+    },
+    "73283977": {
+      "id": "7853a142-3934-49f4-8ff1-2dd2c4b37159",
+      "niceoneId": "6180",
+      "leaf": "premium/luxury-perfumes",
+      "nameAr": "ديور - عطر مس ديور بلومينج بوكيه للنساء - او دي تواليت",
+      "nameEn": "Dior Miss Dior Blooming Bouquet For Women - Eau de Toilette",
+      "kind": "perfume",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "764abc71-a54c-4aec-9cd8-9869b9afdd0d"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080169219
+    },
+    "74681970": {
+      "id": "7242f792-0f94-4812-a136-6271f5f055b7",
+      "niceoneId": "22539",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "فنتي بيوتي - قلوس ملمع ومكبر شفاه بومب هيت من فنتي بيوتي - 01 هوت شيري",
+      "nameEn": "FENTY BEAUTY Gloss Bomb Heat - 01 Hot Cherry",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080410819
+    },
+    "3348901368254": {
+      "id": "0a9275ea-5119-4e96-bafd-0881e8062cdd",
+      "niceoneId": "6836",
+      "leaf": "premium/luxury-perfumes",
+      "stock": 0,
+      "nameAr": "ديور - عطر سوفاج من ديور للرجال - او دو بارفيوم - 60 مل",
+      "nameEn": "Dior Sauvage For Men - Eau de Parfum - DIOR SAUVAGE EDP 60ML",
+      "kind": "perfume",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "764abc71-a54c-4aec-9cd8-9869b9afdd0d"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785079307357
+    },
+    "3548752194648": {
+      "id": "1d22294b-00f5-4e36-9d0c-696512fef562",
+      "niceoneId": "22821",
+      "leaf": "premium/luxury-makeup",
+      "stock": 0,
+      "nameAr": "ميك أب فور إيفر - ميك اب فور ايفر بودرة أساس مضغوطة اتش دي سكين مات فلفت - 1Y04",
+      "nameEn": "MAKE UP FOR EVER HD Skin Matte Velvet Powder Foundation - 1Y04",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785079362454
+    },
+    "3548752194730": {
+      "id": "b41c58f3-9f85-496c-9c44-dc1957bf93f2",
+      "niceoneId": "22821",
+      "leaf": "premium/luxury-makeup",
+      "stock": 0,
+      "nameAr": "ميك أب فور إيفر - ميك اب فور ايفر بودرة أساس مضغوطة اتش دي سكين مات فلفت - 2N22",
+      "nameEn": "MAKE UP FOR EVER HD Skin Matte Velvet Powder Foundation - 2N22",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785079371791
+    },
+    "602004088529": {
+      "id": "5ff055d6-86ee-46f6-8767-1eefab191589",
+      "niceoneId": "3216",
+      "leaf": "premium/luxury-makeup",
+      "stock": 0,
+      "nameAr": "بنفت - ماسكرا برو سيتير للحواجب - شفافة",
+      "nameEn": "Benefit Brow Setter Shaping & Setting Gel - transparent",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785079386159
+    },
+    "773602455942": {
+      "id": "91dff4f3-7d29-490e-98c6-dcc90d84d5db",
+      "niceoneId": "13793",
+      "leaf": "premium/luxury-makeup",
+      "stock": 0,
+      "nameAr": "ماك - بخاخ فكس بلس مات من ماك - 100مل",
+      "nameEn": "MAC Prep Prime Fix + Matte - 100ml",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785079456220
+    },
+    "3548752185233": {
+      "id": "ee52a396-1ab3-4da6-a581-472e8acae2d5",
+      "niceoneId": "21399",
+      "leaf": "premium/luxury-makeup",
+      "stock": 0,
+      "nameAr": "ميك أب فور إيفر - ميك اب فور ايفر كريم أساس إتش دي سكن - 1Y16",
+      "nameEn": "MAKE UP FOR EVER HD Skin Foundation - 1Y16",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785079698591
+    },
+    "3548752185240": {
+      "id": "cb844d94-cf97-4783-b3ae-da5acfe8e9c1",
+      "niceoneId": "21399",
+      "leaf": "premium/luxury-makeup",
+      "stock": 0,
+      "nameAr": "ميك أب فور إيفر - ميك اب فور ايفر كريم أساس إتش دي سكن - 1Y18",
+      "nameEn": "MAKE UP FOR EVER HD Skin Foundation - 1Y18",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785079712200
+    },
+    "3614272648401": {
+      "id": "0805b9ca-17eb-4b20-b118-31ef671791a4",
+      "niceoneId": "11791",
+      "leaf": "premium/luxury-perfumes",
+      "nameAr": "إيف سان لوران - ايف سان لوران عطر ليبر للنساء - او دو برفيوم",
+      "nameEn": "YSL Yves Saint Laurent Libre For Women - Eau De Parfum",
+      "kind": "perfume",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "764abc71-a54c-4aec-9cd8-9869b9afdd0d"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080154556
+    },
+    "3614272050341": {
+      "id": "c564d19e-e3ad-4f12-a8d5-31d13854ab4d",
+      "niceoneId": "7935",
+      "leaf": "premium/luxury-perfumes",
+      "nameAr": "إيف سان لوران - عطر واي من ايف سان لوران للرجال - او دي بارفيوم",
+      "nameEn": "YSL Yves Saint Laurent Y For Men - Eau de Parfum",
+      "kind": "perfume",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "764abc71-a54c-4aec-9cd8-9869b9afdd0d"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080156794
+    },
+    "88300162543": {
+      "id": "9801450f-d072-4085-a375-9b9716c2746c",
+      "niceoneId": "6078",
+      "leaf": "premium/luxury-perfumes",
+      "nameAr": "كالفن كلاين - عطر ايفوريا للنساء - او دو بارفيوم",
+      "nameEn": "Calvin Klein Euphoria For Women - Eau de Parfum",
+      "kind": "perfume",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "764abc71-a54c-4aec-9cd8-9869b9afdd0d"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080162096
+    },
+    "1402035701553": {
+      "id": "3ca774aa-896e-4722-804f-91a087b3c2e1",
+      "niceoneId": "6105",
+      "leaf": "premium/luxury-perfumes",
+      "nameAr": "ديور - عطر هيبنوتيك بويسون من ديور للنساء - او دو تواليت",
+      "nameEn": "Dior Hypnotic Poison For Women - Eau de Toilette",
+      "kind": "perfume",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "764abc71-a54c-4aec-9cd8-9869b9afdd0d"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080165823
+    },
+    "1402068582266": {
+      "id": "972e3933-7517-4a20-804e-39ba3f36a034",
+      "niceoneId": "6170",
+      "leaf": "premium/luxury-perfumes",
+      "nameAr": "بربري - عطر لندن للنساء - او دو بارفيوم",
+      "nameEn": "BURBERRY London For Women - Eau de Parfum",
+      "kind": "perfume",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "764abc71-a54c-4aec-9cd8-9869b9afdd0d"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080173697
+    },
+    "8005610344188": {
+      "id": "746ec13c-b844-4f83-8893-e79ce81f26d8",
+      "niceoneId": "5571",
+      "leaf": "premium/luxury-perfumes",
+      "nameAr": "غوتشي - قوتشي عطر قوتشي قيلتي ابسولت للرجال - او دو برفيوم",
+      "nameEn": "Gucci Guilty Absolute For Men – Eau De Perfume",
+      "kind": "perfume",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "764abc71-a54c-4aec-9cd8-9869b9afdd0d"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080181935
+    },
+    "1402092516503": {
+      "id": "f566a54d-cb43-47de-a051-56d5d2a190a7",
+      "niceoneId": "6836",
+      "leaf": "premium/luxury-perfumes",
+      "nameAr": "ديور - عطر سوفاج من ديور للرجال - او دو بارفيوم - 200مل",
+      "nameEn": "Dior Sauvage For Men - Eau de Parfum - 200ml",
+      "kind": "perfume",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "764abc71-a54c-4aec-9cd8-9869b9afdd0d"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080185533
+    },
+    "3614273852821": {
+      "id": "b7dbe67d-0126-4532-b10a-3613a0159e1f",
+      "niceoneId": "24206",
+      "leaf": "premium/luxury-perfumes",
+      "nameAr": "إيف سان لوران - عطر ماي سلف من ايف سان لوران للرجال - او دو برفيوم - 60مل",
+      "nameEn": "YSL Yves Saint Laurent MYSLF for Men - Eau de Parfum - 60ml",
+      "kind": "perfume",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "764abc71-a54c-4aec-9cd8-9869b9afdd0d"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080189660
+    },
+    "1402003556741": {
+      "id": "439d3302-3f31-4272-983d-a2077eda5ab9",
+      "niceoneId": "18225",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "تارت - كونسيلر خافي عيوب شيب تيب من تارت - 10مل - 22 بيج",
+      "nameEn": "tarte shape tape concealer - 22B light Beige",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080193499
+    },
+    "1402011939871": {
+      "id": "2e772a56-8f23-4b53-b085-525439745a06",
+      "niceoneId": "16538",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "تو فيسد - كونسيلر متعدد الوظائف بورن ذيس واي سوبر كوفراج من توفيسد",
+      "nameEn": "Too Faced Born This Way Super Coverage Multi-Use Sculpting Concealer - Almond",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080199877
+    },
+    "1402051964536": {
+      "id": "87d48141-9044-442c-ad10-a7f94bf3e436",
+      "niceoneId": "16538",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "تو فيسد - كونسيلر متعدد الوظائف بورن ذيس واي سوبر كوفراج من توفيسد - بيج",
+      "nameEn": "Too Faced Born This Way Super Coverage Multi-Use Sculpting Concealer - Golden Beige",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080204341
+    },
+    "3548752194815": {
+      "id": "686f73cf-6422-4ee4-9304-4235525aeb29",
+      "niceoneId": "22821",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "ميك أب فور إيفر - ميك اب فور ايفر بودرة أساس مضغوطة اتش دي سكين مات فلفت - 2R38",
+      "nameEn": "MAKE UP FOR EVER HD Skin Matte Velvet Powder Foundation - 2R38",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080208750
+    },
+    "3548752194822": {
+      "id": "bdad6941-e3d4-45fc-80cf-d668f24a885c",
+      "niceoneId": "22821",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "ميك أب فور إيفر - ميك اب فور ايفر بودرة أساس مضغوطة اتش دي سكين مات فلفت - 3Y40",
+      "nameEn": "MAKE UP FOR EVER HD Skin Matte Velvet Powder Foundation - 3Y40",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080210893
+    },
+    "5060542727532": {
+      "id": "0055886a-1326-4be0-a364-22528cb049b9",
+      "niceoneId": "24699",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "شارلوت تيلبري - شارلوت تلبوري بخاخ مثبت مكياج اير برش فلوليس - 100مل",
+      "nameEn": "Charlotte Tilbury Airbrush Flawless Setting Spray - 100ml",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080213920
+    },
+    "602004119285": {
+      "id": "d1089669-c641-43e6-b17f-4f6928a06c18",
+      "niceoneId": "15044",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "بنفت - ماسكرا حواجب ميني 24 ساعة من بنفت - شفاف",
+      "nameEn": "Benefit Mini 24H Brow Setter - Clear",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080217260
+    },
+    "5060542723619": {
+      "id": "6611f584-0817-4b9a-a907-a7f1656aec15",
+      "niceoneId": "22702",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "شارلوت تيلبري - شارلوت تلبوري بلاشر احمر خدود سائل واضاءة هايلايتر بيوتي لايت واند - بينكقاسم",
+      "nameEn": "Charlotte Tilbury Beauty Light Wand Liquid Blush & Highlighter - Pinkgasm",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080228981
+    },
+    "3548752133081": {
+      "id": "defc3c00-8e1a-4fa9-922a-a6c7dfb5a201",
+      "niceoneId": "26290",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "ميك أب فور إيفر - ميك اب فور ايفر قلم آرتيست كلر متعدد الاستخدمات",
+      "nameEn": "MAKE UP FOR EVER Artist Color Pencil",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080239081
+    },
+    "5060332329526": {
+      "id": "2f7c1cb7-4072-4d92-bb27-fb73caa27c7b",
+      "niceoneId": "20670",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "شارلوت تيلبري - شارلوت تلبوري كريم أساس هوليوود فلوليس فلتر",
+      "nameEn": "Charlotte Tilbury Hollywood Flawless Filter",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080241973
+    },
+    "5060696173308": {
+      "id": "ab2c58d7-2c84-408f-93d9-60d45b683417",
+      "niceoneId": "20670",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "شارلوت تيلبري - شارلوت تلبوري كريم أساس هوليوود فلوليس فلتر - 4.5",
+      "nameEn": "Charlotte Tilbury Hollywood Flawless Filter - 4.5",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080244956
+    },
+    "3548752185158": {
+      "id": "6c7367e2-9e9b-4310-ba50-b0b4e667f3f1",
+      "niceoneId": "21399",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "ميك أب فور إيفر - ميك اب فور ايفر كريم أساس إتش دي سكن - 1N00",
+      "nameEn": "MAKE UP FOR EVER HD Skin Foundation - 1N00",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080256385
+    },
+    "3548752185165": {
+      "id": "82694599-e044-4298-bc6a-8a43cad05efd",
+      "niceoneId": "21399",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "ميك أب فور إيفر - ميك اب فور ايفر كريم أساس إتش دي سكن - 1R02",
+      "nameEn": "MAKE UP FOR EVER HD Skin Foundation - 1R02",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080258468
+    },
+    "3548752185295": {
+      "id": "bb98b7a2-6dba-4954-b818-7044bcb02120",
+      "niceoneId": "21399",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "ميك أب فور إيفر - ميك اب فور ايفر كريم أساس إتش دي سكن - 2R28",
+      "nameEn": "MAKE UP FOR EVER HD Skin Foundation - 2R28",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080260583
+    },
+    "3548752185301": {
+      "id": "75be4a84-7ac9-47b3-b861-f1e8e9322f8e",
+      "niceoneId": "21399",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "ميك أب فور إيفر - ميك اب فور ايفر كريم أساس إتش دي سكن - 2Y30",
+      "nameEn": "MAKE UP FOR EVER HD Skin Foundation - 2Y30",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080262681
+    },
+    "3548752185325": {
+      "id": "95d39a0e-c69d-4f3c-b584-f75dec6bcf7d",
+      "niceoneId": "21399",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "ميك أب فور إيفر - ميك اب فور ايفر كريم أساس إتش دي سكن - 2N34",
+      "nameEn": "MAKE UP FOR EVER HD Skin Foundation - 2N34",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080264866
+    },
+    "3548752185356": {
+      "id": "047822fe-6a76-4ba2-b71b-73a8a52d0496",
+      "niceoneId": "21399",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "ميك أب فور إيفر - ميك اب فور ايفر كريم أساس إتش دي سكن - 3Y40",
+      "nameEn": "MAKE UP FOR EVER HD Skin Foundation - 3Y40",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080267280
+    },
+    "3548752203517": {
+      "id": "6a8698b7-0f9b-4ef0-86ab-f8fd14116ec2",
+      "niceoneId": "26292",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "ميك أب فور إيفر - ميك اب فور ايفر كونسيلر خافي عيوب سكين اتش دي",
+      "nameEn": "MAKE UP FOR EVER HD Skin Concealer",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080278465
+    },
+    "858511001289": {
+      "id": "7d87eaa9-2e27-4d3d-b7fe-22a6a642c8b2",
+      "niceoneId": "25024",
+      "leaf": "premium/luxury-care",
+      "nameAr": "K18 - كيه 18 ماسك ليف إن لإصلاح الشعر الجزيئي - 15مل",
+      "nameEn": "K18 Leave-in Molecular Repair Hair Mask - 15ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080283759
+    },
+    "3474637155025": {
+      "id": "96fd39c0-9b22-49b2-b209-b0a9599dd66c",
+      "niceoneId": "25146",
+      "leaf": "premium/luxury-care",
+      "nameAr": "كيراستاس - سيروم ليلي نوتريتيف ماجيك 8 ساعات للشعر الجاف من كيراستاس - 90مل",
+      "nameEn": "Kerastase Kérastase Nutritive 8H Magic Night Serum for Dry Hair - 90ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080288073
+    },
+    "3474636857975": {
+      "id": "1d17636f-85e5-4cbd-9e78-70533d63255a",
+      "niceoneId": "24530",
+      "leaf": "premium/luxury-care",
+      "stock": 0,
+      "nameAr": "كيراستاس - بخاخ ليف إن جنيسيس ديفنس ثيراميك لحماية الشعر من الحرارة من كيراستاس - 150مل",
+      "nameEn": "Kerastase Genesis Defense Thermique Heat Protecting Leave-In Spray - 150ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080293802
+    },
+    "3474637059019": {
+      "id": "d84d8b86-7ebe-451e-b6ac-8a39d9910d2e",
+      "niceoneId": "25052",
+      "leaf": "premium/luxury-care",
+      "nameAr": "كيراستاس - شامبو مرطب كروما آبسلو باين كروما ريسبكت لحماية الشعر من كيراستاس - 250مل",
+      "nameEn": "Kerastase Chroma Absolu Bain Chroma Respect Hydrating Protective Shampoo - 250ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080298335
+    },
+    "3474636612666": {
+      "id": "71a3b604-0f53-4f73-ab3e-61fffb730b96",
+      "niceoneId": "25053",
+      "leaf": "premium/luxury-care",
+      "nameAr": "كيراستاس - شامبو ريزيستانس باين اكستانسيونيست من كيراستاس - 250مل",
+      "nameEn": "Kerastase Resistance Bain Extentioniste Shampoo - 250ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080301469
+    },
+    "3474636857883": {
+      "id": "e9d83d4c-786e-4b0e-8dcd-7b83ae92ef6e",
+      "niceoneId": "24532",
+      "leaf": "premium/luxury-care",
+      "stock": 0,
+      "nameAr": "كيراستاس - بلسم جينيسيس فوندان رانفورساتور من كيراستاس - 200مل",
+      "nameEn": "Kerastase Genesis Fondant Renforcateur Conditioner - 200ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080309046
+    },
+    "896364002961": {
+      "id": "59523c7a-6fb2-456e-bf42-8d947e46e9b3",
+      "niceoneId": "17395",
+      "leaf": "premium/luxury-care",
+      "nameAr": "أولابلكس - منعم الشعر رقم 6 بوند من اولابليكس - 100مل",
+      "nameEn": "Olaplex No.6 Bond Smoother Hair - 100ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080312670
+    },
+    "3474637196677": {
+      "id": "6166fb9a-d924-40d9-97d8-b9eef4dda0b8",
+      "niceoneId": "26085",
+      "leaf": "premium/luxury-care",
+      "stock": 0,
+      "nameAr": "كيراستاس - سيروم الشعر بريميير للشعر التالف من كيراستاس - 90مل",
+      "nameEn": "Kerastase Premiere Hair Serum for Damaged Hair - 90ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080316147
+    },
+    "3474637154967": {
+      "id": "b88f4cdb-d5c9-49e3-aab9-4a9092956e2a",
+      "niceoneId": "25085",
+      "leaf": "premium/luxury-care",
+      "nameAr": "كيراستاس - ماسك الشعر المغذي للشعر الرقيق والجاف من كيراستاس - 200مل",
+      "nameEn": "Kerastase Nutritive Masquintense Hair Mask for Fine & Thin Dry Hair - 200ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080319866
+    },
+    "858511001166": {
+      "id": "84b1a5ce-50c7-4bca-86ce-43106cc8b224",
+      "niceoneId": "25021",
+      "leaf": "premium/luxury-care",
+      "stock": 0,
+      "nameAr": "K18 - كيه 18 شامبو ببتيد بريب ديتوكس - 250مل",
+      "nameEn": "K18 Peptide Prep Detox Shampoo - 250ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080325116
+    },
+    "3474637059187": {
+      "id": "b65f8b4c-3bec-4ce2-8dac-f8dbba77b719",
+      "niceoneId": "25069",
+      "leaf": "premium/luxury-care",
+      "nameAr": "كيراستاس - بلسم كروما أبسلو مرمم و مضاد للمسامية من كيراستاس - 200 مل",
+      "nameEn": "Kerastase Chroma Absolu Fondant Cica Conditioner - 200 ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080329453
+    },
+    "3474636612918": {
+      "id": "f47ecfba-f4d5-4020-94c7-de6a960759f2",
+      "niceoneId": "25132",
+      "leaf": "premium/luxury-care",
+      "nameAr": "كيراستاس - بلسم ريزيستانس فوندانت إكستانسيونيست من كيراستاس - 200مل",
+      "nameEn": "Kerastase Resistance Fondant Extentioniste Conditioner - 200ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080333352
+    },
+    "3474630713383": {
+      "id": "c90523de-2875-4e80-8f17-363ebb898c76",
+      "niceoneId": "25049",
+      "leaf": "premium/luxury-care",
+      "stock": 0,
+      "nameAr": "كيراستاس - سيروم ريزيستانس ثيرابيست للشعر من كيراستاس - 30مل",
+      "nameEn": "Kerastase Resistance Serum Therapiste Hair Serum - 30ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080336623
+    },
+    "3474636857937": {
+      "id": "1f3b6c17-f4f5-48dc-8419-2c78bc4ef2bf",
+      "niceoneId": "25059",
+      "leaf": "premium/luxury-care",
+      "nameAr": "كيراستاس - ماسك جينيسيس ريكونستيتيوان للشعر من كيراستاس - 200مل",
+      "nameEn": "Kerastase Genesis Masque Reconstituant Hair Mask - 200ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080340133
+    },
+    "850018802239": {
+      "id": "77cd8162-3d9c-4011-9d0a-65b7e635f8fb",
+      "niceoneId": "23963",
+      "leaf": "premium/luxury-care",
+      "nameAr": "أولابلكس - شامبو محسن وموحد الشعر الأشقر رقم 4P من اولابليكس - 250مل",
+      "nameEn": "Olaplex Blonde Enhancer Toning Shampoo Nº 4P - 250ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080344190
+    },
+    "3474637154912": {
+      "id": "4cea2c16-c8de-485f-8ec6-f9d78b76a816",
+      "niceoneId": "25111",
+      "leaf": "premium/luxury-care",
+      "stock": 0,
+      "nameAr": "كيراستاس - شامبو نوتريتيف بان ساتان للشعر شديد الجفاف من كيراستاس - 250 مل",
+      "nameEn": "Kerastase Nutritive Bain Satin Hydrating Shampoo for Dry Hair - 250 ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080347143
+    },
+    "3474636613168": {
+      "id": "6dc66a9b-3396-4a34-94a7-7747c93892b9",
+      "niceoneId": "25057",
+      "leaf": "premium/luxury-care",
+      "nameAr": "كيراستاس - ماسك ريزيستانس اكستانسيونيست للشعر من كيراستاس - 200مل",
+      "nameEn": "Kerastase Resistance Masque Extentioniste Hair Mask - 200ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080350269
+    },
+    "3474636400188": {
+      "id": "6cfd8720-0e62-483a-b08c-f16e172ff51d",
+      "niceoneId": "25088",
+      "leaf": "premium/luxury-care",
+      "nameAr": "كيراستاس - شامبو ديسبلن بان فلويدياليست من كيراستاس - 250 مل",
+      "nameEn": "Kerastase Discipline Bain Fluidealiste Shampoo - 250 ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080353902
+    },
+    "840026657662": {
+      "id": "8635bbba-0dc5-4549-846a-ef81f85489b2",
+      "niceoneId": "22342",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "فنتي بيوتي - قلوس ملمع ومكبر شفاه بومب هيت من فنتي بيوتي - فسي هيت 02",
+      "nameEn": "FENTY BEAUTY Gloss Bomb Heat - Fussy Heat 02",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080395709
+    },
+    "773602002160": {
+      "id": "fc59038b-d904-4c32-8077-f2cd97d3c4cc",
+      "niceoneId": "502",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "ماك - قلم تحديد الشفاه من ماك - سبايس",
+      "nameEn": "MAC Lip pencil - Spice",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080405667
+    },
+    "840026654630": {
+      "id": "cad36fac-a866-4b03-b0a2-246645bb1309",
+      "niceoneId": "22539",
+      "leaf": "premium/luxury-makeup",
+      "nameAr": "فنتي بيوتي - قلوس ملمع ومكبر شفاه بومب هيت من فنتي بيوتي - 01 هوت شيري",
+      "nameEn": "FENTY BEAUTY Gloss Bomb Heat - 01 Hot Cherry",
+      "kind": "makeup",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "d12c04fd-ad76-420c-81b0-708c020b346b"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080409039
+    },
+    "3474636954766": {
+      "id": "ea988540-7ed3-425b-9e38-61b38c3b5bca",
+      "niceoneId": "25128",
+      "leaf": "premium/luxury-care",
+      "stock": 0,
+      "nameAr": "كيراستاس - شامبو سبيسيفيك باين دايفالنت من كيراستاس - 250مل",
+      "nameEn": "Kerastase Specifique Bain Divalent Shampoo - 250ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080418933
+    },
+    "3474637195809": {
+      "id": "eaee4d08-35f3-4ab2-8279-9e82422a2255",
+      "niceoneId": "26082",
+      "leaf": "premium/luxury-care",
+      "nameAr": "كيراستاس - شامبو بريمير باين ديكالسيفيانت للشعر التالف من كيراستاس - 250مل",
+      "nameEn": "Kerastase Premiere Bain Decalcifiant Shampoo for Damaged Hair - 250ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080424032
+    },
+    "3474637196707": {
+      "id": "6c129e47-81c6-4a0f-b5bb-ceaeaa9a3989",
+      "niceoneId": "26083",
+      "leaf": "premium/luxury-care",
+      "nameAr": "كيراستاس - بلسم بريميير للشعر التالف من كيراستاس - 200مل",
+      "nameEn": "Kerastase Premiere Conditioner for Damaged Hair - 200ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080428884
+    },
+    "858511001135": {
+      "id": "ef1dd165-6d67-4e9c-a72f-dcd5dee2cc70",
+      "niceoneId": "25291",
+      "leaf": "premium/luxury-care",
+      "nameAr": "K18 - كيه 18 ماسك لإصلاح الشعر الجزيئي - 150مل",
+      "nameEn": "K18 Molecular Repair Hair Mask - 150ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785080432676
+    }
+  },
+  "skipped": {
+    "22530206": {
+      "reason": "no price",
+      "at": 1785079658702
+    },
+    "35059609": {
+      "reason": "no price",
+      "at": 1785079670891
+    },
+    "37650216": {
+      "reason": "no price",
+      "at": 1785079677945
+    },
+    "49409166": {
+      "reason": "no price",
+      "at": 1785079662978
+    },
+    "53776905": {
+      "reason": "no price",
+      "at": 1785079668074
+    },
+    "70711251": {
+      "reason": "no price",
+      "at": 1785079614303
+    },
+    "73283977": {
+      "reason": "no price",
+      "at": 1785079606673
+    },
+    "74681970": {
+      "reason": "no price",
+      "at": 1785079725682
+    },
+    "85443453": {
+      "reason": "arabic name has latin",
+      "at": 1785080415119
+    },
+    "3614272648401": {
+      "reason": "no price",
+      "at": 1785079502722
+    },
+    "3614272050341": {
+      "reason": "no price",
+      "at": 1785079504897
+    },
+    "88300162543": {
+      "reason": "no price",
+      "at": 1785079599428
+    },
+    "1402035701553": {
+      "reason": "no price",
+      "at": 1785079603407
+    },
+    "8057971180547": {
+      "reason": "arabic name has latin",
+      "at": 1785080389464
+    },
+    "1402068582266": {
+      "reason": "no price",
+      "at": 1785079610818
+    },
+    "3423478452459": {
+      "reason": "arabic name has latin",
+      "at": 1785080391224
+    },
+    "8005610344188": {
+      "reason": "no price",
+      "at": 1785079618109
+    },
+    "1402092516503": {
+      "reason": "no price",
+      "at": 1785079621341
+    },
+    "3614273852821": {
+      "reason": "no price",
+      "at": 1785079624766
+    },
+    "1402003556741": {
+      "reason": "no price",
+      "at": 1785079628558
+    },
+    "1402011939871": {
+      "reason": "no price",
+      "at": 1785079641583
+    },
+    "1402051964536": {
+      "reason": "no price",
+      "at": 1785079645143
+    },
+    "3548752194815": {
+      "reason": "no price",
+      "at": 1785079649011
+    },
+    "3548752194822": {
+      "reason": "no price",
+      "at": 1785079650798
+    },
+    "5060542727532": {
+      "reason": "no price",
+      "at": 1785079653401
+    },
+    "602004119285": {
+      "reason": "no price",
+      "at": 1785079656501
+    },
+    "840026657662": {
+      "reason": "no price",
+      "at": 1785079661652
+    },
+    "5060542723619": {
+      "reason": "no price",
+      "at": 1785079665695
+    },
+    "3548752133081": {
+      "reason": "no price",
+      "at": 1785079674105
+    },
+    "5060332329526": {
+      "reason": "no price",
+      "at": 1785079676645
+    },
+    "5060696173308": {
+      "reason": "no price",
+      "at": 1785079679367
+    },
+    "602004071330": {
+      "reason": "upload failed",
+      "at": 1785080402633
+    },
+    "773602002160": {
+      "reason": "no price",
+      "at": 1785079686729
+    },
+    "3548752185158": {
+      "reason": "no price",
+      "at": 1785079691614
+    },
+    "3548752185165": {
+      "reason": "no price",
+      "at": 1785079695032
+    },
+    "3548752185295": {
+      "reason": "no price",
+      "at": 1785079701978
+    },
+    "3548752185301": {
+      "reason": "no price",
+      "at": 1785079705196
+    },
+    "3548752185325": {
+      "reason": "no price",
+      "at": 1785079708619
+    },
+    "3548752185356": {
+      "reason": "no price",
+      "at": 1785079715537
+    },
+    "840026654630": {
+      "reason": "no price",
+      "at": 1785079724288
+    },
+    "3548752203517": {
+      "reason": "no price",
+      "at": 1785079748119
+    },
+    "858511001289": {
+      "reason": "no price",
+      "at": 1785079767649
+    },
+    "3474637155025": {
+      "reason": "no price",
+      "at": 1785079791597
+    },
+    "893689003031": {
+      "reason": "arabic name has latin",
+      "at": 1785080413152
+    },
+    "3474637059019": {
+      "reason": "no price",
+      "at": 1785079848455
+    },
+    "3474636612666": {
+      "reason": "no price",
+      "at": 1785079857189
+    },
+    "896364002961": {
+      "reason": "no price",
+      "at": 1785079879074
+    },
+    "3474637154967": {
+      "reason": "no price",
+      "at": 1785079908278
+    },
+    "893689003826": {
+      "reason": "arabic name has latin",
+      "at": 1785080415118
+    },
+    "3474637059187": {
+      "reason": "no price",
+      "at": 1785079943443
+    },
+    "3474636612918": {
+      "reason": "no price",
+      "at": 1785079949272
+    },
+    "3474636857937": {
+      "reason": "no price",
+      "at": 1785079981780
+    },
+    "850018802239": {
+      "reason": "no price",
+      "at": 1785080006079
+    },
+    "3474636613168": {
+      "reason": "no price",
+      "at": 1785080033248
+    },
+    "3474636400188": {
+      "reason": "no price",
+      "at": 1785080051915
+    },
+    "3474637195809": {
+      "reason": "no price",
+      "at": 1785080080650
+    },
+    "3474637196707": {
+      "reason": "no price",
+      "at": 1785080092830
+    },
+    "858511001135": {
+      "reason": "no price",
+      "at": 1785080118575
+    }
+  }
+}

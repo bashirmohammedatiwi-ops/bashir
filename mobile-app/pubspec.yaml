@@ -48,7 +48,7 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: assets/images/app_icon_source.png
-  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_background: "#F6FAF9"
   adaptive_icon_foreground: assets/images/app_icon_source.png
   remove_alpha_ios: true
 
@@ -60,4 +60,5 @@ flutter:
     - assets/images/alhayat_butterfly_logo.png
     - assets/images/nav_butterfly.png
     - assets/images/app_icon_source.png
+    - assets/images/app_icon_transparent.png
     - assets/videos/welcome.mp4

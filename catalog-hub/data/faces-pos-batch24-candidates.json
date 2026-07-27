@@ -1,0 +1,464 @@
+[
+  {
+    "barcode": "6971479464676",
+    "facesId": "606517386336",
+    "leaf": "bestsellers",
+    "brandAr": "Sheglam",
+    "brandEn": "Sheglam",
+    "nameAr": "برايمر تصحيح ألوان - وردي",
+    "nameEn": "Sheglam Birthday Skin Primer Invisible Pore Color Correcting Pink",
+    "pos": {
+      "barcode": "6971479464676",
+      "pos": {
+        "price": 8750,
+        "originalPrice": 8750,
+        "discountPercent": 0,
+        "stock": 27,
+        "name": "SHEGLAM primer brithday",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:47.141Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "020714776114",
+    "facesId": "007513083978",
+    "leaf": "bestsellers",
+    "brandAr": "Clinique",
+    "brandEn": "Clinique",
+    "nameAr": "مستحضر الحماية من الشمس فيس صن50 بفلتر 30مل",
+    "nameEn": "Face Sun SPF 50 Sunscreen 30ml",
+    "pos": {
+      "barcode": "020714776114",
+      "pos": {
+        "price": 40250,
+        "originalPrice": 40250,
+        "discountPercent": 0,
+        "stock": 25,
+        "name": "CLINQUE M.FOUNATION SPF50+ 30ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:37.697Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "6294015164176",
+    "facesId": "551916817086",
+    "leaf": "bestsellers",
+    "brandAr": "ARMAF",
+    "brandEn": "ARMAF",
+    "nameAr": "عطر كلوب دي نوي ريد أنتولد",
+    "nameEn": "Club De Nuit Red Untold",
+    "pos": {
+      "barcode": "6294015164176",
+      "pos": {
+        "price": 79000,
+        "originalPrice": 79000,
+        "discountPercent": 0,
+        "stock": 22,
+        "name": "ARMAF CLUB DE NUIT EDP 105ML UNTOLD",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:44.832Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "8011003993826",
+    "facesId": "PM_VERSACE_Bright_Crystal",
+    "leaf": "bestsellers",
+    "brandAr": "Versace",
+    "brandEn": "Versace",
+    "nameAr": "برايت كريستال  أو  دو تواليت",
+    "nameEn": "Bright Crystal Eau De Toilette",
+    "pos": {
+      "barcode": "8011003993826",
+      "pos": {
+        "price": 85000,
+        "originalPrice": 85000,
+        "discountPercent": 0,
+        "stock": 17,
+        "name": "VERSAGE BRIGHT CRYSTAL EDT 90ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:36.257Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "6931611300286",
+    "facesId": "pm606517386342",
+    "leaf": "bestsellers",
+    "brandAr": "Sheglam",
+    "brandEn": "Sheglam",
+    "nameAr": "هايلايتر سائل لوجه مشرق و مزدهر",
+    "nameEn": "Glow Bloom Liquid",
+    "pos": {
+      "barcode": "6931611300286",
+      "pos": {
+        "price": 9000,
+        "originalPrice": 9000,
+        "discountPercent": 0,
+        "stock": 16,
+        "name": "SHEGLAM LIQUID HIGHLIGHTER TEA CAKE",
+        "offerName": null,
+        "syncedAt": "2026-07-17T18:21:20.887Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "8057971180448",
+    "facesId": "009416333197",
+    "leaf": "men-beauty-products",
+    "brandAr": "Dolce & Gabbana",
+    "brandEn": "Dolce & Gabbana",
+    "nameAr": "عطر انتنسو",
+    "nameEn": "Intenso",
+    "pos": {
+      "barcode": "8057971180448",
+      "pos": {
+        "price": 82000,
+        "originalPrice": 82000,
+        "discountPercent": 0,
+        "stock": 16,
+        "name": "Dolce & Gabbana Intenso Eau de Parfum for Men125ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:49.304Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3423222119485",
+    "facesId": "pm015617334219",
+    "leaf": "perfume",
+    "brandAr": "Issey Miyake",
+    "brandEn": "Issey Miyake",
+    "nameAr": "لو سيل ديسي",
+    "nameEn": "Le Sel D'Issey",
+    "pos": {
+      "barcode": "3423222119485",
+      "pos": {
+        "price": 100000,
+        "originalPrice": 100000,
+        "discountPercent": 0,
+        "stock": 14,
+        "name": "ISSEY MIYAKE LE SEL DISSEY PARFUM  100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:48.975Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "768614102021",
+    "facesId": "PM_SHISEIDO_Zen_EDP",
+    "leaf": "perfume",
+    "brandAr": "Shiseido",
+    "brandEn": "Shiseido",
+    "nameAr": "عطر زين أو  دو برفان",
+    "nameEn": "Zen  Eau de Parfum",
+    "pos": {
+      "barcode": "768614102021",
+      "pos": {
+        "price": 55000,
+        "originalPrice": 55000,
+        "discountPercent": 0,
+        "stock": 13,
+        "name": "SHISEDIO ZEN EDP 100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:36.264Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3274872487383",
+    "facesId": "013117163163",
+    "leaf": "bestsellers",
+    "brandAr": "Givenchy",
+    "brandEn": "Givenchy",
+    "nameAr": "عطر جنتلمان أونلي",
+    "nameEn": "Gentleman Only",
+    "pos": {
+      "barcode": "3274872487383",
+      "pos": {
+        "price": 77000,
+        "originalPrice": 77000,
+        "discountPercent": 0,
+        "stock": 12,
+        "name": "Givenchy Gentlemen Only EDT 100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:49.326Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "6294015164152",
+    "facesId": "551916817083",
+    "leaf": "bestsellers",
+    "brandAr": "ARMAF",
+    "brandEn": "ARMAF",
+    "nameAr": "عطر كلوب دي نوي بلو أيكونيك",
+    "nameEn": "Club De Nuit Blue Iconic",
+    "pos": {
+      "barcode": "6294015164152",
+      "pos": {
+        "price": 50000,
+        "originalPrice": 50000,
+        "discountPercent": 0,
+        "stock": 11,
+        "name": "ARMAF CLUB DE NUIT ICONIC EDP 105ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:44.832Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "6971053493689",
+    "facesId": "606517386319",
+    "leaf": "bestsellers",
+    "brandAr": "Sheglam",
+    "brandEn": "Sheglam",
+    "nameAr": "ماسكارا سوداء مضادة للماء",
+    "nameEn": "Sheglam All In One Volume & Length Mascara WP Black 8g",
+    "pos": {
+      "barcode": "6971053493689",
+      "pos": {
+        "price": 10000,
+        "originalPrice": 10000,
+        "discountPercent": 0,
+        "stock": 11,
+        "name": "SHEGLAM ALL IN ONE MASCARA",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:44.358Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "6973474683441",
+    "facesId": "pm606517386356",
+    "leaf": "bestsellers",
+    "brandAr": "Sheglam",
+    "brandEn": "Sheglam",
+    "nameAr": "كونسيلر خافي عيوب معزز لون البشرة",
+    "nameEn": "Complexion Boost",
+    "pos": {
+      "barcode": "6973474683441",
+      "pos": {
+        "price": 9000,
+        "originalPrice": 9000,
+        "discountPercent": 0,
+        "stock": 9,
+        "name": "SHEGLAM CONCEALER SHELL",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:46.118Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "079625042702",
+    "facesId": "164717025047",
+    "leaf": "skincare",
+    "brandAr": "Real Techniques",
+    "brandEn": "Real Techniques",
+    "nameAr": "مجموعة فرشاة ثنائية للعناية بالبشرة",
+    "nameEn": "Skincare Brush Duo",
+    "pos": {
+      "barcode": "079625042702",
+      "pos": {
+        "price": 17250,
+        "originalPrice": 17250,
+        "discountPercent": 0,
+        "stock": 9,
+        "name": "R-T SKIN CARE BRUSH DUO",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:44.043Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "6295199800959",
+    "facesId": "551917349829",
+    "leaf": "bestsellers",
+    "brandAr": "ARMAF",
+    "brandEn": "ARMAF",
+    "nameAr": "عطر ديلايتس يم يم",
+    "nameEn": "Delights Yum Yum",
+    "pos": {
+      "barcode": "6295199800959",
+      "pos": {
+        "price": 42000,
+        "originalPrice": 42000,
+        "discountPercent": 0,
+        "stock": 7,
+        "name": "ARMAF YUM YUM EDO 100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:48.788Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3349668627530",
+    "facesId": "pm025416808812",
+    "leaf": "bestsellers",
+    "brandAr": "Rabanne",
+    "brandEn": "Rabanne",
+    "nameAr": "إنفيكتوس 2024",
+    "nameEn": "Invictus Parfum",
+    "pos": {
+      "barcode": "3349668627530",
+      "pos": {
+        "price": 120000,
+        "originalPrice": 120000,
+        "discountPercent": 0,
+        "stock": 7,
+        "name": "P-R INVICTUS PARFUM 100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:46.704Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3423222010133",
+    "facesId": "PM_ISSEY_MIYAKE_fusion_edti",
+    "leaf": "bestsellers",
+    "brandAr": "Issey Miyake",
+    "brandEn": "Issey Miyake",
+    "nameAr": "عطر فيوجن إكسترام أو دو تواليت إنتنس",
+    "nameEn": "Fusion d'Issey Extreme Eau de Toilette Intense",
+    "pos": {
+      "barcode": "3423222010133",
+      "pos": {
+        "price": 54500,
+        "originalPrice": 54500,
+        "discountPercent": 0,
+        "stock": 7,
+        "name": "ISSEY MIAYKE FUSION EXTREME EDT 100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:48.788Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3360377022928",
+    "facesId": "PM_RALPH_LAUREN_polo_blue_edt",
+    "leaf": "bestsellers",
+    "brandAr": "Ralph Lauren",
+    "brandEn": "Ralph Lauren",
+    "nameAr": "بولو بلو أو دو تواليت",
+    "nameEn": "Polo Blue  Eau De Toilette",
+    "pos": {
+      "barcode": "3360377022928",
+      "pos": {
+        "price": 69000,
+        "originalPrice": 69000,
+        "discountPercent": 0,
+        "stock": 7,
+        "name": "POLO BLUE EDT 125ml",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:35.838Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4250587773200",
+    "facesId": "130812467892",
+    "leaf": "bestsellers",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "بودرة وجه مضغوطة من دون لمعان مت",
+    "nameEn": "Mattifying Compact",
+    "pos": {
+      "barcode": "4250587773200",
+      "pos": {
+        "price": 6750,
+        "originalPrice": 6750,
+        "discountPercent": 0,
+        "stock": 6,
+        "name": "ESSENCE MATTIFYING COMPACT POWDER NO.11",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:39.050Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3614274258073",
+    "facesId": "pm002117217839",
+    "leaf": "men-beauty-products",
+    "brandAr": "Azzaro",
+    "brandEn": "Azzaro",
+    "nameAr": "عطر وونتد فوريفر إليكسير",
+    "nameEn": "Wanted Forever Elixir",
+    "pos": {
+      "barcode": "3614274258073",
+      "pos": {
+        "price": 106000,
+        "originalPrice": 106000,
+        "discountPercent": 0,
+        "stock": 6,
+        "name": "AZZ WANTED FOR EVER ELIXIR 100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:48.139Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "8011003876280",
+    "facesId": "PM_VERSACE_Dylan_Purple_EDP",
+    "leaf": "bestsellers",
+    "brandAr": "Versace",
+    "brandEn": "Versace",
+    "nameAr": "بخاخ طبيعي ديلان بيربل او دو بارفان",
+    "nameEn": "Dylan Purple Eau de Parfum Natural Spray",
+    "pos": {
+      "barcode": "8011003876280",
+      "pos": {
+        "price": 97000,
+        "originalPrice": 97000,
+        "discountPercent": 0,
+        "stock": 6,
+        "name": "VERSACE DYLAN PURPLR EDP 100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:44.832Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3616305186119",
+    "facesId": "pm006817156737",
+    "leaf": "bestsellers",
+    "brandAr": "Chloe",
+    "brandEn": "Chloe",
+    "nameAr": "نوماد لوميير ديجيبت",
+    "nameEn": "Nomade Lumi&egrave;re d'&Eacute;gypte",
+    "pos": {
+      "barcode": "3616305186119",
+      "pos": {
+        "price": 171250,
+        "originalPrice": 171250,
+        "discountPercent": 0,
+        "stock": 6,
+        "name": "CHOLE NOMADE LUMIERE DEEGYPTE EDP 75 ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:48.975Z"
+      },
+      "inApp": null
+    }
+  }
+]

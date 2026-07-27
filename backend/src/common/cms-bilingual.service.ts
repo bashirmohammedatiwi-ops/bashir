@@ -163,6 +163,19 @@ export class CmsBilingualService {
         });
       }
     });
+
+    section.skinConcerns?.forEach((raw) => {
+      if (!raw || typeof raw !== "object") return;
+      const c = raw as Record<string, unknown>;
+      const nameAr = ((c.nameAr as string | undefined) ?? (c.name as string | undefined))?.trim();
+      if (nameAr) c.nameAr = nameAr;
+      this.queue(slots, nameAr, c.nameEn as string, (v) => {
+        c.nameEn = v;
+      });
+      this.queue(slots, c.description as string, c.descriptionEn as string, (v) => {
+        c.descriptionEn = v;
+      });
+    });
   }
 
   private queue(
@@ -199,6 +212,9 @@ export class CmsBilingualService {
       banners: Array.isArray(section.banners)
         ? section.banners.map((b) => (b && typeof b === "object" ? { ...(b as object) } : b))
         : section.banners,
+      skinConcerns: Array.isArray(section.skinConcerns)
+        ? section.skinConcerns.map((c) => (c && typeof c === "object" ? { ...(c as object) } : c))
+        : section.skinConcerns,
       children: section.children?.map((c) => this.cloneSection(c)) ?? [],
     };
   }

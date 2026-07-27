@@ -1,0 +1,114 @@
+[
+  {
+    "barcode": "8057971180547",
+    "niceoneId": "6847",
+    "leaf": "premium/luxury-perfumes",
+    "brandAr": "Dolce and Gabbana",
+    "brandEn": "Dolce and Gabbana",
+    "nameAr": "دولتشي اند جابانا عطر ذا ون للرجال - او دو بارفيوم",
+    "nameEn": "دولتشي اند جابانا عطر ذا ون للرجال - او دو بارفيوم",
+    "listPrice": "٢٦١ ر.س",
+    "pos": {
+      "barcode": "8057971180547",
+      "pos": {
+        "price": 85000,
+        "originalPrice": 85000,
+        "discountPercent": 0,
+        "stock": 0,
+        "name": "D&G THE ONE PH EDP 100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:45.998Z"
+      },
+      "inApp": null
+    },
+    "inAppId": null
+  },
+  {
+    "barcode": "3423478452459",
+    "niceoneId": "7413",
+    "leaf": "premium/luxury-perfumes",
+    "brandAr": "Dolce and Gabbana",
+    "brandEn": "Dolce and Gabbana",
+    "nameAr": "عطر ذا اونلي ون من دولتشي اند جابانا للنساء - او دي بارفيوم",
+    "nameEn": "عطر ذا اونلي ون من دولتشي اند جابانا للنساء - او دي بارفيوم",
+    "listPrice": "٢٩٩ ر.س",
+    "pos": {
+      "barcode": "3423478452459",
+      "pos": null,
+      "inApp": null
+    },
+    "inAppId": null
+  },
+  {
+    "barcode": "602004071330",
+    "niceoneId": "4893",
+    "leaf": "premium/luxury-makeup",
+    "brandAr": "Benefit",
+    "brandEn": "Benefit",
+    "nameAr": "بنفت قلم الحواجب بريسايسلي ماي برو - 04 Warm Deep Brown",
+    "nameEn": "بنفت قلم الحواجب بريسايسلي ماي برو - 04 Warm Deep Brown",
+    "listPrice": "١٢٩ ر.س",
+    "pos": {
+      "barcode": "602004071330",
+      "pos": {
+        "price": 43500,
+        "originalPrice": 43500,
+        "discountPercent": 0,
+        "stock": 0,
+        "name": "BENEFIT MY BROW PENCIL NO.4",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:42.243Z"
+      },
+      "inApp": null
+    },
+    "inAppId": null
+  },
+  {
+    "barcode": "893689003031",
+    "niceoneId": "16669",
+    "leaf": "premium/luxury-care",
+    "brandAr": "Revitalash Cosmetics",
+    "brandEn": "Revitalash Cosmetics",
+    "nameAr": "مرطب الرموش المتطور ريفيتالاش من ريفيتالاش كوزماتيكس - 1.0 مل",
+    "nameEn": "مرطب الرموش المتطور ريفيتالاش من ريفيتالاش كوزماتيكس - 1.0 مل",
+    "listPrice": "١٦٩ ر.س",
+    "pos": {
+      "barcode": "893689003031",
+      "pos": null,
+      "inApp": null
+    },
+    "inAppId": null
+  },
+  {
+    "barcode": "893689003826",
+    "niceoneId": "23308",
+    "leaf": "premium/luxury-care",
+    "brandAr": "Revitalash Cosmetics",
+    "brandEn": "Revitalash Cosmetics",
+    "nameAr": "سيروم تكثيف الحواجب المتطور ريفيتابراو من ريفيتالاش كوزماتيكس - 1.5مل",
+    "nameEn": "سيروم تكثيف الحواجب المتطور ريفيتابراو من ريفيتالاش كوزماتيكس - 1.5مل",
+    "listPrice": "١٩٦ ر.س",
+    "pos": {
+      "barcode": "893689003826",
+      "pos": null,
+      "inApp": null
+    },
+    "inAppId": null
+  },
+  {
+    "barcode": "85443453",
+    "niceoneId": "23308",
+    "leaf": "premium/luxury-care",
+    "brandAr": "Revitalash Cosmetics",
+    "brandEn": "Revitalash Cosmetics",
+    "nameAr": "سيروم تكثيف الحواجب المتطور ريفيتابراو من ريفيتالاش كوزماتيكس - 1.5مل",
+    "nameEn": "سيروم تكثيف الحواجب المتطور ريفيتابراو من ريفيتالاش كوزماتيكس - 1.5مل",
+    "listPrice": "١٩٦ ر.س",
+    "pos": {
+      "barcode": "85443453",
+      "pos": null,
+      "inApp": null
+    },
+    "inAppId": null
+  }
+]

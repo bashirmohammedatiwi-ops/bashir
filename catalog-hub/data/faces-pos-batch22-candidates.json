@@ -1,0 +1,1190 @@
+[
+  {
+    "barcode": "8809447251394",
+    "facesId": "259414593132",
+    "leaf": "skincare",
+    "brandAr": "Dr Althea",
+    "brandEn": "Dr Althea",
+    "nameAr": "345 ريليف كريم لترطيب واصلاح مكثف للبشرة",
+    "nameEn": "345 Relief Cream",
+    "pos": {
+      "barcode": "8809447256221",
+      "pos": {
+        "price": 21000,
+        "originalPrice": 21000,
+        "discountPercent": 0,
+        "stock": 187,
+        "name": "DR.ALTHENA 345 RELIFE CREAM 50ML",
+        "offerName": null,
+        "syncedAt": "2026-07-17T18:21:21.224Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729441973",
+    "facesId": "130816830163",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "مسكارا كول مي كوين دراماتيك فولس لاش افكت",
+    "nameEn": "Call Me Queen Dramatic False Lash Effect",
+    "pos": {
+      "barcode": "4059729441973",
+      "pos": {
+        "price": 6750,
+        "originalPrice": 6750,
+        "discountPercent": 0,
+        "stock": 141,
+        "name": "essence call me mascara",
+        "offerName": null,
+        "syncedAt": "2026-07-17T18:21:21.070Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729421340",
+    "facesId": "130816625665",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "آي لاينر المقاوم للماء والذي يدوم لمدة 24 ساعة",
+    "nameEn": "Dip Eyeliner Waterproof 24H Long-Lasting",
+    "pos": {
+      "barcode": "4059729421340",
+      "pos": {
+        "price": 6250,
+        "originalPrice": 6250,
+        "discountPercent": 0,
+        "stock": 57,
+        "name": "ESSENCE DIP EYELINER WATERPROOF 24H LONG L",
+        "offerName": null,
+        "syncedAt": "2026-07-17T18:21:20.894Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3666057300424",
+    "facesId": "pm007317386373",
+    "leaf": "skincare",
+    "brandAr": "Clarins",
+    "brandEn": "Clarins",
+    "nameAr": "دبل سيروم لايت",
+    "nameEn": "Double Serum Light",
+    "pos": {
+      "barcode": "3666057300424",
+      "pos": {
+        "price": 130000,
+        "originalPrice": 130000,
+        "discountPercent": 0,
+        "stock": 24,
+        "name": "CLARINS Double Serum Light Texture 50 ml",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:49.498Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3423474884957",
+    "facesId": "015613190941",
+    "leaf": "men-beauty-products",
+    "brandAr": "Issey Miyake",
+    "brandEn": "Issey Miyake",
+    "nameAr": "نوار أمبر أو دو برفان 100مل",
+    "nameEn": "L'Eau d'Issey Pour Homme Noir Ambre",
+    "pos": {
+      "barcode": "3423474884957",
+      "pos": {
+        "price": 153000,
+        "originalPrice": 153000,
+        "discountPercent": 0,
+        "stock": 23,
+        "name": "ISSEY MIYAKE PH NOIR AMBRE EDP 100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:39.301Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "6973474683694",
+    "facesId": "pm606517386331",
+    "leaf": "makeup",
+    "brandAr": "Sheglam",
+    "brandEn": "Sheglam",
+    "nameAr": "تنت الشفاه والخدود لإشراقة مثالية",
+    "nameEn": "For The Flush Lip & Cheek Tint",
+    "pos": {
+      "barcode": "6973474683694",
+      "pos": {
+        "price": 10000,
+        "originalPrice": 10000,
+        "discountPercent": 0,
+        "stock": 21,
+        "name": "SHEGLAM TINT CHERRY PICKED",
+        "offerName": null,
+        "syncedAt": "2026-07-17T18:21:21.062Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729447050",
+    "facesId": "pm130816830193",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "اي لوف فلوليس سكن كونسيلر",
+    "nameEn": "I Love Flawless Skin",
+    "pos": {
+      "barcode": "4059729447050",
+      "pos": {
+        "price": 6750,
+        "originalPrice": 6750,
+        "discountPercent": 0,
+        "stock": 18,
+        "name": "essence i love skin concealer 50",
+        "offerName": null,
+        "syncedAt": "2026-07-17T18:21:21.070Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4250035200746",
+    "facesId": "pm130812467560",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "قلم كحل",
+    "nameEn": "Kajal Pencil",
+    "pos": {
+      "barcode": "4250035200746",
+      "pos": {
+        "price": 2750,
+        "originalPrice": 2750,
+        "discountPercent": 0,
+        "stock": 18,
+        "name": "ESSENCE KAJAL PENCIL 04",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:38.304Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729335913",
+    "facesId": "130817019767",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "ظلال العيون \"سوفت توتش\"",
+    "nameEn": "Soft Touch",
+    "pos": {
+      "barcode": "4059729335913",
+      "pos": {
+        "price": 4750,
+        "originalPrice": 4750,
+        "discountPercent": 0,
+        "stock": 17,
+        "name": "Essence Soft Touch Eyeshadow 06",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:46.581Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729371942",
+    "facesId": "pm130816160326",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "قلم حواجب &ldquo;واو وات ا براو&rdquo; مقاوم للماء",
+    "nameEn": "Wow What A Brow Pen Waterproof",
+    "pos": {
+      "barcode": "4059729371942",
+      "pos": {
+        "price": 7000,
+        "originalPrice": 7000,
+        "discountPercent": 0,
+        "stock": 17,
+        "name": "Essence Wow What A Brow Pen Waterproof 02",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:44.047Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3614274350739",
+    "facesId": "pm032817250298",
+    "leaf": "men-beauty-products",
+    "brandAr": "Valentino",
+    "brandEn": "Valentino",
+    "nameAr": "عطر بورن إن روما أومو إكسترا دوز",
+    "nameEn": "Born In Roma Uomo Extradose",
+    "pos": {
+      "barcode": "3614274350739",
+      "pos": {
+        "price": 158750,
+        "originalPrice": 158750,
+        "discountPercent": 0,
+        "stock": 16,
+        "name": "VALENTINO BORN IN ROMA EXTRADOSE UOMO 100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:47.536Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4251232217605",
+    "facesId": "130913432494",
+    "leaf": "makeup",
+    "brandAr": "Catrice",
+    "brandEn": "Catrice",
+    "nameAr": "قلم كحل كاجال للعين",
+    "nameEn": "Inside Eye Khol Kajal",
+    "pos": {
+      "barcode": "4251232217605",
+      "pos": {
+        "price": 5400,
+        "originalPrice": 6000,
+        "discountPercent": 10,
+        "stock": 13,
+        "name": "CATRICE INSIDE EYE KHOL KAJAL 010",
+        "offerName": "â‎‎ 10%",
+        "syncedAt": "2026-07-17T18:21:20.444Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "6931611300262",
+    "facesId": "pm606517386313",
+    "leaf": "makeup",
+    "brandAr": "Sheglam",
+    "brandEn": "Sheglam",
+    "nameAr": "احمر خدود سائل بلون مزدهر",
+    "nameEn": "Color Bloom Liquid",
+    "pos": {
+      "barcode": "6931611300262",
+      "pos": {
+        "price": 7000,
+        "originalPrice": 7000,
+        "discountPercent": 0,
+        "stock": 12,
+        "name": "SHEGLAM LIQUID BLUSH ROSE RITUAL",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:44.253Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729276698",
+    "facesId": "PM_CATRICE_Plumping_Lip_Liner",
+    "leaf": "makeup",
+    "brandAr": "Catrice",
+    "brandEn": "Catrice",
+    "nameAr": "محدد ومكبر شفاه",
+    "nameEn": "Plumping",
+    "pos": {
+      "barcode": "4059729276698",
+      "pos": {
+        "price": 4950,
+        "originalPrice": 5500,
+        "discountPercent": 10,
+        "stock": 10,
+        "name": "CATRICE PLUMPING LIP LINER 040",
+        "offerName": "â‎‎ 10%",
+        "syncedAt": "2026-07-17T18:21:20.721Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729485922",
+    "facesId": "130817019768",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "جل مثبت للحواجب &ldquo;فيكس ات لايك آ برو&rdquo;",
+    "nameEn": "Fix It Like A Pro Transparent",
+    "pos": {
+      "barcode": "4059729485922",
+      "pos": {
+        "price": 6750,
+        "originalPrice": 6750,
+        "discountPercent": 0,
+        "stock": 10,
+        "name": "Essence Fix it Like a Pro Transp Brow Gel",
+        "offerName": null,
+        "syncedAt": "2026-07-17T18:21:21.082Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3616304691645",
+    "facesId": "pm014816623968",
+    "leaf": "men-beauty-products",
+    "brandAr": "Hugo Boss",
+    "brandEn": "Hugo Boss",
+    "nameAr": "بوس بوتلد إلكسير بارفان إنتنس",
+    "nameEn": "Boss Bottled Elixir Parfum Intense",
+    "pos": {
+      "barcode": "3616304691645",
+      "pos": {
+        "price": 141000,
+        "originalPrice": 141000,
+        "discountPercent": 0,
+        "stock": 10,
+        "name": "HUGO BSS BOTTLED ELIXIR PARFUM INTENSE 100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:48.136Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4250035246942",
+    "facesId": "pm130812467565",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "قلم عيون طويل الأمد",
+    "nameEn": "Long-Lasting Eye Pencil",
+    "pos": {
+      "barcode": "4250035246942",
+      "pos": {
+        "price": 4000,
+        "originalPrice": 4000,
+        "discountPercent": 0,
+        "stock": 9,
+        "name": "ESSENCE LONG LASTING EYE PENCIL 01",
+        "offerName": null,
+        "syncedAt": "2026-07-17T18:21:20.444Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3605970859251",
+    "facesId": "PM_RALPH_LAUREN_polo_blue_edp",
+    "leaf": "men-beauty-products",
+    "brandAr": "Ralph Lauren",
+    "brandEn": "Ralph Lauren",
+    "nameAr": "بولو بلو أو دو برفان",
+    "nameEn": "Polo Blue Intense Eau De Parfum",
+    "pos": {
+      "barcode": "3605970859251",
+      "pos": {
+        "price": 88000,
+        "originalPrice": 88000,
+        "discountPercent": 0,
+        "stock": 8,
+        "name": "R-L POLO BLUE EDP 125ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:37.715Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3380810424089",
+    "facesId": "PM_CLARINS_uvplus_pink",
+    "leaf": "bestsellers",
+    "brandAr": "Clarins",
+    "brandEn": "Clarins",
+    "nameAr": "يو في بلس بينك",
+    "nameEn": "UV PLUS [5P] Anti-Pollution Pink",
+    "pos": {
+      "barcode": "3380810424089",
+      "pos": {
+        "price": 73500,
+        "originalPrice": 73500,
+        "discountPercent": 0,
+        "stock": 8,
+        "name": "CLARINS UV PLUS SPF +50 ROSE",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:43.140Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729307569",
+    "facesId": "130815542657",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "قلم تفتيح زاوية العين",
+    "nameEn": "Inner Eye Brightening Pen",
+    "pos": {
+      "barcode": "4059729307569",
+      "pos": {
+        "price": 2750,
+        "originalPrice": 2750,
+        "discountPercent": 0,
+        "stock": 7,
+        "name": "ESSENCE Inner eye brightening pen 01",
+        "offerName": null,
+        "syncedAt": "2026-07-17T18:21:20.732Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "8025272623322",
+    "facesId": "PM_Kiko_milano_Unlimited_double_touch",
+    "leaf": "makeup",
+    "brandAr": "Kiko Milano",
+    "brandEn": "Kiko Milano",
+    "nameAr": "أحمر الشفاه السائل المزدوج أنليميتد دوبل تاتش",
+    "nameEn": "Unlimited Double Touch Lipstick",
+    "pos": {
+      "barcode": "8025272623322",
+      "pos": {
+        "price": 17250,
+        "originalPrice": 28750,
+        "discountPercent": 40,
+        "stock": 7,
+        "name": "KIKO UNLIMITED DOUBLE TOUCH 104",
+        "offerName": "‎‎‎‎",
+        "syncedAt": "2026-07-12T13:50:45.323Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729546975",
+    "facesId": "pm130817466081",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "بلاشر سوفت تاتش باونسي",
+    "nameEn": "Soft Touch Bouncy Blush",
+    "pos": {
+      "barcode": "4059729546975",
+      "pos": {
+        "price": 6000,
+        "originalPrice": 6000,
+        "discountPercent": 0,
+        "stock": 6,
+        "name": "Essence Soft Touch Bouncy Blush 30",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:49.364Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3145891274707",
+    "facesId": "PM_Chanel_homme_EDP",
+    "leaf": "men-beauty-products",
+    "brandAr": "Chanel",
+    "brandEn": "Chanel",
+    "nameAr": "ALLURE HOMME &Eacute;DITION BLANCHE",
+    "nameEn": "ALLURE HOMME ÉDITION BLANCHE",
+    "pos": {
+      "barcode": "3145891274707",
+      "pos": {
+        "price": 278250,
+        "originalPrice": 278250,
+        "discountPercent": 0,
+        "stock": 6,
+        "name": "CHANEL ALLURE M EDT 150ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:37.057Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729490346",
+    "facesId": "pm130817019788",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "كوريكت & كونسيل كونسيلر تفتيح تحت العين",
+    "nameEn": "Correct & Conceal Under Eye Brightening",
+    "pos": {
+      "barcode": "4059729490346",
+      "pos": {
+        "price": 6750,
+        "originalPrice": 6750,
+        "discountPercent": 0,
+        "stock": 5,
+        "name": "Essence Cor & Conc brigh Conc 10",
+        "offerName": null,
+        "syncedAt": "2026-07-17T18:21:21.082Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4250587723779",
+    "facesId": "130913603746",
+    "leaf": "makeup",
+    "brandAr": "Catrice",
+    "brandEn": "Catrice",
+    "nameAr": "ماسكارا جل لاش برو ديزاينر لتحديد وتكثيف الرموش والحواجب",
+    "nameEn": "Lash Brow Designer Shaping And Conditioning Mascara Gel",
+    "pos": {
+      "barcode": "2024098",
+      "pos": {
+        "price": 5400,
+        "originalPrice": 6000,
+        "discountPercent": 10,
+        "stock": 5,
+        "name": "CATRICE Lash & Brow Designer Shap & Cond Gel",
+        "offerName": "â‎‎ 10%",
+        "syncedAt": "2026-07-12T13:50:36.251Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4250947563618",
+    "facesId": "pm130912751373",
+    "leaf": "makeup",
+    "brandAr": "Catrice",
+    "brandEn": "Catrice",
+    "nameAr": "خافي العيوب ليكويد كاموفلاج",
+    "nameEn": "Liquid Camouflage High Coverage Concealer",
+    "pos": {
+      "barcode": "4250947563618",
+      "pos": {
+        "price": 6975,
+        "originalPrice": 7750,
+        "discountPercent": 10,
+        "stock": 5,
+        "name": "CATRICE LIQUID CAMOUFLAGE 005",
+        "offerName": "â‎‎ 10%",
+        "syncedAt": "2026-07-12T13:50:38.670Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729584571",
+    "facesId": "pm130817962138",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "سوفت غلام بيكد بلاش",
+    "nameEn": "Soft Baked",
+    "pos": {
+      "barcode": "4059729584571",
+      "pos": {
+        "price": 6750,
+        "originalPrice": 6750,
+        "discountPercent": 0,
+        "stock": 5,
+        "name": "Essence Soft Baked Blush 20",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:49.364Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729357939",
+    "facesId": "130915828460",
+    "leaf": "makeup",
+    "brandAr": "Catrice",
+    "brandEn": "Catrice",
+    "nameAr": "برايمر ماتيفاير للتحكم في افراز زيوت البشرة",
+    "nameEn": "The Mattifier Oil-control",
+    "pos": {
+      "barcode": "4059729357939",
+      "pos": {
+        "price": 9000,
+        "originalPrice": 10000,
+        "discountPercent": 10,
+        "stock": 5,
+        "name": "Catrice The Mattifier Oil-Control Primer",
+        "offerName": "â‎‎ 10%",
+        "syncedAt": "2026-07-12T13:50:43.512Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "8011003894802",
+    "facesId": "193217157269",
+    "leaf": "perfume",
+    "brandAr": "Atkinsons",
+    "brandEn": "Atkinsons",
+    "nameAr": "شاين دسباية افريثنغ",
+    "nameEn": "Shine Despite Everything",
+    "pos": {
+      "barcode": "8011003894802",
+      "pos": {
+        "price": 153000,
+        "originalPrice": 153000,
+        "discountPercent": 0,
+        "stock": 4,
+        "name": "ATKINSONS SHINE DESPITE EVERTHINK PARFUM 100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-17T18:21:21.401Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3348901419093",
+    "facesId": "PM_DIOR_JOY_by_Dior_EDP",
+    "leaf": "perfume",
+    "brandAr": "Dior",
+    "brandEn": "Dior",
+    "nameAr": "عطر جوي باي ديور أو  دو برفان",
+    "nameEn": "JOY by Dior  Eau de Parfum",
+    "pos": {
+      "barcode": "3348901419093",
+      "pos": {
+        "price": 181250,
+        "originalPrice": 181250,
+        "discountPercent": 0,
+        "stock": 4,
+        "name": "DIOR JOY EDP 90ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:39.777Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4250947593899",
+    "facesId": "130813098259",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "مسكارا تكثيف الرموش ذا فولس لاشيز",
+    "nameEn": "The False Lashes Extreme Volume & Curl",
+    "pos": {
+      "barcode": "4250947593899",
+      "pos": {
+        "price": 6250,
+        "originalPrice": 6250,
+        "discountPercent": 0,
+        "stock": 4,
+        "name": "ESSENCE THE FALSEB LASHES EXTREME VOLUME MASCARA",
+        "offerName": null,
+        "syncedAt": "2026-07-17T18:21:20.444Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "6971870596730",
+    "facesId": "pm606517386330",
+    "leaf": "makeup",
+    "brandAr": "Sheglam",
+    "brandEn": "Sheglam",
+    "nameAr": "بخاخ جسم غو غو جلو اللامع",
+    "nameEn": "Go Go Glow Highlighting",
+    "pos": {
+      "barcode": "6971870596730",
+      "pos": {
+        "price": 12250,
+        "originalPrice": 12250,
+        "discountPercent": 0,
+        "stock": 4,
+        "name": "SHEGLAM GOGO HIGHLIGHTING BODY OPAL",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:47.031Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729419095",
+    "facesId": "pm130916805967",
+    "leaf": "makeup",
+    "brandAr": "Catrice",
+    "brandEn": "Catrice",
+    "nameAr": "كونسيلر أندر آي برايتنر",
+    "nameEn": "Under Eye Brightener",
+    "pos": {
+      "barcode": "4059729419095",
+      "pos": {
+        "price": 7425,
+        "originalPrice": 8250,
+        "discountPercent": 10,
+        "stock": 4,
+        "name": "Catrice Under Eye Brightener 020",
+        "offerName": "â‎‎ 10%",
+        "syncedAt": "2026-07-17T18:21:21.070Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729447371",
+    "facesId": "pm130816830184",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "بيبي غت بلش ليكويد",
+    "nameEn": "Baby Got Blush Liquid",
+    "pos": {
+      "barcode": "4059729447371",
+      "pos": {
+        "price": 7500,
+        "originalPrice": 7500,
+        "discountPercent": 0,
+        "stock": 4,
+        "name": "essence baby got blush liquid blush 20",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:45.890Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729421647",
+    "facesId": "pm130816625649",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "إيسينس أنا أحب كريم أساس البشرة الخالية من العيوب",
+    "nameEn": "I Love Flawless Skin",
+    "pos": {
+      "barcode": "4059729421647",
+      "pos": {
+        "price": 12750,
+        "originalPrice": 12750,
+        "discountPercent": 0,
+        "stock": 4,
+        "name": "ESSENCE I LOVE FLAWLESS FOUND 20",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:45.323Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729393685",
+    "facesId": "130916400727",
+    "leaf": "makeup",
+    "brandAr": "Catrice",
+    "brandEn": "Catrice",
+    "nameAr": "مبراة اقلام المكياج",
+    "nameEn": "Cosmetic Sharpener",
+    "pos": {
+      "barcode": "4059729393685",
+      "pos": {
+        "price": 4050,
+        "originalPrice": 4500,
+        "discountPercent": 10,
+        "stock": 4,
+        "name": "Catrice Cosmetics Sharpner",
+        "offerName": "â‎‎ 10%",
+        "syncedAt": "2026-07-17T18:21:20.887Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "8809495895106",
+    "facesId": "545516761845",
+    "leaf": "skincare",
+    "brandAr": "Jayjun",
+    "brandEn": "Jayjun",
+    "nameAr": "ماسكات جل للعين بشاي اللافندر",
+    "nameEn": "Lavender Tea Eye Gel Patch",
+    "pos": {
+      "barcode": "8809495895106",
+      "pos": {
+        "price": 18000,
+        "originalPrice": 18000,
+        "discountPercent": 0,
+        "stock": 4,
+        "name": "JAYJUN EYE GEL PATCH LAVENDER",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:42.690Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3145891234107",
+    "facesId": "006616959857",
+    "leaf": "men-beauty-products",
+    "brandAr": "Chanel",
+    "brandEn": "Chanel",
+    "nameAr": "ألور أوم سبورت سوبرليجيرا",
+    "nameEn": "ALLURE HOMME SPORT SUPERLEGGERA",
+    "pos": {
+      "barcode": "3145891234107",
+      "pos": {
+        "price": 277500,
+        "originalPrice": 277500,
+        "discountPercent": 0,
+        "stock": 4,
+        "name": "CHANEL SPORT SUPER LEGGERA EDP 100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:46.704Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3614274506167",
+    "facesId": "pm033617544460",
+    "leaf": "perfume",
+    "brandAr": "Viktor & Rolf",
+    "brandEn": "Viktor & Rolf",
+    "nameAr": "فلاور بومب بريتي بيوني",
+    "nameEn": "Flower Bomb Pretty Peony",
+    "pos": {
+      "barcode": "3614274506167",
+      "pos": {
+        "price": 160000,
+        "originalPrice": 160000,
+        "discountPercent": 0,
+        "stock": 3,
+        "name": "V & R Flowerbomb Pretty Peony Eau de Parfum 100ml",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:49.103Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "8011003901647",
+    "facesId": "pm033317687120",
+    "leaf": "perfume",
+    "brandAr": "Versace",
+    "brandEn": "Versace",
+    "nameAr": "عطر كريستال إميرالد",
+    "nameEn": "Crystal Emerald",
+    "pos": {
+      "barcode": "8011003901647",
+      "pos": {
+        "price": 112000,
+        "originalPrice": 112000,
+        "discountPercent": 0,
+        "stock": 3,
+        "name": "Versace Ladies Crystal Emerald EDP 90ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:49.103Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "6084000005993",
+    "facesId": "008711011057",
+    "leaf": "perfume",
+    "brandAr": "Designer Shaik",
+    "brandEn": "Designer Shaik",
+    "nameAr": "عطر شيك شايك كلاسيك رقم 70 للرجال أو دو برفان 80مل",
+    "nameEn": "Chic Shaik Classic No.70 For Men Eau De Parfum 80ml",
+    "pos": {
+      "barcode": "6084000005993",
+      "pos": {
+        "price": 226500,
+        "originalPrice": 226500,
+        "discountPercent": 0,
+        "stock": 3,
+        "name": "SHAIKH NO.70 EDP 80ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:48.843Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729274946",
+    "facesId": "130915304759",
+    "leaf": "makeup",
+    "brandAr": "Catrice",
+    "brandEn": "Catrice",
+    "nameAr": "لاينر برش",
+    "nameEn": "24h Brush Liner",
+    "pos": {
+      "barcode": "4059729274946",
+      "pos": {
+        "price": 6075,
+        "originalPrice": 6750,
+        "discountPercent": 10,
+        "stock": 3,
+        "name": "CATRICE 24H BRUSH LINER 010",
+        "offerName": "â‎‎ 10%",
+        "syncedAt": "2026-07-17T18:21:20.721Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "8028713400025",
+    "facesId": "PM_ACQUA_DI_PARMA_Peonia_Nobile_EDP",
+    "leaf": "perfume",
+    "brandAr": "Acqua Di Parma",
+    "brandEn": "Acqua Di Parma",
+    "nameAr": "بيونيا نوبيلي أو  دو برفان",
+    "nameEn": "Peonia Nobile  Eau de Parfum",
+    "pos": {
+      "barcode": "8028713400025",
+      "pos": {
+        "price": 162250,
+        "originalPrice": 162250,
+        "discountPercent": 0,
+        "stock": 2,
+        "name": "PEONIA N EDP SPRAY 100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:45.086Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729382412",
+    "facesId": "130816160334",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "وات آ تينت ملون للشفاه والخدود",
+    "nameEn": "What A Tint! Lip & Cheek Tint",
+    "pos": {
+      "barcode": "4059729382412",
+      "pos": {
+        "price": 7500,
+        "originalPrice": 7500,
+        "discountPercent": 0,
+        "stock": 2,
+        "name": "Essence What A Tint! Lip & Cheek Tint 01",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:44.047Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "6973072801117",
+    "facesId": "pm606517386306",
+    "leaf": "makeup",
+    "brandAr": "Sheglam",
+    "brandEn": "Sheglam",
+    "nameAr": "قلم حواجب 2 في 1 حسب الحاجة",
+    "nameEn": "Brows On Demand 2-In-1",
+    "pos": {
+      "barcode": "6973072801117",
+      "pos": {
+        "price": 6250,
+        "originalPrice": 6250,
+        "discountPercent": 0,
+        "stock": 2,
+        "name": "SHEGLEM 2IN 1 BROW PENCIL CHOCOLATE",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:45.987Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729420886",
+    "facesId": "130816625662",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "قلم الكحل السائل جدا عالي الثبات",
+    "nameEn": "Eyeliner Pen Extra Long-Lasting",
+    "pos": {
+      "barcode": "4059729420886",
+      "pos": {
+        "price": 6000,
+        "originalPrice": 6000,
+        "discountPercent": 0,
+        "stock": 2,
+        "name": "ESSENCE EYELINER PEN EXTRA LONG LASTING 010",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:45.323Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729584717",
+    "facesId": "130817962191",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "جلو لايك ديوي هاني ديوي برايمر",
+    "nameEn": "Glow Like Honey Dewy",
+    "pos": {
+      "barcode": "4059729584717",
+      "pos": {
+        "price": 9000,
+        "originalPrice": 9000,
+        "discountPercent": 0,
+        "stock": 2,
+        "name": "Essence  Glow Like Honey Dewy  30ml",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:49.364Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "4059729394606",
+    "facesId": "pm130816830171",
+    "leaf": "makeup",
+    "brandAr": "Essence",
+    "brandEn": "Essence",
+    "nameAr": "ملمع شفاه \"جوسي بومب\"",
+    "nameEn": "Juicy Bomb Shiny",
+    "pos": {
+      "barcode": "4059729394606",
+      "pos": {
+        "price": 3000,
+        "originalPrice": 3000,
+        "discountPercent": 0,
+        "stock": 2,
+        "name": "essence juicy bomb shiny lipgloss 101",
+        "offerName": null,
+        "syncedAt": "2026-07-17T18:21:21.070Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "6973474681072",
+    "facesId": "606517386322",
+    "leaf": "makeup",
+    "brandAr": "Sheglam",
+    "brandEn": "Sheglam",
+    "nameAr": "باليت بلاشر احمرار الزهور",
+    "nameEn": "Floral Flush Palette",
+    "pos": {
+      "barcode": "6973474681072",
+      "pos": {
+        "price": 14000,
+        "originalPrice": 14000,
+        "discountPercent": 0,
+        "stock": 2,
+        "name": "SHEGLAM BLUSH PALETTE",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:44.829Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3145891079302",
+    "facesId": "006610025499",
+    "leaf": "body-care",
+    "brandAr": "Chanel",
+    "brandEn": "Chanel",
+    "nameAr": "بلو دو شانيل BLEU DE CHANEL",
+    "nameEn": "BLEU DE CHANEL",
+    "pos": {
+      "barcode": "3145891079302",
+      "pos": {
+        "price": 75250,
+        "originalPrice": 75250,
+        "discountPercent": 0,
+        "stock": 2,
+        "name": "CHANEL BLUE DEODRANT 100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:37.459Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3145891239300",
+    "facesId": "006610025554",
+    "leaf": "body-care",
+    "brandAr": "Chanel",
+    "brandEn": "Chanel",
+    "nameAr": "ALLURE HOMME SPORT",
+    "nameEn": "ALLURE HOMME SPORT",
+    "pos": {
+      "barcode": "3145891239300",
+      "pos": {
+        "price": 73750,
+        "originalPrice": 73750,
+        "discountPercent": 0,
+        "stock": 2,
+        "name": "CHANEL ALLUR SPORT DEODRANT100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-17T18:21:20.481Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "6294015163513",
+    "facesId": "551916817094",
+    "leaf": "men-beauty-products",
+    "brandAr": "ARMAF",
+    "brandEn": "ARMAF",
+    "nameAr": "كلوب دو نوي أوربان مان إليكسير",
+    "nameEn": "Club De Nuit Urban Man Elixir",
+    "pos": {
+      "barcode": "6294015163513",
+      "pos": {
+        "price": 46750,
+        "originalPrice": 46750,
+        "discountPercent": 0,
+        "stock": 2,
+        "name": "ARMAF CLUB DE NUIT ELIXIR EDP 100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:44.954Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3616305040633",
+    "facesId": "pm014817156755",
+    "leaf": "men-beauty-products",
+    "brandAr": "Hugo Boss",
+    "brandEn": "Hugo Boss",
+    "nameAr": "ذا سنت إلكسير إنتنس",
+    "nameEn": "The Scent Elixir Intense",
+    "pos": {
+      "barcode": "3616305040633",
+      "pos": {
+        "price": 147500,
+        "originalPrice": 147500,
+        "discountPercent": 0,
+        "stock": 2,
+        "name": "HUGO BOSS THE SCENT ELIXIR INTENSE 100ML",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:47.287Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3474636397983",
+    "facesId": "018114574487",
+    "leaf": "bestsellers",
+    "brandAr": "Kerastase",
+    "brandEn": "Kerastase",
+    "nameAr": "ريزيستانس ماسك  الشعر ماسك ثيرابيست 200مل",
+    "nameEn": "Resistance Masque Therapiste Hair Mask 200ml",
+    "pos": {
+      "barcode": "3474636397983",
+      "pos": {
+        "price": 67000,
+        "originalPrice": 67000,
+        "discountPercent": 0,
+        "stock": 2,
+        "name": "k‎‎‎ ë‎ ‎â‎‎ 200‎‎",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:38.307Z"
+      },
+      "inApp": null
+    }
+  }
+]

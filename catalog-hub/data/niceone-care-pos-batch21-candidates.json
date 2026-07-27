@@ -1,0 +1,68 @@
+[
+  {
+    "barcode": "8992803994056",
+    "niceoneId": "25453",
+    "leaf": "care/hand-care/hand-moisturizer",
+    "brandAr": "RDL",
+    "brandEn": "RDL",
+    "nameAr": "لوشن تفتيح اليدين والجسم بالحليب وخلاصة البابايا وفيتامين إي من ار دي ال - 600مل",
+    "nameEn": "RDL Papaya Extract With Vitamin E and Milk Brightening Hand & Body Lotion - 600ml",
+    "pos": {
+      "barcode": "8992803994056",
+      "pos": {
+        "price": 2750,
+        "originalPrice": 2750,
+        "discountPercent": 0,
+        "stock": 103,
+        "name": "RDL ‎‎‎‎ ‎¥ ‎‎‎ ‎‎‎‎ ‎‎‎‎‎ 600‎‎",
+        "offerName": null,
+        "syncedAt": "2026-07-17T18:21:20.894Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "6287020281075",
+    "niceoneId": "25391",
+    "leaf": "care",
+    "pos": {
+      "barcode": "6287020281075",
+      "pos": {
+        "price": 50000,
+        "originalPrice": 50000,
+        "discountPercent": 0,
+        "stock": 6,
+        "name": "IBRAHEEM ALQURASHI SPANISH TOBACCO 100ml",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:48.248Z"
+      },
+      "inApp": null
+    },
+    "brandAr": "",
+    "brandEn": "",
+    "nameAr": "",
+    "nameEn": ""
+  },
+  {
+    "barcode": "3474636397983",
+    "niceoneId": "25056",
+    "leaf": "care",
+    "brandAr": "Kerastase",
+    "brandEn": "Kerastase",
+    "nameAr": "ماسك ريزيستانس ثيرابيست للشعر من كيراستاس - 200مل",
+    "nameEn": "ماسك ريزيستانس ثيرابيست للشعر من كيراستاس - 200مل",
+    "pos": {
+      "barcode": "3474636397983",
+      "pos": {
+        "price": 67000,
+        "originalPrice": 67000,
+        "discountPercent": 0,
+        "stock": 2,
+        "name": "k‎‎‎ ë‎ ‎â‎‎ 200‎‎",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:38.307Z"
+      },
+      "inApp": null
+    }
+  }
+]

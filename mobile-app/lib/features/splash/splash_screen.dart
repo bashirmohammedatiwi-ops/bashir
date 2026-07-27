@@ -4,8 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/config/app_config.dart';
 import '../../core/theme/app_fonts.dart';
 
-/// ألوان مستوحاة من اللوغو.
+/// ألوان مستوحاة من اللوغو — متطابقة مع خلفية الرئيسية.
 abstract final class SplashTheme {
+  static const background = Color(0xFFF6FAF9);
   static const teal = Color(0xFF3A9E8F);
   static const tealDark = Color(0xFF2F7F73);
   static const charcoal = Color(0xFF2D2D2D);
@@ -50,7 +51,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     final tagline = widget.lang == 'ar' ? 'جمالك يبدأ من هنا' : 'your beauty starts here';
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: SplashTheme.background,
       body: SafeArea(
         child: Center(
           child: FadeTransition(
@@ -63,10 +64,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Image.asset(
-                      'assets/images/app_icon_source.png',
+                      'assets/images/app_icon_transparent.png',
                       width: 108,
                       height: 108,
                       fit: BoxFit.contain,
+                      filterQuality: FilterQuality.high,
                     ),
                     const SizedBox(height: 28),
                     Text(

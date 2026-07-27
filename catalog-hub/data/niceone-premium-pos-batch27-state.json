@@ -1,0 +1,71 @@
+{
+  "imported": {
+    "8057971180547": {
+      "id": "7f7792a0-0928-4faa-81d6-ee70f869a95f",
+      "niceoneId": "6847",
+      "leaf": "premium/luxury-perfumes",
+      "stock": 0,
+      "nameAr": "دولتشي أند غابانا - عطر ذا ون للرجال - أو دو بارفان",
+      "nameEn": "Dolce & Gabbana The One For Men Eau de Parfum",
+      "kind": "perfume",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "764abc71-a54c-4aec-9cd8-9869b9afdd0d"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785081217077
+    },
+    "3423478452459": {
+      "id": "f8f71890-7ab7-48f1-871a-d3707bf149ad",
+      "niceoneId": "7413",
+      "leaf": "premium/luxury-perfumes",
+      "nameAr": "دولتشي أند غابانا - عطر ذا أونلي ون للنساء - أو دو بارفان",
+      "nameEn": "Dolce & Gabbana The Only One For Women Eau de Parfum",
+      "kind": "perfume",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "764abc71-a54c-4aec-9cd8-9869b9afdd0d"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785081220768
+    },
+    "893689003031": {
+      "id": "1754be14-c656-4736-be72-e7950db00af7",
+      "niceoneId": "16669",
+      "leaf": "premium/luxury-care",
+      "nameAr": "ريفيتalash - سيروم تكثيف الرموش المتطور - 1.0 مل",
+      "nameEn": "RevitaLash Advanced Eyelash Conditioner 1.0ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785081235776
+    },
+    "893689003826": {
+      "id": "68800d96-50e1-4c72-bc32-1a04245d1ed5",
+      "niceoneId": "23308",
+      "leaf": "premium/luxury-care",
+      "nameAr": "ريفيتalash - سيروم تكثيف الحواجب المتطور - 1.5 مل",
+      "nameEn": "RevitaBrow Advanced Eyebrow Conditioner 1.5ml",
+      "kind": "care",
+      "categoryId": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "subcategoryIds": [
+        "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a"
+      ],
+      "tertiaryCategoryIds": [],
+      "at": 1785081240003
+    }
+  },
+  "skipped": {
+    "85443453": {
+      "reason": "arabic name has latin",
+      "at": 1785081403314
+    },
+    "602004071330": {
+      "reason": "upload failed",
+      "at": 1785081401019
+    }
+  }
+}

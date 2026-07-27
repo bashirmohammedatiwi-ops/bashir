@@ -1,0 +1,153 @@
+[
+  {
+    "barcode": "5045252668085",
+    "niceoneId": "6170",
+    "leaf": "premium/luxury-perfumes",
+    "brandAr": "Burberry",
+    "brandEn": "Burberry",
+    "nameAr": "بربري عطر لندن للنساء - او دو بارفيوم",
+    "nameEn": "Burberry London For Women Eau de Parfum",
+    "pos": {
+      "barcode": "5045252668085",
+      "pos": {
+        "price": 62500,
+        "originalPrice": 62500,
+        "discountPercent": 0,
+        "stock": 6,
+        "name": "BURBERRY LONDON L EDP 100ML"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "niceoneId": "11190",
+    "leaf": "premium/luxury-perfumes",
+    "brandAr": "Lancome",
+    "brandEn": "Lancome",
+    "nameAr": "عطر ايدول من لانكوم للنساء - او دو بارفيوم",
+    "nameEn": "عطر ايدول من لانكوم للنساء - او دو بارفيوم",
+    "pos": {
+      "barcode": "3614272629387",
+      "pos": {
+        "price": 126113,
+        "originalPrice": 132750,
+        "discountPercent": 5,
+        "stock": 4,
+        "name": "LANCOME IDOLE W EDP 75 ML",
+        "offerName": "‎‎‎‎ ‎‎‎",
+        "syncedAt": "2026-07-12T13:50:40.874Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "846733030347",
+    "niceoneId": "18225",
+    "leaf": "premium/luxury-makeup",
+    "brandAr": "tarte",
+    "brandEn": "tarte",
+    "nameAr": "كونسيلر خافي عيوب شيب تيب من تارت - 10مل",
+    "nameEn": "كونسيلر خافي عيوب شيب تيب من تارت - 10مل",
+    "pos": {
+      "barcode": "846733030347",
+      "pos": {
+        "price": 35000,
+        "originalPrice": 35000,
+        "discountPercent": 0,
+        "stock": 12,
+        "name": "TARTE SHAPE TABE CONCEALER 34S",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:49.498Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "6294018401919",
+    "niceoneId": "26566",
+    "leaf": "premium/luxury-makeup",
+    "brandAr": "HUDA BEAUTY",
+    "brandEn": "HUDA BEAUTY",
+    "nameAr": "مصحح اللون فو فيلتر من هدى بيوتي",
+    "nameEn": "مصحح اللون فو فيلتر من هدى بيوتي",
+    "pos": {
+      "barcode": "6294018401919",
+      "pos": {
+        "price": 55000,
+        "originalPrice": 55000,
+        "discountPercent": 0,
+        "stock": 13,
+        "name": "HB COLOR CORRECTOR PINK POMELO",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:44.973Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "602004106681",
+    "niceoneId": "11687",
+    "leaf": "premium/luxury-makeup",
+    "brandAr": "Benefit",
+    "brandEn": "Benefit",
+    "nameAr": "تنت الشفاه و الخدود بيني تينت روز تنتد من بنفت - 6.0مل",
+    "nameEn": "تنت الشفاه و الخدود بيني تينت روز تنتد من بنفت - 6.0مل",
+    "pos": {
+      "barcode": "602004106681",
+      "pos": {
+        "price": 30000,
+        "originalPrice": 30000,
+        "discountPercent": 0,
+        "stock": 3,
+        "name": "BENEFIT TINT 6ML",
+        "offerName": null,
+        "syncedAt": "2026-07-17T18:21:20.714Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3548752185271",
+    "niceoneId": "21399",
+    "leaf": "premium/luxury-makeup",
+    "brandAr": "MAKE UP FOR EVER",
+    "brandEn": "MAKE UP FOR EVER",
+    "nameAr": "ميك اب فور ايفر كريم أساس إتش دي سكن",
+    "nameEn": "ميك اب فور ايفر كريم أساس إتش دي سكن",
+    "pos": {
+      "barcode": "3548752185271",
+      "pos": {
+        "price": 51500,
+        "originalPrice": 51500,
+        "discountPercent": 0,
+        "stock": 3,
+        "name": "MAKE UP FOR EVER HD FND NO.Y328",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:47.023Z"
+      },
+      "inApp": null
+    }
+  },
+  {
+    "barcode": "3548752185264",
+    "niceoneId": "21399",
+    "leaf": "premium/luxury-makeup",
+    "brandAr": "MAKE UP FOR EVER",
+    "brandEn": "MAKE UP FOR EVER",
+    "nameAr": "ميك اب فور ايفر كريم أساس إتش دي سكن",
+    "nameEn": "ميك اب فور ايفر كريم أساس إتش دي سكن",
+    "pos": {
+      "barcode": "3548752185264",
+      "pos": {
+        "price": 51500,
+        "originalPrice": 51500,
+        "discountPercent": 0,
+        "stock": 2,
+        "name": "MAKE UP FOR EVER HD FND NO.Y325",
+        "offerName": null,
+        "syncedAt": "2026-07-12T13:50:47.023Z"
+      },
+      "inApp": null
+    }
+  }
+]

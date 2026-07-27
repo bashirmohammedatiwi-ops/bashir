@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_strings.dart';
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/category.dart';
 import '../home_link.dart';
@@ -7,7 +10,7 @@ import '../widgets/circle_tile.dart';
 import '../widgets/home_theme.dart';
 
 /// شريط مشاكل البشرة — pills / circles / cards بأسلوب Beautief.
-class SkinConcernsStrip extends StatelessWidget {
+class SkinConcernsStrip extends ConsumerWidget {
   final List<Category> concerns;
   final String? title;
   final String? subtitle;
@@ -24,8 +27,11 @@ class SkinConcernsStrip extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (concerns.isEmpty) return const SizedBox.shrink();
+
+    final lang = ref.watch(languageCodeProvider);
+    final strings = ref.watch(stringsProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -34,12 +40,12 @@ class SkinConcernsStrip extends StatelessWidget {
           HomeEditorialHeader(
             title: title!,
             subtitle: subtitle,
-            overline: 'دليل البشرة',
+            overline: strings.skinGuideOverline,
             compact: true,
           ),
-        if (display == 'circles') _CirclesRow(concerns: concerns),
-        if (display == 'cards') _CardsList(concerns: concerns),
-        if (display != 'circles' && display != 'cards') _PillsRow(concerns: concerns),
+        if (display == 'circles') _CirclesRow(concerns: concerns, lang: lang),
+        if (display == 'cards') _CardsList(concerns: concerns, lang: lang),
+        if (display != 'circles' && display != 'cards') _PillsRow(concerns: concerns, lang: lang),
       ],
     );
   }
@@ -56,8 +62,9 @@ void _openConcern(BuildContext context, Category concern) {
 
 class _PillsRow extends StatelessWidget {
   final List<Category> concerns;
+  final String lang;
 
-  const _PillsRow({required this.concerns});
+  const _PillsRow({required this.concerns, required this.lang});
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +78,7 @@ class _PillsRow extends StatelessWidget {
         itemBuilder: (_, i) {
           final c = concerns[i];
           return HomeFilterPill(
-            label: c.name,
+            label: c.localizedName(lang),
             icon: c.icon,
             selected: false,
             onTap: () => _openConcern(context, c),
@@ -84,8 +91,9 @@ class _PillsRow extends StatelessWidget {
 
 class _CirclesRow extends StatelessWidget {
   final List<Category> concerns;
+  final String lang;
 
-  const _CirclesRow({required this.concerns});
+  const _CirclesRow({required this.concerns, required this.lang});
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +107,7 @@ class _CirclesRow extends StatelessWidget {
         itemBuilder: (_, i) {
           final c = concerns[i];
           return CircleTile(
-            title: c.name,
+            title: c.localizedName(lang),
             imageUrl: c.imageUrl.isNotEmpty ? c.imageUrl : null,
             icon: c.icon,
             width: 76,
@@ -113,8 +121,9 @@ class _CirclesRow extends StatelessWidget {
 
 class _CardsList extends StatelessWidget {
   final List<Category> concerns;
+  final String lang;
 
-  const _CardsList({required this.concerns});
+  const _CardsList({required this.concerns, required this.lang});
 
   @override
   Widget build(BuildContext context) {
@@ -127,6 +136,7 @@ class _CardsList extends StatelessWidget {
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (_, i) {
           final c = concerns[i];
+          final description = c.localizedDescription(lang);
           return Material(
             color: Colors.white,
             borderRadius: BorderRadius.circular(HomeTheme.tileRadius),
@@ -154,11 +164,16 @@ class _CardsList extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(c.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: HomeTheme.chipLabel),
-                            if (c.description != null && c.description!.isNotEmpty) ...[
+                            Text(
+                              c.localizedName(lang),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: HomeTheme.chipLabel,
+                            ),
+                            if (description.isNotEmpty) ...[
                               const SizedBox(height: 4),
                               Text(
-                                c.description!,
+                                description,
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                                 style: HomeTheme.body(size: 11),

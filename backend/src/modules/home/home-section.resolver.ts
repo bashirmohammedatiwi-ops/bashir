@@ -773,6 +773,9 @@ export class HomeSectionResolver {
     const max = (payload.maxItems as number) ?? 12;
     const enrich = (c: Record<string, unknown>) => ({
       ...c,
+      nameAr: (c.nameAr as string | undefined) ?? (c.name as string),
+      nameEn: (c.nameEn as string | undefined) ?? null,
+      descriptionEn: (c.descriptionEn as string | undefined) ?? null,
       link: buildAppLink("skinConcern", c.slug as string),
       imageUrl: this.concernImageUrl(c),
     });

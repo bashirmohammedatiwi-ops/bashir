@@ -1,0 +1,505 @@
+{
+  "imported": {
+    "8809447251394": {
+      "id": "57196327-3254-47c4-9e42-7c753fb91ecd",
+      "facesId": "259414593132",
+      "leaf": "skincare",
+      "stock": 187,
+      "nameAr": "دكتور آلتيا - 345 ريليف كريم لترطيب واصلاح مكثف للبشرة",
+      "nameEn": "Dr Althea 345 Relief Cream",
+      "kind": "care",
+      "at": 1785068194394
+    },
+    "4059729441973": {
+      "id": "08286fc7-2ec7-4f48-ab76-c48b123777c0",
+      "facesId": "130816830163",
+      "leaf": "makeup",
+      "stock": 141,
+      "nameAr": "إيسينس - مسكارا كول مي كوين دراماتيك فولس لاش افكت",
+      "nameEn": "Essence Call Me Queen Dramatic False Lash Effect",
+      "kind": "makeup",
+      "at": 1785068208456
+    },
+    "4059729421340": {
+      "id": "702d8d92-2d9d-4893-b626-6dbd6cfba4ff",
+      "facesId": "130816625665",
+      "leaf": "makeup",
+      "stock": 57,
+      "nameAr": "إيسينس - آي لاينر المقاوم للماء والذي يدوم لمدة 24 ساعة",
+      "nameEn": "Essence Dip Eyeliner Waterproof 24H Long-Lasting",
+      "kind": "makeup",
+      "at": 1785068217297
+    },
+    "3666057300424": {
+      "id": "af3d67db-5916-4fdd-b571-9fdd5048326a",
+      "facesId": "pm007317386373",
+      "leaf": "skincare",
+      "stock": 24,
+      "nameAr": "كلارنس - دبل سيروم لايت - 50ml",
+      "nameEn": "Clarins Double Serum Light - 50ml",
+      "kind": "care",
+      "at": 1785068227499
+    },
+    "3423474884957": {
+      "id": "f2d2e400-1605-43cb-8f74-eb792281af22",
+      "facesId": "015613190941",
+      "leaf": "men-beauty-products",
+      "stock": 23,
+      "nameAr": "ايسي مياكي - نوار أمبر أو دو برفان 100مل",
+      "nameEn": "Issey Miyake L'Eau d'Issey Pour Homme Noir Ambre",
+      "kind": "perfume",
+      "at": 1785068229430
+    },
+    "6973474683694": {
+      "id": "692d0198-dd4a-41eb-90bf-3d3ec34cd739",
+      "facesId": "pm606517386331",
+      "leaf": "makeup",
+      "stock": 21,
+      "nameAr": "شيجلام - صبغة شفاه ووجنتين - إتس تشيلي - Cherry Picked",
+      "nameEn": "Sheglam For The Flush Lip & Cheek Tint-It's Chili - Cherry Picked",
+      "kind": "makeup",
+      "at": 1785068235530
+    },
+    "4059729447050": {
+      "id": "53aa0af5-6050-40fa-82d5-058028345cee",
+      "facesId": "pm130816830193",
+      "leaf": "makeup",
+      "stock": 18,
+      "nameAr": "إيسينس - اي لوف فلوليس سكن كونسيلر - 50 Light Sand",
+      "nameEn": "Essence I Love Flawless Skin - 50 Light Sand",
+      "kind": "makeup",
+      "at": 1785068244816
+    },
+    "4250035200746": {
+      "id": "e78dd1f9-4f88-4cb8-baab-39d337bc026b",
+      "facesId": "pm130812467560",
+      "leaf": "makeup",
+      "stock": 18,
+      "nameAr": "إيسينس - قلم كحل - 04 White",
+      "nameEn": "Essence Kajal Pencil - 04 White",
+      "kind": "makeup",
+      "at": 1785068259513
+    },
+    "4059729335913": {
+      "id": "c8b76f5c-2f6f-49ec-86c9-ac2e00bf2a30",
+      "facesId": "130817019767",
+      "leaf": "makeup",
+      "stock": 17,
+      "nameAr": "إيسينس - ظلال العيون \"سوفت توتش\"",
+      "nameEn": "Essence Soft Touch",
+      "kind": "makeup",
+      "at": 1785068265120
+    },
+    "4059729371942": {
+      "id": "c5df4eb4-acc1-4580-b4ae-7411e209e72f",
+      "facesId": "pm130816160326",
+      "leaf": "makeup",
+      "stock": 17,
+      "nameAr": "إيسينس - قلم حواجب “واو وات ا براو” مقاوم للماء - 02 Brown",
+      "nameEn": "Essence Wow What A Brow Pen Waterproof - 02 Brown",
+      "kind": "makeup",
+      "at": 1785068271498
+    },
+    "3614274350739": {
+      "id": "a35b7da2-3937-4540-9ad8-d96e6e6cdb58",
+      "facesId": "pm032817250298",
+      "leaf": "men-beauty-products",
+      "stock": 16,
+      "nameAr": "فالنتينو - عطر بورن إن روما أومو إكسترا دوز - 100ml",
+      "nameEn": "Valentino Born In Roma Uomo Extradose - 100ml",
+      "kind": "perfume",
+      "at": 1785068285350
+    },
+    "4251232217605": {
+      "id": "339010a6-f2aa-4ca0-97fc-faadcc796464",
+      "facesId": "130913432494",
+      "leaf": "makeup",
+      "stock": 13,
+      "nameAr": "كاتريس - قلم كحل كاجال للعين",
+      "nameEn": "Catrice Inside Eye Khol Kajal",
+      "kind": "makeup",
+      "at": 1785068294400
+    },
+    "4059729485922": {
+      "id": "24af1d35-5365-47a3-937e-5567409f0c4c",
+      "facesId": "130817019768",
+      "leaf": "makeup",
+      "stock": 10,
+      "nameAr": "إيسينس - جل مثبت للحواجب “فيكس ات لايك آ برو”",
+      "nameEn": "Essence Fix It Like A Pro Transparent",
+      "kind": "makeup",
+      "at": 1785068331311
+    },
+    "3616304691645": {
+      "id": "dcdaf924-bfaf-4c3a-ae73-344961890702",
+      "facesId": "pm014816623968",
+      "leaf": "men-beauty-products",
+      "stock": 10,
+      "nameAr": "هيوغو بوس - بوس بوتلد إلكسير بارفان إنتنس - 100ml",
+      "nameEn": "Hugo Boss Boss Bottled Elixir Parfum Intense - 100ml",
+      "kind": "perfume",
+      "at": 1785068338194
+    },
+    "4250035246942": {
+      "id": "b6504f0c-e952-4a16-8b2d-b4aad4716c05",
+      "facesId": "pm130812467565",
+      "leaf": "makeup",
+      "stock": 9,
+      "nameAr": "إيسينس - قلم عيون طويل الأمد - 01 Black Fever",
+      "nameEn": "Essence Long-Lasting Eye Pencil - 01 Black Fever",
+      "kind": "makeup",
+      "at": 1785068358558
+    },
+    "3605970859251": {
+      "id": "5015451e-9640-45f0-abcd-43daa353da2c",
+      "facesId": "PM_RALPH_LAUREN_polo_blue_edp",
+      "leaf": "men-beauty-products",
+      "stock": 8,
+      "nameAr": "رالف لورين - بولو بلو أو دو برفان - 125مل",
+      "nameEn": "Ralph Lauren Polo Blue Intense Eau De Parfum - 125ml",
+      "kind": "perfume",
+      "at": 1785068365564
+    },
+    "3380810424089": {
+      "id": "5f1aebd8-a386-4c58-8a87-f2cd0c30bb78",
+      "facesId": "PM_CLARINS_uvplus_pink",
+      "leaf": "bestsellers",
+      "stock": 8,
+      "nameAr": "كلارنس - يو في بلس بينك - 50مل",
+      "nameEn": "Clarins UV PLUS [5P] Anti-Pollution Pink - 50ml",
+      "kind": "care",
+      "at": 1785068370938
+    },
+    "4059729307569": {
+      "id": "7cb652db-ecab-47dc-8e54-a82ba3bcb8ed",
+      "facesId": "130815542657",
+      "leaf": "makeup",
+      "stock": 7,
+      "nameAr": "إيسينس - قلم تفتيح زاوية العين",
+      "nameEn": "Essence Inner Eye Brightening Pen",
+      "kind": "makeup",
+      "at": 1785068378155
+    },
+    "8025272623322": {
+      "id": "c9c126e4-b521-43c6-ae51-45ef724e3232",
+      "facesId": "PM_Kiko_milano_Unlimited_double_touch",
+      "leaf": "makeup",
+      "stock": 7,
+      "nameAr": "كيكو ميلانو - أحمر الشفاه السائل المزدوج أنليميتد دوبل تاتش - 104 Sangria",
+      "nameEn": "Kiko Milano Unlimited Double Touch Lipstick - 104 Sangria",
+      "kind": "makeup",
+      "at": 1785068397126
+    },
+    "4059729546975": {
+      "id": "7f774bbe-9f15-4d20-a6af-1c1ba1997796",
+      "facesId": "pm130817466081",
+      "leaf": "makeup",
+      "stock": 6,
+      "nameAr": "إيسينس - سوفت تاتش باونسي بلش - 30 Exotic Daisy",
+      "nameEn": "Essence Soft Touch Bouncy - 30 Exotic Daisy",
+      "kind": "makeup",
+      "at": 1785068409046
+    },
+    "3145891274707": {
+      "id": "c2f65e31-c21a-48fa-a5d2-7b3210959407",
+      "facesId": "PM_Chanel_homme_EDP",
+      "leaf": "men-beauty-products",
+      "stock": 6,
+      "nameAr": "شانيل - ALLURE HOMME ÉDITION BLANCHE - 150ml",
+      "nameEn": "Chanel ALLURE HOMME ÉDITION BLANCHE - 150ml",
+      "kind": "care",
+      "at": 1785068414796
+    },
+    "4059729490346": {
+      "id": "bd29d442-f6ea-4954-a44b-5d778904a766",
+      "facesId": "pm130817019788",
+      "leaf": "makeup",
+      "stock": 5,
+      "nameAr": "إيسينس - كوريكت & كونسيل كونسيلر تفتيح تحت العين - 10 Light",
+      "nameEn": "Essence Correct & Conceal Under Eye Brightening - 10 Light",
+      "kind": "makeup",
+      "at": 1785068426500
+    },
+    "4250587723779": {
+      "id": "2f7a0353-a4cd-426f-8076-553b239ed70b",
+      "facesId": "130913603746",
+      "leaf": "makeup",
+      "stock": 5,
+      "nameAr": "كاتريس - ماسكارا جل لاش برو ديزاينر لتحديد وتكثيف الرموش والحواجب",
+      "nameEn": "Catrice Lash Brow Designer Shaping And Conditioning Mascara Gel",
+      "kind": "makeup",
+      "at": 1785068438150
+    },
+    "4250947563618": {
+      "id": "53106e0d-a841-433b-b6a4-aad270a4b738",
+      "facesId": "pm130912751373",
+      "leaf": "makeup",
+      "stock": 5,
+      "nameAr": "كاتريس - كونسيلر ليكويد كاموفلاج - 05 Light Natural",
+      "nameEn": "Catrice Liquid Camouflage High Coverage - 05 Light Natural",
+      "kind": "makeup",
+      "at": 1785068458254
+    },
+    "4059729584571": {
+      "id": "d22fa2b4-c042-4bfa-a54e-8782ce2cdccc",
+      "facesId": "pm130817962138",
+      "leaf": "makeup",
+      "stock": 5,
+      "nameAr": "إيسينس - سوفت غلام بيكد بلاش - 20 Peach Please",
+      "nameEn": "Essence Soft Baked - 20 Peach Please",
+      "kind": "makeup",
+      "at": 1785068467035
+    },
+    "4059729357939": {
+      "id": "a6584523-8bec-44b4-b649-7bad7811544f",
+      "facesId": "130915828460",
+      "leaf": "makeup",
+      "stock": 5,
+      "nameAr": "كاتريس - برايمر ماتيفاير للتحكم في افراز زيوت البشرة",
+      "nameEn": "Catrice The Mattifier Oil-control",
+      "kind": "makeup",
+      "at": 1785068474010
+    },
+    "8011003894802": {
+      "id": "034da80e-cc32-4be8-bfed-0d9cdecc4964",
+      "facesId": "193217157269",
+      "leaf": "perfume",
+      "stock": 4,
+      "nameAr": "أتكينسونز - شاين دسباية افريثنغ",
+      "nameEn": "Atkinsons Shine Despite Everything",
+      "kind": "perfume",
+      "at": 1785068477682
+    },
+    "3348901419093": {
+      "id": "43514cb3-d707-48e0-b532-6baa7267efb9",
+      "facesId": "PM_DIOR_JOY_by_Dior_EDP",
+      "leaf": "perfume",
+      "stock": 4,
+      "nameAr": "ديور - عطر جوي باي ديور أو دو برفان - 90مل",
+      "nameEn": "Dior JOY by Dior Eau de Parfum - 90ml",
+      "kind": "perfume",
+      "at": 1785068484000
+    },
+    "4250947593899": {
+      "id": "e8c6d717-dd10-4c6d-918a-af92f0382a0c",
+      "facesId": "130813098259",
+      "leaf": "makeup",
+      "stock": 4,
+      "nameAr": "إيسينس - مسكارا تكثيف الرموش ذا فولس لاشيز",
+      "nameEn": "Essence The False Lashes Extreme Volume & Curl",
+      "kind": "makeup",
+      "at": 1785068493179
+    },
+    "6971870596730": {
+      "id": "c74407f1-62dd-46ec-9447-9d6ec1fcf283",
+      "facesId": "pm606517386330",
+      "leaf": "makeup",
+      "stock": 4,
+      "nameAr": "شيجلام - بخاخ جسم غو غو جلو اللامع - Frosted Opal",
+      "nameEn": "Sheglam Go Go Glow Highlighting - Frosted Opal",
+      "kind": "makeup",
+      "at": 1785068498948
+    },
+    "4059729419095": {
+      "id": "2ce010ef-1a69-4d91-be0b-4a9ddc86febc",
+      "facesId": "pm130916805967",
+      "leaf": "makeup",
+      "stock": 4,
+      "nameAr": "كاتريس - كونسيلر أندر آي برايتنر - 020",
+      "nameEn": "Catrice Under Eye Brightener - 020",
+      "kind": "makeup",
+      "at": 1785068506624
+    },
+    "4059729447371": {
+      "id": "f9c085a3-ff38-4956-82bd-88c88fa91b14",
+      "facesId": "pm130816830184",
+      "leaf": "makeup",
+      "stock": 4,
+      "nameAr": "إيسينس - بيبي غت بلش ليكويد - 20 Blushin Berry",
+      "nameEn": "Essence Baby Got Blush Liquid - 20 Blushin Berry",
+      "kind": "makeup",
+      "at": 1785068519108
+    },
+    "4059729421647": {
+      "id": "6bf06372-a546-49d7-9bac-754db96759fd",
+      "facesId": "pm130816625649",
+      "leaf": "makeup",
+      "stock": 4,
+      "nameAr": "إيسينس - أنا أحب كريم أساس البشرة الخالية من العيوب - 20 Medium Porcelain",
+      "nameEn": "Essence I Love Flawless Skin - 20 Medium Porcelain",
+      "kind": "makeup",
+      "at": 1785068529858
+    },
+    "4059729393685": {
+      "id": "3636a9a5-642d-4526-a119-9a24afbd03c9",
+      "facesId": "130916400727",
+      "leaf": "makeup",
+      "stock": 4,
+      "nameAr": "كاتريس - مبراة اقلام المكياج",
+      "nameEn": "Catrice Cosmetic Sharpener",
+      "kind": "makeup",
+      "at": 1785068533578
+    },
+    "8809495895106": {
+      "id": "6ef1e463-38f6-41e9-8dfa-851d15834a0b",
+      "facesId": "545516761845",
+      "leaf": "skincare",
+      "stock": 4,
+      "nameAr": "جايجون - ماسكات جل للعين بشاي اللافندر",
+      "nameEn": "Jayjun Lavender Tea Eye Gel Patch",
+      "kind": "care",
+      "at": 1785068536062
+    },
+    "3145891234107": {
+      "id": "14fc571f-9f4f-40de-8c77-5cea2468a8de",
+      "facesId": "006616959857",
+      "leaf": "men-beauty-products",
+      "stock": 4,
+      "nameAr": "شانيل - ألور أوم سبورت سوبرليجيرا",
+      "nameEn": "Chanel ALLURE HOMME SPORT SUPERLEGGERA",
+      "kind": "care",
+      "at": 1785068538908
+    },
+    "3614274506167": {
+      "id": "ec80ec93-1bb5-4477-8c2f-927fdd0e884c",
+      "facesId": "pm033617544460",
+      "leaf": "perfume",
+      "stock": 3,
+      "nameAr": "فيكتور أند رولف - فلاور بومب بريتي بيوني - 100ml",
+      "nameEn": "Viktor & Rolf Flower Bomb Pretty Peony - 100ml",
+      "kind": "perfume",
+      "at": 1785068545615
+    },
+    "8011003901647": {
+      "id": "657dd114-94d6-47d6-81f8-84d82b11486b",
+      "facesId": "pm033317687120",
+      "leaf": "perfume",
+      "stock": 3,
+      "nameAr": "فيرزاتشي - عطر كريستال إميرالد - 90ML",
+      "nameEn": "Versace Crystal Emerald - 90ML",
+      "kind": "perfume",
+      "at": 1785068552795
+    },
+    "6084000005993": {
+      "id": "066fd4bb-cf18-4f6e-b682-94253e585e19",
+      "facesId": "008711011057",
+      "leaf": "perfume",
+      "stock": 3,
+      "nameAr": "ديزاينر شيخ - عطر شيك شايك كلاسيك رقم 70 للرجال أو دو برفان 80مل",
+      "nameEn": "Designer Shaik Chic Shaik Classic No.70 For Men Eau De Parfum 80ml",
+      "kind": "perfume",
+      "at": 1785068556538
+    },
+    "4059729274946": {
+      "id": "c09b64e1-c197-4827-89fe-0935f8c081e4",
+      "facesId": "130915304759",
+      "leaf": "makeup",
+      "stock": 3,
+      "nameAr": "كاتريس - لاينر برش",
+      "nameEn": "Catrice 24h Brush Liner",
+      "kind": "makeup",
+      "at": 1785068565427
+    },
+    "8028713400025": {
+      "id": "b12c7aea-4806-4add-bf6f-0e09798ff24a",
+      "facesId": "PM_ACQUA_DI_PARMA_Peonia_Nobile_EDP",
+      "leaf": "perfume",
+      "stock": 2,
+      "nameAr": "أكوا دي بارما - بيونيا نوبيلي أو دو برفان - 100مل",
+      "nameEn": "Acqua Di Parma Peonia Nobile Eau de Parfum - 100ml",
+      "kind": "perfume",
+      "at": 1785068571266
+    },
+    "4059729382412": {
+      "id": "6f5d9766-c73b-4b44-8ab3-08dfb75ccc32",
+      "facesId": "130816160334",
+      "leaf": "makeup",
+      "stock": 2,
+      "nameAr": "إيسينس - وات آ تينت ملون للشفاه والخدود",
+      "nameEn": "Essence What A Tint! Lip & Cheek Tint",
+      "kind": "makeup",
+      "at": 1785068579450
+    },
+    "6973072801117": {
+      "id": "1143a8f2-ffc4-4acd-ae43-e3baac9a4791",
+      "facesId": "pm606517386306",
+      "leaf": "makeup",
+      "stock": 2,
+      "nameAr": "شيجلام - قلم حواجب 2 في 1 حسب الحاجة - Chocolate",
+      "nameEn": "Sheglam Brows On Demand 2-In-1 - Chocolate",
+      "kind": "makeup",
+      "at": 1785068589198
+    },
+    "4059729420886": {
+      "id": "6d890a29-0d8a-42d1-b52c-17b099815aef",
+      "facesId": "130816625662",
+      "leaf": "makeup",
+      "stock": 2,
+      "nameAr": "إيسينس - قلم الكحل السائل جدا عالي الثبات",
+      "nameEn": "Essence Eyeliner Pen Extra Long-Lasting",
+      "kind": "makeup",
+      "at": 1785068597375
+    },
+    "4059729584717": {
+      "id": "e8c19e76-33de-4738-b843-81c1befa73fd",
+      "facesId": "130817962191",
+      "leaf": "makeup",
+      "stock": 2,
+      "nameAr": "إيسينس - جلو لايك ديوي هاني ديوي برايمر",
+      "nameEn": "Essence Glow Like Honey Dewy",
+      "kind": "makeup",
+      "at": 1785068600602
+    },
+    "4059729394606": {
+      "id": "f6e0304c-8a27-470f-828e-8e023521c779",
+      "facesId": "pm130816830171",
+      "leaf": "makeup",
+      "stock": 2,
+      "nameAr": "إيسينس - ملمع شفاه \"جوسي بومب\" - 101 Lovely Litchi",
+      "nameEn": "Essence Juicy Bomb Shiny - 101 Lovely Litchi",
+      "kind": "makeup",
+      "at": 1785068613548
+    },
+    "6973474681072": {
+      "id": "13f16b4c-23ae-410d-95ca-5353350ff36f",
+      "facesId": "606517386322",
+      "leaf": "makeup",
+      "stock": 2,
+      "nameAr": "شيجلام - باليت بلاشر احمرار الزهور",
+      "nameEn": "Sheglam Floral Flush Palette",
+      "kind": "makeup",
+      "at": 1785068616144
+    },
+    "3145891079302": {
+      "id": "a02b9962-3655-462c-832b-17b6114a33ad",
+      "facesId": "006610025499",
+      "leaf": "body-care",
+      "stock": 2,
+      "nameAr": "شانيل - بلو دو شانيل BLEU DE CHANEL",
+      "nameEn": "Chanel BLEU DE CHANEL",
+      "kind": "care",
+      "at": 1785068618979
+    },
+    "3145891239300": {
+      "id": "2d76000e-697b-4ccb-b00d-97f523f3375b",
+      "facesId": "006610025554",
+      "leaf": "body-care",
+      "stock": 2,
+      "nameAr": "شانيل - ALLURE HOMME SPORT",
+      "nameEn": "Chanel ALLURE HOMME SPORT",
+      "kind": "care",
+      "at": 1785068621715
+    },
+    "6294015163513": {
+      "id": "6da6dbab-45da-4ce2-bfe8-1147431ddea0",
+      "facesId": "551916817094",
+      "leaf": "men-beauty-products",
+      "stock": 2,
+      "nameAr": "ارماف - كلوب دو نوي أوربان مان إليكسير",
+      "nameEn": "ARMAF Club De Nuit Urban Man Elixir",
+      "kind": "care",
+      "at": 1785068624253
+    }
+  },
+  "skipped": {}
+}

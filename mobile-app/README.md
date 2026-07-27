@@ -48,7 +48,7 @@ flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000/api/v1
 
 > **الإصدار 1.0:** إشعارات Push على شاشة الهاتف **مؤجّلة للتحديث 1.1**. قائمة الإشعارات داخل التطبيق (حسابي) تعمل بدون Firebase.
 
-**جاهز في المستودع:** `PrivacyInfo.xcprivacy`، `ITSAppUsesNonExemptEncryption`، Universal Links، `ExportOptions.plist`.
+> **دليل تفصيلي:** راجع [`APP_STORE_SUBMISSION.md`](APP_STORE_SUBMISSION.md) لخطوات App Store Connect بالترتيب.
 
 **على السيرفر (بعد `git pull` + `./scripts/update.sh`):**
 - `https://deemaalhayat.com/.well-known/apple-app-site-association`
