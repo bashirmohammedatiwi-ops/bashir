@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/bootstrap/app_warmup.dart';
 import 'core/l10n/locale_provider.dart';
-import 'core/push/push_service.dart';
 import 'core/config/app_config.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
@@ -23,7 +22,6 @@ class AlhayaaApp extends ConsumerStatefulWidget {
 
 class _AlhayaaAppState extends ConsumerState<AlhayaaApp> with WidgetsBindingObserver {
   bool _warmedUp = false;
-  bool _pushInited = false;
   bool _minSplashDone = false;
 
   static const _locales = [Locale('ar'), Locale('en')];
@@ -63,13 +61,6 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> with WidgetsBindingObse
     }
 
     final authStatus = ref.watch(authProvider).status;
-    if (AppConfig.pushNotificationsEnabled &&
-        !_pushInited &&
-        authStatus != AuthStatus.unknown) {
-      _pushInited = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) => PushService.init(ref));
-    }
-
     final localeSettings = ref.watch(appLocaleProvider);
     final locale = localeSettings.locale;
     final direction = localeSettings.direction;
