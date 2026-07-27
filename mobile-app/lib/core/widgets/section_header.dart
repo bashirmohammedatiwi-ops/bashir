@@ -23,6 +23,10 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final chevron = Directionality.of(context) == TextDirection.rtl
+        ? Icons.chevron_left
+        : Icons.chevron_right;
+
     if (style == SectionHeaderStyle.niceOne) {
       return Padding(
         padding: EdgeInsets.fromLTRB(
@@ -105,7 +109,7 @@ class SectionHeader extends StatelessWidget {
               child: Row(
                 children: [
                   Text(actionLabel!, style: const TextStyle(fontWeight: FontWeight.w600)),
-                  const Icon(Icons.chevron_left, size: 18),
+                  Icon(chevron, size: 18),
                 ],
               ),
             ),
@@ -123,6 +127,10 @@ class _NiceViewAll extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final chevron = Directionality.of(context) == TextDirection.rtl
+        ? Icons.chevron_left
+        : Icons.chevron_right;
+
     return Material(
       color: AppColors.primaryLight.withValues(alpha: 0.55),
       borderRadius: BorderRadius.circular(AppRadius.pill),
@@ -142,7 +150,7 @@ class _NiceViewAll extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const Icon(Icons.chevron_left, size: 16, color: AppColors.primary),
+              Icon(chevron, size: 16, color: AppColors.primary),
             ],
           ),
         ),

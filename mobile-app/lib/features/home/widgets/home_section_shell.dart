@@ -82,9 +82,10 @@ class HomeSectionShell extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 2, HomeTheme.paddingH, 8),
             child: Row(
               children: [
-                if (headerTrailing != null) ...[headerTrailing!, const Spacer()],
+                if (headerTrailing != null) headerTrailing!,
+                const Spacer(),
                 if (actionLabel != null && onAction != null)
-                  _ViewAllLink(label: actionLabel!, onTap: onAction!),
+                  HomeViewAllLink(label: actionLabel!, onTap: onAction!),
               ],
             ),
           ),
@@ -187,32 +188,8 @@ class HomeSectionHeader extends StatelessWidget {
           ),
           if (trailing != null) trailing!,
           if (actionLabel != null && onAction != null)
-            _ViewAllLink(label: actionLabel!, onTap: onAction!),
+            HomeViewAllLink(label: actionLabel!, onTap: onAction!),
         ],
-      ),
-    );
-  }
-}
-
-class _ViewAllLink extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-
-  const _ViewAllLink({required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(label, style: HomeTheme.viewAll),
-            Icon(Icons.chevron_left_rounded, size: 16, color: HomeTheme.accent),
-          ],
-        ),
       ),
     );
   }

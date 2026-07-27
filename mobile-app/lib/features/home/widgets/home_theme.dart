@@ -109,6 +109,12 @@ abstract final class HomeTheme {
         height: 1.2,
       );
 
+  static IconData viewAllChevron(BuildContext context) {
+    return Directionality.of(context) == TextDirection.rtl
+        ? Icons.chevron_left_rounded
+        : Icons.chevron_right_rounded;
+  }
+
   static BoxDecoration sectionSurface({Color? tint}) => BoxDecoration(
         color: tint ?? surface,
         borderRadius: BorderRadius.circular(cardRadius),
@@ -332,21 +338,33 @@ class HomeEditorialHeader extends StatelessWidget {
           ),
           if (trailing != null) trailing!,
           if (actionLabel != null && onAction != null)
-            GestureDetector(
-              onTap: onAction,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(actionLabel!, style: HomeTheme.viewAll),
-                    const SizedBox(width: 2),
-                    Icon(Icons.chevron_left_rounded, size: 16, color: HomeTheme.accent),
-                  ],
-                ),
-              ),
-            ),
+            HomeViewAllLink(label: actionLabel!, onTap: onAction!),
         ],
+      ),
+    );
+  }
+}
+
+/// رابط «عرض الكل» — دائماً في نهاية صف العنوان (يسار في RTL / يمين في LTR).
+class HomeViewAllLink extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+
+  const HomeViewAllLink({super.key, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label, style: HomeTheme.viewAll),
+            Icon(HomeTheme.viewAllChevron(context), size: 16, color: HomeTheme.accent),
+          ],
+        ),
       ),
     );
   }
