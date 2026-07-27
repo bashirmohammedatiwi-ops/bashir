@@ -196,14 +196,20 @@ class Product {
   }
 
   String get displayCoverUrl => coverUrl;
-  List<String> get galleryUrls => images
-      .map((e) {
-        final full = e.fullUrl;
-        if (full.isNotEmpty) return full;
-        return e.url;
-      })
-      .where((e) => e.isNotEmpty)
-      .toList();
+  List<String> get galleryUrls {
+    final seen = <String>{};
+    final out = <String>[];
+    for (final e in images) {
+      final full = e.fullUrl;
+      final raw = full.isNotEmpty ? full : e.url;
+      if (raw.isEmpty) continue;
+      final key = raw.split('?').first.trim().toLowerCase();
+      if (seen.contains(key)) continue;
+      seen.add(key);
+      out.add(raw);
+    }
+    return out;
+  }
   bool get inStock => stock > 0;
   bool get hasDiscount => discountPercent > 0 && originalPrice > price;
 

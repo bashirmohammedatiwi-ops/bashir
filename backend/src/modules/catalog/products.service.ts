@@ -14,6 +14,11 @@ import { withPlaceholderImages, activeWithoutRealImagesWhere, hasRealProductImag
 import { rewriteProductMediaUrls } from "../../common/media-url.util";
 import { PRODUCT_ORDER_BY_BRAND } from "../../common/product-order.util";
 import { sortShadesByNumber } from "../../common/shade-sort.util";
+import {
+  dedupeKeysForMedia,
+  partitionDuplicateProductImages,
+  type MediaForDedupe,
+} from "./product-image-dedupe.util";
 
 const productRelationsFull = {
   brand: { select: { id: true, name: true, slug: true } },
@@ -178,6 +183,7 @@ export class ProductsService {
       ...product,
       skinType,
       tags,
+      images: this.filterDuplicateImages(product.images),
       concernIds: product.skinConcerns?.map((sc: any) => sc.concernId) ?? [],
       skinConcerns: product.skinConcerns?.map((sc: any) => sc.concern) ?? [],
       subcategoryIds:
@@ -427,22 +433,26 @@ export class ProductsService {
     return { hidden: result.count };
   }
 
-  /** إزالة الصور المكررة من كل المنتجات (نفس mediaId أو نفس hash). */
+  /** إزالة الصور المكررة من كل المنتجات (نفس mediaId، hash، مسار، رابط، أو اسم ملف). */
   async dedupeAllProductImages() {
-    const products = await this.prisma.product.findMany({ select: { id: true } });
+    const products = await this.prisma.product.findMany({ select: { id: true, name: true, sku: true } });
     let removed = 0;
     let productsAffected = 0;
+    const samples: { productId: string; name: string; sku: string | null; removed: number }[] = [];
 
-    for (const { id: productId } of products) {
-      const n = await this.dedupeProductImages(productId);
+    for (const product of products) {
+      const n = await this.dedupeProductImages(product.id);
       if (n > 0) {
         removed += n;
         productsAffected += 1;
+        if (samples.length < 20) {
+          samples.push({ productId: product.id, name: product.name, sku: product.sku, removed: n });
+        }
       }
     }
 
     if (removed > 0) await this.homeFeedCache.invalidateAll();
-    return { removed, productsAffected };
+    return { removed, productsAffected, samples };
   }
 
   async lookupByBarcode(raw: string, storefront = false) {
@@ -555,16 +565,27 @@ export class ProductsService {
 
     const media = await this.prisma.media.findMany({
       where: { id: { in: trimmed } },
-      select: { id: true, hash: true },
+      select: {
+        id: true,
+        hash: true,
+        filename: true,
+        storagePath: true,
+        publicUrlBase: true,
+        originalName: true,
+        width: true,
+        height: true,
+        bytes: true,
+      },
     });
-    const hashById = new Map(media.map((m) => [m.id, m.hash]));
-    const seenHash = new Set<string>();
+    const mediaById = new Map(media.map((m) => [m.id, m]));
+    const seenKeys = new Set<string>();
     const unique: string[] = [];
     for (const mediaId of trimmed) {
-      const hash = hashById.get(mediaId);
-      if (!hash) continue;
-      if (seenHash.has(hash)) continue;
-      seenHash.add(hash);
+      const row = mediaById.get(mediaId);
+      if (!row) continue;
+      const keys = dedupeKeysForMedia(row as MediaForDedupe);
+      if (keys.some((k) => seenKeys.has(k))) continue;
+      for (const k of keys) seenKeys.add(k);
       unique.push(mediaId);
     }
     return unique;
@@ -574,25 +595,31 @@ export class ProductsService {
     const images = await this.prisma.productImage.findMany({
       where: { productId },
       orderBy: { position: "asc" },
-      include: { media: { select: { hash: true } } },
+      include: {
+        media: {
+          select: {
+            id: true,
+            hash: true,
+            filename: true,
+            storagePath: true,
+            publicUrlBase: true,
+            originalName: true,
+            width: true,
+            height: true,
+            bytes: true,
+          },
+        },
+      },
     });
     if (images.length <= 1) return 0;
 
-    const seenMedia = new Set<string>();
-    const seenHash = new Set<string>();
-    const keep: typeof images = [];
-    const removeIds: string[] = [];
-
-    for (const img of images) {
-      const hash = img.media.hash;
-      if (seenMedia.has(img.mediaId) || seenHash.has(hash)) {
-        removeIds.push(img.id);
-        continue;
-      }
-      seenMedia.add(img.mediaId);
-      seenHash.add(hash);
-      keep.push(img);
-    }
+    const { keep, removeIds } = partitionDuplicateProductImages(
+      images.map((img) => ({
+        id: img.id,
+        mediaId: img.mediaId,
+        media: img.media as MediaForDedupe,
+      })),
+    );
 
     if (!removeIds.length) return 0;
 
@@ -607,6 +634,23 @@ export class ProductsService {
     });
 
     return removeIds.length;
+  }
+
+  private filterDuplicateImages(images: any[] | undefined) {
+    const seen = new Set<string>();
+    const out: any[] = [];
+    for (const img of images ?? []) {
+      const media = img?.media;
+      if (!media?.id) {
+        out.push(img);
+        continue;
+      }
+      const keys = dedupeKeysForMedia(media as MediaForDedupe);
+      if (keys.some((k) => seen.has(k))) continue;
+      for (const k of keys) seen.add(k);
+      out.push(img);
+    }
+    return out;
   }
 
   private mapProductWriteError(error: unknown) {

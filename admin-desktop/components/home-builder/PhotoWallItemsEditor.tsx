@@ -133,7 +133,8 @@ export function PhotoWallItemsEditor({ entities, collage = false }: Props) {
                           )}
                         </div>
                         <CascadingLinkPicker
-                          prefix={["payload", "items", name]}
+                          fieldName={name}
+                          restField={restField}
                           entities={lists}
                         />
                         {link?.path ? (

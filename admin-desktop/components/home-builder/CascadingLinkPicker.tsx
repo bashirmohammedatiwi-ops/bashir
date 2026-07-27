@@ -1,6 +1,7 @@
 "use client";
 
 import { Button, Form, Input, Select, Space, Typography } from "antd";
+import type { FormListFieldData } from "antd/es/form/FormList";
 import {
   LINK_TARGET_TYPES,
   LinkTargetType,
@@ -24,11 +25,19 @@ type SearchOption = {
   searchLabel?: string;
 };
 
+type ListFieldRest = Omit<FormListFieldData, "name" | "key">;
+
 type Props = {
-  prefix?: (string | number)[];
+  /** فهرس العنصر داخل Form.List */
+  fieldName: number;
+  restField?: ListFieldRest;
+  /** مسار القائمة — الافتراضي payload.items */
+  listName?: (string | number)[];
   entities: EntityLists;
   optional?: boolean;
 };
+
+const DEFAULT_LIST_NAME = ["payload", "items"];
 
 const LINK_GROUPS: { label: string; types: LinkTargetType[] }[] = [
   { label: "تسوق", types: ["product", "brand", "package", "offers"] },
@@ -39,8 +48,8 @@ const LINK_GROUPS: { label: string; types: LinkTargetType[] }[] = [
 
 const NO_VALUE_TYPES = new Set<LinkTargetType>(["offers", "categoriesTab"]);
 
-function namePath(prefix: (string | number)[], field: string) {
-  return prefix.length ? [...prefix, field] : field;
+function fullPath(listName: (string | number)[], fieldName: number, field: string) {
+  return [...listName, fieldName, field];
 }
 
 function filterOption(input: string, option?: SearchOption) {
@@ -79,8 +88,18 @@ function simpleOptions(items: any[], extra?: (item: any) => string): SearchOptio
   });
 }
 
-function ProductsQueryField({ prefix }: { prefix: (string | number)[] }) {
+function ProductsQueryField({
+  fieldName,
+  restField,
+  listName,
+}: {
+  fieldName: number;
+  restField?: ListFieldRest;
+  listName: (string | number)[];
+}) {
   const form = Form.useFormInstance();
+  const linkValuePath = fullPath(listName, fieldName, "linkValue");
+
   return (
     <Form.Item label="قائمة المنتجات" required>
       <Space direction="vertical" style={{ width: "100%" }} size={8}>
@@ -88,10 +107,11 @@ function ProductsQueryField({ prefix }: { prefix: (string | number)[] }) {
           allowClear
           placeholder="قوالب جاهزة (اختياري)"
           options={PRODUCT_QUERY_PRESETS.map((p) => ({ value: p.value, label: p.label }))}
-          onChange={(v) => form.setFieldValue(namePath(prefix, "linkValue"), v ?? undefined)}
+          onChange={(v) => form.setFieldValue(linkValuePath, v ?? undefined)}
         />
         <Form.Item
-          name={namePath(prefix, "linkValue")}
+          {...restField}
+          name={[fieldName, "linkValue"]}
           noStyle
           rules={[{ required: true, message: "اختر قالباً أو اكتب التصفية" }]}
         >
@@ -103,7 +123,7 @@ function ProductsQueryField({ prefix }: { prefix: (string | number)[] }) {
               key={p.value}
               size="small"
               type="dashed"
-              onClick={() => form.setFieldValue(namePath(prefix, "linkValue"), p.value)}
+              onClick={() => form.setFieldValue(linkValuePath, p.value)}
             >
               {p.label}
             </Button>
@@ -116,13 +136,19 @@ function ProductsQueryField({ prefix }: { prefix: (string | number)[] }) {
 
 function LinkValueField({
   linkType,
-  prefix,
+  fieldName,
+  restField,
+  listName,
   entities,
 }: {
   linkType: LinkTargetType;
-  prefix: (string | number)[];
+  fieldName: number;
+  restField?: ListFieldRest;
+  listName: (string | number)[];
   entities: EntityLists;
 }) {
+  const itemProps = { ...restField, name: [fieldName, "linkValue"] as [number, string] };
+
   if (NO_VALUE_TYPES.has(linkType)) {
     return (
       <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -133,7 +159,7 @@ function LinkValueField({
 
   if (linkType === "product") {
     return (
-      <Form.Item name={namePath(prefix, "linkValue")} label="اختر المنتج" rules={[{ required: true, message: "اختر منتجاً" }]}>
+      <Form.Item {...itemProps} label="اختر المنتج" rules={[{ required: true, message: "اختر منتجاً" }]}>
         <ProductSearchSelect seedProducts={entities.products ?? []} placeholder="ابحث بالاسم أو SKU أو الباركود" />
       </Form.Item>
     );
@@ -141,12 +167,12 @@ function LinkValueField({
 
   if (linkType === "category") {
     return (
-      <Form.Item name={namePath(prefix, "linkValue")} label="اختر القسم الرئيسي" rules={[{ required: true, message: "اختر قسماً" }]}>
+      <Form.Item {...itemProps} label="اختر القسم الرئيسي" rules={[{ required: true, message: "اختر قسماً" }]}>
         <Select
           allowClear
           showSearch
           filterOption={filterOption}
-          placeholder="كل الأقسام الرئيسية"
+          placeholder="ابحث واختر القسم الرئيسي"
           options={categoryOptions(entities.categories ?? [], true)}
         />
       </Form.Item>
@@ -155,12 +181,12 @@ function LinkValueField({
 
   if (linkType === "subcategory") {
     return (
-      <Form.Item name={namePath(prefix, "linkValue")} label="اختر القسم الفرعي" rules={[{ required: true, message: "اختر قسماً فرعياً" }]}>
+      <Form.Item {...itemProps} label="اختر القسم الفرعي" rules={[{ required: true, message: "اختر قسماً فرعياً" }]}>
         <Select
           allowClear
           showSearch
           filterOption={filterOption}
-          placeholder="كل الأقسام الفرعية"
+          placeholder="ابحث واختر القسم الفرعي"
           options={subcategoryOptions(entities.subcategories ?? [])}
         />
       </Form.Item>
@@ -169,12 +195,12 @@ function LinkValueField({
 
   if (linkType === "tertiary") {
     return (
-      <Form.Item name={namePath(prefix, "linkValue")} label="اختر القسم الثانوي" rules={[{ required: true, message: "اختر قسماً ثانوياً" }]}>
+      <Form.Item {...itemProps} label="اختر القسم الثانوي" rules={[{ required: true, message: "اختر قسماً ثانوياً" }]}>
         <Select
           allowClear
           showSearch
           filterOption={filterOption}
-          placeholder="كل الأقسام الثانوية"
+          placeholder="ابحث واختر القسم الثانوي"
           options={simpleOptions(entities.tertiary ?? [])}
         />
       </Form.Item>
@@ -183,13 +209,14 @@ function LinkValueField({
 
   if (linkType === "brand") {
     return (
-      <Form.Item name={namePath(prefix, "linkValue")} label="اختر البراند" rules={[{ required: true, message: "اختر برانداً" }]}>
+      <Form.Item {...itemProps} label="اختر البراند" rules={[{ required: true, message: "اختر برانداً" }]}>
         <Select
           allowClear
           showSearch
           filterOption={filterOption}
-          placeholder="كل البراندات"
+          placeholder="ابحث واختر البراند"
           options={simpleOptions(entities.brands ?? [])}
+          notFoundContent="لا توجد براندات — أضفها من صفحة البراندات"
         />
       </Form.Item>
     );
@@ -197,12 +224,12 @@ function LinkValueField({
 
   if (linkType === "package") {
     return (
-      <Form.Item name={namePath(prefix, "linkValue")} label="اختر الباقة / الروتين" rules={[{ required: true, message: "اختر باقة" }]}>
+      <Form.Item {...itemProps} label="اختر الباقة / الروتين" rules={[{ required: true, message: "اختر باقة" }]}>
         <Select
           allowClear
           showSearch
           filterOption={filterOption}
-          placeholder="كل الباقات"
+          placeholder="ابحث واختر الباقة"
           options={simpleOptions(entities.packages ?? [])}
         />
       </Form.Item>
@@ -211,12 +238,12 @@ function LinkValueField({
 
   if (linkType === "skinConcern") {
     return (
-      <Form.Item name={namePath(prefix, "linkValue")} label="اختر مشكلة البشرة" rules={[{ required: true, message: "اختر مشكلة بشرة" }]}>
+      <Form.Item {...itemProps} label="اختر مشكلة البشرة" rules={[{ required: true, message: "اختر مشكلة بشرة" }]}>
         <Select
           allowClear
           showSearch
           filterOption={filterOption}
-          placeholder="كل مشاكل البشرة"
+          placeholder="ابحث واختر مشكلة البشرة"
           options={simpleOptions(entities.skinConcerns ?? [])}
         />
       </Form.Item>
@@ -225,19 +252,19 @@ function LinkValueField({
 
   if (linkType === "search") {
     return (
-      <Form.Item name={namePath(prefix, "linkValue")} label="كلمة البحث" rules={[{ required: true, message: "أدخل كلمة البحث" }]}>
+      <Form.Item {...itemProps} label="كلمة البحث" rules={[{ required: true, message: "أدخل كلمة البحث" }]}>
         <Input placeholder="مثال: كريم واقي شمس" allowClear />
       </Form.Item>
     );
   }
 
   if (linkType === "products") {
-    return <ProductsQueryField prefix={prefix} />;
+    return <ProductsQueryField fieldName={fieldName} restField={restField} listName={listName} />;
   }
 
   if (linkType === "url") {
     return (
-      <Form.Item name={namePath(prefix, "linkValue")} label="المسار داخل التطبيق" rules={[{ required: true, message: "أدخل المسار" }]}>
+      <Form.Item {...itemProps} label="المسار داخل التطبيق" rules={[{ required: true, message: "أدخل المسار" }]}>
         <Input dir="ltr" placeholder="/brands أو /products?isNew=1" allowClear />
       </Form.Item>
     );
@@ -246,9 +273,18 @@ function LinkValueField({
   return null;
 }
 
-/** ربط متدرج: نوع الرابط → اختيار الهدف */
-export function CascadingLinkPicker({ prefix = [], entities, optional = true }: Props) {
+/** ربط متدرج: نوع الرابط → اختيار الهدف (متوافق مع Form.List) */
+export function CascadingLinkPicker({
+  fieldName,
+  restField,
+  listName = DEFAULT_LIST_NAME,
+  entities,
+  optional = true,
+}: Props) {
   const form = Form.useFormInstance();
+  const linkTypePath = fullPath(listName, fieldName, "linkType");
+  const linkType = Form.useWatch(linkTypePath, form) as LinkTargetType | undefined;
+
   const groupedLinkTypes = LINK_GROUPS.map((g) => ({
     label: g.label,
     options: LINK_TARGET_TYPES.filter((t) => g.types.includes(t.value)).map((t) => ({
@@ -257,18 +293,22 @@ export function CascadingLinkPicker({ prefix = [], entities, optional = true }: 
     })),
   }));
 
-  const onTypeChange = (linkType: LinkTargetType | null) => {
-    form.setFieldValue(namePath(prefix, "link"), undefined);
-    if (!linkType || NO_VALUE_TYPES.has(linkType)) {
-      form.setFieldValue(namePath(prefix, "linkValue"), linkType ? "" : undefined);
-    } else {
-      form.setFieldValue(namePath(prefix, "linkValue"), undefined);
-    }
+  const onTypeChange = (next: LinkTargetType | null) => {
+    const linkValuePath = fullPath(listName, fieldName, "linkValue");
+    const linkPath = fullPath(listName, fieldName, "link");
+    form.setFields([
+      { name: linkTypePath, value: next ?? undefined },
+      { name: linkPath, value: undefined },
+      {
+        name: linkValuePath,
+        value: !next || NO_VALUE_TYPES.has(next) ? (next ? "" : undefined) : undefined,
+      },
+    ]);
   };
 
   return (
     <div className="hb-cascading-link">
-      <Form.Item name={namePath(prefix, "linkType")} label="نوع الرابط">
+      <Form.Item {...restField} name={[fieldName, "linkType"]} label="نوع الرابط">
         <Select
           allowClear={optional}
           showSearch
@@ -279,13 +319,15 @@ export function CascadingLinkPicker({ prefix = [], entities, optional = true }: 
         />
       </Form.Item>
 
-      <Form.Item noStyle shouldUpdate>
-        {({ getFieldValue }) => {
-          const linkType = getFieldValue(namePath(prefix, "linkType")) as LinkTargetType | undefined;
-          if (!linkType) return null;
-          return <LinkValueField linkType={linkType} prefix={prefix} entities={entities} />;
-        }}
-      </Form.Item>
+      {linkType ? (
+        <LinkValueField
+          linkType={linkType}
+          fieldName={fieldName}
+          restField={restField}
+          listName={listName}
+          entities={entities}
+        />
+      ) : null}
     </div>
   );
 }
