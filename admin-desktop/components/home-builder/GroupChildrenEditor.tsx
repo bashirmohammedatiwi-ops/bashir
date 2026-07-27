@@ -114,8 +114,11 @@ export function GroupChildrenEditor({ entities }: Props) {
                       }}
                     />
                   </Form.Item>
-                  <Form.Item {...rest} name={[name, "title"]} label="عنوان (اختياري)">
+                  <Form.Item {...rest} name={[name, "title"]} label="عنوان (عربي — اختياري)">
                     <Input placeholder="يظهر داخل الإطار" />
+                  </Form.Item>
+                  <Form.Item {...rest} name={[name, "titleEn"]} label="عنوان (إنجليزي — اختياري)">
+                    <Input placeholder="Section title in English" />
                   </Form.Item>
                   {childType ? (
                     <Collapse

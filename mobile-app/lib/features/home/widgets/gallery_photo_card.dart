@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_section.dart';
 import 'gallery_tile_sizer.dart';
@@ -135,7 +137,7 @@ class GalleryRenderStyle {
 }
 
 /// بطاقة صورة موحّدة — نفس التصميم لكل صور القسم.
-class GalleryPhotoCard extends StatelessWidget {
+class GalleryPhotoCard extends ConsumerWidget {
   final PhotoTileData data;
   final double width;
   final double height;
@@ -157,12 +159,22 @@ class GalleryPhotoCard extends StatelessWidget {
     this.showShadow = true,
   });
 
-  bool get _hasCaption =>
-      (data.title?.isNotEmpty ?? false) || (data.subtitle?.isNotEmpty ?? false);
+  bool _hasCaption(String lang) =>
+      (data.titleForLang(lang)?.isNotEmpty ?? false) ||
+      (data.subtitleForLang(lang)?.isNotEmpty ?? false);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (data.imageUrl.isEmpty) return const SizedBox.shrink();
+
+    String? title;
+    String? subtitle;
+    String lang = 'ar';
+    if (showCaption) {
+      lang = ref.watch(languageCodeProvider);
+      title = data.titleForLang(lang);
+      subtitle = data.subtitleForLang(lang);
+    }
 
     final shape = data.shape;
     final radius = PhotoShapeGeometry.cornerRadius(
@@ -183,8 +195,8 @@ class GalleryPhotoCard extends StatelessWidget {
 
     image = _GalleryOverlay(
       style: data.overlayStyle ?? 'none',
-      title: data.title,
-      subtitle: data.subtitle,
+      title: title,
+      subtitle: subtitle,
       badge: data.badge,
       child: image,
     );
@@ -214,19 +226,19 @@ class GalleryPhotoCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           framedImage,
-          if (showCaption && _hasCaption && (data.overlayStyle ?? 'none') == 'none') ...[
+          if (showCaption && _hasCaption(lang) && (data.overlayStyle ?? 'none') == 'none') ...[
             const SizedBox(height: 6),
-            if (data.title?.isNotEmpty ?? false)
+            if (title?.isNotEmpty ?? false)
               Text(
-                data.title!,
+                title!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: HomeTheme.chipLabel.copyWith(fontSize: 11.5, fontWeight: FontWeight.w700),
               ),
-            if (data.subtitle?.isNotEmpty ?? false) ...[
+            if (subtitle?.isNotEmpty ?? false) ...[
               const SizedBox(height: 1),
               Text(
-                data.subtitle!,
+                subtitle!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: HomeTheme.body(size: 10.5, color: HomeTheme.inkMuted),

@@ -67,13 +67,26 @@ export function TileItemEditor({
 
       <Row gutter={12}>
         <Col xs={24} sm={12}>
-          <Form.Item {...restField} name={[fieldName, "title"]} label="عنوان على الصورة">
+          <Form.Item {...restField} name={[fieldName, "title"]} label="عنوان على الصورة (عربي)">
             <Input placeholder="اختياري" />
           </Form.Item>
         </Col>
         <Col xs={24} sm={12}>
-          <Form.Item {...restField} name={[fieldName, "subtitle"]} label="نص فرعي">
+          <Form.Item {...restField} name={[fieldName, "titleEn"]} label="عنوان على الصورة (إنجليزي)">
+            <Input placeholder="Optional" />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Row gutter={12}>
+        <Col xs={24} sm={12}>
+          <Form.Item {...restField} name={[fieldName, "subtitle"]} label="نص فرعي (عربي)">
             <Input placeholder="اختياري" />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={12}>
+          <Form.Item {...restField} name={[fieldName, "subtitleEn"]} label="نص فرعي (إنجليزي)">
+            <Input placeholder="Optional" />
           </Form.Item>
         </Col>
       </Row>

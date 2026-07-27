@@ -14,6 +14,7 @@ import '../../core/widgets/states.dart';
 import '../../data/models/category.dart';
 import '../../data/models/product.dart';
 import '../../data/services/api_service.dart';
+import '../catalog/catalog_refresh.dart';
 import '../catalog/catalog_providers.dart';
 import '../catalog/category_tree.dart';
 import 'widgets/listing_filters_section.dart';
@@ -269,7 +270,10 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
 
     return RefreshIndicator(
       color: AppColors.primary,
-      onRefresh: () => _fetch(reset: true),
+      onRefresh: () async {
+        await refreshStorefrontCatalog(ref);
+        await _fetch(reset: true);
+      },
       child: ProductGrid(
         controller: _scroll,
         products: _items,

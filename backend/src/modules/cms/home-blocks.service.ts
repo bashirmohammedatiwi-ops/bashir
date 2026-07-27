@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { CmsPageKey, Prisma } from "@prisma/client";
+import { CmsBilingualService } from "../../common/cms-bilingual.service";
 import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { PrismaService } from "../../common/prisma.service";
 
@@ -8,6 +9,7 @@ export class HomeBlocksService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly homeFeedCache: HomeFeedCacheService,
+    private readonly cmsBilingual: CmsBilingualService,
   ) {}
 
   list(activeOnly = true, pageKey: CmsPageKey = CmsPageKey.HOME) {
@@ -22,7 +24,8 @@ export class HomeBlocksService {
 
   async create(data: any) {
     try {
-      const result = await this.prisma.homeBlock.create({ data: this.sanitize(data) as any });
+      const enriched = await this.cmsBilingual.enrichHomeBlockData(this.pickBilingualFields(data));
+      const result = await this.prisma.homeBlock.create({ data: this.sanitize(enriched) as any });
       await this.homeFeedCache.invalidateAll();
       return result;
     } catch (error) {
@@ -31,9 +34,15 @@ export class HomeBlocksService {
   }
 
   async update(id: string, data: any) {
-    await this.ensure(id);
+    const existing = await this.ensure(id);
     try {
-      const result = await this.prisma.homeBlock.update({ where: { id }, data: this.sanitize(data, true) as any });
+      const merged = this.pickBilingualFields({
+        ...existing,
+        ...data,
+        payload: data.payload !== undefined ? data.payload : existing.payload,
+      });
+      const enriched = await this.cmsBilingual.enrichHomeBlockData(merged);
+      const result = await this.prisma.homeBlock.update({ where: { id }, data: this.sanitize(enriched, true) as any });
       await this.homeFeedCache.invalidateAll();
       return result;
     } catch (error) {
@@ -59,13 +68,26 @@ export class HomeBlocksService {
   private async ensure(id: string) {
     const b = await this.prisma.homeBlock.findUnique({ where: { id } });
     if (!b) throw new NotFoundException("HomeBlock not found");
+    return b;
+  }
+
+  private pickBilingualFields(data: any) {
+    return {
+      title: data.title,
+      titleEn: data.titleEn,
+      subtitle: data.subtitle,
+      subtitleEn: data.subtitleEn,
+      payload: (data.payload ?? {}) as Record<string, unknown>,
+    };
   }
 
   private sanitize(data: any, partial = false) {
     const out: Record<string, unknown> = {};
     if (!partial || data.type !== undefined) out.type = data.type;
     if (!partial || data.title !== undefined) out.title = data.title?.trim?.() || data.title || null;
+    if (!partial || data.titleEn !== undefined) out.titleEn = data.titleEn?.trim?.() || data.titleEn || null;
     if (!partial || data.subtitle !== undefined) out.subtitle = data.subtitle?.trim?.() || data.subtitle || null;
+    if (!partial || data.subtitleEn !== undefined) out.subtitleEn = data.subtitleEn?.trim?.() || data.subtitleEn || null;
     if (!partial || data.position !== undefined) {
       out.position = Number.isFinite(Number(data.position)) ? Number(data.position) : 0;
     }

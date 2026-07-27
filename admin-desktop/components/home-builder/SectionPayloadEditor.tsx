@@ -464,11 +464,17 @@ export function SectionPayloadEditor(props: Props) {
               ]}
             />
           </Form.Item>
-          <Form.Item name={["payload", "label"]} label="شارة النشرة" initialValue="عاجل">
+          <Form.Item name={["payload", "label"]} label="شارة النشرة (عربي)" initialValue="عاجل">
             <Input placeholder="عاجل / جديد / حصري" maxLength={12} />
           </Form.Item>
-          <Form.Item name={["payload", "text"]} label="نص رئيسي">
+          <Form.Item name={["payload", "labelEn"]} label="شارة النشرة (إنجليزي)">
+            <Input placeholder="Breaking / New / Exclusive" maxLength={12} />
+          </Form.Item>
+          <Form.Item name={["payload", "text"]} label="نص رئيسي (عربي)">
             <Input placeholder="شحن مجاني للطلبات فوق 50,000 د.ع" />
+          </Form.Item>
+          <Form.Item name={["payload", "textEn"]} label="نص رئيسي (إنجليزي)">
+            <Input placeholder="Free shipping on orders over 50,000 IQD" />
           </Form.Item>
           <Form.List name={["payload", "items"]}>
             {(fields, { add, remove }) => (
@@ -486,6 +492,26 @@ export function SectionPayloadEditor(props: Props) {
                 ))}
                 <Button type="dashed" onClick={() => add("")} icon={<PlusOutlined />} block>
                   إضافة سطر
+                </Button>
+                <Text type="secondary" style={{ display: "block", marginTop: 16, marginBottom: 8 }}>
+                  الأسطر بالإنجليزية (نفس الترتيب)
+                </Text>
+              </>
+            )}
+          </Form.List>
+          <Form.List name={["payload", "itemsEn"]}>
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...rest }) => (
+                  <div key={key} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                    <Form.Item {...rest} name={name} style={{ flex: 1, marginBottom: 0 }}>
+                      <Input placeholder="English line..." />
+                    </Form.Item>
+                    <Button danger type="text" icon={<MinusCircleOutlined />} onClick={() => remove(name)} />
+                  </div>
+                ))}
+                <Button type="dashed" onClick={() => add("")} icon={<PlusOutlined />} block>
+                  إضافة سطر إنجليزي
                 </Button>
               </>
             )}

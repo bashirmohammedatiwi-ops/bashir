@@ -14,6 +14,7 @@ import '../home_link.dart';
 import '../widgets/home_hero_header.dart';
 import '../widgets/home_banner_stage.dart';
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/l10n/locale_provider.dart';
 import '../widgets/home_category_grid.dart';
 import '../widgets/home_quick_dock.dart';
 import '../widgets/home_section_shell.dart';
@@ -197,7 +198,7 @@ class CategoryGridSection extends ConsumerWidget {
     if (cats.isEmpty) return const SizedBox.shrink();
     return HomeCategoryGrid(
       categories: cats,
-      title: section.title ?? ref.s.categoriesTitle,
+      title: section.titleForLang(ref.watch(languageCodeProvider)) ?? ref.s.categoriesTitle,
       showTitle: section.showTitle,
       showViewAll: section.showViewAll,
       onViewAll: section.showViewAll

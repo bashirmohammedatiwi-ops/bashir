@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_section.dart';
 import '../../cart/widgets/cart_theme.dart';
@@ -9,7 +11,7 @@ import 'home_theme.dart';
 bool homeSectionShowsTitle(HomeSection section) => section.showTitle;
 
 /// غلاف موحّد للأقسام — بسيط، أنيق، بدون تعقيد.
-class HomeSectionShell extends StatelessWidget {
+class HomeSectionShell extends ConsumerWidget {
   final HomeSection section;
   final bool compactTop;
   final String? actionLabel;
@@ -38,7 +40,10 @@ class HomeSectionShell extends StatelessWidget {
   bool get _showTitle => showTitle ?? homeSectionShowsTitle(section);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageCodeProvider);
+    final title = section.titleForLang(lang);
+    final subtitle = section.subtitleForLang(lang);
     final cmsBg = parseHexColor(section.backgroundColor);
 
     Widget body = child;
@@ -61,10 +66,10 @@ class HomeSectionShell extends StatelessWidget {
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_showTitle && (section.title?.isNotEmpty ?? false))
+        if (_showTitle && (title?.isNotEmpty ?? false))
           HomeSectionHeader(
-            title: section.title!,
-            subtitle: section.subtitle,
+            title: title!,
+            subtitle: subtitle,
             headerImageUrl: section.headerImageUrl,
             actionLabel: actionLabel,
             onAction: onAction,

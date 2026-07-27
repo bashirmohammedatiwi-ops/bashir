@@ -23,9 +23,13 @@ function toFormValues(row: any) {
   if (!row) return { isActive: true, position: 0 };
   return {
     title: row.title,
+    titleEn: row.titleEn,
     subtitle: row.subtitle,
+    subtitleEn: row.subtitleEn,
     tag: row.tag,
+    tagEn: row.tagEn,
     ctaLabel: row.ctaLabel,
+    ctaLabelEn: row.ctaLabelEn,
     link: row.link ?? row.ctaUrl ?? "",
     linkType: row.linkType,
     linkValue: row.linkValue,
@@ -42,13 +46,18 @@ function toFormValues(row: any) {
 function toPayload(values: any) {
   return {
     title: values.title,
+    titleEn: values.titleEn,
     subtitle: values.subtitle,
+    subtitleEn: values.subtitleEn,
     tag: values.tag,
+    tagEn: values.tagEn,
     ctaLabel: values.ctaLabel,
+    ctaLabelEn: values.ctaLabelEn,
     link: values.link ?? values.ctaUrl ?? undefined,
     linkType: values.linkType ?? undefined,
     linkValue: values.linkValue ?? undefined,
     discountText: values.discountText ?? undefined,
+    discountTextEn: values.discountTextEn ?? undefined,
     backgroundColor: values.backgroundColor ?? undefined,
     imageId: values.imageId ?? undefined,
     position: values.position,
@@ -207,17 +216,29 @@ export default function BannersPage() {
         width={520}
       >
         <Form layout="vertical" form={form} onFinish={(v) => upsert.mutate(v)}>
-          <Form.Item name="title" label="العنوان" rules={[{ required: true }]}>
+          <Form.Item name="title" label="العنوان (عربي)" rules={[{ required: true }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="subtitle" label="العنوان الفرعي">
+          <Form.Item name="titleEn" label="العنوان (إنجليزي)">
             <Input />
           </Form.Item>
-          <Form.Item name="tag" label="وسم">
+          <Form.Item name="subtitle" label="العنوان الفرعي (عربي)">
+            <Input />
+          </Form.Item>
+          <Form.Item name="subtitleEn" label="العنوان الفرعي (إنجليزي)">
+            <Input />
+          </Form.Item>
+          <Form.Item name="tag" label="وسم (عربي)">
             <Input placeholder="جديد / خصم 30%" />
           </Form.Item>
-          <Form.Item name="ctaLabel" label="نص الزر">
+          <Form.Item name="tagEn" label="وسم (إنجليزي)">
+            <Input placeholder="New / 30% off" />
+          </Form.Item>
+          <Form.Item name="ctaLabel" label="نص الزر (عربي)">
             <Input placeholder="تسوق الآن" />
+          </Form.Item>
+          <Form.Item name="ctaLabelEn" label="نص الزر (إنجليزي)">
+            <Input placeholder="Shop now" />
           </Form.Item>
           <Form.Item name="link" label="رابط الزر">
             <Input placeholder="/products?sale=1" />

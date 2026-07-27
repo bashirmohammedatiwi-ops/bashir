@@ -20,6 +20,7 @@ class ApiCache {
     required T Function(dynamic json) parse,
     required dynamic Function(T value) serialize,
     bool forceRefresh = false,
+    int maxStaleFactor = 2,
   }) async {
     final now = DateTime.now();
     _Entry? entry = _memory[key] ?? _loadDisk(key);
@@ -30,7 +31,8 @@ class ApiCache {
         _memory[key] = entry;
         return parse(entry.data);
       }
-      if (age < ttl * 4) {
+      final maxStale = ttl * maxStaleFactor;
+      if (age < maxStale) {
         _memory[key] = entry;
         _revalidate(key, fetch, serialize);
         return parse(entry.data);
@@ -52,8 +54,22 @@ class ApiCache {
 
   Future<void> remove(String key) async {
     _memory.remove(key);
+    _revalidating.remove(key);
     await _prefs.remove('$_diskPrefix$key');
     await _prefs.remove('$_diskPrefix${key}_ts');
+  }
+
+  /// يمسح كل مفاتيح الكاش التي تبدأ بالبادئة (مثل products_v2).
+  Future<void> removePrefix(String prefix) async {
+    _memory.removeWhere((key, _) => key.startsWith(prefix));
+    _revalidating.removeWhere((key) => key.startsWith(prefix));
+    for (final k in _prefs.getKeys().toList()) {
+      if (!k.startsWith(_diskPrefix)) continue;
+      final shortKey = k.substring(_diskPrefix.length);
+      if (shortKey.startsWith(prefix)) {
+        await _prefs.remove(k);
+      }
+    }
   }
 
   Future<void> clearPublic() async {

@@ -25,7 +25,9 @@ export interface ResolvedHomeSection {
   id: string;
   type: HomeBlockType;
   title?: string | null;
+  titleEn?: string | null;
   subtitle?: string | null;
+  subtitleEn?: string | null;
   position: number;
   layout?: string;
   sectionLayout?: string;
@@ -52,7 +54,9 @@ export interface ResolvedHomeSection {
   packages?: unknown[];
   promoStrip?: {
     text: string;
+    textEn?: string;
     items?: string[];
+    itemsEn?: string[];
     link?: string;
     linkType?: string;
     linkValue?: string;
@@ -63,6 +67,7 @@ export interface ResolvedHomeSection {
     icon?: string;
     variant?: string;
     label?: string;
+    labelEn?: string;
     separator?: string;
     showIcon?: boolean;
   };
@@ -168,7 +173,9 @@ export class HomeSectionResolver {
       id: block.id,
       type: block.type,
       title: block.title,
+      titleEn: block.titleEn,
       subtitle: block.subtitle,
+      subtitleEn: block.subtitleEn,
       position: block.position,
       headerImageUrl,
       backgroundColor:
@@ -335,12 +342,18 @@ export class HomeSectionResolver {
         const items = Array.isArray(rawItems)
           ? rawItems.map((x) => String(x)).filter((s) => s.trim())
           : [];
+        const rawItemsEn = payload.itemsEn;
+        const itemsEn = Array.isArray(rawItemsEn)
+          ? rawItemsEn.map((x) => String(x)).filter((s) => s.trim())
+          : [];
         return {
           ...base,
           layout: "strip",
           promoStrip: {
             text: (payload.text as string) ?? block.title ?? "",
+            textEn: (payload.textEn as string) ?? block.titleEn ?? "",
             items,
+            itemsEn,
             linkType,
             linkValue,
             link: buildAppLink(linkType, linkValue, legacyLink),
@@ -351,6 +364,7 @@ export class HomeSectionResolver {
             icon: (payload.icon as string) ?? "",
             variant: (payload.variant as string) ?? "strip",
             label: (payload.label as string) ?? "عاجل",
+            labelEn: (payload.labelEn as string) ?? "",
             separator: (payload.separator as string) ?? "   •   ",
             showIcon: payload.showIcon !== false,
           },
@@ -494,7 +508,7 @@ export class HomeSectionResolver {
   }
 
   private async resolveGroupChildren(
-    children: { type?: string; title?: string; payload?: Payload }[],
+    children: { type?: string; title?: string; titleEn?: string; payload?: Payload }[],
     ctx: Parameters<HomeSectionResolver["resolve"]>[1],
     parentBlock: HomeBlock,
   ): Promise<ResolvedHomeSection[]> {
@@ -511,12 +525,19 @@ export class HomeSectionResolver {
         id: `${parentBlock.id}-g${i}`,
         type: childType,
         title: child.title ?? null,
+        titleEn: child.titleEn ?? null,
         subtitle: null,
+        subtitleEn: null,
         payload: childPayload as HomeBlock["payload"],
       };
       const resolved = await this.resolveBlock(childBlock, childPayload, ctx);
       if (resolved && !this.isEmpty(resolved)) {
-        out.push({ ...resolved, title: child.title ?? resolved.title, position: i });
+        out.push({
+          ...resolved,
+          title: child.title ?? resolved.title,
+          titleEn: child.titleEn ?? resolved.titleEn,
+          position: i,
+        });
       }
     }
     return out;
@@ -776,7 +797,9 @@ export class HomeSectionResolver {
     const raw = (payload.items as {
       imageId?: string;
       title?: string;
+      titleEn?: string;
       subtitle?: string;
+      subtitleEn?: string;
       linkType?: string;
       linkValue?: string;
       cardSize?: string;
@@ -798,7 +821,9 @@ export class HomeSectionResolver {
         withResolvedLink({
           id: `circle-${idx}`,
           title: item.title ?? "",
+          titleEn: item.titleEn ?? "",
           subtitle: item.subtitle ?? "",
+          subtitleEn: item.subtitleEn ?? "",
           imageUrl,
           image: media,
           linkType: item.linkType,
@@ -821,7 +846,9 @@ export class HomeSectionResolver {
     return {
       id: `inline-${imageId}`,
       title: (payload.title as string) ?? "",
+      titleEn: (payload.titleEn as string) ?? "",
       subtitle: (payload.subtitle as string) ?? "",
+      subtitleEn: (payload.subtitleEn as string) ?? "",
       discountText: (payload.discountText as string) ?? "",
       backgroundColor: (payload.backgroundColor as string) ?? "",
       linkType,
@@ -950,7 +977,9 @@ export class HomeSectionResolver {
     const raw = (payload.items as {
       imageId?: string;
       title?: string;
+      titleEn?: string;
       subtitle?: string;
+      subtitleEn?: string;
       linkType?: string;
       linkValue?: string;
       link?: string;
@@ -972,7 +1001,9 @@ export class HomeSectionResolver {
         withResolvedLink({
           id: `tile-${idx}`,
           title: item.title ?? "",
+          titleEn: item.titleEn ?? "",
           subtitle: item.subtitle ?? "",
+          subtitleEn: item.subtitleEn ?? "",
           imageUrl,
           image: media,
           linkType: item.linkType,

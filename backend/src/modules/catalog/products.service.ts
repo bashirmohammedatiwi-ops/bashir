@@ -158,9 +158,12 @@ export class ProductsService {
     );
   }
 
-  async findOne(idOrSlug: string) {
+  async findOne(idOrSlug: string, storefront = false) {
     const product = await this.prisma.product.findFirst({
-      where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }] },
+      where: {
+        OR: [{ id: idOrSlug }, { slug: idOrSlug }],
+        ...(storefront ? { isActive: true } : {}),
+      },
       include: {
         brand: true,
         category: true,

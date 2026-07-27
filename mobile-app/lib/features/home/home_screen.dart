@@ -3,12 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/cache/home_image_precache.dart';
-import '../../core/network/api_client.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/utils/responsive.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../catalog/catalog_providers.dart';
+import '../catalog/catalog_refresh.dart';
 import 'home_section_renderer.dart';
 import 'widgets/home_scroll_perf.dart';
 import 'widgets/home_theme.dart';
@@ -37,8 +37,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             error: (e, _) => ErrorView(
               message: friendlyError(e),
               onRetry: () async {
-                await ref.read(apiCacheProvider).remove('home_v3');
-                ref.invalidate(homeFeedProvider);
+                await refreshStorefrontCatalog(ref);
               },
             ),
             data: (data) {
@@ -59,14 +58,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 edgeOffset: MediaQuery.paddingOf(context).top,
                 onRefresh: () async {
                   HapticFeedback.mediumImpact();
-                  await ref.read(apiCacheProvider).remove('home_v3');
-                  await ref.read(apiCacheProvider).remove('categories_all_v2');
-                  ref.invalidate(categoriesProvider);
-                  ref.invalidate(homeFeedProvider);
-                  await Future.wait([
-                    ref.read(homeFeedProvider.future),
-                    ref.read(categoriesProvider.future),
-                  ]);
+                  await refreshStorefrontCatalog(ref);
                 },
                 child: CustomScrollView(
                   cacheExtent: HomeScrollPerf.verticalCacheExtent,

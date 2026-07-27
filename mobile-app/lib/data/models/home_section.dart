@@ -1,4 +1,5 @@
 import '../../core/utils/json.dart';
+import '../../core/l10n/localized_text.dart' as l10n;
 import '../../core/utils/media_url.dart';
 import 'banner.dart';
 import 'brand.dart';
@@ -7,7 +8,9 @@ import 'product.dart';
 
 class PromoStrip {
   final String text;
+  final String? textEn;
   final List<String> items;
+  final List<String> itemsEn;
   final String? link;
   final String? linkType;
   final String? linkValue;
@@ -18,12 +21,15 @@ class PromoStrip {
   final String? icon;
   final String? variant;
   final String? label;
+  final String? labelEn;
   final String? separator;
   final bool showIcon;
 
   const PromoStrip({
     required this.text,
+    this.textEn,
     this.items = const [],
+    this.itemsEn = const [],
     this.link,
     this.linkType,
     this.linkValue,
@@ -34,6 +40,7 @@ class PromoStrip {
     this.icon,
     this.variant,
     this.label,
+    this.labelEn,
     this.separator,
     this.showIcon = true,
   });
@@ -44,7 +51,32 @@ class PromoStrip {
 
   bool get hasContent =>
       text.trim().isNotEmpty ||
-      items.any((e) => e.trim().isNotEmpty);
+      (textEn?.trim().isNotEmpty ?? false) ||
+      items.any((e) => e.trim().isNotEmpty) ||
+      itemsEn.any((e) => e.trim().isNotEmpty);
+
+  String textForLang(String lang) => l10n.localizedText(
+        languageCode: lang,
+        ar: text,
+        en: textEn,
+        fallback: '',
+      );
+
+  String labelForLang(String lang) => l10n.localizedText(
+        languageCode: lang,
+        ar: label,
+        en: labelEn,
+        fallback: lang == 'en' ? 'Breaking' : 'عاجل',
+      );
+
+  List<String> linesForLang(String lang) {
+    final enItems = itemsEn.where((e) => e.trim().isNotEmpty).toList();
+    final arItems = items.where((e) => e.trim().isNotEmpty).toList();
+    if (lang == 'en' && enItems.isNotEmpty) return enItems;
+    if (arItems.isNotEmpty) return arItems;
+    if (enItems.isNotEmpty) return enItems;
+    return const [];
+  }
 
   factory PromoStrip.fromJson(Map<String, dynamic>? json) {
     if (json == null) return const PromoStrip(text: '');
@@ -52,9 +84,15 @@ class PromoStrip {
     final items = rawItems is List
         ? rawItems.map((e) => e.toString()).where((s) => s.trim().isNotEmpty).toList()
         : <String>[];
+    final rawItemsEn = json['itemsEn'];
+    final itemsEn = rawItemsEn is List
+        ? rawItemsEn.map((e) => e.toString()).where((s) => s.trim().isNotEmpty).toList()
+        : <String>[];
     return PromoStrip(
       text: asString(json['text']),
+      textEn: json['textEn']?.toString(),
       items: items,
+      itemsEn: itemsEn,
       link: json['link']?.toString(),
       linkType: json['linkType']?.toString(),
       linkValue: json['linkValue']?.toString(),
@@ -65,6 +103,7 @@ class PromoStrip {
       icon: json['icon']?.toString(),
       variant: json['variant']?.toString(),
       label: json['label']?.toString(),
+      labelEn: json['labelEn']?.toString(),
       separator: json['separator']?.toString(),
       showIcon: json['showIcon'] != false,
     );
@@ -126,7 +165,9 @@ class HomeSection {
   final String id;
   final String type;
   final String? title;
+  final String? titleEn;
   final String? subtitle;
+  final String? subtitleEn;
   final int position;
   final String? layout;
   final String? sectionLayout;
@@ -177,7 +218,9 @@ class HomeSection {
     required this.id,
     required this.type,
     this.title,
+    this.titleEn,
     this.subtitle,
+    this.subtitleEn,
     this.position = 0,
     this.layout,
     this.sectionLayout,
@@ -225,11 +268,33 @@ class HomeSection {
     this.frameShadow = false,
   });
 
+  String? titleForLang(String lang) {
+    final val = l10n.localizedText(
+      languageCode: lang,
+      ar: title,
+      en: titleEn,
+      fallback: '',
+    );
+    return val.trim().isEmpty ? null : val;
+  }
+
+  String? subtitleForLang(String lang) {
+    final val = l10n.localizedText(
+      languageCode: lang,
+      ar: subtitle,
+      en: subtitleEn,
+      fallback: '',
+    );
+    return val.trim().isEmpty ? null : val;
+  }
+
   factory HomeSection.fromJson(Map<String, dynamic> json) => HomeSection(
         id: asString(json['id']),
         type: asString(json['type']),
         title: json['title']?.toString(),
+        titleEn: json['titleEn']?.toString(),
         subtitle: json['subtitle']?.toString(),
+        subtitleEn: json['subtitleEn']?.toString(),
         position: asInt(json['position']),
         layout: json['layout']?.toString(),
         sectionLayout: json['sectionLayout']?.toString(),
@@ -288,3 +353,16 @@ class HomeSection {
         frameShadow: json['frameShadow'] == true,
       );
 }
+
+String cmsTextForLang(
+  Map<String, dynamic> raw,
+  String lang, {
+  String arKey = 'title',
+  String enKey = 'titleEn',
+}) =>
+    l10n.localizedText(
+      languageCode: lang,
+      ar: raw[arKey]?.toString(),
+      en: raw[enKey]?.toString(),
+      fallback: '',
+    );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/card_sizes.dart';
@@ -28,7 +29,7 @@ class CategoryTilesSection extends ConsumerWidget {
 
     return HomeCategoryGrid(
       categories: visible,
-      title: section.title ?? ref.s.categoriesTitle,
+      title: section.titleForLang(ref.watch(languageCodeProvider)) ?? ref.s.categoriesTitle,
       showTitle: section.showTitle,
       showViewAll: section.showViewAll,
       onViewAll: section.showViewAll

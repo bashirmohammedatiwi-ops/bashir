@@ -654,13 +654,18 @@ model ShippingArea {
 model Banner {
   id              String     @id @default(uuid())
   title           String
+  titleEn         String?
   subtitle        String?
+  subtitleEn      String?
   tag             String?
+  tagEn           String?
   ctaLabel        String?
+  ctaLabelEn      String?
   link            String?
   linkType        String?
   linkValue       String?
   discountText    String?
+  discountTextEn  String?
   backgroundColor String?
   imageId         String?
   position        Int        @default(0)
@@ -686,7 +691,9 @@ model HomeBlock {
   type            HomeBlockType
   pageKey         CmsPageKey     @default(HOME)
   title           String?
+  titleEn         String?
   subtitle        String?
+  subtitleEn      String?
   payload         Json           // configuration for the block (filter, ids, layout)
   position        Int            @default(0)
   isActive        Boolean        @default(true)

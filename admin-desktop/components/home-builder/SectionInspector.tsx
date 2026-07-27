@@ -128,11 +128,17 @@ export function SectionInspector({
                   label: "📝 المحتوى",
                   children: (
                     <div className="hb-inspector-body">
-                      <Form.Item name="title" label="العنوان في التطبيق">
+                      <Form.Item name="title" label="العنوان في التطبيق (عربي)">
                         <Input placeholder="الأكثر مبيعاً" size="large" />
                       </Form.Item>
-                      <Form.Item name="subtitle" label="عنوان فرعي">
+                      <Form.Item name="titleEn" label="العنوان في التطبيق (إنجليزي)">
+                        <Input placeholder="Best sellers" size="large" />
+                      </Form.Item>
+                      <Form.Item name="subtitle" label="عنوان فرعي (عربي)">
                         <Input placeholder="نص صغير تحت العنوان" />
+                      </Form.Item>
+                      <Form.Item name="subtitleEn" label="عنوان فرعي (إنجليزي)">
+                        <Input placeholder="Optional subtitle in English" />
                       </Form.Item>
                       <div className="hb-inspector-row">
                         <Form.Item name="position" label="الترتيب" style={{ flex: 1 }}>

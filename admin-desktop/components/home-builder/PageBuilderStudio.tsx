@@ -193,7 +193,9 @@ export function PageBuilderStudio({
       const body = blockBody({
         type,
         title: values.title,
+        titleEn: values.titleEn,
         subtitle: values.subtitle,
+        subtitleEn: values.subtitleEn,
         position: values.position ?? builderBlocks.length,
         isActive: values.isActive ?? true,
         payload,
@@ -216,7 +218,9 @@ export function PageBuilderStudio({
           id: newId,
           type: form.getFieldValue("type"),
           title: form.getFieldValue("title"),
+          titleEn: form.getFieldValue("titleEn"),
           subtitle: form.getFieldValue("subtitle"),
+          subtitleEn: form.getFieldValue("subtitleEn"),
           isActive: form.getFieldValue("isActive"),
           payload: form.getFieldValue("payload"),
         });
@@ -256,7 +260,9 @@ export function PageBuilderStudio({
         blockBody({
           type: block.type,
           title: block.title ? `${block.title} (نسخة)` : undefined,
+          titleEn: block.titleEn,
           subtitle: block.subtitle,
+          subtitleEn: block.subtitleEn,
           position: builderBlocks.length,
           isActive: false,
           payload,
@@ -423,7 +429,9 @@ export function PageBuilderStudio({
       form.setFieldsValue({
         type: block.type,
         title: block.title,
+        titleEn: block.titleEn,
         subtitle: block.subtitle,
+        subtitleEn: block.subtitleEn,
         position: block.position,
         isActive: block.isActive,
         payload: {

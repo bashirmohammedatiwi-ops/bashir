@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/l10n/localized_text.dart' as l10n;
 import '../../../core/utils/json.dart';
 import '../../../core/utils/media_url.dart';
 import 'package:flutter/services.dart';
@@ -11,7 +12,9 @@ import 'home_theme.dart';
 class PhotoTileData {
   final String imageUrl;
   final String? title;
+  final String? titleEn;
   final String? subtitle;
+  final String? subtitleEn;
   final String? badge;
   final String shape;
   final String? aspectRatio;
@@ -26,7 +29,9 @@ class PhotoTileData {
   const PhotoTileData({
     required this.imageUrl,
     this.title,
+    this.titleEn,
     this.subtitle,
+    this.subtitleEn,
     this.badge,
     this.shape = 'rounded',
     this.aspectRatio,
@@ -55,7 +60,9 @@ class PhotoTileData {
     return PhotoTileData(
       imageUrl: _readImageUrl(raw),
       title: _trim(raw['title']),
+      titleEn: _trim(raw['titleEn']),
       subtitle: _trim(raw['subtitle']),
+      subtitleEn: _trim(raw['subtitleEn']),
       badge: _trim(raw['badge']),
       shape: raw['shape']?.toString().trim().isNotEmpty == true
           ? raw['shape'].toString()
@@ -71,6 +78,26 @@ class PhotoTileData {
       spanCols: (raw['spanCols'] as num?)?.toInt() ?? 1,
       spanRows: (raw['spanRows'] as num?)?.toInt() ?? 1,
     );
+  }
+
+  String? titleForLang(String lang) {
+    final val = l10n.localizedText(
+      languageCode: lang,
+      ar: title,
+      en: titleEn,
+      fallback: '',
+    );
+    return val.trim().isEmpty ? null : val;
+  }
+
+  String? subtitleForLang(String lang) {
+    final val = l10n.localizedText(
+      languageCode: lang,
+      ar: subtitle,
+      en: subtitleEn,
+      fallback: '',
+    );
+    return val.trim().isEmpty ? null : val;
   }
 
   static String _trim(dynamic v) {

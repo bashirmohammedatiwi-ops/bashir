@@ -158,10 +158,9 @@ class AppConfig {
 
   static const int pageSize = 20;
 
-  /// مدة كاش البيانات العامة.
-  static const Duration homeCacheTtl = Duration(minutes: 5);
-  /// أقسام الكتالوج تتغيّر أحياناً — كاش قصير + مفتاح إصدار في الـ API.
-  static const Duration catalogCacheTtl = Duration(minutes: 10);
-  static const Duration productCacheTtl = Duration(minutes: 2);
-  static const Duration listingCacheTtl = Duration(minutes: 1);
+  /// مدة كاش البيانات العامة — قصيرة ليتوافق التطبيق مع لوحة التحكم بسرعة.
+  static const Duration homeCacheTtl = Duration(seconds: 90);
+  static const Duration catalogCacheTtl = Duration(minutes: 5);
+  static const Duration productCacheTtl = Duration(seconds: 45);
+  static const Duration listingCacheTtl = Duration(seconds: 45);
 }

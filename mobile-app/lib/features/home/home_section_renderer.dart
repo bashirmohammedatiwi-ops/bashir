@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/l10n/locale_provider.dart';
 import '../../data/models/home_feed.dart';
 import '../../data/models/home_section.dart';
 import '../../core/theme/card_sizes.dart';
@@ -62,8 +63,8 @@ class HomeSectionWidget extends ConsumerWidget {
       'CARE_HUB' => CareHubSection(section: section, compactTop: isFirstAfterHero),
       'SKIN_CONCERNS' => SkinConcernsStrip(
           concerns: section.skinConcerns,
-          title: section.title,
-          subtitle: section.subtitle,
+          title: section.titleForLang(ref.watch(languageCodeProvider)),
+          subtitle: section.subtitleForLang(ref.watch(languageCodeProvider)),
           display: section.display ?? section.layout ?? 'chips',
           showTitle: section.showTitle,
         ),

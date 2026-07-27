@@ -16,7 +16,8 @@
     "backfill:images": "node scripts/backfill-product-images.js",
     "dedupe:images": "npx tsx prisma/scripts/dedupe-product-images.ts",
     "dedupe:images:scan": "npx tsx prisma/scripts/dedupe-product-images.ts --scan",
-    "reprocess:media-bg": "npx tsx scripts/reprocess-media-white-bg.ts"
+    "reprocess:media-bg": "npx tsx scripts/reprocess-media-white-bg.ts",
+    "backfill:cms-translations": "npx tsx scripts/backfill-cms-translations.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

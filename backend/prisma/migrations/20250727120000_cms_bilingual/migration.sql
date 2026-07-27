@@ -1,0 +1,9 @@
+-- Bilingual CMS fields for home blocks and banners
+ALTER TABLE "HomeBlock" ADD COLUMN IF NOT EXISTS "titleEn" TEXT;
+ALTER TABLE "HomeBlock" ADD COLUMN IF NOT EXISTS "subtitleEn" TEXT;
+
+ALTER TABLE "Banner" ADD COLUMN IF NOT EXISTS "titleEn" TEXT;
+ALTER TABLE "Banner" ADD COLUMN IF NOT EXISTS "subtitleEn" TEXT;
+ALTER TABLE "Banner" ADD COLUMN IF NOT EXISTS "tagEn" TEXT;
+ALTER TABLE "Banner" ADD COLUMN IF NOT EXISTS "ctaLabelEn" TEXT;
+ALTER TABLE "Banner" ADD COLUMN IF NOT EXISTS "discountTextEn" TEXT;

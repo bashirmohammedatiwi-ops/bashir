@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
+import { CmsBilingualService } from "../../common/cms-bilingual.service";
 import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { PrismaService } from "../../common/prisma.service";
 
@@ -7,6 +8,7 @@ export class BannersService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly homeFeedCache: HomeFeedCacheService,
+    private readonly cmsBilingual: CmsBilingualService,
   ) {}
 
   list(activeOnly = false) {
@@ -18,14 +20,21 @@ export class BannersService {
   }
 
   async create(data: any) {
-    const result = await this.prisma.banner.create({ data });
+    const enriched = await this.cmsBilingual.enrichBannerData(data);
+    const result = await this.prisma.banner.create({ data: enriched as any });
     await this.homeFeedCache.invalidateAll();
     return result;
   }
 
   async update(id: string, data: any) {
-    await this.ensure(id);
-    const result = await this.prisma.banner.update({ where: { id }, data });
+    const existing = await this.ensure(id);
+    const enriched = await this.cmsBilingual.enrichBannerData({ ...existing, ...data });
+    const patch: Record<string, unknown> = { ...data };
+    for (const field of ["title", "subtitle", "tag", "ctaLabel", "discountText"] as const) {
+      const enKey = `${field}En`;
+      if (enriched[enKey] !== undefined) patch[enKey] = enriched[enKey];
+    }
+    const result = await this.prisma.banner.update({ where: { id }, data: patch });
     await this.homeFeedCache.invalidateAll();
     return result;
   }
@@ -40,5 +49,6 @@ export class BannersService {
   private async ensure(id: string) {
     const b = await this.prisma.banner.findUnique({ where: { id } });
     if (!b) throw new NotFoundException("Banner not found");
+    return b;
   }
 }

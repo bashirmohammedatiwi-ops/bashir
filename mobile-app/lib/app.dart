@@ -11,6 +11,7 @@ import 'core/theme/app_theme.dart';
 import 'core/widgets/responsive_app.dart';
 import 'core/widgets/scroll_perf.dart';
 import 'features/auth/auth_provider.dart';
+import 'features/catalog/catalog_refresh.dart';
 import 'features/splash/splash_screen.dart';
 
 class AlhayaaApp extends ConsumerStatefulWidget {
@@ -20,7 +21,7 @@ class AlhayaaApp extends ConsumerStatefulWidget {
   ConsumerState<AlhayaaApp> createState() => _AlhayaaAppState();
 }
 
-class _AlhayaaAppState extends ConsumerState<AlhayaaApp> {
+class _AlhayaaAppState extends ConsumerState<AlhayaaApp> with WidgetsBindingObserver {
   bool _warmedUp = false;
   bool _pushInited = false;
   bool _minSplashDone = false;
@@ -35,9 +36,23 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     Future<void>.delayed(const Duration(milliseconds: 1100), () {
       if (mounted) setState(() => _minSplashDone = true);
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      refreshStorefrontCatalogOnResume(ref);
+    }
   }
 
   @override

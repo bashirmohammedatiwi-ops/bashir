@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/home_section.dart';
 import '../home_link.dart';
@@ -7,31 +9,34 @@ import '../widgets/home_animations.dart';
 import '../widgets/home_marquee.dart';
 import '../widgets/home_theme.dart';
 
-class PromoStripSection extends StatelessWidget {
+class PromoStripSection extends ConsumerWidget {
   final HomeSection section;
 
   const PromoStripSection({super.key, required this.section});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageCodeProvider);
     final strip = section.promoStrip;
     if (strip == null || !strip.hasContent) return const SizedBox.shrink();
 
     final variant = strip.variant ?? 'strip';
-    if (variant == 'news') return _NewsTicker(strip: strip);
-    if (variant == 'ticker') return _SlimTicker(strip: strip);
-    return _PromoCard(strip: strip);
+    if (variant == 'news') return _NewsTicker(strip: strip, lang: lang);
+    if (variant == 'ticker') return _SlimTicker(strip: strip, lang: lang);
+    return _PromoCard(strip: strip, lang: lang);
   }
 }
 
-List<String> _lines(PromoStrip strip) {
-  if (strip.items.isNotEmpty) return strip.items.where((s) => s.trim().isNotEmpty).toList();
-  if (strip.text.trim().isNotEmpty) return [strip.text.trim()];
+List<String> _lines(PromoStrip strip, String lang) {
+  final localized = strip.linesForLang(lang);
+  if (localized.isNotEmpty) return localized;
+  final text = strip.textForLang(lang).trim();
+  if (text.isNotEmpty) return [text];
   return const [];
 }
 
-String _combined(PromoStrip strip) {
-  final lines = _lines(strip);
+String _combined(PromoStrip strip, String lang) {
+  final lines = _lines(strip, lang);
   if (lines.isEmpty) return '';
   return lines.join(strip.separator ?? '   •   ');
 }
@@ -58,12 +63,13 @@ void _openLink(BuildContext context, PromoStrip strip) {
 /// بطاقة ترويج — نص ثابت أو متحرك.
 class _PromoCard extends StatelessWidget {
   final PromoStrip strip;
+  final String lang;
 
-  const _PromoCard({required this.strip});
+  const _PromoCard({required this.strip, required this.lang});
 
   @override
   Widget build(BuildContext context) {
-    final text = _combined(strip);
+    final text = _combined(strip, lang);
     if (text.isEmpty) return const SizedBox.shrink();
 
     final bg = _bg(strip);
@@ -123,12 +129,13 @@ class _PromoCard extends StatelessWidget {
 /// شريط نحيف — نشرة متحركة بعرض كامل.
 class _SlimTicker extends StatelessWidget {
   final PromoStrip strip;
+  final String lang;
 
-  const _SlimTicker({required this.strip});
+  const _SlimTicker({required this.strip, required this.lang});
 
   @override
   Widget build(BuildContext context) {
-    final text = _combined(strip);
+    final text = _combined(strip, lang);
     if (text.isEmpty) return const SizedBox.shrink();
 
     final bg = _bg(strip);
@@ -176,17 +183,18 @@ class _SlimTicker extends StatelessWidget {
 /// نشرة إخبارية — شارة + نص متحرك.
 class _NewsTicker extends StatelessWidget {
   final PromoStrip strip;
+  final String lang;
 
-  const _NewsTicker({required this.strip});
+  const _NewsTicker({required this.strip, required this.lang});
 
   @override
   Widget build(BuildContext context) {
-    final text = _combined(strip);
+    final text = _combined(strip, lang);
     if (text.isEmpty) return const SizedBox.shrink();
 
     final bg = _bg(strip);
     final fg = _textColor(strip);
-    final label = (strip.label ?? 'عاجل').trim();
+    final label = strip.labelForLang(lang).trim();
 
     return HomeTapScale(
       onTap: strip.hasLink ? () => _openLink(context, strip) : null,

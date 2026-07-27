@@ -1,10 +1,11 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'gallery_photo_card.dart';
 import '../home_link.dart';
+import 'gallery_photo_card.dart';
 import 'photo_shape_kit.dart';
 
 /// صور متحركة أفقياً — حلقة سينمائية مع سحب يدوي ونقر موثوق لكل الصور.
@@ -97,7 +98,7 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
   bool _measurePending = false;
   bool _userDragging = false;
   Offset? _pointerDown;
-  static const _dragSlop = 12.0;
+  static const _dragSlop = 10.0;
 
   double get _pxPerSec => 24 + widget.speed.clamp(1, 10) * 10;
 
@@ -108,6 +109,12 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
 
   double get _activePeriod =>
       _periodWidth > 0 ? _periodWidth : _estimatePeriodWidth();
+
+  /// تكرارات كافية لتغطية العرض + ضمان hit-test لكل البلاطات أثناء الحلقة.
+  int _copyCount(double viewportWidth, double period) {
+    if (period <= 0) return 4;
+    return math.max(3, (viewportWidth / period).ceil() + 2);
+  }
 
   static bool _imagesChanged(List<HomeMarqueeImage> a, List<HomeMarqueeImage> b) {
     if (a.length != b.length) return true;
@@ -187,6 +194,7 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
     if (!_ctrl.isAnimating) _ctrl.repeat();
   }
 
+  /// Listener فقط — لا يدخل مسابقة الإيماءات فيمنع onTap على البلاطات.
   void _onPointerDown(PointerDownEvent event) {
     _pointerDown = event.position;
     _userDragging = false;
@@ -205,21 +213,16 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
 
     final period = _activePeriod;
     if (period <= 0) return;
-    final px = _wrapPixels(_ctrl.value * period + event.delta.dx, period);
+    final px = _wrapPixels(_ctrl.value * period - event.delta.dx, period);
     _ctrl.value = px / period;
   }
 
   void _onPointerUp(PointerUpEvent event) {
-    final wasDragging = _userDragging;
     _userDragging = false;
     _pointerDown = null;
-
-    if (wasDragging) {
-      _resumeMotion();
-      return;
-    }
-
-    _resumeMotion();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _resumeMotion();
+    });
   }
 
   void _onPointerCancel(PointerCancelEvent event) {
@@ -257,11 +260,12 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
     super.dispose();
   }
 
-  List<Widget> _tileWidgets() {
+  List<Widget> _tileWidgets(int periodIndex) {
     return [
-      for (final img in widget.images) ...[
+      for (var i = 0; i < widget.images.length; i++) ...[
         _MarqueeTile(
-          image: img,
+          key: ValueKey('mq-$periodIndex-$i-${widget.images[i].url}'),
+          image: widget.images[i],
           defaultHeight: widget.height,
         ),
         SizedBox(width: widget.gap),
@@ -269,12 +273,12 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
     ];
   }
 
-  Widget _period({Key? key}) {
+  Widget _period({Key? key, required int periodIndex}) {
     return Row(
       key: key,
       mainAxisSize: MainAxisSize.min,
       textDirection: TextDirection.ltr,
-      children: _tileWidgets(),
+      children: _tileWidgets(periodIndex),
     );
   }
 
@@ -289,6 +293,8 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
         final viewportW = constraints.maxWidth.isFinite
             ? constraints.maxWidth
             : MediaQuery.sizeOf(context).width;
+        final period = _activePeriod;
+        final copies = _copyCount(viewportW, period);
 
         return RepaintBoundary(
           child: ClipRect(
@@ -312,8 +318,11 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
                         mainAxisSize: MainAxisSize.min,
                         textDirection: TextDirection.ltr,
                         children: [
-                          _period(key: _periodKey),
-                          _period(),
+                          for (var i = 0; i < copies; i++)
+                            _period(
+                              key: i == 0 ? _periodKey : ValueKey('period-$i'),
+                              periodIndex: i,
+                            ),
                         ],
                       ),
                     );
@@ -333,6 +342,7 @@ class _MarqueeTile extends StatelessWidget {
   final double defaultHeight;
 
   const _MarqueeTile({
+    super.key,
     required this.image,
     required this.defaultHeight,
   });
@@ -340,22 +350,18 @@ class _MarqueeTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final h = image.height > 0 ? image.height : defaultHeight;
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: () => image.openLink(context),
-      child: GalleryPhotoCard(
-        data: PhotoTileData(
-          imageUrl: image.url,
-          shape: image.shape,
-          showShadow: false,
-          overlayStyle: 'none',
-          borderStyle: 'none',
-        ),
-        width: image.width,
-        height: h,
-        showCaption: false,
-        onTap: null,
+    return GalleryPhotoCard(
+      data: PhotoTileData(
+        imageUrl: image.url,
+        shape: image.shape,
+        showShadow: false,
+        overlayStyle: 'none',
+        borderStyle: 'none',
       ),
+      width: image.width,
+      height: h,
+      showCaption: false,
+      onTap: () => image.openLink(context),
     );
   }
 }

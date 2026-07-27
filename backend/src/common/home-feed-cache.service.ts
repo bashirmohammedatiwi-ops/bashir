@@ -9,8 +9,8 @@ export class HomeFeedCacheService {
   constructor(private readonly redis: RedisCacheService) {}
 
   ttlSec(): number {
-    const n = Number(process.env.HOME_FEED_CACHE_TTL_SEC ?? 90);
-    return Number.isFinite(n) && n > 0 ? n : 90;
+    const n = Number(process.env.HOME_FEED_CACHE_TTL_SEC ?? 30);
+    return Number.isFinite(n) && n > 0 ? n : 30;
   }
 
   buildKey(settings: Record<string, unknown>): string {

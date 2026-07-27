@@ -15,6 +15,7 @@ import '../../core/widgets/states.dart';
 import '../../data/models/product.dart';
 import '../../data/services/api_service.dart';
 import '../catalog/catalog_providers.dart';
+import '../catalog/catalog_refresh.dart';
 import '../home/home_section_renderer.dart';
 import 'widgets/offers_cms_banner.dart';
 import 'widgets/offers_flash_pulse.dart';
@@ -125,9 +126,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
     if (_refreshingCms) return;
     setState(() => _refreshingCms = true);
     try {
-      await ref.read(apiServiceProvider).getOffers(forceRefresh: true);
-      ref.invalidate(offersFeedProvider);
-      await ref.read(offersFeedProvider.future);
+      await refreshStorefrontCatalog(ref);
     } finally {
       if (mounted) setState(() => _refreshingCms = false);
     }

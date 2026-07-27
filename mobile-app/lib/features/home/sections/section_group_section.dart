@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/home_section.dart';
 import '../home_link.dart';
@@ -7,7 +9,7 @@ import '../home_section_renderer.dart';
 import '../widgets/home_theme.dart';
 
 /// إطار ملون يضم مجموعة أقسام — يظهر في التطبيق كبطاقة مميزة.
-class SectionGroupSection extends StatelessWidget {
+class SectionGroupSection extends ConsumerWidget {
   final HomeSection section;
   final bool compactTop;
 
@@ -18,8 +20,12 @@ class SectionGroupSection extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (section.children.isEmpty) return const SizedBox.shrink();
+
+    final lang = ref.watch(languageCodeProvider);
+    final title = section.titleForLang(lang);
+    final subtitle = section.subtitleForLang(lang);
 
     final bg = parseHexColor(section.backgroundColor) ?? HomeTheme.pearl;
     final border = parseHexColor(section.borderColor);
@@ -42,23 +48,23 @@ class SectionGroupSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (section.showTitle && (section.title?.isNotEmpty ?? false)) ...[
+            if (section.showTitle && (title?.isNotEmpty ?? false)) ...[
               Padding(
                 padding: const EdgeInsets.only(bottom: 12, right: 4, left: 4),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      section.title!,
+                      title!,
                       style: HomeTheme.sectionTitle().copyWith(
                         color: titleColor ?? HomeTheme.ink,
                         fontSize: 18,
                       ),
                     ),
-                    if (section.subtitle?.isNotEmpty ?? false) ...[
+                    if (subtitle?.isNotEmpty ?? false) ...[
                       const SizedBox(height: 4),
                       Text(
-                        section.subtitle!,
+                        subtitle!,
                         style: HomeTheme.body(size: 12).copyWith(
                           color: (titleColor ?? HomeTheme.ink).withValues(alpha: 0.65),
                         ),

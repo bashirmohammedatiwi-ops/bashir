@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { CmsPageKey } from "@prisma/client";
+import { CmsBilingualService } from "../../common/cms-bilingual.service";
 import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { PrismaService } from "../../common/prisma.service";
 import { withPlaceholderImages, hasRealProductImagesWhere } from "../../common/product-placeholder.util";
@@ -37,6 +38,7 @@ export class HomeService {
     private readonly homeFeedCache: HomeFeedCacheService,
     private readonly categories: CategoriesService,
     private readonly brands: BrandsService,
+    private readonly cmsBilingual: CmsBilingualService,
   ) {}
 
   async feed(options?: { skipCache?: boolean }) {
@@ -146,7 +148,7 @@ export class HomeService {
     };
 
     const cmsBlocks = homeBlocks.filter((b) => b.type !== "HERO_BANNER");
-    const sections = await this.sectionResolver.resolve(cmsBlocks, {
+    const resolvedSections = await this.sectionResolver.resolve(cmsBlocks, {
       flashEndsAt,
       defaultCategories: categories,
       defaultBrands: brands,
@@ -155,10 +157,14 @@ export class HomeService {
       allBanners: banners,
       skinConcerns,
     });
+    const sections = await this.cmsBilingual.enrichSections(resolvedSections);
+    const enrichedBanners = await this.cmsBilingual.enrichBanners(
+      banners.map((b) => ({ ...b })) as Record<string, unknown>[],
+    );
 
     return {
       sections,
-      banners: banners.map((b) => ({
+      banners: enrichedBanners.map((b) => ({
         ...b,
         image: rewriteMediaRecord(b.image as Record<string, unknown> | null | undefined),
       })),
@@ -237,7 +243,7 @@ export class HomeService {
       promo: promoProducts.map((p) => withPlaceholderImages(p)),
     };
 
-    const sections = await this.sectionResolver.resolve(offersBlocks, {
+    const resolvedSections = await this.sectionResolver.resolve(offersBlocks, {
       flashEndsAt,
       defaultCategories: [],
       defaultBrands: brands,
@@ -246,6 +252,7 @@ export class HomeService {
       allBanners: banners,
       skinConcerns,
     });
+    const sections = await this.cmsBilingual.enrichSections(resolvedSections);
 
     return {
       sections,

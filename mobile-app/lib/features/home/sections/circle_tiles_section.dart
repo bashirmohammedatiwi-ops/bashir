@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/utils/json.dart';
 import '../../../core/utils/media_url.dart';
@@ -9,12 +11,13 @@ import '../widgets/circle_tile.dart';
 import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
 
-class CircleTilesSection extends StatelessWidget {
+class CircleTilesSection extends ConsumerWidget {
   final HomeSection section;
   const CircleTilesSection({super.key, required this.section});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final lang = ref.watch(languageCodeProvider);
     var items = section.items;
     if (items.isEmpty && section.categories.isNotEmpty) {
       items = section.categories
@@ -37,8 +40,8 @@ class CircleTilesSection extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
         child: layout == 'row'
-            ? _CircleRow(items: items)
-            : _CircleGrid(items: items, columns: layout == 'grid3' ? 3 : 4),
+            ? _CircleRow(items: items, lang: lang)
+            : _CircleGrid(items: items, columns: layout == 'grid3' ? 3 : 4, lang: lang),
       ),
     );
   }
@@ -46,7 +49,8 @@ class CircleTilesSection extends StatelessWidget {
 
 class _CircleRow extends StatelessWidget {
   final List<dynamic> items;
-  const _CircleRow({required this.items});
+  final String lang;
+  const _CircleRow({required this.items, required this.lang});
 
   @override
   Widget build(BuildContext context) {
@@ -56,7 +60,7 @@ class _CircleRow extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(width: 4),
-        itemBuilder: (_, i) => _buildTile(context, items[i]),
+        itemBuilder: (_, i) => _buildTile(context, items[i], lang),
       ),
     );
   }
@@ -65,7 +69,8 @@ class _CircleRow extends StatelessWidget {
 class _CircleGrid extends StatelessWidget {
   final List<dynamic> items;
   final int columns;
-  const _CircleGrid({required this.items, required this.columns});
+  final String lang;
+  const _CircleGrid({required this.items, required this.columns, required this.lang});
 
   @override
   Widget build(BuildContext context) {
@@ -77,19 +82,21 @@ class _CircleGrid extends StatelessWidget {
         for (var i = 0; i < items.length; i++)
           SizedBox(
             width: (MediaQuery.sizeOf(context).width - AppSpacing.screenH * 2 - AppSpacing.sm * (columns - 1)) / columns,
-            child: _buildTile(context, items[i]),
+            child: _buildTile(context, items[i], lang),
           ),
       ],
     );
   }
 }
 
-Widget _buildTile(BuildContext context, dynamic data) {
+Widget _buildTile(BuildContext context, dynamic data, String lang) {
   if (data is! Map) return const SizedBox.shrink();
   final m = Map<String, dynamic>.from(data);
+  final title = cmsTextForLang(m, lang);
+  final subtitle = cmsTextForLang(m, lang, arKey: 'subtitle', enKey: 'subtitleEn');
   return CircleTile(
-    title: m['title']?.toString() ?? '',
-    subtitle: m['subtitle']?.toString(),
+    title: title.isNotEmpty ? title : (m['title']?.toString() ?? ''),
+    subtitle: subtitle.isNotEmpty ? subtitle : m['subtitle']?.toString(),
     imageUrl: resolveImageFromPayload(
       directUrl: m['imageUrl']?.toString(),
       image: m['image'] is Map ? asMap(m['image']) : null,

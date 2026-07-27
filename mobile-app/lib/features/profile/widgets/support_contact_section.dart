@@ -49,7 +49,7 @@ class SupportContactSection extends ConsumerWidget {
               title: s.emailSupport,
               subtitle: email,
               iconColor: AccountTheme.settings,
-              onTap: () => openEmail(email, subject: s.isAr ? 'دعم ديما الحياة' : 'deema alhayat support'),
+              onTap: () => openEmail(email),
             ),
           ],
         ),

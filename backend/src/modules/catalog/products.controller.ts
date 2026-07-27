@@ -73,8 +73,8 @@ export class ProductsController {
 
   @Public()
   @Get(":idOrSlug")
-  findOne(@Param("idOrSlug") idOrSlug: string) {
-    return this.products.findOne(idOrSlug);
+  findOne(@Req() req: any, @Param("idOrSlug") idOrSlug: string) {
+    return this.products.findOne(idOrSlug, !isAdminViewRequest(req));
   }
 
   @ApiBearerAuth()
