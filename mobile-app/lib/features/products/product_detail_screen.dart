@@ -7,6 +7,7 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../core/cache/image_cache.dart';
 import '../../core/config/app_config.dart';
+import '../../core/widgets/app_snackbar.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../core/theme/app_colors.dart';
@@ -108,19 +109,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     }
     HapticFeedback.mediumImpact();
     ref.read(cartProvider.notifier).add(product, quantity: _quantity, shade: shade);
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(s.addedToCart),
-        action: SnackBarAction(
-          label: s.viewCart,
-          textColor: Colors.white,
-          onPressed: () {
-            context.go('/');
-            ref.read(navIndexProvider.notifier).state = 3;
-          },
-        ),
-      ));
+    AppSnackbar.cartAdded(
+      context,
+      title: s.addedToCart,
+      viewCartLabel: s.viewCart,
+      onViewCart: () {
+        context.go('/');
+        ref.read(navIndexProvider.notifier).state = 3;
+      },
+    );
   }
 
   List<String> _galleryUrls(Product product, ProductShade? shade) {

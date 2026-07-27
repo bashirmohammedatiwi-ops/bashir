@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/utils/form_scroll.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/utils/phone_util.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/widgets/auth_gate.dart';
+import '../../core/widgets/keyboard_dismiss.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/address.dart';
@@ -20,6 +22,7 @@ import '../cart/cart_provider.dart';
 import '../cart/coupon_provider.dart';
 import '../shell/main_shell.dart';
 import '../catalog/catalog_providers.dart';
+import '../profile/widgets/address_form.dart';
 import '../profile/profile_providers.dart';
 import 'widgets/checkout_delivery_card.dart';
 import 'widgets/checkout_header.dart';
@@ -34,6 +37,11 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _scrollCtrl = ScrollController();
+  final _nameFieldKey = GlobalKey();
+  final _phoneFieldKey = GlobalKey();
+  final _locationFieldKey = GlobalKey();
+  final _streetFieldKey = GlobalKey();
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _streetCtrl = TextEditingController();
@@ -72,6 +80,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   @override
   void dispose() {
+    _scrollCtrl.dispose();
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
     _streetCtrl.dispose();
@@ -136,6 +145,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   Future<void> _applyCoupon() async {
+    FocusScope.of(context).unfocus();
     final code = _couponCtrl.text.trim();
     if (code.isEmpty) return;
     setState(() => _couponError = null);
@@ -190,8 +200,60 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return api.createAddress(payload);
   }
 
+  Future<void> _scrollToFirstInvalid() async {
+    HapticFeedback.lightImpact();
+    await scrollToFirstInvalidFormSection([
+      _nameFieldKey,
+      _phoneFieldKey,
+      _locationFieldKey,
+      _streetFieldKey,
+    ]);
+  }
+
+  Future<void> _addSavedAddress() async {
+    final user = ref.read(authProvider).user;
+    final initial = Address(
+      id: '',
+      fullName: _nameCtrl.text.trim().isNotEmpty ? _nameCtrl.text.trim() : (user?.name ?? ''),
+      phone: _phoneCtrl.text.trim().isNotEmpty ? normalizePhone(_phoneCtrl.text.trim()) : (user?.phone ?? ''),
+      city: '',
+      governorate: _governorate,
+      area: _area,
+      street: _streetCtrl.text.trim().isEmpty ? null : _streetCtrl.text.trim(),
+      house: _houseCtrl.text.trim().isEmpty ? null : _houseCtrl.text.trim(),
+      isDefault: true,
+    );
+    final draft = await showAddressForm(context, initial: initial);
+    if (draft == null || !mounted) return;
+    try {
+      final created = await ref.read(apiServiceProvider).createAddress(
+            Address(
+              id: '',
+              fullName: draft.fullName,
+              phone: draft.phone,
+              city: draft.city,
+              governorate: draft.governorate,
+              area: draft.area,
+              street: draft.street,
+              house: draft.house,
+              notes: draft.notes,
+              isDefault: draft.isDefault,
+            ),
+          );
+      ref.invalidate(addressesProvider);
+      _applyAddress(created);
+      if (mounted) AppSnackbar.success(context, ref.s.addressSaved);
+    } catch (e) {
+      if (mounted) AppSnackbar.error(context, friendlyError(e));
+    }
+  }
+
   Future<void> _placeOrder() async {
-    if (!_formKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
+    if (!_formKey.currentState!.validate()) {
+      await _scrollToFirstInvalid();
+      return;
+    }
     HapticFeedback.mediumImpact();
     setState(() => _placing = true);
     try {
@@ -287,100 +349,111 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final savedAddresses = addressesAsync.valueOrNull ?? [];
 
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: CheckoutTheme.bg,
-      body: Column(
-        children: [
-          CheckoutHeader(
-            s: s,
-            itemCount: cart.count,
-            onBack: () => context.pop(),
-          ),
-          Expanded(
-            child: addressesAsync.when(
-              loading: () => ListView(
-                padding: EdgeInsets.only(bottom: CheckoutTheme.shellNavReserve(context) + 80),
-                children: const [
-                  Padding(
-                    padding: EdgeInsets.all(16),
-                    child: ShimmerBox(height: 280, radius: 20),
-                  ),
-                ],
-              ),
-              error: (e, _) => ErrorView.from(e, onRetry: () => ref.invalidate(addressesProvider)),
-              data: (_) => ListView(
-                padding: EdgeInsets.only(bottom: CheckoutTheme.shellNavReserve(context) + 90),
-                children: [
-                  CheckoutDeliveryCard(
-                    formKey: _formKey,
-                    nameCtrl: _nameCtrl,
-                    phoneCtrl: _phoneCtrl,
-                    streetCtrl: _streetCtrl,
-                    houseCtrl: _houseCtrl,
-                    governorate: _governorate,
-                    area: _area,
-                    onGovernorateChanged: (v) => setState(() {
-                      _governorate = v;
-                      _area = null;
-                    }),
-                    onAreaChanged: (v) => setState(() => _area = v),
-                    savedAddresses: savedAddresses,
-                    selectedAddressId: _addressId,
-                    onPickAddress: (a) {
-                      HapticFeedback.selectionClick();
-                      _applyAddress(a);
-                    },
-                    onShippingChanged: _refreshShipping,
-                  ),
-                  const SizedBox(height: 14),
-                  CheckoutShippingBanner(s: s, error: _shippingError, onRetry: _refreshShipping),
-                  CheckoutCouponCard(
-                    s: s,
-                    controller: _couponCtrl,
-                    error: _couponError,
-                    appliedCode: _coupon?.code,
-                    onApply: _applyCoupon,
-                  ),
-                  const SizedBox(height: 14),
-                  CheckoutPaymentCard(
-                    s: s,
-                    paymentMethod: _paymentMethod,
-                    onChanged: (v) => setState(() => _paymentMethod = v),
-                  ),
-                  const SizedBox(height: 14),
-                  CheckoutNotesCard(s: s, controller: _notesCtrl),
-                  if (points > 0) ...[
-                    const SizedBox(height: 14),
-                    CheckoutLoyaltyCard(
-                      s: s,
-                      points: points,
-                      useLoyalty: _useLoyalty,
-                      loyaltyDiscount: loyaltyDiscount,
-                      enabled: points >= 100,
-                      onChanged: (v) => _toggleLoyalty(v, points, beforeLoyalty),
+      body: DismissKeyboard(
+        child: Column(
+          children: [
+            CheckoutHeader(
+              s: s,
+              itemCount: cart.count,
+              onBack: () => context.pop(),
+            ),
+            Expanded(
+              child: addressesAsync.when(
+                loading: () => ListView(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.only(bottom: 16),
+                  children: const [
+                    Padding(
+                      padding: EdgeInsets.all(16),
+                      child: ShimmerBox(height: 280, radius: 20),
                     ),
                   ],
-                  const SizedBox(height: 14),
-                  CheckoutSummaryCard(
-                    s: s,
-                    subtotal: subtotal,
-                    discount: discount,
-                    loyaltyDiscount: loyaltyDiscount,
-                    shipping: shipping,
-                    total: total,
-                    shippingLoading: _shippingLoading,
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                ),
+                error: (e, _) => ErrorView.from(e, onRetry: () => ref.invalidate(addressesProvider)),
+                data: (_) => ListView(
+                  controller: _scrollCtrl,
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.only(bottom: 8),
+                  children: [
+                    CheckoutDeliveryCard(
+                      formKey: _formKey,
+                      nameFieldKey: _nameFieldKey,
+                      phoneFieldKey: _phoneFieldKey,
+                      locationFieldKey: _locationFieldKey,
+                      streetFieldKey: _streetFieldKey,
+                      nameCtrl: _nameCtrl,
+                      phoneCtrl: _phoneCtrl,
+                      streetCtrl: _streetCtrl,
+                      houseCtrl: _houseCtrl,
+                      governorate: _governorate,
+                      area: _area,
+                      onGovernorateChanged: (v) => setState(() {
+                        _governorate = v;
+                        _area = null;
+                      }),
+                      onAreaChanged: (v) => setState(() => _area = v),
+                      savedAddresses: savedAddresses,
+                      selectedAddressId: _addressId,
+                      onPickAddress: (a) {
+                        HapticFeedback.selectionClick();
+                        _applyAddress(a);
+                      },
+                      onAddAddress: _addSavedAddress,
+                      onShippingChanged: _refreshShipping,
+                    ),
+                    const SizedBox(height: 14),
+                    CheckoutShippingBanner(s: s, error: _shippingError, onRetry: _refreshShipping),
+                    CheckoutCouponCard(
+                      s: s,
+                      controller: _couponCtrl,
+                      error: _couponError,
+                      appliedCode: _coupon?.code,
+                      onApply: _applyCoupon,
+                    ),
+                    const SizedBox(height: 14),
+                    CheckoutPaymentCard(
+                      s: s,
+                      paymentMethod: _paymentMethod,
+                      onChanged: (v) => setState(() => _paymentMethod = v),
+                    ),
+                    const SizedBox(height: 14),
+                    CheckoutNotesCard(s: s, controller: _notesCtrl),
+                    if (points > 0) ...[
+                      const SizedBox(height: 14),
+                      CheckoutLoyaltyCard(
+                        s: s,
+                        points: points,
+                        useLoyalty: _useLoyalty,
+                        loyaltyDiscount: loyaltyDiscount,
+                        enabled: points >= 100,
+                        onChanged: (v) => _toggleLoyalty(v, points, beforeLoyalty),
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+                    CheckoutSummaryCard(
+                      s: s,
+                      subtotal: subtotal,
+                      discount: discount,
+                      loyaltyDiscount: loyaltyDiscount,
+                      shipping: shipping,
+                      total: total,
+                      shippingLoading: _shippingLoading,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: CheckoutBottomBar(
-        s: s,
-        total: total,
-        placing: _placing,
-        onPlace: _placeOrder,
+            CheckoutBottomBar(
+              s: s,
+              total: total,
+              placing: _placing,
+              onPlace: _placeOrder,
+            ),
+          ],
+        ),
       ),
     );
   }

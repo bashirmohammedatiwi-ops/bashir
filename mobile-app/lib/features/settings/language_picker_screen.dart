@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/l10n/app_strings.dart';
+import '../catalog/catalog_providers.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../home/widgets/home_theme.dart';
@@ -37,6 +38,8 @@ class _LanguagePickerScreenState extends ConsumerState<LanguagePickerScreen> {
 
     if (widget.fromSettings) {
       await ref.read(appLocaleProvider.notifier).chooseLanguage(Locale(code));
+      ref.invalidate(homeFeedProvider);
+      ref.invalidate(offersFeedProvider);
       if (!mounted) return;
       context.pop();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -48,6 +51,8 @@ class _LanguagePickerScreenState extends ConsumerState<LanguagePickerScreen> {
   Future<void> _confirm() async {
     HapticFeedback.lightImpact();
     await ref.read(appLocaleProvider.notifier).chooseLanguage(Locale(_selected));
+    ref.invalidate(homeFeedProvider);
+    ref.invalidate(offersFeedProvider);
     if (!mounted) return;
     if (widget.fromSettings) {
       context.pop();

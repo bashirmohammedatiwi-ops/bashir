@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/config/app_config.dart';
+import '../../../core/l10n/app_strings.dart';
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/navigation/app_navigation.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../auth/auth_provider.dart';
@@ -21,6 +24,9 @@ class HomeHeader extends ConsumerWidget {
     final unread =
         auth.isAuthenticated ? ref.watch(unreadNotificationsCountProvider) : 0;
     final solid = scrollProgress > 0.06;
+    final lang = ref.watch(languageCodeProvider);
+    final s = ref.s;
+    final storeName = AppConfig.displayStoreName(lang);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
@@ -66,7 +72,7 @@ class HomeHeader extends ConsumerWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'الحياة',
+                      storeName,
                       style: HomeTheme.displayTitle(size: 22),
                     ),
                   ],
@@ -95,6 +101,7 @@ class HomeHeader extends ConsumerWidget {
           ),
           const SizedBox(height: 10),
           _SearchPill(
+            hint: s.searchHintHome,
             onTap: () => context.push('/search'),
             onScan: () => context.push('/scan'),
             onCategories: () => ref.read(navIndexProvider.notifier).state = 1,
@@ -106,11 +113,13 @@ class HomeHeader extends ConsumerWidget {
 }
 
 class _SearchPill extends StatelessWidget {
+  final String hint;
   final VoidCallback onTap;
   final VoidCallback onScan;
   final VoidCallback onCategories;
 
   const _SearchPill({
+    required this.hint,
     required this.onTap,
     required this.onScan,
     required this.onCategories,
@@ -144,7 +153,7 @@ class _SearchPill extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'ابحثي عن منتج أو براند…',
+                        hint,
                         style: HomeTheme.body(size: 14, color: HomeTheme.inkMuted),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

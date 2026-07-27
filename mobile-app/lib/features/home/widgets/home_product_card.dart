@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
@@ -52,7 +53,13 @@ class HomeProductCard extends ConsumerWidget {
             children: [
               Expanded(
                 flex: 11,
-                child: _ImageSection(product: product, showPromoBadge: showPromoBadge),
+                child: _ImageSection(
+                  product: product,
+                  showPromoBadge: showPromoBadge,
+                  newLabel: ref.s.newBadge,
+                  offerLabel: ref.s.offerBadge,
+                  soldOutLabel: ref.s.soldOut,
+                ),
               ),
               Expanded(
                 flex: 8,
@@ -66,14 +73,23 @@ class HomeProductCard extends ConsumerWidget {
   }
 }
 
-class _ImageSection extends StatelessWidget {
+class _ImageSection extends ConsumerWidget {
   final Product product;
   final bool showPromoBadge;
+  final String newLabel;
+  final String offerLabel;
+  final String soldOutLabel;
 
-  const _ImageSection({required this.product, required this.showPromoBadge});
+  const _ImageSection({
+    required this.product,
+    required this.showPromoBadge,
+    required this.newLabel,
+    required this.offerLabel,
+    required this.soldOutLabel,
+  });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -108,16 +124,16 @@ class _ImageSection extends StatelessWidget {
             child: _Badge(label: '-${product.discountPercent.round()}%', color: AppColors.sale),
           )
         else if (product.isNew)
-          const Positioned(
+          Positioned(
             top: 8,
             right: 8,
-            child: _Badge(label: 'جديد', color: AppColors.ink),
+            child: _Badge(label: newLabel, color: AppColors.ink),
           )
         else if (showPromoBadge && product.isPromo)
-          const Positioned(
+          Positioned(
             top: 8,
             right: 8,
-            child: _Badge(label: 'عرض', color: AppColors.primary),
+            child: _Badge(label: offerLabel, color: AppColors.primary),
           ),
         if (!product.inStock)
           Positioned.fill(
@@ -132,8 +148,8 @@ class _ImageSection extends StatelessWidget {
                       color: AppColors.ink.withValues(alpha: 0.88),
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                     ),
-                    child: const Text(
-                      'نفد',
+                    child: Text(
+                      soldOutLabel,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 10,
@@ -142,6 +158,28 @@ class _ImageSection extends StatelessWidget {
                     ),
                   ),
                 ),
+              ),
+            ),
+          ),
+        if (product.inStock)
+          Positioned(
+            right: 8,
+            bottom: 8,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ProductCardCartControl(
+                product: product,
+                compact: true,
+                style: ProductCardCartStyle.homeBadge,
               ),
             ),
           ),
@@ -161,7 +199,7 @@ class _InfoSection extends ConsumerWidget {
     final brand = product.brandNameFor(lang).trim();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 7, 8, 9),
+      padding: const EdgeInsets.fromLTRB(10, 7, 10, 9),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -183,35 +221,37 @@ class _InfoSection extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerStart,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    formatPrice(product.price),
+                    maxLines: 1,
+                    style: AppTypography.price.copyWith(
+                      fontSize: 13,
+                      color: product.hasDiscount ? AppColors.sale : AppColors.textPrimary,
+                    ),
+                  ),
+                  if (product.hasDiscount)
                     Text(
-                      formatPrice(product.price),
-                      style: AppTypography.price.copyWith(
-                        fontSize: 13,
-                        color: product.hasDiscount ? AppColors.sale : AppColors.textPrimary,
+                      formatPrice(product.originalPrice),
+                      maxLines: 1,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textMuted,
+                        decoration: TextDecoration.lineThrough,
+                        height: 1.2,
                       ),
                     ),
-                    if (product.hasDiscount)
-                      Text(
-                        formatPrice(product.originalPrice),
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textMuted,
-                          decoration: TextDecoration.lineThrough,
-                          height: 1.2,
-                        ),
-                      ),
-                  ],
-                ),
+                ],
               ),
-              ProductCardCartControl(product: product, compact: true),
-            ],
+            ),
           ),
         ],
       ),

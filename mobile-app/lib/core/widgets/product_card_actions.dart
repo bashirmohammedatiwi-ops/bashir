@@ -8,6 +8,7 @@ import '../../features/auth/auth_provider.dart';
 import '../../core/navigation/app_navigation.dart';
 import '../../features/cart/cart_provider.dart';
 import '../../features/wishlist/wishlist_provider.dart';
+import '../l10n/app_strings.dart';
 import '../l10n/locale_provider.dart';
 import '../theme/app_colors.dart';
 import 'app_snackbar.dart';
@@ -63,15 +64,25 @@ class ProductCardWishButton extends ConsumerWidget {
   }
 }
 
+/// أسلوب زر السلة على البطاقة.
+enum ProductCardCartStyle {
+  /// عدّاد + / − (صفحات المنتجات والقوائم).
+  stepper,
+  /// زر ثابت + شارة العدد (الرئيسية فقط).
+  homeBadge,
+}
+
 /// زر إضافة أو عدّاد كمية على بطاقة المنتج.
 class ProductCardCartControl extends ConsumerWidget {
   final Product product;
   final bool compact;
+  final ProductCardCartStyle style;
 
   const ProductCardCartControl({
     super.key,
     required this.product,
     this.compact = false,
+    this.style = ProductCardCartStyle.stepper,
   });
 
   int _qty(CartState cart) {
@@ -91,7 +102,7 @@ class ProductCardCartControl extends ConsumerWidget {
   }
 
   void _addFirst(BuildContext context, WidgetRef ref) {
-    final lang = ref.read(languageCodeProvider);
+    final s = ref.s;
     HapticFeedback.lightImpact();
     ref.read(cartProvider.notifier).add(
           product,
@@ -99,7 +110,8 @@ class ProductCardCartControl extends ConsumerWidget {
         );
     AppSnackbar.cartAdded(
       context,
-      productName: product.localizedName(lang),
+      title: s.addedToCart,
+      viewCartLabel: s.viewCart,
       onViewCart: () {
         openCartTab(context, ProviderScope.containerOf(context, listen: false));
       },
@@ -125,6 +137,24 @@ class ProductCardCartControl extends ConsumerWidget {
 
     final qty = ref.watch(cartProvider.select(_qty));
 
+    if (style == ProductCardCartStyle.homeBadge) {
+      return _HomeBadgeCartButton(
+        compact: compact,
+        quantity: qty,
+        onTap: () {
+          if (qty <= 0) {
+            _addFirst(context, ref);
+            return;
+          }
+          HapticFeedback.selectionClick();
+          final ok = ref.read(cartProvider.notifier).incrementProduct(product);
+          if (!ok && context.mounted) {
+            AppSnackbar.show(context, 'وصلت للحد الأقصى للمخزون');
+          }
+        },
+      );
+    }
+
     if (qty <= 0) {
       return _AddCartButton(
         compact: compact,
@@ -146,6 +176,89 @@ class ProductCardCartControl extends ConsumerWidget {
         HapticFeedback.selectionClick();
         ref.read(cartProvider.notifier).decrementProduct(product.id);
       },
+    );
+  }
+}
+
+class _HomeBadgeCartButton extends StatelessWidget {
+  final bool compact;
+  final int quantity;
+  final VoidCallback onTap;
+
+  const _HomeBadgeCartButton({
+    required this.compact,
+    required this.quantity,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final side = compact ? 36.0 : 38.0;
+    final radius = compact ? 11.0 : 12.0;
+    final inCart = quantity > 0;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(radius),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
+              width: side,
+              height: side,
+              decoration: BoxDecoration(
+                color: inCart ? AppColors.primary : const Color(0xFFF3F3F4),
+                borderRadius: BorderRadius.circular(radius),
+                border: Border.all(
+                  color: inCart ? AppColors.primary : AppColors.hairline.withValues(alpha: 0.75),
+                ),
+                boxShadow: compact
+                    ? [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: inCart ? 0.12 : 0.06),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Icon(
+                Icons.shopping_bag_outlined,
+                color: inCart ? Colors.white : const Color(0xFF7A757F),
+                size: compact ? 17 : 18,
+              ),
+            ),
+            if (inCart)
+              Positioned(
+                top: -5,
+                right: -5,
+                child: Container(
+                  constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.sale,
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: Colors.white, width: 1.5),
+                  ),
+                  child: Text(
+                    quantity > 99 ? '99+' : '$quantity',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w900,
+                      height: 1,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -235,11 +348,20 @@ class _CartQtyStepper extends StatelessWidget {
 
     return Container(
       height: height,
-      constraints: BoxConstraints(minWidth: compact ? 92 : 96),
+      constraints: BoxConstraints(minWidth: compact ? 78 : 96),
       decoration: BoxDecoration(
         color: const Color(0xFFF3F3F4),
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: AppColors.hairline.withValues(alpha: 0.8)),
+        boxShadow: compact
+            ? [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ]
+            : null,
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

@@ -8,7 +8,7 @@ import '../theme/app_spacing.dart';
 abstract final class AppSnackbar {
   static void show(BuildContext context, String message, {Duration? duration}) {
     ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
+      ..clearSnackBars()
       ..showSnackBar(
         SnackBar(
           content: Text(message),
@@ -22,7 +22,7 @@ abstract final class AppSnackbar {
 
   static void success(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
+      ..clearSnackBars()
       ..showSnackBar(
         SnackBar(
           content: Row(
@@ -41,26 +41,33 @@ abstract final class AppSnackbar {
       );
   }
 
-  /// إشعار إضافة للسلة — فوق شريط التنقل السفلي.
+  static double _bottomMargin(BuildContext context) {
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final path = GoRouter.of(context).state.uri.path;
+    if (path == '/') return bottomInset + 96;
+    if (path.startsWith('/product/')) return bottomInset + 78;
+    return bottomInset + 20;
+  }
+
+  /// إشعار إضافة للسلة — يختفي تلقائياً فوق شريط التنقل/زر الإضافة.
   static void cartAdded(
     BuildContext context, {
+    required String title,
     String? productName,
+    String? viewCartLabel,
     VoidCallback? onViewCart,
   }) {
-    final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final onHomeShell = GoRouter.of(context).state.uri.path == '/';
-    final bottomMargin = bottomInset + (onHomeShell ? 96 : 20);
-
     ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
+      ..clearSnackBars()
       ..showSnackBar(
         SnackBar(
           elevation: 0,
           backgroundColor: Colors.transparent,
           padding: EdgeInsets.zero,
           behavior: SnackBarBehavior.floating,
-          margin: EdgeInsets.fromLTRB(16, 0, 16, bottomMargin),
-          duration: const Duration(milliseconds: 2600),
+          dismissDirection: DismissDirection.down,
+          margin: EdgeInsets.fromLTRB(16, 0, 16, _bottomMargin(context)),
+          duration: const Duration(milliseconds: 2200),
           content: Container(
             padding: const EdgeInsets.fromLTRB(12, 12, 10, 12),
             decoration: BoxDecoration(
@@ -95,9 +102,9 @@ abstract final class AppSnackbar {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text(
-                        'تمت الإضافة إلى السلة',
-                        style: TextStyle(
+                      Text(
+                        title,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 13.5,
                           fontWeight: FontWeight.w800,
@@ -120,7 +127,7 @@ abstract final class AppSnackbar {
                     ],
                   ),
                 ),
-                if (onViewCart != null)
+                if (onViewCart != null && viewCartLabel != null)
                   TextButton(
                     onPressed: () {
                       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -132,9 +139,9 @@ abstract final class AppSnackbar {
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: const Text(
-                      'عرض',
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                    child: Text(
+                      viewCartLabel,
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                     ),
                   ),
               ],
@@ -146,7 +153,7 @@ abstract final class AppSnackbar {
 
   static void error(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
+      ..clearSnackBars()
       ..showSnackBar(
         SnackBar(
           content: Row(
@@ -172,10 +179,11 @@ abstract final class AppSnackbar {
     required VoidCallback onAction,
   }) {
     ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
+      ..clearSnackBars()
       ..showSnackBar(
         SnackBar(
           content: Text(message),
+          duration: const Duration(seconds: 3),
           action: SnackBarAction(
             label: actionLabel,
             textColor: Colors.white,

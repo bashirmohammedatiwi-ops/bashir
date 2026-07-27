@@ -47,15 +47,14 @@ class OffersFlashPulse extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             SizedBox(
-              height: 100,
+              height: 80,
               child: HomeHorizontalList(
-                height: 100,
+                height: 80,
                 padding: EdgeInsets.zero,
                 itemCount: products.length.clamp(0, 10),
                 itemBuilder: (_, i) {
                   final p = products[i];
                   return _ProductThumb(
-                    name: p.name,
                     imageUrl: p.coverUrl,
                     onTap: () {
                       HapticFeedback.selectionClick();
@@ -73,12 +72,10 @@ class OffersFlashPulse extends ConsumerWidget {
 }
 
 class _ProductThumb extends StatelessWidget {
-  final String name;
   final String? imageUrl;
   final VoidCallback onTap;
 
   const _ProductThumb({
-    required this.name,
     required this.imageUrl,
     required this.onTap,
   });
@@ -92,27 +89,15 @@ class _ProductThumb extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
-          child: SizedBox(
-            width: 72,
-            child: Column(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: SizedBox(
-                    width: 72,
-                    height: 72,
-                    child: ProductCoverImage(url: imageUrl ?? '', fit: BoxFit.contain),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                  style: OffersTheme.body(size: 9.5, weight: FontWeight.w700),
-                ),
-              ],
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: SizedBox(
+              width: 80,
+              height: 80,
+              child: ColoredBox(
+                color: OffersTheme.canvas,
+                child: ProductCoverImage(url: imageUrl ?? '', fit: BoxFit.contain),
+              ),
             ),
           ),
         ),

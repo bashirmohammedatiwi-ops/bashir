@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_strings.dart';
+import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/home_section.dart';
@@ -10,22 +13,42 @@ import '../sections/skin_concerns_strip.dart';
 import '../widgets/circle_tile.dart';
 import '../widgets/home_section_shell.dart';
 
-class CareHubSection extends StatefulWidget {
+enum _CareHubTab { concerns, routine, categories, products }
+
+class CareHubSection extends ConsumerStatefulWidget {
   final HomeSection section;
   final bool compactTop;
   const CareHubSection({super.key, required this.section, this.compactTop = false});
 
   @override
-  State<CareHubSection> createState() => _CareHubSectionState();
+  ConsumerState<CareHubSection> createState() => _CareHubSectionState();
 }
 
-class _CareHubSectionState extends State<CareHubSection> {
+class _CareHubSectionState extends ConsumerState<CareHubSection> {
   int _tab = 0;
 
   HomeSection get _section => widget.section;
 
+  List<_CareHubTab> _tabs(bool hasConcerns, bool hasPackages, bool hasCategories, bool hasProducts) {
+    final tabs = <_CareHubTab>[];
+    if (hasConcerns) tabs.add(_CareHubTab.concerns);
+    if (hasPackages) tabs.add(_CareHubTab.routine);
+    if (hasCategories) tabs.add(_CareHubTab.categories);
+    if (hasProducts) tabs.add(_CareHubTab.products);
+    return tabs;
+  }
+
+  String _tabLabel(AppStrings s, _CareHubTab tab) => switch (tab) {
+        _CareHubTab.concerns => s.careTabConcerns,
+        _CareHubTab.routine => s.careTabRoutine,
+        _CareHubTab.categories => s.careTabCategories,
+        _CareHubTab.products => s.careTabProducts,
+      };
+
   @override
   Widget build(BuildContext context) {
+    final s = ref.s;
+    final lang = ref.watch(languageCodeProvider);
     final layout = _section.display ?? _section.layout ?? 'stacked';
     final hasConcerns = _section.skinConcerns.isNotEmpty;
     final hasPackages = _section.packages.isNotEmpty;
@@ -37,11 +60,7 @@ class _CareHubSectionState extends State<CareHubSection> {
     }
 
     if (layout == 'tabs') {
-      final tabs = <String>[];
-      if (hasConcerns) tabs.add('مشاكل');
-      if (hasPackages) tabs.add('روتين');
-      if (hasCategories) tabs.add('أقسام');
-      if (hasProducts) tabs.add('منتجات');
+      final tabs = _tabs(hasConcerns, hasPackages, hasCategories, hasProducts);
 
       return HomeSectionShell(
         section: _section,
@@ -58,7 +77,7 @@ class _CareHubSectionState extends State<CareHubSection> {
                 itemBuilder: (_, i) {
                   final selected = _tab == i;
                   return ChoiceChip(
-                    label: Text(tabs[i]),
+                    label: Text(_tabLabel(s, tabs[i])),
                     selected: selected,
                     onSelected: (_) => setState(() => _tab = i),
                   );
@@ -66,7 +85,7 @@ class _CareHubSectionState extends State<CareHubSection> {
               ),
             ),
             const SizedBox(height: 8),
-            _tabBody(tabs[_tab.clamp(0, tabs.length - 1)]),
+            _tabBody(tabs[_tab.clamp(0, tabs.length - 1)], s, lang),
           ],
         ),
       );
@@ -85,7 +104,7 @@ class _CareHubSectionState extends State<CareHubSection> {
               section: HomeSection(
                 id: '${_section.id}-routine',
                 type: 'ROUTINE_CAROUSEL',
-                title: 'روتين البشرة',
+                title: s.skinRoutineTitle,
                 showTitle: true,
                 packages: _section.packages,
                 cardSize: _section.cardSize,
@@ -97,7 +116,7 @@ class _CareHubSectionState extends State<CareHubSection> {
           ],
           if (hasCategories) ...[
             const SizedBox(height: AppSpacing.sm),
-            _CategoryCircles(categories: _section.categories),
+            _CategoryCircles(categories: _section.categories, lang: lang),
           ],
           if (hasProducts) ...[
             const SizedBox(height: AppSpacing.sm),
@@ -105,7 +124,7 @@ class _CareHubSectionState extends State<CareHubSection> {
               section: HomeSection(
                 id: '${_section.id}-products',
                 type: 'PRODUCT_LIST',
-                title: 'منتجات العناية',
+                title: s.careProductsTitle,
                 showTitle: true,
                 products: _section.products,
                 productCardSize: _section.productCardSize,
@@ -121,16 +140,16 @@ class _CareHubSectionState extends State<CareHubSection> {
     );
   }
 
-  Widget _tabBody(String tab) {
+  Widget _tabBody(_CareHubTab tab, AppStrings s, String lang) {
     switch (tab) {
-      case 'مشاكل':
+      case _CareHubTab.concerns:
         return _ConcernsRow(concerns: _section.skinConcerns);
-      case 'روتين':
+      case _CareHubTab.routine:
         return RoutineCarouselSection(
           section: HomeSection(
             id: '${_section.id}-routine-tab',
             type: 'ROUTINE_CAROUSEL',
-            title: 'روتين البشرة',
+            title: s.skinRoutineTitle,
             showTitle: true,
             packages: _section.packages,
             cardSize: _section.cardSize,
@@ -138,23 +157,22 @@ class _CareHubSectionState extends State<CareHubSection> {
             viewAllQuery: _section.viewAllQuery,
           ),
         );
-      case 'أقسام':
-        return _CategoryCircles(categories: _section.categories);
-      case 'منتجات':
+      case _CareHubTab.categories:
+        return _CategoryCircles(categories: _section.categories, lang: lang);
+      case _CareHubTab.products:
         return ProductCarouselSection(
           section: HomeSection(
             id: '${_section.id}-products-tab',
             type: 'PRODUCT_LIST',
-            title: 'منتجات العناية',
+            title: s.careProductsTitle,
             showTitle: true,
             products: _section.products,
             productCardSize: _section.productCardSize,
+            cardSize: _section.cardSize,
             showViewAll: _section.showViewAll,
             viewAllQuery: _section.viewAllQuery,
           ),
         );
-      default:
-        return const SizedBox.shrink();
     }
   }
 }
@@ -175,7 +193,8 @@ class _ConcernsRow extends StatelessWidget {
 
 class _CategoryCircles extends StatelessWidget {
   final List<Category> categories;
-  const _CategoryCircles({required this.categories});
+  final String lang;
+  const _CategoryCircles({required this.categories, required this.lang});
 
   @override
   Widget build(BuildContext context) {
@@ -190,7 +209,7 @@ class _CategoryCircles extends StatelessWidget {
         itemBuilder: (_, i) {
           final c = categories[i];
           return CircleTile(
-            title: c.name,
+            title: c.localizedName(lang),
             imageUrl: c.imageUrl,
             icon: c.icon,
             cardSize: c.cardSize,

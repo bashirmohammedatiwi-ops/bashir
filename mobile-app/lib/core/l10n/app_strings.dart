@@ -54,7 +54,13 @@ class AppStrings {
       isAr ? 'شحن مجاني +$amount' : 'Free shipping +$amount';
   String get shopByCategory => isAr ? 'تسوقي حسب القسم' : 'Shop by Category';
   String get shopBySkinConcern => isAr ? 'تسوقي حسب مشكلتك' : 'Shop by Skin Concern';
-  String get skinGuideOverline => isAr ? 'دليل البشرة' : 'Skin Guide';
+  String get careTabConcerns => isAr ? 'مشاكل' : 'Concerns';
+  String get careTabRoutine => isAr ? 'روتين' : 'Routine';
+  String get careTabCategories => isAr ? 'أقسام' : 'Categories';
+  String get careTabProducts => isAr ? 'منتجات' : 'Products';
+  String get skinRoutineTitle => isAr ? 'روتين البشرة' : 'Skincare Routine';
+  String get careProductsTitle => isAr ? 'منتجات العناية' : 'Care Products';
+  String get topOffers => isAr ? 'أقوى العروض' : 'Top Offers';
   String get viewAll => isAr ? 'عرض الكل' : 'View All';
   String get categoriesTitle => isAr ? 'الفئات' : 'Categories';
   String get quickOffers => isAr ? 'العروض' : 'Offers';
@@ -306,6 +312,9 @@ class AppStrings {
       isAr ? 'المجموع ($count منتج)' : 'Subtotal ($count items)';
   String get couponDiscount => isAr ? 'خصم الكوبون' : 'Coupon discount';
   String get shippingAtCheckout => isAr ? 'يُحسب عند الدفع' : 'Calculated at checkout';
+  String get shippingByDeliveryArea =>
+      isAr ? 'يُحدَّد بعد اختيار المنطقة' : 'Set after delivery area';
+  String get freeDelivery => isAr ? 'توصيل مجاني' : 'Free delivery';
   String get checkoutBtn => isAr ? 'إتمام الشراء' : 'Checkout';
   String savedAmount(String amount) => isAr ? 'وفّرت $amount' : 'You saved $amount';
   String get freeShippingActivated => isAr ? 'شحن مجاني مُفعّل' : 'Free shipping applied';
@@ -391,6 +400,7 @@ class AppStrings {
       isAr ? 'هل تريد حذف هذا العنوان؟' : 'Delete this address?';
   String get newAddress => isAr ? 'عنوان جديد' : 'New Address';
   String get addAddress => isAr ? 'إضافة عنوان' : 'Add Address';
+  String get addressSaved => isAr ? 'تم حفظ العنوان' : 'Address saved';
   String get loginToChangePassword =>
       isAr ? 'سجّل الدخول لتغيير كلمة المرور' : 'Sign in to change your password';
   String get defaultLabel => isAr ? 'افتراضي' : 'Default';

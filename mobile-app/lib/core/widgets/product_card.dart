@@ -141,14 +141,14 @@ class _ListingProductCard extends ConsumerWidget {
   }
 }
 
-class _ListingImage extends StatelessWidget {
+class _ListingImage extends ConsumerWidget {
   final Product product;
   final bool showPromoBadge;
 
   const _ListingImage({required this.product, required this.showPromoBadge});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final visibleShades = product.displayableShades;
     final hasShades = product.hasMultipleDisplayableShades;
     final badge = product.hasDiscount
@@ -229,6 +229,12 @@ class _ListingImage extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+        if (product.inStock)
+          Positioned(
+            right: 8,
+            bottom: 8,
+            child: ProductCardCartControl(product: product, compact: true),
           ),
       ],
     );
@@ -366,38 +372,40 @@ class _ListingInfo extends ConsumerWidget {
             ),
           ],
           const SizedBox(height: 6),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerStart,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    formatPrice(product.price),
+                    maxLines: 1,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: product.hasDiscount ? AppColors.sale : AppColors.textPrimary,
+                      letterSpacing: -0.3,
+                      height: 1.1,
+                    ),
+                  ),
+                  if (product.hasDiscount)
                     Text(
-                      formatPrice(product.price),
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        color: product.hasDiscount ? AppColors.sale : AppColors.textPrimary,
-                        letterSpacing: -0.3,
-                        height: 1.1,
+                      formatPrice(product.originalPrice),
+                      maxLines: 1,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textMuted,
+                        decoration: TextDecoration.lineThrough,
+                        height: 1.2,
                       ),
                     ),
-                    if (product.hasDiscount)
-                      Text(
-                        formatPrice(product.originalPrice),
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textMuted,
-                          decoration: TextDecoration.lineThrough,
-                          height: 1.2,
-                        ),
-                      ),
-                  ],
-                ),
+                ],
               ),
-              ProductCardCartControl(product: product, compact: true),
-            ],
+            ),
           ),
         ],
       ),
@@ -407,7 +415,7 @@ class _ListingInfo extends ConsumerWidget {
 
 // ─── Standard style ───────────────────────────────────────────────────────────
 
-class _ImageSection extends StatelessWidget {
+class _ImageSection extends ConsumerWidget {
   final Product product;
   final bool showPromoBadge;
   final bool lite;
@@ -421,7 +429,7 @@ class _ImageSection extends StatelessWidget {
   bool get _hasShades => product.hasMultipleDisplayableShades;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -504,6 +512,12 @@ class _ImageSection extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+        if (product.inStock)
+          Positioned(
+            right: 8,
+            bottom: 8,
+            child: ProductCardCartControl(product: product, compact: lite),
           ),
       ],
     );
@@ -649,34 +663,36 @@ class _InfoSection extends ConsumerWidget {
             ),
             const SizedBox(height: 6),
           ],
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: AlignmentDirectional.centerStart,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    formatPrice(product.price),
+                    maxLines: 1,
+                    style: AppTypography.price.copyWith(
+                      fontSize: 14,
+                      color: product.hasDiscount ? AppColors.sale : AppColors.textPrimary,
+                    ),
+                  ),
+                  if (product.hasDiscount)
                     Text(
-                      formatPrice(product.price),
-                      style: AppTypography.price.copyWith(
-                        fontSize: 14,
-                        color: product.hasDiscount ? AppColors.sale : AppColors.textPrimary,
+                      formatPrice(product.originalPrice),
+                      maxLines: 1,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.textMuted,
+                        decoration: TextDecoration.lineThrough,
                       ),
                     ),
-                    if (product.hasDiscount)
-                      Text(
-                        formatPrice(product.originalPrice),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textMuted,
-                          decoration: TextDecoration.lineThrough,
-                        ),
-                      ),
-                  ],
-                ),
+                ],
               ),
-              ProductCardCartControl(product: product),
-            ],
+            ),
           ),
         ],
       ),

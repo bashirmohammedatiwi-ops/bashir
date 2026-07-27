@@ -15,6 +15,7 @@ class CartCheckoutBar extends ConsumerWidget {
   final int discount;
   final int total;
   final int itemCount;
+  final int freeShippingThreshold;
   final bool freeShipping;
   final Coupon? coupon;
 
@@ -24,9 +25,14 @@ class CartCheckoutBar extends ConsumerWidget {
     required this.discount,
     required this.total,
     required this.itemCount,
+    required this.freeShippingThreshold,
     required this.freeShipping,
     this.coupon,
   });
+
+  bool get _qualifiesFreeDelivery =>
+      freeShipping ||
+      (freeShippingThreshold > 0 && subtotal >= freeShippingThreshold);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -55,8 +61,8 @@ class CartCheckoutBar extends ConsumerWidget {
             const SizedBox(height: 5),
             _Row(
               label: s.shipping,
-              value: freeShipping ? s.free : s.shippingAtCheckout,
-              valueColor: freeShipping ? AppColors.success : null,
+              value: _qualifiesFreeDelivery ? s.freeDelivery : s.shippingByDeliveryArea,
+              valueColor: _qualifiesFreeDelivery ? AppColors.success : null,
             ),
             const SizedBox(height: 12),
             SizedBox(

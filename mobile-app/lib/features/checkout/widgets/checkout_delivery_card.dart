@@ -24,6 +24,11 @@ class CheckoutDeliveryCard extends ConsumerWidget {
   final String? selectedAddressId;
   final AddressPicked onPickAddress;
   final VoidCallback onShippingChanged;
+  final VoidCallback? onAddAddress;
+  final GlobalKey? nameFieldKey;
+  final GlobalKey? phoneFieldKey;
+  final GlobalKey? locationFieldKey;
+  final GlobalKey? streetFieldKey;
 
   const CheckoutDeliveryCard({
     super.key,
@@ -40,6 +45,11 @@ class CheckoutDeliveryCard extends ConsumerWidget {
     required this.selectedAddressId,
     required this.onPickAddress,
     required this.onShippingChanged,
+    this.onAddAddress,
+    this.nameFieldKey,
+    this.phoneFieldKey,
+    this.locationFieldKey,
+    this.streetFieldKey,
   });
 
   @override
@@ -62,26 +72,32 @@ class CheckoutDeliveryCard extends ConsumerWidget {
                 title: s.recipientInfo,
                 subtitle: s.recipientAutoFill,
               ),
-              TextFormField(
-                controller: nameCtrl,
-                textInputAction: TextInputAction.next,
-                decoration: CheckoutTheme.fieldDecoration(
-                  label: s.fullName,
-                  icon: Icons.person_outline_rounded,
+              KeyedSubtree(
+                key: nameFieldKey,
+                child: TextFormField(
+                  controller: nameCtrl,
+                  textInputAction: TextInputAction.next,
+                  decoration: CheckoutTheme.fieldDecoration(
+                    label: s.fullName,
+                    icon: Icons.person_outline_rounded,
+                  ),
+                  validator: (v) => (v == null || v.trim().length < 2) ? s.enterYourNameShort : null,
                 ),
-                validator: (v) => (v == null || v.trim().length < 2) ? s.enterYourNameShort : null,
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: phoneCtrl,
-                keyboardType: TextInputType.phone,
-                textInputAction: TextInputAction.next,
-                decoration: CheckoutTheme.fieldDecoration(
-                  label: s.phoneNumber,
-                  hint: '07701234567',
-                  icon: Icons.phone_outlined,
+              KeyedSubtree(
+                key: phoneFieldKey,
+                child: TextFormField(
+                  controller: phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  textInputAction: TextInputAction.next,
+                  decoration: CheckoutTheme.fieldDecoration(
+                    label: s.phoneNumber,
+                    hint: '07701234567',
+                    icon: Icons.phone_outlined,
+                  ),
+                  validator: (v) => validateIraqiPhone(v),
                 ),
-                validator: (v) => validateIraqiPhone(v),
               ),
               const SizedBox(height: 18),
               CheckoutSectionHeader(
@@ -89,71 +105,92 @@ class CheckoutDeliveryCard extends ConsumerWidget {
                 title: s.deliveryLocation,
                 subtitle: s.deliveryLocationHint,
               ),
-              if (savedAddresses.isNotEmpty) ...[
-                SizedBox(
-                  height: 42,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: savedAddresses.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (_, i) {
-                      final a = savedAddresses[i];
-                      final selected = selectedAddressId == a.id;
-                      return FilterChip(
+              const SizedBox(height: 10),
+              SizedBox(
+                height: 42,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: savedAddresses.length + 1,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (_, i) {
+                    if (i == savedAddresses.length) {
+                      return ActionChip(
+                        avatar: const Icon(Icons.add_rounded, size: 16, color: CheckoutTheme.brand),
                         label: Text(
-                          a.isDefault ? '${a.governorate ?? a.city} • ${s.defaultLabel}' : (a.governorate ?? a.city),
-                          style: TextStyle(
+                          s.addAddress,
+                          style: const TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 12,
-                            color: selected ? CheckoutTheme.brandDark : CheckoutTheme.charcoal,
+                            color: CheckoutTheme.brandDark,
                           ),
                         ),
-                        selected: selected,
-                        showCheckmark: false,
-                        selectedColor: CheckoutTheme.brandSoft,
                         backgroundColor: CheckoutTheme.brandWash,
-                        side: BorderSide(
-                          color: selected ? CheckoutTheme.brand : CheckoutTheme.brandSoft,
-                        ),
-                        onSelected: (_) => onPickAddress(a),
+                        side: const BorderSide(color: CheckoutTheme.brandSoft),
+                        onPressed: onAddAddress,
                       );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 12),
-              ],
-              zones.when(
-                loading: () => const LinearProgressIndicator(color: CheckoutTheme.brand),
-                error: (_, __) => _GovernorateTextField(
-                  value: governorate,
-                  onChanged: (v) {
-                    onGovernorateChanged(v);
-                    onShippingChanged();
-                  },
-                ),
-                data: (list) => _GovernorateFields(
-                  zones: list,
-                  governorate: governorate,
-                  area: area,
-                  onGovernorateChanged: (v) {
-                    onGovernorateChanged(v);
-                    onShippingChanged();
-                  },
-                  onAreaChanged: (v) {
-                    onAreaChanged(v);
-                    onShippingChanged();
+                    }
+                    final a = savedAddresses[i];
+                    final selected = selectedAddressId == a.id;
+                    return FilterChip(
+                      label: Text(
+                        a.isDefault ? '${a.governorate ?? a.city} • ${s.defaultLabel}' : (a.governorate ?? a.city),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                          color: selected ? CheckoutTheme.brandDark : CheckoutTheme.charcoal,
+                        ),
+                      ),
+                      selected: selected,
+                      showCheckmark: false,
+                      selectedColor: CheckoutTheme.brandSoft,
+                      backgroundColor: CheckoutTheme.brandWash,
+                      side: BorderSide(
+                        color: selected ? CheckoutTheme.brand : CheckoutTheme.brandSoft,
+                      ),
+                      onSelected: (_) => onPickAddress(a),
+                    );
                   },
                 ),
               ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: streetCtrl,
-                textInputAction: TextInputAction.next,
-                decoration: CheckoutTheme.fieldDecoration(
-                  label: s.streetLabel,
-                  icon: Icons.signpost_outlined,
+              KeyedSubtree(
+                key: locationFieldKey,
+                child: zones.when(
+                  loading: () => const LinearProgressIndicator(color: CheckoutTheme.brand),
+                  error: (_, __) => _GovernorateTextField(
+                    value: governorate,
+                    onChanged: (v) {
+                      onGovernorateChanged(v);
+                      onShippingChanged();
+                    },
+                  ),
+                  data: (list) => _GovernorateFields(
+                    zones: list,
+                    governorate: governorate,
+                    area: area,
+                    onGovernorateChanged: (v) {
+                      onGovernorateChanged(v);
+                      onShippingChanged();
+                    },
+                    onAreaChanged: (v) {
+                      onAreaChanged(v);
+                      onShippingChanged();
+                    },
+                  ),
                 ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? s.enterStreet : null,
+              ),
+              const SizedBox(height: 12),
+              KeyedSubtree(
+                key: streetFieldKey,
+                child: TextFormField(
+                  controller: streetCtrl,
+                  textInputAction: TextInputAction.next,
+                  decoration: CheckoutTheme.fieldDecoration(
+                    label: s.streetLabel,
+                    icon: Icons.signpost_outlined,
+                  ),
+                  validator: (v) => (v == null || v.trim().isEmpty) ? s.enterStreet : null,
+                ),
               ),
               const SizedBox(height: 12),
               TextFormField(

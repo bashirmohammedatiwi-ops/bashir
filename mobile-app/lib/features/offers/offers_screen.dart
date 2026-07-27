@@ -12,6 +12,7 @@ import '../../core/widgets/product_card.dart';
 import '../../core/widgets/scroll_perf.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
+import '../../data/models/home_feed.dart';
 import '../../data/models/product.dart';
 import '../../data/services/api_service.dart';
 import '../catalog/catalog_providers.dart';
@@ -202,6 +203,17 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                             if (slot.isHero) {
                               return RepaintBoundary(
                                 child: OffersCmsBanner(section: slot.section),
+                              );
+                            }
+                            if (slot.section.type == 'FLASH_SALE' &&
+                                slot.section.products.isNotEmpty) {
+                              return OffersSectionFrame(
+                                child: OffersFlashPulse(
+                                  flashSale: FlashSale(
+                                    endsAt: slot.section.endsAt,
+                                    products: slot.section.products,
+                                  ),
+                                ),
                               );
                             }
                             return OffersSectionFrame(

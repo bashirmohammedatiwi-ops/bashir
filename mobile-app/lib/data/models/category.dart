@@ -1,6 +1,7 @@
 import '../../core/utils/json.dart';
 import '../../core/utils/media_url.dart';
 import '../../core/l10n/localized_text.dart';
+import '../../core/l10n/skin_concern_l10n.dart';
 import 'media.dart';
 
 class Category {
@@ -59,19 +60,35 @@ class Category {
         children: asList(json['children']).map(Category.fromJson).toList(),
       );
 
-  String localizedName(String lang) => localizedText(
-        languageCode: lang,
-        ar: nameAr,
-        en: nameEn,
-        fallback: name,
-      );
+  String localizedName(String lang) {
+    if (lang == 'en') {
+      final slugEn = SkinConcernL10n.nameEn(slug);
+      if (slugEn != null) return slugEn;
+      final arEn = SkinConcernL10n.nameEnFromAr(nameAr ?? name);
+      if (arEn != null) return arEn;
+    }
+    return localizedText(
+      languageCode: lang,
+      ar: nameAr ?? name,
+      en: nameEn,
+      fallback: name,
+    );
+  }
 
-  String localizedDescription(String lang) => localizedText(
-        languageCode: lang,
-        ar: description,
-        en: descriptionEn,
-        fallback: '',
-      );
+  String localizedDescription(String lang) {
+    if (lang == 'en') {
+      final slugEn = SkinConcernL10n.descriptionEn(slug);
+      if (slugEn != null) return slugEn;
+      final arEn = SkinConcernL10n.descriptionEnFromAr(description);
+      if (arEn != null) return arEn;
+    }
+    return localizedText(
+      languageCode: lang,
+      ar: description,
+      en: descriptionEn,
+      fallback: '',
+    );
+  }
 
   String get imageUrl {
     if (rawImageUrl != null && rawImageUrl!.isNotEmpty) {

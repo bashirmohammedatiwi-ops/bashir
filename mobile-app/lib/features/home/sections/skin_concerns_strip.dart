@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/category.dart';
@@ -31,7 +30,6 @@ class SkinConcernsStrip extends ConsumerWidget {
     if (concerns.isEmpty) return const SizedBox.shrink();
 
     final lang = ref.watch(languageCodeProvider);
-    final strings = ref.watch(stringsProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -39,8 +37,6 @@ class SkinConcernsStrip extends ConsumerWidget {
         if (showTitle && title != null && title!.isNotEmpty)
           HomeEditorialHeader(
             title: title!,
-            subtitle: subtitle,
-            overline: strings.skinGuideOverline,
             compact: true,
           ),
         if (display == 'circles') _CirclesRow(concerns: concerns, lang: lang),

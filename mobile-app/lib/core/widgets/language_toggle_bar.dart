@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/app_strings.dart';
 import '../l10n/locale_provider.dart';
+import '../../features/catalog/catalog_providers.dart';
 import '../../features/cart/widgets/cart_theme.dart';
 import '../../features/profile/widgets/profile_ui.dart';
 
@@ -67,6 +68,8 @@ class LanguageToggleBar extends ConsumerWidget {
     if (ref.read(languageCodeProvider) == locale.languageCode) return;
     HapticFeedback.selectionClick();
     ref.read(appLocaleProvider.notifier).chooseLanguage(locale);
+    ref.invalidate(homeFeedProvider);
+    ref.invalidate(offersFeedProvider);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(s.languageChanged),

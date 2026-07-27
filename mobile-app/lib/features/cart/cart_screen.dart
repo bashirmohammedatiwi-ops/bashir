@@ -235,6 +235,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                     discount: discount,
                     total: total,
                     itemCount: cart.count,
+                    freeShippingThreshold: threshold,
                     freeShipping: freeShipping,
                     coupon: coupon,
                   ),

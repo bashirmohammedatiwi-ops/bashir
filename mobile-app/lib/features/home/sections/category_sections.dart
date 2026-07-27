@@ -88,6 +88,7 @@ class MakeupCategoriesSection extends ConsumerWidget {
                 accent: accent,
                 width: spec.width,
                 height: spec.height,
+                lang: ref.watch(languageCodeProvider),
               ),
             );
           },
@@ -180,16 +181,19 @@ class _MakeupCard extends StatelessWidget {
   final Color accent;
   final double width;
   final double height;
+  final String lang;
 
   const _MakeupCard({
     required this.category,
     required this.accent,
     required this.width,
     required this.height,
+    required this.lang,
   });
 
   @override
   Widget build(BuildContext context) {
+    final displayName = category.localizedName(lang);
     return GestureDetector(
       onTap: () => openCategoryLink(context, category),
       child: Container(
@@ -211,7 +215,7 @@ class _MakeupCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
               child: Text(
-                category.name,
+                displayName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: HomeTheme.chipLabel.copyWith(fontSize: 12),

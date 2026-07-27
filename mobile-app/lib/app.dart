@@ -7,6 +7,7 @@ import 'core/l10n/locale_provider.dart';
 import 'core/config/app_config.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/widgets/keyboard_dismiss.dart';
 import 'core/widgets/responsive_app.dart';
 import 'core/widgets/scroll_perf.dart';
 import 'features/auth/auth_provider.dart';
@@ -78,7 +79,7 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> with WidgetsBindingObse
         builder: (context, child) => ResponsiveApp(
           child: Directionality(
             textDirection: direction,
-            child: child ?? const SizedBox.shrink(),
+            child: DismissKeyboard(child: child ?? const SizedBox.shrink()),
           ),
         ),
         home: SplashScreen(
@@ -100,7 +101,7 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> with WidgetsBindingObse
       builder: (context, child) => ResponsiveApp(
         child: Directionality(
           textDirection: direction,
-          child: child ?? const SizedBox.shrink(),
+          child: DismissKeyboard(child: child ?? const SizedBox.shrink()),
         ),
       ),
     );
