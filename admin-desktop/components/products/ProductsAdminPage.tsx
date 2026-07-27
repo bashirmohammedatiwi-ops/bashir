@@ -793,7 +793,7 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
             scroll={{ x: 1040 }}
             locale={{ emptyText: <Empty description="لا توجد منتجات" /> }}
             rowClassName={(r) =>
-              `alhayaa-table-row${!r.isActive ? " is-inactive" : ""}`
+              `alhayaa-table-row${!(r as { isActive?: boolean }).isActive ? " is-inactive" : ""}`
             }
             pagination={false}
           />
