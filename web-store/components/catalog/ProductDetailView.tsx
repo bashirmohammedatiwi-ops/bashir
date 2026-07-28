@@ -87,7 +87,7 @@ export function ProductDetailView({ slug }: { slug: string }) {
           <p className="out-of-stock">نفدت الكمية حالياً</p>
         ) : (
           <p className="cod-note">
-            للطلب: حمّلي تطبيق ديما الحياة وأضيفي المنتج للسلة — الدفع عند الاستلام.
+            للطلب والاستفسار تواصلي معنا عبر واتساب — الدفع عند الاستلام.
           </p>
         )}
 

@@ -1,39 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 
 import { useStore } from "@/components/StoreProvider";
 import { APP_ORIGIN } from "@/lib/config";
-import { isLegalRoute } from "@/lib/routes";
 
 export function SiteFooter() {
   const year = new Date().getFullYear();
   const { storeName, whatsappUrl } = useStore();
-  const pathname = usePathname();
-  const showAppCta = !isLegalRoute(pathname);
 
   return (
     <footer className="site-footer">
-      {showAppCta ? (
-        <div className="footer-cta">
-          <div className="container footer-cta-inner">
-            <div>
-              <h3>حمّلي تطبيق {storeName}</h3>
-              <p>تسوّقي بسهولة، تتبّعي طلباتك، واستمتعي بعروض حصرية.</p>
-            </div>
-            <a
-              href="https://play.google.com/store/apps/details?id=com.deemaalhayat.app"
-              className="btn btn-primary"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Google Play
-            </a>
-          </div>
-        </div>
-      ) : null}
-
       <div className="container footer-grid">
         <div>
           <h3>{storeName}</h3>
