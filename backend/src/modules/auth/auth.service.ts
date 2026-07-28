@@ -158,15 +158,9 @@ export class AuthService {
       },
     });
     if (!user || user.deletedAt || !user.isActive) throw new UnauthorizedException();
-    const tier =
-      user.loyaltyPoints >= 3000 ? "platinum"
-      : user.loyaltyPoints >= 1500 ? "gold"
-      : user.loyaltyPoints >= 500 ? "silver"
-      : "normal";
     return {
       ...user,
       points: user.loyaltyPoints,
-      tier,
       orderCount: user._count.orders,
       wishlistCount: user._count.wishlist,
     };

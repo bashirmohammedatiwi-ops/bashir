@@ -1,22 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 
-export type LoyaltyTier = "normal" | "silver" | "gold" | "platinum";
-
-function tierFromPoints(points: number): LoyaltyTier {
-  if (points >= 3000) return "platinum";
-  if (points >= 1500) return "gold";
-  if (points >= 500) return "silver";
-  return "normal";
-}
-
-const TIER_LABELS: Record<LoyaltyTier, string> = {
-  normal: "عادي",
-  silver: "فضي",
-  gold: "ذهبي",
-  platinum: "بلاتيني",
-};
-
 @Injectable()
 export class LoyaltyService {
   constructor(private readonly prisma: PrismaService) {}
@@ -27,21 +11,16 @@ export class LoyaltyService {
       select: { loyaltyPoints: true },
     });
     const points = user?.loyaltyPoints ?? 0;
-    const tier = tierFromPoints(points);
     const history = await this.prisma.loyaltyHistory.findMany({
       where: { userId },
       orderBy: { createdAt: "desc" },
       take: 50,
     });
-    const nextTier = tier === "platinum" ? null : tier === "gold" ? "platinum" : tier === "silver" ? "gold" : "silver";
-    const nextThreshold = nextTier === "platinum" ? 3000 : nextTier === "gold" ? 1500 : 500;
     return {
       points,
-      tier,
-      tierLabel: TIER_LABELS[tier],
-      nextTier,
-      nextThreshold,
-      pointsToNext: nextTier ? Math.max(0, nextThreshold - points) : 0,
+      /** كل 100 نقطة = 1,000 د.ع خصم عند الدفع */
+      redeemBlockSize: 100,
+      redeemBlockValue: 1000,
       history: history.map((h) => ({
         id: h.id,
         title: h.title,

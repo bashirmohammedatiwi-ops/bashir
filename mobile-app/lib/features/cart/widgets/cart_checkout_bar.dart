@@ -6,6 +6,7 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../data/models/coupon.dart';
 import '../../auth/auth_provider.dart';
 import 'cart_theme.dart';
@@ -37,6 +38,7 @@ class CartCheckoutBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.s;
+    final narrow = Responsive.isNarrow(context);
     return DecoratedBox(
       decoration: BoxDecoration(
         color: CartTheme.card,
@@ -66,7 +68,7 @@ class CartCheckoutBar extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             SizedBox(
-              height: 52,
+              height: narrow ? 48 : 52,
               width: double.infinity,
               child: DecoratedBox(
                 decoration: BoxDecoration(
@@ -91,36 +93,48 @@ class CartCheckoutBar extends ConsumerWidget {
                       context.push('/checkout');
                     },
                     borderRadius: BorderRadius.circular(999),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          s.checkoutBtn,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 15,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.22),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            formatPrice(total),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 13,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              s.checkoutBtn,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: narrow ? 14 : 15,
+                              ),
                             ),
-                          ),
+                            SizedBox(width: narrow ? 8 : 10),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: narrow ? 8 : 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.22),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                formatPrice(total),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: narrow ? 12 : 13,
+                                ),
+                              ),
+                            ),
+                            if (!Responsive.isCompact(context)) ...[
+                              const SizedBox(width: 6),
+                              const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 18),
+                            ],
+                          ],
                         ),
-                        const SizedBox(width: 6),
-                        const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 18),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -143,15 +157,29 @@ class _Row extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: AppTypography.caption.copyWith(fontSize: 12)),
-        Text(
-          value,
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 12,
-            color: valueColor ?? CartTheme.charcoal,
+        Flexible(
+          flex: 3,
+          child: Text(
+            label,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.caption.copyWith(fontSize: 12),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Flexible(
+          flex: 2,
+          child: Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 12,
+              color: valueColor ?? CartTheme.charcoal,
+            ),
           ),
         ),
       ],

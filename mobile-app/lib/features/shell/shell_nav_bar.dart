@@ -103,8 +103,8 @@ class _NavTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compact = Responsive.isCompact(context);
-    final iconSize = compact ? 22.0 : 23.0;
+    final narrow = Responsive.isNarrow(context);
+    final iconSize = narrow ? 21.0 : 23.0;
     final inactiveColor = CartTheme.charcoal.withValues(alpha: 0.38);
     final activeColor = CartTheme.brandDark;
 
@@ -139,8 +139,8 @@ class _NavTab extends StatelessWidget {
                     AnimatedContainer(
                       duration: ShellNavBar._duration,
                       curve: Curves.easeOutCubic,
-                      width: compact ? 42 : 44,
-                      height: compact ? 30 : 32,
+                      width: narrow ? 40 : 44,
+                      height: narrow ? 28 : 32,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: active ? CartTheme.brandSoft : Colors.transparent,

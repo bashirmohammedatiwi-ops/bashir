@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/models/product.dart';
 import '../theme/app_spacing.dart';
+import '../utils/responsive.dart';
 import 'product_card.dart';
 import 'scroll_perf.dart';
 
@@ -10,8 +11,8 @@ class HorizontalProductList extends StatelessWidget {
   final List<Product> products;
   final bool showRating;
   final bool showPromoBadge;
-  final double itemWidth;
-  final double height;
+  final double? itemWidth;
+  final double? height;
   final EdgeInsetsGeometry? padding;
 
   const HorizontalProductList({
@@ -19,23 +20,30 @@ class HorizontalProductList extends StatelessWidget {
     required this.products,
     this.showRating = true,
     this.showPromoBadge = false,
-    this.itemWidth = AppSpacing.productCardWidth,
-    this.height = AppSpacing.productRowHeight,
+    this.itemWidth,
+    this.height,
     this.padding,
   });
 
   @override
   Widget build(BuildContext context) {
+    final width = itemWidth ?? Responsive.productCardWidth(context);
+    final listHeight = height ?? Responsive.productRowHeight(context);
     return AppHorizontalList(
-      height: height,
+      height: listHeight,
       padding: padding ??
-          const EdgeInsets.fromLTRB(AppSpacing.md, 0, AppSpacing.md, AppSpacing.lg),
+          EdgeInsets.fromLTRB(
+            Responsive.horizontalPadding(context),
+            0,
+            Responsive.horizontalPadding(context),
+            AppSpacing.lg,
+          ),
       itemCount: products.length,
       itemBuilder: (_, i) => RepaintBoundary(
         child: ProductCard(
           key: ValueKey(products[i].id),
           product: products[i],
-          width: itemWidth,
+          width: width,
           showRating: showRating,
           showPromoBadge: showPromoBadge,
           lite: true,

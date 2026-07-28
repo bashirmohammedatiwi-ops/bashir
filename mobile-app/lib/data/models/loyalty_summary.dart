@@ -26,34 +26,25 @@ class LoyaltyHistoryItem {
 
 class LoyaltySummary {
   final int points;
-  final String tier;
-  final String tierLabel;
-  final String? nextTier;
-  final int nextThreshold;
-  final int pointsToNext;
+  final int redeemBlockSize;
+  final int redeemBlockValue;
   final List<LoyaltyHistoryItem> history;
 
   const LoyaltySummary({
     this.points = 0,
-    this.tier = 'normal',
-    this.tierLabel = 'عضو',
-    this.nextTier,
-    this.nextThreshold = 500,
-    this.pointsToNext = 0,
+    this.redeemBlockSize = 100,
+    this.redeemBlockValue = 1000,
     this.history = const [],
   });
 
   factory LoyaltySummary.fromJson(Map<String, dynamic> json) => LoyaltySummary(
         points: asInt(json['points']),
-        tier: asString(json['tier'], 'normal'),
-        tierLabel: asString(json['tierLabel'], 'عضو'),
-        nextTier: json['nextTier']?.toString(),
-        nextThreshold: asInt(json['nextThreshold'], 500),
-        pointsToNext: asInt(json['pointsToNext']),
+        redeemBlockSize: asInt(json['redeemBlockSize'], 100),
+        redeemBlockValue: asInt(json['redeemBlockValue'], 1000),
         history: asList(json['history']).map((e) => LoyaltyHistoryItem.fromJson(asMap(e))).toList(),
       );
 
-  /// كل 100 نقطة = 1,000 د.ع خصم (حسب الخادم).
-  int get redeemableBlocks => points ~/ 100;
-  int get maxDiscountFromPoints => redeemableBlocks * 1000;
+  int get redeemableBlocks => points ~/ redeemBlockSize;
+
+  int get maxDiscountFromPoints => redeemableBlocks * redeemBlockValue;
 }

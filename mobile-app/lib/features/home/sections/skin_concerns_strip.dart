@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/locale_provider.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/category.dart';
 import '../home_link.dart';
@@ -140,7 +141,7 @@ class _CardsList extends StatelessWidget {
             child: InkWell(
               onTap: () => _openConcern(context, c),
               child: SizedBox(
-                width: 230,
+                width: Responsive.scaledCarouselWidth(context, 230),
                 child: Row(
                   children: [
                     SizedBox(

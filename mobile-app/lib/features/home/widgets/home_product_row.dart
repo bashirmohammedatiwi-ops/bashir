@@ -28,7 +28,8 @@ class HomeProductRow extends StatelessWidget {
     final height = Responsive.productCardHeight(context);
     return HomeHorizontalList(
       height: height + 4,
-      padding: padding,
+      padding: padding ??
+          EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
       itemCount: products.length,
       itemBuilder: (_, i) => RepaintBoundary(
         child: HomeProductCard(

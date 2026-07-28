@@ -27,6 +27,13 @@ abstract final class Responsive {
 
   static bool isCompact(BuildContext context) => tierOf(context) == ScreenTier.compact;
 
+  static bool isMedium(BuildContext context) => tierOf(context) == ScreenTier.medium;
+
+  static bool isNarrow(BuildContext context) {
+    final t = tierOf(context);
+    return t == ScreenTier.compact || t == ScreenTier.medium;
+  }
+
   static bool isExpanded(BuildContext context) => tierOf(context) == ScreenTier.expanded;
 
   /// يمنع كسر التخطيط عند تكبير الخط في إعدادات النظام.
@@ -86,6 +93,39 @@ abstract final class Responsive {
     return 268;
   }
 
+  /// ارتفاع صف المنتجات الأفقي (بطاقة + هامش).
+  static double productRowHeight(BuildContext context) => productCardHeight(context) + 4;
+
+  /// عرض بطاقة CMS يتكيّف مع الشاشة (لا يتجاوز ~72% من العرض).
+  static double scaledCarouselWidth(BuildContext context, double preferred) {
+    final screenW = MediaQuery.sizeOf(context).width;
+    final maxW = switch (tierOf(context)) {
+      ScreenTier.compact => screenW * 0.72,
+      ScreenTier.medium => screenW * 0.68,
+      ScreenTier.regular => screenW * 0.62,
+      ScreenTier.expanded => preferred,
+    };
+    final minW = productCardWidth(context) - 10;
+    return preferred.clamp(minW, maxW);
+  }
+
+  /// ارتفاع معرض صورة المنتج — نسبة من ارتفاع الشاشة مع حدود آمنة.
+  static double galleryExpandedHeight(BuildContext context, {required bool hasThumbs}) {
+    final h = MediaQuery.sizeOf(context).height;
+    final ratio = hasThumbs ? 0.46 : 0.40;
+    return (h * ratio).clamp(hasThumbs ? 300.0 : 260.0, hasThumbs ? 430.0 : 390.0);
+  }
+
+  static double priceDisplaySize(BuildContext context, {double regular = 26}) {
+    return switch (tierOf(context)) {
+      ScreenTier.compact => regular - 4,
+      ScreenTier.medium => regular - 2,
+      _ => regular,
+    };
+  }
+
+  static double sectionPaddingH(BuildContext context) => horizontalPadding(context);
+
   static double cartItemImageSize(BuildContext context) {
     return switch (tierOf(context)) {
       ScreenTier.compact => 76,
@@ -126,4 +166,5 @@ abstract final class Responsive {
 extension ResponsiveContext on BuildContext {
   ScreenTier get screenTier => Responsive.tierOf(this);
   bool get isCompactScreen => Responsive.isCompact(this);
+  bool get isNarrowScreen => Responsive.isNarrow(this);
 }

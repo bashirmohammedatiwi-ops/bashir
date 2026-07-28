@@ -43,19 +43,16 @@ class _LoyaltyBody extends ConsumerWidget {
         data: (summary) => ListView(
           padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 16, ProfileUi.hPad, 24),
           children: [
-            _PointsCard(summary: summary, userName: user?.name ?? ''),
-            const SizedBox(height: 16),
-            if (summary.pointsToNext > 0)
-              ProfileInfoBanner(
-                icon: Icons.trending_up_rounded,
-                text: s.pointsToNextTier(summary.pointsToNext, summary.nextTier ?? ''),
-              ),
+            _PointsCard(summary: summary, userName: user?.name ?? '', s: s),
             const SizedBox(height: 14),
             ProfileInfoBanner(
               icon: Icons.redeem_outlined,
-              text: s.isAr
-                  ? 'كل 100 نقطة = ${formatPrice(1000)} خصم عند الدفع'
-                  : 'Every 100 points = ${formatPrice(1000)} discount at checkout',
+              text: s.loyaltyRedeemAtCheckout(formatPrice(summary.redeemBlockValue)),
+            ),
+            const SizedBox(height: 10),
+            ProfileInfoBanner(
+              icon: Icons.add_shopping_cart_outlined,
+              text: s.loyaltyEarnOnOrder,
             ),
             const SizedBox(height: 24),
             ProfileSectionTitle(s.pointsHistory, icon: Icons.history_rounded),
@@ -77,11 +74,18 @@ class _LoyaltyBody extends ConsumerWidget {
 class _PointsCard extends StatelessWidget {
   final LoyaltySummary summary;
   final String userName;
+  final AppStrings s;
 
-  const _PointsCard({required this.summary, required this.userName});
+  const _PointsCard({
+    required this.summary,
+    required this.userName,
+    required this.s,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final discount = summary.maxDiscountFromPoints;
+
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 26, 24, 24),
       decoration: AccountTheme.heroDecoration(),
@@ -99,21 +103,26 @@ class _PointsCard extends StatelessWidget {
             style: const TextStyle(color: Colors.white, fontSize: 46, fontWeight: FontWeight.w900, letterSpacing: -1),
           ),
           Text(
-            'نقطة متاحة',
+            s.loyaltyAvailablePoints,
             style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 14),
           ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(20),
+          if (discount > 0) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                s.isAr
+                    ? 'يمكنك خصم ${formatPrice(discount)} عند الدفع'
+                    : 'Redeem up to ${formatPrice(discount)} at checkout',
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
             ),
-            child: Text(
-              'مستوى: ${summary.tierLabel}',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-            ),
-          ),
+          ],
         ],
       ),
     );

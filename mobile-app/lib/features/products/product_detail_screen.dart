@@ -15,6 +15,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/friendly_error.dart';
+import '../../core/utils/responsive.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/fullscreen_image_viewer.dart';
 import '../../core/widgets/horizontal_product_list.dart';
@@ -181,15 +182,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   const SizedBox(height: 10),
                   Center(
                     child: Container(
-                      width: 36,
-                      height: 4,
+                      width: 32,
+                      height: 3.5,
                       decoration: BoxDecoration(
-                        color: AppColors.hairline.withValues(alpha: 0.9),
+                        color: AppColors.primarySoft,
                         borderRadius: BorderRadius.circular(99),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   _HeroCard(
                     product: product,
                     shade: _shade,
@@ -201,7 +202,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                   ),
                   if (product.hasMultipleDisplayableShades)
                     Container(
-                      margin: EdgeInsets.fromLTRB(
+                      margin: const EdgeInsets.fromLTRB(
                         ProductDetailTheme.padH,
                         ProductDetailTheme.sectionGap,
                         ProductDetailTheme.padH,
@@ -271,7 +272,7 @@ class _GalleryAppBar extends ConsumerWidget {
 
     return SliverAppBar(
       pinned: true,
-      expandedHeight: hasThumbs ? 420 : 370,
+      expandedHeight: Responsive.galleryExpandedHeight(context, hasThumbs: hasThumbs),
       backgroundColor: ProductDetailTheme.galleryBg,
       surfaceTintColor: Colors.transparent,
       leading: _CircleAction(
@@ -306,15 +307,9 @@ class _GalleryAppBar extends ConsumerWidget {
           ],
           flexibleSpace: FlexibleSpaceBar(
         background: DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                AppColors.primaryLight.withValues(alpha: 0.35),
-                ProductDetailTheme.galleryBg,
-              ],
-            ),
+          decoration: const BoxDecoration(
+            color: ProductDetailTheme.galleryBg,
+            border: Border(bottom: BorderSide(color: AppColors.hairline, width: 0.5)),
           ),
           child: Column(
               children: [
@@ -517,18 +512,16 @@ class _GalleryBadge extends StatelessWidget {
 class _SectionCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry? padding;
-  final double marginTop;
 
   const _SectionCard({
     required this.child,
     this.padding,
-    this.marginTop = ProductDetailTheme.sectionGap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: EdgeInsets.fromLTRB(ProductDetailTheme.padH, marginTop, ProductDetailTheme.padH, 0),
+      margin: const EdgeInsets.fromLTRB(ProductDetailTheme.padH, ProductDetailTheme.sectionGap, ProductDetailTheme.padH, 0),
       padding: padding ?? const EdgeInsets.all(16),
       decoration: ProductDetailTheme.sectionDecoration(),
       child: child,
@@ -558,140 +551,106 @@ class _HeroCard extends ConsumerWidget {
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: ProductDetailTheme.padH),
-      padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
       decoration: ProductDetailTheme.heroCardDecoration(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (product.brandNameFor(lang).isNotEmpty)
-                      Text(
-                        product.brandNameFor(lang).toUpperCase(),
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 11,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                    if (product.brandNameFor(lang).isNotEmpty) const SizedBox(height: 8),
-                    Text(
-                      product.localizedName(lang),
-                      style: AppTypography.sectionTitle.copyWith(
-                        fontSize: 21,
-                        height: 1.3,
-                        letterSpacing: -0.3,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (product.soldCount > 0)
-                Container(
-                  margin: const EdgeInsets.only(top: 2),
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: ProductDetailTheme.chipDecoration(),
-                  child: Text(
-                    '${formatNumber(product.soldCount)}+ ${s.sales}',
-                    style: const TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                ),
-            ],
+          if (product.brandNameFor(lang).isNotEmpty)
+            Text(product.brandNameFor(lang).toUpperCase(), style: ProductDetailTheme.brandStyle),
+          if (product.brandNameFor(lang).isNotEmpty) const SizedBox(height: 6),
+          Text(
+            product.localizedName(lang),
+            style: AppTypography.sectionTitle.copyWith(
+              fontSize: 19,
+              height: 1.35,
+              letterSpacing: -0.35,
+              fontWeight: FontWeight.w800,
+            ),
           ),
           if (product.rating > 0) ...[
             const SizedBox(height: 10),
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: ProductDetailTheme.chipDecoration(active: true),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.star_rounded, color: AppColors.star, size: 15),
-                      const SizedBox(width: 3),
-                      Text(
-                        product.rating.toStringAsFixed(1),
-                        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
-                      ),
-                    ],
-                  ),
+                const Icon(Icons.star_rounded, color: AppColors.star, size: 16),
+                const SizedBox(width: 4),
+                Text(
+                  product.rating.toStringAsFixed(1),
+                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 6),
                 Text(
                   s.reviewCount(product.reviewCount),
                   style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
                 ),
+                if (product.soldCount > 0) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '· ${formatNumber(product.soldCount)}+ ${s.sales}',
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 11.5),
+                  ),
+                ],
               ],
+            ),
+          ] else if (product.soldCount > 0) ...[
+            const SizedBox(height: 8),
+            Text(
+              '${formatNumber(product.soldCount)}+ ${s.sales}',
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 11.5, fontWeight: FontWeight.w600),
             ),
           ],
           const SizedBox(height: 16),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.end,
+            spacing: 8,
+            runSpacing: 6,
             children: [
               Text(
                 formatPrice(price),
                 style: AppTypography.priceLarge.copyWith(
-                  fontSize: 28,
+                  fontSize: Responsive.priceDisplaySize(context),
                   fontWeight: FontWeight.w900,
-                  letterSpacing: -0.5,
-                  color: product.hasDiscount ? AppColors.sale : AppColors.textPrimary,
+                  letterSpacing: -0.6,
+                  color: product.hasDiscount ? AppColors.primary : AppColors.textPrimary,
                 ),
               ),
               if (product.hasDiscount) ...[
-                const SizedBox(width: 8),
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
+                  padding: const EdgeInsets.only(bottom: 3),
                   child: Text(
                     formatPrice(product.originalPrice),
                     style: const TextStyle(
                       color: AppColors.textMuted,
                       decoration: TextDecoration.lineThrough,
-                      fontSize: 13,
+                      fontSize: 12.5,
                     ),
                   ),
                 ),
-              ],
-              if (product.hasDiscount) ...[
-                const SizedBox(width: 8),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 3),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.sale.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                    child: Text(
-                      s.savePercent(product.discountPercent),
-                      style: const TextStyle(
-                        color: AppColors.sale,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w800,
-                      ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(
+                    s.savePercent(product.discountPercent),
+                    style: const TextStyle(
+                      color: AppColors.primaryDark,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
                     ),
                   ),
                 ),
               ],
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
+          _StockBadge(stock: shade?.stock ?? product.stock),
+          const SizedBox(height: 14),
           Row(
             children: [
-              _StockBadge(stock: shade?.stock ?? product.stock),
-              const Spacer(),
               Text(s.quantity, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-              const SizedBox(width: 10),
+              const Spacer(),
               _QuantityStepper(quantity: quantity, onChanged: onQuantityChanged),
             ],
           ),
@@ -699,19 +658,20 @@ class _HeroCard extends ConsumerWidget {
             const SizedBox(height: 14),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               decoration: BoxDecoration(
-                color: AppColors.accentSoft.withValues(alpha: 0.45),
-                borderRadius: BorderRadius.circular(14),
+                color: AppColors.accentSoft.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.accent.withValues(alpha: 0.15)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.stars_rounded, color: AppColors.accent, size: 18),
+                  const Icon(Icons.stars_rounded, color: AppColors.accent, size: 16),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       s.earnPoints(product.pointsEarned),
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11.5),
                     ),
                   ),
                 ],
@@ -736,19 +696,26 @@ class _StockBadge extends ConsumerWidget {
     final color = !inStock ? AppColors.sale : (low ? AppColors.warning : AppColors.success);
     final label = !inStock ? s.outOfStockNow : (low ? s.lowStock(stock) : s.inStock);
 
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    return Align(
+      alignment: AlignmentDirectional.centerStart,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: AlignmentDirectional.centerStart,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: ProductDetailTheme.stockPillDecoration(color),
+          child: Text(
+            label,
+            maxLines: 1,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w700,
+              fontSize: 11,
+              height: 1.2,
+            ),
+          ),
         ),
-        const SizedBox(width: 7),
-        Text(
-          label,
-          style: TextStyle(color: color, fontWeight: FontWeight.w700, fontSize: 12.5),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -762,16 +729,9 @@ class _QuantityStepper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.elevated,
         borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: AppColors.hairline, width: 0.8),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.ink.withValues(alpha: 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: AppColors.primarySoft.withValues(alpha: 0.8)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -782,11 +742,11 @@ class _QuantityStepper extends StatelessWidget {
             onTap: () => onChanged(quantity - 1),
           ),
           SizedBox(
-            width: 38,
+            width: 34,
             child: Text(
               '$quantity',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
             ),
           ),
           _StepBtn(
@@ -812,15 +772,15 @@ class _StepBtn extends StatelessWidget {
     return InkWell(
       onTap: enabled ? onTap : null,
       borderRadius: BorderRadius.circular(12),
-      child: SizedBox(
-        width: 38,
-        height: 38,
-        child: Icon(
-          icon,
-          size: 19,
-          color: enabled ? AppColors.textPrimary : AppColors.textMuted,
+        child: SizedBox(
+          width: 34,
+          height: 34,
+          child: Icon(
+            icon,
+            size: 18,
+            color: enabled ? AppColors.primaryDark : AppColors.textMuted,
+          ),
         ),
-      ),
     );
   }
 }
@@ -834,14 +794,20 @@ class _TrustStrip extends ConsumerWidget {
     final s = ref.s;
     return Padding(
       padding: const EdgeInsets.fromLTRB(ProductDetailTheme.padH, ProductDetailTheme.sectionGap, ProductDetailTheme.padH, 0),
-      child: Row(
-        children: [
-          Expanded(child: _TrustChip(icon: Icons.verified_rounded, label: s.authentic100)),
-          const SizedBox(width: 8),
-          Expanded(child: _TrustChip(icon: Icons.local_shipping_rounded, label: s.fastDelivery)),
-          const SizedBox(width: 8),
-          Expanded(child: _TrustChip(icon: Icons.lock_rounded, label: s.securePayment)),
-        ],
+      child: DecoratedBox(
+        decoration: ProductDetailTheme.sectionDecoration(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+          child: Row(
+            children: [
+              Expanded(child: _TrustChip(icon: Icons.verified_outlined, label: s.authentic100)),
+              Container(width: 1, height: 28, color: AppColors.divider),
+              Expanded(child: _TrustChip(icon: Icons.local_shipping_outlined, label: s.fastDelivery)),
+              Container(width: 1, height: 28, color: AppColors.divider),
+              Expanded(child: _TrustChip(icon: Icons.payments_outlined, label: s.securePayment)),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -854,23 +820,22 @@ class _TrustChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
-      decoration: ProductDetailTheme.sectionDecoration(),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       child: Column(
         children: [
-          Icon(icon, color: AppColors.primary, size: 18),
-          const SizedBox(height: 5),
+          Icon(icon, color: AppColors.accent, size: 17),
+          const SizedBox(height: 4),
           Text(
             label,
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 9.5,
+              fontSize: 9,
               fontWeight: FontWeight.w700,
               color: AppColors.textSecondary,
-              height: 1.25,
+              height: 1.2,
             ),
           ),
         ],
@@ -1314,9 +1279,7 @@ class _SimilarProducts extends ConsumerWidget {
             ),
             HorizontalProductList(
               products: products,
-              itemWidth: 168,
-              height: 296,
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              padding: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
             ),
           ],
         );
@@ -1348,8 +1311,10 @@ class _BottomBar extends ConsumerWidget {
     final unitPrice = shade?.price ?? product.price;
     final total = unitPrice * quantity;
 
+    final narrow = Responsive.isNarrow(context);
+
     return Container(
-      padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
+      padding: EdgeInsets.fromLTRB(narrow ? 14 : 18, 12, narrow ? 14 : 18, 12),
       decoration: ProductDetailTheme.bottomBarDecoration(),
       child: SafeArea(
         top: false,
@@ -1361,54 +1326,55 @@ class _BottomBar extends ConsumerWidget {
               children: [
                 Text(
                   quantity > 1 ? s.totalWithQty(quantity) : s.total,
-                  style: const TextStyle(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.w600),
+                  style: const TextStyle(fontSize: 10.5, color: AppColors.textMuted, fontWeight: FontWeight.w600),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Text(
                   formatPrice(total),
-                  style: AppTypography.price.copyWith(fontSize: 20, fontWeight: FontWeight.w900, letterSpacing: -0.3),
+                  style: AppTypography.price.copyWith(
+                    fontSize: narrow ? 17 : 19,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.4,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ],
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: narrow ? 10 : 14),
             Expanded(
               child: SizedBox(
-                height: 54,
+                height: narrow ? 46 : 50,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: enabled ? AppColors.primaryGradient : null,
                     color: enabled ? null : AppColors.divider,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: enabled
-                        ? [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.28),
-                              blurRadius: 14,
-                              offset: const Offset(0, 5),
-                            ),
-                          ]
-                        : null,
+                    borderRadius: BorderRadius.circular(999),
                   ),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: enabled ? onAdd : null,
-                      borderRadius: BorderRadius.circular(18),
+                      borderRadius: BorderRadius.circular(999),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
                             Icons.shopping_bag_rounded,
-                            size: 20,
+                            size: narrow ? 18 : 20,
                             color: enabled ? Colors.white : AppColors.textMuted,
                           ),
-                          const SizedBox(width: 8),
-                          Text(
-                            enabled ? s.addToCartBtn : s.outOfStock,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 14.5,
-                              color: enabled ? Colors.white : AppColors.textMuted,
+                          SizedBox(width: narrow ? 6 : 8),
+                          Flexible(
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Text(
+                                enabled ? s.addToCartBtn : s.outOfStock,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: narrow ? 13 : 14,
+                                  color: enabled ? Colors.white : AppColors.textMuted,
+                                ),
+                              ),
                             ),
                           ),
                         ],

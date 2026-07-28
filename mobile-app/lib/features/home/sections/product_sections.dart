@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/card_sizes.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_section.dart';
@@ -47,9 +48,10 @@ class ProductCarouselSection extends ConsumerWidget {
           : null,
       child: HomeProductRow(
         products: section.products,
-        itemWidth: cardSizeSpec(section.productCardSize ?? section.cardSize)
-            .productWidth
-            .clamp(148, 164),
+        itemWidth: Responsive.scaledCarouselWidth(
+          context,
+          cardSizeSpec(section.productCardSize ?? section.cardSize).productWidth,
+        ),
       ),
     );
   }
@@ -144,9 +146,10 @@ class _FlashSaleHomeSectionState extends ConsumerState<FlashSaleHomeSection> {
       child: HomeProductRow(
         products: widget.section.products,
         showPromoBadge: true,
-        itemWidth: cardSizeSpec(
-          widget.section.productCardSize ?? widget.section.cardSize,
-        ).productWidth.clamp(140, 156),
+        itemWidth: Responsive.scaledCarouselWidth(
+          context,
+          cardSizeSpec(widget.section.productCardSize ?? widget.section.cardSize).productWidth,
+        ),
       ),
     );
   }
@@ -183,7 +186,10 @@ class PackagesHomeSection extends ConsumerWidget {
         itemBuilder: (_, i) {
           final p = section.packages[i];
           final hasDiscount = p.originalPrice != null && p.originalPrice! > p.price;
-          final cardW = cardSizeSpec(p.cardSize ?? section.cardSize).width.clamp(170, 210).toDouble();
+          final cardW = Responsive.scaledCarouselWidth(
+            context,
+            cardSizeSpec(p.cardSize ?? section.cardSize).width.toDouble(),
+          );
           return GestureDetector(
             onTap: () => openPackageLink(context, p),
             child: Container(

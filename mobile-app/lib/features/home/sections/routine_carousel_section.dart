@@ -6,6 +6,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/card_sizes.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_section.dart';
 import '../home_link.dart';
@@ -55,7 +56,13 @@ class RoutineCarouselSection extends ConsumerWidget {
             return RepaintBoundary(
               child: GestureDetector(
                 onTap: () => openPackageLink(context, p),
-                child: _RoutineCard(package: p, width: cardSizeSpec(section.cardSize).width.clamp(180, 230).toDouble()),
+                child: _RoutineCard(
+                  package: p,
+                  width: Responsive.scaledCarouselWidth(
+                    context,
+                    cardSizeSpec(section.cardSize).width.toDouble(),
+                  ),
+                ),
               ),
             );
           },

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/utils/responsive.dart';
 import 'checkout_theme.dart';
 
 class CheckoutCouponCard extends StatelessWidget {
@@ -23,8 +24,9 @@ class CheckoutCouponCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final narrow = Responsive.isNarrow(context);
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      margin: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
       decoration: CheckoutTheme.cardDecoration(),
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -34,10 +36,11 @@ class CheckoutCouponCard extends StatelessWidget {
             icon: Icons.local_offer_outlined,
             title: s.discountCodeLabel,
           ),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
+          if (narrow)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextField(
                   controller: controller,
                   decoration: CheckoutTheme.fieldDecoration(
                     label: s.enterCode,
@@ -45,35 +48,27 @@ class CheckoutCouponCard extends StatelessWidget {
                     icon: Icons.confirmation_number_outlined,
                   ).copyWith(errorText: error),
                 ),
-              ),
-              const SizedBox(width: 10),
-              SizedBox(
-                height: 52,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: CheckoutTheme.brandGradient,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: onApply,
-                      borderRadius: BorderRadius.circular(14),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 18),
-                        child: Center(
-                          child: Text(
-                            s.applyBtn,
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
-                          ),
-                        ),
-                      ),
-                    ),
+                const SizedBox(height: 10),
+                _ApplyCouponButton(s: s, onApply: onApply, fullWidth: true),
+              ],
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    decoration: CheckoutTheme.fieldDecoration(
+                      label: s.enterCode,
+                      hint: 'SAVE10',
+                      icon: Icons.confirmation_number_outlined,
+                    ).copyWith(errorText: error),
                   ),
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: 10),
+                _ApplyCouponButton(s: s, onApply: onApply),
+              ],
+            ),
           if (appliedCode != null) ...[
             const SizedBox(height: 10),
             Row(
@@ -482,5 +477,51 @@ class CheckoutShippingBanner extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class _ApplyCouponButton extends StatelessWidget {
+  final AppStrings s;
+  final VoidCallback onApply;
+  final bool fullWidth;
+
+  const _ApplyCouponButton({
+    required this.s,
+    required this.onApply,
+    this.fullWidth = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final button = SizedBox(
+      height: 48,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: CheckoutTheme.brandGradient,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onApply,
+            borderRadius: BorderRadius.circular(14),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: fullWidth ? 16 : 14),
+              child: Center(
+                child: Text(
+                  s.applyBtn,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (fullWidth) {
+      return SizedBox(width: double.infinity, child: button);
+    }
+    return button;
   }
 }

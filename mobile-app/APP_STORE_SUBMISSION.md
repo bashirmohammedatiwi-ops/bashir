@@ -1,6 +1,6 @@
 # رفع تطبيق iOS إلى App Store — دليل خطوة بخطوة
 
-> **الإصدار:** 1.0.0 (Build 1) · **Bundle ID:** `com.deemaalhayat.app` · **Team:** `629ARMBUX8`
+> **الإصدار:** 1.0.0 (Build 11) · **Bundle ID:** `com.deemaalhayat.app` · **Team:** `629ARMBUX8`
 
 ---
 
@@ -120,14 +120,14 @@
 
 1. **Sign-in required:** Yes (للشراء).
 2. **Demo account** — **مهم جداً:**
-   - Phone: `[ضع رقم هاتف حقيقي يعمل]`
-   - Password: `[ضع كلمة مرور]`
+   - Phone: `07700000000`
+   - Password: `Review2026`
    - تأكد أن الحساب يعمل: تسجيل دخول → تصفح → إضافة للسلة → طلب (COD) → حذف حساب (اختبار منفصل).
 3. **Contact:** اسمك، هاتفك، `support@deemaalhayat.com`.
 4. **Notes:**
 
 ```
-Demo account: [PHONE] / [PASSWORD]
+Demo account: 07700000000 / Review2026
 v1.0: Cash on delivery only — no in-app purchases.
 Push notifications disabled. Browse without login; checkout requires sign-in.
 Account deletion: Account → Delete Account (حسابي → حذف الحساب).
@@ -178,7 +178,7 @@ flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
 
 ## الخطوة 11 — Submit for Review
 
-1. في **Version 1.0.0** اختر Build **1.0.0 (1)**.
+1. في **Version 1.0.0** اختر Build **1.0.0 (11)**.
 2. راجع كل الأقسام (أيقونات ✓ خضراء).
 3. **Add for Review → Submit to App Review**.
 
@@ -198,7 +198,7 @@ flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
 - [ ] حساب تجريبي يعمل
 - [ ] لقطات 6.7" مرفوعة
 - [ ] App Privacy مكتمل
-- [ ] Build 1.0.0 (1) مرفوع ومعالج
+- [ ] Build 1.0.0 (11) مرفوع ومعالج
 - [ ] Associated Domains مفعّل على App ID
 
 ---

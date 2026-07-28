@@ -7,7 +7,6 @@ class AppUser {
   final String? phone;
   final String? avatarUrl;
   final int points;
-  final String tier;
   final int orderCount;
   final int wishlistCount;
 
@@ -18,7 +17,6 @@ class AppUser {
     this.phone,
     this.avatarUrl,
     this.points = 0,
-    this.tier = 'normal',
     this.orderCount = 0,
     this.wishlistCount = 0,
   });
@@ -30,15 +28,7 @@ class AppUser {
         phone: json['phone']?.toString(),
         avatarUrl: json['avatarUrl']?.toString(),
         points: asInt(json['points'] ?? json['loyaltyPoints']),
-        tier: asString(json['tier'], 'normal'),
         orderCount: asInt(json['orderCount']),
         wishlistCount: asInt(json['wishlistCount']),
       );
-
-  String get tierLabel => switch (tier) {
-        'platinum' => 'بلاتيني',
-        'gold' => 'ذهبي',
-        'silver' => 'فضي',
-        _ => 'عضو',
-      };
 }

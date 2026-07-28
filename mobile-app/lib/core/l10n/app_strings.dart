@@ -223,8 +223,9 @@ class AppStrings {
   String reviewCount(int n) => isAr ? '($n تقييم)' : '($n reviews)';
   String savePercent(int p) => isAr ? 'وفّري $p%' : 'Save $p%';
   String get outOfStockNow => isAr ? 'غير متوفر حالياً' : 'Currently out of stock';
-  String lowStock(int stock) =>
-      isAr ? 'متبقٍ $stock قطع فقط — اطلبي الآن' : 'Only $stock left — order now';
+  String lowStock(int stock) => isAr
+      ? (stock == 1 ? 'آخر قطعة' : 'متبقى $stock قطع')
+      : (stock == 1 ? 'Last one' : 'Only $stock left');
   String get inStock => isAr ? 'متوفر في المخزون' : 'In stock';
   String get selectShade => isAr ? 'اختاري الدرجة' : 'Select shade';
   String get authentic100 => isAr ? 'منتجات\nأصلية 100%' : '100%\nAuthentic';
@@ -360,14 +361,16 @@ class AppStrings {
   // ─── Loyalty ──────────────────────────────────────────────────────────────
   String get loginToSeePoints => isAr ? 'سجّل الدخول لعرض نقاطك' : 'Sign in to view your points';
   String get pointsHistory => isAr ? 'سجل النقاط' : 'Points History';
+  String get loyaltyAvailablePoints => isAr ? 'نقطة متاحة' : 'points available';
+  String loyaltyRedeemAtCheckout(String amount) => isAr
+      ? 'كل 100 نقطة = $amount خصم عند إتمام الطلب (اختياري)'
+      : 'Every 100 points = $amount off at checkout (optional)';
+  String get loyaltyEarnOnOrder => isAr
+      ? 'اكسب نقطة واحدة عن كل 1,000 د.ع في الطلب المكتمل'
+      : 'Earn 1 point for every 1,000 IQD in completed orders';
   String get noHistoryYet => isAr ? 'لا يوجد سجل بعد' : 'No history yet';
   String get pointsWillAppearHere =>
       isAr ? 'ستظهر معاملات النقاط هنا' : 'Point transactions will appear here';
-  String get pointsAvailable => isAr ? 'نقطة متاحة' : 'points available';
-  String pointsToNextTier(int points, String tier) =>
-      isAr ? '$points نقطة للوصول لمستوى $tier' : '$points points to reach $tier';
-  String get pointsRedeemHint =>
-      isAr ? 'كل 100 نقطة = خصم عند الدفع' : 'Every 100 points = discount at checkout';
 
   String get loginToViewOrders =>
       isAr ? 'سجّل الدخول لعرض طلباتك' : 'Sign in to view your orders';
@@ -569,11 +572,4 @@ class AppStrings {
   String get noAddressesSaved => isAr ? 'لا توجد عناوين محفوظة' : 'No saved addresses';
   String get setAsDefault => isAr ? 'تعيين كافتراضي' : 'Set as default';
   String get defaultAddress => isAr ? 'العنوان الافتراضي' : 'Default address';
-
-  String tierLabel(String tier) => switch (tier) {
-        'platinum' => isAr ? 'بلاتيني' : 'Platinum',
-        'gold' => isAr ? 'ذهبي' : 'Gold',
-        'silver' => isAr ? 'فضي' : 'Silver',
-        _ => isAr ? 'عضو' : 'Member',
-      };
 }

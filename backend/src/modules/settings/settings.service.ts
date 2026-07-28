@@ -14,11 +14,6 @@ export const DEFAULT_STORE_SETTINGS = {
   cashOnDelivery: true,
   emailOrders: "orders@alhayaa.com",
   flashSaleEndsAt: null as string | null,
-  loyaltyTiers: {
-    silver: 500,
-    gold: 1500,
-    platinum: 3000,
-  },
   firstOrderBonusPoints: 50,
   pointsPer1000Iqd: 1,
   redeem100PointsValue: 1000,
