@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { useStore } from "@/components/StoreProvider";
+import { isLegalRoute } from "@/lib/routes";
 
 const links = [
   { href: "/", label: "الرئيسية" },
@@ -16,6 +18,8 @@ const links = [
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const { storeName } = useStore();
+  const pathname = usePathname();
+  const showAppCta = !isLegalRoute(pathname);
 
   return (
     <header className="site-header">
@@ -45,14 +49,16 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <a
-          href="https://play.google.com/store/apps/details?id=com.deemaalhayat.app"
-          className="app-badge"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          حمّلي التطبيق
-        </a>
+        {showAppCta ? (
+          <a
+            href="https://play.google.com/store/apps/details?id=com.deemaalhayat.app"
+            className="app-badge"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            حمّلي التطبيق
+          </a>
+        ) : null}
       </div>
     </header>
   );
