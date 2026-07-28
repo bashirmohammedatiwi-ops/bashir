@@ -121,11 +121,6 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> with WidgetsBinding
         title: Text(s.scanBarcode),
         actions: [
           IconButton(
-            tooltip: s.switchCamera,
-            onPressed: () => _controller.switchCamera(),
-            icon: const Icon(Icons.cameraswitch_rounded),
-          ),
-          IconButton(
             tooltip: s.flash,
             onPressed: () => _controller.toggleTorch(),
             icon: ValueListenableBuilder(

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
-/// يخفّي لوحة المفاتيح بسلوك أقرب للتطبيقات الاحترافية:
-/// - لا يختفي عند لمس الحقل التالي (انتقال سلس بين الحقول)
-/// - يختفي عند النقر خارج حقول الإدخال (وليس عند اللمس الأول)
-/// - يختفي عند بدء التمرير
+/// إخفاء لوحة المفاتيح بسلوك احترافي في كل التطبيق:
+/// - **نقر** على أي مكان خارج حقل الإدخال → يختفي فوراً
+/// - **انتقال** من حقل إلى حقل → يبقى مفتوحاً بدون وميض
+/// - **تمرير** عمودي → يختفي كمساعد إضافي
 abstract final class KeyboardDismiss {
   static const tapSlop = 18.0;
 
@@ -15,47 +15,61 @@ abstract final class KeyboardDismiss {
   static bool hitTargetsTextInput(HitTestResult result) {
     for (final entry in result.path) {
       final target = entry.target;
+
       if (target is RenderEditable) return true;
+
       if (target is RenderSemanticsAnnotations &&
           target.properties.textField == true) {
+        return true;
+      }
+
+      final typeName = target.runtimeType.toString();
+      if (typeName.contains('InputDecorator') ||
+          typeName.contains('Editable')) {
         return true;
       }
     }
     return false;
   }
 
-  static bool hitAt(BuildContext context, Offset position) {
+  static bool hitAtView(int viewId, Offset position) {
     final result = HitTestResult();
-    WidgetsBinding.instance.hitTestInView(
-      result,
-      position,
-      View.of(context).viewId,
-    );
+    WidgetsBinding.instance.hitTestInView(result, position, viewId);
     return hitTargetsTextInput(result);
+  }
+
+  static bool hitAt(BuildContext context, Offset position) {
+    return hitAtView(View.of(context).viewId, position);
   }
 
   static void onPointerUp(BuildContext context, Offset down, Offset up) {
     if ((up - down).distance > tapSlop) return;
 
-    final focus = FocusManager.instance.primaryFocus;
-    if (focus == null || !focus.hasFocus) return;
+    final focusBefore = FocusManager.instance.primaryFocus;
+    if (focusBefore == null || !focusBefore.hasFocus) return;
 
-    // انتظر اكتمال انتقال التركيز بين الحقول قبل قرار الإخفاء.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final current = FocusManager.instance.primaryFocus;
-      if (current == null || !current.hasFocus) return;
-      if (hitAt(context, up)) return;
-      current.unfocus();
+    final viewId = View.of(context).viewId;
+    final onTextInput = hitAtView(viewId, up);
+
+    // نقر واضح خارج أي حقل — إخفاء فوري (مثل تطبيقات iOS الاحترافية).
+    if (!onTextInput) {
+      focusBefore.unfocus();
+      return;
+    }
+
+    // نقر على حقل آخر — انتظر اكتمال نقل التركيز ثم قرّر.
+    Future.microtask(() {
+      final focusAfter = FocusManager.instance.primaryFocus;
+      if (focusAfter == null || !focusAfter.hasFocus) return;
+      if (hitAtView(viewId, up)) return;
+      focusAfter.unfocus();
     });
   }
 
   static bool onScroll(ScrollNotification notification) {
-    if (notification is! ScrollUpdateNotification) return false;
+    if (notification is! ScrollStartNotification) return false;
     if (notification.dragDetails == null) return false;
     if (notification.metrics.axis == Axis.horizontal) return false;
-
-    final delta = notification.dragDetails!.delta.dy.abs();
-    if (delta < 2) return false;
 
     final focus = FocusManager.instance.primaryFocus;
     if (focus != null && focus.hasFocus) {
@@ -77,6 +91,7 @@ class DismissKeyboard extends StatefulWidget {
 
 class _DismissKeyboardState extends State<DismissKeyboard> {
   Offset? _pointerDown;
+  int? _activePointer;
 
   @override
   Widget build(BuildContext context) {
@@ -84,14 +99,24 @@ class _DismissKeyboardState extends State<DismissKeyboard> {
       onNotification: KeyboardDismiss.onScroll,
       child: Listener(
         behavior: HitTestBehavior.translucent,
-        onPointerDown: (event) => _pointerDown = event.position,
+        onPointerDown: (event) {
+          _activePointer = event.pointer;
+          _pointerDown = event.position;
+        },
         onPointerUp: (event) {
+          if (_activePointer != event.pointer) return;
           final down = _pointerDown;
           _pointerDown = null;
+          _activePointer = null;
           if (down == null) return;
           KeyboardDismiss.onPointerUp(context, down, event.position);
         },
-        onPointerCancel: (_) => _pointerDown = null,
+        onPointerCancel: (event) {
+          if (_activePointer == event.pointer) {
+            _pointerDown = null;
+            _activePointer = null;
+          }
+        },
         child: widget.child,
       ),
     );
