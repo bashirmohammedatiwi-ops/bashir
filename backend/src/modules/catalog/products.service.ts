@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { barcodeLookupCandidates } from "../../common/barcode.util";
 import { PrismaService } from "../../common/prisma.service";
@@ -229,6 +229,7 @@ export class ProductsService {
     const subcategoryId = subcategoryIds[0] ?? null;
     const tertiaryCategoryId = tertiaryCategoryIds[0] ?? null;
     const imageIds = await this.dedupeImageIds(dto.imageIds);
+    const position = await this.nextProductPosition(dto.brandId);
 
     try {
       const product = await this.prisma.product.create({
@@ -256,6 +257,7 @@ export class ProductsService {
           isPromo: dto.isPromo ?? false,
           isBogo: dto.isBogo ?? false,
           isActive: dto.isActive ?? true,
+          position,
           brandId: dto.brandId,
           categoryId: dto.categoryId || null,
           subcategoryId,
@@ -354,6 +356,10 @@ export class ProductsService {
       await this.prisma.productVariant.deleteMany({ where: { productId: id } });
     }
     const imageIds = dto.imageIds ? await this.dedupeImageIds(dto.imageIds) : undefined;
+    const nextPosition =
+      dto.brandId && dto.brandId !== existing.brandId
+        ? await this.nextProductPosition(dto.brandId)
+        : undefined;
     try {
       await this.prisma.product.update({
         where: { id },
@@ -381,6 +387,7 @@ export class ProductsService {
           isPromo: dto.isPromo,
           isBogo: dto.isBogo,
           isActive: dto.isActive,
+          position: nextPosition,
           brandId: dto.brandId,
           categoryId: dto.categoryId,
           subcategoryId: subcategoryId !== undefined ? subcategoryId : undefined,
@@ -563,9 +570,50 @@ export class ProductsService {
     return { success: true };
   }
 
+  /** حفظ ترتيب منتجات براند واحد في التطبيق. */
+  async reorder(brandId: string, orderedIds: string[]) {
+    const brand = brandId?.trim();
+    if (!brand) throw new BadRequestException("brandId required");
+
+    const ids = [...new Set((orderedIds ?? []).map((id) => String(id || "").trim()).filter(Boolean))];
+    if (!ids.length) throw new BadRequestException("ids required");
+
+    const rows = await this.prisma.product.findMany({
+      where: { brandId: brand },
+      orderBy: [{ position: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+      select: { id: true },
+    });
+    const allIds = rows.map((p) => p.id);
+    const known = new Set(allIds);
+    for (const id of ids) {
+      if (!known.has(id)) throw new BadRequestException(`Unknown product for brand: ${id}`);
+    }
+
+    let merged = ids;
+    if (ids.length !== allIds.length) {
+      const subset = new Set(ids);
+      let cursor = 0;
+      merged = allIds.map((id) => (subset.has(id) ? ids[cursor++]! : id));
+    }
+
+    await this.prisma.$transaction(
+      merged.map((id, position) => this.prisma.product.update({ where: { id }, data: { position } })),
+    );
+    await this.homeFeedCache.invalidateAll();
+    return { success: true, count: merged.length };
+  }
+
   private async ensureExists(id: string) {
     const exists = await this.prisma.product.findUnique({ where: { id } });
     if (!exists) throw new NotFoundException("Product not found");
+  }
+
+  private async nextProductPosition(brandId: string) {
+    const row = await this.prisma.product.aggregate({
+      where: { brandId },
+      _max: { position: true },
+    });
+    return (row._max.position ?? -1) + 1;
   }
 
   private async dedupeImageIds(imageIds?: string[]) {

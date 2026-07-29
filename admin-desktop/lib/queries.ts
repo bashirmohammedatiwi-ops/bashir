@@ -93,6 +93,8 @@ export const mutations = {
     api.post("/products/hide-without-images").then((r) => r.data?.data ?? r.data),
   dedupeProductImages: () =>
     api.post("/products/dedupe-images").then((r) => r.data?.data ?? r.data),
+  reorderProducts: (brandId: string, ids: string[]) =>
+    api.post("/products/reorder", { brandId, ids }).then((r) => r.data?.data ?? r.data),
 
   createCategory: (data: any) => api.post("/categories", data).then((r) => r.data?.data ?? r.data),
   updateCategory: (id: string, data: any) =>

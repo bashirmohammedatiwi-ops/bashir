@@ -71,6 +71,14 @@ export class ProductsController {
     return this.products.dedupeAllProductImages();
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
+  @Post("reorder")
+  reorder(@Body() body: { brandId: string; ids: string[] }) {
+    return this.products.reorder(body.brandId, body.ids ?? []);
+  }
+
   @Public()
   @Get(":idOrSlug")
   findOne(@Req() req: any, @Param("idOrSlug") idOrSlug: string) {

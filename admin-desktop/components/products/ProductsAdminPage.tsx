@@ -13,6 +13,7 @@ import {
 } from "@ant-design/icons";
 import {
   Button,
+  Alert,
   Empty,
   Form,
   Input,
@@ -38,6 +39,7 @@ import { displayProductName } from "@/lib/productName";
 import { mutations, queries } from "@/lib/queries";
 import { formatBytes } from "@/lib/formatBytes";
 import { useBarcodeInventorySync } from "@/hooks/useBarcodeInventorySync";
+import { ProductsSortableList } from "@/components/products/ProductsSortableList";
 import "./products-page.css";
 
 const ProductFormDrawer = dynamic(
@@ -56,9 +58,15 @@ type ProductsAdminPageProps = {
   sortMode: ProductSortMode;
   pageTitle: string;
   pageSubtitle?: string;
+  reorderMode?: boolean;
 };
 
-export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: ProductsAdminPageProps) {
+export function ProductsAdminPage({
+  sortMode,
+  pageTitle,
+  pageSubtitle,
+  reorderMode = false,
+}: ProductsAdminPageProps) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(24);
   const [search, setSearch] = useState("");
@@ -75,6 +83,7 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
   const [activeTab, setActiveTab] = useState("basic");
   const [productImages, setProductImages] = useState<ImageItem[]>([]);
   const [shadePreviews, setShadePreviews] = useState<Record<number, ImageItem | null>>({});
+  const [localOrderProducts, setLocalOrderProducts] = useState<any[]>([]);
   const [form] = Form.useForm();
   const qc = useQueryClient();
   const {
@@ -88,12 +97,14 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
     resetSync,
   } = useBarcodeInventorySync(form);
 
+  const canReorder = reorderMode && !!filterBrandId;
+
   const { data, isLoading, isFetching } = useQuery({
     queryKey: [
       "products",
       sortMode,
-      page,
-      pageSize,
+      canReorder ? "reorder" : page,
+      canReorder ? 500 : pageSize,
       search,
       filterCategoryId,
       filterSubcategoryId,
@@ -103,18 +114,23 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
     ],
     queryFn: () =>
       queries.products({
-        page,
-        limit: pageSize,
+        page: canReorder ? 1 : page,
+        limit: canReorder ? 500 : pageSize,
         search,
         sort: sortMode === "brand" ? "brand" : "latest",
-        categoryId: filterCategoryId,
-        subcategoryId: filterSubcategoryId,
-        tertiaryCategoryId: filterTertiaryCategoryId,
-        concernId: filterConcernId,
+        categoryId: canReorder ? undefined : filterCategoryId,
+        subcategoryId: canReorder ? undefined : filterSubcategoryId,
+        tertiaryCategoryId: canReorder ? undefined : filterTertiaryCategoryId,
+        concernId: canReorder ? undefined : filterConcernId,
         brandId: filterBrandId,
       }),
     staleTime: 3 * 60_000,
   });
+
+  useEffect(() => {
+    if (!canReorder) return;
+    setLocalOrderProducts(data?.data ?? []);
+  }, [canReorder, data?.data]);
 
   const { data: categoriesData } = useQuery({
     queryKey: ["categories"],
@@ -198,6 +214,23 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message
         ?? "تعذّر تنظيف الصور المكررة";
       message.error(typeof msg === "string" ? msg : "تعذّر تنظيف الصور المكررة");
+    },
+  });
+
+  const reorderProducts = useMutation({
+    mutationFn: ({ brandId, ids }: { brandId: string; ids: string[] }) =>
+      mutations.reorderProducts(brandId, ids),
+    onMutate: ({ ids }) => {
+      const byId = new Map(localOrderProducts.map((p) => [p.id, p]));
+      setLocalOrderProducts(ids.map((id) => byId.get(id)).filter(Boolean) as any[]);
+    },
+    onSuccess: () => {
+      message.success("تم حفظ ترتيب المنتجات في التطبيق");
+      qc.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: () => {
+      message.error("تعذّر حفظ ترتيب المنتجات");
+      qc.invalidateQueries({ queryKey: ["products"] });
     },
   });
 
@@ -323,6 +356,7 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
 
   const rawItems = data?.data ?? [];
   const total = data?.meta?.total ?? 0;
+  const orderItems = canReorder ? localOrderProducts : rawItems;
 
   const items = useMemo(() => {
     if (activeFilter === "all") return rawItems;
@@ -642,8 +676,8 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
 
         <div className="pp-toolbar-filters">
           <Select
-            allowClear
-            placeholder="البراند"
+            allowClear={!reorderMode}
+            placeholder={reorderMode ? "اختر البراند للترتيب *" : "البراند"}
             className="pp-filter"
             value={filterBrandId}
             options={(brandsData ?? []).map((b: any) => ({
@@ -657,6 +691,8 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
               setFilterBrandId(v);
             }}
           />
+          {!reorderMode ? (
+            <>
           <Select
             allowClear
             placeholder="القسم"
@@ -724,8 +760,11 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
           <Button type="link" onClick={resetFilters}>
             مسح الفلاتر
           </Button>
+            </>
+          ) : null}
         </div>
 
+        {!reorderMode ? (
         <div className="pp-toolbar-view">
           <Segmented
             value={viewMode}
@@ -736,9 +775,31 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
             ]}
           />
         </div>
+        ) : null}
       </section>
 
-      {viewMode === "grid" ? (
+      {reorderMode && !filterBrandId ? (
+        <Alert
+          type="info"
+          showIcon
+          message="اختر برانداً لإعادة ترتيب منتجاته"
+          description="ترتيب البراندات نفسه يُدار من صفحة البراندات. هنا يمكنك ترتيب المنتجات داخل كل براند بالسحب والإفلات."
+          style={{ marginBottom: 16 }}
+        />
+      ) : null}
+
+      {canReorder ? (
+        <ProductsSortableList
+          products={orderItems}
+          loading={isLoading}
+          reordering={reorderProducts.isPending}
+          onReorder={(ids) => {
+            if (!filterBrandId) return;
+            reorderProducts.mutate({ brandId: filterBrandId, ids });
+          }}
+          onEdit={openEdit}
+        />
+      ) : viewMode === "grid" ? (
         <div className={`pp-grid${isLoading ? " is-loading" : ""}`}>
           {!isLoading && !items.length ? (
             <div className="pp-empty">
@@ -838,6 +899,7 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
         </div>
       )}
 
+      {!canReorder ? (
       <div className="pp-pager">
         <Select
           value={pageSize}
@@ -866,6 +928,7 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
           </Button>
         </Space>
       </div>
+      ) : null}
 
       <ProductFormDrawer
         open={open}

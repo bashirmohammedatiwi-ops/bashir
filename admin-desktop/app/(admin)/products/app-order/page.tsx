@@ -6,8 +6,9 @@ export default function ProductsAppOrderPage() {
   return (
     <ProductsAdminPage
       sortMode="brand"
+      reorderMode
       pageTitle="ترتيب التطبيق"
-      pageSubtitle="نفس ترتيب عرض المنتجات في تطبيق الهاتف — حسب ترتيب البراندات"
+      pageSubtitle="ترتيب البراندات ثم المنتجات داخل كل براند — اسحب المنتجات بعد اختيار البراند"
     />
   );
 }
