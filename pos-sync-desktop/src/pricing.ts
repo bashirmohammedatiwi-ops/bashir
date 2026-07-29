@@ -25,7 +25,7 @@ export type SyncItem = {
   offerName?: string;
 };
 
-/** نفس calcPricing في Desktop\api\server.js */
+/** نفس calcPricing في Desktop\api\server.js — مع دعم SellPr5 بدون عرض نشط */
 export function computePricing(row: PosArticleRow): Omit<
   SyncItem,
   "barcode" | "productCode" | "productNum" | "name"
@@ -35,14 +35,12 @@ export function computePricing(row: PosArticleRow): Omit<
   const quantity = Math.max(0, Math.round(Number(row.quantity) || 0));
   const discountValue = row.discountValue != null ? Number(row.discountValue) : null;
   const discountType = row.discountType != null ? Number(row.discountType) : 0;
+  const offerName = row.offerName?.trim() || undefined;
 
-  let hasOffer = false;
+  const hasActiveOffer = discountValue != null && discountValue > 0;
   let finalPrice = original;
-  let discountPercent = 0;
-  let offerName: string | undefined = row.offerName?.trim() || undefined;
 
-  if (discountValue != null && discountValue > 0) {
-    hasOffer = true;
+  if (hasActiveOffer) {
     if (storedFinal > 0 && storedFinal < original) {
       finalPrice = storedFinal;
     } else if (discountType === 0) {
@@ -50,18 +48,25 @@ export function computePricing(row: PosArticleRow): Omit<
     } else {
       finalPrice = Math.max(0, Math.round(original - discountValue));
     }
+  } else if (storedFinal > 0 && storedFinal < original) {
+    finalPrice = storedFinal;
   }
 
-  if (hasOffer && original > 0 && finalPrice < original) {
-    discountPercent = Math.round((1 - finalPrice / original) * 100);
+  if (finalPrice >= original) {
+    finalPrice = original;
   }
+
+  const hasDiscount = original > 0 && finalPrice < original;
+  const discountPercent = hasDiscount
+    ? Math.round((1 - finalPrice / original) * 100)
+    : 0;
 
   return {
-    price: hasOffer ? finalPrice : original,
+    price: hasDiscount ? finalPrice : original,
     originalPrice: original,
-    discountPercent: hasOffer ? discountPercent : 0,
+    discountPercent,
     stock: quantity,
-    offerName: hasOffer ? offerName : undefined,
+    offerName: hasActiveOffer ? offerName : undefined,
   };
 }
 

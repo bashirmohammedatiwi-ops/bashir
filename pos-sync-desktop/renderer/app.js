@@ -170,8 +170,8 @@ function readForm() {
     api: { baseUrl: fields.apiBase.value.trim() },
     sync: {
       autoSyncMinutes: Number(fields.autoMinutes.value) || 0,
-      batchSize: Number(fields.batchSize.value) || 300,
-      parallelUploads: Number(fields.parallelUploads.value) || 4,
+      batchSize: Number(fields.batchSize.value) || 500,
+      parallelUploads: Number(fields.parallelUploads.value) || 6,
     },
   };
 }
@@ -184,8 +184,8 @@ function fillForm(config) {
   fields.sqlPassword.value = config.sqlServer?.password ?? "";
   fields.apiBase.value = config.api?.baseUrl ?? "";
   fields.autoMinutes.value = String(config.sync?.autoSyncMinutes ?? 5);
-  fields.batchSize.value = String(config.sync?.batchSize ?? 300);
-  fields.parallelUploads.value = String(config.sync?.parallelUploads ?? 4);
+  fields.batchSize.value = String(config.sync?.batchSize ?? 500);
+  fields.parallelUploads.value = String(config.sync?.parallelUploads ?? 6);
   updateInfoPanel(config);
 }
 
@@ -203,8 +203,8 @@ function updateInfoPanel(config) {
   if (mins > 0) {
     els.syncDesc.textContent = `يبحث ويرفع تلقائياً كل ${mins} دقائق — فقط المنتجات المتغيّرة`;
   }
-  els.infoBatch.textContent = fmt(config.sync?.batchSize ?? 300);
-  els.infoParallel.textContent = `${config.sync?.parallelUploads ?? 4}×`;
+  els.infoBatch.textContent = fmt(config.sync?.batchSize ?? 500);
+  els.infoParallel.textContent = `${config.sync?.parallelUploads ?? 6}×`;
 }
 
 function updateStats(stats, count) {

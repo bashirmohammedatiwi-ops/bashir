@@ -8,7 +8,7 @@ export type ApiConfig = {
 export function createApiClient(config: ApiConfig): AxiosInstance {
   return axios.create({
     baseURL: config.baseUrl.replace(/\/$/, ""),
-    timeout: 300_000,
+    timeout: 600_000,
     headers: {
       "Content-Type": "application/json",
       "Accept-Encoding": "gzip, deflate",
@@ -51,7 +51,7 @@ async function sleep(ms: number) {
 }
 
 export type BulkSyncResult = {
-  synced: number;
+  synced?: number;
   failed?: number;
   items?: Array<{ barcode: string; error?: string }>;
 };
@@ -107,7 +107,7 @@ export function chunkItems<T>(items: T[], size: number): T[][] {
   return chunks;
 }
 
-export type BatchUploadProgress = (done: number, total: number) => void;
+export type BatchUploadProgress = (done: number, total: number, syncedSoFar: number) => void;
 
 export type BatchUploadResult = {
   synced: number;
@@ -117,7 +117,11 @@ export type BatchUploadResult = {
   lastError?: string;
 };
 
-function collectFailedItems(batch: SyncItem[], result: BulkSyncResult): SyncItem[] {
+/** يعتمد فقط على error صريح في items — لا يُعيد كل الدفعة كفاشلة */
+function splitBatchResult(
+  batch: SyncItem[],
+  result: BulkSyncResult,
+): { succeeded: SyncItem[]; failed: SyncItem[] } {
   const failedBarcodes = new Set(
     (result.items ?? [])
       .filter((item) => item.error)
@@ -125,8 +129,14 @@ function collectFailedItems(batch: SyncItem[], result: BulkSyncResult): SyncItem
       .filter(Boolean),
   );
 
-  if (failedBarcodes.size === 0) return [];
-  return batch.filter((item) => failedBarcodes.has(item.barcode.trim()));
+  if (failedBarcodes.size === 0) {
+    return { succeeded: batch, failed: [] };
+  }
+
+  const failed = batch.filter((item) => failedBarcodes.has(item.barcode.trim()));
+  const failedSet = new Set(failed.map((item) => item.barcode.trim()));
+  const succeeded = batch.filter((item) => !failedSet.has(item.barcode.trim()));
+  return { succeeded, failed };
 }
 
 export async function pushBatchesParallel(
@@ -152,15 +162,12 @@ export async function pushBatchesParallel(
       const batch = batches[index];
       try {
         const result = await pushBulkWithRetry(client, batch);
-        synced += result.synced ?? batch.length;
-        failed += result.failed ?? 0;
-
-        const batchFailed = collectFailedItems(batch, result);
+        const { succeeded, failed: batchFailed } = splitBatchResult(batch, result);
+        synced += succeeded.length;
+        failed += batchFailed.length;
+        pushed.push(...succeeded);
         if (batchFailed.length > 0) {
           failedItems.push(...batchFailed);
-          pushed.push(...batch.filter((item) => !batchFailed.some((f) => f.barcode === item.barcode)));
-        } else {
-          pushed.push(...batch);
         }
       } catch (err) {
         failed += batch.length;
@@ -168,7 +175,7 @@ export async function pushBatchesParallel(
         lastError = formatApiError(err);
       } finally {
         completed += 1;
-        onProgress?.(completed, total);
+        onProgress?.(completed, total, synced);
       }
     }
   }
@@ -181,12 +188,13 @@ export async function pushBatchesParallel(
 export async function retryFailedItems(
   client: AxiosInstance,
   items: SyncItem[],
-  batchSize = 50,
+  batchSize = 500,
+  concurrency = 4,
 ): Promise<BatchUploadResult> {
   if (!items.length) {
     return { synced: 0, failed: 0, pushed: [], failedItems: [] };
   }
 
   const batches = chunkItems(items, batchSize);
-  return pushBatchesParallel(client, batches, 1);
+  return pushBatchesParallel(client, batches, concurrency);
 }

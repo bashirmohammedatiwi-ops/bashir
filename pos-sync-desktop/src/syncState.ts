@@ -24,12 +24,33 @@ function syncSignature(item: SyncItem | SyncStateEntry): string {
   return `${item.price}|${item.originalPrice}|${item.discountPercent}|${item.stock}|${name}|${offerName}`;
 }
 
-export function dedupeSyncItems(items: SyncItem[]): SyncItem[] {
-  const byBarcode = new Map<string, SyncItem>();
+export type DedupeResult = {
+  items: SyncItem[];
+  collisions: number;
+};
+
+/** يمنع فقدان منتجات عند تكرار الباركود — يستخدم POS:Seq كمعرّف بديل */
+export function dedupeSyncItems(items: SyncItem[]): DedupeResult {
+  const seenBarcodes = new Map<string, string>();
+  const byProductCode = new Map<string, SyncItem>();
+  let collisions = 0;
+
   for (const item of items) {
-    byBarcode.set(normalizeBarcode(item.barcode), item);
+    const barcode = normalizeBarcode(item.barcode);
+    const code = item.productCode;
+    const owner = seenBarcodes.get(barcode);
+
+    if (owner && owner !== code) {
+      collisions += 1;
+      byProductCode.set(code, { ...item, barcode: `POS:${code}` });
+      continue;
+    }
+
+    seenBarcodes.set(barcode, code);
+    byProductCode.set(code, item);
   }
-  return [...byBarcode.values()];
+
+  return { items: [...byProductCode.values()], collisions };
 }
 
 export function buildSyncState(items: SyncItem[]): SyncStateMap {

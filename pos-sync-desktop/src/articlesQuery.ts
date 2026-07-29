@@ -1,5 +1,17 @@
 /** نفس منطق C:\Users\Future of Technology\Desktop\api\server.js */
 
+const OFFER_DATE_ACTIVE = `
+      od.Unlimited = 1
+      OR (od.from_date IS NULL AND od.to_date IS NULL)
+      OR (od.from_date IS NULL AND od.to_date IS NOT NULL AND CAST(GETDATE() AS date) <= od.to_date)
+      OR (od.to_date IS NULL AND od.from_date IS NOT NULL AND CAST(GETDATE() AS date) >= od.from_date)
+      OR (
+        od.from_date IS NOT NULL
+        AND od.to_date IS NOT NULL
+        AND CAST(GETDATE() AS date) BETWEEN od.from_date AND od.to_date
+      )
+`;
+
 export const ACTIVE_OFFERS_CTE = `
 ActiveOffers AS (
   SELECT
@@ -17,11 +29,7 @@ ActiveOffers AS (
   INNER JOIN dbo.offers o ON od.offer_id = o.id
   WHERE o.enabled = 1
     AND od.discount > 0
-    AND (
-      od.Unlimited = 1
-      OR (od.from_date IS NULL AND od.to_date IS NULL)
-      OR (CAST(GETDATE() AS date) BETWEEN od.from_date AND od.to_date)
-    )
+    AND (${OFFER_DATE_ACTIVE})
 )
 `;
 
@@ -61,5 +69,7 @@ SELECT
    FROM dbo.offer_details od
    INNER JOIN dbo.offers o ON od.offer_id = o.id
    INNER JOIN dbo.articles a ON a.Seq = od.item_id
-   WHERE o.enabled = 1 AND od.discount > 0) AS productsOnOffer
+   WHERE o.enabled = 1 AND od.discount > 0
+     AND COALESCE(a.SellPr4, 0) > 0
+     AND (${OFFER_DATE_ACTIVE})) AS productsOnOffer
 `;

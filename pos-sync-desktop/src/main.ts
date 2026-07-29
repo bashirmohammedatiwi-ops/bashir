@@ -43,7 +43,7 @@ function defaultConfig(): AppConfig {
     api: {
       baseUrl: "http://187.127.88.146/api/v1",
     },
-    sync: { autoSyncMinutes: 5, batchSize: 300, parallelUploads: 2 },
+    sync: { autoSyncMinutes: 5, batchSize: 500, parallelUploads: 6 },
   };
 }
 
@@ -109,7 +109,11 @@ async function runSync(manual = false): Promise<{
     const readStarted = Date.now();
     const rows = await fetchArticles(config.sqlServer);
     const items = rows.map(rowToSyncItem).filter((x): x is NonNullable<typeof x> => x != null);
-    log(`قراءة SQL: ${items.length} منتج (${((Date.now() - readStarted) / 1000).toFixed(1)} ث)`);
+    const droppedRows = rows.length - items.length;
+    log(`قراءة SQL: ${rows.length} صف → ${items.length} منتج (${((Date.now() - readStarted) / 1000).toFixed(1)} ث)`);
+    if (droppedRows > 0) {
+      log(`تخطي ${droppedRows} صف بدون معرّف صالح`, "error");
+    }
 
     if (items.length === 0) {
       log("لا توجد منتجات بسعر في قاعدة البيانات", "error");
@@ -117,7 +121,13 @@ async function runSync(manual = false): Promise<{
       return result;
     }
 
-    const uniqueItems = dedupeSyncItems(items);
+    const { items: uniqueItems, collisions } = dedupeSyncItems(items);
+    if (collisions > 0) {
+      log(`باركود مكرر: ${collisions} منتج — رُفعت بمعرّف POS:Seq`, "info");
+    }
+    if (uniqueItems.length < items.length) {
+      log(`دمج ${items.length - uniqueItems.length} صف مكرر (نفس productCode)`, "info");
+    }
     const previousState = loadSyncState(app.getPath("userData"));
     const knownCount = countSyncState(previousState);
     const toSend = manual ? uniqueItems : filterChangedItems(uniqueItems, previousState);
@@ -141,8 +151,8 @@ async function runSync(manual = false): Promise<{
     );
 
     const client = createApiClient(config.api);
-    const batchSize = Math.max(50, Math.min(config.sync.batchSize || 300, 1000));
-    const parallelUploads = Math.max(1, Math.min(config.sync.parallelUploads || 2, 4));
+    const batchSize = Math.max(100, Math.min(config.sync.batchSize || 500, 1000));
+    const parallelUploads = Math.max(1, Math.min(config.sync.parallelUploads || 6, 8));
     const batches = chunkItems(toSend, batchSize);
     const uploadStarted = Date.now();
 
@@ -152,9 +162,10 @@ async function runSync(manual = false): Promise<{
       client,
       batches,
       parallelUploads,
-      (done, total) => {
-        if (done === total || done % parallelUploads === 0) {
-          log(`تقدّم الرفع: ${done}/${total} دفعة`);
+      (done, total, syncedSoFar) => {
+        if (done === total || done % Math.max(1, parallelUploads) === 0) {
+          const pct = Math.round((syncedSoFar / toSend.length) * 100);
+          log(`تقدّم الرفع: ${done}/${total} دفعة — ${syncedSoFar} منتج (${pct}%)`);
         }
       },
     );
@@ -164,8 +175,9 @@ async function runSync(manual = false): Promise<{
     let finalPushed = [...pushed];
 
     if (failedItems.length > 0) {
-      log(`إعادة محاولة ${failedItems.length} منتج فاشل — دفعات صغيرة...`);
-      const retry = await retryFailedItems(client, failedItems, 50);
+      const retryBatch = Math.min(batchSize, 500);
+      log(`إعادة محاولة ${failedItems.length} منتج — ${retryBatch}/دفعة × ${parallelUploads}...`);
+      const retry = await retryFailedItems(client, failedItems, retryBatch, parallelUploads);
       finalSynced += retry.synced;
       finalPushed.push(...retry.pushed);
       finalFailed = retry.failedItems.length;
@@ -188,7 +200,7 @@ async function runSync(manual = false): Promise<{
 
     if (finalFailed > 0) {
       log(
-        `اكتملت جزئياً — رُفع ${finalSynced} | فشل ${finalFailed} | حُفظ ${finalPushed.length} | ${((Date.now() - uploadStarted) / 1000).toFixed(1)} ث`,
+        `اكتملت جزئياً — رُفع ${finalSynced} من ${toSend.length} | فشل ${finalFailed} | ${((Date.now() - uploadStarted) / 1000).toFixed(1)} ث`,
         "error",
       );
       result = {
@@ -202,8 +214,15 @@ async function runSync(manual = false): Promise<{
       return result;
     }
 
+    if (manual && finalSynced < toSend.length) {
+      log(
+        `تحذير: رُفع ${finalSynced} من ${toSend.length} منتج — ${toSend.length - finalSynced} لم يُرفع`,
+        "error",
+      );
+    }
+
     log(
-      `اكتملت — رُفع ${finalSynced} | حُفظ ${finalPushed.length} | ${((Date.now() - uploadStarted) / 1000).toFixed(1)} ث`,
+      `اكتملت — رُفع ${finalSynced}/${toSend.length} | إجمالي POS: ${uniqueItems.length} | ${((Date.now() - uploadStarted) / 1000).toFixed(1)} ث`,
       "success",
     );
     result = {
