@@ -447,6 +447,36 @@ export class ProductsService {
     return { count };
   }
 
+  /** أصناف POS: منتج بلا تدرجات + باركود، أو كل تدرج بباركود يُحسب وحدة مستقلة. */
+  async countPosStats() {
+    const [row] = await this.prisma.$queryRaw<
+      [{ total_products: bigint; pos_units: bigint; pos_shade_units: bigint; pos_single_units: bigint }]
+    >`
+      SELECT
+        (SELECT COUNT(*)::bigint FROM "Product") AS total_products,
+        (
+          (SELECT COUNT(*)::bigint FROM "ProductShade"
+           WHERE barcode IS NOT NULL AND BTRIM(barcode) <> '')
+          +
+          (SELECT COUNT(*)::bigint FROM "Product" p
+           WHERE NOT EXISTS (SELECT 1 FROM "ProductShade" s WHERE s."productId" = p.id)
+             AND p.barcode IS NOT NULL AND BTRIM(p.barcode) <> '')
+        ) AS pos_units,
+        (SELECT COUNT(*)::bigint FROM "ProductShade"
+         WHERE barcode IS NOT NULL AND BTRIM(barcode) <> '') AS pos_shade_units,
+        (SELECT COUNT(*)::bigint FROM "Product" p
+         WHERE NOT EXISTS (SELECT 1 FROM "ProductShade" s WHERE s."productId" = p.id)
+           AND p.barcode IS NOT NULL AND BTRIM(p.barcode) <> '') AS pos_single_units
+    `;
+
+    return {
+      totalProducts: Number(row?.total_products ?? 0),
+      posUnits: Number(row?.pos_units ?? 0),
+      posShadeUnits: Number(row?.pos_shade_units ?? 0),
+      posSingleUnits: Number(row?.pos_single_units ?? 0),
+    };
+  }
+
   async hideActiveWithoutImages() {
     const result = await this.prisma.product.updateMany({
       where: this.activeWithoutImagesWhere(),

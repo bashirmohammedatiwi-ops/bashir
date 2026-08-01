@@ -1,0 +1,242 @@
+[
+  {
+    "num": "001",
+    "name": "Red Wine",
+    "current": "5206929012925",
+    "verified": "5206929012925",
+    "status": "OK",
+    "source": "kpdhellas.gr (matched current)"
+  },
+  {
+    "num": "002",
+    "name": "Love Red",
+    "current": "5206929012935",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "003",
+    "name": "Toffee",
+    "current": "5206929012945",
+    "verified": "5206929012949",
+    "status": "MISMATCH",
+    "source": "pharmacymegastore.gr"
+  },
+  {
+    "num": "004",
+    "name": "Bean Red",
+    "current": "5206929012955",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "005",
+    "name": "Cocoa",
+    "current": "5206929012963",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "006",
+    "name": "Valentine Red",
+    "current": "5206929012975",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "007",
+    "name": "Malt",
+    "current": "5206929012985",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "008",
+    "name": "Peach Melody",
+    "current": "5206929012995",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "009",
+    "name": "Tapioca Cream",
+    "current": "5206929013005",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "010",
+    "name": "Speckletone Wine",
+    "current": "5206929013014",
+    "verified": "5206929013014",
+    "status": "OK",
+    "source": "pharmacymegastore.gr"
+  },
+  {
+    "num": "011",
+    "name": "Milky Chocolate",
+    "current": "5206929013025",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "012",
+    "name": "Rust",
+    "current": "5206929013038",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "013",
+    "name": "Irish Cream",
+    "current": "5206929013045",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "014",
+    "name": "Almond Joy",
+    "current": "5206929013055",
+    "verified": "5206929013052",
+    "status": "MISMATCH",
+    "source": "pharmacymegastore.gr"
+  },
+  {
+    "num": "015",
+    "name": "Cranberry",
+    "current": "5206929013065",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "016",
+    "name": "Moonshine",
+    "current": "5206929013075",
+    "verified": "5206929013076",
+    "status": "MISMATCH",
+    "source": "pharmacymegastore.gr"
+  },
+  {
+    "num": "017",
+    "name": "Crimson Silk",
+    "current": "5206929013085",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "018",
+    "name": "Candy Floss",
+    "current": "5206929013095",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "019",
+    "name": "Guava Jelly",
+    "current": "5206929013105",
+    "verified": "5206929013106",
+    "status": "MISMATCH",
+    "source": "pharmacymegastore.gr"
+  },
+  {
+    "num": "020",
+    "name": "Chilli Red",
+    "current": "5206929013113",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "021",
+    "name": "Indian Red",
+    "current": "5206929013125",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "022",
+    "name": "Brown Sugar",
+    "current": "5206929013135",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "023",
+    "name": "Burgundy",
+    "current": "5206929013145",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "024",
+    "name": "Bohemian Princess",
+    "current": "5206929013155",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "025",
+    "name": "Pecan",
+    "current": "5206929013165",
+    "verified": "5206929013168",
+    "status": "MISMATCH",
+    "source": "pharmacymegastore.gr"
+  },
+  {
+    "num": "026",
+    "name": "Rouge",
+    "current": "5206929013175",
+    "verified": "5206929013175",
+    "status": "OK",
+    "source": "kpdhellas.gr (matched current)"
+  },
+  {
+    "num": "027",
+    "name": "Dark Pink",
+    "current": "5206929013185",
+    "verified": "5206929013182",
+    "status": "MISMATCH",
+    "source": "pharmacymegastore.gr"
+  },
+  {
+    "num": "028",
+    "name": "Chestnut",
+    "current": "5206929013195",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  },
+  {
+    "num": "029",
+    "name": "Pine Cone",
+    "current": "5206929013205",
+    "verified": "5206929013205",
+    "status": "OK",
+    "source": "kpdhellas.gr (matched current)"
+  },
+  {
+    "num": "030",
+    "name": "Brick Red",
+    "current": "5206929013212",
+    "verified": null,
+    "status": "UNVERIFIED",
+    "source": null
+  }
+]

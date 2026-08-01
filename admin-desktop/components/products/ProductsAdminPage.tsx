@@ -152,6 +152,11 @@ export function ProductsAdminPage({
     queryFn: queries.productsWithoutImagesCount,
     staleTime: 30_000,
   });
+  const { data: posStats } = useQuery({
+    queryKey: ["products-pos-stats"],
+    queryFn: queries.productsPosStats,
+    staleTime: 30_000,
+  });
   const { data: skinConcernsData } = useQuery({
     queryKey: ["skin-concerns"],
     queryFn: () => queries.skinConcerns(true),
@@ -163,6 +168,7 @@ export function ProductsAdminPage({
     onSuccess: () => {
       message.success("تم الحذف");
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["products-pos-stats"] });
     },
   });
 
@@ -172,6 +178,7 @@ export function ProductsAdminPage({
     onSuccess: (_data, vars) => {
       message.success(vars.isActive ? "تم تفعيل المنتج" : "تم إيقاف المنتج — لن يظهر في التطبيق");
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["products-pos-stats"] });
     },
     onError: () => message.error("تعذّر تحديث حالة المنتج"),
   });
@@ -187,6 +194,7 @@ export function ProductsAdminPage({
       );
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["products-without-images-count"] });
+      qc.invalidateQueries({ queryKey: ["products-pos-stats"] });
     },
     onError: (err: unknown) => {
       const msg =
@@ -208,6 +216,7 @@ export function ProductsAdminPage({
       );
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["media-stats"] });
+      qc.invalidateQueries({ queryKey: ["products-pos-stats"] });
     },
     onError: (err: unknown) => {
       const msg =
@@ -246,6 +255,7 @@ export function ProductsAdminPage({
       setEditing(null);
       qc.invalidateQueries({ queryKey: ["products"] });
       qc.invalidateQueries({ queryKey: ["media-stats"] });
+      qc.invalidateQueries({ queryKey: ["products-pos-stats"] });
     },
   });
 
@@ -626,6 +636,18 @@ export function ProductsAdminPage({
           <strong>{total.toLocaleString("ar-IQ")}</strong>
           <span>إجمالي المنتجات</span>
         </div>
+        <Tooltip
+          title={
+            posStats
+              ? `منتج بباركود: ${Number(posStats.posSingleUnits ?? 0).toLocaleString("ar-IQ")} — تدرج بباركود: ${Number(posStats.posShadeUnits ?? 0).toLocaleString("ar-IQ")}`
+              : "جاري التحميل..."
+          }
+        >
+          <div className="pp-stat pp-stat--pos">
+            <strong>{(posStats?.posUnits ?? 0).toLocaleString("ar-IQ")}</strong>
+            <span>أصناف POS</span>
+          </div>
+        </Tooltip>
         <div className="pp-stat">
           <strong>{stats.active}</strong>
           <span>نشط في الصفحة</span>

@@ -1,0 +1,152 @@
+﻿[
+    {
+        "num":  "001",
+        "slug":  "red-wine",
+        "barcode":  null
+    },
+    {
+        "num":  "002",
+        "slug":  "love-red",
+        "barcode":  null
+    },
+    {
+        "num":  "003",
+        "slug":  "toffee",
+        "barcode":  null
+    },
+    {
+        "num":  "004",
+        "slug":  "bean-red",
+        "barcode":  null
+    },
+    {
+        "num":  "005",
+        "slug":  "cocoa",
+        "barcode":  null
+    },
+    {
+        "num":  "006",
+        "slug":  "valentine-red",
+        "barcode":  null
+    },
+    {
+        "num":  "007",
+        "slug":  "malt",
+        "barcode":  null
+    },
+    {
+        "num":  "008",
+        "slug":  "peach-melody",
+        "barcode":  null
+    },
+    {
+        "num":  "009",
+        "slug":  "tapioca-cream",
+        "barcode":  null
+    },
+    {
+        "num":  "010",
+        "slug":  "speckletone-wine",
+        "barcode":  null
+    },
+    {
+        "num":  "011",
+        "slug":  "milky-chocolate",
+        "barcode":  null
+    },
+    {
+        "num":  "012",
+        "slug":  "rust",
+        "barcode":  null
+    },
+    {
+        "num":  "013",
+        "slug":  "irish-cream",
+        "barcode":  null
+    },
+    {
+        "num":  "014",
+        "slug":  "almond-joy",
+        "barcode":  null
+    },
+    {
+        "num":  "015",
+        "slug":  "cranberry",
+        "barcode":  null
+    },
+    {
+        "num":  "016",
+        "slug":  "moonshine",
+        "barcode":  null
+    },
+    {
+        "num":  "017",
+        "slug":  "crimson-silk",
+        "barcode":  null
+    },
+    {
+        "num":  "018",
+        "slug":  "candy-floss",
+        "barcode":  null
+    },
+    {
+        "num":  "019",
+        "slug":  "guava-jelly",
+        "barcode":  null
+    },
+    {
+        "num":  "020",
+        "slug":  "chilli-red",
+        "barcode":  null
+    },
+    {
+        "num":  "021",
+        "slug":  "indian-red",
+        "barcode":  null
+    },
+    {
+        "num":  "022",
+        "slug":  "brown-sugar",
+        "barcode":  null
+    },
+    {
+        "num":  "023",
+        "slug":  "burgundy",
+        "barcode":  null
+    },
+    {
+        "num":  "024",
+        "slug":  "bohemian-princess",
+        "barcode":  null
+    },
+    {
+        "num":  "025",
+        "slug":  "pecan",
+        "barcode":  null
+    },
+    {
+        "num":  "026",
+        "slug":  "rouge",
+        "barcode":  null
+    },
+    {
+        "num":  "027",
+        "slug":  "dark-pink",
+        "barcode":  null
+    },
+    {
+        "num":  "028",
+        "slug":  "chestnut",
+        "barcode":  null
+    },
+    {
+        "num":  "029",
+        "slug":  "pine-cone",
+        "barcode":  null
+    },
+    {
+        "num":  "030",
+        "slug":  "brick-red",
+        "barcode":  null
+    }
+]

@@ -1,0 +1,138 @@
+[
+  {
+    "barcode": "4059729490551",
+    "id": "5e66b37b-8b68-4bfd-828e-729a1e005357",
+    "nameAr": "إيسنس - ماسكارا إكستريم للطول والحجم مقاومة للماء رقم ٣ أسود ١٣ مل",
+    "nameEn": "Essence - Lash WITHOUT Limits Extreme Lengthening & Volume Waterproof Mascara 03 Black 13 ml",
+    "price": 6750,
+    "status": "added"
+  },
+  {
+    "barcode": "4250587772029",
+    "id": "6557adab-6edb-4a0c-a8d9-64cc86d05d72",
+    "nameAr": "إيسنس - ماسكارا جيت بيج لاشز للحجم والتجعيد رقم ١ أسود",
+    "nameEn": "Essence - Get BIG! Lashes Volume Curl Mascara 01 Black",
+    "price": 5500,
+    "status": "added"
+  },
+  {
+    "barcode": "4250338494392",
+    "id": "e9703c3a-b64f-44b7-9c7e-bdc84a82fbdc",
+    "nameAr": "إيسنس - ماسكارا جيت بيج لاشز لتعزيز الحجم رقم ١ أسود",
+    "nameEn": "Essence - Get BIG! Lashes Volume Boost Mascara 01 Black",
+    "price": 5500,
+    "status": "added"
+  },
+  {
+    "barcode": "4059729441973",
+    "id": "e1331d14-0fc0-4003-afc4-9e563994bbe9",
+    "nameAr": "إيسنس - ماسكارا كول مي كوين تأثير رموش كثيفة دراماتيكي أسود ١١٫٥ مل",
+    "nameEn": "Essence - Call Me Queen Dramatic False Lash Effect Mascara Black 11.5 ml",
+    "price": 6750,
+    "status": "added"
+  },
+  {
+    "barcode": "4059729593016",
+    "id": "730eb80b-0f24-4ce2-90d2-5c12f06cb1da",
+    "nameAr": "إيسنس - ماسكارا لاش برنسس إكستريم تأثير الرموش الكثيفة مقاومة للماء ١٢ مل",
+    "nameEn": "Essence - Lash Princess False Lash Effect Extreme Waterproof Mascara 12 ml",
+    "price": 6750,
+    "status": "added"
+  },
+  {
+    "barcode": "4059729393876",
+    "id": "1eb8e39b-70ff-48d1-b9d6-72504e8fc190",
+    "nameAr": "إيسنس - ماسكارا لاش برنسس تأثير الرموش الكثيفة بني ١٢ مل",
+    "nameEn": "Essence - Lash Princess False Lash Effect Mascara Brown 12 ml",
+    "price": 6750,
+    "status": "added"
+  },
+  {
+    "barcode": "4059729490322",
+    "id": "490570d6-4b8b-4c51-a5cb-4c8201fe3438",
+    "nameAr": "إيسنس - ماسكارا كول مي كوين تأثير رموش كثيفة دراماتيكي مقاومة للماء أسود ١١٫٥ مل",
+    "nameEn": "Essence - Call Me Queen Dramatic False Lash Effect Mascara Waterproof Black 11.5 ml",
+    "price": 6750,
+    "status": "added"
+  },
+  {
+    "barcode": "4059729521088",
+    "id": "17fc9a76-ab6d-4494-8119-b8fc723f8c75",
+    "nameAr": "إيسنس - ماسكارا تيوبينغ إكستريم للطول والحجم رقم ٤",
+    "nameEn": "Essence - Lash WITHOUT Limits TUBING Extreme Lengthening & Volume Mascara 04",
+    "price": 6750,
+    "status": "added"
+  },
+  {
+    "barcode": "4250035271180",
+    "id": "832eb61b-cbc2-4410-a9d0-28dba62a35fc",
+    "nameAr": "إيسنس - جل شفاف للرموش والحواجب ٩ مل",
+    "nameEn": "Essence - Lash & Brow Gel Mascara Clear 9 ml",
+    "price": 3750,
+    "status": "added"
+  },
+  {
+    "barcode": "4059729485922",
+    "id": "30348aff-814f-4592-9b6c-3b8ad13f3082",
+    "nameAr": "إيسنس - جل تثبيت حواجب شفاف ٨٫٥ مل",
+    "nameEn": "Essence - Fix It Like A Pro Transparent Brow Fixing Gel 8.5 ml",
+    "price": 3750,
+    "status": "added"
+  },
+  {
+    "barcode": "4059729491145",
+    "id": "0e65f1bb-bbf5-4bc2-bbd8-0ee3404ff743",
+    "nameAr": "إيسنس - برايمر وجه ٥ في ١ واندر فول",
+    "nameEn": "Essence - Wonder Full 5 in 1 Primer",
+    "price": 6750,
+    "status": "added"
+  },
+  {
+    "barcode": "4250947501382",
+    "id": "1b230a78-f564-48be-a27d-d27a2b9f1036",
+    "nameAr": "إيسنس - مبراة أقلام مكياج مزدوجة",
+    "nameEn": "Essence - Duo Sharpener",
+    "price": 2250,
+    "status": "added"
+  },
+  {
+    "barcode": "4059729539724",
+    "id": "1534194d-33b4-47ac-a3c4-5cd57485c4a3",
+    "nameAr": "إيسنس - ستك بلاشر متغيّر اللون بولي بوكيت رقم ٠١ ٥ جم",
+    "nameEn": "Essence - Polly Pocket Colour-Changing Blush Stick 01 Here Comes The Fun 5 g",
+    "price": 5250,
+    "status": "added"
+  },
+  {
+    "barcode": "4059729590527",
+    "id": "008087da-49eb-4948-b31a-9c86ef408846",
+    "nameAr": "إيسنس - مجموعة ملمع شفاه وبلسم كيس بوم",
+    "nameEn": "Essence - Kiss Bomb Shiny Lipgloss & Lip Balm Set",
+    "price": 5250,
+    "status": "added"
+  },
+  {
+    "barcode": "4059729421340",
+    "id": "e462bba3-cb95-47e7-8538-cf022ad5b9b5",
+    "nameAr": "إيسنس - كحل سائل مقاوم للماء أسود ٣ مل",
+    "nameEn": "Essence - Dip Eyeliner Waterproof Black 3 ml",
+    "price": 3750,
+    "status": "added"
+  },
+  {
+    "barcode": "4250587705454",
+    "id": "935f813a-ad88-4393-96be-ac89005a3f7e",
+    "nameAr": "إيسنس - كحل سائل إنك أسود رقم ٠١",
+    "nameEn": "Essence - Liquid Ink Eyeliner Black 01",
+    "price": 3750,
+    "status": "added"
+  },
+  {
+    "barcode": "4059729511775",
+    "id": "128b0376-650f-42fa-a040-016843fb3c53",
+    "nameAr": "إيسنس - ملمع شفاه برائحة الشوكولاتة رقم ٠١ ١٠ مل",
+    "nameEn": "Essence - LOVE IT A CHOCO' LOT! Lip Gloss 01 Melted Bliss Chocolate Kiss 10 ml",
+    "price": 5250,
+    "status": "added"
+  }
+]
