@@ -25,7 +25,11 @@ export type SyncItem = {
   offerName?: string;
 };
 
-/** نفس calcPricing في Desktop\api\server.js — مع دعم SellPr5 بدون عرض نشط */
+/**
+ * تسعير المزامنة من صف POS.
+ * التخفيض يظهر فقط عند وجود عرض نشط في ActiveOffers.
+ * عند إزالة العرض: السعر يعود لـ SellPr4 ونسبة الخصم = 0 (لا نُبقي SellPr5 كتخفيض لاصق).
+ */
 export function computePricing(row: PosArticleRow): Omit<
   SyncItem,
   "barcode" | "productCode" | "productNum" | "name"
@@ -38,18 +42,24 @@ export function computePricing(row: PosArticleRow): Omit<
   const offerName = row.offerName?.trim() || undefined;
 
   const hasActiveOffer = discountValue != null && discountValue > 0;
-  let finalPrice = original;
 
-  if (hasActiveOffer) {
-    if (storedFinal > 0 && storedFinal < original) {
-      finalPrice = storedFinal;
-    } else if (discountType === 0) {
-      finalPrice = Math.round(original * (1 - discountValue / 100));
-    } else {
-      finalPrice = Math.max(0, Math.round(original - discountValue));
-    }
-  } else if (storedFinal > 0 && storedFinal < original) {
+  if (!hasActiveOffer) {
+    return {
+      price: original,
+      originalPrice: original,
+      discountPercent: 0,
+      stock: quantity,
+      offerName: undefined,
+    };
+  }
+
+  let finalPrice = original;
+  if (storedFinal > 0 && storedFinal < original) {
     finalPrice = storedFinal;
+  } else if (discountType === 0) {
+    finalPrice = Math.round(original * (1 - discountValue / 100));
+  } else {
+    finalPrice = Math.max(0, Math.round(original - discountValue));
   }
 
   if (finalPrice >= original) {
@@ -66,7 +76,7 @@ export function computePricing(row: PosArticleRow): Omit<
     originalPrice: original,
     discountPercent,
     stock: quantity,
-    offerName: hasActiveOffer ? offerName : undefined,
+    offerName,
   };
 }
 

@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { barcodeLookupCandidates, normalizeBarcode, resolveBarcodeMapKey } from "../../common/barcode.util";
+import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { fixPosArabicText } from "../../common/pos-text-encoding.util";
 import { PrismaService } from "../../common/prisma.service";
 import { InventorySyncItemDto } from "./dto/inventory-sync.dto";
@@ -60,11 +61,34 @@ const SNAPSHOT_CHUNK = 500;
 const PRODUCT_UPDATE_CHUNK = 150;
 const LOOKUP_BATCH = 200;
 
+type ProductPricingUpdate = {
+  productId: string;
+  barcode: string;
+  item: SanitizedItem;
+};
+
+function pickLeadShade<
+  T extends { stock: number; price: number | null; originalPrice: number; discountPercent: number },
+>(shades: T[]): T {
+  const inStock = shades.filter((s) => s.stock > 0);
+  const pool = inStock.length ? inStock : shades;
+  return [...pool].sort((a, b) => {
+    const disc = (b.discountPercent ?? 0) - (a.discountPercent ?? 0);
+    if (disc !== 0) return disc;
+    const priceA = a.price ?? Number.MAX_SAFE_INTEGER;
+    const priceB = b.price ?? Number.MAX_SAFE_INTEGER;
+    return priceA - priceB;
+  })[0]!;
+}
+
 @Injectable()
 export class InventorySyncService {
+  private readonly logger = new Logger(InventorySyncService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly stockAlerts: StockAlertService,
+    private readonly homeFeedCache: HomeFeedCacheService,
   ) {}
 
   async findByBarcode(barcode: string) {
@@ -254,49 +278,88 @@ export class InventorySyncService {
     }
 
     const failed = results.filter((r) => r.error).length;
-    const response = {
+
+    // طبّق الأسعار/التخفيض/المخزون على المنتجات مباشرة قبل الرد — حتى تظهر التخفيضات فوراً
+    let catalogUpdated = 0;
+    let productMap = new Map<string, { id: string; name: string | null }>();
+    try {
+      const catalog = await this.applyCatalogUpdates(sanitized);
+      catalogUpdated = catalog.productsUpdated;
+      productMap = catalog.productMap;
+    } catch (err) {
+      this.logger.error(`Catalog apply failed after snapshot sync: ${this.formatError(err)}`);
+    }
+
+    // تنبيهات المخزون في الخلفية (لا تؤخر الاستجابة بعد تحديث الكتالوج)
+    void this.processStockAlertsInBackground(sanitized, previousStockMap, productMap);
+
+    for (const row of results) {
+      if (row.error) continue;
+      const product = resolveBarcodeMapKey(productMap, row.barcode);
+      if (product) {
+        row.updatedProduct = true;
+        row.productId = product.id;
+      } else {
+        row.updatedProduct = false;
+      }
+    }
+
+    return {
       synced: results.length - failed,
       failed,
+      catalogUpdated,
       items: results,
       syncedAt,
       alerts: { restock: 0, lowStock: 0 },
     };
-
-    void this.applyCatalogUpdatesInBackground(sanitized, previousStockMap);
-
-    return response;
   }
 
-  /** تحديث الكatalog والتنبيهات في الخلفية — لا يُبطئ استجابة bulk */
-  private applyCatalogUpdatesInBackground(
+  /** تحديث التدرجات ثم تجميع السعر/التخفيض/المخزون على المنتج الأب + إبطال الكاش */
+  private async applyCatalogUpdates(sanitized: SanitizedItem[]) {
+    const barcodes = sanitized.map((item) => item.barcode);
+    const productMap = await this.buildProductBarcodeMap(barcodes);
+
+    const shadesUpdated = await this.bulkUpdateShades(sanitized);
+    const productsUpdated = await this.bulkUpdateProducts(sanitized, productMap);
+
+    if (shadesUpdated.size > 0 || productsUpdated.size > 0) {
+      try {
+        await this.homeFeedCache.invalidateAll();
+      } catch (err) {
+        this.logger.warn(`Home feed cache invalidate failed: ${this.formatError(err)}`);
+      }
+    }
+
+    return {
+      productMap,
+      shadesUpdated: shadesUpdated.size,
+      productsUpdated: productsUpdated.size,
+    };
+  }
+
+  private processStockAlertsInBackground(
     sanitized: SanitizedItem[],
     previousStockMap: Map<string, number>,
+    productMap: Map<string, { id: string; name: string | null }>,
   ) {
+    if (sanitized.length > 200) return;
+
     void (async () => {
       try {
-        const barcodes = sanitized.map((item) => item.barcode);
-        const productMap = await this.buildProductBarcodeMap(barcodes);
-        await Promise.all([
-          this.bulkUpdateShades(sanitized),
-          this.bulkUpdateProducts(sanitized, productMap),
-        ]);
-
-        if (sanitized.length <= 200) {
-          const alertItems = sanitized.map((item) => {
-            const product = resolveBarcodeMapKey(productMap, item.barcode);
-            return {
-              barcode: item.barcode,
-              name: item.name,
-              stock: item.stock,
-              previousStock: previousStockMap.get(item.barcode) ?? null,
-              productId: product?.id ?? null,
-              productName: product?.name ?? null,
-            };
-          });
-          await this.stockAlerts.processStockChanges(alertItems);
-        }
-      } catch {
-        /* catalog updates must not affect sync response */
+        const alertItems = sanitized.map((item) => {
+          const product = resolveBarcodeMapKey(productMap, item.barcode);
+          return {
+            barcode: item.barcode,
+            name: item.name,
+            stock: item.stock,
+            previousStock: previousStockMap.get(item.barcode) ?? null,
+            productId: product?.id ?? null,
+            productName: product?.name ?? null,
+          };
+        });
+        await this.stockAlerts.processStockChanges(alertItems);
+      } catch (err) {
+        this.logger.warn(`Stock alerts failed: ${this.formatError(err)}`);
       }
     })();
   }
@@ -530,28 +593,129 @@ export class InventorySyncService {
     }
   }
 
+  /**
+   * يحدّث منتج الأب بعد تحديث التدرجات:
+   * - مخزون = مجموع تدرجات المنتج
+   * - السعر/التخفيض = تدرج العرض (أعلى خصم بين المتوفر، وإلا أقل سعر)
+   * - منتجات بلا تدرجات: تُحدَّث مباشرة من عنصر الباركود
+   */
   private async bulkUpdateProducts(
     items: SanitizedItem[],
     productMap: Map<string, { id: string; name: string | null }>,
   ) {
     const updated = new Set<string>();
-    const byProductId = new Map<
-      string,
-      { productId: string; item: SanitizedItem; barcode: string }
-    >();
+    const productIds = new Set<string>();
+    const directByProductId = new Map<string, { productId: string; item: SanitizedItem; barcode: string }>();
 
     for (const item of items) {
       const product = resolveBarcodeMapKey(productMap, item.barcode);
-      if (product) {
-        byProductId.set(product.id, {
-          productId: product.id,
-          item,
-          barcode: item.barcode,
-        });
+      if (!product) continue;
+      productIds.add(product.id);
+      directByProductId.set(product.id, {
+        productId: product.id,
+        item,
+        barcode: item.barcode,
+      });
+    }
+
+    if (!productIds.size) return updated;
+
+    const idList = [...productIds];
+    const [products, allShades] = await Promise.all([
+      this.prisma.product.findMany({
+        where: { id: { in: idList } },
+        select: { id: true, barcode: true },
+      }),
+      this.prisma.productShade.findMany({
+        where: { productId: { in: idList } },
+        select: {
+          productId: true,
+          barcode: true,
+          stock: true,
+          price: true,
+          originalPrice: true,
+          discountPercent: true,
+        },
+      }),
+    ]);
+
+    const shadesByProduct = new Map<string, typeof allShades>();
+    for (const shade of allShades) {
+      const list = shadesByProduct.get(shade.productId) ?? [];
+      list.push(shade);
+      shadesByProduct.set(shade.productId, list);
+    }
+
+    const itemByBarcode = new Map<string, SanitizedItem>();
+    for (const item of items) {
+      for (const key of barcodeLookupCandidates(item.barcode)) {
+        itemByBarcode.set(key, item);
       }
     }
 
-    const updates = [...byProductId.values()];
+    const updates: ProductPricingUpdate[] = [];
+
+    for (const product of products) {
+      const shades = shadesByProduct.get(product.id) ?? [];
+      const fallback = directByProductId.get(product.id);
+      if (!fallback && !shades.length) continue;
+
+      if (shades.length > 0) {
+        const totalStock = shades.reduce((sum, s) => sum + (s.stock ?? 0), 0);
+        const lead = pickLeadShade(shades);
+        const productBarcodeItem = product.barcode
+          ? resolveBarcodeMapKey(itemByBarcode, product.barcode)
+          : null;
+
+        // إن وُجد باركود للمنتج نفسه في الدفعة وليس له تدرج مطابق، نفضّل سعره مع مجموع المخزون
+        const shadeBarcodes = new Set(
+          shades.flatMap((s) => (s.barcode ? barcodeLookupCandidates(s.barcode) : [])),
+        );
+        const useProductBarcodePricing =
+          !!productBarcodeItem &&
+          !!product.barcode &&
+          !barcodeLookupCandidates(product.barcode).some((k) => shadeBarcodes.has(k));
+
+        const pricingSource = useProductBarcodePricing
+          ? productBarcodeItem!
+          : {
+              price: lead.price ?? fallback?.item.price ?? 0,
+              originalPrice: lead.originalPrice ?? fallback?.item.originalPrice ?? 0,
+              discountPercent: lead.discountPercent ?? fallback?.item.discountPercent ?? 0,
+              stock: totalStock,
+              barcode: fallback?.barcode ?? product.barcode ?? product.id,
+              productCode: null,
+              productNum: null,
+              name: null,
+              offerName: null,
+            };
+
+        const anyPromo = shades.some((s) => (s.discountPercent ?? 0) > 0);
+        updates.push({
+          productId: product.id,
+          barcode: fallback?.barcode ?? product.barcode ?? product.id,
+          item: {
+            barcode: pricingSource.barcode ?? fallback?.barcode ?? product.id,
+            productCode: null,
+            productNum: null,
+            name: null,
+            price: pricingSource.price,
+            originalPrice: pricingSource.originalPrice,
+            discountPercent: anyPromo
+              ? Math.max(
+                  pricingSource.discountPercent,
+                  ...shades.map((s) => s.discountPercent ?? 0),
+                )
+              : 0,
+            stock: totalStock,
+            offerName: null,
+          },
+        });
+      } else if (fallback) {
+        updates.push(fallback);
+      }
+    }
+
     if (!updates.length) return updated;
 
     for (let i = 0; i < updates.length; i += PRODUCT_UPDATE_CHUNK) {
@@ -559,7 +723,8 @@ export class InventorySyncService {
       try {
         await this.updateProductChunk(chunk);
         for (const entry of chunk) updated.add(entry.barcode);
-      } catch {
+      } catch (err) {
+        this.logger.warn(`Product chunk update failed, falling back: ${this.formatError(err)}`);
         await this.updateProductsFallback(chunk, updated);
       }
     }
