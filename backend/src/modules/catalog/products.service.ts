@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { barcodeLookupCandidates } from "../../common/barcode.util";
+import { barcodeLookupCandidates, resolveBarcodeMapKey } from "../../common/barcode.util";
 import { PrismaService } from "../../common/prisma.service";
 import { resolveProductNames } from "../../common/product-names.util";
 import { resolveProductDescriptions } from "../../common/product-descriptions.util";
@@ -796,32 +796,73 @@ export class ProductsService {
     if (!dto.shades?.length) return dto;
 
     const totalStock = dto.shades.reduce((sum, shade) => sum + (shade.stock ?? 0), 0);
-    const priced = dto.shades.find((shade) => shade.price != null) ?? dto.shades[0];
-    if (!priced) return dto;
+    const inStock = dto.shades.filter((shade) => (shade.stock ?? 0) > 0);
+    const pool = inStock.length ? inStock : dto.shades;
+    const lead = [...pool].sort((a, b) => {
+      const disc = (b.discountPercent ?? 0) - (a.discountPercent ?? 0);
+      if (disc !== 0) return disc;
+      return (a.price ?? Number.MAX_SAFE_INTEGER) - (b.price ?? Number.MAX_SAFE_INTEGER);
+    })[0];
+    if (!lead) return dto;
+
+    const maxDiscount = Math.max(0, ...dto.shades.map((s) => s.discountPercent ?? 0));
 
     return {
       ...dto,
       stock: totalStock,
-      price: priced.price ?? dto.price,
-      originalPrice: priced.originalPrice ?? dto.originalPrice ?? dto.price,
-      discountPercent: priced.discountPercent ?? dto.discountPercent ?? 0,
-      isPromo: (priced.discountPercent ?? dto.discountPercent ?? 0) > 0,
+      price: lead.price ?? dto.price,
+      originalPrice: lead.originalPrice ?? dto.originalPrice ?? dto.price,
+      discountPercent: maxDiscount,
+      isPromo: maxDiscount > 0,
     };
   }
 
   private async applySyncedPricing<T extends { barcode?: string; shades?: CreateProductDto["shades"]; price?: number; originalPrice?: number; discountPercent?: number; stock?: number; isPromo?: boolean }>(dto: T): Promise<T> {
-    const snapshot = await this.inventorySync.getSnapshotForBarcodes(this.collectBarcodes(dto));
-    if (!snapshot) return dto;
+    const shadeCodes = (dto.shades ?? [])
+      .map((shade) => shade.barcode?.trim())
+      .filter((code): code is string => !!code);
+    const allCodes = [
+      ...new Set([...(dto.barcode?.trim() ? [dto.barcode.trim()] : []), ...shadeCodes]),
+    ];
+    if (!allCodes.length) return dto;
 
-    const pricing = this.inventorySync.pricingFromSnapshot(snapshot);
-    return {
-      ...dto,
-      price: pricing.price,
-      originalPrice: pricing.originalPrice,
-      discountPercent: pricing.discountPercent,
-      stock: pricing.stock,
-      isPromo: pricing.isPromo,
-    };
+    const snapshots = await this.inventorySync.getSnapshotsMapForBarcodes(allCodes);
+    if (!snapshots.size) return dto;
+
+    let next = { ...dto };
+
+    if (dto.shades?.length) {
+      next.shades = dto.shades.map((shade) => {
+        if (!shade.barcode?.trim()) return shade;
+        const snap = resolveBarcodeMapKey(snapshots, shade.barcode);
+        if (!snap) return shade;
+        const pricing = this.inventorySync.pricingFromSnapshot(snap);
+        return {
+          ...shade,
+          price: pricing.price,
+          originalPrice: pricing.originalPrice,
+          discountPercent: pricing.discountPercent,
+          stock: pricing.stock,
+        };
+      });
+    }
+
+    if (dto.barcode?.trim()) {
+      const snap = resolveBarcodeMapKey(snapshots, dto.barcode);
+      if (snap) {
+        const pricing = this.inventorySync.pricingFromSnapshot(snap);
+        next = {
+          ...next,
+          price: pricing.price,
+          originalPrice: pricing.originalPrice,
+          discountPercent: pricing.discountPercent,
+          stock: pricing.stock,
+          isPromo: pricing.isPromo,
+        };
+      }
+    }
+
+    return next;
   }
 
   /// دمج القائمة الجديدة مع الحقل المفرد القديم (توافق مع الواجهات القديمة).

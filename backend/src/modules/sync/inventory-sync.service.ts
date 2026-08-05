@@ -205,18 +205,63 @@ export class InventorySyncService {
   }
 
   async getSnapshotForBarcodes(barcodes: string[]) {
+    const map = await this.getSnapshotsMapForBarcodes(barcodes);
+    for (const code of barcodes) {
+      const hit = resolveBarcodeMapKey(map, code);
+      if (hit) return hit;
+    }
+    return null;
+  }
+
+  /** لقطات متعددة حسب الباركود — لتحديث كل تدرج من POS */
+  async getSnapshotsMapForBarcodes(barcodes: string[]) {
     const candidates = [
       ...new Set(barcodes.flatMap((b) => barcodeLookupCandidates(b))),
     ];
-    if (!candidates.length) return null;
+    const map = new Map<
+      string,
+      {
+        barcode: string;
+        price: number;
+        originalPrice: number;
+        discountPercent: number;
+        stock: number;
+        name: string | null;
+        offerName: string | null;
+        syncedAt: Date;
+      }
+    >();
+    if (!candidates.length) return map;
 
-    const snapshot = await this.prisma.inventorySyncSnapshot.findFirst({
+    const snapshots = await this.prisma.inventorySyncSnapshot.findMany({
       where: {
         OR: [{ barcode: { in: candidates } }, { productNum: { in: candidates } }],
       },
     });
 
-    return snapshot ? fixSnapshotText(snapshot) : null;
+    for (const row of snapshots) {
+      const fixed = fixSnapshotText(row);
+      const entry = {
+        barcode: fixed.barcode,
+        price: fixed.price,
+        originalPrice: fixed.originalPrice,
+        discountPercent: fixed.discountPercent,
+        stock: fixed.stock,
+        name: fixed.name ?? null,
+        offerName: fixed.offerName ?? null,
+        syncedAt: fixed.syncedAt,
+      };
+      for (const key of barcodeLookupCandidates(fixed.barcode)) {
+        map.set(key, entry);
+      }
+      if (fixed.productNum) {
+        for (const key of barcodeLookupCandidates(fixed.productNum)) {
+          map.set(key, entry);
+        }
+      }
+    }
+
+    return map;
   }
 
   pricingFromSnapshot(snapshot: {
@@ -295,7 +340,13 @@ export class InventorySyncService {
 
     for (const row of results) {
       if (row.error) continue;
-      const product = resolveBarcodeMapKey(productMap, row.barcode);
+      const item = sanitized.find((s) => s.barcode === row.barcode);
+      const product =
+        resolveBarcodeMapKey(productMap, row.barcode) ||
+        (item
+          ? resolveBarcodeMapKey(productMap, item.productNum) ||
+            resolveBarcodeMapKey(productMap, item.productCode)
+          : null);
       if (product) {
         row.updatedProduct = true;
         row.productId = product.id;
@@ -314,13 +365,25 @@ export class InventorySyncService {
     };
   }
 
-  /** تحديث التدرجات ثم تجميع السعر/التخفيض/المخزون على المنتج الأب + إبطال الكاش */
+  /** تحديث التدرجات ثم المنتج الأب مباشرة من عناصر POS */
   private async applyCatalogUpdates(sanitized: SanitizedItem[]) {
-    const barcodes = sanitized.map((item) => item.barcode);
-    const productMap = await this.buildProductBarcodeMap(barcodes);
+    const lookupCodes = [
+      ...new Set(
+        sanitized.flatMap((item) => [
+          ...barcodeLookupCandidates(item.barcode),
+          ...barcodeLookupCandidates(item.productNum),
+          ...barcodeLookupCandidates(item.productCode),
+        ]),
+      ),
+    ];
+    const productMap = await this.buildProductBarcodeMap(lookupCodes);
 
     const shadesUpdated = await this.bulkUpdateShades(sanitized);
-    const productsUpdated = await this.bulkUpdateProducts(sanitized, productMap);
+    const productsUpdated = await this.bulkUpdateProducts(sanitized, productMap, shadesUpdated);
+
+    this.logger.log(
+      `POS catalog apply: shades=${shadesUpdated.size} products=${productsUpdated.size} items=${sanitized.length}`,
+    );
 
     if (shadesUpdated.size > 0 || productsUpdated.size > 0) {
       try {
@@ -521,7 +584,10 @@ export class InventorySyncService {
 
     const updateRows: Array<{ shadeId: string; item: SanitizedItem; barcode: string }> = [];
     for (const item of items) {
-      const shadeId = resolveBarcodeMapKey(shadeByBarcode, item.barcode);
+      const shadeId =
+        resolveBarcodeMapKey(shadeByBarcode, item.barcode) ||
+        resolveBarcodeMapKey(shadeByBarcode, item.productNum) ||
+        resolveBarcodeMapKey(shadeByBarcode, item.productCode);
       if (!shadeId) continue;
       updateRows.push({ shadeId, item, barcode: item.barcode });
     }
@@ -531,8 +597,12 @@ export class InventorySyncService {
       const chunk = updateRows.slice(i, i + PRODUCT_UPDATE_CHUNK);
       try {
         await this.updateShadeChunk(chunk);
-        for (const row of chunk) updated.add(row.barcode);
-      } catch {
+        for (const row of chunk) {
+          updated.add(row.barcode);
+          for (const key of barcodeLookupCandidates(row.barcode)) updated.add(key);
+        }
+      } catch (err) {
+        this.logger.warn(`Shade chunk update failed, falling back: ${this.formatError(err)}`);
         await this.updateShadesFallback(chunk, updated);
       }
     }
@@ -546,10 +616,10 @@ export class InventorySyncService {
     const rows = chunk.map(
       ({ shadeId, item }) => Prisma.sql`(
         ${shadeId}::uuid,
-        ${item.stock},
-        ${item.price},
-        ${item.originalPrice},
-        ${item.discountPercent}
+        ${item.stock}::int,
+        ${item.price}::int,
+        ${item.originalPrice}::int,
+        ${item.discountPercent}::int
       )`,
     );
 
@@ -587,6 +657,7 @@ export class InventorySyncService {
           },
         });
         updated.add(row.barcode);
+        for (const key of barcodeLookupCandidates(row.barcode)) updated.add(key);
       } catch {
         /* skip */
       }
@@ -594,21 +665,26 @@ export class InventorySyncService {
   }
 
   /**
-   * يحدّث منتج الأب بعد تحديث التدرجات:
-   * - مخزون = مجموع تدرجات المنتج
-   * - السعر/التخفيض = تدرج العرض (أعلى خصم بين المتوفر، وإلا أقل سعر)
-   * - منتجات بلا تدرجات: تُحدَّث مباشرة من عنصر الباركود
+   * يحدّث منتج الأب فوراً من POS:
+   * - إن وُجدت تدرجات تم تحديثها في هذه الدفعة → تجميع من كل التدرجات
+   * - وإلا → تطبيق عنصر الباركود المطابق مباشرة (حتى لو للمنتج تدرجات قديمة بلا مطابقة)
    */
   private async bulkUpdateProducts(
     items: SanitizedItem[],
     productMap: Map<string, { id: string; name: string | null }>,
+    syncedShadeBarcodes: Set<string>,
   ) {
     const updated = new Set<string>();
     const productIds = new Set<string>();
     const directByProductId = new Map<string, { productId: string; item: SanitizedItem; barcode: string }>();
 
+    const resolveItemProduct = (item: SanitizedItem) =>
+      resolveBarcodeMapKey(productMap, item.barcode) ||
+      resolveBarcodeMapKey(productMap, item.productNum) ||
+      resolveBarcodeMapKey(productMap, item.productCode);
+
     for (const item of items) {
-      const product = resolveBarcodeMapKey(productMap, item.barcode);
+      const product = resolveItemProduct(item);
       if (!product) continue;
       productIds.add(product.id);
       directByProductId.set(product.id, {
@@ -648,72 +724,65 @@ export class InventorySyncService {
 
     const itemByBarcode = new Map<string, SanitizedItem>();
     for (const item of items) {
-      for (const key of barcodeLookupCandidates(item.barcode)) {
+      for (const key of [
+        ...barcodeLookupCandidates(item.barcode),
+        ...barcodeLookupCandidates(item.productNum),
+        ...barcodeLookupCandidates(item.productCode),
+      ]) {
         itemByBarcode.set(key, item);
       }
     }
+
+    const shadeSynced = (barcode: string | null | undefined) => {
+      if (!barcode) return false;
+      return barcodeLookupCandidates(barcode).some((k) => syncedShadeBarcodes.has(k));
+    };
 
     const updates: ProductPricingUpdate[] = [];
 
     for (const product of products) {
       const shades = shadesByProduct.get(product.id) ?? [];
       const fallback = directByProductId.get(product.id);
-      if (!fallback && !shades.length) continue;
+      if (!fallback) continue;
 
-      if (shades.length > 0) {
+      const anyShadeSynced = shades.some((s) => shadeSynced(s.barcode));
+
+      if (shades.length > 0 && anyShadeSynced) {
         const totalStock = shades.reduce((sum, s) => sum + (s.stock ?? 0), 0);
         const lead = pickLeadShade(shades);
-        const productBarcodeItem = product.barcode
-          ? resolveBarcodeMapKey(itemByBarcode, product.barcode)
-          : null;
-
-        // إن وُجد باركود للمنتج نفسه في الدفعة وليس له تدرج مطابق، نفضّل سعره مع مجموع المخزون
-        const shadeBarcodes = new Set(
-          shades.flatMap((s) => (s.barcode ? barcodeLookupCandidates(s.barcode) : [])),
-        );
-        const useProductBarcodePricing =
-          !!productBarcodeItem &&
-          !!product.barcode &&
-          !barcodeLookupCandidates(product.barcode).some((k) => shadeBarcodes.has(k));
-
-        const pricingSource = useProductBarcodePricing
-          ? productBarcodeItem!
-          : {
-              price: lead.price ?? fallback?.item.price ?? 0,
-              originalPrice: lead.originalPrice ?? fallback?.item.originalPrice ?? 0,
-              discountPercent: lead.discountPercent ?? fallback?.item.discountPercent ?? 0,
-              stock: totalStock,
-              barcode: fallback?.barcode ?? product.barcode ?? product.id,
-              productCode: null,
-              productNum: null,
-              name: null,
-              offerName: null,
-            };
-
-        const anyPromo = shades.some((s) => (s.discountPercent ?? 0) > 0);
+        const maxDiscount = Math.max(0, ...shades.map((s) => s.discountPercent ?? 0));
         updates.push({
           productId: product.id,
-          barcode: fallback?.barcode ?? product.barcode ?? product.id,
+          barcode: fallback.barcode,
           item: {
-            barcode: pricingSource.barcode ?? fallback?.barcode ?? product.id,
+            barcode: fallback.barcode,
             productCode: null,
             productNum: null,
             name: null,
-            price: pricingSource.price,
-            originalPrice: pricingSource.originalPrice,
-            discountPercent: anyPromo
-              ? Math.max(
-                  pricingSource.discountPercent,
-                  ...shades.map((s) => s.discountPercent ?? 0),
-                )
-              : 0,
+            price: lead.price ?? fallback.item.price,
+            originalPrice: lead.originalPrice ?? fallback.item.originalPrice,
+            discountPercent: maxDiscount,
             stock: totalStock,
             offerName: null,
           },
         });
-      } else if (fallback) {
-        updates.push(fallback);
+        continue;
       }
+
+      // باركود المنتج / SKU بدون تدرج محدّث في هذه الدفعة — طبّق عنصر POS مباشرة
+      const productBarcodeItem = product.barcode
+        ? resolveBarcodeMapKey(itemByBarcode, product.barcode)
+        : null;
+      const source = productBarcodeItem ?? fallback.item;
+      updates.push({
+        productId: product.id,
+        barcode: fallback.barcode,
+        item: {
+          ...source,
+          // أبقِ المخزون من عنصر المزامنة (كمية POS لهذا الباركود)
+          stock: source.stock,
+        },
+      });
     }
 
     if (!updates.length) return updated;
@@ -738,11 +807,11 @@ export class InventorySyncService {
     const rows = chunk.map(
       ({ productId, item }) => Prisma.sql`(
         ${productId}::uuid,
-        ${item.price},
-        ${item.originalPrice},
-        ${item.discountPercent},
-        ${item.stock},
-        ${item.discountPercent > 0}
+        ${item.price}::int,
+        ${item.originalPrice}::int,
+        ${item.discountPercent}::int,
+        ${item.stock}::int,
+        ${(item.discountPercent > 0 ? 1 : 0)}::int
       )`,
     );
 
@@ -752,7 +821,7 @@ export class InventorySyncService {
         "originalPrice" = v."originalPrice",
         "discountPercent" = v."discountPercent",
         "stock" = v.stock,
-        "isPromo" = v."isPromo",
+        "isPromo" = (v."isPromo" = 1),
         "updatedAt" = NOW()
       FROM (VALUES ${Prisma.join(rows)}) AS v(
         id,
