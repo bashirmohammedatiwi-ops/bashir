@@ -118,6 +118,11 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.auto_awesome),
+            tooltip: 'تعبئة ذكية GPT',
+            onPressed: () => context.push('/gpt-autofill?barcode=${Uri.encodeComponent(widget.barcode)}'),
+          ),
+          IconButton(
             icon: const Icon(Icons.text_fields),
             tooltip: 'بحث بالاسم',
             onPressed: () => context.push('/search?q=${Uri.encodeComponent(widget.barcode)}'),
@@ -225,6 +230,12 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
             const SizedBox(height: 12),
             const Text('لم يُعثر على منتج بهذا الباركود'),
             const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () => context.push('/gpt-autofill?barcode=${Uri.encodeComponent(widget.barcode)}'),
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('تعبئة ذكية بـ GPT'),
+            ),
+            const SizedBox(height: 10),
             OutlinedButton.icon(
               onPressed: () => context.push('/search'),
               icon: const Icon(Icons.text_fields),
@@ -252,6 +263,12 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
               child: LinearProgressIndicator(),
             ),
           Text('${_options.length} نتيجة', style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () => context.push('/gpt-autofill?barcode=${Uri.encodeComponent(widget.barcode)}'),
+            icon: const Icon(Icons.auto_awesome, size: 18),
+            label: const Text('أو عبّئ البيانات بـ GPT مع صور Google'),
+          ),
           const SizedBox(height: 12),
           ..._options.map((opt) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),

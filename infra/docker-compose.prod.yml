@@ -81,6 +81,8 @@ services:
       ENABLE_HSTS: ${ENABLE_HSTS:-0}
       DEEPL_API_KEY: ${DEEPL_API_KEY:-}
       GOOGLE_TRANSLATE_API_KEY: ${GOOGLE_TRANSLATE_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.4-nano}
     volumes:
       - mediadata:/data/uploads
     expose:

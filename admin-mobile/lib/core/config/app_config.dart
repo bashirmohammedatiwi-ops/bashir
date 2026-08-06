@@ -1,10 +1,11 @@
 class AppConfig {
   AppConfig._();
 
-  static const String vpsHost = '187.127.88.146';
+  /// Production host (VPS IP 187.127.88.146 is no longer reachable).
+  static const String productionHost = 'deemaalhayat.com';
 
-  static const String _defaultApi = 'http://$vpsHost/api/v1';
-  static const String _defaultCatalogHub = 'http://$vpsHost/catalog-hub';
+  static const String _defaultApi = 'https://$productionHost/api/v1';
+  static const String _defaultCatalogHub = 'https://$productionHost/catalog-hub';
 
   static String get apiBaseUrl {
     const fromEnv = String.fromEnvironment('API_BASE_URL');

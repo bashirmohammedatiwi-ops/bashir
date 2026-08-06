@@ -1,0 +1,153 @@
+{
+  "shades": [
+    {
+      "name": "Glassy",
+      "nameAr": "جلاسي",
+      "displayName": "جلاسي — Glassy (شفاف لامع)",
+      "colorHex": "#F5EBE8",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-FAUXFILLERLIPGLOSS-GLASSY-TILE1_b384ae3b-ee06-4758-a70c-72126a0fc985.webp?v=1759616950",
+      "position": 0,
+      "descEn": "clear high-shine — glass-like universal gloss",
+      "descAr": "شفاف لامع — ملمع زجاجي يناسب كل الإطلالات"
+    },
+    {
+      "name": "Sugar Baby",
+      "nameAr": "شوغر بيبي",
+      "displayName": "شوغر بيبي — Sugar Baby (وردي فاتح)",
+      "colorHex": "#F4888C",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-FAUXFILLERLIPGLOSS-SUGARBABY-TILE1_b120e5c7-9c8c-419c-900c-627379ee5061.webp?v=1759871470",
+      "position": 1,
+      "descEn": "light baby pink — sweet juicy shine",
+      "descAr": "وردي فاتح حلو — لمعان شفاه عصيري ناعم"
+    },
+    {
+      "name": "Honey",
+      "nameAr": "هوني",
+      "displayName": "هوني — Honey (نود خوخي فاتح)",
+      "colorHex": "#EE9069",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-FAUXFILLERLIPGLOSS-HONEY-TILE1_a7746a8a-e769-4f42-8165-507c65bff718.webp?v=1759871490",
+      "position": 2,
+      "descEn": "light peachy nude — warm everyday gloss",
+      "descAr": "نود خوخي فاتح — ملمع يومي دافئ ومشرق"
+    },
+    {
+      "name": "Bombshell",
+      "nameAr": "بومبشيل",
+      "displayName": "بومبشيل — Bombshell (بني وردي)",
+      "colorHex": "#BD5E5D",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-FAUXFILLERLIPGLOSS-BOMBSHELL-TILE1_3c846ee5-2dfe-4698-9fd0-e68a1606af10.webp?v=1759871504",
+      "position": 3,
+      "descEn": "pinky brown — soft glam nude flush",
+      "descAr": "بني وردي ناعم — نود أنثوي بلمعان راقٍ"
+    },
+    {
+      "name": "Foxy",
+      "nameAr": "فوكسي",
+      "displayName": "فوكسي — Foxy (كراميل بني)",
+      "colorHex": "#CA6046",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-FAUXFILLERLIPGLOSS-FOXY-TILE1_1418339e-3f2d-4b2a-8d08-5bda413b7337.webp?v=1759871497",
+      "position": 4,
+      "descEn": "caramel brown — warm sultry shine",
+      "descAr": "كراميل بني دافئ — لمعان شفاه جذاب ومشمس"
+    },
+    {
+      "name": "Posh",
+      "nameAr": "بوش",
+      "displayName": "بوش — Posh (وردي توتي)",
+      "colorHex": "#8D4A4A",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-FAUXFILLERLIPGLOSS-POSH-TILE1_38b74ea8-cf03-4d17-ac4d-eb5beae21209.webp?v=1759871522",
+      "position": 5,
+      "descEn": "deep rose berry — bold evening gloss",
+      "descAr": "وردي توتي عميق — لمعان جريء للسهرات"
+    },
+    {
+      "name": "Coco",
+      "nameAr": "كوكو",
+      "displayName": "كوكو — Coco (شوكولاتة بني)",
+      "colorHex": "#7A4831",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-FAUXFILLERLIPGLOSS-COCO-TILE1_4c42fe1f-1035-4806-b929-edd8bd305a37.webp?v=1759871529",
+      "position": 6,
+      "descEn": "deep chocolate brown — rich glossy depth",
+      "descAr": "شوكولاتة بني غني — عمق لامع فاخر"
+    },
+    {
+      "name": "She Glitzy",
+      "nameAr": "شي غليتزي",
+      "displayName": "شي غليتزي — She Glitzy (لمعان وردي-بنفسجي)",
+      "colorHex": "#E8B8C8",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-FAUXFILLERLIPGLOSS-SHEGLITZY-TILE1.webp?v=1759872930",
+      "position": 7,
+      "descEn": "pearlescent shimmer with pink-purple duo-chrome",
+      "descAr": "لمعان لؤلؤي بتأثير وردي-بنفسجي مزدوج"
+    },
+    {
+      "name": "She Flirty",
+      "nameAr": "شي فليرتي",
+      "displayName": "شي فليرتي — She Flirty (وردي لامع)",
+      "colorHex": "#D88786",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-FAUXFILLERLIPGLOSS-SHEFLIRTY-TILE1_892f0ca3-eed1-48a0-85fa-96426ce3337f.webp?v=1759872921",
+      "position": 8,
+      "descEn": "baby pink shimmer with silver flecks",
+      "descAr": "وردي فاتح لامع مع بريق فضي رقيق"
+    },
+    {
+      "name": "She Fire",
+      "nameAr": "شي فاير",
+      "displayName": "شي فاير — She Fire (بني لامع)",
+      "colorHex": "#B77C74",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-FAUXFILLERLIPGLOSS-SHEFIRE-TILE1.webp?v=1759872939",
+      "position": 9,
+      "descEn": "chocolate brown shimmer with pink-gold flecks",
+      "descAr": "بني شوكولاتة لامع مع بريق وردي-ذهبي"
+    },
+    {
+      "name": "UUU-Baby",
+      "nameAr": "يو يو يو بيبي",
+      "displayName": "يو يو يو بيبي — UUU-Baby (بنفسجي أوبي)",
+      "colorHex": "#FEA3B4",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-FAUXFILLERLIPGLOSS-UUUBABY-TILE1_d1e399fa-dac3-4aaa-9ead-5df5d8031b23.webp?v=1759671987",
+      "position": 10,
+      "descEn": "sheer ube purple — cool-toned juicy tint",
+      "descAr": "بنفسجي أوبي شفاف — لمسة باردة عصيرية"
+    },
+    {
+      "name": "LightCealer",
+      "nameAr": "لايت سييلر",
+      "displayName": "لايت سييلر — LightCealer (تصحيح فاتح)",
+      "colorHex": "#F7C0A5",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/STRAWBERRY-LATTE_FFGLOSS_PDP_PACKSHOTS_LIGHTCEALER_1.webp?v=1774885552",
+      "position": 11,
+      "descEn": "light concealer tint — brightens and smooths lips",
+      "descAr": "تصحيح فاتح — يفتّح الشفاه ويموّه الخطوط الدقيقة"
+    },
+    {
+      "name": "MidCealer",
+      "nameAr": "ميد سييلر",
+      "displayName": "ميد سييلر — MidCealer (تصحيح متوسط)",
+      "colorHex": "#EFAF90",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/STRAWBERRY-LATTE_FFGLOSS_PDP_PACKSHOTS_MIDCEALER_1.webp?v=1774885552",
+      "position": 12,
+      "descEn": "medium concealer tint — evens tone with glossy finish",
+      "descAr": "تصحيح متوسط — يوحّد لون الشفاه بلمعان ناعم"
+    },
+    {
+      "name": "RichCealer",
+      "nameAr": "ريتش سييلر",
+      "displayName": "ريتش سييلر — RichCealer (تصحيح غني)",
+      "colorHex": "#D58669",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/STRAWBERRY-LATTE_FFGLOSS_PDP_PACKSHOTS_RICHCEALER_1.webp?v=1774885552",
+      "position": 13,
+      "descEn": "rich concealer tint — deep tone correction with shine",
+      "descAr": "تصحيح غني — تصحيح عميق للون الشفاه بلمعان مرطب"
+    }
+  ],
+  "productImages": [
+    "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-FAUXFILLERLIPGLOSS-SUGARBABY-TILE1_b120e5c7-9c8c-419c-900c-627379ee5061.webp?v=1759871470",
+    "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-FAUXFILLERLIPGLOSS-GLASSY-TILE2_b28b166c-94cd-4f47-87f6-da7461e31552.webp?v=1759616951",
+    "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-FAUXFILLERLIPGLOSS-GLASSY-TILE4_c5efce66-eba1-42c6-8866-3dbf9a6f0329.webp?v=1759616950",
+    "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-FAUXFILLERLIPGLOSS-GLASSY-TILE5_1a4fa460-4b8b-4803-bc7a-58083bdc52bf.webp?v=1759616950",
+    "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/Artboard_126.webp?v=1774423510",
+    "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-FAUXFILLERLIPGLOSS-HONEY-TILE1_a7746a8a-e769-4f42-8165-507c65bff718.webp?v=1759871490",
+    "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-FAUXFILLERLIPGLOSS-COCO-TILE1_4c42fe1f-1035-4806-b929-edd8bd305a37.webp?v=1759871529"
+  ]
+}

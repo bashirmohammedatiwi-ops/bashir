@@ -1,0 +1,22 @@
+{
+  "variant_groups": [
+    {
+      "group_key": "mon-reve|shadow-wand|eyeshadow-stick|2g",
+      "representative_barcode": "5201641028131",
+      "variants": [
+        {
+          "barcode": "5201641028131",
+          "variant_value": "01 Gold",
+          "color_hex": "#D4AF37",
+          "image_url": "https://cdn.pharm24.gr/images/1200x630-90/5201641028131a.jpg"
+        },
+        {
+          "barcode": "5201641028148",
+          "variant_value": "02 Frost",
+          "color_hex": "#E6E9EE",
+          "image_url": "https://cdn.pharm24.gr/images/1200x630-90/5201641028148a.jpg"
+        }
+      ]
+    }
+  ]
+}

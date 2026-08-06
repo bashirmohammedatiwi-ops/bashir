@@ -1,0 +1,73 @@
+{
+  "shades": [
+    {
+      "name": "Cherry Light",
+      "colorHex": "#f0b9af",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0265/9755/6317/files/FAUXFILTER-COLOR-CORRECTOR_PDP_PACKSHOTS_FINAL_CHERRY-LIGHT.jpg?v=1760175746",
+      "position": 0,
+      "sku": "HB01395"
+    },
+    {
+      "name": "Peach Light",
+      "colorHex": "#efb3a5",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0265/9755/6317/files/FAUXFILTER-COLOR-CORRECTOR_PDP_PACKSHOTS_FINAL_PEACH-LIGHT.jpg?v=1760175920",
+      "position": 1,
+      "sku": "HB01394"
+    },
+    {
+      "name": "Pink Pomelo",
+      "colorHex": "#eeb4a8",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0265/9755/6317/files/FAUXFILTER-COLOR-CORRECTOR_PDP_PACKSHOTS_FINAL_PINK-POMELO.jpg?v=1760176224",
+      "position": 2,
+      "sku": "HB01023"
+    },
+    {
+      "name": "Cherry Blossom",
+      "colorHex": "#eeb5aa",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0265/9755/6317/files/FAUXFILTER-COLOR-CORRECTOR_PDP_PACKSHOTS_FINAL_CHERRY-BLOSSOM.jpg?v=1760176086",
+      "position": 3,
+      "sku": "HB01250"
+    },
+    {
+      "name": "Peach",
+      "colorHex": "#eeb3a6",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0265/9755/6317/files/FAUXFILTER-COLOR-CORRECTOR_PDP_PACKSHOTS_FINAL_PEACH.jpg?v=1760177048",
+      "position": 4,
+      "sku": "HB01024"
+    },
+    {
+      "name": "Mango",
+      "colorHex": "#edafa0",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0265/9755/6317/files/FAUXFILTER-COLOR-CORRECTOR_PDP_PACKSHOTS_FINAL_MANGO.jpg?v=1760177191",
+      "position": 5,
+      "sku": "HB01025"
+    },
+    {
+      "name": "Papaya",
+      "colorHex": "#eca795",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0265/9755/6317/files/FAUXFILTER-COLOR-CORRECTOR_PDP_PACKSHOTS_FINAL_PAPAYA.jpg?v=1760177420",
+      "position": 6,
+      "sku": "HB01026"
+    },
+    {
+      "name": "Lychee",
+      "colorHex": "#ecada1",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0265/9755/6317/files/FAUXFILTER-COLOR-CORRECTOR_PDP_PACKSHOTS_FINAL_LYCHEE.jpg?v=1760177324",
+      "position": 7,
+      "sku": "HB01309"
+    },
+    {
+      "name": "Blood Orange",
+      "colorHex": "#d37c61",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0265/9755/6317/files/HB_FFCC-REFRESH_PACKSHOT_BLOODORANGE.jpg?v=1760177540",
+      "position": 8,
+      "sku": "HB01027"
+    }
+  ],
+  "productImages": [
+    "https://cdn.shopify.com/s/files/1/0265/9755/6317/files/FAUXFILTER-COLOR-CORRECTOR_PDP_PACKSHOTS_FINAL_PINK-POMELO.jpg?v=1760176224",
+    "https://cdn.shopify.com/s/files/1/0265/9755/6317/files/FAUXFILTER-COLOR-CORRECTOR_PDP_B_AS_FINAL_PINK-POMELO.jpg?v=1760176224",
+    "https://cdn.shopify.com/s/files/1/0265/9755/6317/files/FAUXFILTER-COLOR-CORRECTOR_PDP_B_AS_FINAL_MANGO.jpg?v=1760177191",
+    "https://cdn.shopify.com/s/files/1/0265/9755/6317/files/FAUXFILTER-COLOR-CORRECTOR_PDP_B_AS_FINAL_CHERRY-BLOSSOMcopy.jpg?v=1760176094"
+  ]
+}

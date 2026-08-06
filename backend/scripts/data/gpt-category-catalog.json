@@ -1,0 +1,1217 @@
+{
+  "main": [
+    {
+      "id": "d3c24d19-dde5-41e5-b0a9-bede45393795",
+      "name_ar": "المكياج",
+      "name_en": "Makeup",
+      "slug": "makeup"
+    },
+    {
+      "id": "975e0e23-edd2-4181-ad6d-ecade6452b95",
+      "name_ar": "العطور",
+      "name_en": "Perfumes",
+      "slug": "perfume"
+    },
+    {
+      "id": "7123c328-9edf-46a9-9d5d-a1993a71af11",
+      "name_ar": "الصحة والتغذية",
+      "name_en": "Health & Nutrition",
+      "slug": "vitamins-supplements"
+    },
+    {
+      "id": "9f99dbf3-15c4-4561-8f53-1499a8743a47",
+      "name_ar": "العناية",
+      "name_en": "Care",
+      "slug": "care"
+    },
+    {
+      "id": "3e5e60af-8828-4894-b192-d2988d6f5a48",
+      "name_ar": "الأجهزة",
+      "name_en": "Devices",
+      "slug": "devices"
+    },
+    {
+      "id": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5",
+      "name_ar": "بريميوم",
+      "name_en": "Premium",
+      "slug": "premium"
+    },
+    {
+      "id": "84084ccc-f185-499c-8d0b-97d2ba2d0686",
+      "name_ar": "الأظافر",
+      "name_en": "Nails",
+      "slug": "nails"
+    },
+    {
+      "id": "90c89e67-aa43-4f55-8cd6-efed255e1126",
+      "name_ar": "الهدايا",
+      "name_en": "Gifts",
+      "slug": "gifts"
+    },
+    {
+      "id": "74e0a4ac-20e6-437f-8e2a-1858eecf969c",
+      "name_ar": "عدسات",
+      "name_en": "Lenses",
+      "slug": "lenses"
+    },
+    {
+      "id": "06f8d36f-a094-4252-ae28-cba993445c8f",
+      "name_ar": "معطرات المنزل",
+      "name_en": "Home Scents",
+      "slug": "home-scents"
+    }
+  ],
+  "sub": [
+    {
+      "id": "2bbecee1-084d-446c-b4fd-65f769130de9",
+      "name_ar": "الوجه",
+      "name_en": "Face",
+      "parent_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "0f9ce5c0-b3fc-42cc-85f5-7077d75a90bd",
+      "name_ar": "المكياج الكوري",
+      "name_en": "Korean Makeup",
+      "parent_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "56da5b82-c847-4e9b-9cea-cc901236189f",
+      "name_ar": "الشفاه",
+      "name_en": "Lips",
+      "parent_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "be0ba95f-62a6-4245-8012-5f6943ea5cab",
+      "name_ar": "العيون",
+      "name_en": "Eyes",
+      "parent_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "92ebe64a-9091-4460-9f12-68ecbdf4e1e9",
+      "name_ar": "الحواجب",
+      "name_en": "Eyebrow",
+      "parent_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "7b95190f-d5b7-4dff-8456-3c6d10fdafe6",
+      "name_ar": "الخدود",
+      "name_en": "Cheek",
+      "parent_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "774d62c3-8119-4c0c-983b-2513fc46df24",
+      "name_ar": "الهايلايتر",
+      "name_en": "Highlighter",
+      "parent_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "c7a90d6f-6fd4-40df-9b02-4cb33b8efce1",
+      "name_ar": "أدوات وفرش مكياج",
+      "name_en": "Brushes & Tools",
+      "parent_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "59c4dabd-4e87-46e8-a6ce-e5e51a7e901b",
+      "name_ar": "عطور ميني",
+      "name_en": "Mini Perfume Sets",
+      "parent_id": "975e0e23-edd2-4181-ad6d-ecade6452b95"
+    },
+    {
+      "id": "13754665-184a-48c6-8dd3-b36b9c0e5f28",
+      "name_ar": "أطقم العطور",
+      "name_en": "Gift Set",
+      "parent_id": "975e0e23-edd2-4181-ad6d-ecade6452b95"
+    },
+    {
+      "id": "0bb891c1-2aa0-4e4a-ace8-f07f6b53f241",
+      "name_ar": "عطور عود",
+      "name_en": "Oud perfume",
+      "parent_id": "975e0e23-edd2-4181-ad6d-ecade6452b95"
+    },
+    {
+      "id": "642aa63c-b29b-4431-95d3-2534d7df0c4f",
+      "name_ar": "عطور مسك",
+      "name_en": "Musk Perfumes",
+      "parent_id": "975e0e23-edd2-4181-ad6d-ecade6452b95"
+    },
+    {
+      "id": "92a95f2e-d855-4943-9875-b85e684f746a",
+      "name_ar": "عطور نيش",
+      "name_en": "Niche Perfumes",
+      "parent_id": "975e0e23-edd2-4181-ad6d-ecade6452b95"
+    },
+    {
+      "id": "453c027d-0022-455b-91a9-d4299479ec62",
+      "name_ar": "عطور جسم",
+      "name_en": "Body Perfumes",
+      "parent_id": "975e0e23-edd2-4181-ad6d-ecade6452b95"
+    },
+    {
+      "id": "ba6a399c-4043-4b05-97e5-4e471bb9fc02",
+      "name_ar": "عطور شعر",
+      "name_en": "Hair Mists",
+      "parent_id": "975e0e23-edd2-4181-ad6d-ecade6452b95"
+    },
+    {
+      "id": "2f0bc477-cc55-443a-809c-f5384cc6314a",
+      "name_ar": "عطور أطفال",
+      "name_en": "Children Perfumes",
+      "parent_id": "975e0e23-edd2-4181-ad6d-ecade6452b95"
+    },
+    {
+      "id": "bcbfcf49-4e64-4d25-9c8e-9b9c8387bf8a",
+      "name_ar": "عطور للجنسين",
+      "name_en": "Unisex Perfumes",
+      "parent_id": "975e0e23-edd2-4181-ad6d-ecade6452b95"
+    },
+    {
+      "id": "1ba9f472-af81-4708-9304-07f3435b6b24",
+      "name_ar": "عطور نسائية",
+      "name_en": "Women Perfumes",
+      "parent_id": "975e0e23-edd2-4181-ad6d-ecade6452b95"
+    },
+    {
+      "id": "8dca642a-1194-4101-b5cc-486ca1664e89",
+      "name_ar": "عطور رجالية",
+      "name_en": "Men Perfumes",
+      "parent_id": "975e0e23-edd2-4181-ad6d-ecade6452b95"
+    },
+    {
+      "id": "07d0e8c3-3369-47b7-bb34-d430ca4a26d4",
+      "name_ar": "جديد العطور",
+      "name_en": "New perfume",
+      "parent_id": "975e0e23-edd2-4181-ad6d-ecade6452b95"
+    },
+    {
+      "id": "df65ad65-4c6d-4f9c-84af-c9f0776080d0",
+      "name_ar": "المكملات الغذائية",
+      "name_en": "Nutraceuticals",
+      "parent_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "d121101d-f4f4-46d0-841e-c71f1964d557",
+      "name_ar": "أجهزة صحية",
+      "name_en": "Health Devices",
+      "parent_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "74f1aa30-abd7-4804-9a79-b2955a68a65b",
+      "name_ar": "الرياضة والاسترخاء",
+      "name_en": "Fitness and Relaxation",
+      "parent_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "314bcc4c-4c32-4a43-887f-6bf13f7aa897",
+      "name_ar": "منتجات العناية الصحية",
+      "name_en": "Healthcare Essentials",
+      "parent_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "2e60b85d-1f1f-4d61-a431-4b668d42753e",
+      "name_ar": "تغذية رياضية",
+      "name_en": "Sports Nutrition",
+      "parent_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "09146169-f9c4-4649-a365-ca1b8cda365f",
+      "name_ar": "العناية الطبية",
+      "name_en": "DERMA HUB",
+      "parent_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "7d2bfaec-d963-404b-b9b5-04b64a82bf29",
+      "name_ar": "العناية الكورية",
+      "name_en": "Korean Care",
+      "parent_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "bbf672bf-58cf-4cd3-8b17-46a7ddcc1c27",
+      "name_ar": "عناية الفم والأسنان",
+      "name_en": "Oral Care",
+      "parent_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "23aaaa07-91ee-4937-847e-d7866a9e937a",
+      "name_ar": "العناية بالجسم",
+      "name_en": "Body Care",
+      "parent_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "150a633e-80a7-4cb3-8f2d-8eab90a99190",
+      "name_ar": "العناية بالشعر",
+      "name_en": "Hair Care",
+      "parent_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "07661898-571a-4a88-aa6c-76dcdbf53029",
+      "name_ar": "العناية بالوجه",
+      "name_en": "Face Care",
+      "parent_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "01ad1f0d-7c15-469c-bf86-85abd135e68f",
+      "name_ar": "العناية باليدين",
+      "name_en": "Hand Care",
+      "parent_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "905db637-498a-49bc-83e8-b3d0a335d5b6",
+      "name_ar": "العناية بالقدم",
+      "name_en": "Foot Care",
+      "parent_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "25dc8086-bffa-47af-aaf7-64d503e58a9f",
+      "name_ar": "الوقاية من الشمس",
+      "name_en": "Sun Care",
+      "parent_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "6ffcfb0e-645f-47d0-8fb9-4ef88b2b4e60",
+      "name_ar": "عناية المرأة",
+      "name_en": "Feminine Care",
+      "parent_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "0daef5a1-9dfb-44ac-89ca-b2ac80dffbef",
+      "name_ar": "الأم و الطفل",
+      "name_en": "Mom & Baby",
+      "parent_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "01300f8f-9b4d-4d15-904c-e045383c9b97",
+      "name_ar": "عناية الرجل",
+      "name_en": "Men care",
+      "parent_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "77cbd365-527e-41c2-99cc-0219039bbd66",
+      "name_ar": "أجهزة الشعر",
+      "name_en": "Hair Devices",
+      "parent_id": "3e5e60af-8828-4894-b192-d2988d6f5a48"
+    },
+    {
+      "id": "2a0389dc-787f-4325-9653-6d288c389b6e",
+      "name_ar": "أجهزة الوجه",
+      "name_en": "Facial Devices",
+      "parent_id": "3e5e60af-8828-4894-b192-d2988d6f5a48"
+    },
+    {
+      "id": "c9cf7518-438a-4e80-b199-5359f1d9510c",
+      "name_ar": "أجهزة الجسم",
+      "name_en": "Body Devices",
+      "parent_id": "3e5e60af-8828-4894-b192-d2988d6f5a48"
+    },
+    {
+      "id": "627ef2bb-6083-42e5-9873-75f61405ddb5",
+      "name_ar": "أجهزة نسائية",
+      "name_en": "Female Devices",
+      "parent_id": "3e5e60af-8828-4894-b192-d2988d6f5a48"
+    },
+    {
+      "id": "d12c04fd-ad76-420c-81b0-708c020b346b",
+      "name_ar": "مكياج فاخر",
+      "name_en": "Luxury Makeup",
+      "parent_id": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5"
+    },
+    {
+      "id": "764abc71-a54c-4aec-9cd8-9869b9afdd0d",
+      "name_ar": "عطور فاخرة",
+      "name_en": "Luxury Perfumes",
+      "parent_id": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5"
+    },
+    {
+      "id": "8d0236dc-9c36-4bd7-a0d0-2e78d4d9268a",
+      "name_ar": "منتجات العناية الفاخرة",
+      "name_en": "Luxury Care",
+      "parent_id": "09f69d8a-f6d4-41f5-8fb5-a3b0e7e302d5"
+    },
+    {
+      "id": "335e8fa7-2ab1-4a3d-894e-607c434898b5",
+      "name_ar": "طلاء الأظافر",
+      "name_en": "Nail Polish",
+      "parent_id": "84084ccc-f185-499c-8d0b-97d2ba2d0686"
+    },
+    {
+      "id": "44962225-cca9-4351-818e-a106307de3ac",
+      "name_ar": "العناية بالأظافر",
+      "name_en": "Nails Care",
+      "parent_id": "84084ccc-f185-499c-8d0b-97d2ba2d0686"
+    },
+    {
+      "id": "88f3d267-7da8-4bd3-90ab-cd399b077453",
+      "name_ar": "مزيل طلاء الأظافر",
+      "name_en": "Nails Polish Remover",
+      "parent_id": "84084ccc-f185-499c-8d0b-97d2ba2d0686"
+    },
+    {
+      "id": "4410565c-8959-42bf-ac21-9e8a2e6b9541",
+      "name_ar": "أدوات الأظافر",
+      "name_en": "Nail Tools",
+      "parent_id": "84084ccc-f185-499c-8d0b-97d2ba2d0686"
+    },
+    {
+      "id": "ddf9a020-83c3-4064-9952-a41d2afbaa8c",
+      "name_ar": "الأظافر الصناعية",
+      "name_en": "Fake Nails",
+      "parent_id": "84084ccc-f185-499c-8d0b-97d2ba2d0686"
+    },
+    {
+      "id": "348650b2-18de-4e95-bf8c-1af2da1ae452",
+      "name_ar": "مجموعة هدايا نسائية",
+      "name_en": "Women Gift Sets",
+      "parent_id": "90c89e67-aa43-4f55-8cd6-efed255e1126"
+    },
+    {
+      "id": "08770090-8df0-4f74-863f-b36521ebc8be",
+      "name_ar": "مجموعة هدايا رجالية",
+      "name_en": "Men Gift sets",
+      "parent_id": "90c89e67-aa43-4f55-8cd6-efed255e1126"
+    },
+    {
+      "id": "28778bfe-a4b2-49a2-bdce-2f25d725f3c3",
+      "name_ar": "محاليل عدسات لاصقة",
+      "name_en": "Contact Lenses Solution",
+      "parent_id": "74e0a4ac-20e6-437f-8e2a-1858eecf969c"
+    },
+    {
+      "id": "31d66402-a298-4eb7-b447-84e9136245e1",
+      "name_ar": "عدسات أفل",
+      "name_en": "Afle Lenses",
+      "parent_id": "74e0a4ac-20e6-437f-8e2a-1858eecf969c"
+    },
+    {
+      "id": "b8125c21-89d4-4315-a2c9-f2946abea5e6",
+      "name_ar": "عدسات ديفا",
+      "name_en": "Diva Lenses",
+      "parent_id": "74e0a4ac-20e6-437f-8e2a-1858eecf969c"
+    },
+    {
+      "id": "4de3d1a3-03d6-479d-a22d-360a8d09ec77",
+      "name_ar": "عدسات نيو لنس",
+      "name_en": "New Lens Lenses",
+      "parent_id": "74e0a4ac-20e6-437f-8e2a-1858eecf969c"
+    },
+    {
+      "id": "0058d011-3bad-49bb-b251-6d2d6b880020",
+      "name_ar": "عدسات لنس مي",
+      "name_en": "Lens Me Lenses",
+      "parent_id": "74e0a4ac-20e6-437f-8e2a-1858eecf969c"
+    },
+    {
+      "id": "3e1766b7-62ae-40a7-a158-c18883d02d82",
+      "name_ar": "عدسات بيوتيس طبية",
+      "name_en": "Beauteous Prescription Contact Lenses",
+      "parent_id": "74e0a4ac-20e6-437f-8e2a-1858eecf969c"
+    },
+    {
+      "id": "e655bc4e-e99f-4678-a9cc-287ad0fc8d11",
+      "name_ar": "عدسات بيوتيس التجميلية",
+      "name_en": "Beauteous Cosmetic Contact Lenses",
+      "parent_id": "74e0a4ac-20e6-437f-8e2a-1858eecf969c"
+    },
+    {
+      "id": "853db419-0ffc-4fa5-9db6-5e3b844d295a",
+      "name_ar": "العود والبخور",
+      "name_en": "Oud & Bakhoor",
+      "parent_id": "06f8d36f-a094-4252-ae28-cba993445c8f"
+    },
+    {
+      "id": "6770db47-4388-4e4e-a74a-079b7e86544d",
+      "name_ar": "مباخر",
+      "name_en": "Incense Burner",
+      "parent_id": "06f8d36f-a094-4252-ae28-cba993445c8f"
+    },
+    {
+      "id": "0822145d-8a0c-4eeb-9260-16b7fac0b54d",
+      "name_ar": "شموع وعيدان معطرة",
+      "name_en": "Candle & Diffuser",
+      "parent_id": "06f8d36f-a094-4252-ae28-cba993445c8f"
+    },
+    {
+      "id": "f2d3b8b3-fa5a-4e12-b0be-30bb7861f736",
+      "name_ar": "معطرات الجو",
+      "name_en": "Air fresheners",
+      "parent_id": "06f8d36f-a094-4252-ae28-cba993445c8f"
+    }
+  ],
+  "tertiary": [
+    {
+      "id": "036b1b3c-aa73-4dd1-bdd2-1a12f193645a",
+      "name_ar": "فاونديشن",
+      "name_en": "Foundation",
+      "parent_id": "2bbecee1-084d-446c-b4fd-65f769130de9",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "c1b72eae-d6d1-4341-9c83-42c75a8b7fcf",
+      "name_ar": "كونسيلر",
+      "name_en": "Concealers and Correctors",
+      "parent_id": "2bbecee1-084d-446c-b4fd-65f769130de9",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "828bbfd2-d611-417a-bdca-0f5424a61171",
+      "name_ar": "بودرة",
+      "name_en": "Powder",
+      "parent_id": "2bbecee1-084d-446c-b4fd-65f769130de9",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "d179ae24-9cf5-4a70-8dbd-bedd0cfbef0b",
+      "name_ar": "برايمر",
+      "name_en": "Face Primer",
+      "parent_id": "2bbecee1-084d-446c-b4fd-65f769130de9",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "afb26abb-e48f-4ced-8863-2c3ba1333505",
+      "name_ar": "مثبت مكياج",
+      "name_en": "Makeup Spray",
+      "parent_id": "2bbecee1-084d-446c-b4fd-65f769130de9",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "7f6f5a87-4736-49e7-963f-4736b6b7aeb0",
+      "name_ar": "بي بي وسي سي كريم",
+      "name_en": "BB & CC Cream",
+      "parent_id": "2bbecee1-084d-446c-b4fd-65f769130de9",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "77e49c2a-36be-4a4c-a08d-131289617924",
+      "name_ar": "مجموعات المكياج",
+      "name_en": "Makeup Sets",
+      "parent_id": "2bbecee1-084d-446c-b4fd-65f769130de9",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "a53f7b8d-1b45-4fa8-9055-d5de6fac6ab8",
+      "name_ar": "مزيل مكياج",
+      "name_en": "Makeup Removers",
+      "parent_id": "2bbecee1-084d-446c-b4fd-65f769130de9",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "5c279f28-2833-42d7-9211-8f72f2c4522f",
+      "name_ar": "تنت شفايف",
+      "name_en": "Lip Tint",
+      "parent_id": "56da5b82-c847-4e9b-9cea-cc901236189f",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "eaa06284-281e-475f-937b-b01ee24192df",
+      "name_ar": "روج",
+      "name_en": "Lipstick",
+      "parent_id": "56da5b82-c847-4e9b-9cea-cc901236189f",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "b53dd3be-ae16-47a4-a306-238f2060b8d8",
+      "name_ar": "روج سائل",
+      "name_en": "Liquid Lipstick",
+      "parent_id": "56da5b82-c847-4e9b-9cea-cc901236189f",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "6405a88e-402f-4508-8799-c8f3ad049c66",
+      "name_ar": "ملمع الشفاه",
+      "name_en": "Lip Gloss",
+      "parent_id": "56da5b82-c847-4e9b-9cea-cc901236189f",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "54e393a9-90bf-41bb-beeb-c5364afce287",
+      "name_ar": "محدد الشفايف",
+      "name_en": "Lip Liner",
+      "parent_id": "56da5b82-c847-4e9b-9cea-cc901236189f",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "3b99e300-81d4-4f79-a74e-005f4e037222",
+      "name_ar": "مجموعة أحمر شفاه",
+      "name_en": "Lip Sets",
+      "parent_id": "56da5b82-c847-4e9b-9cea-cc901236189f",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "e1032b57-c1af-49e3-a408-130468f22736",
+      "name_ar": "ماسكرا",
+      "name_en": "Mascara",
+      "parent_id": "be0ba95f-62a6-4245-8012-5f6943ea5cab",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "c8866117-67e0-4509-a887-60100775524b",
+      "name_ar": "كحل",
+      "name_en": "Eyeliner",
+      "parent_id": "be0ba95f-62a6-4245-8012-5f6943ea5cab",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "07f14763-7a8b-4646-a057-8748e2b18bd4",
+      "name_ar": "ايشادو",
+      "name_en": "Eyeshadow",
+      "parent_id": "be0ba95f-62a6-4245-8012-5f6943ea5cab",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "9057d3e9-d162-4f49-a910-1ec1281d6780",
+      "name_ar": "برايمر عيون",
+      "name_en": "Eye Primer",
+      "parent_id": "be0ba95f-62a6-4245-8012-5f6943ea5cab",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "a6620b04-09ee-427c-a195-5b0626276fc9",
+      "name_ar": "جل وبودرة حواجب",
+      "name_en": "Eyebrow gel",
+      "parent_id": "92ebe64a-9091-4460-9f12-68ecbdf4e1e9",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "b1db1ac0-66ff-4912-8072-0c07e3fffda3",
+      "name_ar": "أقلام الحواجب",
+      "name_en": "Eyebrow Pencil",
+      "parent_id": "92ebe64a-9091-4460-9f12-68ecbdf4e1e9",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "3e4a3ad5-72fb-4a9b-878e-97cf31354b74",
+      "name_ar": "ماسكارا الحواجب",
+      "name_en": "Eyebrow Mascara",
+      "parent_id": "92ebe64a-9091-4460-9f12-68ecbdf4e1e9",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "d80ee9e0-cf30-4137-9a20-88ea349bf25b",
+      "name_ar": "مجموعة حواجب",
+      "name_en": "Eyebrow Kits",
+      "parent_id": "92ebe64a-9091-4460-9f12-68ecbdf4e1e9",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "388af575-b9d3-484f-b382-3376cbb4efe8",
+      "name_ar": "بلاشر",
+      "name_en": "Blush",
+      "parent_id": "7b95190f-d5b7-4dff-8456-3c6d10fdafe6",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "0721dc53-a2b8-45e4-b318-d45a13c4dcf2",
+      "name_ar": "كونتور",
+      "name_en": "Contour",
+      "parent_id": "7b95190f-d5b7-4dff-8456-3c6d10fdafe6",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "209555fb-201d-457f-9ac6-7cf1ea277bff",
+      "name_ar": "برونزر",
+      "name_en": "Bronzer",
+      "parent_id": "7b95190f-d5b7-4dff-8456-3c6d10fdafe6",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "7480a30f-ed2b-41a8-9349-dd67edb010b6",
+      "name_ar": "هايلايتر بودرة",
+      "name_en": "Powder Highlighter",
+      "parent_id": "774d62c3-8119-4c0c-983b-2513fc46df24",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "6fed608e-80d7-4449-9427-fc2848b091be",
+      "name_ar": "هايلايتر سائل",
+      "name_en": "Liquid Highlighter",
+      "parent_id": "774d62c3-8119-4c0c-983b-2513fc46df24",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "a99143f3-c785-4eef-ba80-d506f6d3bf7d",
+      "name_ar": "باليت مكياج",
+      "name_en": "Palette & Set",
+      "parent_id": "774d62c3-8119-4c0c-983b-2513fc46df24",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "575c78b2-000c-4311-8c69-3694995a3565",
+      "name_ar": "فرش وجه",
+      "name_en": "Face Brushes",
+      "parent_id": "c7a90d6f-6fd4-40df-9b02-4cb33b8efce1",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "0ab0d6d2-4550-4b3b-9ac3-91df6e90b70a",
+      "name_ar": "فرش عيون",
+      "name_en": "Eye Brushes",
+      "parent_id": "c7a90d6f-6fd4-40df-9b02-4cb33b8efce1",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "23c956db-5347-4a71-92e4-0d771c44eaa4",
+      "name_ar": "فرش حواجب",
+      "name_en": "Eyebrow Brushes",
+      "parent_id": "c7a90d6f-6fd4-40df-9b02-4cb33b8efce1",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "3d6d6709-a1f6-4bf9-9afe-ccf67aac1ae9",
+      "name_ar": "فرش الشفايف",
+      "name_en": "Lip Brushes",
+      "parent_id": "c7a90d6f-6fd4-40df-9b02-4cb33b8efce1",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "06b4a6ef-0882-4df4-a26d-571750842b49",
+      "name_ar": "اسفنج مكياج",
+      "name_en": "Makeup Sponges",
+      "parent_id": "c7a90d6f-6fd4-40df-9b02-4cb33b8efce1",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "2543df6c-14b1-46db-a929-5e52c615ea8c",
+      "name_ar": "مجموعة فرش مكياج",
+      "name_en": "Brush Sets",
+      "parent_id": "c7a90d6f-6fd4-40df-9b02-4cb33b8efce1",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "fccdd999-2838-4884-acb5-649ed08aca59",
+      "name_ar": "أدوات مكياج",
+      "name_en": "Makeup Tools",
+      "parent_id": "c7a90d6f-6fd4-40df-9b02-4cb33b8efce1",
+      "main_id": "d3c24d19-dde5-41e5-b0a9-bede45393795"
+    },
+    {
+      "id": "37be1bdc-3b3c-4ba5-b358-172881b58cf2",
+      "name_ar": "صحة البشرة والشعر والاظافر",
+      "name_en": "Hair, Skin & Nails",
+      "parent_id": "df65ad65-4c6d-4f9c-84af-c9f0776080d0",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "a6f99cd5-d215-44a9-8a7d-5894d23d68d3",
+      "name_ar": "التحكم بالوزن",
+      "name_en": "Weight Control",
+      "parent_id": "df65ad65-4c6d-4f9c-84af-c9f0776080d0",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "fb9c095f-9f47-4473-977e-6344ed2dafd5",
+      "name_ar": "الصحة النسائية",
+      "name_en": "Women health",
+      "parent_id": "df65ad65-4c6d-4f9c-84af-c9f0776080d0",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "66a52d7d-6263-4da9-9943-27dbdc80440c",
+      "name_ar": "صحة الطفل",
+      "name_en": "Kids Health",
+      "parent_id": "df65ad65-4c6d-4f9c-84af-c9f0776080d0",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "ada5ad8d-c8fa-4d23-9f73-252bc795c2b6",
+      "name_ar": "مساعدات النوم",
+      "name_en": "Sleep Aids",
+      "parent_id": "df65ad65-4c6d-4f9c-84af-c9f0776080d0",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "ea7efb51-eea6-443c-9300-961d3ac608cf",
+      "name_ar": "تخفيف التوتر",
+      "name_en": "Stress Relief",
+      "parent_id": "df65ad65-4c6d-4f9c-84af-c9f0776080d0",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "45ac31d9-9af1-4251-8243-8b5e7b89e69e",
+      "name_ar": "العناية بمرضى السكري",
+      "name_en": "Diabetes Care",
+      "parent_id": "df65ad65-4c6d-4f9c-84af-c9f0776080d0",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "621ca7bb-46b1-43f6-8a35-b121a0b32eee",
+      "name_ar": "النشاط والطاقه",
+      "name_en": "Energy Boosters",
+      "parent_id": "df65ad65-4c6d-4f9c-84af-c9f0776080d0",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "290072ea-aa8c-4d70-8551-e66a9b1c7054",
+      "name_ar": "دعم المناعة",
+      "name_en": "Immune Support",
+      "parent_id": "df65ad65-4c6d-4f9c-84af-c9f0776080d0",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "26639c99-bff6-4398-b092-c353820f977b",
+      "name_ar": "فيتامينات لصحة القلب",
+      "name_en": "Heart Health",
+      "parent_id": "df65ad65-4c6d-4f9c-84af-c9f0776080d0",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "69f0b557-68d1-42b2-bc98-7d57ebecede6",
+      "name_ar": "دعم الجهاز الهضمي",
+      "name_en": "Digestive Support",
+      "parent_id": "df65ad65-4c6d-4f9c-84af-c9f0776080d0",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "a0e9c5e8-2fe3-4239-83d6-9dca9eab6019",
+      "name_ar": "صحة العظام والمفاصل والعضلات",
+      "name_en": "Bone, Joint & Muscles",
+      "parent_id": "df65ad65-4c6d-4f9c-84af-c9f0776080d0",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "f7befd01-a793-4701-8d9d-fc663632ab40",
+      "name_ar": "الصحة الجنسية",
+      "name_en": "Sexual Health",
+      "parent_id": "df65ad65-4c6d-4f9c-84af-c9f0776080d0",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "4b688f77-37df-4121-8108-95a99eb61531",
+      "name_ar": "قياس ضغط الدم",
+      "name_en": "Blood Pressure Mentor",
+      "parent_id": "d121101d-f4f4-46d0-841e-c71f1964d557",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "a860b36f-3a3e-492d-aab4-2ac05d7eda20",
+      "name_ar": "مقياس الحرارة",
+      "name_en": "Thermometer",
+      "parent_id": "d121101d-f4f4-46d0-841e-c71f1964d557",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "7b445105-dfa0-46d3-8328-87179bd782e1",
+      "name_ar": "أجهزة قياس الوزن",
+      "name_en": "Weight Scales",
+      "parent_id": "74f1aa30-abd7-4804-9a79-b2955a68a65b",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "65ad6be8-508c-4d99-9edb-13f59300846c",
+      "name_ar": "أجهزة تدليك",
+      "name_en": "Massagers",
+      "parent_id": "74f1aa30-abd7-4804-9a79-b2955a68a65b",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "8b4095b3-c9f5-48db-b59b-1a72e4c1fb4a",
+      "name_ar": "ساونا",
+      "name_en": "Sauna",
+      "parent_id": "74f1aa30-abd7-4804-9a79-b2955a68a65b",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "5e466cba-351e-4ffd-846e-a1e5c494440b",
+      "name_ar": "كمادات دافئة",
+      "name_en": "Heating Pads",
+      "parent_id": "74f1aa30-abd7-4804-9a79-b2955a68a65b",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "e4a0c126-8898-45bc-9f5b-236e7ebaf23f",
+      "name_ar": "مساعدات الراحة",
+      "name_en": "Comfort Aids",
+      "parent_id": "74f1aa30-abd7-4804-9a79-b2955a68a65b",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "9a22f3aa-b37b-4434-affa-04c607abe107",
+      "name_ar": "تخفيف السعال والزكام",
+      "name_en": "Cough & Cold Treatments",
+      "parent_id": "314bcc4c-4c32-4a43-887f-6bf13f7aa897",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "576d1df7-6fea-4646-89cc-bf607b5f1c21",
+      "name_ar": "صحة البشرة",
+      "name_en": "Dermacare Essentials",
+      "parent_id": "314bcc4c-4c32-4a43-887f-6bf13f7aa897",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "f97aea40-8c10-4c14-9c72-c98709e2985f",
+      "name_ar": "العناية بالشعر وفروة الرأس",
+      "name_en": "Hair & Scalp Care",
+      "parent_id": "314bcc4c-4c32-4a43-887f-6bf13f7aa897",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "8cdc143f-f905-42b2-ba43-0d3da835fa18",
+      "name_ar": "العناية بصحة الفم",
+      "name_en": "Oral Health Essentials",
+      "parent_id": "314bcc4c-4c32-4a43-887f-6bf13f7aa897",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "feb27490-74eb-40a7-bdec-367bb69b080a",
+      "name_ar": "واي بروتين",
+      "name_en": "Whey Protein",
+      "parent_id": "2e60b85d-1f1f-4d61-a431-4b668d42753e",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "fffe7a89-62dd-458c-966a-6f5d5e399344",
+      "name_ar": "كرياتين",
+      "name_en": "Creatine",
+      "parent_id": "2e60b85d-1f1f-4d61-a431-4b668d42753e",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "1c740332-2dbd-4561-a62d-a2c26f1a7719",
+      "name_ar": "جلوتامين",
+      "name_en": "Glutamine",
+      "parent_id": "2e60b85d-1f1f-4d61-a431-4b668d42753e",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "f7fa1caa-84e5-4e3c-90ae-9da1bffc712d",
+      "name_ar": "أحماض أمينية",
+      "name_en": "BCAA",
+      "parent_id": "2e60b85d-1f1f-4d61-a431-4b668d42753e",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "a3e92dfe-7e96-4f3b-b155-e1d41d672d60",
+      "name_ar": "مكملات قبل التمرين",
+      "name_en": "Pre-Workout",
+      "parent_id": "2e60b85d-1f1f-4d61-a431-4b668d42753e",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "3144c33a-6f34-4f19-ac0d-e21e549e16c6",
+      "name_ar": "مكملات بعد التمرين",
+      "name_en": "Post-Workout",
+      "parent_id": "2e60b85d-1f1f-4d61-a431-4b668d42753e",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "e5137859-4a0d-4969-95a2-e4d967aa8591",
+      "name_ar": "سناكات البروتين",
+      "name_en": "Protein Snacks",
+      "parent_id": "2e60b85d-1f1f-4d61-a431-4b668d42753e",
+      "main_id": "7123c328-9edf-46a9-9d5d-a1993a71af11"
+    },
+    {
+      "id": "2cf78dfc-8e8f-4f48-b75f-59eb445ba269",
+      "name_ar": "العناية بالبشرة",
+      "name_en": "Skin Care",
+      "parent_id": "7d2bfaec-d963-404b-b9b5-04b64a82bf29",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "cc1aa9c2-85a2-4776-80b8-e332394e2bad",
+      "name_ar": "معجون الأسنان",
+      "name_en": "Toothpaste",
+      "parent_id": "bbf672bf-58cf-4cd3-8b17-46a7ddcc1c27",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "8ca9add6-b014-4637-8398-7f50597b7f24",
+      "name_ar": "فرش أسنان",
+      "name_en": "Toothbrushes",
+      "parent_id": "bbf672bf-58cf-4cd3-8b17-46a7ddcc1c27",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "3945cf7d-65c6-49cb-8268-0b71dfb0dc75",
+      "name_ar": "تبييض الأسنان",
+      "name_en": "Teeth whitening",
+      "parent_id": "bbf672bf-58cf-4cd3-8b17-46a7ddcc1c27",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "1e56bafe-0d29-4442-afd6-aeba39f1c058",
+      "name_ar": "تنظيف الأسنان",
+      "name_en": "Flossing Essentials",
+      "parent_id": "bbf672bf-58cf-4cd3-8b17-46a7ddcc1c27",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "af91b47d-cfb0-4ee5-b9c3-d1661cc68cc3",
+      "name_ar": "غسول الفم",
+      "name_en": "Mouthwash",
+      "parent_id": "bbf672bf-58cf-4cd3-8b17-46a7ddcc1c27",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "784a2619-a67a-48c0-aa75-f7720953d607",
+      "name_ar": "معطرات الفم",
+      "name_en": "Mouth Fresheners",
+      "parent_id": "bbf672bf-58cf-4cd3-8b17-46a7ddcc1c27",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "b6a3b2c8-7b2d-450f-9884-493bc3992d3f",
+      "name_ar": "منتجات التنحيف",
+      "name_en": "Skin Tightening Serums",
+      "parent_id": "23aaaa07-91ee-4937-847e-d7866a9e937a",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "9464c921-9650-421f-8e2b-6a172f7524c5",
+      "name_ar": "مزيل العرق",
+      "name_en": "Deodorant",
+      "parent_id": "23aaaa07-91ee-4937-847e-d7866a9e937a",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "15e1a2c3-9924-4fd3-a7d9-b66d9adaddce",
+      "name_ar": "مقشر الجسم",
+      "name_en": "Body Scrub",
+      "parent_id": "23aaaa07-91ee-4937-847e-d7866a9e937a",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "5ab05504-516e-4104-a934-6d23666ffdca",
+      "name_ar": "تفتيح الجسم",
+      "name_en": "Body Whitening",
+      "parent_id": "23aaaa07-91ee-4937-847e-d7866a9e937a",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "a898f04c-03d4-4ab6-baa7-bb64cf0d2e3e",
+      "name_ar": "زيوت الجسم",
+      "name_en": "Body Oil",
+      "parent_id": "23aaaa07-91ee-4937-847e-d7866a9e937a",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "fcd86b22-a0fd-47b9-ba4c-c76164dadab2",
+      "name_ar": "مرطبات الجسم",
+      "name_en": "Body Moisturizer",
+      "parent_id": "23aaaa07-91ee-4937-847e-d7866a9e937a",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "35be991e-3062-4fbd-8f0a-2393bf806524",
+      "name_ar": "غسول الجسم",
+      "name_en": "Body Cleansers",
+      "parent_id": "23aaaa07-91ee-4937-847e-d7866a9e937a",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "7623cbaa-3a0d-4231-b8d7-283d7c24b2a9",
+      "name_ar": "بودرة الجسم",
+      "name_en": "Body Powder",
+      "parent_id": "23aaaa07-91ee-4937-847e-d7866a9e937a",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "89c0752d-b2c7-45fe-9e7f-41adccc7e200",
+      "name_ar": "أدوات الاستحمام",
+      "name_en": "Shower Essentials",
+      "parent_id": "23aaaa07-91ee-4937-847e-d7866a9e937a",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "ee39d6a6-5074-43b6-a80c-a7c1b23c3bd1",
+      "name_ar": "معالجات الشعر",
+      "name_en": "Hair treatment",
+      "parent_id": "150a633e-80a7-4cb3-8f2d-8eab90a99190",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "50d4a6f9-efc9-4411-9b27-711f93cb754c",
+      "name_ar": "مصففات الشعر",
+      "name_en": "Hair Brushes & Accessories",
+      "parent_id": "150a633e-80a7-4cb3-8f2d-8eab90a99190",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "04b359b4-e4fb-45d0-aae1-8fef65af84f8",
+      "name_ar": "صبغات الشعر",
+      "name_en": "Hair Coloring",
+      "parent_id": "150a633e-80a7-4cb3-8f2d-8eab90a99190",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "ab7c66e4-4df6-474f-b9d2-dd059dd60bfc",
+      "name_ar": "الزيوت و ماسك الشعر",
+      "name_en": "Oil & Masks",
+      "parent_id": "150a633e-80a7-4cb3-8f2d-8eab90a99190",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "25b4613e-cbf3-47cc-98b1-c94b398d51f4",
+      "name_ar": "الشامبو و البلسم",
+      "name_en": "Shampoo & Conditioners",
+      "parent_id": "150a633e-80a7-4cb3-8f2d-8eab90a99190",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "c508347a-8844-4068-b508-9653ede66b8b",
+      "name_ar": "Hair styling",
+      "name_en": "Hair styling",
+      "parent_id": "150a633e-80a7-4cb3-8f2d-8eab90a99190",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "05028a17-da64-4c66-b25f-73c758acc2f8",
+      "name_ar": "غسولات الوجه",
+      "name_en": "Cleansers & Toners",
+      "parent_id": "07661898-571a-4a88-aa6c-76dcdbf53029",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "21801439-d0e9-4106-b5e8-dfdd70ffeb8d",
+      "name_ar": "ترطيب الوجه",
+      "name_en": "Face Moisturizer",
+      "parent_id": "07661898-571a-4a88-aa6c-76dcdbf53029",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "09bedca5-0c6c-4a71-9b03-4bf29cecaf53",
+      "name_ar": "العناية بالعين",
+      "name_en": "Eye care",
+      "parent_id": "07661898-571a-4a88-aa6c-76dcdbf53029",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "5a89a7d0-16d9-47d6-8575-2961289fc526",
+      "name_ar": "ماسكات وجه",
+      "name_en": "Face Masks",
+      "parent_id": "07661898-571a-4a88-aa6c-76dcdbf53029",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "13e79b55-2eba-4289-ba14-4b5e8c32ac85",
+      "name_ar": "مقشر الوجه",
+      "name_en": "Face Scrubs",
+      "parent_id": "07661898-571a-4a88-aa6c-76dcdbf53029",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "4e096506-7890-437c-a8a4-6d5a36217f09",
+      "name_ar": "مستلزمات العناية بالوجه",
+      "name_en": "Face Tools",
+      "parent_id": "07661898-571a-4a88-aa6c-76dcdbf53029",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "e932381d-8469-4099-b66e-ce1a7eec9b60",
+      "name_ar": "العناية بالشفايف",
+      "name_en": "Lip care",
+      "parent_id": "07661898-571a-4a88-aa6c-76dcdbf53029",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "37616187-67dc-4ae5-9dc3-06ec3161bfa1",
+      "name_ar": "صابون لليدين",
+      "name_en": "Hand Wash",
+      "parent_id": "01ad1f0d-7c15-469c-bf86-85abd135e68f",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "3cdb4e43-e28d-4cac-8677-6415ea069d4f",
+      "name_ar": "مرطبات اليدين",
+      "name_en": "Hand Cream",
+      "parent_id": "01ad1f0d-7c15-469c-bf86-85abd135e68f",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "fe8b8c4b-008c-4ac7-a17f-6c96c886210b",
+      "name_ar": "مستلزمات العناية باليدين",
+      "name_en": "Hand Tools",
+      "parent_id": "01ad1f0d-7c15-469c-bf86-85abd135e68f",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "d673c77a-0a03-4f06-a73f-af5616313715",
+      "name_ar": "مستلزمات العناية بالقدمين",
+      "name_en": "Foot Tools",
+      "parent_id": "905db637-498a-49bc-83e8-b3d0a335d5b6",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "d2cf1ce9-fd36-4292-80f3-9fb90c759a3c",
+      "name_ar": "ترطيب القدمين",
+      "name_en": "Foot Cream",
+      "parent_id": "905db637-498a-49bc-83e8-b3d0a335d5b6",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "ad2a9e6b-5e20-4393-849a-e5e6c6cc97e2",
+      "name_ar": "واقي الشمس",
+      "name_en": "Sunscreen",
+      "parent_id": "25dc8086-bffa-47af-aaf7-64d503e58a9f",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "5c16af2a-c0dd-4a8c-9d52-b28f238bf8b8",
+      "name_ar": "تان",
+      "name_en": "Tanning Oils & Lotions",
+      "parent_id": "25dc8086-bffa-47af-aaf7-64d503e58a9f",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "71ef62ac-3e95-4ca9-aa33-a73a8ca0e8be",
+      "name_ar": "فوط صحية",
+      "name_en": "Pantyliner",
+      "parent_id": "6ffcfb0e-645f-47d0-8fb9-4ef88b2b4e60",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "5d4e7ee3-9107-4beb-b0b5-e5cf81963e13",
+      "name_ar": "ازالة الشعر",
+      "name_en": "Women Hair Removal",
+      "parent_id": "6ffcfb0e-645f-47d0-8fb9-4ef88b2b4e60",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "7ce8e10e-791d-4263-868e-fc4501f61461",
+      "name_ar": "عناية الأم",
+      "name_en": "Mommy care",
+      "parent_id": "0daef5a1-9dfb-44ac-89ca-b2ac80dffbef",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "fbacb6e2-33ed-4071-ae78-21d77aaa476c",
+      "name_ar": "عناية الطفل",
+      "name_en": "Baby Care",
+      "parent_id": "0daef5a1-9dfb-44ac-89ca-b2ac80dffbef",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "2858a6c7-8a12-4277-a0a3-a06c0b0719d7",
+      "name_ar": "منتجات العناية باللحية",
+      "name_en": "Beard Care",
+      "parent_id": "01300f8f-9b4d-4d15-904c-e045383c9b97",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "1a192be8-a3b7-453b-81ae-b840a69227e9",
+      "name_ar": "مستلزمات الحلاقة",
+      "name_en": "Shaving & Grooming",
+      "parent_id": "01300f8f-9b4d-4d15-904c-e045383c9b97",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "8dd445d7-e0ca-42f7-aa11-97599760eb8a",
+      "name_ar": "ماكينات حلاقة",
+      "name_en": "Shaving Machines",
+      "parent_id": "01300f8f-9b4d-4d15-904c-e045383c9b97",
+      "main_id": "9f99dbf3-15c4-4561-8f53-1499a8743a47"
+    },
+    {
+      "id": "94c2dd60-20d2-4aa7-957c-bc86d6e8c3a1",
+      "name_ar": "مباخر الكترونية",
+      "name_en": "Electric Incense Burner",
+      "parent_id": "6770db47-4388-4e4e-a74a-079b7e86544d",
+      "main_id": "06f8d36f-a094-4252-ae28-cba993445c8f"
+    },
+    {
+      "id": "2d32bd0c-73ce-4604-8910-e896ab2936b6",
+      "name_ar": "مباخر كلاسيكية",
+      "name_en": "Classic Incense Burner",
+      "parent_id": "6770db47-4388-4e4e-a74a-079b7e86544d",
+      "main_id": "06f8d36f-a094-4252-ae28-cba993445c8f"
+    }
+  ]
+}

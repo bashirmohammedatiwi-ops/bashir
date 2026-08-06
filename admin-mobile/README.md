@@ -9,6 +9,7 @@
 - بحث في catalog-hub عبر كل المتاجر
 - معاينة المنتج مع سعر POS والمخزون وحالة «موجود في التطبيق»
 - استيراد المنتج (صور، براند، تصنيف، تدرجات)
+- تعبئة ذكية بـ GPT (أسماء/أوصاف باللغتين + تصنيف + اختيار صور Google)
 
 ## التشغيل
 
@@ -20,13 +21,19 @@ flutter run
 
 ## عناوين السيرفر (افتراضي)
 
-- API: `http://187.127.88.146/api/v1`
-- Catalog Hub: `http://187.127.88.146/catalog-hub`
+- API: `https://deemaalhayat.com/api/v1`
+- Catalog Hub: `https://deemaalhayat.com/catalog-hub`
+
+يتطلب السيرفر إعداد:
+```
+OPENAI_API_KEY=...
+OPENAI_MODEL=gpt-5.6-luna-low
+```
 
 لتغيير العناوين عند البناء:
 
 ```bash
-flutter run --dart-define=API_BASE_URL=http://YOUR_HOST/api/v1 --dart-define=CATALOG_HUB_URL=http://YOUR_HOST/catalog-hub
+flutter run --dart-define=API_BASE_URL=https://YOUR_HOST/api/v1 --dart-define=CATALOG_HUB_URL=https://YOUR_HOST/catalog-hub
 ```
 
 ## بناء APK

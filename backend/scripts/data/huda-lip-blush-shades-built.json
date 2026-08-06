@@ -1,0 +1,71 @@
+{
+  "shades": [
+    {
+      "name": "Peachy Kiss",
+      "nameAr": "قبلة خوخية",
+      "displayName": "قبلة خوخية — Peachy Kiss",
+      "colorHex": "#EDAE86",
+      "imageUrl": "https://media.kohlsimg.com/is/image/kohls/6206817_Peachy_Kiss?wid=800&hei=800&op_sharpen=1&ver=5",
+      "position": 0,
+      "sku": "HB00983",
+      "price": 40000,
+      "descEn": "soft peachy nude — your-lips-but-better warmth",
+      "descAr": "نود خوخي ناعم — دفء طبيعي كأنّه لون شفاهك لكن أجمل"
+    },
+    {
+      "name": "Apricot Kiss",
+      "nameAr": "قبلة مشمشية",
+      "displayName": "قبلة مشمشية — Apricot Kiss",
+      "colorHex": "#F1865F",
+      "imageUrl": "https://media.kohlsimg.com/is/image/kohls/30bd8db29ae7e1a7a991ade04056df182f02e1cc?wid=800&hei=800&op_sharpen=1&ver=3",
+      "position": 1,
+      "sku": "HB00984",
+      "price": 40000,
+      "descEn": "warm apricot coral — sun-kissed flush of color",
+      "descAr": "مرجاني مشمشي دافئ — احمرار مشمس ناعم"
+    },
+    {
+      "name": "Coral Kiss",
+      "nameAr": "قبلة مرجانية",
+      "displayName": "قبلة مرجانية — Coral Kiss",
+      "colorHex": "#E1807C",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/LIPBLUSH-PACKSHOTS_CORAL-KISS_4460c1d6-6a6e-42ea-8cdb-c0126ad24639.jpg?v=1759671902",
+      "position": 2,
+      "sku": "HB00985",
+      "price": 40000,
+      "descEn": "vibrant coral pink — Huda's signature pop of color",
+      "descAr": "وردي مرجاني زاهي — درجة هدى المميزة بلمسة لون جريئة"
+    },
+    {
+      "name": "Rosy Kiss",
+      "nameAr": "قبلة وردية",
+      "displayName": "قبلة وردية — Rosy Kiss",
+      "colorHex": "#D797AE",
+      "imageUrl": "https://media.kohlsimg.com/is/image/kohls/6206817_Rosy_Kiss?wid=800&hei=800&op_sharpen=1",
+      "position": 3,
+      "sku": "HB00986",
+      "price": 40000,
+      "descEn": "dusty rosy pink — romantic just-pinched flush",
+      "descAr": "وردي روز مطفي — احمرار خدود رومانسي كأنّكِ عادتِ للتو من البرد"
+    },
+    {
+      "name": "Berry Kiss",
+      "nameAr": "قبلة توتية",
+      "displayName": "قبلة توتية — Berry Kiss",
+      "colorHex": "#B47777",
+      "imageUrl": "https://media.kohlsimg.com/is/image/kohls/6206817_Berry_Kiss?wid=800&hei=800&op_sharpen=1",
+      "position": 4,
+      "sku": "HB00987",
+      "price": 40000,
+      "descEn": "deep berry mauve — bold stain with rich pigment",
+      "descAr": "توتي موف عميق — تينت جريء بلون غني وثبات عالٍ"
+    }
+  ],
+  "productImages": [
+    "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/LIPBLUSH-PACKSHOTS_CORAL-KISS_4460c1d6-6a6e-42ea-8cdb-c0126ad24639.jpg?v=1759671902",
+    "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-LIPBLUSH-CORALKISS-TILE4_a0023221-6ba7-482f-aab2-fd6e5062816f.webp?v=1762687459",
+    "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-LIPBLUSH-CORALKISS-TILE5_5c4dab70-26c5-4e3b-8790-1b1bce4f2044.webp?v=1759671902",
+    "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-LIPBLUSH-APRICOTKISS-TILE1.webp",
+    "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/PDP-SECTION1-LIPBLUSH-BERRYKISS-TILE1.webp"
+  ]
+}

@@ -68,7 +68,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
   }
 
   String _message(Object e, String fallback) {
-    if (e.toString().contains('401')) return 'البريد أو كلمة المرور غير صحيحة';
+    final s = e.toString();
+    if (s.contains('401')) return 'البريد أو كلمة المرور غير صحيحة';
+    if (s.contains('SocketException') ||
+        s.contains('Failed host lookup') ||
+        s.contains('Connection refused') ||
+        s.contains('Timed out') ||
+        s.contains('TimeoutException') ||
+        s.contains('Connection errored') ||
+        s.contains('HandshakeException')) {
+      return 'تعذّر الاتصال بالسيرفر — تأكد من الإنترنت';
+    }
     return fallback;
   }
 }

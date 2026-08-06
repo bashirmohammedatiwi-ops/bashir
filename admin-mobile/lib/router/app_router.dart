@@ -7,6 +7,7 @@ import '../features/auth/login_screen.dart';
 import '../features/scan/scan_screen.dart';
 import '../features/import/results_screen.dart';
 import '../features/import/text_search_screen.dart';
+import '../features/import/gpt_autofill_screen.dart';
 import '../features/import/product_import_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -30,6 +31,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) {
           final barcode = state.uri.queryParameters['barcode'] ?? '';
           return ResultsScreen(barcode: barcode);
+        },
+      ),
+      GoRoute(
+        path: '/gpt-autofill',
+        builder: (_, state) {
+          final barcode = state.uri.queryParameters['barcode'] ?? '';
+          final hint = state.uri.queryParameters['hint'];
+          return GptAutofillScreen(barcode: barcode, hint: hint);
         },
       ),
       GoRoute(
