@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 import '../features/auth/login_screen.dart';
 import '../features/scan/scan_screen.dart';
+import '../features/ai/ai_add_screen.dart';
+import '../features/home/home_shell.dart';
 import '../features/import/results_screen.dart';
 import '../features/import/text_search_screen.dart';
 import '../features/import/gpt_autofill_screen.dart';
@@ -25,7 +27,19 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
     routes: [
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      GoRoute(path: '/scan', builder: (_, __) => const ScanScreen()),
+      ShellRoute(
+        builder: (context, state, child) => HomeShell(child: child),
+        routes: [
+          GoRoute(
+            path: '/scan',
+            builder: (_, __) => const ScanScreen(),
+          ),
+          GoRoute(
+            path: '/ai-add',
+            builder: (_, __) => const AiAddScreen(),
+          ),
+        ],
+      ),
       GoRoute(
         path: '/results',
         builder: (_, state) {
