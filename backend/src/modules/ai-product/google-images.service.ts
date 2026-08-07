@@ -16,38 +16,58 @@ export type GoogleImageHit = {
 export class GoogleImagesService {
   private readonly logger = new Logger(GoogleImagesService.name);
 
-  /** Primary entry: search images using the barcode only (+ light product keywords). */
-  async searchByBarcode(barcode: string, limit = 30): Promise<GoogleImageHit[]> {
+  /** Search by barcode first, then enrich with product/brand name queries. */
+  async searchByBarcode(
+    barcode: string,
+    limit = 30,
+    nameHints: string[] = [],
+  ): Promise<GoogleImageHit[]> {
     const digits = barcode.replace(/\D/g, "") || barcode.trim();
     if (digits.length < 6) return [];
+
+    const nameQueries = nameHints
+      .map((s) => s.replace(/\s+/g, " ").trim())
+      .filter((s) => s.length >= 4)
+      .slice(0, 4);
 
     const queries = [
       digits,
       `${digits} product`,
       `${digits} cosmetics`,
-      `${digits} makeup`,
+      ...nameQueries.map((n) => `${digits} ${n}`),
+      ...nameQueries,
+      ...nameQueries.map((n) => `${n} product`),
     ];
 
     const googleKey = process.env.GOOGLE_CSE_API_KEY?.trim();
     const googleCx = process.env.GOOGLE_CSE_CX?.trim();
-    if (googleKey && googleCx) {
-      const hits = await this.searchGoogleCse(digits, googleKey, googleCx, limit);
-      if (hits.length) return hits;
-    }
 
     const merged: GoogleImageHit[] = [];
     const seen = new Set<string>();
-    for (const q of queries) {
-      const batch = await this.searchDuckDuckGo(q, Math.min(16, limit));
+
+    const pushBatch = (batch: GoogleImageHit[]) => {
       for (const hit of batch) {
         const key = this.dedupeKey(hit.url);
         if (!key || seen.has(key)) continue;
         seen.add(key);
         merged.push(hit);
-        if (merged.length >= limit) return merged;
       }
+    };
+
+    if (googleKey && googleCx) {
+      pushBatch(await this.searchGoogleCse(digits, googleKey, googleCx, Math.min(20, limit)));
+      for (const n of nameQueries.slice(0, 2)) {
+        if (merged.length >= limit) break;
+        pushBatch(await this.searchGoogleCse(n, googleKey, googleCx, 10));
+      }
+      if (merged.length >= Math.min(12, limit)) return merged.slice(0, limit);
     }
-    return merged;
+
+    for (const q of queries) {
+      if (merged.length >= limit) break;
+      pushBatch(await this.searchDuckDuckGo(q, Math.min(14, limit)));
+    }
+    return merged.slice(0, limit);
   }
 
   /** @deprecated Prefer searchByBarcode — kept for any callers passing free text. */

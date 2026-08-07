@@ -115,7 +115,10 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
 
       AiAutofillResult fill;
       if (widget.manualMode) {
-        final images = await ai.searchImages(widget.barcode);
+        final images = await ai.searchImages(
+          widget.barcode,
+          nameHint: widget.hint,
+        );
         fill = AiAutofillResult(
           barcode: widget.barcode,
           brandAr: '',
@@ -161,14 +164,15 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
         }
       }
 
-      final brandNeedle = (fill.brandAr.isNotEmpty ? fill.brandAr : fill.brandEn).toLowerCase();
-      if (brandNeedle.isNotEmpty) {
-        for (final b in brands) {
-          final names = [b.nameAr, b.nameEn, b.name].whereType<String>().map((s) => s.toLowerCase());
-          if (names.any((n) => n == brandNeedle || n.contains(brandNeedle) || brandNeedle.contains(n))) {
-            _brandId = b.id;
-            break;
-          }
+      final brandNeedleAr = fill.brandAr.trim();
+      final brandNeedleEn = fill.brandEn.trim();
+      _brandId = _bestBrandMatch(brands, brandNeedleAr, brandNeedleEn)?.id;
+      final matchedBrand = _selectedBrand;
+      if (matchedBrand != null) {
+        // Keep GPT brand labels if richer; fill empty side from catalog name.
+        if (_brandAr.text.trim().isEmpty) _brandAr.text = matchedBrand.displayName;
+        if (_brandEn.text.trim().isEmpty) {
+          _brandEn.text = matchedBrand.nameEn ?? matchedBrand.name ?? matchedBrand.displayName;
         }
       }
     } catch (e) {
@@ -258,10 +262,74 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     );
   }
 
+  BrandEntity? _bestBrandMatch(List<BrandEntity> brands, String ar, String en) {
+    String norm(String s) => s
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^\w\s\u0600-\u06FF]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    final needles = [ar, en].map(norm).where((s) => s.isNotEmpty).toList();
+    if (needles.isEmpty) return null;
+
+    // Prefer exact / near-exact — avoid "بيو" matching inside "بيوتي"
+    BrandEntity? best;
+    var bestScore = 0;
+    for (final b in brands) {
+      final candidates = [b.name, b.nameAr, b.nameEn, b.displayName]
+          .whereType<String>()
+          .map(norm)
+          .where((s) => s.isNotEmpty)
+          .toSet();
+      var score = 0;
+      for (final needle in needles) {
+        for (final c in candidates) {
+          if (c == needle) {
+            score = score < 100 ? 100 : score;
+          } else if (c.startsWith(needle) || needle.startsWith(c)) {
+            // Only if the shorter side is long enough (avoids Beyu/بيو false positives)
+            final shorter = c.length < needle.length ? c : needle;
+            if (shorter.length >= 6) score = score < 85 ? 85 : score;
+          } else {
+            final nTokens = needle.split(' ').where((t) => t.length > 1).toSet();
+            final cTokens = c.split(' ').where((t) => t.length > 1).toSet();
+            if (nTokens.isEmpty || cTokens.isEmpty) continue;
+            final overlap = nTokens.where(cTokens.contains).length;
+            // Require majority of tokens, and overlapping tokens must be meaningful
+            if (overlap >= 2 || (nTokens.length == 1 && overlap == 1 && nTokens.first.length >= 5)) {
+              final ratio = overlap / (nTokens.length > cTokens.length ? nTokens.length : cTokens.length);
+              if (ratio >= 0.66) score = score < 75 ? 75 : score;
+            }
+          }
+        }
+      }
+      // Special: Huda Beauty aliases
+      final joined = candidates.join(' ');
+      if (needles.any((n) => n.contains('huda') || n.contains('هدى') || n.contains('هودا'))) {
+        if (joined.contains('huda') || joined.contains('هدى') || joined.contains('هودا')) {
+          score = score < 95 ? 95 : score;
+        }
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        best = b;
+      }
+    }
+    return bestScore >= 75 ? best : null;
+  }
+
   Future<void> _refreshImages() async {
     setState(() => _refreshingImages = true);
     try {
-      final imgs = await ref.read(aiProductRepositoryProvider).searchImages(widget.barcode);
+      final nameHint = [
+        _brandEn.text.trim().isNotEmpty ? _brandEn.text.trim() : _brandAr.text.trim(),
+        _nameEn.text.trim(),
+        _nameAr.text.trim(),
+      ].where((s) => s.isNotEmpty).join(' | ');
+      final imgs = await ref.read(aiProductRepositoryProvider).searchImages(
+            widget.barcode,
+            nameHint: nameHint,
+          );
       setState(() {
         _images = imgs;
         if (_selectedImages.isEmpty && imgs.isNotEmpty) {
@@ -271,7 +339,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
             ..addAll(_selectedImages);
         }
       });
-      _snack('تم تحديث الصور بالباركود (${imgs.length})');
+      _snack('تم تحديث الصور بالباركود والاسم (${imgs.length})');
     } catch (e) {
       _snack(e.toString().replaceFirst('Exception: ', ''));
     } finally {
@@ -855,7 +923,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
           child: Column(
             children: [
               Text(
-                'الصيغة: البراند - اسم المنتج (معبّر بالعربي والإنجليزي)',
+                'الصيغة عربي: البراند البراند - اسم المنتج · إنجليزي: Brand - Product',
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
               ),
               const SizedBox(height: 10),
@@ -925,7 +993,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'البحث يتم بالباركود ${widget.barcode} — بدون استهلاك AI',
+                'البحث بالباركود + اسم المنتج/البراند — بدون استهلاك AI',
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
                 textDirection: TextDirection.ltr,
                 textAlign: TextAlign.right,
@@ -1175,9 +1243,18 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                     items: _brands,
                     selected: _selectedBrand,
                     labelOf: (b) => b.displayName,
+                    subtitleOf: (b) => b.searchTokens.where((t) => t != b.displayName).join(' · '),
                     isSame: (a, b) => a.id == b.id,
                   );
-                  if (picked != null) setState(() => _brandId = picked.id);
+                  if (picked != null) {
+                    setState(() {
+                      _brandId = picked.id;
+                      _brandAr.text = picked.displayName;
+                      _brandEn.text = picked.nameEn?.trim().isNotEmpty == true
+                          ? picked.nameEn!.trim()
+                          : (picked.name?.trim().isNotEmpty == true ? picked.name!.trim() : picked.displayName);
+                    });
+                  }
                 },
               ),
               const Divider(),

@@ -19,4 +19,9 @@ export class AiImagesDto {
   @MaxLength(32)
   @Matches(/^[0-9A-Za-z\-]+$/)
   barcode!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(240)
+  nameHint?: string;
 }

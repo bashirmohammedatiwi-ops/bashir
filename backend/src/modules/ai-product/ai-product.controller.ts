@@ -23,6 +23,6 @@ export class AiProductController {
   /** Barcode image search only — no AI tokens. */
   @Post("images")
   images(@Body() dto: AiImagesDto) {
-    return this.ai.searchImages(dto.barcode);
+    return this.ai.searchImages(dto.barcode, dto.nameHint);
   }
 }

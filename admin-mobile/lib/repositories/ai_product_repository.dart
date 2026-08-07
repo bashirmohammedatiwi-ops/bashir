@@ -39,12 +39,15 @@ class AiProductRepository {
     }
   }
 
-  Future<List<AiAutofillImage>> searchImages(String barcode) async {
+  Future<List<AiAutofillImage>> searchImages(String barcode, {String? nameHint}) async {
     try {
       final resp = await _dio.post(
         '/ai-product/images',
-        data: {'barcode': barcode.trim()},
-        options: Options(receiveTimeout: const Duration(seconds: 45)),
+        data: {
+          'barcode': barcode.trim(),
+          if (nameHint != null && nameHint.trim().isNotEmpty) 'nameHint': nameHint.trim(),
+        },
+        options: Options(receiveTimeout: const Duration(seconds: 60)),
       );
       final data = asMap(resp.data['data'] ?? resp.data);
       return (data['images'] as List? ?? [])

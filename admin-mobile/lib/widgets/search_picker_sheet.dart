@@ -61,10 +61,13 @@ class _SearchPickerBodyState<T> extends State<_SearchPickerBody<T>> {
   List<T> get _filtered {
     final q = _q.trim().toLowerCase();
     if (q.isEmpty) return widget.items;
+    final tokens = q.split(RegExp(r'\s+')).where((t) => t.isNotEmpty).toList();
     return widget.items.where((item) {
       final label = widget.labelOf(item).toLowerCase();
       final sub = widget.subtitleOf?.call(item).toLowerCase() ?? '';
-      return label.contains(q) || sub.contains(q);
+      final hay = '$label $sub';
+      if (hay.contains(q)) return true;
+      return tokens.every((t) => hay.contains(t));
     }).toList();
   }
 

@@ -132,7 +132,7 @@ export class AiProductService {
       };
     }
 
-    const cacheKey = `${digits}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `v2|${digits}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 30 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -149,13 +149,10 @@ export class AiProductService {
         ? "gpt-5.4-nano"
         : requested;
 
-    // 2) Free barcode facts + barcode image search — parallel, zero AI
-    const [free, imageHits] = await Promise.all([
-      this.freeBarcodeHint(digits),
-      this.images.searchByBarcode(digits, 32),
-    ]);
+    // 2) Free facts first (helps image name queries) — zero AI
+    const free = await this.freeBarcodeHint(digits);
 
-    // 3) One cheap GPT call — NO web_search tool (images already from barcode search)
+    // 3) Cheap GPT call — NO web_search
     const rawGpt = await this.callGpt({
       apiKey,
       model,
@@ -164,6 +161,15 @@ export class AiProductService {
       hint: hint?.trim() || undefined,
     });
     const gpt = this.polishNaming(rawGpt);
+
+    // 4) Images by barcode + product/brand name (not from AI)
+    const imageHits = await this.images.searchByBarcode(digits, 36, [
+      free.title ?? "",
+      gpt.brand_en,
+      gpt.name_en,
+      `${gpt.brand_en} ${gpt.name_en}`.replace(`${gpt.brand_en} ${gpt.brand_en}`, gpt.brand_en),
+      gpt.brand_ar,
+    ]);
 
     const matched = await this.matchCategories(gpt);
 
@@ -177,8 +183,8 @@ export class AiProductService {
       descriptionAr: gpt.description_ar,
       descriptionEn: gpt.description_en,
       category: matched,
-      confidence: gpt.confidence,
-      needsReview: gpt.needs_review,
+      confidence: gpt.confidence > 0 ? gpt.confidence : gpt.needs_review ? 55 : 70,
+      needsReview: gpt.needs_review || gpt.confidence < 40,
       reviewNotes: null,
       sourceUrl: null,
       images: imageHits,
@@ -187,7 +193,7 @@ export class AiProductService {
         usedWebSearch: false,
         freeHintSource: free.source ?? null,
         imageCount: imageHits.length,
-        imageQuery: digits,
+        imageQuery: [digits, gpt.brand_en, gpt.name_en].filter(Boolean).join(" | "),
         aiSkipped: false,
         reason: null,
         cached: false,
@@ -197,12 +203,23 @@ export class AiProductService {
     return payload;
   }
 
-  /** Refresh images by barcode only — no AI. */
-  async searchImages(barcode: string) {
+  /** Refresh images by barcode + optional product name — no AI. */
+  async searchImages(barcode: string, nameHint?: string) {
     const digits = barcode.replace(/\D/g, "") || barcode.trim();
     if (digits.length < 6) throw new BadRequestException("باركود غير صالح");
-    const images = await this.images.searchByBarcode(digits, 32);
-    return { barcode: digits, images, meta: { imageQuery: digits, imageCount: images.length } };
+    const hints = (nameHint ?? "")
+      .split(/[|,]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const images = await this.images.searchByBarcode(digits, 36, hints);
+    return {
+      barcode: digits,
+      images,
+      meta: {
+        imageQuery: [digits, ...hints].join(" | "),
+        imageCount: images.length,
+      },
+    };
   }
 
   private async findExistingProduct(barcode: string) {
@@ -381,15 +398,12 @@ export class AiProductService {
     const instructions = `Iraqi beauty e-commerce catalog writer (Al Hayaa). JSON only. Keep tokens low.
 
 NAMING (strict — both languages MUST use: Brand - Product):
+• name_ar = "{براند} {براند} - {نوع عربي} {خط EN} {صفات}"
+  IMPORTANT: Arabic brand MUST appear TWICE before the dash (same spelling).
+  Example: "هدى بيوتي هدى بيوتي - مجموعة كونتور وستروب Contour & Strobe Silverfox & Enchanting تثبيت عالي"
 • name_en = "{BrandEn} - {expressive official product name}"
-  Include product type (Concealer/Foundation/Mascara/Lip Liner/Blush/Powder…) + line name + key benefit/finish/SPF/size if known.
-  Example: "Seventeen - Ideal Cover Liquid Concealer Full Coverage 6ml"
-• name_ar = "{براند عربي} - {نوع المنتج بالعربي العراقي} {اسم الخط الرسمي EN} {صفات قصيرة معبّرة}"
-  Use Iraqi retail product types: كونسيلر، فاونديشن، ماسكارا، قلم شفاه، قلم حواجب، بلاشر، باودر، كحل، ظل عيون، سيروم، مرطب…
-  Keep official English line name. Add 2–5 expressive Arabic traits (تغطية، مطفي، مقاوم للماء، SPF…).
-  Example: "سفنتين - كونسيلر Ideal Cover Liquid بتغطية كاملة وثبات عالٍ 6 مل"
-• NEVER put brand only. NEVER omit the " - " separator. Do NOT repeat brand twice.
-• brand_ar / brand_en must match the brand used in the names (Seventeen→سفنتين, Deborah Milano→ديبورا ميلانو).
+  Example: "Huda Beauty - Contour & Strobe Set Silverfox & Enchanting Long-Wear Glow"
+• NEVER omit the " - " separator. Do NOT use two different brand spellings.
 
 DESC_AR: 2 short Iraqi retail sentences + 3 benefit bullets.
 DESC_EN: 2 short retail sentences + 3 benefit bullets.
@@ -452,18 +466,19 @@ Write expressive Brand - Product names in AR+EN, then fill the rest of the JSON.
     throw new ServiceUnavailableException("رد GPT فارغ");
   }
 
-  /** Enforce "Brand - Product" naming in AR/EN without a second AI call. */
+  /** Enforce naming: EN "Brand - Product"; AR "Brand Brand - Product". */
   private polishNaming(gpt: GptAutofillJson): GptAutofillJson {
     const brandEn = this.canonicalBrandEn(gpt.brand_en || gpt.brand_ar || "");
     const brandAr = this.canonicalBrandAr(brandEn, gpt.brand_ar || "");
-    const nameEn = this.ensureBrandDashName(gpt.name_en || "", brandEn);
-    const nameAr = this.ensureBrandDashName(gpt.name_ar || "", brandAr);
+    const nameEn = this.ensureBrandDashName(gpt.name_en || "", brandEn, { doubleBrand: false });
+    const nameAr = this.ensureBrandDashName(gpt.name_ar || "", brandAr, { doubleBrand: true });
     return {
       ...gpt,
       brand_en: brandEn || gpt.brand_en?.trim() || "",
       brand_ar: brandAr || gpt.brand_ar?.trim() || "",
       name_en: nameEn,
       name_ar: nameAr,
+      confidence: typeof gpt.confidence === "number" ? gpt.confidence : 60,
     };
   }
 
@@ -517,29 +532,47 @@ Write expressive Brand - Product names in AR+EN, then fill the rest of the JSON.
     return ar || brandEn.trim();
   }
 
-  private ensureBrandDashName(name: string, brand: string): string {
+  private ensureBrandDashName(
+    name: string,
+    brand: string,
+    opts: { doubleBrand?: boolean } = {},
+  ): string {
     const cleaned = name.replace(/\s+/g, " ").trim();
     const b = brand.replace(/\s+/g, " ").trim();
-    if (!cleaned) return b ? `${b} -` : "";
+    if (!cleaned) return b ? (opts.doubleBrand ? `${b} ${b} -` : `${b} -`) : "";
     if (!b) return cleaned;
 
     const dashParts = cleaned.split(/\s*[-–—]\s*/);
     let productPart = cleaned;
 
-    // Already "Brand - Product"
-    if (dashParts.length >= 2 && this.namesMatch(dashParts[0], b)) {
-      productPart = dashParts.slice(1).join(" - ").trim();
+    // "Brand - Product" or "Brand Brand - Product"
+    if (dashParts.length >= 2) {
+      const left = dashParts[0].trim();
+      const leftNorm = this.norm(left);
+      const brandNorm = this.norm(b);
+      const doubleNorm = this.norm(`${b} ${b}`);
+      if (leftNorm === brandNorm || leftNorm === doubleNorm || this.namesMatch(left, b)) {
+        productPart = dashParts.slice(1).join(" - ").trim();
+      } else if (this.startsWithBrand(cleaned, b)) {
+        productPart = cleaned.slice(b.length).replace(/^[\s:–—-]+/, "").trim();
+        // strip second brand if present after first
+        productPart = this.stripLeadingBrand(productPart, b).replace(/^[\s:–—-]+/, "").trim() || productPart;
+      }
     } else if (this.startsWithBrand(cleaned, b)) {
       productPart = cleaned.slice(b.length).replace(/^[\s:–—-]+/, "").trim();
+      productPart = this.stripLeadingBrand(productPart, b).replace(/^[\s:–—-]+/, "").trim() || productPart;
     } else {
-      // Strip a leading brand occurrence if GPT embedded it without dash
       const stripped = this.stripLeadingBrand(cleaned, b);
       productPart = stripped || cleaned;
     }
 
     productPart = this.stripLeadingBrand(productPart, b).replace(/^[\s:–—-]+/, "").trim() || productPart;
+    // Remove accidental alternate spellings of same brand at start (هودا بيوتي after هدى بيوتي)
+    productPart = productPart.replace(/^(هودا\s*بيوتي|huda\s*beauty)\s*[-–—]?\s*/i, "").trim() || productPart;
     if (!productPart) productPart = cleaned;
-    return `${b} - ${productPart}`;
+
+    const prefix = opts.doubleBrand ? `${b} ${b}` : b;
+    return `${prefix} - ${productPart}`;
   }
 
   private startsWithBrand(name: string, brand: string): boolean {
