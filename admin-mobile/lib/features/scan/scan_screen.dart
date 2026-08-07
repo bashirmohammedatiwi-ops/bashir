@@ -5,18 +5,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/utils/helpers.dart';
 import '../../providers/auth_provider.dart';
-
-const _barcodeFormats = <BarcodeFormat>[
-  BarcodeFormat.ean13,
-  BarcodeFormat.ean8,
-  BarcodeFormat.upcA,
-  BarcodeFormat.upcE,
-  BarcodeFormat.code128,
-  BarcodeFormat.code39,
-  BarcodeFormat.code93,
-  BarcodeFormat.itf14,
-  BarcodeFormat.codabar,
-];
+import '../../widgets/barcode_live_scanner.dart';
 
 class ScanScreen extends ConsumerStatefulWidget {
   const ScanScreen({super.key});
@@ -27,7 +16,7 @@ class ScanScreen extends ConsumerStatefulWidget {
 
 class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObserver {
   final _manualController = TextEditingController();
-  final _scannerKey = GlobalKey<_LiveScannerState>();
+  final _scannerKey = GlobalKey<BarcodeLiveScannerState>();
   bool _handled = false;
   bool _showManual = false;
 
@@ -95,7 +84,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
         title: const Text('مسح الباركود'),
         actions: [
           IconButton(
-            tooltip: 'بحث بالاسم',
+            tooltip: 'بحث نصي',
             icon: const Icon(Icons.text_fields),
             onPressed: () => context.push('/search'),
           ),
@@ -143,127 +132,51 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
             child: Stack(
               fit: StackFit.expand,
               children: [
-                _LiveScanner(key: _scannerKey, onDetect: _onDetect),
-                Center(
-                  child: Container(
-                    width: 260,
-                    height: 140,
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.white70, width: 2),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 24,
-                  left: 24,
-                  right: 24,
-                  child: Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
+                if (_showManual)
+                  const ColoredBox(
+                    color: Colors.black87,
+                    child: Center(
                       child: Text(
-                        'وجّه الكاميرا نحو باركود المنتج للبحث في كتالوج المتاجر واستيراده',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium,
+                        'أدخل الباركود يدوياً أعلاه',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
+                  )
+                else ...[
+                  BarcodeLiveScanner(key: _scannerKey, onDetect: _onDetect),
+                  IgnorePointer(
+                    child: Center(
+                      child: Container(
+                        width: 260,
+                        height: 140,
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.white70, width: 2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),
-                ),
+                  Positioned(
+                    bottom: 24,
+                    left: 24,
+                    right: 24,
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(
+                          'وجّه الكاميرا نحو باركود المنتج للبحث في كتالوج المتاجر واستيراده',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _LiveScanner extends StatefulWidget {
-  const _LiveScanner({super.key, required this.onDetect});
-
-  final void Function(BarcodeCapture) onDetect;
-
-  @override
-  State<_LiveScanner> createState() => _LiveScannerState();
-}
-
-class _LiveScannerState extends State<_LiveScanner> {
-  late final MobileScannerController _controller;
-  bool _starting = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = MobileScannerController(
-      autoStart: false,
-      detectionSpeed: DetectionSpeed.normal,
-      facing: CameraFacing.back,
-      formats: _barcodeFormats,
-    );
-    WidgetsBinding.instance.addPostFrameCallback((_) => resume());
-  }
-
-  Future<void> pause() async {
-    if (!_controller.value.isRunning) return;
-    try {
-      await _controller.stop();
-    } catch (_) {}
-  }
-
-  Future<void> resume() async {
-    if (!mounted || _starting || _controller.value.isRunning) return;
-    _starting = true;
-    try {
-      await _controller.start();
-    } catch (_) {
-      try {
-        await _controller.stop();
-        await Future<void>.delayed(const Duration(milliseconds: 200));
-        if (mounted) await _controller.start();
-      } catch (_) {}
-    } finally {
-      _starting = false;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MobileScanner(
-      controller: _controller,
-      onDetect: widget.onDetect,
-      errorBuilder: (context, error) {
-        return ColoredBox(
-          color: Colors.black,
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.white, size: 48),
-                  const SizedBox(height: 12),
-                  Text(
-                    error.errorDetails?.message ?? error.errorCode.message,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: resume,
-                    child: const Text('إعادة تشغيل الكاميرا'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }

@@ -10,18 +10,7 @@ import '../../core/utils/helpers.dart';
 import '../../models/ai_autofill.dart';
 import '../../providers/auth_provider.dart';
 import '../../repositories/ai_product_repository.dart';
-
-const _barcodeFormats = <BarcodeFormat>[
-  BarcodeFormat.ean13,
-  BarcodeFormat.ean8,
-  BarcodeFormat.upcA,
-  BarcodeFormat.upcE,
-  BarcodeFormat.code128,
-  BarcodeFormat.code39,
-  BarcodeFormat.code93,
-  BarcodeFormat.itf14,
-  BarcodeFormat.codabar,
-];
+import '../../widgets/barcode_live_scanner.dart';
 
 /// Dedicated AI product-add: scan → duplicate check → autofill wizard.
 class AiAddScreen extends ConsumerStatefulWidget {
@@ -34,7 +23,7 @@ class AiAddScreen extends ConsumerStatefulWidget {
 class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingObserver {
   final _manualController = TextEditingController();
   final _hintController = TextEditingController();
-  final _scannerKey = GlobalKey<_AiLiveScannerState>();
+  final _scannerKey = GlobalKey<BarcodeLiveScannerState>();
   bool _handled = false;
   bool _showManual = false;
   bool _checking = false;
@@ -458,7 +447,7 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
                         ),
                       )
                     else ...[
-                      _AiLiveScanner(key: _scannerKey, onDetect: _onDetect),
+                      BarcodeLiveScanner(key: _scannerKey, onDetect: _onDetect),
                       IgnorePointer(
                         child: Center(
                           child: Container(
@@ -516,96 +505,6 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
             ),
         ],
       ),
-    );
-  }
-}
-
-class _AiLiveScanner extends StatefulWidget {
-  const _AiLiveScanner({super.key, required this.onDetect});
-
-  final void Function(BarcodeCapture) onDetect;
-
-  @override
-  State<_AiLiveScanner> createState() => _AiLiveScannerState();
-}
-
-class _AiLiveScannerState extends State<_AiLiveScanner> {
-  late final MobileScannerController _controller;
-  bool _starting = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = MobileScannerController(
-      autoStart: false,
-      detectionSpeed: DetectionSpeed.normal,
-      facing: CameraFacing.back,
-      formats: _barcodeFormats,
-    );
-    WidgetsBinding.instance.addPostFrameCallback((_) => resume());
-  }
-
-  Future<void> pause() async {
-    if (!_controller.value.isRunning) return;
-    try {
-      await _controller.stop();
-    } catch (_) {}
-  }
-
-  Future<void> resume() async {
-    if (!mounted || _starting || _controller.value.isRunning) return;
-    _starting = true;
-    try {
-      await _controller.start();
-    } catch (_) {
-      try {
-        await _controller.stop();
-        await Future<void>.delayed(const Duration(milliseconds: 200));
-        if (mounted) await _controller.start();
-      } catch (_) {}
-    } finally {
-      _starting = false;
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MobileScanner(
-      controller: _controller,
-      onDetect: widget.onDetect,
-      errorBuilder: (context, error) {
-        return ColoredBox(
-          color: Colors.black,
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.error_outline, color: Colors.white, size: 48),
-                  const SizedBox(height: 12),
-                  Text(
-                    error.errorDetails?.message ?? error.errorCode.message,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: resume,
-                    child: const Text('إعادة تشغيل الكاميرا'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }
