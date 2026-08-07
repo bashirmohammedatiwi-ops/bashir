@@ -19,15 +19,33 @@ type GptAutofillJson = {
   name_en: string;
   description_ar: string;
   description_en: string;
+  /** Short catalog codes from the tree, e.g. M01 / S03 / T12 — preferred over names. */
+  category_main_code: string;
+  category_sub_codes: string[];
+  category_tertiary_codes: string[];
+  /** Human labels (echo of chosen codes) — fallback if codes missing/invalid. */
   category_main_ar: string;
   category_sub_ar: string;
   category_tertiary_ar: string;
-  /** Extra subcategory names when the product fits more than one. */
   category_subs_ar: string[];
-  /** Extra tertiary names when the product fits more than one. */
   category_tertiaries_ar: string[];
   confidence: number;
   needs_review: boolean;
+};
+
+type CategoryCodeEntry = {
+  id: string;
+  code: string;
+  level: "main" | "sub" | "tertiary";
+  parentCode: string | null;
+  parentId: string | null;
+  nameAr: string;
+};
+
+type CategoryCatalog = {
+  at: number;
+  text: string;
+  byCode: Map<string, CategoryCodeEntry>;
 };
 
 const AUTOFILL_SCHEMA = {
@@ -40,6 +58,9 @@ const AUTOFILL_SCHEMA = {
     name_en: { type: "string" },
     description_ar: { type: "string" },
     description_en: { type: "string" },
+    category_main_code: { type: "string" },
+    category_sub_codes: { type: "array", items: { type: "string" } },
+    category_tertiary_codes: { type: "array", items: { type: "string" } },
     category_main_ar: { type: "string" },
     category_sub_ar: { type: "string" },
     category_tertiary_ar: { type: "string" },
@@ -55,6 +76,9 @@ const AUTOFILL_SCHEMA = {
     "name_en",
     "description_ar",
     "description_en",
+    "category_main_code",
+    "category_sub_codes",
+    "category_tertiary_codes",
     "category_main_ar",
     "category_sub_ar",
     "category_tertiary_ar",
@@ -65,7 +89,7 @@ const AUTOFILL_SCHEMA = {
   ],
 } as const;
 
-/** Beauty category synonym helpers for better matching without extra AI tokens. */
+/** Beauty product-type synonyms — fallback name matching only (not primary). */
 const CATEGORY_SYNONYMS: Record<string, string[]> = {
   كونسيلر: ["concealer", "cover", "تصحيح"],
   فاونديشن: ["foundation", "fond de teint", "كريم اساس", "كريم أساس"],
@@ -90,7 +114,7 @@ const CATEGORY_SYNONYMS: Record<string, string[]> = {
   "عناية الفم والاسنان": ["oral", "dental care", "teeth"],
 };
 
-/** Tokens too generic to score as category matches (would select every sibling). */
+/** Tokens too generic for fallback name matching. */
 const GENERIC_CATEGORY_TOKENS = new Set(
   [
     "عناية",
@@ -120,7 +144,7 @@ const GENERIC_CATEGORY_TOKENS = new Set(
 @Injectable()
 export class AiProductService {
   private readonly logger = new Logger(AiProductService.name);
-  private categoryHintCache: { at: number; text: string } | null = null;
+  private categoryCatalogCache: CategoryCatalog | null = null;
   private readonly autofillCache = new Map<string, { at: number; payload: Record<string, unknown> }>();
 
   constructor(
@@ -175,7 +199,7 @@ export class AiProductService {
     }
 
     const resolved = this.resolveOpenAiModel(modelChoice);
-    const cacheKey = `v11|${force ? "force|" : ""}${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `v12|${force ? "force|" : ""}${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 30 * 60_000) {
       const cachedPayload = cached.payload as {
@@ -909,7 +933,8 @@ export class AiProductService {
     hint?: string;
     imageTitles?: string[];
   }): Promise<{ gpt: GptAutofillJson; usedWebSearch: boolean }> {
-    const categoryHint = await this.compactCategoryHint();
+    const catalog = await this.getCategoryCatalog();
+    const categoryHint = catalog.text;
 
     const known = [
       args.free.title ? `db_title=${args.free.title}` : null,
@@ -955,20 +980,22 @@ NAMING (صارم):
 
 DESC_AR: جملتان قصيرتان بالفصحى + 3 نقاط فوائد (أو وصف مختصر جداً إذا الثقة منخفضة). بدون لهجة محكية.
 DESC_EN: جملتان + 3 نقاط.
-التصنيفات يجب أن تطابق الأسماء أدناه حرفياً قدر الإمكان (فضّل العربي) — املأها دائماً حتى لو تقريبية:
+
+التصنيف (اختر من الشجرة بالرموز — دقة أعلى من الأسماء):
 ${categoryHint}
-• category_main_ar = قسم رئيسي واحد فقط من القائمة (إلزامي إن أمكن).
-• category_sub_ar = القسم الفرعي الأساسي الأنسب فقط (واحد).
-• category_subs_ar = اتركها فارغة عادةً. املأها فقط إذا المنتج يناسب فعلاً قسمين فرعيين مختلفين بوضوح (حد أقصى 2) — ممنوع اختيار كل أقسام «العناية» أو ما شابه.
-• category_tertiary_ar = القسم الثانوي الأساسي إن وُجد.
-• category_tertiaries_ar = فارغة عادةً؛ حد أقصى 2 عند الحاجة الحقيقية فقط.
-• إذا لم تجد تطابقاً دقيقاً: اختر أقرب اسم واحد من الشجرة — لا تملأ مصفوفات إضافية بالتخمين.
+قواعد التصنيف:
+• انسخ الرموز حرفياً كما هي (مثل M01 أو S03 أو T12) — ممنوع اختراع رموز غير موجودة في الشجرة.
+• category_main_code = رمز رئيسي واحد (Mxx).
+• category_sub_codes = عادةً رمز فرعي واحد فقط (Sxx تحت الرئيسي). أضف ثانياً فقط إذا المنتج يناسب قسمين مختلفين بوضوح — ممنوع اختيار كل أقسام العناية دفعة واحدة.
+• category_tertiary_codes = رموز Txx المناسبة تحت الفرعي المختار (عادة 0–1، حد أقصى 2).
+• املأ category_main_ar / category_sub_ar / category_tertiary_ar بأسماء الأقسام المطابقة للرموز المختارة.
+• category_subs_ar / category_tertiaries_ar اتركها فارغة عادةً.
 بدون باركود درجات.`;
 
     const userInput = `barcode=${args.barcode}
 known: ${known || "none"}
 STEP1: web_search query="${args.barcode}" once.
-STEP2: return complete JSON — MSA name_ar (market terms, no dialect) + official name_en + filled categories. If unknown: needs_review=true, confidence≤30.`;
+STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code(s) copied from the tree. If unknown: needs_review=true, confidence≤30.`;
 
     const payload: Record<string, unknown> = {
       model: args.model,
@@ -1054,8 +1081,8 @@ STEP2: return complete JSON — MSA name_ar (market terms, no dialect) + officia
     if ((gpt.brand_ar || gpt.brand_en || "").trim()) score += 2;
     if ((gpt.name_ar || "").trim().length >= 3) score += 3;
     if ((gpt.name_en || "").trim().length >= 3) score += 2;
-    if ((gpt.category_main_ar || "").trim()) score += 2;
-    if ((gpt.category_sub_ar || "").trim()) score += 1;
+    if ((gpt.category_main_code || gpt.category_main_ar || "").trim()) score += 2;
+    if ((gpt.category_sub_codes?.length || gpt.category_sub_ar || "").toString().trim()) score += 1;
     if ((gpt.description_ar || "").trim().length > 20) score += 1;
     return score;
   }
@@ -1068,6 +1095,11 @@ STEP2: return complete JSON — MSA name_ar (market terms, no dialect) + officia
     const nameArRaw = this.ensureBrandDashName(gpt.name_ar || "", brandAr, { doubleBrand: false });
     const nameAr = this.polishMarketArabic(nameArRaw);
     const descriptionAr = this.polishMarketArabic(gpt.description_ar || "");
+    const normCodes = (arr: unknown, prefix: string) =>
+      (Array.isArray(arr) ? arr : [])
+        .map((s) => String(s ?? "").trim().toUpperCase())
+        .filter((c) => new RegExp(`^${prefix}\\d{2}$`).test(c));
+
     return {
       ...gpt,
       brand_en: brandEn || gpt.brand_en?.trim() || "",
@@ -1075,6 +1107,15 @@ STEP2: return complete JSON — MSA name_ar (market terms, no dialect) + officia
       name_en: nameEn,
       name_ar: nameAr,
       description_ar: descriptionAr,
+      category_main_code: (() => {
+        const c = String(gpt.category_main_code ?? "")
+          .trim()
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, "");
+        return /^M\d{2}$/.test(c) ? c : "";
+      })(),
+      category_sub_codes: normCodes(gpt.category_sub_codes, "S").slice(0, 2),
+      category_tertiary_codes: normCodes(gpt.category_tertiary_codes, "T").slice(0, 2),
       category_subs_ar: Array.isArray(gpt.category_subs_ar)
         ? gpt.category_subs_ar.map((s) => String(s ?? "").trim()).filter(Boolean)
         : [],
@@ -1266,143 +1307,219 @@ STEP2: return complete JSON — MSA name_ar (market terms, no dialect) + officia
     return s;
   }
 
-  private async compactCategoryHint(): Promise<string> {
+  /** Build coded category tree for GPT to pick from (IDs resolved server-side). */
+  private async getCategoryCatalog(): Promise<CategoryCatalog> {
     const now = Date.now();
-    if (this.categoryHintCache && now - this.categoryHintCache.at < 10 * 60_000) {
-      return this.categoryHintCache.text;
+    if (this.categoryCatalogCache && now - this.categoryCatalogCache.at < 10 * 60_000) {
+      return this.categoryCatalogCache;
     }
 
     const mains = await this.prisma.category.findMany({
       where: { parentId: null, isActive: true },
       select: {
+        id: true,
         nameAr: true,
         nameEn: true,
         name: true,
         children: {
           where: { isActive: true },
           select: {
+            id: true,
             nameAr: true,
             nameEn: true,
             name: true,
             children: {
               where: { isActive: true },
-              select: { nameAr: true, nameEn: true, name: true },
-              take: 8,
+              select: { id: true, nameAr: true, nameEn: true, name: true },
+              orderBy: { position: "asc" },
             },
           },
-          take: 12,
+          orderBy: { position: "asc" },
         },
       },
-      take: 10,
       orderBy: { position: "asc" },
     });
 
-    const lines: string[] = [];
+    const byCode = new Map<string, CategoryCodeEntry>();
+    const lines: string[] = ["CATEGORY TREE — copy codes exactly (Mxx / Sxx / Txx):"];
+    let mIdx = 0;
+    let sIdx = 0;
+    let tIdx = 0;
+
+    const labelOf = (row: { nameAr: string | null; nameEn: string | null; name: string }) =>
+      row.nameAr || row.nameEn || row.name;
+
     for (const m of mains) {
-      const mainLabel = m.nameAr || m.nameEn || m.name;
-      const subs = m.children
-        .map((s) => {
-          const subLabel = s.nameAr || s.nameEn || s.name;
-          const tert = s.children
-            .map((t) => t.nameAr || t.nameEn || t.name)
-            .filter(Boolean)
-            .slice(0, 4);
-          return tert.length ? `${subLabel}>{${tert.join(",")}}` : subLabel;
-        })
-        .filter(Boolean);
-      lines.push(`${mainLabel}: ${subs.join(" | ")}`);
-    }
-    const text = lines.join("\n").slice(0, 2200);
-    this.categoryHintCache = { at: now, text };
-    return text;
-  }
+      mIdx += 1;
+      const mCode = `M${String(mIdx).padStart(2, "0")}`;
+      const mLabel = labelOf(m);
+      byCode.set(mCode, {
+        id: m.id,
+        code: mCode,
+        level: "main",
+        parentCode: null,
+        parentId: null,
+        nameAr: mLabel,
+      });
+      lines.push(`${mCode} ${mLabel}`);
 
-  private async matchCategories(gpt: GptAutofillJson) {
-    const mains = await this.prisma.category.findMany({
-      where: { parentId: null, isActive: true },
-      select: { id: true, nameAr: true, nameEn: true, name: true },
-    });
+      for (const s of m.children) {
+        sIdx += 1;
+        const sCode = `S${String(sIdx).padStart(2, "0")}`;
+        const sLabel = labelOf(s);
+        byCode.set(sCode, {
+          id: s.id,
+          code: sCode,
+          level: "sub",
+          parentCode: mCode,
+          parentId: m.id,
+          nameAr: sLabel,
+        });
+        lines.push(`  ${sCode} ${sLabel}`);
 
-    const identityForMain = this.collectCategoryHints(gpt.name_ar, [
-      gpt.name_en,
-      gpt.category_sub_ar,
-      gpt.category_tertiary_ar,
-    ]);
-
-    let main =
-      this.bestMatch(mains, gpt.category_main_ar, gpt.category_main_ar) ??
-      this.bestMatch(mains, gpt.category_main_ar, "");
-
-    // Fallback: infer main category from product name when GPT left it empty/weak
-    if (!main) {
-      for (const hint of identityForMain) {
-        const hit = this.bestMatch(mains, hint, hint);
-        if (hit && hit.score >= 55) {
-          main = hit;
-          break;
+        for (const t of s.children) {
+          tIdx += 1;
+          const tCode = `T${String(tIdx).padStart(2, "0")}`;
+          const tLabel = labelOf(t);
+          byCode.set(tCode, {
+            id: t.id,
+            code: tCode,
+            level: "tertiary",
+            parentCode: sCode,
+            parentId: s.id,
+            nameAr: tLabel,
+          });
+          lines.push(`    ${tCode} ${tLabel}`);
         }
       }
     }
 
-    let subcategoryIds: string[] = [];
-    let tertiaryCategoryIds: string[] = [];
+    // Keep prompt bounded but prefer full tree when possible
+    let text = lines.join("\n");
+    if (text.length > 6000) {
+      text = text.slice(0, 6000) + "\n…(truncated)";
+    }
+
+    const catalog: CategoryCatalog = { at: now, text, byCode };
+    this.categoryCatalogCache = catalog;
+    return catalog;
+  }
+
+  private async matchCategories(gpt: GptAutofillJson) {
+    const catalog = await this.getCategoryCatalog();
+
+    // 1) Primary path: AI-picked codes (validated against tree + parent links)
+    const mainFromCode = this.resolveCode(catalog, gpt.category_main_code, "main");
+    let mainId = mainFromCode?.id ?? null;
+    let mainName = mainFromCode?.nameAr ?? null;
+    const mainCode = mainFromCode?.code ?? null;
+
+    const subcategoryIds: string[] = [];
+    const tertiaryCategoryIds: string[] = [];
     const subcategoryNames: string[] = [];
     const tertiaryNames: string[] = [];
 
-    if (main) {
-      const subs = await this.prisma.category.findMany({
-        where: { parentId: main.id, isActive: true },
-        select: { id: true, nameAr: true, nameEn: true, name: true },
-      });
+    if (mainFromCode) {
+      for (const code of gpt.category_sub_codes ?? []) {
+        if (subcategoryIds.length >= 2) break;
+        const entry = this.resolveCode(catalog, code, "sub");
+        if (!entry) continue;
+        if (entry.parentCode !== mainCode && entry.parentId !== mainFromCode.id) continue;
+        if (subcategoryIds.includes(entry.id)) continue;
+        subcategoryIds.push(entry.id);
+        subcategoryNames.push(entry.nameAr);
+      }
 
+      const allowedSubCodes = new Set(
+        [...catalog.byCode.values()]
+          .filter((e) => e.level === "sub" && subcategoryIds.includes(e.id))
+          .map((e) => e.code),
+      );
+      for (const code of gpt.category_tertiary_codes ?? []) {
+        if (tertiaryCategoryIds.length >= 2) break;
+        const entry = this.resolveCode(catalog, code, "tertiary");
+        if (!entry) continue;
+        if (entry.parentCode && !allowedSubCodes.has(entry.parentCode)) continue;
+        if (entry.parentId && !subcategoryIds.includes(entry.parentId)) continue;
+        if (tertiaryCategoryIds.includes(entry.id)) continue;
+        tertiaryCategoryIds.push(entry.id);
+        tertiaryNames.push(entry.nameAr);
+      }
+    }
+
+    // 2) Fallback: name matching only if codes missing/invalid
+    if (!mainId) {
+      const mains = [...catalog.byCode.values()]
+        .filter((e) => e.level === "main")
+        .map((e) => ({ id: e.id, nameAr: e.nameAr, nameEn: null, name: e.nameAr }));
+      const mainHit =
+        this.bestMatch(mains, gpt.category_main_ar, gpt.category_main_ar) ??
+        this.bestMatch(mains, gpt.name_ar, gpt.name_en);
+      if (mainHit && mainHit.score >= 55) {
+        mainId = mainHit.id;
+        mainName = mainHit.nameAr || mainHit.name || null;
+      }
+    }
+
+    if (mainId && !subcategoryIds.length) {
+      const subs = [...catalog.byCode.values()]
+        .filter((e) => e.level === "sub" && e.parentId === mainId)
+        .map((e) => ({ id: e.id, nameAr: e.nameAr, nameEn: null, name: e.nameAr }));
       const subHints = this.collectCategoryHints(gpt.category_sub_ar, gpt.category_subs_ar);
       const identityHints = this.collectCategoryHints(gpt.name_ar, [gpt.name_en]);
-
-      // Prefer explicit GPT subcategory names only. Identity is a last-resort single pick.
-      subcategoryIds = this.matchManyCategories(subs, subHints, identityHints, {
-        maxSelect: Math.min(3, Math.max(1, subHints.length || 1)),
+      const ids = this.matchManyCategories(subs, subHints, identityHints, {
+        maxSelect: Math.min(2, Math.max(1, subHints.length || 1)),
       });
+      for (const id of ids) {
+        const row = subs.find((s) => s.id === id);
+        subcategoryIds.push(id);
+        if (row?.nameAr) subcategoryNames.push(row.nameAr);
+      }
+    }
 
-      if (subcategoryIds.length) {
-        const tert = await this.prisma.category.findMany({
-          where: { parentId: { in: subcategoryIds }, isActive: true },
-          select: { id: true, nameAr: true, nameEn: true, name: true, parentId: true },
-        });
-        const tertHints = this.collectCategoryHints(
-          gpt.category_tertiary_ar,
-          gpt.category_tertiaries_ar,
-        );
-        tertiaryCategoryIds = this.matchManyCategories(tert, tertHints, identityHints, {
-          maxSelect: Math.min(3, Math.max(1, tertHints.length || 1)),
-        });
-
-        const subById = new Map(subs.map((s) => [s.id, s]));
-        for (const id of subcategoryIds) {
-          const row = subById.get(id);
-          const label = row?.nameAr || row?.name || row?.nameEn;
-          if (label) subcategoryNames.push(label);
-        }
-        const tertById = new Map(tert.map((t) => [t.id, t]));
-        for (const id of tertiaryCategoryIds) {
-          const row = tertById.get(id);
-          const label = row?.nameAr || row?.name || row?.nameEn;
-          if (label) tertiaryNames.push(label);
-        }
+    if (subcategoryIds.length && !tertiaryCategoryIds.length) {
+      const tert = [...catalog.byCode.values()]
+        .filter((e) => e.level === "tertiary" && e.parentId && subcategoryIds.includes(e.parentId))
+        .map((e) => ({ id: e.id, nameAr: e.nameAr, nameEn: null, name: e.nameAr }));
+      const tertHints = this.collectCategoryHints(gpt.category_tertiary_ar, gpt.category_tertiaries_ar);
+      const identityHints = this.collectCategoryHints(gpt.name_ar, [gpt.name_en]);
+      const ids = this.matchManyCategories(tert, tertHints, identityHints, {
+        maxSelect: Math.min(2, Math.max(1, tertHints.length || 1)),
+      });
+      for (const id of ids) {
+        const row = tert.find((t) => t.id === id);
+        tertiaryCategoryIds.push(id);
+        if (row?.nameAr) tertiaryNames.push(row.nameAr);
       }
     }
 
     return {
-      categoryId: main?.id ?? null,
+      categoryId: mainId,
       subcategoryId: subcategoryIds[0] ?? null,
       tertiaryCategoryId: tertiaryCategoryIds[0] ?? null,
       subcategoryIds,
       tertiaryCategoryIds,
-      categoryNameAr: main?.nameAr || main?.name || gpt.category_main_ar,
+      categoryNameAr: mainName || gpt.category_main_ar,
       subcategoryNameAr: subcategoryNames[0] ?? gpt.category_sub_ar,
       tertiaryNameAr: tertiaryNames[0] ?? gpt.category_tertiary_ar,
       subcategoryNamesAr: subcategoryNames,
       tertiaryNamesAr: tertiaryNames,
     };
+  }
+
+  private resolveCode(
+    catalog: CategoryCatalog,
+    raw: string | undefined,
+    level: CategoryCodeEntry["level"],
+  ): CategoryCodeEntry | null {
+    const code = String(raw ?? "")
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
+    if (!code) return null;
+    const entry = catalog.byCode.get(code);
+    if (!entry || entry.level !== level) return null;
+    return entry;
   }
 
   /** Split GPT strings / arrays into distinct category name hints. */
@@ -1428,9 +1545,7 @@ STEP2: return complete JSON — MSA name_ar (market terms, no dialect) + officia
   }
 
   /**
-   * Match catalog categories conservatively.
-   * - One best hit per explicit GPT hint (never spray-select siblings).
-   * - Identity/name used only if nothing matched — single best pick.
+   * Fallback name matcher only — primary path uses AI codes.
    */
   private matchManyCategories(
     rows: Array<{ id: string; nameAr: string | null; nameEn: string | null; name?: string | null }>,
@@ -1448,14 +1563,12 @@ STEP2: return complete JSON — MSA name_ar (market terms, no dialect) + officia
       selected.push(id);
     };
 
-    // 1) Explicit GPT hints — best match per hint only
     for (const hint of primaryHints) {
       if (selected.length >= maxSelect) break;
       const hit = this.bestMatch(rows, hint, hint);
       if (hit && hit.score >= 55) push(hit.id);
     }
 
-    // 2) Fallback: single strongest identity match (never multi-select from name)
     if (!selected.length && identityHints.length) {
       let best:
         | ({ id: string; nameAr: string | null; nameEn: string | null; name?: string | null } & {
