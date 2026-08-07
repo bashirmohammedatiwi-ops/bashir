@@ -44,13 +44,20 @@ class AiProductRepository {
     }
   }
 
-  Future<List<AiAutofillImage>> searchImages(String barcode, {String? nameHint}) async {
+  Future<List<AiAutofillImage>> searchImages(
+    String barcode, {
+    String? nameHint,
+    String mode = 'barcode',
+    String? query,
+  }) async {
     try {
       final resp = await _dio.post(
         '/ai-product/images',
         data: {
           'barcode': barcode.trim(),
+          'mode': mode,
           if (nameHint != null && nameHint.trim().isNotEmpty) 'nameHint': nameHint.trim(),
+          if (query != null && query.trim().isNotEmpty) 'query': query.trim(),
         },
         options: Options(receiveTimeout: const Duration(seconds: 60)),
       );
@@ -60,7 +67,7 @@ class AiProductRepository {
           .where((i) => i.url.isNotEmpty)
           .toList();
     } on DioException catch (e) {
-      throw Exception(extractApiError(e, 'فشل جلب الصور بالباركود'));
+      throw Exception(extractApiError(e, 'فشل جلب الصور'));
     }
   }
 }

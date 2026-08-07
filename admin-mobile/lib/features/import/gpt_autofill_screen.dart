@@ -12,6 +12,7 @@ import '../../models/catalog.dart';
 import '../../models/inventory.dart';
 import '../../repositories/ai_product_repository.dart';
 import '../../repositories/product_repository.dart';
+import '../../widgets/google_style_image_search.dart';
 import '../../widgets/search_picker_sheet.dart';
 import '../../widgets/section_card.dart';
 import '../../widgets/shade_tile.dart';
@@ -329,20 +330,30 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     return bestScore >= 75 ? best : null;
   }
 
-  Future<void> _refreshImages() async {
+  Future<void> _refreshImages({ImageSearchMode mode = ImageSearchMode.barcode, String? query}) async {
     setState(() => _refreshingImages = true);
     try {
-      final nameHint = [
+      final nameFallback = [
         _brandEn.text.trim().isNotEmpty ? _brandEn.text.trim() : _brandAr.text.trim(),
         _nameEn.text.trim(),
         _nameAr.text.trim(),
-      ].where((s) => s.isNotEmpty).join(' | ');
+      ].where((s) => s.isNotEmpty).join(' ');
+
+      final q = (query ?? '').trim().isNotEmpty
+          ? query!.trim()
+          : (mode == ImageSearchMode.name ? nameFallback : widget.barcode);
+
       final imgs = await ref.read(aiProductRepositoryProvider).searchImages(
             widget.barcode,
-            nameHint: nameHint,
+            mode: mode == ImageSearchMode.name ? 'name' : 'barcode',
+            query: q,
+            nameHint: nameFallback,
           );
       setState(() {
         _images = imgs;
+        // Keep previous selections that still exist; otherwise pick top 4
+        _selectedImages.removeWhere((u) => !imgs.any((i) => i.url == u));
+        _imageOrder.removeWhere((u) => !_selectedImages.contains(u));
         if (_selectedImages.isEmpty && imgs.isNotEmpty) {
           _selectedImages.addAll(imgs.take(4).map((e) => e.url));
           _imageOrder
@@ -350,12 +361,22 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
             ..addAll(_selectedImages);
         }
       });
-      _snack('تم تحديث الصور بالباركود والاسم (${imgs.length})');
+      _snack('نتائج البحث: ${imgs.length} صورة');
     } catch (e) {
       _snack(e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _refreshingImages = false);
     }
+  }
+
+  String get _defaultNameQuery {
+    final en = _nameEn.text.trim();
+    final ar = _nameAr.text.trim();
+    final brand = _brandEn.text.trim().isNotEmpty ? _brandEn.text.trim() : _brandAr.text.trim();
+    if (en.isNotEmpty) return en;
+    if (ar.isNotEmpty) return ar;
+    if (brand.isNotEmpty) return brand;
+    return widget.hint?.trim() ?? '';
   }
 
   void _addShade() {
@@ -989,118 +1010,33 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
 
   Widget _buildImagesStep() {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
       children: [
-        SectionCard(
-          title: 'صور بالباركود',
-          icon: Icons.image_search,
-          trailing: TextButton.icon(
-            onPressed: _refreshingImages ? null : _refreshImages,
-            icon: _refreshingImages
-                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.refresh, size: 18),
-            label: const Text('تحديث'),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'البحث بالباركود + اسم المنتج/البراند — بدون استهلاك AI',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-                textDirection: TextDirection.ltr,
-                textAlign: TextAlign.right,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'اضغط مطوّلاً على صورة للمعاينة',
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Text('${_selectedImages.length} مختارة / ${_images.length}', style: TextStyle(color: Colors.grey.shade700)),
-                  const Spacer(),
-                  TextButton(
-                    onPressed: () => setState(() {
-                      _selectedImages
-                        ..clear()
-                        ..addAll(_images.map((e) => e.url));
-                      _imageOrder
-                        ..clear()
-                        ..addAll(_selectedImages);
-                    }),
-                    child: const Text('الكل'),
-                  ),
-                  TextButton(
-                    onPressed: () => setState(() {
-                      _selectedImages.clear();
-                      _imageOrder.clear();
-                      for (final s in _shades) {
-                        s.imageUrl = null;
-                      }
-                    }),
-                    child: const Text('مسح'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              if (_images.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 28),
-                  child: Text('لا توجد صور لهذا الباركود — جرّب تحديث البحث', textAlign: TextAlign.center),
-                )
-              else
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _images.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                    childAspectRatio: 0.85,
-                  ),
-                  itemBuilder: (_, i) {
-                    final img = _images[i];
-                    final selected = _selectedImages.contains(img.url);
-                    final order = _imageOrder.indexOf(img.url);
-                    return InkWell(
-                      onTap: () => _toggleImage(img.url),
-                      onLongPress: () => _showImagePreview(img.url),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: CachedNetworkImage(
-                              imageUrl: img.thumbUrl.isNotEmpty ? img.thumbUrl : img.url,
-                              fit: BoxFit.cover,
-                              errorWidget: (_, __, ___) =>
-                                  Container(color: Colors.grey.shade200, child: const Icon(Icons.broken_image)),
-                            ),
-                          ),
-                          Positioned(
-                            top: 6,
-                            left: 6,
-                            child: CircleAvatar(
-                              radius: 12,
-                              backgroundColor: selected ? AppTheme.primary : Colors.black45,
-                              child: selected
-                                  ? Text(
-                                      '${order + 1}',
-                                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                                    )
-                                  : const Icon(Icons.add, size: 14, color: Colors.white),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-            ],
-          ),
+        GoogleStyleImageSearch(
+          barcode: widget.barcode,
+          images: _images,
+          selectedUrls: _selectedImages,
+          imageOrder: _imageOrder,
+          loading: _refreshingImages,
+          initialNameQuery: _defaultNameQuery,
+          onSearch: (mode, query) => _refreshImages(mode: mode, query: query),
+          onToggle: _toggleImage,
+          onPreview: _showImagePreview,
+          onSelectAll: () => setState(() {
+            _selectedImages
+              ..clear()
+              ..addAll(_images.map((e) => e.url));
+            _imageOrder
+              ..clear()
+              ..addAll(_selectedImages);
+          }),
+          onClear: () => setState(() {
+            _selectedImages.clear();
+            _imageOrder.clear();
+            for (final s in _shades) {
+              s.imageUrl = null;
+            }
+          }),
         ),
       ],
     );

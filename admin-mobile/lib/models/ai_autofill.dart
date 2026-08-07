@@ -4,19 +4,38 @@ class AiAutofillImage {
     required this.thumbUrl,
     required this.title,
     required this.source,
+    this.width,
+    this.height,
   });
 
   final String url;
   final String thumbUrl;
   final String title;
   final String source;
+  final int? width;
+  final int? height;
+
+  String? get sizeLabel {
+    if (width != null && height != null && width! > 0 && height! > 0) {
+      return '${width}×${height}';
+    }
+    return null;
+  }
 
   factory AiAutofillImage.fromJson(Map<String, dynamic> json) {
+    int? dim(dynamic v) {
+      if (v is int) return v > 0 ? v : null;
+      if (v is num) return v.toInt() > 0 ? v.toInt() : null;
+      return int.tryParse(v?.toString() ?? '');
+    }
+
     return AiAutofillImage(
       url: json['url']?.toString() ?? '',
       thumbUrl: json['thumbUrl']?.toString() ?? json['url']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
       source: json['source']?.toString() ?? '',
+      width: dim(json['width']),
+      height: dim(json['height']),
     );
   }
 }

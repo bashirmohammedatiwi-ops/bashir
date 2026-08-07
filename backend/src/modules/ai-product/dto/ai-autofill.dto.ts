@@ -40,4 +40,15 @@ export class AiImagesDto {
   @IsString()
   @MaxLength(240)
   nameHint?: string;
+
+  /** barcode = بحث بالباركود ، name = بحث بالاسم مثل Google */
+  @IsOptional()
+  @IsString()
+  @IsIn(["barcode", "name"])
+  mode?: "barcode" | "name";
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(240)
+  query?: string;
 }

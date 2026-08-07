@@ -265,20 +265,38 @@ export class AiProductService {
   }
 
   /** Refresh images by barcode + optional product name — no AI. */
-  async searchImages(barcode: string, nameHint?: string) {
+  async searchImages(
+    barcode: string,
+    nameHint?: string,
+    mode: "barcode" | "name" = "barcode",
+    query?: string,
+  ) {
     const digits = barcode.replace(/\D/g, "") || barcode.trim();
     if (digits.length < 6) throw new BadRequestException("باركود غير صالح");
-    const hints = (nameHint ?? "")
+
+    if (mode === "name") {
+      const q = (query ?? nameHint ?? "").replace(/\s+/g, " ").trim();
+      if (q.length < 2) throw new BadRequestException("أدخل اسم المنتج للبحث");
+      const images = await this.images.searchQuery(q, 48);
+      return {
+        barcode: digits,
+        images,
+        meta: { imageQuery: q, imageCount: images.length, mode: "name" },
+      };
+    }
+
+    const hints = (nameHint ?? query ?? "")
       .split(/[|,]/)
       .map((s) => s.trim())
       .filter(Boolean);
-    const images = await this.images.searchByBarcode(digits, 36, hints);
+    const images = await this.images.searchByBarcode(digits, 48, hints);
     return {
       barcode: digits,
       images,
       meta: {
         imageQuery: [digits, ...hints].join(" | "),
         imageCount: images.length,
+        mode: "barcode",
       },
     };
   }
