@@ -5,7 +5,7 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { AiProductService } from "./ai-product.service";
-import { AiAutofillDto } from "./dto/ai-autofill.dto";
+import { AiAutofillDto, AiImagesDto } from "./dto/ai-autofill.dto";
 
 @ApiTags("ai-product")
 @ApiBearerAuth()
@@ -18,5 +18,11 @@ export class AiProductController {
   @Post("autofill")
   autofill(@Body() dto: AiAutofillDto) {
     return this.ai.autofill(dto.barcode, dto.hint);
+  }
+
+  /** Barcode image search only — no AI tokens. */
+  @Post("images")
+  images(@Body() dto: AiImagesDto) {
+    return this.ai.searchImages(dto.barcode);
   }
 }

@@ -5,7 +5,9 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/helpers.dart';
+import '../../models/ai_autofill.dart';
 import '../../providers/auth_provider.dart';
+import '../../repositories/ai_product_repository.dart';
 
 const _barcodeFormats = <BarcodeFormat>[
   BarcodeFormat.ean13,
@@ -19,8 +21,7 @@ const _barcodeFormats = <BarcodeFormat>[
   BarcodeFormat.codabar,
 ];
 
-/// Dedicated AI product-add flow:
-/// scan / type barcode → GPT autofill (AR/EN + category) → pick images → save.
+/// Dedicated AI product-add: scan → duplicate check → autofill wizard.
 class AiAddScreen extends ConsumerStatefulWidget {
   const AiAddScreen({super.key});
 
@@ -34,6 +35,7 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
   final _scannerKey = GlobalKey<_AiLiveScannerState>();
   bool _handled = false;
   bool _showManual = false;
+  bool _checking = false;
 
   @override
   void initState() {
@@ -60,7 +62,7 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
     }
   }
 
-  Future<void> _openAiAutofill(String raw) async {
+  Future<void> _handleBarcode(String raw) async {
     final digits = normalizeBarcode(raw);
     if (digits.isEmpty) {
       if (mounted) {
@@ -68,26 +70,143 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
           const SnackBar(content: Text('باركود غير صالح')),
         );
       }
+      setState(() => _handled = false);
       return;
     }
+
     await _scannerKey.currentState?.pause();
     if (!mounted) return;
-    final hint = _hintController.text.trim();
-    final uri = Uri(
-      path: '/gpt-autofill',
-      queryParameters: {
-        'barcode': digits,
-        if (hint.isNotEmpty) 'hint': hint,
+    setState(() => _checking = true);
+
+    try {
+      final check = await ref.read(aiProductRepositoryProvider).checkBarcode(digits);
+      if (!mounted) return;
+
+      if (check.exists) {
+        await _showExistingDialog(digits, check);
+        return;
+      }
+
+      final hint = _hintController.text.trim();
+      final uri = Uri(
+        path: '/gpt-autofill',
+        queryParameters: {
+          'barcode': digits,
+          if (hint.isNotEmpty) 'hint': hint,
+        },
+      );
+      await context.push(uri.toString());
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _checking = false;
+          _handled = false;
+        });
+        await _scannerKey.currentState?.resume();
+      }
+    }
+  }
+
+  Future<void> _showExistingDialog(String barcode, BarcodeCheckResult check) async {
+    final p = check.product;
+    final name = p?.displayName ?? 'منتج بدون اسم';
+    final brand = p?.brandName;
+    final shade = check.matchedShadeName ?? p?.matchedShadeName;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + MediaQuery.of(ctx).padding.bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.inventory_2_outlined, color: Colors.orange.shade800, size: 36),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'المنتج موجود مسبقاً',
+                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'لا حاجة لإضافته مرة أخرى — ظهر في المتجر بهذا الباركود.',
+                            style: TextStyle(fontSize: 13, height: 1.35),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+              if (brand != null && brand.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(brand, style: TextStyle(color: Colors.grey.shade700)),
+              ],
+              if (shade != null && shade.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text('درجة: $shade', style: TextStyle(color: Colors.grey.shade700)),
+              ],
+              const SizedBox(height: 8),
+              Text(
+                'باركود: $barcode',
+                textDirection: TextDirection.ltr,
+                style: TextStyle(fontFamily: 'monospace', color: Colors.grey.shade600),
+              ),
+              if (p?.price != null) ...[
+                const SizedBox(height: 4),
+                Text('السعر: ${p!.price} د.ع · المخزون: ${p.stock ?? 0}'),
+              ],
+              const SizedBox(height: 18),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('حسناً — امسح منتجاً آخر'),
+              ),
+            ],
+          ),
+        );
       },
     );
-    await context.push(uri.toString());
-    if (!mounted) return;
-    await _scannerKey.currentState?.resume();
-    setState(() => _handled = false);
   }
 
   void _onDetect(BarcodeCapture capture) {
-    if (_handled || capture.barcodes.isEmpty) return;
+    if (_handled || _checking || capture.barcodes.isEmpty) return;
     final barcode = capture.barcodes.firstWhere(
       (b) => b.format != BarcodeFormat.qrCode && (b.rawValue?.trim().isNotEmpty ?? false),
       orElse: () => capture.barcodes.first,
@@ -96,7 +215,7 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
     final raw = barcode.rawValue?.trim();
     if (raw == null || raw.isEmpty) return;
     _handled = true;
-    _openAiAutofill(raw);
+    _handleBarcode(raw);
   }
 
   @override
@@ -110,7 +229,7 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
           IconButton(
             tooltip: _showManual ? 'الكاميرا' : 'إدخال يدوي',
             icon: Icon(_showManual ? Icons.camera_alt : Icons.keyboard),
-            onPressed: () => setState(() => _showManual = !_showManual),
+            onPressed: _checking ? null : () => setState(() => _showManual = !_showManual),
           ),
           PopupMenuButton<String>(
             onSelected: (v) {
@@ -123,128 +242,153 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppTheme.primary.withValues(alpha: 0.12),
-                  AppTheme.accent.withValues(alpha: 0.18),
-                ],
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
-            ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          Column(
+            children: [
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primary.withValues(alpha: 0.12),
+                      AppTheme.accent.withValues(alpha: 0.18),
+                    ],
+                    begin: Alignment.topRight,
+                    end: Alignment.bottomLeft,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.auto_awesome, color: AppTheme.primary, size: 22),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'سيناريو الإضافة الذكية',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: AppTheme.primaryDark,
+                    Row(
+                      children: [
+                        Icon(Icons.auto_awesome, color: AppTheme.primary, size: 22),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'إضافة ذكية سريعة',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              color: AppTheme.primaryDark,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      '• إن كان الباركود موجوداً يظهر تنبيه فوري بدون AI\n'
+                      '• الصور تُجلب بالباركود من البحث (ليس من الذكاء الاصطناعي)\n'
+                      '• راجع وعدّل كل الحقول قبل الحفظ',
+                      style: TextStyle(height: 1.45, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                child: TextField(
+                  controller: _hintController,
+                  enabled: !_checking,
+                  textInputAction: TextInputAction.done,
+                  decoration: const InputDecoration(
+                    labelText: 'تلميح اختياري (يوفر استهلاك AI)',
+                    hintText: 'مثال: Seventeen Ideal Cover Concealer',
+                    prefixIcon: Icon(Icons.lightbulb_outline),
+                  ),
+                ),
+              ),
+              if (_showManual)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _manualController,
+                          enabled: !_checking,
+                          keyboardType: TextInputType.number,
+                          textInputAction: TextInputAction.go,
+                          decoration: const InputDecoration(
+                            labelText: 'أدخل الباركود',
+                            prefixIcon: Icon(Icons.pin),
+                          ),
+                          onSubmitted: _handleBarcode,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        onPressed: _checking ? null : () => _handleBarcode(_manualController.text),
+                        child: const Text('متابعة'),
+                      ),
+                    ],
+                  ),
+                ),
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _AiLiveScanner(key: _scannerKey, onDetect: _onDetect),
+                    IgnorePointer(
+                      child: Center(
+                        child: Container(
+                          width: 240,
+                          height: 140,
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.white70, width: 2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: 16,
+                      right: 16,
+                      bottom: 24,
+                      child: Material(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(12),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          child: Text(
+                            'امسح الباركود — نفحص الوجود أولاً ثم نفتح المعاينة',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white, fontSize: 13),
+                          ),
                         ),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 8),
-                Text(
-                  '1) امسح باركود المنتج\n'
-                  '2) الذكاء الاصطناعي يملأ الاسم والوصف عربي/إنجليزي + التصنيف\n'
-                  '3) اختر صور المنتج من نتائج البحث\n'
-                  '4) راجع واحفظ في المتجر',
-                  style: TextStyle(height: 1.45, fontSize: 13),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-            child: TextField(
-              controller: _hintController,
-              textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(
-                labelText: 'تلميح اختياري (اسم المنتج / العلامة)',
-                hintText: 'مثال: Seventeen Ideal Cover Concealer',
-                prefixIcon: Icon(Icons.lightbulb_outline),
+          if (_checking)
+            ColoredBox(
+              color: Colors.black45,
+              child: Center(
+                child: Card(
+                  margin: const EdgeInsets.all(32),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text('جاري فحص الباركود في المتجر...', textAlign: TextAlign.center),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-          if (_showManual)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _manualController,
-                      keyboardType: TextInputType.number,
-                      textInputAction: TextInputAction.go,
-                      decoration: const InputDecoration(
-                        labelText: 'أدخل الباركود',
-                        prefixIcon: Icon(Icons.pin),
-                      ),
-                      onSubmitted: _openAiAutofill,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: () => _openAiAutofill(_manualController.text),
-                    child: const Text('متابعة'),
-                  ),
-                ],
-              ),
-            ),
-          Expanded(
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                _AiLiveScanner(key: _scannerKey, onDetect: _onDetect),
-                IgnorePointer(
-                  child: Center(
-                    child: Container(
-                      width: 240,
-                      height: 140,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.white70, width: 2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: 24,
-                  child: Material(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.circular(12),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                      child: Text(
-                        'وجّه الكاميرا إلى باركود المنتج لإضافة بالـ AI',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white, fontSize: 13),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

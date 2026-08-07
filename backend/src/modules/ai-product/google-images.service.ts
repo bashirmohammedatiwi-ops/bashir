@@ -8,14 +8,111 @@ export type GoogleImageHit = {
 };
 
 /**
- * Free image search via DuckDuckGo (no Google bill).
- * Falls back to empty list if blocked — GPT autofill still works without images.
+ * Product image search by BARCODE (not by AI).
+ * Prefers Google Custom Search when GOOGLE_CSE_API_KEY + GOOGLE_CSE_CX are set;
+ * otherwise DuckDuckGo image search with barcode queries (free).
  */
 @Injectable()
 export class GoogleImagesService {
   private readonly logger = new Logger(GoogleImagesService.name);
 
+  /** Primary entry: search images using the barcode only (+ light product keywords). */
+  async searchByBarcode(barcode: string, limit = 30): Promise<GoogleImageHit[]> {
+    const digits = barcode.replace(/\D/g, "") || barcode.trim();
+    if (digits.length < 6) return [];
+
+    const queries = [
+      digits,
+      `${digits} product`,
+      `${digits} cosmetics`,
+      `${digits} makeup`,
+    ];
+
+    const googleKey = process.env.GOOGLE_CSE_API_KEY?.trim();
+    const googleCx = process.env.GOOGLE_CSE_CX?.trim();
+    if (googleKey && googleCx) {
+      const hits = await this.searchGoogleCse(digits, googleKey, googleCx, limit);
+      if (hits.length) return hits;
+    }
+
+    const merged: GoogleImageHit[] = [];
+    const seen = new Set<string>();
+    for (const q of queries) {
+      const batch = await this.searchDuckDuckGo(q, Math.min(16, limit));
+      for (const hit of batch) {
+        const key = this.dedupeKey(hit.url);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        merged.push(hit);
+        if (merged.length >= limit) return merged;
+      }
+    }
+    return merged;
+  }
+
+  /** @deprecated Prefer searchByBarcode — kept for any callers passing free text. */
   async searchProductImages(query: string, limit = 24): Promise<GoogleImageHit[]> {
+    const q = query.trim();
+    if (!q) return [];
+    // If query looks like a barcode-only string, use barcode path.
+    if (/^\d{8,14}$/.test(q.replace(/\s/g, ""))) {
+      return this.searchByBarcode(q, limit);
+    }
+    return this.searchDuckDuckGo(q, limit);
+  }
+
+  private async searchGoogleCse(
+    barcode: string,
+    apiKey: string,
+    cx: string,
+    limit: number,
+  ): Promise<GoogleImageHit[]> {
+    try {
+      const hits: GoogleImageHit[] = [];
+      const pages = Math.min(3, Math.ceil(limit / 10));
+      for (let i = 0; i < pages; i++) {
+        const url = new URL("https://www.googleapis.com/customsearch/v1");
+        url.searchParams.set("key", apiKey);
+        url.searchParams.set("cx", cx);
+        url.searchParams.set("q", barcode);
+        url.searchParams.set("searchType", "image");
+        url.searchParams.set("num", "10");
+        url.searchParams.set("start", String(i * 10 + 1));
+        url.searchParams.set("safe", "active");
+
+        const res = await fetch(url.toString(), { signal: AbortSignal.timeout(12_000) });
+        if (!res.ok) {
+          this.logger.warn(`Google CSE HTTP ${res.status}`);
+          break;
+        }
+        const body = (await res.json()) as {
+          items?: Array<{
+            link?: string;
+            title?: string;
+            image?: { thumbnailLink?: string; contextLink?: string };
+          }>;
+        };
+        for (const item of body.items ?? []) {
+          const image = (item.link ?? "").trim();
+          if (!image.startsWith("http") || /\.svg(\?|$)/i.test(image)) continue;
+          hits.push({
+            url: image,
+            thumbUrl: (item.image?.thumbnailLink ?? image).trim(),
+            title: (item.title ?? "").trim(),
+            source: (item.image?.contextLink ?? "").trim(),
+          });
+          if (hits.length >= limit) return hits;
+        }
+        if (!(body.items?.length)) break;
+      }
+      return hits;
+    } catch (err) {
+      this.logger.warn(`Google CSE failed: ${(err as Error).message}`);
+      return [];
+    }
+  }
+
+  private async searchDuckDuckGo(query: string, limit = 24): Promise<GoogleImageHit[]> {
     const q = query.trim();
     if (!q) return [];
 
@@ -85,5 +182,14 @@ export class GoogleImagesService {
       html.match(/vqd=([\d-]+)/) ||
       html.match(/"vqd":"([^"]+)"/);
     return m?.[1] ?? null;
+  }
+
+  private dedupeKey(url: string): string | null {
+    try {
+      const u = new URL(url);
+      return `${u.hostname}${u.pathname}`.toLowerCase();
+    } catch {
+      return url.trim().toLowerCase() || null;
+    }
   }
 }

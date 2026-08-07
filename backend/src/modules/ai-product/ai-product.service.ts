@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
+import { barcodeLookupCandidates } from "../../common/barcode.util";
 import { PrismaService } from "../../common/prisma.service";
 import { GoogleImagesService } from "./google-images.service";
 
@@ -6,6 +7,7 @@ type FreeHint = {
   title?: string;
   brand?: string;
   quantity?: string;
+  categoryHints?: string[];
   source?: string;
 };
 
@@ -21,8 +23,6 @@ type GptAutofillJson = {
   category_tertiary_ar: string;
   confidence: number;
   needs_review: boolean;
-  review_notes: string | null;
-  source_url: string;
 };
 
 const AUTOFILL_SCHEMA = {
@@ -40,8 +40,6 @@ const AUTOFILL_SCHEMA = {
     category_tertiary_ar: { type: "string" },
     confidence: { type: "number" },
     needs_review: { type: "boolean" },
-    review_notes: { type: ["string", "null"] },
-    source_url: { type: "string" },
   },
   required: [
     "brand_ar",
@@ -55,14 +53,35 @@ const AUTOFILL_SCHEMA = {
     "category_tertiary_ar",
     "confidence",
     "needs_review",
-    "review_notes",
-    "source_url",
   ],
 } as const;
+
+/** Beauty category synonym helpers for better matching without extra AI tokens. */
+const CATEGORY_SYNONYMS: Record<string, string[]> = {
+  كونسيلر: ["concealer", "cover", "تصحيح"],
+  فاونديشن: ["foundation", "fond de teint", "كريم اساس", "كريم أساس"],
+  ماسكارا: ["mascara"],
+  "احمر شفاه": ["lipstick", "أحمر شفاه", "روج"],
+  "قلم شفاه": ["lip liner", "lipliner", "قلم تحديد شفاه"],
+  "قلم حواجب": ["brow pencil", "eyebrow pencil", "eyebrow"],
+  "جل حواجب": ["brow gel", "eyebrow gel"],
+  بلاشر: ["blush", "blusher", "احمر خدود", "أحمر خدود"],
+  هايلايتر: ["highlighter", "highlight"],
+  برونزر: ["bronzer"],
+  بودرة: ["powder", "compact powder", "setting powder"],
+  كحل: ["eyeliner", "kohl", "ايلاينر"],
+  "ظل عيون": ["eyeshadow", "eye shadow"],
+  برايمر: ["primer"],
+  سيروم: ["serum"],
+  مرطب: ["moisturizer", "moisturiser", "cream"],
+  شامبو: ["shampoo"],
+  "واقي شمس": ["sunscreen", "spf", "sun screen"],
+};
 
 @Injectable()
 export class AiProductService {
   private readonly logger = new Logger(AiProductService.name);
+  private categoryHintCache: { at: number; text: string } | null = null;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -70,42 +89,77 @@ export class AiProductService {
   ) {}
 
   async autofill(barcode: string, hint?: string) {
+    const digits = barcode.replace(/\D/g, "") || barcode.trim();
+    if (digits.length < 6) throw new BadRequestException("باركود غير صالح");
+
+    // 1) Duplicate check — no AI cost
+    const existing = await this.findExistingProduct(digits);
+    if (existing) {
+      return {
+        exists: true as const,
+        barcode: digits,
+        product: existing,
+        brandAr: "",
+        brandEn: "",
+        nameAr: existing.nameAr || existing.name || "",
+        nameEn: existing.nameEn || "",
+        descriptionAr: "",
+        descriptionEn: "",
+        category: {
+          categoryId: null,
+          subcategoryId: null,
+          tertiaryCategoryId: null,
+          categoryNameAr: null,
+          subcategoryNameAr: null,
+          tertiaryNameAr: null,
+        },
+        confidence: 100,
+        needsReview: false,
+        reviewNotes: "المنتج موجود مسبقاً في المتجر",
+        sourceUrl: null,
+        images: [],
+        meta: {
+          model: null,
+          usedWebSearch: false,
+          freeHintSource: null,
+          imageCount: 0,
+          imageQuery: digits,
+          aiSkipped: true,
+          reason: "duplicate",
+        },
+      };
+    }
+
     const apiKey = process.env.OPENAI_API_KEY?.trim();
     if (!apiKey) {
       throw new ServiceUnavailableException("OPENAI_API_KEY غير مُعد على السيرفر");
     }
 
     const requested = (process.env.OPENAI_MODEL ?? "gpt-5.4-nano").trim();
-    // Cursor slug gpt-5.6-luna-low is not an OpenAI API model — map to cheapest nano tier.
     const model =
       /luna[-_]?low/i.test(requested) || requested === "gpt-5.6-luna-low"
         ? "gpt-5.4-nano"
         : requested;
-    const digits = barcode.replace(/\D/g, "") || barcode.trim();
-    if (digits.length < 6) throw new BadRequestException("باركود غير صالح");
 
-    const free = await this.freeBarcodeHint(digits);
-    const useWebSearch = !free.title && !(hint && hint.trim());
+    // 2) Free barcode facts + barcode image search — parallel, zero AI
+    const [free, imageHits] = await Promise.all([
+      this.freeBarcodeHint(digits),
+      this.images.searchByBarcode(digits, 32),
+    ]);
 
+    // 3) One cheap GPT call — NO web_search tool (images already from barcode search)
     const gpt = await this.callGpt({
       apiKey,
       model,
       barcode: digits,
       free,
       hint: hint?.trim() || undefined,
-      useWebSearch,
     });
 
-    const imageQuery =
-      [gpt.brand_en || gpt.brand_ar, gpt.name_en || gpt.name_ar, digits].filter(Boolean).join(" ").trim() ||
-      digits;
-
-    const [matched, imageHits] = await Promise.all([
-      this.matchCategories(gpt),
-      this.images.searchProductImages(imageQuery, 28),
-    ]);
+    const matched = await this.matchCategories(gpt);
 
     return {
+      exists: false as const,
       barcode: digits,
       brandAr: gpt.brand_ar,
       brandEn: gpt.brand_en,
@@ -116,24 +170,94 @@ export class AiProductService {
       category: matched,
       confidence: gpt.confidence,
       needsReview: gpt.needs_review,
-      reviewNotes: gpt.review_notes,
-      sourceUrl: gpt.source_url,
+      reviewNotes: null,
+      sourceUrl: null,
       images: imageHits,
       meta: {
         model,
-        usedWebSearch: useWebSearch,
+        usedWebSearch: false,
         freeHintSource: free.source ?? null,
         imageCount: imageHits.length,
+        imageQuery: digits,
+        aiSkipped: false,
+        reason: null,
       },
     };
   }
 
+  /** Refresh images by barcode only — no AI. */
+  async searchImages(barcode: string) {
+    const digits = barcode.replace(/\D/g, "") || barcode.trim();
+    if (digits.length < 6) throw new BadRequestException("باركود غير صالح");
+    const images = await this.images.searchByBarcode(digits, 32);
+    return { barcode: digits, images, meta: { imageQuery: digits, imageCount: images.length } };
+  }
+
+  private async findExistingProduct(barcode: string) {
+    const candidates = barcodeLookupCandidates(barcode);
+    if (!candidates.length) return null;
+
+    const product = await this.prisma.product.findFirst({
+      where: { barcode: { in: candidates } },
+      select: {
+        id: true,
+        sku: true,
+        barcode: true,
+        name: true,
+        nameAr: true,
+        nameEn: true,
+        isActive: true,
+        price: true,
+        stock: true,
+        brand: { select: { id: true, name: true, nameAr: true, nameEn: true } },
+      },
+    });
+    if (product) return product;
+
+    const shade = await this.prisma.productShade.findFirst({
+      where: { barcode: { in: candidates } },
+      select: {
+        name: true,
+        barcode: true,
+        product: {
+          select: {
+            id: true,
+            sku: true,
+            barcode: true,
+            name: true,
+            nameAr: true,
+            nameEn: true,
+            isActive: true,
+            price: true,
+            stock: true,
+            brand: { select: { id: true, name: true, nameAr: true, nameEn: true } },
+          },
+        },
+      },
+    });
+    if (!shade?.product) return null;
+    return {
+      ...shade.product,
+      matchedShadeName: shade.name,
+      matchedShadeBarcode: shade.barcode,
+    };
+  }
+
   private async freeBarcodeHint(barcode: string): Promise<FreeHint> {
+    const [obf, off, upc] = await Promise.all([
+      this.lookupOpenBeautyFacts(barcode),
+      this.lookupOpenFoodFacts(barcode),
+      this.lookupUpcItemDb(barcode),
+    ]);
+    return obf.title ? obf : off.title ? off : upc.title ? upc : {};
+  }
+
+  private async lookupOpenBeautyFacts(barcode: string): Promise<FreeHint> {
     try {
       const url = `https://world.openbeautyfacts.org/api/v2/product/${barcode}.json`;
       const res = await fetch(url, {
-        headers: { Accept: "application/json", "User-Agent": "AlhayaaAiAutofill/1.0" },
-        signal: AbortSignal.timeout(8_000),
+        headers: { Accept: "application/json", "User-Agent": "AlhayaaAiAutofill/2.0" },
+        signal: AbortSignal.timeout(7_000),
       });
       if (!res.ok) return {};
       const body = (await res.json()) as {
@@ -144,6 +268,7 @@ export class AiProductService {
           product_name_ar?: string;
           brands?: string;
           quantity?: string;
+          categories_tags?: string[];
         };
       };
       if (body.status !== 1 || !body.product) return {};
@@ -154,7 +279,67 @@ export class AiProductService {
         title,
         brand: (p.brands ?? "").split(",")[0]?.trim() || undefined,
         quantity: p.quantity?.trim() || undefined,
+        categoryHints: (p.categories_tags ?? []).slice(0, 6).map((t) => t.replace(/^en:/, "")),
         source: "openbeautyfacts",
+      };
+    } catch {
+      return {};
+    }
+  }
+
+  private async lookupOpenFoodFacts(barcode: string): Promise<FreeHint> {
+    try {
+      const url = `https://world.openfoodfacts.org/api/v2/product/${barcode}.json`;
+      const res = await fetch(url, {
+        headers: { Accept: "application/json", "User-Agent": "AlhayaaAiAutofill/2.0" },
+        signal: AbortSignal.timeout(7_000),
+      });
+      if (!res.ok) return {};
+      const body = (await res.json()) as {
+        status?: number;
+        product?: {
+          product_name?: string;
+          product_name_en?: string;
+          brands?: string;
+          quantity?: string;
+          categories_tags?: string[];
+        };
+      };
+      if (body.status !== 1 || !body.product) return {};
+      const p = body.product;
+      const title = (p.product_name_en || p.product_name || "").trim();
+      if (!title) return {};
+      return {
+        title,
+        brand: (p.brands ?? "").split(",")[0]?.trim() || undefined,
+        quantity: p.quantity?.trim() || undefined,
+        categoryHints: (p.categories_tags ?? []).slice(0, 6).map((t) => t.replace(/^en:/, "")),
+        source: "openfoodfacts",
+      };
+    } catch {
+      return {};
+    }
+  }
+
+  private async lookupUpcItemDb(barcode: string): Promise<FreeHint> {
+    try {
+      const url = `https://api.upcitemdb.com/prod/trial/lookup?upc=${encodeURIComponent(barcode)}`;
+      const res = await fetch(url, {
+        headers: { Accept: "application/json", "User-Agent": "AlhayaaAiAutofill/2.0" },
+        signal: AbortSignal.timeout(7_000),
+      });
+      if (!res.ok) return {};
+      const body = (await res.json()) as {
+        items?: Array<{ title?: string; brand?: string; size?: string; category?: string }>;
+      };
+      const item = body.items?.[0];
+      if (!item?.title?.trim()) return {};
+      return {
+        title: item.title.trim(),
+        brand: item.brand?.trim() || undefined,
+        quantity: item.size?.trim() || undefined,
+        categoryHints: item.category ? [item.category] : undefined,
+        source: "upcitemdb",
       };
     } catch {
       return {};
@@ -167,42 +352,38 @@ export class AiProductService {
     barcode: string;
     free: FreeHint;
     hint?: string;
-    useWebSearch: boolean;
   }): Promise<GptAutofillJson> {
     const categoryHint = await this.compactCategoryHint();
 
     const known = [
-      args.free.title ? `Known title: ${args.free.title}` : null,
-      args.free.brand ? `Known brand: ${args.free.brand}` : null,
-      args.free.quantity ? `Known size: ${args.free.quantity}` : null,
-      args.hint ? `Staff hint: ${args.hint}` : null,
+      args.free.title ? `title=${args.free.title}` : null,
+      args.free.brand ? `brand=${args.free.brand}` : null,
+      args.free.quantity ? `size=${args.free.quantity}` : null,
+      args.free.categoryHints?.length ? `tags=${args.free.categoryHints.join(",")}` : null,
+      args.hint ? `staff=${args.hint}` : null,
     ]
       .filter(Boolean)
-      .join("\n");
+      .join(" | ");
 
-    const instructions = `You fill bilingual product fields for an Iraqi beauty e-commerce app (Al Hayaa).
-Return STRICT JSON only. Keep text SHORT to save tokens.
-Arabic: natural Iraqi market naming. English: professional retail naming.
-Descriptions: 2–4 short sentences + 3–5 bullet benefits max. No fluff.
-Pick category names ONLY from this catalog (Arabic names preferred):
+    // Compact prompt — no web_search, tiny output budget
+    const instructions = `Iraqi beauty shop catalog writer. JSON only. Minimal tokens.
+NAME_AR: "[براند عربي] - [نوع] [اسم الخط EN]" e.g. "سفنتين - كونسيلر Ideal Cover Liquid"
+NAME_EN: "[Brand] - [Official Name]" e.g. "Seventeen - Ideal Cover Liquid Concealer"
+DESC_AR: 2 short Iraqi retail sentences + 3 benefit bullets.
+DESC_EN: 2 short retail sentences + 3 benefit bullets.
+Categories MUST match catalog names below (Arabic preferred):
 ${categoryHint}
-If unsure, nearest category and needs_review=true.
-Do NOT invent shade barcodes.`;
+If unsure: nearest category + needs_review=true. No shade barcodes.`;
 
-    const userInput = args.useWebSearch
-      ? `Barcode: ${args.barcode}
-STEP 1: ONE web search with query "${args.barcode}" only.
-STEP 2: Fill JSON.
-${known}`
-      : `Barcode: ${args.barcode}
-Use the known product facts below. Do NOT web search.
-${known || "No external facts — infer carefully and set needs_review=true."}`;
+    const userInput = `barcode=${args.barcode}
+facts: ${known || "none — infer carefully, needs_review=true"}
+Fill product JSON.`;
 
     const payload: Record<string, unknown> = {
       model: args.model,
       instructions,
       input: userInput,
-      max_output_tokens: 700,
+      max_output_tokens: 480,
       text: {
         format: {
           type: "json_schema",
@@ -212,9 +393,7 @@ ${known || "No external facts — infer carefully and set needs_review=true."}`;
         },
       },
     };
-    if (args.useWebSearch) {
-      payload.tools = [{ type: "web_search" }];
-    }
+    // Intentionally NO tools / web_search — images come from barcode search; facts from free APIs.
 
     const res = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
@@ -223,7 +402,7 @@ ${known || "No external facts — infer carefully and set needs_review=true."}`;
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(60_000),
+      signal: AbortSignal.timeout(45_000),
     });
 
     const body = (await res.json()) as Record<string, unknown>;
@@ -252,6 +431,11 @@ ${known || "No external facts — infer carefully and set needs_review=true."}`;
   }
 
   private async compactCategoryHint(): Promise<string> {
+    const now = Date.now();
+    if (this.categoryHintCache && now - this.categoryHintCache.at < 10 * 60_000) {
+      return this.categoryHintCache.text;
+    }
+
     const mains = await this.prisma.category.findMany({
       where: { parentId: null, isActive: true },
       select: {
@@ -267,13 +451,13 @@ ${known || "No external facts — infer carefully and set needs_review=true."}`;
             children: {
               where: { isActive: true },
               select: { nameAr: true, nameEn: true, name: true },
-              take: 12,
+              take: 8,
             },
           },
-          take: 16,
+          take: 12,
         },
       },
-      take: 12,
+      take: 10,
       orderBy: { position: "asc" },
     });
 
@@ -286,13 +470,15 @@ ${known || "No external facts — infer carefully and set needs_review=true."}`;
           const tert = s.children
             .map((t) => t.nameAr || t.nameEn || t.name)
             .filter(Boolean)
-            .slice(0, 6);
-          return tert.length ? `${subLabel}[${tert.join(",")}]` : subLabel;
+            .slice(0, 4);
+          return tert.length ? `${subLabel}>{${tert.join(",")}}` : subLabel;
         })
         .filter(Boolean);
       lines.push(`${mainLabel}: ${subs.join(" | ")}`);
     }
-    return lines.join("\n").slice(0, 3500);
+    const text = lines.join("\n").slice(0, 2200);
+    this.categoryHintCache = { at: now, text };
+    return text;
   }
 
   private async matchCategories(gpt: GptAutofillJson) {
@@ -349,7 +535,7 @@ ${known || "No external facts — infer carefully and set needs_review=true."}`;
     ar: string,
     en: string,
   ) {
-    const targets = [ar, en].map((s) => this.norm(s)).filter(Boolean);
+    const targets = this.expandTargets([ar, en]);
     if (!targets.length) return null;
     let best:
       | { id: string; nameAr: string | null; nameEn: string | null; name?: string | null; score: number }
@@ -358,16 +544,51 @@ ${known || "No external facts — infer carefully and set needs_review=true."}`;
       const candidates = [row.nameAr, row.nameEn, row.name]
         .map((s) => this.norm(s ?? ""))
         .filter(Boolean);
+      const expandedCandidates = this.expandTargets(candidates);
       let score = 0;
       for (const t of targets) {
-        for (const c of candidates) {
+        for (const c of expandedCandidates) {
           if (t === c) score = Math.max(score, 100);
-          else if (t.includes(c) || c.includes(t)) score = Math.max(score, 70);
+          else if (t.includes(c) || c.includes(t)) score = Math.max(score, 72);
+          else if (this.tokenOverlap(t, c) >= 0.6) score = Math.max(score, 55);
         }
       }
       if (score >= 40 && (!best || score > best.score)) best = { ...row, score };
     }
     return best;
+  }
+
+  private expandTargets(raw: string[]): string[] {
+    const out = new Set<string>();
+    for (const s of raw) {
+      const n = this.norm(s);
+      if (!n) continue;
+      out.add(n);
+      for (const [key, syns] of Object.entries(CATEGORY_SYNONYMS)) {
+        const kn = this.norm(key);
+        if (n.includes(kn) || kn.includes(n)) {
+          out.add(kn);
+          for (const syn of syns) out.add(this.norm(syn));
+        }
+        for (const syn of syns) {
+          const sn = this.norm(syn);
+          if (n.includes(sn) || sn.includes(n)) {
+            out.add(kn);
+            out.add(sn);
+          }
+        }
+      }
+    }
+    return [...out];
+  }
+
+  private tokenOverlap(a: string, b: string): number {
+    const ta = new Set(a.split(" ").filter((t) => t.length > 1));
+    const tb = new Set(b.split(" ").filter((t) => t.length > 1));
+    if (!ta.size || !tb.size) return 0;
+    let hit = 0;
+    for (const t of ta) if (tb.has(t)) hit++;
+    return hit / Math.max(ta.size, tb.size);
   }
 
   private norm(s: string) {

@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../core/theme/app_theme.dart';
 import '../../core/utils/helpers.dart';
 import '../../models/ai_autofill.dart';
 import '../../models/brand.dart';
@@ -11,6 +12,7 @@ import '../../repositories/product_repository.dart';
 import '../../widgets/search_picker_sheet.dart';
 import '../../widgets/section_card.dart';
 
+/// Multi-step AI add wizard: naming → images → category/price → review & save.
 class GptAutofillScreen extends ConsumerStatefulWidget {
   const GptAutofillScreen({super.key, required this.barcode, this.hint});
 
@@ -22,6 +24,7 @@ class GptAutofillScreen extends ConsumerStatefulWidget {
 }
 
 class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
+  final _page = PageController();
   final _nameAr = TextEditingController();
   final _nameEn = TextEditingController();
   final _descAr = TextEditingController();
@@ -31,11 +34,15 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
   final _price = TextEditingController();
   final _stock = TextEditingController(text: '0');
 
+  int _step = 0;
   bool _loading = true;
   bool _saving = false;
+  bool _refreshingImages = false;
   String? _error;
   AiAutofillResult? _result;
+  List<AiAutofillImage> _images = [];
   final Set<String> _selectedImages = {};
+  final List<String> _imageOrder = [];
 
   List<BrandEntity> _brands = [];
   List<NamedEntity> _categories = [];
@@ -46,6 +53,8 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
   String? _subcategoryId;
   String? _tertiaryId;
 
+  static const _stepTitles = ['التسمية', 'الصور', 'التصنيف', 'المعاينة'];
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +63,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
 
   @override
   void dispose() {
+    _page.dispose();
     _nameAr.dispose();
     _nameEn.dispose();
     _descAr.dispose();
@@ -79,20 +89,28 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
       final brands = await brandsFuture;
       final cats = await catsFuture;
 
+      if (fill.exists) {
+        if (!mounted) return;
+        setState(() {
+          _result = fill;
+          _loading = false;
+        });
+        return;
+      }
+
       _brands = brands;
       _categories = cats;
       _applyResult(fill);
 
       if (fill.category.categoryId != null) {
-        await _loadSubs(fill.category.categoryId!);
+        await _loadSubs(fill.category.categoryId!, clearChildren: false);
         _subcategoryId = fill.category.subcategoryId;
         if (_subcategoryId != null) {
-          await _loadTertiary(_subcategoryId!);
+          await _loadTertiary(_subcategoryId!, clearChildren: false);
           _tertiaryId = fill.category.tertiaryCategoryId;
         }
       }
 
-      // Prefer exact brand match
       final brandNeedle = (fill.brandAr.isNotEmpty ? fill.brandAr : fill.brandEn).toLowerCase();
       for (final b in brands) {
         final names = [b.nameAr, b.nameEn, b.name].whereType<String>().map((s) => s.toLowerCase());
@@ -119,24 +137,63 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     _categoryId = fill.category.categoryId;
     _subcategoryId = fill.category.subcategoryId;
     _tertiaryId = fill.category.tertiaryCategoryId;
+    _images = List.of(fill.images);
     _selectedImages
       ..clear()
-      ..addAll(fill.images.take(4).map((i) => i.url));
+      ..addAll(_images.take(4).map((i) => i.url));
+    _imageOrder
+      ..clear()
+      ..addAll(_selectedImages);
   }
 
-  Future<void> _loadSubs(String categoryId) async {
+  void _toggleImage(String url) {
+    setState(() {
+      if (_selectedImages.contains(url)) {
+        _selectedImages.remove(url);
+        _imageOrder.remove(url);
+      } else {
+        _selectedImages.add(url);
+        _imageOrder.add(url);
+      }
+    });
+  }
+
+  Future<void> _refreshImages() async {
+    setState(() => _refreshingImages = true);
+    try {
+      final imgs = await ref.read(aiProductRepositoryProvider).searchImages(widget.barcode);
+      setState(() {
+        _images = imgs;
+        if (_selectedImages.isEmpty && imgs.isNotEmpty) {
+          _selectedImages.addAll(imgs.take(4).map((e) => e.url));
+          _imageOrder
+            ..clear()
+            ..addAll(_selectedImages);
+        }
+      });
+      _snack('تم تحديث الصور بالباركود (${imgs.length})');
+    } catch (e) {
+      _snack(e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _refreshingImages = false);
+    }
+  }
+
+  Future<void> _loadSubs(String categoryId, {bool clearChildren = true}) async {
     _categoryId = categoryId;
     _subcategories = await ref.read(productRepositoryProvider).subcategories(parentId: categoryId);
-    _subcategoryId = null;
-    _tertiaryId = null;
-    _tertiary = [];
+    if (clearChildren) {
+      _subcategoryId = null;
+      _tertiaryId = null;
+      _tertiary = [];
+    }
     if (mounted) setState(() {});
   }
 
-  Future<void> _loadTertiary(String subcategoryId) async {
+  Future<void> _loadTertiary(String subcategoryId, {bool clearChildren = true}) async {
     _subcategoryId = subcategoryId;
     _tertiary = await ref.read(productRepositoryProvider).tertiarySections(parentId: subcategoryId);
-    _tertiaryId = null;
+    if (clearChildren) _tertiaryId = null;
     if (mounted) setState(() {});
   }
 
@@ -154,6 +211,111 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
       if (b.id == _brandId) return b;
     }
     return null;
+  }
+
+  bool _validateStep(int step) {
+    if (step == 0) {
+      if (_nameAr.text.trim().isEmpty && _nameEn.text.trim().isEmpty) {
+        _snack('أدخل الاسم عربي أو إنجليزي على الأقل');
+        return false;
+      }
+    }
+    if (step == 1 && _selectedImages.isEmpty) {
+      _snack('اختر صورة واحدة على الأقل (أو حدّث البحث بالباركود)');
+      return false;
+    }
+    if (step == 2 && (_categoryId == null || _categoryId!.isEmpty)) {
+      _snack('اختر القسم الرئيسي');
+      return false;
+    }
+    return true;
+  }
+
+  void _goTo(int step) {
+    setState(() => _step = step);
+    _page.animateToPage(step, duration: const Duration(milliseconds: 280), curve: Curves.easeOutCubic);
+  }
+
+  Future<void> _next() async {
+    if (!_validateStep(_step)) return;
+    if (_step < 3) {
+      _goTo(_step + 1);
+      return;
+    }
+    await _confirmAndSave();
+  }
+
+  Future<void> _confirmAndSave() async {
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + MediaQuery.of(ctx).padding.bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('تأكيد الإضافة', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+              const SizedBox(height: 12),
+              _previewTile('الاسم', _nameAr.text.trim().isNotEmpty ? _nameAr.text.trim() : _nameEn.text.trim()),
+              _previewTile('البراند', _selectedBrand?.displayName ?? _brandAr.text.trim()),
+              _previewTile('القسم', [
+                _find(_categories, _categoryId)?.displayName,
+                _find(_subcategories, _subcategoryId)?.displayName,
+                _find(_tertiary, _tertiaryId)?.displayName,
+              ].whereType<String>().where((s) => s.isNotEmpty).join(' › ')),
+              _previewTile('السعر', '${_price.text.trim().isEmpty ? "0" : _price.text.trim()} د.ع'),
+              _previewTile('الصور', '${_selectedImages.length} صورة'),
+              const SizedBox(height: 8),
+              if (_selectedImages.isNotEmpty)
+                SizedBox(
+                  height: 64,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: _imageOrder
+                        .where(_selectedImages.contains)
+                        .map(
+                          (url) => Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: CachedNetworkImage(imageUrl: url, width: 64, height: 64, fit: BoxFit.cover),
+                            ),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
+              const SizedBox(height: 16),
+              FilledButton.icon(
+                onPressed: () => Navigator.pop(ctx, true),
+                icon: const Icon(Icons.check),
+                label: const Text('تأكيد وحفظ في المتجر'),
+              ),
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('رجوع للتعديل')),
+            ],
+          ),
+        );
+      },
+    );
+    if (ok == true) await _save();
+  }
+
+  Widget _previewTile(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(width: 72, child: Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 13))),
+          Expanded(child: Text(value.isEmpty ? '—' : value, style: const TextStyle(fontWeight: FontWeight.w600))),
+        ],
+      ),
+    );
   }
 
   Future<void> _save() async {
@@ -186,11 +348,16 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
         tertiaryCategoryId: _tertiaryId,
       );
 
+      final orderedUrls = [
+        ..._imageOrder.where(_selectedImages.contains),
+        ..._selectedImages.where((u) => !_imageOrder.contains(u)),
+      ];
+
       final imageIds = <String>[];
       var i = 0;
-      for (final url in _selectedImages) {
+      for (final url in orderedUrls) {
         i++;
-        _snack('رفع الصور $i / ${_selectedImages.length}', short: true);
+        _snack('رفع الصور $i / ${orderedUrls.length}', short: true);
         final id = await repo.uploadImageFromUrl(url);
         if (id != null && !imageIds.contains(id)) imageIds.add(id);
       }
@@ -203,12 +370,12 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
       final barcode = normalizeBarcode(widget.barcode);
 
       await repo.createProduct({
-        'sku': 'GPT-$barcode',
+        'sku': 'AI-$barcode',
         if (barcode.isNotEmpty) 'barcode': barcode,
         'name': nameAr.isNotEmpty ? nameAr : nameEn,
         if (nameAr.isNotEmpty) 'nameAr': nameAr,
         if (nameEn.isNotEmpty) 'nameEn': nameEn,
-        'slug': slugify(nameAr.isNotEmpty ? nameAr : nameEn, 'gpt'),
+        'slug': slugify(nameAr.isNotEmpty ? nameAr : nameEn, 'ai'),
         'brandId': brandId,
         'categoryId': _categoryId,
         if (sanitized.subcategoryId != null) 'subcategoryId': sanitized.subcategoryId,
@@ -230,7 +397,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('تم الحفظ'),
-          content: const Text('أُضيف المنتج بنجاح عبر التعبئة الذكية'),
+          content: const Text('أُضيف المنتج بنجاح بعد المعاينة والتعديل'),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('حسناً')),
           ],
@@ -258,16 +425,21 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
       appBar: AppBar(
         title: Column(
           children: [
-            const Text('تعبئة ذكية (GPT)', style: TextStyle(fontSize: 16)),
-            Text(widget.barcode, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal), textDirection: TextDirection.ltr),
+            const Text('معاينة الإضافة الذكية', style: TextStyle(fontSize: 16)),
+            Text(
+              widget.barcode,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
+              textDirection: TextDirection.ltr,
+            ),
           ],
         ),
         actions: [
-          IconButton(
-            tooltip: 'إعادة التعبئة',
-            onPressed: _loading || _saving ? null : _bootstrap,
-            icon: const Icon(Icons.refresh),
-          ),
+          if (!_loading && _error == null && _result?.exists != true)
+            IconButton(
+              tooltip: 'إعادة التعبئة (يستهلك AI)',
+              onPressed: _saving ? null : _bootstrap,
+              icon: const Icon(Icons.refresh),
+            ),
         ],
       ),
       body: _loading
@@ -277,9 +449,9 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text('جاري البحث والتعبئة بموديل اقتصادي...'),
+                  Text('جلب حقائق مجانية + صور بالباركود...'),
                   SizedBox(height: 6),
-                  Text('gpt-5.4-nano (استهلاك منخفض)', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                  Text('ثم تعبئة نصية بموديل اقتصادي (بدون بحث ويب)', style: TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
               ),
             )
@@ -299,25 +471,87 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                     ),
                   ),
                 )
-              : _buildForm(),
-      bottomNavigationBar: _loading || _error != null
+              : _result?.exists == true
+                  ? _buildExistsBody()
+                  : Column(
+                      children: [
+                        _StepHeader(step: _step, titles: _stepTitles),
+                        Expanded(
+                          child: PageView(
+                            controller: _page,
+                            physics: const NeverScrollableScrollPhysics(),
+                            onPageChanged: (i) => setState(() => _step = i),
+                            children: [
+                              _buildNamingStep(),
+                              _buildImagesStep(),
+                              _buildCategoryStep(),
+                              _buildReviewStep(),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+      bottomNavigationBar: _loading || _error != null || _result?.exists == true
           ? null
           : SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                child: FilledButton.icon(
-                  onPressed: _saving ? null : _save,
-                  icon: _saving
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Icon(Icons.auto_awesome),
-                  label: Text(_saving ? 'جاري الحفظ...' : 'حفظ المنتج (${_selectedImages.length} صور)'),
+                child: Row(
+                  children: [
+                    if (_step > 0)
+                      OutlinedButton(
+                        onPressed: _saving ? null : () => _goTo(_step - 1),
+                        child: const Text('رجوع'),
+                      ),
+                    if (_step > 0) const SizedBox(width: 10),
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _saving ? null : _next,
+                        icon: _saving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              )
+                            : Icon(_step == 3 ? Icons.save_outlined : Icons.arrow_back),
+                        label: Text(
+                          _saving
+                              ? 'جاري الحفظ...'
+                              : _step == 3
+                                  ? 'مراجعة وحفظ'
+                                  : 'التالي: ${_stepTitles[_step + 1]}',
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
     );
   }
 
-  Widget _buildForm() {
+  Widget _buildExistsBody() {
+    final p = _result!.existingProduct;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.inventory_2, size: 56, color: Colors.orange.shade700),
+            const SizedBox(height: 12),
+            const Text('المنتج موجود مسبقاً', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Text(p?.displayName ?? '', textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
+            const SizedBox(height: 20),
+            FilledButton(onPressed: () => Navigator.pop(context), child: const Text('رجوع')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNamingStep() {
     final result = _result!;
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -327,44 +561,112 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
             color: Colors.amber.shade50,
             child: ListTile(
               leading: const Icon(Icons.warning_amber_rounded, color: Colors.amber),
-              title: Text('مراجعة مطلوبة — ثقة ${result.confidence.toStringAsFixed(0)}%'),
-              subtitle: Text(result.reviewNotes?.isNotEmpty == true ? result.reviewNotes! : 'تحقق من الاسم والتصنيف قبل الحفظ'),
+              title: Text('راجع التسمية — ثقة ${result.confidence.toStringAsFixed(0)}%'),
+              subtitle: const Text('عدّل الاسم والوصف بحرية قبل المتابعة'),
             ),
           ),
         SectionCard(
-          title: 'الصور من Google',
+          title: 'الاسم والوصف (قابل للتعديل)',
+          icon: Icons.edit_note,
+          child: Column(
+            children: [
+              TextField(controller: _nameAr, decoration: const InputDecoration(labelText: 'الاسم عربي'), maxLines: 2),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _nameEn,
+                decoration: const InputDecoration(labelText: 'الاسم إنجليزي'),
+                maxLines: 2,
+                textDirection: TextDirection.ltr,
+              ),
+              const SizedBox(height: 10),
+              TextField(controller: _descAr, decoration: const InputDecoration(labelText: 'الوصف عربي'), maxLines: 6),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _descEn,
+                decoration: const InputDecoration(labelText: 'الوصف إنجليزي'),
+                maxLines: 6,
+                textDirection: TextDirection.ltr,
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(child: TextField(controller: _brandAr, decoration: const InputDecoration(labelText: 'براند عربي'))),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _brandEn,
+                      decoration: const InputDecoration(labelText: 'براند إنجليزي'),
+                      textDirection: TextDirection.ltr,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImagesStep() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        SectionCard(
+          title: 'صور بالباركود',
+          icon: Icons.image_search,
+          trailing: TextButton.icon(
+            onPressed: _refreshingImages ? null : _refreshImages,
+            icon: _refreshingImages
+                ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.refresh, size: 18),
+            label: const Text('تحديث'),
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Text(
+                'البحث يتم بالباركود ${widget.barcode} — بدون استهلاك AI',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                textDirection: TextDirection.ltr,
+                textAlign: TextAlign.right,
+              ),
+              const SizedBox(height: 8),
               Row(
                 children: [
-                  Text('${_selectedImages.length} مختارة / ${result.images.length}', style: TextStyle(color: Colors.grey.shade700)),
+                  Text('${_selectedImages.length} مختارة / ${_images.length}', style: TextStyle(color: Colors.grey.shade700)),
                   const Spacer(),
                   TextButton(
                     onPressed: () => setState(() {
                       _selectedImages
                         ..clear()
-                        ..addAll(result.images.map((e) => e.url));
+                        ..addAll(_images.map((e) => e.url));
+                      _imageOrder
+                        ..clear()
+                        ..addAll(_selectedImages);
                     }),
-                    child: const Text('تحديد الكل'),
+                    child: const Text('الكل'),
                   ),
                   TextButton(
-                    onPressed: () => setState(() => _selectedImages.clear()),
+                    onPressed: () => setState(() {
+                      _selectedImages.clear();
+                      _imageOrder.clear();
+                    }),
                     child: const Text('مسح'),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              if (result.images.isEmpty)
+              if (_images.isEmpty)
                 const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 24),
-                  child: Text('لا توجد صور — يمكنك الحفظ لاحقاً بعد إضافة صور يدوياً من لوحة التحكم', textAlign: TextAlign.center),
+                  padding: EdgeInsets.symmetric(vertical: 28),
+                  child: Text('لا توجد صور لهذا الباركود — جرّب تحديث البحث', textAlign: TextAlign.center),
                 )
               else
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  itemCount: result.images.length,
+                  itemCount: _images.length,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
                     mainAxisSpacing: 8,
@@ -372,16 +674,11 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                     childAspectRatio: 0.85,
                   ),
                   itemBuilder: (_, i) {
-                    final img = result.images[i];
+                    final img = _images[i];
                     final selected = _selectedImages.contains(img.url);
+                    final order = _imageOrder.indexOf(img.url);
                     return InkWell(
-                      onTap: () => setState(() {
-                        if (selected) {
-                          _selectedImages.remove(img.url);
-                        } else {
-                          _selectedImages.add(img.url);
-                        }
-                      }),
+                      onTap: () => _toggleImage(img.url),
                       borderRadius: BorderRadius.circular(12),
                       child: Stack(
                         fit: StackFit.expand,
@@ -391,7 +688,8 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                             child: CachedNetworkImage(
                               imageUrl: img.thumbUrl.isNotEmpty ? img.thumbUrl : img.url,
                               fit: BoxFit.cover,
-                              errorWidget: (_, __, ___) => Container(color: Colors.grey.shade200, child: const Icon(Icons.broken_image)),
+                              errorWidget: (_, __, ___) =>
+                                  Container(color: Colors.grey.shade200, child: const Icon(Icons.broken_image)),
                             ),
                           ),
                           Positioned(
@@ -399,72 +697,37 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                             left: 6,
                             child: CircleAvatar(
                               radius: 12,
-                              backgroundColor: selected ? Theme.of(context).colorScheme.primary : Colors.black45,
-                              child: Icon(selected ? Icons.check : Icons.add, size: 14, color: Colors.white),
+                              backgroundColor: selected ? AppTheme.primary : Colors.black45,
+                              child: selected
+                                  ? Text('${order + 1}', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold))
+                                  : const Icon(Icons.add, size: 14, color: Colors.white),
                             ),
                           ),
-                          if (img.title.isNotEmpty)
-                            Positioned(
-                              left: 0,
-                              right: 0,
-                              bottom: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: const BoxDecoration(
-                                  color: Colors.black54,
-                                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
-                                ),
-                                child: Text(img.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontSize: 10)),
-                              ),
-                            ),
                         ],
                       ),
                     );
                   },
                 ),
-              if (result.model != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Text(
-                    'موديل: ${result.model}${result.usedWebSearch ? ' · بحث ويب' : ' · بدون بحث ويب'}',
-                    style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                  ),
-                ),
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        SectionCard(
-          title: 'التسمية والوصف',
-          child: Column(
-            children: [
-              TextField(controller: _nameAr, decoration: const InputDecoration(labelText: 'الاسم عربي'), maxLines: 2),
-              const SizedBox(height: 10),
-              TextField(controller: _nameEn, decoration: const InputDecoration(labelText: 'الاسم إنجليزي'), maxLines: 2, textDirection: TextDirection.ltr),
-              const SizedBox(height: 10),
-              TextField(controller: _descAr, decoration: const InputDecoration(labelText: 'الوصف عربي'), maxLines: 5),
-              const SizedBox(height: 10),
-              TextField(controller: _descEn, decoration: const InputDecoration(labelText: 'الوصف إنجليزي'), maxLines: 5, textDirection: TextDirection.ltr),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
+      ],
+    );
+  }
+
+  Widget _buildCategoryStep() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
         SectionCard(
           title: 'البراند والتصنيف',
+          icon: Icons.category_outlined,
           child: Column(
             children: [
-              Row(
-                children: [
-                  Expanded(child: TextField(controller: _brandAr, decoration: const InputDecoration(labelText: 'براند عربي'))),
-                  const SizedBox(width: 8),
-                  Expanded(child: TextField(controller: _brandEn, decoration: const InputDecoration(labelText: 'براند إنجليزي'), textDirection: TextDirection.ltr)),
-                ],
-              ),
-              const SizedBox(height: 8),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('البراند من القائمة'),
-                subtitle: Text(_selectedBrand?.displayName ?? 'يُنشأ تلقائياً إن لم يُختر'),
+                subtitle: Text(_selectedBrand?.displayName ?? 'يُنشأ من الاسم إن لم يُختر'),
                 trailing: const Icon(Icons.chevron_left),
                 onTap: () async {
                   final picked = await showSearchPicker<BrandEntity>(
@@ -537,19 +800,174 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 12),
         SectionCard(
           title: 'السعر والمخزون',
+          icon: Icons.payments_outlined,
           child: Row(
             children: [
-              Expanded(child: TextField(controller: _price, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'السعر د.ع'), textDirection: TextDirection.ltr)),
+              Expanded(
+                child: TextField(
+                  controller: _price,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'السعر د.ع'),
+                  textDirection: TextDirection.ltr,
+                ),
+              ),
               const SizedBox(width: 8),
-              Expanded(child: TextField(controller: _stock, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'المخزون'), textDirection: TextDirection.ltr)),
+              Expanded(
+                child: TextField(
+                  controller: _stock,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'المخزون'),
+                  textDirection: TextDirection.ltr,
+                ),
+              ),
             ],
           ),
         ),
-        const SizedBox(height: 80),
       ],
+    );
+  }
+
+  Widget _buildReviewStep() {
+    final result = _result!;
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        SectionCard(
+          title: 'معاينة نهائية — راجع قبل الحفظ',
+          icon: Icons.fact_check_outlined,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _reviewRow('الاسم عربي', _nameAr.text),
+              _reviewRow('الاسم إنجليزي', _nameEn.text),
+              _reviewRow('الوصف عربي', _descAr.text, maxLines: 4),
+              _reviewRow('البراند', _selectedBrand?.displayName ?? '${_brandAr.text} / ${_brandEn.text}'),
+              _reviewRow(
+                'التصنيف',
+                [
+                  _find(_categories, _categoryId)?.displayName,
+                  _find(_subcategories, _subcategoryId)?.displayName,
+                  _find(_tertiary, _tertiaryId)?.displayName,
+                ].whereType<String>().where((s) => s.isNotEmpty).join(' › '),
+              ),
+              _reviewRow('السعر / المخزون', '${_price.text.isEmpty ? "0" : _price.text} د.ع · ${_stock.text}'),
+              const SizedBox(height: 8),
+              Text('الصور (${_selectedImages.length})', style: const TextStyle(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 88,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: _imageOrder
+                      .where(_selectedImages.contains)
+                      .map(
+                        (url) => Padding(
+                          padding: const EdgeInsets.only(left: 8),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: CachedNetworkImage(imageUrl: url, width: 88, height: 88, fit: BoxFit.cover),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+              ),
+              if (result.model != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'AI: ${result.model} · صور بالباركود · بدون web search',
+                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                ),
+              ],
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () => _goTo(0),
+                icon: const Icon(Icons.edit),
+                label: const Text('تعديل التسمية'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => _goTo(1),
+                icon: const Icon(Icons.image),
+                label: const Text('تعديل الصور'),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => _goTo(2),
+                icon: const Icon(Icons.category),
+                label: const Text('تعديل التصنيف والسعر'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _reviewRow(String label, String value, {int maxLines = 2}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+          const SizedBox(height: 2),
+          Text(
+            value.trim().isEmpty ? '—' : value.trim(),
+            maxLines: maxLines,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontWeight: FontWeight.w600, height: 1.35),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepHeader extends StatelessWidget {
+  const _StepHeader({required this.step, required this.titles});
+
+  final int step;
+  final List<String> titles;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      color: Colors.white,
+      child: Row(
+        children: [
+          for (var i = 0; i < titles.length; i++) ...[
+            if (i > 0)
+              Expanded(
+                child: Container(
+                  height: 2,
+                  color: i <= step ? AppTheme.primary : Colors.grey.shade300,
+                ),
+              ),
+            Column(
+              children: [
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: i <= step ? AppTheme.primary : Colors.grey.shade300,
+                  foregroundColor: Colors.white,
+                  child: Text('${i + 1}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  titles[i],
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: i == step ? FontWeight.w700 : FontWeight.normal,
+                    color: i <= step ? AppTheme.primaryDark : Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

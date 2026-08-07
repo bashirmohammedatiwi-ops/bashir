@@ -12,3 +12,11 @@ export class AiAutofillDto {
   @MaxLength(200)
   hint?: string;
 }
+
+export class AiImagesDto {
+  @IsString()
+  @MinLength(6)
+  @MaxLength(32)
+  @Matches(/^[0-9A-Za-z\-]+$/)
+  barcode!: string;
+}
