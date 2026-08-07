@@ -90,13 +90,13 @@ export class AiProductService {
     private readonly images: GoogleImagesService,
   ) {}
 
-  async autofill(barcode: string, hint?: string, modelChoice?: string) {
+  async autofill(barcode: string, hint?: string, modelChoice?: string, force = false) {
     const digits = barcode.replace(/\D/g, "") || barcode.trim();
     if (digits.length < 6) throw new BadRequestException("باركود غير صالح");
 
-    // 1) Duplicate check — no AI cost
+    // 1) Duplicate check — no AI cost (unless force = review/correct mode)
     const existing = await this.findExistingProduct(digits);
-    if (existing) {
+    if (existing && !force) {
       return {
         exists: true as const,
         barcode: digits,
@@ -120,6 +120,7 @@ export class AiProductService {
         reviewNotes: "المنتج موجود مسبقاً في المتجر",
         sourceUrl: null,
         images: [],
+        issues: [],
         meta: {
           model: null,
           modelChoice: null,
@@ -130,12 +131,13 @@ export class AiProductService {
           aiSkipped: true,
           reason: "duplicate",
           cached: false,
+          force: false,
         },
       };
     }
 
     const resolved = this.resolveOpenAiModel(modelChoice);
-    const cacheKey = `v7|${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `v8|${force ? "force|" : ""}${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 30 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -156,7 +158,9 @@ export class AiProductService {
       free.brand,
       free.title,
       free.brand && free.title ? `${free.brand} ${free.title}`.slice(0, 90) : null,
-    ].filter((s): s is string => Boolean(s && s.trim().length >= 2)));
+      existing?.nameEn,
+      existing?.nameAr,
+    ].filter((s): s is string => Boolean(s && String(s).trim().length >= 2)));
     if (free.imageUrl?.startsWith("http")) {
       const key = free.imageUrl.toLowerCase();
       if (!imageHits.some((h) => h.url.toLowerCase() === key)) {
@@ -170,22 +174,42 @@ export class AiProductService {
     }
     const imageTitles = this.extractIdentityTitles(imageHits);
 
+    const reviewHint = existing
+      ? [
+          hint?.trim(),
+          `CURRENT_IN_CATALOG name_ar=${existing.nameAr || existing.name || ""}`,
+          `CURRENT name_en=${existing.nameEn || ""}`,
+          `CURRENT brand=${(existing as { brand?: { name?: string } }).brand?.name || ""}`,
+          "Compare barcode identity vs CURRENT; suggest corrections. Do not invent a different product.",
+        ]
+          .filter(Boolean)
+          .join(" | ")
+      : hint?.trim() || undefined;
+
     // 4) GPT with web_search — required for non-famous products; never invent
     const { gpt: rawGpt, usedWebSearch } = await this.callGpt({
       apiKey,
       model,
       barcode: digits,
       free,
-      hint: hint?.trim() || undefined,
+      hint: reviewHint,
       imageTitles,
     });
     const gpt = this.polishNaming(rawGpt);
 
     const matched = await this.matchCategories(gpt);
+    const issues = this.buildQualityIssues({
+      existing,
+      gpt,
+      matched,
+      imageCount: imageHits.length,
+      free,
+    });
 
     const payload = {
-      exists: false as const,
+      exists: Boolean(existing) as boolean,
       barcode: digits,
+      product: existing ?? null,
       brandAr: gpt.brand_ar,
       brandEn: gpt.brand_en,
       nameAr: gpt.name_ar,
@@ -194,12 +218,33 @@ export class AiProductService {
       descriptionEn: gpt.description_en,
       category: matched,
       confidence: gpt.confidence > 0 ? gpt.confidence : gpt.needs_review ? 35 : 70,
-      needsReview: gpt.needs_review || gpt.confidence < 45,
-      reviewNotes: gpt.needs_review
-        ? "راجع الاسم — المصادر ضعيفة أو غير مؤكدة لهذا الباركود"
+      needsReview: gpt.needs_review || gpt.confidence < 45 || issues.some((i) => i.severity === "high"),
+      reviewNotes: existing
+        ? issues.length
+          ? `مراجعة منتج موجود — ${issues.length} ملاحظة`
+          : "مراجعة منتج موجود — يبدو سليماً"
         : null,
       sourceUrl: null,
       images: imageHits,
+      issues,
+      current: existing
+        ? {
+            nameAr: existing.nameAr || existing.name || "",
+            nameEn: existing.nameEn || "",
+            brandName: (existing as { brand?: { name?: string } }).brand?.name || "",
+            price: existing.price,
+            stock: existing.stock,
+          }
+        : null,
+      suggested: {
+        nameAr: gpt.name_ar,
+        nameEn: gpt.name_en,
+        brandAr: gpt.brand_ar,
+        brandEn: gpt.brand_en,
+        descriptionAr: gpt.description_ar,
+        descriptionEn: gpt.description_en,
+        category: matched,
+      },
       meta: {
         model,
         modelChoice: resolved.choice,
@@ -210,12 +255,18 @@ export class AiProductService {
         imageCount: imageHits.length,
         imageQuery: [digits, gpt.brand_en, gpt.name_en].filter(Boolean).join(" | "),
         aiSkipped: false,
-        reason: null,
+        reason: existing ? "force_review" : null,
         cached: false,
+        force: Boolean(force && existing),
       },
     };
     this.autofillCache.set(cacheKey, { at: Date.now(), payload: payload as unknown as Record<string, unknown> });
     return payload;
+  }
+
+  /** AI quality review for a barcode already in the catalog. */
+  async reviewExisting(barcode: string, hint?: string, modelChoice?: string) {
+    return this.autofill(barcode, hint, modelChoice, true);
   }
 
   listModels() {
@@ -320,20 +371,30 @@ export class AiProductService {
     const candidates = barcodeLookupCandidates(barcode);
     if (!candidates.length) return null;
 
+    const productSelect = {
+      id: true,
+      sku: true,
+      barcode: true,
+      name: true,
+      nameAr: true,
+      nameEn: true,
+      descriptionAr: true,
+      descriptionEn: true,
+      isActive: true,
+      price: true,
+      stock: true,
+      brandId: true,
+      categoryId: true,
+      subcategoryId: true,
+      tertiaryCategoryId: true,
+      brand: { select: { id: true, name: true } },
+      category: { select: { id: true, nameAr: true, name: true } },
+      _count: { select: { images: true, shades: true } },
+    } as const;
+
     const product = await this.prisma.product.findFirst({
       where: { barcode: { in: candidates } },
-      select: {
-        id: true,
-        sku: true,
-        barcode: true,
-        name: true,
-        nameAr: true,
-        nameEn: true,
-        isActive: true,
-        price: true,
-        stock: true,
-        brand: { select: { id: true, name: true } },
-      },
+      select: productSelect,
     });
     if (product) return product;
 
@@ -342,20 +403,7 @@ export class AiProductService {
       select: {
         name: true,
         barcode: true,
-        product: {
-          select: {
-            id: true,
-            sku: true,
-            barcode: true,
-            name: true,
-            nameAr: true,
-            nameEn: true,
-            isActive: true,
-            price: true,
-            stock: true,
-            brand: { select: { id: true, name: true } },
-          },
-        },
+        product: { select: productSelect },
       },
     });
     if (!shade?.product) return null;
@@ -364,6 +412,163 @@ export class AiProductService {
       matchedShadeName: shade.name,
       matchedShadeBarcode: shade.barcode,
     };
+  }
+
+  private buildQualityIssues(args: {
+    existing: Awaited<ReturnType<AiProductService["findExistingProduct"]>>;
+    gpt: GptAutofillJson;
+    matched: {
+      categoryId: string | null;
+      subcategoryId: string | null;
+      tertiaryCategoryId: string | null;
+    };
+    imageCount: number;
+    free: FreeHint;
+  }): Array<{
+    code: string;
+    severity: "high" | "medium" | "low";
+    field: string;
+    messageAr: string;
+    current?: string;
+    suggested?: string;
+  }> {
+    const issues: Array<{
+      code: string;
+      severity: "high" | "medium" | "low";
+      field: string;
+      messageAr: string;
+      current?: string;
+      suggested?: string;
+    }> = [];
+    const ex = args.existing;
+    const gpt = args.gpt;
+
+    const curNameAr = (ex?.nameAr || ex?.name || "").trim();
+    const curNameEn = (ex?.nameEn || "").trim();
+    const curBrand = (ex as { brand?: { name?: string } } | null)?.brand?.name?.trim() || "";
+    const curDescAr = (ex as { descriptionAr?: string } | null)?.descriptionAr?.trim() || "";
+    const imageCountInDb = (ex as { _count?: { images?: number } } | null)?._count?.images ?? 0;
+
+    if (!curNameAr) {
+      issues.push({
+        code: "name_ar_empty",
+        severity: "high",
+        field: "nameAr",
+        messageAr: "الاسم العربي فارغ أو ضعيف",
+        suggested: gpt.name_ar,
+      });
+    } else if (/(.)\1{3,}/.test(curNameAr) || /^(\S+)(\s+\1){2,}/.test(curNameAr)) {
+      issues.push({
+        code: "name_ar_repeated",
+        severity: "high",
+        field: "nameAr",
+        messageAr: "تكرار غير طبيعي في الاسم العربي",
+        current: curNameAr,
+        suggested: gpt.name_ar,
+      });
+    } else if (
+      gpt.name_ar &&
+      this.norm(curNameAr) !== this.norm(gpt.name_ar) &&
+      !this.norm(curNameAr).includes(this.norm(gpt.brand_ar || "").split(" ")[0] || "___")
+    ) {
+      // Suggest rename when AI identity differs meaningfully
+      const a = this.norm(curNameAr);
+      const b = this.norm(gpt.name_ar);
+      if (a.length > 8 && b.length > 8 && !a.includes(b.slice(0, 12)) && !b.includes(a.slice(0, 12))) {
+        issues.push({
+          code: "name_ar_mismatch",
+          severity: "medium",
+          field: "nameAr",
+          messageAr: "الاسم العربي قد لا يطابق هوية الباركود",
+          current: curNameAr,
+          suggested: gpt.name_ar,
+        });
+      }
+    }
+
+    if (!curNameEn && gpt.name_en) {
+      issues.push({
+        code: "name_en_empty",
+        severity: "medium",
+        field: "nameEn",
+        messageAr: "الاسم الإنجليزي فارغ",
+        suggested: gpt.name_en,
+      });
+    }
+
+    if (curDescAr.length < 40 && (gpt.description_ar?.length ?? 0) > 40) {
+      issues.push({
+        code: "description_ar_weak",
+        severity: "medium",
+        field: "descriptionAr",
+        messageAr: "الوصف العربي قصير أو ناقص",
+        current: curDescAr.slice(0, 80),
+        suggested: gpt.description_ar,
+      });
+    }
+
+    if (curBrand && gpt.brand_en && this.norm(curBrand) !== this.norm(gpt.brand_en) && this.norm(curBrand) !== this.norm(gpt.brand_ar)) {
+      const bn = this.norm(curBrand);
+      const be = this.norm(gpt.brand_en);
+      const ba = this.norm(gpt.brand_ar);
+      if (!bn.includes(be.split(" ")[0] || "___") && !be.includes(bn.split(" ")[0] || "___") && !ba.includes(bn.split(" ")[0] || "___")) {
+        issues.push({
+          code: "brand_mismatch",
+          severity: "high",
+          field: "brand",
+          messageAr: "البراند في الكتالوج قد لا يطابق نتيجة البحث",
+          current: curBrand,
+          suggested: `${gpt.brand_ar} / ${gpt.brand_en}`,
+        });
+      }
+    }
+
+    if (!ex?.categoryId && !args.matched.categoryId) {
+      issues.push({
+        code: "category_missing",
+        severity: "high",
+        field: "category",
+        messageAr: "التصنيف غير محدد",
+      });
+    }
+
+    if (imageCountInDb === 0) {
+      issues.push({
+        code: "images_missing",
+        severity: "high",
+        field: "images",
+        messageAr: args.imageCount > 0 ? `لا صور في المتجر — وُجد ${args.imageCount} اقتراح بالباركود` : "لا صور للمنتج",
+      });
+    }
+
+    if ((ex?.price ?? 0) <= 0) {
+      issues.push({
+        code: "price_zero",
+        severity: "medium",
+        field: "price",
+        messageAr: "السعر غير مضبوط (0)",
+      });
+    }
+
+    if (!args.free.title && gpt.needs_review) {
+      issues.push({
+        code: "weak_identity",
+        severity: "medium",
+        field: "identity",
+        messageAr: "هوية الباركود ضعيفة — راجع الاسم يدوياً",
+      });
+    }
+
+    if (gpt.confidence > 0 && gpt.confidence < 45) {
+      issues.push({
+        code: "low_confidence",
+        severity: "medium",
+        field: "confidence",
+        messageAr: `ثقة التعرّف منخفضة (${Math.round(gpt.confidence)}%)`,
+      });
+    }
+
+    return issues;
   }
 
   private async freeBarcodeHint(barcode: string): Promise<FreeHint> {

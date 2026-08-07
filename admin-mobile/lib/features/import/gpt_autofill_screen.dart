@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ai_draft_store.dart';
@@ -827,6 +828,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
 
   Widget _buildExistsBody() {
     final p = _result!.existingProduct;
+    final id = p?.id ?? '';
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -839,7 +841,42 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
             const SizedBox(height: 8),
             Text(p?.displayName ?? '', textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
             const SizedBox(height: 20),
-            FilledButton(onPressed: () => Navigator.pop(context), child: const Text('رجوع')),
+            if (id.isNotEmpty) ...[
+              FilledButton.icon(
+                onPressed: () {
+                  final uri = Uri(
+                    path: '/product-review',
+                    queryParameters: {
+                      'id': id,
+                      'barcode': widget.barcode,
+                      if (widget.modelId != null) 'model': widget.modelId!,
+                      'auto': '1',
+                    },
+                  );
+                  context.pushReplacement(uri.toString());
+                },
+                icon: const Icon(Icons.auto_awesome),
+                label: const Text('مراجعة وتصحيح بالـ AI'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: () {
+                  final uri = Uri(
+                    path: '/product-review',
+                    queryParameters: {
+                      'id': id,
+                      'barcode': widget.barcode,
+                      if (widget.modelId != null) 'model': widget.modelId!,
+                    },
+                  );
+                  context.pushReplacement(uri.toString());
+                },
+                icon: const Icon(Icons.info_outline),
+                label: const Text('عرض التفاصيل'),
+              ),
+              const SizedBox(height: 8),
+            ],
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('رجوع')),
           ],
         ),
       ),

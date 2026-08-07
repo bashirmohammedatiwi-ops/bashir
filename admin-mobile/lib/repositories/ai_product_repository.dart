@@ -27,10 +27,34 @@ class AiProductRepository {
     required String barcode,
     String? hint,
     String? model,
+    bool force = false,
   }) async {
     try {
       final resp = await _dio.post(
         '/ai-product/autofill',
+        data: {
+          'barcode': barcode.trim(),
+          if (hint != null && hint.trim().isNotEmpty) 'hint': hint.trim(),
+          if (model != null && model.trim().isNotEmpty) 'model': model.trim(),
+          if (force) 'force': true,
+        },
+        options: Options(receiveTimeout: const Duration(seconds: 90)),
+      );
+      return AiAutofillResult.fromJson(asMap(resp.data['data'] ?? resp.data));
+    } on DioException catch (e) {
+      throw Exception(extractApiError(e, 'فشل التعبئة الذكية'));
+    }
+  }
+
+  /** مراجعة منتج موجود — نفس نتيجة autofill مع force + ملاحظات جودة */
+  Future<AiAutofillResult> reviewExisting({
+    required String barcode,
+    String? hint,
+    String? model,
+  }) async {
+    try {
+      final resp = await _dio.post(
+        '/ai-product/review-existing',
         data: {
           'barcode': barcode.trim(),
           if (hint != null && hint.trim().isNotEmpty) 'hint': hint.trim(),
@@ -40,7 +64,7 @@ class AiProductRepository {
       );
       return AiAutofillResult.fromJson(asMap(resp.data['data'] ?? resp.data));
     } on DioException catch (e) {
-      throw Exception(extractApiError(e, 'فشل التعبئة الذكية'));
+      throw Exception(extractApiError(e, 'فشل مراجعة المنتج'));
     }
   }
 

@@ -5,7 +5,7 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { AiProductService } from "./ai-product.service";
-import { AiAutofillDto, AiImagesDto } from "./dto/ai-autofill.dto";
+import { AiAutofillDto, AiImagesDto, AiReviewExistingDto } from "./dto/ai-autofill.dto";
 
 @ApiTags("ai-product")
 @ApiBearerAuth()
@@ -22,7 +22,13 @@ export class AiProductController {
 
   @Post("autofill")
   autofill(@Body() dto: AiAutofillDto) {
-    return this.ai.autofill(dto.barcode, dto.hint, dto.model);
+    return this.ai.autofill(dto.barcode, dto.hint, dto.model, Boolean(dto.force));
+  }
+
+  /** مراجعة منتج موجود بالباركود — AI + ملاحظات جودة + اقتراحات تصحيح */
+  @Post("review-existing")
+  reviewExisting(@Body() dto: AiReviewExistingDto) {
+    return this.ai.reviewExisting(dto.barcode, dto.hint, dto.model);
   }
 
   /** Barcode image search only — no AI tokens. */

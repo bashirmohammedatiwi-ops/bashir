@@ -541,9 +541,20 @@ export class ProductsService {
       name: true,
       nameAr: true,
       nameEn: true,
+      descriptionAr: true,
+      descriptionEn: true,
       sku: true,
       barcode: true,
       isActive: true,
+      price: true,
+      stock: true,
+      brandId: true,
+      categoryId: true,
+      subcategoryId: true,
+      tertiaryCategoryId: true,
+      brand: { select: { id: true, name: true } },
+      category: { select: { id: true, name: true, nameAr: true } },
+      _count: { select: { images: true, shades: true } },
     } as const;
 
     const products = await this.prisma.product.findMany({

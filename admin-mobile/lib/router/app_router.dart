@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import '../features/auth/login_screen.dart';
 import '../features/scan/scan_screen.dart';
 import '../features/ai/ai_add_screen.dart';
+import '../features/ai/existing_product_review_screen.dart';
 import '../features/home/home_shell.dart';
 import '../features/import/results_screen.dart';
 import '../features/import/text_search_screen.dart';
@@ -59,6 +60,21 @@ final routerProvider = Provider<GoRouter>((ref) {
             hint: hint,
             manualMode: manual,
             modelId: model,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/product-review',
+        builder: (_, state) {
+          final id = state.uri.queryParameters['id'] ?? '';
+          final barcode = state.uri.queryParameters['barcode'] ?? '';
+          final model = state.uri.queryParameters['model'];
+          final auto = state.uri.queryParameters['auto'] == '1';
+          return ExistingProductReviewScreen(
+            productId: id,
+            barcode: barcode,
+            modelId: model,
+            autoReview: auto,
           );
         },
       ),

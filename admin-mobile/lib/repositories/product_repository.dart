@@ -175,6 +175,24 @@ class ProductRepository {
     }
   }
 
+  Future<Map<String, dynamic>> getProduct(String idOrSlug) async {
+    try {
+      final resp = await _dio.get('/products/$idOrSlug');
+      return asMap(resp.data['data'] ?? resp.data);
+    } on DioException catch (e) {
+      throw Exception(extractApiError(e, 'فشل جلب المنتج'));
+    }
+  }
+
+  Future<Map<String, dynamic>> updateProduct(String id, Map<String, dynamic> payload) async {
+    try {
+      final resp = await _dio.patch('/products/$id', data: payload);
+      return asMap(resp.data['data'] ?? resp.data);
+    } on DioException catch (e) {
+      throw Exception(extractApiError(e, 'فشل تحديث المنتج'));
+    }
+  }
+
   CategoryMatch matchCategoryFromHints(
     List<NamedEntity> categories,
     List<NamedEntity> subcategories,

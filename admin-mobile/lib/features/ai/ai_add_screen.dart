@@ -175,12 +175,13 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
     final name = p?.displayName ?? 'منتج بدون اسم';
     final brand = p?.brandName;
     final shade = check.matchedShadeName ?? p?.matchedShadeName;
+    final productId = p?.id;
 
     await showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
       builder: (ctx) {
         return Padding(
@@ -199,39 +200,21 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.orange.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.inventory_2_outlined, color: Colors.orange.shade800, size: 36),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'المنتج موجود مسبقاً',
-                            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'لا حاجة لإضافته مرة أخرى — ظهر في المتجر بهذا الباركود.',
-                            style: TextStyle(fontSize: 13, height: 1.35),
-                          ),
-                        ],
-                      ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Icon(Icons.inventory_2_outlined, color: Colors.orange.shade800, size: 28),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'المنتج موجود مسبقاً',
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+              const SizedBox(height: 12),
+              Text(name, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15.5, height: 1.3)),
               if (brand != null && brand.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(brand, style: TextStyle(color: Colors.grey.shade700)),
@@ -240,21 +223,63 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
                 const SizedBox(height: 4),
                 Text('درجة: $shade', style: TextStyle(color: Colors.grey.shade700)),
               ],
-              const SizedBox(height: 8),
+              const SizedBox(height: 6),
               Text(
-                'باركود: $barcode',
+                barcode,
                 textDirection: TextDirection.ltr,
-                style: TextStyle(fontFamily: 'monospace', color: Colors.grey.shade600),
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
               ),
-              if (p?.price != null) ...[
-                const SizedBox(height: 4),
-                Text('السعر: ${p!.price} د.ع · المخزون: ${p.stock ?? 0}'),
+              if (p != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  [
+                    if (p.price != null) '${p.price} د.ع',
+                    if (p.stock != null) 'مخزون ${p.stock}',
+                    if (p.imageCount > 0) '${p.imageCount} صورة',
+                    if (p.categoryName != null) p.categoryName!,
+                  ].join(' · '),
+                  style: const TextStyle(fontSize: 13, color: AppTheme.muted),
+                ),
               ],
-              const SizedBox(height: 18),
-              FilledButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('حسناً — امسح منتجاً آخر'),
-              ),
+              const SizedBox(height: 16),
+              if (productId != null && productId.isNotEmpty) ...[
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    final uri = Uri(
+                      path: '/product-review',
+                      queryParameters: {
+                        'id': productId,
+                        'barcode': barcode,
+                        'model': _model.id,
+                        'auto': '1',
+                      },
+                    );
+                    context.push(uri.toString());
+                  },
+                  icon: const Icon(Icons.auto_awesome),
+                  label: const Text('مراجعة وتصحيح بالـ AI'),
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    final uri = Uri(
+                      path: '/product-review',
+                      queryParameters: {
+                        'id': productId,
+                        'barcode': barcode,
+                        'model': _model.id,
+                      },
+                    );
+                    context.push(uri.toString());
+                  },
+                  icon: const Icon(Icons.info_outline),
+                  label: const Text('عرض التفاصيل والتعديل'),
+                ),
+                const SizedBox(height: 8),
+              ],
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('مسح منتج آخر')),
             ],
           ),
         );
