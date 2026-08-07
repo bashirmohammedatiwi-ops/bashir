@@ -160,14 +160,8 @@ export class AiProductService {
     });
     const gpt = this.polishNaming(rawGpt);
 
-    // 4) Images by barcode + product/brand name (not from AI)
-    const imageHits = await this.images.searchByBarcode(digits, 36, [
-      free.title ?? "",
-      gpt.brand_en,
-      gpt.name_en,
-      `${gpt.brand_en} ${gpt.name_en}`.replace(`${gpt.brand_en} ${gpt.brand_en}`, gpt.brand_en),
-      gpt.brand_ar,
-    ]);
+    // 4) Images by barcode only (Google-like) — name search is available in the UI toggle
+    const imageHits = await this.images.searchByBarcode(digits, 48);
 
     const matched = await this.matchCategories(gpt);
 
@@ -285,16 +279,15 @@ export class AiProductService {
       };
     }
 
-    const hints = (nameHint ?? query ?? "")
-      .split(/[|,]/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const images = await this.images.searchByBarcode(digits, 48, hints);
+    // Barcode mode: search digits like Google Images — do NOT mix product-name hints
+    // (they dilute barcode results). User can switch to "بالاسم" for name search.
+    const q = (query ?? digits).replace(/\D/g, "") || digits;
+    const images = await this.images.searchByBarcode(q, 48);
     return {
       barcode: digits,
       images,
       meta: {
-        imageQuery: [digits, ...hints].join(" | "),
+        imageQuery: q,
         imageCount: images.length,
         mode: "barcode",
       },
