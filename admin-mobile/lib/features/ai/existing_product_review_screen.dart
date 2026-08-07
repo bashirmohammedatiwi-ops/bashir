@@ -1,14 +1,29 @@
+import 'dart:typed_data';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ai_model_prefs.dart';
+import '../../core/utils/media_url.dart';
 import '../../models/ai_autofill.dart';
 import '../../repositories/ai_product_repository.dart';
 import '../../repositories/product_repository.dart';
 import '../../widgets/section_card.dart';
+import '../media/product_image_editor_screen.dart';
 
+class _ManagedImage {
+  _ManagedImage({
+    this.mediaId,
+    required this.displayUrl,
+  });
+
+  String? mediaId;
+  String displayUrl;
+  Uint8List? editedBytes;
+  bool get isEdited => editedBytes != null;
+}
 /// مراجعة منتج موجود: عرض التفاصيل + فحص AI + قبول التصحيحات + حفظ.
 class ExistingProductReviewScreen extends ConsumerStatefulWidget {
   const ExistingProductReviewScreen({
@@ -38,6 +53,9 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
   AiAutofillResult? _review;
   final Set<String> _acceptedFields = {};
   final Set<String> _selectedNewImages = {};
+  final Map<String, Uint8List> _editedNewImages = {};
+  final List<_ManagedImage> _managedImages = [];
+  bool _imagesDirty = false;
 
   final _nameAr = TextEditingController();
   final _nameEn = TextEditingController();
@@ -89,20 +107,27 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
     _descEn.text = (raw['descriptionEn'] ?? '').toString();
     _price.text = '${raw['price'] ?? 0}';
     _stock.text = '${raw['stock'] ?? 0}';
+    _syncManagedImagesFromProduct();
+  }
+
+  void _syncManagedImagesFromProduct() {
+    _managedImages.clear();
+    for (final row in _currentImages) {
+      final url = resolveProductImageUrl(row, prefer: 'medium');
+      if (url == null || url.isEmpty) continue;
+      final media = row['media'];
+      final mediaId = media is Map
+          ? media['id']?.toString()
+          : (row['mediaId']?.toString() ?? row['id']?.toString());
+      _managedImages.add(_ManagedImage(mediaId: mediaId, displayUrl: url));
+    }
+    _imagesDirty = false;
   }
 
   List<Map<String, dynamic>> get _currentImages {
     final list = _product?['images'];
     if (list is! List) return [];
     return list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-  }
-
-  String? _mediaUrl(Map<String, dynamic> image) {
-    final media = image['media'];
-    if (media is Map) {
-      return (media['url'] ?? media['thumbnailUrl'])?.toString();
-    }
-    return image['url']?.toString();
   }
 
   String? get _brandName {
@@ -220,21 +245,30 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
         if (resolved != null && resolved.isNotEmpty) brandId = resolved;
       }
 
-      // Keep existing image IDs; append newly selected uploaded images
-      final existingImageIds = _currentImages
-          .map((e) {
-            final media = e['media'];
-            if (media is Map) return media['id']?.toString();
-            return e['mediaId']?.toString() ?? e['id']?.toString();
-          })
-          .whereType<String>()
-          .where((s) => s.isNotEmpty)
-          .toList();
+      // Images: keep order of managed list (edited re-uploaded), then append AI picks
+      final imageIds = <String>[];
+      for (final img in _managedImages) {
+        if (img.editedBytes != null) {
+          final mid = await repo.uploadImageBytes(img.editedBytes!);
+          if (mid != null && mid.isNotEmpty) imageIds.add(mid);
+        } else if (img.mediaId != null && img.mediaId!.isNotEmpty) {
+          imageIds.add(img.mediaId!);
+        }
+      }
 
-      final newIds = <String>[];
       for (final url in _selectedNewImages) {
-        final mid = await repo.uploadImageFromUrl(url);
-        if (mid != null && mid.isNotEmpty) newIds.add(mid);
+        final edited = _editedNewImages[url];
+        final String mid;
+        if (edited != null) {
+          final uploaded = await repo.uploadImageBytes(edited);
+          if (uploaded == null || uploaded.isEmpty) {
+            throw Exception('فشل رفع صورة معدّلة');
+          }
+          mid = uploaded;
+        } else {
+          mid = await repo.uploadImageFromUrlRequired(url);
+        }
+        if (!imageIds.contains(mid)) imageIds.add(mid);
       }
 
       final payload = <String, dynamic>{
@@ -248,19 +282,32 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
         if (brandId != null && brandId.isNotEmpty) 'brandId': brandId,
         if (review?.category.categoryId != null && _acceptedFields.contains('category'))
           'categoryId': review!.category.categoryId,
+        if (review != null &&
+            _acceptedFields.contains('category') &&
+            (review.category.subcategoryIds.isNotEmpty || review.category.subcategoryId != null))
+          'subcategoryIds': review.category.subcategoryIds.isNotEmpty
+              ? review.category.subcategoryIds
+              : [review.category.subcategoryId!],
+        if (review != null &&
+            _acceptedFields.contains('category') &&
+            (review.category.tertiaryCategoryIds.isNotEmpty || review.category.tertiaryCategoryId != null))
+          'tertiaryCategoryIds': review.category.tertiaryCategoryIds.isNotEmpty
+              ? review.category.tertiaryCategoryIds
+              : [review.category.tertiaryCategoryId!],
         if (review?.category.subcategoryId != null && _acceptedFields.contains('category'))
           'subcategoryId': review!.category.subcategoryId,
         if (review?.category.tertiaryCategoryId != null && _acceptedFields.contains('category'))
           'tertiaryCategoryId': review!.category.tertiaryCategoryId,
       };
 
-      if (newIds.isNotEmpty) {
-        payload['imageIds'] = [...existingImageIds, ...newIds];
+      if (_imagesDirty || _selectedNewImages.isNotEmpty || imageIds.isNotEmpty) {
+        payload['imageIds'] = imageIds;
       }
 
       final updated = await repo.updateProduct(id, payload);
       _applyProduct(updated);
       _selectedNewImages.clear();
+      _editedNewImages.clear();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('تم حفظ التصحيحات')),
@@ -357,7 +404,8 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
   }
 
   Widget _buildHeroCard() {
-    final thumb = _currentImages.isNotEmpty ? _mediaUrl(_currentImages.first) : null;
+    final thumbBytes = _managedImages.isNotEmpty ? _managedImages.first.editedBytes : null;
+    final thumbUrl = _managedImages.isNotEmpty ? _managedImages.first.displayUrl : null;
     final active = _product?['isActive'] == true;
     return Card(
       child: Padding(
@@ -370,12 +418,22 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
               child: SizedBox(
                 width: 84,
                 height: 84,
-                child: thumb == null
-                    ? ColoredBox(
-                        color: Colors.grey.shade100,
-                        child: const Icon(Icons.image_not_supported_outlined),
-                      )
-                    : CachedNetworkImage(imageUrl: thumb, fit: BoxFit.cover),
+                child: thumbBytes != null
+                    ? Image.memory(thumbBytes, fit: BoxFit.cover)
+                    : thumbUrl == null
+                        ? ColoredBox(
+                            color: Colors.grey.shade100,
+                            child: const Icon(Icons.image_not_supported_outlined),
+                          )
+                        : CachedNetworkImage(
+                            imageUrl: thumbUrl,
+                            fit: BoxFit.cover,
+                            memCacheWidth: 200,
+                            errorWidget: (_, __, ___) => ColoredBox(
+                              color: Colors.grey.shade100,
+                              child: const Icon(Icons.broken_image_outlined),
+                            ),
+                          ),
               ),
             ),
             const SizedBox(width: 12),
@@ -426,7 +484,7 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
   }
 
   Widget _buildStatsRow() {
-    final images = _currentImages.length;
+    final images = _managedImages.length;
     final shades = (_product?['shades'] is List) ? (_product!['shades'] as List).length : 0;
     return Row(
       children: [
@@ -626,10 +684,16 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
               subtitle: Text(
                 [
                   _review!.category.categoryNameAr,
-                  _review!.category.subcategoryNameAr,
-                  _review!.category.tertiaryNameAr,
+                  if (_review!.category.subcategoryNamesAr.isNotEmpty)
+                    _review!.category.subcategoryNamesAr.join(' · ')
+                  else
+                    _review!.category.subcategoryNameAr,
+                  if (_review!.category.tertiaryNamesAr.isNotEmpty)
+                    _review!.category.tertiaryNamesAr.join(' · ')
+                  else
+                    _review!.category.tertiaryNameAr,
                 ].whereType<String>().where((s) => s.isNotEmpty).join(' › '),
-                maxLines: 2,
+                maxLines: 3,
               ),
               value: _acceptedFields.contains('category'),
               onChanged: (v) => setState(() {
@@ -650,10 +714,10 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
     final images = _review!.images;
     return SectionCard(
       title: 'صور مقترحة من الباركود',
-      subtitle: 'اختر صوراً لإضافتها للمنتج عند الحفظ',
+      subtitle: 'اختر ثم عدّل (قص/إطار أبيض) قبل الإضافة',
       icon: Icons.add_photo_alternate_outlined,
       child: SizedBox(
-        height: 110,
+        height: 118,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: images.length,
@@ -661,46 +725,78 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
           itemBuilder: (_, i) {
             final img = images[i];
             final selected = _selectedNewImages.contains(img.url);
-            return InkWell(
-              onTap: () => setState(() {
-                if (selected) {
-                  _selectedNewImages.remove(img.url);
-                } else {
-                  _selectedNewImages.add(img.url);
-                }
-              }),
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                width: 96,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: selected ? AppTheme.primary : const Color(0xFFECE7F0),
-                    width: selected ? 2 : 1,
-                  ),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    CachedNetworkImage(
-                      imageUrl: img.thumbUrl.isNotEmpty ? img.thumbUrl : img.url,
-                      fit: BoxFit.cover,
+            final edited = _editedNewImages[img.url];
+            return SizedBox(
+              width: 100,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: InkWell(
+                      onTap: () => setState(() {
+                        if (selected) {
+                          _selectedNewImages.remove(img.url);
+                          _editedNewImages.remove(img.url);
+                        } else {
+                          _selectedNewImages.add(img.url);
+                        }
+                      }),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: selected ? AppTheme.primary : const Color(0xFFECE7F0),
+                            width: selected ? 2 : 1,
+                          ),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: edited != null
+                            ? Image.memory(edited, fit: BoxFit.cover)
+                            : CachedNetworkImage(
+                                imageUrl: img.thumbUrl.isNotEmpty ? img.thumbUrl : img.url,
+                                fit: BoxFit.cover,
+                                memCacheWidth: 240,
+                              ),
+                      ),
                     ),
-                    if (selected)
-                      const Align(
-                        alignment: Alignment.topLeft,
-                        child: Padding(
-                          padding: EdgeInsets.all(6),
-                          child: CircleAvatar(
-                            radius: 12,
-                            backgroundColor: AppTheme.primary,
-                            child: Icon(Icons.check, size: 14, color: Colors.white),
+                  ),
+                  if (selected)
+                    Positioned(
+                      top: 6,
+                      left: 6,
+                      child: CircleAvatar(
+                        radius: 12,
+                        backgroundColor: AppTheme.primary,
+                        child: const Icon(Icons.check, size: 14, color: Colors.white),
+                      ),
+                    ),
+                  if (selected)
+                    Positioned(
+                      bottom: 6,
+                      right: 6,
+                      child: Material(
+                        color: Colors.black87,
+                        borderRadius: BorderRadius.circular(16),
+                        child: InkWell(
+                          onTap: () async {
+                            final result = await openProductImageEditor(
+                              context,
+                              imageUrl: edited == null ? img.url : null,
+                              imageBytes: edited,
+                            );
+                            if (result != null && mounted) {
+                              setState(() => _editedNewImages[img.url] = result.bytes);
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(16),
+                          child: const Padding(
+                            padding: EdgeInsets.all(6),
+                            child: Icon(Icons.crop_rotate, size: 14, color: Colors.white),
                           ),
                         ),
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
             );
           },
@@ -709,29 +805,154 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
     );
   }
 
+  Future<void> _editManagedImage(int index) async {
+    final img = _managedImages[index];
+    final result = await openProductImageEditor(
+      context,
+      imageUrl: img.editedBytes == null ? img.displayUrl : null,
+      imageBytes: img.editedBytes,
+      title: 'تعديل صورة #${index + 1}',
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      img.editedBytes = result.bytes;
+      _imagesDirty = true;
+    });
+  }
+
   Widget _buildCurrentImages() {
-    final images = _currentImages;
     return SectionCard(
-      title: 'صور المنتج الحالية (${images.length})',
+      title: 'صور المنتج (${_managedImages.length})',
+      subtitle: 'عرض · قص · إطار أبيض · حذف · إعادة ترتيب',
       icon: Icons.photo_library_outlined,
-      child: images.isEmpty
+      child: _managedImages.isEmpty
           ? const Text('لا توجد صور محفوظة', style: TextStyle(color: AppTheme.muted))
-          : SizedBox(
-              height: 96,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: images.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (_, i) {
-                  final url = _mediaUrl(images[i]);
-                  return ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: url == null
-                        ? ColoredBox(color: Colors.grey.shade100, child: const SizedBox(width: 96, height: 96))
-                        : CachedNetworkImage(imageUrl: url, width: 96, height: 96, fit: BoxFit.cover),
-                  );
-                },
-              ),
+          : Column(
+              children: [
+                SizedBox(
+                  height: 148,
+                  child: ReorderableListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    buildDefaultDragHandles: false,
+                    onReorder: (oldIndex, newIndex) {
+                      setState(() {
+                        if (newIndex > oldIndex) newIndex -= 1;
+                        final item = _managedImages.removeAt(oldIndex);
+                        _managedImages.insert(newIndex, item);
+                        _imagesDirty = true;
+                      });
+                    },
+                    itemCount: _managedImages.length,
+                    itemBuilder: (context, index) {
+                      final img = _managedImages[index];
+                      return ReorderableDelayedDragStartListener(
+                        key: ValueKey('img-$index-${img.mediaId ?? img.displayUrl}'),
+                        index: index,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 10),
+                          child: SizedBox(
+                            width: 120,
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: Stack(
+                                    children: [
+                                      Positioned.fill(
+                                        child: Material(
+                                          color: const Color(0xFFF7F5F9),
+                                          borderRadius: BorderRadius.circular(14),
+                                          clipBehavior: Clip.antiAlias,
+                                          child: InkWell(
+                                            onTap: () => _editManagedImage(index),
+                                            child: img.editedBytes != null
+                                                ? Image.memory(img.editedBytes!, fit: BoxFit.cover)
+                                                : CachedNetworkImage(
+                                                    imageUrl: img.displayUrl,
+                                                    fit: BoxFit.cover,
+                                                    memCacheWidth: 320,
+                                                    errorWidget: (_, __, ___) => const Icon(Icons.broken_image_outlined),
+                                                  ),
+                                          ),
+                                        ),
+                                      ),
+                                      Positioned(
+                                        top: 6,
+                                        left: 6,
+                                        child: CircleAvatar(
+                                          radius: 12,
+                                          backgroundColor: AppTheme.primary,
+                                          child: Text(
+                                            '${index + 1}',
+                                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800),
+                                          ),
+                                        ),
+                                      ),
+                                      if (img.isEdited)
+                                        Positioned(
+                                          bottom: 6,
+                                          left: 6,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: AppTheme.success,
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: const Text(
+                                              'معدّلة',
+                                              style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                                            ),
+                                          ),
+                                        ),
+                                      Positioned(
+                                        top: 4,
+                                        right: 4,
+                                        child: IconButton.filledTonal(
+                                          style: IconButton.styleFrom(
+                                            backgroundColor: Colors.black87,
+                                            foregroundColor: Colors.white,
+                                            minimumSize: const Size(32, 32),
+                                            padding: EdgeInsets.zero,
+                                          ),
+                                          onPressed: () => setState(() {
+                                            _managedImages.removeAt(index);
+                                            _imagesDirty = true;
+                                          }),
+                                          icon: const Icon(Icons.close, size: 16),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: OutlinedButton(
+                                        onPressed: () => _editManagedImage(index),
+                                        style: OutlinedButton.styleFrom(
+                                          padding: EdgeInsets.zero,
+                                          minimumSize: const Size.fromHeight(32),
+                                          visualDensity: VisualDensity.compact,
+                                        ),
+                                        child: const Text('تعديل', style: TextStyle(fontSize: 11)),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'اضغط مطوّلاً واسحب لإعادة الترتيب · تعديل = قص أو إطار أبيض',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                ),
+              ],
             ),
     );
   }

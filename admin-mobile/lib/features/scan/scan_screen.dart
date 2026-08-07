@@ -4,8 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/utils/helpers.dart';
+import '../../core/utils/daily_progress_store.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/barcode_live_scanner.dart';
+import '../home/daily_progress_screen.dart';
 
 class ScanScreen extends ConsumerStatefulWidget {
   const ScanScreen({super.key});
@@ -39,6 +41,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
     if (scanner == null) return;
     if (state == AppLifecycleState.resumed) {
       scanner.resume();
+      ref.read(dailyProgressProvider.notifier).refresh();
     } else if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
       scanner.pause();
     }
@@ -83,6 +86,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
       appBar: AppBar(
         title: const Text('مسح الباركود'),
         actions: [
+          const DailyProgressChip(),
           IconButton(
             tooltip: 'بحث نصي',
             icon: const Icon(Icons.text_fields),
@@ -96,9 +100,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
           PopupMenuButton<String>(
             onSelected: (v) {
               if (v == 'logout') ref.read(authProvider.notifier).logout();
+              if (v == 'progress') context.push('/daily-progress');
             },
             itemBuilder: (_) => [
               PopupMenuItem(enabled: false, child: Text(user?.name ?? user?.email ?? '')),
+              const PopupMenuItem(value: 'progress', child: Text('التقدم اليومي')),
               const PopupMenuItem(value: 'logout', child: Text('تسجيل الخروج')),
             ],
           ),

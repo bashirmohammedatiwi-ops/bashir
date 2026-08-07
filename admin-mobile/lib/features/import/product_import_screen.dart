@@ -5,7 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 
+import '../../core/theme/app_theme.dart';
 import '../../core/utils/brand_match.dart';
+import '../../core/utils/daily_progress_store.dart';
 import '../../core/utils/helpers.dart';
 import '../../models/brand.dart';
 import '../../models/catalog.dart';
@@ -46,8 +48,8 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
   List<NamedEntity> _tertiarySections = [];
   String? _brandId;
   String? _categoryId;
-  String? _subcategoryId;
-  String? _tertiaryCategoryId;
+  final List<String> _subcategoryIds = [];
+  final List<String> _tertiaryCategoryIds = [];
   int? _expandedShade;
   bool _descExpanded = false;
   int _imageIndex = 0;
@@ -97,8 +99,8 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
       _inv = {};
       _brandId = null;
       _categoryId = null;
-      _subcategoryId = null;
-      _tertiaryCategoryId = null;
+      _subcategoryIds.clear();
+      _tertiaryCategoryIds.clear();
       _subcategories = [];
       _tertiarySections = [];
       _expandedShade = null;
@@ -217,8 +219,17 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
           _tertiarySections = tert;
           _brandId = brandId;
           _categoryId = match.categoryId;
-          _subcategoryId = match.subcategoryId;
-          _tertiaryCategoryId = match.tertiaryCategoryId;
+          _subcategoryIds
+            ..clear()
+            ..addAll([
+              if (match.subcategoryId != null && match.subcategoryId!.isNotEmpty) match.subcategoryId!,
+            ]);
+          _tertiaryCategoryIds
+            ..clear()
+            ..addAll([
+              if (match.tertiaryCategoryId != null && match.tertiaryCategoryId!.isNotEmpty)
+                match.tertiaryCategoryId!,
+            ]);
           _inv = inv;
           _selectedShadeIndices
             ..clear()
@@ -288,6 +299,7 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
 
   Future<void> _showImportSuccess() async {
     if (!mounted) return;
+    final todayCount = ref.read(dailyProgressProvider).todayCount;
     await showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -300,6 +312,11 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
               Icon(Icons.check_circle, color: Colors.green.shade600, size: 56),
               const SizedBox(height: 12),
               const Text('تم استيراد المنتج بنجاح', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              Text(
+                'منتجات اليوم: $todayCount',
+                style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.primary),
+              ),
               const SizedBox(height: 20),
               FilledButton.icon(
                 onPressed: () {
@@ -311,7 +328,16 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
                 style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
               ),
               const SizedBox(height: 8),
-              OutlinedButton(
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  context.push('/daily-progress');
+                },
+                icon: const Icon(Icons.local_fire_department_outlined),
+                label: const Text('عرض التقدم اليومي'),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
                 onPressed: () => Navigator.pop(ctx),
                 child: const Text('البقاء في المعاينة'),
               ),
@@ -338,12 +364,23 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
     return null;
   }
 
+  String _entityNames(List<NamedEntity> list, List<String> ids) {
+    if (ids.isEmpty) return '';
+    final set = ids.toSet();
+    return list.where((e) => set.contains(e.id)).map((e) => e.displayName).join(' · ');
+  }
+
+  List<NamedEntity> _findMany(List<NamedEntity> list, List<String> ids) {
+    final set = ids.toSet();
+    return list.where((e) => set.contains(e.id)).toList();
+  }
+
   Future<void> _onCategoryChanged(String? id) async {
     if (id == null) return;
     setState(() {
       _categoryId = id;
-      _subcategoryId = null;
-      _tertiaryCategoryId = null;
+      _subcategoryIds.clear();
+      _tertiaryCategoryIds.clear();
       _subcategories = [];
       _tertiarySections = [];
       _loadingSubs = true;
@@ -357,21 +394,31 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
     }
   }
 
-  Future<void> _onSubcategoryChanged(String? id) async {
-    setState(() {
-      _subcategoryId = id;
-      _tertiaryCategoryId = null;
-      _tertiarySections = [];
-      _loadingTertiary = id != null;
-    });
-    if (id == null) return;
-    final tert = await ref.read(productRepositoryProvider).tertiarySections(parentId: id);
-    if (mounted) {
+  Future<void> _reloadTertiaries({bool prune = true}) async {
+    if (_subcategoryIds.isEmpty) {
       setState(() {
-        _tertiarySections = tert;
+        _tertiarySections = [];
+        if (prune) _tertiaryCategoryIds.clear();
         _loadingTertiary = false;
       });
+      return;
     }
+    setState(() => _loadingTertiary = true);
+    final repo = ref.read(productRepositoryProvider);
+    final merged = <NamedEntity>[];
+    final seen = <String>{};
+    for (final subId in _subcategoryIds) {
+      final list = await repo.tertiarySections(parentId: subId);
+      for (final t in list) {
+        if (seen.add(t.id)) merged.add(t);
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _tertiarySections = merged;
+      if (prune) _tertiaryCategoryIds.removeWhere((id) => !seen.contains(id));
+      _loadingTertiary = false;
+    });
   }
 
   NamedEntity? _findEntity(List<NamedEntity> list, String? id) {
@@ -413,32 +460,45 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
       await _onCategoryChanged(_categoryId);
     }
     if (!mounted) return;
-    final picked = await showSearchPicker<NamedEntity>(
+    final picked = await showMultiSearchPicker<NamedEntity>(
       context: context,
-      title: 'القسم الفرعي',
+      title: 'الأقسام الفرعية',
       items: _subcategories,
-      selected: _findEntity(_subcategories, _subcategoryId),
+      selected: _findMany(_subcategories, _subcategoryIds),
       labelOf: (c) => c.displayName,
       isSame: (a, b) => a.id == b.id,
     );
-    if (picked != null) await _onSubcategoryChanged(picked.id);
+    if (picked != null && mounted) {
+      setState(() {
+        _subcategoryIds
+          ..clear()
+          ..addAll(picked.map((e) => e.id));
+      });
+      await _reloadTertiaries();
+    }
   }
 
   Future<void> _pickTertiary() async {
-    if (_subcategoryId == null) return;
+    if (_subcategoryIds.isEmpty) return;
     if (_tertiarySections.isEmpty && !_loadingTertiary) {
-      await _onSubcategoryChanged(_subcategoryId);
+      await _reloadTertiaries(prune: false);
     }
     if (!mounted) return;
-    final picked = await showSearchPicker<NamedEntity>(
+    final picked = await showMultiSearchPicker<NamedEntity>(
       context: context,
-      title: 'القسم الثانوي',
+      title: 'الأقسام الثانوية',
       items: _tertiarySections,
-      selected: _findEntity(_tertiarySections, _tertiaryCategoryId),
+      selected: _findMany(_tertiarySections, _tertiaryCategoryIds),
       labelOf: (c) => c.displayName,
       isSame: (a, b) => a.id == b.id,
     );
-    if (picked != null && mounted) setState(() => _tertiaryCategoryId = picked.id);
+    if (picked != null && mounted) {
+      setState(() {
+        _tertiaryCategoryIds
+          ..clear()
+          ..addAll(picked.map((e) => e.id));
+      });
+    }
   }
 
   Future<void> _import() async {
@@ -484,8 +544,8 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
             brandId: brandId,
             selectedBarcode: widget.barcode,
             categoryId: _categoryId,
-            subcategoryId: _subcategoryId,
-            tertiaryCategoryId: _tertiaryCategoryId,
+            subcategoryIds: _subcategoryIds,
+            tertiaryCategoryIds: _tertiaryCategoryIds,
             shadesOverride: activeShades.isNotEmpty ? activeShades : null,
             priceOverride: priceOverride,
             stockOverride: stockOverride,
@@ -498,6 +558,17 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
                 });
               }
             },
+          );
+      final name = product.nameAr.trim().isNotEmpty
+          ? product.nameAr.trim()
+          : product.nameEn.trim();
+      final bc = (widget.barcode?.trim().isNotEmpty == true)
+          ? widget.barcode!.trim()
+          : (product.barcode ?? product.sourceId);
+      await ref.read(dailyProgressProvider.notifier).recordAdd(
+            barcode: bc,
+            name: name.isNotEmpty ? name : null,
+            source: 'catalog',
           );
       if (!mounted) return;
       await _showImportSuccess();
@@ -674,17 +745,29 @@ class _ProductImportScreenState extends ConsumerState<ProductImportScreen> {
                                   const SizedBox(height: 12),
                                   PickerField(
                                     label: 'القسم الفرعي',
-                                    value: _loadingSubs ? 'جاري التحميل...' : _entityName(_subcategories, _subcategoryId),
-                                    hint: _categoryId == null ? 'اختر القسم أولاً' : 'اختر القسم الفرعي (اختياري)',
+                                    value: _loadingSubs
+                                        ? 'جاري التحميل...'
+                                        : (_entityNames(_subcategories, _subcategoryIds).isEmpty
+                                            ? null
+                                            : _entityNames(_subcategories, _subcategoryIds)),
+                                    hint: _categoryId == null
+                                        ? 'اختر القسم أولاً'
+                                        : 'يمكن اختيار أكثر من قسم فرعي',
                                     enabled: !_importing && _categoryId != null && !_loadingSubs,
                                     onTap: _pickSubcategory,
                                   ),
                                   const SizedBox(height: 12),
                                   PickerField(
                                     label: 'القسم الثانوي',
-                                    value: _loadingTertiary ? 'جاري التحميل...' : _entityName(_tertiarySections, _tertiaryCategoryId),
-                                    hint: _subcategoryId == null ? 'اختر القسم الفرعي أولاً' : 'اختر القسم الثانوي (اختياري)',
-                                    enabled: !_importing && _subcategoryId != null && !_loadingTertiary,
+                                    value: _loadingTertiary
+                                        ? 'جاري التحميل...'
+                                        : (_entityNames(_tertiarySections, _tertiaryCategoryIds).isEmpty
+                                            ? null
+                                            : _entityNames(_tertiarySections, _tertiaryCategoryIds)),
+                                    hint: _subcategoryIds.isEmpty
+                                        ? 'اختر القسم الفرعي أولاً'
+                                        : 'يمكن اختيار أكثر من قسم ثانوي',
+                                    enabled: !_importing && _subcategoryIds.isNotEmpty && !_loadingTertiary,
                                     onTap: _pickTertiary,
                                   ),
                                   if (product.categoryHint?.isNotEmpty == true) ...[

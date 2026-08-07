@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/utils/daily_progress_store.dart';
+
 /// Shell with bottom navigation: catalog import vs AI add.
-class HomeShell extends StatelessWidget {
+class HomeShell extends ConsumerWidget {
   const HomeShell({super.key, required this.child});
 
   final Widget child;
@@ -13,9 +16,10 @@ class HomeShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final location = GoRouterState.of(context).uri.path;
     final selected = _indexForLocation(location);
+    final todayCount = ref.watch(dailyProgressProvider).todayCount;
 
     return Scaffold(
       body: child,
@@ -25,15 +29,23 @@ class HomeShell extends StatelessWidget {
           if (index == selected) return;
           context.go(index == 0 ? '/scan' : '/ai-add');
         },
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.storefront_outlined),
-            selectedIcon: Icon(Icons.storefront),
+            icon: const Icon(Icons.storefront_outlined),
+            selectedIcon: const Icon(Icons.storefront),
             label: 'الكتالوج',
           ),
           NavigationDestination(
-            icon: Icon(Icons.add_circle_outline),
-            selectedIcon: Icon(Icons.add_circle),
+            icon: Badge(
+              isLabelVisible: todayCount > 0,
+              label: Text('$todayCount', style: const TextStyle(fontSize: 10)),
+              child: const Icon(Icons.add_circle_outline),
+            ),
+            selectedIcon: Badge(
+              isLabelVisible: todayCount > 0,
+              label: Text('$todayCount', style: const TextStyle(fontSize: 10)),
+              child: const Icon(Icons.add_circle),
+            ),
             label: 'إضافة ذكية',
           ),
         ],

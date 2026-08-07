@@ -6,11 +6,15 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ai_draft_store.dart';
 import '../../core/utils/ai_model_prefs.dart';
+import '../../core/utils/daily_progress_store.dart';
 import '../../core/utils/helpers.dart';
+import '../../core/utils/readd_assets_cache.dart';
 import '../../models/ai_autofill.dart';
 import '../../providers/auth_provider.dart';
 import '../../repositories/ai_product_repository.dart';
+import '../../repositories/product_repository.dart';
 import '../../widgets/barcode_live_scanner.dart';
+import '../home/daily_progress_screen.dart';
 
 /// Dedicated AI product-add: scan → duplicate check → autofill wizard.
 class AiAddScreen extends ConsumerStatefulWidget {
@@ -62,6 +66,7 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
     if (scanner == null) return;
     if (state == AppLifecycleState.resumed) {
       scanner.resume();
+      ref.read(dailyProgressProvider.notifier).refresh();
     } else if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
       scanner.pause();
     }
@@ -230,24 +235,27 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
                   style: const TextStyle(fontSize: 13, color: AppTheme.muted),
                 ),
               ],
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withValues(alpha: 0.06),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'يمكنك حذف المنتج وإضافته من جديد بالـ AI. الصور القديمة تبقى متاحة لتعيد اختيارها.',
+                  style: TextStyle(fontSize: 13, height: 1.35),
+                ),
+              ),
               const SizedBox(height: 16),
               if (productId != null && productId.isNotEmpty) ...[
                 FilledButton.icon(
-                  onPressed: () {
+                  onPressed: () async {
                     Navigator.pop(ctx);
-                    final uri = Uri(
-                      path: '/product-review',
-                      queryParameters: {
-                        'id': productId,
-                        'barcode': barcode,
-                        'model': _model.id,
-                        'auto': '1',
-                      },
-                    );
-                    context.push(uri.toString());
+                    await _deleteAndReadd(barcode: barcode, productId: productId);
                   },
-                  icon: const Icon(Icons.auto_awesome),
-                  label: const Text('مراجعة وتصحيح بالـ AI'),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('حذف وإعادة إضافة بالـ AI'),
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
@@ -264,7 +272,7 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
                     context.push(uri.toString());
                   },
                   icon: const Icon(Icons.info_outline),
-                  label: const Text('عرض التفاصيل والتعديل'),
+                  label: const Text('عرض التفاصيل فقط'),
                 ),
                 const SizedBox(height: 8),
               ],
@@ -274,6 +282,66 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
         );
       },
     );
+  }
+
+  Future<void> _deleteAndReadd({required String barcode, required String productId}) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('حذف وإعادة إضافة؟'),
+        content: const Text(
+          'سيُحذف المنتج الحالي من المتجر، ثم تُفتح الإضافة الذكية من جديد.\n\n'
+          'صور المنتج القديمة ستظهر لك في خطوة الصور لتعيد استخدامها إن أردت.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('حذف ومتابعة'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _checking = true);
+    await _scannerKey.currentState?.pause();
+    try {
+      final products = ref.read(productRepositoryProvider);
+      final raw = await products.getProduct(productId);
+      final assets = ReaddAssets.fromProductJson(raw);
+      ReaddAssetsCache.save(barcode, assets);
+
+      await products.deleteProduct(productId);
+      if (!mounted) return;
+
+      final hint = _hintController.text.trim();
+      final uri = Uri(
+        path: '/gpt-autofill',
+        queryParameters: {
+          'barcode': barcode,
+          if (hint.isNotEmpty) 'hint': hint,
+          'model': _model.id,
+          if (assets.isNotEmpty) 'keptImages': '1',
+        },
+      );
+      await context.push(uri.toString());
+      await _loadRecent();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _checking = false;
+          _handled = false;
+        });
+        await _scannerKey.currentState?.resume();
+      }
+    }
   }
 
   void _onDetect(BarcodeCapture capture) {
@@ -297,6 +365,7 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
       appBar: AppBar(
         title: const Text('إضافة ذكية'),
         actions: [
+          const DailyProgressChip(),
           IconButton(
             tooltip: _showManual ? 'الكاميرا' : 'إدخال يدوي',
             icon: Icon(_showManual ? Icons.camera_alt_outlined : Icons.keyboard_alt_outlined),
@@ -305,9 +374,11 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
           PopupMenuButton<String>(
             onSelected: (v) {
               if (v == 'logout') ref.read(authProvider.notifier).logout();
+              if (v == 'progress') context.push('/daily-progress');
             },
             itemBuilder: (_) => [
               PopupMenuItem(enabled: false, child: Text(user?.name ?? user?.email ?? '')),
+              const PopupMenuItem(value: 'progress', child: Text('التقدم اليومي')),
               const PopupMenuItem(value: 'logout', child: Text('تسجيل الخروج')),
             ],
           ),

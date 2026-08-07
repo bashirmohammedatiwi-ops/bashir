@@ -1,3 +1,5 @@
+import '../core/utils/media_url.dart';
+
 class AiAutofillImage {
   const AiAutofillImage({
     required this.url,
@@ -45,26 +47,57 @@ class AiAutofillCategory {
     this.categoryId,
     this.subcategoryId,
     this.tertiaryCategoryId,
+    this.subcategoryIds = const [],
+    this.tertiaryCategoryIds = const [],
     this.categoryNameAr,
     this.subcategoryNameAr,
     this.tertiaryNameAr,
+    this.subcategoryNamesAr = const [],
+    this.tertiaryNamesAr = const [],
   });
 
   final String? categoryId;
   final String? subcategoryId;
   final String? tertiaryCategoryId;
+  final List<String> subcategoryIds;
+  final List<String> tertiaryCategoryIds;
   final String? categoryNameAr;
   final String? subcategoryNameAr;
   final String? tertiaryNameAr;
+  final List<String> subcategoryNamesAr;
+  final List<String> tertiaryNamesAr;
 
   factory AiAutofillCategory.fromJson(Map<String, dynamic> json) {
+    List<String> ids(dynamic v) {
+      if (v is! List) return [];
+      return v.map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+    }
+
+    List<String> names(dynamic v) {
+      if (v is! List) return [];
+      return v.map((e) => e?.toString().trim() ?? '').where((s) => s.isNotEmpty).toList();
+    }
+
+    final subIds = ids(json['subcategoryIds']);
+    final tertIds = ids(json['tertiaryCategoryIds']);
+    final subSingle = json['subcategoryId']?.toString();
+    final tertSingle = json['tertiaryCategoryId']?.toString();
+
     return AiAutofillCategory(
       categoryId: json['categoryId']?.toString(),
-      subcategoryId: json['subcategoryId']?.toString(),
-      tertiaryCategoryId: json['tertiaryCategoryId']?.toString(),
+      subcategoryId: subSingle,
+      tertiaryCategoryId: tertSingle,
+      subcategoryIds: subIds.isNotEmpty
+          ? subIds
+          : (subSingle != null && subSingle.isNotEmpty ? [subSingle] : const []),
+      tertiaryCategoryIds: tertIds.isNotEmpty
+          ? tertIds
+          : (tertSingle != null && tertSingle.isNotEmpty ? [tertSingle] : const []),
       categoryNameAr: json['categoryNameAr']?.toString(),
       subcategoryNameAr: json['subcategoryNameAr']?.toString(),
       tertiaryNameAr: json['tertiaryNameAr']?.toString(),
+      subcategoryNamesAr: names(json['subcategoryNamesAr']),
+      tertiaryNamesAr: names(json['tertiaryNamesAr']),
     );
   }
 }
@@ -182,14 +215,12 @@ class ExistingProductInfo {
     if (images is List) {
       for (final row in images) {
         if (row is! Map) continue;
-        final media = row['media'];
-        String? url;
-        if (media is Map) {
-          url = (media['url'] ?? media['thumbnailUrl'])?.toString();
-          thumb ??= (media['thumbnailUrl'] ?? media['url'])?.toString();
-        }
-        url ??= row['url']?.toString();
-        if (url != null && url.isNotEmpty) imageUrls.add(url);
+        final map = Map<String, dynamic>.from(row);
+        final url = resolveProductImageUrl(map, prefer: 'thumb') ??
+            resolveProductImageUrl(map, prefer: 'medium');
+        if (url == null || url.isEmpty) continue;
+        imageUrls.add(url);
+        thumb ??= url;
       }
       if (imageCount == 0) imageCount = imageUrls.length;
     }

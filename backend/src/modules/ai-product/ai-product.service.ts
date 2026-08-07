@@ -22,6 +22,10 @@ type GptAutofillJson = {
   category_main_ar: string;
   category_sub_ar: string;
   category_tertiary_ar: string;
+  /** Extra subcategory names when the product fits more than one. */
+  category_subs_ar: string[];
+  /** Extra tertiary names when the product fits more than one. */
+  category_tertiaries_ar: string[];
   confidence: number;
   needs_review: boolean;
 };
@@ -39,6 +43,8 @@ const AUTOFILL_SCHEMA = {
     category_main_ar: { type: "string" },
     category_sub_ar: { type: "string" },
     category_tertiary_ar: { type: "string" },
+    category_subs_ar: { type: "array", items: { type: "string" } },
+    category_tertiaries_ar: { type: "array", items: { type: "string" } },
     confidence: { type: "number" },
     needs_review: { type: "boolean" },
   },
@@ -52,6 +58,8 @@ const AUTOFILL_SCHEMA = {
     "category_main_ar",
     "category_sub_ar",
     "category_tertiary_ar",
+    "category_subs_ar",
+    "category_tertiaries_ar",
     "confidence",
     "needs_review",
   ],
@@ -62,7 +70,8 @@ const CATEGORY_SYNONYMS: Record<string, string[]> = {
   كونسيلر: ["concealer", "cover", "تصحيح"],
   فاونديشن: ["foundation", "fond de teint", "كريم اساس", "كريم أساس"],
   ماسكارا: ["mascara"],
-  "احمر شفاه": ["lipstick", "أحمر شفاه", "روج"],
+  "احمر شفاه": ["lipstick", "أحمر شفاه", "روج", "ليبستيك", "lip stick"],
+  "جلوس شفاه": ["lip gloss", "ليب جلوس", "لمعان شفاه"],
   "قلم شفاه": ["lip liner", "lipliner", "قلم تحديد شفاه"],
   "قلم حواجب": ["brow pencil", "eyebrow pencil", "eyebrow"],
   "جل حواجب": ["brow gel", "eyebrow gel"],
@@ -77,6 +86,12 @@ const CATEGORY_SYNONYMS: Record<string, string[]> = {
   مرطب: ["moisturizer", "moisturiser", "cream"],
   شامبو: ["shampoo"],
   "واقي شمس": ["sunscreen", "spf", "sun screen"],
+  مكياج: ["makeup", "make up", "تجميل"],
+  وجه: ["face", "بشرة"],
+  عيون: ["eyes", "eye"],
+  شفاه: ["lips", "lip"],
+  حواجب: ["brows", "eyebrow", "brow"],
+  عناية: ["skincare", "skin care", "العناية"],
 };
 
 @Injectable()
@@ -137,10 +152,22 @@ export class AiProductService {
     }
 
     const resolved = this.resolveOpenAiModel(modelChoice);
-    const cacheKey = `v8|${force ? "force|" : ""}${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `v10|${force ? "force|" : ""}${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 30 * 60_000) {
-      return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
+      const cachedPayload = cached.payload as {
+        nameAr?: string;
+        nameEn?: string;
+        brandAr?: string;
+        brandEn?: string;
+        category?: { categoryId?: string | null };
+      };
+      const hasName = Boolean((cachedPayload.nameAr || cachedPayload.nameEn || "").trim());
+      const hasBrand = Boolean((cachedPayload.brandAr || cachedPayload.brandEn || "").trim());
+      if (hasName && hasBrand) {
+        return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
+      }
+      this.autofillCache.delete(cacheKey);
     }
 
     const apiKey = process.env.OPENAI_API_KEY?.trim();
@@ -186,15 +213,50 @@ export class AiProductService {
           .join(" | ")
       : hint?.trim() || undefined;
 
-    // 4) GPT with web_search — required for non-famous products; never invent
-    const { gpt: rawGpt, usedWebSearch } = await this.callGpt({
-      apiKey,
-      model,
-      barcode: digits,
-      free,
-      hint: reviewHint,
-      imageTitles,
-    });
+    // 4) GPT with web_search — retry once if empty/weak (transient empty replies)
+    let rawGpt: GptAutofillJson;
+    let usedWebSearch = false;
+    try {
+      const first = await this.callGpt({
+        apiKey,
+        model,
+        barcode: digits,
+        free,
+        hint: reviewHint,
+        imageTitles,
+      });
+      rawGpt = first.gpt;
+      usedWebSearch = first.usedWebSearch;
+      if (this.isWeakGpt(rawGpt)) {
+        this.logger.warn(`Weak GPT autofill for ${digits} — retrying once`);
+        const second = await this.callGpt({
+          apiKey,
+          model,
+          barcode: digits,
+          free,
+          hint: [reviewHint, "RETRY: previous reply was empty/incomplete. Fill all fields."]
+            .filter(Boolean)
+            .join(" | "),
+          imageTitles,
+        });
+        if (!this.isWeakGpt(second.gpt) || this.gptScore(second.gpt) >= this.gptScore(rawGpt)) {
+          rawGpt = second.gpt;
+          usedWebSearch = second.usedWebSearch || usedWebSearch;
+        }
+      }
+    } catch (err) {
+      this.logger.warn(`GPT autofill failed for ${digits}: ${(err as Error).message} — retrying`);
+      const second = await this.callGpt({
+        apiKey,
+        model,
+        barcode: digits,
+        free,
+        hint: reviewHint,
+        imageTitles,
+      });
+      rawGpt = second.gpt;
+      usedWebSearch = second.usedWebSearch;
+    }
     const gpt = this.polishNaming(rawGpt);
 
     const matched = await this.matchCategories(gpt);
@@ -260,7 +322,12 @@ export class AiProductService {
         force: Boolean(force && existing),
       },
     };
-    this.autofillCache.set(cacheKey, { at: Date.now(), payload: payload as unknown as Record<string, unknown> });
+    const cacheable =
+      Boolean((payload.nameAr || payload.nameEn || "").trim()) &&
+      Boolean((payload.brandAr || payload.brandEn || "").trim());
+    if (cacheable) {
+      this.autofillCache.set(cacheKey, { at: Date.now(), payload: payload as unknown as Record<string, unknown> });
+    }
     return payload;
   }
 
@@ -352,8 +419,7 @@ export class AiProductService {
       };
     }
 
-    // Barcode mode: search digits like Google Images — do NOT mix product-name hints
-    // (they dilute barcode results). User can switch to "بالاسم" for name search.
+    // Barcode mode: search digits like Google Images (no SerpAPI / no extra filters)
     const q = (query ?? digits).replace(/\D/g, "") || digits;
     const images = await this.images.searchByBarcode(q, 48);
     return {
@@ -834,7 +900,7 @@ export class AiProductService {
       .filter(Boolean)
       .join(" | ");
 
-    const instructions = `كاتب كتالوج تجميل عراقي لمتجر الحياة (Al Hayaa). JSON فقط.
+    const instructions = `كاتب كتالوج تجميل لمتجر الحياة (Al Hayaa) في العراق. JSON فقط.
 
 IDENTIFY (إلزامي — لا تختلق):
 1) نفّذ web_search واحدة فقط باستعلام = أرقام الباركود فقط (${args.barcode}).
@@ -843,38 +909,47 @@ IDENTIFY (إلزامي — لا تختلق):
 4) إذا لم تجد مصدراً موثوقاً: needs_review=true و confidence≤30. ضع أفضل تخمين حذر من الحقائق المتوفرة فقط — ممنوع اختلاق براند/منتج مشهور خطأً.
 5) لا تكتب وصفاً تسويقياً مفصلاً لمنتج غير مؤكد.
 
-الجمهور: زبائن عراقيين — لهجة بيع مألوفة (فصحى قريبة من المحكي العراقي الخفيف).
+اللغة العربية (صارم):
+• فصحى واضحة فقط — ممنوع اللهجة العراقية المحكية (مثل: شلون، هواية، هسه، خوش، يمعود…).
+• استخدم مصطلحات سوق التجميل الشائعة في العراق والعالم العربي، وليست كلمات عامية.
+  أمثلة إلزامية: روج/ليبستك → أحمر شفاه | ليب جلوس → جلوس شفاه | فاونديشن مقبول | كونسيلر مقبول.
 
 NAMING (صارم):
 • brand_ar / brand_en = اسم البراند فقط (مرة واحدة).
 • name_en = "{BrandEn} - {Official Product Name}"  (البراند مرة واحدة قبل الشرطة)
-• name_ar = "{براند} - {نوع عراقي} {اسم الخط EN} {صفة قصيرة} {الحجم إن وُجد}"
+• name_ar = "{براند} - {نوع المنتج بمصطلح سوقي} {اسم الخط EN} {صفة قصيرة} {الحجم إن وُجد}"
   البراند بالعربي يظهر مرة واحدة فقط قبل الشرطة — ممنوع تكراره.
   أمثلة:
   - "سفنتين - كونسيلر Ideal Cover Liquid بتغطية كاملة"
   - "كوسمالاين - جل استحمام Soft Wave برائحة الورد 650 مل"
   - "كريست - شرائط تبييض 3D Whitestrips Professional Effects"
-• مفردات النوع: foundation→فاونديشن | concealer→كونسيلر | mascara→ماسكارا | lipstick→أحمر شفاه
-  lip gloss→جلوس شفاه | lip liner→قلم شفاه | brow pencil→قلم حواجب | blush→بلاشر
-  highlighter→هايلايتر | powder→بودرة | eyeliner→كحل أو ايلاينر | eyeshadow→ظل عيون
-  primer→برايمر | serum→سيروم | moisturizer→مرطب | sunscreen→واقي شمس | whitening strips→شرائط تبييض
+  - "ميبلين - أحمر شفاه SuperStay Matte Ink"
+• مفردات النوع (سوق العراق): foundation→فاونديشن | concealer→كونسيلر | mascara→ماسكارا
+  lipstick/rouge→أحمر شفاه (ممنوع: روج) | lip gloss→جلوس شفاه | lip liner→قلم شفاه
+  brow pencil→قلم حواجب | blush→بلاشر | highlighter→هايلايتر | powder→بودرة
+  eyeliner→ايلاينر أو كحل | eyeshadow→ظل عيون | primer→برايمر | serum→سيروم
+  moisturizer→مرطب | sunscreen→واقي شمس | whitening strips→شرائط تبييض
 
-DESC_AR: جملتان قصيرتان بنبرة محل عراقي + 3 نقاط فوائد (أو وصف مختصر جداً إذا الثقة منخفضة).
+DESC_AR: جملتان قصيرتان بالفصحى + 3 نقاط فوائد (أو وصف مختصر جداً إذا الثقة منخفضة). بدون لهجة محكية.
 DESC_EN: جملتان + 3 نقاط.
-التصنيفات يجب أن تطابق الأسماء أدناه (فضّل العربي):
+التصنيفات يجب أن تطابق الأسماء أدناه حرفياً قدر الإمكان (فضّل العربي) — املأها دائماً حتى لو تقريبية:
 ${categoryHint}
+• category_main_ar = قسم رئيسي واحد فقط من القائمة (إلزامي إن أمكن).
+• category_sub_ar = القسم الفرعي الأساسي. إذا يناسب أكثر من فرعي: الباقي في category_subs_ar.
+• category_tertiary_ar = القسم الثانوي الأساسي. إذا يناسب أكثر من ثانوي: الباقي في category_tertiaries_ar.
+• إذا لم تجد تطابقاً دقيقاً: اختر أقرب اسم من الشجرة أعلاه — لا تترك التصنيفات فارغة لمنتج معروف النوع.
 بدون باركود درجات.`;
 
     const userInput = `barcode=${args.barcode}
 known: ${known || "none"}
 STEP1: web_search query="${args.barcode}" once.
-STEP2: return JSON — Iraqi name_ar + official name_en. If unknown: needs_review=true, confidence≤30.`;
+STEP2: return complete JSON — MSA name_ar (market terms, no dialect) + official name_en + filled categories. If unknown: needs_review=true, confidence≤30.`;
 
     const payload: Record<string, unknown> = {
       model: args.model,
       instructions,
       input: userInput,
-      max_output_tokens: 700,
+      max_output_tokens: 1200,
       tools: [{ type: "web_search" }],
       text: {
         format: {
@@ -909,37 +984,104 @@ STEP2: return JSON — Iraqi name_ar + official name_en. If unknown: needs_revie
       return row.type === "web_search_call" || row.type === "web_search";
     });
     const jsonText = this.extractJsonText(body);
-    return { gpt: JSON.parse(jsonText) as GptAutofillJson, usedWebSearch };
+    try {
+      return { gpt: JSON.parse(jsonText) as GptAutofillJson, usedWebSearch };
+    } catch {
+      this.logger.warn(`Invalid GPT JSON for ${args.barcode}: ${jsonText.slice(0, 200)}`);
+      throw new ServiceUnavailableException("رد GPT غير صالح أو ناقص");
+    }
   }
 
   private extractJsonText(body: Record<string, unknown>): string {
     const output = (body.output as unknown[]) ?? [];
+    const chunks: string[] = [];
     for (const item of output) {
       const row = item as { type?: string; content?: Array<{ type?: string; text?: string }> };
       if (row.type !== "message" || !row.content) continue;
       for (const part of row.content) {
-        if ((part.type === "output_text" || part.type === "text") && part.text) return part.text;
+        if ((part.type === "output_text" || part.type === "text") && part.text?.trim()) {
+          chunks.push(part.text);
+        }
       }
     }
     const top = body.output_text;
-    if (typeof top === "string" && top.trim()) return top;
+    if (typeof top === "string" && top.trim()) chunks.push(top);
+
+    for (const text of chunks) {
+      const trimmed = text.trim();
+      if (trimmed.startsWith("{") && trimmed.endsWith("}")) return trimmed;
+      const start = trimmed.indexOf("{");
+      const end = trimmed.lastIndexOf("}");
+      if (start >= 0 && end > start) return trimmed.slice(start, end + 1);
+    }
+    if (chunks[0]?.trim()) return chunks[0].trim();
     throw new ServiceUnavailableException("رد GPT فارغ");
   }
 
-  /** Enforce naming: EN/AR both "Brand - Product" (brand once). */
+  private isWeakGpt(gpt: GptAutofillJson): boolean {
+    const name = (gpt.name_ar || gpt.name_en || "").trim();
+    const brand = (gpt.brand_ar || gpt.brand_en || "").trim();
+    return name.length < 3 || brand.length < 1;
+  }
+
+  private gptScore(gpt: GptAutofillJson): number {
+    let score = 0;
+    if ((gpt.brand_ar || gpt.brand_en || "").trim()) score += 2;
+    if ((gpt.name_ar || "").trim().length >= 3) score += 3;
+    if ((gpt.name_en || "").trim().length >= 3) score += 2;
+    if ((gpt.category_main_ar || "").trim()) score += 2;
+    if ((gpt.category_sub_ar || "").trim()) score += 1;
+    if ((gpt.description_ar || "").trim().length > 20) score += 1;
+    return score;
+  }
+
+  /** Enforce naming: EN/AR both "Brand - Product" (brand once) + market Arabic terms. */
   private polishNaming(gpt: GptAutofillJson): GptAutofillJson {
     const brandEn = this.canonicalBrandEn(gpt.brand_en || gpt.brand_ar || "");
     const brandAr = this.canonicalBrandAr(brandEn, gpt.brand_ar || "");
     const nameEn = this.ensureBrandDashName(gpt.name_en || "", brandEn, { doubleBrand: false });
-    const nameAr = this.ensureBrandDashName(gpt.name_ar || "", brandAr, { doubleBrand: false });
+    const nameArRaw = this.ensureBrandDashName(gpt.name_ar || "", brandAr, { doubleBrand: false });
+    const nameAr = this.polishMarketArabic(nameArRaw);
+    const descriptionAr = this.polishMarketArabic(gpt.description_ar || "");
     return {
       ...gpt,
       brand_en: brandEn || gpt.brand_en?.trim() || "",
       brand_ar: brandAr || gpt.brand_ar?.trim() || "",
       name_en: nameEn,
       name_ar: nameAr,
+      description_ar: descriptionAr,
+      category_subs_ar: Array.isArray(gpt.category_subs_ar)
+        ? gpt.category_subs_ar.map((s) => String(s ?? "").trim()).filter(Boolean)
+        : [],
+      category_tertiaries_ar: Array.isArray(gpt.category_tertiaries_ar)
+        ? gpt.category_tertiaries_ar.map((s) => String(s ?? "").trim()).filter(Boolean)
+        : [],
       confidence: typeof gpt.confidence === "number" ? gpt.confidence : 60,
     };
+  }
+
+  /** MSA + Iraqi-market beauty terms (not dialect). */
+  private polishMarketArabic(text: string): string {
+    if (!text?.trim()) return text || "";
+    let s = text.replace(/\s+/g, " ").trim();
+    const termMap: Array<[RegExp, string]> = [
+      [/\bروج\b/g, "أحمر شفاه"],
+      [/\bليب\s*ستيك\b/gi, "أحمر شفاه"],
+      [/\blipstick\b/gi, "أحمر شفاه"],
+      [/\brouge\b/gi, "أحمر شفاه"],
+      [/\bليب\s*جلوس\b/gi, "جلوس شفاه"],
+      [/\blip\s*gloss\b/gi, "جلوس شفاه"],
+      [/\bليب\s*لاينر\b/gi, "قلم شفاه"],
+      [/\blip\s*liner\b/gi, "قلم شفاه"],
+    ];
+    for (const [re, to] of termMap) s = s.replace(re, to);
+
+    // Strip common Iraqi dialect tokens if the model slips
+    s = s
+      .replace(/\b(شلون|هواية|هواي|هسه|خوش|يمعود|شكد|وينه|هايچ|هيج|اكو|ماكو)\b/gi, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+    return s;
   }
 
   private canonicalBrandEn(raw: string): string {
@@ -1155,55 +1297,175 @@ STEP2: return JSON — Iraqi name_ar + official name_en. If unknown: needs_revie
       where: { parentId: null, isActive: true },
       select: { id: true, nameAr: true, nameEn: true, name: true },
     });
-    const main =
+
+    const identityForMain = this.collectCategoryHints(gpt.name_ar, [
+      gpt.name_en,
+      gpt.category_sub_ar,
+      gpt.category_tertiary_ar,
+      ...(gpt.category_subs_ar ?? []),
+      ...(gpt.category_tertiaries_ar ?? []),
+    ]);
+
+    let main =
       this.bestMatch(mains, gpt.category_main_ar, gpt.category_main_ar) ??
       this.bestMatch(mains, gpt.category_main_ar, "");
 
-    let subcategoryId: string | null = null;
-    let tertiaryCategoryId: string | null = null;
-    let subcategoryNameAr: string | null = null;
-    let tertiaryNameAr: string | null = null;
+    // Fallback: infer main category from product name when GPT left it empty/weak
+    if (!main) {
+      for (const hint of identityForMain) {
+        const hit = this.bestMatch(mains, hint, hint);
+        if (hit && hit.score >= 40) {
+          main = hit;
+          break;
+        }
+      }
+    }
+
+    let subcategoryIds: string[] = [];
+    let tertiaryCategoryIds: string[] = [];
+    const subcategoryNames: string[] = [];
+    const tertiaryNames: string[] = [];
 
     if (main) {
       const subs = await this.prisma.category.findMany({
         where: { parentId: main.id, isActive: true },
         select: { id: true, nameAr: true, nameEn: true, name: true },
       });
-      const sub =
-        this.bestMatch(subs, gpt.category_sub_ar, gpt.category_sub_ar) ??
-        this.bestMatch(subs, gpt.category_sub_ar, "");
-      if (sub) {
-        subcategoryId = sub.id;
-        subcategoryNameAr = sub.nameAr || sub.name || null;
-        const tert = await this.prisma.category.findMany({
-          where: { parentId: sub.id, isActive: true },
-          select: { id: true, nameAr: true, nameEn: true, name: true },
+
+      const subHints = this.collectCategoryHints(gpt.category_sub_ar, gpt.category_subs_ar);
+      const identityHints = this.collectCategoryHints(
+        gpt.name_ar,
+        [gpt.name_en, gpt.category_tertiary_ar, ...(gpt.category_tertiaries_ar ?? [])],
+      );
+      subcategoryIds = this.matchManyCategories(subs, subHints, identityHints, {
+        identityMin: subHints.length ? 65 : 55,
+      });
+
+      // If still empty, try product-type synonyms against all subs
+      if (!subcategoryIds.length) {
+        subcategoryIds = this.matchManyCategories(subs, identityHints, [], {
+          identityMin: 50,
         });
-        const t =
-          this.bestMatch(tert, gpt.category_tertiary_ar, gpt.category_tertiary_ar) ??
-          this.bestMatch(tert, gpt.category_tertiary_ar, "");
-        if (t) {
-          tertiaryCategoryId = t.id;
-          tertiaryNameAr = t.nameAr || t.name || null;
+      }
+
+      if (subcategoryIds.length) {
+        const tert = await this.prisma.category.findMany({
+          where: { parentId: { in: subcategoryIds }, isActive: true },
+          select: { id: true, nameAr: true, nameEn: true, name: true, parentId: true },
+        });
+        const tertHints = this.collectCategoryHints(
+          gpt.category_tertiary_ar,
+          gpt.category_tertiaries_ar,
+        );
+        tertiaryCategoryIds = this.matchManyCategories(tert, tertHints, identityHints, {
+          identityMin: tertHints.length ? 65 : 55,
+        });
+
+        const subById = new Map(subs.map((s) => [s.id, s]));
+        for (const id of subcategoryIds) {
+          const row = subById.get(id);
+          const label = row?.nameAr || row?.name || row?.nameEn;
+          if (label) subcategoryNames.push(label);
+        }
+        const tertById = new Map(tert.map((t) => [t.id, t]));
+        for (const id of tertiaryCategoryIds) {
+          const row = tertById.get(id);
+          const label = row?.nameAr || row?.name || row?.nameEn;
+          if (label) tertiaryNames.push(label);
         }
       }
     }
 
     return {
       categoryId: main?.id ?? null,
-      subcategoryId,
-      tertiaryCategoryId,
+      subcategoryId: subcategoryIds[0] ?? null,
+      tertiaryCategoryId: tertiaryCategoryIds[0] ?? null,
+      subcategoryIds,
+      tertiaryCategoryIds,
       categoryNameAr: main?.nameAr || main?.name || gpt.category_main_ar,
-      subcategoryNameAr: subcategoryNameAr ?? gpt.category_sub_ar,
-      tertiaryNameAr: tertiaryNameAr ?? gpt.category_tertiary_ar,
+      subcategoryNameAr: subcategoryNames[0] ?? gpt.category_sub_ar,
+      tertiaryNameAr: tertiaryNames[0] ?? gpt.category_tertiary_ar,
+      subcategoryNamesAr: subcategoryNames,
+      tertiaryNamesAr: tertiaryNames,
     };
+  }
+
+  /** Split GPT strings / arrays into distinct category name hints. */
+  private collectCategoryHints(primary: string | undefined, extras?: string[] | string): string[] {
+    const raw: string[] = [];
+    if (primary?.trim()) raw.push(primary);
+    if (Array.isArray(extras)) raw.push(...extras);
+    else if (typeof extras === "string" && extras.trim()) raw.push(extras);
+
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const chunk of raw) {
+      for (const part of chunk.split(/[,|،/]+/)) {
+        const t = part.replace(/\s+/g, " ").trim();
+        if (t.length < 2) continue;
+        const key = this.norm(t);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        out.push(t);
+      }
+    }
+    return out;
+  }
+
+  /**
+   * Auto-select every catalog category that clearly matches GPT hints
+   * or the product identity (name). Primary hint order is preserved.
+   */
+  private matchManyCategories(
+    rows: Array<{ id: string; nameAr: string | null; nameEn: string | null; name?: string | null }>,
+    primaryHints: string[],
+    identityHints: string[],
+    opts: { identityMin?: number } = {},
+  ): string[] {
+    if (!rows.length) return [];
+    const identityMin = opts.identityMin ?? 65;
+
+    const selected: string[] = [];
+    const push = (id: string | undefined | null) => {
+      if (!id || selected.includes(id)) return;
+      selected.push(id);
+    };
+
+    // 1) Explicit GPT hints (including extras) — lower threshold
+    for (const hint of primaryHints) {
+      const hit = this.bestMatch(rows, hint, hint);
+      if (hit && hit.score >= 40) push(hit.id);
+    }
+
+    // 2) Identity / product name — strong matches (threshold relaxed when GPT categories empty)
+    for (const hint of identityHints) {
+      const hit = this.bestMatch(rows, hint, hint);
+      if (hit && hit.score >= identityMin) push(hit.id);
+    }
+
+    // 3) Score all rows against combined hints; keep additional strong hits
+    const combined = [...primaryHints, ...identityHints];
+    if (combined.length) {
+      for (const row of rows) {
+        let score = 0;
+        for (const hint of combined) {
+          const hit = this.bestMatch([row], hint, hint);
+          if (hit) score = Math.max(score, hit.score);
+        }
+        if (score >= Math.max(60, identityMin - 5)) push(row.id);
+      }
+    }
+
+    return selected;
   }
 
   private bestMatch(
     rows: Array<{ id: string; nameAr: string | null; nameEn: string | null; name?: string | null }>,
     ar: string,
     en: string,
-  ) {
+  ):
+    | ({ id: string; nameAr: string | null; nameEn: string | null; name?: string | null } & { score: number })
+    | null {
     const targets = this.expandTargets([ar, en]);
     if (!targets.length) return null;
     let best:

@@ -8,6 +8,7 @@ import '../features/scan/scan_screen.dart';
 import '../features/ai/ai_add_screen.dart';
 import '../features/ai/existing_product_review_screen.dart';
 import '../features/home/home_shell.dart';
+import '../features/home/daily_progress_screen.dart';
 import '../features/import/results_screen.dart';
 import '../features/import/text_search_screen.dart';
 import '../features/import/gpt_autofill_screen.dart';
@@ -40,6 +41,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (_, __) => const AiAddScreen(),
           ),
         ],
+      ),
+      GoRoute(
+        path: '/daily-progress',
+        builder: (_, __) => const DailyProgressScreen(),
       ),
       GoRoute(
         path: '/results',

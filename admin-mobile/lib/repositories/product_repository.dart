@@ -77,11 +77,68 @@ class ProductRepository {
     return items.map((k, v) => MapEntry(k, BarcodeInventoryLookup.fromJson(k, asMap(v))));
   }
 
+  /// Uploads a remote image. Retries server then device-side fetch.
+  /// Returns null only when every attempt fails (caller should not silent-skip).
   Future<String?> uploadImageFromUrl(String url, {String purpose = 'PRODUCT'}) async {
+    final trimmed = url.trim();
+    if (trimmed.isEmpty) return null;
+
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        final id = await _uploadImageFromUrlServer(trimmed, purpose: purpose);
+        if (id != null && id.isNotEmpty) return id;
+      } catch (_) {}
+      try {
+        final id = await _uploadImageFromUrlClient(trimmed, purpose: purpose);
+        if (id != null && id.isNotEmpty) return id;
+      } catch (_) {}
+      if (attempt == 0) {
+        await Future<void>.delayed(const Duration(milliseconds: 450));
+      }
+    }
+    return null;
+  }
+
+  /// Like [uploadImageFromUrl] but throws when the image cannot be uploaded.
+  Future<String> uploadImageFromUrlRequired(String url, {String purpose = 'PRODUCT'}) async {
+    final id = await uploadImageFromUrl(url, purpose: purpose);
+    if (id != null && id.isNotEmpty) return id;
+    final host = Uri.tryParse(url.trim())?.host;
+    throw Exception(
+      host != null && host.isNotEmpty
+          ? 'تعذّر رفع صورة من $host'
+          : 'تعذّر رفع إحدى الصور المختارة',
+    );
+  }
+
+  Future<String?> uploadImageBytes(
+    Uint8List bytes, {
+    String purpose = 'PRODUCT',
+    String filename = 'edited.jpg',
+    String contentType = 'image/jpeg',
+  }) async {
+    if (bytes.length < 64) return null;
     try {
-      return await _uploadImageFromUrlServer(url, purpose: purpose);
-    } catch (_) {
-      return _uploadImageFromUrlClient(url, purpose: purpose);
+      final formData = FormData.fromMap({
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: filename,
+          contentType: DioMediaType.parse(contentType),
+        ),
+        'purpose': purpose,
+      });
+      final uploadResp = await _dio.post(
+        '/media/upload',
+        data: formData,
+        options: Options(
+          receiveTimeout: const Duration(seconds: 120),
+          contentType: 'multipart/form-data',
+        ),
+      );
+      final data = asMap(uploadResp.data['data'] ?? uploadResp.data);
+      return data['id']?.toString();
+    } on DioException catch (e) {
+      throw Exception(extractApiError(e, 'فشل رفع الصورة المعدّلة'));
     }
   }
 
@@ -105,6 +162,10 @@ class ProductRepository {
       'User-Agent':
           'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
     };
+    final uri = Uri.tryParse(trimmed);
+    if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {
+      headers['Referer'] = '${uri.scheme}://${uri.host}/';
+    }
     if (trimmed.contains('waheteter.com')) {
       headers['Referer'] = 'https://waheteter.com/';
     }
@@ -112,6 +173,9 @@ class ProductRepository {
         trimmed.contains('d1aq4ubbxe020v.cloudfront.net') ||
         trimmed.contains('d3e7ardzpaj3y4.cloudfront.net')) {
       headers['Referer'] = 'https://niceonesa.com/ar/';
+    }
+    if (trimmed.contains('googleusercontent.com') || trimmed.contains('ggpht.com')) {
+      headers['Referer'] = 'https://www.google.com/';
     }
 
     final fetcher = Dio(
@@ -193,6 +257,14 @@ class ProductRepository {
     }
   }
 
+  Future<void> deleteProduct(String id) async {
+    try {
+      await _dio.delete('/products/$id');
+    } on DioException catch (e) {
+      throw Exception(extractApiError(e, 'فشل حذف المنتج'));
+    }
+  }
+
   CategoryMatch matchCategoryFromHints(
     List<NamedEntity> categories,
     List<NamedEntity> subcategories,
@@ -253,24 +325,45 @@ class ProductRepository {
     String? subcategoryId,
     String? tertiaryCategoryId,
   }) async {
-    String? sub = subcategoryId;
-    String? tert = tertiaryCategoryId;
+    final multi = await sanitizeCategoryHierarchyMulti(
+      categoryId: categoryId,
+      subcategoryIds: [
+        if (subcategoryId != null && subcategoryId.isNotEmpty) subcategoryId,
+      ],
+      tertiaryCategoryIds: [
+        if (tertiaryCategoryId != null && tertiaryCategoryId.isNotEmpty) tertiaryCategoryId,
+      ],
+    );
+    return (
+      subcategoryId: multi.subcategoryIds.isNotEmpty ? multi.subcategoryIds.first : null,
+      tertiaryCategoryId: multi.tertiaryCategoryIds.isNotEmpty ? multi.tertiaryCategoryIds.first : null,
+    );
+  }
 
-    if (sub != null) {
-      final subs = await subcategories(parentId: categoryId);
-      if (!subs.any((s) => s.id == sub)) sub = null;
-    }
+  Future<({List<String> subcategoryIds, List<String> tertiaryCategoryIds})> sanitizeCategoryHierarchyMulti({
+    required String categoryId,
+    List<String> subcategoryIds = const [],
+    List<String> tertiaryCategoryIds = const [],
+  }) async {
+    final validSubs = await subcategories(parentId: categoryId);
+    final subSet = validSubs.map((s) => s.id).toSet();
+    final safeSubs = [
+      ...{for (final id in subcategoryIds) if (subSet.contains(id)) id},
+    ];
 
-    if (tert != null) {
-      if (sub == null) {
-        tert = null;
-      } else {
-        final sections = await tertiarySections(parentId: sub);
-        if (!sections.any((t) => t.id == tert)) tert = null;
+    final safeTerts = <String>[];
+    final tertSeen = <String>{};
+    if (safeSubs.isNotEmpty && tertiaryCategoryIds.isNotEmpty) {
+      for (final subId in safeSubs) {
+        final sections = await tertiarySections(parentId: subId);
+        final allowed = sections.map((t) => t.id).toSet();
+        for (final tid in tertiaryCategoryIds) {
+          if (allowed.contains(tid) && tertSeen.add(tid)) safeTerts.add(tid);
+        }
       }
     }
 
-    return (subcategoryId: sub, tertiaryCategoryId: tert);
+    return (subcategoryIds: safeSubs, tertiaryCategoryIds: safeTerts);
   }
 
   Map<String, dynamic> _shadePayload(CatalogImportShade s, int index, Map<String, String> urlToId, BarcodePosSnapshot? inv) {
@@ -297,6 +390,8 @@ class ProductRepository {
     String? categoryId,
     String? subcategoryId,
     String? tertiaryCategoryId,
+    List<String>? subcategoryIds,
+    List<String>? tertiaryCategoryIds,
     List<CatalogImportShade>? shadesOverride,
     int? priceOverride,
     int? stockOverride,
@@ -309,13 +404,21 @@ class ProductRepository {
       throw Exception('اختر القسم الرئيسي');
     }
 
-    final sanitized = await sanitizeCategoryHierarchy(
+    final mergedSubs = <String>{
+      ...?subcategoryIds,
+      if (subcategoryId != null && subcategoryId.isNotEmpty) subcategoryId,
+    }.toList();
+    final mergedTerts = <String>{
+      ...?tertiaryCategoryIds,
+      if (tertiaryCategoryId != null && tertiaryCategoryId.isNotEmpty) tertiaryCategoryId,
+    }.toList();
+    final sanitized = await sanitizeCategoryHierarchyMulti(
       categoryId: categoryId,
-      subcategoryId: subcategoryId,
-      tertiaryCategoryId: tertiaryCategoryId,
+      subcategoryIds: mergedSubs,
+      tertiaryCategoryIds: mergedTerts,
     );
-    final safeSub = sanitized.subcategoryId;
-    final safeTert = sanitized.tertiaryCategoryId;
+    final safeSubs = sanitized.subcategoryIds;
+    final safeTerts = sanitized.tertiaryCategoryIds;
 
     final imageUrls = <String>[];
     for (final img in preview.images) {
@@ -400,8 +503,10 @@ class ProductRepository {
       'slug': slugify(nameAr.isNotEmpty ? nameAr : nameEn, 'product'),
       'brandId': brandId,
       'categoryId': categoryId,
-      if (safeSub != null) 'subcategoryId': safeSub,
-      if (safeTert != null) 'tertiaryCategoryId': safeTert,
+      if (safeSubs.isNotEmpty) 'subcategoryId': safeSubs.first,
+      if (safeTerts.isNotEmpty) 'tertiaryCategoryId': safeTerts.first,
+      if (safeSubs.isNotEmpty) 'subcategoryIds': safeSubs,
+      if (safeTerts.isNotEmpty) 'tertiaryCategoryIds': safeTerts,
       'description': stripHtml(preview.descriptionAr).isNotEmpty ? stripHtml(preview.descriptionAr) : stripHtml(preview.descriptionEn),
       if (stripHtml(preview.descriptionAr).isNotEmpty) 'descriptionAr': stripHtml(preview.descriptionAr),
       if (stripHtml(preview.descriptionEn).isNotEmpty) 'descriptionEn': stripHtml(preview.descriptionEn),

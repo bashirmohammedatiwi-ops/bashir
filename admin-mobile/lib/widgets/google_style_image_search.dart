@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
@@ -6,7 +8,7 @@ import '../models/ai_autofill.dart';
 
 enum ImageSearchMode { barcode, name }
 
-/// Compact image picker: barcode/name search + tap to select.
+/// Compact image picker: barcode/name search + tap to select + edit.
 class GoogleStyleImageSearch extends StatefulWidget {
   const GoogleStyleImageSearch({
     super.key,
@@ -21,6 +23,9 @@ class GoogleStyleImageSearch extends StatefulWidget {
     required this.onSelectAll,
     required this.onClear,
     required this.initialNameQuery,
+    this.editedBytesByUrl = const {},
+    this.onEdit,
+    this.onSetPrimary,
   });
 
   final String barcode;
@@ -34,6 +39,10 @@ class GoogleStyleImageSearch extends StatefulWidget {
   final VoidCallback onSelectAll;
   final VoidCallback onClear;
   final String initialNameQuery;
+  final Map<String, Uint8List> editedBytesByUrl;
+  final Future<void> Function(String url)? onEdit;
+  /// Move this selected URL to index 0 (product primary).
+  final void Function(String url)? onSetPrimary;
 
   @override
   State<GoogleStyleImageSearch> createState() => _GoogleStyleImageSearchState();
@@ -145,8 +154,13 @@ class _GoogleStyleImageSearchState extends State<GoogleStyleImageSearch> {
                             _mode == ImageSearchMode.barcode ? TextDirection.ltr : TextDirection.rtl,
                         onSubmitted: (_) => _runSearch(),
                         decoration: InputDecoration(
-                          hintText: _mode == ImageSearchMode.barcode ? 'الباركود…' : 'اسم المنتج…',
+                          hintText: _mode == ImageSearchMode.barcode
+                              ? 'الصق الباركود كما في Google…'
+                              : 'اسم المنتج…',
                           prefixIcon: const Icon(Icons.search),
+                          helperText: _mode == ImageSearchMode.barcode
+                              ? 'بحث صور بسيط بالباركود'
+                              : null,
                         ),
                       ),
                     ),
@@ -172,6 +186,41 @@ class _GoogleStyleImageSearchState extends State<GoogleStyleImageSearch> {
           ),
         ),
         const SizedBox(height: 10),
+        if (widget.imageOrder.where(widget.selectedUrls.contains).isNotEmpty) ...[
+          Text(
+            'المختارة — الأولى رئيسية · اضغط ★ لتعيين رئيسية',
+            style: TextStyle(fontWeight: FontWeight.w700, color: Colors.grey.shade800),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 104,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                for (final entry in widget.imageOrder
+                    .where(widget.selectedUrls.contains)
+                    .toList()
+                    .asMap()
+                    .entries)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: _SelectedThumb(
+                      url: entry.value,
+                      edited: widget.editedBytesByUrl[entry.value],
+                      isPrimary: entry.key == 0,
+                      onPreview: () => widget.onPreview(entry.value),
+                      onEdit: widget.onEdit == null ? null : () => widget.onEdit!(entry.value),
+                      onRemove: () => widget.onToggle(entry.value),
+                      onSetPrimary: entry.key == 0 || widget.onSetPrimary == null
+                          ? null
+                          : () => widget.onSetPrimary!(entry.value),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
         Row(
           children: [
             Text(
@@ -222,6 +271,7 @@ class _GoogleStyleImageSearchState extends State<GoogleStyleImageSearch> {
               final selected = widget.selectedUrls.contains(img.url);
               final order = widget.imageOrder.indexOf(img.url);
               final host = _hostOf(img.source.isNotEmpty ? img.source : img.url);
+              final edited = widget.editedBytesByUrl[img.url];
 
               return Material(
                 color: Colors.white,
@@ -247,12 +297,15 @@ class _GoogleStyleImageSearchState extends State<GoogleStyleImageSearch> {
                             children: [
                               ColoredBox(
                                 color: const Color(0xFFF7F5F9),
-                                child: CachedNetworkImage(
-                                  imageUrl: img.thumbUrl.isNotEmpty ? img.thumbUrl : img.url,
-                                  fit: BoxFit.contain,
-                                  errorWidget: (_, __, ___) =>
-                                      Icon(Icons.broken_image_outlined, color: Colors.grey.shade400),
-                                ),
+                                child: edited != null
+                                    ? Image.memory(edited, fit: BoxFit.contain, gaplessPlayback: true)
+                                    : CachedNetworkImage(
+                                        imageUrl: img.thumbUrl.isNotEmpty ? img.thumbUrl : img.url,
+                                        fit: BoxFit.contain,
+                                        memCacheWidth: 400,
+                                        errorWidget: (_, __, ___) =>
+                                            Icon(Icons.broken_image_outlined, color: Colors.grey.shade400),
+                                      ),
                               ),
                               Positioned(
                                 top: 8,
@@ -262,7 +315,7 @@ class _GoogleStyleImageSearchState extends State<GoogleStyleImageSearch> {
                                   backgroundColor: selected ? AppTheme.primary : Colors.black45,
                                   child: selected
                                       ? Text(
-                                          '${order + 1}',
+                                          order == 0 ? '★' : '${order + 1}',
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 11,
@@ -272,6 +325,39 @@ class _GoogleStyleImageSearchState extends State<GoogleStyleImageSearch> {
                                       : const Icon(Icons.add, size: 15, color: Colors.white),
                                 ),
                               ),
+                              if (edited != null)
+                                Positioned(
+                                  bottom: 8,
+                                  left: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.success,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      'معدّلة',
+                                      style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w700),
+                                    ),
+                                  ),
+                                ),
+                              if (selected && widget.onEdit != null)
+                                Positioned(
+                                  bottom: 8,
+                                  right: 8,
+                                  child: Material(
+                                    color: Colors.black87,
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: InkWell(
+                                      onTap: () => widget.onEdit!(img.url),
+                                      borderRadius: BorderRadius.circular(20),
+                                      child: const Padding(
+                                        padding: EdgeInsets.all(7),
+                                        child: Icon(Icons.crop_rotate, color: Colors.white, size: 16),
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               Positioned(
                                 top: 8,
                                 right: 8,
@@ -300,6 +386,116 @@ class _GoogleStyleImageSearchState extends State<GoogleStyleImageSearch> {
             },
           ),
       ],
+    );
+  }
+}
+
+class _SelectedThumb extends StatelessWidget {
+  const _SelectedThumb({
+    required this.url,
+    required this.edited,
+    required this.isPrimary,
+    required this.onPreview,
+    required this.onRemove,
+    this.onEdit,
+    this.onSetPrimary,
+  });
+
+  final String url;
+  final Uint8List? edited;
+  final bool isPrimary;
+  final VoidCallback onPreview;
+  final VoidCallback onRemove;
+  final VoidCallback? onEdit;
+  final VoidCallback? onSetPrimary;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 96,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Material(
+              color: const Color(0xFFF7F5F9),
+              borderRadius: BorderRadius.circular(12),
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: onPreview,
+                onLongPress: onSetPrimary,
+                child: edited != null
+                    ? Image.memory(edited!, fit: BoxFit.cover)
+                    : CachedNetworkImage(imageUrl: url, fit: BoxFit.cover, memCacheWidth: 240),
+              ),
+            ),
+          ),
+          if (isPrimary)
+            Positioned(
+              top: 4,
+              right: 4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: const Text(
+                  'رئيسية',
+                  style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ),
+          Positioned(
+            top: 4,
+            left: 4,
+            child: _MiniIconButton(icon: Icons.close, onTap: onRemove),
+          ),
+          if (onSetPrimary != null)
+            Positioned(
+              bottom: 4,
+              left: 4,
+              child: _MiniIconButton(icon: Icons.star, onTap: onSetPrimary!),
+            ),
+          if (onEdit != null)
+            Positioned(
+              bottom: 4,
+              right: 4,
+              child: _MiniIconButton(icon: Icons.crop_rotate, onTap: onEdit!),
+            ),
+          if (edited != null && onSetPrimary == null)
+            Positioned(
+              bottom: 4,
+              left: 4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(color: AppTheme.success, borderRadius: BorderRadius.circular(6)),
+                child: const Text('معدّلة', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w700)),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MiniIconButton extends StatelessWidget {
+  const _MiniIconButton({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black87,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(5),
+          child: Icon(icon, size: 14, color: Colors.white),
+        ),
+      ),
     );
   }
 }

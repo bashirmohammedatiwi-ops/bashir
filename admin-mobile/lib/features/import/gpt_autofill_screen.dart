@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,7 +8,9 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ai_draft_store.dart';
 import '../../core/utils/api_error.dart';
+import '../../core/utils/daily_progress_store.dart';
 import '../../core/utils/helpers.dart';
+import '../../core/utils/readd_assets_cache.dart';
 import '../../models/ai_autofill.dart';
 import '../../models/brand.dart';
 import '../../models/catalog.dart';
@@ -17,6 +21,7 @@ import '../../widgets/google_style_image_search.dart';
 import '../../widgets/search_picker_sheet.dart';
 import '../../widgets/section_card.dart';
 import '../../widgets/shade_tile.dart';
+import '../media/product_image_editor_screen.dart';
 
 /// Multi-step AI add wizard: naming → images → shades → category/price → review & save.
 class GptAutofillScreen extends ConsumerStatefulWidget {
@@ -74,7 +79,11 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
   List<AiAutofillImage> _images = [];
   final Set<String> _selectedImages = {};
   final List<String> _imageOrder = [];
+  final Map<String, Uint8List> _editedBytesByUrl = {};
   final List<_AiShadeDraft> _shades = [];
+  /// Media from a deleted product kept for reuse (url → mediaId).
+  final Map<String, String> _preservedMediaByUrl = {};
+  List<AiAutofillImage> _preservedImages = [];
 
   List<BrandEntity> _brands = [];
   List<NamedEntity> _categories = [];
@@ -82,8 +91,8 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
   List<NamedEntity> _tertiary = [];
   String? _brandId;
   String? _categoryId;
-  String? _subcategoryId;
-  String? _tertiaryId;
+  final List<String> _subcategoryIds = [];
+  final List<String> _tertiaryIds = [];
 
   static const _stepTitles = ['التسمية', 'الصور', 'التدرجات', 'التصنيف', 'المعاينة'];
 
@@ -116,6 +125,14 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
       _error = null;
     });
     try {
+      final kept = ReaddAssetsCache.take(widget.barcode);
+      if (kept != null && kept.isNotEmpty) {
+        _preservedImages = List.of(kept.images);
+        _preservedMediaByUrl
+          ..clear()
+          ..addAll(kept.urlToMediaId);
+      }
+
       final products = ref.read(productRepositoryProvider);
       final ai = ref.read(aiProductRepositoryProvider);
       final brandsFuture = products.brands();
@@ -167,13 +184,32 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
       _categories = cats;
       _applyPosFromLookup(invMap);
       _applyResult(fill);
+      _mergePreservedImages();
 
       if (fill.category.categoryId != null) {
         await _loadSubs(fill.category.categoryId!, clearChildren: false);
-        _subcategoryId = fill.category.subcategoryId;
-        if (_subcategoryId != null) {
-          await _loadTertiary(_subcategoryId!, clearChildren: false);
-          _tertiaryId = fill.category.tertiaryCategoryId;
+        _subcategoryIds
+          ..clear()
+          ..addAll(
+            fill.category.subcategoryIds.isNotEmpty
+                ? fill.category.subcategoryIds
+                : [
+                    if (fill.category.subcategoryId != null && fill.category.subcategoryId!.isNotEmpty)
+                      fill.category.subcategoryId!,
+                  ],
+          );
+        if (_subcategoryIds.isNotEmpty) {
+          await _reloadTertiaries(pruneSelection: false);
+          final suggestedTert = fill.category.tertiaryCategoryIds.isNotEmpty
+              ? fill.category.tertiaryCategoryIds
+              : [
+                  if (fill.category.tertiaryCategoryId != null &&
+                      fill.category.tertiaryCategoryId!.isNotEmpty)
+                    fill.category.tertiaryCategoryId!,
+                ];
+          _tertiaryIds
+            ..clear()
+            ..addAll(suggestedTert.where((id) => _tertiary.any((t) => t.id == id)));
         }
       }
 
@@ -221,12 +257,39 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     _brandAr.text = fill.brandAr;
     _brandEn.text = fill.brandEn;
     _categoryId = fill.category.categoryId;
-    _subcategoryId = fill.category.subcategoryId;
-    _tertiaryId = fill.category.tertiaryCategoryId;
+    _subcategoryIds
+      ..clear()
+      ..addAll(
+        fill.category.subcategoryIds.isNotEmpty
+            ? fill.category.subcategoryIds
+            : [
+                if (fill.category.subcategoryId != null && fill.category.subcategoryId!.isNotEmpty)
+                  fill.category.subcategoryId!,
+              ],
+      );
+    _tertiaryIds
+      ..clear()
+      ..addAll(
+        fill.category.tertiaryCategoryIds.isNotEmpty
+            ? fill.category.tertiaryCategoryIds
+            : [
+                if (fill.category.tertiaryCategoryId != null &&
+                    fill.category.tertiaryCategoryId!.isNotEmpty)
+                  fill.category.tertiaryCategoryId!,
+              ],
+      );
     _images = List.of(fill.images);
     // User picks images manually — never auto-select defaults
     _selectedImages.clear();
     _imageOrder.clear();
+  }
+
+  void _mergePreservedImages() {
+    if (_preservedImages.isEmpty) return;
+    final seen = _images.map((e) => e.url).toSet();
+    final prepend = _preservedImages.where((i) => !seen.contains(i.url)).toList();
+    if (prepend.isEmpty) return;
+    _images = [...prepend, ..._images];
   }
 
   void _toggleImage(String url) {
@@ -234,6 +297,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
       if (_selectedImages.contains(url)) {
         _selectedImages.remove(url);
         _imageOrder.remove(url);
+        _editedBytesByUrl.remove(url);
         for (final s in _shades) {
           if (s.imageUrl == url) s.imageUrl = null;
         }
@@ -244,7 +308,61 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     });
   }
 
+  /// First in [_imageOrder] is the product primary image.
+  void _setPrimaryImage(String url) {
+    if (!_selectedImages.contains(url)) return;
+    setState(() {
+      _imageOrder.remove(url);
+      _imageOrder.insert(0, url);
+    });
+    _snack('تم تعيين الصورة كرئيسية', short: true);
+  }
+
+  List<String> _orderedSelectedUrls() {
+    final ordered = <String>[
+      ..._imageOrder.where(_selectedImages.contains),
+      ..._selectedImages.where((u) => !_imageOrder.contains(u)),
+    ];
+    return ordered;
+  }
+
+  Future<String> _uploadSelectedUrl(ProductRepository repo, String url) async {
+    final edited = _editedBytesByUrl[url];
+    if (edited != null) {
+      final id = await repo.uploadImageBytes(edited);
+      if (id == null || id.isEmpty) {
+        throw Exception('فشل رفع صورة معدّلة');
+      }
+      return id;
+    }
+    final preservedId = _preservedMediaByUrl[url];
+    if (preservedId != null && preservedId.isNotEmpty) {
+      return preservedId;
+    }
+    return repo.uploadImageFromUrlRequired(url);
+  }
+
+  Future<void> _editImage(String url) async {
+    final existing = _editedBytesByUrl[url];
+    final result = await openProductImageEditor(
+      context,
+      imageUrl: existing == null ? url : null,
+      imageBytes: existing,
+      title: 'تعديل صورة المنتج',
+    );
+    if (result == null || !mounted) return;
+    setState(() {
+      _editedBytesByUrl[url] = result.bytes;
+      if (!_selectedImages.contains(url)) {
+        _selectedImages.add(url);
+        _imageOrder.add(url);
+      }
+    });
+    _snack('تم تعديل الصورة — ستُرفع النسخة الجديدة عند الحفظ', short: true);
+  }
+
   void _showImagePreview(String url) {
+    final edited = _editedBytesByUrl[url];
     showDialog<void>(
       context: context,
       builder: (ctx) => Dialog(
@@ -254,18 +372,34 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
           alignment: Alignment.topRight,
           children: [
             InteractiveViewer(
-              child: CachedNetworkImage(
-                imageUrl: url,
-                fit: BoxFit.contain,
-                errorWidget: (_, __, ___) => const Center(
-                  child: Icon(Icons.broken_image, color: Colors.white54, size: 48),
-                ),
-              ),
+              child: edited != null
+                  ? Image.memory(edited, fit: BoxFit.contain)
+                  : CachedNetworkImage(
+                      imageUrl: url,
+                      fit: BoxFit.contain,
+                      errorWidget: (_, __, ___) => const Center(
+                        child: Icon(Icons.broken_image, color: Colors.white54, size: 48),
+                      ),
+                    ),
             ),
             IconButton(
               icon: const Icon(Icons.close, color: Colors.white),
               onPressed: () => Navigator.pop(ctx),
             ),
+            if (_selectedImages.contains(url))
+              Positioned(
+                bottom: 16,
+                left: 16,
+                right: 16,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _editImage(url);
+                  },
+                  icon: const Icon(Icons.crop_rotate),
+                  label: const Text('قص / إطار أبيض'),
+                ),
+              ),
           ],
         ),
       ),
@@ -345,18 +479,23 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
             widget.barcode,
             mode: mode == ImageSearchMode.name ? 'name' : 'barcode',
             query: q,
-            nameHint: nameFallback,
+            // Always pass known name so barcode search can enrich thin results
+            nameHint: nameFallback.isNotEmpty ? nameFallback : widget.hint,
           );
       setState(() {
-        _images = imgs;
+        final searchUrls = imgs.map((e) => e.url).toSet();
+        final kept = _preservedImages.where((i) => !searchUrls.contains(i.url)).toList();
+        _images = [...kept, ...imgs];
         // Keep only selections that still exist; do NOT auto-pick new images
-        _selectedImages.removeWhere((u) => !imgs.any((i) => i.url == u));
+        _selectedImages.removeWhere((u) => !_images.any((i) => i.url == u));
         _imageOrder.removeWhere((u) => !_selectedImages.contains(u));
       });
       _snack(
-        imgs.isEmpty
+        imgs.isEmpty && _preservedImages.isEmpty
             ? 'لا نتائج — جرّب البحث بالاسم'
-            : 'نتائج البحث: ${imgs.length} صورة — اختر ما تريده يدوياً',
+            : 'نتائج البحث: ${imgs.length} صورة'
+                '${_preservedImages.isNotEmpty ? ' · ${_preservedImages.length} سابقة' : ''}'
+                ' — اختر ما تريده يدوياً',
       );
     } catch (e) {
       _snack(e.toString().replaceFirst('Exception: ', ''));
@@ -479,18 +618,41 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     _categoryId = categoryId;
     _subcategories = await ref.read(productRepositoryProvider).subcategories(parentId: categoryId);
     if (clearChildren) {
-      _subcategoryId = null;
-      _tertiaryId = null;
+      _subcategoryIds.clear();
+      _tertiaryIds.clear();
       _tertiary = [];
     }
     if (mounted) setState(() {});
   }
 
-  Future<void> _loadTertiary(String subcategoryId, {bool clearChildren = true}) async {
-    _subcategoryId = subcategoryId;
-    _tertiary = await ref.read(productRepositoryProvider).tertiarySections(parentId: subcategoryId);
-    if (clearChildren) _tertiaryId = null;
+  Future<void> _reloadTertiaries({bool pruneSelection = true}) async {
+    if (_subcategoryIds.isEmpty) {
+      _tertiary = [];
+      if (pruneSelection) _tertiaryIds.clear();
+      if (mounted) setState(() {});
+      return;
+    }
+    final repo = ref.read(productRepositoryProvider);
+    final merged = <NamedEntity>[];
+    final seen = <String>{};
+    for (final subId in _subcategoryIds) {
+      final list = await repo.tertiarySections(parentId: subId);
+      for (final t in list) {
+        if (seen.add(t.id)) merged.add(t);
+      }
+    }
+    _tertiary = merged;
+    if (pruneSelection) {
+      _tertiaryIds.removeWhere((id) => !seen.contains(id));
+    }
     if (mounted) setState(() {});
+  }
+
+  Future<void> _setSubcategories(List<NamedEntity> picked) async {
+    _subcategoryIds
+      ..clear()
+      ..addAll(picked.map((e) => e.id));
+    await _reloadTertiaries();
   }
 
   NamedEntity? _find(List<NamedEntity> list, String? id) {
@@ -499,6 +661,18 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
       if (e.id == id) return e;
     }
     return null;
+  }
+
+  List<NamedEntity> _findMany(List<NamedEntity> list, List<String> ids) {
+    final set = ids.toSet();
+    return list.where((e) => set.contains(e.id)).toList();
+  }
+
+  String _labelsOf(List<NamedEntity> list, List<String> ids, {String empty = 'اختياري'}) {
+    if (ids.isEmpty) return empty;
+    final labels = _findMany(list, ids).map((e) => e.displayName).where((s) => s.isNotEmpty).toList();
+    if (labels.isEmpty) return empty;
+    return labels.join(' · ');
   }
 
   BrandEntity? get _selectedBrand {
@@ -582,16 +756,13 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
         throw Exception('تعذّر تحديد البراند');
       }
 
-      final sanitized = await repo.sanitizeCategoryHierarchy(
+      final sanitized = await repo.sanitizeCategoryHierarchyMulti(
         categoryId: _categoryId!,
-        subcategoryId: _subcategoryId,
-        tertiaryCategoryId: _tertiaryId,
+        subcategoryIds: _subcategoryIds,
+        tertiaryCategoryIds: _tertiaryIds,
       );
 
-      final orderedUrls = [
-        ..._imageOrder.where(_selectedImages.contains),
-        ..._selectedImages.where((u) => !_imageOrder.contains(u)),
-      ];
+      final orderedUrls = _orderedSelectedUrls();
 
       final shadeImageUrls = <String>[];
       if (_multiShadeEnabled) {
@@ -604,12 +775,37 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
       final allUploadUrls = [...orderedUrls, ...shadeImageUrls];
 
       final urlToId = <String, String>{};
-      var i = 0;
-      for (final url in allUploadUrls) {
-        i++;
-        _snack('رفع الصور $i / ${allUploadUrls.length}', short: true);
-        final id = await repo.uploadImageFromUrl(url);
-        if (id != null) urlToId[url] = id;
+      final failedUrls = <String>[];
+      for (var i = 0; i < allUploadUrls.length; i++) {
+        final url = allUploadUrls[i];
+        _snack('رفع الصور ${i + 1} / ${allUploadUrls.length}', short: true);
+        try {
+          urlToId[url] = await _uploadSelectedUrl(repo, url);
+        } catch (_) {
+          failedUrls.add(url);
+        }
+      }
+
+      // One more pass for transient failures
+      if (failedUrls.isNotEmpty) {
+        final retry = List<String>.from(failedUrls);
+        failedUrls.clear();
+        for (var i = 0; i < retry.length; i++) {
+          final url = retry[i];
+          _snack('إعادة رفع ${i + 1} / ${retry.length}', short: true);
+          try {
+            urlToId[url] = await _uploadSelectedUrl(repo, url);
+          } catch (_) {
+            failedUrls.add(url);
+          }
+        }
+      }
+
+      if (failedUrls.isNotEmpty) {
+        throw Exception(
+          'تعذّر رفع ${failedUrls.length} من ${orderedUrls.length} صور مختارة. '
+          'جرّب صوراً أخرى أو أعد المحاولة.',
+        );
       }
 
       final imageIds = <String>[];
@@ -618,6 +814,13 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
         if (id != null && !imageIds.contains(id)) imageIds.add(id);
       }
       if (imageIds.isEmpty) throw Exception('تعذّر رفع الصور المختارة');
+      if (imageIds.length < orderedUrls.length) {
+        // Same file uploaded from different URLs → one media id; still OK if primary kept
+        _snack(
+          'ملاحظة: ${orderedUrls.length - imageIds.length} صورة مكررة المحتوى — حُفظت ${imageIds.length}',
+          short: true,
+        );
+      }
 
       final nameAr = _nameAr.text.trim();
       final nameEn = _nameEn.text.trim();
@@ -652,8 +855,10 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
         'slug': slugify(nameAr.isNotEmpty ? nameAr : nameEn, 'ai'),
         'brandId': brandId,
         'categoryId': _categoryId,
-        if (sanitized.subcategoryId != null) 'subcategoryId': sanitized.subcategoryId,
-        if (sanitized.tertiaryCategoryId != null) 'tertiaryCategoryId': sanitized.tertiaryCategoryId,
+        if (sanitized.subcategoryIds.isNotEmpty) 'subcategoryId': sanitized.subcategoryIds.first,
+        if (sanitized.tertiaryCategoryIds.isNotEmpty) 'tertiaryCategoryId': sanitized.tertiaryCategoryIds.first,
+        if (sanitized.subcategoryIds.isNotEmpty) 'subcategoryIds': sanitized.subcategoryIds,
+        if (sanitized.tertiaryCategoryIds.isNotEmpty) 'tertiaryCategoryIds': sanitized.tertiaryCategoryIds,
         'description': _descAr.text.trim().isNotEmpty ? _descAr.text.trim() : _descEn.text.trim(),
         if (_descAr.text.trim().isNotEmpty) 'descriptionAr': _descAr.text.trim(),
         if (_descEn.text.trim().isNotEmpty) 'descriptionEn': _descEn.text.trim(),
@@ -672,14 +877,29 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
         nameEn: nameEn.isNotEmpty ? nameEn : null,
       );
 
+      await ref.read(dailyProgressProvider.notifier).recordAdd(
+            barcode: barcode,
+            name: nameAr.isNotEmpty ? nameAr : nameEn,
+            source: 'ai',
+          );
+
       if (!mounted) return;
       await showDialog<void>(
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('تم الحفظ'),
-          content: const Text('أُضيف المنتج بنجاح بعد المعاينة والتعديل'),
+          content: Text(
+            'أُضيف المنتج بنجاح.\nمنتجات اليوم: ${ref.read(dailyProgressProvider).todayCount}',
+          ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('حسناً')),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                context.push('/daily-progress');
+              },
+              child: const Text('التقدم'),
+            ),
           ],
         ),
       );
@@ -826,6 +1046,49 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     );
   }
 
+  Future<void> _deleteExistingAndReadd() async {
+    final id = _result?.existingProduct?.id;
+    if (id == null || id.isEmpty) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('حذف وإعادة إضافة؟'),
+        content: const Text(
+          'سيُحذف المنتج الحالي، ثم تُعاد الإضافة الذكية.\n\n'
+          'الصور القديمة ستظهر في خطوة الصور لتعيد استخدامها.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('إلغاء')),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('حذف ومتابعة')),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final products = ref.read(productRepositoryProvider);
+      final raw = await products.getProduct(id);
+      final assets = ReaddAssets.fromProductJson(raw);
+      ReaddAssetsCache.save(widget.barcode, assets);
+      await products.deleteProduct(id);
+      if (!mounted) return;
+      await _bootstrap();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = e.toString().replaceFirst('Exception: ', '');
+        });
+        _snack(_error ?? 'فشل الحذف');
+      }
+    }
+  }
+
   Widget _buildExistsBody() {
     final p = _result!.existingProduct;
     final id = p?.id ?? '';
@@ -840,23 +1103,18 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
             const Text('المنتج موجود مسبقاً', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             Text(p?.displayName ?? '', textAlign: TextAlign.center, style: const TextStyle(fontSize: 16)),
+            const SizedBox(height: 12),
+            Text(
+              'احذف المنتج وأضفه من جديد بالـ AI. الصور القديمة تبقى متاحة للاختيار.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13.5, height: 1.35, color: Colors.grey.shade700),
+            ),
             const SizedBox(height: 20),
             if (id.isNotEmpty) ...[
               FilledButton.icon(
-                onPressed: () {
-                  final uri = Uri(
-                    path: '/product-review',
-                    queryParameters: {
-                      'id': id,
-                      'barcode': widget.barcode,
-                      if (widget.modelId != null) 'model': widget.modelId!,
-                      'auto': '1',
-                    },
-                  );
-                  context.pushReplacement(uri.toString());
-                },
-                icon: const Icon(Icons.auto_awesome),
-                label: const Text('مراجعة وتصحيح بالـ AI'),
+                onPressed: _deleteExistingAndReadd,
+                icon: const Icon(Icons.refresh),
+                label: const Text('حذف وإعادة إضافة بالـ AI'),
               ),
               const SizedBox(height: 8),
               OutlinedButton.icon(
@@ -872,7 +1130,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                   context.pushReplacement(uri.toString());
                 },
                 icon: const Icon(Icons.info_outline),
-                label: const Text('عرض التفاصيل'),
+                label: const Text('عرض التفاصيل فقط'),
               ),
               const SizedBox(height: 8),
             ],
@@ -972,6 +1230,21 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
       children: [
+        if (_preservedImages.isNotEmpty)
+          Card(
+            color: AppTheme.primary.withValues(alpha: 0.06),
+            margin: const EdgeInsets.only(bottom: 12),
+            child: ListTile(
+              leading: Icon(Icons.photo_library_outlined, color: AppTheme.primary),
+              title: Text(
+                'صور سابقة (${_preservedImages.length})',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+              subtitle: const Text(
+                'ظاهرة في أعلى القائمة — اختر ما تحتاجه؛ لن تُرفع من جديد إن اخترتها.',
+              ),
+            ),
+          ),
         GoogleStyleImageSearch(
           barcode: widget.barcode,
           images: _images,
@@ -979,20 +1252,25 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
           imageOrder: _imageOrder,
           loading: _refreshingImages,
           initialNameQuery: _defaultNameQuery,
+          editedBytesByUrl: _editedBytesByUrl,
           onSearch: (mode, query) => _refreshImages(mode: mode, query: query),
           onToggle: _toggleImage,
           onPreview: _showImagePreview,
+          onEdit: _editImage,
+          onSetPrimary: _setPrimaryImage,
           onSelectAll: () => setState(() {
+            final urls = _images.map((e) => e.url).toList();
             _selectedImages
               ..clear()
-              ..addAll(_images.map((e) => e.url));
+              ..addAll(urls);
             _imageOrder
               ..clear()
-              ..addAll(_selectedImages);
+              ..addAll(urls);
           }),
           onClear: () => setState(() {
             _selectedImages.clear();
             _imageOrder.clear();
+            _editedBytesByUrl.clear();
             for (final s in _shades) {
               s.imageUrl = null;
             }
@@ -1187,41 +1465,83 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('القسم الفرعي'),
-                subtitle: Text(_find(_subcategories, _subcategoryId)?.displayName ?? 'اختياري'),
+                subtitle: Text(
+                  _labelsOf(_subcategories, _subcategoryIds, empty: 'يمكن اختيار أكثر من قسم'),
+                ),
                 trailing: const Icon(Icons.chevron_left),
                 onTap: _categoryId == null
                     ? null
                     : () async {
-                        final picked = await showSearchPicker<NamedEntity>(
+                        final picked = await showMultiSearchPicker<NamedEntity>(
                           context: context,
-                          title: 'القسم الفرعي',
+                          title: 'الأقسام الفرعية',
                           items: _subcategories,
-                          selected: _find(_subcategories, _subcategoryId),
+                          selected: _findMany(_subcategories, _subcategoryIds),
                           labelOf: (c) => c.displayName,
                           isSame: (a, b) => a.id == b.id,
                         );
-                        if (picked != null) await _loadTertiary(picked.id);
+                        if (picked != null) await _setSubcategories(picked);
                       },
               ),
+              if (_subcategoryIds.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: _findMany(_subcategories, _subcategoryIds)
+                        .map(
+                          (e) => InputChip(
+                            label: Text(e.displayName),
+                            onDeleted: () async {
+                              _subcategoryIds.remove(e.id);
+                              await _reloadTertiaries();
+                            },
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('القسم الثانوي'),
-                subtitle: Text(_find(_tertiary, _tertiaryId)?.displayName ?? 'اختياري'),
+                subtitle: Text(
+                  _labelsOf(_tertiary, _tertiaryIds, empty: 'يمكن اختيار أكثر من قسم'),
+                ),
                 trailing: const Icon(Icons.chevron_left),
-                onTap: _subcategoryId == null
+                onTap: _subcategoryIds.isEmpty
                     ? null
                     : () async {
-                        final picked = await showSearchPicker<NamedEntity>(
+                        final picked = await showMultiSearchPicker<NamedEntity>(
                           context: context,
-                          title: 'القسم الثانوي',
+                          title: 'الأقسام الثانوية',
                           items: _tertiary,
-                          selected: _find(_tertiary, _tertiaryId),
+                          selected: _findMany(_tertiary, _tertiaryIds),
                           labelOf: (c) => c.displayName,
                           isSame: (a, b) => a.id == b.id,
                         );
-                        if (picked != null) setState(() => _tertiaryId = picked.id);
+                        if (picked != null) {
+                          setState(() {
+                            _tertiaryIds
+                              ..clear()
+                              ..addAll(picked.map((e) => e.id));
+                          });
+                        }
                       },
               ),
+              if (_tertiaryIds.isNotEmpty)
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: _findMany(_tertiary, _tertiaryIds)
+                      .map(
+                        (e) => InputChip(
+                          label: Text(e.displayName),
+                          onDeleted: () => setState(() => _tertiaryIds.remove(e.id)),
+                        ),
+                      )
+                      .toList(),
+                ),
             ],
           ),
         ),
@@ -1319,15 +1639,15 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                 'التصنيف',
                 [
                   _find(_categories, _categoryId)?.displayName,
-                  _find(_subcategories, _subcategoryId)?.displayName,
-                  _find(_tertiary, _tertiaryId)?.displayName,
+                  if (_subcategoryIds.isNotEmpty) _labelsOf(_subcategories, _subcategoryIds, empty: ''),
+                  if (_tertiaryIds.isNotEmpty) _labelsOf(_tertiary, _tertiaryIds, empty: ''),
                 ].whereType<String>().where((s) => s.isNotEmpty).join(' › '),
               ),
               _reviewRow('السعر / المخزون', '${_price.text.isEmpty ? "0" : _price.text} د.ع · ${_stock.text}'),
               if (_multiShadeEnabled) _reviewRow('التدرجات', '${_shades.length} درجة'),
               const SizedBox(height: 4),
               Text(
-                'الصور (${_selectedImages.length})',
+                'الصور (${_selectedImages.length}) — الأولى رئيسية',
                 style: const TextStyle(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
@@ -1335,14 +1655,44 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                 height: 84,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  children: _imageOrder
-                      .where(_selectedImages.contains)
+                  children: _orderedSelectedUrls()
+                      .asMap()
+                      .entries
                       .map(
-                        (url) => Padding(
+                        (e) => Padding(
                           padding: const EdgeInsets.only(left: 8),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(12),
-                            child: CachedNetworkImage(imageUrl: url, width: 84, height: 84, fit: BoxFit.cover),
+                          child: Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: CachedNetworkImage(
+                                  imageUrl: e.value,
+                                  width: 84,
+                                  height: 84,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              if (e.key == 0)
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primary,
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'رئيسية',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w800,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       )
