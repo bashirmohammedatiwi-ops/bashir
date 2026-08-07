@@ -134,7 +134,7 @@ export class AiProductService {
     }
 
     const resolved = this.resolveOpenAiModel(modelChoice);
-    const cacheKey = `v4|${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `v5|${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 30 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -466,33 +466,49 @@ export class AiProductService {
       .filter(Boolean)
       .join(" | ");
 
-    // Compact prompt — naming quality first, still no web_search
-    const instructions = `Iraqi beauty e-commerce catalog writer (Al Hayaa). JSON only. Keep tokens low.
+    // Compact prompt — Iraqi retail naming first, still no web_search
+    const instructions = `كاتب كتالوج تجميل عراقي لمتجر الحياة (Al Hayaa). JSON فقط. قلّل التوكنات.
 
-NAMING (strict):
-• brand_ar / brand_en = brand only (once).
-• name_en = "{BrandEn} - {product}"  (brand ONCE before dash)
-  Example: "Crest - 3D Whitestrips Professional Effects Whitening Kit"
-• name_ar = "{براند} {براند} - {المنتج}"  (brand EXACTLY TWICE before dash — never 3+)
-  Example: "كريست كريست - شرائط تبييض 3D Whitestrips Professional Effects"
-• Prefer putting ONLY the product text after the dash (no brand words there).
-• NEVER write brand 3 or 4 times. NEVER mix two spellings of the same brand.
+الجمهور: زبائن عراقيين في صيدليات ومتاجر تجميل — لهجة بيع مألوفة في العراق (فصحى قريبة من المحكي العراقي الخفيف، مو ترجمة حرفية من الإنجليزي ومو لهجة خليجية).
 
-DESC_AR: 2 short Iraqi retail sentences + 3 benefit bullets.
-DESC_EN: 2 short retail sentences + 3 benefit bullets.
-Categories MUST match catalog names below (Arabic preferred):
+NAMING (صارم):
+• brand_ar / brand_en = اسم البراند فقط (مرة واحدة).
+• name_en = "{BrandEn} - {Official Product Name}"  (البراند مرة واحدة قبل الشرطة)
+  مثال: "Crest - 3D Whitestrips Professional Effects Whitening Kit"
+• name_ar = "{براند} {براند} - {نوع عراقي} {اسم الخط EN} {صفة قصيرة} {الحجم إن وُجد}"
+  البراند بالعربي يظهر مرتين بالضبط قبل الشرطة — أبداً 3 أو أكثر.
+  بعد الشرطة: ابدأ بنوع المنتج بلفظ السوق العراقي، ثم اسم الخط الرسمي بالإنجليزي كما على العبوة، ثم صفة بسيطة يفهمها الزبون العراقي، ثم الحجم/الدرجة إن وجدت.
+  أمثلة جيدة:
+  - "سفنتين سفنتين - كونسيلر Ideal Cover Liquid بتغطية كاملة"
+  - "هدى بيوتي هدى بيوتي - فاونديشن FauxFilter Luminous Matte"
+  - "كريست كريست - شرائط تبييض 3D Whitestrips Professional Effects"
+  - "مون ريف مون ريف - ماسكارا Cosmic لتكثيف وإطالة الرموش 12 مل"
+• مفردات النوع (التزم بها — لا تترجم حرفياً إلى فصحى ثقيلة):
+  foundation→فاونديشن | concealer→كونسيلر | mascara→ماسكارا | lipstick→أحمر شفاه
+  lip gloss→جلوس شفاه | lip liner→قلم شفاه | brow pencil→قلم حواجب | brow gel→جل حواجب
+  blush→بلاشر | highlighter→هايلايتر | bronzer→برونزر | powder→بودرة
+  eyeliner/kohl→كحل أو ايلاينر | eyeshadow→ظل عيون | primer→برايمر | serum→سيروم
+  moisturizer→مرطب | shampoo→شامبو | sunscreen→واقي شمس | whitening strips→شرائط تبييض
+• ممنوع: ترجمة حرفية ركيكة، فصحى ثقيلة، كلمات خليجية، تكرار البراند أكثر من مرتين، خلط كتابتين للبراند.
+
+DESC_AR (نبرة محل عراقي):
+• جملتان قصيرتان كأنك تشرح للزبونة بالعراقي الخفيف الفصيح، ثم 3 نقاط فوائد عملية (تغطية، ثبات، لمسة، مناسب للحر/اليوم…).
+• تجنّب العبارات المترجمة حرفياً من الإنجليزي.
+
+DESC_EN: جملتان + 3 نقاط فوائد بأسلوب retail إنجليزي واضح.
+التصنيفات يجب أن تطابق الأسماء أدناه (فضّل العربي):
 ${categoryHint}
-If unsure: nearest category + needs_review=true. No shade barcodes.`;
+إذا غير متأكد: أقرب تصنيف + needs_review=true. بدون باركود درجات.`;
 
     const userInput = `barcode=${args.barcode}
 facts: ${known || "none — infer carefully, needs_review=true"}
-Write expressive Brand - Product names in AR+EN, then fill the rest of the JSON.`;
+اكتب name_ar بنبرة السوق العراقي (نوع عراقي + خط EN) و name_en رسمي، ثم أكمل الـ JSON.`;
 
     const payload: Record<string, unknown> = {
       model: args.model,
       instructions,
       input: userInput,
-      max_output_tokens: 560,
+      max_output_tokens: 640,
       text: {
         format: {
           type: "json_schema",

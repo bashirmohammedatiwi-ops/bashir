@@ -956,7 +956,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
           child: Column(
             children: [
               Text(
-                'الصيغة عربي: البراند البراند - اسم المنتج · إنجليزي: Brand - Product',
+                'عربي (سوق عراقي): البراند البراند - نوع المنتج + اسم الخط · إنجليزي: Brand - Product',
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
               ),
               const SizedBox(height: 10),
