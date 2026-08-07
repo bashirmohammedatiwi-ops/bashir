@@ -134,7 +134,7 @@ export class AiProductService {
     }
 
     const resolved = this.resolveOpenAiModel(modelChoice);
-    const cacheKey = `v3|${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `v4|${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 30 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -469,13 +469,14 @@ export class AiProductService {
     // Compact prompt — naming quality first, still no web_search
     const instructions = `Iraqi beauty e-commerce catalog writer (Al Hayaa). JSON only. Keep tokens low.
 
-NAMING (strict — both languages MUST use: Brand - Product):
-• name_ar = "{براند} {براند} - {نوع عربي} {خط EN} {صفات}"
-  IMPORTANT: Arabic brand MUST appear TWICE before the dash (same spelling).
-  Example: "هدى بيوتي هدى بيوتي - مجموعة كونتور وستروب Contour & Strobe Silverfox & Enchanting تثبيت عالي"
-• name_en = "{BrandEn} - {expressive official product name}"
-  Example: "Huda Beauty - Contour & Strobe Set Silverfox & Enchanting Long-Wear Glow"
-• NEVER omit the " - " separator. Do NOT use two different brand spellings.
+NAMING (strict):
+• brand_ar / brand_en = brand only (once).
+• name_en = "{BrandEn} - {product}"  (brand ONCE before dash)
+  Example: "Crest - 3D Whitestrips Professional Effects Whitening Kit"
+• name_ar = "{براند} {براند} - {المنتج}"  (brand EXACTLY TWICE before dash — never 3+)
+  Example: "كريست كريست - شرائط تبييض 3D Whitestrips Professional Effects"
+• Prefer putting ONLY the product text after the dash (no brand words there).
+• NEVER write brand 3 or 4 times. NEVER mix two spellings of the same brand.
 
 DESC_AR: 2 short Iraqi retail sentences + 3 benefit bullets.
 DESC_EN: 2 short retail sentences + 3 benefit bullets.
@@ -538,7 +539,7 @@ Write expressive Brand - Product names in AR+EN, then fill the rest of the JSON.
     throw new ServiceUnavailableException("رد GPT فارغ");
   }
 
-  /** Enforce naming: EN "Brand - Product"; AR "Brand Brand - Product". */
+  /** Enforce naming: EN "Brand - Product"; AR exactly "Brand Brand - Product". */
   private polishNaming(gpt: GptAutofillJson): GptAutofillJson {
     const brandEn = this.canonicalBrandEn(gpt.brand_en || gpt.brand_ar || "");
     const brandAr = this.canonicalBrandAr(brandEn, gpt.brand_ar || "");
@@ -566,12 +567,15 @@ Write expressive Brand - Product names in AR+EN, then fill the rest of the JSON.
       [/bourjois|بورجوا/, "Bourjois"],
       [/loreal|لوريال|لورييل/, "L'Oréal"],
       [/maybelline|ميبلين/, "Maybelline"],
-      [/huda\s*beauty|هدى/, "Huda Beauty"],
+      [/huda\s*beauty|هدى|هودا/, "Huda Beauty"],
       [/beesline|بيزلين|بيزلاين/, "Beesline"],
-      [/garnier|غارنييه|غارنييه/, "Garnier"],
+      [/garnier|غارنييه/, "Garnier"],
       [/radiant|راديانت/, "Radiant"],
       [/mon\s*reve|مون\s*ريف/, "Mon Reve"],
       [/grigi|جريجي/, "Grigi"],
+      [/crest|كريست/, "Crest"],
+      [/oral[\s-]?b|اورال/, "Oral-B"],
+      [/colgate|كولجيت/, "Colgate"],
     ];
     for (const [re, en] of map) {
       if (re.test(n)) return en;
@@ -596,6 +600,9 @@ Write expressive Brand - Product names in AR+EN, then fill the rest of the JSON.
       [/radiant/, "راديانت"],
       [/mon\s*reve/, "مون ريف"],
       [/grigi/, "جريجي"],
+      [/crest/, "كريست"],
+      [/oral[\s-]?b/, "اورال بي"],
+      [/colgate/, "كولجيت"],
     ];
     for (const [re, ar] of map) {
       if (re.test(n)) return ar;
@@ -604,76 +611,102 @@ Write expressive Brand - Product names in AR+EN, then fill the rest of the JSON.
     return ar || brandEn.trim();
   }
 
+  /** Build final title with brand prefix exactly once (EN) or twice (AR). */
   private ensureBrandDashName(
     name: string,
     brand: string,
     opts: { doubleBrand?: boolean } = {},
   ): string {
-    const cleaned = name.replace(/\s+/g, " ").trim();
     const b = brand.replace(/\s+/g, " ").trim();
-    if (!cleaned) return b ? (opts.doubleBrand ? `${b} ${b} -` : `${b} -`) : "";
-    if (!b) return cleaned;
+    if (!b) return name.replace(/\s+/g, " ").trim();
 
-    const dashParts = cleaned.split(/\s*[-–—]\s*/);
-    let productPart = cleaned;
-
-    // "Brand - Product" or "Brand Brand - Product"
-    if (dashParts.length >= 2) {
-      const left = dashParts[0].trim();
-      const leftNorm = this.norm(left);
-      const brandNorm = this.norm(b);
-      const doubleNorm = this.norm(`${b} ${b}`);
-      if (leftNorm === brandNorm || leftNorm === doubleNorm || this.namesMatch(left, b)) {
-        productPart = dashParts.slice(1).join(" - ").trim();
-      } else if (this.startsWithBrand(cleaned, b)) {
-        productPart = cleaned.slice(b.length).replace(/^[\s:–—-]+/, "").trim();
-        // strip second brand if present after first
-        productPart = this.stripLeadingBrand(productPart, b).replace(/^[\s:–—-]+/, "").trim() || productPart;
-      }
-    } else if (this.startsWithBrand(cleaned, b)) {
-      productPart = cleaned.slice(b.length).replace(/^[\s:–—-]+/, "").trim();
-      productPart = this.stripLeadingBrand(productPart, b).replace(/^[\s:–—-]+/, "").trim() || productPart;
-    } else {
-      const stripped = this.stripLeadingBrand(cleaned, b);
-      productPart = stripped || cleaned;
-    }
-
-    productPart = this.stripLeadingBrand(productPart, b).replace(/^[\s:–—-]+/, "").trim() || productPart;
-    // Remove accidental alternate spellings of same brand at start (هودا بيوتي after هدى بيوتي)
-    productPart = productPart.replace(/^(هودا\s*بيوتي|huda\s*beauty)\s*[-–—]?\s*/i, "").trim() || productPart;
-    if (!productPart) productPart = cleaned;
-
+    const product = this.extractProductCore(name, b);
     const prefix = opts.doubleBrand ? `${b} ${b}` : b;
-    return `${prefix} - ${productPart}`;
+    if (!product) return `${prefix} -`;
+    return `${prefix} - ${product}`;
   }
 
-  private startsWithBrand(name: string, brand: string): boolean {
-    return this.norm(name).startsWith(this.norm(brand));
-  }
+  /** Strip every leading brand repetition and return product-only text. */
+  private extractProductCore(name: string, brand: string): string {
+    let s = name.replace(/\s+/g, " ").trim();
+    if (!s) return "";
 
-  private namesMatch(a: string, b: string): boolean {
-    const na = this.norm(a);
-    const nb = this.norm(b);
-    return na === nb || na.includes(nb) || nb.includes(na);
-  }
-
-  private stripLeadingBrand(text: string, brand: string): string {
-    const t = text.trim();
-    const b = brand.trim();
-    if (!t || !b) return t;
-    if (this.norm(t).startsWith(this.norm(b))) {
-      return t.slice(b.length).replace(/^[\s:–—-]+/, "").trim();
+    // If "anything - product", drop a left side that is only brand tokens
+    const dash = s.match(/^(.+?)\s*[-–—]\s*(.+)$/);
+    if (dash) {
+      const left = dash[1].trim();
+      const right = dash[2].trim();
+      if (this.isOnlyBrandRepetition(left, brand)) {
+        s = right;
+      }
     }
-    // Also strip common Seventeen Arabic variants when canonical brand is سفنتين
-    const variants = ["سيفينتين", "سفنتيين", "سفنتين", "Seventeen", "seventeen"];
-    for (const v of variants) {
-      if (this.norm(b).includes("seventeen") || this.norm(b).includes("سفنتين") || this.norm(b) === this.norm(v)) {
-        if (this.norm(t).startsWith(this.norm(v))) {
-          return t.slice(v.length).replace(/^[\s:–—-]+/, "").trim();
+
+    s = this.stripAllLeadingBrands(s, brand);
+    // If product still starts with "Brand -", peel again
+    s = this.stripAllLeadingBrands(s.replace(/^[-–—\s]+/, "").trim(), brand);
+    return s.replace(/^[-–—\s]+/, "").trim();
+  }
+
+  private brandAliases(brand: string): string[] {
+    const b = brand.replace(/\s+/g, " ").trim();
+    const n = this.norm(b);
+    const aliases = new Set<string>([b]);
+    if (/crest|كريست/.test(n)) {
+      ["Crest", "crest", "كريست"].forEach((a) => aliases.add(a));
+    }
+    if (/huda|هدى|هودا/.test(n)) {
+      ["Huda Beauty", "Huda", "هدى بيوتي", "هودا بيوتي", "هدى"].forEach((a) => aliases.add(a));
+    }
+    if (/seventeen|سفنتين|سيفينتين|سفنتيين/.test(n)) {
+      ["Seventeen", "سفنتين", "سيفينتين", "سفنتيين"].forEach((a) => aliases.add(a));
+    }
+    if (/deborah|ديبورا/.test(n)) {
+      ["Deborah Milano", "Deborah", "ديبورا ميلانو", "ديبورا"].forEach((a) => aliases.add(a));
+    }
+    // Always include single first token for multi-word brands (Huda, Deborah…)
+    const first = b.split(/\s+/)[0];
+    if (first && first.length >= 3) aliases.add(first);
+    return [...aliases].sort((a, c) => c.length - a.length);
+  }
+
+  private isOnlyBrandRepetition(left: string, brand: string): boolean {
+    let rest = this.norm(left);
+    if (!rest) return true;
+    for (let i = 0; i < 12; i++) {
+      let hit = false;
+      for (const alias of this.brandAliases(brand)) {
+        const a = this.norm(alias);
+        if (!a) continue;
+        if (rest === a) return true;
+        if (rest.startsWith(a + " ")) {
+          rest = rest.slice(a.length).trim();
+          hit = true;
+          break;
         }
       }
+      if (!hit) break;
     }
-    return t;
+    return rest.length === 0;
+  }
+
+  private stripAllLeadingBrands(text: string, brand: string): string {
+    let s = text.replace(/\s+/g, " ").trim();
+    for (let i = 0; i < 16; i++) {
+      let changed = false;
+      for (const alias of this.brandAliases(brand)) {
+        const words = alias.split(/\s+/).filter(Boolean);
+        const sWords = s.split(/\s+/).filter(Boolean);
+        if (sWords.length < words.length) continue;
+        const head = sWords.slice(0, words.length).join(" ");
+        if (this.norm(head) === this.norm(alias)) {
+          s = sWords.slice(words.length).join(" ").replace(/^[-–—:\s]+/, "").trim();
+          changed = true;
+          break;
+        }
+      }
+      if (!changed) break;
+    }
+    return s;
   }
 
   private async compactCategoryHint(): Promise<string> {
