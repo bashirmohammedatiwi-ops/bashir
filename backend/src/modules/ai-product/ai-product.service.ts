@@ -134,7 +134,7 @@ export class AiProductService {
     }
 
     const resolved = this.resolveOpenAiModel(modelChoice);
-    const cacheKey = `v5|${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `v6|${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 30 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -147,21 +147,23 @@ export class AiProductService {
 
     const model = resolved.apiModel;
 
-    // 2) Free facts first (helps image name queries) — zero AI
+    // 2) Free barcode DBs + go-upc (many regional beauty EANs are missing from OBF/UPC alone)
     const free = await this.freeBarcodeHint(digits);
 
-    // 3) Cheap GPT call — NO web_search
-    const rawGpt = await this.callGpt({
+    // 3) Barcode image titles often name obscure SKUs before GPT runs
+    const imageHits = await this.images.searchByBarcode(digits, 48);
+    const imageTitles = this.extractIdentityTitles(imageHits);
+
+    // 4) GPT with web_search — required for non-famous products; never invent
+    const { gpt: rawGpt, usedWebSearch } = await this.callGpt({
       apiKey,
       model,
       barcode: digits,
       free,
       hint: hint?.trim() || undefined,
+      imageTitles,
     });
     const gpt = this.polishNaming(rawGpt);
-
-    // 4) Images by barcode only (Google-like) — name search is available in the UI toggle
-    const imageHits = await this.images.searchByBarcode(digits, 48);
 
     const matched = await this.matchCategories(gpt);
 
@@ -175,16 +177,20 @@ export class AiProductService {
       descriptionAr: gpt.description_ar,
       descriptionEn: gpt.description_en,
       category: matched,
-      confidence: gpt.confidence > 0 ? gpt.confidence : gpt.needs_review ? 55 : 70,
-      needsReview: gpt.needs_review || gpt.confidence < 40,
-      reviewNotes: null,
+      confidence: gpt.confidence > 0 ? gpt.confidence : gpt.needs_review ? 35 : 70,
+      needsReview: gpt.needs_review || gpt.confidence < 45,
+      reviewNotes: gpt.needs_review
+        ? "راجع الاسم — المصادر ضعيفة أو غير مؤكدة لهذا الباركود"
+        : null,
       sourceUrl: null,
       images: imageHits,
       meta: {
         model,
         modelChoice: resolved.choice,
-        usedWebSearch: false,
+        usedWebSearch,
         freeHintSource: free.source ?? null,
+        freeHintTitle: free.title ?? null,
+        imageTitleHints: imageTitles.slice(0, 5),
         imageCount: imageHits.length,
         imageQuery: [digits, gpt.brand_en, gpt.name_en].filter(Boolean).join(" | "),
         aiSkipped: false,
@@ -204,7 +210,7 @@ export class AiProductService {
           id: "gpt-5.6-luna-low",
           labelAr: "5.6 Luna Low",
           labelEn: "Luna Low",
-          descriptionAr: "الأرخص والأسرع — مناسب للإضافة اليومية",
+          descriptionAr: "الأرخص — مع بحث ويب للباركود",
           apiModel: "gpt-5.4-nano",
           costTier: "lowest",
         },
@@ -212,7 +218,7 @@ export class AiProductService {
           id: "gpt-5.6-luna-medium",
           labelAr: "5.6 Luna Medium",
           labelEn: "Luna Medium",
-          descriptionAr: "جودة أعلى للتسمية والوصف — تكلفة أعلى قليلاً",
+          descriptionAr: "أدق للتسمية + بحث ويب — تكلفة أعلى قليلاً",
           apiModel: "gpt-5.4-mini",
           costTier: "medium",
         },
@@ -345,12 +351,78 @@ export class AiProductService {
   }
 
   private async freeBarcodeHint(barcode: string): Promise<FreeHint> {
-    const [obf, off, upc] = await Promise.all([
-      this.lookupOpenBeautyFacts(barcode),
-      this.lookupOpenFoodFacts(barcode),
-      this.lookupUpcItemDb(barcode),
-    ]);
-    return obf.title ? obf : off.title ? off : upc.title ? upc : {};
+    const variants = barcodeLookupCandidates(barcode)
+      .filter((v) => /^\d{8,14}$/.test(v))
+      .slice(0, 3);
+
+    const tasks: Promise<FreeHint>[] = [];
+    for (const v of variants) {
+      tasks.push(
+        this.lookupOpenBeautyFacts(v),
+        this.lookupOpenFoodFacts(v),
+        this.lookupUpcItemDb(v),
+        this.lookupGoUpc(v),
+        this.lookupBuycott(v),
+      );
+    }
+    const results = (await Promise.all(tasks)).filter((r) => r.title?.trim());
+    if (!results.length) return {};
+
+    const rank = (source?: string) => {
+      switch (source) {
+        case "openbeautyfacts":
+          return 0;
+        case "go-upc":
+          return 1;
+        case "buycott":
+          return 2;
+        case "upcitemdb":
+          return 3;
+        case "openfoodfacts":
+          return 4;
+        default:
+          return 9;
+      }
+    };
+    results.sort((a, b) => rank(a.source) - rank(b.source));
+    const best = { ...results[0] };
+    const altTitles = [
+      ...new Set(
+        results
+          .slice(1)
+          .map((r) => r.title!.trim())
+          .filter((t) => t && this.norm(t) !== this.norm(best.title ?? "")),
+      ),
+    ].slice(0, 4);
+    if (altTitles.length) {
+      best.categoryHints = [...(best.categoryHints ?? []), ...altTitles.map((t) => `also:${t}`)].slice(
+        0,
+        8,
+      );
+    }
+    if (!best.brand) {
+      best.brand = results.find((r) => r.brand)?.brand;
+    }
+    return best;
+  }
+
+  private extractIdentityTitles(
+    hits: Array<{ title?: string; source?: string }>,
+  ): string[] {
+    const out: string[] = [];
+    const seen = new Set<string>();
+    for (const hit of hits) {
+      const raw = (hit.title ?? "").replace(/\s+/g, " ").trim();
+      if (raw.length < 8 || raw.length > 140) continue;
+      if (/^\d[\d\s-]{6,}$/.test(raw)) continue;
+      if (/^(image|photo|img|product|untitled)\b/i.test(raw)) continue;
+      const key = this.norm(raw).slice(0, 80);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push(raw);
+      if (out.length >= 8) break;
+    }
+    return out;
   }
 
   private async lookupOpenBeautyFacts(barcode: string): Promise<FreeHint> {
@@ -447,68 +519,134 @@ export class AiProductService {
     }
   }
 
+  /** Public go-upc search — strong coverage for EU/ME beauty EANs. */
+  private async lookupGoUpc(barcode: string): Promise<FreeHint> {
+    try {
+      const res = await fetch(`https://go-upc.com/search?q=${encodeURIComponent(barcode)}`, {
+        headers: {
+          Accept: "text/html",
+          "User-Agent":
+            "Mozilla/5.0 (compatible; AlhayaaAiAutofill/2.0; +https://deemaalhayat.com)",
+        },
+        signal: AbortSignal.timeout(8_000),
+      });
+      if (!res.ok) return {};
+      const html = await res.text();
+      const h1 = html
+        .match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]
+        ?.replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!h1 || /not found|no product|search results/i.test(h1)) return {};
+      if (/^\d+$/.test(h1)) return {};
+      const brand =
+        html.match(/<td[^>]*>\s*Brand\s*<\/td>\s*<td[^>]*>([^<]+)/i)?.[1]?.trim() ||
+        html.match(/Brand<\/[^>]+>\s*<[^>]+>([^<]+)/i)?.[1]?.trim();
+      const cat =
+        html.match(/<td[^>]*>\s*Category\s*<\/td>\s*<td[^>]*>([^<]+)/i)?.[1]?.trim() ||
+        html.match(/Category<\/[^>]+>\s*<[^>]+>([^<]+)/i)?.[1]?.trim();
+      return {
+        title: h1.slice(0, 180),
+        brand: brand || undefined,
+        categoryHints: cat ? [cat] : undefined,
+        source: "go-upc",
+      };
+    } catch {
+      return {};
+    }
+  }
+
+  private async lookupBuycott(barcode: string): Promise<FreeHint> {
+    try {
+      const res = await fetch(`https://www.buycott.com/upc/${encodeURIComponent(barcode)}`, {
+        headers: {
+          Accept: "text/html",
+          "User-Agent":
+            "Mozilla/5.0 (compatible; AlhayaaAiAutofill/2.0; +https://deemaalhayat.com)",
+        },
+        signal: AbortSignal.timeout(7_000),
+      });
+      if (!res.ok) return {};
+      const html = await res.text();
+      const title =
+        html.match(/property="og:title"\s+content="([^"]+)"/i)?.[1]?.trim() ||
+        html
+          .match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]
+          ?.replace(/<[^>]+>/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      if (!title || /not found|buycott|upc\/ean/i.test(title)) return {};
+      const cleaned = title.replace(/\s*[|\-–—]\s*Buycott.*$/i, "").trim();
+      if (cleaned.length < 4) return {};
+      return { title: cleaned.slice(0, 180), source: "buycott" };
+    } catch {
+      return {};
+    }
+  }
+
   private async callGpt(args: {
     apiKey: string;
     model: string;
     barcode: string;
     free: FreeHint;
     hint?: string;
-  }): Promise<GptAutofillJson> {
+    imageTitles?: string[];
+  }): Promise<{ gpt: GptAutofillJson; usedWebSearch: boolean }> {
     const categoryHint = await this.compactCategoryHint();
 
     const known = [
-      args.free.title ? `title=${args.free.title}` : null,
-      args.free.brand ? `brand=${args.free.brand}` : null,
+      args.free.title ? `db_title=${args.free.title}` : null,
+      args.free.brand ? `db_brand=${args.free.brand}` : null,
       args.free.quantity ? `size=${args.free.quantity}` : null,
-      args.free.categoryHints?.length ? `tags=${args.free.categoryHints.join(",")}` : null,
+      args.free.source ? `db_source=${args.free.source}` : null,
+      args.free.categoryHints?.length ? `db_tags=${args.free.categoryHints.join(",")}` : null,
+      args.imageTitles?.length ? `image_titles=${args.imageTitles.slice(0, 6).join(" || ")}` : null,
       args.hint ? `staff=${args.hint}` : null,
     ]
       .filter(Boolean)
       .join(" | ");
 
-    // Compact prompt — Iraqi retail naming first, still no web_search
-    const instructions = `كاتب كتالوج تجميل عراقي لمتجر الحياة (Al Hayaa). JSON فقط. قلّل التوكنات.
+    const instructions = `كاتب كتالوج تجميل عراقي لمتجر الحياة (Al Hayaa). JSON فقط.
 
-الجمهور: زبائن عراقيين في صيدليات ومتاجر تجميل — لهجة بيع مألوفة في العراق (فصحى قريبة من المحكي العراقي الخفيف، مو ترجمة حرفية من الإنجليزي ومو لهجة خليجية).
+IDENTIFY (إلزامي — لا تختلق):
+1) نفّذ web_search واحدة فقط باستعلام = أرقام الباركود فقط (${args.barcode}).
+2) اعتمد نتائج البحث + قواعد الباركود + عناوين الصور. إذا تعارضت الحقائق المجانية مع الويب، ثق بالويب.
+3) منتجات التجميل الإقليمية (يونان/شرق أوسط/أوروبا) غالباً غير مشهورة — ابحث بالباركود ولا تستبدلها بمنتج عالمي شهير مشابه.
+4) إذا لم تجد مصدراً موثوقاً: needs_review=true و confidence≤30. ضع أفضل تخمين حذر من الحقائق المتوفرة فقط — ممنوع اختلاق براند/منتج مشهور خطأً.
+5) لا تكتب وصفاً تسويقياً مفصلاً لمنتج غير مؤكد.
+
+الجمهور: زبائن عراقيين — لهجة بيع مألوفة (فصحى قريبة من المحكي العراقي الخفيف).
 
 NAMING (صارم):
 • brand_ar / brand_en = اسم البراند فقط (مرة واحدة).
 • name_en = "{BrandEn} - {Official Product Name}"  (البراند مرة واحدة قبل الشرطة)
-  مثال: "Crest - 3D Whitestrips Professional Effects Whitening Kit"
 • name_ar = "{براند} {براند} - {نوع عراقي} {اسم الخط EN} {صفة قصيرة} {الحجم إن وُجد}"
   البراند بالعربي يظهر مرتين بالضبط قبل الشرطة — أبداً 3 أو أكثر.
-  بعد الشرطة: ابدأ بنوع المنتج بلفظ السوق العراقي، ثم اسم الخط الرسمي بالإنجليزي كما على العبوة، ثم صفة بسيطة يفهمها الزبون العراقي، ثم الحجم/الدرجة إن وجدت.
-  أمثلة جيدة:
+  أمثلة:
   - "سفنتين سفنتين - كونسيلر Ideal Cover Liquid بتغطية كاملة"
-  - "هدى بيوتي هدى بيوتي - فاونديشن FauxFilter Luminous Matte"
   - "كريست كريست - شرائط تبييض 3D Whitestrips Professional Effects"
-  - "مون ريف مون ريف - ماسكارا Cosmic لتكثيف وإطالة الرموش 12 مل"
-• مفردات النوع (التزم بها — لا تترجم حرفياً إلى فصحى ثقيلة):
-  foundation→فاونديشن | concealer→كونسيلر | mascara→ماسكارا | lipstick→أحمر شفاه
-  lip gloss→جلوس شفاه | lip liner→قلم شفاه | brow pencil→قلم حواجب | brow gel→جل حواجب
-  blush→بلاشر | highlighter→هايلايتر | bronzer→برونزر | powder→بودرة
-  eyeliner/kohl→كحل أو ايلاينر | eyeshadow→ظل عيون | primer→برايمر | serum→سيروم
-  moisturizer→مرطب | shampoo→شامبو | sunscreen→واقي شمس | whitening strips→شرائط تبييض
-• ممنوع: ترجمة حرفية ركيكة، فصحى ثقيلة، كلمات خليجية، تكرار البراند أكثر من مرتين، خلط كتابتين للبراند.
+• مفردات النوع: foundation→فاونديشن | concealer→كونسيلر | mascara→ماسكارا | lipstick→أحمر شفاه
+  lip gloss→جلوس شفاه | lip liner→قلم شفاه | brow pencil→قلم حواجب | blush→بلاشر
+  highlighter→هايلايتر | powder→بودرة | eyeliner→كحل أو ايلاينر | eyeshadow→ظل عيون
+  primer→برايمر | serum→سيروم | moisturizer→مرطب | sunscreen→واقي شمس | whitening strips→شرائط تبييض
 
-DESC_AR (نبرة محل عراقي):
-• جملتان قصيرتان كأنك تشرح للزبونة بالعراقي الخفيف الفصيح، ثم 3 نقاط فوائد عملية (تغطية، ثبات، لمسة، مناسب للحر/اليوم…).
-• تجنّب العبارات المترجمة حرفياً من الإنجليزي.
-
-DESC_EN: جملتان + 3 نقاط فوائد بأسلوب retail إنجليزي واضح.
+DESC_AR: جملتان قصيرتان بنبرة محل عراقي + 3 نقاط فوائد (أو وصف مختصر جداً إذا الثقة منخفضة).
+DESC_EN: جملتان + 3 نقاط.
 التصنيفات يجب أن تطابق الأسماء أدناه (فضّل العربي):
 ${categoryHint}
-إذا غير متأكد: أقرب تصنيف + needs_review=true. بدون باركود درجات.`;
+بدون باركود درجات.`;
 
     const userInput = `barcode=${args.barcode}
-facts: ${known || "none — infer carefully, needs_review=true"}
-اكتب name_ar بنبرة السوق العراقي (نوع عراقي + خط EN) و name_en رسمي، ثم أكمل الـ JSON.`;
+known: ${known || "none"}
+STEP1: web_search query="${args.barcode}" once.
+STEP2: return JSON — Iraqi name_ar + official name_en. If unknown: needs_review=true, confidence≤30.`;
 
     const payload: Record<string, unknown> = {
       model: args.model,
       instructions,
       input: userInput,
-      max_output_tokens: 640,
+      max_output_tokens: 700,
+      tools: [{ type: "web_search" }],
       text: {
         format: {
           type: "json_schema",
@@ -518,7 +656,6 @@ facts: ${known || "none — infer carefully, needs_review=true"}
         },
       },
     };
-    // Intentionally NO tools / web_search — images come from barcode search; facts from free APIs.
 
     const res = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
@@ -527,7 +664,7 @@ facts: ${known || "none — infer carefully, needs_review=true"}
         "Content-Type": "application/json",
       },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(45_000),
+      signal: AbortSignal.timeout(75_000),
     });
 
     const body = (await res.json()) as Record<string, unknown>;
@@ -537,8 +674,13 @@ facts: ${known || "none — infer carefully, needs_review=true"}
       throw new ServiceUnavailableException(err?.message ?? `OpenAI HTTP ${res.status}`);
     }
 
+    const output = (body.output as unknown[]) ?? [];
+    const usedWebSearch = output.some((item) => {
+      const row = item as { type?: string };
+      return row.type === "web_search_call" || row.type === "web_search";
+    });
     const jsonText = this.extractJsonText(body);
-    return JSON.parse(jsonText) as GptAutofillJson;
+    return { gpt: JSON.parse(jsonText) as GptAutofillJson, usedWebSearch };
   }
 
   private extractJsonText(body: Record<string, unknown>): string {
