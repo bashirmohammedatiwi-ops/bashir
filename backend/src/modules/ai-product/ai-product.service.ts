@@ -86,13 +86,36 @@ const CATEGORY_SYNONYMS: Record<string, string[]> = {
   مرطب: ["moisturizer", "moisturiser", "cream"],
   شامبو: ["shampoo"],
   "واقي شمس": ["sunscreen", "spf", "sun screen"],
-  مكياج: ["makeup", "make up", "تجميل"],
-  وجه: ["face", "بشرة"],
-  عيون: ["eyes", "eye"],
-  شفاه: ["lips", "lip"],
-  حواجب: ["brows", "eyebrow", "brow"],
-  عناية: ["skincare", "skin care", "العناية"],
+  "عناية الفم": ["oral care", "dental", "toothpaste", "معجون اسنان", "معجون أسنان", "غسول فم"],
+  "عناية الفم والاسنان": ["oral", "dental care", "teeth"],
 };
+
+/** Tokens too generic to score as category matches (would select every sibling). */
+const GENERIC_CATEGORY_TOKENS = new Set(
+  [
+    "عناية",
+    "العناية",
+    "مكياج",
+    "تجميل",
+    "وجه",
+    "عيون",
+    "شفاه",
+    "حواجب",
+    "شعر",
+    "جسم",
+    "بشرة",
+    "care",
+    "skin",
+    "makeup",
+    "face",
+    "eye",
+    "eyes",
+    "lips",
+    "lip",
+    "hair",
+    "body",
+  ].map((s) => s.toLowerCase()),
+);
 
 @Injectable()
 export class AiProductService {
@@ -152,7 +175,7 @@ export class AiProductService {
     }
 
     const resolved = this.resolveOpenAiModel(modelChoice);
-    const cacheKey = `v10|${force ? "force|" : ""}${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `v11|${force ? "force|" : ""}${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 30 * 60_000) {
       const cachedPayload = cached.payload as {
@@ -935,9 +958,11 @@ DESC_EN: جملتان + 3 نقاط.
 التصنيفات يجب أن تطابق الأسماء أدناه حرفياً قدر الإمكان (فضّل العربي) — املأها دائماً حتى لو تقريبية:
 ${categoryHint}
 • category_main_ar = قسم رئيسي واحد فقط من القائمة (إلزامي إن أمكن).
-• category_sub_ar = القسم الفرعي الأساسي. إذا يناسب أكثر من فرعي: الباقي في category_subs_ar.
-• category_tertiary_ar = القسم الثانوي الأساسي. إذا يناسب أكثر من ثانوي: الباقي في category_tertiaries_ar.
-• إذا لم تجد تطابقاً دقيقاً: اختر أقرب اسم من الشجرة أعلاه — لا تترك التصنيفات فارغة لمنتج معروف النوع.
+• category_sub_ar = القسم الفرعي الأساسي الأنسب فقط (واحد).
+• category_subs_ar = اتركها فارغة عادةً. املأها فقط إذا المنتج يناسب فعلاً قسمين فرعيين مختلفين بوضوح (حد أقصى 2) — ممنوع اختيار كل أقسام «العناية» أو ما شابه.
+• category_tertiary_ar = القسم الثانوي الأساسي إن وُجد.
+• category_tertiaries_ar = فارغة عادةً؛ حد أقصى 2 عند الحاجة الحقيقية فقط.
+• إذا لم تجد تطابقاً دقيقاً: اختر أقرب اسم واحد من الشجرة — لا تملأ مصفوفات إضافية بالتخمين.
 بدون باركود درجات.`;
 
     const userInput = `barcode=${args.barcode}
@@ -1302,8 +1327,6 @@ STEP2: return complete JSON — MSA name_ar (market terms, no dialect) + officia
       gpt.name_en,
       gpt.category_sub_ar,
       gpt.category_tertiary_ar,
-      ...(gpt.category_subs_ar ?? []),
-      ...(gpt.category_tertiaries_ar ?? []),
     ]);
 
     let main =
@@ -1314,7 +1337,7 @@ STEP2: return complete JSON — MSA name_ar (market terms, no dialect) + officia
     if (!main) {
       for (const hint of identityForMain) {
         const hit = this.bestMatch(mains, hint, hint);
-        if (hit && hit.score >= 40) {
+        if (hit && hit.score >= 55) {
           main = hit;
           break;
         }
@@ -1333,20 +1356,12 @@ STEP2: return complete JSON — MSA name_ar (market terms, no dialect) + officia
       });
 
       const subHints = this.collectCategoryHints(gpt.category_sub_ar, gpt.category_subs_ar);
-      const identityHints = this.collectCategoryHints(
-        gpt.name_ar,
-        [gpt.name_en, gpt.category_tertiary_ar, ...(gpt.category_tertiaries_ar ?? [])],
-      );
-      subcategoryIds = this.matchManyCategories(subs, subHints, identityHints, {
-        identityMin: subHints.length ? 65 : 55,
-      });
+      const identityHints = this.collectCategoryHints(gpt.name_ar, [gpt.name_en]);
 
-      // If still empty, try product-type synonyms against all subs
-      if (!subcategoryIds.length) {
-        subcategoryIds = this.matchManyCategories(subs, identityHints, [], {
-          identityMin: 50,
-        });
-      }
+      // Prefer explicit GPT subcategory names only. Identity is a last-resort single pick.
+      subcategoryIds = this.matchManyCategories(subs, subHints, identityHints, {
+        maxSelect: Math.min(3, Math.max(1, subHints.length || 1)),
+      });
 
       if (subcategoryIds.length) {
         const tert = await this.prisma.category.findMany({
@@ -1358,7 +1373,7 @@ STEP2: return complete JSON — MSA name_ar (market terms, no dialect) + officia
           gpt.category_tertiaries_ar,
         );
         tertiaryCategoryIds = this.matchManyCategories(tert, tertHints, identityHints, {
-          identityMin: tertHints.length ? 65 : 55,
+          maxSelect: Math.min(3, Math.max(1, tertHints.length || 1)),
         });
 
         const subById = new Map(subs.map((s) => [s.id, s]));
@@ -1413,47 +1428,45 @@ STEP2: return complete JSON — MSA name_ar (market terms, no dialect) + officia
   }
 
   /**
-   * Auto-select every catalog category that clearly matches GPT hints
-   * or the product identity (name). Primary hint order is preserved.
+   * Match catalog categories conservatively.
+   * - One best hit per explicit GPT hint (never spray-select siblings).
+   * - Identity/name used only if nothing matched — single best pick.
    */
   private matchManyCategories(
     rows: Array<{ id: string; nameAr: string | null; nameEn: string | null; name?: string | null }>,
     primaryHints: string[],
     identityHints: string[],
-    opts: { identityMin?: number } = {},
+    opts: { maxSelect?: number } = {},
   ): string[] {
     if (!rows.length) return [];
-    const identityMin = opts.identityMin ?? 65;
+    const maxSelect = Math.max(1, opts.maxSelect ?? 1);
 
     const selected: string[] = [];
     const push = (id: string | undefined | null) => {
       if (!id || selected.includes(id)) return;
+      if (selected.length >= maxSelect) return;
       selected.push(id);
     };
 
-    // 1) Explicit GPT hints (including extras) — lower threshold
+    // 1) Explicit GPT hints — best match per hint only
     for (const hint of primaryHints) {
+      if (selected.length >= maxSelect) break;
       const hit = this.bestMatch(rows, hint, hint);
-      if (hit && hit.score >= 40) push(hit.id);
+      if (hit && hit.score >= 55) push(hit.id);
     }
 
-    // 2) Identity / product name — strong matches (threshold relaxed when GPT categories empty)
-    for (const hint of identityHints) {
-      const hit = this.bestMatch(rows, hint, hint);
-      if (hit && hit.score >= identityMin) push(hit.id);
-    }
-
-    // 3) Score all rows against combined hints; keep additional strong hits
-    const combined = [...primaryHints, ...identityHints];
-    if (combined.length) {
-      for (const row of rows) {
-        let score = 0;
-        for (const hint of combined) {
-          const hit = this.bestMatch([row], hint, hint);
-          if (hit) score = Math.max(score, hit.score);
-        }
-        if (score >= Math.max(60, identityMin - 5)) push(row.id);
+    // 2) Fallback: single strongest identity match (never multi-select from name)
+    if (!selected.length && identityHints.length) {
+      let best:
+        | ({ id: string; nameAr: string | null; nameEn: string | null; name?: string | null } & {
+            score: number;
+          })
+        | null = null;
+      for (const hint of identityHints) {
+        const hit = this.bestMatch(rows, hint, hint);
+        if (hit && hit.score >= 70 && (!best || hit.score > best.score)) best = hit;
       }
+      if (best) push(best.id);
     }
 
     return selected;
@@ -1478,15 +1491,35 @@ STEP2: return complete JSON — MSA name_ar (market terms, no dialect) + officia
       const expandedCandidates = this.expandTargets(candidates);
       let score = 0;
       for (const t of targets) {
+        if (this.isGenericCategoryToken(t)) continue;
         for (const c of expandedCandidates) {
-          if (t === c) score = Math.max(score, 100);
-          else if (t.includes(c) || c.includes(t)) score = Math.max(score, 72);
-          else if (this.tokenOverlap(t, c) >= 0.6) score = Math.max(score, 55);
+          if (this.isGenericCategoryToken(c)) continue;
+          if (t === c) {
+            score = Math.max(score, t.length >= 6 ? 100 : 88);
+          } else if (t.includes(c) || c.includes(t)) {
+            const shorter = t.length <= c.length ? t : c;
+            const longer = t.length > c.length ? t : c;
+            // Require a meaningful phrase — blocks "عناية" matching every care sub
+            if (shorter.length < 6) continue;
+            if (this.isGenericCategoryToken(shorter)) continue;
+            score = Math.max(score, shorter.length * 2 >= longer.length ? 90 : 72);
+          } else if (this.tokenOverlap(t, c) >= 0.7) {
+            score = Math.max(score, 60);
+          }
         }
       }
-      if (score >= 40 && (!best || score > best.score)) best = { ...row, score };
+      if (score >= 55 && (!best || score > best.score)) best = { ...row, score };
     }
     return best;
+  }
+
+  private isGenericCategoryToken(token: string): boolean {
+    const n = this.norm(token);
+    if (!n) return true;
+    if (GENERIC_CATEGORY_TOKENS.has(n)) return true;
+    // Single short Arabic/Latin word shared by many category labels
+    if (!n.includes(" ") && n.length <= 4) return true;
+    return false;
   }
 
   private expandTargets(raw: string[]): string[] {
@@ -1497,12 +1530,17 @@ STEP2: return complete JSON — MSA name_ar (market terms, no dialect) + officia
       out.add(n);
       for (const [key, syns] of Object.entries(CATEGORY_SYNONYMS)) {
         const kn = this.norm(key);
+        if (kn.length < 5) continue;
         if (n.includes(kn) || kn.includes(n)) {
           out.add(kn);
-          for (const syn of syns) out.add(this.norm(syn));
+          for (const syn of syns) {
+            const sn = this.norm(syn);
+            if (sn.length >= 4) out.add(sn);
+          }
         }
         for (const syn of syns) {
           const sn = this.norm(syn);
+          if (sn.length < 4) continue;
           if (n.includes(sn) || sn.includes(n)) {
             out.add(kn);
             out.add(sn);
