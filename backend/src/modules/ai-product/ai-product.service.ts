@@ -9,6 +9,7 @@ type FreeHint = {
   quantity?: string;
   categoryHints?: string[];
   source?: string;
+  imageUrl?: string;
 };
 
 type GptAutofillJson = {
@@ -134,7 +135,7 @@ export class AiProductService {
     }
 
     const resolved = this.resolveOpenAiModel(modelChoice);
-    const cacheKey = `v6|${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `v7|${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 30 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -150,8 +151,23 @@ export class AiProductService {
     // 2) Free barcode DBs + go-upc (many regional beauty EANs are missing from OBF/UPC alone)
     const free = await this.freeBarcodeHint(digits);
 
-    // 3) Barcode image titles often name obscure SKUs before GPT runs
-    const imageHits = await this.images.searchByBarcode(digits, 48);
+    // 3) Barcode images first; supplement with brand/title only if barcode hits are thin
+    const imageHits = await this.images.searchByBarcode(digits, 48, [
+      free.brand,
+      free.title,
+      free.brand && free.title ? `${free.brand} ${free.title}`.slice(0, 90) : null,
+    ].filter((s): s is string => Boolean(s && s.trim().length >= 2)));
+    if (free.imageUrl?.startsWith("http")) {
+      const key = free.imageUrl.toLowerCase();
+      if (!imageHits.some((h) => h.url.toLowerCase() === key)) {
+        imageHits.unshift({
+          url: free.imageUrl,
+          thumbUrl: free.imageUrl,
+          title: free.title ?? digits,
+          source: free.source ?? "barcode-db",
+        });
+      }
+    }
     const imageTitles = this.extractIdentityTitles(imageHits);
 
     // 4) GPT with web_search — required for non-famous products; never invent
@@ -403,6 +419,9 @@ export class AiProductService {
     if (!best.brand) {
       best.brand = results.find((r) => r.brand)?.brand;
     }
+    if (!best.imageUrl) {
+      best.imageUrl = results.find((r) => r.imageUrl)?.imageUrl;
+    }
     return best;
   }
 
@@ -545,10 +564,14 @@ export class AiProductService {
       const cat =
         html.match(/<td[^>]*>\s*Category\s*<\/td>\s*<td[^>]*>([^<]+)/i)?.[1]?.trim() ||
         html.match(/Category<\/[^>]+>\s*<[^>]+>([^<]+)/i)?.[1]?.trim();
+      const imageUrl =
+        html.match(/property="og:image"\s+content="([^"]+)"/i)?.[1]?.trim() ||
+        html.match(/https?:\/\/[^"'\\\s>]*go-upc[^"'\\\s>]+\.(?:jpg|jpeg|png|webp)/i)?.[0];
       return {
         title: h1.slice(0, 180),
         brand: brand || undefined,
         categoryHints: cat ? [cat] : undefined,
+        imageUrl: imageUrl?.startsWith("http") ? imageUrl : undefined,
         source: "go-upc",
       };
     } catch {
@@ -620,11 +643,12 @@ IDENTIFY (إلزامي — لا تختلق):
 NAMING (صارم):
 • brand_ar / brand_en = اسم البراند فقط (مرة واحدة).
 • name_en = "{BrandEn} - {Official Product Name}"  (البراند مرة واحدة قبل الشرطة)
-• name_ar = "{براند} {براند} - {نوع عراقي} {اسم الخط EN} {صفة قصيرة} {الحجم إن وُجد}"
-  البراند بالعربي يظهر مرتين بالضبط قبل الشرطة — أبداً 3 أو أكثر.
+• name_ar = "{براند} - {نوع عراقي} {اسم الخط EN} {صفة قصيرة} {الحجم إن وُجد}"
+  البراند بالعربي يظهر مرة واحدة فقط قبل الشرطة — ممنوع تكراره.
   أمثلة:
-  - "سفنتين سفنتين - كونسيلر Ideal Cover Liquid بتغطية كاملة"
-  - "كريست كريست - شرائط تبييض 3D Whitestrips Professional Effects"
+  - "سفنتين - كونسيلر Ideal Cover Liquid بتغطية كاملة"
+  - "كوسمالاين - جل استحمام Soft Wave برائحة الورد 650 مل"
+  - "كريست - شرائط تبييض 3D Whitestrips Professional Effects"
 • مفردات النوع: foundation→فاونديشن | concealer→كونسيلر | mascara→ماسكارا | lipstick→أحمر شفاه
   lip gloss→جلوس شفاه | lip liner→قلم شفاه | brow pencil→قلم حواجب | blush→بلاشر
   highlighter→هايلايتر | powder→بودرة | eyeliner→كحل أو ايلاينر | eyeshadow→ظل عيون
@@ -697,12 +721,12 @@ STEP2: return JSON — Iraqi name_ar + official name_en. If unknown: needs_revie
     throw new ServiceUnavailableException("رد GPT فارغ");
   }
 
-  /** Enforce naming: EN "Brand - Product"; AR exactly "Brand Brand - Product". */
+  /** Enforce naming: EN/AR both "Brand - Product" (brand once). */
   private polishNaming(gpt: GptAutofillJson): GptAutofillJson {
     const brandEn = this.canonicalBrandEn(gpt.brand_en || gpt.brand_ar || "");
     const brandAr = this.canonicalBrandAr(brandEn, gpt.brand_ar || "");
     const nameEn = this.ensureBrandDashName(gpt.name_en || "", brandEn, { doubleBrand: false });
-    const nameAr = this.ensureBrandDashName(gpt.name_ar || "", brandAr, { doubleBrand: true });
+    const nameAr = this.ensureBrandDashName(gpt.name_ar || "", brandAr, { doubleBrand: false });
     return {
       ...gpt,
       brand_en: brandEn || gpt.brand_en?.trim() || "",
@@ -732,6 +756,7 @@ STEP2: return JSON — Iraqi name_ar + official name_en. If unknown: needs_revie
       [/mon\s*reve|مون\s*ريف/, "Mon Reve"],
       [/grigi|جريجي/, "Grigi"],
       [/crest|كريست/, "Crest"],
+      [/cosmaline|كوسمالاين/, "Cosmaline"],
       [/oral[\s-]?b|اورال/, "Oral-B"],
       [/colgate|كولجيت/, "Colgate"],
     ];
@@ -759,6 +784,7 @@ STEP2: return JSON — Iraqi name_ar + official name_en. If unknown: needs_revie
       [/mon\s*reve/, "مون ريف"],
       [/grigi/, "جريجي"],
       [/crest/, "كريست"],
+      [/cosmaline/, "كوسمالاين"],
       [/oral[\s-]?b/, "اورال بي"],
       [/colgate/, "كولجيت"],
     ];
@@ -769,7 +795,7 @@ STEP2: return JSON — Iraqi name_ar + official name_en. If unknown: needs_revie
     return ar || brandEn.trim();
   }
 
-  /** Build final title with brand prefix exactly once (EN) or twice (AR). */
+  /** Build final title with brand prefix exactly once. */
   private ensureBrandDashName(
     name: string,
     brand: string,
@@ -779,6 +805,7 @@ STEP2: return JSON — Iraqi name_ar + official name_en. If unknown: needs_revie
     if (!b) return name.replace(/\s+/g, " ").trim();
 
     const product = this.extractProductCore(name, b);
+    // doubleBrand kept for backwards-compat but unused (always single brand now)
     const prefix = opts.doubleBrand ? `${b} ${b}` : b;
     if (!product) return `${prefix} -`;
     return `${prefix} - ${product}`;

@@ -125,6 +125,11 @@ class _GoogleStyleImageSearchState extends State<GoogleStyleImageSearch> {
                   ),
                 ],
               ),
+              const SizedBox(height: 6),
+              Text(
+                'اضغط على الصور التي تريدها — لا يُختار شيء تلقائياً',
+                style: TextStyle(fontSize: 12.5, color: Colors.grey.shade700),
+              ),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(4),

@@ -25,14 +25,12 @@ export class GoogleImagesService {
   }
 
   /**
-   * Barcode mode: search the barcode digits the way Google Images would —
-   * primary query is the barcode itself, plus UPC/EAN length variants only.
-   * No "product/cosmetics/packaging" dilution. Soft filters only.
+   * Barcode mode: search digits like Google Images, then (only if thin) brand/title supplements.
    */
   async searchByBarcode(
     barcode: string,
     limit = 48,
-    _nameHints: string[] = [],
+    nameHints: string[] = [],
   ): Promise<GoogleImageHit[]> {
     const digits = barcode.replace(/\D/g, "") || barcode.trim();
     if (digits.length < 6) return [];
@@ -40,17 +38,38 @@ export class GoogleImagesService {
     const variants = this.barcodeQueryVariants(digits);
     const merged: GoogleImageHit[] = [];
     const seen = new Set<string>();
-
-    for (const q of variants) {
-      if (merged.length >= limit) break;
-      for (const hit of await this.collectResults(q, limit, { expandVariants: false, softFilter: true })) {
+    const pushHits = (batch: GoogleImageHit[]) => {
+      for (const hit of batch) {
         const key = this.dedupeKey(hit.url);
         if (!key || seen.has(key)) continue;
         seen.add(key);
         merged.push(hit);
+        if (merged.length >= limit) return;
+      }
+    };
+
+    for (const q of variants) {
+      if (merged.length >= limit) break;
+      pushHits(await this.collectResults(q, limit, { expandVariants: false, softFilter: true }));
+    }
+
+    // Supplement only when barcode-only results are thin (obscure regional SKUs)
+    if (merged.length < Math.min(16, Math.floor(limit / 2))) {
+      const extras: string[] = [];
+      for (const hint of nameHints) {
+        const h = hint.replace(/\s+/g, " ").trim();
+        if (h.length < 2 || h.length > 100) continue;
+        if (/^\d{8,14}$/.test(h)) continue;
+        extras.push(`${digits} ${h}`);
+        extras.push(h);
+      }
+      extras.push(`${digits} product`, `${digits} packaging`);
+      for (const q of [...new Set(extras)].slice(0, 6)) {
         if (merged.length >= limit) break;
+        pushHits(await this.collectResults(q, Math.min(24, limit), { expandVariants: false, softFilter: true }));
       }
     }
+
     return merged.slice(0, limit);
   }
 
@@ -64,13 +83,19 @@ export class GoogleImagesService {
   }
 
   private barcodeQueryVariants(digits: string): string[] {
-    const out = new Set<string>([digits]);
-    // EAN-13 with leading 0 ↔ UPC-A (12)
-    if (digits.length === 13 && digits.startsWith("0")) out.add(digits.slice(1));
-    if (digits.length === 12) out.add(`0${digits}`);
-    // Common Google Image style: just the number (already), and quoted for exact match engines
-    out.add(`"${digits}"`);
-    return [...out];
+    const out: string[] = [];
+    const add = (q: string) => {
+      if (q && !out.includes(q)) out.push(q);
+    };
+    // Order matters: plain barcode first (best Google Images match)
+    add(digits);
+    add(`"${digits}"`);
+    if (digits.length === 13 && digits.startsWith("0")) add(digits.slice(1));
+    if (digits.length === 12) add(`0${digits}`);
+    if (digits.length === 13) add(digits.slice(0, 12)); // sometimes listed as 12
+    add(`EAN ${digits}`);
+    add(`UPC ${digits}`);
+    return out;
   }
 
   private async collectResults(

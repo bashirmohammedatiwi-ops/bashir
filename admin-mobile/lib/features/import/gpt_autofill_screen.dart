@@ -223,12 +223,9 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     _subcategoryId = fill.category.subcategoryId;
     _tertiaryId = fill.category.tertiaryCategoryId;
     _images = List.of(fill.images);
-    _selectedImages
-      ..clear()
-      ..addAll(_images.take(4).map((i) => i.url));
-    _imageOrder
-      ..clear()
-      ..addAll(_selectedImages);
+    // User picks images manually — never auto-select defaults
+    _selectedImages.clear();
+    _imageOrder.clear();
   }
 
   void _toggleImage(String url) {
@@ -351,17 +348,15 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
           );
       setState(() {
         _images = imgs;
-        // Keep previous selections that still exist; otherwise pick top 4
+        // Keep only selections that still exist; do NOT auto-pick new images
         _selectedImages.removeWhere((u) => !imgs.any((i) => i.url == u));
         _imageOrder.removeWhere((u) => !_selectedImages.contains(u));
-        if (_selectedImages.isEmpty && imgs.isNotEmpty) {
-          _selectedImages.addAll(imgs.take(4).map((e) => e.url));
-          _imageOrder
-            ..clear()
-            ..addAll(_selectedImages);
-        }
       });
-      _snack('نتائج البحث: ${imgs.length} صورة');
+      _snack(
+        imgs.isEmpty
+            ? 'لا نتائج — جرّب البحث بالاسم'
+            : 'نتائج البحث: ${imgs.length} صورة — اختر ما تريده يدوياً',
+      );
     } catch (e) {
       _snack(e.toString().replaceFirst('Exception: ', ''));
     } finally {
@@ -956,7 +951,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
           child: Column(
             children: [
               Text(
-                'عربي (سوق عراقي): البراند البراند - نوع المنتج + اسم الخط · إنجليزي: Brand - Product',
+                'عربي / إنجليزي: البراند - اسم المنتج (مرة واحدة فقط)',
                 style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
               ),
               const SizedBox(height: 10),
