@@ -6,7 +6,7 @@ import '../models/ai_autofill.dart';
 
 enum ImageSearchMode { barcode, name }
 
-/// Google-like image results panel: mode toggle, search bar, size badges, selection.
+/// Compact image picker: barcode/name search + tap to select.
 class GoogleStyleImageSearch extends StatefulWidget {
   const GoogleStyleImageSearch({
     super.key,
@@ -72,7 +72,7 @@ class _GoogleStyleImageSearchState extends State<GoogleStyleImageSearch> {
     final q = _query.text.trim();
     if (_mode == ImageSearchMode.name && q.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('أدخل اسم المنتج للبحث مثل Google')),
+        const SnackBar(content: Text('أدخل اسم المنتج للبحث')),
       );
       return;
     }
@@ -92,164 +92,118 @@ class _GoogleStyleImageSearchState extends State<GoogleStyleImageSearch> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppTheme.primary.withValues(alpha: 0.12)),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primary.withValues(alpha: 0.06),
-                blurRadius: 18,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.travel_explore, color: AppTheme.primary),
-                  const SizedBox(width: 8),
-                  const Expanded(
-                    child: Text(
-                      'بحث الصور',
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-                    ),
-                  ),
-                  Text(
-                    '${widget.selectedUrls.length} مختارة',
-                    style: TextStyle(color: Colors.grey.shade700, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'اضغط على الصور التي تريدها — لا يُختار شيء تلقائياً',
-                style: TextStyle(fontSize: 12.5, color: Colors.grey.shade700),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: AppTheme.surface,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
                   children: [
-                    Expanded(
-                      child: _ModeChip(
-                        selected: _mode == ImageSearchMode.barcode,
-                        icon: Icons.qr_code_2,
-                        label: 'بالباركود',
-                        onTap: () => _setMode(ImageSearchMode.barcode),
+                    const Expanded(
+                      child: Text(
+                        'اختر الصور',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5),
                       ),
                     ),
-                    Expanded(
-                      child: _ModeChip(
-                        selected: _mode == ImageSearchMode.name,
-                        icon: Icons.title,
-                        label: 'بالاسم',
-                        onTap: () => _setMode(ImageSearchMode.name),
+                    Text(
+                      '${widget.selectedUrls.length} مختارة',
+                      style: const TextStyle(
+                        color: AppTheme.primaryDark,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _query,
-                      textInputAction: TextInputAction.search,
-                      textDirection: _mode == ImageSearchMode.barcode ? TextDirection.ltr : TextDirection.rtl,
-                      onSubmitted: (_) => _runSearch(),
-                      decoration: InputDecoration(
-                        hintText: _mode == ImageSearchMode.barcode
-                            ? 'أدخل الباركود…'
-                            : 'ابحث باسم المنتج مثل Google…',
-                        prefixIcon: const Icon(Icons.search),
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(28)),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(28),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(28),
-                          borderSide: const BorderSide(color: AppTheme.primary, width: 1.4),
+                const SizedBox(height: 12),
+                SegmentedButton<ImageSearchMode>(
+                  segments: const [
+                    ButtonSegment(
+                      value: ImageSearchMode.barcode,
+                      icon: Icon(Icons.qr_code_2, size: 18),
+                      label: Text('باركود'),
+                    ),
+                    ButtonSegment(
+                      value: ImageSearchMode.name,
+                      icon: Icon(Icons.search, size: 18),
+                      label: Text('اسم'),
+                    ),
+                  ],
+                  selected: {_mode},
+                  onSelectionChanged: (s) => _setMode(s.first),
+                  style: const ButtonStyle(visualDensity: VisualDensity.compact),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _query,
+                        textInputAction: TextInputAction.search,
+                        textDirection:
+                            _mode == ImageSearchMode.barcode ? TextDirection.ltr : TextDirection.rtl,
+                        onSubmitted: (_) => _runSearch(),
+                        decoration: InputDecoration(
+                          hintText: _mode == ImageSearchMode.barcode ? 'الباركود…' : 'اسم المنتج…',
+                          prefixIcon: const Icon(Icons.search),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: widget.loading ? null : _runSearch,
-                    style: FilledButton.styleFrom(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: widget.loading ? null : _runSearch,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size(72, 48),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                      ),
+                      child: widget.loading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Text('بحث'),
                     ),
-                    child: widget.loading
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text('بحث'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _mode == ImageSearchMode.barcode
-                    ? 'نتائج صور مرتبطة بالباركود — بدون استهلاك AI'
-                    : 'نتائج صور بالاسم كما في بحث Google — بدون استهلاك AI',
-                style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 10),
         Row(
           children: [
             Text(
               '${widget.images.length} نتيجة',
-              style: TextStyle(fontWeight: FontWeight.w700, color: Colors.grey.shade800),
+              style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.muted),
             ),
             const Spacer(),
-            TextButton(onPressed: widget.onSelectAll, child: const Text('تحديد الكل')),
+            TextButton(onPressed: widget.onSelectAll, child: const Text('الكل')),
             TextButton(onPressed: widget.onClear, child: const Text('مسح')),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         if (widget.loading && widget.images.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 48),
             child: Center(child: CircularProgressIndicator()),
           )
         else if (widget.images.isEmpty)
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
-            ),
-            child: Column(
-              children: [
-                Icon(Icons.image_not_supported_outlined, size: 42, color: Colors.grey.shade400),
-                const SizedBox(height: 10),
-                Text(
-                  'لا توجد نتائج — جرّب تبديل الوضع أو تعديل نص البحث',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey.shade700),
-                ),
-              ],
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 16),
+              child: Column(
+                children: [
+                  Icon(Icons.image_search_outlined, size: 40, color: Colors.grey.shade400),
+                  const SizedBox(height: 10),
+                  Text(
+                    'لا نتائج — جرّب البحث بالاسم',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey.shade700),
+                  ),
+                ],
+              ),
             ),
           )
         else
@@ -259,95 +213,83 @@ class _GoogleStyleImageSearchState extends State<GoogleStyleImageSearch> {
             itemCount: widget.images.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 0.72,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: 0.78,
             ),
-            itemBuilder: (_, i) {
-              final img = widget.images[i];
+            itemBuilder: (context, index) {
+              final img = widget.images[index];
               final selected = widget.selectedUrls.contains(img.url);
               final order = widget.imageOrder.indexOf(img.url);
               final host = _hostOf(img.source.isNotEmpty ? img.source : img.url);
 
               return Material(
                 color: Colors.white,
-                elevation: selected ? 2 : 0,
-                shadowColor: AppTheme.primary.withValues(alpha: 0.25),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(14),
+                clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   onTap: () => widget.onToggle(img.url),
                   onLongPress: () => widget.onPreview(img.url),
-                  borderRadius: BorderRadius.circular(16),
                   child: Ink(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(14),
                       border: Border.all(
-                        color: selected ? AppTheme.primary : Colors.grey.shade200,
+                        color: selected ? AppTheme.primary : const Color(0xFFECE7F0),
                         width: selected ? 2 : 1,
                       ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: _SizeBadge(image: img),
-                              ),
-                              const SizedBox(width: 6),
-                              CircleAvatar(
-                                radius: 12,
-                                backgroundColor: selected ? AppTheme.primary : Colors.black38,
-                                child: selected
-                                    ? Text(
-                                        '${order + 1}',
-                                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                                      )
-                                    : const Icon(Icons.add, size: 14, color: Colors.white),
-                              ),
-                            ],
-                          ),
-                        ),
                         Expanded(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: ColoredBox(
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              ColoredBox(
                                 color: const Color(0xFFF7F5F9),
                                 child: CachedNetworkImage(
                                   imageUrl: img.thumbUrl.isNotEmpty ? img.thumbUrl : img.url,
                                   fit: BoxFit.contain,
-                                  errorWidget: (_, __, ___) => Icon(Icons.broken_image, color: Colors.grey.shade400),
+                                  errorWidget: (_, __, ___) =>
+                                      Icon(Icons.broken_image_outlined, color: Colors.grey.shade400),
                                 ),
                               ),
-                            ),
+                              Positioned(
+                                top: 8,
+                                left: 8,
+                                child: CircleAvatar(
+                                  radius: 13,
+                                  backgroundColor: selected ? AppTheme.primary : Colors.black45,
+                                  child: selected
+                                      ? Text(
+                                          '${order + 1}',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        )
+                                      : const Icon(Icons.add, size: 15, color: Colors.white),
+                                ),
+                              ),
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: _SizeBadge(image: img),
+                              ),
+                            ],
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(10, 6, 10, 10),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                img.title.isNotEmpty ? img.title : 'صورة منتج',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, height: 1.25),
-                              ),
-                              if (host.isNotEmpty) ...[
-                                const SizedBox(height: 2),
-                                Text(
-                                  host,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
-                                  textDirection: TextDirection.ltr,
-                                ),
-                              ],
-                            ],
+                          padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
+                          child: Text(
+                            host.isNotEmpty
+                                ? host
+                                : (img.title.isNotEmpty ? img.title : 'صورة'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 11, color: AppTheme.muted),
+                            textDirection: host.isNotEmpty ? TextDirection.ltr : TextDirection.rtl,
                           ),
                         ),
                       ],
@@ -358,49 +300,6 @@ class _GoogleStyleImageSearchState extends State<GoogleStyleImageSearch> {
             },
           ),
       ],
-    );
-  }
-}
-
-class _ModeChip extends StatelessWidget {
-  const _ModeChip({
-    required this.selected,
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final bool selected;
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? AppTheme.primary : Colors.transparent,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, size: 18, color: selected ? Colors.white : AppTheme.primaryDark),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                  color: selected ? Colors.white : AppTheme.primaryDark,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
@@ -448,18 +347,17 @@ class _SizeBadgeState extends State<_SizeBadge> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: AppTheme.primary.withValues(alpha: 0.08),
+        color: Colors.black.withValues(alpha: 0.55),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
         _label,
-        textAlign: TextAlign.center,
         style: const TextStyle(
-          fontSize: 11,
+          fontSize: 10,
           fontWeight: FontWeight.w700,
-          color: AppTheme.primaryDark,
+          color: Colors.white,
         ),
         textDirection: TextDirection.ltr,
       ),

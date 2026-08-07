@@ -516,7 +516,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
       }
     }
     if (step == 1 && _selectedImages.isEmpty) {
-      _snack('اختر صورة واحدة على الأقل (أو حدّث البحث بالباركود)');
+      _snack('اختر صورة واحدة على الأقل');
       return false;
     }
     if (step == 3 && (_categoryId == null || _categoryId!.isEmpty)) {
@@ -526,122 +526,35 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     return true;
   }
 
+  /// Skip shades step when product has no color variants.
+  int _forwardStep(int from) {
+    if (from == 1 && !_multiShadeEnabled) return 3;
+    return from + 1;
+  }
+
+  int _backStep(int from) {
+    if (from == 3 && !_multiShadeEnabled) return 1;
+    return from - 1;
+  }
+
   void _goTo(int step) {
     setState(() => _step = step);
-    _page.animateToPage(step, duration: const Duration(milliseconds: 280), curve: Curves.easeOutCubic);
+    _page.animateToPage(step, duration: const Duration(milliseconds: 260), curve: Curves.easeOutCubic);
   }
 
   Future<void> _next() async {
     if (!_validateStep(_step)) return;
     if (_step < 4) {
-      _goTo(_step + 1);
+      _goTo(_forwardStep(_step));
       return;
     }
-    await _confirmAndSave();
+    // Review step is the confirmation — save directly
+    await _save();
   }
 
-  Future<void> _confirmAndSave() async {
-    final warnings = _qualityWarnings();
-    final ok = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + MediaQuery.of(ctx).padding.bottom),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text('تأكيد الإضافة', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-              const SizedBox(height: 12),
-              _previewTile('الاسم', _nameAr.text.trim().isNotEmpty ? _nameAr.text.trim() : _nameEn.text.trim()),
-              _previewTile('البراند', _selectedBrand?.displayName ?? _brandAr.text.trim()),
-              _previewTile('القسم', [
-                _find(_categories, _categoryId)?.displayName,
-                _find(_subcategories, _subcategoryId)?.displayName,
-                _find(_tertiary, _tertiaryId)?.displayName,
-              ].whereType<String>().where((s) => s.isNotEmpty).join(' › ')),
-              _previewTile('السعر', '${_price.text.trim().isEmpty ? "0" : _price.text.trim()} د.ع'),
-              _previewTile('الصور', '${_selectedImages.length} صورة'),
-              if (_multiShadeEnabled) _previewTile('التدرجات', '${_shades.length} درجة'),
-              const SizedBox(height: 8),
-              if (_selectedImages.isNotEmpty)
-                SizedBox(
-                  height: 64,
-                  child: ListView(
-                    scrollDirection: Axis.horizontal,
-                    children: _imageOrder
-                        .where(_selectedImages.contains)
-                        .map(
-                          (url) => Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: CachedNetworkImage(imageUrl: url, width: 64, height: 64, fit: BoxFit.cover),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                ),
-              if (warnings.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.amber.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.warning_amber_rounded, color: Colors.amber.shade800, size: 20),
-                          const SizedBox(width: 6),
-                          Text('تنبيهات الجودة', style: TextStyle(fontWeight: FontWeight.w700, color: Colors.amber.shade900)),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      for (final w in warnings)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 4),
-                          child: Text('• $w', style: TextStyle(fontSize: 13, color: Colors.amber.shade900)),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: () => Navigator.pop(ctx, true),
-                icon: const Icon(Icons.check),
-                label: const Text('تأكيد وحفظ في المتجر'),
-              ),
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('رجوع للتعديل')),
-            ],
-          ),
-        );
-      },
-    );
-    if (ok == true) await _save();
-  }
-
-  Widget _previewTile(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(width: 72, child: Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 13))),
-          Expanded(child: Text(value.isEmpty ? '—' : value, style: const TextStyle(fontWeight: FontWeight.w600))),
-        ],
-      ),
-    );
+  void _goBack() {
+    if (_step <= 0 || _saving) return;
+    _goTo(_backStep(_step));
   }
 
   Future<void> _save() async {
@@ -818,13 +731,12 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                 children: [
                   const CircularProgressIndicator(),
                   const SizedBox(height: 16),
-                  Text(widget.manualMode ? 'جلب صور بالباركود...' : 'جلب حقائق مجانية + صور بالباركود...'),
+                  Text(widget.manualMode ? 'جاري جلب الصور…' : 'جاري التعرف على المنتج…'),
                   if (!widget.manualMode) ...[
                     const SizedBox(height: 6),
                     Text(
-                      'موديل: ${widget.modelId ?? 'gpt-5.6-luna-low'} (بدون بحث ويب)',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                      textDirection: TextDirection.ltr,
+                      'قد يستغرق بضع ثوانٍ',
+                      style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
                     ),
                   ],
                 ],
@@ -870,13 +782,20 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
       bottomNavigationBar: _loading || _error != null || _result?.exists == true
           ? null
           : SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(top: BorderSide(color: Color(0xFFECE7F0))),
+                ),
                 child: Row(
                   children: [
                     if (_step > 0)
                       OutlinedButton(
-                        onPressed: _saving ? null : () => _goTo(_step - 1),
+                        onPressed: _saving ? null : _goBack,
+                        style: OutlinedButton.styleFrom(
+                          minimumSize: const Size(88, 48),
+                        ),
                         child: const Text('رجوع'),
                       ),
                     if (_step > 0) const SizedBox(width: 10),
@@ -889,13 +808,13 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                                 height: 18,
                                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                               )
-                            : Icon(_step == 4 ? Icons.save_outlined : Icons.arrow_back),
+                            : Icon(_step == 4 ? Icons.check_rounded : Icons.arrow_back_rounded),
                         label: Text(
                           _saving
-                              ? 'جاري الحفظ...'
+                              ? 'جاري الحفظ…'
                               : _step == 4
-                                  ? 'مراجعة وحفظ'
-                                  : 'التالي: ${_stepTitles[_step + 1]}',
+                                  ? 'حفظ في المتجر'
+                                  : 'التالي: ${_stepTitles[_forwardStep(_step)]}',
                         ),
                       ),
                     ),
@@ -930,73 +849,82 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
   Widget _buildNamingStep() {
     final result = _result!;
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
       children: [
         if (result.needsReview || result.confidence < 70)
           Card(
-            color: Colors.amber.shade50,
+            color: const Color(0xFFFFF8E8),
             child: ListTile(
-              leading: const Icon(Icons.warning_amber_rounded, color: Colors.amber),
+              leading: Icon(Icons.info_outline, color: Colors.amber.shade800),
               title: Text(
                 widget.manualMode
-                    ? 'إدخال يدوي — راجع التسمية'
+                    ? 'أدخل الاسم بنفسك'
                     : 'راجع التسمية — ثقة ${result.confidence.toStringAsFixed(0)}%',
+                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
               ),
-              subtitle: const Text('عدّل الاسم والوصف بحرية قبل المتابعة'),
+              subtitle: const Text('يمكنك التعديل بحرية قبل المتابعة'),
             ),
           ),
         SectionCard(
-          title: 'الاسم والوصف (قابل للتعديل)',
-          icon: Icons.edit_note,
+          title: 'الاسم',
+          subtitle: 'براند - اسم المنتج',
+          icon: Icons.badge_outlined,
           child: Column(
             children: [
-              Text(
-                'عربي / إنجليزي: البراند - اسم المنتج (مرة واحدة فقط)',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-              ),
-              const SizedBox(height: 10),
               TextField(
                 controller: _nameAr,
-                decoration: const InputDecoration(
-                  labelText: 'الاسم عربي',
-                  hintText: 'سفنتين - كونسيلر Ideal Cover Liquid بتغطية كاملة',
-                ),
+                decoration: const InputDecoration(labelText: 'عربي'),
                 maxLines: 2,
               ),
               const SizedBox(height: 10),
               TextField(
                 controller: _nameEn,
-                decoration: const InputDecoration(
-                  labelText: 'الاسم إنجليزي',
-                  hintText: 'Seventeen - Ideal Cover Liquid Concealer Full Coverage',
-                ),
+                decoration: const InputDecoration(labelText: 'English'),
                 maxLines: 2,
                 textDirection: TextDirection.ltr,
               ),
-              const SizedBox(height: 10),
-              TextField(controller: _descAr, decoration: const InputDecoration(labelText: 'الوصف عربي'), maxLines: 6),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _descEn,
-                decoration: const InputDecoration(labelText: 'الوصف إنجليزي'),
-                maxLines: 6,
-                textDirection: TextDirection.ltr,
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(child: TextField(controller: _brandAr, decoration: const InputDecoration(labelText: 'براند عربي'))),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: TextField(
-                      controller: _brandEn,
-                      decoration: const InputDecoration(labelText: 'براند إنجليزي'),
-                      textDirection: TextDirection.ltr,
-                    ),
-                  ),
-                ],
+            ],
+          ),
+        ),
+        SectionCard(
+          title: 'البراند',
+          icon: Icons.storefront_outlined,
+          child: Row(
+            children: [
+              Expanded(child: TextField(controller: _brandAr, decoration: const InputDecoration(labelText: 'عربي'))),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _brandEn,
+                  decoration: const InputDecoration(labelText: 'English'),
+                  textDirection: TextDirection.ltr,
+                ),
               ),
             ],
+          ),
+        ),
+        Theme(
+          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+          child: Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: ExpansionTile(
+              initiallyExpanded: false,
+              tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              leading: Icon(Icons.notes_outlined, color: AppTheme.primary),
+              title: const Text('الوصف', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
+              subtitle: const Text('اضغط للتعديل إن لزم', style: TextStyle(fontSize: 12.5, color: AppTheme.muted)),
+              children: [
+                TextField(controller: _descAr, decoration: const InputDecoration(labelText: 'وصف عربي'), maxLines: 5),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _descEn,
+                  decoration: const InputDecoration(labelText: 'English description'),
+                  maxLines: 5,
+                  textDirection: TextDirection.ltr,
+                ),
+              ],
+            ),
           ),
         ),
       ],
@@ -1042,15 +970,16 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
       padding: const EdgeInsets.all(16),
       children: [
         SectionCard(
-          title: 'تدرجات اللون',
+          title: 'التدرجات',
+          subtitle: 'اختياري — اتركه مغلقاً إن لم يكن للمنتج درجات لون',
           icon: Icons.palette_outlined,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('المنتج متعدد التدرجات'),
-                subtitle: const Text('أضف درجات يدوياً بدون باركود لكل درجة'),
+                title: const Text('متعدد التدرجات'),
+                subtitle: const Text('مثل فاونديشن أو أحمر شفاه بدرجات'),
                 value: _multiShadeEnabled,
                 onChanged: _setMultiShadeEnabled,
               ),
@@ -1307,46 +1236,47 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
   }
 
   Widget _buildReviewStep() {
-    final result = _result!;
     final warnings = _qualityWarnings();
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
       children: [
         if (warnings.isNotEmpty)
           Card(
-            color: Colors.amber.shade50,
+            color: const Color(0xFFFFF8E8),
             margin: const EdgeInsets.only(bottom: 12),
             child: Padding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.warning_amber_rounded, color: Colors.amber),
+                      Icon(Icons.info_outline, color: Colors.amber.shade800, size: 22),
                       const SizedBox(width: 8),
-                      Text('تنبيهات الجودة (${warnings.length})', style: const TextStyle(fontWeight: FontWeight.w700)),
+                      Text(
+                        'تنبيهات (${warnings.length})',
+                        style: TextStyle(fontWeight: FontWeight.w800, color: Colors.amber.shade900),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   for (final w in warnings)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 4),
-                      child: Text('• $w', style: TextStyle(fontSize: 13, color: Colors.amber.shade900)),
+                      child: Text('• $w', style: TextStyle(fontSize: 13, color: Colors.amber.shade900, height: 1.35)),
                     ),
                 ],
               ),
             ),
           ),
         SectionCard(
-          title: 'معاينة نهائية — راجع قبل الحفظ',
+          title: 'جاهز للحفظ',
+          subtitle: 'راجع الملخص ثم اضغط حفظ',
           icon: Icons.fact_check_outlined,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _reviewRow('الاسم عربي', _nameAr.text),
-              _reviewRow('الاسم إنجليزي', _nameEn.text),
-              _reviewRow('الوصف عربي', _descAr.text, maxLines: 4),
+              _reviewRow('الاسم', _nameAr.text.trim().isNotEmpty ? _nameAr.text : _nameEn.text),
               _reviewRow('البراند', _selectedBrand?.displayName ?? '${_brandAr.text} / ${_brandEn.text}'),
               _reviewRow(
                 'التصنيف',
@@ -1357,15 +1287,15 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                 ].whereType<String>().where((s) => s.isNotEmpty).join(' › '),
               ),
               _reviewRow('السعر / المخزون', '${_price.text.isEmpty ? "0" : _price.text} د.ع · ${_stock.text}'),
-              if (_multiShadeEnabled)
-                _reviewRow('التدرجات', '${_shades.length} درجة')
-              else
-                _reviewRow('التدرجات', 'منتج بدون تدرجات'),
-              const SizedBox(height: 8),
-              Text('الصور (${_selectedImages.length})', style: const TextStyle(fontWeight: FontWeight.w700)),
+              if (_multiShadeEnabled) _reviewRow('التدرجات', '${_shades.length} درجة'),
+              const SizedBox(height: 4),
+              Text(
+                'الصور (${_selectedImages.length})',
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: 8),
               SizedBox(
-                height: 88,
+                height: 84,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   children: _imageOrder
@@ -1374,41 +1304,40 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                         (url) => Padding(
                           padding: const EdgeInsets.only(left: 8),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: CachedNetworkImage(imageUrl: url, width: 88, height: 88, fit: BoxFit.cover),
+                            borderRadius: BorderRadius.circular(12),
+                            child: CachedNetworkImage(imageUrl: url, width: 84, height: 84, fit: BoxFit.cover),
                           ),
                         ),
                       )
                       .toList(),
                 ),
               ),
-              if (result.model != null && !widget.manualMode) ...[
-                const SizedBox(height: 12),
-                Text(
-                  'AI: ${result.model} · صور بالباركود · بدون web search',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                ),
-              ],
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () => _goTo(0),
-                icon: const Icon(Icons.edit),
-                label: const Text('تعديل التسمية'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => _goTo(1),
-                icon: const Icon(Icons.image),
-                label: const Text('تعديل الصور'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => _goTo(2),
-                icon: const Icon(Icons.palette_outlined),
-                label: const Text('تعديل التدرجات'),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => _goTo(3),
-                icon: const Icon(Icons.category),
-                label: const Text('تعديل التصنيف والسعر'),
+              const SizedBox(height: 14),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ActionChip(
+                    avatar: const Icon(Icons.edit, size: 16),
+                    label: const Text('التسمية'),
+                    onPressed: () => _goTo(0),
+                  ),
+                  ActionChip(
+                    avatar: const Icon(Icons.image_outlined, size: 16),
+                    label: const Text('الصور'),
+                    onPressed: () => _goTo(1),
+                  ),
+                  ActionChip(
+                    avatar: const Icon(Icons.palette_outlined, size: 16),
+                    label: const Text('التدرجات'),
+                    onPressed: () => _goTo(2),
+                  ),
+                  ActionChip(
+                    avatar: const Icon(Icons.category_outlined, size: 16),
+                    label: const Text('التصنيف'),
+                    onPressed: () => _goTo(3),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1445,41 +1374,47 @@ class _StepHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+    final progress = (step + 1) / titles.length;
+    return Material(
       color: Colors.white,
-      child: Row(
-        children: [
-          for (var i = 0; i < titles.length; i++) ...[
-            if (i > 0)
-              Expanded(
-                child: Container(
-                  height: 2,
-                  color: i <= step ? AppTheme.primary : Colors.grey.shade300,
-                ),
-              ),
-            Column(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
               children: [
-                CircleAvatar(
-                  radius: 14,
-                  backgroundColor: i <= step ? AppTheme.primary : Colors.grey.shade300,
-                  foregroundColor: Colors.white,
-                  child: Text('${i + 1}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                ),
-                const SizedBox(height: 4),
                 Text(
-                  titles[i],
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: i == step ? FontWeight.w700 : FontWeight.normal,
-                    color: i <= step ? AppTheme.primaryDark : Colors.grey,
+                  titles[step],
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
+                    color: AppTheme.primaryDark,
+                  ),
+                ),
+                const Spacer(),
+                Text(
+                  '${step + 1} / ${titles.length}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                    color: AppTheme.muted,
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(
+                value: progress,
+                minHeight: 6,
+                backgroundColor: const Color(0xFFECE7F0),
+                color: AppTheme.primary,
+              ),
+            ),
           ],
-        ],
+        ),
       ),
     );
   }

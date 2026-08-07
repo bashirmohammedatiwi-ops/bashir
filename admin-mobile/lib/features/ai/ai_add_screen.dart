@@ -281,11 +281,11 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('إضافة بالـ AI'),
+        title: const Text('إضافة ذكية'),
         actions: [
           IconButton(
             tooltip: _showManual ? 'الكاميرا' : 'إدخال يدوي',
-            icon: Icon(_showManual ? Icons.camera_alt : Icons.keyboard),
+            icon: Icon(_showManual ? Icons.camera_alt_outlined : Icons.keyboard_alt_outlined),
             onPressed: _checking ? null : () => setState(() => _showManual = !_showManual),
           ),
           PopupMenuButton<String>(
@@ -303,171 +303,167 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
         children: [
           Column(
             children: [
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppTheme.primary.withValues(alpha: 0.12),
-                      AppTheme.accent.withValues(alpha: 0.18),
-                    ],
-                    begin: Alignment.topRight,
-                    end: Alignment.bottomLeft,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.primary.withValues(alpha: 0.2)),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.auto_awesome, color: AppTheme.primary, size: 22),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'إضافة ذكية سريعة',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15,
-                              color: AppTheme.primaryDark,
+              // Compact toolbar — model + optional hint
+              Material(
+                color: Colors.white,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: InputDecorator(
+                              decoration: const InputDecoration(
+                                labelText: 'الموديل',
+                                prefixIcon: Icon(Icons.auto_awesome, size: 20),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _model.id,
+                                  isExpanded: true,
+                                  isDense: true,
+                                  items: [
+                                    for (final m in AiModelOption.all)
+                                      DropdownMenuItem(
+                                        value: m.id,
+                                        child: Text(m.labelAr, overflow: TextOverflow.ellipsis),
+                                      ),
+                                  ],
+                                  onChanged: _checking
+                                      ? null
+                                      : (id) async {
+                                          if (id == null) return;
+                                          setState(() => _model = AiModelOption.byId(id));
+                                          await AiModelPrefs.setSelectedId(id);
+                                        },
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      '• إن كان الباركود موجوداً يظهر تنبيه فوري بدون AI\n'
-                      '• اختر تعبئة ذكية أو إضافة يدوية بدون AI\n'
-                      '• الصور بالباركود · تدرجات اختيارية · معاينة قبل الحفظ',
-                      style: TextStyle(height: 1.45, fontSize: 13),
-                    ),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    labelText: 'موديل الذكاء الاصطناعي',
-                    prefixIcon: Icon(Icons.memory),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      isExpanded: true,
-                      value: _model.id,
-                      items: [
-                        for (final m in AiModelOption.all)
-                          DropdownMenuItem(
-                            value: m.id,
-                            child: Text('${m.labelAr} — ${m.descriptionAr}', overflow: TextOverflow.ellipsis),
-                          ),
-                      ],
-                      onChanged: _checking
-                          ? null
-                          : (id) async {
-                              if (id == null) return;
-                              setState(() => _model = AiModelOption.byId(id));
-                              await AiModelPrefs.setSelectedId(id);
+                        ],
+                      ),
+                      if (_recent.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          height: 36,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _recent.length,
+                            separatorBuilder: (_, __) => const SizedBox(width: 6),
+                            itemBuilder: (_, i) {
+                              final e = _recent[i];
+                              return ActionChip(
+                                visualDensity: VisualDensity.compact,
+                                avatar: const Icon(Icons.history, size: 14),
+                                label: Text(e.displayName, overflow: TextOverflow.ellipsis),
+                                onPressed: _checking ? null : () => _handleBarcode(e.barcode),
+                              );
                             },
-                    ),
-                  ),
-                ),
-              ),
-              if (_recent.isNotEmpty)
-                SizedBox(
-                  height: 52,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _recent.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemBuilder: (_, i) {
-                      final e = _recent[i];
-                      return ActionChip(
-                        avatar: const Icon(Icons.history, size: 16),
-                        label: Text(e.displayName, overflow: TextOverflow.ellipsis),
-                        onPressed: _checking ? null : () => _handleBarcode(e.barcode),
-                      );
-                    },
-                  ),
-                ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
-                child: TextField(
-                  controller: _hintController,
-                  enabled: !_checking,
-                  textInputAction: TextInputAction.done,
-                  decoration: const InputDecoration(
-                    labelText: 'تلميح اختياري (يوفر استهلاك AI)',
-                    hintText: 'مثال: Seventeen Ideal Cover Concealer',
-                    prefixIcon: Icon(Icons.lightbulb_outline),
-                  ),
-                ),
-              ),
-              if (_showManual)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _manualController,
-                          enabled: !_checking,
-                          keyboardType: TextInputType.number,
-                          textInputAction: TextInputAction.go,
-                          decoration: const InputDecoration(
-                            labelText: 'أدخل الباركود',
-                            prefixIcon: Icon(Icons.pin),
                           ),
-                          onSubmitted: _handleBarcode,
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _hintController,
+                        enabled: !_checking,
+                        textInputAction: TextInputAction.done,
+                        decoration: const InputDecoration(
+                          labelText: 'تلميح (اختياري)',
+                          hintText: 'اسم المنتج إن عرفته…',
+                          prefixIcon: Icon(Icons.tips_and_updates_outlined, size: 20),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      FilledButton(
-                        onPressed: _checking ? null : () => _handleBarcode(_manualController.text),
-                        child: const Text('متابعة'),
-                      ),
+                      if (_showManual) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _manualController,
+                                enabled: !_checking,
+                                keyboardType: TextInputType.number,
+                                textInputAction: TextInputAction.go,
+                                textDirection: TextDirection.ltr,
+                                decoration: const InputDecoration(
+                                  labelText: 'الباركود',
+                                  prefixIcon: Icon(Icons.pin_outlined),
+                                ),
+                                onSubmitted: _handleBarcode,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            FilledButton(
+                              onPressed: _checking ? null : () => _handleBarcode(_manualController.text),
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size(88, 48),
+                              ),
+                              child: const Text('متابعة'),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
                 ),
+              ),
               Expanded(
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    _AiLiveScanner(key: _scannerKey, onDetect: _onDetect),
-                    IgnorePointer(
-                      child: Center(
-                        child: Container(
-                          width: 240,
-                          height: 140,
-                          decoration: BoxDecoration(
-                            border: Border.all(color: Colors.white70, width: 2),
-                            borderRadius: BorderRadius.circular(12),
+                    if (_showManual)
+                      ColoredBox(
+                        color: Colors.black87,
+                        child: Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.keyboard_alt_outlined, size: 56, color: Colors.white.withValues(alpha: 0.7)),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'أدخل الباركود أعلاه ثم اضغط متابعة',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(color: Colors.white, fontSize: 15),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
+                    else ...[
+                      _AiLiveScanner(key: _scannerKey, onDetect: _onDetect),
+                      IgnorePointer(
+                        child: Center(
+                          child: Container(
+                            width: 260,
+                            height: 150,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.white.withValues(alpha: 0.85), width: 2.5),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    Positioned(
-                      left: 16,
-                      right: 16,
-                      bottom: 24,
-                      child: Material(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(12),
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          child: Text(
-                            'امسح الباركود — نفحص الوجود أولاً ثم نفتح المعاينة',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white, fontSize: 13),
+                      Positioned(
+                        left: 20,
+                        right: 20,
+                        bottom: 28,
+                        child: Material(
+                          color: Colors.black.withValues(alpha: 0.55),
+                          borderRadius: BorderRadius.circular(14),
+                          child: const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            child: Text(
+                              'وجّه الكاميرا نحو الباركود',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -478,15 +474,15 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
               color: Colors.black45,
               child: Center(
                 child: Card(
-                  margin: const EdgeInsets.all(32),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
+                  margin: const EdgeInsets.all(40),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 28, vertical: 28),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
+                      children: [
                         CircularProgressIndicator(),
                         SizedBox(height: 16),
-                        Text('جاري فحص الباركود في المتجر...', textAlign: TextAlign.center),
+                        Text('جاري الفحص…', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
