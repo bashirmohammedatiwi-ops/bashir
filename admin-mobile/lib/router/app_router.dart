@@ -52,7 +52,8 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) {
           final barcode = state.uri.queryParameters['barcode'] ?? '';
           final hint = state.uri.queryParameters['hint'];
-          return GptAutofillScreen(barcode: barcode, hint: hint);
+          final manual = state.uri.queryParameters['manual'] == '1';
+          return GptAutofillScreen(barcode: barcode, hint: hint, manualMode: manual);
         },
       ),
       GoRoute(

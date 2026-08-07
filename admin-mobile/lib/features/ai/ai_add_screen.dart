@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/ai_draft_store.dart';
 import '../../core/utils/helpers.dart';
 import '../../models/ai_autofill.dart';
 import '../../providers/auth_provider.dart';
@@ -36,11 +37,18 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
   bool _handled = false;
   bool _showManual = false;
   bool _checking = false;
+  List<AiDraftEntry> _recent = [];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _loadRecent();
+  }
+
+  Future<void> _loadRecent() async {
+    final list = await AiDraftStore.list();
+    if (mounted) setState(() => _recent = list.take(8).toList());
   }
 
   @override
@@ -87,15 +95,20 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
         return;
       }
 
+      final mode = await _pickAddMode();
+      if (mode == null || !mounted) return;
+
       final hint = _hintController.text.trim();
       final uri = Uri(
         path: '/gpt-autofill',
         queryParameters: {
           'barcode': digits,
           if (hint.isNotEmpty) 'hint': hint,
+          if (mode == 'manual') 'manual': '1',
         },
       );
       await context.push(uri.toString());
+      await _loadRecent();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -111,6 +124,41 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
         await _scannerKey.currentState?.resume();
       }
     }
+  }
+
+  Future<String?> _pickAddMode() async {
+    return showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: EdgeInsets.fromLTRB(20, 16, 20, 20 + MediaQuery.of(ctx).padding.bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('طريقة الإضافة', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(Icons.auto_awesome, color: AppTheme.primary),
+                title: const Text('تعبئة ذكية (AI)'),
+                subtitle: const Text('تسمية ووصف وتصنيف — استهلاك منخفض'),
+                onTap: () => Navigator.pop(ctx, 'ai'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.edit_note),
+                title: const Text('يدوي بدون AI'),
+                subtitle: const Text('صور بالباركود فقط — تكتب التسمية بنفسك'),
+                onTap: () => Navigator.pop(ctx, 'manual'),
+              ),
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _showExistingDialog(String barcode, BarcodeCheckResult check) async {
@@ -284,13 +332,31 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
                     SizedBox(height: 8),
                     Text(
                       '• إن كان الباركود موجوداً يظهر تنبيه فوري بدون AI\n'
-                      '• الصور تُجلب بالباركود من البحث (ليس من الذكاء الاصطناعي)\n'
-                      '• راجع وعدّل كل الحقول قبل الحفظ',
+                      '• اختر تعبئة ذكية أو إضافة يدوية بدون AI\n'
+                      '• الصور بالباركود · تدرجات اختيارية · معاينة قبل الحفظ',
                       style: TextStyle(height: 1.45, fontSize: 13),
                     ),
                   ],
                 ),
               ),
+              if (_recent.isNotEmpty)
+                SizedBox(
+                  height: 52,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _recent.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemBuilder: (_, i) {
+                      final e = _recent[i];
+                      return ActionChip(
+                        avatar: const Icon(Icons.history, size: 16),
+                        label: Text(e.displayName, overflow: TextOverflow.ellipsis),
+                        onPressed: _checking ? null : () => _handleBarcode(e.barcode),
+                      );
+                    },
+                  ),
+                ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
                 child: TextField(

@@ -88,7 +88,7 @@ class ExistingProductInfo {
     final brand = json['brand'];
     String? brandName;
     if (brand is Map) {
-      brandName = (brand['nameAr'] ?? brand['nameEn'] ?? brand['name'])?.toString();
+      brandName = (brand['name'] ?? brand['nameAr'] ?? brand['nameEn'])?.toString();
     }
     return ExistingProductInfo(
       id: json['id']?.toString() ?? '',

@@ -94,7 +94,7 @@ export class GoogleImagesService {
         };
         for (const item of body.items ?? []) {
           const image = (item.link ?? "").trim();
-          if (!image.startsWith("http") || /\.svg(\?|$)/i.test(image)) continue;
+          if (!this.isUsableImage(image, item.title ?? "")) continue;
           hits.push({
             url: image,
             thumbUrl: (item.image?.thumbnailLink ?? image).trim(),
@@ -148,8 +148,7 @@ export class GoogleImagesService {
       const hits: GoogleImageHit[] = [];
       for (const row of body.results ?? []) {
         const image = (row.image ?? "").trim();
-        if (!image.startsWith("http")) continue;
-        if (/\.svg(\?|$)/i.test(image)) continue;
+        if (!this.isUsableImage(image, row.title ?? "")) continue;
         hits.push({
           url: image,
           thumbUrl: (row.thumbnail ?? image).trim(),
@@ -191,5 +190,17 @@ export class GoogleImagesService {
     } catch {
       return url.trim().toLowerCase() || null;
     }
+  }
+
+  /** Drop logos, icons, placeholders, and non-photo assets. */
+  private isUsableImage(url: string, title = ""): boolean {
+    if (!url.startsWith("http")) return false;
+    if (/\.svg(\?|$)/i.test(url)) return false;
+    if (/\.(gif)(\?|$)/i.test(url)) return false;
+    const blob = `${url} ${title}`.toLowerCase();
+    const junk =
+      /logo|favicon|sprite|icon[_-]?only|placeholder|no[_-]?image|1x1|pixel|tracking|badge|watermark|banner[_-]?ad/;
+    if (junk.test(blob)) return false;
+    return true;
   }
 }

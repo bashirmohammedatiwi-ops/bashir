@@ -82,6 +82,7 @@ const CATEGORY_SYNONYMS: Record<string, string[]> = {
 export class AiProductService {
   private readonly logger = new Logger(AiProductService.name);
   private categoryHintCache: { at: number; text: string } | null = null;
+  private readonly autofillCache = new Map<string, { at: number; payload: Record<string, unknown> }>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -126,8 +127,15 @@ export class AiProductService {
           imageQuery: digits,
           aiSkipped: true,
           reason: "duplicate",
+          cached: false,
         },
       };
+    }
+
+    const cacheKey = `${digits}|${(hint ?? "").trim().toLowerCase()}`;
+    const cached = this.autofillCache.get(cacheKey);
+    if (cached && Date.now() - cached.at < 30 * 60_000) {
+      return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
     }
 
     const apiKey = process.env.OPENAI_API_KEY?.trim();
@@ -159,7 +167,7 @@ export class AiProductService {
 
     const matched = await this.matchCategories(gpt);
 
-    return {
+    const payload = {
       exists: false as const,
       barcode: digits,
       brandAr: gpt.brand_ar,
@@ -182,8 +190,11 @@ export class AiProductService {
         imageQuery: digits,
         aiSkipped: false,
         reason: null,
+        cached: false,
       },
     };
+    this.autofillCache.set(cacheKey, { at: Date.now(), payload: payload as unknown as Record<string, unknown> });
+    return payload;
   }
 
   /** Refresh images by barcode only — no AI. */
@@ -210,7 +221,7 @@ export class AiProductService {
         isActive: true,
         price: true,
         stock: true,
-        brand: { select: { id: true, name: true, nameAr: true, nameEn: true } },
+        brand: { select: { id: true, name: true } },
       },
     });
     if (product) return product;
@@ -231,7 +242,7 @@ export class AiProductService {
             isActive: true,
             price: true,
             stock: true,
-            brand: { select: { id: true, name: true, nameAr: true, nameEn: true } },
+            brand: { select: { id: true, name: true } },
           },
         },
       },
