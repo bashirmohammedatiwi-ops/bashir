@@ -89,7 +89,7 @@ export class AiProductService {
     private readonly images: GoogleImagesService,
   ) {}
 
-  async autofill(barcode: string, hint?: string) {
+  async autofill(barcode: string, hint?: string, modelChoice?: string) {
     const digits = barcode.replace(/\D/g, "") || barcode.trim();
     if (digits.length < 6) throw new BadRequestException("باركود غير صالح");
 
@@ -121,6 +121,7 @@ export class AiProductService {
         images: [],
         meta: {
           model: null,
+          modelChoice: null,
           usedWebSearch: false,
           freeHintSource: null,
           imageCount: 0,
@@ -132,7 +133,8 @@ export class AiProductService {
       };
     }
 
-    const cacheKey = `v2|${digits}|${(hint ?? "").trim().toLowerCase()}`;
+    const resolved = this.resolveOpenAiModel(modelChoice);
+    const cacheKey = `v3|${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 30 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -143,11 +145,7 @@ export class AiProductService {
       throw new ServiceUnavailableException("OPENAI_API_KEY غير مُعد على السيرفر");
     }
 
-    const requested = (process.env.OPENAI_MODEL ?? "gpt-5.4-nano").trim();
-    const model =
-      /luna[-_]?low/i.test(requested) || requested === "gpt-5.6-luna-low"
-        ? "gpt-5.4-nano"
-        : requested;
+    const model = resolved.apiModel;
 
     // 2) Free facts first (helps image name queries) — zero AI
     const free = await this.freeBarcodeHint(digits);
@@ -190,6 +188,7 @@ export class AiProductService {
       images: imageHits,
       meta: {
         model,
+        modelChoice: resolved.choice,
         usedWebSearch: false,
         freeHintSource: free.source ?? null,
         imageCount: imageHits.length,
@@ -201,6 +200,68 @@ export class AiProductService {
     };
     this.autofillCache.set(cacheKey, { at: Date.now(), payload: payload as unknown as Record<string, unknown> });
     return payload;
+  }
+
+  listModels() {
+    return {
+      default: "gpt-5.6-luna-low",
+      models: [
+        {
+          id: "gpt-5.6-luna-low",
+          labelAr: "5.6 Luna Low",
+          labelEn: "Luna Low",
+          descriptionAr: "الأرخص والأسرع — مناسب للإضافة اليومية",
+          apiModel: "gpt-5.4-nano",
+          costTier: "lowest",
+        },
+        {
+          id: "gpt-5.6-luna-medium",
+          labelAr: "5.6 Luna Medium",
+          labelEn: "Luna Medium",
+          descriptionAr: "جودة أعلى للتسمية والوصف — تكلفة أعلى قليلاً",
+          apiModel: "gpt-5.4-mini",
+          costTier: "medium",
+        },
+      ],
+    };
+  }
+
+  /**
+   * Cursor slugs (luna-low / luna-medium) are not OpenAI API model ids.
+   * Map them to the closest cheap OpenAI models.
+   */
+  private resolveOpenAiModel(choice?: string): { choice: string; apiModel: string } {
+    const raw = (choice ?? process.env.OPENAI_MODEL ?? "gpt-5.6-luna-low").trim();
+    const key = raw.toLowerCase().replace(/_/g, "-");
+
+    if (
+      key === "gpt-5.6-luna-medium" ||
+      key === "luna-medium" ||
+      key === "luna-med" ||
+      /luna[-]?med/i.test(key)
+    ) {
+      return { choice: "gpt-5.6-luna-medium", apiModel: "gpt-5.4-mini" };
+    }
+
+    if (
+      key === "gpt-5.6-luna-low" ||
+      key === "luna-low" ||
+      /luna[-]?low/i.test(key) ||
+      key === "gpt-5.4-nano"
+    ) {
+      return { choice: "gpt-5.6-luna-low", apiModel: "gpt-5.4-nano" };
+    }
+
+    if (key === "gpt-5.4-mini") {
+      return { choice: "gpt-5.6-luna-medium", apiModel: "gpt-5.4-mini" };
+    }
+
+    // Allow explicit OpenAI ids as escape hatch
+    if (/^gpt-/i.test(raw)) {
+      return { choice: raw, apiModel: raw };
+    }
+
+    return { choice: "gpt-5.6-luna-low", apiModel: "gpt-5.4-nano" };
   }
 
   /** Refresh images by barcode + optional product name — no AI. */

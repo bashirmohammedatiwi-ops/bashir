@@ -18,11 +18,18 @@ import '../../widgets/shade_tile.dart';
 
 /// Multi-step AI add wizard: naming → images → shades → category/price → review & save.
 class GptAutofillScreen extends ConsumerStatefulWidget {
-  const GptAutofillScreen({super.key, required this.barcode, this.hint, this.manualMode = false});
+  const GptAutofillScreen({
+    super.key,
+    required this.barcode,
+    this.hint,
+    this.manualMode = false,
+    this.modelId,
+  });
 
   final String barcode;
   final String? hint;
   final bool manualMode;
+  final String? modelId;
 
   @override
   ConsumerState<GptAutofillScreen> createState() => _GptAutofillScreenState();
@@ -134,7 +141,11 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
           aiSkipped: true,
         );
       } else {
-        fill = await ai.autofill(barcode: widget.barcode, hint: widget.hint);
+        fill = await ai.autofill(
+          barcode: widget.barcode,
+          hint: widget.hint,
+          model: widget.modelId,
+        );
       }
 
       final brands = await brandsFuture;
@@ -794,9 +805,10 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                   Text(widget.manualMode ? 'جلب صور بالباركود...' : 'جلب حقائق مجانية + صور بالباركود...'),
                   if (!widget.manualMode) ...[
                     const SizedBox(height: 6),
-                    const Text(
-                      'ثم تعبئة نصية بموديل اقتصادي (بدون بحث ويب)',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    Text(
+                      'موديل: ${widget.modelId ?? 'gpt-5.6-luna-low'} (بدون بحث ويب)',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      textDirection: TextDirection.ltr,
                     ),
                   ],
                 ],

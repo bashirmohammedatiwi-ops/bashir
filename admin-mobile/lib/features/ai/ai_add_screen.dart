@@ -5,6 +5,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ai_draft_store.dart';
+import '../../core/utils/ai_model_prefs.dart';
 import '../../core/utils/helpers.dart';
 import '../../models/ai_autofill.dart';
 import '../../providers/auth_provider.dart';
@@ -38,17 +39,24 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
   bool _showManual = false;
   bool _checking = false;
   List<AiDraftEntry> _recent = [];
+  AiModelOption _model = AiModelOption.lunaLow;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadRecent();
+    _loadModel();
   }
 
   Future<void> _loadRecent() async {
     final list = await AiDraftStore.list();
     if (mounted) setState(() => _recent = list.take(8).toList());
+  }
+
+  Future<void> _loadModel() async {
+    final id = await AiModelPrefs.getSelectedId();
+    if (mounted) setState(() => _model = AiModelOption.byId(id));
   }
 
   @override
@@ -105,6 +113,7 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
           'barcode': digits,
           if (hint.isNotEmpty) 'hint': hint,
           if (mode == 'manual') 'manual': '1',
+          if (mode == 'ai') 'model': _model.id,
         },
       );
       await context.push(uri.toString());
@@ -337,6 +346,35 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
                       style: TextStyle(height: 1.45, fontSize: 13),
                     ),
                   ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                child: InputDecorator(
+                  decoration: const InputDecoration(
+                    labelText: 'موديل الذكاء الاصطناعي',
+                    prefixIcon: Icon(Icons.memory),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: _model.id,
+                      items: [
+                        for (final m in AiModelOption.all)
+                          DropdownMenuItem(
+                            value: m.id,
+                            child: Text('${m.labelAr} — ${m.descriptionAr}', overflow: TextOverflow.ellipsis),
+                          ),
+                      ],
+                      onChanged: _checking
+                          ? null
+                          : (id) async {
+                              if (id == null) return;
+                              setState(() => _model = AiModelOption.byId(id));
+                              await AiModelPrefs.setSelectedId(id);
+                            },
+                    ),
+                  ),
                 ),
               ),
               if (_recent.isNotEmpty)

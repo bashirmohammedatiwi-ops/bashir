@@ -23,13 +23,18 @@ class AiProductRepository {
     }
   }
 
-  Future<AiAutofillResult> autofill({required String barcode, String? hint}) async {
+  Future<AiAutofillResult> autofill({
+    required String barcode,
+    String? hint,
+    String? model,
+  }) async {
     try {
       final resp = await _dio.post(
         '/ai-product/autofill',
         data: {
           'barcode': barcode.trim(),
           if (hint != null && hint.trim().isNotEmpty) 'hint': hint.trim(),
+          if (model != null && model.trim().isNotEmpty) 'model': model.trim(),
         },
         options: Options(receiveTimeout: const Duration(seconds: 90)),
       );

@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Role } from "@prisma/client";
 import { Roles } from "../../common/decorators/roles.decorator";
@@ -15,9 +15,14 @@ import { AiAutofillDto, AiImagesDto } from "./dto/ai-autofill.dto";
 export class AiProductController {
   constructor(private readonly ai: AiProductService) {}
 
+  @Get("models")
+  models() {
+    return this.ai.listModels();
+  }
+
   @Post("autofill")
   autofill(@Body() dto: AiAutofillDto) {
-    return this.ai.autofill(dto.barcode, dto.hint);
+    return this.ai.autofill(dto.barcode, dto.hint, dto.model);
   }
 
   /** Barcode image search only — no AI tokens. */
