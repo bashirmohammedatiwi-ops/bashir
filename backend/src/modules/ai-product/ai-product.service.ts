@@ -148,13 +148,14 @@ export class AiProductService {
     ]);
 
     // 3) One cheap GPT call — NO web_search tool (images already from barcode search)
-    const gpt = await this.callGpt({
+    const rawGpt = await this.callGpt({
       apiKey,
       model,
       barcode: digits,
       free,
       hint: hint?.trim() || undefined,
     });
+    const gpt = this.polishNaming(rawGpt);
 
     const matched = await this.matchCategories(gpt);
 
@@ -365,10 +366,20 @@ export class AiProductService {
       .filter(Boolean)
       .join(" | ");
 
-    // Compact prompt — no web_search, tiny output budget
-    const instructions = `Iraqi beauty shop catalog writer. JSON only. Minimal tokens.
-NAME_AR: "[براند عربي] - [نوع] [اسم الخط EN]" e.g. "سفنتين - كونسيلر Ideal Cover Liquid"
-NAME_EN: "[Brand] - [Official Name]" e.g. "Seventeen - Ideal Cover Liquid Concealer"
+    // Compact prompt — naming quality first, still no web_search
+    const instructions = `Iraqi beauty e-commerce catalog writer (Al Hayaa). JSON only. Keep tokens low.
+
+NAMING (strict — both languages MUST use: Brand - Product):
+• name_en = "{BrandEn} - {expressive official product name}"
+  Include product type (Concealer/Foundation/Mascara/Lip Liner/Blush/Powder…) + line name + key benefit/finish/SPF/size if known.
+  Example: "Seventeen - Ideal Cover Liquid Concealer Full Coverage 6ml"
+• name_ar = "{براند عربي} - {نوع المنتج بالعربي العراقي} {اسم الخط الرسمي EN} {صفات قصيرة معبّرة}"
+  Use Iraqi retail product types: كونسيلر، فاونديشن، ماسكارا، قلم شفاه، قلم حواجب، بلاشر، باودر، كحل، ظل عيون، سيروم، مرطب…
+  Keep official English line name. Add 2–5 expressive Arabic traits (تغطية، مطفي، مقاوم للماء، SPF…).
+  Example: "سفنتين - كونسيلر Ideal Cover Liquid بتغطية كاملة وثبات عالٍ 6 مل"
+• NEVER put brand only. NEVER omit the " - " separator. Do NOT repeat brand twice.
+• brand_ar / brand_en must match the brand used in the names (Seventeen→سفنتين, Deborah Milano→ديبورا ميلانو).
+
 DESC_AR: 2 short Iraqi retail sentences + 3 benefit bullets.
 DESC_EN: 2 short retail sentences + 3 benefit bullets.
 Categories MUST match catalog names below (Arabic preferred):
@@ -377,13 +388,13 @@ If unsure: nearest category + needs_review=true. No shade barcodes.`;
 
     const userInput = `barcode=${args.barcode}
 facts: ${known || "none — infer carefully, needs_review=true"}
-Fill product JSON.`;
+Write expressive Brand - Product names in AR+EN, then fill the rest of the JSON.`;
 
     const payload: Record<string, unknown> = {
       model: args.model,
       instructions,
       input: userInput,
-      max_output_tokens: 480,
+      max_output_tokens: 560,
       text: {
         format: {
           type: "json_schema",
@@ -428,6 +439,125 @@ Fill product JSON.`;
     const top = body.output_text;
     if (typeof top === "string" && top.trim()) return top;
     throw new ServiceUnavailableException("رد GPT فارغ");
+  }
+
+  /** Enforce "Brand - Product" naming in AR/EN without a second AI call. */
+  private polishNaming(gpt: GptAutofillJson): GptAutofillJson {
+    const brandEn = this.canonicalBrandEn(gpt.brand_en || gpt.brand_ar || "");
+    const brandAr = this.canonicalBrandAr(brandEn, gpt.brand_ar || "");
+    const nameEn = this.ensureBrandDashName(gpt.name_en || "", brandEn);
+    const nameAr = this.ensureBrandDashName(gpt.name_ar || "", brandAr);
+    return {
+      ...gpt,
+      brand_en: brandEn || gpt.brand_en?.trim() || "",
+      brand_ar: brandAr || gpt.brand_ar?.trim() || "",
+      name_en: nameEn,
+      name_ar: nameAr,
+    };
+  }
+
+  private canonicalBrandEn(raw: string): string {
+    const n = this.norm(raw);
+    if (!n) return raw.trim();
+    const map: Array<[RegExp, string]> = [
+      [/seventeen|سيفينتين|سفنتيين|سفنتين/, "Seventeen"],
+      [/deborah\s*milano|deborah|ديبورا/, "Deborah Milano"],
+      [/gosh|جوش/, "GOSH"],
+      [/essence|اسنس|إسسنس/, "essence"],
+      [/catrice|كاتريس/, "Catrice"],
+      [/bourjois|بورجوا/, "Bourjois"],
+      [/loreal|لوريال|لورييل/, "L'Oréal"],
+      [/maybelline|ميبلين/, "Maybelline"],
+      [/huda\s*beauty|هدى/, "Huda Beauty"],
+      [/beesline|بيزلين|بيزلاين/, "Beesline"],
+      [/garnier|غارنييه|غارنييه/, "Garnier"],
+      [/radiant|راديانت/, "Radiant"],
+      [/mon\s*reve|مون\s*ريف/, "Mon Reve"],
+      [/grigi|جريجي/, "Grigi"],
+    ];
+    for (const [re, en] of map) {
+      if (re.test(n)) return en;
+    }
+    return raw.trim().replace(/\s+/g, " ");
+  }
+
+  private canonicalBrandAr(brandEn: string, rawAr: string): string {
+    const n = this.norm(brandEn || rawAr);
+    const map: Array<[RegExp, string]> = [
+      [/seventeen/, "سفنتين"],
+      [/deborah/, "ديبورا ميلانو"],
+      [/gosh/, "جوش"],
+      [/essence/, "اسنس"],
+      [/catrice/, "كاتريس"],
+      [/bourjois/, "بورجوا"],
+      [/l.?oreal/, "لوريال"],
+      [/maybelline/, "ميبلين"],
+      [/huda/, "هدى بيوتي"],
+      [/beesline/, "بيزلين"],
+      [/garnier/, "غارنييه"],
+      [/radiant/, "راديانت"],
+      [/mon\s*reve/, "مون ريف"],
+      [/grigi/, "جريجي"],
+    ];
+    for (const [re, ar] of map) {
+      if (re.test(n)) return ar;
+    }
+    const ar = rawAr.trim().replace(/\s+/g, " ");
+    return ar || brandEn.trim();
+  }
+
+  private ensureBrandDashName(name: string, brand: string): string {
+    const cleaned = name.replace(/\s+/g, " ").trim();
+    const b = brand.replace(/\s+/g, " ").trim();
+    if (!cleaned) return b ? `${b} -` : "";
+    if (!b) return cleaned;
+
+    const dashParts = cleaned.split(/\s*[-–—]\s*/);
+    let productPart = cleaned;
+
+    // Already "Brand - Product"
+    if (dashParts.length >= 2 && this.namesMatch(dashParts[0], b)) {
+      productPart = dashParts.slice(1).join(" - ").trim();
+    } else if (this.startsWithBrand(cleaned, b)) {
+      productPart = cleaned.slice(b.length).replace(/^[\s:–—-]+/, "").trim();
+    } else {
+      // Strip a leading brand occurrence if GPT embedded it without dash
+      const stripped = this.stripLeadingBrand(cleaned, b);
+      productPart = stripped || cleaned;
+    }
+
+    productPart = this.stripLeadingBrand(productPart, b).replace(/^[\s:–—-]+/, "").trim() || productPart;
+    if (!productPart) productPart = cleaned;
+    return `${b} - ${productPart}`;
+  }
+
+  private startsWithBrand(name: string, brand: string): boolean {
+    return this.norm(name).startsWith(this.norm(brand));
+  }
+
+  private namesMatch(a: string, b: string): boolean {
+    const na = this.norm(a);
+    const nb = this.norm(b);
+    return na === nb || na.includes(nb) || nb.includes(na);
+  }
+
+  private stripLeadingBrand(text: string, brand: string): string {
+    const t = text.trim();
+    const b = brand.trim();
+    if (!t || !b) return t;
+    if (this.norm(t).startsWith(this.norm(b))) {
+      return t.slice(b.length).replace(/^[\s:–—-]+/, "").trim();
+    }
+    // Also strip common Seventeen Arabic variants when canonical brand is سفنتين
+    const variants = ["سيفينتين", "سفنتيين", "سفنتين", "Seventeen", "seventeen"];
+    for (const v of variants) {
+      if (this.norm(b).includes("seventeen") || this.norm(b).includes("سفنتين") || this.norm(b) === this.norm(v)) {
+        if (this.norm(t).startsWith(this.norm(v))) {
+          return t.slice(v.length).replace(/^[\s:–—-]+/, "").trim();
+        }
+      }
+    }
+    return t;
   }
 
   private async compactCategoryHint(): Promise<string> {

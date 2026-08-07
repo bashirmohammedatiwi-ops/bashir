@@ -570,11 +570,26 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
           icon: Icons.edit_note,
           child: Column(
             children: [
-              TextField(controller: _nameAr, decoration: const InputDecoration(labelText: 'الاسم عربي'), maxLines: 2),
+              Text(
+                'الصيغة: البراند - اسم المنتج (معبّر بالعربي والإنجليزي)',
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _nameAr,
+                decoration: const InputDecoration(
+                  labelText: 'الاسم عربي',
+                  hintText: 'سفنتين - كونسيلر Ideal Cover Liquid بتغطية كاملة',
+                ),
+                maxLines: 2,
+              ),
               const SizedBox(height: 10),
               TextField(
                 controller: _nameEn,
-                decoration: const InputDecoration(labelText: 'الاسم إنجليزي'),
+                decoration: const InputDecoration(
+                  labelText: 'الاسم إنجليزي',
+                  hintText: 'Seventeen - Ideal Cover Liquid Concealer Full Coverage',
+                ),
                 maxLines: 2,
                 textDirection: TextDirection.ltr,
               ),
