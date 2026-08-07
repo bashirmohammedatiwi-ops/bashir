@@ -319,7 +319,7 @@ ${known || "No external facts — infer carefully and set needs_review=true."}`;
         this.bestMatch(subs, gpt.category_sub_ar, "");
       if (sub) {
         subcategoryId = sub.id;
-        subcategoryNameAr = sub.nameAr || sub.name;
+        subcategoryNameAr = sub.nameAr || sub.name || null;
         const tert = await this.prisma.category.findMany({
           where: { parentId: sub.id, isActive: true },
           select: { id: true, nameAr: true, nameEn: true, name: true },
@@ -329,7 +329,7 @@ ${known || "No external facts — infer carefully and set needs_review=true."}`;
           this.bestMatch(tert, gpt.category_tertiary_ar, "");
         if (t) {
           tertiaryCategoryId = t.id;
-          tertiaryNameAr = t.nameAr || t.name;
+          tertiaryNameAr = t.nameAr || t.name || null;
         }
       }
     }
