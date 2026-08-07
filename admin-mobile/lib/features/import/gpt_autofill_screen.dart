@@ -79,6 +79,8 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
   List<AiAutofillImage> _images = [];
   final Set<String> _selectedImages = {};
   final List<String> _imageOrder = [];
+  /// Keeps metadata for selected URLs so they survive barcode ↔ name search swaps.
+  final Map<String, AiAutofillImage> _imageByUrl = {};
   final Map<String, Uint8List> _editedBytesByUrl = {};
   final List<_AiShadeDraft> _shades = [];
   /// Media from a deleted product kept for reuse (url → mediaId).
@@ -279,6 +281,9 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
               ],
       );
     _images = List.of(fill.images);
+    for (final img in _images) {
+      _imageByUrl[img.url] = img;
+    }
     // User picks images manually — never auto-select defaults
     _selectedImages.clear();
     _imageOrder.clear();
@@ -302,6 +307,15 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
           if (s.imageUrl == url) s.imageUrl = null;
         }
       } else {
+        AiAutofillImage? hit;
+        for (final i in _images) {
+          if (i.url == url) {
+            hit = i;
+            break;
+          }
+        }
+        hit ??= _imageByUrl[url];
+        if (hit != null) _imageByUrl[url] = hit;
         _selectedImages.add(url);
         _imageOrder.add(url);
       }
@@ -483,19 +497,46 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
             nameHint: nameFallback.isNotEmpty ? nameFallback : widget.hint,
           );
       setState(() {
-        final searchUrls = imgs.map((e) => e.url).toSet();
-        final kept = _preservedImages.where((i) => !searchUrls.contains(i.url)).toList();
-        _images = [...kept, ...imgs];
-        // Keep only selections that still exist; do NOT auto-pick new images
-        _selectedImages.removeWhere((u) => !_images.any((i) => i.url == u));
-        _imageOrder.removeWhere((u) => !_selectedImages.contains(u));
+        for (final img in imgs) {
+          _imageByUrl[img.url] = img;
+        }
+        for (final img in _preservedImages) {
+          _imageByUrl.putIfAbsent(img.url, () => img);
+        }
+
+        // Keep every selected image visible (even if not in this search result)
+        final selectedKept = <AiAutofillImage>[];
+        final seen = <String>{};
+        for (final url in _imageOrder.where(_selectedImages.contains)) {
+          final img = _imageByUrl[url];
+          if (img == null || seen.contains(url)) continue;
+          seen.add(url);
+          selectedKept.add(img);
+        }
+
+        final searchNew = <AiAutofillImage>[];
+        for (final img in imgs) {
+          if (seen.contains(img.url)) continue;
+          seen.add(img.url);
+          searchNew.add(img);
+        }
+        for (final img in _preservedImages) {
+          if (seen.contains(img.url)) continue;
+          seen.add(img.url);
+          searchNew.add(img);
+        }
+
+        _images = [...selectedKept, ...searchNew];
+        // Never drop selections when switching barcode ↔ name search
       });
+      final keptCount = _selectedImages.length;
       _snack(
-        imgs.isEmpty && _preservedImages.isEmpty
+        imgs.isEmpty && keptCount == 0 && _preservedImages.isEmpty
             ? 'لا نتائج — جرّب البحث بالاسم'
-            : 'نتائج البحث: ${imgs.length} صورة'
-                '${_preservedImages.isNotEmpty ? ' · ${_preservedImages.length} سابقة' : ''}'
-                ' — اختر ما تريده يدوياً',
+            : 'نتائج: ${imgs.length}'
+                '${keptCount > 0 ? ' · مختارة محفوظة: $keptCount' : ''}'
+                '${_preservedImages.isNotEmpty ? ' · سابقة: ${_preservedImages.length}' : ''}'
+                ' — يمكنك الجمع بين بحث الباركود والاسم',
       );
     } catch (e) {
       _snack(e.toString().replaceFirst('Exception: ', ''));
@@ -1260,6 +1301,9 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
           onSetPrimary: _setPrimaryImage,
           onSelectAll: () => setState(() {
             final urls = _images.map((e) => e.url).toList();
+            for (final img in _images) {
+              _imageByUrl[img.url] = img;
+            }
             _selectedImages
               ..clear()
               ..addAll(urls);

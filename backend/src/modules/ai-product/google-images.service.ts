@@ -11,21 +11,24 @@ export type GoogleImageHit = {
 
 /**
  * Product image search — Google CSE when configured, else DuckDuckGo.
- * Barcode mode searches the digits like Google Images (minimal filtering).
+ * Barcode mode filters out barcode-sticker / UPC-chart junk; name mode stays broader.
  */
 @Injectable()
 export class GoogleImagesService {
   private readonly logger = new Logger(GoogleImagesService.name);
 
-  /** Exact Google-like search for a free-text or barcode query. */
+  /** Free-text product search (name / brand). */
   async searchQuery(query: string, limit = 48): Promise<GoogleImageHit[]> {
     const q = query.replace(/\s+/g, " ").trim();
     if (q.length < 3) return [];
-    return this.collectResults(q, limit, { expandVariants: !/^\d{8,14}$/.test(q) });
+    return this.collectResults(q, limit, {
+      expandVariants: !/^\d{8,14}$/.test(q),
+      filterMode: "product",
+    });
   }
 
   /**
-   * Barcode mode: search digits like Google Images, then (only if thin) brand/title supplements.
+   * Barcode mode: search digits, filter barcode-junk hard, then enrich with name hints.
    */
   async searchByBarcode(
     barcode: string,
@@ -50,27 +53,43 @@ export class GoogleImagesService {
 
     for (const q of variants) {
       if (merged.length >= limit) break;
-      pushHits(await this.collectResults(q, limit, { expandVariants: false, softFilter: true }));
+      pushHits(
+        await this.collectResults(q, limit, {
+          expandVariants: false,
+          filterMode: "barcode",
+        }),
+      );
     }
 
-    // Supplement only when barcode-only results are thin (obscure regional SKUs)
-    if (merged.length < Math.min(16, Math.floor(limit / 2))) {
-      const extras: string[] = [];
-      for (const hint of nameHints) {
-        const h = hint.replace(/\s+/g, " ").trim();
-        if (h.length < 2 || h.length > 100) continue;
-        if (/^\d{8,14}$/.test(h)) continue;
-        extras.push(`${digits} ${h}`);
-        extras.push(h);
-      }
-      extras.push(`${digits} product`, `${digits} packaging`);
-      for (const q of [...new Set(extras)].slice(0, 6)) {
-        if (merged.length >= limit) break;
-        pushHits(await this.collectResults(q, Math.min(24, limit), { expandVariants: false, softFilter: true }));
-      }
+    // Name/brand enrichment — always when hints exist (better product photos than bare EAN)
+    const extras: string[] = [];
+    for (const hint of nameHints) {
+      const h = hint.replace(/\s+/g, " ").trim();
+      if (h.length < 2 || h.length > 100) continue;
+      if (/^\d{8,14}$/.test(h)) continue;
+      extras.push(`${h} ${digits}`);
+      extras.push(h);
+      // First 2–3 tokens often = brand + line
+      const short = h.split(/\s+/).slice(0, 4).join(" ");
+      if (short.length >= 3 && short !== h) extras.push(short);
+    }
+    // Prefer product-photo wording over "EAN/UPC" (those pull sticker charts)
+    if (merged.length < Math.min(20, limit)) {
+      extras.push(`${digits} product photo`);
+      extras.push(`${digits} packshot`);
     }
 
-    return merged.slice(0, limit);
+    for (const q of [...new Set(extras)].slice(0, 8)) {
+      if (merged.length >= limit) break;
+      pushHits(
+        await this.collectResults(q, Math.min(24, limit), {
+          expandVariants: false,
+          filterMode: "barcode",
+        }),
+      );
+    }
+
+    return this.rankProductPhotos(merged).slice(0, limit);
   }
 
   async searchProductImages(query: string, limit = 24): Promise<GoogleImageHit[]> {
@@ -87,23 +106,23 @@ export class GoogleImagesService {
     const add = (q: string) => {
       if (q && !out.includes(q)) out.push(q);
     };
-    // Order matters: plain barcode first (best Google Images match)
+    // Plain digits first (best retail packshot match). Avoid bare "EAN/UPC <digits>"
+    // — those queries mostly return barcode symbology charts and stickers.
     add(digits);
     add(`"${digits}"`);
     if (digits.length === 13 && digits.startsWith("0")) add(digits.slice(1));
     if (digits.length === 12) add(`0${digits}`);
-    if (digits.length === 13) add(digits.slice(0, 12)); // sometimes listed as 12
-    add(`EAN ${digits}`);
-    add(`UPC ${digits}`);
+    if (digits.length === 13) add(digits.slice(0, 12));
+    add(`${digits} product`);
     return out;
   }
 
   private async collectResults(
     query: string,
     limit: number,
-    opts: { expandVariants?: boolean; softFilter?: boolean } = {},
+    opts: { expandVariants?: boolean; filterMode?: "soft" | "product" | "barcode" } = {},
   ): Promise<GoogleImageHit[]> {
-    const soft = opts.softFilter !== false;
+    const filterMode = opts.filterMode ?? "product";
     const googleKey = process.env.GOOGLE_CSE_API_KEY?.trim();
     const googleCx = process.env.GOOGLE_CSE_CX?.trim();
 
@@ -113,7 +132,7 @@ export class GoogleImagesService {
       for (const hit of batch) {
         const key = this.dedupeKey(hit.url);
         if (!key || seen.has(key)) continue;
-        if (!this.isUsableImage(hit.url, hit.title, soft)) continue;
+        if (!this.isUsableImage(hit, filterMode)) continue;
         seen.add(key);
         merged.push(hit);
       }
@@ -130,7 +149,6 @@ export class GoogleImagesService {
 
     for (const q of queries) {
       if (merged.length >= limit) break;
-      // Paginate DDG for richer Google-like volume
       for (const offset of [0, 100, 200]) {
         if (merged.length >= limit) break;
         push(await this.searchDuckDuckGo(q, 50, offset));
@@ -157,7 +175,6 @@ export class GoogleImagesService {
         url.searchParams.set("searchType", "image");
         url.searchParams.set("num", "10");
         url.searchParams.set("start", String(i * 10 + 1));
-        // Do not force safe=active — it hides many retail product shots
         url.searchParams.set("safe", "off");
 
         const res = await fetch(url.toString(), { signal: AbortSignal.timeout(12_000) });
@@ -190,7 +207,7 @@ export class GoogleImagesService {
           });
           if (hits.length >= limit) return hits;
         }
-        if (!(body.items?.length)) break;
+        if (!body.items?.length) break;
       }
       return hits;
     } catch (err) {
@@ -213,7 +230,6 @@ export class GoogleImagesService {
       url.searchParams.set("q", q);
       url.searchParams.set("vqd", vqd);
       url.searchParams.set("f", ",,,,,");
-      // p=-1 disables safe search — closer to open Google Images results
       url.searchParams.set("p", "-1");
       if (offset > 0) url.searchParams.set("s", String(offset));
 
@@ -298,21 +314,76 @@ export class GoogleImagesService {
   }
 
   /**
-   * Soft filter only — previous rules (logo|badge|icon…) blocked many real product photos
-   * because retail CDNs put those words in paths/titles.
+   * Drop tracking pixels always; in barcode/product mode also drop barcode stickers,
+   * UPC charts, generators, and extreme aspect-ratio strips.
    */
-  private isUsableImage(url: string, title = "", soft = true): boolean {
+  private isUsableImage(
+    hit: GoogleImageHit,
+    mode: "soft" | "product" | "barcode" = "product",
+  ): boolean {
+    const url = hit.url;
     if (!url.startsWith("http")) return false;
     if (/^data:/i.test(url)) return false;
     if (/\.svg(\?|$)/i.test(url)) return false;
-    // Keep gifs — some shade swatches are animated or stored as gif
-    if (!soft) return true;
 
     const path = url.toLowerCase();
-    // Only drop obvious tracking / 1×1 pixels
+    const blob = `${path} ${hit.title} ${hit.source}`.toLowerCase();
+
     if (/[?&](utm_|pixel|track|beacon)=/i.test(path)) return false;
     if (/\/(1x1|pixel\.|spacer\.|blank\.)/i.test(path)) return false;
-    if (/\b(favicon)\b/i.test(`${path} ${title}`)) return false;
+    if (/\bfavicon\b/i.test(blob)) return false;
+
+    if (mode === "soft") return true;
+
+    // Barcode generators / symbology chart hosts
+    if (
+      /(barcode[-.]?(generator|maker|creator)|tec-it\.com|barcodesinc|barcode\.tec|qr-code-generator|qrcode\.|zxing\.|bwip-js)/i.test(
+        blob,
+      )
+    ) {
+      return false;
+    }
+
+    // Titles/paths that are clearly barcode stickers or lookup pages — not product packshots
+    const junk =
+      /\b(barcode\s*(label|sticker|symbol|scanner|reader|lookup|check|generator|font|software|scanner)|upc[\s-]*(barcode|a|e)|ean[\s-]*(13|8|barcode)|gtin|datamatrix|data\s*matrix|qr[\s-]?code|stock\s*barcode|empty\s*barcode|barcode\s*only)\b/i;
+    if (junk.test(blob)) return false;
+
+    // Arabic junk for barcode-only images
+    if (/(ملصق\s*باركود|باركود\s*فقط|مولد\s*باركود|قارئ\s*باركود)/i.test(blob)) return false;
+
+    // Extreme strips = typical 1D barcode images
+    const w = hit.width ?? 0;
+    const h = hit.height ?? 0;
+    if (w > 0 && h > 0) {
+      const ratio = w / h;
+      if (ratio > 4.2 || ratio < 0.24) return false;
+      if (mode === "barcode" && (w < 140 || h < 140)) return false;
+    }
+
     return true;
+  }
+
+  /** Prefer square-ish retail packshots over long barcode strips that slipped through. */
+  private rankProductPhotos(hits: GoogleImageHit[]): GoogleImageHit[] {
+    const score = (h: GoogleImageHit) => {
+      let s = 0;
+      const w = h.width ?? 0;
+      const hgt = h.height ?? 0;
+      if (w >= 400 && hgt >= 400) s += 30;
+      else if (w >= 250 && hgt >= 250) s += 18;
+      if (w > 0 && hgt > 0) {
+        const r = w / hgt;
+        if (r >= 0.55 && r <= 1.8) s += 25; // packshot-ish
+        if (r > 3 || r < 0.33) s -= 40;
+      }
+      const blob = `${h.title} ${h.source} ${h.url}`.toLowerCase();
+      if (/\b(product|packshot|packaging|bottle|tube|box|cosmetics|beauty|makeup)\b/i.test(blob)) {
+        s += 12;
+      }
+      if (/\b(barcode|upc|ean|qr)\b/i.test(blob)) s -= 20;
+      return s;
+    };
+    return [...hits].sort((a, b) => score(b) - score(a));
   }
 }

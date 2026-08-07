@@ -188,7 +188,7 @@ class _GoogleStyleImageSearchState extends State<GoogleStyleImageSearch> {
         const SizedBox(height: 10),
         if (widget.imageOrder.where(widget.selectedUrls.contains).isNotEmpty) ...[
           Text(
-            'المختارة — الأولى رئيسية · اضغط ★ لتعيين رئيسية',
+            'المختارة تبقى عند تبديل بحث الباركود ↔ الاسم — الأولى رئيسية · ★ لتعيين رئيسية',
             style: TextStyle(fontWeight: FontWeight.w700, color: Colors.grey.shade800),
           ),
           const SizedBox(height: 8),

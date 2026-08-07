@@ -466,16 +466,21 @@ export class AiProductService {
       };
     }
 
-    // Barcode mode: search digits like Google Images (no SerpAPI / no extra filters)
+    // Barcode mode: digits + name hints; filter drops barcode-sticker junk
     const q = (query ?? digits).replace(/\D/g, "") || digits;
-    const images = await this.images.searchByBarcode(q, 48);
+    const hints = (nameHint ?? "")
+      .split(/[|,/]+/)
+      .map((s) => s.replace(/\s+/g, " ").trim())
+      .filter((s) => s.length >= 2);
+    const images = await this.images.searchByBarcode(q, 48, hints);
     return {
       barcode: digits,
       images,
       meta: {
-        imageQuery: q,
+        imageQuery: hints.length ? `${q} | ${hints[0]}` : q,
         imageCount: images.length,
         mode: "barcode",
+        nameHints: hints.slice(0, 3),
       },
     };
   }
