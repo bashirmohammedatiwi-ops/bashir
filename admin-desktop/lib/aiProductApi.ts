@@ -76,7 +76,7 @@ export async function aiSearchImages(input: {
     "/ai-product/images",
     {
       barcode: input.barcode.trim(),
-      mode: input.mode ?? "name",
+      mode: input.mode ?? "barcode",
       ...(input.query?.trim() ? { query: input.query.trim() } : {}),
       ...(input.nameHint?.trim() ? { nameHint: input.nameHint.trim() } : {}),
     },

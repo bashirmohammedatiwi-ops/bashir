@@ -15,8 +15,11 @@ import {
 } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiImageSearchGrid } from "./AiImageSearchGrid";
+import { AiImageSearchPanel } from "./AiImageSearchPanel";
 import { aiSearchImages, aiShadeFamily, fetchAiModels } from "@/lib/aiProductApi";
 import type { ShadeFamilyResult } from "@/lib/aiProductTypes";
+import { applyAiCategories } from "@/lib/aiCategoryApply";
+import { catalogThumbToImage, enrichShadesFromCatalog, mergeUniqueImages } from "@/lib/aiCatalogEnrich";
 import { matchBrandIdLocal } from "@/lib/catalogBrandMatch";
 import { lookupInventoryBarcodes } from "@/lib/inventorySync";
 import { defaultSku, saveAiProduct } from "@/lib/aiProductSave";
@@ -164,7 +167,7 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
       const inv = await lookupInventoryBarcodes(barcodes);
       return { fill, inv };
     },
-    onSuccess: ({ fill, inv }) => {
+    onSuccess: async ({ fill, inv }) => {
       setResult(fill);
       setNameAr(fill.nameAr);
       setNameEn(fill.nameEn);
@@ -173,9 +176,16 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
       setDescAr(fill.descriptionAr);
       setGallery(fill.images);
       if (fill.images.length) setSelectedGallery(new Set([fill.images[0].url]));
-      if (fill.category.categoryId) setCategoryId(fill.category.categoryId);
-      if (fill.category.subcategoryIds?.length) setSubcategoryIds(fill.category.subcategoryIds);
-      if (fill.category.tertiaryCategoryIds?.length) setTertiaryIds(fill.category.tertiaryCategoryIds);
+      const applied = await applyAiCategories(fill.category, {
+        categories: categoriesQ.data ?? [],
+        nameAr: fill.nameAr,
+        nameEn: fill.nameEn,
+        productTypeAr: fill.productTypeAr,
+        hint,
+      });
+      if (applied.categoryId) setCategoryId(applied.categoryId);
+      if (applied.subcategoryIds.length) setSubcategoryIds(applied.subcategoryIds);
+      if (applied.tertiaryCategoryIds.length) setTertiaryIds(applied.tertiaryCategoryIds);
       const rows: ShadeRow[] = fill.shades.map((s) => ({
         barcode: s.barcode,
         name: s.name,
@@ -200,6 +210,29 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
       const brands = brandsQ.data ?? [];
       const matched = matchBrandIdLocal(brands, fill.brandAr, fill.brandEn);
       if (matched) setBrandId(matched);
+      void enrichShadesFromCatalog(barcodes, (bc, hit) => {
+        const shadeName = hit.matchedShadeName || hit.shadeName;
+        const img = catalogThumbToImage(hit);
+        setShades((prev) =>
+          prev.map((row) => {
+            if (row.barcode !== bc) return row;
+            return {
+              ...row,
+              name: shadeName || row.name,
+              imageUrl: row.imageUrl || img?.url || null,
+            };
+          }),
+        );
+        if (img) {
+          setShadeImages((prev) => ({
+            ...prev,
+            [bc]: mergeUniqueImages(
+              (prev[bc] ?? []).map((url) => ({ url, thumbUrl: url })),
+              [img],
+            ).map((i) => i.url),
+          }));
+        }
+      });
       setStep(1);
       if (fill.isFallback) message.warning("تعرف محدود — راجع الأسماء والصور");
       else message.success(`تم التعرف على ${rows.length} تدرج`);
@@ -262,13 +295,29 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
     setLoadingShadeImages(true);
     try {
       const q = [brandEn || brandAr, nameEn || nameAr, shade.name, shade.code].filter(Boolean).join(" ");
-      const hits = await aiSearchImages({
+      const barcodeHits = await aiSearchImages({
         barcode: shade.barcode,
-        mode: "name",
-        query: q,
+        mode: "barcode",
         nameHint: q,
       });
+      let hits = barcodeHits;
+      if (hits.length < 6) {
+        const nameHits = await aiSearchImages({
+          barcode: shade.barcode,
+          mode: "name",
+          query: q,
+          nameHint: q,
+        });
+        hits = mergeUniqueImages(hits, nameHits);
+      }
       setShadeImages((prev) => ({ ...prev, [shade.barcode]: hits.map((h) => h.url) }));
+      if (!shade.imageUrl && hits[0]?.url) {
+        setShades((prev) => {
+          const next = [...prev];
+          next[idx] = { ...shade, imageUrl: hits[0].url };
+          return next;
+        });
+      }
     } catch (e) {
       message.error((e as Error).message || "فشل جلب صور التدرج");
     } finally {
@@ -276,13 +325,45 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
     }
   };
 
+  useEffect(() => {
+    if (step !== 2 || !shades.length) return;
+    let cancelled = false;
+    void (async () => {
+      for (let i = 0; i < shades.length; i++) {
+        if (cancelled) return;
+        const bc = shades[i].barcode;
+        if (shadeImages[bc]?.length) continue;
+        await loadShadeImages(i);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, shades.map((s) => s.barcode).join(",")]);
+
+  useEffect(() => {
+    if (step !== 4 || categoryId || !result) return;
+    void applyAiCategories(result.category, {
+      categories: categoriesQ.data ?? [],
+      nameAr,
+      nameEn,
+      productTypeAr: result.productTypeAr,
+      hint,
+    }).then((applied) => {
+      if (applied.categoryId) setCategoryId(applied.categoryId);
+      if (applied.subcategoryIds.length) setSubcategoryIds(applied.subcategoryIds);
+      if (applied.tertiaryCategoryIds.length) setTertiaryIds(applied.tertiaryCategoryIds);
+    });
+  }, [step, categoryId, categoriesQ.data, nameAr, nameEn, result, hint]);
+
   const activeShade = shades[activeShadeIdx];
   const activeShadeUrls = activeShade ? (shadeImages[activeShade.barcode] ?? []).map((url) => ({ url, thumbUrl: url })) : [];
 
   const canNext = useMemo(() => {
     if (step === 0) return barcodes.length >= 2;
     if (step === 1) return nameAr.trim() || nameEn.trim();
-    if (step === 2) return shades.some((s) => s.imageUrl);
+    if (step === 2) return true;
     if (step === 3) return selectedGallery.size > 0;
     if (step === 4) return !!categoryId;
     return true;
@@ -425,24 +506,33 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
         ) : null}
 
         {step === 3 ? (
-          <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-            <AiImageSearchGrid
-              images={gallery}
-              selected={selectedGallery}
-              onToggle={(url) => {
-                setSelectedGallery((prev) => {
-                  const next = new Set(prev);
-                  if (next.has(url)) next.delete(url);
-                  else next.add(url);
-                  return next;
-                });
-              }}
-            />
-          </Space>
+          <AiImageSearchPanel
+            barcode={barcodes[0] ?? ""}
+            nameHints={[brandEn, brandAr, nameEn, nameAr, hint]}
+            images={gallery}
+            selected={selectedGallery}
+            onImagesChange={setGallery}
+            onToggle={(url) => {
+              setSelectedGallery((prev) => {
+                const next = new Set(prev);
+                if (next.has(url)) next.delete(url);
+                else next.add(url);
+                return next;
+              });
+            }}
+          />
         ) : null}
 
         {step === 4 ? (
           <Form layout="vertical" style={{ maxWidth: 560 }}>
+            {(result?.category.categoryNameAr || result?.productTypeAr) ? (
+              <Alert
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+                message={`تصنيف مقترح: ${[result?.category.categoryNameAr, result?.category.subcategoryNameAr, result?.productTypeAr].filter(Boolean).join(" › ")}`}
+              />
+            ) : null}
             <Form.Item label="القسم الرئيسي" required>
               <Select
                 value={categoryId}

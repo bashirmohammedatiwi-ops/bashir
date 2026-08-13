@@ -14,11 +14,12 @@ import {
   message,
 } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { AiImageSearchGrid } from "./AiImageSearchGrid";
-import { aiAutofill, aiSearchImages, fetchAiModels } from "@/lib/aiProductApi";
+import { AiImageSearchPanel } from "./AiImageSearchPanel";
+import { aiAutofill, fetchAiModels } from "@/lib/aiProductApi";
 import type { AiAutofillResult } from "@/lib/aiProductTypes";
+import { applyAiCategories } from "@/lib/aiCategoryApply";
+import { catalogThumbToImage, enrichBarcodeFromCatalog, mergeUniqueImages } from "@/lib/aiCatalogEnrich";
 import { matchBrandIdLocal } from "@/lib/catalogBrandMatch";
-import { matchCategoryFromHints } from "@/lib/catalogCategoryMatch";
 import { fetchInventoryByBarcode } from "@/lib/inventorySync";
 import { defaultSku, saveAiProduct } from "@/lib/aiProductSave";
 import { normalizeBarcode } from "@/lib/barcode";
@@ -56,7 +57,6 @@ export function AiSingleProductWizard({ open, onClose, onSuccess }: Props) {
   const [images, setImages] = useState(result?.images ?? []);
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [imageQuery, setImageQuery] = useState("");
-  const [loadingImages, setLoadingImages] = useState(false);
 
   const modelsQ = useQuery({
     queryKey: ["ai-models"],
@@ -142,7 +142,7 @@ export function AiSingleProductWizard({ open, onClose, onSuccess }: Props) {
       const inv = await fetchInventoryByBarcode(bc);
       return { fill, inv };
     },
-    onSuccess: ({ fill, inv }) => {
+    onSuccess: async ({ fill, inv }) => {
       setResult(fill);
       setNameAr(fill.nameAr);
       setNameEn(fill.nameEn);
@@ -151,13 +151,20 @@ export function AiSingleProductWizard({ open, onClose, onSuccess }: Props) {
       setDescAr(fill.descriptionAr);
       setDescEn(fill.descriptionEn);
       setImages(fill.images);
-      setImageQuery(fill.nameEn || fill.nameAr || hint);
+      setImageQuery([fill.brandEn, fill.nameEn, hint].filter(Boolean).join(" "));
       if (fill.images.length) {
         setSelectedImages(new Set([fill.images[0].url]));
       }
-      if (fill.category.categoryId) setCategoryId(fill.category.categoryId);
-      if (fill.category.subcategoryIds?.length) setSubcategoryIds(fill.category.subcategoryIds);
-      if (fill.category.tertiaryCategoryIds?.length) setTertiaryIds(fill.category.tertiaryCategoryIds);
+      const applied = await applyAiCategories(fill.category, {
+        categories: categoriesQ.data ?? [],
+        nameAr: fill.nameAr,
+        nameEn: fill.nameEn,
+        productTypeAr: fill.productTypeAr,
+        hint,
+      });
+      if (applied.categoryId) setCategoryId(applied.categoryId);
+      if (applied.subcategoryIds.length) setSubcategoryIds(applied.subcategoryIds);
+      if (applied.tertiaryCategoryIds.length) setTertiaryIds(applied.tertiaryCategoryIds);
       if (inv) {
         setPrice(inv.price);
         setStock(inv.stock);
@@ -165,6 +172,16 @@ export function AiSingleProductWizard({ open, onClose, onSuccess }: Props) {
       const brands = brandsQ.data ?? [];
       const matched = matchBrandIdLocal(brands, fill.brandAr, fill.brandEn);
       if (matched) setBrandId(matched);
+      void enrichBarcodeFromCatalog(normalizeBarcode(barcode)).then((hit) => {
+        if (!hit) return;
+        const img = catalogThumbToImage(hit);
+        if (img) {
+          setImages((prev) => mergeUniqueImages(prev, [img]));
+          setSelectedImages((prev) => (prev.size ? prev : new Set([img.url])));
+        }
+        if (hit.nameAr && !fill.nameAr) setNameAr(hit.nameAr);
+        if (hit.brandAr && !fill.brandAr) setBrandAr(hit.brandAr);
+      });
       setStep(1);
       message.success("تم التعرف على المنتج");
     },
@@ -215,30 +232,20 @@ export function AiSingleProductWizard({ open, onClose, onSuccess }: Props) {
     onError: (e: Error) => message.error(e.message || "فشل الحفظ"),
   });
 
-  const applyCategoryHints = useCallback(() => {
-    const cats = categoriesQ.data ?? [];
-    const subs = subsQ.data ?? [];
-    const tert = tertQ.data ?? [];
-    const matched = matchCategoryFromHints(cats, subs, tert, nameAr, nameEn);
-    if (matched.categoryId) setCategoryId(matched.categoryId);
-    if (matched.subcategoryId) setSubcategoryIds([matched.subcategoryId]);
-    if (matched.tertiaryCategoryId) setTertiaryIds([matched.tertiaryCategoryId]);
-  }, [categoriesQ.data, subsQ.data, tertQ.data, nameAr, nameEn]);
-
-  const refreshImages = async () => {
-    setLoadingImages(true);
-    try {
-      const bc = normalizeBarcode(barcode);
-      const q = imageQuery.trim() || nameEn || nameAr || hint;
-      const hits = await aiSearchImages({ barcode: bc, mode: "name", query: q, nameHint: q });
-      setImages(hits);
-      if (hits.length && !selectedImages.size) setSelectedImages(new Set([hits[0].url]));
-    } catch (e) {
-      message.error((e as Error).message || "فشل جلب الصور");
-    } finally {
-      setLoadingImages(false);
-    }
-  };
+  useEffect(() => {
+    if (step !== 3 || categoryId || !result) return;
+    void applyAiCategories(result.category, {
+      categories: categoriesQ.data ?? [],
+      nameAr,
+      nameEn,
+      productTypeAr: result.productTypeAr,
+      hint,
+    }).then((applied) => {
+      if (applied.categoryId) setCategoryId(applied.categoryId);
+      if (applied.subcategoryIds.length) setSubcategoryIds(applied.subcategoryIds);
+      if (applied.tertiaryCategoryIds.length) setTertiaryIds(applied.tertiaryCategoryIds);
+    });
+  }, [step, categoryId, categoriesQ.data, nameAr, nameEn, result, hint]);
 
   const toggleImage = (url: string) => {
     setSelectedImages((prev) => {
@@ -343,33 +350,25 @@ export function AiSingleProductWizard({ open, onClose, onSuccess }: Props) {
         ) : null}
 
         {step === 2 ? (
-          <Space direction="vertical" size="middle" style={{ width: "100%" }}>
-            <Space.Compact style={{ width: "100%" }}>
-              <Input
-                value={imageQuery}
-                onChange={(e) => setImageQuery(e.target.value)}
-                placeholder="بحث صور بالاسم"
-                onPressEnter={() => refreshImages()}
-              />
-              <Button onClick={refreshImages} loading={loadingImages}>
-                بحث
-              </Button>
-            </Space.Compact>
-            <AiImageSearchGrid
-              images={images}
-              selected={selectedImages}
-              onToggle={toggleImage}
-              loading={loadingImages}
-            />
-            <div style={{ color: "#8a8194", fontSize: 13 }}>محدد: {selectedImages.size} صورة</div>
-          </Space>
+          <AiImageSearchPanel
+            barcode={barcode}
+            nameHints={[brandEn, brandAr, nameEn, nameAr, hint, imageQuery]}
+            images={images}
+            selected={selectedImages}
+            onImagesChange={setImages}
+            onToggle={toggleImage}
+          />
         ) : null}
 
         {step === 3 ? (
           <Space direction="vertical" size="middle" style={{ width: "100%", maxWidth: 560 }}>
-            <Button type="link" onClick={applyCategoryHints} style={{ padding: 0 }}>
-              تخمين التصنيف من الاسم
-            </Button>
+            {(result?.category.categoryNameAr || result?.productTypeAr) ? (
+              <Alert
+                type="info"
+                showIcon
+                message={`تصنيف مقترح: ${[result?.category.categoryNameAr, result?.category.subcategoryNameAr, result?.productTypeAr].filter(Boolean).join(" › ")}`}
+              />
+            ) : null}
             <Form layout="vertical">
               <Form.Item label="القسم الرئيسي" required>
                 <Select

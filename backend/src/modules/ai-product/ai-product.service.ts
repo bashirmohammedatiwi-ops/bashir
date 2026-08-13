@@ -353,7 +353,7 @@ export class AiProductService {
   private async shadeFamilyFast(rawBarcodes: string[], hint?: string, modelChoice?: string) {
     const unique = rawBarcodes;
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `shade-v7|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `shade-v8|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 20 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -915,7 +915,12 @@ export class AiProductService {
       .slice(0, 2);
     const tasks: Promise<FreeHint>[] = [];
     for (const v of variants) {
-      tasks.push(this.lookupOpenBeautyFacts(v), this.lookupGoUpc(v));
+      tasks.push(
+        this.lookupOpenBeautyFacts(v),
+        this.lookupOpenFoodFacts(v),
+        this.lookupUpcItemDb(v),
+        this.lookupGoUpc(v),
+      );
     }
     const results = (await Promise.all(tasks)).filter((r) => r.title?.trim());
     if (!results.length) return {};
@@ -1077,12 +1082,18 @@ export class AiProductService {
       const p = body.product;
       const title = (p.product_name_en || p.product_name || p.product_name_ar || "").trim();
       if (!title) return {};
+      const imageUrl =
+        (p as { image_front_url?: string; image_url?: string; image_front_small_url?: string })
+          .image_front_url ||
+        (p as { image_url?: string }).image_url ||
+        undefined;
       return {
         title,
         brand: (p.brands ?? "").split(",")[0]?.trim() || undefined,
         quantity: p.quantity?.trim() || undefined,
         categoryHints: (p.categories_tags ?? []).slice(0, 6).map((t) => t.replace(/^en:/, "")),
         source: "openbeautyfacts",
+        imageUrl,
       };
     } catch {
       return {};
@@ -1111,12 +1122,17 @@ export class AiProductService {
       const p = body.product;
       const title = (p.product_name_en || p.product_name || "").trim();
       if (!title) return {};
+      const imageUrl =
+        (p as { image_front_url?: string; image_url?: string }).image_front_url ||
+        (p as { image_url?: string }).image_url ||
+        undefined;
       return {
         title,
         brand: (p.brands ?? "").split(",")[0]?.trim() || undefined,
         quantity: p.quantity?.trim() || undefined,
         categoryHints: (p.categories_tags ?? []).slice(0, 6).map((t) => t.replace(/^en:/, "")),
         source: "openfoodfacts",
+        imageUrl,
       };
     } catch {
       return {};
@@ -1132,7 +1148,7 @@ export class AiProductService {
       });
       if (!res.ok) return {};
       const body = (await res.json()) as {
-        items?: Array<{ title?: string; brand?: string; size?: string; category?: string }>;
+        items?: Array<{ title?: string; brand?: string; size?: string; category?: string; images?: string[] }>;
       };
       const item = body.items?.[0];
       if (!item?.title?.trim()) return {};
@@ -1142,6 +1158,7 @@ export class AiProductService {
         quantity: item.size?.trim() || undefined,
         categoryHints: item.category ? [item.category] : undefined,
         source: "upcitemdb",
+        imageUrl: item.images?.[0]?.trim() || undefined,
       };
     } catch {
       return {};
@@ -1326,6 +1343,7 @@ export class AiProductService {
       { test: /micellar|ميسيلار/, ar: "ماء ميسيلار", en: "micellar water", mainAr: "عناية", subAr: "بشرة" },
       { test: /makeup\s*remover|مزيل مكياج/, ar: "مزيل مكياج", en: "makeup remover", mainAr: "عناية", subAr: "بشرة" },
       { test: /cleanser|cleansing|منظف وجه|منظف/, ar: "منظف", en: "cleanser", mainAr: "عناية", subAr: "بشرة" },
+      { test: /mat\s*passion|lip\s*fluid|liquid\s*lip/, ar: "أحمر شفاه سائل", en: "liquid lipstick", mainAr: "مكياج", subAr: "شفاه" },
       { test: /lip\s*fluid|liquid\s*lip|matte\s*ink|lip\s*tint|احمر شفاه سائل/, ar: "أحمر شفاه سائل", en: "liquid lipstick", mainAr: "مكياج", subAr: "شفاه" },
       { test: /lip\s*gloss|جلوس|gloss/, ar: "جلوس شفاه", en: "lip gloss", mainAr: "مكياج", subAr: "شفاه" },
       { test: /lip\s*liner|lipliner|قلم شفاه/, ar: "قلم شفاه", en: "lip liner", mainAr: "مكياج", subAr: "شفاه" },

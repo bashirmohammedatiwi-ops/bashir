@@ -38,7 +38,6 @@ export class GoogleImagesService {
     const digits = barcode.replace(/\D/g, "") || barcode.trim();
     if (digits.length < 6) return [];
 
-    const variants = this.barcodeQueryVariants(digits);
     const merged: GoogleImageHit[] = [];
     const seen = new Set<string>();
     const pushHits = (batch: GoogleImageHit[]) => {
@@ -51,12 +50,16 @@ export class GoogleImagesService {
       }
     };
 
+    // Fast retail DB packshots first (like Google Images barcode tab)
+    pushHits(await this.fetchBarcodePackshots(digits));
+
+    const variants = this.barcodeQueryVariants(digits, nameHints);
     for (const q of variants) {
       if (merged.length >= limit) break;
       pushHits(
         await this.collectResults(q, limit, {
           expandVariants: false,
-          filterMode: "barcode",
+          filterMode: merged.length < 8 ? "product" : "barcode",
         }),
       );
     }
@@ -145,20 +148,111 @@ export class GoogleImagesService {
     return this.searchQuery(q, limit);
   }
 
-  private barcodeQueryVariants(digits: string): string[] {
+  private barcodeQueryVariants(digits: string, nameHints: string[] = []): string[] {
     const out: string[] = [];
     const add = (q: string) => {
       if (q && !out.includes(q)) out.push(q);
     };
-    // Plain digits first (best retail packshot match). Avoid bare "EAN/UPC <digits>"
-    // — those queries mostly return barcode symbology charts and stickers.
+    const brand = nameHints.find((h) => h.length >= 3 && !/^\d+$/.test(h)) ?? "";
+    const shortBrand = brand.split(/\s+/).slice(0, 2).join(" ");
+
     add(digits);
     add(`"${digits}"`);
+    add(`EAN ${digits}`);
+    add(`UPC ${digits}`);
+    add(`barcode ${digits}`);
+    if (shortBrand) {
+      add(`${shortBrand} ${digits}`);
+      add(`"${digits}" ${shortBrand}`);
+    }
     if (digits.length === 13 && digits.startsWith("0")) add(digits.slice(1));
     if (digits.length === 12) add(`0${digits}`);
     if (digits.length === 13) add(digits.slice(0, 12));
     add(`${digits} product`);
+    add(`${digits} cosmetics`);
+    add(`${digits} makeup`);
+    add(`site:openbeautyfacts.org ${digits}`);
+    add(`site:upcitemdb.com ${digits}`);
+    add(`site:barcode.lookup ${digits}`);
     return out;
+  }
+
+  /** Open Beauty/Food Facts + retail DB images — high precision for barcode searches. */
+  private async fetchBarcodePackshots(barcode: string): Promise<GoogleImageHit[]> {
+    const hits: GoogleImageHit[] = [];
+    const push = (url: string, title: string, source: string, thumb?: string) => {
+      const u = url.trim();
+      if (!u.startsWith("http")) return;
+      hits.push({
+        url: u,
+        thumbUrl: (thumb || u).trim(),
+        title: title.trim() || barcode,
+        source,
+      });
+    };
+
+    const fetchObf = async (base: string, source: string) => {
+      try {
+        const res = await fetch(`${base}/api/v2/product/${barcode}.json`, {
+          headers: { Accept: "application/json", "User-Agent": "AlhayaaImageSearch/3.0" },
+          signal: AbortSignal.timeout(8_000),
+        });
+        if (!res.ok) return;
+        const body = (await res.json()) as {
+          status?: number;
+          product?: {
+            product_name?: string;
+            product_name_en?: string;
+            brands?: string;
+            image_url?: string;
+            image_front_url?: string;
+            image_front_small_url?: string;
+            selected_images?: { front?: { display?: { en?: string } } };
+          };
+        };
+        if (body.status !== 1 || !body.product) return;
+        const p = body.product;
+        const title = (p.product_name_en || p.product_name || p.brands || barcode).trim();
+        const url =
+          p.image_front_url ||
+          p.selected_images?.front?.display?.en ||
+          p.image_url ||
+          "";
+        push(url, title, source, p.image_front_small_url || url);
+      } catch (err) {
+        this.logger.debug(`Packshot ${source} skipped: ${(err as Error).message}`);
+      }
+    };
+
+    await Promise.all([
+      fetchObf("https://world.openbeautyfacts.org", "openbeautyfacts.org"),
+      fetchObf("https://world.openfoodfacts.org", "openfoodfacts.org"),
+    ]);
+
+    try {
+      const res = await fetch(
+        `https://api.upcitemdb.com/prod/trial/lookup?upc=${encodeURIComponent(barcode)}`,
+        {
+          headers: { Accept: "application/json", "User-Agent": "AlhayaaImageSearch/3.0" },
+          signal: AbortSignal.timeout(7_000),
+        },
+      );
+      if (res.ok) {
+        const body = (await res.json()) as {
+          items?: Array<{ title?: string; brand?: string; images?: string[] }>;
+        };
+        const item = body.items?.[0];
+        if (item?.images?.length) {
+          for (const img of item.images.slice(0, 4)) {
+            push(img, item.title || item.brand || barcode, "upcitemdb.com");
+          }
+        }
+      }
+    } catch {
+      /* optional */
+    }
+
+    return hits;
   }
 
   private async collectResults(
@@ -193,9 +287,9 @@ export class GoogleImagesService {
 
     for (const q of queries) {
       if (merged.length >= limit) break;
-      for (const offset of [0, 100, 200, 300]) {
+      for (const offset of [0, 100]) {
         if (merged.length >= limit) break;
-        push(await this.searchDuckDuckGo(q, 50, offset));
+        push(await this.searchDuckDuckGo(q, 40, offset));
       }
     }
 

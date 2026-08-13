@@ -642,7 +642,7 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
     await _searchShadeImages(index);
   }
 
-  Future<void> _searchShadeImages(int index, {String? query, String mode = 'name', bool skipSnack = false}) async {
+  Future<void> _searchShadeImages(int index, {String? query, String mode = 'barcode', bool skipSnack = false}) async {
     if (index < 0 || index >= _shades.length) return;
     final shade = _shades[index];
     setState(() => shade.loadingImages = true);
@@ -674,7 +674,7 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
     }
   }
 
-  Future<void> _refreshGallery({ImageSearchMode mode = ImageSearchMode.name, String? query}) async {
+  Future<void> _refreshGallery({ImageSearchMode mode = ImageSearchMode.barcode, String? query}) async {
     setState(() => _refreshingGallery = true);
     try {
       final q = (query ?? '').trim().isNotEmpty
