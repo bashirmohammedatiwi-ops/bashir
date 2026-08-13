@@ -345,7 +345,7 @@ export class AiProductService {
       return await this.shadeFamilyFast(unique, hint, modelChoice);
     } catch (err) {
       this.logger.warn(`shadeFamily fast path failed, using fallback: ${(err as Error).message}`);
-      return this.buildShadeFamilyFallback(unique, hint, modelChoice);
+      return await this.buildShadeFamilyFallback(unique, hint, modelChoice);
     }
   }
 
@@ -353,14 +353,14 @@ export class AiProductService {
   private async shadeFamilyFast(rawBarcodes: string[], hint?: string, modelChoice?: string) {
     const unique = rawBarcodes;
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `shade-v6|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `shade-v7|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 20 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
     }
 
-    const existingHits = (
-      await Promise.all(
+    const [existingHits, freeByBarcode] = await Promise.all([
+      Promise.all(
         unique.map(async (barcode) => {
           const product = await this.findExistingProduct(barcode);
           if (!product) return null;
@@ -372,17 +372,19 @@ export class AiProductService {
             matchedShadeName: (product as { matchedShadeName?: string }).matchedShadeName || null,
           };
         }),
-      )
-    ).filter((h): h is NonNullable<typeof h> => Boolean(h));
-
-    const freeByBarcode = new Map<string, FreeHint>();
-    for (let i = 0; i < unique.length; i += 8) {
-      const chunk = unique.slice(i, i + 8);
-      const part = await Promise.all(
-        chunk.map(async (barcode) => [barcode, await this.freeBarcodeHintLight(barcode)] as const),
-      );
-      for (const [barcode, free] of part) freeByBarcode.set(barcode, free);
-    }
+      ).then((rows) => rows.filter((h): h is NonNullable<typeof h> => Boolean(h))),
+      (async () => {
+        const map = new Map<string, FreeHint>();
+        for (let i = 0; i < unique.length; i += 8) {
+          const chunk = unique.slice(i, i + 8);
+          const part = await Promise.all(
+            chunk.map(async (barcode) => [barcode, await this.freeBarcodeHintLight(barcode)] as const),
+          );
+          for (const [barcode, free] of part) map.set(barcode, free);
+        }
+        return map;
+      })(),
+    ]);
 
     const existingByBarcode = new Map(
       existingHits.map((h) => [h.barcode.toLowerCase(), h] as const),
@@ -413,6 +415,7 @@ export class AiProductService {
         existingByBarcode.get(barcode.toLowerCase())?.matchedShadeName,
       ),
     );
+    const namingBudgetMs = unique.length >= 10 ? 16_000 : 22_000;
     const named = await this.cursor.verifyBilingualNames(
       {
         barcode: lead,
@@ -428,6 +431,7 @@ export class AiProductService {
         extraContext: `shade_family barcodes=${unique.join(",")} product_type=${draft.category_tertiary_ar || ""}`,
       },
       resolved.choice,
+      namingBudgetMs,
     );
     const polished = this.polishNaming({
       ...draft,
@@ -597,7 +601,26 @@ export class AiProductService {
       .split(/[|,/]+/)
       .map((s) => s.replace(/\s+/g, " ").trim())
       .filter((s) => s.length >= 2);
-    const images = await this.images.searchByBarcode(q, 72, hints);
+    let images = await this.images.searchByBarcode(q, 72, hints);
+    if (images.length < 4 && hints.length) {
+      try {
+        const nameQ = hints[0].slice(0, 90);
+        const extra = await Promise.race([
+          this.images.searchQuery(nameQ, 48),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("name fallback timeout")), 8_000),
+          ),
+        ]);
+        const seen = new Set(images.map((h) => h.url.toLowerCase()));
+        for (const hit of extra) {
+          if (seen.has(hit.url.toLowerCase())) continue;
+          seen.add(hit.url.toLowerCase());
+          images.push(hit);
+        }
+      } catch (err) {
+        this.logger.warn(`searchImages name fallback skipped: ${(err as Error).message}`);
+      }
+    }
     return {
       barcode: digits,
       images,
@@ -901,10 +924,51 @@ export class AiProductService {
     return { ...results[0] };
   }
 
-  private buildShadeFamilyFallback(barcodes: string[], hint?: string, modelChoice?: string) {
+  private async buildShadeFamilyFallback(barcodes: string[], hint?: string, modelChoice?: string) {
     const resolved = this.cursor.resolveModel(modelChoice);
     const hintText = String(hint ?? "").trim();
-    const shadeRows = barcodes.map((barcode, index) => this.guessShadeRow(barcode, { title: hintText }, index));
+    const lead = barcodes[0] ?? "";
+
+    const freeByBarcode = new Map<string, FreeHint>();
+    for (let i = 0; i < barcodes.length; i += 8) {
+      const chunk = barcodes.slice(i, i + 8);
+      const part = await Promise.all(
+        chunk.map(async (barcode) => [barcode, await this.freeBarcodeHintLight(barcode)] as const),
+      );
+      for (const [barcode, free] of part) freeByBarcode.set(barcode, free);
+    }
+    const leadFree = freeByBarcode.get(lead) ?? { title: hintText };
+
+    let galleryImages: GoogleImageHit[] = [];
+    try {
+      galleryImages = await Promise.race([
+        this.images.searchByBarcode(lead, 20, [leadFree.brand, leadFree.title, hintText].filter(
+          (s): s is string => Boolean(s && String(s).trim().length >= 2),
+        )),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("fallback gallery timeout")), 10_000),
+        ),
+      ]);
+    } catch (err) {
+      this.logger.warn(`Shade-family fallback gallery skipped: ${(err as Error).message}`);
+    }
+
+    const imageTitles = this.extractIdentityTitles(galleryImages);
+    const draft = this.buildHeuristicAutofill({
+      barcode: lead,
+      free: leadFree,
+      imageTitles,
+      hint: hintText,
+      shadeFamily: true,
+    });
+
+    const shadeRows = barcodes.map((barcode, index) =>
+      this.guessShadeRow(
+        barcode,
+        freeByBarcode.get(barcode) ?? { title: hintText },
+        index,
+      ),
+    );
     const shades = this.sortShadeFamily(
       barcodes.map((barcode, index) => {
         const row = shadeRows[index];
@@ -924,29 +988,36 @@ export class AiProductService {
       }),
     ).map((shade, index) => ({ ...shade, position: index }));
 
+    let matched = {
+      categoryId: null as string | null,
+      subcategoryId: null as string | null,
+      tertiaryCategoryId: null as string | null,
+      subcategoryIds: [] as string[],
+      tertiaryCategoryIds: [] as string[],
+      categoryNameAr: null as string | null,
+      subcategoryNameAr: null as string | null,
+      tertiaryNameAr: null as string | null,
+    };
+    try {
+      matched = await this.matchCategories(draft);
+    } catch (err) {
+      this.logger.warn(`Shade-family fallback categories skipped: ${(err as Error).message}`);
+    }
+
     return {
       barcodes,
-      brandAr: "",
-      brandEn: "",
-      nameAr: hintText,
-      nameEn: hintText,
-      descriptionAr: hintText ? `${hintText}. متوفر بعدة تدرجات.` : "متوفر بعدة تدرجات.",
-      descriptionEn: hintText ? `${hintText}. Available in multiple shades.` : "Available in multiple shades.",
-      productTypeAr: "",
-      category: {
-        categoryId: null,
-        subcategoryId: null,
-        tertiaryCategoryId: null,
-        subcategoryIds: [],
-        tertiaryCategoryIds: [],
-        categoryNameAr: null,
-        subcategoryNameAr: null,
-        tertiaryNameAr: null,
-      },
-      confidence: 28,
+      brandAr: draft.brand_ar || "",
+      brandEn: draft.brand_en || "",
+      nameAr: draft.name_ar || hintText,
+      nameEn: draft.name_en || hintText,
+      descriptionAr: draft.description_ar || (hintText ? `${hintText}. متوفر بعدة تدرجات.` : "متوفر بعدة تدرجات."),
+      descriptionEn: draft.description_en || (hintText ? `${hintText}. Available in multiple shades.` : "Available in multiple shades."),
+      productTypeAr: String(draft.category_tertiary_ar || draft.category_sub_ar || "").trim(),
+      category: matched,
+      confidence: 32,
       needsReview: true,
       shades,
-      images: [],
+      images: galleryImages,
       existingHits: [],
       meta: {
         model: resolved.apiModel,
@@ -956,8 +1027,8 @@ export class AiProductService {
         namesVerified: false,
         namingSource: "fallback",
         shadeCount: shades.length,
-        imageCount: 0,
-        imageQuery: hintText || barcodes[0] || "",
+        imageCount: galleryImages.length,
+        imageQuery: hintText || lead || "",
         cached: false,
         fallback: true,
       },

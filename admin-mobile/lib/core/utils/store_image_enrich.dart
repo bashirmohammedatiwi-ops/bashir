@@ -58,9 +58,19 @@ Future<List<AiAutofillImage>> enrichImagesFromStores({
   } catch (_) {}
 
   final hint = (nameHint ?? '').trim();
+  final queries = <String>{};
+  if (hint.length >= 2) queries.add(hint);
   if (hint.length >= 4) {
+    final parts = hint.split(RegExp(r'\s+-\s+|\s+\|\s+'));
+    for (final p in parts) {
+      final t = p.trim();
+      if (t.length >= 4) queries.add(t);
+    }
+  }
+
+  for (final q in queries) {
     try {
-      final textHits = await catalog.searchByText(hint, stores: storeIds);
+      final textHits = await catalog.searchByText(q, stores: storeIds);
       for (final opt in textHits.take(10)) {
         final label = '${opt.storeLabel} · ${opt.nameEn ?? opt.nameAr}';
         if (opt.thumb != null && opt.thumb!.trim().isNotEmpty) {

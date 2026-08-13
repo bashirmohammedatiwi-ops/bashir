@@ -73,5 +73,7 @@ ShadeFamilyResult buildLocalShadeFamilyFallback({
     images: const [],
     namesVerified: false,
     namingSource: 'local-fallback',
+    isFallback: true,
+    imageCount: 0,
   );
 }

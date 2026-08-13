@@ -421,6 +421,8 @@ class ShadeFamilyResult {
     this.usedWebSearch = false,
     this.namesVerified = false,
     this.namingSource,
+    this.isFallback = false,
+    this.imageCount = 0,
   });
 
   final List<String> barcodes;
@@ -442,6 +444,8 @@ class ShadeFamilyResult {
   final bool usedWebSearch;
   final bool namesVerified;
   final String? namingSource;
+  final bool isFallback;
+  final int imageCount;
 
   factory ShadeFamilyResult.fromJson(Map<String, dynamic> json) {
     final images = (json['images'] as List? ?? [])
@@ -482,6 +486,8 @@ class ShadeFamilyResult {
       usedWebSearch: meta['usedWebSearch'] == true,
       namesVerified: meta['namesVerified'] == true,
       namingSource: meta['namingSource']?.toString(),
+      isFallback: meta['fallback'] == true || meta['namingSource']?.toString() == 'fallback',
+      imageCount: int.tryParse('${meta['imageCount'] ?? images.length}') ?? images.length,
     );
   }
 }

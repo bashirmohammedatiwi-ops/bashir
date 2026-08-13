@@ -14,6 +14,7 @@ import '../../core/utils/brand_match.dart';
 import '../../core/utils/daily_progress_store.dart';
 import '../../core/utils/helpers.dart';
 import '../../core/utils/product_naming.dart';
+import '../../core/utils/shade_catalog_enrich.dart';
 import '../../core/utils/shade_family_fallback.dart';
 import '../../core/utils/shade_sort.dart';
 import '../../core/utils/store_image_enrich.dart';
@@ -111,6 +112,7 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
   bool _posFilled = false;
   String? _error;
   ShadeFamilyResult? _result;
+  bool _enriching = false;
 
   final _shades = <_ShadeDraft>[];
   List<AiAutofillImage> _gallery = [];
@@ -190,21 +192,15 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
       _applyPos();
       _applyResult(fill);
 
-      if (usedLocalFallback && mounted) {
-        _snack('تعذّر التعرف التلقائي — يمكنك المتابعة وتعديل الأسماء والصور يدوياً', short: false);
-      }
-
-      try {
-        _gallery = await enrichImagesFromStores(
-          catalog: ref.read(catalogRepositoryProvider),
-          barcode: _mainBarcode,
-          nameHint: _productNameQuery,
-          base: _gallery,
-        );
-        for (final img in _gallery) {
-          _imageByUrl[img.url] = img;
+      if (mounted) {
+        if (usedLocalFallback) {
+          _snack('تعذّر التعرف التلقائي — جاري إثراء النتائج من المتاجر…', short: false);
+        } else if (fill.isFallback) {
+          _snack('تعرف محدود — جاري إثراء الأسماء والصور…', short: false);
+        } else if (!fill.namesVerified && fill.needsReview) {
+          _snack('تم التعرف — راجع الأسماء والتصنيف قبل الحفظ', short: false);
         }
-      } catch (_) {}
+      }
 
       await _applyCategoryFromProduct(fill);
 
@@ -216,16 +212,81 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
           _brandEn.text = matched.nameEn ?? matched.name ?? matched.displayName;
         }
       }
+
+      if (mounted) setState(() => _loading = false);
+
+      unawaited(_postBootstrapEnrich(usedLocalFallback: usedLocalFallback));
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-        if (_error == null && _shades.isNotEmpty) {
-          unawaited(_prefetchShadeImages());
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _postBootstrapEnrich({required bool usedLocalFallback}) async {
+    if (!mounted) return;
+    setState(() => _enriching = true);
+    try {
+      final catalog = ref.read(catalogRepositoryProvider);
+
+      try {
+        _gallery = await enrichImagesFromStores(
+          catalog: catalog,
+          barcode: _mainBarcode,
+          nameHint: _enrichNameHint,
+          base: _gallery,
+        );
+        for (final img in _gallery) {
+          _imageByUrl[img.url] = img;
+        }
+        if (mounted) setState(() {});
+      } catch (_) {}
+
+      final catalogHits = await enrichShadesFromCatalog(
+        catalog: catalog,
+        barcodes: _shades.map((s) => s.barcode).toList(),
+      );
+      if (catalogHits.isNotEmpty && mounted) {
+        setState(() {
+          for (final shade in _shades) {
+            final hit = catalogHits[shade.barcode];
+            if (hit == null) continue;
+            if (hit.shadeName != null && isGenericShadeName(shade.nameController.text)) {
+              shade.nameController.text = hit.shadeName!;
+            }
+            if (hit.image != null && shade.imageHits.isEmpty) {
+              shade.imageHits = [hit.image!];
+              _imageByUrl[hit.image!.url] = hit.image!;
+            }
+          }
+        });
+      }
+
+      if (_gallery.isEmpty && mounted) {
+        await _refreshGallery();
+      }
+
+      if (_shades.isNotEmpty) {
+        await _prefetchShadeImages();
+      }
+
+      if (mounted && (usedLocalFallback || _gallery.isEmpty)) {
+        final withImages = _shades.where((s) => s.imageHits.isNotEmpty).length;
+        if (withImages > 0 || _gallery.isNotEmpty) {
+          _snack('تم إثراء ${withImages} تدرج و${_gallery.length} صورة عامة', short: false);
         }
       }
+    } finally {
+      if (mounted) setState(() => _enriching = false);
     }
+  }
+
+  String get _enrichNameHint {
+    final parts = <String>[
+      if ((widget.hint ?? '').trim().isNotEmpty) widget.hint!.trim(),
+      _productNameQuery,
+      '${_brandEn.text.trim()} ${_nameEn.text.trim()}'.trim(),
+    ].where((s) => s.isNotEmpty).toList();
+    return parts.isNotEmpty ? parts.first : '';
   }
 
   Future<void> _continueWithLocalFallback() async {
@@ -246,16 +307,11 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
       _applyPos();
       _applyResult(fill);
       await _applyCategoryFromProduct(fill);
-      _snack('متابعة يدوية — عدّل الأسماء والصور ثم احفظ', short: false);
+      if (mounted) setState(() => _loading = false);
+      unawaited(_postBootstrapEnrich(usedLocalFallback: true));
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-        if (_error == null && _shades.isNotEmpty) {
-          unawaited(_prefetchShadeImages());
-        }
-      }
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -350,9 +406,9 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
   }
 
   Future<void> _prefetchShadeImages() async {
-    for (var i = 0; i < _shades.length; i += 2) {
-      final end = (i + 2 < _shades.length) ? i + 2 : _shades.length;
-      await Future.wait(List.generate(end - i, (j) => _searchShadeImages(i + j)));
+    for (var i = 0; i < _shades.length; i += 3) {
+      final end = (i + 3 < _shades.length) ? i + 3 : _shades.length;
+      await Future.wait(List.generate(end - i, (j) => _searchShadeImages(i + j, skipSnack: true)));
       if (!mounted) return;
     }
   }
@@ -472,7 +528,8 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
 
   Future<void> _guessCategoryLocally() async {
     if (_categories.isEmpty) return;
-    final hay = '${_nameEn.text} ${_nameAr.text} ${_result?.productTypeAr ?? ''}'.toLowerCase();
+    final hint = (widget.hint ?? '').toLowerCase();
+    final hay = '${_nameEn.text} ${_nameAr.text} ${_result?.productTypeAr ?? ''} $hint'.toLowerCase();
 
     NamedEntity? main;
     for (final c in _categories) {
@@ -550,27 +607,32 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
   }
 
   String get _productNameQuery {
+    final hint = (widget.hint ?? '').trim();
     final en = _nameEn.text.trim();
     final ar = _nameAr.text.trim();
     final brand = _brandEn.text.trim().isNotEmpty ? _brandEn.text.trim() : _brandAr.text.trim();
     if (en.isNotEmpty) return en;
     if (ar.isNotEmpty) return ar;
+    if (hint.isNotEmpty) return hint;
     return brand;
   }
 
   String _shadeSearchQuery(_ShadeDraft shade) {
+    final hint = (widget.hint ?? '').trim();
     final brand = _brandEn.text.trim().isNotEmpty ? _brandEn.text.trim() : _brandAr.text.trim();
     final product = _nameEn.text.trim().isNotEmpty ? _nameEn.text.trim() : _nameAr.text.trim();
     final code = shade.codeController.text.trim();
     final shadeName = shade.nameController.text.trim();
+    final genericName = isGenericShadeName(shadeName);
     final parts = <String>[
       if (brand.isNotEmpty) brand,
       if (product.isNotEmpty) product.split(' - ').first.trim(),
-      if (shadeName.isNotEmpty && !RegExp(r'^shade\s*\d+$', caseSensitive: false).hasMatch(shadeName)) shadeName,
+      if (hint.isNotEmpty && product.isEmpty) hint.split(' - ').first.trim(),
+      if (shadeName.isNotEmpty && !genericName) shadeName,
       if (code.isNotEmpty && code.length <= 3) code,
-      shade.barcode,
     ];
-    return parts.where((s) => s.isNotEmpty).join(' ');
+    final query = parts.where((s) => s.isNotEmpty).join(' ');
+    return query.isNotEmpty ? query : shade.barcode;
   }
 
   Future<void> _ensureShadeImages(int index) async {
@@ -580,7 +642,7 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
     await _searchShadeImages(index);
   }
 
-  Future<void> _searchShadeImages(int index, {String? query, String mode = 'name'}) async {
+  Future<void> _searchShadeImages(int index, {String? query, String mode = 'name', bool skipSnack = false}) async {
     if (index < 0 || index >= _shades.length) return;
     final shade = _shades[index];
     setState(() => shade.loadingImages = true);
@@ -590,12 +652,12 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
             shade.barcode,
             mode: mode,
             query: mode == 'name' ? (q.isNotEmpty ? q : shade.barcode) : shade.barcode,
-            nameHint: q.isNotEmpty ? q : _productNameQuery,
+            nameHint: q.isNotEmpty ? q : _enrichNameHint,
           );
       final merged = await enrichImagesFromStores(
         catalog: ref.read(catalogRepositoryProvider),
         barcode: shade.barcode,
-        nameHint: q.isNotEmpty ? q : _productNameQuery,
+        nameHint: q.isNotEmpty ? q : _enrichNameHint,
         base: imgs,
       );
       if (!mounted) return;
@@ -606,7 +668,7 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
         }
       });
     } catch (e) {
-      _snack(e.toString().replaceFirst('Exception: ', ''));
+      if (!skipSnack) _snack(e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => shade.loadingImages = false);
     }
@@ -627,7 +689,7 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
       final merged = await enrichImagesFromStores(
         catalog: ref.read(catalogRepositoryProvider),
         barcode: _mainBarcode,
-        nameHint: _productNameQuery,
+        nameHint: _enrichNameHint,
         base: imgs,
       );
       if (!mounted) return;
@@ -1099,6 +1161,8 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
                       titles: _titles,
                       extra: _step == 1 ? 'تدرج ${_shadeImageIndex + 1} / ${_shades.length}' : null,
                     ),
+                    if (_enriching)
+                      const LinearProgressIndicator(minHeight: 3),
                     Expanded(
                       child: PageView(
                         controller: _page,
@@ -1420,9 +1484,21 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
             child: Center(child: CircularProgressIndicator()),
           )
         else if (shade.imageHits.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(child: Text('لا نتائج — جرّب البحث بالاسم أو الباركود')),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: Column(
+              children: [
+                const Text('لا نتائج بعد — جاري البحث أو جرّب يدوياً'),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  onPressed: shade.loadingImages
+                      ? null
+                      : () => _searchShadeImages(_shadeImageIndex, mode: 'name'),
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('إعادة البحث'),
+                ),
+              ],
+            ),
           )
         else
           GridView.builder(

@@ -81,7 +81,7 @@ class AiProductRepository {
           if (hint != null && hint.trim().isNotEmpty) 'hint': hint.trim(),
           if (model != null && model.trim().isNotEmpty) 'model': model.trim(),
         },
-        options: Options(receiveTimeout: const Duration(seconds: 120)),
+        options: Options(receiveTimeout: const Duration(seconds: 180)),
       );
       return ShadeFamilyResult.fromJson(asMap(resp.data['data'] ?? resp.data));
     } on DioException catch (e) {

@@ -61,7 +61,11 @@ export class CursorNamingClient {
     return { choice: "composer-2.5-low", apiModel: "composer-2.5", fast: false };
   }
 
-  async verifyBilingualNames(input: CursorNamingInput, modelChoice?: string): Promise<CursorNamingOutput> {
+  async verifyBilingualNames(
+    input: CursorNamingInput,
+    modelChoice?: string,
+    maxWaitMs = 70_000,
+  ): Promise<CursorNamingOutput> {
     const resolved = this.resolveModel(modelChoice);
     const key = this.apiKey();
     if (!key) {
@@ -71,12 +75,15 @@ export class CursorNamingClient {
 
     const prompt = this.buildPrompt(input);
     try {
-      const text = await this.runCloudAgent({
-        apiKey: key,
-        model: resolved.apiModel,
-        fast: resolved.fast,
-        prompt,
-      });
+      const text = await this.runCloudAgent(
+        {
+          apiKey: key,
+          model: resolved.apiModel,
+          fast: resolved.fast,
+          prompt,
+        },
+        maxWaitMs,
+      );
       const parsed = this.parseNames(text);
       if (!parsed) {
         this.logger.warn(`Cursor naming JSON missing for ${input.barcode}`);
@@ -176,12 +183,16 @@ Return exactly:
     }
   }
 
-  private async runCloudAgent(args: {
-    apiKey: string;
-    model: string;
-    fast: boolean;
-    prompt: string;
-  }): Promise<string> {
+  private async runCloudAgent(
+    args: {
+      apiKey: string;
+      model: string;
+      fast: boolean;
+      prompt: string;
+    },
+    maxWaitMs = 70_000,
+  ): Promise<string> {
+    const createTimeout = Math.min(25_000, Math.max(8_000, maxWaitMs - 2_000));
     const created = await this.requestJson("POST", "/agents", args.apiKey, {
       prompt: { text: args.prompt },
       model: {
@@ -189,7 +200,7 @@ Return exactly:
         params: [{ id: "fast", value: args.fast ? "true" : "false" }],
       },
       name: "alhayaa-name-verify",
-    }, 25_000);
+    }, createTimeout);
 
     const agent = (created.agent as Record<string, unknown> | undefined) ?? created;
     const run = created.run as Record<string, unknown> | undefined;
@@ -199,7 +210,7 @@ Return exactly:
       throw new Error("Cursor agent create returned no ids");
     }
 
-    const deadline = Date.now() + 70_000;
+    const deadline = Date.now() + maxWaitMs;
     while (Date.now() < deadline) {
       const row = await this.requestJson("GET", `/agents/${encodeURIComponent(agentId)}/runs/${encodeURIComponent(runId)}`, args.apiKey);
       const status = String(row.status ?? "").toUpperCase();
