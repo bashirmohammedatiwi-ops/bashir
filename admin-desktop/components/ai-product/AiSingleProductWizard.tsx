@@ -1,0 +1,458 @@
+"use client";
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Alert,
+  Button,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  Space,
+  Steps,
+  Tag,
+  message,
+} from "antd";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AiImageSearchGrid } from "./AiImageSearchGrid";
+import { aiAutofill, aiSearchImages, fetchAiModels } from "@/lib/aiProductApi";
+import type { AiAutofillResult } from "@/lib/aiProductTypes";
+import { matchBrandIdLocal } from "@/lib/catalogBrandMatch";
+import { matchCategoryFromHints } from "@/lib/catalogCategoryMatch";
+import { fetchInventoryByBarcode } from "@/lib/inventorySync";
+import { defaultSku, saveAiProduct } from "@/lib/aiProductSave";
+import { normalizeBarcode } from "@/lib/barcode";
+import { queries, mutations } from "@/lib/queries";
+
+type NamedRow = { id: string; nameAr?: string; name?: string; nameEn?: string };
+
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
+};
+
+const STEPS = ["الباركود", "التسمية", "الصور", "التصنيف", "الحفظ"];
+
+export function AiSingleProductWizard({ open, onClose, onSuccess }: Props) {
+  const qc = useQueryClient();
+  const [step, setStep] = useState(0);
+  const [barcode, setBarcode] = useState("");
+  const [hint, setHint] = useState("");
+  const [modelId, setModelId] = useState<string | undefined>();
+  const [result, setResult] = useState<AiAutofillResult | null>(null);
+  const [nameAr, setNameAr] = useState("");
+  const [nameEn, setNameEn] = useState("");
+  const [brandAr, setBrandAr] = useState("");
+  const [brandEn, setBrandEn] = useState("");
+  const [descAr, setDescAr] = useState("");
+  const [descEn, setDescEn] = useState("");
+  const [brandId, setBrandId] = useState<string | undefined>();
+  const [categoryId, setCategoryId] = useState<string | undefined>();
+  const [subcategoryIds, setSubcategoryIds] = useState<string[]>([]);
+  const [tertiaryIds, setTertiaryIds] = useState<string[]>([]);
+  const [price, setPrice] = useState(0);
+  const [stock, setStock] = useState(0);
+  const [images, setImages] = useState(result?.images ?? []);
+  const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
+  const [imageQuery, setImageQuery] = useState("");
+  const [loadingImages, setLoadingImages] = useState(false);
+
+  const modelsQ = useQuery({
+    queryKey: ["ai-models"],
+    queryFn: fetchAiModels,
+    enabled: open,
+  });
+
+  const brandsQ = useQuery({
+    queryKey: ["brands"],
+    queryFn: () => queries.brands({ activeOnly: true }),
+    enabled: open,
+  });
+
+  const categoriesQ = useQuery({
+    queryKey: ["categories"],
+    queryFn: queries.categories,
+    enabled: open,
+  });
+
+  const subsQ = useQuery({
+    queryKey: ["subcategories", categoryId],
+    queryFn: () => queries.subcategories({ parentId: categoryId }),
+    enabled: open && !!categoryId,
+  });
+
+  const tertQ = useQuery({
+    queryKey: ["tertiary", subcategoryIds.join(",")],
+    queryFn: async () => {
+      const merged: Array<{ id: string; name?: string; nameAr?: string; nameEn?: string }> = [];
+      const seen = new Set<string>();
+      for (const subId of subcategoryIds) {
+        const list = await queries.tertiarySections({ parentId: subId });
+        for (const t of list) {
+          if (!seen.has(t.id)) {
+            seen.add(t.id);
+            merged.push(t);
+          }
+        }
+      }
+      return merged;
+    },
+    enabled: open && subcategoryIds.length > 0,
+  });
+
+  const reset = useCallback(() => {
+    setStep(0);
+    setBarcode("");
+    setHint("");
+    setResult(null);
+    setNameAr("");
+    setNameEn("");
+    setBrandAr("");
+    setBrandEn("");
+    setDescAr("");
+    setDescEn("");
+    setBrandId(undefined);
+    setCategoryId(undefined);
+    setSubcategoryIds([]);
+    setTertiaryIds([]);
+    setPrice(0);
+    setStock(0);
+    setImages([]);
+    setSelectedImages(new Set());
+    setImageQuery("");
+  }, []);
+
+  useEffect(() => {
+    if (!open) reset();
+  }, [open, reset]);
+
+  useEffect(() => {
+    if (!modelsQ.data?.default || modelId) return;
+    setModelId(modelsQ.data.default);
+  }, [modelsQ.data, modelId]);
+
+  const autofillMut = useMutation({
+    mutationFn: async () => {
+      const bc = normalizeBarcode(barcode);
+      if (bc.length < 6) throw new Error("أدخل باركود صالح (6 أرقام على الأقل)");
+      const check = await queries.productBarcodeCheck(bc);
+      if (check?.exists) throw new Error("المنتج موجود مسبقاً — استخدم تعديل المنتجات");
+      const fill = await aiAutofill({ barcode: bc, hint, model: modelId });
+      const inv = await fetchInventoryByBarcode(bc);
+      return { fill, inv };
+    },
+    onSuccess: ({ fill, inv }) => {
+      setResult(fill);
+      setNameAr(fill.nameAr);
+      setNameEn(fill.nameEn);
+      setBrandAr(fill.brandAr);
+      setBrandEn(fill.brandEn);
+      setDescAr(fill.descriptionAr);
+      setDescEn(fill.descriptionEn);
+      setImages(fill.images);
+      setImageQuery(fill.nameEn || fill.nameAr || hint);
+      if (fill.images.length) {
+        setSelectedImages(new Set([fill.images[0].url]));
+      }
+      if (fill.category.categoryId) setCategoryId(fill.category.categoryId);
+      if (fill.category.subcategoryIds?.length) setSubcategoryIds(fill.category.subcategoryIds);
+      if (fill.category.tertiaryCategoryIds?.length) setTertiaryIds(fill.category.tertiaryCategoryIds);
+      if (inv) {
+        setPrice(inv.price);
+        setStock(inv.stock);
+      }
+      const brands = brandsQ.data ?? [];
+      const matched = matchBrandIdLocal(brands, fill.brandAr, fill.brandEn);
+      if (matched) setBrandId(matched);
+      setStep(1);
+      message.success("تم التعرف على المنتج");
+    },
+    onError: (e: Error) => message.error(e.message || "فشل التعرف"),
+  });
+
+  const saveMut = useMutation({
+    mutationFn: async () => {
+      const bc = normalizeBarcode(barcode);
+      let resolvedBrandId = brandId;
+      if (!resolvedBrandId) {
+        const resolved = await mutations.resolveBrand({
+          brandAr,
+          brandEn,
+          createIfMissing: true,
+        });
+        resolvedBrandId = resolved?.id;
+      }
+      if (!resolvedBrandId) throw new Error("تعذّر تحديد البراند");
+      if (!categoryId) throw new Error("اختر القسم الرئيسي");
+      const gallery = [...selectedImages];
+      if (!gallery.length) throw new Error("اختر صورة واحدة على الأقل");
+
+      return saveAiProduct({
+        values: {
+          barcode: bc,
+          sku: defaultSku(bc),
+          nameAr,
+          nameEn,
+          descriptionAr: descAr,
+          descriptionEn: descEn,
+          brandId: resolvedBrandId,
+          categoryId,
+          subcategoryIds,
+          tertiaryCategoryIds: tertiaryIds,
+          price,
+          stock,
+        },
+        galleryUrls: gallery,
+      });
+    },
+    onSuccess: () => {
+      message.success("تم إنشاء المنتج بنجاح");
+      qc.invalidateQueries({ queryKey: ["products"] });
+      onSuccess?.();
+      onClose();
+    },
+    onError: (e: Error) => message.error(e.message || "فشل الحفظ"),
+  });
+
+  const applyCategoryHints = useCallback(() => {
+    const cats = categoriesQ.data ?? [];
+    const subs = subsQ.data ?? [];
+    const tert = tertQ.data ?? [];
+    const matched = matchCategoryFromHints(cats, subs, tert, nameAr, nameEn);
+    if (matched.categoryId) setCategoryId(matched.categoryId);
+    if (matched.subcategoryId) setSubcategoryIds([matched.subcategoryId]);
+    if (matched.tertiaryCategoryId) setTertiaryIds([matched.tertiaryCategoryId]);
+  }, [categoriesQ.data, subsQ.data, tertQ.data, nameAr, nameEn]);
+
+  const refreshImages = async () => {
+    setLoadingImages(true);
+    try {
+      const bc = normalizeBarcode(barcode);
+      const q = imageQuery.trim() || nameEn || nameAr || hint;
+      const hits = await aiSearchImages({ barcode: bc, mode: "name", query: q, nameHint: q });
+      setImages(hits);
+      if (hits.length && !selectedImages.size) setSelectedImages(new Set([hits[0].url]));
+    } catch (e) {
+      message.error((e as Error).message || "فشل جلب الصور");
+    } finally {
+      setLoadingImages(false);
+    }
+  };
+
+  const toggleImage = (url: string) => {
+    setSelectedImages((prev) => {
+      const next = new Set(prev);
+      if (next.has(url)) next.delete(url);
+      else next.add(url);
+      return next;
+    });
+  };
+
+  const canNext = useMemo(() => {
+    if (step === 0) return barcode.trim().length >= 6;
+    if (step === 1) return nameAr.trim() || nameEn.trim();
+    if (step === 2) return selectedImages.size > 0;
+    if (step === 3) return !!categoryId;
+    return true;
+  }, [step, barcode, nameAr, nameEn, selectedImages, categoryId]);
+
+  if (!open) return null;
+
+  return (
+    <div className="ai-wizard-shell">
+      <div className="ai-wizard-head">
+        <Space style={{ width: "100%", justifyContent: "space-between" }}>
+          <div>
+            <strong style={{ fontSize: 18 }}>إضافة منتج مفرد بالذكاء الاصطناعي</strong>
+            <div style={{ color: "#8a8194", fontSize: 13, marginTop: 4 }}>
+              Composer يؤكد الاسم — ثم اختر الصور والتصنيف
+            </div>
+          </div>
+          <Button onClick={onClose}>إغلاق</Button>
+        </Space>
+        <Steps current={step} size="small" style={{ marginTop: 18 }} items={STEPS.map((t) => ({ title: t }))} />
+      </div>
+
+      <div className="ai-wizard-body">
+        {step === 0 ? (
+          <Space direction="vertical" size="large" style={{ width: "100%", maxWidth: 520 }}>
+            <Alert
+              type="info"
+              showIcon
+              message="امسح أو أدخل باركود المنتج"
+              description="أضف تلميحاً (اسم المنتج على العبوة) لنتائج أدق في التسمية والصور."
+            />
+            <Form layout="vertical">
+              <Form.Item label="الباركود" required>
+                <Input
+                  size="large"
+                  prefix="📦"
+                  value={barcode}
+                  onChange={(e) => setBarcode(e.target.value.replace(/\D/g, ""))}
+                  placeholder="4052136246445"
+                  inputMode="numeric"
+                />
+              </Form.Item>
+              <Form.Item label="تلميح المنتج (اختياري)">
+                <Input
+                  value={hint}
+                  onChange={(e) => setHint(e.target.value)}
+                  placeholder="ARTDECO MAT PASSION Lip Fluid"
+                />
+              </Form.Item>
+              <Form.Item label="نموذج AI">
+                <Select
+                  value={modelId}
+                  onChange={setModelId}
+                  loading={modelsQ.isLoading}
+                  options={(modelsQ.data?.models ?? []).map((m) => ({
+                    value: m.id,
+                    label: m.labelAr,
+                  }))}
+                />
+              </Form.Item>
+            </Form>
+          </Space>
+        ) : null}
+
+        {step === 1 ? (
+          <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+            {result?.needsReview ? (
+              <Alert type="warning" showIcon message="يُنصح بمراجعة الأسماء قبل الحفظ" />
+            ) : null}
+            {result?.namesVerified ? <Tag color="green">تم تأكيد الاسم بالـ AI</Tag> : null}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <Form.Item label="الاسم عربي">
+                <Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} />
+              </Form.Item>
+              <Form.Item label="الاسم إنجليزي">
+                <Input value={nameEn} onChange={(e) => setNameEn(e.target.value)} />
+              </Form.Item>
+              <Form.Item label="البراند عربي">
+                <Input value={brandAr} onChange={(e) => setBrandAr(e.target.value)} />
+              </Form.Item>
+              <Form.Item label="البراند إنجليزي">
+                <Input value={brandEn} onChange={(e) => setBrandEn(e.target.value)} />
+              </Form.Item>
+            </div>
+            <Form.Item label="الوصف عربي">
+              <Input.TextArea rows={3} value={descAr} onChange={(e) => setDescAr(e.target.value)} />
+            </Form.Item>
+          </Space>
+        ) : null}
+
+        {step === 2 ? (
+          <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+            <Space.Compact style={{ width: "100%" }}>
+              <Input
+                value={imageQuery}
+                onChange={(e) => setImageQuery(e.target.value)}
+                placeholder="بحث صور بالاسم"
+                onPressEnter={() => refreshImages()}
+              />
+              <Button onClick={refreshImages} loading={loadingImages}>
+                بحث
+              </Button>
+            </Space.Compact>
+            <AiImageSearchGrid
+              images={images}
+              selected={selectedImages}
+              onToggle={toggleImage}
+              loading={loadingImages}
+            />
+            <div style={{ color: "#8a8194", fontSize: 13 }}>محدد: {selectedImages.size} صورة</div>
+          </Space>
+        ) : null}
+
+        {step === 3 ? (
+          <Space direction="vertical" size="middle" style={{ width: "100%", maxWidth: 560 }}>
+            <Button type="link" onClick={applyCategoryHints} style={{ padding: 0 }}>
+              تخمين التصنيف من الاسم
+            </Button>
+            <Form layout="vertical">
+              <Form.Item label="القسم الرئيسي" required>
+                <Select
+                  value={categoryId}
+                  onChange={(v) => {
+                    setCategoryId(v);
+                    setSubcategoryIds([]);
+                    setTertiaryIds([]);
+                  }}
+                  options={(categoriesQ.data ?? []).map((c: NamedRow) => ({
+                    value: c.id,
+                    label: c.nameAr || c.name || c.nameEn,
+                  }))}
+                />
+              </Form.Item>
+              <Form.Item label="قسم فرعي">
+                <Select
+                  mode="multiple"
+                  value={subcategoryIds}
+                  onChange={setSubcategoryIds}
+                  options={(subsQ.data ?? []).map((s: NamedRow) => ({
+                    value: s.id,
+                    label: s.nameAr || s.name || s.nameEn,
+                  }))}
+                />
+              </Form.Item>
+              <Form.Item label="قسم ثانوي">
+                <Select
+                  mode="multiple"
+                  value={tertiaryIds}
+                  onChange={setTertiaryIds}
+                  options={(tertQ.data ?? []).map((t: NamedRow) => ({
+                    value: t.id,
+                    label: t.nameAr || t.name || t.nameEn,
+                  }))}
+                />
+              </Form.Item>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                <Form.Item label="السعر">
+                  <InputNumber style={{ width: "100%" }} min={0} value={price} onChange={(v) => setPrice(Number(v ?? 0))} />
+                </Form.Item>
+                <Form.Item label="المخزون">
+                  <InputNumber style={{ width: "100%" }} min={0} value={stock} onChange={(v) => setStock(Number(v ?? 0))} />
+                </Form.Item>
+              </div>
+            </Form>
+          </Space>
+        ) : null}
+
+        {step === 4 ? (
+          <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+            <Alert type="success" showIcon message="جاهز للحفظ" description="سيتم رفع الصور وإنشاء المنتج في المتجر." />
+            <div style={{ background: "#faf8fc", padding: 16, borderRadius: 12 }}>
+              <div><strong>الاسم:</strong> {nameAr || nameEn}</div>
+              <div><strong>الباركود:</strong> {normalizeBarcode(barcode)}</div>
+              <div><strong>الصور:</strong> {selectedImages.size}</div>
+              <div><strong>السعر:</strong> {price} · <strong>المخزون:</strong> {stock}</div>
+            </div>
+          </Space>
+        ) : null}
+      </div>
+
+      <div className="ai-wizard-foot">
+        <Button
+          disabled={step === 0 || autofillMut.isPending || saveMut.isPending}
+          onClick={() => setStep((s) => Math.max(0, s - 1))}
+        >
+          رجوع
+        </Button>
+        {step === 0 ? (
+          <Button type="primary" loading={autofillMut.isPending} onClick={() => autofillMut.mutate()}>
+            تعرف بالذكاء الاصطناعي
+          </Button>
+        ) : step < 4 ? (
+          <Button type="primary" disabled={!canNext} onClick={() => setStep((s) => s + 1)}>
+            التالي
+          </Button>
+        ) : (
+          <Button type="primary" loading={saveMut.isPending} onClick={() => saveMut.mutate()}>
+            حفظ المنتج
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
