@@ -159,7 +159,7 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
       for (final s in _scanned)
         if (s.existsName != null && s.existsName!.trim().isNotEmpty) s.barcode: s.existsName!.trim(),
     };
-    await context.pushReplacement(
+    context.pushReplacement(
       '/shade-family/wizard',
       extra: {
         'barcodes': barcodes,
