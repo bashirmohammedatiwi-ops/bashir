@@ -29,13 +29,14 @@ class _ScannedShade {
 class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
     with WidgetsBindingObserver {
   final _scannerKey = GlobalKey<BarcodeLiveScannerState>();
-  final _manualController = TextEditingController();
+  final _barcodeController = TextEditingController();
+  final _barcodeFocus = FocusNode();
   final _hintController = TextEditingController();
   final _scanned = <_ScannedShade>[];
   final _seen = <String>{};
   final _lastSeenAt = <String, DateTime>{};
 
-  bool _showManual = false;
+  bool _cameraEnabled = true;
   bool _cameraActive = true;
   String? _flash;
   AiModelOption _model = AiModelOption.composerLow;
@@ -45,6 +46,9 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadModel();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _barcodeFocus.requestFocus();
+    });
   }
 
   Future<void> _loadModel() async {
@@ -61,13 +65,15 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _manualController.dispose();
+    _barcodeController.dispose();
+    _barcodeFocus.dispose();
     _hintController.dispose();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!_cameraEnabled) return;
     final scanner = _scannerKey.currentState;
     if (scanner == null) return;
     if (state == AppLifecycleState.resumed) {
@@ -75,6 +81,17 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
     } else if (state == AppLifecycleState.inactive || state == AppLifecycleState.paused) {
       scanner.pause();
     }
+  }
+
+  void _submitBarcodeField([String? value]) {
+    final raw = (value ?? _barcodeController.text).trim();
+    if (raw.isEmpty) {
+      _barcodeFocus.requestFocus();
+      return;
+    }
+    _acceptBarcode(raw);
+    _barcodeController.clear();
+    _barcodeFocus.requestFocus();
   }
 
   void _onDetect(BarcodeCapture capture) {
@@ -147,7 +164,7 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
 
   Future<void> _continue() async {
     if (_scanned.isEmpty) {
-      _pulse('امسح تدرجاً واحداً على الأقل');
+      _pulse('أضف تدرجاً واحداً على الأقل');
       return;
     }
     setState(() => _cameraActive = false);
@@ -178,9 +195,17 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
         actions: [
           const DailyProgressChip(),
           IconButton(
-            tooltip: _showManual ? 'الكاميرا' : 'إدخال يدوي',
-            icon: Icon(_showManual ? Icons.camera_alt_outlined : Icons.keyboard_alt_outlined),
-            onPressed: () => setState(() => _showManual = !_showManual),
+            tooltip: _cameraEnabled ? 'إيقاف الكاميرا' : 'تشغيل الكاميرا',
+            icon: Icon(_cameraEnabled ? Icons.videocam_off_outlined : Icons.videocam_outlined),
+            onPressed: () async {
+              setState(() => _cameraEnabled = !_cameraEnabled);
+              if (_cameraEnabled) {
+                await _scannerKey.currentState?.resume();
+              } else {
+                await _scannerKey.currentState?.pause();
+              }
+              if (mounted) _barcodeFocus.requestFocus();
+            },
           ),
         ],
       ),
@@ -226,6 +251,38 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
                     ],
                   ),
                   const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _barcodeController,
+                          focusNode: _barcodeFocus,
+                          autofocus: true,
+                          keyboardType: TextInputType.text,
+                          textInputAction: TextInputAction.done,
+                          textDirection: TextDirection.ltr,
+                          autocorrect: false,
+                          enableSuggestions: false,
+                          decoration: const InputDecoration(
+                            labelText: 'باركود التدرج',
+                            hintText: 'امسح بجهاز الباركود أو اكتب الرقم',
+                            prefixIcon: Icon(Icons.qr_code_scanner_outlined, size: 20),
+                            helperText: 'يدعم الكاميرا · جهاز البرايس جيكر · الإدخال اليدوي',
+                            helperMaxLines: 2,
+                          ),
+                          onSubmitted: _submitBarcodeField,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton(
+                        onPressed: () => _submitBarcodeField(),
+                        style: FilledButton.styleFrom(minimumSize: const Size(88, 56)),
+                        child: const Text('إضافة'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   TextField(
                     controller: _hintController,
                     textInputAction: TextInputAction.done,
@@ -235,43 +292,11 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
                       prefixIcon: Icon(Icons.tips_and_updates_outlined, size: 20),
                     ),
                   ),
-                  if (_showManual) ...[
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _manualController,
-                            keyboardType: TextInputType.number,
-                            textInputAction: TextInputAction.go,
-                            textDirection: TextDirection.ltr,
-                            decoration: const InputDecoration(
-                              labelText: 'باركود تدرج',
-                              prefixIcon: Icon(Icons.pin_outlined),
-                            ),
-                            onSubmitted: (v) {
-                              _acceptBarcode(v);
-                              _manualController.clear();
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        FilledButton(
-                          onPressed: () {
-                            _acceptBarcode(_manualController.text);
-                            _manualController.clear();
-                          },
-                          style: FilledButton.styleFrom(minimumSize: const Size(88, 48)),
-                          child: const Text('إضافة'),
-                        ),
-                      ],
-                    ),
-                  ],
                   const SizedBox(height: 8),
                   Text(
                     _scanned.isEmpty
-                        ? 'امسح عبوات التدرجات بسرعة — نفس المنتج، درجات مختلفة'
-                        : '${_scanned.length} تدرج ممسوح',
+                        ? 'أضف تدرجات نفس المنتج — كاميرا أو جهاز باركود أو الحقل أعلاه'
+                        : '${_scanned.length} تدرج مضاف',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: _scanned.isEmpty ? AppTheme.muted : AppTheme.primaryDark,
@@ -315,7 +340,7 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
             child: Stack(
               fit: StackFit.expand,
               children: [
-                if (_showManual)
+                if (!_cameraEnabled)
                   ColoredBox(
                     color: Colors.black87,
                     child: Center(
@@ -324,10 +349,10 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.palette_outlined, size: 56, color: Colors.white.withValues(alpha: 0.7)),
+                            Icon(Icons.qr_code_scanner, size: 56, color: Colors.white.withValues(alpha: 0.7)),
                             const SizedBox(height: 12),
                             const Text(
-                              'أدخل باركود كل تدرج ثم اضغط إضافة',
+                              'الكاميرا متوقفة — استخدم حقل الباركود أو جهاز البرايس جيكر',
                               textAlign: TextAlign.center,
                               style: TextStyle(color: Colors.white, fontSize: 15),
                             ),
@@ -368,7 +393,7 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         child: Text(
-                          _flash != null ? 'تم: $_flash' : 'امسح التدرجات واحداً تلو الآخر دون توقف',
+                          _flash != null ? 'تم: $_flash' : 'أو امسح بالكاميرا — الحقل أعلاه يعمل دائماً',
                           textAlign: TextAlign.center,
                           style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
                         ),
@@ -409,7 +434,7 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
             icon: const Icon(Icons.auto_awesome),
             label: Text(
               _scanned.isEmpty
-                  ? 'امسح التدرجات أولاً'
+                  ? 'أضف تدرجاً واحداً على الأقل'
                   : 'تعرّف على ${_scanned.length} تدرج وأكمل',
             ),
           ),
