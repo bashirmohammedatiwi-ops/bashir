@@ -11,6 +11,7 @@ type FreeHint = {
   categoryHints?: string[];
   source?: string;
   imageUrl?: string;
+  colorHex?: string;
 };
 
 type GptAutofillJson = {
@@ -353,7 +354,7 @@ export class AiProductService {
   private async shadeFamilyFast(rawBarcodes: string[], hint?: string, modelChoice?: string) {
     const unique = rawBarcodes;
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `shade-v12|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `shade-v13|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 20 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -1754,12 +1755,19 @@ export class AiProductService {
       nameEn = this.inventShadeLabel(blob || title, code, index);
     }
     const nameAr = this.polishMarketArabic(this.guessShadeNameAr(nameEn, code));
+    const hexFromText = this.extractHexFromText(`${known} ${title} ${blob}`);
+    const color_hex =
+      (free?.colorHex && this.normalizeShadeHex(free.colorHex) !== "#CCCCCC"
+        ? this.normalizeShadeHex(free.colorHex)
+        : "") ||
+      (hexFromText && hexFromText !== "#CCCCCC" ? hexFromText : "") ||
+      this.guessShadeHex(`${nameEn} ${title} ${blob}`);
     return {
       barcode,
       code,
       name_en: nameEn,
       name_ar: nameAr,
-      color_hex: this.guessShadeHex(`${nameEn} ${title} ${blob}`),
+      color_hex,
     };
   }
 
@@ -1871,7 +1879,7 @@ export class AiProductService {
 
   private async lookupCatalogShade(
     barcode: string,
-  ): Promise<{ shadeName?: string; title?: string; imageUrl?: string } | null> {
+  ): Promise<{ shadeName?: string; title?: string; imageUrl?: string; colorHex?: string } | null> {
     const stores = ["miswag", "faces"];
     for (const store of stores) {
       try {
@@ -1889,18 +1897,26 @@ export class AiProductService {
             nameAr?: string;
             title?: string;
             thumb?: string;
+            colorHex?: string;
+            hex?: string;
+            swatchUrl?: string;
+            swatchImage?: string;
           }>;
         };
         const hit = body.results?.[0];
         if (!hit) continue;
         const shadeName = String(hit.matchedShadeName || hit.shadeName || "").trim();
         const title = String(hit.nameEn || hit.nameAr || hit.title || "").trim();
-        const imageUrl = String(hit.thumb || "").trim();
+        const imageUrl = String(hit.swatchUrl || hit.swatchImage || hit.thumb || "").trim();
+        const colorHex = this.normalizeShadeHex(
+          String(hit.colorHex || hit.hex || "").trim() || undefined,
+        );
         if (shadeName || title) {
           return {
             shadeName: shadeName || undefined,
             title: title || undefined,
             imageUrl: imageUrl.startsWith("http") ? imageUrl : undefined,
+            colorHex: colorHex !== "#CCCCCC" ? colorHex : undefined,
           };
         }
       } catch {
@@ -1936,6 +1952,7 @@ export class AiProductService {
             next.title = hit.title;
           }
           if (!next.imageUrl && hit.imageUrl) next.imageUrl = hit.imageUrl;
+          if (hit.colorHex) next.colorHex = hit.colorHex;
           next.source = next.source ?? "catalog-hub";
           freeByBarcode.set(barcode, next);
         }),
@@ -2040,19 +2057,34 @@ export class AiProductService {
     return `#${h}`;
   }
 
+  private extractHexFromText(text: string): string {
+    const m = String(text || "").match(/#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/);
+    if (!m) return "";
+    return this.normalizeShadeHex(`#${m[1]}`);
+  }
+
   private guessShadeHex(text: string): string {
     const n = this.norm(text);
     const map: Array<[RegExp, string]> = [
+      [/burnt\s*rose|brick\s*red/, "#9B3D3D"],
+      [/smooth\s*plum|deep\s*plum|plum/, "#7B3F61"],
+      [/nudist|nude\s*pink|soft\s*nude/, "#C9A08A"],
+      [/pinky\s*swear|baby\s*pink|light\s*pink/, "#F0A8B8"],
+      [/mauve|dusty\s*rose/, "#B07A8A"],
+      [/terracotta|rust/, "#C45C3A"],
+      [/wine|bordeaux|burgundy/, "#722F37"],
       [/ivory|porcelain/, "#F4E6D4"],
       [/nude|beige|sand/, "#D4B08C"],
       [/honey|caramel|gold/, "#C4924A"],
       [/rose|pink|blush/, "#E8A0B0"],
-      [/coral/, "#E07A5F"],
-      [/red|cherry|ruby|passion/, "#C41E3A"],
-      [/plum|berry|wine/, "#8E3A59"],
+      [/coral|peach/, "#E07A5F"],
+      [/red|cherry|ruby|passion|scarlet/, "#C41E3A"],
+      [/berry|cranberry/, "#9E3A59"],
       [/brown|mocha|cocoa|espresso|chocolate/, "#6B3E2E"],
       [/clear|transparent/, "#F6EDE8"],
       [/black|noir/, "#1A1A1A"],
+      [/orange|tangerine/, "#E86A2A"],
+      [/purple|violet|lilac/, "#8E5A9B"],
     ];
     for (const [re, hex] of map) {
       if (re.test(n)) return hex;

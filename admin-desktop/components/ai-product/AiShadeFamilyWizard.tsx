@@ -20,7 +20,7 @@ import { AiProgressOverlay, type AiProgressState } from "./AiProgressOverlay";
 import { aiSearchImages, aiShadeFamily, fetchAiModels } from "@/lib/aiProductApi";
 import type { ShadeFamilyResult } from "@/lib/aiProductTypes";
 import { applyAiCategories } from "@/lib/aiCategoryApply";
-import { catalogThumbToImage, enrichShadesFromCatalog, inferProductIdentityFromCatalog, isBarcodeLikeProductName, isGenericShadeName, mergeUniqueImages } from "@/lib/aiCatalogEnrich";
+import { catalogThumbToImage, enrichShadeColors, enrichShadesFromCatalog, inferProductIdentityFromCatalog, isBarcodeLikeProductName, isGenericShadeName, mergeUniqueImages, resolveShadeRowColor } from "@/lib/aiCatalogEnrich";
 import { formatAiError, startShadeFamilyProgressTicker } from "@/lib/aiProgress";
 import { matchBrandIdLocal } from "@/lib/catalogBrandMatch";
 import { lookupInventoryBarcodes } from "@/lib/inventorySync";
@@ -260,6 +260,7 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
           }));
         }
       }
+      await enrichShadeColors(rows, catalogMap);
     } catch {
       /* optional */
     }
@@ -420,10 +421,18 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
         hits = mergeUniqueImages(hits, nameHits);
       }
       setShadeImages((prev) => ({ ...prev, [shade.barcode]: hits.map((h) => h.url) }));
-      if (!shade.imageUrl && hits[0]?.url) {
+      const imageUrl = shade.imageUrl || hits[0]?.url || null;
+      if (imageUrl) {
+        const colorHex = await resolveShadeRowColor({
+          name: shade.name,
+          colorHex: shade.colorHex,
+          imageUrl,
+        });
         setShades((prev) => {
           const next = [...prev];
-          next[idx] = { ...shade, imageUrl: hits[0].url };
+          const cur = next[idx];
+          if (!cur) return prev;
+          next[idx] = { ...cur, imageUrl: cur.imageUrl || imageUrl, colorHex };
           return next;
         });
       }
@@ -573,7 +582,10 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
                     return { ...row, name: isGenericShadeName(row.name) ? shadeName : row.name };
                   }),
                 );
-                message.success("تم تحديث أسماء المنتج والتدرجات من المتاجر");
+                const nextRows = shades.map((row) => ({ ...row }));
+                await enrichShadeColors(nextRows, map);
+                setShades(nextRows);
+                message.success("تم تحديث أسماء المنتج والتدرجات وألوانها من المتاجر");
               }}
             >
               إثراء الأسماء من المتاجر
@@ -597,6 +609,17 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
                     next[i] = { ...s, code: e.target.value };
                     setShades(next);
                   }}
+                />
+                <Input
+                  type="color"
+                  value={s.colorHex}
+                  title="لون التدرج"
+                  onChange={(e) => {
+                    const next = [...shades];
+                    next[i] = { ...s, colorHex: e.target.value };
+                    setShades(next);
+                  }}
+                  style={{ width: 44, padding: 2, cursor: "pointer" }}
                 />
                 <Tag dir="ltr">{s.barcode}</Tag>
               </div>

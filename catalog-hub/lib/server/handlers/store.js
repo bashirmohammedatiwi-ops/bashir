@@ -60,6 +60,8 @@ function mapBarcodeSearchHit(adapter, item, digits) {
     miswagId: item.miswagId || (isMiswagInternalId(digits) ? digits : ''),
     barcode: item.barcode || (isMiswagInternalId(digits) ? '' : digits),
     matchType: item.matchType || (isMiswagInternalId(digits) ? 'miswag_id' : 'ean'),
+    colorHex: String(item.colorHex || item.hex || '').trim(),
+    swatchUrl: String(item.swatchUrl || item.swatchImage || '').trim(),
   };
 }
 

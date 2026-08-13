@@ -146,17 +146,20 @@ export async function searchBarcode(code) {
 }
 
 function toBarcodeHit(detail, digits, shade) {
+  const swatch = shade?.swatchImage || shade?.image || '';
   return {
     id: detail.id,
     nameAr: detail.nameAr,
     nameEn: detail.nameEn,
     brandAr: detail.brandAr,
     brandEn: detail.brandEn,
-    thumb: shade?.image || shade?.swatchImage || detail.thumb,
+    thumb: swatch || detail.thumb,
     price: shade?.price || detail.price,
     barcode: shade?.barcode || detail.barcode || digits,
     shadeName: shade?.nameAr || shade?.nameEn || '',
     matchType: 'ean',
+    colorHex: String(shade?.colorHex || shade?.hex || '').trim(),
+    swatchUrl: swatch,
   };
 }
 

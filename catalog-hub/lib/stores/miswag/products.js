@@ -536,19 +536,24 @@ function rememberBarcodeMatch(digits, item, { shadeName = '' } = {}) {
 }
 
 function toBarcodeHit(item, digits, matchType, extra = {}) {
+  const shade = extra.shade;
+  const hex = String(shade?.hex || shade?.colorHex || extra.colorHex || '').trim();
+  const swatch = String(shade?.image || shade?.swatchUrl || extra.swatchUrl || '').trim();
   return {
     id: item.id,
     nameAr: item.nameAr,
     nameEn: item.nameEn,
     brandAr: item.brandAr,
     brandEn: item.brandEn,
-    thumb: item.thumb,
+    thumb: swatch || item.thumb,
     price: item.price,
     shadeCount: item.shadeCount,
     hasOptions: item.hasOptions,
-    shadeName: extra.shadeName || '',
+    shadeName: extra.shadeName || shade?.nameAr || shade?.name || '',
     barcode: digits,
     matchType,
+    colorHex: hex,
+    swatchUrl: swatch,
   };
 }
 
@@ -712,7 +717,7 @@ export async function searchBarcode(code) {
       const shade = (item.shades || []).find((s) => s.barcode && gtinEqual(s.barcode, digits));
       if (shade) {
         learnPrefixBrand(digits, item.brandAr || item.brandEn);
-        return [toBarcodeHit(item, digits, 'ean', { shadeName: shade.nameAr || shade.name })];
+        return [toBarcodeHit(item, digits, 'ean', { shade, shadeName: shade.nameAr || shade.name })];
       }
     }
   }
@@ -755,7 +760,7 @@ export async function searchBarcode(code) {
     if (shade) {
       learnPrefixBrand(digits, detail.brandAr || detail.brandEn);
       rememberBarcodeMatch(digits, detail, { shadeName: shade.nameAr || shade.name });
-      return [toBarcodeHit(detail, digits, 'ean', { shadeName: shade.nameAr || shade.name })];
+      return [toBarcodeHit(detail, digits, 'ean', { shade, shadeName: shade.nameAr || shade.name })];
     }
   }
 

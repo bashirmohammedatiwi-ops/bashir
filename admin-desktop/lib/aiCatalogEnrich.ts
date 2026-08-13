@@ -1,5 +1,90 @@
 import { searchCatalogByBarcode, type CatalogImportOption } from "./catalogImport";
 import type { AiAutofillImage } from "./aiProductTypes";
+import { resolveShadeColorHex } from "./shadeColorFromImage";
+
+export function normalizeShadeHex(raw?: string): string {
+  let h = String(raw ?? "").trim().toUpperCase().replace(/^#/, "");
+  if (/^[0-9A-F]{3}$/.test(h)) {
+    h = `${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`;
+  }
+  if (!/^[0-9A-F]{6}$/.test(h)) return "#CCCCCC";
+  return `#${h}`;
+}
+
+export function guessShadeHexFromName(name: string): string {
+  const n = String(name ?? "").toLowerCase();
+  const map: Array<[RegExp, string]> = [
+    [/burnt\s*rose|brick\s*red/, "#9B3D3D"],
+    [/smooth\s*plum|deep\s*plum|plum/, "#7B3F61"],
+    [/nudist|nude\s*pink|soft\s*nude/, "#C9A08A"],
+    [/pinky\s*swear|baby\s*pink|light\s*pink/, "#F0A8B8"],
+    [/mauve|dusty\s*rose/, "#B07A8A"],
+    [/terracotta|rust/, "#C45C3A"],
+    [/wine|bordeaux|burgundy/, "#722F37"],
+    [/ivory|porcelain/, "#F4E6D4"],
+    [/nude|beige|sand/, "#D4B08C"],
+    [/honey|caramel|gold/, "#C4924A"],
+    [/rose|pink|blush/, "#E8A0B0"],
+    [/coral|peach/, "#E07A5F"],
+    [/red|cherry|ruby|passion|scarlet/, "#C41E3A"],
+    [/berry|cranberry/, "#9E3A59"],
+    [/brown|mocha|cocoa|espresso|chocolate/, "#6B3E2E"],
+    [/clear|transparent/, "#F6EDE8"],
+    [/black|noir/, "#1A1A1A"],
+    [/orange|tangerine/, "#E86A2A"],
+    [/purple|violet|lilac/, "#8E5A9B"],
+  ];
+  for (const [re, hex] of map) {
+    if (re.test(n)) return hex;
+  }
+  return "#CCCCCC";
+}
+
+export function catalogShadeColor(hit?: CatalogImportOption | null): string {
+  const hex = normalizeShadeHex(hit?.colorHex);
+  return hex !== "#CCCCCC" ? hex : "";
+}
+
+export async function resolveShadeRowColor(input: {
+  name: string;
+  colorHex?: string;
+  imageUrl?: string | null;
+  catalogHit?: CatalogImportOption | null;
+}): Promise<string> {
+  const fromCatalog = catalogShadeColor(input.catalogHit);
+  const fromApi = normalizeShadeHex(input.colorHex);
+  const swatch = String(input.catalogHit?.swatchUrl || "").trim();
+  const thumb = String(input.catalogHit?.thumb || "").trim();
+  const image = String(input.imageUrl || "").trim();
+  const sampled = await resolveShadeColorHex({
+    colorHex: fromCatalog || (fromApi !== "#CCCCCC" ? fromApi : undefined),
+    swatchUrl: swatch || thumb || undefined,
+    imageUrl: image || thumb || undefined,
+  });
+  if (sampled) return normalizeShadeHex(sampled);
+  if (fromCatalog) return fromCatalog;
+  if (fromApi !== "#CCCCCC") return fromApi;
+  return guessShadeHexFromName(input.name);
+}
+
+export async function enrichShadeColors(
+  rows: Array<{ barcode: string; name: string; colorHex: string; imageUrl?: string | null }>,
+  catalogMap: Map<string, CatalogImportOption>,
+): Promise<void> {
+  for (let i = 0; i < rows.length; i += 4) {
+    const chunk = rows.slice(i, i + 4);
+    await Promise.all(
+      chunk.map(async (row) => {
+        row.colorHex = await resolveShadeRowColor({
+          name: row.name,
+          colorHex: row.colorHex,
+          imageUrl: row.imageUrl,
+          catalogHit: catalogMap.get(row.barcode),
+        });
+      }),
+    );
+  }
+}
 
 export function isGenericShadeName(name: string): boolean {
   const t = String(name ?? "").trim();
