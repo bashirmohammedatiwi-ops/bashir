@@ -56,10 +56,15 @@ final routerProvider = Provider<GoRouter>((ref) {
           var barcodes = <String>[];
           String? hint;
           String? model;
+          Map<String, String> existsNames = {};
           if (extra is Map) {
             barcodes = (extra['barcodes'] as List? ?? []).map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
             hint = extra['hint']?.toString();
             model = extra['model']?.toString();
+            final rawExists = extra['existsNames'];
+            if (rawExists is Map) {
+              existsNames = rawExists.map((k, v) => MapEntry(k.toString(), v.toString()));
+            }
           }
           if (barcodes.isEmpty) {
             barcodes = (state.uri.queryParameters['barcodes'] ?? '')
@@ -74,6 +79,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             barcodes: barcodes,
             hint: hint,
             modelId: model,
+            existsNames: existsNames,
           );
         },
       ),

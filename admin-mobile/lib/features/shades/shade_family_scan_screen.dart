@@ -36,6 +36,7 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
   final _lastSeenAt = <String, DateTime>{};
 
   bool _showManual = false;
+  bool _cameraActive = true;
   String? _flash;
   AiModelOption _model = AiModelOption.composerLow;
 
@@ -143,19 +144,29 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
       _pulse('امسح تدرجاً واحداً على الأقل');
       return;
     }
+    setState(() => _cameraActive = false);
     await _scannerKey.currentState?.pause();
     if (!mounted) return;
     final barcodes = _scanned.map((s) => s.barcode).toList();
     final hint = _hintController.text.trim();
+    final existsNames = <String, String>{
+      for (final s in _scanned)
+        if (s.existsName != null && s.existsName!.trim().isNotEmpty) s.barcode: s.existsName!.trim(),
+    };
     await context.push(
       '/shade-family/wizard',
       extra: {
         'barcodes': barcodes,
         if (hint.isNotEmpty) 'hint': hint,
         'model': _model.id,
+        if (existsNames.isNotEmpty) 'existsNames': existsNames,
       },
     );
-    if (mounted) await _scannerKey.currentState?.resume();
+    if (!mounted) return;
+    setState(() => _cameraActive = true);
+    if (!_showManual) {
+      await _scannerKey.currentState?.resume();
+    }
   }
 
   @override
@@ -324,7 +335,7 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
                       ),
                     ),
                   )
-                else ...[
+                else if (_cameraActive) ...[
                   BarcodeLiveScanner(
                     key: _scannerKey,
                     onDetect: _onDetect,
@@ -363,7 +374,23 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
                       ),
                     ),
                   ),
-                ],
+                ] else
+                  ColoredBox(
+                    color: Colors.black87,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(color: Colors.white),
+                          const SizedBox(height: 14),
+                          Text(
+                            'جاري تحليل ${_scanned.length} تدرج…',
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 15),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),

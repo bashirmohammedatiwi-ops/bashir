@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -36,11 +37,13 @@ class ShadeFamilyWizardScreen extends ConsumerStatefulWidget {
     required this.barcodes,
     this.hint,
     this.modelId,
+    this.existsNames = const {},
   });
 
   final List<String> barcodes;
   final String? hint;
   final String? modelId;
+  final Map<String, String> existsNames;
 
   @override
   ConsumerState<ShadeFamilyWizardScreen> createState() => _ShadeFamilyWizardScreenState();
@@ -200,7 +203,12 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+        if (_error == null && _shades.isNotEmpty) {
+          unawaited(_prefetchShadeImages());
+        }
+      }
     }
   }
 
@@ -260,6 +268,7 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
       }
     }
     _sortShades();
+    _applyKnownShadeNames();
     _gallery = List.of(fill.images);
     for (final img in _gallery) {
       _imageByUrl[img.url] = img;
@@ -280,6 +289,25 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
         barcodeB: b.barcode,
       ),
     );
+  }
+
+  void _applyKnownShadeNames() {
+    for (final shade in _shades) {
+      final known = widget.existsNames[shade.barcode]?.trim();
+      if (known == null || known.isEmpty) continue;
+      final current = shade.nameController.text.trim();
+      if (current.isEmpty || RegExp(r'^shade\s*\d+', caseSensitive: false).hasMatch(current)) {
+        shade.nameController.text = known;
+      }
+    }
+  }
+
+  Future<void> _prefetchShadeImages() async {
+    for (var i = 0; i < _shades.length; i += 3) {
+      final end = (i + 3 < _shades.length) ? i + 3 : _shades.length;
+      await Future.wait(List.generate(end - i, (j) => _searchShadeImages(i + j)));
+      if (!mounted) return;
+    }
   }
 
   BrandEntity? _bestBrandMatch(List<BrandEntity> brands, String ar, String en) {
@@ -484,12 +512,18 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
   }
 
   String _shadeSearchQuery(_ShadeDraft shade) {
-    return [
-      _brandEn.text.trim().isNotEmpty ? _brandEn.text.trim() : _brandAr.text.trim(),
-      _nameEn.text.trim().isNotEmpty ? _nameEn.text.trim() : _nameAr.text.trim(),
-      shade.codeController.text.trim(),
-      shade.nameController.text.trim(),
-    ].where((s) => s.isNotEmpty).join(' ');
+    final brand = _brandEn.text.trim().isNotEmpty ? _brandEn.text.trim() : _brandAr.text.trim();
+    final product = _nameEn.text.trim().isNotEmpty ? _nameEn.text.trim() : _nameAr.text.trim();
+    final code = shade.codeController.text.trim();
+    final shadeName = shade.nameController.text.trim();
+    final parts = <String>[
+      if (brand.isNotEmpty) brand,
+      if (product.isNotEmpty) product.split(' - ').first.trim(),
+      if (shadeName.isNotEmpty && !RegExp(r'^shade\s*\d+$', caseSensitive: false).hasMatch(shadeName)) shadeName,
+      if (code.isNotEmpty && code.length <= 3) code,
+      shade.barcode,
+    ];
+    return parts.where((s) => s.isNotEmpty).join(' ');
   }
 
   Future<void> _ensureShadeImages(int index) async {

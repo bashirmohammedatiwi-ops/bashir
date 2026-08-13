@@ -342,7 +342,7 @@ export class AiProductService {
     if (!unique.length) throw new BadRequestException("أدخل باركود تدرج واحد على الأقل");
 
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `shade-v4|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `shade-v5|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 20 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -365,13 +365,17 @@ export class AiProductService {
     ).filter((h): h is NonNullable<typeof h> => Boolean(h));
 
     const freeByBarcode = new Map<string, FreeHint>();
-    for (let i = 0; i < unique.length; i += 2) {
-      const chunk = unique.slice(i, i + 2);
+    for (let i = 0; i < unique.length; i += 4) {
+      const chunk = unique.slice(i, i + 4);
       const part = await Promise.all(
         chunk.map(async (barcode) => [barcode, await this.freeBarcodeHint(barcode)] as const),
       );
       for (const [barcode, free] of part) freeByBarcode.set(barcode, free);
     }
+
+    const existingByBarcode = new Map(
+      existingHits.map((h) => [h.barcode.toLowerCase(), h] as const),
+    );
 
     const lead = unique[0];
     const leadFree = freeByBarcode.get(lead) ?? {};
@@ -389,8 +393,26 @@ export class AiProductService {
       hint,
       shadeFamily: true,
     });
+
+    const shadeNameHints = [
+      hint,
+      draft.brand_en,
+      draft.brand_ar,
+      draft.name_en,
+      draft.name_ar,
+      leadFree.title,
+      leadFree.brand,
+    ].filter((s): s is string => Boolean(s && String(s).trim().length >= 2));
+
+    await this.enrichShadeHintsFromImages(unique, freeByBarcode, shadeNameHints);
+
     const shadeRows = unique.map((barcode, index) =>
-      this.guessShadeRow(barcode, freeByBarcode.get(barcode), index),
+      this.guessShadeRow(
+        barcode,
+        freeByBarcode.get(barcode),
+        index,
+        existingByBarcode.get(barcode.toLowerCase())?.matchedShadeName,
+      ),
     );
     const named = await this.cursor.verifyBilingualNames(
       {
@@ -430,7 +452,8 @@ export class AiProductService {
     const shades = this.sortShadeFamily(
       unique.map((barcode, index) => {
         const row = gptByBarcode.get(barcode.toLowerCase());
-        const code = String(row?.code ?? "").trim();
+        let code = String(row?.code ?? "").trim();
+        if (this.isBarcodeFragmentCode(code, barcode)) code = "";
         const nameEn = String(row?.name_en ?? "").trim();
         const nameAr = this.polishMarketArabic(String(row?.name_ar ?? "").trim());
         let name = "";
@@ -1346,13 +1369,21 @@ export class AiProductService {
     barcode: string,
     free: FreeHint | undefined,
     index: number,
+    existingShadeName?: string | null,
   ): GptShadeRow {
+    const known = String(existingShadeName ?? "").trim();
     const title = String(free?.title ?? "").trim();
-    const blob = [title, free?.brand].filter(Boolean).join(" ");
-    const code = this.extractShadeCode(title || blob, barcode, index);
-    let nameEn = this.extractShadeName(title, code);
+    const blob = [known, title, free?.brand].filter(Boolean).join(" ");
+    let code = this.extractShadeCode(blob || title, barcode, index);
+    if (this.isBarcodeFragmentCode(code, barcode)) {
+      code = this.extractShadeCode(known || title, barcode, index);
+    }
+    let nameEn = known ? this.extractShadeName(known, code) || known : this.extractShadeName(title, code);
     if (!nameEn || /^shade\s*\d+$/i.test(nameEn.trim())) {
-      nameEn = this.inventShadeLabel(title || blob, code, index);
+      nameEn = this.inventShadeLabel(blob || title, code, index);
+    }
+    if (/^shade\s*\d{3,}$/i.test(nameEn.trim())) {
+      nameEn = this.inventShadeLabel(blob || title, code, index);
     }
     const nameAr = this.polishMarketArabic(this.guessShadeNameAr(nameEn, code));
     return {
@@ -1442,17 +1473,70 @@ export class AiProductService {
       if (n >= 10 && n <= 999) return String(n);
     }
 
-    const digits = barcode.replace(/\D/g, "");
-    if (digits.length >= 10) {
-      const slice = digits.slice(-5, -1);
-      if (slice && slice !== "0000") return slice;
-    }
     return String(index + 1).padStart(2, "0");
+  }
+
+  private isBarcodeFragmentCode(code: string, barcode: string): boolean {
+    const c = String(code ?? "").trim();
+    if (!/^\d{3,4}$/.test(c)) return false;
+    const digits = barcode.replace(/\D/g, "");
+    return digits.includes(c);
+  }
+
+  private async enrichShadeHintsFromImages(
+    barcodes: string[],
+    freeByBarcode: Map<string, FreeHint>,
+    nameHints: string[],
+  ): Promise<void> {
+    const hints = [...new Set(nameHints.map((h) => h.replace(/\s+/g, " ").trim()).filter((h) => h.length >= 2))];
+    const need = barcodes.filter((barcode) => {
+      const title = String(freeByBarcode.get(barcode)?.title ?? "").trim();
+      if (title.length < 10) return true;
+      const code = this.extractShadeCode(title, barcode, 0);
+      const name = this.extractShadeName(title, code);
+      return !name || /^shade\s*\d+$/i.test(name);
+    });
+    if (!need.length) return;
+
+    for (let i = 0; i < need.length; i += 4) {
+      const chunk = need.slice(i, i + 4);
+      await Promise.all(
+        chunk.map(async (barcode) => {
+          try {
+            const hits = await this.images.searchByBarcode(barcode, 24, hints);
+            const titles = this.extractIdentityTitles(hits);
+            const best =
+              titles.find((t) => this.extractShadeName(t, this.extractShadeCode(t, barcode, 0)).length >= 2) ??
+              titles[0] ??
+              hits.find((h) => (h.title ?? "").trim().length >= 12)?.title;
+            if (!best) return;
+            const cur = freeByBarcode.get(barcode) ?? {};
+            const curTitle = String(cur.title ?? "").trim();
+            if (!curTitle || curTitle.length < best.length) {
+              freeByBarcode.set(barcode, { ...cur, title: best.trim(), source: cur.source ?? "image-search" });
+            }
+          } catch {
+            /* ignore per-barcode image failures */
+          }
+        }),
+      );
+    }
   }
 
   private extractShadeName(text: string, code: string): string {
     const quoted = text.match(/["“']([A-Za-z][A-Za-z \-]{2,40})["”']/);
     if (quoted?.[1]) return quoted[1].trim();
+
+    const colorTail = text.match(/\b([A-Za-z][A-Za-z\s\-]{2,28}?)\s+(\d{2,3})\s*(?:ml|mL|g|gr|oz)?\s*$/i);
+    if (colorTail?.[1] && colorTail?.[2]) {
+      const label = colorTail[1].replace(/\s+/g, " ").trim();
+      const num = colorTail[2];
+      if (label.length >= 3 && !/^(lip|fluid|mat|passion|artdeco|makeup)$/i.test(label)) {
+        return label;
+      }
+      if (label.length >= 3) return `${label} ${num}`;
+    }
+
     if (!code) return "";
     const escaped = code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const afterCode = text.match(new RegExp(`${escaped}\\s*[-–:]\\s*([A-Za-z][A-Za-z \\-]{2,40})`));

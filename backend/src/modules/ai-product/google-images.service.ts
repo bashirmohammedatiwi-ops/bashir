@@ -117,6 +117,20 @@ export class GoogleImagesService {
           }),
         );
       }
+      const shadeCode = nameHints
+        .flatMap((h) => [...String(h).matchAll(/\b(\d{2,3})\b/g)].map((m) => m[1]))
+        .find((n) => {
+          const v = parseInt(n, 10);
+          return v >= 10 && v <= 999;
+        });
+      if (shadeCode) {
+        pushHits(
+          await this.collectResults(`${brandHint} ${shadeCode}`, Math.min(24, limit), {
+            expandVariants: false,
+            filterMode: "product",
+          }),
+        );
+      }
     }
 
     return this.rankProductPhotos(merged).slice(0, limit);
