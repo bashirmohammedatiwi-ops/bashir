@@ -1,0 +1,28 @@
+---
+description: Arabic product titles start with the brand as-is (English stays English).
+globs: admin-mobile/**,backend/src/modules/ai-product/**
+alwaysApply: false
+---
+
+# Catalog Arabic naming — brand as-is
+
+`nameAr` always starts with the brand exactly as written on the pack, then a dash, then Iraqi-market Arabic product copy.
+
+- If the brand is English/Latin (`ARTDECO`, `GOSH`, `Seventeen`, `Maybelline`) keep it English at the start of `nameAr`. Do **not** translate it to Arabic in the title.
+- If the brand is Arabic (`حياة`) keep it Arabic.
+- `brand_ar` on the brand record may still have an Arabic alias; that alias is **not** the `nameAr` prefix when `brand_en` is Latin.
+
+Format:
+
+```
+nameAr: "{BrandAsIs} - {نوع سوقي} {خط EN} {صفة} {حجم}"
+nameEn: "{BrandEn} - {Official Product Name}"
+```
+
+Examples:
+
+- `Seventeen - كونسيلر Ideal Cover Liquid بتغطية كاملة`
+- `ARTDECO - جلوس شفاه Plumping Lip Fluid مملّئ 3 مل`
+- `حياة - سيروم فيتامين سي للوجه 30 مل`
+
+Phone add (`admin-mobile`) must auto-prefix titles when brand is chosen or on next/save. AI autofill (`polishNaming`) must use `brandPrefixForArabicTitle`.

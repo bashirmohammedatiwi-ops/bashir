@@ -22,10 +22,12 @@ class BarcodeLiveScanner extends StatefulWidget {
     super.key,
     required this.onDetect,
     this.formats = kBarcodeFormats,
+    this.detectionSpeed = DetectionSpeed.normal,
   });
 
   final void Function(BarcodeCapture capture) onDetect;
   final List<BarcodeFormat> formats;
+  final DetectionSpeed detectionSpeed;
 
   @override
   State<BarcodeLiveScanner> createState() => BarcodeLiveScannerState();
@@ -43,7 +45,7 @@ class BarcodeLiveScannerState extends State<BarcodeLiveScanner> {
     super.initState();
     _controller = MobileScannerController(
       autoStart: false,
-      detectionSpeed: DetectionSpeed.normal,
+      detectionSpeed: widget.detectionSpeed,
       facing: CameraFacing.back,
       formats: widget.formats,
     );

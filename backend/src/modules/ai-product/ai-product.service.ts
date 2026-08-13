@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
 import { barcodeLookupCandidates } from "../../common/barcode.util";
 import { PrismaService } from "../../common/prisma.service";
+import { CursorNamingClient } from "./cursor-naming.client";
 import { GoogleImagesService } from "./google-images.service";
 
 type FreeHint = {
@@ -33,6 +34,14 @@ type GptAutofillJson = {
   needs_review: boolean;
 };
 
+type GptShadeRow = {
+  barcode: string;
+  code: string;
+  name_en: string;
+  name_ar: string;
+  color_hex: string;
+};
+
 type CategoryCodeEntry = {
   id: string;
   code: string;
@@ -47,47 +56,6 @@ type CategoryCatalog = {
   text: string;
   byCode: Map<string, CategoryCodeEntry>;
 };
-
-const AUTOFILL_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    brand_ar: { type: "string" },
-    brand_en: { type: "string" },
-    name_ar: { type: "string" },
-    name_en: { type: "string" },
-    description_ar: { type: "string" },
-    description_en: { type: "string" },
-    category_main_code: { type: "string" },
-    category_sub_codes: { type: "array", items: { type: "string" } },
-    category_tertiary_codes: { type: "array", items: { type: "string" } },
-    category_main_ar: { type: "string" },
-    category_sub_ar: { type: "string" },
-    category_tertiary_ar: { type: "string" },
-    category_subs_ar: { type: "array", items: { type: "string" } },
-    category_tertiaries_ar: { type: "array", items: { type: "string" } },
-    confidence: { type: "number" },
-    needs_review: { type: "boolean" },
-  },
-  required: [
-    "brand_ar",
-    "brand_en",
-    "name_ar",
-    "name_en",
-    "description_ar",
-    "description_en",
-    "category_main_code",
-    "category_sub_codes",
-    "category_tertiary_codes",
-    "category_main_ar",
-    "category_sub_ar",
-    "category_tertiary_ar",
-    "category_subs_ar",
-    "category_tertiaries_ar",
-    "confidence",
-    "needs_review",
-  ],
-} as const;
 
 /** Beauty product-type synonyms — fallback name matching only (not primary). */
 const CATEGORY_SYNONYMS: Record<string, string[]> = {
@@ -150,6 +118,7 @@ export class AiProductService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly images: GoogleImagesService,
+    private readonly cursor: CursorNamingClient,
   ) {}
 
   async autofill(barcode: string, hint?: string, modelChoice?: string, force = false) {
@@ -198,8 +167,8 @@ export class AiProductService {
       };
     }
 
-    const resolved = this.resolveOpenAiModel(modelChoice);
-    const cacheKey = `v12|${force ? "force|" : ""}${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
+    const resolved = this.cursor.resolveModel(modelChoice);
+    const cacheKey = `v13|${force ? "force|" : ""}${digits}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 30 * 60_000) {
       const cachedPayload = cached.payload as {
@@ -217,12 +186,9 @@ export class AiProductService {
       this.autofillCache.delete(cacheKey);
     }
 
-    const apiKey = process.env.OPENAI_API_KEY?.trim();
-    if (!apiKey) {
-      throw new ServiceUnavailableException("OPENAI_API_KEY غير مُعد على السيرفر");
+    if (!this.cursor.hasApiKey()) {
+      throw new ServiceUnavailableException("CURSOR_API_KEY غير مُعد على السيرفر");
     }
-
-    const model = resolved.apiModel;
 
     // 2) Free barcode DBs + go-upc (many regional beauty EANs are missing from OBF/UPC alone)
     const free = await this.freeBarcodeHint(digits);
@@ -260,51 +226,33 @@ export class AiProductService {
           .join(" | ")
       : hint?.trim() || undefined;
 
-    // 4) GPT with web_search — retry once if empty/weak (transient empty replies)
-    let rawGpt: GptAutofillJson;
-    let usedWebSearch = false;
-    try {
-      const first = await this.callGpt({
-        apiKey,
-        model,
+    // 4) Heuristic identity + template desc/category. Composer 2.5 Low verifies bilingual names only.
+    const draft = this.buildHeuristicAutofill({ barcode: digits, free, imageTitles, hint: reviewHint });
+    const named = await this.cursor.verifyBilingualNames(
+      {
         barcode: digits,
-        free,
-        hint: reviewHint,
+        brand_ar: draft.brand_ar,
+        brand_en: draft.brand_en,
+        name_ar: draft.name_ar,
+        name_en: draft.name_en,
+        dbTitle: free.title,
+        dbBrand: free.brand,
+        quantity: free.quantity,
         imageTitles,
-      });
-      rawGpt = first.gpt;
-      usedWebSearch = first.usedWebSearch;
-      if (this.isWeakGpt(rawGpt)) {
-        this.logger.warn(`Weak GPT autofill for ${digits} — retrying once`);
-        const second = await this.callGpt({
-          apiKey,
-          model,
-          barcode: digits,
-          free,
-          hint: [reviewHint, "RETRY: previous reply was empty/incomplete. Fill all fields."]
-            .filter(Boolean)
-            .join(" | "),
-          imageTitles,
-        });
-        if (!this.isWeakGpt(second.gpt) || this.gptScore(second.gpt) >= this.gptScore(rawGpt)) {
-          rawGpt = second.gpt;
-          usedWebSearch = second.usedWebSearch || usedWebSearch;
-        }
-      }
-    } catch (err) {
-      this.logger.warn(`GPT autofill failed for ${digits}: ${(err as Error).message} — retrying`);
-      const second = await this.callGpt({
-        apiKey,
-        model,
-        barcode: digits,
-        free,
         hint: reviewHint,
-        imageTitles,
-      });
-      rawGpt = second.gpt;
-      usedWebSearch = second.usedWebSearch;
-    }
-    const gpt = this.polishNaming(rawGpt);
+      },
+      resolved.choice,
+    );
+    const gpt = this.polishNaming({
+      ...draft,
+      brand_ar: named.brand_ar || draft.brand_ar,
+      brand_en: named.brand_en || draft.brand_en,
+      name_ar: named.name_ar || draft.name_ar,
+      name_en: named.name_en || draft.name_en,
+      needs_review: draft.needs_review || !named.verified,
+      confidence: named.verified ? Math.max(draft.confidence, 72) : Math.min(draft.confidence, 45),
+    });
+    const namesVerified = named.verified && !this.isWeakGpt(gpt);
 
     const matched = await this.matchCategories(gpt);
     const issues = this.buildQualityIssues({
@@ -355,9 +303,12 @@ export class AiProductService {
         category: matched,
       },
       meta: {
-        model,
+        model: resolved.apiModel,
         modelChoice: resolved.choice,
-        usedWebSearch,
+        fast: resolved.fast,
+        usedWebSearch: false,
+        namesVerified,
+        namingSource: namesVerified ? "composer-2.5" : "heuristic",
         freeHintSource: free.source ?? null,
         freeHintTitle: free.title ?? null,
         imageTitleHints: imageTitles.slice(0, 5),
@@ -383,66 +334,221 @@ export class AiProductService {
     return this.autofill(barcode, hint, modelChoice, true);
   }
 
+  /**
+   * Makeup shade-family add: many scanned EANs → one product + shade list
+   * (code, official name, hex) + bilingual naming. Images are chosen on the phone.
+   */
+  async shadeFamily(rawBarcodes: string[], hint?: string, modelChoice?: string) {
+    const unique: string[] = [];
+    const seen = new Set<string>();
+    for (const raw of rawBarcodes ?? []) {
+      const digits = String(raw ?? "").replace(/\D/g, "") || String(raw ?? "").trim();
+      if (digits.length < 6) continue;
+      const key = digits.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push(digits);
+      if (unique.length >= 40) break;
+    }
+    if (!unique.length) throw new BadRequestException("أدخل باركود تدرج واحد على الأقل");
+
+    if (!this.cursor.hasApiKey()) {
+      throw new ServiceUnavailableException("CURSOR_API_KEY غير مُعد على السيرفر");
+    }
+
+    const resolved = this.cursor.resolveModel(modelChoice);
+    const cacheKey = `shade-v2|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cached = this.autofillCache.get(cacheKey);
+    if (cached && Date.now() - cached.at < 20 * 60_000) {
+      return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
+    }
+
+    const existingHits = (
+      await Promise.all(
+        unique.map(async (barcode) => {
+          const product = await this.findExistingProduct(barcode);
+          if (!product) return null;
+          return {
+            barcode,
+            productId: product.id,
+            nameAr: product.nameAr || product.name || "",
+            nameEn: product.nameEn || "",
+            matchedShadeName: (product as { matchedShadeName?: string }).matchedShadeName || null,
+          };
+        }),
+      )
+    ).filter((h): h is NonNullable<typeof h> => Boolean(h));
+
+    const hintBarcodes = unique.slice(0, 5);
+    const freeByBarcode = new Map<string, FreeHint>();
+    for (let i = 0; i < hintBarcodes.length; i += 2) {
+      const chunk = hintBarcodes.slice(i, i + 2);
+      const part = await Promise.all(
+        chunk.map(async (barcode) => [barcode, await this.freeBarcodeHint(barcode)] as const),
+      );
+      for (const [barcode, free] of part) freeByBarcode.set(barcode, free);
+    }
+
+    const lead = unique[0];
+    const leadFree = freeByBarcode.get(lead) ?? {};
+    const imageHits = await this.images.searchByBarcode(lead, 24, [
+      leadFree.brand,
+      leadFree.title,
+      hint,
+    ].filter((s): s is string => Boolean(s && String(s).trim().length >= 2)));
+    const imageTitles = this.extractIdentityTitles(imageHits);
+
+    const draft = this.buildHeuristicAutofill({
+      barcode: lead,
+      free: leadFree,
+      imageTitles,
+      hint,
+      shadeFamily: true,
+    });
+    const shadeRows = unique.map((barcode, index) =>
+      this.guessShadeRow(barcode, freeByBarcode.get(barcode), imageTitles, index),
+    );
+    const named = await this.cursor.verifyBilingualNames(
+      {
+        barcode: lead,
+        brand_ar: draft.brand_ar,
+        brand_en: draft.brand_en,
+        name_ar: draft.name_ar,
+        name_en: draft.name_en,
+        dbTitle: leadFree.title,
+        dbBrand: leadFree.brand,
+        quantity: leadFree.quantity,
+        imageTitles,
+        hint,
+        extraContext: `shade_family barcodes=${unique.join(",")} product_type=${draft.category_tertiary_ar || ""}`,
+      },
+      resolved.choice,
+    );
+    const polished = this.polishNaming({
+      ...draft,
+      brand_ar: named.brand_ar || draft.brand_ar,
+      brand_en: named.brand_en || draft.brand_en,
+      name_ar: named.name_ar || draft.name_ar,
+      name_en: named.name_en || draft.name_en,
+      needs_review: draft.needs_review || !named.verified,
+      confidence: named.verified ? Math.max(draft.confidence, 72) : Math.min(draft.confidence, 45),
+    });
+    const namesVerified = named.verified && !this.isWeakGpt(polished);
+    const matched = await this.matchCategories(polished);
+
+    const gptByBarcode = new Map<string, GptShadeRow>();
+    for (const row of shadeRows) {
+      const key = (String(row.barcode ?? "").replace(/\D/g, "") || String(row.barcode ?? "").trim()).toLowerCase();
+      if (!key) continue;
+      gptByBarcode.set(key, row);
+    }
+
+    const shades = unique.map((barcode, index) => {
+      const row = gptByBarcode.get(barcode.toLowerCase());
+      const code = String(row?.code ?? "").trim();
+      const nameEn = String(row?.name_en ?? "").trim();
+      const nameAr = this.polishMarketArabic(String(row?.name_ar ?? "").trim());
+      let name = "";
+      if (code && nameEn && !nameEn.toLowerCase().startsWith(code.toLowerCase())) {
+        name = `${code} ${nameEn}`;
+      } else if (nameEn) {
+        name = nameEn;
+      } else if (code && nameAr) {
+        name = `${code} ${nameAr}`;
+      } else {
+        name = nameAr || code || `تدرج ${index + 1}`;
+      }
+      return {
+        barcode,
+        code,
+        name,
+        nameEn: nameEn || name,
+        nameAr: nameAr || name,
+        colorHex: this.normalizeShadeHex(row?.color_hex),
+        position: index,
+      };
+    });
+
+    const galleryQuery = [polished.brand_en || polished.brand_ar, polished.name_en || polished.name_ar]
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 90);
+    let galleryImages = imageHits;
+    if (galleryQuery.length >= 4) {
+      try {
+        const extra = await this.images.searchQuery(galleryQuery, 36);
+        const seenUrl = new Set(galleryImages.map((h) => h.url.toLowerCase()));
+        for (const hit of extra) {
+          if (seenUrl.has(hit.url.toLowerCase())) continue;
+          seenUrl.add(hit.url.toLowerCase());
+          galleryImages.push(hit);
+        }
+      } catch (err) {
+        this.logger.warn(`Shade-family gallery search failed: ${(err as Error).message}`);
+      }
+    }
+
+    const payload = {
+      barcodes: unique,
+      brandAr: polished.brand_ar,
+      brandEn: polished.brand_en,
+      nameAr: polished.name_ar,
+      nameEn: polished.name_en,
+      descriptionAr: polished.description_ar,
+      descriptionEn: polished.description_en,
+      productTypeAr: String(draft.category_tertiary_ar || draft.category_sub_ar || "").trim(),
+      category: matched,
+      confidence: polished.confidence > 0 ? polished.confidence : polished.needs_review ? 35 : 70,
+      needsReview: polished.needs_review || polished.confidence < 45 || shades.some((s) => !s.code),
+      shades,
+      images: galleryImages,
+      existingHits,
+      meta: {
+        model: resolved.apiModel,
+        modelChoice: resolved.choice,
+        fast: resolved.fast,
+        usedWebSearch: false,
+        namesVerified,
+        namingSource: namesVerified ? "composer-2.5" : "heuristic",
+        shadeCount: shades.length,
+        imageCount: galleryImages.length,
+        imageQuery: galleryQuery || lead,
+        cached: false,
+      },
+    };
+
+    this.autofillCache.set(cacheKey, { at: Date.now(), payload: payload as unknown as Record<string, unknown> });
+    return payload;
+  }
+
   listModels() {
     return {
-      default: "gpt-5.6-luna-low",
+      default: "composer-2.5-low",
+      namesOnly: true,
+      provider: "cursor",
       models: [
         {
-          id: "gpt-5.6-luna-low",
-          labelAr: "5.6 Luna Low",
-          labelEn: "Luna Low",
-          descriptionAr: "الأرخص — مع بحث ويب للباركود",
-          apiModel: "gpt-5.4-nano",
+          id: "composer-2.5-low",
+          labelAr: "Composer 2.5 Low",
+          labelEn: "Composer 2.5 Low",
+          descriptionAr: "تأكيد الاسم بالعربي والإنجليزي فقط — الأرخص",
+          apiModel: "composer-2.5",
+          fast: false,
           costTier: "lowest",
         },
         {
-          id: "gpt-5.6-luna-medium",
-          labelAr: "5.6 Luna Medium",
-          labelEn: "Luna Medium",
-          descriptionAr: "أدق للتسمية + بحث ويب — تكلفة أعلى قليلاً",
-          apiModel: "gpt-5.4-mini",
+          id: "composer-2.5-fast",
+          labelAr: "Composer 2.5 Fast",
+          labelEn: "Composer 2.5 Fast",
+          descriptionAr: "نفس التأكيد على الاسم — أسرع بتكلفة أعلى",
+          apiModel: "composer-2.5",
+          fast: true,
           costTier: "medium",
         },
       ],
     };
-  }
-
-  /**
-   * Cursor slugs (luna-low / luna-medium) are not OpenAI API model ids.
-   * Map them to the closest cheap OpenAI models.
-   */
-  private resolveOpenAiModel(choice?: string): { choice: string; apiModel: string } {
-    const raw = (choice ?? process.env.OPENAI_MODEL ?? "gpt-5.6-luna-low").trim();
-    const key = raw.toLowerCase().replace(/_/g, "-");
-
-    if (
-      key === "gpt-5.6-luna-medium" ||
-      key === "luna-medium" ||
-      key === "luna-med" ||
-      /luna[-]?med/i.test(key)
-    ) {
-      return { choice: "gpt-5.6-luna-medium", apiModel: "gpt-5.4-mini" };
-    }
-
-    if (
-      key === "gpt-5.6-luna-low" ||
-      key === "luna-low" ||
-      /luna[-]?low/i.test(key) ||
-      key === "gpt-5.4-nano"
-    ) {
-      return { choice: "gpt-5.6-luna-low", apiModel: "gpt-5.4-nano" };
-    }
-
-    if (key === "gpt-5.4-mini") {
-      return { choice: "gpt-5.6-luna-medium", apiModel: "gpt-5.4-mini" };
-    }
-
-    // Allow explicit OpenAI ids as escape hatch
-    if (/^gpt-/i.test(raw)) {
-      return { choice: raw, apiModel: raw };
-    }
-
-    return { choice: "gpt-5.6-luna-low", apiModel: "gpt-5.4-nano" };
   }
 
   /** Refresh images by barcode + optional product name — no AI. */
@@ -566,6 +672,18 @@ export class AiProductService {
     const curBrand = (ex as { brand?: { name?: string } } | null)?.brand?.name?.trim() || "";
     const curDescAr = (ex as { descriptionAr?: string } | null)?.descriptionAr?.trim() || "";
     const imageCountInDb = (ex as { _count?: { images?: number } } | null)?._count?.images ?? 0;
+
+    const arPrefix = this.brandPrefixForArabicTitle(gpt.brand_en || "", gpt.brand_ar || "");
+    if (curNameAr && arPrefix && !curNameAr.toLowerCase().startsWith(arPrefix.toLowerCase())) {
+      issues.push({
+        code: "name_ar_brand_prefix",
+        severity: "medium",
+        field: "nameAr",
+        messageAr: `الاسم العربي يجب أن يبدأ بالبراند كما هو: ${arPrefix}`,
+        current: curNameAr,
+        suggested: gpt.name_ar,
+      });
+    }
 
     if (!curNameAr) {
       issues.push({
@@ -930,149 +1048,284 @@ export class AiProductService {
     }
   }
 
-  private async callGpt(args: {
-    apiKey: string;
-    model: string;
+  private buildHeuristicAutofill(args: {
     barcode: string;
     free: FreeHint;
-    hint?: string;
     imageTitles?: string[];
-  }): Promise<{ gpt: GptAutofillJson; usedWebSearch: boolean }> {
-    const catalog = await this.getCategoryCatalog();
-    const categoryHint = catalog.text;
-
-    const known = [
-      args.free.title ? `db_title=${args.free.title}` : null,
-      args.free.brand ? `db_brand=${args.free.brand}` : null,
-      args.free.quantity ? `size=${args.free.quantity}` : null,
-      args.free.source ? `db_source=${args.free.source}` : null,
-      args.free.categoryHints?.length ? `db_tags=${args.free.categoryHints.join(",")}` : null,
-      args.imageTitles?.length ? `image_titles=${args.imageTitles.slice(0, 6).join(" || ")}` : null,
-      args.hint ? `staff=${args.hint}` : null,
+    hint?: string;
+    shadeFamily?: boolean;
+  }): GptAutofillJson {
+    const blob = [
+      args.free.brand,
+      args.free.title,
+      args.hint,
+      ...(args.imageTitles ?? []),
+      ...(args.free.categoryHints ?? []),
     ]
       .filter(Boolean)
-      .join(" | ");
+      .join(" ");
 
-    const instructions = `كاتب كتالوج تجميل لمتجر الحياة (Al Hayaa) في العراق. JSON فقط.
+    const type = this.guessProductType(blob);
+    const rawBrand = (args.free.brand || this.guessBrandFromText(blob) || "").trim();
+    const brandEn = this.canonicalBrandEn(rawBrand);
+    const brandAr = this.canonicalBrandAr(brandEn, rawBrand);
+    const arTitleBrand = this.brandPrefixForArabicTitle(brandEn, brandAr);
 
-IDENTIFY (إلزامي — لا تختلق):
-1) نفّذ web_search واحدة فقط باستعلام = أرقام الباركود فقط (${args.barcode}).
-2) اعتمد نتائج البحث + قواعد الباركود + عناوين الصور. إذا تعارضت الحقائق المجانية مع الويب، ثق بالويب.
-3) منتجات التجميل الإقليمية (يونان/شرق أوسط/أوروبا) غالباً غير مشهورة — ابحث بالباركود ولا تستبدلها بمنتج عالمي شهير مشابه.
-4) إذا لم تجد مصدراً موثوقاً: needs_review=true و confidence≤30. ضع أفضل تخمين حذر من الحقائق المتوفرة فقط — ممنوع اختلاق براند/منتج مشهور خطأً.
-5) لا تكتب وصفاً تسويقياً مفصلاً لمنتج غير مؤكد.
-
-اللغة العربية (صارم):
-• فصحى واضحة فقط — ممنوع اللهجة العراقية المحكية (مثل: شلون، هواية، هسه، خوش، يمعود…).
-• استخدم مصطلحات سوق التجميل الشائعة في العراق والعالم العربي، وليست كلمات عامية.
-  أمثلة إلزامية: روج/ليبستك → أحمر شفاه | ليب جلوس → جلوس شفاه | فاونديشن مقبول | كونسيلر مقبول.
-
-NAMING (صارم):
-• brand_ar / brand_en = اسم البراند فقط (مرة واحدة).
-• name_en = "{BrandEn} - {Official Product Name}"  (البراند مرة واحدة قبل الشرطة)
-• name_ar = "{براند} - {نوع المنتج بمصطلح سوقي} {اسم الخط EN} {صفة قصيرة} {الحجم إن وُجد}"
-  البراند بالعربي يظهر مرة واحدة فقط قبل الشرطة — ممنوع تكراره.
-  أمثلة:
-  - "سفنتين - كونسيلر Ideal Cover Liquid بتغطية كاملة"
-  - "كوسمالاين - جل استحمام Soft Wave برائحة الورد 650 مل"
-  - "كريست - شرائط تبييض 3D Whitestrips Professional Effects"
-  - "ميبلين - أحمر شفاه SuperStay Matte Ink"
-• مفردات النوع (سوق العراق): foundation→فاونديشن | concealer→كونسيلر | mascara→ماسكارا
-  lipstick/rouge→أحمر شفاه (ممنوع: روج) | lip gloss→جلوس شفاه | lip liner→قلم شفاه
-  brow pencil→قلم حواجب | blush→بلاشر | highlighter→هايلايتر | powder→بودرة
-  eyeliner→ايلاينر أو كحل | eyeshadow→ظل عيون | primer→برايمر | serum→سيروم
-  moisturizer→مرطب | sunscreen→واقي شمس | whitening strips→شرائط تبييض
-
-DESC_AR: جملتان قصيرتان بالفصحى + 3 نقاط فوائد (أو وصف مختصر جداً إذا الثقة منخفضة). بدون لهجة محكية.
-DESC_EN: جملتان + 3 نقاط.
-
-التصنيف (اختر من الشجرة بالرموز — دقة أعلى من الأسماء):
-${categoryHint}
-قواعد التصنيف:
-• انسخ الرموز حرفياً كما هي (مثل M01 أو S03 أو T12) — ممنوع اختراع رموز غير موجودة في الشجرة.
-• category_main_code = رمز رئيسي واحد (Mxx).
-• category_sub_codes = عادةً رمز فرعي واحد فقط (Sxx تحت الرئيسي). أضف ثانياً فقط إذا المنتج يناسب قسمين مختلفين بوضوح — ممنوع اختيار كل أقسام العناية دفعة واحدة.
-• category_tertiary_codes = رموز Txx المناسبة تحت الفرعي المختار (عادة 0–1، حد أقصى 2).
-• املأ category_main_ar / category_sub_ar / category_tertiary_ar بأسماء الأقسام المطابقة للرموز المختارة.
-• category_subs_ar / category_tertiaries_ar اتركها فارغة عادةً.
-بدون باركود درجات.`;
-
-    const userInput = `barcode=${args.barcode}
-known: ${known || "none"}
-STEP1: web_search query="${args.barcode}" once.
-STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code(s) copied from the tree. If unknown: needs_review=true, confidence≤30.`;
-
-    const payload: Record<string, unknown> = {
-      model: args.model,
-      instructions,
-      input: userInput,
-      max_output_tokens: 1200,
-      tools: [{ type: "web_search" }],
-      text: {
-        format: {
-          type: "json_schema",
-          name: "ai_product_autofill",
-          strict: true,
-          schema: AUTOFILL_SCHEMA,
-        },
-      },
-    };
-
-    const res = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${args.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(75_000),
-    });
-
-    const body = (await res.json()) as Record<string, unknown>;
-    if (!res.ok) {
-      const err = body.error as { message?: string } | undefined;
-      this.logger.error(`OpenAI error: ${err?.message ?? res.status}`);
-      throw new ServiceUnavailableException(err?.message ?? `OpenAI HTTP ${res.status}`);
+    let productCore = this.stripRetailerJunk(args.free.title || args.imageTitles?.[0] || args.hint || "");
+    if (brandEn) productCore = this.extractProductCore(productCore, brandEn);
+    if (brandAr && this.norm(brandAr) !== this.norm(brandEn)) {
+      productCore = this.extractProductCore(productCore, brandAr);
     }
-
-    const output = (body.output as unknown[]) ?? [];
-    const usedWebSearch = output.some((item) => {
-      const row = item as { type?: string };
-      return row.type === "web_search_call" || row.type === "web_search";
-    });
-    const jsonText = this.extractJsonText(body);
-    try {
-      return { gpt: JSON.parse(jsonText) as GptAutofillJson, usedWebSearch };
-    } catch {
-      this.logger.warn(`Invalid GPT JSON for ${args.barcode}: ${jsonText.slice(0, 200)}`);
-      throw new ServiceUnavailableException("رد GPT غير صالح أو ناقص");
-    }
-  }
-
-  private extractJsonText(body: Record<string, unknown>): string {
-    const output = (body.output as unknown[]) ?? [];
-    const chunks: string[] = [];
-    for (const item of output) {
-      const row = item as { type?: string; content?: Array<{ type?: string; text?: string }> };
-      if (row.type !== "message" || !row.content) continue;
-      for (const part of row.content) {
-        if ((part.type === "output_text" || part.type === "text") && part.text?.trim()) {
-          chunks.push(part.text);
-        }
+    productCore = this.stripShadeTokens(productCore);
+    const qty = (args.free.quantity || "").trim();
+    if (qty) {
+      const escaped = qty.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      if (!new RegExp(escaped, "i").test(productCore)) {
+        productCore = `${productCore} ${qty}`.trim();
       }
     }
-    const top = body.output_text;
-    if (typeof top === "string" && top.trim()) chunks.push(top);
+    if (!productCore) productCore = type.en || args.barcode;
 
-    for (const text of chunks) {
-      const trimmed = text.trim();
-      if (trimmed.startsWith("{") && trimmed.endsWith("}")) return trimmed;
-      const start = trimmed.indexOf("{");
-      const end = trimmed.lastIndexOf("}");
-      if (start >= 0 && end > start) return trimmed.slice(start, end + 1);
+    const nameEn = brandEn ? `${brandEn} - ${productCore}` : productCore;
+    const arType = type.ar ? `${type.ar} ` : "";
+    const arCore = this.stripLeadingType(productCore, type);
+    const nameAr = arTitleBrand
+      ? `${arTitleBrand} - ${arType}${arCore}`.replace(/\s+/g, " ").trim()
+      : `${arType}${arCore}`.trim();
+
+    const desc = this.templateDescriptions({
+      brandEn,
+      brandAr: arTitleBrand,
+      typeAr: type.ar,
+      typeEn: type.en,
+      line: productCore,
+      shadeFamily: Boolean(args.shadeFamily),
+    });
+
+    const weak = !brandEn || (!args.free.title && !(args.imageTitles?.length));
+    return {
+      brand_ar: brandAr,
+      brand_en: brandEn,
+      name_ar: this.polishMarketArabic(nameAr),
+      name_en: nameEn,
+      description_ar: desc.ar,
+      description_en: desc.en,
+      category_main_code: "",
+      category_sub_codes: [],
+      category_tertiary_codes: [],
+      category_main_ar: type.mainAr,
+      category_sub_ar: type.subAr,
+      category_tertiary_ar: type.ar,
+      category_subs_ar: type.subAr ? [type.subAr] : [],
+      category_tertiaries_ar: type.ar ? [type.ar] : [],
+      confidence: weak ? 28 : 62,
+      needs_review: weak,
+    };
+  }
+
+  private guessBrandFromText(text: string): string {
+    const n = this.norm(text);
+    const known = [
+      "ARTDECO",
+      "Seventeen",
+      "GOSH",
+      "Mon Reve",
+      "Maybelline",
+      "L'Oréal",
+      "essence",
+      "Catrice",
+      "Bourjois",
+      "Huda Beauty",
+      "Beesline",
+      "Garnier",
+      "Radiant",
+      "Deborah Milano",
+      "Cosmaline",
+      "Grigi",
+      "Crest",
+      "Colgate",
+      "Oral-B",
+    ];
+    for (const b of known) {
+      if (n.includes(this.norm(b))) return b;
     }
-    if (chunks[0]?.trim()) return chunks[0].trim();
-    throw new ServiceUnavailableException("رد GPT فارغ");
+    return "";
+  }
+
+  private guessProductType(text: string): { ar: string; en: string; mainAr: string; subAr: string } {
+    const n = this.norm(text);
+    const rows: Array<{ test: RegExp; ar: string; en: string; mainAr: string; subAr: string }> = [
+      { test: /lip\s*fluid|liquid\s*lip|matte\s*ink|lip\s*tint|احمر شفاه سائل/, ar: "أحمر شفاه سائل", en: "liquid lipstick", mainAr: "مكياج", subAr: "شفاه" },
+      { test: /lip\s*gloss|جلوس|gloss/, ar: "جلوس شفاه", en: "lip gloss", mainAr: "مكياج", subAr: "شفاه" },
+      { test: /lip\s*liner|lipliner|قلم شفاه/, ar: "قلم شفاه", en: "lip liner", mainAr: "مكياج", subAr: "شفاه" },
+      { test: /lipstick|احمر شفاه|أحمر شفاه|\brouge\b|ليبستيك/, ar: "أحمر شفاه", en: "lipstick", mainAr: "مكياج", subAr: "شفاه" },
+      { test: /concealer|كونسيلر/, ar: "كونسيلر", en: "concealer", mainAr: "مكياج", subAr: "وجه" },
+      { test: /foundation|فاونديشن|fond de teint|كريم اساس|كريم أساس/, ar: "فاونديشن", en: "foundation", mainAr: "مكياج", subAr: "وجه" },
+      { test: /mascara|ماسكارا/, ar: "ماسكارا", en: "mascara", mainAr: "مكياج", subAr: "عيون" },
+      { test: /eyeshadow|ظل عيون|eye\s*shadow/, ar: "ظل عيون", en: "eyeshadow", mainAr: "مكياج", subAr: "عيون" },
+      { test: /eyeliner|ايلاينر|كحل|kohl/, ar: "ايلاينر", en: "eyeliner", mainAr: "مكياج", subAr: "عيون" },
+      { test: /brow\s*gel|جل حواجب/, ar: "جل حواجب", en: "brow gel", mainAr: "مكياج", subAr: "حواجب" },
+      { test: /brow|حواجب|eyebrow/, ar: "قلم حواجب", en: "brow pencil", mainAr: "مكياج", subAr: "حواجب" },
+      { test: /blush|بلاشر|احمر خدود|أحمر خدود/, ar: "بلاشر", en: "blush", mainAr: "مكياج", subAr: "وجه" },
+      { test: /highlighter|هايلايتر/, ar: "هايلايتر", en: "highlighter", mainAr: "مكياج", subAr: "وجه" },
+      { test: /bronzer|برونزر/, ar: "برونزر", en: "bronzer", mainAr: "مكياج", subAr: "وجه" },
+      { test: /primer|برايمر/, ar: "برايمر", en: "primer", mainAr: "مكياج", subAr: "وجه" },
+      { test: /powder|بودرة/, ar: "بودرة", en: "powder", mainAr: "مكياج", subAr: "وجه" },
+      { test: /serum|سيروم/, ar: "سيروم", en: "serum", mainAr: "عناية", subAr: "بشرة" },
+      { test: /moisturizer|مرطب/, ar: "مرطب", en: "moisturizer", mainAr: "عناية", subAr: "بشرة" },
+      { test: /sunscreen|واقي شمس|\bspf\b/, ar: "واقي شمس", en: "sunscreen", mainAr: "عناية", subAr: "بشرة" },
+      { test: /shampoo|شامبو/, ar: "شامبو", en: "shampoo", mainAr: "عناية", subAr: "شعر" },
+      { test: /toothpaste|معجون|oral|dental|mouthwash|غسول فم/, ar: "عناية الفم", en: "oral care", mainAr: "عناية", subAr: "فم" },
+    ];
+    for (const row of rows) {
+      if (row.test.test(n) || row.test.test(text)) return row;
+    }
+    return { ar: "", en: "", mainAr: "مكياج", subAr: "" };
+  }
+
+  private stripRetailerJunk(title: string): string {
+    return title
+      .replace(/\s+/g, " ")
+      .replace(/\b(buy|shop|online|price|offer|sale|amazon|ebay|pharmacy|صيدلية|سعر|عرض)\b/gi, " ")
+      .replace(/\b\d{8,14}\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 120);
+  }
+
+  private stripShadeTokens(text: string): string {
+    return text
+      .replace(/\b(shade|n[°o.]?|nr\.?|color)\s*[#:]?\s*[A-Z]?\d{1,3}\b/gi, " ")
+      .replace(/\b[A-Z]\d{2,3}\b/g, " ")
+      .replace(/\s+#\d{1,3}\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  private stripLeadingType(core: string, type: { ar: string; en: string }): string {
+    let s = core.replace(/\s+/g, " ").trim();
+    for (const t of [type.ar, type.en]) {
+      if (!t) continue;
+      const re = new RegExp(`^${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*[-–:]?\\s*`, "i");
+      s = s.replace(re, "").trim();
+    }
+    return s || core;
+  }
+
+  private templateDescriptions(args: {
+    brandEn: string;
+    brandAr: string;
+    typeAr: string;
+    typeEn: string;
+    line: string;
+    shadeFamily: boolean;
+  }): { ar: string; en: string } {
+    const brand = args.brandAr || args.brandEn || "المنتج";
+    const typeAr = args.typeAr || "منتج تجميل";
+    const typeEn = args.typeEn || "beauty product";
+    const line = args.line || typeEn;
+    const shadeNoteAr = args.shadeFamily ? "متوفر بعدة تدرجات." : "";
+    const shadeNoteEn = args.shadeFamily ? "Available in multiple shades." : "";
+    const ar = `${brand} ${typeAr} ${line}. مناسب للاستخدام اليومي في سوق العراق. ${shadeNoteAr}
+• ملمس مريح وسهل التطبيق
+• لمسة نهائية مناسبة لنوع المنتج
+• عبوة عملية للاستخدام اليومي`.replace(/\s+\n/g, "\n").trim();
+    const en = `${args.brandEn || "This"} ${typeEn} (${line}) for everyday wear. ${shadeNoteEn}
+• Easy to apply
+• Finish suited to the product type
+• Practical everyday packaging`.trim();
+    return { ar: this.polishMarketArabic(ar), en };
+  }
+
+  private guessShadeRow(
+    barcode: string,
+    free: FreeHint | undefined,
+    imageTitles: string[],
+    index: number,
+  ): GptShadeRow {
+    const blob = [free?.title, free?.brand, ...(imageTitles ?? [])].filter(Boolean).join(" ");
+    const code = this.extractShadeCode(blob, barcode, index);
+    const nameEn = this.extractShadeName(blob, code) || (code ? `Shade ${code}` : `Shade ${index + 1}`);
+    const nameAr = this.polishMarketArabic(this.guessShadeNameAr(nameEn, code));
+    return {
+      barcode,
+      code,
+      name_en: nameEn,
+      name_ar: nameAr,
+      color_hex: this.guessShadeHex(`${nameEn} ${blob}`),
+    };
+  }
+
+  private extractShadeCode(text: string, barcode: string, index: number): string {
+    const m =
+      text.match(/\b(?:shade|n[°o.]?|nr\.?|#)\s*([A-Z]?\d{1,3})\b/i) ||
+      text.match(/\b([A-Z]\d{2,3})\b/) ||
+      text.match(/\b(\d{2,3})\b/);
+    if (m?.[1]) return m[1].toUpperCase();
+    const tail = barcode.replace(/\D/g, "").slice(-2);
+    if (tail && tail !== "00") return String(Number(tail) || tail);
+    return String(index + 1).padStart(2, "0");
+  }
+
+  private extractShadeName(text: string, code: string): string {
+    const quoted = text.match(/["“']([A-Za-z][A-Za-z \-]{2,40})["”']/);
+    if (quoted?.[1]) return quoted[1].trim();
+    if (!code) return "";
+    const escaped = code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const afterCode = text.match(new RegExp(`${escaped}\\s*[-–:]\\s*([A-Za-z][A-Za-z \\-]{2,40})`));
+    if (afterCode?.[1]) return afterCode[1].trim();
+    return "";
+  }
+
+  private guessShadeNameAr(nameEn: string, code: string): string {
+    const n = this.norm(nameEn);
+    const map: Array<[RegExp, string]> = [
+      [/nude|nudist/, "نود"],
+      [/ivory/, "عاجي"],
+      [/beige/, "بيج"],
+      [/rose|pink/, "وردي"],
+      [/coral/, "مرجاني"],
+      [/red|cherry|ruby/, "أحمر"],
+      [/brown|mocha|cocoa|espresso/, "بني"],
+      [/plum|berry/, "برقوقي"],
+      [/clear|transparent/, "شفاف"],
+      [/sand/, "رملي"],
+      [/honey/, "عسلي"],
+      [/caramel/, "كراميل"],
+    ];
+    for (const [re, ar] of map) {
+      if (re.test(n)) return code ? `${code} ${ar}` : ar;
+    }
+    return code || nameEn;
+  }
+
+  private normalizeShadeHex(raw?: string): string {
+    let h = String(raw ?? "").trim().toUpperCase().replace(/^#/, "");
+    if (/^[0-9A-F]{3}$/.test(h)) {
+      h = `${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`;
+    }
+    if (!/^[0-9A-F]{6}$/.test(h)) return "#CCCCCC";
+    return `#${h}`;
+  }
+
+  private guessShadeHex(text: string): string {
+    const n = this.norm(text);
+    const map: Array<[RegExp, string]> = [
+      [/ivory|porcelain/, "#F4E6D4"],
+      [/nude|beige|sand/, "#D4B08C"],
+      [/honey|caramel|gold/, "#C4924A"],
+      [/rose|pink|blush/, "#E8A0B0"],
+      [/coral/, "#E07A5F"],
+      [/red|cherry|ruby|passion/, "#C41E3A"],
+      [/plum|berry|wine/, "#8E3A59"],
+      [/brown|mocha|cocoa|espresso|chocolate/, "#6B3E2E"],
+      [/clear|transparent/, "#F6EDE8"],
+      [/black|noir/, "#1A1A1A"],
+    ];
+    for (const [re, hex] of map) {
+      if (re.test(n)) return hex;
+    }
+    return "#CCCCCC";
   }
 
   private isWeakGpt(gpt: GptAutofillJson): boolean {
@@ -1081,23 +1334,38 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
     return name.length < 3 || brand.length < 1;
   }
 
-  private gptScore(gpt: GptAutofillJson): number {
-    let score = 0;
-    if ((gpt.brand_ar || gpt.brand_en || "").trim()) score += 2;
-    if ((gpt.name_ar || "").trim().length >= 3) score += 3;
-    if ((gpt.name_en || "").trim().length >= 3) score += 2;
-    if ((gpt.category_main_code || gpt.category_main_ar || "").trim()) score += 2;
-    if ((gpt.category_sub_codes?.length || gpt.category_sub_ar || "").toString().trim()) score += 1;
-    if ((gpt.description_ar || "").trim().length > 20) score += 1;
-    return score;
+
+  /** Latin/English brand stays Latin; Arabic brand stays Arabic. */
+  private isLatinBrand(value: string): boolean {
+    const s = (value || "").trim();
+    if (!s || /[\u0600-\u06FF]/.test(s)) return false;
+    return /[A-Za-z]/.test(s);
+  }
+
+  private hasArabicScript(value: string): boolean {
+    return /[\u0600-\u06FF]/.test(value || "");
+  }
+
+  /** Prefix used at the start of name_ar — brand as-is, never translated. */
+  private brandPrefixForArabicTitle(brandEn: string, brandAr: string): string {
+    const en = (brandEn || "").replace(/\s+/g, " ").trim();
+    const ar = (brandAr || "").replace(/\s+/g, " ").trim();
+    if (this.isLatinBrand(en)) return en;
+    if (this.hasArabicScript(ar)) return ar;
+    if (this.isLatinBrand(ar)) return ar;
+    return en || ar;
   }
 
   /** Enforce naming: EN/AR both "Brand - Product" (brand once) + market Arabic terms. */
   private polishNaming(gpt: GptAutofillJson): GptAutofillJson {
     const brandEn = this.canonicalBrandEn(gpt.brand_en || gpt.brand_ar || "");
     const brandAr = this.canonicalBrandAr(brandEn, gpt.brand_ar || "");
+    const arTitleBrand = this.brandPrefixForArabicTitle(brandEn, brandAr);
     const nameEn = this.ensureBrandDashName(gpt.name_en || "", brandEn, { doubleBrand: false });
-    const nameArRaw = this.ensureBrandDashName(gpt.name_ar || "", brandAr, { doubleBrand: false });
+    const nameArRaw = this.ensureBrandDashName(gpt.name_ar || "", arTitleBrand, {
+      doubleBrand: false,
+      alsoStrip: [brandEn, brandAr],
+    });
     const nameAr = this.polishMarketArabic(nameArRaw);
     const descriptionAr = this.polishMarketArabic(gpt.description_ar || "");
     const normCodes = (arr: unknown, prefix: string) =>
@@ -1172,9 +1440,11 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
       [/garnier|غارنييه/, "Garnier"],
       [/radiant|راديانت/, "Radiant"],
       [/mon\s*reve|مون\s*ريف/, "Mon Reve"],
+      [/artdeco|ارتديكو|آرتديكو|ارتيكو|أرتديكو/, "ARTDECO"],
       [/grigi|جريجي/, "Grigi"],
       [/crest|كريست/, "Crest"],
       [/cosmaline|كوسمالاين/, "Cosmaline"],
+      [/artdeco|ارتديكو|أرتديكو/, "ARTDECO"],
       [/oral[\s-]?b|اورال/, "Oral-B"],
       [/colgate|كولجيت/, "Colgate"],
     ];
@@ -1200,9 +1470,11 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
       [/garnier/, "غارنييه"],
       [/radiant/, "راديانت"],
       [/mon\s*reve/, "مون ريف"],
+      [/artdeco/, "آرتديكو"],
       [/grigi/, "جريجي"],
       [/crest/, "كريست"],
       [/cosmaline/, "كوسمالاين"],
+      [/artdeco/, "أرتديكو"],
       [/oral[\s-]?b/, "اورال بي"],
       [/colgate/, "كولجيت"],
     ];
@@ -1217,12 +1489,17 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
   private ensureBrandDashName(
     name: string,
     brand: string,
-    opts: { doubleBrand?: boolean } = {},
+    opts: { doubleBrand?: boolean; alsoStrip?: string[] } = {},
   ): string {
     const b = brand.replace(/\s+/g, " ").trim();
     if (!b) return name.replace(/\s+/g, " ").trim();
 
-    const product = this.extractProductCore(name, b);
+    let product = this.extractProductCore(name, b);
+    for (const extra of opts.alsoStrip ?? []) {
+      const e = extra.replace(/\s+/g, " ").trim();
+      if (!e || this.norm(e) === this.norm(b)) continue;
+      product = this.extractProductCore(product, e);
+    }
     // doubleBrand kept for backwards-compat but unused (always single brand now)
     const prefix = opts.doubleBrand ? `${b} ${b}` : b;
     if (!product) return `${prefix} -`;

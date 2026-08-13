@@ -1,0 +1,46 @@
+---
+description: Deborah Milano product naming — Arabic (Iraqi market) + English (global official)
+globs: backend/scripts/**/add-deborah-*.ts,backend/scripts/**/fix-deborah-*.ts
+alwaysApply: false
+---
+
+# Deborah Milano — Product Naming
+
+When adding or updating Deborah Milano products in catalog scripts, **always set both `nameAr` and `nameEn`**. PATCH with only one field can null the other on the API.
+
+## English (`nameEn`) — global official
+
+Format: `Deborah Milano - [Official Product Name]`
+
+- Match deborahmilano.com / packaging (Title Case, keep `24Ore`, `5-in-1`, `With`, shade at end).
+- Examples:
+  - `Deborah Milano - Skin Booster Mat Foundation`
+  - `Deborah Milano - 24Ore Instant Maxi Volume Mascara With Ceramides Black`
+  - `Deborah Milano - Extraordinary 5-in-1 Mascara Blue Navy`
+
+## Arabic (`nameAr`) — Iraqi market
+
+Format: `ديبورا ميلانو - [نوع المنتج بالعربي] [اسم الخط/المنتج بالإنجليزي كما على العبوة]`
+
+- Brand **always** `ديبورا ميلانو` (Arabic letters only — never Latin `a`/`o` in the brand).
+- Use Iraqi-familiar product types, then the **official English line name** unchanged:
+  - Foundation → `فاونديشن` (not `فونديشن`)
+  - Mascara → `ماسكارا`
+  - Concealer → `كونسيلر`
+  - Lip gloss → `جلوس شفاه`
+  - Lip pencil / liner → `قلم شفاه`
+  - Brow marker / pencil → `قلم حواجب`
+  - Lipstick → `أحمر شفاه` (+ optional Arabic descriptor before line name)
+- Shade / variant stays in English at the end (e.g. `Black`, `Chocolate Brown`).
+- Examples:
+  - `ديبورا ميلانو - فاونديشن Skin Booster Mat`
+  - `ديبورا ميلانو - ماسكارا 24Ore Instant Maxi Volume With Ceramides Black`
+
+## Script checklist
+
+```typescript
+nameAr: "ديبورا ميلانو - فاونديشن Skin Booster Mat",
+nameEn: "Deborah Milano - Skin Booster Mat Foundation",
+```
+
+Both fields are required in POST/PATCH payloads for every new Deborah product.

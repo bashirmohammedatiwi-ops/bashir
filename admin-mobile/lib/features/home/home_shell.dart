@@ -11,6 +11,7 @@ class HomeShell extends ConsumerWidget {
   final Widget child;
 
   int _indexForLocation(String location) {
+    if (location.startsWith('/shade-family')) return 2;
     if (location.startsWith('/ai-add')) return 1;
     return 0;
   }
@@ -27,7 +28,9 @@ class HomeShell extends ConsumerWidget {
         selectedIndex: selected,
         onDestinationSelected: (index) {
           if (index == selected) return;
-          context.go(index == 0 ? '/scan' : '/ai-add');
+          if (index == 0) context.go('/scan');
+          if (index == 1) context.go('/ai-add');
+          if (index == 2) context.go('/shade-family');
         },
         destinations: [
           NavigationDestination(
@@ -47,6 +50,11 @@ class HomeShell extends ConsumerWidget {
               child: const Icon(Icons.add_circle),
             ),
             label: 'إضافة ذكية',
+          ),
+          const NavigationDestination(
+            icon: Icon(Icons.palette_outlined),
+            selectedIcon: Icon(Icons.palette),
+            label: 'تدرجات',
           ),
         ],
       ),

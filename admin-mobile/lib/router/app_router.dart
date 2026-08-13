@@ -7,6 +7,8 @@ import '../features/auth/login_screen.dart';
 import '../features/scan/scan_screen.dart';
 import '../features/ai/ai_add_screen.dart';
 import '../features/ai/existing_product_review_screen.dart';
+import '../features/shades/shade_family_scan_screen.dart';
+import '../features/shades/shade_family_wizard_screen.dart';
 import '../features/home/home_shell.dart';
 import '../features/home/daily_progress_screen.dart';
 import '../features/import/results_screen.dart';
@@ -40,7 +42,39 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/ai-add',
             builder: (_, __) => const AiAddScreen(),
           ),
+          GoRoute(
+            path: '/shade-family',
+            builder: (_, __) => const ShadeFamilyScanScreen(),
+          ),
         ],
+      ),
+      GoRoute(
+        path: '/shade-family/wizard',
+        builder: (_, state) {
+          final extra = state.extra;
+          var barcodes = <String>[];
+          String? hint;
+          String? model;
+          if (extra is Map) {
+            barcodes = (extra['barcodes'] as List? ?? []).map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
+            hint = extra['hint']?.toString();
+            model = extra['model']?.toString();
+          }
+          if (barcodes.isEmpty) {
+            barcodes = (state.uri.queryParameters['barcodes'] ?? '')
+                .split(',')
+                .map((s) => s.trim())
+                .where((s) => s.isNotEmpty)
+                .toList();
+            hint ??= state.uri.queryParameters['hint'];
+            model ??= state.uri.queryParameters['model'];
+          }
+          return ShadeFamilyWizardScreen(
+            barcodes: barcodes,
+            hint: hint,
+            modelId: model,
+          );
+        },
       ),
       GoRoute(
         path: '/daily-progress',

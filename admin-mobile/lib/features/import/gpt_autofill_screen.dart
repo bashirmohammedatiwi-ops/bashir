@@ -7,9 +7,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ai_draft_store.dart';
+import '../../core/utils/ai_model_prefs.dart';
 import '../../core/utils/api_error.dart';
 import '../../core/utils/daily_progress_store.dart';
 import '../../core/utils/helpers.dart';
+import '../../core/utils/product_naming.dart';
 import '../../core/utils/readd_assets_cache.dart';
 import '../../models/ai_autofill.dart';
 import '../../models/brand.dart';
@@ -17,6 +19,7 @@ import '../../models/catalog.dart';
 import '../../models/inventory.dart';
 import '../../repositories/ai_product_repository.dart';
 import '../../repositories/product_repository.dart';
+import '../../widgets/composer_naming_banner.dart';
 import '../../widgets/google_style_image_search.dart';
 import '../../widgets/search_picker_sheet.dart';
 import '../../widgets/section_card.dart';
@@ -65,6 +68,10 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
   final _descEn = TextEditingController();
   final _brandAr = TextEditingController();
   final _brandEn = TextEditingController();
+  final _brandArFocus = FocusNode();
+  final _brandEnFocus = FocusNode();
+  final _nameArFocus = FocusNode();
+  final _nameEnFocus = FocusNode();
   final _price = TextEditingController();
   final _stock = TextEditingController(text: '0');
 
@@ -98,9 +105,17 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
 
   static const _stepTitles = ['التسمية', 'الصور', 'التدرجات', 'التصنيف', 'المعاينة'];
 
+  bool _syncingNames = false;
+
   @override
   void initState() {
     super.initState();
+    _brandAr.addListener(_onBrandFieldsChanged);
+    _brandEn.addListener(_onBrandFieldsChanged);
+    _brandArFocus.addListener(_onBrandFocusChanged);
+    _brandEnFocus.addListener(_onBrandFocusChanged);
+    _nameArFocus.addListener(_onNameFocusChanged);
+    _nameEnFocus.addListener(_onNameFocusChanged);
     _bootstrap();
   }
 
@@ -111,8 +126,18 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     _nameEn.dispose();
     _descAr.dispose();
     _descEn.dispose();
+    _brandAr.removeListener(_onBrandFieldsChanged);
+    _brandEn.removeListener(_onBrandFieldsChanged);
+    _brandArFocus.removeListener(_onBrandFocusChanged);
+    _brandEnFocus.removeListener(_onBrandFocusChanged);
+    _nameArFocus.removeListener(_onNameFocusChanged);
+    _nameEnFocus.removeListener(_onNameFocusChanged);
     _brandAr.dispose();
     _brandEn.dispose();
+    _brandArFocus.dispose();
+    _brandEnFocus.dispose();
+    _nameArFocus.dispose();
+    _nameEnFocus.dispose();
     _price.dispose();
     _stock.dispose();
     for (final s in _shades) {
@@ -221,11 +246,16 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
       final matchedBrand = _selectedBrand;
       if (matchedBrand != null) {
         // Keep GPT brand labels if richer; fill empty side from catalog name.
-        if (_brandAr.text.trim().isEmpty) _brandAr.text = matchedBrand.displayName;
+        if (_brandAr.text.trim().isEmpty) {
+          _brandAr.text = matchedBrand.nameAr?.trim().isNotEmpty == true
+              ? matchedBrand.nameAr!.trim()
+              : matchedBrand.displayName;
+        }
         if (_brandEn.text.trim().isEmpty) {
           _brandEn.text = matchedBrand.nameEn ?? matchedBrand.name ?? matchedBrand.displayName;
         }
       }
+      _applyNamePrefixes();
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
     } finally {
@@ -287,6 +317,77 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     // User picks images manually — never auto-select defaults
     _selectedImages.clear();
     _imageOrder.clear();
+    _applyNamePrefixes();
+  }
+
+  void _onBrandFieldsChanged() {
+    if (_loading || _syncingNames) return;
+    if (mounted) setState(() {});
+  }
+
+  void _onBrandFocusChanged() {
+    if (_loading || _syncingNames) return;
+    if (!_brandArFocus.hasFocus && !_brandEnFocus.hasFocus) {
+      _applyNamePrefixes();
+      if (mounted) setState(() {});
+    }
+  }
+
+  void _onNameFocusChanged() {
+    if (_loading || _syncingNames) return;
+    if (!_nameArFocus.hasFocus && !_nameEnFocus.hasFocus) {
+      _applyNamePrefixes();
+      if (mounted) setState(() {});
+    }
+  }
+
+  String get _arabicTitleBrand =>
+      ProductNaming.arabicTitleBrand(brandAr: _brandAr.text, brandEn: _brandEn.text);
+
+  String get _englishTitleBrand =>
+      ProductNaming.englishTitleBrand(brandEn: _brandEn.text, brandAr: _brandAr.text);
+
+  void _applyNamePrefixes() {
+    if (_syncingNames) return;
+    _syncingNames = true;
+    final ar = ProductNaming.applyArabicTitle(
+      current: _nameAr.text,
+      brandAr: _brandAr.text,
+      brandEn: _brandEn.text,
+    );
+    final en = ProductNaming.applyEnglishTitle(
+      current: _nameEn.text,
+      brandEn: _brandEn.text,
+      brandAr: _brandAr.text,
+    );
+    if (_nameAr.text != ar) _nameAr.value = TextEditingValue(text: ar, selection: TextSelection.collapsed(offset: ar.length));
+    if (_nameEn.text != en) _nameEn.value = TextEditingValue(text: en, selection: TextSelection.collapsed(offset: en.length));
+    _syncingNames = false;
+  }
+
+  Future<void> _pickBrand() async {
+    final picked = await showSearchPicker<BrandEntity>(
+      context: context,
+      title: 'اختر البراند',
+      items: _brands,
+      selected: _selectedBrand,
+      labelOf: (b) => b.displayName,
+      subtitleOf: (b) {
+        final en = b.nameEn?.trim();
+        if (en != null && en.isNotEmpty && en != b.displayName) return en;
+        return b.searchTokens.where((t) => t != b.displayName).join(' · ');
+      },
+      isSame: (a, b) => a.id == b.id,
+    );
+    if (picked == null) return;
+    setState(() {
+      _brandId = picked.id;
+      _brandAr.text = picked.nameAr?.trim().isNotEmpty == true ? picked.nameAr!.trim() : picked.displayName;
+      _brandEn.text = picked.nameEn?.trim().isNotEmpty == true
+          ? picked.nameEn!.trim()
+          : (picked.name?.trim().isNotEmpty == true ? picked.name!.trim() : picked.displayName);
+      _applyNamePrefixes();
+    });
   }
 
   void _mergePreservedImages() {
@@ -643,6 +744,10 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     if (!nameAr.contains(' - ') && !nameEn.contains(' - ')) {
       warnings.add('الاسم يفضّل أن يحتوي على " - " بين البراند واسم المنتج');
     }
+    final arBrand = ProductNaming.arabicTitleBrand(brandAr: _brandAr.text, brandEn: _brandEn.text);
+    if (nameAr.isNotEmpty && arBrand.isNotEmpty && !nameAr.toLowerCase().startsWith(arBrand.toLowerCase())) {
+      warnings.add('الاسم العربي يجب أن يبدأ بالبراند كما هو: $arBrand');
+    }
     if (_selectedImages.isEmpty) {
       warnings.add('اختر صورة واحدة على الأقل');
     }
@@ -726,6 +831,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
 
   bool _validateStep(int step) {
     if (step == 0) {
+      _applyNamePrefixes();
       if (_nameAr.text.trim().isEmpty && _nameEn.text.trim().isEmpty) {
         _snack('أدخل الاسم عربي أو إنجليزي على الأقل');
         return false;
@@ -863,6 +969,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
         );
       }
 
+      _applyNamePrefixes();
       final nameAr = _nameAr.text.trim();
       final nameEn = _nameEn.text.trim();
       final price = toIntPrice(int.tryParse(_price.text.trim()));
@@ -993,11 +1100,11 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                 children: [
                   const CircularProgressIndicator(),
                   const SizedBox(height: 16),
-                  Text(widget.manualMode ? 'جاري جلب الصور…' : 'جاري التعرف على المنتج…'),
+                  Text(widget.manualMode ? 'جاري جلب الصور…' : 'جاري تأكيد الاسم بـ Composer 2.5…'),
                   if (!widget.manualMode) ...[
                     const SizedBox(height: 6),
                     Text(
-                      'قد يستغرق بضع ثوانٍ',
+                      'الاسم باللغتين فقط — التصنيف والصور من الباركود',
                       style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
                     ),
                   ],
@@ -1184,9 +1291,18 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
 
   Widget _buildNamingStep() {
     final result = _result!;
+    final arPrefix = _arabicTitleBrand;
+    final enPrefix = _englishTitleBrand;
+    final latinBrand = ProductNaming.isLatinBrand(_brandEn.text) ||
+        (!ProductNaming.hasArabicScript(_brandAr.text) && ProductNaming.isLatinBrand(_brandAr.text));
     return ListView(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 24),
       children: [
+        if (!widget.manualMode)
+          ComposerNamingBanner(
+            model: AiModelOption.byId(widget.modelId ?? result.modelChoice ?? result.model),
+            verified: result.namesVerified,
+          ),
         if (result.needsReview || result.confidence < 70)
           Card(
             color: const Color(0xFFFFF8E8),
@@ -1201,40 +1317,139 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
               subtitle: const Text('يمكنك التعديل بحرية قبل المتابعة'),
             ),
           ),
+        Card(
+          color: AppTheme.primary.withValues(alpha: 0.06),
+          margin: const EdgeInsets.only(bottom: 12),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.sell_outlined, color: AppTheme.primary),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text(
+                        'الاسم العربي يبدأ بالبراند كما هو',
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  latinBrand
+                      ? 'البراند إنجليزي فيبقى إنجليزي في بداية الاسم، ثم تكمل بيانات المنتج بالعربي.'
+                      : 'البراند عربي فيُكتب عربي في البداية ثم تكمل بيانات المنتج.',
+                  style: const TextStyle(fontSize: 13, height: 1.4, color: AppTheme.muted),
+                ),
+                if (arPrefix.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Chip(
+                        avatar: const Icon(Icons.flag_outlined, size: 16),
+                        label: Text(
+                          arPrefix,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
+                          textDirection: ProductNaming.hasArabicScript(arPrefix)
+                              ? TextDirection.rtl
+                              : TextDirection.ltr,
+                        ),
+                        backgroundColor: Colors.white,
+                      ),
+                      Text(
+                        latinBrand ? 'ثم نوع المنتج بالعربي' : 'ثم بقية الاسم بالعربي',
+                        style: const TextStyle(fontSize: 12.5, color: AppTheme.muted),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
         SectionCard(
-          title: 'الاسم',
-          subtitle: 'براند - اسم المنتج',
-          icon: Icons.badge_outlined,
+          title: 'البراند',
+          subtitle: _selectedBrand?.displayName ?? 'اختر من القائمة أو اكتب الاسم',
+          icon: Icons.storefront_outlined,
+          trailing: TextButton.icon(
+            onPressed: _pickBrand,
+            icon: const Icon(Icons.search, size: 18),
+            label: const Text('قائمة'),
+          ),
           child: Column(
             children: [
-              TextField(
-                controller: _nameAr,
-                decoration: const InputDecoration(labelText: 'عربي'),
-                maxLines: 2,
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _brandAr,
+                      focusNode: _brandArFocus,
+                      decoration: const InputDecoration(labelText: 'عربي'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: TextField(
+                      controller: _brandEn,
+                      focusNode: _brandEnFocus,
+                      decoration: const InputDecoration(labelText: 'English'),
+                      textDirection: TextDirection.ltr,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 10),
-              TextField(
-                controller: _nameEn,
-                decoration: const InputDecoration(labelText: 'English'),
-                maxLines: 2,
-                textDirection: TextDirection.ltr,
+              Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: TextButton.icon(
+                  onPressed: () {
+                    _applyNamePrefixes();
+                    setState(() {});
+                  },
+                  icon: const Icon(Icons.auto_fix_high_outlined, size: 18),
+                  label: const Text('تطبيق البراند على الاسم'),
+                ),
               ),
             ],
           ),
         ),
         SectionCard(
-          title: 'البراند',
-          icon: Icons.storefront_outlined,
-          child: Row(
+          title: 'الاسم',
+          subtitle: arPrefix.isEmpty ? 'براند - نوع المنتج' : '$arPrefix - نوع المنتج بالعربي',
+          icon: Icons.badge_outlined,
+          child: Column(
             children: [
-              Expanded(child: TextField(controller: _brandAr, decoration: const InputDecoration(labelText: 'عربي'))),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: _brandEn,
-                  decoration: const InputDecoration(labelText: 'English'),
-                  textDirection: TextDirection.ltr,
+              TextField(
+                controller: _nameAr,
+                focusNode: _nameArFocus,
+                decoration: InputDecoration(
+                  labelText: 'عربي',
+                  helperText: arPrefix.isEmpty
+                      ? 'مثال: ARTDECO - جلوس شفاه Plumping Lip Fluid'
+                      : 'يبدأ بـ $arPrefix ثم نوع المنتج والحجم',
+                  helperMaxLines: 2,
                 ),
+                maxLines: 2,
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _nameEn,
+                focusNode: _nameEnFocus,
+                decoration: InputDecoration(
+                  labelText: 'English',
+                  helperText: enPrefix.isEmpty
+                      ? 'Brand - Official product name'
+                      : 'Starts with $enPrefix - official name',
+                  helperMaxLines: 2,
+                ),
+                maxLines: 2,
+                textDirection: TextDirection.ltr,
               ),
             ],
           ),
@@ -1467,26 +1682,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                 title: const Text('البراند من القائمة'),
                 subtitle: Text(_selectedBrand?.displayName ?? 'يُنشأ من الاسم إن لم يُختر'),
                 trailing: const Icon(Icons.chevron_left),
-                onTap: () async {
-                  final picked = await showSearchPicker<BrandEntity>(
-                    context: context,
-                    title: 'اختر البراند',
-                    items: _brands,
-                    selected: _selectedBrand,
-                    labelOf: (b) => b.displayName,
-                    subtitleOf: (b) => b.searchTokens.where((t) => t != b.displayName).join(' · '),
-                    isSame: (a, b) => a.id == b.id,
-                  );
-                  if (picked != null) {
-                    setState(() {
-                      _brandId = picked.id;
-                      _brandAr.text = picked.displayName;
-                      _brandEn.text = picked.nameEn?.trim().isNotEmpty == true
-                          ? picked.nameEn!.trim()
-                          : (picked.name?.trim().isNotEmpty == true ? picked.name!.trim() : picked.displayName);
-                    });
-                  }
-                },
+                onTap: _pickBrand,
               ),
               const Divider(),
               ListTile(
@@ -1677,8 +1873,16 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _reviewRow('الاسم', _nameAr.text.trim().isNotEmpty ? _nameAr.text : _nameEn.text),
-              _reviewRow('البراند', _selectedBrand?.displayName ?? '${_brandAr.text} / ${_brandEn.text}'),
+              _reviewRow('الاسم العربي', _nameAr.text),
+              _reviewRow('English name', _nameEn.text, maxLines: 3),
+              _reviewRow(
+                'البراند',
+                {
+                  if (_arabicTitleBrand.isNotEmpty) _arabicTitleBrand,
+                  if (_englishTitleBrand.isNotEmpty && _englishTitleBrand != _arabicTitleBrand) _englishTitleBrand,
+                  if (_selectedBrand?.displayName != null) _selectedBrand!.displayName,
+                }.join(' · '),
+              ),
               _reviewRow(
                 'التصنيف',
                 [

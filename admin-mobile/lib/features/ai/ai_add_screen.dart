@@ -14,6 +14,7 @@ import '../../providers/auth_provider.dart';
 import '../../repositories/ai_product_repository.dart';
 import '../../repositories/product_repository.dart';
 import '../../widgets/barcode_live_scanner.dart';
+import '../../widgets/composer_naming_banner.dart';
 import '../home/daily_progress_screen.dart';
 
 /// Dedicated AI product-add: scan → duplicate check → autofill wizard.
@@ -32,7 +33,7 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
   bool _showManual = false;
   bool _checking = false;
   List<AiDraftEntry> _recent = [];
-  AiModelOption _model = AiModelOption.lunaLow;
+  AiModelOption _model = AiModelOption.composerLow;
 
   @override
   void initState() {
@@ -146,8 +147,8 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
               const SizedBox(height: 12),
               ListTile(
                 leading: const Icon(Icons.auto_awesome, color: AppTheme.primary),
-                title: const Text('تعبئة ذكية (AI)'),
-                subtitle: const Text('تسمية ووصف وتصنيف — استهلاك منخفض'),
+                title: const Text('تعبئة ذكية (Composer)'),
+                subtitle: const Text('يؤكد الاسم باللغتين فقط — تصنيف ووصف من الباركود'),
                 onTap: () => Navigator.pop(ctx, 'ai'),
               ),
               ListTile(
@@ -395,12 +396,13 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                   child: Column(
                     children: [
+                      ComposerNamingBanner(model: _model, compact: true),
                       Row(
                         children: [
                           Expanded(
                             child: InputDecorator(
                               decoration: const InputDecoration(
-                                labelText: 'الموديل',
+                                labelText: 'Composer',
                                 prefixIcon: Icon(Icons.auto_awesome, size: 20),
                               ),
                               child: DropdownButtonHideUnderline(
@@ -412,7 +414,10 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
                                     for (final m in AiModelOption.all)
                                       DropdownMenuItem(
                                         value: m.id,
-                                        child: Text(m.labelAr, overflow: TextOverflow.ellipsis),
+                                        child: Text(
+                                          '${m.labelAr} — ${m.descriptionAr}',
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
                                       ),
                                   ],
                                   onChanged: _checking
@@ -568,6 +573,12 @@ class _AiAddScreenState extends ConsumerState<AiAddScreen> with WidgetsBindingOb
                         CircularProgressIndicator(),
                         SizedBox(height: 16),
                         Text('جاري الفحص…', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w600)),
+                        SizedBox(height: 6),
+                        Text(
+                          'ثم تأكيد الاسم بـ Composer 2.5 Low',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 12.5, color: AppTheme.muted),
+                        ),
                       ],
                     ),
                   ),

@@ -38,7 +38,7 @@ class AiProductRepository {
           if (model != null && model.trim().isNotEmpty) 'model': model.trim(),
           if (force) 'force': true,
         },
-        options: Options(receiveTimeout: const Duration(seconds: 90)),
+        options: Options(receiveTimeout: const Duration(seconds: 120)),
       );
       return AiAutofillResult.fromJson(asMap(resp.data['data'] ?? resp.data));
     } on DioException catch (e) {
@@ -60,11 +60,32 @@ class AiProductRepository {
           if (hint != null && hint.trim().isNotEmpty) 'hint': hint.trim(),
           if (model != null && model.trim().isNotEmpty) 'model': model.trim(),
         },
-        options: Options(receiveTimeout: const Duration(seconds: 90)),
+        options: Options(receiveTimeout: const Duration(seconds: 120)),
       );
       return AiAutofillResult.fromJson(asMap(resp.data['data'] ?? resp.data));
     } on DioException catch (e) {
       throw Exception(extractApiError(e, 'فشل مراجعة المنتج'));
+    }
+  }
+
+  Future<ShadeFamilyResult> shadeFamily({
+    required List<String> barcodes,
+    String? hint,
+    String? model,
+  }) async {
+    try {
+      final resp = await _dio.post(
+        '/ai-product/shade-family',
+        data: {
+          'barcodes': barcodes.map((b) => b.trim()).where((b) => b.isNotEmpty).toList(),
+          if (hint != null && hint.trim().isNotEmpty) 'hint': hint.trim(),
+          if (model != null && model.trim().isNotEmpty) 'model': model.trim(),
+        },
+        options: Options(receiveTimeout: const Duration(seconds: 140)),
+      );
+      return ShadeFamilyResult.fromJson(asMap(resp.data['data'] ?? resp.data));
+    } on DioException catch (e) {
+      throw Exception(extractApiError(e, 'فشل التعرف على التدرجات'));
     }
   }
 

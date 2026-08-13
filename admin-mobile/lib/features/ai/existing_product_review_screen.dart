@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/utils/ai_model_prefs.dart';
 import '../../core/utils/media_url.dart';
+import '../../core/utils/product_naming.dart';
 import '../../models/ai_autofill.dart';
 import '../../repositories/ai_product_repository.dart';
 import '../../repositories/product_repository.dart';
@@ -136,6 +137,51 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
     return null;
   }
 
+  String get _brandArText {
+    final review = _review;
+    if (_acceptedFields.contains('brand') && review != null && review.brandAr.trim().isNotEmpty) {
+      return review.brandAr.trim();
+    }
+    final brand = _product?['brand'];
+    if (brand is Map) {
+      final ar = (brand['nameAr'] ?? '').toString().trim();
+      if (ar.isNotEmpty) return ar;
+      final name = (brand['name'] ?? '').toString().trim();
+      if (ProductNaming.hasArabicScript(name)) return name;
+    }
+    return '';
+  }
+
+  String get _brandEnText {
+    final review = _review;
+    if (_acceptedFields.contains('brand') && review != null && review.brandEn.trim().isNotEmpty) {
+      return review.brandEn.trim();
+    }
+    final brand = _product?['brand'];
+    if (brand is Map) {
+      final en = (brand['nameEn'] ?? '').toString().trim();
+      if (en.isNotEmpty) return en;
+      final name = (brand['name'] ?? '').toString().trim();
+      if (ProductNaming.isLatinBrand(name)) return name;
+    }
+    return '';
+  }
+
+  void _applyNamePrefixes() {
+    final ar = ProductNaming.applyArabicTitle(
+      current: _nameAr.text,
+      brandAr: _brandArText,
+      brandEn: _brandEnText,
+    );
+    final en = ProductNaming.applyEnglishTitle(
+      current: _nameEn.text,
+      brandEn: _brandEnText,
+      brandAr: _brandArText,
+    );
+    if (_nameAr.text != ar) _nameAr.text = ar;
+    if (_nameEn.text != en) _nameEn.text = en;
+  }
+
   String? get _categoryPath {
     final parts = <String>[];
     for (final key in ['category', 'subcategory', 'tertiaryCategory']) {
@@ -213,6 +259,8 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
         _nameEn.text = r.nameEn;
         _acceptedFields.add('nameEn');
       }
+      _acceptedFields.add('brand');
+      _applyNamePrefixes();
       if (r.descriptionAr.trim().isNotEmpty) {
         _descAr.text = r.descriptionAr;
         _acceptedFields.add('descriptionAr');
@@ -221,7 +269,6 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
         _descEn.text = r.descriptionEn;
         _acceptedFields.add('descriptionEn');
       }
-      _acceptedFields.add('brand');
     });
     _snack('تم تطبيق اقتراحات التسمية والوصف');
   }
@@ -271,6 +318,10 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
         if (!imageIds.contains(mid)) imageIds.add(mid);
       }
 
+      if (_acceptedFields.contains('brand') ||
+          (!_acceptedFields.contains('nameAr') && !_acceptedFields.contains('nameEn'))) {
+        _applyNamePrefixes();
+      }
       final payload = <String, dynamic>{
         'nameAr': _nameAr.text.trim(),
         'nameEn': _nameEn.text.trim(),
@@ -517,7 +568,7 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
   Widget _buildAiActions() {
     return SectionCard(
       title: 'مراجعة بالذكاء الاصطناعي',
-      subtitle: 'يفحص الباركود ويقارن مع بيانات المتجر ويقترح تصحيحاً',
+      subtitle: 'Composer 2.5 يؤكد الاسم باللغتين ويقارن مع بيانات المتجر',
       icon: Icons.auto_awesome,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -531,7 +582,7 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                   )
                 : const Icon(Icons.fact_check_outlined),
-            label: Text(_reviewing ? 'جاري المراجعة…' : 'فحص وتصحيح بالـ AI'),
+            label: Text(_reviewing ? 'جاري تأكيد الاسم…' : 'فحص وتصحيح الاسم (Composer)'),
           ),
           if (_review != null) ...[
             const SizedBox(height: 8),
@@ -543,7 +594,7 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
             const SizedBox(height: 8),
             Text(
               'ثقة التعرّف: ${_review!.confidence.toStringAsFixed(0)}%'
-              '${_review!.usedWebSearch ? ' · بحث ويب' : ''}'
+              '${_review!.namesVerified ? ' · اسم مؤكَّد Composer' : ''}'
               '${_review!.reviewNotes != null ? ' · ${_review!.reviewNotes}' : ''}',
               style: const TextStyle(fontSize: 12.5, color: AppTheme.muted),
             ),
@@ -637,7 +688,17 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
       icon: Icons.edit_note,
       child: Column(
         children: [
-          TextField(controller: _nameAr, decoration: const InputDecoration(labelText: 'الاسم عربي'), maxLines: 2),
+          TextField(
+            controller: _nameAr,
+            decoration: InputDecoration(
+              labelText: 'الاسم عربي',
+              helperText: _brandEnText.isNotEmpty || _brandArText.isNotEmpty
+                  ? 'يبدأ بالبراند كما هو: ${ProductNaming.arabicTitleBrand(brandAr: _brandArText, brandEn: _brandEnText)}'
+                  : 'البراند الإنجليزي يبقى إنجليزي في بداية الاسم',
+              helperMaxLines: 2,
+            ),
+            maxLines: 2,
+          ),
           const SizedBox(height: 10),
           TextField(
             controller: _nameEn,

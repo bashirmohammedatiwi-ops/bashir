@@ -268,7 +268,10 @@ class AiAutofillResult {
     this.reviewNotes,
     this.sourceUrl,
     this.model,
+    this.modelChoice,
     this.usedWebSearch = false,
+    this.namesVerified = false,
+    this.namingSource,
     this.imageQuery,
     this.aiSkipped = false,
     this.issues = const [],
@@ -290,7 +293,10 @@ class AiAutofillResult {
   final String? sourceUrl;
   final List<AiAutofillImage> images;
   final String? model;
+  final String? modelChoice;
   final bool usedWebSearch;
+  final bool namesVerified;
+  final String? namingSource;
   final String? imageQuery;
   final bool aiSkipped;
   final List<AiQualityIssue> issues;
@@ -325,10 +331,157 @@ class AiAutofillResult {
       sourceUrl: json['sourceUrl']?.toString(),
       images: images,
       model: meta['model']?.toString(),
+      modelChoice: meta['modelChoice']?.toString(),
       usedWebSearch: meta['usedWebSearch'] == true,
+      namesVerified: meta['namesVerified'] == true,
+      namingSource: meta['namingSource']?.toString(),
       imageQuery: meta['imageQuery']?.toString(),
       aiSkipped: meta['aiSkipped'] == true,
       issues: issues,
+    );
+  }
+}
+
+class ShadeFamilyExistingHit {
+  const ShadeFamilyExistingHit({
+    required this.barcode,
+    required this.productId,
+    this.nameAr,
+    this.nameEn,
+    this.matchedShadeName,
+  });
+
+  final String barcode;
+  final String productId;
+  final String? nameAr;
+  final String? nameEn;
+  final String? matchedShadeName;
+
+  factory ShadeFamilyExistingHit.fromJson(Map<String, dynamic> json) {
+    return ShadeFamilyExistingHit(
+      barcode: json['barcode']?.toString() ?? '',
+      productId: json['productId']?.toString() ?? json['id']?.toString() ?? '',
+      nameAr: json['nameAr']?.toString(),
+      nameEn: json['nameEn']?.toString(),
+      matchedShadeName: json['matchedShadeName']?.toString(),
+    );
+  }
+}
+
+class ShadeFamilyShade {
+  const ShadeFamilyShade({
+    required this.barcode,
+    required this.code,
+    required this.name,
+    required this.nameEn,
+    required this.nameAr,
+    required this.colorHex,
+    required this.position,
+  });
+
+  final String barcode;
+  final String code;
+  final String name;
+  final String nameEn;
+  final String nameAr;
+  final String colorHex;
+  final int position;
+
+  factory ShadeFamilyShade.fromJson(Map<String, dynamic> json) {
+    return ShadeFamilyShade(
+      barcode: json['barcode']?.toString() ?? '',
+      code: json['code']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      nameEn: json['nameEn']?.toString() ?? json['name']?.toString() ?? '',
+      nameAr: json['nameAr']?.toString() ?? json['name']?.toString() ?? '',
+      colorHex: json['colorHex']?.toString() ?? '#CCCCCC',
+      position: int.tryParse('${json['position'] ?? 0}') ?? 0,
+    );
+  }
+}
+
+class ShadeFamilyResult {
+  const ShadeFamilyResult({
+    required this.barcodes,
+    required this.brandAr,
+    required this.brandEn,
+    required this.nameAr,
+    required this.nameEn,
+    required this.descriptionAr,
+    required this.descriptionEn,
+    required this.category,
+    required this.confidence,
+    required this.needsReview,
+    required this.shades,
+    required this.images,
+    this.productTypeAr = '',
+    this.existingHits = const [],
+    this.model,
+    this.modelChoice,
+    this.usedWebSearch = false,
+    this.namesVerified = false,
+    this.namingSource,
+  });
+
+  final List<String> barcodes;
+  final String brandAr;
+  final String brandEn;
+  final String nameAr;
+  final String nameEn;
+  final String descriptionAr;
+  final String descriptionEn;
+  final String productTypeAr;
+  final AiAutofillCategory category;
+  final num confidence;
+  final bool needsReview;
+  final List<ShadeFamilyShade> shades;
+  final List<AiAutofillImage> images;
+  final List<ShadeFamilyExistingHit> existingHits;
+  final String? model;
+  final String? modelChoice;
+  final bool usedWebSearch;
+  final bool namesVerified;
+  final String? namingSource;
+
+  factory ShadeFamilyResult.fromJson(Map<String, dynamic> json) {
+    final images = (json['images'] as List? ?? [])
+        .whereType<Map>()
+        .map((e) => AiAutofillImage.fromJson(Map<String, dynamic>.from(e)))
+        .where((i) => i.url.isNotEmpty)
+        .toList();
+    final shades = (json['shades'] as List? ?? [])
+        .whereType<Map>()
+        .map((e) => ShadeFamilyShade.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+    final hits = (json['existingHits'] as List? ?? [])
+        .whereType<Map>()
+        .map((e) => ShadeFamilyExistingHit.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+    final meta = json['meta'] is Map ? Map<String, dynamic>.from(json['meta'] as Map) : <String, dynamic>{};
+    final barcodes = (json['barcodes'] as List? ?? [])
+        .map((e) => e?.toString() ?? '')
+        .where((s) => s.isNotEmpty)
+        .toList();
+    return ShadeFamilyResult(
+      barcodes: barcodes,
+      brandAr: json['brandAr']?.toString() ?? '',
+      brandEn: json['brandEn']?.toString() ?? '',
+      nameAr: json['nameAr']?.toString() ?? '',
+      nameEn: json['nameEn']?.toString() ?? '',
+      descriptionAr: json['descriptionAr']?.toString() ?? '',
+      descriptionEn: json['descriptionEn']?.toString() ?? '',
+      productTypeAr: json['productTypeAr']?.toString() ?? '',
+      category: AiAutofillCategory.fromJson(Map<String, dynamic>.from((json['category'] as Map?) ?? {})),
+      confidence: json['confidence'] as num? ?? 0,
+      needsReview: json['needsReview'] == true,
+      shades: shades,
+      images: images,
+      existingHits: hits,
+      model: meta['model']?.toString(),
+      modelChoice: meta['modelChoice']?.toString(),
+      usedWebSearch: meta['usedWebSearch'] == true,
+      namesVerified: meta['namesVerified'] == true,
+      namingSource: meta['namingSource']?.toString(),
     );
   }
 }
