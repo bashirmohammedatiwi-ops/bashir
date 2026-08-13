@@ -25,6 +25,13 @@ export type CursorNamingOutput = CursorNameDraft & {
   runtime: "cloud" | "none";
 };
 
+export type CursorShadeRow = {
+  barcode: string;
+  code: string;
+  name_en: string;
+  name_ar: string;
+};
+
 type CursorModelResolved = {
   choice: string;
   apiModel: string;
@@ -93,6 +100,75 @@ export class CursorNamingClient {
     } catch (err) {
       this.logger.warn(`Cursor naming failed for ${input.barcode}: ${(err as Error).message}`);
       return this.toOutput(this.fallback(input), resolved, false, "none");
+    }
+  }
+
+  /** Polish shade names for a makeup family (one JSON batch). */
+  async verifyShadeFamilyNames(
+    input: {
+      brand_en: string;
+      brand_ar: string;
+      product_en: string;
+      hint?: string;
+      shades: Array<{ barcode: string; code: string; name_en: string; db_title?: string }>;
+    },
+    modelChoice?: string,
+    maxWaitMs = 24_000,
+  ): Promise<CursorShadeRow[] | null> {
+    const resolved = this.resolveModel(modelChoice);
+    const key = this.apiKey();
+    if (!key || !input.shades.length) return null;
+
+    const lines = input.shades
+      .map(
+        (s) =>
+          `barcode=${s.barcode} code=${s.code} draft_en=${s.name_en || "none"} db=${s.db_title || "none"}`,
+      )
+      .join("\n");
+
+    const prompt = `You are a beauty catalog specialist for Al Hayaa (Iraq).
+Reply with JSON ONLY. No markdown. No code fences. Do not use tools.
+
+Task: For each barcode, return the OFFICIAL shade/color name (English + Arabic) for this makeup product family.
+Product: ${input.brand_en} ${input.product_en}
+Staff hint: ${input.hint?.trim() || "none"}
+
+Rules:
+- name_en = color/shade name only (e.g. "Romantic Red", "Pink Desire") — NOT "Shade 01".
+- Include shade code/number in name_en when standard (e.g. "01 Romantic Red").
+- name_ar = Arabic color name + code if present (e.g. "01 أحمر رومانسي").
+- Use real cosmetic shade names when inferable from db_title or product line; never generic "Shade N".
+- If truly unknown, use descriptive color guess from code order (still not "Shade 01").
+
+Shades:
+${lines}
+
+Return exactly:
+{"shades":[{"barcode":"","code":"","name_en":"","name_ar":""}]}`;
+
+    try {
+      const text = await this.runCloudAgent(
+        { apiKey: key, model: resolved.apiModel, fast: resolved.fast, prompt },
+        maxWaitMs,
+      );
+      const start = text.indexOf("{");
+      const end = text.lastIndexOf("}");
+      if (start < 0 || end <= start) return null;
+      const obj = JSON.parse(text.slice(start, end + 1)) as {
+        shades?: Array<Record<string, unknown>>;
+      };
+      const rows = (obj.shades ?? [])
+        .map((row) => ({
+          barcode: String(row.barcode ?? "").replace(/\D/g, "") || String(row.barcode ?? "").trim(),
+          code: String(row.code ?? "").trim(),
+          name_en: String(row.name_en ?? row.nameEn ?? "").trim(),
+          name_ar: String(row.name_ar ?? row.nameAr ?? "").trim(),
+        }))
+        .filter((r) => r.barcode && r.name_en.length >= 2);
+      return rows.length ? rows : null;
+    } catch (err) {
+      this.logger.warn(`Cursor shade-family naming failed: ${(err as Error).message}`);
+      return null;
     }
   }
 

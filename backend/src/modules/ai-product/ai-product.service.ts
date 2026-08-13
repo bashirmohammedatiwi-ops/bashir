@@ -353,7 +353,7 @@ export class AiProductService {
   private async shadeFamilyFast(rawBarcodes: string[], hint?: string, modelChoice?: string) {
     const unique = rawBarcodes;
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `shade-v8|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `shade-v9|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 20 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -407,7 +407,25 @@ export class AiProductService {
       shadeFamily: true,
     });
 
-    const shadeRows = unique.map((barcode, index) =>
+    const enrichHints = [
+      leadFree.brand,
+      leadFree.title,
+      hint,
+      draft.brand_en,
+      draft.name_en,
+    ].filter((s): s is string => Boolean(s && String(s).trim().length >= 2));
+
+    await this.enrichShadeHintsFromCatalog(unique, freeByBarcode);
+    try {
+      await Promise.race([
+        this.enrichShadeHintsFromImages(unique, freeByBarcode, enrichHints),
+        new Promise<void>((resolve) => setTimeout(resolve, 14_000)),
+      ]);
+    } catch (err) {
+      this.logger.warn(`Shade image enrich skipped: ${(err as Error).message}`);
+    }
+
+    let shadeRows = unique.map((barcode, index) =>
       this.guessShadeRow(
         barcode,
         freeByBarcode.get(barcode),
@@ -415,6 +433,7 @@ export class AiProductService {
         existingByBarcode.get(barcode.toLowerCase())?.matchedShadeName,
       ),
     );
+
     const namingBudgetMs = unique.length >= 10 ? 16_000 : 22_000;
     const named = await this.cursor.verifyBilingualNames(
       {
@@ -444,6 +463,42 @@ export class AiProductService {
     });
     const namesVerified = named.verified && !this.isWeakGpt(polished);
     const matched = await this.matchCategories(polished);
+
+    const genericCount = shadeRows.filter((r) => this.isGenericShadeName(r.name_en)).length;
+    if (genericCount >= 2 && this.cursor.hasApiKey()) {
+      try {
+        const aiShades = await this.cursor.verifyShadeFamilyNames(
+          {
+            brand_en: polished.brand_en,
+            brand_ar: polished.brand_ar,
+            product_en: polished.name_en,
+            hint,
+            shades: shadeRows.map((row) => ({
+              barcode: row.barcode,
+              code: row.code,
+              name_en: row.name_en,
+              db_title: freeByBarcode.get(row.barcode)?.title,
+            })),
+          },
+          resolved.choice,
+          unique.length >= 10 ? 18_000 : 24_000,
+        );
+        if (aiShades?.length) {
+          const byBc = new Map(aiShades.map((s) => [s.barcode.toLowerCase(), s] as const));
+          shadeRows = shadeRows.map((row) => {
+            const hit = byBc.get(row.barcode.toLowerCase());
+            if (!hit || this.isGenericShadeName(hit.name_en)) return row;
+            return {
+              ...row,
+              name_en: hit.name_en,
+              name_ar: hit.name_ar || this.polishMarketArabic(this.guessShadeNameAr(hit.name_en, row.code)),
+            };
+          });
+        }
+      } catch (err) {
+        this.logger.warn(`Shade-family AI naming skipped: ${(err as Error).message}`);
+      }
+    }
 
     const gptByBarcode = new Map<string, GptShadeRow>();
     for (const row of shadeRows) {
@@ -966,6 +1021,22 @@ export class AiProductService {
       hint: hintText,
       shadeFamily: true,
     });
+
+    await this.enrichShadeHintsFromCatalog(barcodes, freeByBarcode);
+    try {
+      await Promise.race([
+        this.enrichShadeHintsFromImages(
+          barcodes,
+          freeByBarcode,
+          [leadFree.brand, leadFree.title, hintText, draft.brand_en, draft.name_en].filter(
+            (s): s is string => Boolean(s && String(s).trim().length >= 2),
+          ),
+        ),
+        new Promise<void>((resolve) => setTimeout(resolve, 12_000)),
+      ]);
+    } catch {
+      /* optional */
+    }
 
     const shadeRows = barcodes.map((barcode, index) =>
       this.guessShadeRow(
@@ -1551,10 +1622,10 @@ export class AiProductService {
       code = this.extractShadeCode(known || title, barcode, index);
     }
     let nameEn = known ? this.extractShadeName(known, code) || known : this.extractShadeName(title, code);
-    if (!nameEn || /^shade\s*\d+$/i.test(nameEn.trim())) {
+    if (!nameEn || this.isGenericShadeName(nameEn)) {
       nameEn = this.inventShadeLabel(blob || title, code, index);
     }
-    if (/^shade\s*\d{3,}$/i.test(nameEn.trim())) {
+    if (this.isGenericShadeName(nameEn)) {
       nameEn = this.inventShadeLabel(blob || title, code, index);
     }
     const nameAr = this.polishMarketArabic(this.guessShadeNameAr(nameEn, code));
@@ -1655,6 +1726,98 @@ export class AiProductService {
     return digits.includes(c);
   }
 
+  private isGenericShadeName(name: string): boolean {
+    const t = String(name ?? "").trim();
+    if (!t) return true;
+    if (/^تدرج\s*\d+$/i.test(t)) return true;
+    if (/^shade\s*\d+$/i.test(t)) return true;
+    if (/^shade\s*\d{1,3}$/i.test(t)) return true;
+    if (/^\d{1,3}$/.test(t)) return true;
+    return false;
+  }
+
+  private catalogHubBase(): string {
+    const raw =
+      process.env.CATALOG_HUB_INTERNAL_URL ??
+      process.env.CATALOG_HUB_URL ??
+      "http://catalog-hub:10000";
+    return raw.replace(/\/$/, "").replace(/\/catalog-hub$/, "");
+  }
+
+  private async lookupCatalogShade(
+    barcode: string,
+  ): Promise<{ shadeName?: string; title?: string; imageUrl?: string } | null> {
+    const stores = ["faces", "miswag", "miraaya", "beautyway", "niceone"];
+    for (const store of stores) {
+      try {
+        const url = `${this.catalogHubBase()}/api/import/search?q=${encodeURIComponent(barcode)}&store=${encodeURIComponent(store)}&stores=${encodeURIComponent(store)}`;
+        const res = await fetch(url, {
+          headers: { Accept: "application/json", "User-Agent": "AlhayaaAiAutofill/2.1" },
+          signal: AbortSignal.timeout(6_500),
+        });
+        if (!res.ok) continue;
+        const body = (await res.json()) as {
+          results?: Array<{
+            shadeName?: string;
+            matchedShadeName?: string;
+            nameEn?: string;
+            nameAr?: string;
+            title?: string;
+            thumb?: string;
+          }>;
+        };
+        const hit = body.results?.[0];
+        if (!hit) continue;
+        const shadeName = String(hit.matchedShadeName || hit.shadeName || "").trim();
+        const title = String(hit.nameEn || hit.nameAr || hit.title || "").trim();
+        const imageUrl = String(hit.thumb || "").trim();
+        if (shadeName || title) {
+          return {
+            shadeName: shadeName || undefined,
+            title: title || undefined,
+            imageUrl: imageUrl.startsWith("http") ? imageUrl : undefined,
+          };
+        }
+      } catch {
+        /* try next store */
+      }
+    }
+    return null;
+  }
+
+  private async enrichShadeHintsFromCatalog(
+    barcodes: string[],
+    freeByBarcode: Map<string, FreeHint>,
+  ): Promise<void> {
+    for (let i = 0; i < barcodes.length; i += 6) {
+      const chunk = barcodes.slice(i, i + 6);
+      await Promise.all(
+        chunk.map(async (barcode) => {
+          const cur = freeByBarcode.get(barcode) ?? {};
+          const title = String(cur.title ?? "").trim();
+          const code = this.extractShadeCode(title, barcode, 0);
+          const name = this.extractShadeName(title, code);
+          if (title.length >= 14 && name && !this.isGenericShadeName(name)) return;
+
+          const hit = await this.lookupCatalogShade(barcode);
+          if (!hit) return;
+
+          const next: FreeHint = { ...cur };
+          if (hit.shadeName) {
+            next.title = hit.title
+              ? `${hit.title} — ${hit.shadeName}`
+              : hit.shadeName;
+          } else if (hit.title && hit.title.length > title.length) {
+            next.title = hit.title;
+          }
+          if (!next.imageUrl && hit.imageUrl) next.imageUrl = hit.imageUrl;
+          next.source = next.source ?? "catalog-hub";
+          freeByBarcode.set(barcode, next);
+        }),
+      );
+    }
+  }
+
   private async enrichShadeHintsFromImages(
     barcodes: string[],
     freeByBarcode: Map<string, FreeHint>,
@@ -1698,6 +1861,11 @@ export class AiProductService {
   private extractShadeName(text: string, code: string): string {
     const quoted = text.match(/["“']([A-Za-z][A-Za-z \-]{2,40})["”']/);
     if (quoted?.[1]) return quoted[1].trim();
+
+    const nrMatch = text.match(
+      /\b(?:no\.?|nr\.?|n[°o]\.?|#)\s*(\d{1,3})\s*[-–:]\s*([A-Za-z][A-Za-z\s\-]{2,36})/i,
+    );
+    if (nrMatch?.[2]) return nrMatch[2].replace(/\s+/g, " ").trim();
 
     const colorTail = text.match(/\b([A-Za-z][A-Za-z\s\-]{2,28}?)\s+(\d{2,3})\s*(?:ml|mL|g|gr|oz)?\s*$/i);
     if (colorTail?.[1] && colorTail?.[2]) {

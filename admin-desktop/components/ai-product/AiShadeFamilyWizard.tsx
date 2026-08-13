@@ -19,7 +19,7 @@ import { AiImageSearchPanel } from "./AiImageSearchPanel";
 import { aiSearchImages, aiShadeFamily, fetchAiModels } from "@/lib/aiProductApi";
 import type { ShadeFamilyResult } from "@/lib/aiProductTypes";
 import { applyAiCategories } from "@/lib/aiCategoryApply";
-import { catalogThumbToImage, enrichShadesFromCatalog, mergeUniqueImages } from "@/lib/aiCatalogEnrich";
+import { catalogThumbToImage, enrichShadesFromCatalog, isGenericShadeName, mergeUniqueImages } from "@/lib/aiCatalogEnrich";
 import { matchBrandIdLocal } from "@/lib/catalogBrandMatch";
 import { lookupInventoryBarcodes } from "@/lib/inventorySync";
 import { defaultSku, saveAiProduct } from "@/lib/aiProductSave";
@@ -193,6 +193,32 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
         colorHex: s.colorHex || "#CCCCCC",
         imageUrl: null,
       }));
+
+      try {
+        const catalogMap = await enrichShadesFromCatalog(barcodes);
+        for (let i = 0; i < rows.length; i++) {
+          const hit = catalogMap.get(rows[i].barcode);
+          if (!hit) continue;
+          const shadeName = hit.matchedShadeName || hit.shadeName;
+          if (shadeName && isGenericShadeName(rows[i].name)) {
+            rows[i] = { ...rows[i], name: shadeName };
+          }
+          const img = catalogThumbToImage(hit);
+          if (img) {
+            rows[i] = { ...rows[i], imageUrl: rows[i].imageUrl || img.url };
+            setShadeImages((prev) => ({
+              ...prev,
+              [rows[i].barcode]: mergeUniqueImages(
+                (prev[rows[i].barcode] ?? []).map((url) => ({ url, thumbUrl: url })),
+                [img],
+              ).map((x) => x.url),
+            }));
+          }
+        }
+      } catch {
+        /* catalog optional */
+      }
+
       setShades(rows);
       const pos: Record<string, { price: number; stock: number }> = {};
       let totalStock = 0;
@@ -218,7 +244,7 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
             if (row.barcode !== bc) return row;
             return {
               ...row,
-              name: shadeName || row.name,
+              name: shadeName && isGenericShadeName(row.name) ? shadeName : row.name,
               imageUrl: row.imageUrl || img?.url || null,
             };
           }),
@@ -436,6 +462,23 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
               </Form.Item>
             </div>
             <strong>التدرجات ({shades.length})</strong>
+            <Button
+              size="small"
+              onClick={async () => {
+                const map = await enrichShadesFromCatalog(barcodes);
+                setShades((prev) =>
+                  prev.map((row) => {
+                    const hit = map.get(row.barcode);
+                    const shadeName = hit?.matchedShadeName || hit?.shadeName;
+                    if (!shadeName) return row;
+                    return { ...row, name: isGenericShadeName(row.name) ? shadeName : row.name };
+                  }),
+                );
+                message.success("تم تحديث الأسماء من المتاجر");
+              }}
+            >
+              إثراء الأسماء من المتاجر
+            </Button>
             {shades.map((s, i) => (
               <div key={s.barcode} className="ai-shade-row">
                 <div className="ai-swatch" style={{ background: s.colorHex }} />

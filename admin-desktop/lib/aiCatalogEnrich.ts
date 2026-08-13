@@ -1,6 +1,15 @@
 import { searchCatalogByBarcode, type CatalogImportOption } from "./catalogImport";
 import type { AiAutofillImage } from "./aiProductTypes";
 
+export function isGenericShadeName(name: string): boolean {
+  const t = String(name ?? "").trim();
+  if (!t) return true;
+  if (/^تدرج\s*\d+$/i.test(t)) return true;
+  if (/^shade\s*\d+$/i.test(t)) return true;
+  if (/^\d{1,3}$/.test(t)) return true;
+  return false;
+}
+
 export async function enrichBarcodeFromCatalog(
   barcode: string,
   stores: string[] = ["miswag", "faces"],
@@ -17,9 +26,10 @@ export async function enrichShadesFromCatalog(
   onPartial?: (barcode: string, hit: CatalogImportOption) => void,
 ): Promise<Map<string, CatalogImportOption>> {
   const map = new Map<string, CatalogImportOption>();
+  const stores = ["faces", "miswag", "miraaya", "beautyway", "niceone"];
   await Promise.all(
     barcodes.map(async (barcode) => {
-      const hit = await enrichBarcodeFromCatalog(barcode);
+      const hit = await enrichBarcodeFromCatalog(barcode, stores);
       if (!hit) return;
       map.set(barcode, hit);
       onPartial?.(barcode, hit);
