@@ -14,6 +14,7 @@ import '../../core/utils/brand_match.dart';
 import '../../core/utils/daily_progress_store.dart';
 import '../../core/utils/helpers.dart';
 import '../../core/utils/product_naming.dart';
+import '../../core/utils/shade_family_fallback.dart';
 import '../../core/utils/shade_sort.dart';
 import '../../core/utils/store_image_enrich.dart';
 import '../../models/ai_autofill.dart';
@@ -166,17 +167,32 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
       final catsFuture = products.categories();
       final invFuture = products.lookupBarcodes(widget.barcodes);
 
-      final fill = await ai.shadeFamily(
-        barcodes: widget.barcodes,
-        hint: widget.hint,
-        model: widget.modelId,
-      );
+      ShadeFamilyResult fill;
+      var usedLocalFallback = false;
+      try {
+        fill = await ai.shadeFamily(
+          barcodes: widget.barcodes,
+          hint: widget.hint,
+          model: widget.modelId,
+        );
+      } catch (e) {
+        usedLocalFallback = true;
+        fill = buildLocalShadeFamilyFallback(
+          barcodes: widget.barcodes,
+          hint: widget.hint,
+          existsNames: widget.existsNames,
+        );
+      }
 
       _brands = await brandsFuture;
       _categories = await catsFuture;
       _inv = await invFuture;
       _applyPos();
       _applyResult(fill);
+
+      if (usedLocalFallback && mounted) {
+        _snack('تعذّر التعرف التلقائي — يمكنك المتابعة وتعديل الأسماء والصور يدوياً', short: false);
+      }
 
       try {
         _gallery = await enrichImagesFromStores(
@@ -200,6 +216,37 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
           _brandEn.text = matched.nameEn ?? matched.name ?? matched.displayName;
         }
       }
+    } catch (e) {
+      _error = e.toString().replaceFirst('Exception: ', '');
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+        if (_error == null && _shades.isNotEmpty) {
+          unawaited(_prefetchShadeImages());
+        }
+      }
+    }
+  }
+
+  Future<void> _continueWithLocalFallback() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final products = ref.read(productRepositoryProvider);
+      final fill = buildLocalShadeFamilyFallback(
+        barcodes: widget.barcodes,
+        hint: widget.hint,
+        existsNames: widget.existsNames,
+      );
+      _brands = await products.brands();
+      _categories = await products.categories();
+      _inv = await products.lookupBarcodes(widget.barcodes);
+      _applyPos();
+      _applyResult(fill);
+      await _applyCategoryFromProduct(fill);
+      _snack('متابعة يدوية — عدّل الأسماء والصور ثم احفظ', short: false);
     } catch (e) {
       _error = e.toString().replaceFirst('Exception: ', '');
     } finally {
@@ -303,8 +350,8 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
   }
 
   Future<void> _prefetchShadeImages() async {
-    for (var i = 0; i < _shades.length; i += 3) {
-      final end = (i + 3 < _shades.length) ? i + 3 : _shades.length;
+    for (var i = 0; i < _shades.length; i += 2) {
+      final end = (i + 2 < _shades.length) ? i + 2 : _shades.length;
       await Future.wait(List.generate(end - i, (j) => _searchShadeImages(i + j)));
       if (!mounted) return;
     }
@@ -991,17 +1038,25 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
         ],
       ),
       body: _loading
-          ? const Center(
+          ? Center(
               child: Padding(
-                padding: EdgeInsets.all(32),
+                padding: const EdgeInsets.all(32),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('جاري تأكيد اسم الخط بـ Composer 2.5…', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w600)),
-                    SizedBox(height: 6),
-                    Text('الاسم باللغتين فقط — التدرجات من الباركود', textAlign: TextAlign.center, style: TextStyle(color: AppTheme.muted)),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text(
+                      'جاري التعرف على ${widget.barcodes.length} تدرج…',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'قد يستغرق دقيقة — يمكنك المتابعة يدوياً إذا تأخر',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: AppTheme.muted),
+                    ),
                   ],
                 ),
               ),
@@ -1018,6 +1073,11 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
                         Text(_error!, textAlign: TextAlign.center),
                         const SizedBox(height: 16),
                         FilledButton(onPressed: _bootstrap, child: const Text('إعادة المحاولة')),
+                        const SizedBox(height: 8),
+                        OutlinedButton(
+                          onPressed: _continueWithLocalFallback,
+                          child: const Text('متابعة يدوياً'),
+                        ),
                         if (isSessionExpiredError(_error!)) ...[
                           const SizedBox(height: 10),
                           TextButton(

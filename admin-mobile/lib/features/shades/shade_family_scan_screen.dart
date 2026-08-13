@@ -53,6 +53,12 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
   }
 
   @override
+  void deactivate() {
+    _scannerKey.currentState?.pause();
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _manualController.dispose();
@@ -153,7 +159,7 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
       for (final s in _scanned)
         if (s.existsName != null && s.existsName!.trim().isNotEmpty) s.barcode: s.existsName!.trim(),
     };
-    await context.push(
+    await context.pushReplacement(
       '/shade-family/wizard',
       extra: {
         'barcodes': barcodes,
@@ -162,11 +168,6 @@ class _ShadeFamilyScanScreenState extends ConsumerState<ShadeFamilyScanScreen>
         if (existsNames.isNotEmpty) 'existsNames': existsNames,
       },
     );
-    if (!mounted) return;
-    setState(() => _cameraActive = true);
-    if (!_showManual) {
-      await _scannerKey.currentState?.resume();
-    }
   }
 
   @override
