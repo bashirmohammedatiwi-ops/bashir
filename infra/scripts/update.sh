@@ -1,11 +1,56 @@
 #!/usr/bin/env bash
 # Full production update — single command for the VPS.
+# Usage:
+#   cd ~/alhayaa && bash pull.sh
+#   cd infra && ./scripts/update.sh
+#   ./scripts/update.sh --full      # force rebuild API + admin + store
+#   ./scripts/update.sh --api-only  # API/docker only (no admin/store)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 INFRA_ROOT="$ROOT"
 cd "$ROOT"
 REPO_ROOT="$(cd "$ROOT/.." && pwd)"
+
+FORCE_FULL_UPDATE=0
+API_ONLY=0
+SKIP_GIT=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --full)
+      FORCE_FULL_UPDATE=1
+      shift
+      ;;
+    --api-only)
+      API_ONLY=1
+      shift
+      ;;
+    --no-pull)
+      SKIP_GIT=1
+      shift
+      ;;
+    -h | --help)
+      cat <<'EOF'
+Alhayaa VPS update
+
+  pull.sh                 Sync GitHub + smart rebuild (recommended)
+  pull.sh --full          Force rebuild API + admin + store
+  pull.sh --api-only      API + migrations only (skip admin/store)
+  pull.sh --no-pull       Skip git fetch (rebuild from current tree)
+
+Examples:
+  cd ~/alhayaa && bash pull.sh
+  cd ~/alhayaa/infra && ./scripts/update.sh
+EOF
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1 (try --help)"
+      exit 1
+      ;;
+  esac
+done
 
 if [[ ! -f .env ]]; then
   echo "Missing infra/.env — copy .env.example and edit values."
@@ -20,28 +65,6 @@ set +a
 COMPOSE="docker compose -f docker-compose.prod.yml"
 # shellcheck source=lib/deploy-common.sh
 source "$ROOT/scripts/lib/deploy-common.sh"
-
-sync_repo() {
-  if [[ ! -d "$REPO_ROOT/.git" ]]; then
-    echo "==> Not a git repo — skipping pull"
-    return 0
-  fi
-
-  echo "==> Pull latest code..."
-  git -C "$REPO_ROOT" fetch origin main
-
-  if ! git -C "$REPO_ROOT" diff --quiet HEAD origin/main -- infra/scripts 2>/dev/null \
-    || ! git -C "$REPO_ROOT" diff --quiet -- infra/scripts infra/nginx 2>/dev/null; then
-    echo "    Resetting infra/scripts + infra/nginx to origin/main..."
-    git -C "$REPO_ROOT" checkout origin/main -- infra/scripts infra/nginx 2>/dev/null || true
-  fi
-
-  if ! git -C "$REPO_ROOT" pull --ff-only origin main; then
-    echo "    Pull blocked — hard reset infra tracking files and retry..."
-    git -C "$REPO_ROOT" checkout origin/main -- infra/scripts infra/nginx 2>/dev/null || true
-    git -C "$REPO_ROOT" pull --ff-only origin main
-  fi
-}
 
 ensure_deploy_scripts() {
   if [[ ! -f "$ROOT/scripts/sync-catalog-hub-data.sh" ]]; then
@@ -91,8 +114,18 @@ resolve_stale_compose_containers() {
   done
 }
 
-echo "==> Alhayaa full update"
+run_migrations() {
+  echo "==> Apply database migrations..."
+  if ! $COMPOSE exec -T api npx prisma migrate deploy; then
+    echo "==> Migration failed — syncing PostgreSQL password and retrying..."
+    ./scripts/sync-postgres-password.sh
+    $COMPOSE exec -T api npx prisma migrate deploy
+  fi
+}
+
+echo "==> Alhayaa update"
 echo "    Domain: ${DOMAIN:-localhost}"
+echo "    Repo:   $REPO_ROOT"
 
 if [[ -f .env ]]; then
   if grep -q '^SEED_DEMO=1' .env 2>/dev/null; then
@@ -102,16 +135,25 @@ if [[ -f .env ]]; then
   if ! grep -q '^SEED_DEMO=' .env 2>/dev/null; then
     echo 'SEED_DEMO=0' >>.env
   fi
-  if grep -q '^RUN_SEED=1' .env 2>/dev/null; then
-    echo "==> NOTE: RUN_SEED=1 is set — will only ensure admin user (no demo data)."
-    echo "    Set RUN_SEED=0 in infra/.env after first boot if you prefer."
-  fi
 fi
 
-sync_repo
+if [[ "$SKIP_GIT" != "1" ]]; then
+  sync_repo_from_github "$REPO_ROOT"
+fi
+
+load_deploy_state
+
+if [[ "$API_ONLY" == "1" ]]; then
+  NEED_API_REBUILD=1
+  NEED_ADMIN_REBUILD=0
+  NEED_STORE_REBUILD=0
+  echo "==> API-only mode"
+else
+  detect_deploy_targets
+  ensure_static_outputs_exist
+fi
 
 ensure_deploy_scripts
-
 chmod +x scripts/*.sh scripts/lib/*.sh 2>/dev/null || true
 
 ensure_env_production_defaults
@@ -121,11 +163,15 @@ source .env
 set +a
 
 render_nginx
-
 resolve_stale_compose_containers
 
-echo "==> Rebuild API + Catalog Hub..."
-$COMPOSE up -d --build --remove-orphans api catalog-hub postgres redis
+if [[ "${NEED_API_REBUILD:-1}" == "1" ]]; then
+  echo "==> Rebuild API + Catalog Hub..."
+  $COMPOSE up -d --build --remove-orphans api catalog-hub postgres redis
+else
+  echo "==> Skip API image rebuild — ensure containers are up..."
+  $COMPOSE up -d postgres redis api catalog-hub
+fi
 
 if ! ensure_catalog_hub_ready; then
   echo "WARN: catalog-hub not healthy yet — check: docker compose -f docker-compose.prod.yml logs catalog-hub --tail=50"
@@ -134,12 +180,7 @@ fi
 echo "==> Sync catalog-hub seed data into live volume..."
 ./scripts/sync-catalog-hub-data.sh || true
 
-echo "==> Apply database migrations..."
-if ! $COMPOSE exec -T api npx prisma migrate deploy; then
-  echo "==> Migration failed — syncing PostgreSQL password and retrying..."
-  ./scripts/sync-postgres-password.sh
-  $COMPOSE exec -T api npx prisma migrate deploy
-fi
+run_migrations
 
 if ! ensure_api_ready; then
   echo "==> API not healthy — syncing PostgreSQL password..."
@@ -150,14 +191,26 @@ if ! ensure_api_ready; then
   }
 fi
 
-echo "==> Link skin guide products (8 per concern)..."
-$COMPOSE exec -T api npm run link:skin-concerns || true
+if [[ "$API_ONLY" != "1" ]]; then
+  echo "==> Link skin guide products (8 per concern)..."
+  $COMPOSE exec -T api npm run link:skin-concerns || true
 
-echo "==> Build customer web store (atomic)..."
-build_store_web_panel
+  if [[ "${NEED_STORE_REBUILD:-1}" == "1" ]]; then
+    echo "==> Build customer web store (atomic)..."
+    build_store_web_panel
+  else
+    echo "==> Skip store build (unchanged)"
+    ensure_store_static_permissions || build_store_web_panel
+  fi
 
-echo "==> Build admin web panel (atomic)..."
-build_admin_web_panel
+  if [[ "${NEED_ADMIN_REBUILD:-1}" == "1" ]]; then
+    echo "==> Build admin web panel (atomic)..."
+    build_admin_web_panel
+  else
+    echo "==> Skip admin build (unchanged)"
+    ensure_admin_static_permissions || build_admin_web_panel
+  fi
+fi
 
 echo "==> Enable HTTPS + reload Nginx..."
 maybe_enable_https
@@ -178,6 +231,10 @@ echo "==> Free disk space (Docker cleanup)..."
 chmod +x scripts/docker-cleanup.sh
 ./scripts/docker-cleanup.sh
 
+save_deploy_state
+
 echo ""
 echo "Update complete."
 print_stack_urls
+echo ""
+echo "Tip: use 'cd ~/alhayaa && bash pull.sh' anytime for a safe full sync."

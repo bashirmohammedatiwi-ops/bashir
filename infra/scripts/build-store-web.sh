@@ -62,7 +62,7 @@ verify_store_static() {
 }
 
 run_store_npm_build() {
-  local install_cmd build_cmd
+  local install_cmd build_cmd stamp="$STORE_ROOT/node_modules/.install-stamp"
   if [[ -f "$STORE_ROOT/package-lock.json" ]]; then
     install_cmd="npm ci --legacy-peer-deps"
   else
@@ -70,10 +70,21 @@ run_store_npm_build() {
   fi
   build_cmd="NEXT_PUBLIC_API_BASE=\"$API_BASE\" NEXT_PUBLIC_MEDIA_BASE=\"$MEDIA_BASE\" STORE_BUILD_API_BASE=\"$BUILD_API\" NEXT_PUBLIC_BUILD_SHA=\"$GIT_SHA\" NEXT_PUBLIC_BUILD_TIME=\"$BUILD_TIME\" npm run build"
 
-  if command -v npm >/dev/null 2>&1; then
+  run_host_npm() {
     cd "$STORE_ROOT"
-    eval "$install_cmd"
+    if [[ ! -d node_modules ]] || [[ ! -f "$stamp" ]] || { [[ -f package-lock.json ]] && [[ package-lock.json -nt "$stamp" ]]; }; then
+      echo "==> npm install (web-store)..."
+      eval "$install_cmd"
+      mkdir -p node_modules
+      touch "$stamp"
+    else
+      echo "==> node_modules up to date — skip npm ci"
+    fi
     eval "$build_cmd"
+  }
+
+  if command -v npm >/dev/null 2>&1; then
+    run_host_npm
     return 0
   fi
 

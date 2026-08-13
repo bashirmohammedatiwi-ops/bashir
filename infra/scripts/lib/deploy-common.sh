@@ -339,3 +339,140 @@ detect_verify_base() {
 
   echo "http://${domain}"
 }
+
+# --- Git sync + smart deploy detection ---
+
+sync_repo_from_github() {
+  local repo="${1:-${REPO_ROOT:-}}"
+  if [[ -z "$repo" || ! -d "$repo/.git" ]]; then
+    echo "==> Not a git repo — skipping GitHub sync"
+    return 0
+  fi
+
+  echo "==> Sync from GitHub (origin/main)..."
+  local before remote
+  before="$(git -C "$repo" rev-parse --short HEAD 2>/dev/null || echo none)"
+  git -C "$repo" fetch origin main
+  remote="$(git -C "$repo" rev-parse --short origin/main 2>/dev/null || echo none)"
+  echo "    before: $before"
+  echo "    remote: $remote"
+
+  if [[ "$(git -C "$repo" rev-parse HEAD)" != "$(git -C "$repo" rev-parse origin/main)" ]]; then
+    echo "==> Reset hard to origin/main (keeps infra/.env — gitignored)"
+    git -C "$repo" reset --hard origin/main
+  else
+    echo "==> Already on origin/main"
+  fi
+
+  git -C "$repo" clean -fd \
+    -- admin-desktop/.next admin-desktop/out \
+    web-store/.next web-store/out \
+    2>/dev/null || true
+
+  echo "==> $(git -C "$repo" log -1 --oneline)"
+}
+
+deploy_state_file() {
+  echo "$(_infra_root)/.deploy-state"
+}
+
+load_deploy_state() {
+  LAST_DEPLOY_SHA=""
+  local f
+  f="$(deploy_state_file)"
+  if [[ -f "$f" ]]; then
+    # shellcheck disable=SC1090
+    source "$f"
+    LAST_DEPLOY_SHA="${DEPLOY_SHA:-}"
+  fi
+}
+
+save_deploy_state() {
+  local repo="${REPO_ROOT:-}"
+  local sha time f
+  f="$(deploy_state_file)"
+  sha="$(git -C "$repo" rev-parse HEAD 2>/dev/null || echo unknown)"
+  time="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+  cat >"$f" <<EOF
+DEPLOY_SHA=$sha
+DEPLOY_TIME=$time
+EOF
+  echo "==> Deploy state saved ($sha @ $time)"
+}
+
+# Sets NEED_API_REBUILD, NEED_ADMIN_REBUILD, NEED_STORE_REBUILD (0|1)
+detect_deploy_targets() {
+  local repo="${REPO_ROOT:-}"
+  local prev="${LAST_DEPLOY_SHA:-}"
+  local cur changed force="${FORCE_FULL_UPDATE:-0}"
+
+  NEED_API_REBUILD=1
+  NEED_ADMIN_REBUILD=1
+  NEED_STORE_REBUILD=1
+
+  if [[ "$force" == "1" ]]; then
+    echo "==> Full rebuild (--full)"
+    return 0
+  fi
+
+  cur="$(git -C "$repo" rev-parse HEAD 2>/dev/null || echo "")"
+  if [[ -z "$cur" ]]; then
+    return 0
+  fi
+
+  if [[ -z "$prev" ]] || ! git -C "$repo" cat-file -e "${prev}^{commit}" 2>/dev/null; then
+    echo "==> First deploy or unknown previous SHA — full rebuild"
+    return 0
+  fi
+
+  if [[ "$prev" == "$cur" ]]; then
+    NEED_API_REBUILD=0
+    NEED_ADMIN_REBUILD=0
+    NEED_STORE_REBUILD=0
+    echo "==> Same commit as last deploy ($cur) — skip rebuilds unless static dirs missing"
+    return 0
+  fi
+
+  changed="$(git -C "$repo" diff --name-only "$prev" "$cur" 2>/dev/null || true)"
+  NEED_API_REBUILD=0
+  NEED_ADMIN_REBUILD=0
+  NEED_STORE_REBUILD=0
+
+  if echo "$changed" | grep -qE '^(backend|catalog-hub)/'; then
+    NEED_API_REBUILD=1
+  fi
+  if echo "$changed" | grep -qE '^infra/(docker-compose\.prod\.yml|docker-compose\.yml|nginx)/'; then
+    NEED_API_REBUILD=1
+  fi
+  if echo "$changed" | grep -qE '^admin-desktop/'; then
+    NEED_ADMIN_REBUILD=1
+  fi
+  if echo "$changed" | grep -qE '^web-store/'; then
+    NEED_STORE_REBUILD=1
+  fi
+  if echo "$changed" | grep -qE '^infra/scripts/(build-admin|build-store|lib/deploy-common)'; then
+    NEED_ADMIN_REBUILD=1
+    NEED_STORE_REBUILD=1
+  fi
+
+  if [[ "$NEED_API_REBUILD$NEED_ADMIN_REBUILD$NEED_STORE_REBUILD" == "000" ]]; then
+    echo "==> No API/admin/store source changes since last deploy — skip image/static rebuilds"
+  else
+    echo "==> Smart rebuild since ${prev:0:7}:"
+    echo "    API:   $([[ "$NEED_API_REBUILD" == 1 ]] && echo rebuild || echo skip)"
+    echo "    Admin: $([[ "$NEED_ADMIN_REBUILD" == 1 ]] && echo rebuild || echo skip)"
+    echo "    Store: $([[ "$NEED_STORE_REBUILD" == 1 ]] && echo rebuild || echo skip)"
+  fi
+}
+
+ensure_static_outputs_exist() {
+  local infra="$(_infra_root)"
+  if [[ "${NEED_ADMIN_REBUILD:-1}" == "0" ]] && [[ ! -f "$infra/admin-static/login/index.html" ]]; then
+    echo "==> admin-static missing — forcing admin rebuild"
+    NEED_ADMIN_REBUILD=1
+  fi
+  if [[ "${NEED_STORE_REBUILD:-1}" == "0" ]] && [[ ! -f "$infra/store-static/privacy/index.html" ]]; then
+    echo "==> store-static missing — forcing store rebuild"
+    NEED_STORE_REBUILD=1
+  fi
+}

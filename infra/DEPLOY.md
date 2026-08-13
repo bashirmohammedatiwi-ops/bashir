@@ -42,18 +42,50 @@ Internet → Nginx (:443)
 PostgreSQL + Redis (شبكة داخلية فقط — بدون منافذ عامة)
 ```
 
+## التحديث السريع (أمر واحد)
+
+من جذر المشروع على VPS:
+
+```bash
+cd ~/alhayaa
+bash pull.sh
+```
+
+هذا الأمر يقوم تلقائياً بـ:
+1. **مزامنة GitHub** (`git fetch` + `reset --hard origin/main`) — بدون تعارضات `git pull`
+2. **إعادة بناء ذكية** — يعيد بناء API أو لوحة التحكم أو المتجر فقط إذا تغيّر كودها
+3. **بناء لوحة التحكم** تلقائياً (لا حاجة لـ `build-admin-web.sh` منفصل)
+4. **Migrations** + **Nginx** + **تحقق** + **تنظيف Docker**
+
+### خيارات إضافية
+
+```bash
+bash pull.sh --full       # إعادة بناء كل شيء (API + admin + store)
+bash pull.sh --api-only   # API فقط — بدون لوحة التحكم
+bash pull.sh --help
+```
+
+### إذا فشل التحديث
+
+```bash
+cd ~/alhayaa/infra
+./scripts/recover-deploy.sh
+```
+
+> **ملاحظة:** `infra/.env` محفوظ (gitignored) — لن يُمسح عند `reset --hard`.
+
 ## لوحة التحكم على الويب
 
-عند النشر عبر `deploy.sh` يتم بناء لوحة التحكم تلقائياً وتقديمها على:
+عند النشر عبر `deploy.sh` أو `pull.sh` يتم بناء لوحة التحكم تلقائياً وتقديمها على:
 
-`https://YOUR_DOMAIN/` (مثال: `/login/` و `/dashboard/`)
+`https://YOUR_DOMAIN/admin/login/`
 
-لإعادة البناء يدوياً:
+لإعادة البناء يدوياً (نادراً):
 
 ```bash
 cd infra
 ./scripts/build-admin-web.sh
-docker compose -f docker-compose.prod.yml up -d nginx
+docker compose -f docker-compose.prod.yml up -d --force-recreate nginx
 ```
 
 للتطوير المحلي بدون Electron:
@@ -82,10 +114,11 @@ npm run dev:next
 ## أوامر مفيدة
 
 ```bash
-cd infra
-chmod +x scripts/*.sh
-./scripts/update.sh          # تحديث كامل — أمر واحد فقط
-./scripts/verify.sh          # تحقق بعد التحديث
+cd ~/alhayaa && bash pull.sh          # التحديث الموصى به — أمر واحد
+cd infra && ./scripts/update.sh      # نفس pull.sh من مجلد infra
+./scripts/update.sh --full           # إعادة بناء كاملة
+./scripts/verify.sh                  # تحقق بعد التحديث
+./scripts/recover-deploy.sh          # إصلاح git + تحديث كامل
 ./scripts/sync-postgres-password.sh  # إصلاح P1000 إذا تغيّرت كلمة سر DB
 docker compose -f docker-compose.prod.yml logs -f api
 docker compose -f docker-compose.prod.yml exec api npx prisma migrate deploy
@@ -123,8 +156,9 @@ Copy-Item .env.example .env
 | Nginx لا يبدأ بعد SSL | تأكد أن `DOMAIN` في `.env` يطابق DNS وأن certbot نجح |
 | `migration failed` | `docker compose -f docker-compose.prod.yml logs api` |
 | الصور لا تظهر | تحقق من `MEDIA_PUBLIC_BASE_URL=https://DOMAIN/media` |
-| Admin لا يتصل / 403 | `./scripts/update.sh` — يصلح الصلاحيات ويعيد بناء اللوحة وnginx تلقائياً |
-| لوحة الويب فارغة أو 403 | `./scripts/update.sh` أو `./scripts/build-admin-web.sh` ثم `docker compose -f docker-compose.prod.yml up -d --force-recreate nginx` |
+| Admin لا يتصل / 403 | `cd ~/alhayaa && bash pull.sh` — يصلح الصلاحيات ويعيد بناء اللوحة وnginx تلقائياً |
+| `git pull` يفشل | استخدم `bash pull.sh` بدلاً منه — يعمل `reset --hard` بأمان |
+| لوحة الويب فارغة أو 403 | `bash pull.sh` أو `cd infra && ./scripts/recover-deploy.sh` |
 | بطء الصور | تأكد أن الطلبات تذهب إلى `/media/` وليس عبر API |
 
 ## النسخ الاحتياطي

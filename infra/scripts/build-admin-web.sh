@@ -22,11 +22,6 @@ fi
 
 API_BASE="${NEXT_PUBLIC_API_BASE:-/api/v1}"
 MEDIA_BASE="${NEXT_PUBLIC_MEDIA_BASE:-/media}"
-VPS_ORIGIN="${API_BASE%/api/v1}"
-VPS_ORIGIN="${VPS_ORIGIN%/api}"
-if [[ "$API_BASE" == /* ]]; then
-  VPS_ORIGIN="(same host as admin)"
-fi
 CATALOG_HUB_URL="${NEXT_PUBLIC_CATALOG_HUB_URL:-/catalog-hub}"
 
 GIT_SHA="$(git -C "$ADMIN_ROOT/.." rev-parse --short HEAD 2>/dev/null || echo "unknown")"
@@ -38,25 +33,67 @@ echo "    API:    $API_BASE"
 echo "    Media:  $MEDIA_BASE"
 echo "    Catalog: $CATALOG_HUB_URL"
 
-cd "$ADMIN_ROOT"
+should_npm_install() {
+  local lock="$ADMIN_ROOT/package-lock.json"
+  local stamp="$ADMIN_ROOT/node_modules/.install-stamp"
+  [[ ! -d "$ADMIN_ROOT/node_modules" ]] && return 0
+  [[ ! -f "$stamp" ]] && return 0
+  [[ -f "$lock" && "$lock" -nt "$stamp" ]] && return 0
+  return 1
+}
 
-if [[ -f package-lock.json ]]; then
-  npm ci --legacy-peer-deps
-else
-  npm install --legacy-peer-deps
+run_admin_npm_build() {
+  local install_cmd build_cmd
+  if [[ -f "$ADMIN_ROOT/package-lock.json" ]]; then
+    install_cmd="npm ci --legacy-peer-deps"
+  else
+    install_cmd="npm install --legacy-peer-deps"
+  fi
+  build_cmd="NEXT_PUBLIC_API_BASE=\"$API_BASE\" NEXT_PUBLIC_MEDIA_BASE=\"$MEDIA_BASE\" NEXT_PUBLIC_CATALOG_HUB_URL=\"$CATALOG_HUB_URL\" NEXT_PUBLIC_BASE_PATH=\"/admin\" NEXT_PUBLIC_BUILD_SHA=\"$GIT_SHA\" NEXT_PUBLIC_BUILD_TIME=\"$BUILD_TIME\" npm run build:web"
+
+  if command -v npm >/dev/null 2>&1; then
+    cd "$ADMIN_ROOT"
+    if should_npm_install; then
+      echo "==> npm install (admin-desktop)..."
+      eval "$install_cmd"
+      mkdir -p node_modules
+      touch node_modules/.install-stamp
+    else
+      echo "==> node_modules up to date — skip npm ci"
+    fi
+    eval "$build_cmd"
+    return 0
+  fi
+
+  echo "==> npm not found on host — building admin with node:20-alpine Docker image"
+  if ! command -v docker >/dev/null 2>&1; then
+    echo "ERROR: neither npm nor docker available — install Node.js 20+ or Docker on the VPS"
+    exit 1
+  fi
+
+  docker run --rm \
+    -v "$ADMIN_ROOT:/app" \
+    -w /app \
+    -e NEXT_PUBLIC_API_BASE="$API_BASE" \
+    -e NEXT_PUBLIC_MEDIA_BASE="$MEDIA_BASE" \
+    -e NEXT_PUBLIC_CATALOG_HUB_URL="$CATALOG_HUB_URL" \
+    -e NEXT_PUBLIC_BASE_PATH="/admin" \
+    -e NEXT_PUBLIC_BUILD_SHA="$GIT_SHA" \
+    -e NEXT_PUBLIC_BUILD_TIME="$BUILD_TIME" \
+    node:20-alpine \
+    sh -c "$install_cmd && $build_cmd"
+}
+
+run_admin_npm_build
+
+if [[ ! -d "$ADMIN_ROOT/out" ]]; then
+  echo "ERROR: Next.js export did not produce admin-desktop/out"
+  exit 1
 fi
-
-NEXT_PUBLIC_API_BASE="$API_BASE" \
-NEXT_PUBLIC_MEDIA_BASE="$MEDIA_BASE" \
-NEXT_PUBLIC_CATALOG_HUB_URL="$CATALOG_HUB_URL" \
-NEXT_PUBLIC_BASE_PATH="/admin" \
-NEXT_PUBLIC_BUILD_SHA="$GIT_SHA" \
-NEXT_PUBLIC_BUILD_TIME="$BUILD_TIME" \
-npm run build:web
 
 rm -rf "$STAGING_DIR"
 mkdir -p "$STAGING_DIR"
-cp -r out/. "$STAGING_DIR/"
+cp -r "$ADMIN_ROOT/out/." "$STAGING_DIR/"
 chmod -R a+rX "$STAGING_DIR"
 
 verify_admin_static() {
@@ -80,7 +117,6 @@ if ! verify_admin_static "$STAGING_DIR"; then
   exit 1
 fi
 
-# Atomic swap — never leave admin-static empty if staging is valid
 if [[ -d "$OUT_DIR" ]]; then
   rm -rf "$BACKUP_DIR"
   mv "$OUT_DIR" "$BACKUP_DIR"
