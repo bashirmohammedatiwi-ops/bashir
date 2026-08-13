@@ -16,10 +16,12 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiImageSearchGrid } from "./AiImageSearchGrid";
 import { AiImageSearchPanel } from "./AiImageSearchPanel";
+import { AiProgressOverlay, type AiProgressState } from "./AiProgressOverlay";
 import { aiSearchImages, aiShadeFamily, fetchAiModels } from "@/lib/aiProductApi";
 import type { ShadeFamilyResult } from "@/lib/aiProductTypes";
 import { applyAiCategories } from "@/lib/aiCategoryApply";
 import { catalogThumbToImage, enrichShadesFromCatalog, isGenericShadeName, mergeUniqueImages } from "@/lib/aiCatalogEnrich";
+import { formatAiError, startSimulatedProgress } from "@/lib/aiProgress";
 import { matchBrandIdLocal } from "@/lib/catalogBrandMatch";
 import { lookupInventoryBarcodes } from "@/lib/inventorySync";
 import { defaultSku, saveAiProduct } from "@/lib/aiProductSave";
@@ -43,6 +45,22 @@ type Props = {
 };
 
 const STEPS = ["الباركودات", "التسمية", "صور التدرجات", "صور المنتج", "التصنيف", "الحفظ"];
+
+const IDENTIFY_STAGES = [
+  "تحليل الباركودات",
+  "التعرف بالذكاء الاصطناعي",
+  "إثراء من المتاجر",
+  "تطبيق التصنيفات",
+];
+
+const EMPTY_PROGRESS: AiProgressState = {
+  open: false,
+  title: "",
+  stageLabel: "",
+  percent: 0,
+  stageIndex: 0,
+  totalStages: IDENTIFY_STAGES.length,
+};
 
 function parseBarcodes(raw: string): string[] {
   const seen = new Set<string>();
@@ -81,6 +99,8 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
   const [shadeImages, setShadeImages] = useState<Record<string, string[]>>({});
   const [loadingShadeImages, setLoadingShadeImages] = useState(false);
   const [invMap, setInvMap] = useState<Record<string, { price: number; stock: number }>>({});
+  const [identifying, setIdentifying] = useState(false);
+  const [progress, setProgress] = useState<AiProgressState>(EMPTY_PROGRESS);
 
   const barcodes = useMemo(() => parseBarcodes(barcodesRaw), [barcodesRaw]);
 
@@ -149,6 +169,8 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
     setActiveShadeIdx(0);
     setShadeImages({});
     setInvMap({});
+    setIdentifying(false);
+    setProgress(EMPTY_PROGRESS);
   }, []);
 
   useEffect(() => {
@@ -160,111 +182,151 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
     setModelId(modelsQ.data.default);
   }, [modelsQ.data, modelId]);
 
-  const familyMut = useMutation({
-    mutationFn: async () => {
-      if (barcodes.length < 2) throw new Error("أدخل باركودين على الأقل للتدرجات");
-      const fill = await aiShadeFamily({ barcodes, hint, model: modelId });
-      const inv = await lookupInventoryBarcodes(barcodes);
-      return { fill, inv };
-    },
-    onSuccess: async ({ fill, inv }) => {
-      setResult(fill);
-      setNameAr(fill.nameAr);
-      setNameEn(fill.nameEn);
-      setBrandAr(fill.brandAr);
-      setBrandEn(fill.brandEn);
-      setDescAr(fill.descriptionAr);
-      setGallery(fill.images);
-      if (fill.images.length) setSelectedGallery(new Set([fill.images[0].url]));
-      const applied = await applyAiCategories(fill.category, {
-        categories: categoriesQ.data ?? [],
-        nameAr: fill.nameAr,
-        nameEn: fill.nameEn,
-        productTypeAr: fill.productTypeAr,
-        hint,
-      });
-      if (applied.categoryId) setCategoryId(applied.categoryId);
-      if (applied.subcategoryIds.length) setSubcategoryIds(applied.subcategoryIds);
-      if (applied.tertiaryCategoryIds.length) setTertiaryIds(applied.tertiaryCategoryIds);
-      const rows: ShadeRow[] = fill.shades.map((s) => ({
-        barcode: s.barcode,
-        name: s.name,
-        code: s.code || "",
-        colorHex: s.colorHex || "#CCCCCC",
-        imageUrl: null,
-      }));
+  const applyFillResult = async (fill: ShadeFamilyResult, inv: Awaited<ReturnType<typeof lookupInventoryBarcodes>>) => {
+    setResult(fill);
+    setNameAr(fill.nameAr);
+    setNameEn(fill.nameEn);
+    setBrandAr(fill.brandAr);
+    setBrandEn(fill.brandEn);
+    setDescAr(fill.descriptionAr);
+    setGallery(fill.images);
+    if (fill.images.length) setSelectedGallery(new Set([fill.images[0].url]));
 
-      try {
-        const catalogMap = await enrichShadesFromCatalog(barcodes);
-        for (let i = 0; i < rows.length; i++) {
-          const hit = catalogMap.get(rows[i].barcode);
-          if (!hit) continue;
-          const shadeName = hit.matchedShadeName || hit.shadeName;
-          if (shadeName && isGenericShadeName(rows[i].name)) {
-            rows[i] = { ...rows[i], name: shadeName };
-          }
-          const img = catalogThumbToImage(hit);
-          if (img) {
-            rows[i] = { ...rows[i], imageUrl: rows[i].imageUrl || img.url };
-            setShadeImages((prev) => ({
-              ...prev,
-              [rows[i].barcode]: mergeUniqueImages(
-                (prev[rows[i].barcode] ?? []).map((url) => ({ url, thumbUrl: url })),
-                [img],
-              ).map((x) => x.url),
-            }));
-          }
-        }
-      } catch {
-        /* catalog optional */
-      }
+    setProgress((p) => ({
+      ...p,
+      stageIndex: 3,
+      stageLabel: IDENTIFY_STAGES[3],
+      percent: 92,
+      detail: "تطبيق التصنيفات والبراند...",
+    }));
 
-      setShades(rows);
-      const pos: Record<string, { price: number; stock: number }> = {};
-      let totalStock = 0;
-      for (const bc of barcodes) {
-        const hit = inv[bc]?.pos;
-        if (hit) {
-          pos[bc] = { price: hit.price, stock: hit.stock };
-          totalStock += hit.stock;
-        }
-      }
-      setInvMap(pos);
-      const lead = barcodes[0];
-      if (pos[lead]) setPrice(pos[lead].price);
-      setStock(totalStock);
-      const brands = brandsQ.data ?? [];
-      const matched = matchBrandIdLocal(brands, fill.brandAr, fill.brandEn);
-      if (matched) setBrandId(matched);
-      void enrichShadesFromCatalog(barcodes, (bc, hit) => {
+    const applied = await applyAiCategories(fill.category, {
+      categories: categoriesQ.data ?? [],
+      nameAr: fill.nameAr,
+      nameEn: fill.nameEn,
+      productTypeAr: fill.productTypeAr,
+      hint,
+    });
+    if (applied.categoryId) setCategoryId(applied.categoryId);
+    if (applied.subcategoryIds.length) setSubcategoryIds(applied.subcategoryIds);
+    if (applied.tertiaryCategoryIds.length) setTertiaryIds(applied.tertiaryCategoryIds);
+
+    const rows: ShadeRow[] = fill.shades.map((s) => ({
+      barcode: s.barcode,
+      name: s.name,
+      code: s.code || "",
+      colorHex: s.colorHex || "#CCCCCC",
+      imageUrl: null,
+    }));
+
+    setProgress((p) => ({
+      ...p,
+      stageIndex: 2,
+      stageLabel: IDENTIFY_STAGES[2],
+      percent: 85,
+      detail: `إثراء ${barcodes.length} تدرج من المتاجر...`,
+    }));
+
+    try {
+      const catalogMap = await enrichShadesFromCatalog(barcodes);
+      for (let i = 0; i < rows.length; i++) {
+        const hit = catalogMap.get(rows[i].barcode);
+        if (!hit) continue;
         const shadeName = hit.matchedShadeName || hit.shadeName;
+        if (shadeName && isGenericShadeName(rows[i].name)) {
+          rows[i] = { ...rows[i], name: shadeName };
+        }
         const img = catalogThumbToImage(hit);
-        setShades((prev) =>
-          prev.map((row) => {
-            if (row.barcode !== bc) return row;
-            return {
-              ...row,
-              name: shadeName && isGenericShadeName(row.name) ? shadeName : row.name,
-              imageUrl: row.imageUrl || img?.url || null,
-            };
-          }),
-        );
         if (img) {
+          rows[i] = { ...rows[i], imageUrl: rows[i].imageUrl || img.url };
           setShadeImages((prev) => ({
             ...prev,
-            [bc]: mergeUniqueImages(
-              (prev[bc] ?? []).map((url) => ({ url, thumbUrl: url })),
+            [rows[i].barcode]: mergeUniqueImages(
+              (prev[rows[i].barcode] ?? []).map((url) => ({ url, thumbUrl: url })),
               [img],
-            ).map((i) => i.url),
+            ).map((x) => x.url),
           }));
         }
-      });
+      }
+    } catch {
+      /* optional */
+    }
+
+    setShades(rows);
+    const pos: Record<string, { price: number; stock: number }> = {};
+    let totalStock = 0;
+    for (const bc of barcodes) {
+      const hit = inv[bc]?.pos;
+      if (hit) {
+        pos[bc] = { price: hit.price, stock: hit.stock };
+        totalStock += hit.stock;
+      }
+    }
+    setInvMap(pos);
+    const lead = barcodes[0];
+    if (pos[lead]) setPrice(pos[lead].price);
+    setStock(totalStock);
+    const brands = brandsQ.data ?? [];
+    const matched = matchBrandIdLocal(brands, fill.brandAr, fill.brandEn);
+    if (matched) setBrandId(matched);
+  };
+
+  const runIdentify = async () => {
+    if (barcodes.length < 2) {
+      message.error("أدخل باركودين على الأقل للتدرجات");
+      return;
+    }
+
+    setIdentifying(true);
+    let stopSim: (() => void) | undefined;
+    setProgress({
+      open: true,
+      title: "جاري التعرف على التدرجات",
+      stageLabel: IDENTIFY_STAGES[0],
+      detail: `${barcodes.length} باركود — قد يستغرق حتى دقيقتين`,
+      percent: 4,
+      stageIndex: 0,
+      totalStages: IDENTIFY_STAGES.length,
+    });
+
+    try {
+      stopSim = startSimulatedProgress(
+        (percent) => setProgress((p) => (p.open ? { ...p, percent } : p)),
+        { from: 8, to: 75, intervalMs: 1500, step: 2 },
+      );
+
+      setProgress((p) => ({
+        ...p,
+        stageIndex: 1,
+        stageLabel: IDENTIFY_STAGES[1],
+        detail: "الاتصال بالسيرفر والذكاء الاصطناعي...",
+      }));
+
+      const fill = await aiShadeFamily({ barcodes, hint, model: modelId });
+      stopSim();
+      stopSim = undefined;
+
+      setProgress((p) => ({
+        ...p,
+        percent: 78,
+        detail: "جلب المخزون من نقطة البيع...",
+      }));
+      const inv = await lookupInventoryBarcodes(barcodes);
+
+      await applyFillResult(fill, inv);
+
+      setProgress((p) => ({ ...p, percent: 100, detail: "اكتمل!" }));
       setStep(1);
       if (fill.isFallback) message.warning("تعرف محدود — راجع الأسماء والصور");
-      else message.success(`تم التعرف على ${rows.length} تدرج`);
-    },
-    onError: (e: Error) => message.error(e.message || "فشل التعرف على التدرجات"),
-  });
+      else message.success(`تم التعرف على ${fill.shades.length} تدرج`);
+    } catch (e) {
+      message.error(formatAiError(e, "فشل التعرف على التدرجات"));
+    } finally {
+      stopSim?.();
+      setIdentifying(false);
+      window.setTimeout(() => setProgress(EMPTY_PROGRESS), 600);
+    }
+  };
 
   const saveMut = useMutation({
     mutationFn: async () => {
@@ -399,6 +461,7 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
 
   return (
     <div className="ai-wizard-shell">
+      <AiProgressOverlay state={progress} />
       <div className="ai-wizard-head">
         <Space style={{ width: "100%", justifyContent: "space-between" }}>
           <div>
@@ -634,11 +697,11 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
       </div>
 
       <div className="ai-wizard-foot">
-        <Button disabled={step === 0 || familyMut.isPending || saveMut.isPending} onClick={() => setStep((s) => Math.max(0, s - 1))}>
+        <Button disabled={step === 0 || identifying || saveMut.isPending} onClick={() => setStep((s) => Math.max(0, s - 1))}>
           رجوع
         </Button>
         {step === 0 ? (
-          <Button type="primary" loading={familyMut.isPending} onClick={() => familyMut.mutate()}>
+          <Button type="primary" loading={identifying} onClick={() => void runIdentify()}>
             تعرف على التدرجات
           </Button>
         ) : step < 5 ? (

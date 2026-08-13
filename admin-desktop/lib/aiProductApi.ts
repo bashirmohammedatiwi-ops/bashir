@@ -61,7 +61,7 @@ export async function aiShadeFamily(input: {
       ...(input.hint?.trim() ? { hint: input.hint.trim() } : {}),
       ...(input.model?.trim() ? { model: input.model.trim() } : {}),
     },
-    { timeout: 180_000 },
+    { timeout: 300_000 },
   );
   return parseShadeFamily(unwrap(res.data));
 }

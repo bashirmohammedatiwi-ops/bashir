@@ -353,7 +353,7 @@ export class AiProductService {
   private async shadeFamilyFast(rawBarcodes: string[], hint?: string, modelChoice?: string) {
     const unique = rawBarcodes;
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `shade-v9|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `shade-v10|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 20 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -415,15 +415,13 @@ export class AiProductService {
       draft.name_en,
     ].filter((s): s is string => Boolean(s && String(s).trim().length >= 2));
 
-    await this.enrichShadeHintsFromCatalog(unique, freeByBarcode);
-    try {
-      await Promise.race([
+    await Promise.race([
+      Promise.all([
+        this.enrichShadeHintsFromCatalog(unique, freeByBarcode),
         this.enrichShadeHintsFromImages(unique, freeByBarcode, enrichHints),
-        new Promise<void>((resolve) => setTimeout(resolve, 14_000)),
-      ]);
-    } catch (err) {
-      this.logger.warn(`Shade image enrich skipped: ${(err as Error).message}`);
-    }
+      ]),
+      new Promise<void>((resolve) => setTimeout(resolve, 12_000)),
+    ]);
 
     let shadeRows = unique.map((barcode, index) =>
       this.guessShadeRow(
@@ -465,24 +463,32 @@ export class AiProductService {
     const matched = await this.matchCategories(polished);
 
     const genericCount = shadeRows.filter((r) => this.isGenericShadeName(r.name_en)).length;
-    if (genericCount >= 2 && this.cursor.hasApiKey()) {
+    const shouldAiShadeNames =
+      genericCount >= 2 &&
+      genericCount >= Math.ceil(unique.length * 0.5) &&
+      unique.length <= 12 &&
+      this.cursor.hasApiKey();
+    if (shouldAiShadeNames) {
       try {
-        const aiShades = await this.cursor.verifyShadeFamilyNames(
-          {
-            brand_en: polished.brand_en,
-            brand_ar: polished.brand_ar,
-            product_en: polished.name_en,
-            hint,
-            shades: shadeRows.map((row) => ({
-              barcode: row.barcode,
-              code: row.code,
-              name_en: row.name_en,
-              db_title: freeByBarcode.get(row.barcode)?.title,
-            })),
-          },
-          resolved.choice,
-          unique.length >= 10 ? 18_000 : 24_000,
-        );
+        const aiShades = await Promise.race([
+          this.cursor.verifyShadeFamilyNames(
+            {
+              brand_en: polished.brand_en,
+              brand_ar: polished.brand_ar,
+              product_en: polished.name_en,
+              hint,
+              shades: shadeRows.map((row) => ({
+                barcode: row.barcode,
+                code: row.code,
+                name_en: row.name_en,
+                db_title: freeByBarcode.get(row.barcode)?.title,
+              })),
+            },
+            resolved.choice,
+            unique.length >= 8 ? 14_000 : 20_000,
+          ),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 18_000)),
+        ]);
         if (aiShades?.length) {
           const byBc = new Map(aiShades.map((s) => [s.barcode.toLowerCase(), s] as const));
           shadeRows = shadeRows.map((row) => {
@@ -1747,13 +1753,13 @@ export class AiProductService {
   private async lookupCatalogShade(
     barcode: string,
   ): Promise<{ shadeName?: string; title?: string; imageUrl?: string } | null> {
-    const stores = ["faces", "miswag", "miraaya", "beautyway", "niceone"];
+    const stores = ["faces", "miswag", "miraaya"];
     for (const store of stores) {
       try {
         const url = `${this.catalogHubBase()}/api/import/search?q=${encodeURIComponent(barcode)}&store=${encodeURIComponent(store)}&stores=${encodeURIComponent(store)}`;
         const res = await fetch(url, {
           headers: { Accept: "application/json", "User-Agent": "AlhayaaAiAutofill/2.1" },
-          signal: AbortSignal.timeout(6_500),
+          signal: AbortSignal.timeout(4_500),
         });
         if (!res.ok) continue;
         const body = (await res.json()) as {
