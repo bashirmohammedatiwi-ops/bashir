@@ -36,3 +36,52 @@ export function startSimulatedProgress(
   }, intervalMs);
   return () => window.clearInterval(id);
 }
+
+export type ShadeFamilyProgressTick = {
+  stageIndex: number;
+  stageLabel: string;
+  detail: string;
+  percent: number;
+};
+
+/** Time-based progress messages while waiting on shade-family API. */
+export function startShadeFamilyProgressTicker(
+  onTick: (tick: ShadeFamilyProgressTick) => void,
+  stages: string[],
+  barcodeCount: number,
+) {
+  const t0 = Date.now();
+  const id = window.setInterval(() => {
+    const elapsed = Math.floor((Date.now() - t0) / 1000);
+    let stageIndex = 0;
+    let detail = `جاري تحليل ${barcodeCount} باركود على السيرفر...`;
+    let percent = Math.min(72, 6 + Math.floor(elapsed * 1.4));
+
+    if (elapsed >= 8) {
+      stageIndex = 1;
+      detail = "جلب بيانات المنتج والباركودات من قواعد البيانات...";
+      percent = Math.min(78, 18 + Math.floor((elapsed - 8) * 1.2));
+    }
+    if (elapsed >= 22) {
+      detail = "التسمية بالذكاء الاصطناعي — قد تستغرق 30–60 ثانية...";
+      percent = Math.min(82, 35 + Math.floor((elapsed - 22) * 0.8));
+    }
+    if (elapsed >= 45) {
+      detail = "لا يزال السيرفر يعمل — هذا طبيعي، لا تغلق الصفحة...";
+      percent = Math.min(88, 50 + Math.floor((elapsed - 45) * 0.5));
+    }
+    if (elapsed >= 75) {
+      detail = "اقتراب من الانتهاء — إن تجاوز 3 دقائق أعد المحاولة";
+      percent = Math.min(92, 65 + Math.floor((elapsed - 75) * 0.3));
+    }
+
+    onTick({
+      stageIndex,
+      stageLabel: stages[stageIndex] ?? stages[0] ?? "",
+      detail,
+      percent,
+    });
+  }, 1000);
+
+  return () => window.clearInterval(id);
+}

@@ -21,7 +21,7 @@ import { aiSearchImages, aiShadeFamily, fetchAiModels } from "@/lib/aiProductApi
 import type { ShadeFamilyResult } from "@/lib/aiProductTypes";
 import { applyAiCategories } from "@/lib/aiCategoryApply";
 import { catalogThumbToImage, enrichShadesFromCatalog, isGenericShadeName, mergeUniqueImages } from "@/lib/aiCatalogEnrich";
-import { formatAiError, startSimulatedProgress } from "@/lib/aiProgress";
+import { formatAiError, startShadeFamilyProgressTicker } from "@/lib/aiProgress";
 import { matchBrandIdLocal } from "@/lib/catalogBrandMatch";
 import { lookupInventoryBarcodes } from "@/lib/inventorySync";
 import { defaultSku, saveAiProduct } from "@/lib/aiProductSave";
@@ -278,40 +278,49 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
     }
 
     setIdentifying(true);
-    let stopSim: (() => void) | undefined;
+    let stopTicker: (() => void) | undefined;
     setProgress({
       open: true,
       title: "جاري التعرف على التدرجات",
       stageLabel: IDENTIFY_STAGES[0],
-      detail: `${barcodes.length} باركود — قد يستغرق حتى دقيقتين`,
-      percent: 4,
+      detail: `جاري تحليل ${barcodes.length} باركود على السيرفر...`,
+      percent: 6,
       stageIndex: 0,
       totalStages: IDENTIFY_STAGES.length,
     });
 
     try {
-      stopSim = startSimulatedProgress(
-        (percent) => setProgress((p) => (p.open ? { ...p, percent } : p)),
-        { from: 8, to: 75, intervalMs: 1500, step: 2 },
+      stopTicker = startShadeFamilyProgressTicker(
+        (tick) =>
+          setProgress((p) =>
+            p.open
+              ? {
+                  ...p,
+                  stageIndex: tick.stageIndex,
+                  stageLabel: IDENTIFY_STAGES[tick.stageIndex] ?? p.stageLabel,
+                  detail: tick.detail,
+                  percent: tick.percent,
+                }
+              : p,
+          ),
+        IDENTIFY_STAGES,
+        barcodes.length,
       );
 
-      setProgress((p) => ({
-        ...p,
-        stageIndex: 1,
-        stageLabel: IDENTIFY_STAGES[1],
-        detail: "الاتصال بالسيرفر والذكاء الاصطناعي...",
-      }));
-
-      const fill = await aiShadeFamily({ barcodes, hint, model: modelId });
-      stopSim();
-      stopSim = undefined;
+      const fillPromise = aiShadeFamily({ barcodes, hint, model: modelId });
+      const invPromise = lookupInventoryBarcodes(barcodes);
+      const fill = await fillPromise;
+      stopTicker();
+      stopTicker = undefined;
 
       setProgress((p) => ({
         ...p,
-        percent: 78,
-        detail: "جلب المخزون من نقطة البيع...",
+        percent: 85,
+        stageIndex: 2,
+        stageLabel: IDENTIFY_STAGES[2],
+        detail: "جلب المخزون وإثراء الأسماء من المتاجر...",
       }));
-      const inv = await lookupInventoryBarcodes(barcodes);
+      const inv = await invPromise;
 
       await applyFillResult(fill, inv);
 
@@ -322,7 +331,7 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
     } catch (e) {
       message.error(formatAiError(e, "فشل التعرف على التدرجات"));
     } finally {
-      stopSim?.();
+      stopTicker?.();
       setIdentifying(false);
       window.setTimeout(() => setProgress(EMPTY_PROGRESS), 600);
     }

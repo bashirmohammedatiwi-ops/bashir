@@ -139,6 +139,64 @@ export class GoogleImagesService {
     return this.rankProductPhotos(merged).slice(0, limit);
   }
 
+  /** Shade-family fast path — packshots + 2 queries max, hard 7s cap. */
+  async searchByBarcodeFast(
+    barcode: string,
+    limit = 16,
+    nameHints: string[] = [],
+  ): Promise<GoogleImageHit[]> {
+    const run = async (): Promise<GoogleImageHit[]> => {
+      const digits = barcode.replace(/\D/g, "") || barcode.trim();
+      if (digits.length < 6) return [];
+
+      const merged: GoogleImageHit[] = [];
+      const seen = new Set<string>();
+      const pushHits = (batch: GoogleImageHit[]) => {
+        for (const hit of batch) {
+          const key = this.dedupeKey(hit.url);
+          if (!key || seen.has(key)) continue;
+          seen.add(key);
+          merged.push(hit);
+          if (merged.length >= limit) return;
+        }
+      };
+
+      pushHits(await this.fetchBarcodePackshots(digits));
+      const variants = this.barcodeQueryVariants(digits, nameHints).slice(0, 2);
+      for (const q of variants) {
+        if (merged.length >= limit) break;
+        pushHits(
+          await this.collectResults(q, Math.min(12, limit), {
+            expandVariants: false,
+            filterMode: "barcode",
+          }),
+        );
+      }
+
+      const brand = nameHints.find((h) => h.length >= 3 && !/^\d+$/.test(h));
+      if (brand && merged.length < 6) {
+        pushHits(
+          await this.collectResults(`${brand} ${digits}`, Math.min(12, limit), {
+            expandVariants: false,
+            filterMode: "product",
+          }),
+        );
+      }
+
+      return this.rankProductPhotos(merged).slice(0, limit);
+    };
+
+    try {
+      return await Promise.race([
+        run(),
+        new Promise<GoogleImageHit[]>((resolve) => setTimeout(() => resolve([]), 7_000)),
+      ]);
+    } catch (err) {
+      this.logger.warn(`searchByBarcodeFast failed: ${(err as Error).message}`);
+      return [];
+    }
+  }
+
   async searchProductImages(query: string, limit = 24): Promise<GoogleImageHit[]> {
     const q = query.trim();
     if (!q) return [];

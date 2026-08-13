@@ -353,7 +353,7 @@ export class AiProductService {
   private async shadeFamilyFast(rawBarcodes: string[], hint?: string, modelChoice?: string) {
     const unique = rawBarcodes;
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `shade-v10|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `shade-v11|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 20 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -378,7 +378,7 @@ export class AiProductService {
         for (let i = 0; i < unique.length; i += 8) {
           const chunk = unique.slice(i, i + 8);
           const part = await Promise.all(
-            chunk.map(async (barcode) => [barcode, await this.freeBarcodeHintLight(barcode)] as const),
+            chunk.map(async (barcode) => [barcode, await this.freeBarcodeHintShadeFamily(barcode)] as const),
           );
           for (const [barcode, free] of part) map.set(barcode, free);
         }
@@ -392,7 +392,7 @@ export class AiProductService {
 
     const lead = unique[0];
     const leadFree = freeByBarcode.get(lead) ?? {};
-    const imageHits = await this.images.searchByBarcode(lead, 24, [
+    const imageHits = await this.images.searchByBarcodeFast(lead, 16, [
       leadFree.brand,
       leadFree.title,
       hint,
@@ -407,20 +407,9 @@ export class AiProductService {
       shadeFamily: true,
     });
 
-    const enrichHints = [
-      leadFree.brand,
-      leadFree.title,
-      hint,
-      draft.brand_en,
-      draft.name_en,
-    ].filter((s): s is string => Boolean(s && String(s).trim().length >= 2));
-
     await Promise.race([
-      Promise.all([
-        this.enrichShadeHintsFromCatalog(unique, freeByBarcode),
-        this.enrichShadeHintsFromImages(unique, freeByBarcode, enrichHints),
-      ]),
-      new Promise<void>((resolve) => setTimeout(resolve, 12_000)),
+      this.enrichShadeHintsFromCatalog(unique, freeByBarcode),
+      new Promise<void>((resolve) => setTimeout(resolve, 8_000)),
     ]);
 
     let shadeRows = unique.map((barcode, index) =>
@@ -432,7 +421,7 @@ export class AiProductService {
       ),
     );
 
-    const namingBudgetMs = unique.length >= 10 ? 16_000 : 22_000;
+    const namingBudgetMs = unique.length >= 10 ? 14_000 : unique.length <= 8 ? 12_000 : 16_000;
     const named = await this.cursor.verifyBilingualNames(
       {
         barcode: lead,
@@ -555,7 +544,7 @@ export class AiProductService {
       .trim()
       .slice(0, 90);
     let galleryImages = imageHits;
-    if (galleryQuery.length >= 4) {
+    if (galleryQuery.length >= 4 && galleryImages.length < 4) {
       try {
         const extra = await Promise.race([
           this.images.searchQuery(galleryQuery, 24),
@@ -986,6 +975,25 @@ export class AiProductService {
     const results = (await Promise.all(tasks)).filter((r) => r.title?.trim());
     if (!results.length) return {};
     const rank = (source?: string) => (source === "openbeautyfacts" ? 0 : source === "go-upc" ? 1 : 9);
+    results.sort((a, b) => rank(a.source) - rank(b.source));
+    return { ...results[0] };
+  }
+
+  /** Ultra-light lookup for shade-family (6–15 barcodes) — 2 sources, 4s cap. */
+  private async freeBarcodeHintShadeFamily(barcode: string): Promise<FreeHint> {
+    const variants = barcodeLookupCandidates(barcode)
+      .filter((v) => /^\d{8,14}$/.test(v))
+      .slice(0, 1);
+    const tasks: Promise<FreeHint>[] = [];
+    for (const v of variants) {
+      tasks.push(this.lookupGoUpc(v), this.lookupOpenBeautyFacts(v));
+    }
+    const results = await Promise.race([
+      Promise.all(tasks).then((rows) => rows.filter((r) => r.title?.trim())),
+      new Promise<FreeHint[]>((resolve) => setTimeout(() => resolve([]), 4_000)),
+    ]);
+    if (!results.length) return {};
+    const rank = (source?: string) => (source === "go-upc" ? 0 : source === "openbeautyfacts" ? 1 : 9);
     results.sort((a, b) => rank(a.source) - rank(b.source));
     return { ...results[0] };
   }
@@ -1753,13 +1761,13 @@ export class AiProductService {
   private async lookupCatalogShade(
     barcode: string,
   ): Promise<{ shadeName?: string; title?: string; imageUrl?: string } | null> {
-    const stores = ["faces", "miswag", "miraaya"];
+    const stores = ["miswag", "faces"];
     for (const store of stores) {
       try {
         const url = `${this.catalogHubBase()}/api/import/search?q=${encodeURIComponent(barcode)}&store=${encodeURIComponent(store)}&stores=${encodeURIComponent(store)}`;
         const res = await fetch(url, {
           headers: { Accept: "application/json", "User-Agent": "AlhayaaAiAutofill/2.1" },
-          signal: AbortSignal.timeout(4_500),
+          signal: AbortSignal.timeout(3_000),
         });
         if (!res.ok) continue;
         const body = (await res.json()) as {
