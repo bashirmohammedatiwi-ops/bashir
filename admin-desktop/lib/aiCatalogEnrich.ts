@@ -1,4 +1,4 @@
-import { searchCatalogByBarcode, type CatalogImportOption } from "./catalogImport";
+import { fetchCatalogProduct, searchCatalogByBarcode, type CatalogImportOption, type CatalogImportShade } from "./catalogImport";
 import type { AiAutofillImage } from "./aiProductTypes";
 import { resolveShadeColorHex } from "./shadeColorFromImage";
 
@@ -90,10 +90,52 @@ export function isGenericShadeName(name: string): boolean {
   const t = String(name ?? "").trim();
   if (!t) return true;
   if (/^تدرج\s*\d+$/i.test(t)) return true;
-  if (/^shade\s*\d+$/i.test(t)) return true;
+  if (/^shade\s*0*\d+$/i.test(t)) return true;
+  if (/^color\s*0*\d+$/i.test(t)) return true;
   if (/^\d{1,3}$/.test(t)) return true;
   if (/^no\.?\s*\d{1,3}$/i.test(t)) return true;
   return false;
+}
+
+function barcodeDigits(bc: string): string {
+  return String(bc ?? "").replace(/\D/g, "");
+}
+
+function shadeDisplayName(shade: {
+  name?: string;
+  nameEn?: string;
+  nameAr?: string;
+  shadeTitleEn?: string;
+  shadeTitleAr?: string;
+  shadeCode?: string;
+  shadeNumber?: string;
+}): string {
+  const en = String(shade.shadeTitleEn || shade.nameEn || shade.name || "").trim();
+  const ar = String(shade.shadeTitleAr || shade.nameAr || "").trim();
+  const code = String(shade.shadeCode || shade.shadeNumber || "").trim();
+  let label = en || ar;
+  if (label && code && !new RegExp(`\\b${code}\\b`, "i").test(label)) {
+    label = `${label} ${code}`;
+  }
+  return label || code;
+}
+
+export function applyCatalogHitToRow(
+  row: { barcode: string; name: string; code: string; colorHex: string; imageUrl?: string | null },
+  hit: CatalogImportOption,
+): void {
+  const shadeName = String(hit.matchedShadeName || hit.shadeName || "").trim();
+  if (shadeName && isGenericShadeName(row.name)) {
+    row.name = shadeName;
+  }
+  const codeFromName = shadeName.match(/\b(\d{1,3})\s*$/);
+  if (codeFromName && !row.code) {
+    row.code = codeFromName[1];
+  }
+  const hex = catalogShadeColor(hit);
+  if (hex) row.colorHex = hex;
+  const img = catalogThumbToImage(hit);
+  if (img?.url) row.imageUrl = row.imageUrl || img.url;
 }
 
 export function isBarcodeLikeProductName(name: string, barcodes: string[] = []): boolean {
@@ -183,17 +225,107 @@ export async function enrichShadesFromCatalog(
   barcodes: string[],
   onPartial?: (barcode: string, hit: CatalogImportOption) => void,
 ): Promise<Map<string, CatalogImportOption>> {
+  if (barcodes.length >= 2) {
+    return enrichShadeFamilyFromCatalog(barcodes, onPartial);
+  }
   const map = new Map<string, CatalogImportOption>();
-  const stores = ["faces", "miswag", "miraaya", "beautyway", "niceone"];
-  await Promise.all(
-    barcodes.map(async (barcode) => {
+  const hit = await enrichBarcodeFromCatalog(barcodes[0], ["miswag", "faces"]);
+  if (hit) {
+    map.set(barcodes[0], hit);
+    onPartial?.(barcodes[0], hit);
+  }
+  return map;
+}
+
+/**
+ * Final enrich path for shade families: barcode probe → fetch full product → map all shades.
+ */
+export async function enrichShadeFamilyFromCatalog(
+  barcodes: string[],
+  onPartial?: (barcode: string, hit: CatalogImportOption) => void,
+): Promise<Map<string, CatalogImportOption>> {
+  const want = new Set(barcodes.map(barcodeDigits).filter((d) => d.length >= 8));
+  const byDigits = new Map<string, CatalogImportOption>();
+  const stores = ["miswag", "faces"];
+
+  // Phase 1: probe first 3 barcodes (fast) to find parent product id
+  const probe = barcodes.slice(0, Math.min(3, barcodes.length));
+  const probes = await Promise.all(
+    probe.map(async (barcode) => {
       const hit = await enrichBarcodeFromCatalog(barcode, stores);
-      if (!hit) return;
-      map.set(barcode, hit);
-      onPartial?.(barcode, hit);
+      return hit ? { barcode, hit } as const : null;
     }),
   );
-  return map;
+
+  for (const row of probes) {
+    if (!row) continue;
+    const key = barcodeDigits(row.barcode);
+    byDigits.set(key, { ...row.hit, barcode: row.barcode });
+    onPartial?.(row.barcode, row.hit);
+  }
+
+  const ranked = probes
+    .filter((r): r is NonNullable<typeof r> => Boolean(r))
+    .map((r) => r.hit)
+    .sort(
+      (a, b) =>
+        (b.shadeCount || 0) - (a.shadeCount || 0) ||
+        String(b.nameEn ?? b.nameAr ?? "").length - String(a.nameEn ?? a.nameAr ?? "").length,
+    );
+  const parent = ranked[0];
+
+  // Phase 2: one product fetch → all shades with barcodes + hex
+  if (parent?.sourceId && parent.store) {
+    try {
+      const product = await fetchCatalogProduct(parent.store, parent.sourceId, parent.storeLabel);
+      for (const shade of product.shades ?? []) {
+        const digits = barcodeDigits(String(shade.barcode ?? ""));
+        if (!digits || !want.has(digits)) continue;
+        const original = barcodes.find((bc) => barcodeDigits(bc) === digits) || digits;
+        const shadeName = shadeDisplayName(shade);
+        const hit: CatalogImportOption = {
+          store: product.store,
+          storeLabel: product.storeLabel,
+          sourceId: product.sourceId,
+          nameAr: product.nameAr,
+          nameEn: product.nameEn,
+          brandAr: product.brandAr,
+          thumb: String(shade.swatchUrl || shade.imageUrl || ""),
+          barcode: original,
+          shadeCount: product.shadeCount ?? product.shades.length,
+          shadeName,
+          matchedShadeName: shadeName,
+          colorHex: String(shade.colorHex || (shade as CatalogImportShade & { hex?: string }).hex || ""),
+          swatchUrl: String(shade.swatchUrl || shade.imageUrl || ""),
+        };
+        byDigits.set(digits, hit);
+        onPartial?.(original, hit);
+      }
+    } catch {
+      /* keep probe hits */
+    }
+  }
+
+  // Phase 3: fill any missing barcodes individually (parallel, 2 stores)
+  const missing = barcodes.filter((bc) => !byDigits.has(barcodeDigits(bc)));
+  if (missing.length) {
+    await Promise.all(
+      missing.map(async (barcode) => {
+        const hit = await enrichBarcodeFromCatalog(barcode, stores);
+        if (!hit) return;
+        const key = barcodeDigits(barcode);
+        byDigits.set(key, { ...hit, barcode });
+        onPartial?.(barcode, hit);
+      }),
+    );
+  }
+
+  const out = new Map<string, CatalogImportOption>();
+  for (const bc of barcodes) {
+    const hit = byDigits.get(barcodeDigits(bc));
+    if (hit) out.set(bc, hit);
+  }
+  return out;
 }
 
 export function catalogThumbToImage(hit: CatalogImportOption): AiAutofillImage | null {

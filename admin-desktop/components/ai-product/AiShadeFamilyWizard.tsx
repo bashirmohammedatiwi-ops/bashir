@@ -20,7 +20,7 @@ import { AiProgressOverlay, type AiProgressState } from "./AiProgressOverlay";
 import { aiSearchImages, aiShadeFamily, fetchAiModels } from "@/lib/aiProductApi";
 import type { ShadeFamilyResult } from "@/lib/aiProductTypes";
 import { applyAiCategories } from "@/lib/aiCategoryApply";
-import { catalogThumbToImage, enrichShadeColors, enrichShadesFromCatalog, inferProductIdentityFromCatalog, isBarcodeLikeProductName, isGenericShadeName, mergeUniqueImages, resolveShadeRowColor } from "@/lib/aiCatalogEnrich";
+import { catalogThumbToImage, applyCatalogHitToRow, enrichShadeColors, enrichShadesFromCatalog, inferProductIdentityFromCatalog, isBarcodeLikeProductName, isGenericShadeName, mergeUniqueImages, resolveShadeRowColor } from "@/lib/aiCatalogEnrich";
 import { formatAiError, startShadeFamilyProgressTicker } from "@/lib/aiProgress";
 import { matchBrandIdLocal } from "@/lib/catalogBrandMatch";
 import { lookupInventoryBarcodes } from "@/lib/inventorySync";
@@ -224,7 +224,7 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
       stageIndex: 2,
       stageLabel: IDENTIFY_STAGES[2],
       percent: 85,
-      detail: `إثراء ${barcodes.length} تدرج من المتاجر...`,
+      detail: `جلب كل التدرجات من المتجر (${barcodes.length} باركود)...`,
     }));
 
     try {
@@ -244,13 +244,9 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
       for (let i = 0; i < rows.length; i++) {
         const hit = catalogMap.get(rows[i].barcode);
         if (!hit) continue;
-        const shadeName = hit.matchedShadeName || hit.shadeName;
-        if (shadeName && isGenericShadeName(rows[i].name)) {
-          rows[i] = { ...rows[i], name: shadeName };
-        }
+        applyCatalogHitToRow(rows[i], hit);
         const img = catalogThumbToImage(hit);
         if (img) {
-          rows[i] = { ...rows[i], imageUrl: rows[i].imageUrl || img.url };
           setShadeImages((prev) => ({
             ...prev,
             [rows[i].barcode]: mergeUniqueImages(
@@ -574,18 +570,14 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
                   if (identity.nameEn) setNameEn(identity.nameEn);
                   if (identity.nameAr) setNameAr(identity.nameAr);
                 }
-                setShades((prev) =>
-                  prev.map((row) => {
-                    const hit = map.get(row.barcode);
-                    const shadeName = hit?.matchedShadeName || hit?.shadeName;
-                    if (!shadeName) return row;
-                    return { ...row, name: isGenericShadeName(row.name) ? shadeName : row.name };
-                  }),
-                );
                 const nextRows = shades.map((row) => ({ ...row }));
+                for (const row of nextRows) {
+                  const hit = map.get(row.barcode);
+                  if (hit) applyCatalogHitToRow(row, hit);
+                }
                 await enrichShadeColors(nextRows, map);
                 setShades(nextRows);
-                message.success("تم تحديث أسماء المنتج والتدرجات وألوانها من المتاجر");
+                message.success(`تم تحديث ${nextRows.filter((r) => !isGenericShadeName(r.name)).length}/${nextRows.length} تدرج من المتاجر`);
               }}
             >
               إثراء الأسماء من المتاجر

@@ -354,7 +354,7 @@ export class AiProductService {
   private async shadeFamilyFast(rawBarcodes: string[], hint?: string, modelChoice?: string) {
     const unique = rawBarcodes;
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `shade-v13|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `shade-v14|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 20 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -396,8 +396,11 @@ export class AiProductService {
 
     const [, imageHits] = await Promise.all([
       Promise.race([
-        this.enrichShadeHintsFromCatalog(unique, freeByBarcode),
-        new Promise<void>((resolve) => setTimeout(resolve, 8_000)),
+        Promise.all([
+          this.enrichFamilyFromCatalogProduct(unique, freeByBarcode),
+          this.enrichShadeHintsFromCatalog(unique, freeByBarcode),
+        ]),
+        new Promise<void>((resolve) => setTimeout(resolve, 15_000)),
       ]),
       this.images.searchByBarcodeFast(lead, 16, [
         leadFree.brand,
@@ -1863,8 +1866,8 @@ export class AiProductService {
     const t = String(name ?? "").trim();
     if (!t) return true;
     if (/^تدرج\s*\d+$/i.test(t)) return true;
-    if (/^shade\s*\d+$/i.test(t)) return true;
-    if (/^shade\s*\d{1,3}$/i.test(t)) return true;
+    if (/^shade\s*0*\d+$/i.test(t)) return true;
+    if (/^color\s*0*\d+$/i.test(t)) return true;
     if (/^\d{1,3}$/.test(t)) return true;
     return false;
   }
@@ -1924,6 +1927,104 @@ export class AiProductService {
       }
     }
     return null;
+  }
+
+  private barcodeDigits(bc: string): string {
+    return String(bc ?? "").replace(/\D/g, "");
+  }
+
+  /** Fetch parent product once and map all shade barcodes (names + hex). */
+  private async enrichFamilyFromCatalogProduct(
+    barcodes: string[],
+    freeByBarcode: Map<string, FreeHint>,
+  ): Promise<void> {
+    const stores = ["miswag", "faces"];
+    const want = new Set(barcodes.map((b) => this.barcodeDigits(b)).filter((d) => d.length >= 8));
+    let parentStore = "";
+    let parentId = "";
+
+    for (const bc of barcodes.slice(0, 3)) {
+      for (const store of stores) {
+        try {
+          const url = `${this.catalogHubBase()}/api/import/search?q=${encodeURIComponent(bc)}&store=${encodeURIComponent(store)}&stores=${encodeURIComponent(store)}`;
+          const res = await fetch(url, {
+            headers: { Accept: "application/json", "User-Agent": "AlhayaaAiAutofill/2.2" },
+            signal: AbortSignal.timeout(8_000),
+          });
+          if (!res.ok) continue;
+          const body = (await res.json()) as {
+            results?: Array<{ sourceId?: string; id?: string; store?: string }>;
+          };
+          const hit = body.results?.[0];
+          const sourceId = String(hit?.sourceId || hit?.id || "").trim();
+          if (sourceId) {
+            parentStore = String(hit?.store || store);
+            parentId = sourceId;
+            break;
+          }
+        } catch {
+          /* try next store */
+        }
+      }
+      if (parentId) break;
+    }
+    if (!parentId || !parentStore) return;
+
+    try {
+      const url = `${this.catalogHubBase()}/api/import/${encodeURIComponent(parentStore)}/products/${encodeURIComponent(parentId)}`;
+      const res = await fetch(url, {
+        headers: { Accept: "application/json", "User-Agent": "AlhayaaAiAutofill/2.2" },
+        signal: AbortSignal.timeout(25_000),
+      });
+      if (!res.ok) return;
+      const body = (await res.json()) as {
+        product?: {
+          nameEn?: string;
+          nameAr?: string;
+          shades?: Array<{
+            barcode?: string;
+            name?: string;
+            nameEn?: string;
+            nameAr?: string;
+            colorHex?: string;
+            hex?: string;
+            swatchUrl?: string;
+            swatchImage?: string;
+            imageUrl?: string;
+            image?: string;
+            shadeNumber?: string;
+            shadeCode?: string;
+          }>;
+        };
+      };
+      const product = body.product;
+      const family = String(product?.nameEn || product?.nameAr || "").trim();
+      for (const shade of product?.shades ?? []) {
+        const digits = this.barcodeDigits(String(shade.barcode ?? ""));
+        if (!digits || !want.has(digits)) continue;
+        const rawBc = barcodes.find((b) => this.barcodeDigits(b) === digits) || digits;
+        const cur = freeByBarcode.get(rawBc) ?? {};
+        const shadeLabel = String(shade.nameEn || shade.name || shade.nameAr || "").trim();
+        const code = String(shade.shadeCode || shade.shadeNumber || "").trim();
+        const shadeName =
+          shadeLabel && code && !shadeLabel.toLowerCase().includes(code.toLowerCase())
+            ? `${shadeLabel} ${code}`
+            : shadeLabel || code;
+        const hexRaw = this.normalizeShadeHex(String(shade.colorHex || shade.hex || ""));
+        const img = String(
+          shade.swatchUrl || shade.swatchImage || shade.imageUrl || shade.image || "",
+        ).trim();
+        freeByBarcode.set(rawBc, {
+          ...cur,
+          title: shadeName ? (family ? `${family} — ${shadeName}` : shadeName) : cur.title,
+          colorHex: hexRaw !== "#CCCCCC" ? hexRaw : cur.colorHex,
+          imageUrl: img.startsWith("http") ? img : cur.imageUrl,
+          source: "catalog-family",
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`Catalog family enrich skipped: ${(err as Error).message}`);
+    }
   }
 
   private async enrichShadeHintsFromCatalog(
