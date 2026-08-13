@@ -98,6 +98,27 @@ export class GoogleImagesService {
       );
     }
 
+    const storeSites = [
+      "site:faces.com",
+      "site:miswag.net",
+      "site:beautyway.com",
+      "site:niceone.com",
+      "site:amazon.com",
+      "site:sephora.com",
+    ];
+    const brandHint = nameHints.find((h) => h.length >= 3 && !/^\d+$/.test(h)) ?? "";
+    if (brandHint && merged.length < limit) {
+      for (const site of storeSites.slice(0, 5)) {
+        if (merged.length >= limit) break;
+        pushHits(
+          await this.collectResults(`${brandHint} ${site}`, Math.min(24, limit), {
+            expandVariants: false,
+            filterMode: "product",
+          }),
+        );
+      }
+    }
+
     return this.rankProductPhotos(merged).slice(0, limit);
   }
 

@@ -264,7 +264,7 @@ class _GoogleStyleImageSearchState extends State<GoogleStyleImageSearch> {
               crossAxisCount: 2,
               mainAxisSpacing: 10,
               crossAxisSpacing: 10,
-              childAspectRatio: 0.78,
+              childAspectRatio: 0.68,
             ),
             itemBuilder: (context, index) {
               final img = widget.images[index];
@@ -367,15 +367,34 @@ class _GoogleStyleImageSearchState extends State<GoogleStyleImageSearch> {
                           ),
                         ),
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(8, 6, 8, 8),
-                          child: Text(
-                            host.isNotEmpty
-                                ? host
-                                : (img.title.isNotEmpty ? img.title : 'صورة'),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 11, color: AppTheme.muted),
-                            textDirection: host.isNotEmpty ? TextDirection.ltr : TextDirection.rtl,
+                          padding: const EdgeInsets.fromLTRB(8, 6, 8, 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Text(
+                                img.title.trim().isNotEmpty
+                                    ? img.title.trim()
+                                    : (host.isNotEmpty ? host : 'صورة'),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.25,
+                                ),
+                                textDirection: img.title.trim().isNotEmpty && RegExp(r'[\u0600-\u06FF]').hasMatch(img.title)
+                                    ? TextDirection.rtl
+                                    : TextDirection.ltr,
+                              ),
+                              if (host.isNotEmpty)
+                                Text(
+                                  host,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+                                  textDirection: TextDirection.ltr,
+                                ),
+                            ],
                           ),
                         ),
                       ],

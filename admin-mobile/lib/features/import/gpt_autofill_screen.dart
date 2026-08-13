@@ -14,11 +14,13 @@ import '../../core/utils/daily_progress_store.dart';
 import '../../core/utils/helpers.dart';
 import '../../core/utils/product_naming.dart';
 import '../../core/utils/readd_assets_cache.dart';
+import '../../core/utils/store_image_enrich.dart';
 import '../../models/ai_autofill.dart';
 import '../../models/brand.dart';
 import '../../models/catalog.dart';
 import '../../models/inventory.dart';
 import '../../repositories/ai_product_repository.dart';
+import '../../repositories/catalog_repository.dart';
 import '../../repositories/product_repository.dart';
 import '../../widgets/composer_naming_banner.dart';
 import '../../widgets/google_style_image_search.dart';
@@ -212,6 +214,17 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
       _categories = cats;
       _applyPosFromLookup(invMap);
       _applyResult(fill);
+      try {
+        _images = await enrichImagesFromStores(
+          catalog: ref.read(catalogRepositoryProvider),
+          barcode: widget.barcode,
+          nameHint: widget.hint,
+          base: _images,
+        );
+        for (final img in _images) {
+          _imageByUrl[img.url] = img;
+        }
+      } catch (_) {}
       _mergePreservedImages();
 
       if (fill.category.categoryId != null) {
@@ -604,8 +617,15 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
             // Always pass known name so barcode search can enrich thin results
             nameHint: nameFallback.isNotEmpty ? nameFallback : widget.hint,
           );
+      final merged = await enrichImagesFromStores(
+        catalog: ref.read(catalogRepositoryProvider),
+        barcode: widget.barcode,
+        nameHint: nameFallback.isNotEmpty ? nameFallback : widget.hint,
+        base: imgs,
+      );
+      if (!mounted) return;
       setState(() {
-        for (final img in imgs) {
+        for (final img in merged) {
           _imageByUrl[img.url] = img;
         }
         for (final img in _preservedImages) {
@@ -623,7 +643,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
         }
 
         final searchNew = <AiAutofillImage>[];
-        for (final img in imgs) {
+        for (final img in merged) {
           if (seen.contains(img.url)) continue;
           seen.add(img.url);
           searchNew.add(img);

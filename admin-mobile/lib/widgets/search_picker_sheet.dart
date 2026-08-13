@@ -40,6 +40,8 @@ Future<List<T>?> showMultiSearchPicker<T>({
   return showModalBottomSheet<List<T>>(
     context: context,
     isScrollControlled: true,
+    isDismissible: false,
+    enableDrag: false,
     useSafeArea: true,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
     builder: (ctx) => _MultiSearchPickerBody<T>(
@@ -305,7 +307,7 @@ class _MultiSearchPickerBodyState<T> extends State<_MultiSearchPickerBody<T>> {
                   const Spacer(),
                   FilledButton(
                     onPressed: () => Navigator.pop(context, List<T>.of(_selected)),
-                    child: const Text('تم'),
+                    child: const Text('حفظ الاختيار'),
                   ),
                 ],
               ),

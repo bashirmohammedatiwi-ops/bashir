@@ -342,7 +342,7 @@ export class AiProductService {
     if (!unique.length) throw new BadRequestException("أدخل باركود تدرج واحد على الأقل");
 
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `shade-v3|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `shade-v4|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 20 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -364,10 +364,9 @@ export class AiProductService {
       )
     ).filter((h): h is NonNullable<typeof h> => Boolean(h));
 
-    const hintBarcodes = unique.slice(0, 5);
     const freeByBarcode = new Map<string, FreeHint>();
-    for (let i = 0; i < hintBarcodes.length; i += 2) {
-      const chunk = hintBarcodes.slice(i, i + 2);
+    for (let i = 0; i < unique.length; i += 2) {
+      const chunk = unique.slice(i, i + 2);
       const part = await Promise.all(
         chunk.map(async (barcode) => [barcode, await this.freeBarcodeHint(barcode)] as const),
       );
@@ -391,7 +390,7 @@ export class AiProductService {
       shadeFamily: true,
     });
     const shadeRows = unique.map((barcode, index) =>
-      this.guessShadeRow(barcode, freeByBarcode.get(barcode), imageTitles, index),
+      this.guessShadeRow(barcode, freeByBarcode.get(barcode), index),
     );
     const named = await this.cursor.verifyBilingualNames(
       {
@@ -428,31 +427,39 @@ export class AiProductService {
       gptByBarcode.set(key, row);
     }
 
-    const shades = unique.map((barcode, index) => {
-      const row = gptByBarcode.get(barcode.toLowerCase());
-      const code = String(row?.code ?? "").trim();
-      const nameEn = String(row?.name_en ?? "").trim();
-      const nameAr = this.polishMarketArabic(String(row?.name_ar ?? "").trim());
-      let name = "";
-      if (code && nameEn && !nameEn.toLowerCase().startsWith(code.toLowerCase())) {
-        name = `${code} ${nameEn}`;
-      } else if (nameEn) {
-        name = nameEn;
-      } else if (code && nameAr) {
-        name = `${code} ${nameAr}`;
-      } else {
-        name = nameAr || code || `تدرج ${index + 1}`;
-      }
-      return {
-        barcode,
-        code,
-        name,
-        nameEn: nameEn || name,
-        nameAr: nameAr || name,
-        colorHex: this.normalizeShadeHex(row?.color_hex),
-        position: index,
-      };
-    });
+    const shades = this.sortShadeFamily(
+      unique.map((barcode, index) => {
+        const row = gptByBarcode.get(barcode.toLowerCase());
+        const code = String(row?.code ?? "").trim();
+        const nameEn = String(row?.name_en ?? "").trim();
+        const nameAr = this.polishMarketArabic(String(row?.name_ar ?? "").trim());
+        let name = "";
+        const cleanEn = nameEn
+          .replace(new RegExp(`^shade\\s*${code}\\s*`, "i"), "")
+          .replace(new RegExp(`^${code}\\s*`, "i"), "")
+          .trim();
+        if (cleanEn && code && !cleanEn.toLowerCase().includes(code.toLowerCase())) {
+          name = `${cleanEn} ${code}`;
+        } else if (cleanEn) {
+          name = cleanEn;
+        } else if (nameEn) {
+          name = nameEn;
+        } else if (code && nameAr) {
+          name = nameAr.includes(code) ? nameAr : `${nameAr} ${code}`;
+        } else {
+          name = nameAr || code || `تدرج ${index + 1}`;
+        }
+        return {
+          barcode,
+          code,
+          name,
+          nameEn: nameEn || name,
+          nameAr: nameAr || name,
+          colorHex: this.normalizeShadeHex(row?.color_hex),
+          position: index,
+        };
+      }),
+    ).map((shade, index) => ({ ...shade, position: index }));
 
     const galleryQuery = [polished.brand_en || polished.brand_ar, polished.name_en || polished.name_ar]
       .filter(Boolean)
@@ -1260,14 +1267,44 @@ export class AiProductService {
       re.lastIndex = 0;
     }
     s = s.replace(/\s+/g, " ").trim();
+    for (const t of types) {
+      const esc = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      s = s.replace(new RegExp(esc, "gi"), " ").replace(/\s+/g, " ").trim();
+    }
 
     const typeAr = types[0] || (!this.hasArabicScript(s) ? (typeHintAr || "").trim() : "");
     const line = s.replace(/\s+/g, " ").trim();
-    const out = [typeAr, line, ...sizes].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
-    if (!this.hasArabicScript(out) && typeHintAr) {
+    let out = [typeAr, line, ...sizes].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+    out = this.dedupeArabicPhrases(out);
+    if (!this.hasArabicScript(out) && typeHintAr && !out.includes(typeHintAr)) {
       return `${typeHintAr} ${out}`.replace(/\s+/g, " ").trim();
     }
     return out;
+  }
+
+  private dedupeArabicPhrases(text: string): string {
+    let s = (text || "").replace(/\s+/g, " ").trim();
+    if (!s) return s;
+    const known = [
+      "أحمر شفاه سائل",
+      "أحمر شفاه",
+      "جلوس شفاه",
+      "قلم شفاه",
+      "موس تنظيف",
+      "فاونديشن",
+      "كونسيلر",
+      "ماسكارا",
+      "بلاشر",
+      "هايلايتر",
+      "برونزر",
+      "برايمر",
+      "بودرة",
+    ];
+    for (const phrase of known) {
+      const esc = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      s = s.replace(new RegExp(`(${esc})(\\s+\\1)+`, "g"), "$1");
+    }
+    return s.replace(/\s+/g, " ").trim();
   }
 
   private stripLeadingType(core: string, type: { ar: string; en: string }): string {
@@ -1308,30 +1345,108 @@ export class AiProductService {
   private guessShadeRow(
     barcode: string,
     free: FreeHint | undefined,
-    imageTitles: string[],
     index: number,
   ): GptShadeRow {
-    const blob = [free?.title, free?.brand, ...(imageTitles ?? [])].filter(Boolean).join(" ");
-    const code = this.extractShadeCode(blob, barcode, index);
-    const nameEn = this.extractShadeName(blob, code) || (code ? `Shade ${code}` : `Shade ${index + 1}`);
+    const title = String(free?.title ?? "").trim();
+    const blob = [title, free?.brand].filter(Boolean).join(" ");
+    const code = this.extractShadeCode(title || blob, barcode, index);
+    let nameEn = this.extractShadeName(title, code);
+    if (!nameEn || /^shade\s*\d+$/i.test(nameEn.trim())) {
+      nameEn = this.inventShadeLabel(title || blob, code, index);
+    }
     const nameAr = this.polishMarketArabic(this.guessShadeNameAr(nameEn, code));
     return {
       barcode,
       code,
       name_en: nameEn,
       name_ar: nameAr,
-      color_hex: this.guessShadeHex(`${nameEn} ${blob}`),
+      color_hex: this.guessShadeHex(`${nameEn} ${title} ${blob}`),
     };
   }
 
+  private inventShadeLabel(text: string, code: string, index: number): string {
+    let s = this.stripRetailerJunk(text);
+    s = s.replace(/\bARTDECO\b/gi, " ").replace(/\blip\s*fluid\b/gi, " ");
+    s = s.replace(/\bmat\s*passion\b/gi, " ").replace(/\b\d+\s*ml\b/gi, " ");
+    s = s.replace(/\b(?:nr\.?|no\.?|n[°o]\.?|#)\s*\d+\b/gi, " ");
+    s = s.replace(/\s+/g, " ").trim();
+    const words = s.split(/\s+/).filter((w) => w.length > 1 && !/^\d+$/.test(w));
+    if (words.length >= 2) return words.slice(-2).join(" ");
+    if (words.length === 1) return words[0];
+    return code ? `Shade ${code}` : `Shade ${index + 1}`;
+  }
+
+  private shadeSortNumber(code: string, name: string): number | null {
+    const c = String(code ?? "").trim();
+    if (/^\d{1,3}$/.test(c)) {
+      const n = parseInt(c, 10);
+      return Number.isFinite(n) ? n : null;
+    }
+    const alphaNum = c.match(/^([A-Za-z]?)(\d{1,3})$/);
+    if (alphaNum?.[2]) {
+      const n = parseInt(alphaNum[2], 10);
+      if (n >= 1 && n <= 999) return n;
+    }
+    const nums = [...String(name ?? "").matchAll(/\b(\d{1,3})\b/g)];
+    if (nums.length) {
+      const n = parseInt(nums[nums.length - 1][1], 10);
+      if (n >= 1 && n <= 999) return n;
+    }
+    return null;
+  }
+
+  private compareShadeOrder(
+    a: { code: string; name: string },
+    b: { code: string; name: string },
+    barcodeA: string,
+    barcodeB: string,
+  ): number {
+    const na = this.shadeSortNumber(a.code, a.name);
+    const nb = this.shadeSortNumber(b.code, b.name);
+    if (na != null && nb != null && na !== nb) return na - nb;
+    if (na != null && nb == null) return -1;
+    if (na == null && nb != null) return 1;
+    const nameCmp = String(a.name ?? "").localeCompare(String(b.name ?? ""), undefined, {
+      sensitivity: "base",
+    });
+    if (nameCmp !== 0) return nameCmp;
+    const barcodeCmp = String(barcodeA ?? "").localeCompare(String(barcodeB ?? ""));
+    if (barcodeCmp !== 0) return barcodeCmp;
+    return String(a.code ?? "").localeCompare(String(b.code ?? ""), undefined, { sensitivity: "base" });
+  }
+
+  private sortShadeFamily<
+    T extends { barcode: string; code?: string; name?: string; nameEn?: string },
+  >(shades: T[]): T[] {
+    return [...shades].sort((a, b) =>
+      this.compareShadeOrder(
+        { code: String(a.code ?? ""), name: String(a.name ?? a.nameEn ?? "") },
+        { code: String(b.code ?? ""), name: String(b.name ?? b.nameEn ?? "") },
+        a.barcode,
+        b.barcode,
+      ),
+    );
+  }
+
   private extractShadeCode(text: string, barcode: string, index: number): string {
-    const m =
-      text.match(/\b(?:shade|n[°o.]?|nr\.?|#)\s*([A-Z]?\d{1,3})\b/i) ||
-      text.match(/\b([A-Z]\d{2,3})\b/) ||
-      text.match(/\b(\d{2,3})\b/);
-    if (m?.[1]) return m[1].toUpperCase();
-    const tail = barcode.replace(/\D/g, "").slice(-2);
-    if (tail && tail !== "00") return String(Number(tail) || tail);
+    const t = text || "";
+    const labeled =
+      t.match(/\b(?:shade|n[°o.]?|nr\.?|no\.?|#)\s*([A-Za-z]?\d{1,3})\b/i) ||
+      t.match(/\b([A-Z]{1,2}\d{2,3})\b/);
+    if (labeled?.[1]) return labeled[1].toUpperCase();
+
+    const endNum = t.match(/\b(\d{2,3})\b(?!\s*(?:ml|g|gr|oz)\b)/gi);
+    if (endNum?.length) {
+      const last = endNum[endNum.length - 1];
+      const n = parseInt(last, 10);
+      if (n >= 10 && n <= 999) return String(n);
+    }
+
+    const digits = barcode.replace(/\D/g, "");
+    if (digits.length >= 10) {
+      const slice = digits.slice(-5, -1);
+      if (slice && slice !== "0000") return slice;
+    }
     return String(index + 1).padStart(2, "0");
   }
 
@@ -1440,6 +1555,7 @@ export class AiProductService {
     const nameAr = this.polishMarketArabic(
       arTitleBrand ? `${arTitleBrand} - ${this.arabicizeProductCore(nameArBody, typeHint)}` : this.arabicizeProductCore(nameArRaw, typeHint),
     );
+    const nameArFinal = this.dedupeArabicPhrases(nameAr);
     const descriptionAr = this.polishMarketArabic(gpt.description_ar || "");
     const normCodes = (arr: unknown, prefix: string) =>
       (Array.isArray(arr) ? arr : [])
@@ -1451,7 +1567,7 @@ export class AiProductService {
       brand_en: brandEn || gpt.brand_en?.trim() || "",
       brand_ar: brandAr || gpt.brand_ar?.trim() || "",
       name_en: nameEn,
-      name_ar: nameAr,
+      name_ar: nameArFinal,
       description_ar: descriptionAr,
       category_main_code: (() => {
         const c = String(gpt.category_main_code ?? "")

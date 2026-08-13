@@ -13,12 +13,15 @@ import '../../core/utils/brand_match.dart';
 import '../../core/utils/daily_progress_store.dart';
 import '../../core/utils/helpers.dart';
 import '../../core/utils/product_naming.dart';
+import '../../core/utils/shade_sort.dart';
+import '../../core/utils/store_image_enrich.dart';
 import '../../models/ai_autofill.dart';
 import '../../models/brand.dart';
 import '../../models/catalog.dart';
 import '../../models/inventory.dart';
 import '../../providers/auth_provider.dart';
 import '../../repositories/ai_product_repository.dart';
+import '../../repositories/catalog_repository.dart';
 import '../../repositories/product_repository.dart';
 import '../../widgets/composer_naming_banner.dart';
 import '../../widgets/google_style_image_search.dart';
@@ -64,10 +67,15 @@ class _ShadeDraft {
   String get displayName {
     final code = codeController.text.trim();
     final name = nameController.text.trim();
-    if (code.isNotEmpty && name.isNotEmpty && !name.toLowerCase().startsWith(code.toLowerCase())) {
-      return '$code $name';
+    if (name.isEmpty) return code.isNotEmpty ? code : barcode;
+    if (code.isEmpty) return name;
+    final ln = name.toLowerCase();
+    final lc = code.toLowerCase();
+    if (ln == lc || ln.endsWith(' $lc') || ln.contains(' $lc ') || ln.startsWith('$lc ')) {
+      return name;
     }
-    return name.isNotEmpty ? name : (code.isNotEmpty ? code : barcode);
+    if (!ln.startsWith(lc)) return '$code $name';
+    return name;
   }
 
   void dispose() {
@@ -167,28 +175,19 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
       _applyPos();
       _applyResult(fill);
 
-      if (fill.category.categoryId != null) {
-        await _loadSubs(fill.category.categoryId!, clearChildren: false);
-        final suggestedSubs = fill.category.subcategoryIds.isNotEmpty
-            ? fill.category.subcategoryIds
-            : [
-                if ((fill.category.subcategoryId ?? '').isNotEmpty) fill.category.subcategoryId!,
-              ];
-        _subcategoryIds
-          ..clear()
-          ..addAll(suggestedSubs.where((id) => _subcategories.any((s) => s.id == id)));
-        if (_subcategoryIds.isNotEmpty) {
-          await _reloadTertiaries(pruneSelection: false);
-          final suggested = fill.category.tertiaryCategoryIds.isNotEmpty
-              ? fill.category.tertiaryCategoryIds
-              : [
-                  if ((fill.category.tertiaryCategoryId ?? '').isNotEmpty) fill.category.tertiaryCategoryId!,
-                ];
-          _tertiaryIds
-            ..clear()
-            ..addAll(suggested.where((id) => _tertiary.any((t) => t.id == id)));
+      try {
+        _gallery = await enrichImagesFromStores(
+          catalog: ref.read(catalogRepositoryProvider),
+          barcode: _mainBarcode,
+          nameHint: _productNameQuery,
+          base: _gallery,
+        );
+        for (final img in _gallery) {
+          _imageByUrl[img.url] = img;
         }
-      }
+      } catch (_) {}
+
+      await _applyCategoryFromProduct(fill);
 
       _brandId = _bestBrandMatch(_brands, fill.brandAr, fill.brandEn)?.id;
       final matched = _selectedBrand;
@@ -260,12 +259,27 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
         _shades.add(_ShadeDraft(barcode: widget.barcodes[i], name: 'تدرج ${i + 1}', code: '', hex: '#CCCCCC'));
       }
     }
+    _sortShades();
     _gallery = List.of(fill.images);
     for (final img in _gallery) {
       _imageByUrl[img.url] = img;
     }
     _selectedGallery.clear();
     _galleryOrder.clear();
+  }
+
+  void _sortShades() {
+    if (_shades.length < 2) return;
+    _shades.sort(
+      (a, b) => compareShadeOrder(
+        codeA: a.codeController.text,
+        nameA: a.nameController.text,
+        barcodeA: a.barcode,
+        codeB: b.codeController.text,
+        nameB: b.nameController.text,
+        barcodeB: b.barcode,
+      ),
+    );
   }
 
   BrandEntity? _bestBrandMatch(List<BrandEntity> brands, String ar, String en) {
@@ -342,6 +356,95 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
     if (mounted) setState(() {});
   }
 
+  Future<void> _applyCategoryFromProduct(ShadeFamilyResult fill) async {
+    final mainId = fill.category.categoryId;
+    if (mainId != null && mainId.isNotEmpty) {
+      _categoryId = mainId;
+      await _loadSubs(mainId, clearChildren: false);
+      final suggestedSubs = fill.category.subcategoryIds.isNotEmpty
+          ? fill.category.subcategoryIds
+          : [
+              if ((fill.category.subcategoryId ?? '').isNotEmpty) fill.category.subcategoryId!,
+            ];
+      _subcategoryIds
+        ..clear()
+        ..addAll(suggestedSubs.where((id) => _subcategories.any((s) => s.id == id)));
+      if (_subcategoryIds.isEmpty && fill.category.subcategoryNameAr != null) {
+        final subName = fill.category.subcategoryNameAr!.toLowerCase();
+        for (final s in _subcategories) {
+          final n = s.displayName.toLowerCase();
+          if (n.contains(subName) || subName.contains(n)) {
+            _subcategoryIds.add(s.id);
+          }
+        }
+      }
+      if (_subcategoryIds.isNotEmpty) {
+        await _reloadTertiaries(pruneSelection: false);
+        final suggestedTert = fill.category.tertiaryCategoryIds.isNotEmpty
+            ? fill.category.tertiaryCategoryIds
+            : [
+                if ((fill.category.tertiaryCategoryId ?? '').isNotEmpty) fill.category.tertiaryCategoryId!,
+              ];
+        _tertiaryIds
+          ..clear()
+          ..addAll(suggestedTert.where((id) => _tertiary.any((t) => t.id == id)));
+      }
+      if (mounted) setState(() {});
+      return;
+    }
+    await _guessCategoryLocally();
+  }
+
+  Future<void> _guessCategoryLocally() async {
+    if (_categories.isEmpty) return;
+    final hay = '${_nameEn.text} ${_nameAr.text} ${_result?.productTypeAr ?? ''}'.toLowerCase();
+
+    NamedEntity? main;
+    for (final c in _categories) {
+      final n = c.displayName.toLowerCase();
+      if (n.contains('مكياج') || n.contains('makeup')) {
+        if (hay.contains('lip') || hay.contains('شفاه') || hay.contains('أحمر') || hay.contains('fluid') || hay.contains('gloss')) {
+          main = c;
+          break;
+        }
+      }
+    }
+    if (main == null) {
+      for (final c in _categories) {
+        if (c.displayName.contains('مكياج')) {
+          main = c;
+          break;
+        }
+      }
+    }
+    main ??= _categories.isNotEmpty ? _categories.first : null;
+    if (main == null) return;
+
+    await _loadSubs(main.id);
+    final subs = _subcategories.where((s) {
+      final n = s.displayName.toLowerCase();
+      if (hay.contains('lip') || hay.contains('شفاه') || hay.contains('fluid')) {
+        return n.contains('شفاه') || n.contains('lip');
+      }
+      if (hay.contains('eye') || hay.contains('عيون') || hay.contains('mascara')) {
+        return n.contains('عيون') || n.contains('eye');
+      }
+      if (hay.contains('face') || hay.contains('وجه') || hay.contains('foundation') || hay.contains('blush')) {
+        return n.contains('وجه') || n.contains('face');
+      }
+      if (hay.contains('brow') || hay.contains('حواجب')) return n.contains('حواجب') || n.contains('brow');
+      return false;
+    }).toList();
+
+    if (subs.isNotEmpty) {
+      _subcategoryIds
+        ..clear()
+        ..addAll(subs.map((e) => e.id));
+      await _reloadTertiaries();
+    }
+    if (mounted) setState(() {});
+  }
+
   NamedEntity? _find(List<NamedEntity> list, String? id) {
     if (id == null) return null;
     for (final e in list) {
@@ -408,10 +511,16 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
             query: mode == 'name' ? (q.isNotEmpty ? q : shade.barcode) : shade.barcode,
             nameHint: q.isNotEmpty ? q : _productNameQuery,
           );
+      final merged = await enrichImagesFromStores(
+        catalog: ref.read(catalogRepositoryProvider),
+        barcode: shade.barcode,
+        nameHint: q.isNotEmpty ? q : _productNameQuery,
+        base: imgs,
+      );
       if (!mounted) return;
       setState(() {
-        shade.imageHits = imgs;
-        for (final img in imgs) {
+        shade.imageHits = merged;
+        for (final img in merged) {
           _imageByUrl[img.url] = img;
         }
       });
@@ -434,9 +543,15 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
             query: q,
             nameHint: _productNameQuery,
           );
+      final merged = await enrichImagesFromStores(
+        catalog: ref.read(catalogRepositoryProvider),
+        barcode: _mainBarcode,
+        nameHint: _productNameQuery,
+        base: imgs,
+      );
       if (!mounted) return;
       setState(() {
-        for (final img in imgs) {
+        for (final img in merged) {
           _imageByUrl[img.url] = img;
         }
         final selectedKept = <AiAutofillImage>[];
@@ -447,7 +562,7 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
           selectedKept.add(img);
         }
         final searchNew = <AiAutofillImage>[];
-        for (final img in imgs) {
+        for (final img in merged) {
           if (!seen.add(img.url)) continue;
           searchNew.add(img);
         }
@@ -509,14 +624,27 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
     );
   }
 
-  Future<String> _uploadUrl(ProductRepository repo, String url) async {
+  Future<String?> _uploadUrl(ProductRepository repo, String url, {bool required = true}) async {
     final edited = _editedBytesByUrl[url];
     if (edited != null) {
       final id = await repo.uploadImageBytes(edited);
-      if (id == null || id.isEmpty) throw Exception('فشل رفع صورة معدّلة');
+      if (id == null || id.isEmpty) {
+        if (required) throw Exception('فشل رفع صورة معدّلة');
+        return null;
+      }
       return id;
     }
-    return repo.uploadImageFromUrlRequired(url);
+    final id = await repo.uploadImageFromUrl(url);
+    if (id == null || id.isEmpty) {
+      if (required) {
+        final host = Uri.tryParse(url.trim())?.host;
+        throw Exception(
+          host != null && host.isNotEmpty ? 'تعذّر رفع صورة من $host' : 'تعذّر رفع إحدى الصور المختارة',
+        );
+      }
+      return null;
+    }
+    return id;
   }
 
   bool _validateStep(int step) {
@@ -631,6 +759,7 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
 
     setState(() => _saving = true);
     try {
+      _sortShades();
       final repo = ref.read(productRepositoryProvider);
       final brandAr = _brandAr.text.trim();
       final brandEn = _brandEn.text.trim();
@@ -671,11 +800,24 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
         for (final s in _shades)
           if (s.imageUrl != null && s.imageUrl!.isNotEmpty && !galleryUrls.contains(s.imageUrl)) s.imageUrl!,
       ];
-      final allUrls = [...galleryUrls, ...shadeUrls];
       final urlToId = <String, String>{};
-      for (var i = 0; i < allUrls.length; i++) {
-        _snack('رفع الصور ${i + 1} / ${allUrls.length}', short: true);
-        urlToId[allUrls[i]] = await _uploadUrl(repo, allUrls[i]);
+      var galleryIdx = 0;
+      for (final url in galleryUrls) {
+        galleryIdx++;
+        _snack('رفع صور المنتج $galleryIdx / ${galleryUrls.length}', short: true);
+        final id = await _uploadUrl(repo, url, required: true);
+        if (id != null) urlToId[url] = id;
+      }
+      var shadeIdx = 0;
+      for (final url in shadeUrls) {
+        shadeIdx++;
+        _snack('رفع صور التدرجات $shadeIdx / ${shadeUrls.length}', short: true);
+        try {
+          final id = await _uploadUrl(repo, url, required: false);
+          if (id != null) urlToId[url] = id;
+        } catch (_) {
+          _snack('تخطّي صورة تدرج', short: true);
+        }
       }
 
       final imageIds = <String>[];
@@ -1349,6 +1491,25 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
                         }
                       },
               ),
+              if (_subcategoryIds.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: _findMany(_subcategories, _subcategoryIds)
+                        .map(
+                          (e) => InputChip(
+                            label: Text(e.displayName),
+                            onDeleted: () async {
+                              setState(() => _subcategoryIds.remove(e.id));
+                              await _reloadTertiaries();
+                            },
+                          ),
+                        )
+                        .toList(),
+                  ),
+                ),
               if (_subcategoryIds.isNotEmpty)
                 ListTile(
                   contentPadding: EdgeInsets.zero,

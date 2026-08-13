@@ -130,6 +130,10 @@ class ProductNaming {
       s = s.replaceAll(re, ' ');
     }
     s = s.replaceAll(RegExp(r'\s+'), ' ').trim();
+    for (final t in types) {
+      s = s.replaceAll(RegExp(RegExp.escape(t), caseSensitive: false), ' ').trim();
+    }
+    s = s.replaceAll(RegExp(r'\s+'), ' ').trim();
 
     final parts = <String>[
       if (types.isNotEmpty) types.first,
@@ -137,10 +141,49 @@ class ProductNaming {
       ...sizes,
     ];
     var out = parts.join(' ').replaceAll(RegExp(r'\s+'), ' ').trim();
-    if (out.isNotEmpty && !_arabic.hasMatch(out) && types.isEmpty) {
-      // still Latin — keep line/size; caller may prepend type elsewhere
-    }
+    out = _dedupeArabicPhrases(out);
     return out;
+  }
+
+  /// Removes repeated Arabic product-type phrases like "أحمر شفاه سائل أحمر شفاه سائل".
+  static String _dedupeArabicPhrases(String text) {
+    var s = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (s.isEmpty) return s;
+    const knownTypes = [
+      'أحمر شفاه سائل',
+      'أحمر شفاه',
+      'جلوس شفاه',
+      'قلم شفاه',
+      'موس تنظيف',
+      'رغوة تنظيف',
+      'جل استحمام',
+      'لوشن جسم',
+      'واقي شمس',
+      'ظل عيون',
+      'قلم حواجب',
+      'جل حواجب',
+      'فاونديشن',
+      'كونسيلر',
+      'ماسكارا',
+      'ايلاينر',
+      'بلاشر',
+      'هايلايتر',
+      'برونزر',
+      'برايمر',
+      'بودرة',
+      'سيروم',
+      'مرطب',
+      'شامبو',
+      'بلسم',
+      'تونر',
+      'ماسك',
+      'منظف',
+    ];
+    for (final phrase in knownTypes) {
+      final escaped = RegExp.escape(phrase);
+      s = s.replaceAll(RegExp('($escaped)(\\s+\\1)+'), r'$1');
+    }
+    return s.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 
   static String applyEnglishTitle({
