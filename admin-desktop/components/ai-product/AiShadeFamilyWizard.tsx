@@ -20,7 +20,7 @@ import { AiProgressOverlay, type AiProgressState } from "./AiProgressOverlay";
 import { aiSearchImages, aiShadeFamily, fetchAiModels } from "@/lib/aiProductApi";
 import type { ShadeFamilyResult } from "@/lib/aiProductTypes";
 import { applyAiCategories } from "@/lib/aiCategoryApply";
-import { catalogThumbToImage, enrichShadesFromCatalog, isGenericShadeName, mergeUniqueImages } from "@/lib/aiCatalogEnrich";
+import { catalogThumbToImage, enrichShadesFromCatalog, inferProductIdentityFromCatalog, isBarcodeLikeProductName, isGenericShadeName, mergeUniqueImages } from "@/lib/aiCatalogEnrich";
 import { formatAiError, startShadeFamilyProgressTicker } from "@/lib/aiProgress";
 import { matchBrandIdLocal } from "@/lib/catalogBrandMatch";
 import { lookupInventoryBarcodes } from "@/lib/inventorySync";
@@ -229,6 +229,18 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
 
     try {
       const catalogMap = await enrichShadesFromCatalog(barcodes);
+      const identity = inferProductIdentityFromCatalog(catalogMap, hint);
+      if (
+        identity &&
+        (isBarcodeLikeProductName(fill.nameEn, barcodes) ||
+          isBarcodeLikeProductName(fill.nameAr, barcodes) ||
+          !fill.brandEn.trim())
+      ) {
+        if (identity.brandEn) setBrandEn(identity.brandEn);
+        if (identity.brandAr) setBrandAr(identity.brandAr);
+        if (identity.nameEn && isBarcodeLikeProductName(fill.nameEn, barcodes)) setNameEn(identity.nameEn);
+        if (identity.nameAr && isBarcodeLikeProductName(fill.nameAr, barcodes)) setNameAr(identity.nameAr);
+      }
       for (let i = 0; i < rows.length; i++) {
         const hit = catalogMap.get(rows[i].barcode);
         if (!hit) continue;
@@ -519,6 +531,14 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
         {step === 1 ? (
           <Space direction="vertical" size="middle" style={{ width: "100%" }}>
             {result?.isFallback ? <Alert type="warning" message="تعرف محدود — راجع الأسماء" /> : null}
+            {isBarcodeLikeProductName(nameEn, barcodes) || isBarcodeLikeProductName(nameAr, barcodes) ? (
+              <Alert
+                type="warning"
+                showIcon
+                message="اسم المنتج غير مكتمل"
+                description="أدخل تلميح المنتج في الخطوة الأولى (مثل ARTDECO MAT PASSION Lip Fluid) أو اضغط «إثراء الأسماء من المتاجر»."
+              />
+            ) : null}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               <Form.Item label="اسم المنتج عربي">
                 <Input value={nameAr} onChange={(e) => setNameAr(e.target.value)} />
@@ -538,6 +558,13 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
               size="small"
               onClick={async () => {
                 const map = await enrichShadesFromCatalog(barcodes);
+                const identity = inferProductIdentityFromCatalog(map, hint);
+                if (identity) {
+                  if (identity.brandEn) setBrandEn(identity.brandEn);
+                  if (identity.brandAr) setBrandAr(identity.brandAr);
+                  if (identity.nameEn) setNameEn(identity.nameEn);
+                  if (identity.nameAr) setNameAr(identity.nameAr);
+                }
                 setShades((prev) =>
                   prev.map((row) => {
                     const hit = map.get(row.barcode);
@@ -546,7 +573,7 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
                     return { ...row, name: isGenericShadeName(row.name) ? shadeName : row.name };
                   }),
                 );
-                message.success("تم تحديث الأسماء من المتاجر");
+                message.success("تم تحديث أسماء المنتج والتدرجات من المتاجر");
               }}
             >
               إثراء الأسماء من المتاجر

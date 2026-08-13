@@ -353,7 +353,7 @@ export class AiProductService {
   private async shadeFamilyFast(rawBarcodes: string[], hint?: string, modelChoice?: string) {
     const unique = rawBarcodes;
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `shade-v11|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `shade-v12|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 20 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -392,25 +392,34 @@ export class AiProductService {
 
     const lead = unique[0];
     const leadFree = freeByBarcode.get(lead) ?? {};
-    const imageHits = await this.images.searchByBarcodeFast(lead, 16, [
-      leadFree.brand,
-      leadFree.title,
-      hint,
-    ].filter((s): s is string => Boolean(s && String(s).trim().length >= 2)));
-    const imageTitles = this.extractIdentityTitles(imageHits);
 
-    const draft = this.buildHeuristicAutofill({
+    const [, imageHits] = await Promise.all([
+      Promise.race([
+        this.enrichShadeHintsFromCatalog(unique, freeByBarcode),
+        new Promise<void>((resolve) => setTimeout(resolve, 8_000)),
+      ]),
+      this.images.searchByBarcodeFast(lead, 16, [
+        leadFree.brand,
+        leadFree.title,
+        hint,
+      ].filter((s): s is string => Boolean(s && String(s).trim().length >= 2))),
+    ]);
+    const imageTitles = this.extractIdentityTitles(imageHits);
+    const enrichedLead = freeByBarcode.get(lead) ?? leadFree;
+
+    let draft = this.buildHeuristicAutofill({
       barcode: lead,
-      free: leadFree,
+      free: enrichedLead,
       imageTitles,
       hint,
       shadeFamily: true,
     });
-
-    await Promise.race([
-      this.enrichShadeHintsFromCatalog(unique, freeByBarcode),
-      new Promise<void>((resolve) => setTimeout(resolve, 8_000)),
-    ]);
+    draft = this.refineShadeFamilyDraft(draft, {
+      barcode: lead,
+      hint,
+      freeByBarcode,
+      imageTitles,
+    });
 
     let shadeRows = unique.map((barcode, index) =>
       this.guessShadeRow(
@@ -421,7 +430,8 @@ export class AiProductService {
       ),
     );
 
-    const namingBudgetMs = unique.length >= 10 ? 14_000 : unique.length <= 8 ? 12_000 : 16_000;
+    const namingBudgetMs =
+      unique.length >= 10 ? 18_000 : unique.length <= 8 ? 14_000 : 16_000;
     const named = await this.cursor.verifyBilingualNames(
       {
         barcode: lead,
@@ -429,9 +439,9 @@ export class AiProductService {
         brand_en: draft.brand_en,
         name_ar: draft.name_ar,
         name_en: draft.name_en,
-        dbTitle: leadFree.title,
-        dbBrand: leadFree.brand,
-        quantity: leadFree.quantity,
+        dbTitle: enrichedLead.title,
+        dbBrand: enrichedLead.brand,
+        quantity: enrichedLead.quantity,
         imageTitles,
         hint,
         extraContext: `shade_family barcodes=${unique.join(",")} product_type=${draft.category_tertiary_ar || ""}`,
@@ -448,8 +458,9 @@ export class AiProductService {
       needs_review: draft.needs_review || !named.verified,
       confidence: named.verified ? Math.max(draft.confidence, 72) : Math.min(draft.confidence, 45),
     });
-    const namesVerified = named.verified && !this.isWeakGpt(polished);
-    const matched = await this.matchCategories(polished);
+    const familyIdentity = this.guardShadeFamilyIdentity(polished, lead, hint, freeByBarcode);
+    const namesVerified = named.verified && !this.isWeakGpt(familyIdentity);
+    const matched = await this.matchCategories(familyIdentity);
 
     const genericCount = shadeRows.filter((r) => this.isGenericShadeName(r.name_en)).length;
     const shouldAiShadeNames =
@@ -462,9 +473,9 @@ export class AiProductService {
         const aiShades = await Promise.race([
           this.cursor.verifyShadeFamilyNames(
             {
-              brand_en: polished.brand_en,
-              brand_ar: polished.brand_ar,
-              product_en: polished.name_en,
+              brand_en: familyIdentity.brand_en,
+              brand_ar: familyIdentity.brand_ar,
+              product_en: familyIdentity.name_en,
               hint,
               shades: shadeRows.map((row) => ({
                 barcode: row.barcode,
@@ -537,7 +548,7 @@ export class AiProductService {
       }),
     ).map((shade, index) => ({ ...shade, position: index }));
 
-    const galleryQuery = [polished.brand_en || polished.brand_ar, polished.name_en || polished.name_ar]
+    const galleryQuery = [familyIdentity.brand_en || familyIdentity.brand_ar, familyIdentity.name_en || familyIdentity.name_ar]
       .filter(Boolean)
       .join(" ")
       .replace(/\s+/g, " ")
@@ -565,16 +576,16 @@ export class AiProductService {
 
     const payload = {
       barcodes: unique,
-      brandAr: polished.brand_ar,
-      brandEn: polished.brand_en,
-      nameAr: polished.name_ar,
-      nameEn: polished.name_en,
-      descriptionAr: polished.description_ar,
-      descriptionEn: polished.description_en,
+      brandAr: familyIdentity.brand_ar,
+      brandEn: familyIdentity.brand_en,
+      nameAr: familyIdentity.name_ar,
+      nameEn: familyIdentity.name_en,
+      descriptionAr: familyIdentity.description_ar,
+      descriptionEn: familyIdentity.description_en,
       productTypeAr: String(draft.category_tertiary_ar || draft.category_sub_ar || "").trim(),
       category: matched,
-      confidence: polished.confidence > 0 ? polished.confidence : polished.needs_review ? 35 : 70,
-      needsReview: polished.needs_review || polished.confidence < 45 || shades.some((s) => !s.code),
+      confidence: familyIdentity.confidence > 0 ? familyIdentity.confidence : familyIdentity.needs_review ? 35 : 70,
+      needsReview: familyIdentity.needs_review || familyIdentity.confidence < 45 || shades.some((s) => !s.code),
       shades,
       images: galleryImages,
       existingHits,
@@ -1355,7 +1366,11 @@ export class AiProductService {
         productCore = `${productCore} ${qty}`.trim();
       }
     }
-    if (!productCore) productCore = type.en || args.barcode;
+    if (!productCore) {
+      const fromHint = args.hint ? this.stripShadeTokens(this.stripRetailerJunk(args.hint)) : "";
+      productCore = fromHint || type.en || "";
+    }
+    if (!productCore && !args.shadeFamily) productCore = args.barcode;
 
     const nameEn = brandEn ? `${brandEn} - ${productCore}` : productCore;
     const arCore = this.arabicizeProductCore(this.stripLeadingType(productCore, type), type.ar);
@@ -1389,6 +1404,102 @@ export class AiProductService {
       confidence: weak ? 28 : 62,
       needs_review: weak,
     };
+  }
+
+  private isBarcodeLikeText(text: string): boolean {
+    const raw = String(text ?? "").trim();
+    const digits = raw.replace(/\D/g, "");
+    if (digits.length >= 8 && digits.length <= 14 && /^\d+$/.test(digits)) {
+      return raw.replace(/\D/g, "") === digits && raw.length <= digits.length + 2;
+    }
+    return false;
+  }
+
+  private refineShadeFamilyDraft(
+    draft: GptAutofillJson,
+    args: {
+      barcode: string;
+      hint?: string;
+      freeByBarcode: Map<string, FreeHint>;
+      imageTitles: string[];
+    },
+  ): GptAutofillJson {
+    const weakName =
+      this.isBarcodeLikeText(draft.name_en) ||
+      this.isBarcodeLikeText(draft.name_ar) ||
+      !String(draft.brand_en ?? "").trim();
+    if (!weakName) return draft;
+
+    let bestTitle = String(args.hint ?? "").trim();
+    let bestBrand = "";
+    for (const free of args.freeByBarcode.values()) {
+      const title = String(free?.title ?? "").trim();
+      if (title.length > bestTitle.length) bestTitle = title;
+      if (!bestBrand && free?.brand) bestBrand = String(free.brand).trim();
+    }
+
+    if (!bestTitle && !bestBrand) return draft;
+
+    const mergedFree: FreeHint = {
+      ...(args.freeByBarcode.get(args.barcode) ?? {}),
+      title: bestTitle || args.freeByBarcode.get(args.barcode)?.title,
+      brand: bestBrand || args.freeByBarcode.get(args.barcode)?.brand,
+    };
+
+    return this.buildHeuristicAutofill({
+      barcode: args.barcode,
+      free: mergedFree,
+      imageTitles: args.imageTitles,
+      hint: args.hint,
+      shadeFamily: true,
+    });
+  }
+
+  private guardShadeFamilyIdentity(
+    gpt: GptAutofillJson,
+    lead: string,
+    hint: string | undefined,
+    freeByBarcode: Map<string, FreeHint>,
+  ): GptAutofillJson {
+    const bad =
+      this.isBarcodeLikeText(gpt.name_en) ||
+      this.isBarcodeLikeText(gpt.name_ar) ||
+      this.isWeakGpt(gpt);
+    if (!bad) return gpt;
+
+    const rebuilt = this.refineShadeFamilyDraft(gpt, {
+      barcode: lead,
+      hint,
+      freeByBarcode,
+      imageTitles: [],
+    });
+    if (!this.isBarcodeLikeText(rebuilt.name_en) && String(rebuilt.brand_en ?? "").trim()) {
+      return this.polishNaming(rebuilt);
+    }
+
+    const hintText = String(hint ?? "").trim();
+    if (hintText && !this.isBarcodeLikeText(hintText)) {
+      const brandEn = this.canonicalBrandEn(this.guessBrandFromText(hintText));
+      const brandAr = this.canonicalBrandAr(brandEn, hintText);
+      const core = this.stripShadeTokens(this.stripRetailerJunk(hintText));
+      const nameEn = brandEn ? `${brandEn} - ${core}` : core;
+      const arBrand = this.brandPrefixForArabicTitle(brandEn, brandAr);
+      const type = this.guessProductType(hintText);
+      const nameAr = arBrand
+        ? `${arBrand} - ${this.arabicizeProductCore(this.stripLeadingType(core, type), type.ar)}`
+        : this.arabicizeProductCore(core, type.ar);
+      return this.polishNaming({
+        ...gpt,
+        brand_en: brandEn || gpt.brand_en,
+        brand_ar: brandAr || gpt.brand_ar,
+        name_en: nameEn,
+        name_ar: this.polishMarketArabic(nameAr),
+        needs_review: true,
+        confidence: 55,
+      });
+    }
+
+    return { ...gpt, needs_review: true, confidence: Math.min(gpt.confidence ?? 30, 35) };
   }
 
   private guessBrandFromText(text: string): string {
