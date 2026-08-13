@@ -2073,8 +2073,8 @@ export class AiProductService {
       subcategoryIds,
       tertiaryCategoryIds,
       categoryNameAr: mainName || gpt.category_main_ar || type.mainAr,
-      subcategoryNameAr: subcategoryNames[0] ?? gpt.category_sub_ar || type.subAr,
-      tertiaryNameAr: tertiaryNames[0] ?? gpt.category_tertiary_ar || type.ar,
+      subcategoryNameAr: subcategoryNames[0] ?? (gpt.category_sub_ar || type.subAr),
+      tertiaryNameAr: tertiaryNames[0] ?? (gpt.category_tertiary_ar || type.ar),
       subcategoryNamesAr: subcategoryNames,
       tertiaryNamesAr: tertiaryNames,
     };
