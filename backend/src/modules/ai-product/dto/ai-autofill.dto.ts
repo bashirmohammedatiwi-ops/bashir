@@ -114,6 +114,22 @@ export class AiShadeFamilyDto {
   model?: string;
 }
 
+export class AiGlobalShadeEnrichDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(40)
+  @IsString({ each: true })
+  @MinLength(6, { each: true })
+  @MaxLength(32, { each: true })
+  @Matches(/^[0-9A-Za-z\-]{6,32}$/, { each: true })
+  barcodes!: string[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  hint?: string;
+}
+
 export class AiReviewExistingDto {
   @IsString()
   @MinLength(6)

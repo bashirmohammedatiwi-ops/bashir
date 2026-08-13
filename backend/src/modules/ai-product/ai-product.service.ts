@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { barcodeLookupCandidates } from "../../common/barcode.util";
 import { PrismaService } from "../../common/prisma.service";
 import { CursorNamingClient } from "./cursor-naming.client";
+import { GlobalBarcodeEnrichmentService, type GlobalBarcodeHit } from "./global-barcode-enrichment.service";
 import { GoogleImageHit, GoogleImagesService } from "./google-images.service";
 
 type FreeHint = {
@@ -111,6 +112,7 @@ export class AiProductService {
     private readonly prisma: PrismaService,
     private readonly images: GoogleImagesService,
     private readonly cursor: CursorNamingClient,
+    private readonly globalEnrichment: GlobalBarcodeEnrichmentService,
   ) {}
 
   async autofill(barcode: string, hint?: string, modelChoice?: string, force = false) {
@@ -328,18 +330,75 @@ export class AiProductService {
    * Makeup shade-family add: many scanned EANs → one product + shade list
    * (code, official name, hex) + bilingual naming. Images are chosen on the phone.
    */
+  /** Global smart enrich — worldwide barcode DBs + web + image search (not catalog-only). */
+  async enrichShadesGlobal(barcodes: string[], hint?: string) {
+    const unique = this.normalizeBarcodeList(barcodes);
+    if (!unique.length) throw new BadRequestException("أدخل باركود واحد على الأقل");
+
+    const globalMap = await this.globalEnrichment.enrichShadeFamily(unique, hint, { budgetMs: 28_000 });
+    const catalogHints = new Map<string, FreeHint>();
+    await Promise.race([
+      Promise.all([
+        this.enrichFamilyFromCatalogProduct(unique, catalogHints),
+        this.enrichShadeHintsFromCatalog(unique, catalogHints),
+      ]),
+      new Promise<void>((resolve) => setTimeout(resolve, 12_000)),
+    ]);
+
+    const shades = unique.map((barcode, index) => {
+      const global = globalMap.get(barcode);
+      const catalog = catalogHints.get(barcode);
+      const merged = this.mergeGlobalAndCatalogHint(global, catalog, hint);
+      const row = this.guessShadeRow(barcode, merged, index);
+      return {
+        barcode,
+        code: row.code,
+        name: this.formatShadeDisplayName(row),
+        nameEn: row.name_en,
+        nameAr: row.name_ar,
+        colorHex: this.normalizeShadeHex(row.color_hex),
+        source: merged.source ?? global?.source ?? "global",
+        confidence: global?.confidence ?? 0,
+      };
+    });
+
+    const lead = unique[0];
+    const leadHint = catalogHints.get(lead) ?? this.globalHitToFreeHint(globalMap.get(lead), hint);
+    const draft = this.buildHeuristicAutofill({
+      barcode: lead,
+      free: leadHint,
+      hint,
+      shadeFamily: true,
+    });
+
+    return {
+      barcodes: unique,
+      brandEn: draft.brand_en,
+      brandAr: draft.brand_ar,
+      nameEn: draft.name_en,
+      nameAr: draft.name_ar,
+      shades,
+      meta: {
+        engine: "global-v1",
+        sources: [
+          "openbeautyfacts",
+          "openfoodfacts",
+          "go-upc",
+          "upcitemdb",
+          "barcodelookup",
+          "ean-search",
+          "web",
+          "image-search",
+          "catalog-boost",
+        ],
+        shadeCount: shades.length,
+        namedCount: shades.filter((s) => !this.isGenericShadeName(s.nameEn)).length,
+      },
+    };
+  }
+
   async shadeFamily(rawBarcodes: string[], hint?: string, modelChoice?: string) {
-    const unique: string[] = [];
-    const seen = new Set<string>();
-    for (const raw of rawBarcodes ?? []) {
-      const digits = String(raw ?? "").replace(/\D/g, "") || String(raw ?? "").trim();
-      if (digits.length < 6) continue;
-      const key = digits.toLowerCase();
-      if (seen.has(key)) continue;
-      seen.add(key);
-      unique.push(digits);
-      if (unique.length >= 40) break;
-    }
+    const unique = this.normalizeBarcodeList(rawBarcodes);
     if (!unique.length) throw new BadRequestException("أدخل باركود تدرج واحد على الأقل");
 
     try {
@@ -354,7 +413,7 @@ export class AiProductService {
   private async shadeFamilyFast(rawBarcodes: string[], hint?: string, modelChoice?: string) {
     const unique = rawBarcodes;
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `shade-v14|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `shade-v15|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 20 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -375,13 +434,10 @@ export class AiProductService {
         }),
       ).then((rows) => rows.filter((h): h is NonNullable<typeof h> => Boolean(h))),
       (async () => {
+        const globalMap = await this.globalEnrichment.enrichShadeFamily(unique, hint, { budgetMs: 24_000 });
         const map = new Map<string, FreeHint>();
-        for (let i = 0; i < unique.length; i += 8) {
-          const chunk = unique.slice(i, i + 8);
-          const part = await Promise.all(
-            chunk.map(async (barcode) => [barcode, await this.freeBarcodeHintShadeFamily(barcode)] as const),
-          );
-          for (const [barcode, free] of part) map.set(barcode, free);
+        for (const barcode of unique) {
+          map.set(barcode, this.globalHitToFreeHint(globalMap.get(barcode), hint));
         }
         return map;
       })(),
@@ -597,7 +653,8 @@ export class AiProductService {
         model: resolved.apiModel,
         modelChoice: resolved.choice,
         fast: resolved.fast,
-        usedWebSearch: false,
+        usedWebSearch: true,
+        globalEngine: "global-v1",
         namesVerified,
         namingSource: namesVerified ? "composer-2.5" : "heuristic",
         shadeCount: shades.length,
@@ -1860,6 +1917,92 @@ export class AiProductService {
     if (!/^\d{3,4}$/.test(c)) return false;
     const digits = barcode.replace(/\D/g, "");
     return digits.includes(c);
+  }
+
+  private normalizeBarcodeList(rawBarcodes: string[]): string[] {
+    const unique: string[] = [];
+    const seen = new Set<string>();
+    for (const raw of rawBarcodes ?? []) {
+      const digits = String(raw ?? "").replace(/\D/g, "") || String(raw ?? "").trim();
+      if (digits.length < 6) continue;
+      const key = digits.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push(digits);
+      if (unique.length >= 40) break;
+    }
+    return unique;
+  }
+
+  private globalHitToFreeHint(hit: GlobalBarcodeHit | undefined, hint?: string): FreeHint {
+    if (!hit || hit.confidence <= 0) return hint ? { title: hint } : {};
+    const family = String(hit.title ?? hint ?? "").trim();
+    const shade = String(hit.shadeName ?? "").trim();
+    const title =
+      shade && family && !family.toLowerCase().includes(shade.toLowerCase())
+        ? `${family} — ${shade}`
+        : shade || family;
+    return {
+      title: title || family,
+      brand: hit.brand,
+      imageUrl: hit.imageUrl,
+      colorHex: hit.colorHex,
+      source: hit.source ? `global:${hit.source}` : "global",
+    };
+  }
+
+  private mergeGlobalAndCatalogHint(
+    global: GlobalBarcodeHit | undefined,
+    catalog: FreeHint | undefined,
+    hint?: string,
+  ): FreeHint {
+    const fromGlobal = this.globalHitToFreeHint(global, hint);
+    if (!catalog?.title?.trim()) return fromGlobal;
+    const catalogTitle = String(catalog.title).trim();
+    const globalTitle = String(fromGlobal.title ?? "").trim();
+    const catalogShade = this.extractShadeName(catalogTitle, "") || catalogTitle;
+    const globalShade = global?.shadeName || this.extractShadeName(globalTitle, "") || globalTitle;
+    const catalogNamed = catalogShade.length >= 2 && !this.isGenericShadeName(catalogShade);
+    const globalNamed =
+      Boolean(global?.shadeName) ||
+      (globalShade.length >= 2 && !this.isGenericShadeName(globalShade));
+
+    if (catalogNamed && (!globalNamed || (global?.confidence ?? 0) < 55)) {
+      return {
+        ...fromGlobal,
+        ...catalog,
+        title: catalogTitle || globalTitle,
+        brand: catalog.brand || fromGlobal.brand,
+        colorHex: catalog.colorHex || fromGlobal.colorHex,
+        imageUrl: catalog.imageUrl || fromGlobal.imageUrl,
+        source: [fromGlobal.source, catalog.source].filter(Boolean).join("+"),
+      };
+    }
+    return {
+      ...catalog,
+      ...fromGlobal,
+      title: globalTitle || catalogTitle,
+      brand: fromGlobal.brand || catalog.brand,
+      colorHex: fromGlobal.colorHex || catalog.colorHex,
+      imageUrl: fromGlobal.imageUrl || catalog.imageUrl,
+    };
+  }
+
+  private formatShadeDisplayName(row: GptShadeRow): string {
+    const code = String(row.code ?? "").trim();
+    const nameEn = String(row.name_en ?? "").trim();
+    const nameAr = String(row.name_ar ?? "").trim();
+    const cleanEn = nameEn
+      .replace(new RegExp(`^shade\\s*${code}\\s*`, "i"), "")
+      .replace(new RegExp(`^${code}\\s*`, "i"), "")
+      .trim();
+    if (cleanEn && code && !cleanEn.toLowerCase().includes(code.toLowerCase())) {
+      return `${cleanEn} ${code}`;
+    }
+    if (cleanEn) return cleanEn;
+    if (nameEn) return nameEn;
+    if (code && nameAr) return nameAr.includes(code) ? nameAr : `${nameAr} ${code}`;
+    return nameAr || code || nameEn;
   }
 
   private isGenericShadeName(name: string): boolean {

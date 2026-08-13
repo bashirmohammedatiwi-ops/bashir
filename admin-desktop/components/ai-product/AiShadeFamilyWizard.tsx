@@ -49,7 +49,7 @@ const STEPS = ["الباركودات", "التسمية", "صور التدرجا�
 const IDENTIFY_STAGES = [
   "تحليل الباركودات",
   "التعرف بالذكاء الاصطناعي",
-  "إثراء من المتاجر",
+  "بحث عالمي ذكي",
   "تطبيق التصنيفات",
 ];
 
@@ -224,11 +224,11 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
       stageIndex: 2,
       stageLabel: IDENTIFY_STAGES[2],
       percent: 85,
-      detail: `جلب كل التدرجات من المتجر (${barcodes.length} باركود)...`,
+      detail: `بحث عالمي عن ${barcodes.length} باركود (متاجر عربية وعالمية)...`,
     }));
 
     try {
-      const catalogMap = await enrichShadesFromCatalog(barcodes);
+      const catalogMap = await enrichShadesFromCatalog(barcodes, undefined, hint);
       const identity = inferProductIdentityFromCatalog(catalogMap, hint);
       if (
         identity &&
@@ -562,7 +562,7 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
             <Button
               size="small"
               onClick={async () => {
-                const map = await enrichShadesFromCatalog(barcodes);
+                const map = await enrichShadesFromCatalog(barcodes, undefined, hint);
                 const identity = inferProductIdentityFromCatalog(map, hint);
                 if (identity) {
                   if (identity.brandEn) setBrandEn(identity.brandEn);
@@ -577,10 +577,10 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
                 }
                 await enrichShadeColors(nextRows, map);
                 setShades(nextRows);
-                message.success(`تم تحديث ${nextRows.filter((r) => !isGenericShadeName(r.name)).length}/${nextRows.length} تدرج من المتاجر`);
+                message.success(`تم تحديث ${nextRows.filter((r) => !isGenericShadeName(r.name)).length}/${nextRows.length} تدرج (بحث عالمي)`);
               }}
             >
-              إثراء الأسماء من المتاجر
+              إثراء عالمي ذكي
             </Button>
             {shades.map((s, i) => (
               <div key={s.barcode} className="ai-shade-row">

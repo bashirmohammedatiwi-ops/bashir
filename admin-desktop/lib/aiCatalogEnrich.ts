@@ -1,4 +1,5 @@
 import { fetchCatalogProduct, searchCatalogByBarcode, type CatalogImportOption, type CatalogImportShade } from "./catalogImport";
+import { aiEnrichShadesGlobal } from "./aiProductApi";
 import type { AiAutofillImage } from "./aiProductTypes";
 import { resolveShadeColorHex } from "./shadeColorFromImage";
 
@@ -224,7 +225,46 @@ export async function enrichBarcodeFromCatalog(
 export async function enrichShadesFromCatalog(
   barcodes: string[],
   onPartial?: (barcode: string, hit: CatalogImportOption) => void,
+  hint?: string,
 ): Promise<Map<string, CatalogImportOption>> {
+  return enrichShadesGlobally(barcodes, hint, onPartial);
+}
+
+/**
+ * Worldwide smart enrich: OpenBeautyFacts, GoUPC, UPCItemDB, web + image search,
+ * with optional catalog-hub boost (not limited to local stores).
+ */
+export async function enrichShadesGlobally(
+  barcodes: string[],
+  hint?: string,
+  onPartial?: (barcode: string, hit: CatalogImportOption) => void,
+): Promise<Map<string, CatalogImportOption>> {
+  const out = new Map<string, CatalogImportOption>();
+  if (!barcodes.length) return out;
+
+  try {
+    const global = await aiEnrichShadesGlobal({ barcodes, hint });
+    for (const shade of global.shades) {
+      const hit: CatalogImportOption = {
+        store: "global",
+        storeLabel: shade.source || "بحث عالمي",
+        sourceId: shade.barcode,
+        nameAr: global.nameAr,
+        nameEn: global.nameEn,
+        brandAr: global.brandAr,
+        barcode: shade.barcode,
+        shadeName: shade.name,
+        matchedShadeName: shade.name,
+        colorHex: shade.colorHex,
+      };
+      out.set(shade.barcode, hit);
+      onPartial?.(shade.barcode, hit);
+    }
+    if (out.size >= Math.ceil(barcodes.length * 0.5)) return out;
+  } catch {
+    /* fall through to catalog probe */
+  }
+
   if (barcodes.length >= 2) {
     return enrichShadeFamilyFromCatalog(barcodes, onPartial);
   }
@@ -237,9 +277,7 @@ export async function enrichShadesFromCatalog(
   return map;
 }
 
-/**
- * Final enrich path for shade families: barcode probe → fetch full product → map all shades.
- */
+/** @deprecated Use enrichShadesGlobally — kept for catalog-only fallback. */
 export async function enrichShadeFamilyFromCatalog(
   barcodes: string[],
   onPartial?: (barcode: string, hit: CatalogImportOption) => void,
