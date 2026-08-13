@@ -23,6 +23,7 @@ Examples:
 
 - `Seventeen - كونسيلر Ideal Cover Liquid بتغطية كاملة`
 - `ARTDECO - جلوس شفاه Plumping Lip Fluid مملّئ 3 مل`
+- `ARTDECO - موس تنظيف Pure Silk 150 مل`
 - `حياة - سيروم فيتامين سي للوجه 30 مل`
 
 Phone add (`admin-mobile`) must auto-prefix titles when brand is chosen or on next/save. AI autofill (`polishNaming`) must use `brandPrefixForArabicTitle`.

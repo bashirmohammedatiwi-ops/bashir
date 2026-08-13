@@ -52,6 +52,7 @@ services:
       CORS_ORIGIN: "*"
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-change_me_access_dev}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change_me_refresh_dev}
+      JWT_ACCESS_TTL: ${JWT_ACCESS_TTL:-28800}
       MEDIA_ROOT: /data/uploads
       MEDIA_PUBLIC_PREFIX: /media
       MEDIA_PUBLIC_BASE_URL: http://localhost/media

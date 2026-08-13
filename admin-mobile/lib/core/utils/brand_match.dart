@@ -75,6 +75,24 @@ int _scoreBrandMatch(List<String> hints, List<String> candidates) {
   return (ar: ar, en: en);
 }
 
+bool typedBrandMatchesSelected(
+  BrandEntity? selected, {
+  required String brandAr,
+  required String brandEn,
+}) {
+  if (selected == null) return false;
+  final names = [selected.name, selected.nameAr, selected.nameEn, selected.displayName]
+      .whereType<String>()
+      .where((s) => s.trim().isNotEmpty)
+      .toList();
+  final ar = brandAr.trim();
+  final en = brandEn.trim();
+  if (ar.isEmpty && en.isEmpty) return true;
+  if (ar.isNotEmpty && _scoreBrandMatch([ar], names) < 82) return false;
+  if (en.isNotEmpty && _scoreBrandMatch([en], names) < 82) return false;
+  return true;
+}
+
 String? matchBrandIdLocal(List<BrandEntity> brands, {String brandAr = '', String brandEn = ''}) {
   final hints = [brandAr, brandEn].map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
   if (hints.isEmpty) return null;

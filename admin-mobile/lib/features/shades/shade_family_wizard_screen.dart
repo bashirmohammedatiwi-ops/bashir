@@ -9,12 +9,15 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/ai_draft_store.dart';
 import '../../core/utils/ai_model_prefs.dart';
 import '../../core/utils/api_error.dart';
+import '../../core/utils/brand_match.dart';
 import '../../core/utils/daily_progress_store.dart';
 import '../../core/utils/helpers.dart';
+import '../../core/utils/product_naming.dart';
 import '../../models/ai_autofill.dart';
 import '../../models/brand.dart';
 import '../../models/catalog.dart';
 import '../../models/inventory.dart';
+import '../../providers/auth_provider.dart';
 import '../../repositories/ai_product_repository.dart';
 import '../../repositories/product_repository.dart';
 import '../../widgets/composer_naming_banner.dart';
@@ -166,15 +169,14 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
 
       if (fill.category.categoryId != null) {
         await _loadSubs(fill.category.categoryId!, clearChildren: false);
+        final suggestedSubs = fill.category.subcategoryIds.isNotEmpty
+            ? fill.category.subcategoryIds
+            : [
+                if ((fill.category.subcategoryId ?? '').isNotEmpty) fill.category.subcategoryId!,
+              ];
         _subcategoryIds
           ..clear()
-          ..addAll(
-            fill.category.subcategoryIds.isNotEmpty
-                ? fill.category.subcategoryIds
-                : [
-                    if ((fill.category.subcategoryId ?? '').isNotEmpty) fill.category.subcategoryId!,
-                  ],
-          );
+          ..addAll(suggestedSubs.where((id) => _subcategories.any((s) => s.id == id)));
         if (_subcategoryIds.isNotEmpty) {
           await _reloadTertiaries(pruneSelection: false);
           final suggested = fill.category.tertiaryCategoryIds.isNotEmpty
@@ -226,8 +228,13 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
 
   void _applyResult(ShadeFamilyResult fill) {
     _result = fill;
-    _nameAr.text = fill.nameAr;
     _nameEn.text = fill.nameEn;
+    _nameAr.text = ProductNaming.applyArabicTitle(
+      current: fill.nameAr,
+      brandAr: fill.brandAr,
+      brandEn: fill.brandEn,
+      englishName: fill.nameEn,
+    );
     _descAr.text = fill.descriptionAr;
     _descEn.text = fill.descriptionEn;
     _brandAr.text = fill.brandAr;
@@ -625,13 +632,22 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
     setState(() => _saving = true);
     try {
       final repo = ref.read(productRepositoryProvider);
+      final brandAr = _brandAr.text.trim();
+      final brandEn = _brandEn.text.trim();
       var brandId = _brandId;
-      if (brandId == null || brandId.isEmpty) {
-        brandId = await repo.resolveBrand(
-          brandAr: _brandAr.text.trim(),
-          brandEn: _brandEn.text.trim(),
-          createIfMissing: true,
-        );
+      final selectedStillValid = typedBrandMatchesSelected(
+        _selectedBrand,
+        brandAr: brandAr,
+        brandEn: brandEn,
+      );
+      if (!selectedStillValid || brandId == null || brandId.isEmpty) {
+        brandId = matchBrandIdLocal(_brands, brandAr: brandAr, brandEn: brandEn) ??
+            await repo.resolveBrand(
+              brandAr: brandAr,
+              brandEn: brandEn,
+              createIfMissing: true,
+            );
+        _brandId = brandId;
       }
       if (brandId == null || brandId.isEmpty) throw Exception('تعذّر تحديد البراند');
 
@@ -640,6 +656,12 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
         subcategoryIds: _subcategoryIds,
         tertiaryCategoryIds: _tertiaryIds,
       );
+      _subcategoryIds
+        ..clear()
+        ..addAll(sanitized.subcategoryIds);
+      _tertiaryIds
+        ..clear()
+        ..addAll(sanitized.tertiaryCategoryIds);
 
       final galleryUrls = [
         ..._galleryOrder.where(_selectedGallery.contains),
@@ -820,6 +842,16 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
                         Text(_error!, textAlign: TextAlign.center),
                         const SizedBox(height: 16),
                         FilledButton(onPressed: _bootstrap, child: const Text('إعادة المحاولة')),
+                        if (isSessionExpiredError(_error!)) ...[
+                          const SizedBox(height: 10),
+                          TextButton(
+                            onPressed: () {
+                              ref.read(authProvider.notifier).logout();
+                              context.go('/login');
+                            },
+                            child: const Text('تسجيل الدخول'),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -953,13 +985,28 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
           icon: Icons.storefront_outlined,
           child: Row(
             children: [
-              Expanded(child: TextField(controller: _brandAr, decoration: const InputDecoration(labelText: 'عربي'))),
+              Expanded(
+                child: TextField(
+                  controller: _brandAr,
+                  decoration: const InputDecoration(labelText: 'عربي'),
+                  onChanged: (_) {
+                    if (!typedBrandMatchesSelected(_selectedBrand, brandAr: _brandAr.text, brandEn: _brandEn.text)) {
+                      setState(() => _brandId = null);
+                    }
+                  },
+                ),
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: TextField(
                   controller: _brandEn,
                   decoration: const InputDecoration(labelText: 'English'),
                   textDirection: TextDirection.ltr,
+                  onChanged: (_) {
+                    if (!typedBrandMatchesSelected(_selectedBrand, brandAr: _brandAr.text, brandEn: _brandEn.text)) {
+                      setState(() => _brandId = null);
+                    }
+                  },
                 ),
               ),
             ],
@@ -1249,11 +1296,11 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
                   );
                   if (picked != null) {
                     setState(() {
-                      _brandId = picked.id;
                       _brandAr.text = picked.displayName;
                       _brandEn.text = picked.nameEn?.trim().isNotEmpty == true
                           ? picked.nameEn!.trim()
                           : (picked.name?.trim().isNotEmpty == true ? picked.name!.trim() : picked.displayName);
+                      _brandId = picked.id;
                     });
                   }
                 },
@@ -1293,9 +1340,11 @@ class _ShadeFamilyWizardScreenState extends ConsumerState<ShadeFamilyWizardScree
                           isSame: (a, b) => a.id == b.id,
                         );
                         if (picked != null) {
-                          _subcategoryIds
-                            ..clear()
-                            ..addAll(picked.map((e) => e.id));
+                          setState(() {
+                            _subcategoryIds
+                              ..clear()
+                              ..addAll(picked.map((e) => e.id));
+                          });
                           await _reloadTertiaries();
                         }
                       },

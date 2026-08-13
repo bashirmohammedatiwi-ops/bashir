@@ -9,6 +9,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/utils/ai_draft_store.dart';
 import '../../core/utils/ai_model_prefs.dart';
 import '../../core/utils/api_error.dart';
+import '../../core/utils/brand_match.dart';
 import '../../core/utils/daily_progress_store.dart';
 import '../../core/utils/helpers.dart';
 import '../../core/utils/product_naming.dart';
@@ -215,16 +216,15 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
 
       if (fill.category.categoryId != null) {
         await _loadSubs(fill.category.categoryId!, clearChildren: false);
+        final suggestedSubs = fill.category.subcategoryIds.isNotEmpty
+            ? fill.category.subcategoryIds
+            : [
+                if (fill.category.subcategoryId != null && fill.category.subcategoryId!.isNotEmpty)
+                  fill.category.subcategoryId!,
+              ];
         _subcategoryIds
           ..clear()
-          ..addAll(
-            fill.category.subcategoryIds.isNotEmpty
-                ? fill.category.subcategoryIds
-                : [
-                    if (fill.category.subcategoryId != null && fill.category.subcategoryId!.isNotEmpty)
-                      fill.category.subcategoryId!,
-                  ],
-          );
+          ..addAll(suggestedSubs.where((id) => _subcategories.any((s) => s.id == id)));
         if (_subcategoryIds.isNotEmpty) {
           await _reloadTertiaries(pruneSelection: false);
           final suggestedTert = fill.category.tertiaryCategoryIds.isNotEmpty
@@ -322,6 +322,12 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
 
   void _onBrandFieldsChanged() {
     if (_loading || _syncingNames) return;
+    final matches = typedBrandMatchesSelected(
+      _selectedBrand,
+      brandAr: _brandAr.text,
+      brandEn: _brandEn.text,
+    );
+    if (!matches && _brandId != null) _brandId = null;
     if (mounted) setState(() {});
   }
 
@@ -354,6 +360,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
       current: _nameAr.text,
       brandAr: _brandAr.text,
       brandEn: _brandEn.text,
+      englishName: _nameEn.text,
     );
     final en = ProductNaming.applyEnglishTitle(
       current: _nameEn.text,
@@ -381,11 +388,11 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     );
     if (picked == null) return;
     setState(() {
-      _brandId = picked.id;
       _brandAr.text = picked.nameAr?.trim().isNotEmpty == true ? picked.nameAr!.trim() : picked.displayName;
       _brandEn.text = picked.nameEn?.trim().isNotEmpty == true
           ? picked.nameEn!.trim()
           : (picked.name?.trim().isNotEmpty == true ? picked.name!.trim() : picked.displayName);
+      _brandId = picked.id;
       _applyNamePrefixes();
     });
   }
@@ -798,6 +805,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     _subcategoryIds
       ..clear()
       ..addAll(picked.map((e) => e.id));
+    if (mounted) setState(() {});
     await _reloadTertiaries();
   }
 
@@ -867,11 +875,21 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
   Future<void> _next() async {
     if (!_validateStep(_step)) return;
     if (_step < 4) {
-      _goTo(_forwardStep(_step));
+      final from = _step;
+      final dest = _forwardStep(from);
+      _goTo(dest);
+      if (from == 0 && dest == 1) {
+        // ignore: unawaited_futures
+        _enrichImagesWithName();
+      }
       return;
     }
     // Review step is the confirmation — save directly
     await _save();
+  }
+
+  Future<void> _enrichImagesWithName() async {
+    await _refreshImages(mode: ImageSearchMode.barcode);
   }
 
   void _goBack() {
@@ -891,13 +909,22 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     setState(() => _saving = true);
     try {
       final repo = ref.read(productRepositoryProvider);
+      final brandAr = _brandAr.text.trim();
+      final brandEn = _brandEn.text.trim();
       var brandId = _brandId;
-      if (brandId == null || brandId.isEmpty) {
-        brandId = await repo.resolveBrand(
-          brandAr: _brandAr.text.trim(),
-          brandEn: _brandEn.text.trim(),
-          createIfMissing: true,
-        );
+      final selectedStillValid = typedBrandMatchesSelected(
+        _selectedBrand,
+        brandAr: brandAr,
+        brandEn: brandEn,
+      );
+      if (!selectedStillValid || brandId == null || brandId.isEmpty) {
+        brandId = matchBrandIdLocal(_brands, brandAr: brandAr, brandEn: brandEn) ??
+            await repo.resolveBrand(
+              brandAr: brandAr,
+              brandEn: brandEn,
+              createIfMissing: true,
+            );
+        _brandId = brandId;
       }
       if (brandId == null || brandId.isEmpty) {
         throw Exception('تعذّر تحديد البراند');
@@ -908,6 +935,12 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
         subcategoryIds: _subcategoryIds,
         tertiaryCategoryIds: _tertiaryIds,
       );
+      _subcategoryIds
+        ..clear()
+        ..addAll(sanitized.subcategoryIds);
+      _tertiaryIds
+        ..clear()
+        ..addAll(sanitized.tertiaryCategoryIds);
 
       final orderedUrls = _orderedSelectedUrls();
 
@@ -1431,8 +1464,8 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                 decoration: InputDecoration(
                   labelText: 'عربي',
                   helperText: arPrefix.isEmpty
-                      ? 'مثال: ARTDECO - جلوس شفاه Plumping Lip Fluid'
-                      : 'يبدأ بـ $arPrefix ثم نوع المنتج والحجم',
+                      ? 'مثال: ARTDECO - موس تنظيف Pure Silk 150 مل'
+                      : 'يبدأ بـ $arPrefix ثم نوع المنتج بالعربي واسم الخط بالإنجليزي',
                   helperMaxLines: 2,
                 ),
                 maxLines: 2,
@@ -1734,7 +1767,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                           (e) => InputChip(
                             label: Text(e.displayName),
                             onDeleted: () async {
-                              _subcategoryIds.remove(e.id);
+                              setState(() => _subcategoryIds.remove(e.id));
                               await _reloadTertiaries();
                             },
                           ),

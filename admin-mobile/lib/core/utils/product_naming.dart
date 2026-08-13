@@ -49,12 +49,98 @@ class ProductNaming {
     required String current,
     required String brandAr,
     required String brandEn,
+    String? englishName,
   }) {
     final prefix = arabicTitleBrand(brandAr: brandAr, brandEn: brandEn);
-    if (prefix.isEmpty) return current.replaceAll(RegExp(r'\s+'), ' ').trim();
-    final core = productCore(current, [prefix, brandEn, brandAr]);
-    if (core.isEmpty) return '$prefix -';
-    return '$prefix - $core';
+    if (prefix.isEmpty) return arabicizeProductCore(current.replaceAll(RegExp(r'\s+'), ' ').trim());
+    final core = productCore(current.isNotEmpty ? current : (englishName ?? ''), [prefix, brandEn, brandAr]);
+    final arabicCore = arabicizeProductCore(core, fallback: englishName);
+    if (arabicCore.isEmpty) return '$prefix -';
+    return '$prefix - $arabicCore';
+  }
+
+  /// Type in Arabic + official line in English + size. Brand is applied separately.
+  static String arabicizeProductCore(String core, {String? fallback}) {
+    var s = core.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (s.isEmpty && (fallback ?? '').trim().isNotEmpty) {
+      s = fallback!.replaceAll(RegExp(r'\s+'), ' ').trim();
+      final dash = RegExp(r'^(.+?)\s*[-–—]\s*(.+)$').firstMatch(s);
+      if (dash != null) s = dash.group(2)!.trim();
+    }
+    if (s.isEmpty) return '';
+
+    final sizes = <String>[];
+    s = s.replaceAllMapped(RegExp(r'(\d+(?:[.,]\d+)?)\s*(ml|مل|g|غ|gm|gr|grams?|oz)\b', caseSensitive: false), (m) {
+      final n = m.group(1)!.replaceAll(',', '.');
+      final u = m.group(2)!.toLowerCase();
+      final unit = (u == 'ml' || u == 'مل') ? 'مل' : (u == 'oz' ? 'أونصة' : 'غ');
+      sizes.add('$n $unit');
+      return ' ';
+    });
+    s = s.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+    const phrases = <(String, String)>[
+      (r'cleansing\s+mousse|mousse\s+nettoyante', 'موس تنظيف'),
+      (r'cleansing\s+foam', 'رغوة تنظيف'),
+      (r'cleansing\s+milk', 'حليب تنظيف'),
+      (r'cleansing\s+gel', 'جل تنظيف'),
+      (r'makeup\s+remover', 'مزيل مكياج'),
+      (r'micellar\s+water', 'ماء ميسيلار'),
+      (r'facial\s+cleanser|\bcleanser\b|\bcleansing\b', 'منظف'),
+      (r'liquid\s+lipstick|lip\s+fluid', 'أحمر شفاه سائل'),
+      (r'lip\s+gloss', 'جلوس شفاه'),
+      (r'\blipstick\b|\brouge\b', 'أحمر شفاه'),
+      (r'lip\s+liner|lipliner', 'قلم شفاه'),
+      (r'\bconcealer\b', 'كونسيلر'),
+      (r'\bfoundation\b', 'فاونديشن'),
+      (r'\bmascara\b', 'ماسكارا'),
+      (r'eye\s*shadow', 'ظل عيون'),
+      (r'\beyeliner\b|\bkohl\b', 'ايلاينر'),
+      (r'brow\s+gel', 'جل حواجب'),
+      (r'brow\s+pencil|eyebrow', 'قلم حواجب'),
+      (r'\bblush(er)?\b', 'بلاشر'),
+      (r'\bhighlighter\b', 'هايلايتر'),
+      (r'\bbronzer\b', 'برونزر'),
+      (r'\bprimer\b', 'برايمر'),
+      (r'\bpowder\b', 'بودرة'),
+      (r'\bserum\b', 'سيروم'),
+      (r'moisturi[sz]er', 'مرطب'),
+      (r'sun\s*screen|\bspf\b', 'واقي شمس'),
+      (r'\bshampoo\b', 'شامبو'),
+      (r'\bconditioner\b', 'بلسم'),
+      (r'shower\s+gel', 'جل استحمام'),
+      (r'body\s+lotion', 'لوشن جسم'),
+      (r'\btoner\b', 'تونر'),
+      (r'\bmask\b|\bmasque\b', 'ماسك'),
+      (r'\bmousse\b', 'موس'),
+      (r'\bfoam\b', 'رغوة'),
+      (r'\bcream\b', 'كريم'),
+      (r'\blotion\b', 'لوشن'),
+      (r'\bgel\b', 'جل'),
+      (r'\boil\b', 'زيت'),
+      (r'\bspray\b', 'بخاخ'),
+      (r'\bsoap\b', 'صابون'),
+    ];
+
+    final types = <String>[];
+    for (final pair in phrases) {
+      final re = RegExp(pair.$1, caseSensitive: false);
+      if (!re.hasMatch(s)) continue;
+      if (!types.contains(pair.$2)) types.add(pair.$2);
+      s = s.replaceAll(re, ' ');
+    }
+    s = s.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+    final parts = <String>[
+      if (types.isNotEmpty) types.first,
+      if (s.isNotEmpty) s,
+      ...sizes,
+    ];
+    var out = parts.join(' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (out.isNotEmpty && !_arabic.hasMatch(out) && types.isEmpty) {
+      // still Latin — keep line/size; caller may prepend type elsewhere
+    }
+    return out;
   }
 
   static String applyEnglishTitle({

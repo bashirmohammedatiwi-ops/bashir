@@ -104,7 +104,7 @@ class AiProductRepository {
           if (nameHint != null && nameHint.trim().isNotEmpty) 'nameHint': nameHint.trim(),
           if (query != null && query.trim().isNotEmpty) 'query': query.trim(),
         },
-        options: Options(receiveTimeout: const Duration(seconds: 60)),
+        options: Options(receiveTimeout: const Duration(seconds: 90)),
       );
       final data = asMap(resp.data['data'] ?? resp.data);
       return (data['images'] as List? ?? [])

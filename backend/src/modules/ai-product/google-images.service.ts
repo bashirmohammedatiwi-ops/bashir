@@ -18,7 +18,7 @@ export class GoogleImagesService {
   private readonly logger = new Logger(GoogleImagesService.name);
 
   /** Free-text product search (name / brand). */
-  async searchQuery(query: string, limit = 48): Promise<GoogleImageHit[]> {
+  async searchQuery(query: string, limit = 72): Promise<GoogleImageHit[]> {
     const q = query.replace(/\s+/g, " ").trim();
     if (q.length < 3) return [];
     return this.collectResults(q, limit, {
@@ -32,7 +32,7 @@ export class GoogleImagesService {
    */
   async searchByBarcode(
     barcode: string,
-    limit = 48,
+    limit = 72,
     nameHints: string[] = [],
   ): Promise<GoogleImageHit[]> {
     const digits = barcode.replace(/\D/g, "") || barcode.trim();
@@ -61,30 +61,39 @@ export class GoogleImagesService {
       );
     }
 
-    // Name/brand enrichment — always when hints exist (better product photos than bare EAN)
-    const extras: string[] = [];
+    const barcodePlus: string[] = [];
+    const nameOnly: string[] = [];
     for (const hint of nameHints) {
       const h = hint.replace(/\s+/g, " ").trim();
-      if (h.length < 2 || h.length > 100) continue;
+      if (h.length < 2 || h.length > 120) continue;
       if (/^\d{8,14}$/.test(h)) continue;
-      extras.push(`${h} ${digits}`);
-      extras.push(h);
-      // First 2–3 tokens often = brand + line
-      const short = h.split(/\s+/).slice(0, 4).join(" ");
-      if (short.length >= 3 && short !== h) extras.push(short);
+      barcodePlus.push(`${h} ${digits}`);
+      nameOnly.push(h);
+      const short = h.split(/\s+/).slice(0, 5).join(" ");
+      if (short.length >= 3 && short !== h) nameOnly.push(short);
+      const brandLine = h.split(/\s+/).slice(0, 3).join(" ");
+      if (brandLine.length >= 3 && brandLine !== short) nameOnly.push(brandLine);
     }
-    // Prefer product-photo wording over "EAN/UPC" (those pull sticker charts)
-    if (merged.length < Math.min(20, limit)) {
-      extras.push(`${digits} product photo`);
-      extras.push(`${digits} packshot`);
+    if (merged.length < Math.min(24, limit)) {
+      barcodePlus.push(`${digits} product photo`);
+      barcodePlus.push(`${digits} packshot`);
     }
 
-    for (const q of [...new Set(extras)].slice(0, 8)) {
+    for (const q of [...new Set(barcodePlus)].slice(0, 6)) {
       if (merged.length >= limit) break;
       pushHits(
-        await this.collectResults(q, Math.min(24, limit), {
+        await this.collectResults(q, Math.min(36, limit), {
           expandVariants: false,
           filterMode: "barcode",
+        }),
+      );
+    }
+    for (const q of [...new Set(nameOnly)].slice(0, 12)) {
+      if (merged.length >= limit) break;
+      pushHits(
+        await this.collectResults(q, Math.min(48, limit), {
+          expandVariants: true,
+          filterMode: "product",
         }),
       );
     }
@@ -149,7 +158,7 @@ export class GoogleImagesService {
 
     for (const q of queries) {
       if (merged.length >= limit) break;
-      for (const offset of [0, 100, 200]) {
+      for (const offset of [0, 100, 200, 300]) {
         if (merged.length >= limit) break;
         push(await this.searchDuckDuckGo(q, 50, offset));
       }
@@ -166,7 +175,7 @@ export class GoogleImagesService {
   ): Promise<GoogleImageHit[]> {
     try {
       const hits: GoogleImageHit[] = [];
-      const pages = Math.min(5, Math.ceil(limit / 10));
+      const pages = Math.min(8, Math.ceil(limit / 10));
       for (let i = 0; i < pages; i++) {
         const url = new URL("https://www.googleapis.com/customsearch/v1");
         url.searchParams.set("key", apiKey);

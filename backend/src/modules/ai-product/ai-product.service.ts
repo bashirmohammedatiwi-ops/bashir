@@ -1,8 +1,8 @@
-import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { barcodeLookupCandidates } from "../../common/barcode.util";
 import { PrismaService } from "../../common/prisma.service";
 import { CursorNamingClient } from "./cursor-naming.client";
-import { GoogleImagesService } from "./google-images.service";
+import { GoogleImageHit, GoogleImagesService } from "./google-images.service";
 
 type FreeHint = {
   title?: string;
@@ -60,6 +60,8 @@ type CategoryCatalog = {
 /** Beauty product-type synonyms — fallback name matching only (not primary). */
 const CATEGORY_SYNONYMS: Record<string, string[]> = {
   كونسيلر: ["concealer", "cover", "تصحيح"],
+  منظف: ["cleanser", "cleansing", "موس تنظيف", "cleansing mousse", "foam cleanser"],
+  "موس تنظيف": ["cleansing mousse", "mousse", "cleanser"],
   فاونديشن: ["foundation", "fond de teint", "كريم اساس", "كريم أساس"],
   ماسكارا: ["mascara"],
   "احمر شفاه": ["lipstick", "أحمر شفاه", "روج", "ليبستيك", "lip stick"],
@@ -82,30 +84,19 @@ const CATEGORY_SYNONYMS: Record<string, string[]> = {
   "عناية الفم والاسنان": ["oral", "dental care", "teeth"],
 };
 
-/** Tokens too generic for fallback name matching. */
+/** Tokens too generic for *partial* matching. Exact labels like شفاه/وجه still match. */
 const GENERIC_CATEGORY_TOKENS = new Set(
   [
     "عناية",
     "العناية",
     "مكياج",
     "تجميل",
-    "وجه",
-    "عيون",
-    "شفاه",
-    "حواجب",
-    "شعر",
-    "جسم",
-    "بشرة",
     "care",
     "skin",
     "makeup",
-    "face",
-    "eye",
-    "eyes",
-    "lips",
-    "lip",
-    "hair",
-    "body",
+    "beauty",
+    "product",
+    "cosmetic",
   ].map((s) => s.toLowerCase()),
 );
 
@@ -168,7 +159,7 @@ export class AiProductService {
     }
 
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `v13|${force ? "force|" : ""}${digits}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `v14|${force ? "force|" : ""}${digits}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 30 * 60_000) {
       const cachedPayload = cached.payload as {
@@ -186,20 +177,17 @@ export class AiProductService {
       this.autofillCache.delete(cacheKey);
     }
 
-    if (!this.cursor.hasApiKey()) {
-      throw new ServiceUnavailableException("CURSOR_API_KEY غير مُعد على السيرفر");
-    }
-
     // 2) Free barcode DBs + go-upc (many regional beauty EANs are missing from OBF/UPC alone)
     const free = await this.freeBarcodeHint(digits);
 
     // 3) Barcode images first; supplement with brand/title only if barcode hits are thin
-    const imageHits = await this.images.searchByBarcode(digits, 48, [
+    const imageHits = await this.images.searchByBarcode(digits, 72, [
       free.brand,
       free.title,
       free.brand && free.title ? `${free.brand} ${free.title}`.slice(0, 90) : null,
       existing?.nameEn,
       existing?.nameAr,
+      hint,
     ].filter((s): s is string => Boolean(s && String(s).trim().length >= 2)));
     if (free.imageUrl?.startsWith("http")) {
       const key = free.imageUrl.toLowerCase();
@@ -253,6 +241,7 @@ export class AiProductService {
       confidence: named.verified ? Math.max(draft.confidence, 72) : Math.min(draft.confidence, 45),
     });
     const namesVerified = named.verified && !this.isWeakGpt(gpt);
+    await this.mergeNamedImageSearch(imageHits, gpt);
 
     const matched = await this.matchCategories(gpt);
     const issues = this.buildQualityIssues({
@@ -352,12 +341,8 @@ export class AiProductService {
     }
     if (!unique.length) throw new BadRequestException("أدخل باركود تدرج واحد على الأقل");
 
-    if (!this.cursor.hasApiKey()) {
-      throw new ServiceUnavailableException("CURSOR_API_KEY غير مُعد على السيرفر");
-    }
-
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `shade-v2|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `shade-v3|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 20 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -391,7 +376,7 @@ export class AiProductService {
 
     const lead = unique[0];
     const leadFree = freeByBarcode.get(lead) ?? {};
-    const imageHits = await this.images.searchByBarcode(lead, 24, [
+    const imageHits = await this.images.searchByBarcode(lead, 48, [
       leadFree.brand,
       leadFree.title,
       hint,
@@ -478,7 +463,7 @@ export class AiProductService {
     let galleryImages = imageHits;
     if (galleryQuery.length >= 4) {
       try {
-        const extra = await this.images.searchQuery(galleryQuery, 36);
+        const extra = await this.images.searchQuery(galleryQuery, 60);
         const seenUrl = new Set(galleryImages.map((h) => h.url.toLowerCase()));
         for (const hit of extra) {
           if (seenUrl.has(hit.url.toLowerCase())) continue;
@@ -564,7 +549,7 @@ export class AiProductService {
     if (mode === "name") {
       const q = (query ?? nameHint ?? "").replace(/\s+/g, " ").trim();
       if (q.length < 2) throw new BadRequestException("أدخل اسم المنتج للبحث");
-      const images = await this.images.searchQuery(q, 48);
+      const images = await this.images.searchQuery(q, 72);
       return {
         barcode: digits,
         images,
@@ -578,7 +563,7 @@ export class AiProductService {
       .split(/[|,/]+/)
       .map((s) => s.replace(/\s+/g, " ").trim())
       .filter((s) => s.length >= 2);
-    const images = await this.images.searchByBarcode(q, 48, hints);
+    const images = await this.images.searchByBarcode(q, 72, hints);
     return {
       barcode: digits,
       images,
@@ -1087,11 +1072,8 @@ export class AiProductService {
     if (!productCore) productCore = type.en || args.barcode;
 
     const nameEn = brandEn ? `${brandEn} - ${productCore}` : productCore;
-    const arType = type.ar ? `${type.ar} ` : "";
-    const arCore = this.stripLeadingType(productCore, type);
-    const nameAr = arTitleBrand
-      ? `${arTitleBrand} - ${arType}${arCore}`.replace(/\s+/g, " ").trim()
-      : `${arType}${arCore}`.trim();
+    const arCore = this.arabicizeProductCore(this.stripLeadingType(productCore, type), type.ar);
+    const nameAr = arTitleBrand ? `${arTitleBrand} - ${arCore}` : arCore;
 
     const desc = this.templateDescriptions({
       brandEn,
@@ -1155,6 +1137,11 @@ export class AiProductService {
   private guessProductType(text: string): { ar: string; en: string; mainAr: string; subAr: string } {
     const n = this.norm(text);
     const rows: Array<{ test: RegExp; ar: string; en: string; mainAr: string; subAr: string }> = [
+      { test: /cleansing\s*mousse|mousse\s*nettoyante|موس تنظيف/, ar: "موس تنظيف", en: "cleansing mousse", mainAr: "عناية", subAr: "بشرة" },
+      { test: /cleansing\s*foam|رغوة تنظيف/, ar: "رغوة تنظيف", en: "cleansing foam", mainAr: "عناية", subAr: "بشرة" },
+      { test: /micellar|ميسيلار/, ar: "ماء ميسيلار", en: "micellar water", mainAr: "عناية", subAr: "بشرة" },
+      { test: /makeup\s*remover|مزيل مكياج/, ar: "مزيل مكياج", en: "makeup remover", mainAr: "عناية", subAr: "بشرة" },
+      { test: /cleanser|cleansing|منظف وجه|منظف/, ar: "منظف", en: "cleanser", mainAr: "عناية", subAr: "بشرة" },
       { test: /lip\s*fluid|liquid\s*lip|matte\s*ink|lip\s*tint|احمر شفاه سائل/, ar: "أحمر شفاه سائل", en: "liquid lipstick", mainAr: "مكياج", subAr: "شفاه" },
       { test: /lip\s*gloss|جلوس|gloss/, ar: "جلوس شفاه", en: "lip gloss", mainAr: "مكياج", subAr: "شفاه" },
       { test: /lip\s*liner|lipliner|قلم شفاه/, ar: "قلم شفاه", en: "lip liner", mainAr: "مكياج", subAr: "شفاه" },
@@ -1175,6 +1162,12 @@ export class AiProductService {
       { test: /moisturizer|مرطب/, ar: "مرطب", en: "moisturizer", mainAr: "عناية", subAr: "بشرة" },
       { test: /sunscreen|واقي شمس|\bspf\b/, ar: "واقي شمس", en: "sunscreen", mainAr: "عناية", subAr: "بشرة" },
       { test: /shampoo|شامبو/, ar: "شامبو", en: "shampoo", mainAr: "عناية", subAr: "شعر" },
+      { test: /conditioner|بلسم/, ar: "بلسم", en: "conditioner", mainAr: "عناية", subAr: "شعر" },
+      { test: /toner|تونر/, ar: "تونر", en: "toner", mainAr: "عناية", subAr: "بشرة" },
+      { test: /body\s*lotion|لوشن جسم/, ar: "لوشن جسم", en: "body lotion", mainAr: "عناية", subAr: "جسم" },
+      { test: /shower\s*gel|جل استحمام/, ar: "جل استحمام", en: "shower gel", mainAr: "عناية", subAr: "جسم" },
+      { test: /nail\s*polish|طلاء اظافر|طلاء أظافر/, ar: "طلاء أظافر", en: "nail polish", mainAr: "مكياج", subAr: "أظافر" },
+      { test: /perfume|eau de|عطر|بارفان/, ar: "عطر", en: "perfume", mainAr: "عطور", subAr: "" },
       { test: /toothpaste|معجون|oral|dental|mouthwash|غسول فم/, ar: "عناية الفم", en: "oral care", mainAr: "عناية", subAr: "فم" },
     ];
     for (const row of rows) {
@@ -1200,6 +1193,81 @@ export class AiProductService {
       .replace(/\s+#\d{1,3}\b/g, " ")
       .replace(/\s+/g, " ")
       .trim();
+  }
+
+  /** After the brand dash: Arabic market type + optional EN line + size. */
+  private arabicizeProductCore(core: string, typeHintAr?: string): string {
+    let s = (core || "").replace(/\s+/g, " ").trim();
+    if (!s) return (typeHintAr || "").trim();
+
+    const sizes: string[] = [];
+    s = s.replace(/(\d+(?:[.,]\d+)?)\s*(ml|مل|g|غ|gm|gr|grams?|oz)\b/gi, (_m, n: string, u: string) => {
+      const unit = /ml|مل/i.test(u) ? "مل" : /oz/i.test(u) ? "أونصة" : "غ";
+      sizes.push(`${String(n).replace(",", ".")} ${unit}`);
+      return " ";
+    });
+    s = s.replace(/\s+/g, " ").trim();
+
+    const phrases: Array<[RegExp, string]> = [
+      [/cleansing\s+mousse|mousse\s+nettoyante/gi, "موس تنظيف"],
+      [/cleansing\s+foam/gi, "رغوة تنظيف"],
+      [/cleansing\s+milk/gi, "حليب تنظيف"],
+      [/cleansing\s+gel/gi, "جل تنظيف"],
+      [/makeup\s+remover/gi, "مزيل مكياج"],
+      [/micellar\s+water/gi, "ماء ميسيلار"],
+      [/facial\s+cleanser|\bcleanser\b|\bcleansing\b/gi, "منظف"],
+      [/liquid\s+lipstick|lip\s+fluid/gi, "أحمر شفاه سائل"],
+      [/lip\s+gloss/gi, "جلوس شفاه"],
+      [/\blipstick\b|\brouge\b/gi, "أحمر شفاه"],
+      [/lip\s+liner|lipliner/gi, "قلم شفاه"],
+      [/\bconcealer\b/gi, "كونسيلر"],
+      [/\bfoundation\b/gi, "فاونديشن"],
+      [/\bmascara\b/gi, "ماسكارا"],
+      [/eye\s*shadow/gi, "ظل عيون"],
+      [/\beyeliner\b|\bkohl\b/gi, "ايلاينر"],
+      [/brow\s+gel/gi, "جل حواجب"],
+      [/brow\s+pencil|eyebrow/gi, "قلم حواجب"],
+      [/\bblush(er)?\b/gi, "بلاشر"],
+      [/\bhighlighter\b/gi, "هايلايتر"],
+      [/\bbronzer\b/gi, "برونزر"],
+      [/\bprimer\b/gi, "برايمر"],
+      [/\bpowder\b/gi, "بودرة"],
+      [/\bserum\b/gi, "سيروم"],
+      [/moisturi[sz]er/gi, "مرطب"],
+      [/sun\s*screen|\bspf\b/gi, "واقي شمس"],
+      [/\bshampoo\b/gi, "شامبو"],
+      [/\bconditioner\b/gi, "بلسم"],
+      [/shower\s+gel/gi, "جل استحمام"],
+      [/body\s+lotion/gi, "لوشن جسم"],
+      [/\btoner\b/gi, "تونر"],
+      [/\bmask\b|\bmasque\b/gi, "ماسك"],
+      [/\bmousse\b/gi, "موس"],
+      [/\bfoam\b/gi, "رغوة"],
+      [/\bcream\b/gi, "كريم"],
+      [/\blotion\b/gi, "لوشن"],
+      [/\bgel\b/gi, "جل"],
+      [/\boil\b/gi, "زيت"],
+      [/\bspray\b/gi, "بخاخ"],
+      [/\bsoap\b/gi, "صابون"],
+    ];
+
+    const types: string[] = [];
+    for (const [re, ar] of phrases) {
+      if (!re.test(s)) continue;
+      re.lastIndex = 0;
+      if (!types.includes(ar)) types.push(ar);
+      s = s.replace(re, " ");
+      re.lastIndex = 0;
+    }
+    s = s.replace(/\s+/g, " ").trim();
+
+    const typeAr = types[0] || (!this.hasArabicScript(s) ? (typeHintAr || "").trim() : "");
+    const line = s.replace(/\s+/g, " ").trim();
+    const out = [typeAr, line, ...sizes].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+    if (!this.hasArabicScript(out) && typeHintAr) {
+      return `${typeHintAr} ${out}`.replace(/\s+/g, " ").trim();
+    }
+    return out;
   }
 
   private stripLeadingType(core: string, type: { ar: string; en: string }): string {
@@ -1362,11 +1430,16 @@ export class AiProductService {
     const brandAr = this.canonicalBrandAr(brandEn, gpt.brand_ar || "");
     const arTitleBrand = this.brandPrefixForArabicTitle(brandEn, brandAr);
     const nameEn = this.ensureBrandDashName(gpt.name_en || "", brandEn, { doubleBrand: false });
-    const nameArRaw = this.ensureBrandDashName(gpt.name_ar || "", arTitleBrand, {
+    const nameArRaw = this.ensureBrandDashName(gpt.name_ar || gpt.name_en || "", arTitleBrand, {
       doubleBrand: false,
       alsoStrip: [brandEn, brandAr],
     });
-    const nameAr = this.polishMarketArabic(nameArRaw);
+    const typeHint =
+      gpt.category_tertiary_ar || gpt.category_sub_ar || this.guessProductType(`${nameEn} ${nameArRaw}`).ar;
+    const nameArBody = this.extractProductCore(nameArRaw, arTitleBrand);
+    const nameAr = this.polishMarketArabic(
+      arTitleBrand ? `${arTitleBrand} - ${this.arabicizeProductCore(nameArBody, typeHint)}` : this.arabicizeProductCore(nameArRaw, typeHint),
+    );
     const descriptionAr = this.polishMarketArabic(gpt.description_ar || "");
     const normCodes = (arr: unknown, prefix: string) =>
       (Array.isArray(arr) ? arr : [])
@@ -1387,8 +1460,8 @@ export class AiProductService {
           .replace(/[^A-Z0-9]/g, "");
         return /^M\d{2}$/.test(c) ? c : "";
       })(),
-      category_sub_codes: normCodes(gpt.category_sub_codes, "S").slice(0, 2),
-      category_tertiary_codes: normCodes(gpt.category_tertiary_codes, "T").slice(0, 2),
+      category_sub_codes: normCodes(gpt.category_sub_codes, "S").slice(0, 4),
+      category_tertiary_codes: normCodes(gpt.category_tertiary_codes, "T").slice(0, 4),
       category_subs_ar: Array.isArray(gpt.category_subs_ar)
         ? gpt.category_subs_ar.map((s) => String(s ?? "").trim()).filter(Boolean)
         : [],
@@ -1687,10 +1760,43 @@ export class AiProductService {
     return catalog;
   }
 
+  private async mergeNamedImageSearch(
+    imageHits: GoogleImageHit[],
+    gpt: Pick<GptAutofillJson, "brand_ar" | "brand_en" | "name_ar" | "name_en">,
+  ) {
+    const queries = [
+      [gpt.brand_en || gpt.brand_ar, gpt.name_en].filter(Boolean).join(" "),
+      [gpt.brand_en || gpt.brand_ar, gpt.name_ar].filter(Boolean).join(" "),
+      gpt.name_en,
+      gpt.name_ar,
+    ]
+      .map((s) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, 90))
+      .filter((s) => s.length >= 4);
+    const seen = new Set(imageHits.map((h) => h.url.toLowerCase()));
+    for (const q of [...new Set(queries)].slice(0, 3)) {
+      if (imageHits.length >= 90) break;
+      try {
+        const extra = await this.images.searchQuery(q, 48);
+        for (const hit of extra) {
+          const key = hit.url.toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          imageHits.push(hit);
+        }
+      } catch (err) {
+        this.logger.warn(`Named image search failed: ${(err as Error).message}`);
+      }
+    }
+  }
+
   private async matchCategories(gpt: GptAutofillJson) {
     const catalog = await this.getCategoryCatalog();
+    const type = this.guessProductType(
+      [gpt.name_ar, gpt.name_en, gpt.category_main_ar, gpt.category_sub_ar, gpt.category_tertiary_ar, gpt.brand_en, gpt.brand_ar]
+        .filter(Boolean)
+        .join(" "),
+    );
 
-    // 1) Primary path: AI-picked codes (validated against tree + parent links)
     const mainFromCode = this.resolveCode(catalog, gpt.category_main_code, "main");
     let mainId = mainFromCode?.id ?? null;
     let mainName = mainFromCode?.nameAr ?? null;
@@ -1700,16 +1806,25 @@ export class AiProductService {
     const tertiaryCategoryIds: string[] = [];
     const subcategoryNames: string[] = [];
     const tertiaryNames: string[] = [];
+    const maxMulti = 4;
+
+    const pushSub = (id: string | undefined | null, name?: string | null) => {
+      if (!id || subcategoryIds.includes(id) || subcategoryIds.length >= maxMulti) return;
+      subcategoryIds.push(id);
+      if (name) subcategoryNames.push(name);
+    };
+    const pushTert = (id: string | undefined | null, name?: string | null) => {
+      if (!id || tertiaryCategoryIds.includes(id) || tertiaryCategoryIds.length >= maxMulti) return;
+      tertiaryCategoryIds.push(id);
+      if (name) tertiaryNames.push(name);
+    };
 
     if (mainFromCode) {
       for (const code of gpt.category_sub_codes ?? []) {
-        if (subcategoryIds.length >= 2) break;
         const entry = this.resolveCode(catalog, code, "sub");
         if (!entry) continue;
         if (entry.parentCode !== mainCode && entry.parentId !== mainFromCode.id) continue;
-        if (subcategoryIds.includes(entry.id)) continue;
-        subcategoryIds.push(entry.id);
-        subcategoryNames.push(entry.nameAr);
+        pushSub(entry.id, entry.nameAr);
       }
 
       const allowedSubCodes = new Set(
@@ -1718,60 +1833,120 @@ export class AiProductService {
           .map((e) => e.code),
       );
       for (const code of gpt.category_tertiary_codes ?? []) {
-        if (tertiaryCategoryIds.length >= 2) break;
         const entry = this.resolveCode(catalog, code, "tertiary");
         if (!entry) continue;
         if (entry.parentCode && !allowedSubCodes.has(entry.parentCode)) continue;
         if (entry.parentId && !subcategoryIds.includes(entry.parentId)) continue;
-        if (tertiaryCategoryIds.includes(entry.id)) continue;
-        tertiaryCategoryIds.push(entry.id);
-        tertiaryNames.push(entry.nameAr);
+        pushTert(entry.id, entry.nameAr);
       }
     }
 
-    // 2) Fallback: name matching only if codes missing/invalid
     if (!mainId) {
       const mains = [...catalog.byCode.values()]
         .filter((e) => e.level === "main")
-        .map((e) => ({ id: e.id, nameAr: e.nameAr, nameEn: null, name: e.nameAr }));
-      const mainHit =
-        this.bestMatch(mains, gpt.category_main_ar, gpt.category_main_ar) ??
-        this.bestMatch(mains, gpt.name_ar, gpt.name_en);
-      if (mainHit && mainHit.score >= 55) {
-        mainId = mainHit.id;
-        mainName = mainHit.nameAr || mainHit.name || null;
+        .map((e) => ({ id: e.id, nameAr: e.nameAr, nameEn: null as string | null, name: e.nameAr }));
+      const mainHints = this.collectCategoryHints(gpt.category_main_ar, [type.mainAr, gpt.name_ar, gpt.name_en]);
+      for (const hint of mainHints) {
+        const hit = this.bestMatch(mains, hint, hint);
+        if (hit && hit.score >= 48) {
+          mainId = hit.id;
+          mainName = hit.nameAr || hit.name || null;
+          break;
+        }
+      }
+      if (!mainId) {
+        for (const hint of [type.mainAr, gpt.category_main_ar].filter(Boolean)) {
+          const tn = this.norm(hint);
+          if (!tn) continue;
+          const row = mains.find((m) => {
+            const n = this.norm(m.nameAr || m.name || "");
+            return n === tn || n.includes(tn) || tn.includes(n);
+          });
+          if (row) {
+            mainId = row.id;
+            mainName = row.nameAr || row.name || null;
+            break;
+          }
+        }
       }
     }
 
-    if (mainId && !subcategoryIds.length) {
-      const subs = [...catalog.byCode.values()]
-        .filter((e) => e.level === "sub" && e.parentId === mainId)
-        .map((e) => ({ id: e.id, nameAr: e.nameAr, nameEn: null, name: e.nameAr }));
-      const subHints = this.collectCategoryHints(gpt.category_sub_ar, gpt.category_subs_ar);
-      const identityHints = this.collectCategoryHints(gpt.name_ar, [gpt.name_en]);
-      const ids = this.matchManyCategories(subs, subHints, identityHints, {
-        maxSelect: Math.min(2, Math.max(1, subHints.length || 1)),
+    const allEntries = [...catalog.byCode.values()];
+    const subsOfMain = mainId
+      ? allEntries
+          .filter((e) => e.level === "sub" && e.parentId === mainId)
+          .map((e) => ({ id: e.id, nameAr: e.nameAr, nameEn: null as string | null, name: e.nameAr }))
+      : [];
+
+    if (mainId && subcategoryIds.length < maxMulti && subsOfMain.length) {
+      const subHints = this.collectCategoryHints(gpt.category_sub_ar, [
+        ...(gpt.category_subs_ar ?? []),
+        type.subAr,
+        type.ar,
+      ]);
+      const identityHints = this.collectCategoryHints(gpt.name_ar, [gpt.name_en, type.en, type.ar]);
+      const ids = this.matchManyCategories(subsOfMain, subHints, identityHints, {
+        maxSelect: maxMulti,
+        primaryMinScore: 48,
+        identityMinScore: 58,
       });
       for (const id of ids) {
-        const row = subs.find((s) => s.id === id);
-        subcategoryIds.push(id);
-        if (row?.nameAr) subcategoryNames.push(row.nameAr);
+        const row = subsOfMain.find((s) => s.id === id);
+        pushSub(id, row?.nameAr);
+      }
+      if (!subcategoryIds.length && type.subAr) {
+        const tn = this.norm(type.subAr);
+        for (const row of subsOfMain) {
+          const n = this.norm(row.nameAr || row.name || "");
+          if (n === tn || n.includes(tn) || (tn.length >= 3 && tn.includes(n))) {
+            pushSub(row.id, row.nameAr);
+          }
+        }
       }
     }
 
-    if (subcategoryIds.length && !tertiaryCategoryIds.length) {
-      const tert = [...catalog.byCode.values()]
-        .filter((e) => e.level === "tertiary" && e.parentId && subcategoryIds.includes(e.parentId))
-        .map((e) => ({ id: e.id, nameAr: e.nameAr, nameEn: null, name: e.nameAr }));
-      const tertHints = this.collectCategoryHints(gpt.category_tertiary_ar, gpt.category_tertiaries_ar);
-      const identityHints = this.collectCategoryHints(gpt.name_ar, [gpt.name_en]);
-      const ids = this.matchManyCategories(tert, tertHints, identityHints, {
-        maxSelect: Math.min(2, Math.max(1, tertHints.length || 1)),
-      });
-      for (const id of ids) {
-        const row = tert.find((t) => t.id === id);
-        tertiaryCategoryIds.push(id);
-        if (row?.nameAr) tertiaryNames.push(row.nameAr);
+    const tertUnderSubs = (parentIds: string[]) =>
+      allEntries
+        .filter((e) => e.level === "tertiary" && e.parentId && parentIds.includes(e.parentId))
+        .map((e) => ({ id: e.id, nameAr: e.nameAr, nameEn: null as string | null, name: e.nameAr, parentId: e.parentId }));
+
+    if (mainId && tertiaryCategoryIds.length < maxMulti) {
+      const tertHints = this.collectCategoryHints(gpt.category_tertiary_ar, [
+        ...(gpt.category_tertiaries_ar ?? []),
+        type.ar,
+      ]);
+      const identityHints = this.collectCategoryHints(gpt.name_ar, [gpt.name_en, type.en, type.ar]);
+      let tertRows = tertUnderSubs(subcategoryIds);
+      if (!tertRows.length && subsOfMain.length) {
+        tertRows = tertUnderSubs(subsOfMain.map((s) => s.id));
+      }
+      if (tertRows.length) {
+        const ids = this.matchManyCategories(tertRows, tertHints, identityHints, {
+          maxSelect: maxMulti,
+          primaryMinScore: 48,
+          identityMinScore: 58,
+        });
+        for (const id of ids) {
+          const row = tertRows.find((t) => t.id === id);
+          if (row?.parentId) {
+            const parent = subsOfMain.find((s) => s.id === row.parentId) ?? allEntries.find((e) => e.id === row.parentId);
+            pushSub(row.parentId, parent?.nameAr ?? null);
+          }
+          pushTert(id, row?.nameAr);
+        }
+      }
+      if (!tertiaryCategoryIds.length && type.ar) {
+        const tn = this.norm(type.ar);
+        for (const row of tertUnderSubs(subsOfMain.length ? subsOfMain.map((s) => s.id) : subcategoryIds)) {
+          const n = this.norm(row.nameAr || row.name || "");
+          if (n === tn || n.includes(tn) || (tn.length >= 4 && tn.includes(n))) {
+            if (row.parentId) {
+              const parent = subsOfMain.find((s) => s.id === row.parentId);
+              pushSub(row.parentId, parent?.nameAr);
+            }
+            pushTert(row.id, row.nameAr);
+          }
+        }
       }
     }
 
@@ -1781,9 +1956,9 @@ export class AiProductService {
       tertiaryCategoryId: tertiaryCategoryIds[0] ?? null,
       subcategoryIds,
       tertiaryCategoryIds,
-      categoryNameAr: mainName || gpt.category_main_ar,
-      subcategoryNameAr: subcategoryNames[0] ?? gpt.category_sub_ar,
-      tertiaryNameAr: tertiaryNames[0] ?? gpt.category_tertiary_ar,
+      categoryNameAr: mainName || gpt.category_main_ar || type.mainAr,
+      subcategoryNameAr: subcategoryNames[0] ?? gpt.category_sub_ar || type.subAr,
+      tertiaryNameAr: tertiaryNames[0] ?? gpt.category_tertiary_ar || type.ar,
       subcategoryNamesAr: subcategoryNames,
       tertiaryNamesAr: tertiaryNames,
     };
@@ -1833,35 +2008,35 @@ export class AiProductService {
     rows: Array<{ id: string; nameAr: string | null; nameEn: string | null; name?: string | null }>,
     primaryHints: string[],
     identityHints: string[],
-    opts: { maxSelect?: number } = {},
+    opts: { maxSelect?: number; primaryMinScore?: number; identityMinScore?: number } = {},
   ): string[] {
     if (!rows.length) return [];
-    const maxSelect = Math.max(1, opts.maxSelect ?? 1);
+    const maxSelect = Math.max(1, opts.maxSelect ?? 4);
+    const primaryMin = opts.primaryMinScore ?? 48;
+    const identityMin = opts.identityMinScore ?? 58;
 
     const selected: string[] = [];
     const push = (id: string | undefined | null) => {
-      if (!id || selected.includes(id)) return;
-      if (selected.length >= maxSelect) return;
+      if (!id || selected.includes(id) || selected.length >= maxSelect) return;
       selected.push(id);
     };
 
+    const ranked: Array<{ id: string; score: number }> = [];
     for (const hint of primaryHints) {
-      if (selected.length >= maxSelect) break;
       const hit = this.bestMatch(rows, hint, hint);
-      if (hit && hit.score >= 55) push(hit.id);
+      if (hit && hit.score >= primaryMin) ranked.push({ id: hit.id, score: hit.score });
     }
+    ranked.sort((a, b) => b.score - a.score);
+    for (const r of ranked) push(r.id);
 
-    if (!selected.length && identityHints.length) {
-      let best:
-        | ({ id: string; nameAr: string | null; nameEn: string | null; name?: string | null } & {
-            score: number;
-          })
-        | null = null;
+    if (selected.length < maxSelect && identityHints.length) {
+      const extra: Array<{ id: string; score: number }> = [];
       for (const hint of identityHints) {
         const hit = this.bestMatch(rows, hint, hint);
-        if (hit && hit.score >= 70 && (!best || hit.score > best.score)) best = hit;
+        if (hit && hit.score >= identityMin) extra.push({ id: hit.id, score: hit.score });
       }
-      if (best) push(best.id);
+      extra.sort((a, b) => b.score - a.score);
+      for (const r of extra) push(r.id);
     }
 
     return selected;
@@ -1886,16 +2061,16 @@ export class AiProductService {
       const expandedCandidates = this.expandTargets(candidates);
       let score = 0;
       for (const t of targets) {
-        if (this.isGenericCategoryToken(t)) continue;
         for (const c of expandedCandidates) {
-          if (this.isGenericCategoryToken(c)) continue;
           if (t === c) {
-            score = Math.max(score, t.length >= 6 ? 100 : 88);
-          } else if (t.includes(c) || c.includes(t)) {
+            score = Math.max(score, t.length >= 3 ? 100 : 88);
+            continue;
+          }
+          if (this.isGenericCategoryToken(t) || this.isGenericCategoryToken(c)) continue;
+          if (t.includes(c) || c.includes(t)) {
             const shorter = t.length <= c.length ? t : c;
             const longer = t.length > c.length ? t : c;
-            // Require a meaningful phrase — blocks "عناية" matching every care sub
-            if (shorter.length < 6) continue;
+            if (shorter.length < 4) continue;
             if (this.isGenericCategoryToken(shorter)) continue;
             score = Math.max(score, shorter.length * 2 >= longer.length ? 90 : 72);
           } else if (this.tokenOverlap(t, c) >= 0.7) {
@@ -1903,7 +2078,7 @@ export class AiProductService {
           }
         }
       }
-      if (score >= 55 && (!best || score > best.score)) best = { ...row, score };
+      if (score >= 48 && (!best || score > best.score)) best = { ...row, score };
     }
     return best;
   }
@@ -1912,8 +2087,8 @@ export class AiProductService {
     const n = this.norm(token);
     if (!n) return true;
     if (GENERIC_CATEGORY_TOKENS.has(n)) return true;
-    // Single short Arabic/Latin word shared by many category labels
-    if (!n.includes(" ") && n.length <= 4) return true;
+    // Short Latin particles only — Arabic labels like شفاه/وجه must still match.
+    if (/^[a-z]+$/.test(n) && n.length <= 3) return true;
     return false;
   }
 

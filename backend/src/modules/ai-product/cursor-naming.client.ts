@@ -1,4 +1,4 @@
-import { Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
 export type CursorNameDraft = {
   brand_ar: string;
@@ -65,7 +65,8 @@ export class CursorNamingClient {
     const resolved = this.resolveModel(modelChoice);
     const key = this.apiKey();
     if (!key) {
-      throw new ServiceUnavailableException("CURSOR_API_KEY غير مُعد على السيرفر");
+      this.logger.warn("CURSOR_API_KEY missing — heuristic names only");
+      return this.toOutput(this.fallback(input), resolved, false, "none");
     }
 
     const prompt = this.buildPrompt(input);
@@ -127,10 +128,16 @@ Task: verify and polish bilingual PRODUCT NAMES only (not description, not categ
 Rules:
 - brand_en / brand_ar = brand name only (once).
 - name_en = "{BrandEn} - {Official Product Name}" without shade number.
-- name_ar = "{BrandAsOnPack} - {Iraqi market type term} {official line EN} {short trait} {size if known}" without shade number.
-- Latin pack brands stay Latin at the start of name_ar (ARTDECO, Seventeen, GOSH, Maybelline, Mon Reve). Do not translate those brand prefixes.
-- Arabic: MSA only. No Iraqi dialect (شلون، هواية، هسه…).
-- Market terms: lipstick/rouge → أحمر شفاه (not روج) | lip gloss → جلوس شفاه | concealer → كونسيلر | foundation → فاونديشن | mascara → ماسكارا | blush → بلاشر | highlighter → هايلايتر | eyeliner → ايلاينر | eyeshadow → ظل عيون | brow pencil → قلم حواجب.
+- name_ar = "{LatinBrandAsOnPack} - {نوع المنتج بالعربي} {اسم الخط الرسمي EN} {الحجم}"
+  HARD: after the dash, the PRODUCT TYPE must be Arabic. Never copy the full English title into name_ar.
+  Latin brand stays Latin only at the start (ARTDECO, Seventeen, GOSH, Maybelline, Mon Reve).
+- Arabic: MSA only. No Iraqi dialect.
+- Market types: cleansing mousse → موس تنظيف | cleanser → منظف | lipstick → أحمر شفاه (not روج) | lip gloss → جلوس شفاه | concealer → كونسيلر | foundation → فاونديشن | mascara → ماسكارا | blush → بلاشر | highlighter → هايلايتر | eyeliner → ايلاينر | eyeshadow → ظل عيون | brow pencil → قلم حواجب | serum → سيروم | shampoo → شامبو | ml → مل
+Examples:
+- name_en: "ARTDECO - Pure Silk Cleansing Mousse 150 ml"
+- name_ar: "ARTDECO - موس تنظيف Pure Silk 150 مل"
+- name_en: "Seventeen - Ideal Cover Liquid Concealer"
+- name_ar: "Seventeen - كونسيلر Ideal Cover Liquid"
 
 barcode=${input.barcode}
 draft_brand_en=${input.brand_en || "none"}

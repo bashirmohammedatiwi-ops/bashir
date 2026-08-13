@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../core/network/api_client.dart';
 import '../providers/auth_provider.dart';
 import '../features/auth/login_screen.dart';
 import '../features/scan/scan_screen.dart';
@@ -149,6 +150,12 @@ final routerProvider = Provider<GoRouter>((ref) {
 class _AuthListenable extends ChangeNotifier {
   _AuthListenable(this.ref) {
     ref.listen(authProvider, (_, __) => notifyListeners());
+    ref.listen<int>(sessionLostProvider, (prev, next) {
+      if ((prev ?? 0) < next) {
+        ref.read(authProvider.notifier).logout();
+      }
+      notifyListeners();
+    });
   }
   final Ref ref;
 }

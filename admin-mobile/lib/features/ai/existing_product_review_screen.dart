@@ -172,6 +172,7 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
       current: _nameAr.text,
       brandAr: _brandArText,
       brandEn: _brandEnText,
+      englishName: _nameEn.text,
     );
     final en = ProductNaming.applyEnglishTitle(
       current: _nameEn.text,
