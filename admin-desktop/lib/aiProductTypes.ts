@@ -52,6 +52,7 @@ export type ShadeFamilyShade = {
   nameEn?: string;
   nameAr?: string;
   colorHex?: string;
+  imageUrl?: string;
   position?: number;
 };
 
@@ -172,6 +173,7 @@ export function parseShadeFamily(data: unknown): ShadeFamilyResult {
         nameAr: row.nameAr ? String(row.nameAr) : undefined,
         nameEn: row.nameEn ? String(row.nameEn) : undefined,
         colorHex: row.colorHex ? String(row.colorHex) : "#CCCCCC",
+        imageUrl: row.imageUrl ? String(row.imageUrl) : undefined,
         position: Number(row.position ?? 0),
       };
     }),

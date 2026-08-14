@@ -357,6 +357,7 @@ export class AiProductService {
         nameEn: row.name_en,
         nameAr: row.name_ar,
         colorHex: this.normalizeShadeHex(row.color_hex),
+        imageUrl: this.pickShadeImageUrl(merged),
         source: merged.source ?? global?.source ?? "global",
         confidence: global?.confidence ?? 0,
       };
@@ -639,6 +640,7 @@ export class AiProductService {
           nameEn: nameEn || name,
           nameAr: nameAr || name,
           colorHex: this.normalizeShadeHex(row?.color_hex),
+          imageUrl: this.pickShadeImageUrl(freeByBarcode.get(barcode)),
           position: index,
         };
       }),
@@ -759,10 +761,44 @@ export class AiProductService {
       .split(/[|,/]+/)
       .map((s) => s.replace(/\s+/g, " ").trim())
       .filter((s) => s.length >= 2);
-    let images = await Promise.race([
+
+    const images: GoogleImageHit[] = [];
+    const seen = new Set<string>();
+    const pushUnique = (batch: GoogleImageHit[]) => {
+      for (const hit of batch) {
+        const key = hit.url.toLowerCase();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        images.push(hit);
+      }
+    };
+
+    try {
+      const shopify = await Promise.race([
+        this.globalEnrichment.enrichFamilyFromShopify([digits], hints.join(" ")),
+        new Promise<Map<string, GlobalBarcodeHit>>((resolve) => setTimeout(() => resolve(new Map()), 4_500)),
+      ]);
+      const shopHit = shopify.get(digits);
+      if (shopHit?.imageUrl?.startsWith("http")) {
+        pushUnique([
+          {
+            url: shopHit.imageUrl,
+            thumbUrl: shopHit.imageUrl,
+            title: shopHit.shadeName || shopHit.title || digits,
+            source: shopHit.source ?? "shopify",
+          },
+        ]);
+      }
+    } catch {
+      /* optional fast path */
+    }
+
+    const searched = await Promise.race([
       this.images.searchByBarcode(q, 36, hints),
       new Promise<GoogleImageHit[]>((resolve) => setTimeout(() => resolve([]), 18_000)),
     ]);
+    pushUnique(searched);
+
     if (images.length < 4 && hints.length) {
       try {
         const nameQ = hints[0].slice(0, 90);
@@ -2126,6 +2162,11 @@ export class AiProductService {
       if (unique.length >= 40) break;
     }
     return unique;
+  }
+
+  private pickShadeImageUrl(free?: FreeHint): string | undefined {
+    const url = String(free?.imageUrl ?? "").trim();
+    return url.startsWith("http") ? url : undefined;
   }
 
   private globalHitToFreeHint(hit: GlobalBarcodeHit | undefined, hint?: string): FreeHint {

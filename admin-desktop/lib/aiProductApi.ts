@@ -136,7 +136,7 @@ export async function aiSearchImages(input: {
       ...(input.query?.trim() ? { query: input.query.trim() } : {}),
       ...(input.nameHint?.trim() ? { nameHint: input.nameHint.trim() } : {}),
     },
-    { timeout: 30_000 },
+    { timeout: 90_000 },
   );
   const body = unwrap<Record<string, unknown>>(res.data);
   return pickImages(body);

@@ -20,7 +20,7 @@ export function AiImageSearchGrid({
 }: Props) {
   const [broken, setBroken] = useState<Set<string>>(() => new Set());
 
-  if (loading) {
+  if (loading && !images.length) {
     return (
       <div style={{ textAlign: "center", padding: 48, color: "#8a8194" }}>
         جاري جلب الصور…
@@ -30,14 +30,20 @@ export function AiImageSearchGrid({
 
   const visible = images.filter((img) => !broken.has(img.url));
 
-  if (!visible.length) {
+  if (!visible.length && !loading) {
     return (
       <div style={{ textAlign: "center", padding: 48, color: "#8a8194" }}>{emptyText}</div>
     );
   }
 
   return (
-    <div className="ai-image-grid">
+    <div>
+      {loading ? (
+        <div style={{ textAlign: "center", padding: "8px 0 16px", color: "#8a8194", fontSize: 13 }}>
+          جاري جلب المزيد من الصور…
+        </div>
+      ) : null}
+      <div className="ai-image-grid">
       {visible.map((img) => {
         const url = img.url;
         const thumb = img.thumbUrl || img.url;
@@ -62,6 +68,7 @@ export function AiImageSearchGrid({
           </button>
         );
       })}
+      </div>
     </div>
   );
 }

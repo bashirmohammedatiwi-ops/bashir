@@ -224,8 +224,16 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
       name: s.name,
       code: s.code || "",
       colorHex: s.colorHex || "#CCCCCC",
-      imageUrl: null,
+      imageUrl: s.imageUrl?.startsWith("http") ? s.imageUrl : null,
     }));
+
+    const imageSeed: Record<string, AiAutofillImage[]> = {};
+    for (const s of fill.shades) {
+      if (!s.imageUrl?.startsWith("http")) continue;
+      imageSeed[s.barcode] = mergeUniqueImages(imageSeed[s.barcode] ?? [], [
+        { url: s.imageUrl, thumbUrl: s.imageUrl, title: s.name, source: "enrich" },
+      ]);
+    }
 
     setProgress((p) => ({
       ...p,
@@ -252,15 +260,22 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
       for (let i = 0; i < rows.length; i++) {
         const hit = catalogMap.get(rows[i].barcode);
         if (!hit) continue;
-        if (!isGenericShadeName(rows[i].name)) continue;
-        applyCatalogHitToRow(rows[i], hit);
+        if (isGenericShadeName(rows[i].name)) {
+          applyCatalogHitToRow(rows[i], hit);
+        }
         const img = catalogThumbToImage(hit);
         if (img) {
-          setShadeImages((prev) => ({
-            ...prev,
-            [rows[i].barcode]: mergeUniqueImages(prev[rows[i].barcode] ?? [], [img]),
-          }));
+          imageSeed[rows[i].barcode] = mergeUniqueImages(imageSeed[rows[i].barcode] ?? [], [img]);
         }
+      }
+      if (Object.keys(imageSeed).length) {
+        setShadeImages((prev) => {
+          const next = { ...prev };
+          for (const [bc, imgs] of Object.entries(imageSeed)) {
+            next[bc] = mergeUniqueImages(prev[bc] ?? [], imgs);
+          }
+          return next;
+        });
       }
       await enrichShadeColors(rows, catalogMap);
     } catch {
@@ -404,6 +419,15 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
   const loadShadeImages = async (idx: number) => {
     const shade = shades[idx];
     if (!shade) return;
+    const preloaded: AiAutofillImage[] = shade.imageUrl?.startsWith("http")
+      ? [{ url: shade.imageUrl, thumbUrl: shade.imageUrl, title: shade.name, source: "enrich" }]
+      : [];
+    if (preloaded.length) {
+      setShadeImages((prev) => ({
+        ...prev,
+        [shade.barcode]: mergeUniqueImages(prev[shade.barcode] ?? [], preloaded),
+      }));
+    }
     setLoadingShadeImages(true);
     try {
       const shadeLabel = isGenericShadeName(shade.name) ? "" : shade.name;
@@ -425,7 +449,10 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
         });
         hits = mergeUniqueImages(hits, nameHits, 36);
       }
-      setShadeImages((prev) => ({ ...prev, [shade.barcode]: hits }));
+      setShadeImages((prev) => ({
+        ...prev,
+        [shade.barcode]: mergeUniqueImages(preloaded, mergeUniqueImages(prev[shade.barcode] ?? [], hits, 36), 36),
+      }));
       const imageUrl = shade.imageUrl || hits[0]?.url || null;
       if (imageUrl) {
         const colorHex = await resolveShadeRowColor({
@@ -443,6 +470,7 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
       }
     } catch (e) {
       message.error((e as Error).message || "فشل جلب صور التدرج");
+      setShadeImages((prev) => ({ ...prev, [shade.barcode]: prev[shade.barcode] ?? preloaded }));
     } finally {
       setLoadingShadeImages(false);
     }
@@ -451,7 +479,7 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
   useEffect(() => {
     if (step !== 2 || !shades.length) return;
     const bc = shades[activeShadeIdx]?.barcode;
-    if (!bc || shadeImages[bc]?.length) return;
+    if (!bc || shadeImages[bc] !== undefined) return;
     void loadShadeImages(activeShadeIdx);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, activeShadeIdx, shades.map((s) => s.barcode).join(",")]);
@@ -633,7 +661,7 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
                   type={activeShadeIdx === i ? "primary" : "default"}
                   onClick={() => {
                     setActiveShadeIdx(i);
-                    if (!shadeImages[s.barcode]) loadShadeImages(i);
+                    if (shadeImages[s.barcode] === undefined) loadShadeImages(i);
                   }}
                 >
                   {s.name || s.code || i + 1}
