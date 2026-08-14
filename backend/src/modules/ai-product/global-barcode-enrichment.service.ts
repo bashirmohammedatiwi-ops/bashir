@@ -51,7 +51,7 @@ type ShopifyBrandCfg = {
 const SHOPIFY_BRANDS: ShopifyBrandCfg[] = [
   {
     brands: [/artdeco/i],
-    domains: ["artdeco.com"],
+    domains: ["artdeco.com", "artdeco.de"],
     hintHandles: [
       { pattern: /mat\s*passion|lip\s*fluid/i, handles: ["mat-passion-lip-fluid-15-ad1882-xx"] },
     ],
@@ -66,6 +66,17 @@ const SHOPIFY_BRANDS: ShopifyBrandCfg[] = [
     domains: ["catrice.eu"],
     hintHandles: [],
   },
+];
+
+/** Shades missing from live Shopify JSON but sold on ARTDECO retail sites. */
+const ARTDECO_MAT_PASSION_SUPPLEMENT: Array<{
+  barcode: string;
+  variantTitle: string;
+  colorHex?: string;
+}> = [
+  { barcode: "4052136246568", variantTitle: "44 - scarlet red", colorHex: "#AC092C" },
+  { barcode: "4052136246537", variantTitle: "60 - loyal nude", colorHex: "#AD6959" },
+  { barcode: "4052136246445", variantTitle: "75 - think pink", colorHex: "#B35569" },
 ];
 
 @Injectable()
@@ -112,18 +123,85 @@ export class GlobalBarcodeEnrichmentService {
     }
 
     const out = new Map<string, GlobalBarcodeHit>();
+    const catalog: GlobalBarcodeHit[] = [];
+
     for (const cfg of configs) {
       for (const domain of cfg.domains) {
         for (const handle of handles) {
-          const part = await this.fetchShopifyProduct(domain, handle, want);
-          for (const [digits, hit] of part) {
-            const prev = out.get(digits);
-            if (!prev || hit.confidence > prev.confidence) out.set(digits, hit);
-          }
+          catalog.push(...(await this.fetchAllShopifyVariants(domain, handle)));
         }
       }
     }
+
+    if (/mat\s*passion/i.test(hintText)) {
+      for (const row of ARTDECO_MAT_PASSION_SUPPLEMENT) {
+        const parsed = this.parseShopifyVariantShade(row.variantTitle);
+        catalog.push({
+          barcode: row.barcode,
+          brand: "ARTDECO",
+          title: "Mat Passion Lip Fluid",
+          shadeName: parsed.shadeName,
+          colorHex: row.colorHex,
+          source: "supplement:artdeco-mat-passion",
+          confidence: 90,
+        });
+      }
+    }
+
+    const uniqueCatalog = this.dedupeCatalog(catalog);
+    for (const digits of want) {
+      const matched = this.fuzzyMatchBarcode(digits, uniqueCatalog, 2);
+      if (matched) out.set(digits, matched);
+    }
     return out;
+  }
+
+  private dedupeCatalog(catalog: GlobalBarcodeHit[]): GlobalBarcodeHit[] {
+    const byBarcode = new Map<string, GlobalBarcodeHit>();
+    for (const hit of catalog) {
+      const prev = byBarcode.get(hit.barcode);
+      if (!prev || hit.confidence > prev.confidence) byBarcode.set(hit.barcode, hit);
+    }
+    return [...byBarcode.values()];
+  }
+
+  private hammingDistance(a: string, b: string): number {
+    const x = a.padEnd(13, "0").slice(0, 13);
+    const y = b.padEnd(13, "0").slice(0, 13);
+    let d = 0;
+    for (let i = 0; i < 13; i++) if (x[i] !== y[i]) d++;
+    return d;
+  }
+
+  /**
+   * POS scanners often misread one digit — match within same EAN manufacturer prefix.
+   */
+  private fuzzyMatchBarcode(
+    want: string,
+    catalog: GlobalBarcodeHit[],
+    maxDist = 2,
+  ): GlobalBarcodeHit | null {
+    const exact = catalog.find((h) => h.barcode === want);
+    if (exact) return { ...exact, barcode: want };
+
+    const prefix = want.slice(0, 7);
+    const ranked = catalog
+      .filter((h) => h.barcode.startsWith(prefix) && h.shadeName)
+      .map((h) => ({ hit: h, dist: this.hammingDistance(want, h.barcode) }))
+      .filter((r) => r.dist > 0 && r.dist <= maxDist)
+      .sort((a, b) => a.dist - b.dist);
+
+    if (!ranked.length) return null;
+    const best = ranked[0];
+    const tied = ranked.filter((r) => r.dist === best.dist);
+    if (tied.length > 1 && best.dist > 1) return null;
+
+    return {
+      ...best.hit,
+      barcode: want,
+      confidence: Math.max(55, (best.hit.confidence ?? 80) - best.dist * 4),
+      source: `${best.hit.source ?? "shopify"}:fuzzy${best.dist}`,
+    };
   }
 
   async enrichShadeFamily(
@@ -246,12 +324,8 @@ export class GlobalBarcodeEnrichmentService {
     return { code: "", shadeName: raw };
   }
 
-  private async fetchShopifyProduct(
-    domain: string,
-    handle: string,
-    want: Set<string>,
-  ): Promise<Map<string, GlobalBarcodeHit>> {
-    const out = new Map<string, GlobalBarcodeHit>();
+  private async fetchAllShopifyVariants(domain: string, handle: string): Promise<GlobalBarcodeHit[]> {
+    const out: GlobalBarcodeHit[] = [];
     try {
       const res = await fetch(`https://${domain}/products/${handle}.json`, {
         headers: { Accept: "application/json", "User-Agent": UA },
@@ -280,7 +354,7 @@ export class GlobalBarcodeEnrichmentService {
 
       for (const v of product.variants ?? []) {
         const digits = String(v.barcode ?? "").replace(/\D/g, "");
-        if (!digits || !want.has(digits)) continue;
+        if (!digits) continue;
 
         const variantTitle = String(v.title ?? v.name ?? "").trim();
         const parsed = this.parseShopifyVariantShade(variantTitle);
@@ -291,7 +365,7 @@ export class GlobalBarcodeEnrichmentService {
             : `https:${imageRaw}`
           : undefined;
 
-        out.set(digits, {
+        out.push({
           barcode: digits,
           brand: brand || undefined,
           title: family,
