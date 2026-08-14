@@ -162,7 +162,7 @@ export class AiProductService {
     }
 
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `v14|${force ? "force|" : ""}${digits}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `v15|${force ? "force|" : ""}${digits}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 30 * 60_000) {
       const cachedPayload = cached.payload as {
@@ -180,18 +180,25 @@ export class AiProductService {
       this.autofillCache.delete(cacheKey);
     }
 
+    const wallStarted = Date.now();
+    const wallBudgetMs = 55_000;
+
     // 2) Free barcode DBs + go-upc (many regional beauty EANs are missing from OBF/UPC alone)
     const free = await this.freeBarcodeHint(digits);
 
-    // 3) Barcode images first; supplement with brand/title only if barcode hits are thin
-    const imageHits = await this.images.searchByBarcode(digits, 72, [
+    // 3) Fast barcode images (hard cap) — never block autofill on unbounded image search
+    const imageHints = [
       free.brand,
       free.title,
       free.brand && free.title ? `${free.brand} ${free.title}`.slice(0, 90) : null,
       existing?.nameEn,
       existing?.nameAr,
       hint,
-    ].filter((s): s is string => Boolean(s && String(s).trim().length >= 2)));
+    ].filter((s): s is string => Boolean(s && String(s).trim().length >= 2));
+    const imageHits = await Promise.race([
+      this.images.searchByBarcodeFast(digits, 24, imageHints),
+      new Promise<GoogleImageHit[]>((resolve) => setTimeout(() => resolve([]), 8_000)),
+    ]);
     if (free.imageUrl?.startsWith("http")) {
       const key = free.imageUrl.toLowerCase();
       if (!imageHits.some((h) => h.url.toLowerCase() === key)) {
@@ -217,8 +224,9 @@ export class AiProductService {
           .join(" | ")
       : hint?.trim() || undefined;
 
-    // 4) Heuristic identity + template desc/category. Composer 2.5 Low verifies bilingual names only.
+    // 4) Heuristic identity + short Cursor naming (must finish before client 120s timeout)
     const draft = this.buildHeuristicAutofill({ barcode: digits, free, imageTitles, hint: reviewHint });
+    const namingBudget = Math.max(8_000, Math.min(16_000, wallBudgetMs - (Date.now() - wallStarted) - 8_000));
     const named = await this.cursor.verifyBilingualNames(
       {
         barcode: digits,
@@ -233,6 +241,7 @@ export class AiProductService {
         hint: reviewHint,
       },
       resolved.choice,
+      namingBudget,
     );
     const gpt = this.polishNaming({
       ...draft,
@@ -244,7 +253,12 @@ export class AiProductService {
       confidence: named.verified ? Math.max(draft.confidence, 72) : Math.min(draft.confidence, 45),
     });
     const namesVerified = named.verified && !this.isWeakGpt(gpt);
-    await this.mergeNamedImageSearch(imageHits, gpt);
+    if (imageHits.length < 8 && Date.now() - wallStarted < wallBudgetMs - 6_000) {
+      await Promise.race([
+        this.mergeNamedImageSearch(imageHits, gpt),
+        new Promise<void>((resolve) => setTimeout(resolve, 6_000)),
+      ]);
+    }
 
     const matched = await this.matchCategories(gpt);
     const issues = this.buildQualityIssues({
@@ -418,7 +432,7 @@ export class AiProductService {
   private async shadeFamilyFast(rawBarcodes: string[], hint?: string, modelChoice?: string) {
     const unique = rawBarcodes;
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `shade-v19|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `shade-v20|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 20 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -3045,10 +3059,13 @@ export class AiProductService {
       .map((s) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, 90))
       .filter((s) => s.length >= 4);
     const seen = new Set(imageHits.map((h) => h.url.toLowerCase()));
-    for (const q of [...new Set(queries)].slice(0, 3)) {
-      if (imageHits.length >= 90) break;
+    for (const q of [...new Set(queries)].slice(0, 2)) {
+      if (imageHits.length >= 36) break;
       try {
-        const extra = await this.images.searchQuery(q, 48);
+        const extra = await Promise.race([
+          this.images.searchQuery(q, 24),
+          new Promise<GoogleImageHit[]>((resolve) => setTimeout(() => resolve([]), 4_500)),
+        ]);
         for (const hit of extra) {
           const key = hit.url.toLowerCase();
           if (seen.has(key)) continue;

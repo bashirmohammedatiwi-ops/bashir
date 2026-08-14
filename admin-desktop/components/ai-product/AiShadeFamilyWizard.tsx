@@ -244,40 +244,58 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
     }));
 
     try {
-      const catalogMap = await enrichShadesFromCatalog(barcodes, undefined, hint);
-      const identity = inferProductIdentityFromCatalog(catalogMap, hint);
-      const refreshed = resolveFamilyProductNames({
-        hint,
-        nameEn: identity?.nameEn || familyNames.nameEn,
-        nameAr: identity?.nameAr || familyNames.nameAr,
-        brandEn: identity?.brandEn || familyNames.brandEn,
-        brandAr: identity?.brandAr || familyNames.brandAr,
-      });
-      setBrandEn(refreshed.brandEn);
-      setBrandAr(refreshed.brandAr);
-      setNameEn(refreshed.nameEn);
-      setNameAr(refreshed.nameAr);
-      for (let i = 0; i < rows.length; i++) {
-        const hit = catalogMap.get(rows[i].barcode);
-        if (!hit) continue;
-        if (isGenericShadeName(rows[i].name)) {
-          applyCatalogHitToRow(rows[i], hit);
+      const namedAlready = rows.filter((r) => !isGenericShadeName(r.name)).length;
+      // Skip slow second enrich when shade-family API already named most shades
+      if (namedAlready >= Math.ceil(Math.max(2, rows.length) * 0.55)) {
+        setBrandEn(familyNames.brandEn);
+        setBrandAr(familyNames.brandAr);
+        setNameEn(familyNames.nameEn);
+        setNameAr(familyNames.nameAr);
+        if (Object.keys(imageSeed).length) {
+          setShadeImages((prev) => {
+            const next = { ...prev };
+            for (const [bc, imgs] of Object.entries(imageSeed)) {
+              next[bc] = mergeUniqueImages(prev[bc] ?? [], imgs);
+            }
+            return next;
+          });
         }
-        const img = catalogThumbToImage(hit);
-        if (img) {
-          imageSeed[rows[i].barcode] = mergeUniqueImages(imageSeed[rows[i].barcode] ?? [], [img]);
-        }
-      }
-      if (Object.keys(imageSeed).length) {
-        setShadeImages((prev) => {
-          const next = { ...prev };
-          for (const [bc, imgs] of Object.entries(imageSeed)) {
-            next[bc] = mergeUniqueImages(prev[bc] ?? [], imgs);
-          }
-          return next;
+      } else {
+        const catalogMap = await enrichShadesFromCatalog(barcodes, undefined, hint);
+        const identity = inferProductIdentityFromCatalog(catalogMap, hint);
+        const refreshed = resolveFamilyProductNames({
+          hint,
+          nameEn: identity?.nameEn || familyNames.nameEn,
+          nameAr: identity?.nameAr || familyNames.nameAr,
+          brandEn: identity?.brandEn || familyNames.brandEn,
+          brandAr: identity?.brandAr || familyNames.brandAr,
         });
+        setBrandEn(refreshed.brandEn);
+        setBrandAr(refreshed.brandAr);
+        setNameEn(refreshed.nameEn);
+        setNameAr(refreshed.nameAr);
+        for (let i = 0; i < rows.length; i++) {
+          const hit = catalogMap.get(rows[i].barcode);
+          if (!hit) continue;
+          if (isGenericShadeName(rows[i].name)) {
+            applyCatalogHitToRow(rows[i], hit);
+          }
+          const img = catalogThumbToImage(hit);
+          if (img) {
+            imageSeed[rows[i].barcode] = mergeUniqueImages(imageSeed[rows[i].barcode] ?? [], [img]);
+          }
+        }
+        if (Object.keys(imageSeed).length) {
+          setShadeImages((prev) => {
+            const next = { ...prev };
+            for (const [bc, imgs] of Object.entries(imageSeed)) {
+              next[bc] = mergeUniqueImages(prev[bc] ?? [], imgs);
+            }
+            return next;
+          });
+        }
+        await enrichShadeColors(rows, catalogMap);
       }
-      await enrichShadeColors(rows, catalogMap);
     } catch {
       /* optional */
     }

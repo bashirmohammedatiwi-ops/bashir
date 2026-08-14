@@ -66,6 +66,43 @@ const SHOPIFY_BRANDS: ShopifyBrandCfg[] = [
     domains: ["catrice.eu"],
     hintHandles: [],
   },
+  {
+    brands: [/maybelline/i],
+    domains: ["maybelline.com"],
+    hintHandles: [],
+  },
+  {
+    brands: [/nyx/i],
+    domains: ["nyxcosmetics.com"],
+    hintHandles: [],
+  },
+  {
+    brands: [/mon\s*reve|monreve/i],
+    domains: ["monrevecosmetics.com"],
+    hintHandles: [],
+  },
+  {
+    brands: [/beesline/i],
+    domains: ["beesline.com"],
+    hintHandles: [],
+  },
+  {
+    brands: [/seventeen/i],
+    domains: ["seventeencosmetics.com"],
+    hintHandles: [],
+  },
+];
+
+/** Always try these Shopify beauty sites when discovering family by barcode (any brand). */
+const UNIVERSAL_SHOPIFY_DOMAINS = [
+  "artdeco.com",
+  "artdeco.de",
+  "essence.eu",
+  "catrice.eu",
+  "maybelline.com",
+  "nyxcosmetics.com",
+  "monrevecosmetics.com",
+  "beesline.com",
 ];
 
 /** Shades missing from live Shopify JSON but sold on ARTDECO retail sites. */
@@ -89,6 +126,7 @@ export class GlobalBarcodeEnrichmentService {
 
   /**
    * One Shopify product page often lists every shade barcode — fastest path for makeup families.
+   * Brand-agnostic: discover via barcode + web even when hint brand is unknown.
    */
   async enrichFamilyFromShopify(barcodes: string[], hint?: string): Promise<Map<string, GlobalBarcodeHit>> {
     const want = new Set(
@@ -98,42 +136,59 @@ export class GlobalBarcodeEnrichmentService {
 
     const hintText = String(hint ?? "").trim();
     const configs = this.shopifyConfigsForHint(hintText);
-    if (!configs.length) return new Map();
+    const domains = new Set<string>();
+    for (const cfg of configs) for (const d of cfg.domains) domains.add(d);
+    for (const d of UNIVERSAL_SHOPIFY_DOMAINS) domains.add(d);
 
-    const handles = new Set<string>();
+    const handlesByDomain = new Map<string, Set<string>>();
+    const addHandle = (domain: string, handle: string) => {
+      if (!domain || !handle) return;
+      const set = handlesByDomain.get(domain) ?? new Set<string>();
+      set.add(handle);
+      handlesByDomain.set(domain, set);
+    };
+
     for (const cfg of configs) {
       for (const row of cfg.hintHandles) {
         if (!hintText || row.pattern.test(hintText)) {
-          for (const h of row.handles) handles.add(h);
+          for (const h of row.handles) for (const d of cfg.domains) addHandle(d, h);
         }
       }
     }
 
-    for (const cfg of configs) {
-      for (const domain of cfg.domains) {
-        for (const bc of barcodes.slice(0, 3)) {
+    // Discover by barcode on known domains (first 2 barcodes)
+    await Promise.all(
+      [...domains].slice(0, 8).flatMap((domain) =>
+        barcodes.slice(0, 2).map(async (bc) => {
           const found = await this.discoverShopifyHandle(domain, bc, hintText);
-          if (found) handles.add(found);
-        }
-        if (!handles.size && hintText.length >= 6) {
-          const found = await this.discoverShopifyHandle(domain, hintText, hintText);
-          if (found) handles.add(found);
-        }
+          if (found) addHandle(domain, found);
+        }),
+      ),
+    );
+
+    if (!handlesByDomain.size && hintText.length >= 4) {
+      for (const domain of [...domains].slice(0, 6)) {
+        const found = await this.discoverShopifyHandle(domain, hintText, hintText);
+        if (found) addHandle(domain, found);
       }
+    }
+
+    // Brand-agnostic: find Shopify product URLs from the web for the lead barcode
+    if (!handlesByDomain.size || [...handlesByDomain.values()].every((s) => !s.size)) {
+      const web = await this.discoverShopifyProductsFromWeb(barcodes[0], hintText);
+      for (const row of web) addHandle(row.domain, row.handle);
     }
 
     const out = new Map<string, GlobalBarcodeHit>();
     const catalog: GlobalBarcodeHit[] = [];
 
-    for (const cfg of configs) {
-      for (const domain of cfg.domains) {
-        for (const handle of handles) {
-          catalog.push(...(await this.fetchAllShopifyVariants(domain, handle)));
-        }
+    for (const [domain, handles] of handlesByDomain) {
+      for (const handle of handles) {
+        catalog.push(...(await this.fetchAllShopifyVariants(domain, handle)));
       }
     }
 
-    if (/mat\s*passion/i.test(hintText)) {
+    if (/mat\s*passion/i.test(hintText) || catalog.some((h) => /mat\s*passion/i.test(h.title ?? ""))) {
       for (const row of ARTDECO_MAT_PASSION_SUPPLEMENT) {
         const parsed = this.parseShopifyVariantShade(row.variantTitle);
         catalog.push({
@@ -270,6 +325,60 @@ export class GlobalBarcodeEnrichmentService {
     const h = String(hint ?? "").trim();
     if (!h) return [];
     return SHOPIFY_BRANDS.filter((cfg) => cfg.brands.some((re) => re.test(h)));
+  }
+
+  /** Find Shopify product pages from web search — works for any brand. */
+  private async discoverShopifyProductsFromWeb(
+    barcode: string,
+    hint: string,
+  ): Promise<Array<{ domain: string; handle: string }>> {
+    const digits = String(barcode ?? "").replace(/\D/g, "") || String(barcode ?? "").trim();
+    if (digits.length < 8) return [];
+    const queries = [
+      `"${digits}" lipstick OR foundation OR mascara OR blush`,
+      hint ? `${hint} ${digits} site:myshopify.com` : "",
+      `${digits} makeup shade`,
+    ].filter((q) => q.length >= 10);
+
+    const found: Array<{ domain: string; handle: string }> = [];
+    const seen = new Set<string>();
+    for (const query of queries.slice(0, 2)) {
+      try {
+        const res = await fetch("https://html.duckduckgo.com/html/", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded", "User-Agent": UA },
+          body: `q=${encodeURIComponent(query)}&b=`,
+          signal: AbortSignal.timeout(5_500),
+        });
+        if (!res.ok) continue;
+        const html = await res.text();
+        const hrefs = [...html.matchAll(/uddg=([^&"]+)/g)].map((m) => {
+          try {
+            return decodeURIComponent(m[1]);
+          } catch {
+            return "";
+          }
+        });
+        const rawLinks = [
+          ...hrefs,
+          ...[...html.matchAll(/https?:\/\/[a-z0-9.-]+\/products\/[a-z0-9-]+/gi)].map((m) => m[0]),
+        ];
+        for (const link of rawLinks) {
+          const m = link.match(/https?:\/\/([^/]+)\/products\/([a-z0-9-]+)/i);
+          if (!m) continue;
+          const domain = m[1].replace(/^www\./, "").toLowerCase();
+          const handle = m[2];
+          const key = `${domain}|${handle}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          found.push({ domain, handle });
+          if (found.length >= 4) return found;
+        }
+      } catch {
+        /* next */
+      }
+    }
+    return found;
   }
 
   private async discoverShopifyHandle(domain: string, query: string, hint: string): Promise<string | null> {
@@ -418,13 +527,16 @@ export class GlobalBarcodeEnrichmentService {
 
     const budgetMs = opts?.budgetMs ?? 9_000;
     const run = async (): Promise<GlobalBarcodeHit> => {
+      const brandSites = this.brandSitesFromHint(familyHint);
       const metas = await Promise.allSettled([
         this.lookupGoUpc(digits),
         this.lookupObf(digits),
         this.lookupUpcItemDb(digits),
         this.lookupWebMeta(digits, `"${digits}" ${familyHint} lipstick shade`),
-        this.lookupWebMeta(digits, `${digits} ${familyHint} site:artdeco.com`),
         this.lookupWebMeta(digits, `${digits} ${familyHint} site:sephora.com`),
+        brandSites[0]
+          ? this.lookupWebMeta(digits, `${digits} ${familyHint} site:${brandSites[0]}`)
+          : Promise.resolve(null),
         this.lookupImageMeta(digits, familyHint),
         this.lookupBrandSite(digits, familyHint),
       ]);
@@ -459,14 +571,30 @@ export class GlobalBarcodeEnrichmentService {
     }
   }
 
-  private async lookupBrandSite(barcode: string, hint: string): Promise<MetaRow | null> {
-    const h = hint.toLowerCase();
+  private brandSitesFromHint(hint: string): string[] {
     const sites: string[] = [];
     if (/\bartdeco\b/i.test(hint)) sites.push("artdeco.com");
-    if (/\bessence\b/i.test(hint)) sites.push("essence.eu", "essencemakeup.com");
+    if (/\bessence\b/i.test(hint)) sites.push("essence.eu");
+    if (/\bcatrice\b/i.test(hint)) sites.push("catrice.eu");
     if (/\bmaybelline\b/i.test(hint)) sites.push("maybelline.com");
+    if (/\bnyx\b/i.test(hint)) sites.push("nyxcosmetics.com");
+    if (/\bmon\s*reve\b/i.test(hint)) sites.push("monrevecosmetics.com");
+    if (/\bbeesline\b/i.test(hint)) sites.push("beesline.com");
     if (/\bloreal\b/i.test(hint) || /\bl'oreal\b/i.test(hint)) sites.push("loreal.com");
-    if (!sites.length) return null;
+    if (/\bseventeen\b/i.test(hint)) sites.push("seventeencosmetics.com");
+    return sites;
+  }
+
+  private async lookupBrandSite(barcode: string, hint: string): Promise<MetaRow | null> {
+    const sites = this.brandSitesFromHint(hint);
+    if (!sites.length) {
+      // Brand unknown: still probe major retail pages
+      for (const site of ["sephora.com", "notino.com", "douglas.de"].slice(0, 1)) {
+        const row = await this.lookupWebMeta(barcode, `"${barcode}" site:${site}`);
+        if (row?.title) return { ...row, source: `brand:${site}` };
+      }
+      return null;
+    }
 
     for (const site of sites.slice(0, 2)) {
       const row = await this.lookupWebMeta(barcode, `"${barcode}" site:${site} ${hint}`);
@@ -486,7 +614,8 @@ export class GlobalBarcodeEnrichmentService {
     if (cached) {
       const age = Date.now() - cached.at;
       if (cached.hit.confidence > 0 && age < 30 * 60_000) return cached.hit;
-      if (cached.hit.confidence <= 0 && age < 90_000) return cached.hit;
+      // Do not stick on timeout/empty results — only brief negative cache
+      if (cached.hit.confidence <= 0 && age < 12_000) return cached.hit;
     }
 
     const budgetMs = opts?.budgetMs ?? 7_000;
@@ -539,7 +668,7 @@ export class GlobalBarcodeEnrichmentService {
           ),
         ),
       ]);
-      this.cache.set(cacheKey, { at: Date.now(), hit });
+      if (hit.confidence > 0) this.cache.set(cacheKey, { at: Date.now(), hit });
       return hit;
     } catch (err) {
       this.logger.warn(`Global enrich failed for ${digits}: ${(err as Error).message}`);

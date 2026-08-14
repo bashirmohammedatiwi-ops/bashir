@@ -15,6 +15,7 @@ import {
 } from "antd";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AiImageSearchPanel } from "./AiImageSearchPanel";
+import { AiProgressOverlay, type AiProgressState } from "./AiProgressOverlay";
 import { aiAutofill, fetchAiModels } from "@/lib/aiProductApi";
 import type { AiAutofillResult } from "@/lib/aiProductTypes";
 import { applyAiCategories } from "@/lib/aiCategoryApply";
@@ -23,6 +24,7 @@ import { matchBrandIdLocal } from "@/lib/catalogBrandMatch";
 import { fetchInventoryByBarcode } from "@/lib/inventorySync";
 import { defaultSku, saveAiProduct } from "@/lib/aiProductSave";
 import { normalizeBarcode } from "@/lib/barcode";
+import { formatAiError, startSimulatedProgress } from "@/lib/aiProgress";
 import { queries, mutations } from "@/lib/queries";
 
 type NamedRow = { id: string; nameAr?: string; name?: string; nameEn?: string };
@@ -57,6 +59,15 @@ export function AiSingleProductWizard({ open, onClose, onSuccess }: Props) {
   const [images, setImages] = useState(result?.images ?? []);
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [imageQuery, setImageQuery] = useState("");
+  const [progress, setProgress] = useState<AiProgressState>({
+    open: false,
+    title: "",
+    stageLabel: "",
+    detail: "",
+    percent: 0,
+    stageIndex: 0,
+    totalStages: 4,
+  });
 
   const modelsQ = useQuery({
     queryKey: ["ai-models"],
@@ -138,11 +149,45 @@ export function AiSingleProductWizard({ open, onClose, onSuccess }: Props) {
       if (bc.length < 6) throw new Error("أدخل باركود صالح (6 أرقام على الأقل)");
       const check = await queries.productBarcodeCheck(bc);
       if (check?.exists) throw new Error("المنتج موجود مسبقاً — استخدم تعديل المنتجات");
-      const fill = await aiAutofill({ barcode: bc, hint, model: modelId });
-      const inv = await fetchInventoryByBarcode(bc);
-      return { fill, inv };
+
+      setProgress({
+        open: true,
+        title: "جاري التعرف على المنتج",
+        stageLabel: "الباركود",
+        detail: "جلب بيانات الباركود من قواعد عالمية...",
+        percent: 8,
+        stageIndex: 0,
+        totalStages: 4,
+      });
+      const stopTicker = startSimulatedProgress(
+        (percent) =>
+          setProgress((p) => ({
+            ...p,
+            percent,
+            stageIndex: percent < 30 ? 0 : percent < 55 ? 1 : percent < 75 ? 2 : 3,
+            stageLabel: percent < 30 ? "الباركود" : percent < 55 ? "الصور" : percent < 75 ? "التسمية" : "التصنيف",
+            detail:
+              percent < 30
+                ? "جلب بيانات الباركود من قواعد عالمية..."
+                : percent < 55
+                  ? "بحث صور المنتج..."
+                  : percent < 75
+                    ? "تسمية المنتج بالذكاء الاصطناعي..."
+                    : "اقتراح التصنيف...",
+          })),
+        { from: 10, to: 88, intervalMs: 900, step: 3 },
+      );
+
+      try {
+        const fill = await aiAutofill({ barcode: bc, hint, model: modelId });
+        const inv = await fetchInventoryByBarcode(bc);
+        return { fill, inv };
+      } finally {
+        stopTicker();
+      }
     },
     onSuccess: async ({ fill, inv }) => {
+      setProgress((p) => ({ ...p, open: false, percent: 100 }));
       setResult(fill);
       setNameAr(fill.nameAr);
       setNameEn(fill.nameEn);
@@ -185,7 +230,10 @@ export function AiSingleProductWizard({ open, onClose, onSuccess }: Props) {
       setStep(1);
       message.success("تم التعرف على المنتج");
     },
-    onError: (e: Error) => message.error(e.message || "فشل التعرف"),
+    onError: (e: Error) => {
+      setProgress((p) => ({ ...p, open: false }));
+      message.error(formatAiError(e, "فشل التعرف على المنتج"));
+    },
   });
 
   const saveMut = useMutation({
@@ -268,6 +316,7 @@ export function AiSingleProductWizard({ open, onClose, onSuccess }: Props) {
 
   return (
     <div className="ai-wizard-shell">
+      <AiProgressOverlay state={progress} />
       <div className="ai-wizard-head">
         <Space style={{ width: "100%", justifyContent: "space-between" }}>
           <div>

@@ -108,15 +108,21 @@ export class GoogleImagesService {
       if (merged.length >= limit) break;
     }
 
-    if (merged.length < Math.min(16, limit)) {
-      for (const q of this.barcodeQueryVariants(digits, nameHints).slice(0, 4)) {
-        if (merged.length >= limit) break;
+    // Sequential fallbacks must stay bounded — unbounded DDG/CSE loops hang autofill past client timeout.
+    const started = Date.now();
+    const softBudgetMs = 14_000;
+    if (merged.length < Math.min(10, limit) && Date.now() - started < softBudgetMs) {
+      for (const q of this.barcodeQueryVariants(digits, nameHints).slice(0, 2)) {
+        if (merged.length >= limit || Date.now() - started > softBudgetMs) break;
         pushHits(
-          await this.collectResults(q, Math.min(20, limit), {
-            expandVariants: false,
-            filterMode: merged.length < 8 ? "product" : "barcode",
-            nameHints,
-          }),
+          await Promise.race([
+            this.collectResults(q, Math.min(16, limit), {
+              expandVariants: false,
+              filterMode: merged.length < 6 ? "product" : "barcode",
+              nameHints,
+            }),
+            new Promise<GoogleImageHit[]>((resolve) => setTimeout(() => resolve([]), 5_000)),
+          ]),
         );
       }
     }
@@ -127,15 +133,18 @@ export class GoogleImagesService {
           .map((h) => h.replace(/\s+/g, " ").trim())
           .filter((h) => h.length >= 4 && !/^\d{8,14}$/.test(h)),
       ),
-    ].slice(0, 4);
+    ].slice(0, 2);
     for (const q of nameOnly) {
-      if (merged.length >= limit) break;
+      if (merged.length >= Math.min(16, limit) || Date.now() - started > softBudgetMs) break;
       pushHits(
-        await this.collectResults(q, Math.min(24, limit), {
-          expandVariants: true,
-          filterMode: "product",
-          nameHints,
-        }),
+        await Promise.race([
+          this.collectResults(q, Math.min(16, limit), {
+            expandVariants: true,
+            filterMode: "product",
+            nameHints,
+          }),
+          new Promise<GoogleImageHit[]>((resolve) => setTimeout(() => resolve([]), 5_000)),
+        ]),
       );
     }
 
