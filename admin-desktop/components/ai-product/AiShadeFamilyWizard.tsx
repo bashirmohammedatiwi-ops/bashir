@@ -257,10 +257,7 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
         if (img) {
           setShadeImages((prev) => ({
             ...prev,
-            [rows[i].barcode]: mergeUniqueImages(
-              (prev[rows[i].barcode] ?? []).map((url) => ({ url, thumbUrl: url })),
-              [img],
-            ).map((x) => x.url),
+            [rows[i].barcode]: mergeUniqueImages(prev[rows[i].barcode] ?? [], [img]),
           }));
         }
       }
