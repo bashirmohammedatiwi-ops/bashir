@@ -370,13 +370,17 @@ export class AiProductService {
       hint,
       shadeFamily: true,
     });
+    const familyDraft = this.sanitizeShadeFamilyProductNames(draft, {
+      hint,
+      freeByBarcode: catalogHints,
+    });
 
     return {
       barcodes: unique,
-      brandEn: draft.brand_en,
-      brandAr: draft.brand_ar,
-      nameEn: draft.name_en,
-      nameAr: draft.name_ar,
+      brandEn: familyDraft.brand_en,
+      brandAr: familyDraft.brand_ar,
+      nameEn: familyDraft.name_en,
+      nameAr: familyDraft.name_ar,
       shades,
       meta: {
         engine: "global-v1",
@@ -413,7 +417,7 @@ export class AiProductService {
   private async shadeFamilyFast(rawBarcodes: string[], hint?: string, modelChoice?: string) {
     const unique = rawBarcodes;
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `shade-v15|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `shade-v17|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 20 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -481,6 +485,8 @@ export class AiProductService {
       imageTitles,
     });
 
+    await this.healWeakShadeHints(unique, freeByBarcode, hint, draft);
+
     let shadeRows = unique.map((barcode, index) =>
       this.guessShadeRow(
         barcode,
@@ -489,6 +495,38 @@ export class AiProductService {
         existingByBarcode.get(barcode.toLowerCase())?.matchedShadeName,
       ),
     );
+
+    const preGeneric = shadeRows.filter((r) => this.isGenericShadeName(r.name_en));
+    if (preGeneric.length) {
+      try {
+        await Promise.race([
+          this.enrichShadeHintsFromImages(
+            preGeneric.map((r) => r.barcode),
+            freeByBarcode,
+            [
+              draft.brand_en,
+              draft.brand_ar,
+              draft.name_en,
+              draft.name_ar,
+              hint,
+              enrichedLead.title,
+              enrichedLead.brand,
+            ].filter((s): s is string => Boolean(s && String(s).trim().length >= 2)),
+          ),
+          new Promise<void>((resolve) => setTimeout(resolve, 12_000)),
+        ]);
+        shadeRows = unique.map((barcode, index) =>
+          this.guessShadeRow(
+            barcode,
+            freeByBarcode.get(barcode),
+            index,
+            existingByBarcode.get(barcode.toLowerCase())?.matchedShadeName,
+          ),
+        );
+      } catch {
+        /* optional image heal */
+      }
+    }
 
     const namingBudgetMs =
       unique.length >= 10 ? 18_000 : unique.length <= 8 ? 14_000 : 16_000;
@@ -524,12 +562,10 @@ export class AiProductService {
 
     const genericCount = shadeRows.filter((r) => this.isGenericShadeName(r.name_en)).length;
     const shouldAiShadeNames =
-      genericCount >= 2 &&
-      genericCount >= Math.ceil(unique.length * 0.5) &&
-      unique.length <= 12 &&
-      this.cursor.hasApiKey();
+      genericCount >= 1 && unique.length <= 20 && this.cursor.hasApiKey();
     if (shouldAiShadeNames) {
       try {
+        const genericOnly = shadeRows.filter((r) => this.isGenericShadeName(r.name_en));
         const aiShades = await Promise.race([
           this.cursor.verifyShadeFamilyNames(
             {
@@ -537,7 +573,7 @@ export class AiProductService {
               brand_ar: familyIdentity.brand_ar,
               product_en: familyIdentity.name_en,
               hint,
-              shades: shadeRows.map((row) => ({
+              shades: (genericOnly.length ? genericOnly : shadeRows).map((row) => ({
                 barcode: row.barcode,
                 code: row.code,
                 name_en: row.name_en,
@@ -545,9 +581,9 @@ export class AiProductService {
               })),
             },
             resolved.choice,
-            unique.length >= 8 ? 14_000 : 20_000,
+            genericOnly.length <= 3 ? 16_000 : unique.length >= 8 ? 14_000 : 20_000,
           ),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 18_000)),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 20_000)),
         ]);
         if (aiShades?.length) {
           const byBc = new Map(aiShades.map((s) => [s.barcode.toLowerCase(), s] as const));
@@ -723,7 +759,10 @@ export class AiProductService {
       .split(/[|,/]+/)
       .map((s) => s.replace(/\s+/g, " ").trim())
       .filter((s) => s.length >= 2);
-    let images = await this.images.searchByBarcode(q, 72, hints);
+    let images = await Promise.race([
+      this.images.searchByBarcode(q, 36, hints),
+      new Promise<GoogleImageHit[]>((resolve) => setTimeout(() => resolve([]), 18_000)),
+    ]);
     if (images.length < 4 && hints.length) {
       try {
         const nameQ = hints[0].slice(0, 90);
@@ -1420,6 +1459,9 @@ export class AiProductService {
       productCore = this.extractProductCore(productCore, brandAr);
     }
     productCore = this.stripShadeTokens(productCore);
+    if (args.shadeFamily) {
+      productCore = this.stripFamilyShadeFromTitle(productCore);
+    }
     const qty = (args.free.quantity || "").trim();
     if (qty) {
       const escaped = qty.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -1429,7 +1471,7 @@ export class AiProductService {
     }
     if (!productCore) {
       const fromHint = args.hint ? this.stripShadeTokens(this.stripRetailerJunk(args.hint)) : "";
-      productCore = fromHint || type.en || "";
+      productCore = args.shadeFamily ? this.stripFamilyShadeFromTitle(fromHint) : fromHint || type.en || "";
     }
     if (!productCore && !args.shadeFamily) productCore = args.barcode;
 
@@ -1488,32 +1530,176 @@ export class AiProductService {
     const weakName =
       this.isBarcodeLikeText(draft.name_en) ||
       this.isBarcodeLikeText(draft.name_ar) ||
-      !String(draft.brand_en ?? "").trim();
-    if (!weakName) return draft;
+      !String(draft.brand_en ?? "").trim() ||
+      this.hasShadeSuffixInName(draft.name_en) ||
+      this.hasShadeSuffixInName(draft.name_ar);
 
-    let bestTitle = String(args.hint ?? "").trim();
-    let bestBrand = "";
-    for (const free of args.freeByBarcode.values()) {
-      const title = String(free?.title ?? "").trim();
-      if (title.length > bestTitle.length) bestTitle = title;
-      if (!bestBrand && free?.brand) bestBrand = String(free.brand).trim();
+    let next = draft;
+    if (weakName) {
+      let bestTitle = String(args.hint ?? "").trim();
+      let bestBrand = "";
+      for (const free of args.freeByBarcode.values()) {
+        const title = String(free?.title ?? "").trim();
+        if (title.length > bestTitle.length) bestTitle = title;
+        if (!bestBrand && free?.brand) bestBrand = String(free.brand).trim();
+      }
+
+      if (bestTitle || bestBrand) {
+        const mergedFree: FreeHint = {
+          ...(args.freeByBarcode.get(args.barcode) ?? {}),
+          title: bestTitle || args.freeByBarcode.get(args.barcode)?.title,
+          brand: bestBrand || args.freeByBarcode.get(args.barcode)?.brand,
+        };
+
+        next = this.buildHeuristicAutofill({
+          barcode: args.barcode,
+          free: mergedFree,
+          imageTitles: args.imageTitles,
+          hint: args.hint,
+          shadeFamily: true,
+        });
+      }
     }
 
-    if (!bestTitle && !bestBrand) return draft;
-
-    const mergedFree: FreeHint = {
-      ...(args.freeByBarcode.get(args.barcode) ?? {}),
-      title: bestTitle || args.freeByBarcode.get(args.barcode)?.title,
-      brand: bestBrand || args.freeByBarcode.get(args.barcode)?.brand,
-    };
-
-    return this.buildHeuristicAutofill({
-      barcode: args.barcode,
-      free: mergedFree,
-      imageTitles: args.imageTitles,
+    return this.sanitizeShadeFamilyProductNames(next, {
       hint: args.hint,
-      shadeFamily: true,
+      freeByBarcode: args.freeByBarcode,
     });
+  }
+
+  private sanitizeShadeFamilyProductNames(
+    draft: GptAutofillJson,
+    args: { hint?: string; freeByBarcode: Map<string, FreeHint> },
+  ): GptAutofillJson {
+    const brandEn = String(draft.brand_en ?? "").trim();
+    const productCore = this.deriveShadeFamilyProductCore({
+      hint: args.hint,
+      freeByBarcode: args.freeByBarcode,
+      brandEn,
+      fallbackName: draft.name_en,
+    });
+    if (!productCore) return draft;
+
+    const blob = [productCore, args.hint, brandEn, draft.brand_ar].filter(Boolean).join(" ");
+    const type = this.guessProductType(blob);
+    const nameEn = brandEn ? `${brandEn} - ${productCore}` : productCore;
+    const brandAr = String(draft.brand_ar ?? "").trim();
+    const arTitleBrand = this.brandPrefixForArabicTitle(brandEn, brandAr);
+    const arCore = this.arabicizeProductCore(this.stripLeadingType(productCore, type), type.ar);
+    const nameAr = arTitleBrand ? `${arTitleBrand} - ${arCore}` : arCore;
+
+    return {
+      ...draft,
+      brand_en: brandEn || draft.brand_en,
+      brand_ar: brandAr || draft.brand_ar,
+      name_en: nameEn.replace(/\s+/g, " ").trim(),
+      name_ar: this.polishMarketArabic(nameAr),
+    };
+  }
+
+  private deriveShadeFamilyProductCore(args: {
+    hint?: string;
+    freeByBarcode: Map<string, FreeHint>;
+    brandEn: string;
+    fallbackName?: string;
+  }): string {
+    const hintText = String(args.hint ?? "").trim();
+    if (hintText && !this.isBarcodeLikeText(hintText)) {
+      let fromHint = this.stripFamilyShadeFromTitle(this.stripRetailerJunk(hintText));
+      if (args.brandEn) fromHint = this.extractProductCore(fromHint, args.brandEn);
+      fromHint = this.stripFamilyShadeFromTitle(fromHint);
+      if (fromHint.length >= 4) return fromHint;
+    }
+
+    const strippedTitles = [...args.freeByBarcode.values()]
+      .map((free) => {
+        let title = this.stripFamilyShadeFromTitle(String(free?.title ?? "").trim());
+        if (args.brandEn) title = this.extractProductCore(title, args.brandEn);
+        return this.stripFamilyShadeFromTitle(title);
+      })
+      .filter((t) => t.length >= 6);
+
+    const consensus = this.consensusProductLine(strippedTitles);
+    if (consensus) return consensus;
+
+    const fallback = String(args.fallbackName ?? "").trim();
+    if (fallback) {
+      let core = this.stripFamilyShadeFromTitle(fallback);
+      if (args.brandEn) core = this.extractProductCore(core, args.brandEn);
+      return this.stripFamilyShadeFromTitle(core);
+    }
+    return "";
+  }
+
+  private consensusProductLine(titles: string[]): string {
+    if (!titles.length) return "";
+    const cores = [...new Set(titles.map((t) => t.replace(/\s+/g, " ").trim()).filter((t) => t.length >= 6))];
+    if (!cores.length) return "";
+    cores.sort((a, b) => b.length - a.length);
+    for (const candidate of cores) {
+      const norm = this.norm(candidate);
+      const matches = cores.filter((c) => {
+        const cn = this.norm(c);
+        return cn.includes(norm) || norm.includes(cn);
+      });
+      if (matches.length >= Math.max(2, Math.ceil(cores.length * 0.25))) return candidate;
+    }
+    return cores[0];
+  }
+
+  private hasShadeSuffixInName(name: string): boolean {
+    const raw = String(name ?? "").trim();
+    if (!raw) return false;
+    const stripped = this.stripFamilyShadeFromTitle(raw);
+    return stripped.length >= 4 && this.norm(stripped) !== this.norm(raw);
+  }
+
+  private readonly PRODUCT_LINE_KEYWORDS =
+    /\b(lip\s*fluid|mat\s*passion|mascara|foundation|concealer|lipstick|lip\s*gloss|eyeshadow|eye\s*shadow|eyeliner|blush|bronzer|highlighter|primer|powder|brow|lip\s*liner|lipliner)\b/i;
+
+  private isShadeSegment(seg: string): boolean {
+    const s = seg.trim();
+    if (!s) return false;
+    if (this.PRODUCT_LINE_KEYWORDS.test(s)) return false;
+    if (/^\d{1,3}\s*[-–:]\s*[A-Za-z]/i.test(s)) return true;
+    if (/^\d{1,3}$/.test(s)) return true;
+    if (/^[A-Za-z][A-Za-z\s\-]{2,30}\s+\d{1,3}$/i.test(s)) return true;
+    if (
+      /^[A-Za-z][A-Za-z\s\-]{2,30}\s+\d{1,3}(?:\s+\d+(?:[.,]\d+)?\s*(?:ml|g|oz))?$/i.test(s) &&
+      !this.PRODUCT_LINE_KEYWORDS.test(s)
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  private stripFamilyShadeFromTitle(title: string): string {
+    let s = this.stripRetailerJunk(String(title ?? "")).trim();
+    if (!s) return "";
+
+    let size = "";
+    const sizeMatch = s.match(/\s+(\d+(?:[.,]\d+)?)\s*(ml|g|oz)\s*$/i);
+    if (sizeMatch) {
+      const n = parseFloat(sizeMatch[1]);
+      const before = s.slice(0, -sizeMatch[0].length).trim();
+      const isProductSize =
+        n >= 10 ||
+        /[.,]/.test(sizeMatch[1]) ||
+        /\b(fluid|lipstick|mascara|cream|gel|lotion|foundation|concealer)\s*$/i.test(before);
+      if (isProductSize) {
+        size = ` ${sizeMatch[1]} ${sizeMatch[2]}`;
+        s = before;
+      }
+    }
+
+    const parts = s.split(/\s*[-–—]\s*/).map((p) => p.trim()).filter(Boolean);
+    while (parts.length > 1 && this.isShadeSegment(parts[parts.length - 1])) {
+      parts.pop();
+    }
+
+    let core = this.stripShadeTokens(parts.join(" - "));
+    if (size && !new RegExp(size.trim(), "i").test(core)) core = `${core}${size}`.trim();
+    return core.replace(/\s+/g, " ").trim();
   }
 
   private guardShadeFamilyIdentity(
@@ -1525,8 +1711,12 @@ export class AiProductService {
     const bad =
       this.isBarcodeLikeText(gpt.name_en) ||
       this.isBarcodeLikeText(gpt.name_ar) ||
-      this.isWeakGpt(gpt);
-    if (!bad) return gpt;
+      this.isWeakGpt(gpt) ||
+      this.hasShadeSuffixInName(gpt.name_en) ||
+      this.hasShadeSuffixInName(gpt.name_ar);
+    if (!bad) {
+      return this.sanitizeShadeFamilyProductNames(gpt, { hint, freeByBarcode });
+    }
 
     const rebuilt = this.refineShadeFamilyDraft(gpt, {
       barcode: lead,
@@ -1542,13 +1732,14 @@ export class AiProductService {
     if (hintText && !this.isBarcodeLikeText(hintText)) {
       const brandEn = this.canonicalBrandEn(this.guessBrandFromText(hintText));
       const brandAr = this.canonicalBrandAr(brandEn, hintText);
-      const core = this.stripShadeTokens(this.stripRetailerJunk(hintText));
-      const nameEn = brandEn ? `${brandEn} - ${core}` : core;
+      const core = this.stripFamilyShadeFromTitle(this.stripRetailerJunk(hintText));
+      const productCore = brandEn ? this.extractProductCore(core, brandEn) : core;
+      const nameEn = brandEn ? `${brandEn} - ${productCore}` : productCore;
       const arBrand = this.brandPrefixForArabicTitle(brandEn, brandAr);
       const type = this.guessProductType(hintText);
       const nameAr = arBrand
-        ? `${arBrand} - ${this.arabicizeProductCore(this.stripLeadingType(core, type), type.ar)}`
-        : this.arabicizeProductCore(core, type.ar);
+        ? `${arBrand} - ${this.arabicizeProductCore(this.stripLeadingType(productCore, type), type.ar)}`
+        : this.arabicizeProductCore(productCore, type.ar);
       return this.polishNaming({
         ...gpt,
         brand_en: brandEn || gpt.brand_en,
@@ -1949,6 +2140,61 @@ export class AiProductService {
       colorHex: hit.colorHex,
       source: hit.source ? `global:${hit.source}` : "global",
     };
+  }
+
+  private async healWeakShadeHints(
+    barcodes: string[],
+    freeByBarcode: Map<string, FreeHint>,
+    hint: string | undefined,
+    draft: GptAutofillJson,
+  ): Promise<void> {
+    const weak = barcodes.filter((bc) => {
+      const free = freeByBarcode.get(bc);
+      const title = String(free?.title ?? "").trim();
+      if (!title) return true;
+      const code = this.extractShadeCode(title, bc, 0);
+      const name = this.extractShadeName(title, code);
+      return !name || this.isGenericShadeName(name);
+    });
+    if (!weak.length) return;
+
+    const namedTitles = barcodes
+      .map((bc) => {
+        const title = String(freeByBarcode.get(bc)?.title ?? "").trim();
+        if (!title) return "";
+        const code = this.extractShadeCode(title, bc, 0);
+        const name = this.extractShadeName(title, code);
+        return !this.isGenericShadeName(name) ? title : "";
+      })
+      .filter(Boolean);
+    const familyHint = [
+      hint,
+      draft.brand_en,
+      draft.name_en,
+      ...namedTitles.slice(0, 2),
+    ]
+      .filter((s): s is string => Boolean(s && String(s).trim().length >= 2))
+      .join(" ")
+      .trim();
+    if (!familyHint) return;
+
+    const retry = await this.globalEnrichment.retryWeakBarcodes(weak, familyHint, { budgetMs: 16_000 });
+    for (const bc of weak) {
+      const digits = this.barcodeDigits(bc);
+      const hit = retry.get(digits);
+      if (!hit || hit.confidence <= 0) continue;
+      const merged = this.globalHitToFreeHint(hit, familyHint);
+      const cur = freeByBarcode.get(bc) ?? {};
+      freeByBarcode.set(bc, {
+        ...cur,
+        ...merged,
+        title: merged.title || cur.title,
+        brand: merged.brand || cur.brand,
+        colorHex: merged.colorHex || cur.colorHex,
+        imageUrl: merged.imageUrl || cur.imageUrl,
+        source: [cur.source, merged.source].filter(Boolean).join("+"),
+      });
+    }
   }
 
   private mergeGlobalAndCatalogHint(

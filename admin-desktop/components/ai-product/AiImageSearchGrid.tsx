@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { AiAutofillImage } from "@/lib/aiProductTypes";
 
 type Props = {
@@ -17,6 +18,8 @@ export function AiImageSearchGrid({
   loading,
   emptyText = "لا توجد صور — جرّب البحث مرة أخرى",
 }: Props) {
+  const [broken, setBroken] = useState<Set<string>>(() => new Set());
+
   if (loading) {
     return (
       <div style={{ textAlign: "center", padding: 48, color: "#8a8194" }}>
@@ -25,7 +28,9 @@ export function AiImageSearchGrid({
     );
   }
 
-  if (!images.length) {
+  const visible = images.filter((img) => !broken.has(img.url));
+
+  if (!visible.length) {
     return (
       <div style={{ textAlign: "center", padding: 48, color: "#8a8194" }}>{emptyText}</div>
     );
@@ -33,7 +38,7 @@ export function AiImageSearchGrid({
 
   return (
     <div className="ai-image-grid">
-      {images.map((img) => {
+      {visible.map((img) => {
         const url = img.url;
         const thumb = img.thumbUrl || img.url;
         const isSelected = selected.has(url);
@@ -46,7 +51,13 @@ export function AiImageSearchGrid({
             title={img.title || undefined}
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={thumb} alt={img.title || "صورة منتج"} loading="lazy" />
+            <img
+              src={thumb}
+              alt={img.title || "صورة منتج"}
+              loading="lazy"
+              decoding="async"
+              onError={() => setBroken((prev) => new Set(prev).add(url))}
+            />
             {img.title ? <div className="ai-image-title">{img.title}</div> : null}
           </button>
         );

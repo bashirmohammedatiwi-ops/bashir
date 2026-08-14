@@ -18,9 +18,9 @@ import { AiImageSearchGrid } from "./AiImageSearchGrid";
 import { AiImageSearchPanel } from "./AiImageSearchPanel";
 import { AiProgressOverlay, type AiProgressState } from "./AiProgressOverlay";
 import { aiSearchImages, aiShadeFamily, fetchAiModels } from "@/lib/aiProductApi";
-import type { ShadeFamilyResult } from "@/lib/aiProductTypes";
+import type { AiAutofillImage, ShadeFamilyResult } from "@/lib/aiProductTypes";
 import { applyAiCategories } from "@/lib/aiCategoryApply";
-import { catalogThumbToImage, applyCatalogHitToRow, enrichShadeColors, enrichShadesFromCatalog, inferProductIdentityFromCatalog, isBarcodeLikeProductName, isGenericShadeName, mergeUniqueImages, resolveShadeRowColor } from "@/lib/aiCatalogEnrich";
+import { catalogThumbToImage, applyCatalogHitToRow, enrichShadeColors, enrichShadesFromCatalog, inferProductIdentityFromCatalog, isBarcodeLikeProductName, isGenericShadeName, mergeUniqueImages, resolveFamilyProductNames, resolveShadeRowColor } from "@/lib/aiCatalogEnrich";
 import { formatAiError, startShadeFamilyProgressTicker } from "@/lib/aiProgress";
 import { matchBrandIdLocal } from "@/lib/catalogBrandMatch";
 import { lookupInventoryBarcodes } from "@/lib/inventorySync";
@@ -96,7 +96,7 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
   const [gallery, setGallery] = useState(result?.images ?? []);
   const [selectedGallery, setSelectedGallery] = useState<Set<string>>(new Set());
   const [activeShadeIdx, setActiveShadeIdx] = useState(0);
-  const [shadeImages, setShadeImages] = useState<Record<string, string[]>>({});
+  const [shadeImages, setShadeImages] = useState<Record<string, AiAutofillImage[]>>({});
   const [loadingShadeImages, setLoadingShadeImages] = useState(false);
   const [invMap, setInvMap] = useState<Record<string, { price: number; stock: number }>>({});
   const [identifying, setIdentifying] = useState(false);
@@ -183,11 +183,19 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
   }, [modelsQ.data, modelId]);
 
   const applyFillResult = async (fill: ShadeFamilyResult, inv: Awaited<ReturnType<typeof lookupInventoryBarcodes>>) => {
+    const familyNames = resolveFamilyProductNames({
+      hint,
+      nameEn: fill.nameEn,
+      nameAr: fill.nameAr,
+      brandEn: fill.brandEn,
+      brandAr: fill.brandAr,
+    });
+
     setResult(fill);
-    setNameAr(fill.nameAr);
-    setNameEn(fill.nameEn);
-    setBrandAr(fill.brandAr);
-    setBrandEn(fill.brandEn);
+    setNameAr(familyNames.nameAr);
+    setNameEn(familyNames.nameEn);
+    setBrandAr(familyNames.brandAr || fill.brandAr);
+    setBrandEn(familyNames.brandEn || fill.brandEn);
     setDescAr(fill.descriptionAr);
     setGallery(fill.images);
     if (fill.images.length) setSelectedGallery(new Set([fill.images[0].url]));
@@ -230,17 +238,17 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
     try {
       const catalogMap = await enrichShadesFromCatalog(barcodes, undefined, hint);
       const identity = inferProductIdentityFromCatalog(catalogMap, hint);
-      if (
-        identity &&
-        (isBarcodeLikeProductName(fill.nameEn, barcodes) ||
-          isBarcodeLikeProductName(fill.nameAr, barcodes) ||
-          !fill.brandEn.trim())
-      ) {
-        if (identity.brandEn) setBrandEn(identity.brandEn);
-        if (identity.brandAr) setBrandAr(identity.brandAr);
-        if (identity.nameEn && isBarcodeLikeProductName(fill.nameEn, barcodes)) setNameEn(identity.nameEn);
-        if (identity.nameAr && isBarcodeLikeProductName(fill.nameAr, barcodes)) setNameAr(identity.nameAr);
-      }
+      const refreshed = resolveFamilyProductNames({
+        hint,
+        nameEn: identity?.nameEn || familyNames.nameEn,
+        nameAr: identity?.nameAr || familyNames.nameAr,
+        brandEn: identity?.brandEn || familyNames.brandEn,
+        brandAr: identity?.brandAr || familyNames.brandAr,
+      });
+      setBrandEn(refreshed.brandEn);
+      setBrandAr(refreshed.brandAr);
+      setNameEn(refreshed.nameEn);
+      setNameAr(refreshed.nameAr);
       for (let i = 0; i < rows.length; i++) {
         const hit = catalogMap.get(rows[i].barcode);
         if (!hit) continue;
@@ -400,23 +408,26 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
     if (!shade) return;
     setLoadingShadeImages(true);
     try {
-      const q = [brandEn || brandAr, nameEn || nameAr, shade.name, shade.code].filter(Boolean).join(" ");
+      const shadeLabel = isGenericShadeName(shade.name) ? "" : shade.name;
+      const nameHint = [brandEn, brandAr, hint, nameEn, nameAr, shadeLabel, shade.code]
+        .filter(Boolean)
+        .join(" | ");
       const barcodeHits = await aiSearchImages({
         barcode: shade.barcode,
         mode: "barcode",
-        nameHint: q,
+        nameHint,
       });
       let hits = barcodeHits;
-      if (hits.length < 6) {
+      if (hits.length < 4) {
         const nameHits = await aiSearchImages({
           barcode: shade.barcode,
           mode: "name",
-          query: q,
-          nameHint: q,
+          query: [brandEn, nameEn, shadeLabel, shade.code].filter(Boolean).join(" "),
+          nameHint,
         });
-        hits = mergeUniqueImages(hits, nameHits);
+        hits = mergeUniqueImages(hits, nameHits, 36);
       }
-      setShadeImages((prev) => ({ ...prev, [shade.barcode]: hits.map((h) => h.url) }));
+      setShadeImages((prev) => ({ ...prev, [shade.barcode]: hits }));
       const imageUrl = shade.imageUrl || hits[0]?.url || null;
       if (imageUrl) {
         const colorHex = await resolveShadeRowColor({
@@ -441,20 +452,11 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
 
   useEffect(() => {
     if (step !== 2 || !shades.length) return;
-    let cancelled = false;
-    void (async () => {
-      for (let i = 0; i < shades.length; i++) {
-        if (cancelled) return;
-        const bc = shades[i].barcode;
-        if (shadeImages[bc]?.length) continue;
-        await loadShadeImages(i);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    const bc = shades[activeShadeIdx]?.barcode;
+    if (!bc || shadeImages[bc]?.length) return;
+    void loadShadeImages(activeShadeIdx);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, shades.map((s) => s.barcode).join(",")]);
+  }, [step, activeShadeIdx, shades.map((s) => s.barcode).join(",")]);
 
   useEffect(() => {
     if (step !== 4 || categoryId || !result) return;
@@ -472,7 +474,7 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
   }, [step, categoryId, categoriesQ.data, nameAr, nameEn, result, hint]);
 
   const activeShade = shades[activeShadeIdx];
-  const activeShadeUrls = activeShade ? (shadeImages[activeShade.barcode] ?? []).map((url) => ({ url, thumbUrl: url })) : [];
+  const activeShadeUrls = activeShade ? (shadeImages[activeShade.barcode] ?? []) : [];
 
   const canNext = useMemo(() => {
     if (step === 0) return barcodes.length >= 2;
@@ -564,12 +566,17 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
               onClick={async () => {
                 const map = await enrichShadesFromCatalog(barcodes, undefined, hint);
                 const identity = inferProductIdentityFromCatalog(map, hint);
-                if (identity) {
-                  if (identity.brandEn) setBrandEn(identity.brandEn);
-                  if (identity.brandAr) setBrandAr(identity.brandAr);
-                  if (identity.nameEn) setNameEn(identity.nameEn);
-                  if (identity.nameAr) setNameAr(identity.nameAr);
-                }
+                const refreshed = resolveFamilyProductNames({
+                  hint,
+                  nameEn: identity?.nameEn || nameEn,
+                  nameAr: identity?.nameAr || nameAr,
+                  brandEn: identity?.brandEn || brandEn,
+                  brandAr: identity?.brandAr || brandAr,
+                });
+                setBrandEn(refreshed.brandEn);
+                setBrandAr(refreshed.brandAr);
+                setNameEn(refreshed.nameEn);
+                setNameAr(refreshed.nameAr);
                 const nextRows = shades.map((row) => ({ ...row }));
                 for (const row of nextRows) {
                   const hit = map.get(row.barcode);

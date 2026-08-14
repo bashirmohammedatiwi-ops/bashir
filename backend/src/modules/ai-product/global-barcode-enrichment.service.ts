@@ -70,7 +70,120 @@ export class GlobalBarcodeEnrichmentService {
       );
       for (const hit of part) out.set(hit.barcode, hit);
     }
+
+    const weak = barcodes
+      .map((bc) => String(bc ?? "").replace(/\D/g, "") || String(bc ?? "").trim())
+      .filter((digits) => {
+        const hit = out.get(digits);
+        return !hit || hit.confidence < 50 || !hit.shadeName;
+      });
+    if (weak.length && Date.now() - started < budgetMs) {
+      const best = [...out.values()].sort((a, b) => b.confidence - a.confidence)[0];
+      const familyHint = [hint, best?.brand, best?.title].filter(Boolean).join(" ").trim();
+      const retry = await this.retryWeakBarcodes(weak, familyHint, {
+        budgetMs: Math.min(20_000, Math.max(5_000, budgetMs - (Date.now() - started))),
+      });
+      for (const [digits, hit] of retry) {
+        const prev = out.get(digits);
+        if (hit.confidence > (prev?.confidence ?? 0)) out.set(digits, hit);
+      }
+    }
+
     return out;
+  }
+
+  /** Focused second pass for barcodes that missed on the first global sweep. */
+  async retryWeakBarcodes(
+    barcodes: string[],
+    familyHint: string,
+    opts?: { budgetMs?: number },
+  ): Promise<Map<string, GlobalBarcodeHit>> {
+    const budgetMs = opts?.budgetMs ?? 18_000;
+    const started = Date.now();
+    const out = new Map<string, GlobalBarcodeHit>();
+    const unique = [...new Set(barcodes.map((bc) => String(bc ?? "").replace(/\D/g, "") || String(bc ?? "").trim()))];
+
+    await Promise.all(
+      unique.map(async (digits) => {
+        if (Date.now() - started > budgetMs) return;
+        const remaining = Math.max(4_000, budgetMs - (Date.now() - started));
+        const hit = await this.enrichBarcodeFocused(digits, familyHint, {
+          budgetMs: Math.min(10_000, remaining),
+        });
+        out.set(digits, hit);
+      }),
+    );
+    return out;
+  }
+
+  private async enrichBarcodeFocused(
+    digits: string,
+    familyHint: string,
+    opts?: { budgetMs?: number },
+  ): Promise<GlobalBarcodeHit> {
+    const cacheKey = `focus|${digits}|${familyHint.trim().toLowerCase()}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached && cached.hit.confidence > 0 && Date.now() - cached.at < 30 * 60_000) {
+      return cached.hit;
+    }
+
+    const budgetMs = opts?.budgetMs ?? 9_000;
+    const run = async (): Promise<GlobalBarcodeHit> => {
+      const metas = await Promise.allSettled([
+        this.lookupGoUpc(digits),
+        this.lookupObf(digits),
+        this.lookupUpcItemDb(digits),
+        this.lookupWebMeta(digits, `"${digits}" ${familyHint} lipstick shade`),
+        this.lookupWebMeta(digits, `${digits} ${familyHint} site:artdeco.com`),
+        this.lookupWebMeta(digits, `${digits} ${familyHint} site:sephora.com`),
+        this.lookupImageMeta(digits, familyHint),
+        this.lookupBrandSite(digits, familyHint),
+      ]);
+      const rows: MetaRow[] = [];
+      for (const row of metas) {
+        if (row.status === "fulfilled" && row.value) rows.push(row.value);
+      }
+      const best = this.pickBestMeta(rows, familyHint);
+      const parsed = this.parseShadeFromTitle(best.title ?? "", best.shade);
+      return {
+        barcode: digits,
+        brand: best.brand,
+        title: parsed.productLine || best.title,
+        shadeName: parsed.shadeName || best.shade,
+        imageUrl: best.imageUrl,
+        source: best.source ? `retry:${best.source}` : "retry",
+        confidence: this.scoreMeta(best, familyHint),
+      };
+    };
+
+    try {
+      const hit = await Promise.race([
+        run(),
+        new Promise<GlobalBarcodeHit>((resolve) =>
+          setTimeout(() => resolve({ barcode: digits, confidence: 0, source: "timeout" }), budgetMs),
+        ),
+      ]);
+      if (hit.confidence > 0) this.cache.set(cacheKey, { at: Date.now(), hit });
+      return hit;
+    } catch {
+      return { barcode: digits, confidence: 0, source: "error" };
+    }
+  }
+
+  private async lookupBrandSite(barcode: string, hint: string): Promise<MetaRow | null> {
+    const h = hint.toLowerCase();
+    const sites: string[] = [];
+    if (/\bartdeco\b/i.test(hint)) sites.push("artdeco.com");
+    if (/\bessence\b/i.test(hint)) sites.push("essence.eu", "essencemakeup.com");
+    if (/\bmaybelline\b/i.test(hint)) sites.push("maybelline.com");
+    if (/\bloreal\b/i.test(hint) || /\bl'oreal\b/i.test(hint)) sites.push("loreal.com");
+    if (!sites.length) return null;
+
+    for (const site of sites.slice(0, 2)) {
+      const row = await this.lookupWebMeta(barcode, `"${barcode}" site:${site} ${hint}`);
+      if (row?.title) return { ...row, source: `brand:${site}` };
+    }
+    return null;
   }
 
   async enrichBarcode(
@@ -81,7 +194,11 @@ export class GlobalBarcodeEnrichmentService {
     const digits = String(barcode ?? "").replace(/\D/g, "") || String(barcode ?? "").trim();
     const cacheKey = `${digits}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.cache.get(cacheKey);
-    if (cached && Date.now() - cached.at < 30 * 60_000) return cached.hit;
+    if (cached) {
+      const age = Date.now() - cached.at;
+      if (cached.hit.confidence > 0 && age < 30 * 60_000) return cached.hit;
+      if (cached.hit.confidence <= 0 && age < 90_000) return cached.hit;
+    }
 
     const budgetMs = opts?.budgetMs ?? 7_000;
     const variants = barcodeLookupCandidates(digits).filter((v) => /^\d{8,14}$/.test(v)).slice(0, 2);
@@ -170,6 +287,8 @@ export class GlobalBarcodeEnrichmentService {
     if (row.source === "upcitemdb") score += 4;
     if (row.source === "web") score += 3;
     if (row.source === "image-search") score += 7;
+    if (row.source?.startsWith("brand:")) score += 9;
+    if (row.source?.startsWith("retry:")) score += 2;
     const hintNorm = String(hint ?? "").toLowerCase();
     if (hintNorm && `${brand} ${title}`.toLowerCase().includes(hintNorm.slice(0, 12))) score += 10;
     return score;
@@ -194,6 +313,9 @@ export class GlobalBarcodeEnrichmentService {
 
     const nr = productLine.match(/\b(?:no\.?|nr\.?|n[°o]\.?|#)\s*(\d{1,3})\s*[-–:]\s*([A-Za-z][A-Za-z\s\-]{2,36})/i);
     if (nr?.[2] && !shadeName) shadeName = `${nr[2].trim()} ${nr[1]}`;
+
+    const codeDash = productLine.match(/\b(\d{1,3})\s*[-–]\s*([A-Za-z][A-Za-z\s\-]{2,36})\b/);
+    if (codeDash?.[2] && !shadeName) shadeName = `${codeDash[2].trim()} ${codeDash[1]}`;
 
     return { productLine, shadeName: shadeName.replace(/\s+/g, " ").trim() };
   }

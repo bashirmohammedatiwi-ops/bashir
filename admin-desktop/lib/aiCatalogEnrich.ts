@@ -171,11 +171,82 @@ function guessBrandFromTitle(text: string): string {
 }
 
 function stripShadeSuffixFromTitle(title: string): string {
-  return title
+  let s = String(title ?? "").trim();
+  if (!s) return "";
+
+  let size = "";
+  const sizeMatch = s.match(/\s+(\d+(?:[.,]\d+)?)\s*(ml|g|oz)\s*$/i);
+  if (sizeMatch) {
+    const n = parseFloat(sizeMatch[1]);
+    const before = s.slice(0, -sizeMatch[0].length).trim();
+    const isProductSize =
+      n >= 10 ||
+      /[.,]/.test(sizeMatch[1]) ||
+      /\b(fluid|lipstick|mascara|cream|gel|lotion|foundation|concealer)\s*$/i.test(before);
+    if (isProductSize) {
+      size = ` ${sizeMatch[1]} ${sizeMatch[2]}`;
+      s = before;
+    }
+  }
+
+  const productLine =
+    /\b(lip\s*fluid|mat\s*passion|mascara|foundation|concealer|lipstick|lip\s*gloss|eyeshadow|eyeliner|blush|bronzer|highlighter|primer|powder|brow|lip\s*liner)\b/i;
+
+  const isShadeSegment = (seg: string) => {
+    const t = seg.trim();
+    if (!t) return false;
+    if (productLine.test(t)) return false;
+    if (/^\d{1,3}\s*[-–:]\s*[A-Za-z]/i.test(t)) return true;
+    if (/^\d{1,3}$/.test(t)) return true;
+    if (/^[A-Za-z][A-Za-z\s\-]{2,30}\s+\d{1,3}$/i.test(t)) return true;
+    if (/^[A-Za-z][A-Za-z\s\-]{2,30}\s+\d{1,3}(?:\s+\d+(?:[.,]\d+)?\s*(?:ml|g|oz))?$/i.test(t) && !productLine.test(t)) {
+      return true;
+    }
+    return false;
+  };
+
+  const parts = s.split(/\s*[-–—]\s*/).map((p) => p.trim()).filter(Boolean);
+  while (parts.length > 1 && isShadeSegment(parts[parts.length - 1])) {
+    parts.pop();
+  }
+
+  let core = parts
+    .join(" - ")
     .replace(/\b(?:no\.?|nr\.?|n[°o]\.?|#)\s*\d+\b/gi, " ")
-    .replace(/\b\d{2,3}\b(?!\s*(?:ml|g|gr|oz)\b)/gi, " ")
     .replace(/\s+/g, " ")
     .trim();
+  if (size && !new RegExp(size.trim(), "i").test(core)) core = `${core}${size}`.trim();
+  return core;
+}
+
+export function resolveFamilyProductNames(input: {
+  hint?: string;
+  nameEn?: string;
+  nameAr?: string;
+  brandEn?: string;
+  brandAr?: string;
+}): { nameEn: string; nameAr: string; brandEn: string; brandAr: string } {
+  const hint = String(input.hint ?? "").trim();
+  const brandEn = String(input.brandEn ?? "").trim() || guessBrandFromTitle(hint || input.nameEn || "");
+  const brandAr = String(input.brandAr ?? "").trim() || brandEn;
+
+  const source = hint || String(input.nameEn ?? "").trim();
+  const familyCore = stripShadeSuffixFromTitle(
+    brandEn ? source.replace(new RegExp(`^${brandEn}\\s*[-–—]?\\s*`, "i"), "").trim() : source,
+  );
+  const nameEn = brandEn && familyCore ? `${brandEn} - ${familyCore}` : familyCore || source;
+  const nameArRaw = String(input.nameAr ?? "").trim();
+  const nameAr =
+    nameArRaw && !isBarcodeLikeProductName(nameArRaw)
+      ? stripShadeSuffixFromTitle(nameArRaw)
+      : nameEn;
+
+  return {
+    brandEn,
+    brandAr,
+    nameEn: nameEn.replace(/\s+/g, " ").trim(),
+    nameAr: nameAr.replace(/\s+/g, " ").trim(),
+  };
 }
 
 export function inferProductIdentityFromCatalog(

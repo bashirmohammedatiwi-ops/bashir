@@ -28,7 +28,7 @@ export class GoogleImagesService {
   }
 
   /**
-   * Barcode mode: search digits, filter barcode-junk hard, then enrich with name hints.
+   * Barcode mode: packshots + cosmetics retail queries in parallel, strict beauty filter.
    */
   async searchByBarcode(
     barcode: string,
@@ -50,93 +50,96 @@ export class GoogleImagesService {
       }
     };
 
-    // Fast retail DB packshots first (like Google Images barcode tab)
-    pushHits(await this.fetchBarcodePackshots(digits));
+    const brand = nameHints.find((h) => h.length >= 3 && !/^\d{8,14}$/.test(h)) ?? "";
+    const shortBrand = brand.split(/\s+/).slice(0, 2).join(" ");
+    const shadeCode = nameHints
+      .flatMap((h) => [...String(h).matchAll(/\b(\d{2,3})\b/g)].map((m) => m[1]))
+      .find((n) => {
+        const v = parseInt(n, 10);
+        return v >= 1 && v <= 999;
+      });
 
-    const variants = this.barcodeQueryVariants(digits, nameHints);
-    for (const q of variants) {
-      if (merged.length >= limit) break;
-      pushHits(
-        await this.collectResults(q, limit, {
-          expandVariants: false,
-          filterMode: merged.length < 8 ? "product" : "barcode",
-        }),
-      );
-    }
-
-    const barcodePlus: string[] = [];
-    const nameOnly: string[] = [];
-    for (const hint of nameHints) {
-      const h = hint.replace(/\s+/g, " ").trim();
-      if (h.length < 2 || h.length > 120) continue;
-      if (/^\d{8,14}$/.test(h)) continue;
-      barcodePlus.push(`${h} ${digits}`);
-      nameOnly.push(h);
-      const short = h.split(/\s+/).slice(0, 5).join(" ");
-      if (short.length >= 3 && short !== h) nameOnly.push(short);
-      const brandLine = h.split(/\s+/).slice(0, 3).join(" ");
-      if (brandLine.length >= 3 && brandLine !== short) nameOnly.push(brandLine);
-    }
-    if (merged.length < Math.min(24, limit)) {
-      barcodePlus.push(`${digits} product photo`);
-      barcodePlus.push(`${digits} packshot`);
-    }
-
-    for (const q of [...new Set(barcodePlus)].slice(0, 6)) {
-      if (merged.length >= limit) break;
-      pushHits(
-        await this.collectResults(q, Math.min(36, limit), {
-          expandVariants: false,
-          filterMode: "barcode",
-        }),
-      );
-    }
-    for (const q of [...new Set(nameOnly)].slice(0, 12)) {
-      if (merged.length >= limit) break;
-      pushHits(
-        await this.collectResults(q, Math.min(48, limit), {
-          expandVariants: true,
-          filterMode: "product",
-        }),
-      );
-    }
-
-    const storeSites = [
-      "site:faces.com",
-      "site:miswag.net",
-      "site:beautyway.com",
-      "site:niceone.com",
-      "site:amazon.com",
-      "site:sephora.com",
+    const parallelQueries: Array<Promise<GoogleImageHit[]>> = [
+      this.fetchBarcodePackshots(digits),
+      this.searchCosmeticsRetailByBarcode(digits, nameHints),
+      this.collectResults(`"${digits}"`, Math.min(28, limit), {
+        expandVariants: false,
+        filterMode: "barcode",
+        nameHints,
+      }),
     ];
-    const brandHint = nameHints.find((h) => h.length >= 3 && !/^\d+$/.test(h)) ?? "";
-    if (brandHint && merged.length < limit) {
-      for (const site of storeSites.slice(0, 5)) {
+
+    if (shortBrand) {
+      parallelQueries.push(
+        this.collectResults(`"${digits}" ${shortBrand} cosmetics`, Math.min(24, limit), {
+          expandVariants: false,
+          filterMode: "product",
+          nameHints,
+        }),
+      );
+      parallelQueries.push(
+        this.collectResults(`${shortBrand} ${digits} lipstick makeup`, Math.min(20, limit), {
+          expandVariants: false,
+          filterMode: "product",
+          nameHints,
+        }),
+      );
+    }
+    if (shadeCode && shortBrand) {
+      parallelQueries.push(
+        this.collectResults(`${shortBrand} ${shadeCode} lip fluid`, Math.min(16, limit), {
+          expandVariants: false,
+          filterMode: "product",
+          nameHints,
+        }),
+      );
+    }
+
+    const batches = await Promise.allSettled(
+      parallelQueries.map((task) =>
+        Promise.race([
+          task,
+          new Promise<GoogleImageHit[]>((resolve) => setTimeout(() => resolve([]), 12_000)),
+        ]),
+      ),
+    );
+    for (const batch of batches) {
+      if (batch.status === "fulfilled") pushHits(batch.value);
+      if (merged.length >= limit) break;
+    }
+
+    if (merged.length < Math.min(16, limit)) {
+      for (const q of this.barcodeQueryVariants(digits, nameHints).slice(0, 4)) {
         if (merged.length >= limit) break;
         pushHits(
-          await this.collectResults(`${brandHint} ${site}`, Math.min(24, limit), {
+          await this.collectResults(q, Math.min(20, limit), {
             expandVariants: false,
-            filterMode: "product",
-          }),
-        );
-      }
-      const shadeCode = nameHints
-        .flatMap((h) => [...String(h).matchAll(/\b(\d{2,3})\b/g)].map((m) => m[1]))
-        .find((n) => {
-          const v = parseInt(n, 10);
-          return v >= 10 && v <= 999;
-        });
-      if (shadeCode) {
-        pushHits(
-          await this.collectResults(`${brandHint} ${shadeCode}`, Math.min(24, limit), {
-            expandVariants: false,
-            filterMode: "product",
+            filterMode: merged.length < 8 ? "product" : "barcode",
+            nameHints,
           }),
         );
       }
     }
 
-    return this.rankProductPhotos(merged).slice(0, limit);
+    const nameOnly = [
+      ...new Set(
+        nameHints
+          .map((h) => h.replace(/\s+/g, " ").trim())
+          .filter((h) => h.length >= 4 && !/^\d{8,14}$/.test(h)),
+      ),
+    ].slice(0, 4);
+    for (const q of nameOnly) {
+      if (merged.length >= limit) break;
+      pushHits(
+        await this.collectResults(q, Math.min(24, limit), {
+          expandVariants: true,
+          filterMode: "product",
+          nameHints,
+        }),
+      );
+    }
+
+    return this.rankProductPhotos(merged, nameHints).slice(0, limit);
   }
 
   /** Shade-family fast path — packshots + 2 queries max, hard 7s cap. */
@@ -162,6 +165,7 @@ export class GoogleImagesService {
       };
 
       pushHits(await this.fetchBarcodePackshots(digits));
+      pushHits(await this.searchCosmeticsRetailByBarcode(digits, nameHints));
       const variants = this.barcodeQueryVariants(digits, nameHints).slice(0, 2);
       for (const q of variants) {
         if (merged.length >= limit) break;
@@ -169,6 +173,7 @@ export class GoogleImagesService {
           await this.collectResults(q, Math.min(12, limit), {
             expandVariants: false,
             filterMode: "barcode",
+            nameHints,
           }),
         );
       }
@@ -179,11 +184,12 @@ export class GoogleImagesService {
           await this.collectResults(`${brand} ${digits}`, Math.min(12, limit), {
             expandVariants: false,
             filterMode: "product",
+            nameHints,
           }),
         );
       }
 
-      return this.rankProductPhotos(merged).slice(0, limit);
+      return this.rankProductPhotos(merged, nameHints).slice(0, limit);
     };
 
     try {
@@ -195,6 +201,57 @@ export class GoogleImagesService {
       this.logger.warn(`searchByBarcodeFast failed: ${(err as Error).message}`);
       return [];
     }
+  }
+
+  /** Cosmetics retailer image search — mirrors Google Images barcode results. */
+  private async searchCosmeticsRetailByBarcode(
+    digits: string,
+    nameHints: string[] = [],
+  ): Promise<GoogleImageHit[]> {
+    const brand = nameHints.find((h) => h.length >= 3 && !/^\d{8,14}$/.test(h)) ?? "";
+    const shortBrand = brand.split(/\s+/).slice(0, 2).join(" ");
+    const sites = [
+      "site:artdeco.com",
+      "site:sephora.com",
+      "site:notino.com",
+      "site:douglas.de",
+      "site:farmaline.be",
+      "site:perfumesclub.com",
+      "site:flaconi.de",
+      "site:lookfantastic.com",
+      "site:boots.com",
+      "site:openbeautyfacts.org",
+      "site:faces.com",
+      "site:miswag.net",
+    ];
+    const queries = [
+      `"${digits}"`,
+      shortBrand ? `"${digits}" ${shortBrand}` : "",
+      ...sites.slice(0, 6).map((site) => `${site} ${digits}`),
+      shortBrand ? `${shortBrand} ${digits} lip fluid` : "",
+    ].filter((q) => q.length >= 8);
+
+    const batches = await Promise.allSettled(
+      [...new Set(queries)].slice(0, 6).map((q) =>
+        this.collectResults(q, 14, {
+          expandVariants: false,
+          filterMode: "product",
+          nameHints,
+        }),
+      ),
+    );
+    const out: GoogleImageHit[] = [];
+    const seen = new Set<string>();
+    for (const batch of batches) {
+      if (batch.status !== "fulfilled") continue;
+      for (const hit of batch.value) {
+        const key = this.dedupeKey(hit.url);
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        out.push(hit);
+      }
+    }
+    return out;
   }
 
   async searchProductImages(query: string, limit = 24): Promise<GoogleImageHit[]> {
@@ -310,15 +367,42 @@ export class GoogleImagesService {
       /* optional */
     }
 
+    try {
+      const res = await fetch(`https://go-upc.com/search?q=${encodeURIComponent(barcode)}`, {
+        headers: { Accept: "text/html", "User-Agent": "AlhayaaImageSearch/3.0" },
+        signal: AbortSignal.timeout(6_000),
+      });
+      if (res.ok) {
+        const html = await res.text();
+        const img =
+          html.match(/<img[^>]+src=["'](https?:\/\/[^"']+\.(?:jpg|jpeg|png|webp)[^"']*)["']/i)?.[1] ||
+          html.match(/(https?:\/\/[^\s"'<>]+\.(?:jpg|jpeg|png|webp))/i)?.[1];
+        const title =
+          html
+            .match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1]
+            ?.replace(/<[^>]+>/g, " ")
+            .replace(/\s+/g, " ")
+            .trim() || barcode;
+        if (img && !/logo|icon|avatar/i.test(img)) push(img, title, "go-upc.com");
+      }
+    } catch {
+      /* optional */
+    }
+
     return hits;
   }
 
   private async collectResults(
     query: string,
     limit: number,
-    opts: { expandVariants?: boolean; filterMode?: "soft" | "product" | "barcode" } = {},
+    opts: {
+      expandVariants?: boolean;
+      filterMode?: "soft" | "product" | "barcode";
+      nameHints?: string[];
+    } = {},
   ): Promise<GoogleImageHit[]> {
     const filterMode = opts.filterMode ?? "product";
+    const nameHints = opts.nameHints ?? [];
     const googleKey = process.env.GOOGLE_CSE_API_KEY?.trim();
     const googleCx = process.env.GOOGLE_CSE_CX?.trim();
 
@@ -328,16 +412,11 @@ export class GoogleImagesService {
       for (const hit of batch) {
         const key = this.dedupeKey(hit.url);
         if (!key || seen.has(key)) continue;
-        if (!this.isUsableImage(hit, filterMode)) continue;
+        if (!this.isUsableImage(hit, filterMode, nameHints)) continue;
         seen.add(key);
         merged.push(hit);
       }
     };
-
-    if (googleKey && googleCx) {
-      push(await this.searchGoogleCse(query, googleKey, googleCx, limit));
-      if (merged.length >= Math.min(20, limit)) return merged.slice(0, limit);
-    }
 
     const queries = opts.expandVariants
       ? [query, `${query} product`, `${query} packaging`]
@@ -345,10 +424,16 @@ export class GoogleImagesService {
 
     for (const q of queries) {
       if (merged.length >= limit) break;
-      for (const offset of [0, 100]) {
-        if (merged.length >= limit) break;
-        push(await this.searchDuckDuckGo(q, 40, offset));
+      const tasks: Promise<GoogleImageHit[]>[] = [];
+      if (googleKey && googleCx) {
+        tasks.push(this.searchGoogleCse(q, googleKey, googleCx, Math.min(limit, 20)));
       }
+      tasks.push(this.searchDuckDuckGo(q, Math.min(30, limit), 0));
+      const batches = await Promise.allSettled(tasks);
+      for (const batch of batches) {
+        if (batch.status === "fulfilled") push(batch.value);
+      }
+      if (merged.length >= Math.min(12, limit)) break;
     }
 
     return merged.slice(0, limit);
@@ -516,6 +601,7 @@ export class GoogleImagesService {
   private isUsableImage(
     hit: GoogleImageHit,
     mode: "soft" | "product" | "barcode" = "product",
+    nameHints: string[] = [],
   ): boolean {
     const url = hit.url;
     if (!url.startsWith("http")) return false;
@@ -528,6 +614,8 @@ export class GoogleImagesService {
     if (/[?&](utm_|pixel|track|beacon)=/i.test(path)) return false;
     if (/\/(1x1|pixel\.|spacer\.|blank\.)/i.test(path)) return false;
     if (/\bfavicon\b/i.test(blob)) return false;
+
+    if (this.isNonProductJunk(blob)) return false;
 
     if (mode === "soft") return true;
 
@@ -557,11 +645,46 @@ export class GoogleImagesService {
       if (mode === "barcode" && (w < 140 || h < 140)) return false;
     }
 
+    const hasBeautyHint = nameHints.some((hint) =>
+      /\b(artdeco|lip|mascara|foundation|cosmetic|makeup|beauty|mat\s*passion|rouge|eyeshadow|concealer|blush)\b/i.test(
+        hint,
+      ),
+    );
+    if ((mode === "product" || mode === "barcode") && hasBeautyHint && !this.isBeautyRelevant(hit, nameHints)) {
+      return false;
+    }
+
     return true;
   }
 
+  private isNonProductJunk(blob: string): boolean {
+    return /\b(ups\b|uninterruptible|power\s*supply|earbuds|airpods|iphone\s*case|charger|cable|adapter|router|modem|laptop|keyboard|mouse|sock|beanie|beanie|winter\s*hat|cereal|baby\s*food|shower\s*gel|adidas\s*ice|stock\s*photo|getty|shutterstock|istock|business\s*meeting|office\s*worker|warehouse|shipping\s*label|delivery\s*note|invoice|receipt|diagram|screenshot|wireframe|placeholder|noimage|no-image|default-image)\b/i.test(
+      blob,
+    );
+  }
+
+  private isBeautyRelevant(hit: GoogleImageHit, nameHints: string[]): boolean {
+    const blob = `${hit.title} ${hit.source} ${hit.url}`.toLowerCase();
+    const trusted =
+      /\b(artdeco|sephora|notino|douglas|farmaline|perfumesclub|flaconi|lookfantastic|boots|nykaa|faces\.com|miswag|openbeautyfacts|cosmetic|makeup|beauty|lip\s*fluid|lipstick|mascara|foundation|concealer|blush|eyeshadow|rouge|mat\s*passion)\b/i;
+    if (trusted.test(blob)) return true;
+
+    const w = hit.width ?? 0;
+    const h = hit.height ?? 0;
+    if (w >= 280 && h >= 280) {
+      const ratio = w / h;
+      if (ratio >= 0.55 && ratio <= 1.8) return true;
+    }
+
+    const brand = nameHints.find((h) => h.length >= 3 && !/^\d+$/.test(h)) ?? "";
+    if (brand && blob.includes(brand.split(/\s+/)[0].toLowerCase())) return true;
+
+    return false;
+  }
+
   /** Prefer square-ish retail packshots over long barcode strips that slipped through. */
-  private rankProductPhotos(hits: GoogleImageHit[]): GoogleImageHit[] {
+  private rankProductPhotos(hits: GoogleImageHit[], nameHints: string[] = []): GoogleImageHit[] {
+    const brand = nameHints.find((h) => h.length >= 3 && !/^\d{8,14}$/.test(h)) ?? "";
     const score = (h: GoogleImageHit) => {
       let s = 0;
       const w = h.width ?? 0;
@@ -574,10 +697,15 @@ export class GoogleImagesService {
         if (r > 3 || r < 0.33) s -= 40;
       }
       const blob = `${h.title} ${h.source} ${h.url}`.toLowerCase();
-      if (/\b(product|packshot|packaging|bottle|tube|box|cosmetics|beauty|makeup)\b/i.test(blob)) {
+      if (/\b(product|packshot|packaging|bottle|tube|box|cosmetics|beauty|makeup|lip\s*fluid|lipstick)\b/i.test(blob)) {
         s += 12;
       }
+      if (/\b(artdeco|sephora|notino|douglas|farmaline|perfumesclub|flaconi|openbeautyfacts|go-upc|upcitemdb)\b/i.test(blob)) {
+        s += 22;
+      }
+      if (brand && blob.includes(brand.split(/\s+/)[0].toLowerCase())) s += 15;
       if (/\b(barcode|upc|ean|qr)\b/i.test(blob)) s -= 20;
+      if (this.isNonProductJunk(blob)) s -= 80;
       return s;
     };
     return [...hits].sort((a, b) => score(b) - score(a));
