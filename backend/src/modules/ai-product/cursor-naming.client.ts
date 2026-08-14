@@ -36,6 +36,7 @@ type CursorModelResolved = {
   choice: string;
   apiModel: string;
   fast: boolean;
+  supportsFast: boolean;
 };
 
 const CURSOR_API_BASE = "https://api.cursor.com/v1";
@@ -49,23 +50,65 @@ export class CursorNamingClient {
   }
 
   resolveModel(choice?: string): CursorModelResolved {
-    const raw = (choice ?? process.env.CURSOR_MODEL ?? "composer-2.5-low").trim();
+    const raw = (choice ?? process.env.CURSOR_MODEL ?? "gpt-5.6-terra").trim();
     const key = raw.toLowerCase().replace(/_/g, "-");
+
+    // GPT-5.6 Terra (user "tera" typo accepted) — default quality model for product naming
+    if (
+      key === "gpt-5.6-terra" ||
+      key === "gpt-5.6-tera" ||
+      key === "terra" ||
+      key === "tera" ||
+      key === "gpt-terra" ||
+      key === "gpt-tera"
+    ) {
+      return { choice: "gpt-5.6-terra", apiModel: "gpt-5.6-terra", fast: false, supportsFast: false };
+    }
+
+    if (key === "gpt-5.6-sol" || key === "sol" || key === "gpt-sol") {
+      return { choice: "gpt-5.6-sol", apiModel: "gpt-5.6-sol", fast: false, supportsFast: false };
+    }
+
+    if (
+      key === "gpt-5.6-luna" ||
+      key === "gpt-5.6-luna-low" ||
+      key === "luna-low" ||
+      key === "luna" ||
+      key === "gpt-luna"
+    ) {
+      return { choice: "gpt-5.6-luna-low", apiModel: "gpt-5.6-luna", fast: false, supportsFast: false };
+    }
+
+    if (
+      key === "gpt-5.6-luna-medium" ||
+      key === "luna-medium" ||
+      key === "luna-med" ||
+      /luna[-]?med/i.test(key)
+    ) {
+      return { choice: "gpt-5.6-luna-medium", apiModel: "gpt-5.6-luna", fast: false, supportsFast: false };
+    }
 
     const wantsFast =
       key === "composer-2.5-fast" ||
       key === "composer-2.5-high" ||
-      key === "gpt-5.6-luna-medium" ||
-      key === "luna-medium" ||
-      key === "luna-med" ||
-      /luna[-]?med/i.test(key) ||
+      key === "composer-fast" ||
       key === "fast";
 
     if (wantsFast) {
-      return { choice: "composer-2.5-fast", apiModel: "composer-2.5", fast: true };
+      return { choice: "composer-2.5-fast", apiModel: "composer-2.5", fast: true, supportsFast: true };
     }
 
-    return { choice: "composer-2.5-low", apiModel: "composer-2.5", fast: false };
+    if (
+      key === "composer-2.5-low" ||
+      key === "composer-2.5" ||
+      key === "composer-low" ||
+      key === "composer"
+    ) {
+      return { choice: "composer-2.5-low", apiModel: "composer-2.5", fast: false, supportsFast: true };
+    }
+
+    // Unknown → quality default
+    return { choice: "gpt-5.6-terra", apiModel: "gpt-5.6-terra", fast: false, supportsFast: false };
   }
 
   async verifyBilingualNames(
@@ -87,6 +130,7 @@ export class CursorNamingClient {
           apiKey: key,
           model: resolved.apiModel,
           fast: resolved.fast,
+          supportsFast: resolved.supportsFast,
           prompt,
         },
         maxWaitMs,
@@ -148,7 +192,13 @@ Return exactly:
 
     try {
       const text = await this.runCloudAgent(
-        { apiKey: key, model: resolved.apiModel, fast: resolved.fast, prompt },
+        {
+          apiKey: key,
+          model: resolved.apiModel,
+          fast: resolved.fast,
+          supportsFast: resolved.supportsFast,
+          prompt,
+        },
         maxWaitMs,
       );
       const start = text.indexOf("{");
@@ -194,65 +244,57 @@ Return exactly:
 
   private fallback(input: CursorNamingInput): CursorNameDraft {
     return {
-      brand_ar: input.brand_ar?.trim() || "",
-      brand_en: input.brand_en?.trim() || "",
-      name_ar: input.name_ar?.trim() || "",
-      name_en: input.name_en?.trim() || "",
+      brand_ar: input.brand_ar,
+      brand_en: input.brand_en,
+      name_ar: input.name_ar,
+      name_en: input.name_en,
     };
   }
 
   private buildPrompt(input: CursorNamingInput): string {
-    const titles = (input.imageTitles ?? []).slice(0, 6).join(" || ") || "none";
-    return `You are a beauty catalog copywriter for Al Hayaa (Iraqi market).
-Reply with JSON ONLY. No markdown. No code fences. Do not use tools. Do not read or write files. Do not search the web. Immediate JSON reply.
+    const titles = (input.imageTitles ?? []).slice(0, 8).join(" | ") || "none";
+    return `You are a bilingual beauty catalog specialist for Al Hayaa (Iraq market).
+Reply with JSON ONLY. No markdown. No code fences. Do not use tools.
 
-Task: verify and polish bilingual PRODUCT NAMES only (not description, not category, not shade list).
+Barcode: ${input.barcode}
+DB brand: ${input.dbBrand?.trim() || "none"}
+DB title: ${input.dbTitle?.trim() || "none"}
+Quantity: ${input.quantity?.trim() || "none"}
+Staff hint: ${input.hint?.trim() || "none"}
+Image titles: ${titles}
+Draft brand_en: ${input.brand_en || "none"}
+Draft brand_ar: ${input.brand_ar || "none"}
+Draft name_en: ${input.name_en || "none"}
+Draft name_ar: ${input.name_ar || "none"}
+${input.extraContext ? `Extra: ${input.extraContext}` : ""}
 
 Rules:
-- brand_en / brand_ar = brand name only (once).
-- name_en = "{BrandEn} - {Official Product Name}" without shade number.
-- name_ar = "{LatinBrandAsOnPack} - {نوع المنتج بالعربي} {اسم الخط الرسمي EN} {الحجم}"
-  HARD: after the dash, the PRODUCT TYPE must be Arabic. Never copy the full English title into name_ar.
-  Latin brand stays Latin only at the start (ARTDECO, Seventeen, GOSH, Maybelline, Mon Reve).
-- Arabic: MSA only. No Iraqi dialect.
-- Market types: cleansing mousse → موس تنظيف | cleanser → منظف | lipstick → أحمر شفاه (not روج) | lip gloss → جلوس شفاه | concealer → كونسيلر | foundation → فاونديشن | mascara → ماسكارا | blush → بلاشر | highlighter → هايلايتر | eyeliner → ايلاينر | eyeshadow → ظل عيون | brow pencil → قلم حواجب | serum → سيروم | shampoo → شامبو | ml → مل
-Examples:
-- name_en: "ARTDECO - Pure Silk Cleansing Mousse 150 ml"
-- name_ar: "ARTDECO - موس تنظيف Pure Silk 150 مل"
-- name_en: "Seventeen - Ideal Cover Liquid Concealer"
-- name_ar: "Seventeen - كونسيلر Ideal Cover Liquid"
-
-barcode=${input.barcode}
-draft_brand_en=${input.brand_en || "none"}
-draft_brand_ar=${input.brand_ar || "none"}
-draft_name_en=${input.name_en || "none"}
-draft_name_ar=${input.name_ar || "none"}
-db_title=${input.dbTitle || "none"}
-db_brand=${input.dbBrand || "none"}
-size=${input.quantity || "none"}
-image_titles=${titles}
-staff_hint=${input.hint?.trim() || "none"}
-${input.extraContext ? `extra=${input.extraContext}` : ""}
+- Identify the REAL cosmetics product (brand + product line). Never output the barcode as the product name.
+- brand_en / brand_ar = official brand only (e.g. ARTDECO). Keep Latin brand Latin in both fields when brand is Latin.
+- name_en = "Brand - Product line" (family name, strip shade-only suffixes when possible).
+- name_ar = same product in market Arabic, brand first when Latin.
+- Prefer DB title + image titles + hint over inventing.
+- If data is weak, still return best plausible beauty product name — NEVER digits-only names.
 
 Return exactly:
 {"brand_ar":"","brand_en":"","name_ar":"","name_en":""}`;
   }
 
-  private parseNames(raw: string): CursorNameDraft | null {
-    const text = (raw || "").trim();
-    if (!text) return null;
-    let jsonText = text;
-    const start = text.indexOf("{");
-    const end = text.lastIndexOf("}");
-    if (start >= 0 && end > start) jsonText = text.slice(start, end + 1);
+  private parseNames(text: string): CursorNameDraft | null {
     try {
-      const obj = JSON.parse(jsonText) as Record<string, unknown>;
+      const start = text.indexOf("{");
+      const end = text.lastIndexOf("}");
+      if (start < 0 || end <= start) return null;
+      const obj = JSON.parse(text.slice(start, end + 1)) as Record<string, unknown>;
       const brand_ar = String(obj.brand_ar ?? obj.brandAr ?? "").trim();
       const brand_en = String(obj.brand_en ?? obj.brandEn ?? "").trim();
       const name_ar = String(obj.name_ar ?? obj.nameAr ?? "").trim();
       const name_en = String(obj.name_en ?? obj.nameEn ?? "").trim();
       if (name_ar.length < 3 && name_en.length < 3) return null;
       if (!brand_ar && !brand_en) return null;
+      // Reject barcode-as-name outputs from the model
+      const digits = name_en.replace(/\D/g, "") || name_ar.replace(/\D/g, "");
+      if (digits.length >= 8 && (name_en === digits || name_ar === digits)) return null;
       return { brand_ar, brand_en, name_ar, name_en };
     } catch {
       return null;
@@ -264,19 +306,28 @@ Return exactly:
       apiKey: string;
       model: string;
       fast: boolean;
+      supportsFast: boolean;
       prompt: string;
     },
     maxWaitMs = 70_000,
   ): Promise<string> {
     const createTimeout = Math.min(25_000, Math.max(8_000, maxWaitMs - 2_000));
-    const created = await this.requestJson("POST", "/agents", args.apiKey, {
-      prompt: { text: args.prompt },
-      model: {
-        id: args.model,
-        params: [{ id: "fast", value: args.fast ? "true" : "false" }],
+    const modelBody: Record<string, unknown> = { id: args.model };
+    if (args.supportsFast) {
+      modelBody.params = [{ id: "fast", value: args.fast ? "true" : "false" }];
+    }
+
+    const created = await this.requestJson(
+      "POST",
+      "/agents",
+      args.apiKey,
+      {
+        prompt: { text: args.prompt },
+        model: modelBody,
+        name: "alhayaa-name-verify",
       },
-      name: "alhayaa-name-verify",
-    }, createTimeout);
+      createTimeout,
+    );
 
     const agent = (created.agent as Record<string, unknown> | undefined) ?? created;
     const run = created.run as Record<string, unknown> | undefined;
@@ -288,7 +339,11 @@ Return exactly:
 
     const deadline = Date.now() + maxWaitMs;
     while (Date.now() < deadline) {
-      const row = await this.requestJson("GET", `/agents/${encodeURIComponent(agentId)}/runs/${encodeURIComponent(runId)}`, args.apiKey);
+      const row = await this.requestJson(
+        "GET",
+        `/agents/${encodeURIComponent(agentId)}/runs/${encodeURIComponent(runId)}`,
+        args.apiKey,
+      );
       const status = String(row.status ?? "").toUpperCase();
       if (status === "FINISHED" || status === "COMPLETED") {
         return String(row.result ?? "");

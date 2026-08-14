@@ -162,7 +162,7 @@ export class AiProductService {
     }
 
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `v15|${force ? "force|" : ""}${digits}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `v16|${force ? "force|" : ""}${digits}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 30 * 60_000) {
       const cachedPayload = cached.payload as {
@@ -174,17 +174,52 @@ export class AiProductService {
       };
       const hasName = Boolean((cachedPayload.nameAr || cachedPayload.nameEn || "").trim());
       const hasBrand = Boolean((cachedPayload.brandAr || cachedPayload.brandEn || "").trim());
-      if (hasName && hasBrand) {
+      const nameBad =
+        this.isBarcodeLikeText(String(cachedPayload.nameEn ?? "")) ||
+        this.isBarcodeLikeText(String(cachedPayload.nameAr ?? ""));
+      if (hasName && hasBrand && !nameBad) {
         return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
       }
       this.autofillCache.delete(cacheKey);
     }
 
     const wallStarted = Date.now();
-    const wallBudgetMs = 55_000;
+    const wallBudgetMs = 70_000;
 
-    // 2) Free barcode DBs + go-upc (many regional beauty EANs are missing from OBF/UPC alone)
-    const free = await this.freeBarcodeHint(digits);
+    // 2) Free barcode DBs + global/Shopify boost (critical when OBF/GoUPC miss)
+    let free = await this.freeBarcodeHint(digits);
+    if (!free.title?.trim() || !free.brand?.trim()) {
+      try {
+        const [globalHit, shopMap] = await Promise.all([
+          Promise.race([
+            this.globalEnrichment.enrichBarcode(digits, hint, { budgetMs: 7_500 }),
+            new Promise<GlobalBarcodeHit | null>((resolve) => setTimeout(() => resolve(null), 7_500)),
+          ]),
+          Promise.race([
+            this.globalEnrichment.enrichFamilyFromShopify([digits], hint || free.title || free.brand),
+            new Promise<Map<string, GlobalBarcodeHit>>((resolve) => setTimeout(() => resolve(new Map()), 6_000)),
+          ]),
+        ]);
+        const shop = shopMap.get(digits);
+        const mergedTitle =
+          shop?.shadeName && shop?.title
+            ? `${shop.title} — ${shop.shadeName}`
+            : shop?.title || globalHit?.title || free.title;
+        const mergedBrand = shop?.brand || globalHit?.brand || free.brand;
+        if (mergedTitle || mergedBrand) {
+          free = {
+            ...free,
+            title: mergedTitle || free.title,
+            brand: mergedBrand || free.brand,
+            imageUrl: shop?.imageUrl || globalHit?.imageUrl || free.imageUrl,
+            colorHex: shop?.colorHex || globalHit?.colorHex || free.colorHex,
+            source: [free.source, shop?.source, globalHit?.source].filter(Boolean).join("+") || "global",
+          };
+        }
+      } catch (err) {
+        this.logger.warn(`Autofill global boost skipped: ${(err as Error).message}`);
+      }
+    }
 
     // 3) Fast barcode images (hard cap) — never block autofill on unbounded image search
     const imageHints = [
@@ -224,10 +259,14 @@ export class AiProductService {
           .join(" | ")
       : hint?.trim() || undefined;
 
-    // 4) Heuristic identity + short Cursor naming (must finish before client 120s timeout)
-    const draft = this.buildHeuristicAutofill({ barcode: digits, free, imageTitles, hint: reviewHint });
-    const namingBudget = Math.max(8_000, Math.min(16_000, wallBudgetMs - (Date.now() - wallStarted) - 8_000));
-    const named = await this.cursor.verifyBilingualNames(
+    // 4) Heuristic + Cursor naming (default GPT-5.6 Terra) — never accept barcode-as-name silently
+    let draft = this.buildHeuristicAutofill({ barcode: digits, free, imageTitles, hint: reviewHint });
+    const remaining = wallBudgetMs - (Date.now() - wallStarted);
+    const namingBudget = Math.max(
+      12_000,
+      Math.min(resolved.apiModel.includes("terra") || resolved.apiModel.includes("sol") ? 35_000 : 18_000, remaining - 8_000),
+    );
+    let named = await this.cursor.verifyBilingualNames(
       {
         barcode: digits,
         brand_ar: draft.brand_ar,
@@ -243,7 +282,7 @@ export class AiProductService {
       resolved.choice,
       namingBudget,
     );
-    const gpt = this.polishNaming({
+    let gpt = this.polishNaming({
       ...draft,
       brand_ar: named.brand_ar || draft.brand_ar,
       brand_en: named.brand_en || draft.brand_en,
@@ -252,7 +291,69 @@ export class AiProductService {
       needs_review: draft.needs_review || !named.verified,
       confidence: named.verified ? Math.max(draft.confidence, 72) : Math.min(draft.confidence, 45),
     });
-    const namesVerified = named.verified && !this.isWeakGpt(gpt);
+
+    // If still barcode-like / empty brand, one more enrich + Terra naming pass
+    if (
+      this.isBarcodeLikeText(gpt.name_en) ||
+      this.isBarcodeLikeText(gpt.name_ar) ||
+      !String(gpt.brand_en || gpt.brand_ar).trim()
+    ) {
+      try {
+        const shopMap = await Promise.race([
+          this.globalEnrichment.enrichFamilyFromShopify(
+            [digits],
+            [hint, free.title, free.brand, "lipstick makeup"].filter(Boolean).join(" "),
+          ),
+          new Promise<Map<string, GlobalBarcodeHit>>((resolve) => setTimeout(() => resolve(new Map()), 8_000)),
+        ]);
+        const shop = shopMap.get(digits);
+        if (shop?.title || shop?.shadeName || shop?.brand) {
+          free = {
+            ...free,
+            title: shop.shadeName ? `${shop.title ?? ""} — ${shop.shadeName}`.trim() : shop.title || free.title,
+            brand: shop.brand || free.brand,
+            imageUrl: shop.imageUrl || free.imageUrl,
+            source: [free.source, shop.source].filter(Boolean).join("+"),
+          };
+          draft = this.buildHeuristicAutofill({ barcode: digits, free, imageTitles, hint: reviewHint });
+        }
+        const retryBudget = Math.min(28_000, Math.max(10_000, wallBudgetMs - (Date.now() - wallStarted) - 5_000));
+        named = await this.cursor.verifyBilingualNames(
+          {
+            barcode: digits,
+            brand_ar: draft.brand_ar,
+            brand_en: draft.brand_en,
+            name_ar: draft.name_ar,
+            name_en: draft.name_en,
+            dbTitle: free.title,
+            dbBrand: free.brand,
+            quantity: free.quantity,
+            imageTitles,
+            hint: reviewHint || free.title,
+            extraContext: "CRITICAL: name must NOT be the barcode digits. Prefer brand + product line.",
+          },
+          "gpt-5.6-terra",
+          retryBudget,
+        );
+        gpt = this.polishNaming({
+          ...draft,
+          brand_ar: named.brand_ar || draft.brand_ar,
+          brand_en: named.brand_en || draft.brand_en,
+          name_ar: named.name_ar || draft.name_ar,
+          name_en: named.name_en || draft.name_en,
+          needs_review: true,
+          confidence: named.verified ? Math.max(draft.confidence, 68) : 30,
+        });
+      } catch (err) {
+        this.logger.warn(`Autofill recovery pass failed: ${(err as Error).message}`);
+      }
+    }
+
+    const namesVerified =
+      named.verified &&
+      !this.isWeakGpt(gpt) &&
+      !this.isBarcodeLikeText(gpt.name_en) &&
+      !this.isBarcodeLikeText(gpt.name_ar);
     if (imageHits.length < 8 && Date.now() - wallStarted < wallBudgetMs - 6_000) {
       await Promise.race([
         this.mergeNamedImageSearch(imageHits, gpt),
@@ -314,7 +415,7 @@ export class AiProductService {
         fast: resolved.fast,
         usedWebSearch: false,
         namesVerified,
-        namingSource: namesVerified ? "composer-2.5" : "heuristic",
+        namingSource: namesVerified ? resolved.apiModel : "heuristic",
         freeHintSource: free.source ?? null,
         freeHintTitle: free.title ?? null,
         imageTitleHints: imageTitles.slice(0, 5),
@@ -328,7 +429,9 @@ export class AiProductService {
     };
     const cacheable =
       Boolean((payload.nameAr || payload.nameEn || "").trim()) &&
-      Boolean((payload.brandAr || payload.brandEn || "").trim());
+      Boolean((payload.brandAr || payload.brandEn || "").trim()) &&
+      !this.isBarcodeLikeText(payload.nameEn) &&
+      !this.isBarcodeLikeText(payload.nameAr);
     if (cacheable) {
       this.autofillCache.set(cacheKey, { at: Date.now(), payload: payload as unknown as Record<string, unknown> });
     }
@@ -432,7 +535,7 @@ export class AiProductService {
   private async shadeFamilyFast(rawBarcodes: string[], hint?: string, modelChoice?: string) {
     const unique = rawBarcodes;
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `shade-v20|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `shade-v21|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 20 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -596,9 +699,14 @@ export class AiProductService {
               })),
             },
             resolved.choice,
-            genericOnly.length <= 3 ? 16_000 : unique.length >= 8 ? 14_000 : 20_000,
+            genericOnly.length <= 3 ? 22_000 : unique.length >= 8 ? 28_000 : 32_000,
           ),
-          new Promise<null>((resolve) => setTimeout(() => resolve(null), 20_000)),
+          new Promise<null>((resolve) =>
+            setTimeout(
+              () => resolve(null),
+              resolved.apiModel.includes("terra") || resolved.apiModel.includes("sol") ? 35_000 : 22_000,
+            ),
+          ),
         ]);
         if (aiShades?.length) {
           const byBc = new Map(aiShades.map((s) => [s.barcode.toLowerCase(), s] as const));
@@ -708,7 +816,7 @@ export class AiProductService {
         usedWebSearch: true,
         globalEngine: "global-v1",
         namesVerified,
-        namingSource: namesVerified ? "composer-2.5" : "heuristic",
+        namingSource: namesVerified ? resolved.apiModel : "heuristic",
         shadeCount: shades.length,
         imageCount: galleryImages.length,
         imageQuery: galleryQuery || lead,
@@ -722,15 +830,42 @@ export class AiProductService {
 
   listModels() {
     return {
-      default: "composer-2.5-low",
+      default: "gpt-5.6-terra",
       namesOnly: true,
       provider: "cursor",
       models: [
         {
+          id: "gpt-5.6-terra",
+          labelAr: "GPT-5.6 Terra (موصى به)",
+          labelEn: "GPT-5.6 Terra",
+          descriptionAr: "أفضل توازن جودة/سرعة لتسمية المنتجات والتدرجات عبر Cursor API",
+          apiModel: "gpt-5.6-terra",
+          fast: false,
+          costTier: "high",
+        },
+        {
+          id: "gpt-5.6-sol",
+          labelAr: "GPT-5.6 Sol",
+          labelEn: "GPT-5.6 Sol",
+          descriptionAr: "أقوى استدلال — أبطأ وأغلى",
+          apiModel: "gpt-5.6-sol",
+          fast: false,
+          costTier: "highest",
+        },
+        {
+          id: "gpt-5.6-luna-low",
+          labelAr: "GPT-5.6 Luna",
+          labelEn: "GPT-5.6 Luna",
+          descriptionAr: "أسرع وأرخص ضمن عائلة 5.6",
+          apiModel: "gpt-5.6-luna",
+          fast: false,
+          costTier: "medium",
+        },
+        {
           id: "composer-2.5-low",
           labelAr: "Composer 2.5 Low",
           labelEn: "Composer 2.5 Low",
-          descriptionAr: "تأكيد الاسم بالعربي والإنجليزي فقط — الأرخص",
+          descriptionAr: "تأكيد اسم رخيص وسريع",
           apiModel: "composer-2.5",
           fast: false,
           costTier: "lowest",
@@ -739,7 +874,7 @@ export class AiProductService {
           id: "composer-2.5-fast",
           labelAr: "Composer 2.5 Fast",
           labelEn: "Composer 2.5 Fast",
-          descriptionAr: "نفس التأكيد على الاسم — أسرع بتكلفة أعلى",
+          descriptionAr: "Composer أسرع بتكلفة أعلى",
           apiModel: "composer-2.5",
           fast: true,
           costTier: "medium",

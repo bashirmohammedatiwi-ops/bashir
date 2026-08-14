@@ -181,6 +181,15 @@ export function AiSingleProductWizard({ open, onClose, onSuccess }: Props) {
       try {
         const fill = await aiAutofill({ barcode: bc, hint, model: modelId });
         const inv = await fetchInventoryByBarcode(bc);
+        const nameLooksLikeBarcode =
+          /^\d{8,14}$/.test(String(fill.nameEn ?? "").trim()) ||
+          /^\d{8,14}$/.test(String(fill.nameAr ?? "").trim());
+        const missingBrand = !String(fill.brandEn || fill.brandAr).trim();
+        if (nameLooksLikeBarcode || missingBrand) {
+          throw new Error(
+            "تعذّر التعرف على المنتج (الاسم/البراند فارغ). أضف تلميحاً مثل اسم الماركة والخط ثم أعد المحاولة.",
+          );
+        }
         return { fill, inv };
       } finally {
         stopTicker();

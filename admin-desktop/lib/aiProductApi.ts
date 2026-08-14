@@ -44,7 +44,7 @@ export async function aiAutofill(input: {
       ...(input.model?.trim() ? { model: input.model.trim() } : {}),
       ...(input.force ? { force: true } : {}),
     },
-    { timeout: 120_000 },
+    { timeout: 180_000 },
   );
   return parseAutofill(unwrap(res.data));
 }

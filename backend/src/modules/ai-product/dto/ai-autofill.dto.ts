@@ -12,13 +12,15 @@ import {
 } from "class-validator";
 import { Transform } from "class-transformer";
 
-/** Client-facing model ids. Add-app uses Composer 2.5 (Cursor API) for bilingual names only. */
+/** Client-facing model ids. Default quality path uses GPT-5.6 Terra via Cursor API. */
 export const AI_MODEL_CHOICES = [
+  "gpt-5.6-terra",
+  "gpt-5.6-sol",
+  "gpt-5.6-luna-low",
+  "gpt-5.6-luna-medium",
   "composer-2.5-low",
   "composer-2.5-fast",
   "composer-2.5",
-  "gpt-5.6-luna-low",
-  "gpt-5.6-luna-medium",
   "gpt-5.4-nano",
   "gpt-5.4-mini",
 ] as const;
@@ -42,6 +44,11 @@ export class AiAutofillDto {
   @MaxLength(64)
   @IsIn([
     ...AI_MODEL_CHOICES,
+    "terra",
+    "tera",
+    "gpt-5.6-tera",
+    "sol",
+    "luna",
     "luna-low",
     "luna-medium",
     "luna-med",
@@ -105,6 +112,11 @@ export class AiShadeFamilyDto {
   @MaxLength(64)
   @IsIn([
     ...AI_MODEL_CHOICES,
+    "terra",
+    "tera",
+    "gpt-5.6-tera",
+    "sol",
+    "luna",
     "luna-low",
     "luna-medium",
     "luna-med",
@@ -152,6 +164,11 @@ export class AiReviewExistingDto {
   @MaxLength(64)
   @IsIn([
     ...AI_MODEL_CHOICES,
+    "terra",
+    "tera",
+    "gpt-5.6-tera",
+    "sol",
+    "luna",
     "luna-low",
     "luna-medium",
     "luna-med",
