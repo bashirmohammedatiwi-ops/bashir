@@ -9,6 +9,7 @@ import {
   EyeInvisibleOutlined,
   PlusOutlined,
   SearchOutlined,
+  TableOutlined,
   UnorderedListOutlined,
 } from "@ant-design/icons";
 import {
@@ -50,6 +51,14 @@ const ProductFormDrawer = dynamic(
   { ssr: false },
 );
 
+const BulkProductPasteModal = dynamic(
+  () =>
+    import("@/components/products/BulkProductPasteModal").then((m) => ({
+      default: m.BulkProductPasteModal,
+    })),
+  { ssr: false },
+);
+
 type ViewMode = "table" | "grid";
 type ActiveFilter = "all" | "active" | "inactive";
 export type ProductSortMode = "latest" | "brand";
@@ -80,6 +89,7 @@ export function ProductsAdminPage({
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [editing, setEditing] = useState<any | null>(null);
   const [open, setOpen] = useState(false);
+  const [bulkPasteOpen, setBulkPasteOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
   const [productImages, setProductImages] = useState<ImageItem[]>([]);
   const [shadePreviews, setShadePreviews] = useState<Record<number, ImageItem | null>>({});
@@ -624,6 +634,9 @@ export function ProductsAdminPage({
                 استيراد من الكتالوج
               </Button>
             </Link>
+            <Button size="large" icon={<TableOutlined />} onClick={() => setBulkPasteOpen(true)}>
+              إضافة جماعية
+            </Button>
             <Button type="primary" size="large" icon={<PlusOutlined />} onClick={openCreate}>
               منتج جديد
             </Button>
@@ -977,6 +990,8 @@ export function ProductsAdminPage({
         onClose={() => setOpen(false)}
         onSubmit={(v) => upsert.mutate(v)}
       />
+
+      <BulkProductPasteModal open={bulkPasteOpen} onClose={() => setBulkPasteOpen(false)} />
     </div>
   );
 }

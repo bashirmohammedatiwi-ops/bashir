@@ -1,4 +1,10 @@
-type NamedEntity = { id: string; nameAr?: string; nameEn?: string; name?: string };
+type NamedEntity = {
+  id: string;
+  nameAr?: string;
+  nameEn?: string;
+  name?: string;
+  parentId?: string | null;
+};
 
 function norm(s: string) {
   return String(s || "")
@@ -33,6 +39,52 @@ function splitHintParts(hintAr = "", hintEn = "") {
     .split(/[›>／/|»«]+/)
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+export function matchBestNamedEntity(
+  entities: NamedEntity[],
+  label: string,
+  minScore = 50,
+  preferParentId?: string,
+): string | undefined {
+  const hint = String(label || "").trim();
+  if (!hint || !entities.length) return undefined;
+
+  let best: { id: string; score: number } | null = null;
+  for (const entity of entities) {
+    let score = scoreName(hint, entity);
+    if (preferParentId && entity.parentId && entity.parentId === preferParentId) {
+      score += 8;
+    }
+    if (score >= minScore && (!best || score > best.score)) {
+      best = { id: entity.id, score };
+    }
+  }
+  return best?.id;
+}
+
+/** Match one or many labels (comma / Arabic-comma separated) to entity ids. */
+export function matchNamedLabels(
+  entities: NamedEntity[],
+  labelsCsv: string,
+  minScore = 50,
+  preferParentIds?: string[],
+): string[] {
+  const labels = String(labelsCsv ?? "")
+    .split(/[،,;|/]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const ids: string[] = [];
+  const prefer = preferParentIds?.filter(Boolean) ?? [];
+  for (const label of labels) {
+    let id: string | undefined;
+    for (const parentId of prefer.length ? prefer : [undefined]) {
+      id = matchBestNamedEntity(entities, label, minScore, parentId);
+      if (id) break;
+    }
+    if (id && !ids.includes(id)) ids.push(id);
+  }
+  return ids;
 }
 
 export function matchCategoryFromHints(
