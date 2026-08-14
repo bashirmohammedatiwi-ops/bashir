@@ -335,7 +335,7 @@ export class AiProductService {
     const unique = this.normalizeBarcodeList(barcodes);
     if (!unique.length) throw new BadRequestException("أدخل باركود واحد على الأقل");
 
-    const globalMap = await this.globalEnrichment.enrichShadeFamily(unique, hint, { budgetMs: 28_000 });
+    const globalMap = await this.globalEnrichment.enrichShadeFamily(unique, hint, { budgetMs: 42_000 });
     const catalogHints = new Map<string, FreeHint>();
     await Promise.race([
       Promise.all([
@@ -417,7 +417,7 @@ export class AiProductService {
   private async shadeFamilyFast(rawBarcodes: string[], hint?: string, modelChoice?: string) {
     const unique = rawBarcodes;
     const resolved = this.cursor.resolveModel(modelChoice);
-    const cacheKey = `shade-v17|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cacheKey = `shade-v18|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 20 * 60_000) {
       return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
@@ -438,7 +438,7 @@ export class AiProductService {
         }),
       ).then((rows) => rows.filter((h): h is NonNullable<typeof h> => Boolean(h))),
       (async () => {
-        const globalMap = await this.globalEnrichment.enrichShadeFamily(unique, hint, { budgetMs: 24_000 });
+        const globalMap = await this.globalEnrichment.enrichShadeFamily(unique, hint, { budgetMs: 42_000 });
         const map = new Map<string, FreeHint>();
         for (const barcode of unique) {
           map.set(barcode, this.globalHitToFreeHint(globalMap.get(barcode), hint));
@@ -2088,6 +2088,9 @@ export class AiProductService {
 
   private extractShadeCode(text: string, barcode: string, index: number): string {
     const t = text || "";
+    const codeDash = t.match(/\b(\d{1,3})\s*[-–]\s*[A-Za-z][A-Za-z\s\-]{2,}/);
+    if (codeDash?.[1]) return codeDash[1];
+
     const labeled =
       t.match(/\b(?:shade|n[°o.]?|nr\.?|no\.?|#)\s*([A-Za-z]?\d{1,3})\b/i) ||
       t.match(/\b([A-Z]{1,2}\d{2,3})\b/);
@@ -2126,13 +2129,22 @@ export class AiProductService {
   }
 
   private globalHitToFreeHint(hit: GlobalBarcodeHit | undefined, hint?: string): FreeHint {
-    if (!hit || hit.confidence <= 0) return hint ? { title: hint } : {};
-    const family = String(hit.title ?? hint ?? "").trim();
+    if (!hit || hit.confidence <= 0) return {};
+    const family = String(hit.title ?? "").trim();
     const shade = String(hit.shadeName ?? "").trim();
-    const title =
-      shade && family && !family.toLowerCase().includes(shade.toLowerCase())
-        ? `${family} — ${shade}`
-        : shade || family;
+    let title = family;
+    if (shade) {
+      const codeDash = shade.match(/^(\d{1,3})\s*[-–]\s*(.+)$/);
+      if (codeDash) {
+        title = family ? `${family} — ${codeDash[2].trim()} ${codeDash[1]}` : shade;
+      } else if (family && !family.toLowerCase().includes(shade.toLowerCase())) {
+        title = `${family} — ${shade}`;
+      } else {
+        title = shade;
+      }
+    } else if (!title && hint) {
+      title = hint;
+    }
     return {
       title: title || family,
       brand: hit.brand,
@@ -2158,6 +2170,44 @@ export class AiProductService {
     });
     if (!weak.length) return;
 
+    const familyHint = [
+      hint,
+      draft.brand_en,
+      draft.name_en,
+    ]
+      .filter((s): s is string => Boolean(s && String(s).trim().length >= 2))
+      .join(" ")
+      .trim();
+    if (!familyHint) return;
+
+    const shopifyHits = await this.globalEnrichment.enrichFamilyFromShopify(barcodes, familyHint);
+    for (const bc of barcodes) {
+      const digits = this.barcodeDigits(bc);
+      const hit = shopifyHits.get(digits);
+      if (!hit?.shadeName || hit.confidence <= 0) continue;
+      const merged = this.globalHitToFreeHint(hit, familyHint);
+      const cur = freeByBarcode.get(bc) ?? {};
+      freeByBarcode.set(bc, {
+        ...cur,
+        ...merged,
+        title: merged.title || cur.title,
+        brand: merged.brand || cur.brand,
+        colorHex: merged.colorHex || cur.colorHex,
+        imageUrl: merged.imageUrl || cur.imageUrl,
+        source: [cur.source, merged.source].filter(Boolean).join("+"),
+      });
+    }
+
+    const stillWeak = barcodes.filter((bc) => {
+      const free = freeByBarcode.get(bc);
+      const title = String(free?.title ?? "").trim();
+      if (!title) return true;
+      const code = this.extractShadeCode(title, bc, 0);
+      const name = this.extractShadeName(title, code);
+      return !name || this.isGenericShadeName(name);
+    });
+    if (!stillWeak.length) return;
+
     const namedTitles = barcodes
       .map((bc) => {
         const title = String(freeByBarcode.get(bc)?.title ?? "").trim();
@@ -2167,23 +2217,14 @@ export class AiProductService {
         return !this.isGenericShadeName(name) ? title : "";
       })
       .filter(Boolean);
-    const familyHint = [
-      hint,
-      draft.brand_en,
-      draft.name_en,
-      ...namedTitles.slice(0, 2),
-    ]
-      .filter((s): s is string => Boolean(s && String(s).trim().length >= 2))
-      .join(" ")
-      .trim();
-    if (!familyHint) return;
+    const retryHint = [familyHint, ...namedTitles.slice(0, 2)].filter(Boolean).join(" ").trim();
 
-    const retry = await this.globalEnrichment.retryWeakBarcodes(weak, familyHint, { budgetMs: 16_000 });
-    for (const bc of weak) {
+    const retry = await this.globalEnrichment.retryWeakBarcodes(stillWeak, retryHint, { budgetMs: 18_000 });
+    for (const bc of stillWeak) {
       const digits = this.barcodeDigits(bc);
       const hit = retry.get(digits);
-      if (!hit || hit.confidence <= 0) continue;
-      const merged = this.globalHitToFreeHint(hit, familyHint);
+      if (!hit || hit.confidence <= 0 || !hit.shadeName) continue;
+      const merged = this.globalHitToFreeHint(hit, retryHint);
       const cur = freeByBarcode.get(bc) ?? {};
       freeByBarcode.set(bc, {
         ...cur,
@@ -2498,6 +2539,9 @@ export class AiProductService {
       /\b(?:no\.?|nr\.?|n[°o]\.?|#)\s*(\d{1,3})\s*[-–:]\s*([A-Za-z][A-Za-z\s\-]{2,36})/i,
     );
     if (nrMatch?.[2]) return nrMatch[2].replace(/\s+/g, " ").trim();
+
+    const codeDash = text.match(/\b(\d{1,3})\s*[-–]\s*([A-Za-z][A-Za-z\s\-]{2,36})\b/);
+    if (codeDash?.[2]) return codeDash[2].replace(/\s+/g, " ").trim();
 
     const colorTail = text.match(/\b([A-Za-z][A-Za-z\s\-]{2,28}?)\s+(\d{2,3})\s*(?:ml|mL|g|gr|oz)?\s*$/i);
     if (colorTail?.[1] && colorTail?.[2]) {

@@ -252,6 +252,7 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
       for (let i = 0; i < rows.length; i++) {
         const hit = catalogMap.get(rows[i].barcode);
         if (!hit) continue;
+        if (!isGenericShadeName(rows[i].name)) continue;
         applyCatalogHitToRow(rows[i], hit);
         const img = catalogThumbToImage(hit);
         if (img) {

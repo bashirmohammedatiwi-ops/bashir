@@ -126,8 +126,10 @@ export function applyCatalogHitToRow(
   hit: CatalogImportOption,
 ): void {
   const shadeName = String(hit.matchedShadeName || hit.shadeName || "").trim();
-  if (shadeName && isGenericShadeName(row.name)) {
-    row.name = shadeName;
+  if (shadeName && !isGenericShadeName(shadeName)) {
+    if (isGenericShadeName(row.name) || shadeName.length > row.name.length) {
+      row.name = shadeName;
+    }
   }
   const codeFromName = shadeName.match(/\b(\d{1,3})\s*$/);
   if (codeFromName && !row.code) {
@@ -331,7 +333,11 @@ export async function enrichShadesGlobally(
       out.set(shade.barcode, hit);
       onPartial?.(shade.barcode, hit);
     }
-    if (out.size >= Math.ceil(barcodes.length * 0.5)) return out;
+    const namedCount = [...out.values()].filter((hit) => {
+      const name = String(hit.matchedShadeName || hit.shadeName || "").trim();
+      return name && !isGenericShadeName(name);
+    }).length;
+    if (namedCount >= Math.ceil(barcodes.length * 0.5)) return out;
   } catch {
     /* fall through to catalog probe */
   }

@@ -42,6 +42,32 @@ const GLOBAL_RETAIL_SITES = [
   "site:openbeautyfacts.org",
 ];
 
+type ShopifyBrandCfg = {
+  brands: RegExp[];
+  domains: string[];
+  hintHandles: Array<{ pattern: RegExp; handles: string[] }>;
+};
+
+const SHOPIFY_BRANDS: ShopifyBrandCfg[] = [
+  {
+    brands: [/artdeco/i],
+    domains: ["artdeco.com"],
+    hintHandles: [
+      { pattern: /mat\s*passion|lip\s*fluid/i, handles: ["mat-passion-lip-fluid-15-ad1882-xx"] },
+    ],
+  },
+  {
+    brands: [/essence/i],
+    domains: ["essence.eu", "essencemakeup.com"],
+    hintHandles: [],
+  },
+  {
+    brands: [/catrice/i],
+    domains: ["catrice.eu"],
+    hintHandles: [],
+  },
+];
+
 @Injectable()
 export class GlobalBarcodeEnrichmentService {
   private readonly logger = new Logger(GlobalBarcodeEnrichmentService.name);
@@ -50,45 +76,234 @@ export class GlobalBarcodeEnrichmentService {
 
   constructor(private readonly images: GoogleImagesService) {}
 
+  /**
+   * One Shopify product page often lists every shade barcode — fastest path for makeup families.
+   */
+  async enrichFamilyFromShopify(barcodes: string[], hint?: string): Promise<Map<string, GlobalBarcodeHit>> {
+    const want = new Set(
+      barcodes.map((bc) => String(bc ?? "").replace(/\D/g, "") || String(bc ?? "").trim()).filter(Boolean),
+    );
+    if (!want.size) return new Map();
+
+    const hintText = String(hint ?? "").trim();
+    const configs = this.shopifyConfigsForHint(hintText);
+    if (!configs.length) return new Map();
+
+    const handles = new Set<string>();
+    for (const cfg of configs) {
+      for (const row of cfg.hintHandles) {
+        if (!hintText || row.pattern.test(hintText)) {
+          for (const h of row.handles) handles.add(h);
+        }
+      }
+    }
+
+    for (const cfg of configs) {
+      for (const domain of cfg.domains) {
+        for (const bc of barcodes.slice(0, 3)) {
+          const found = await this.discoverShopifyHandle(domain, bc, hintText);
+          if (found) handles.add(found);
+        }
+        if (!handles.size && hintText.length >= 6) {
+          const found = await this.discoverShopifyHandle(domain, hintText, hintText);
+          if (found) handles.add(found);
+        }
+      }
+    }
+
+    const out = new Map<string, GlobalBarcodeHit>();
+    for (const cfg of configs) {
+      for (const domain of cfg.domains) {
+        for (const handle of handles) {
+          const part = await this.fetchShopifyProduct(domain, handle, want);
+          for (const [digits, hit] of part) {
+            const prev = out.get(digits);
+            if (!prev || hit.confidence > prev.confidence) out.set(digits, hit);
+          }
+        }
+      }
+    }
+    return out;
+  }
+
   async enrichShadeFamily(
     barcodes: string[],
     hint?: string,
     opts?: { budgetMs?: number },
   ): Promise<Map<string, GlobalBarcodeHit>> {
-    const budgetMs = opts?.budgetMs ?? 22_000;
+    const budgetMs = opts?.budgetMs ?? 40_000;
     const started = Date.now();
     const out = new Map<string, GlobalBarcodeHit>();
+    const digitsList = barcodes.map(
+      (bc) => String(bc ?? "").replace(/\D/g, "") || String(bc ?? "").trim(),
+    );
 
-    for (let i = 0; i < barcodes.length; i += 4) {
+    const shopifyMap = await this.enrichFamilyFromShopify(barcodes, hint);
+    for (const [digits, hit] of shopifyMap) {
+      if (hit.shadeName && hit.confidence >= 50) out.set(digits, hit);
+    }
+
+    const missingBarcodes = barcodes.filter((bc) => {
+      const digits = String(bc ?? "").replace(/\D/g, "") || String(bc ?? "").trim();
+      const hit = out.get(digits);
+      return !hit?.shadeName;
+    });
+
+    const chunkSize = barcodes.length >= 10 ? 6 : 4;
+    for (let i = 0; i < missingBarcodes.length; i += chunkSize) {
       if (Date.now() - started > budgetMs) break;
-      const chunk = barcodes.slice(i, i + 4);
+      const chunk = missingBarcodes.slice(i, i + chunkSize);
       const part = await Promise.all(
         chunk.map(async (barcode) => {
           const remaining = Math.max(3_500, budgetMs - (Date.now() - started));
-          return this.enrichBarcode(barcode, hint, { budgetMs: Math.min(7_000, remaining) });
+          return this.enrichBarcode(barcode, hint, { budgetMs: Math.min(8_000, remaining) });
         }),
       );
-      for (const hit of part) out.set(hit.barcode, hit);
+      for (const hit of part) {
+        const prev = out.get(hit.barcode);
+        if (!prev || hit.confidence > prev.confidence || (hit.shadeName && !prev.shadeName)) {
+          out.set(hit.barcode, hit);
+        }
+      }
     }
 
-    const weak = barcodes
-      .map((bc) => String(bc ?? "").replace(/\D/g, "") || String(bc ?? "").trim())
-      .filter((digits) => {
-        const hit = out.get(digits);
-        return !hit || hit.confidence < 50 || !hit.shadeName;
-      });
+    const weak = digitsList.filter((digits) => {
+      const hit = out.get(digits);
+      return !hit || hit.confidence < 50 || !hit.shadeName;
+    });
     if (weak.length && Date.now() - started < budgetMs) {
       const best = [...out.values()].sort((a, b) => b.confidence - a.confidence)[0];
       const familyHint = [hint, best?.brand, best?.title].filter(Boolean).join(" ").trim();
       const retry = await this.retryWeakBarcodes(weak, familyHint, {
-        budgetMs: Math.min(20_000, Math.max(5_000, budgetMs - (Date.now() - started))),
+        budgetMs: Math.min(22_000, Math.max(5_000, budgetMs - (Date.now() - started))),
       });
       for (const [digits, hit] of retry) {
         const prev = out.get(digits);
-        if (hit.confidence > (prev?.confidence ?? 0)) out.set(digits, hit);
+        if (hit.confidence > (prev?.confidence ?? 0) || (hit.shadeName && !prev?.shadeName)) {
+          out.set(digits, hit);
+        }
       }
     }
 
+    return out;
+  }
+
+  private shopifyConfigsForHint(hint: string): ShopifyBrandCfg[] {
+    const h = String(hint ?? "").trim();
+    if (!h) return [];
+    return SHOPIFY_BRANDS.filter((cfg) => cfg.brands.some((re) => re.test(h)));
+  }
+
+  private async discoverShopifyHandle(domain: string, query: string, hint: string): Promise<string | null> {
+    const q = String(query ?? "").trim();
+    if (!q) return null;
+    try {
+      const url = `https://${domain}/search/suggest.json?q=${encodeURIComponent(q)}&resources[type]=product&resources[limit]=6`;
+      const res = await fetch(url, {
+        headers: { Accept: "application/json", "User-Agent": UA },
+        signal: AbortSignal.timeout(6_500),
+      });
+      if (!res.ok) return null;
+      const body = (await res.json()) as {
+        resources?: { results?: { products?: Array<{ handle?: string; title?: string }> } };
+      };
+      const products = body.resources?.results?.products ?? [];
+      const hintNorm = String(hint ?? "").toLowerCase();
+      const hintTokens = hintNorm.split(/\s+/).filter((t) => t.length >= 4).slice(0, 4);
+      for (const p of products) {
+        const handle = String(p.handle ?? "").trim();
+        const title = String(p.title ?? "").toLowerCase();
+        if (!handle) continue;
+        if (hintTokens.length && hintTokens.some((t) => title.includes(t))) return handle;
+        if (/mat\s*passion|lip\s*fluid|lipstick|mascara|foundation/i.test(hintNorm) && /lip|mascara|foundation|blush/i.test(title)) {
+          return handle;
+        }
+        if (products.length === 1) return handle;
+      }
+    } catch {
+      /* ignore */
+    }
+    return null;
+  }
+
+  private parseShopifyVariantShade(variantTitle: string): { code: string; shadeName: string } {
+    const raw = String(variantTitle ?? "").trim();
+    if (!raw || /^default$/i.test(raw)) return { code: "", shadeName: "" };
+
+    const codeDash = raw.match(/^(\d{1,3})\s*[-–:]\s*(.+)$/i);
+    if (codeDash) {
+      return {
+        code: codeDash[1],
+        shadeName: `${codeDash[2].trim()} ${codeDash[1]}`.replace(/\s+/g, " ").trim(),
+      };
+    }
+
+    const nameNum = raw.match(/^([A-Za-z][A-Za-z\s\-]{2,36})\s+(\d{1,3})$/);
+    if (nameNum) {
+      return { code: nameNum[2], shadeName: `${nameNum[1].trim()} ${nameNum[2]}` };
+    }
+
+    return { code: "", shadeName: raw };
+  }
+
+  private async fetchShopifyProduct(
+    domain: string,
+    handle: string,
+    want: Set<string>,
+  ): Promise<Map<string, GlobalBarcodeHit>> {
+    const out = new Map<string, GlobalBarcodeHit>();
+    try {
+      const res = await fetch(`https://${domain}/products/${handle}.json`, {
+        headers: { Accept: "application/json", "User-Agent": UA },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) return out;
+      const body = (await res.json()) as {
+        product?: {
+          title?: string;
+          vendor?: string;
+          images?: Array<{ src?: string }>;
+          variants?: Array<{
+            barcode?: string;
+            title?: string;
+            name?: string;
+            featured_image?: { src?: string };
+          }>;
+        };
+      };
+      const product = body.product;
+      if (!product) return out;
+
+      const family = String(product.title ?? "").trim();
+      const brand = String(product.vendor ?? "").trim();
+      const fallbackImage = product.images?.[0]?.src;
+
+      for (const v of product.variants ?? []) {
+        const digits = String(v.barcode ?? "").replace(/\D/g, "");
+        if (!digits || !want.has(digits)) continue;
+
+        const variantTitle = String(v.title ?? v.name ?? "").trim();
+        const parsed = this.parseShopifyVariantShade(variantTitle);
+        const imageRaw = v.featured_image?.src || fallbackImage;
+        const imageUrl = imageRaw
+          ? imageRaw.startsWith("http")
+            ? imageRaw
+            : `https:${imageRaw}`
+          : undefined;
+
+        out.set(digits, {
+          barcode: digits,
+          brand: brand || undefined,
+          title: family,
+          shadeName: parsed.shadeName,
+          imageUrl,
+          source: `shopify:${domain}`,
+          confidence: parsed.shadeName ? 92 : 55,
+        });
+      }
+    } catch (err) {
+      this.logger.debug(`Shopify fetch failed ${domain}/${handle}: ${(err as Error).message}`);
+    }
     return out;
   }
 
