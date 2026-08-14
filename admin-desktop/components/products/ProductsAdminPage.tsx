@@ -9,7 +9,6 @@ import {
   EyeInvisibleOutlined,
   PlusOutlined,
   SearchOutlined,
-  TableOutlined,
   UnorderedListOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
