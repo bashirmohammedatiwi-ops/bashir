@@ -1,3 +1,4 @@
+import { normalizeBarcode } from "./barcode";
 import { matchBrandIdLocal } from "./catalogBrandMatch";
 import { matchBestNamedEntity, matchNamedLabels } from "./catalogCategoryMatch";
 import {
@@ -5,9 +6,10 @@ import {
   resolveBarcodeLookup,
   type BarcodeInventoryLookup,
 } from "./inventorySync";
-import { buildProductPayload } from "./productPayload";
-import type { PastedProductRow } from "./parseProductTablePaste";
+import { parseProductTablePaste, type PastedProductRow } from "./parseProductTablePaste";
+import { slugSourceName } from "./productName";
 import { mutations, queries } from "./queries";
+import { slugify } from "./slugify";
 
 type NamedRow = {
   id: string;
@@ -45,6 +47,16 @@ export type BulkImportProgress = {
   message?: string;
 };
 
+function asNamedRows(raw: unknown): NamedRow[] {
+  if (Array.isArray(raw)) return raw as NamedRow[];
+  if (raw && typeof raw === "object") {
+    const obj = raw as { data?: unknown; items?: unknown };
+    if (Array.isArray(obj.data)) return obj.data as NamedRow[];
+    if (Array.isArray(obj.items)) return obj.items as NamedRow[];
+  }
+  return [];
+}
+
 function labelOf(entities: NamedRow[], id?: string) {
   if (!id) return "";
   const hit = entities.find((e) => e.id === id);
@@ -55,32 +67,77 @@ function labelsOf(entities: NamedRow[], ids: string[]) {
   return ids.map((id) => labelOf(entities, id)).filter(Boolean);
 }
 
-export async function resolveBulkProductRows(
-  rows: PastedProductRow[],
-): Promise<BulkProductResolved[]> {
-  const [brands, categories, subcategories, tertiary] = await Promise.all([
+function buildBulkCreatePayload(row: BulkProductResolved) {
+  const nameAr = row.nameAr.trim();
+  const nameEn = row.nameEn.trim();
+  const name = nameAr || nameEn;
+  return {
+    sku: `AI-${row.barcode}`,
+    barcode: normalizeBarcode(row.barcode) || undefined,
+    name,
+    nameAr: nameAr || undefined,
+    nameEn: nameEn || undefined,
+    slug: slugify(slugSourceName({ nameAr, nameEn, name }), "product"),
+    brandId: row.brandId,
+    categoryId: row.categoryId || null,
+    subcategoryIds: row.subcategoryIds,
+    tertiaryCategoryIds: row.tertiaryCategoryIds,
+    description: row.descriptionAr.trim() || row.descriptionEn.trim() || "",
+    descriptionAr: row.descriptionAr.trim() || undefined,
+    descriptionEn: row.descriptionEn.trim() || undefined,
+    ingredients: "",
+    howToUse: "",
+    price: Number(row.price ?? 0),
+    originalPrice: Number(row.originalPrice ?? 0),
+    discountPercent: Number(row.discountPercent ?? 0),
+    stock: Number(row.stock ?? 0),
+    pointsEarned: 0,
+    rating: 0,
+    isNew: false,
+    isBestSeller: false,
+    isFeatured: false,
+    isPromo: false,
+    isBogo: false,
+    isActive: true,
+    tags: [],
+    skinType: [],
+    concernIds: [],
+    imageIds: [],
+    shades: [],
+    variants: [],
+  };
+}
+
+export async function resolveBulkProductRows(rawTable: string): Promise<BulkProductResolved[]> {
+  const rows = parseProductTablePaste(rawTable);
+  if (!rows.length) {
+    throw new Error("لم يتم التعرف على صفوف منتجات. تأكد من وجود عمود الباركود والأسماء.");
+  }
+
+  const [brandsRaw, categoriesRaw, subcategoriesRaw, tertiaryRaw] = await Promise.all([
     queries.brands({ activeOnly: true }),
     queries.categories(),
     queries.subcategories(),
     queries.tertiarySections(),
   ]);
 
-  const brandRows = (brands ?? []) as NamedRow[];
-  const catRows = (categories ?? []) as NamedRow[];
-  const subRows = (subcategories ?? []) as NamedRow[];
-  const tertRows = (tertiary ?? []) as NamedRow[];
+  const brandRows = asNamedRows(brandsRaw);
+  const catRows = asNamedRows(categoriesRaw);
+  const subRows = asNamedRows(subcategoriesRaw);
+  const tertRows = asNamedRows(tertiaryRaw);
 
   const invMap = await lookupInventoryBarcodes(rows.map((r) => r.barcode)).catch(
     () => ({} as Record<string, BarcodeInventoryLookup>),
   );
 
   const brandCache = new Map<string, string | undefined>();
-
   const resolved: BulkProductResolved[] = [];
+
   for (const row of rows) {
     const warnings: string[] = [];
     const brandKey = row.brand.trim().toLowerCase();
     let brandId = brandCache.get(brandKey);
+
     if (!brandCache.has(brandKey)) {
       brandId = matchBrandIdLocal(brandRows, row.brand, row.brand);
       if (!brandId && row.brand.trim()) {
@@ -179,27 +236,7 @@ export async function importBulkProducts(
   for (let i = 0; i < importable.length; i++) {
     const row = importable[i];
     try {
-      const payload = buildProductPayload(
-        {
-          sku: `AI-${row.barcode}`,
-          barcode: row.barcode,
-          nameAr: row.nameAr,
-          nameEn: row.nameEn,
-          brandId: row.brandId,
-          categoryId: row.categoryId,
-          subcategoryIds: row.subcategoryIds,
-          tertiaryCategoryIds: row.tertiaryCategoryIds,
-          descriptionAr: row.descriptionAr,
-          descriptionEn: row.descriptionEn,
-          price: row.price,
-          originalPrice: row.originalPrice,
-          discountPercent: row.discountPercent,
-          stock: row.stock,
-          isActive: true,
-        },
-        [],
-      );
-      await mutations.createProduct(payload);
+      await mutations.createProduct(buildBulkCreatePayload(row));
       ok += 1;
       onProgress?.({
         index: i + 1,
@@ -222,16 +259,6 @@ export async function importBulkProducts(
         message: String(message),
       });
     }
-  }
-
-  if (skipped > 0) {
-    onProgress?.({
-      index: importable.length,
-      total: importable.length,
-      barcode: "",
-      status: "skip",
-      message: `تم تخطي ${skipped} صف (موجود أو ناقص بيانات)`,
-    });
   }
 
   return { ok, skipped, failed };

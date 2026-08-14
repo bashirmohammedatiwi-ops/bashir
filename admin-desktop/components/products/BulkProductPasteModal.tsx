@@ -18,7 +18,6 @@ import {
   resolveBulkProductRows,
   type BulkProductResolved,
 } from "@/lib/bulkProductImport";
-import { parseProductTablePaste } from "@/lib/parseProductTablePaste";
 
 type Props = {
   open: boolean;
@@ -27,7 +26,7 @@ type Props = {
 
 type Phase = "paste" | "preview" | "importing" | "done";
 
-export function BulkProductPasteModal({ open, onClose }: Props) {
+export default function BulkProductPasteModal({ open, onClose }: Props) {
   const qc = useQueryClient();
   const [phase, setPhase] = useState<Phase>("paste");
   const [raw, setRaw] = useState("");
@@ -52,13 +51,7 @@ export function BulkProductPasteModal({ open, onClose }: Props) {
   };
 
   const parseMut = useMutation({
-    mutationFn: async () => {
-      const parsed = parseProductTablePaste(raw);
-      if (!parsed.length) {
-        throw new Error("لم يتم التعرف على صفوف منتجات. تأكد من وجود عمود الباركود والأسماء.");
-      }
-      return resolveBulkProductRows(parsed);
-    },
+    mutationFn: async () => resolveBulkProductRows(raw),
     onSuccess: (resolved) => {
       setRows(resolved);
       setPhase("preview");
@@ -175,9 +168,7 @@ export function BulkProductPasteModal({ open, onClose }: Props) {
             <div style={{ marginBottom: 16 }}>
               <Progress
                 percent={
-                  progress.total
-                    ? Math.round((progress.done / progress.total) * 100)
-                    : 0
+                  progress.total ? Math.round((progress.done / progress.total) * 100) : 0
                 }
                 status="active"
               />

@@ -11,6 +11,7 @@ import {
   SearchOutlined,
   TableOutlined,
   UnorderedListOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import {
   Button,
@@ -52,10 +53,7 @@ const ProductFormDrawer = dynamic(
 );
 
 const BulkProductPasteModal = dynamic(
-  () =>
-    import("@/components/products/BulkProductPasteModal").then((m) => ({
-      default: m.BulkProductPasteModal,
-    })),
+  () => import("@/components/products/BulkProductPasteModal"),
   { ssr: false },
 );
 
@@ -634,7 +632,7 @@ export function ProductsAdminPage({
                 استيراد من الكتالوج
               </Button>
             </Link>
-            <Button size="large" icon={<TableOutlined />} onClick={() => setBulkPasteOpen(true)}>
+            <Button size="large" icon={<UploadOutlined />} onClick={() => setBulkPasteOpen(true)}>
               إضافة جماعية
             </Button>
             <Button type="primary" size="large" icon={<PlusOutlined />} onClick={openCreate}>
@@ -991,7 +989,9 @@ export function ProductsAdminPage({
         onSubmit={(v) => upsert.mutate(v)}
       />
 
-      <BulkProductPasteModal open={bulkPasteOpen} onClose={() => setBulkPasteOpen(false)} />
+      {bulkPasteOpen ? (
+        <BulkProductPasteModal open={bulkPasteOpen} onClose={() => setBulkPasteOpen(false)} />
+      ) : null}
     </div>
   );
 }

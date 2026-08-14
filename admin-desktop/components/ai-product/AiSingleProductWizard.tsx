@@ -377,25 +377,12 @@ export function AiSingleProductWizard({ open, onClose, onSuccess, embedded }: Pr
                   value={modelId}
                   onChange={setModelId}
                   loading={modelsQ.isLoading}
-                  optionLabelProp="label"
                   options={(modelsQ.data?.models ?? []).map((m) => ({
                     value: m.id,
-                    label: m.labelAr,
-                    title: m.descriptionAr,
+                    label: m.descriptionAr
+                      ? `${m.labelAr} — ${m.descriptionAr}`
+                      : m.labelAr,
                   }))}
-                  optionRender={(opt) => {
-                    const m = (modelsQ.data?.models ?? []).find((x) => x.id === opt.value);
-                    return (
-                      <div style={{ padding: "4px 0" }}>
-                        <div style={{ fontWeight: 600 }}>{opt.label}</div>
-                        {m?.descriptionAr ? (
-                          <div style={{ fontSize: 12, color: "#8a8194", marginTop: 2 }}>
-                            {m.descriptionAr}
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  }}
                 />
               </Form.Item>
             </Form>
