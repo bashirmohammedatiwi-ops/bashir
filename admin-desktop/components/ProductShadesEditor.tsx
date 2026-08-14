@@ -1,5 +1,6 @@
 "use client";
-import { Button, Form, Input, Radio, Space } from "antd";
+import { useState } from "react";
+import { Button, Form, Input, Radio, Space, message } from "antd";
 import type { FormListFieldData } from "antd/es/form";
 import {
   ProductImageDropzone,
@@ -8,6 +9,7 @@ import {
 } from "@/components/ProductImageDropzone";
 import { mediaThumb } from "@/lib/mediaUrl";
 import { normalizeBarcode } from "@/lib/barcode";
+import { parseShadeTablePaste } from "@/lib/parseShadeTablePaste";
 
 type Props = {
   fields: FormListFieldData[];
@@ -31,6 +33,66 @@ export function ProductShadesEditor({
   shadeSyncLoading = {},
 }: Props) {
   const shadesWatch = Form.useWatch("shades", form) ?? [];
+  const [tablePasteRaw, setTablePasteRaw] = useState("");
+  const [pasteOpen, setPasteOpen] = useState(false);
+
+  const applyGptTable = () => {
+    const rows = parseShadeTablePaste(tablePasteRaw);
+    if (!rows.length) {
+      message.error("لم يتم التعرف على الجدول. الصق أعمدة: الباركود | Shade | HEX");
+      return;
+    }
+
+    const current: Array<Record<string, unknown>> = [...(form.getFieldValue("shades") ?? [])];
+    let added = 0;
+    let updated = 0;
+
+    for (const row of rows) {
+      const idx = current.findIndex(
+        (s) => normalizeBarcode(String(s?.barcode ?? "")) === row.barcode,
+      );
+      if (idx >= 0) {
+        const prev = current[idx] ?? {};
+        current[idx] = {
+          ...prev,
+          name: row.name || prev.name,
+          colorHex:
+            row.colorHex && row.colorHex !== "#CCCCCC"
+              ? row.colorHex
+              : prev.colorHex || "#E91E63",
+          barcode: row.barcode,
+          isGradient: prev.isGradient === true,
+        };
+        updated += 1;
+      } else {
+        current.push({
+          name: row.name,
+          colorHex: row.colorHex || "#E91E63",
+          colorHexEnd: undefined,
+          isGradient: false,
+          barcode: row.barcode,
+          imageId: undefined,
+          price: undefined,
+          originalPrice: 0,
+          discountPercent: 0,
+          stock: 0,
+        });
+        added += 1;
+      }
+    }
+
+    form.setFieldsValue({ shades: current });
+
+    current.forEach((s, i) => {
+      const bc = normalizeBarcode(String(s?.barcode ?? ""));
+      if (bc.length >= 6) onShadeBarcodeLookup?.(i, bc);
+    });
+
+    message.success(
+      `تم استيراد الجدول: ${added} جديد${updated ? ` · ${updated} محدّث` : ""} (${rows.length} صف)`,
+    );
+    setPasteOpen(false);
+  };
 
   return (
     <div>
@@ -40,6 +102,8 @@ export function ProductShadesEditor({
           justifyContent: "space-between",
           alignItems: "center",
           marginBottom: 10,
+          gap: 8,
+          flexWrap: "wrap",
         }}
       >
         <div>
@@ -48,29 +112,64 @@ export function ProductShadesEditor({
             لون صلب أو تدرج — صورة وباركود لكل درجة
           </div>
         </div>
-        <Button
-          size="small"
-          type="dashed"
-          onClick={() =>
-            add({
-              name: "",
-              colorHex: "#E91E63",
-              colorHexEnd: undefined,
-              isGradient: false,
-              barcode: "",
-              imageId: undefined,
-              price: undefined,
-              originalPrice: 0,
-              discountPercent: 0,
-              stock: 0,
-            })
-          }
-        >
-          + درجة لون
-        </Button>
+        <Space wrap>
+          <Button size="small" onClick={() => setPasteOpen((v) => !v)}>
+            {pasteOpen ? "إخفاء لصق الجدول" : "لصق جدول من GPT"}
+          </Button>
+          <Button
+            size="small"
+            type="dashed"
+            onClick={() =>
+              add({
+                name: "",
+                colorHex: "#E91E63",
+                colorHexEnd: undefined,
+                isGradient: false,
+                barcode: "",
+                imageId: undefined,
+                price: undefined,
+                originalPrice: 0,
+                discountPercent: 0,
+                stock: 0,
+              })
+            }
+          >
+            + درجة لون
+          </Button>
+        </Space>
       </div>
 
-      {fields.length === 0 && (
+      {pasteOpen ? (
+        <div
+          style={{
+            border: "1px solid #e8e0f0",
+            background: "#fcfaff",
+            borderRadius: 10,
+            padding: 12,
+            marginBottom: 12,
+          }}
+        >
+          <div style={{ fontSize: 13, marginBottom: 6, color: "#5b5268" }}>
+            الصق جدولاً من GPT (Markdown أو Excel) ثم اضغط تطبيق — يُضاف الباركود والاسم واللون تلقائياً
+          </div>
+          <Input.TextArea
+            rows={8}
+            value={tablePasteRaw}
+            onChange={(e) => setTablePasteRaw(e.target.value)}
+            dir="ltr"
+            style={{ fontFamily: "ui-monospace, Consolas, monospace", fontSize: 12 }}
+            placeholder={`| الباركود      | Shade              | HEX تقريبي |\n| ------------- | ------------------ | ---------- |\n| 4052136226386 | 21 – Glossy Nude   | #C98F7D    |\n| 4052136226393 | 28 – Goddess       | #A86E58    |`}
+          />
+          <Space style={{ marginTop: 8 }}>
+            <Button type="primary" onClick={applyGptTable} disabled={!tablePasteRaw.trim()}>
+              تطبيق الجدول
+            </Button>
+            <Button onClick={() => setTablePasteRaw("")}>مسح</Button>
+          </Space>
+        </div>
+      ) : null}
+
+      {fields.length === 0 && !pasteOpen && (
         <div
           style={{
             padding: 16,
@@ -80,7 +179,7 @@ export function ProductShadesEditor({
             borderRadius: 8,
           }}
         >
-          لا توجد درجات — أضف لوناً إن كان المنتج يحتوي ألواناً (مكياج، طلاء...)
+          لا توجد درجات — أضف لوناً يدوياً أو الصق جدول GPT
         </div>
       )}
 
