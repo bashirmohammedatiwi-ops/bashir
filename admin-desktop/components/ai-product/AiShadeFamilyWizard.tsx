@@ -26,6 +26,12 @@ import { matchBrandIdLocal } from "@/lib/catalogBrandMatch";
 import { lookupInventoryBarcodes } from "@/lib/inventorySync";
 import { defaultSku, saveAiProduct } from "@/lib/aiProductSave";
 import { normalizeBarcode } from "@/lib/barcode";
+import {
+  mergePastedShadesIntoRows,
+  parseShadeTablePaste,
+  pastedShadesToBarcodeList,
+  type PastedShadeRow,
+} from "@/lib/parseShadeTablePaste";
 import { queries, mutations } from "@/lib/queries";
 
 type NamedRow = { id: string; nameAr?: string; name?: string; nameEn?: string };
@@ -78,6 +84,8 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
   const [barcodesRaw, setBarcodesRaw] = useState("");
+  const [tablePasteRaw, setTablePasteRaw] = useState("");
+  const [pastedShades, setPastedShades] = useState<PastedShadeRow[]>([]);
   const [hint, setHint] = useState("");
   const [modelId, setModelId] = useState<string | undefined>();
   const [result, setResult] = useState<ShadeFamilyResult | null>(null);
@@ -150,6 +158,8 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
   const reset = useCallback(() => {
     setStep(0);
     setBarcodesRaw("");
+    setTablePasteRaw("");
+    setPastedShades([]);
     setHint("");
     setResult(null);
     setShades([]);
@@ -171,6 +181,33 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
     setInvMap({});
     setIdentifying(false);
     setProgress(EMPTY_PROGRESS);
+  }, []);
+
+  const applyTablePaste = useCallback((raw: string, opts?: { silent?: boolean }) => {
+    const rows = parseShadeTablePaste(raw);
+    if (!rows.length) {
+      if (!opts?.silent) message.error("لم يتم التعرف على جدول تدرجات. الصق جدولاً يحتوي باركود + اسم التدرج");
+      return null;
+    }
+    setPastedShades(rows);
+    setBarcodesRaw(pastedShadesToBarcodeList(rows));
+    setTablePasteRaw(raw.trim());
+    setShades((prev) => {
+      if (!prev.length) {
+        return rows.map((r) => ({
+          barcode: r.barcode,
+          name: r.name,
+          code: r.code,
+          colorHex: r.colorHex || "#CCCCCC",
+          imageUrl: null,
+        }));
+      }
+      return mergePastedShadesIntoRows(prev, rows);
+    });
+    if (!opts?.silent) {
+      message.success(`تم استيراد ${rows.length} تدرج من الجدول`);
+    }
+    return rows;
   }, []);
 
   useEffect(() => {
@@ -219,14 +256,17 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
     if (applied.subcategoryIds.length) setSubcategoryIds(applied.subcategoryIds);
     if (applied.tertiaryCategoryIds.length) setTertiaryIds(applied.tertiaryCategoryIds);
 
-    const rows: ShadeRow[] = fill.shades.map((s) => ({
-      barcode: s.barcode,
-      name: s.name,
-      code: s.code || "",
-      colorHex: s.colorHex || "#CCCCCC",
-      imageUrl: s.imageUrl?.startsWith("http") ? s.imageUrl : null,
-    }));
-
+    const rows: ShadeRow[] = mergePastedShadesIntoRows(
+      fill.shades.map((s) => ({
+        barcode: s.barcode,
+        name: s.name,
+        code: s.code || "",
+        colorHex: s.colorHex || "#CCCCCC",
+        imageUrl: s.imageUrl?.startsWith("http") ? s.imageUrl : null,
+      })),
+      pastedShades,
+    );
+    // Prefer GPT-pasted shade names/hex over generic AI invent labels
     const imageSeed: Record<string, AiAutofillImage[]> = {};
     for (const s of fill.shades) {
       if (!s.imageUrl?.startsWith("http")) continue;
@@ -553,20 +593,73 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
             <Alert
               type="info"
               showIcon
-              message="باركود كل تدرج في سطر"
-              description="يمكن لصق قائمة من مسدس الأسعار أو الماسح. الباركود الأول يُستخدم كمنتج رئيسي."
+              message="باركود كل تدرج في سطر — أو الصق جدول GPT"
+              description="يمكن لصق قائمة باركودات، أو جدول Markdown من GPT يحتوي الباركود + اسم التدرج + اللون."
             />
             <Form layout="vertical">
+              <Form.Item
+                label="لصق جدول تدرجات من GPT (اختياري)"
+                extra={
+                  pastedShades.length
+                    ? `تم تحميل ${pastedShades.length} تدرج بأسماء وألوان من الجدول`
+                    : "مثال: | الباركود | Shade | HEX |"
+                }
+              >
+                <Input.TextArea
+                  rows={7}
+                  value={tablePasteRaw}
+                  onChange={(e) => setTablePasteRaw(e.target.value)}
+                  placeholder={`| الباركود      | Shade              | HEX تقريبي |\n| ------------- | ------------------ | ---------- |\n| 4052136226386 | 21 – Glossy Nude   | #C98F7D    |\n| 4052136226393 | 28 – Goddess       | #A86E58    |`}
+                  dir="ltr"
+                  style={{ fontFamily: "ui-monospace, monospace", fontSize: 12 }}
+                />
+                <Space style={{ marginTop: 8 }}>
+                  <Button
+                    type="primary"
+                    onClick={() => applyTablePaste(tablePasteRaw)}
+                    disabled={!tablePasteRaw.trim()}
+                  >
+                    تطبيق الجدول
+                  </Button>
+                  {pastedShades.length ? (
+                    <Button
+                      onClick={() => {
+                        setPastedShades([]);
+                        setTablePasteRaw("");
+                        message.info("تم مسح بيانات الجدول — الباركودات تبقى إن وُجدت");
+                      }}
+                    >
+                      مسح الجدول
+                    </Button>
+                  ) : null}
+                </Space>
+              </Form.Item>
               <Form.Item label={`الباركودات (${barcodes.length})`} required>
                 <Input.TextArea
-                  rows={8}
+                  rows={6}
                   value={barcodesRaw}
                   onChange={(e) => setBarcodesRaw(e.target.value)}
                   placeholder={"4052136246445\n4052136246452\n4052136246469"}
                 />
               </Form.Item>
+              {pastedShades.length ? (
+                <div style={{ display: "grid", gap: 6 }}>
+                  <strong>معاينة التدرجات من الجدول</strong>
+                  {pastedShades.slice(0, 8).map((s) => (
+                    <div key={s.barcode} className="ai-shade-row">
+                      <div className="ai-swatch" style={{ background: s.colorHex }} />
+                      <span style={{ flex: 1 }}>{s.name}</span>
+                      <Tag dir="ltr">{s.code || "—"}</Tag>
+                      <Tag dir="ltr">{s.barcode}</Tag>
+                    </div>
+                  ))}
+                  {pastedShades.length > 8 ? (
+                    <div style={{ color: "#8a8194", fontSize: 12 }}>+{pastedShades.length - 8} تدرج آخر</div>
+                  ) : null}
+                </div>
+              ) : null}
               <Form.Item label="تلميح المنتج">
-                <Input value={hint} onChange={(e) => setHint(e.target.value)} placeholder="ARTDECO MAT PASSION Lip Fluid" />
+                <Input value={hint} onChange={(e) => setHint(e.target.value)} placeholder="ARTDECO Plumping Lip Fluid" />
               </Form.Item>
               <Form.Item label="نموذج AI">
                 <Select
@@ -605,34 +698,62 @@ export function AiShadeFamilyWizard({ open, onClose, onSuccess }: Props) {
               </Form.Item>
             </div>
             <strong>التدرجات ({shades.length})</strong>
-            <Button
-              size="small"
-              onClick={async () => {
-                const map = await enrichShadesFromCatalog(barcodes, undefined, hint);
-                const identity = inferProductIdentityFromCatalog(map, hint);
-                const refreshed = resolveFamilyProductNames({
-                  hint,
-                  nameEn: identity?.nameEn || nameEn,
-                  nameAr: identity?.nameAr || nameAr,
-                  brandEn: identity?.brandEn || brandEn,
-                  brandAr: identity?.brandAr || brandAr,
-                });
-                setBrandEn(refreshed.brandEn);
-                setBrandAr(refreshed.brandAr);
-                setNameEn(refreshed.nameEn);
-                setNameAr(refreshed.nameAr);
-                const nextRows = shades.map((row) => ({ ...row }));
-                for (const row of nextRows) {
-                  const hit = map.get(row.barcode);
-                  if (hit) applyCatalogHitToRow(row, hit);
-                }
-                await enrichShadeColors(nextRows, map);
-                setShades(nextRows);
-                message.success(`تم تحديث ${nextRows.filter((r) => !isGenericShadeName(r.name)).length}/${nextRows.length} تدرج (بحث عالمي)`);
-              }}
+            <Space wrap>
+              <Button
+                size="small"
+                onClick={async () => {
+                  const map = await enrichShadesFromCatalog(barcodes, undefined, hint);
+                  const identity = inferProductIdentityFromCatalog(map, hint);
+                  const refreshed = resolveFamilyProductNames({
+                    hint,
+                    nameEn: identity?.nameEn || nameEn,
+                    nameAr: identity?.nameAr || nameAr,
+                    brandEn: identity?.brandEn || brandEn,
+                    brandAr: identity?.brandAr || brandAr,
+                  });
+                  setBrandEn(refreshed.brandEn);
+                  setBrandAr(refreshed.brandAr);
+                  setNameEn(refreshed.nameEn);
+                  setNameAr(refreshed.nameAr);
+                  const nextRows = shades.map((row) => ({ ...row }));
+                  for (const row of nextRows) {
+                    const hit = map.get(row.barcode);
+                    if (hit) applyCatalogHitToRow(row, hit);
+                  }
+                  await enrichShadeColors(nextRows, map);
+                  setShades(mergePastedShadesIntoRows(nextRows, pastedShades));
+                  message.success(`تم تحديث ${nextRows.filter((r) => !isGenericShadeName(r.name)).length}/${nextRows.length} تدرج (بحث عالمي)`);
+                }}
+              >
+                إثراء عالمي ذكي
+              </Button>
+            </Space>
+            <Form.Item
+              label="تحديث من جدول GPT"
+              style={{ marginBottom: 8 }}
+              extra="الصق الجدول ثم اضغط تطبيق — يستبدل أسماء وألوان التدرجات المطابقة"
             >
-              إثراء عالمي ذكي
-            </Button>
+              <Input.TextArea
+                rows={4}
+                value={tablePasteRaw}
+                onChange={(e) => setTablePasteRaw(e.target.value)}
+                placeholder="| الباركود | Shade | HEX |"
+                dir="ltr"
+                style={{ fontFamily: "ui-monospace, monospace", fontSize: 12 }}
+              />
+              <Button
+                size="small"
+                type="primary"
+                style={{ marginTop: 8 }}
+                disabled={!tablePasteRaw.trim()}
+                onClick={() => {
+                  const rows = applyTablePaste(tablePasteRaw);
+                  if (rows?.length) setShades((prev) => mergePastedShadesIntoRows(prev, rows));
+                }}
+              >
+                تطبيق الجدول على التدرجات
+              </Button>
+            </Form.Item>
             {shades.map((s, i) => (
               <div key={s.barcode} className="ai-shade-row">
                 <div className="ai-swatch" style={{ background: s.colorHex }} />
