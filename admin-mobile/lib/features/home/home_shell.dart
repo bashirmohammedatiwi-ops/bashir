@@ -4,14 +4,13 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/utils/daily_progress_store.dart';
 
-/// Shell with bottom navigation: catalog import vs AI add.
+/// Shell with bottom navigation: catalog vs AI single-product add.
 class HomeShell extends ConsumerWidget {
   const HomeShell({super.key, required this.child});
 
   final Widget child;
 
   int _indexForLocation(String location) {
-    if (location.startsWith('/shade-family')) return 2;
     if (location.startsWith('/ai-add')) return 1;
     return 0;
   }
@@ -30,31 +29,25 @@ class HomeShell extends ConsumerWidget {
           if (index == selected) return;
           if (index == 0) context.go('/scan');
           if (index == 1) context.go('/ai-add');
-          if (index == 2) context.go('/shade-family');
         },
         destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.storefront_outlined),
-            selectedIcon: const Icon(Icons.storefront),
+          const NavigationDestination(
+            icon: Icon(Icons.storefront_outlined),
+            selectedIcon: Icon(Icons.storefront),
             label: 'الكتالوج',
           ),
           NavigationDestination(
             icon: Badge(
               isLabelVisible: todayCount > 0,
               label: Text('$todayCount', style: const TextStyle(fontSize: 10)),
-              child: const Icon(Icons.add_circle_outline),
+              child: const Icon(Icons.auto_awesome_outlined),
             ),
             selectedIcon: Badge(
               isLabelVisible: todayCount > 0,
               label: Text('$todayCount', style: const TextStyle(fontSize: 10)),
-              child: const Icon(Icons.add_circle),
+              child: const Icon(Icons.auto_awesome),
             ),
             label: 'إضافة ذكية',
-          ),
-          const NavigationDestination(
-            icon: Icon(Icons.palette_outlined),
-            selectedIcon: Icon(Icons.palette),
-            label: 'تدرجات',
           ),
         ],
       ),

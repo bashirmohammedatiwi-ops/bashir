@@ -29,7 +29,7 @@ import '../../widgets/section_card.dart';
 import '../../widgets/shade_tile.dart';
 import '../media/product_image_editor_screen.dart';
 
-/// Multi-step AI add wizard: naming → images → shades → category/price → review & save.
+/// Multi-step AI add wizard: naming → images → category/price → review & save.
 class GptAutofillScreen extends ConsumerStatefulWidget {
   const GptAutofillScreen({
     super.key,
@@ -46,21 +46,6 @@ class GptAutofillScreen extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<GptAutofillScreen> createState() => _GptAutofillScreenState();
-}
-
-class _AiShadeDraft {
-  _AiShadeDraft({String name = '', String colorHex = '#CCCCCC', this.imageUrl})
-      : nameController = TextEditingController(text: name),
-        hexController = TextEditingController(text: colorHex);
-
-  final TextEditingController nameController;
-  final TextEditingController hexController;
-  String? imageUrl;
-
-  void dispose() {
-    nameController.dispose();
-    hexController.dispose();
-  }
 }
 
 class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
@@ -83,7 +68,6 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
   bool _saving = false;
   bool _refreshingImages = false;
   bool _posFilled = false;
-  bool _multiShadeEnabled = false;
   String? _error;
   AiAutofillResult? _result;
   List<AiAutofillImage> _images = [];
@@ -92,7 +76,6 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
   /// Keeps metadata for selected URLs so they survive barcode ↔ name search swaps.
   final Map<String, AiAutofillImage> _imageByUrl = {};
   final Map<String, Uint8List> _editedBytesByUrl = {};
-  final List<_AiShadeDraft> _shades = [];
   /// Media from a deleted product kept for reuse (url → mediaId).
   final Map<String, String> _preservedMediaByUrl = {};
   List<AiAutofillImage> _preservedImages = [];
@@ -106,7 +89,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
   final List<String> _subcategoryIds = [];
   final List<String> _tertiaryIds = [];
 
-  static const _stepTitles = ['التسمية', 'الصور', 'التدرجات', 'التصنيف', 'المعاينة'];
+  static const _stepTitles = ['التسمية', 'الصور', 'التصنيف', 'المعاينة'];
 
   bool _syncingNames = false;
 
@@ -143,9 +126,6 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     _nameEnFocus.dispose();
     _price.dispose();
     _stock.dispose();
-    for (final s in _shades) {
-      s.dispose();
-    }
     super.dispose();
   }
 
@@ -424,9 +404,6 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
         _selectedImages.remove(url);
         _imageOrder.remove(url);
         _editedBytesByUrl.remove(url);
-        for (final s in _shades) {
-          if (s.imageUrl == url) s.imageUrl = null;
-        }
       } else {
         AiAutofillImage? hit;
         for (final i in _images) {
@@ -683,87 +660,6 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     return widget.hint?.trim() ?? '';
   }
 
-  void _addShade() {
-    setState(() => _shades.add(_AiShadeDraft()));
-  }
-
-  void _removeShade(int index) {
-    setState(() {
-      _shades[index].dispose();
-      _shades.removeAt(index);
-    });
-  }
-
-  void _setMultiShadeEnabled(bool value) {
-    setState(() {
-      _multiShadeEnabled = value;
-      if (!value) {
-        for (final s in _shades) {
-          s.dispose();
-        }
-        _shades.clear();
-      } else if (_shades.isEmpty) {
-        _shades.add(_AiShadeDraft());
-      }
-    });
-  }
-
-  Future<void> _pickShadeImage(_AiShadeDraft shade) async {
-    final urls = _imageOrder.where(_selectedImages.contains).toList();
-    if (urls.isEmpty) {
-      _snack('اختر صور المنتج أولاً من خطوة الصور');
-      return;
-    }
-    final picked = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('اختر صورة للدرجة'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: GridView.builder(
-            shrinkWrap: true,
-            itemCount: urls.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              mainAxisSpacing: 8,
-              crossAxisSpacing: 8,
-            ),
-            itemBuilder: (_, i) {
-              final url = urls[i];
-              return InkWell(
-                onTap: () => Navigator.pop(ctx, url),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: CachedNetworkImage(imageUrl: url, fit: BoxFit.cover),
-                ),
-              );
-            },
-          ),
-        ),
-        actions: [
-          if (shade.imageUrl != null)
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, ''),
-              child: const Text('إزالة الصورة'),
-            ),
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-        ],
-      ),
-    );
-    if (picked == null) return;
-    setState(() => shade.imageUrl = picked.isEmpty ? null : picked);
-  }
-
-  Color _colorFromHex(String raw) {
-    final hex = raw.replaceAll('#', '').trim();
-    if (hex.length >= 6) {
-      try {
-        return Color(int.parse('FF${hex.substring(0, 6)}', radix: 16));
-      } catch (_) {}
-    }
-    return Colors.grey.shade300;
-  }
-
   List<String> _qualityWarnings() {
     final warnings = <String>[];
     final nameAr = _nameAr.text.trim();
@@ -780,9 +676,6 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
     }
     if (_categoryId == null || _categoryId!.isEmpty) {
       warnings.add('القسم الرئيسي مطلوب');
-    }
-    if (_multiShadeEnabled && _shades.isEmpty) {
-      warnings.add('فعّلت التدرجات لكن لم تُضف أي درجة');
     }
     return warnings;
   }
@@ -869,23 +762,16 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
       _snack('اختر صورة واحدة على الأقل');
       return false;
     }
-    if (step == 3 && (_categoryId == null || _categoryId!.isEmpty)) {
+    if (step == 2 && (_categoryId == null || _categoryId!.isEmpty)) {
       _snack('اختر القسم الرئيسي');
       return false;
     }
     return true;
   }
 
-  /// Skip shades step when product has no color variants.
-  int _forwardStep(int from) {
-    if (from == 1 && !_multiShadeEnabled) return 3;
-    return from + 1;
-  }
+  int _forwardStep(int from) => from + 1;
 
-  int _backStep(int from) {
-    if (from == 3 && !_multiShadeEnabled) return 1;
-    return from - 1;
-  }
+  int _backStep(int from) => from - 1;
 
   void _goTo(int step) {
     setState(() => _step = step);
@@ -894,7 +780,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
 
   Future<void> _next() async {
     if (!_validateStep(_step)) return;
-    if (_step < 4) {
+    if (_step < 3) {
       final from = _step;
       final dest = _forwardStep(from);
       _goTo(dest);
@@ -963,16 +849,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
         ..addAll(sanitized.tertiaryCategoryIds);
 
       final orderedUrls = _orderedSelectedUrls();
-
-      final shadeImageUrls = <String>[];
-      if (_multiShadeEnabled) {
-        for (final s in _shades) {
-          if (s.imageUrl != null && s.imageUrl!.isNotEmpty && !orderedUrls.contains(s.imageUrl)) {
-            shadeImageUrls.add(s.imageUrl!);
-          }
-        }
-      }
-      final allUploadUrls = [...orderedUrls, ...shadeImageUrls];
+      final allUploadUrls = [...orderedUrls];
 
       final urlToId = <String, String>{};
       final failedUrls = <String>[];
@@ -1029,23 +906,7 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
       final stock = toIntPrice(int.tryParse(_stock.text.trim()));
       final barcode = normalizeBarcode(widget.barcode);
 
-      final shadePayloads = <Map<String, dynamic>>[];
-      if (_multiShadeEnabled) {
-        for (var idx = 0; idx < _shades.length; idx++) {
-          final s = _shades[idx];
-          final name = s.nameController.text.trim();
-          String? imageId;
-          if (s.imageUrl != null && s.imageUrl!.isNotEmpty) {
-            imageId = urlToId[s.imageUrl];
-          }
-          shadePayloads.add({
-            'name': name.isEmpty ? 'درجة ${idx + 1}' : name,
-            'colorHex': normalizeColorHex(s.hexController.text),
-            'position': idx,
-            if (imageId != null) 'imageId': imageId,
-          });
-        }
-      }
+      const shadePayloads = <Map<String, dynamic>>[];
 
       await repo.createProduct({
         'sku': 'AI-$barcode',
@@ -1153,11 +1014,11 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                 children: [
                   const CircularProgressIndicator(),
                   const SizedBox(height: 16),
-                  Text(widget.manualMode ? 'جاري جلب الصور…' : 'جاري تأكيد الاسم بـ Composer 2.5…'),
+                  Text(widget.manualMode ? 'جاري جلب الصور…' : 'جاري التعرف على المنتج بالـ AI…'),
                   if (!widget.manualMode) ...[
                     const SizedBox(height: 6),
                     Text(
-                      'الاسم باللغتين فقط — التصنيف والصور من الباركود',
+                      'تسمية باللغتين · صور · تصنيف — منتج مفرد',
                       style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600),
                     ),
                   ],
@@ -1193,7 +1054,6 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                             children: [
                               _buildNamingStep(),
                               _buildImagesStep(),
-                              _buildShadesStep(),
                               _buildCategoryStep(),
                               _buildReviewStep(),
                             ],
@@ -1230,11 +1090,11 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                                 height: 18,
                                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                               )
-                            : Icon(_step == 4 ? Icons.check_rounded : Icons.arrow_back_rounded),
+                            : Icon(_step == 3 ? Icons.check_rounded : Icons.arrow_back_rounded),
                         label: Text(
                           _saving
                               ? 'جاري الحفظ…'
-                              : _step == 4
+                              : _step == 3
                                   ? 'حفظ في المتجر'
                                   : 'التالي: ${_stepTitles[_forwardStep(_step)]}',
                         ),
@@ -1583,141 +1443,9 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
             _selectedImages.clear();
             _imageOrder.clear();
             _editedBytesByUrl.clear();
-            for (final s in _shades) {
-              s.imageUrl = null;
-            }
           }),
         ),
       ],
-    );
-  }
-
-  Widget _buildShadesStep() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        SectionCard(
-          title: 'التدرجات',
-          subtitle: 'اختياري — اتركه مغلقاً إن لم يكن للمنتج درجات لون',
-          icon: Icons.palette_outlined,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('متعدد التدرجات'),
-                subtitle: const Text('مثل فاونديشن أو أحمر شفاه بدرجات'),
-                value: _multiShadeEnabled,
-                onChanged: _setMultiShadeEnabled,
-              ),
-              if (_multiShadeEnabled) ...[
-                const SizedBox(height: 8),
-                for (var i = 0; i < _shades.length; i++) _buildShadeRow(i),
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: _addShade,
-                  icon: const Icon(Icons.add),
-                  label: const Text('إضافة درجة'),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildShadeRow(int index) {
-    final shade = _shades[index];
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Text('درجة ${index + 1}', style: const TextStyle(fontWeight: FontWeight.w700)),
-                const Spacer(),
-                IconButton(
-                  tooltip: 'حذف',
-                  onPressed: _shades.length > 1 ? () => _removeShade(index) : null,
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                ),
-              ],
-            ),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  margin: const EdgeInsets.only(top: 12, left: 8),
-                  decoration: BoxDecoration(
-                    color: _colorFromHex(shade.hexController.text),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.grey.shade400),
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: shade.nameController,
-                        decoration: const InputDecoration(labelText: 'اسم الدرجة'),
-                      ),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: shade.hexController,
-                        decoration: const InputDecoration(
-                          labelText: 'لون HEX',
-                          hintText: '#RRGGBB',
-                        ),
-                        textDirection: TextDirection.ltr,
-                        onChanged: (_) => setState(() {}),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                if (shade.imageUrl != null && shade.imageUrl!.isNotEmpty)
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: CachedNetworkImage(
-                      imageUrl: shade.imageUrl!,
-                      width: 48,
-                      height: 48,
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                else
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.image_outlined, color: Colors.grey),
-                  ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _pickShadeImage(shade),
-                    icon: const Icon(Icons.photo_library_outlined, size: 18),
-                    label: Text(shade.imageUrl == null ? 'اختر صورة من المنتج' : 'تغيير الصورة'),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1945,7 +1673,6 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                 ].whereType<String>().where((s) => s.isNotEmpty).join(' › '),
               ),
               _reviewRow('السعر / المخزون', '${_price.text.isEmpty ? "0" : _price.text} د.ع · ${_stock.text}'),
-              if (_multiShadeEnabled) _reviewRow('التدرجات', '${_shades.length} درجة'),
               const SizedBox(height: 4),
               Text(
                 'الصور (${_selectedImages.length}) — الأولى رئيسية',
@@ -2016,14 +1743,9 @@ class _GptAutofillScreenState extends ConsumerState<GptAutofillScreen> {
                     onPressed: () => _goTo(1),
                   ),
                   ActionChip(
-                    avatar: const Icon(Icons.palette_outlined, size: 16),
-                    label: const Text('التدرجات'),
-                    onPressed: () => _goTo(2),
-                  ),
-                  ActionChip(
                     avatar: const Icon(Icons.category_outlined, size: 16),
                     label: const Text('التصنيف'),
-                    onPressed: () => _goTo(3),
+                    onPressed: () => _goTo(2),
                   ),
                 ],
               ),

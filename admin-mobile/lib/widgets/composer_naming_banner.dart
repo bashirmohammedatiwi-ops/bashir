@@ -17,12 +17,12 @@ class ComposerNamingBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final m = model ?? AiModelOption.composerLow;
+    final m = model ?? AiModelOption.terra;
     final status = verified == true
         ? 'تم تأكيد الاسم باللغتين'
         : verified == false
             ? 'راجع الاسم يدوياً — لم يُؤكَّد بعد'
-            : 'Composer يؤكد الاسم بالعربي والإنجليزي فقط';
+            : 'النموذج يؤكد الاسم بالعربي والإنجليزي';
     return Card(
       color: verified == false ? const Color(0xFFFFF8E8) : AppTheme.primary.withValues(alpha: 0.07),
       margin: EdgeInsets.only(bottom: compact ? 8 : 12),
@@ -32,9 +32,7 @@ class ComposerNamingBanner extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(
-              verified == true
-                  ? Icons.verified_outlined
-                  : Icons.auto_awesome,
+              verified == true ? Icons.verified_outlined : Icons.auto_awesome,
               color: verified == false ? Colors.amber.shade800 : AppTheme.primary,
               size: 22,
             ),
@@ -54,9 +52,11 @@ class ComposerNamingBanner extends StatelessWidget {
                   ),
                   if (!compact) ...[
                     const SizedBox(height: 4),
-                    const Text(
-                      'التصنيف والوصف والصور من قواعد الباركود — بدون GPT كامل.',
-                      style: TextStyle(fontSize: 12, height: 1.35, color: AppTheme.muted),
+                    Text(
+                      m.descriptionAr.isNotEmpty
+                          ? m.descriptionAr
+                          : 'التصنيف والوصف والصور من قواعد الباركود.',
+                      style: const TextStyle(fontSize: 12, height: 1.35, color: AppTheme.muted),
                     ),
                   ],
                 ],

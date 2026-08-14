@@ -33,11 +33,13 @@ type Props = {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  /** When true, hide close button (page embeds the wizard). */
+  embedded?: boolean;
 };
 
 const STEPS = ["الباركود", "التسمية", "الصور", "التصنيف", "الحفظ"];
 
-export function AiSingleProductWizard({ open, onClose, onSuccess }: Props) {
+export function AiSingleProductWizard({ open, onClose, onSuccess, embedded }: Props) {
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
   const [barcode, setBarcode] = useState("");
@@ -284,7 +286,8 @@ export function AiSingleProductWizard({ open, onClose, onSuccess }: Props) {
       message.success("تم إنشاء المنتج بنجاح");
       qc.invalidateQueries({ queryKey: ["products"] });
       onSuccess?.();
-      onClose();
+      if (embedded) reset();
+      else onClose();
     },
     onError: (e: Error) => message.error(e.message || "فشل الحفظ"),
   });
@@ -329,12 +332,12 @@ export function AiSingleProductWizard({ open, onClose, onSuccess }: Props) {
       <div className="ai-wizard-head">
         <Space style={{ width: "100%", justifyContent: "space-between" }}>
           <div>
-            <strong style={{ fontSize: 18 }}>إضافة منتج مفرد بالذكاء الاصطناعي</strong>
+            <strong style={{ fontSize: 18 }}>إضافة منتج مفرد</strong>
             <div style={{ color: "#8a8194", fontSize: 13, marginTop: 4 }}>
-              Composer يؤكد الاسم — ثم اختر الصور والتصنيف
+              اختر الموديل ← تعرّف على الباركود ← راجع التسمية والصور ← احفظ
             </div>
           </div>
-          <Button onClick={onClose}>إغلاق</Button>
+          {!embedded ? <Button onClick={onClose}>إغلاق</Button> : null}
         </Space>
         <Steps current={step} size="small" style={{ marginTop: 18 }} items={STEPS.map((t) => ({ title: t }))} />
       </div>
@@ -366,15 +369,33 @@ export function AiSingleProductWizard({ open, onClose, onSuccess }: Props) {
                   placeholder="ARTDECO MAT PASSION Lip Fluid"
                 />
               </Form.Item>
-              <Form.Item label="نموذج AI">
+              <Form.Item
+                label="نموذج التسمية"
+                extra="Terra موصى به · Sol أقوى · Luna/Composer أسرع وأرخص"
+              >
                 <Select
                   value={modelId}
                   onChange={setModelId}
                   loading={modelsQ.isLoading}
+                  optionLabelProp="label"
                   options={(modelsQ.data?.models ?? []).map((m) => ({
                     value: m.id,
                     label: m.labelAr,
+                    title: m.descriptionAr,
                   }))}
+                  optionRender={(opt) => {
+                    const m = (modelsQ.data?.models ?? []).find((x) => x.id === opt.value);
+                    return (
+                      <div style={{ padding: "4px 0" }}>
+                        <div style={{ fontWeight: 600 }}>{opt.label}</div>
+                        {m?.descriptionAr ? (
+                          <div style={{ fontSize: 12, color: "#8a8194", marginTop: 2 }}>
+                            {m.descriptionAr}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  }}
                 />
               </Form.Item>
             </Form>

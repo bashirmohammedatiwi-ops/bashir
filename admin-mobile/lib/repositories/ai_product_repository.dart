@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/network/api_client.dart';
+import '../core/utils/ai_model_prefs.dart';
 import '../core/utils/api_error.dart';
 import '../core/utils/json.dart';
 import '../models/ai_autofill.dart';
@@ -20,6 +21,21 @@ class AiProductRepository {
       return BarcodeCheckResult.fromJson(asMap(resp.data['data'] ?? resp.data));
     } on DioException catch (e) {
       throw Exception(extractApiError(e, 'فشل فحص الباركود'));
+    }
+  }
+
+  Future<List<AiModelOption>> listModels() async {
+    try {
+      final resp = await _dio.get('/ai-product/models');
+      final data = asMap(resp.data['data'] ?? resp.data);
+      final raw = data['models'] as List? ?? [];
+      final models = raw
+          .map((e) => AiModelOption.fromApi(Map<String, dynamic>.from(e as Map)))
+          .where((m) => m.id.isNotEmpty)
+          .toList();
+      return models.isEmpty ? AiModelOption.all : models;
+    } on DioException {
+      return AiModelOption.all;
     }
   }
 
@@ -68,27 +84,6 @@ class AiProductRepository {
     }
   }
 
-  Future<ShadeFamilyResult> shadeFamily({
-    required List<String> barcodes,
-    String? hint,
-    String? model,
-  }) async {
-    try {
-      final resp = await _dio.post(
-        '/ai-product/shade-family',
-        data: {
-          'barcodes': barcodes.map((b) => b.trim()).where((b) => b.isNotEmpty).toList(),
-          if (hint != null && hint.trim().isNotEmpty) 'hint': hint.trim(),
-          if (model != null && model.trim().isNotEmpty) 'model': model.trim(),
-        },
-        options: Options(receiveTimeout: const Duration(seconds: 180)),
-      );
-      return ShadeFamilyResult.fromJson(asMap(resp.data['data'] ?? resp.data));
-    } on DioException catch (e) {
-      throw Exception(extractApiError(e, 'فشل التعرف على التدرجات'));
-    }
-  }
-
   Future<List<AiAutofillImage>> searchImages(
     String barcode, {
     String? nameHint,
@@ -118,5 +113,5 @@ class AiProductRepository {
 }
 
 final aiProductRepositoryProvider = Provider<AiProductRepository>((ref) {
-  return AiProductRepository(ref.read(dioProvider));
+  return AiProductRepository(ref.watch(dioProvider));
 });

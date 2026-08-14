@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Clean staff-tool theme — purple brand, calm surfaces, roomy controls.
+/// Clean staff-tool theme — deep plum brand, calm surfaces, roomy controls.
 class AppTheme {
   static const Color primary = Color(0xFF5B2A7A);
   static const Color primaryDark = Color(0xFF3D1B54);
-  static const Color accent = Color(0xFFD4A5E0);
-  static const Color surface = Color(0xFFF7F5F9);
+  static const Color accent = Color(0xFFC9A227);
+  static const Color surface = Color(0xFFF6F3F9);
   static const Color card = Colors.white;
   static const Color muted = Color(0xFF6B6570);
   static const Color success = Color(0xFF1B7A4E);

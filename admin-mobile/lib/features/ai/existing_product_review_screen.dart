@@ -569,7 +569,7 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
   Widget _buildAiActions() {
     return SectionCard(
       title: 'مراجعة بالذكاء الاصطناعي',
-      subtitle: 'Composer 2.5 يؤكد الاسم باللغتين ويقارن مع بيانات المتجر',
+      subtitle: 'الموديل يؤكد الاسم باللغتين ويقارن مع بيانات المتجر',
       icon: Icons.auto_awesome,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -583,7 +583,7 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                   )
                 : const Icon(Icons.fact_check_outlined),
-            label: Text(_reviewing ? 'جاري تأكيد الاسم…' : 'فحص وتصحيح الاسم (Composer)'),
+            label: Text(_reviewing ? 'جاري تأكيد الاسم…' : 'فحص وتصحيح الاسم بالـ AI'),
           ),
           if (_review != null) ...[
             const SizedBox(height: 8),
@@ -595,7 +595,7 @@ class _ExistingProductReviewScreenState extends ConsumerState<ExistingProductRev
             const SizedBox(height: 8),
             Text(
               'ثقة التعرّف: ${_review!.confidence.toStringAsFixed(0)}%'
-              '${_review!.namesVerified ? ' · اسم مؤكَّد Composer' : ''}'
+              '${_review!.namesVerified ? ' · اسم مؤكَّد بالـ AI' : ''}'
               '${_review!.reviewNotes != null ? ' · ${_review!.reviewNotes}' : ''}',
               style: const TextStyle(fontSize: 12.5, color: AppTheme.muted),
             ),

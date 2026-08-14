@@ -838,7 +838,7 @@ export class AiProductService {
           id: "gpt-5.6-terra",
           labelAr: "GPT-5.6 Terra (موصى به)",
           labelEn: "GPT-5.6 Terra",
-          descriptionAr: "أفضل توازن جودة/سرعة لتسمية المنتجات والتدرجات عبر Cursor API",
+          descriptionAr: "أفضل توازن جودة/سرعة لتسمية المنتج المفرد عبر Cursor API",
           apiModel: "gpt-5.6-terra",
           fast: false,
           costTier: "high",

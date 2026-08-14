@@ -5,7 +5,7 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { AiProductService } from "./ai-product.service";
-import { AiAutofillDto, AiGlobalShadeEnrichDto, AiImagesDto, AiReviewExistingDto, AiShadeFamilyDto } from "./dto/ai-autofill.dto";
+import { AiAutofillDto, AiImagesDto, AiReviewExistingDto } from "./dto/ai-autofill.dto";
 
 @ApiTags("ai-product")
 @ApiBearerAuth()
@@ -29,18 +29,6 @@ export class AiProductController {
   @Post("review-existing")
   reviewExisting(@Body() dto: AiReviewExistingDto) {
     return this.ai.reviewExisting(dto.barcode, dto.hint, dto.model);
-  }
-
-  /** Identify makeup shade family from multiple scanned barcodes. */
-  @Post("shade-family")
-  shadeFamily(@Body() dto: AiShadeFamilyDto) {
-    return this.ai.shadeFamily(dto.barcodes, dto.hint, dto.model);
-  }
-
-  /** Worldwide barcode + web enrich for shade families (Arabic & international stores). */
-  @Post("global-shade-enrich")
-  globalShadeEnrich(@Body() dto: AiGlobalShadeEnrichDto) {
-    return this.ai.enrichShadesGlobal(dto.barcodes, dto.hint);
   }
 
   /** Barcode image search only — no AI tokens. */
