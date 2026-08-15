@@ -41,6 +41,7 @@ import { mutations, queries } from "@/lib/queries";
 import { formatBytes } from "@/lib/formatBytes";
 import { useBarcodeInventorySync } from "@/hooks/useBarcodeInventorySync";
 import { ProductsSortableList } from "@/components/products/ProductsSortableList";
+import { BulkProductPasteModal } from "@/components/products/BulkProductPasteModal";
 import "./products-page.css";
 
 const ProductFormDrawer = dynamic(
@@ -48,11 +49,6 @@ const ProductFormDrawer = dynamic(
     import("@/components/products/ProductFormDrawer").then((m) => ({
       default: m.ProductFormDrawer,
     })),
-  { ssr: false },
-);
-
-const BulkProductPasteModal = dynamic(
-  () => import("@/components/products/BulkProductPasteModal"),
   { ssr: false },
 );
 

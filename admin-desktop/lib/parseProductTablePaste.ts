@@ -22,8 +22,13 @@ function splitTableCells(line: string): string[] {
       .split("|")
       .map((c) => c.trim());
   }
+  // Word / Excel paste
   if (trimmed.includes("\t")) {
     return trimmed.split("\t").map((c) => c.trim());
+  }
+  // Word sometimes uses 2+ spaces between columns
+  if (/\S\s{2,}\S/.test(trimmed) && /\d{8,14}/.test(trimmed)) {
+    return trimmed.split(/\s{2,}/).map((c) => c.trim()).filter(Boolean);
   }
   return [trimmed];
 }
