@@ -29,6 +29,7 @@ export type SyncItem = {
  * تسعير المزامنة من صف POS.
  * التخفيض يظهر فقط عند وجود عرض نشط في ActiveOffers.
  * عند إزالة العرض: السعر يعود لـ SellPr4 ونسبة الخصم = 0 (لا نُبقي SellPr5 كتخفيض لاصق).
+ * إذا كان SellPr5 أكبر من أو يساوي SellPr4 رغم وجود عرض، لا يُحسب خصم.
  */
 export function computePricing(row: PosArticleRow): Omit<
   SyncItem,
@@ -56,12 +57,13 @@ export function computePricing(row: PosArticleRow): Omit<
   let finalPrice = original;
   if (storedFinal > 0 && storedFinal < original) {
     finalPrice = storedFinal;
+  } else if (storedFinal >= original) {
+    finalPrice = original;
   } else if (discountType === 0) {
     finalPrice = Math.round(original * (1 - discountValue / 100));
   } else {
     finalPrice = Math.max(0, Math.round(original - discountValue));
   }
-
   if (finalPrice >= original) {
     finalPrice = original;
   }
@@ -76,7 +78,7 @@ export function computePricing(row: PosArticleRow): Omit<
     originalPrice: original,
     discountPercent,
     stock: quantity,
-    offerName,
+    offerName: hasDiscount ? offerName : undefined,
   };
 }
 

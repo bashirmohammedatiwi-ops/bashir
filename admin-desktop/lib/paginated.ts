@@ -1,6 +1,12 @@
 export type PaginatedBody<T> = {
   data: T[];
-  meta?: { total?: number; page?: number; limit?: number };
+  meta?: {
+    total?: number;
+    page?: number;
+    limit?: number;
+    totalPages?: number;
+    hasNext?: boolean;
+  };
 };
 
 /** يفك غلاف API ويُرجع قائمة المنتجات/العناصر بشكل موحّد */

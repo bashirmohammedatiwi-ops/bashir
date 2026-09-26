@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { createApiClient, chunkItems, formatApiError, pushBatchesParallel, reportSyncRun, retryFailedItems } from "./apiClient";
+import { createApiClient, chunkItems, formatApiError, normalizeApiBaseUrl, pushBatchesParallel, reportSyncRun, retryFailedItems, testBulkApi } from "./apiClient";
 import { rowToSyncItem, type SyncItem } from "./pricing";
 import { fetchArticles, testConnection, type SqlServerConfig } from "./sqlServer";
 import {
@@ -41,7 +41,7 @@ function defaultConfig(): AppConfig {
       options: { encrypt: false, trustServerCertificate: true },
     },
     api: {
-      baseUrl: "http://187.127.88.146/api/v1",
+      baseUrl: "https://deemaalhayat.com/api/v1",
     },
     sync: { autoSyncMinutes: 5, batchSize: 500, parallelUploads: 6 },
   };
@@ -50,7 +50,11 @@ function defaultConfig(): AppConfig {
 function loadConfig(): AppConfig | null {
   const userPath = configPath();
   if (fs.existsSync(userPath)) {
-    return JSON.parse(fs.readFileSync(userPath, "utf8")) as AppConfig;
+    const cfg = JSON.parse(fs.readFileSync(userPath, "utf8")) as AppConfig;
+    if (cfg.api?.baseUrl) {
+      cfg.api.baseUrl = normalizeApiBaseUrl(cfg.api.baseUrl);
+    }
+    return cfg;
   }
 
   const bundledExample = path.join(__dirname, "..", "config.example.json");
@@ -66,6 +70,9 @@ function loadConfig(): AppConfig | null {
 }
 
 function saveConfig(next: AppConfig) {
+  if (next.api?.baseUrl) {
+    next.api.baseUrl = normalizeApiBaseUrl(next.api.baseUrl);
+  }
   fs.mkdirSync(path.dirname(configPath()), { recursive: true });
   fs.writeFileSync(configPath(), JSON.stringify(next, null, 2), "utf8");
   config = next;
@@ -151,6 +158,18 @@ async function runSync(manual = false): Promise<{
     );
 
     const client = createApiClient(config.api);
+    const apiBase = client.defaults.baseURL ?? config.api.baseUrl;
+    log(`الاتصال بالسيرفر: ${apiBase}`);
+
+    const bulkTest = await testBulkApi(client);
+    if (!bulkTest.ok) {
+      log(`فشل اختبار الرفع: ${bulkTest.error}`, "error");
+      log("تأكد من عنوان API: https://deemaalhayat.com/api/v1 (لا تستخدم IP مباشرة)", "error");
+      result = { ok: false, synced: 0, total: uniqueItems.length, changed: toSend.length, skipped, failed: toSend.length };
+      return result;
+    }
+    log("اختبار الرفع ناجح — بدء المزامنة...", "success");
+
     const batchSize = Math.max(100, Math.min(config.sync.batchSize || 500, 1000));
     const parallelUploads = Math.max(1, Math.min(config.sync.parallelUploads || 6, 8));
     const batches = chunkItems(toSend, batchSize);
@@ -350,6 +369,14 @@ app.setPath(
 
 app.whenReady().then(() => {
   config = loadConfig();
+  if (config?.api?.baseUrl) {
+    const normalized = normalizeApiBaseUrl(config.api.baseUrl);
+    if (normalized !== config.api.baseUrl) {
+      config.api.baseUrl = normalized;
+      saveConfig(config);
+      log(`تم تحديث عنوان API إلى: ${normalized}`, "success");
+    }
+  }
   createWindow();
   restartAutoSync();
 });

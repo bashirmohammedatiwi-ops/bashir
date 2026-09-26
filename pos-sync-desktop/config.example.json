@@ -10,7 +10,7 @@
     }
   },
   "api": {
-    "baseUrl": "http://187.127.88.146/api/v1"
+    "baseUrl": "https://deemaalhayat.com/api/v1"
   },
   "sync": {
     "autoSyncMinutes": 5,

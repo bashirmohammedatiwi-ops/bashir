@@ -5,10 +5,44 @@ export type ApiConfig = {
   baseUrl: string;
 };
 
+const VPS_IP = "187.127.88.146";
+const PRODUCTION_DOMAIN = "deemaalhayat.com";
+
+/** السيرفر يفرض HTTPS + شهادة SSL للدومين فقط (ليس للـ IP) */
+export function normalizeApiBaseUrl(baseUrl: string): string {
+  const trimmed = baseUrl.trim().replace(/\/$/, "");
+  if (!trimmed) return trimmed;
+
+  try {
+    const parsed = new URL(trimmed);
+    const host = parsed.hostname.toLowerCase();
+
+    if (host === VPS_IP) {
+      parsed.hostname = PRODUCTION_DOMAIN;
+      parsed.protocol = "https:";
+      return parsed.toString().replace(/\/$/, "");
+    }
+
+    if (
+      parsed.protocol === "http:" &&
+      (host === PRODUCTION_DOMAIN || host.endsWith(`.${PRODUCTION_DOMAIN}`))
+    ) {
+      parsed.protocol = "https:";
+      return parsed.toString().replace(/\/$/, "");
+    }
+  } catch {
+    /* keep as-is */
+  }
+
+  return trimmed;
+}
+
 export function createApiClient(config: ApiConfig): AxiosInstance {
+  const baseURL = normalizeApiBaseUrl(config.baseUrl);
   return axios.create({
-    baseURL: config.baseUrl.replace(/\/$/, ""),
+    baseURL,
     timeout: 600_000,
+    maxRedirects: 0,
     headers: {
       "Content-Type": "application/json",
       "Accept-Encoding": "gzip, deflate",
@@ -32,17 +66,42 @@ export async function pushBulk(
   client: AxiosInstance,
   items: SyncItem[],
 ): Promise<BulkSyncResult> {
-  const { data } = await client.post("/sync/inventory/bulk", { items });
-  const payload = data?.data ?? data;
+  const { data, status } = await client.post("/sync/inventory/bulk", { items });
+  if (status >= 300) {
+    throw new Error(`HTTP ${status}: unexpected redirect — استخدم https:// في عنوان API`);
+  }
+  const payload = (data?.data ?? data) as BulkSyncResult | undefined;
+  if (!payload || typeof payload !== "object") {
+    throw new Error("استجابة غير صالحة من السيرفر — تحقق من عنوان API (https://)");
+  }
   return payload;
 }
 
 export async function pingApi(client: AxiosInstance): Promise<boolean> {
   try {
-    await client.get("/health", { baseURL: client.defaults.baseURL?.replace("/api/v1", "") });
+    await client.get("/health");
     return true;
   } catch {
     return false;
+  }
+}
+
+export async function testBulkApi(client: AxiosInstance): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const result = await pushBulk(client, [
+      {
+        barcode: "__POS_SYNC_PING__",
+        productCode: "0",
+        price: 1,
+        originalPrice: 1,
+        discountPercent: 0,
+        stock: 0,
+      },
+    ]);
+    if ((result.synced ?? 0) >= 1) return { ok: true };
+    return { ok: false, error: "السيرفر لم يقبل دفعة الاختبار" };
+  } catch (err) {
+    return { ok: false, error: formatApiError(err) };
   }
 }
 

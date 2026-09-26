@@ -49,7 +49,7 @@ SELECT
   CAST(COALESCE(NULLIF(a.SellPr4, 0), 0) AS bigint) AS originalPrice,
   CAST(COALESCE(NULLIF(a.SellPr5, 0), 0) AS bigint) AS storedFinalPrice,
   CAST(COALESCE(a.CurTot1, 0) AS bigint) AS quantity,
-  CAST(COALESCE(ao.discount, 0) AS float) AS discountValue,
+  CAST(ao.discount AS float) AS discountValue,
   CAST(COALESCE(ao.discount_type, 0) AS int) AS discountType,
   ${POS_TEXT("ao.offer_name")} AS offerName
 FROM dbo.articles a
