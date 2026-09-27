@@ -87,21 +87,48 @@ export default function NotificationsPage() {
     <>
       <PageHeader
         title="الإشعارات"
-        subtitle="إرسال إشعارات Push مع صورة وربط منتج أو فئة أو عروض"
+        subtitle="إرسال Push للهاتف + إشعار داخل التطبيق (صورة وربط منتج / فئة / عروض)"
         extra={
-          <Button type="primary" onClick={() => setOpen(true)}>
-            + إشعار جديد
-          </Button>
+          <Space>
+            {stats && (
+              <Tag color={stats.fcmEnabled ? "success" : "warning"}>
+                {stats.fcmEnabled ? "Push مفعّل (FCM)" : "Push غير مفعّل على السيرفر"}
+              </Tag>
+            )}
+            <Button type="primary" onClick={() => setOpen(true)}>
+              + إشعار جديد
+            </Button>
+          </Space>
         }
       />
 
-      {!stats?.fcmEnabled && (
+      {stats && !stats.fcmEnabled && (
+        <Alert
+          type="warning"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message="Firebase غير مفعّل على السيرفر"
+          description="شغّل من جهازك: ./infra/scripts/setup-firebase-push.sh — بعدها أعد تحميل هذه الصفحة. الإشعارات تُحفظ داخل التطبيق حتى بدون Push."
+        />
+      )}
+
+      {stats?.fcmEnabled && (stats?.activeDevices ?? 0) === 0 && (
         <Alert
           type="info"
           showIcon
           style={{ marginBottom: 16 }}
-          message="Push غير مفعّل على السيرفر"
-          description="أضف FIREBASE_SERVICE_ACCOUNT_PATH أو FIREBASE_SERVICE_ACCOUNT_JSON في .env — الإشعارات تُحفظ داخل التطبيق حتى بدون Firebase."
+          message="لا توجد أجهزة مسجّلة بعد"
+          description="ثبّت نسخة التطبيق الجديدة وافتحها مرة واحدة (وافق على إذن الإشعارات) حتى يظهر جهاز هنا، ثم أرسل إشعاراً تجريبياً."
+        />
+      )}
+
+      {stats?.fcmEnabled && (stats?.activeDevices ?? 0) > 0 && (
+        <Alert
+          type="success"
+          showIcon
+          style={{ marginBottom: 16 }}
+          message={`جاهز للإرسال — ${stats.activeDevices} جهاز مسجّل`}
+          description="استخدم «+ إشعار جديد» مع تفعيل «إرسال Push للهاتف». الحالة تظهر في عمود Push (تم الإرسال / جزئي / فشل)."
         />
       )}
 

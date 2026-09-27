@@ -3,3 +3,8 @@ backups/
 nginx/default.conf
 admin-static/
 .deploy-state
+store-static/
+secrets/
+docker-compose.firebase.yml
+**/firebase-service-account.json
+*-firebase-adminsdk-*.json

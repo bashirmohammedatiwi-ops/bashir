@@ -212,8 +212,10 @@ export function NotificationComposeModal({ open, onClose }: Props) {
     onSuccess: (result: any) => {
       const status = result?.pushStatus;
       if (status === "SENT") message.success("تم إرسال الإشعار للهاتف");
-      else if (status === "SKIPPED") message.success("تم حفظ الإشعار — Push غير مفعّل أو لا توجد أجهزة");
-      else if (status === "PARTIAL") message.warning("تم الإرسال جزئياً — راجع السجل");
+      else if (status === "SKIPPED")
+        message.warning("حُفظ داخل التطبيق — لا أجهزة مسجّلة أو Firebase غير مفعّل على السيرفر");
+      else if (status === "PARTIAL") message.warning("تم الإرسال جزئياً — راجع عمود Push في السجل");
+      else if (status === "FAILED") message.error("فشل إرسال Push — راجع السجل");
       else message.success("تم إنشاء الإشعار");
       onClose();
       form.resetFields();
@@ -365,7 +367,12 @@ export function NotificationComposeModal({ open, onClose }: Props) {
               />
             </Form.Item>
 
-            <Form.Item name="sendPush" label="إرسال Push للهاتف" valuePropName="checked">
+            <Form.Item
+              name="sendPush"
+              label="إرسال Push للهاتف"
+              valuePropName="checked"
+              extra="إذا كان Firebase مفعّلاً على السيرفر ستصل للشاشة حتى والتطبيق مغلق. وإلا تُحفظ داخل التطبيق فقط."
+            >
               <Switch checkedChildren="نعم" unCheckedChildren="داخل التطبيق فقط" />
             </Form.Item>
           </Form>

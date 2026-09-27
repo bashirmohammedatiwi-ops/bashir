@@ -1,9 +1,7 @@
 # إعداد Firebase Cloud Messaging (FCM)
 
-> **ملاحظة:** الإصدار **1.0** يرسل الإشعارات **داخل التطبيق فقط** (`pushNotificationsEnabled = false`).
-> هذا الدليل لتفعيل **Push على شاشة الهاتف** في التحديث **1.1+**.
-
-في التحديث 1.1 (عند تفعيل إشعارات Push): أعد `aps-environment` و`UIBackgroundModes` في iOS، و`POST_NOTIFICATIONS` في Android، واضبط `AppConfig.pushNotificationsEnabled = true`.
+> Push على شاشة الهاتف مفعّل في التطبيق (`pushNotificationsEnabled = true`).
+> يحتاج السيرفر مفتاح Firebase Admin، وFirebase يحتاج مفتاح APNs.
 
 Push يحتاج **3 أجزاء** تعمل معاً:
 
@@ -52,26 +50,20 @@ Push يحتاج **3 أجزاء** تعمل معاً:
 
 ## الجزء 3 — السيرفر (VPS)
 
-في `backend/.env` أو `infra/.env` (حسب إعدادك):
+في `infra/.env` أو عبر السكربت:
+
+```bash
+# من جهازك (Mac) — يرفع ملف الحساب ويعيد تشغيل الـ API
+./infra/scripts/setup-firebase-push.sh
+# أو: ./infra/scripts/setup-firebase-push.sh user@YOUR_VPS
+```
+
+السكربت يضع الملف في `infra/secrets/` على الـ VPS ويضبط `FIREBASE_SERVICE_ACCOUNT_PATH`.
+
+أو يدوياً:
 
 ```env
 FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"...",...}
-```
-
-**كيف تحصل على الملف:**
-1. Firebase Console → Project Settings → **Service accounts**
-2. **Generate new private key** → يحمّل JSON
-3. الصق محتوى JSON كسطر واحد في `FIREBASE_SERVICE_ACCOUNT_JSON`
-
-أو:
-
-```env
-FIREBASE_SERVICE_ACCOUNT_PATH=./firebase-service-account.json
-```
-
-ثم أعد تشغيل API:
-```bash
-cd ~/alhayaa/infra && ./scripts/update.sh
 ```
 
 **تحقق:** لوحة التحكم → الإشعارات → يجب أن يظهر `fcmEnabled: true` وليس تحذير Push.

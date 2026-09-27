@@ -66,6 +66,8 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@12345}
       CURSOR_API_KEY: ${CURSOR_API_KEY:-}
       CURSOR_MODEL: ${CURSOR_MODEL:-composer-2.5}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${FIREBASE_SERVICE_ACCOUNT_JSON:-}
+      FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-}
     volumes:
       - mediadata:/data/uploads
     expose:

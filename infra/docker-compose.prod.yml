@@ -87,6 +87,8 @@ services:
       CURSOR_MODEL: ${CURSOR_MODEL:-composer-2.5}
       GOOGLE_CSE_API_KEY: ${GOOGLE_CSE_API_KEY:-}
       GOOGLE_CSE_CX: ${GOOGLE_CSE_CX:-}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${FIREBASE_SERVICE_ACCOUNT_JSON:-}
+      FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-}
     volumes:
       - mediadata:/data/uploads
     expose:
