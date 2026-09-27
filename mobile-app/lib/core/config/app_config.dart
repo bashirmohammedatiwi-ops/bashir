@@ -5,9 +5,9 @@ class AppConfig {
   /// الدومين الرسمي للمتجر (ويب + تطبيق).
   static const String appDomain = 'deemaalhayat.com';
 
-  /// إشعارات Push على شاشة الهاتف — مؤجّلة للتحديث 1.1 (أعد إضافة firebase_* حينها).
-  /// الإشعارات داخل التطبيق (قائمة حسابي) تعمل بدون Firebase.
-  static const bool pushNotificationsEnabled = false;
+  /// إشعارات Push على شاشة الهاتف عبر FCM + APNs.
+  /// قائمة الإشعارات داخل التطبيق تعمل حتى لو فشل Firebase.
+  static const bool pushNotificationsEnabled = true;
 
   static const String appScheme = 'https';
 

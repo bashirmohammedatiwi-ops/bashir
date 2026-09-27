@@ -18,6 +18,7 @@ import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { MediaPicker } from "@/components/MediaPicker";
 import { EntityMultiPicker } from "./EntityMultiPicker";
+import { InfiniteProductPicker } from "./InfiniteProductPicker";
 import { CategoryCatalogPicker } from "./CategoryCatalogPicker";
 import { LinkTargetPicker, ProductScopeFields } from "./LinkTargetPicker";
 import { SectionStyleFields } from "./SectionStyleFields";
@@ -342,7 +343,7 @@ export function SectionPayloadEditor(props: Props) {
             {({ getFieldValue }) =>
               getFieldValue(["payload", "source"]) === "manual" ? (
                 <Form.Item name={["payload", "productIds"]} label="المنتجات">
-                  <EntityMultiPicker items={props.products ?? []} max={24} />
+                  <InfiniteProductPicker max={24} sort="brand" />
                 </Form.Item>
               ) : (
                 <>
@@ -375,7 +376,7 @@ export function SectionPayloadEditor(props: Props) {
             {({ getFieldValue }) =>
               getFieldValue(["payload", "source"]) === "manual" ? (
                 <Form.Item name={["payload", "productIds"]} label="منتجات العرض">
-                  <EntityMultiPicker items={props.products ?? []} max={24} />
+                  <InfiniteProductPicker max={24} sort="brand" />
                 </Form.Item>
               ) : (
                 <>

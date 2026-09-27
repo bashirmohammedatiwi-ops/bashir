@@ -2,6 +2,12 @@
 
 import dynamic from "next/dynamic";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ProductsGridSkeleton, ProductsLoadMore } from "@/components/products/ProductsLoadMore";
+import {
+  flattenProductPages,
+  PRODUCTS_PAGE_SIZE,
+  useProductsInfinite,
+} from "@/hooks/useProductsInfinite";
 import {
   AppstoreOutlined,
   CloudDownloadOutlined,
@@ -10,9 +16,11 @@ import {
   PlusOutlined,
   SearchOutlined,
   UnorderedListOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 import {
   Button,
+  Alert,
   Empty,
   Form,
   Input,
@@ -38,6 +46,8 @@ import { displayProductName } from "@/lib/productName";
 import { mutations, queries } from "@/lib/queries";
 import { formatBytes } from "@/lib/formatBytes";
 import { useBarcodeInventorySync } from "@/hooks/useBarcodeInventorySync";
+import { ProductsSortableList } from "@/components/products/ProductsSortableList";
+import { BulkProductPasteModal } from "@/components/products/BulkProductPasteModal";
 import "./products-page.css";
 
 const ProductFormDrawer = dynamic(
@@ -56,11 +66,15 @@ type ProductsAdminPageProps = {
   sortMode: ProductSortMode;
   pageTitle: string;
   pageSubtitle?: string;
+  reorderMode?: boolean;
 };
 
-export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: ProductsAdminPageProps) {
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(24);
+export function ProductsAdminPage({
+  sortMode,
+  pageTitle,
+  pageSubtitle,
+  reorderMode = false,
+}: ProductsAdminPageProps) {
   const [search, setSearch] = useState("");
   const [searchDraft, setSearchDraft] = useState("");
   const [filterCategoryId, setFilterCategoryId] = useState<string | undefined>();
@@ -72,9 +86,11 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [editing, setEditing] = useState<any | null>(null);
   const [open, setOpen] = useState(false);
+  const [bulkPasteOpen, setBulkPasteOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("basic");
   const [productImages, setProductImages] = useState<ImageItem[]>([]);
   const [shadePreviews, setShadePreviews] = useState<Record<number, ImageItem | null>>({});
+  const [localOrderProducts, setLocalOrderProducts] = useState<any[]>([]);
   const [form] = Form.useForm();
   const qc = useQueryClient();
   const {
@@ -88,33 +104,48 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
     resetSync,
   } = useBarcodeInventorySync(form);
 
-  const { data, isLoading, isFetching } = useQuery({
-    queryKey: [
-      "products",
-      sortMode,
-      page,
-      pageSize,
-      search,
-      filterCategoryId,
-      filterSubcategoryId,
-      filterTertiaryCategoryId,
-      filterConcernId,
-      filterBrandId,
-    ],
+  const canReorder = reorderMode && !!filterBrandId;
+
+  const {
+    data: infiniteData,
+    isLoading: infiniteLoading,
+    isFetching: infiniteFetching,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useProductsInfinite({
+    search: search || undefined,
+    sort: sortMode === "brand" ? "brand" : "latest",
+    categoryId: filterCategoryId,
+    subcategoryId: filterSubcategoryId,
+    tertiaryCategoryId: filterTertiaryCategoryId,
+    concernId: filterConcernId,
+    brandId: filterBrandId,
+    limit: PRODUCTS_PAGE_SIZE,
+    enabled: !reorderMode,
+  });
+
+  const { data: reorderData, isLoading: reorderLoading, isFetching: reorderFetching } = useQuery({
+    queryKey: ["products-reorder", filterBrandId, search],
     queryFn: () =>
       queries.products({
-        page,
-        limit: pageSize,
+        page: 1,
+        limit: 500,
         search,
-        sort: sortMode === "brand" ? "brand" : "latest",
-        categoryId: filterCategoryId,
-        subcategoryId: filterSubcategoryId,
-        tertiaryCategoryId: filterTertiaryCategoryId,
-        concernId: filterConcernId,
+        sort: "brand",
         brandId: filterBrandId,
       }),
+    enabled: canReorder,
     staleTime: 3 * 60_000,
   });
+
+  const isLoading = reorderMode ? reorderLoading : infiniteLoading;
+  const isFetching = reorderMode ? reorderFetching : infiniteFetching;
+
+  useEffect(() => {
+    if (!canReorder) return;
+    setLocalOrderProducts(reorderData?.data ?? []);
+  }, [canReorder, reorderData?.data]);
 
   const { data: categoriesData } = useQuery({
     queryKey: ["categories"],
@@ -136,6 +167,11 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
     queryFn: queries.productsWithoutImagesCount,
     staleTime: 30_000,
   });
+  const { data: posStats } = useQuery({
+    queryKey: ["products-pos-stats"],
+    queryFn: queries.productsPosStats,
+    staleTime: 30_000,
+  });
   const { data: skinConcernsData } = useQuery({
     queryKey: ["skin-concerns"],
     queryFn: () => queries.skinConcerns(true),
@@ -147,6 +183,8 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
     onSuccess: () => {
       message.success("تم الحذف");
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["products-infinite"] });
+      qc.invalidateQueries({ queryKey: ["products-pos-stats"] });
     },
   });
 
@@ -156,6 +194,8 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
     onSuccess: (_data, vars) => {
       message.success(vars.isActive ? "تم تفعيل المنتج" : "تم إيقاف المنتج — لن يظهر في التطبيق");
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["products-infinite"] });
+      qc.invalidateQueries({ queryKey: ["products-pos-stats"] });
     },
     onError: () => message.error("تعذّر تحديث حالة المنتج"),
   });
@@ -169,8 +209,9 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
           ? `تم إيقاف ${n.toLocaleString("ar-IQ")} منتج بدون صورة — لن تظهر في التطبيق`
           : "لا توجد منتجات نشطة بدون صور",
       );
-      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["products-infinite"] });
       qc.invalidateQueries({ queryKey: ["products-without-images-count"] });
+      qc.invalidateQueries({ queryKey: ["products-pos-stats"] });
     },
     onError: (err: unknown) => {
       const msg =
@@ -190,14 +231,32 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
           ? `تم حذف ${removed.toLocaleString("ar-IQ")} صورة مكررة من ${affected.toLocaleString("ar-IQ")} منتج`
           : "لا توجد صور مكررة — كل المنتجات نظيفة",
       );
-      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["products-infinite"] });
       qc.invalidateQueries({ queryKey: ["media-stats"] });
+      qc.invalidateQueries({ queryKey: ["products-pos-stats"] });
     },
     onError: (err: unknown) => {
       const msg =
         (err as { response?: { data?: { message?: string } } })?.response?.data?.message
         ?? "تعذّر تنظيف الصور المكررة";
       message.error(typeof msg === "string" ? msg : "تعذّر تنظيف الصور المكررة");
+    },
+  });
+
+  const reorderProducts = useMutation({
+    mutationFn: ({ brandId, ids }: { brandId: string; ids: string[] }) =>
+      mutations.reorderProducts(brandId, ids),
+    onMutate: ({ ids }) => {
+      const byId = new Map(localOrderProducts.map((p) => [p.id, p]));
+      setLocalOrderProducts(ids.map((id) => byId.get(id)).filter(Boolean) as any[]);
+    },
+    onSuccess: () => {
+      message.success("تم حفظ ترتيب المنتجات في التطبيق");
+      qc.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: () => {
+      message.error("تعذّر حفظ ترتيب المنتجات");
+      qc.invalidateQueries({ queryKey: ["products"] });
     },
   });
 
@@ -211,8 +270,9 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
       message.success(editing?.id ? "تم تعديل المنتج" : "تم إنشاء المنتج");
       setOpen(false);
       setEditing(null);
-      qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["products-infinite"] });
       qc.invalidateQueries({ queryKey: ["media-stats"] });
+      qc.invalidateQueries({ queryKey: ["products-pos-stats"] });
     },
   });
 
@@ -321,8 +381,14 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
     }
   }, [open, form]);
 
-  const rawItems = data?.data ?? [];
-  const total = data?.meta?.total ?? 0;
+  const rawItems = reorderMode
+    ? (reorderData?.data ?? [])
+    : flattenProductPages(infiniteData?.pages);
+  const total = reorderMode
+    ? (reorderData?.meta?.total ?? rawItems.length)
+    : (infiniteData?.pages?.[0]?.meta?.total ?? rawItems.length);
+  const loadedCount = rawItems.length;
+  const orderItems = canReorder ? localOrderProducts : rawItems;
 
   const items = useMemo(() => {
     if (activeFilter === "all") return rawItems;
@@ -333,7 +399,7 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
   const stats = useMemo(() => {
     const active = rawItems.filter((p: any) => p.isActive).length;
     const lowStock = rawItems.filter((p: any) => Number(p.stock ?? 0) <= 5).length;
-    return { active, lowStock, pageCount: rawItems.length };
+    return { active, lowStock, loaded: rawItems.length };
   }, [rawItems]);
 
   const { data: filterSubcategories } = useQuery({
@@ -411,7 +477,6 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
   }, [open, form, formTertiaryGroups, selectedSubcategoryIds, watchedSubcategoryIds]);
 
   const resetFilters = () => {
-    setPage(1);
     setSearch("");
     setSearchDraft("");
     setFilterCategoryId(undefined);
@@ -533,7 +598,7 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
     <div className="alhayaa-page products-page">
       <PageHeader
         title={pageTitle}
-        subtitle={`${pageSubtitle ? `${pageSubtitle} — ` : ""}${total.toLocaleString("ar-IQ")} منتج${isFetching && !isLoading ? " — جاري التحديث..." : ""}`}
+        subtitle={`${pageSubtitle ? `${pageSubtitle} — ` : ""}${loadedCount.toLocaleString("ar-IQ")} / ${total.toLocaleString("ar-IQ")} منتج${isFetching && !isLoading ? " — جاري التحديث..." : ""}`}
         extra={
           <Space wrap>
             <Popconfirm
@@ -580,6 +645,9 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
                 استيراد من الكتالوج
               </Button>
             </Link>
+            <Button size="large" icon={<UploadOutlined />} onClick={() => setBulkPasteOpen(true)}>
+              إضافة جماعية
+            </Button>
             <Button type="primary" size="large" icon={<PlusOutlined />} onClick={openCreate}>
               منتج جديد
             </Button>
@@ -592,9 +660,21 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
           <strong>{total.toLocaleString("ar-IQ")}</strong>
           <span>إجمالي المنتجات</span>
         </div>
+        <Tooltip
+          title={
+            posStats
+              ? `منتج بباركود: ${Number(posStats.posSingleUnits ?? 0).toLocaleString("ar-IQ")} — تدرج بباركود: ${Number(posStats.posShadeUnits ?? 0).toLocaleString("ar-IQ")}`
+              : "جاري التحميل..."
+          }
+        >
+          <div className="pp-stat pp-stat--pos">
+            <strong>{(posStats?.posUnits ?? 0).toLocaleString("ar-IQ")}</strong>
+            <span>أصناف POS</span>
+          </div>
+        </Tooltip>
         <div className="pp-stat">
           <strong>{stats.active}</strong>
-          <span>نشط في الصفحة</span>
+          <span>نشط (محمّل)</span>
         </div>
         <div className={`pp-stat${stats.lowStock ? " is-warn" : ""}`}>
           <strong>{stats.lowStock}</strong>
@@ -623,18 +703,12 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
             placeholder="ابحث بالاسم أو SKU أو الباركود..."
             value={searchDraft}
             onChange={(e) => setSearchDraft(e.target.value)}
-            onPressEnter={() => {
-              setPage(1);
-              setSearch(searchDraft.trim());
-            }}
+            onPressEnter={() => setSearch(searchDraft.trim())}
           />
           <Button
             type="primary"
             size="large"
-            onClick={() => {
-              setPage(1);
-              setSearch(searchDraft.trim());
-            }}
+            onClick={() => setSearch(searchDraft.trim())}
           >
             بحث
           </Button>
@@ -642,8 +716,8 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
 
         <div className="pp-toolbar-filters">
           <Select
-            allowClear
-            placeholder="البراند"
+            allowClear={!reorderMode}
+            placeholder={reorderMode ? "اختر البراند للترتيب *" : "البراند"}
             className="pp-filter"
             value={filterBrandId}
             options={(brandsData ?? []).map((b: any) => ({
@@ -652,11 +726,10 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
             }))}
             showSearch
             optionFilterProp="label"
-            onChange={(v) => {
-              setPage(1);
-              setFilterBrandId(v);
-            }}
+            onChange={(v) => setFilterBrandId(v)}
           />
+          {!reorderMode ? (
+            <>
           <Select
             allowClear
             placeholder="القسم"
@@ -664,7 +737,6 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
             value={filterCategoryId}
             options={(categoriesData ?? []).map((c: any) => ({ value: c.id, label: c.name }))}
             onChange={(v) => {
-              setPage(1);
               setFilterCategoryId(v);
               setFilterSubcategoryId(undefined);
               setFilterTertiaryCategoryId(undefined);
@@ -681,7 +753,6 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
               label: s.name,
             }))}
             onChange={(v) => {
-              setPage(1);
               setFilterSubcategoryId(v);
               setFilterTertiaryCategoryId(undefined);
             }}
@@ -696,10 +767,7 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
               value: s.id,
               label: s.name,
             }))}
-            onChange={(v) => {
-              setPage(1);
-              setFilterTertiaryCategoryId(v);
-            }}
+            onChange={(v) => setFilterTertiaryCategoryId(v)}
           />
           <Select
             allowClear
@@ -707,10 +775,7 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
             className="pp-filter"
             value={filterConcernId}
             options={(skinConcernsData ?? []).map((c: any) => ({ value: c.id, label: c.name }))}
-            onChange={(v) => {
-              setPage(1);
-              setFilterConcernId(v);
-            }}
+            onChange={(v) => setFilterConcernId(v)}
           />
           <Segmented
             value={activeFilter}
@@ -724,8 +789,11 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
           <Button type="link" onClick={resetFilters}>
             مسح الفلاتر
           </Button>
+            </>
+          ) : null}
         </div>
 
+        {!reorderMode ? (
         <div className="pp-toolbar-view">
           <Segmented
             value={viewMode}
@@ -736,11 +804,36 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
             ]}
           />
         </div>
+        ) : null}
       </section>
 
-      {viewMode === "grid" ? (
-        <div className={`pp-grid${isLoading ? " is-loading" : ""}`}>
-          {!isLoading && !items.length ? (
+      {reorderMode && !filterBrandId ? (
+        <Alert
+          type="info"
+          showIcon
+          message="اختر برانداً لإعادة ترتيب منتجاته"
+          description="ترتيب البراندات نفسه يُدار من صفحة البراندات. هنا يمكنك ترتيب المنتجات داخل كل براند بالسحب والإفلات."
+          style={{ marginBottom: 16 }}
+        />
+      ) : null}
+
+      {canReorder ? (
+        <ProductsSortableList
+          products={orderItems}
+          loading={isLoading}
+          reordering={reorderProducts.isPending}
+          onReorder={(ids) => {
+            if (!filterBrandId) return;
+            reorderProducts.mutate({ brandId: filterBrandId, ids });
+          }}
+          onEdit={openEdit}
+        />
+      ) : viewMode === "grid" ? (
+        <>
+        <div className={`pp-grid${isFetching && !isFetchingNextPage ? " is-refreshing" : ""}`}>
+          {isLoading ? (
+            <ProductsGridSkeleton count={12} />
+          ) : !items.length ? (
             <div className="pp-empty">
               <Empty
                 description="لا توجد منتجات مطابقة"
@@ -820,15 +913,28 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
               );
             })
           )}
+          {isFetchingNextPage ? <ProductsGridSkeleton count={4} /> : null}
         </div>
+        {!isLoading && items.length > 0 ? (
+          <ProductsLoadMore
+            loaded={loadedCount}
+            total={total}
+            hasMore={!!hasNextPage}
+            loadingMore={isFetchingNextPage}
+            onLoadMore={() => void fetchNextPage()}
+          />
+        ) : null}
+        </>
       ) : (
+        <>
         <div className="pp-table-wrap">
           <Table
             rowKey="id"
             loading={isLoading}
             dataSource={items}
             columns={columns}
-            scroll={{ x: 1040 }}
+            scroll={{ x: 1040, y: 640 }}
+            virtual
             locale={{ emptyText: <Empty description="لا توجد منتجات" /> }}
             rowClassName={(r) =>
               `alhayaa-table-row${!(r as { isActive?: boolean }).isActive ? " is-inactive" : ""}`
@@ -836,36 +942,17 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
             pagination={false}
           />
         </div>
+        {!isLoading && items.length > 0 ? (
+          <ProductsLoadMore
+            loaded={loadedCount}
+            total={total}
+            hasMore={!!hasNextPage}
+            loadingMore={isFetchingNextPage}
+            onLoadMore={() => void fetchNextPage()}
+          />
+        ) : null}
+        </>
       )}
-
-      <div className="pp-pager">
-        <Select
-          value={pageSize}
-          options={[
-            { value: 12, label: "12 / صفحة" },
-            { value: 24, label: "24 / صفحة" },
-            { value: 48, label: "48 / صفحة" },
-          ]}
-          onChange={(v) => {
-            setPage(1);
-            setPageSize(v);
-          }}
-        />
-        <Space>
-          <Button disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-            السابق
-          </Button>
-          <span className="pp-page-label">
-            صفحة {page} · {total.toLocaleString("ar-IQ")} منتج
-          </span>
-          <Button
-            disabled={page * pageSize >= total}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            التالي
-          </Button>
-        </Space>
-      </div>
 
       <ProductFormDrawer
         open={open}
@@ -892,6 +979,10 @@ export function ProductsAdminPage({ sortMode, pageTitle, pageSubtitle }: Product
         onClose={() => setOpen(false)}
         onSubmit={(v) => upsert.mutate(v)}
       />
+
+      {bulkPasteOpen ? (
+        <BulkProductPasteModal open={bulkPasteOpen} onClose={() => setBulkPasteOpen(false)} />
+      ) : null}
     </div>
   );
 }

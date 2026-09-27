@@ -1,6 +1,6 @@
-import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import { barcodeLookupCandidates } from "../../common/barcode.util";
+import { barcodeLookupCandidates, resolveBarcodeMapKey } from "../../common/barcode.util";
 import { PrismaService } from "../../common/prisma.service";
 import { resolveProductNames } from "../../common/product-names.util";
 import { resolveProductDescriptions } from "../../common/product-descriptions.util";
@@ -229,6 +229,7 @@ export class ProductsService {
     const subcategoryId = subcategoryIds[0] ?? null;
     const tertiaryCategoryId = tertiaryCategoryIds[0] ?? null;
     const imageIds = await this.dedupeImageIds(dto.imageIds);
+    const position = await this.nextProductPosition(dto.brandId);
 
     try {
       const product = await this.prisma.product.create({
@@ -256,6 +257,7 @@ export class ProductsService {
           isPromo: dto.isPromo ?? false,
           isBogo: dto.isBogo ?? false,
           isActive: dto.isActive ?? true,
+          position,
           brandId: dto.brandId,
           categoryId: dto.categoryId || null,
           subcategoryId,
@@ -354,6 +356,10 @@ export class ProductsService {
       await this.prisma.productVariant.deleteMany({ where: { productId: id } });
     }
     const imageIds = dto.imageIds ? await this.dedupeImageIds(dto.imageIds) : undefined;
+    const nextPosition =
+      dto.brandId && dto.brandId !== existing.brandId
+        ? await this.nextProductPosition(dto.brandId)
+        : undefined;
     try {
       await this.prisma.product.update({
         where: { id },
@@ -381,6 +387,7 @@ export class ProductsService {
           isPromo: dto.isPromo,
           isBogo: dto.isBogo,
           isActive: dto.isActive,
+          position: nextPosition,
           brandId: dto.brandId,
           categoryId: dto.categoryId,
           subcategoryId: subcategoryId !== undefined ? subcategoryId : undefined,
@@ -438,6 +445,36 @@ export class ProductsService {
   async countActiveWithoutImages() {
     const count = await this.prisma.product.count({ where: this.activeWithoutImagesWhere() });
     return { count };
+  }
+
+  /** أصناف POS: منتج بلا تدرجات + باركود، أو كل تدرج بباركود يُحسب وحدة مستقلة. */
+  async countPosStats() {
+    const [row] = await this.prisma.$queryRaw<
+      [{ total_products: bigint; pos_units: bigint; pos_shade_units: bigint; pos_single_units: bigint }]
+    >`
+      SELECT
+        (SELECT COUNT(*)::bigint FROM "Product") AS total_products,
+        (
+          (SELECT COUNT(*)::bigint FROM "ProductShade"
+           WHERE barcode IS NOT NULL AND BTRIM(barcode) <> '')
+          +
+          (SELECT COUNT(*)::bigint FROM "Product" p
+           WHERE NOT EXISTS (SELECT 1 FROM "ProductShade" s WHERE s."productId" = p.id)
+             AND p.barcode IS NOT NULL AND BTRIM(p.barcode) <> '')
+        ) AS pos_units,
+        (SELECT COUNT(*)::bigint FROM "ProductShade"
+         WHERE barcode IS NOT NULL AND BTRIM(barcode) <> '') AS pos_shade_units,
+        (SELECT COUNT(*)::bigint FROM "Product" p
+         WHERE NOT EXISTS (SELECT 1 FROM "ProductShade" s WHERE s."productId" = p.id)
+           AND p.barcode IS NOT NULL AND BTRIM(p.barcode) <> '') AS pos_single_units
+    `;
+
+    return {
+      totalProducts: Number(row?.total_products ?? 0),
+      posUnits: Number(row?.pos_units ?? 0),
+      posShadeUnits: Number(row?.pos_shade_units ?? 0),
+      posSingleUnits: Number(row?.pos_single_units ?? 0),
+    };
   }
 
   async hideActiveWithoutImages() {
@@ -504,9 +541,20 @@ export class ProductsService {
       name: true,
       nameAr: true,
       nameEn: true,
+      descriptionAr: true,
+      descriptionEn: true,
       sku: true,
       barcode: true,
       isActive: true,
+      price: true,
+      stock: true,
+      brandId: true,
+      categoryId: true,
+      subcategoryId: true,
+      tertiaryCategoryId: true,
+      brand: { select: { id: true, name: true } },
+      category: { select: { id: true, name: true, nameAr: true } },
+      _count: { select: { images: true, shades: true } },
     } as const;
 
     const products = await this.prisma.product.findMany({
@@ -563,9 +611,50 @@ export class ProductsService {
     return { success: true };
   }
 
+  /** حفظ ترتيب منتجات براند واحد في التطبيق. */
+  async reorder(brandId: string, orderedIds: string[]) {
+    const brand = brandId?.trim();
+    if (!brand) throw new BadRequestException("brandId required");
+
+    const ids = [...new Set((orderedIds ?? []).map((id) => String(id || "").trim()).filter(Boolean))];
+    if (!ids.length) throw new BadRequestException("ids required");
+
+    const rows = await this.prisma.product.findMany({
+      where: { brandId: brand },
+      orderBy: [{ position: "asc" }, { createdAt: "asc" }, { id: "asc" }],
+      select: { id: true },
+    });
+    const allIds = rows.map((p) => p.id);
+    const known = new Set(allIds);
+    for (const id of ids) {
+      if (!known.has(id)) throw new BadRequestException(`Unknown product for brand: ${id}`);
+    }
+
+    let merged = ids;
+    if (ids.length !== allIds.length) {
+      const subset = new Set(ids);
+      let cursor = 0;
+      merged = allIds.map((id) => (subset.has(id) ? ids[cursor++]! : id));
+    }
+
+    await this.prisma.$transaction(
+      merged.map((id, position) => this.prisma.product.update({ where: { id }, data: { position } })),
+    );
+    await this.homeFeedCache.invalidateAll();
+    return { success: true, count: merged.length };
+  }
+
   private async ensureExists(id: string) {
     const exists = await this.prisma.product.findUnique({ where: { id } });
     if (!exists) throw new NotFoundException("Product not found");
+  }
+
+  private async nextProductPosition(brandId: string) {
+    const row = await this.prisma.product.aggregate({
+      where: { brandId },
+      _max: { position: true },
+    });
+    return (row._max.position ?? -1) + 1;
   }
 
   private async dedupeImageIds(imageIds?: string[]) {
@@ -718,32 +807,73 @@ export class ProductsService {
     if (!dto.shades?.length) return dto;
 
     const totalStock = dto.shades.reduce((sum, shade) => sum + (shade.stock ?? 0), 0);
-    const priced = dto.shades.find((shade) => shade.price != null) ?? dto.shades[0];
-    if (!priced) return dto;
+    const inStock = dto.shades.filter((shade) => (shade.stock ?? 0) > 0);
+    const pool = inStock.length ? inStock : dto.shades;
+    const lead = [...pool].sort((a, b) => {
+      const disc = (b.discountPercent ?? 0) - (a.discountPercent ?? 0);
+      if (disc !== 0) return disc;
+      return (a.price ?? Number.MAX_SAFE_INTEGER) - (b.price ?? Number.MAX_SAFE_INTEGER);
+    })[0];
+    if (!lead) return dto;
+
+    const maxDiscount = Math.max(0, ...dto.shades.map((s) => s.discountPercent ?? 0));
 
     return {
       ...dto,
       stock: totalStock,
-      price: priced.price ?? dto.price,
-      originalPrice: priced.originalPrice ?? dto.originalPrice ?? dto.price,
-      discountPercent: priced.discountPercent ?? dto.discountPercent ?? 0,
-      isPromo: (priced.discountPercent ?? dto.discountPercent ?? 0) > 0,
+      price: lead.price ?? dto.price,
+      originalPrice: lead.originalPrice ?? dto.originalPrice ?? dto.price,
+      discountPercent: maxDiscount,
+      isPromo: maxDiscount > 0,
     };
   }
 
   private async applySyncedPricing<T extends { barcode?: string; shades?: CreateProductDto["shades"]; price?: number; originalPrice?: number; discountPercent?: number; stock?: number; isPromo?: boolean }>(dto: T): Promise<T> {
-    const snapshot = await this.inventorySync.getSnapshotForBarcodes(this.collectBarcodes(dto));
-    if (!snapshot) return dto;
+    const shadeCodes = (dto.shades ?? [])
+      .map((shade) => shade.barcode?.trim())
+      .filter((code): code is string => !!code);
+    const allCodes = [
+      ...new Set([...(dto.barcode?.trim() ? [dto.barcode.trim()] : []), ...shadeCodes]),
+    ];
+    if (!allCodes.length) return dto;
 
-    const pricing = this.inventorySync.pricingFromSnapshot(snapshot);
-    return {
-      ...dto,
-      price: pricing.price,
-      originalPrice: pricing.originalPrice,
-      discountPercent: pricing.discountPercent,
-      stock: pricing.stock,
-      isPromo: pricing.isPromo,
-    };
+    const snapshots = await this.inventorySync.getSnapshotsMapForBarcodes(allCodes);
+    if (!snapshots.size) return dto;
+
+    let next = { ...dto };
+
+    if (dto.shades?.length) {
+      next.shades = dto.shades.map((shade) => {
+        if (!shade.barcode?.trim()) return shade;
+        const snap = resolveBarcodeMapKey(snapshots, shade.barcode);
+        if (!snap) return shade;
+        const pricing = this.inventorySync.pricingFromSnapshot(snap);
+        return {
+          ...shade,
+          price: pricing.price,
+          originalPrice: pricing.originalPrice,
+          discountPercent: pricing.discountPercent,
+          stock: pricing.stock,
+        };
+      });
+    }
+
+    if (dto.barcode?.trim()) {
+      const snap = resolveBarcodeMapKey(snapshots, dto.barcode);
+      if (snap) {
+        const pricing = this.inventorySync.pricingFromSnapshot(snap);
+        next = {
+          ...next,
+          price: pricing.price,
+          originalPrice: pricing.originalPrice,
+          discountPercent: pricing.discountPercent,
+          stock: pricing.stock,
+          isPromo: pricing.isPromo,
+        };
+      }
+    }
+
+    return next;
   }
 
   /// دمج القائمة الجديدة مع الحقل المفرد القديم (توافق مع الواجهات القديمة).

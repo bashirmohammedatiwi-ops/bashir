@@ -78,8 +78,11 @@
     "@types/node": "^25.9.1",
     "@types/passport-jwt": "^4.0.1",
     "@types/uuid": "^10.0.0",
+    "google-drive-getfilelist": "^1.0.5",
+    "googleapis": "^173.0.0",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "xlsx": "^0.18.5"
   }
 }

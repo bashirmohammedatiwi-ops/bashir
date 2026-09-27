@@ -1,0 +1,108 @@
+{
+  "shades": [
+    {
+      "name": "1 Warm Blonde",
+      "nameAr": "أشقر دافئ",
+      "displayName": "أشقر دافئ — 1 Warm Blonde",
+      "colorHex": "#c8a882",
+      "imageUrl": "https://static.thcdn.com/productimg/original/13318351-3364896461424576.jpg",
+      "position": 0,
+      "sku": "HB00530",
+      "price": 22000,
+      "descEn": "golden blonde — for blonde hair with warm golden undertones",
+      "descAr": "أشقر ذهبي — للشعر الأشقر ب undertone دافئ ذهبي"
+    },
+    {
+      "name": "2 Neutral Blonde",
+      "nameAr": "أشقر محايد",
+      "displayName": "أشقر محايد — 2 Neutral Blonde",
+      "colorHex": "#b8a898",
+      "imageUrl": "https://static.thcdn.com/productimg/original/13318352-3734896461519451.jpg",
+      "position": 1,
+      "sku": "HB00531",
+      "price": 22000,
+      "descEn": "neutral blonde — for blonde hair with balanced cool-warm undertones",
+      "descAr": "أشقر محايد — للشعر الأشقر ب undertone متوازن بارد-دافئ"
+    },
+    {
+      "name": "3 Caramel Blonde",
+      "nameAr": "أشقر كراميل",
+      "displayName": "أشقر كراميل — 3 Caramel Blonde",
+      "colorHex": "#a88868",
+      "imageUrl": "https://static.thcdn.com/productimg/original/13318353-5664896461636412.jpg",
+      "position": 2,
+      "sku": "HB00532",
+      "price": 22000,
+      "descEn": "caramel blonde — for red or dark blonde hair with warm undertone",
+      "descAr": "أشقر كراميل — للشعر الأحمر أو الأشقر الداكن ب undertone دافئ"
+    },
+    {
+      "name": "4 Light Brown",
+      "nameAr": "بني فاتح",
+      "displayName": "بني فاتح — 4 Light Brown",
+      "colorHex": "#8b6848",
+      "imageUrl": "https://static.thcdn.com/productimg/original/13318354-1174896461715717.jpg",
+      "position": 3,
+      "sku": "HB00533",
+      "price": 22000,
+      "descEn": "light brown — for light brown hair with warm undertones",
+      "descAr": "بني فاتح — للشعر البني الفاتح ب undertone دافئ"
+    },
+    {
+      "name": "5 Medium Brown",
+      "nameAr": "بني متوسط",
+      "displayName": "بني متوسط — 5 Medium Brown",
+      "colorHex": "#6e5038",
+      "imageUrl": "https://static.thcdn.com/productimg/original/13318355-2164896461799153.jpg",
+      "position": 4,
+      "sku": "HB00534",
+      "price": 22000,
+      "descEn": "medium brown — versatile everyday brunette match",
+      "descAr": "بني متوسط — درجة يومية مرنة للبني الطبيعي"
+    },
+    {
+      "name": "6 Rich Brown",
+      "nameAr": "بني غني",
+      "displayName": "بني غني — 6 Rich Brown",
+      "colorHex": "#543828",
+      "imageUrl": "https://static.thcdn.com/productimg/original/13318356-2804896461884386.jpg",
+      "position": 5,
+      "sku": "HB00535",
+      "price": 22000,
+      "descEn": "rich brown — deep brunette with natural depth",
+      "descAr": "بني غني — بني عميق بطبيعة غنية"
+    },
+    {
+      "name": "7 Black Brown",
+      "nameAr": "بني داكن",
+      "displayName": "بني داكن — 7 Black Brown",
+      "colorHex": "#3a2820",
+      "imageUrl": "https://static.thcdn.com/productimg/original/13318357-1624896461972211.jpg",
+      "position": 6,
+      "sku": "HB00536",
+      "price": 22000,
+      "descEn": "black brown — dark brunette with soft black depth",
+      "descAr": "بني أسود — بني داكن بعمق أسود ناعم"
+    },
+    {
+      "name": "8 Soft Black",
+      "nameAr": "أسود ناعم",
+      "displayName": "أسود ناعم — 8 Soft Black",
+      "colorHex": "#2a2220",
+      "imageUrl": "https://static.thcdn.com/productimg/original/13318358-1024896462059709.jpg",
+      "position": 7,
+      "sku": "HB00537",
+      "price": 22000,
+      "descEn": "soft black — deepest shade for bold defined brows",
+      "descAr": "أسود ناعم — أعمق درجة لحواجب محددة وجريئة"
+    }
+  ],
+  "productImages": [
+    "https://static.thcdn.com/productimg/original/13318350-6564896461342439.jpg",
+    "https://static.thcdn.com/productimg/original/13318350-1634896925241541.jpg",
+    "https://static.thcdn.com/productimg/original/13318350-1744900279528779.jpg",
+    "https://static.thcdn.com/productimg/original/13318350-4564901072279949.jpg",
+    "https://static.thcdn.com/productimg/original/13318350-9044900803337767.jpg",
+    "https://static.thcdn.com/productimg/original/13318351-3364896461424576.jpg"
+  ]
+}

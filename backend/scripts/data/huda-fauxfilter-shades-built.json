@@ -1,0 +1,282 @@
+{
+  "shades": [
+    {
+      "name": "Milkshake 100B",
+      "colorHex": "#dab4a9",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Milkshake-1_4f472bfe-8bd8-42f9-919c-5c37848d31d5.jpg?v=1759616905",
+      "position": 0,
+      "sku": "HB00483"
+    },
+    {
+      "name": "Angel Food 110N",
+      "colorHex": "#d1a898",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HBFFoundation-Packshot-AngelFood-2_2c06a51f-6e33-4b85-acd7-61351a979586.jpg?v=1759616908",
+      "position": 1,
+      "sku": "HB00484"
+    },
+    {
+      "name": "Vanilla 120B",
+      "colorHex": "#e0b3a3",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Vanilla-3_532911c5-665a-48d9-ac9c-3fabb2a3677f.jpg?v=1759616908",
+      "position": 2,
+      "sku": "HB00485"
+    },
+    {
+      "name": "Panna Cotta 130G",
+      "colorHex": "#ca9b86",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-PannaCota-4_eb8d4ae2-7709-4c77-8543-cefd3ea8800b.jpg?v=1759616908",
+      "position": 3,
+      "sku": "HB00486"
+    },
+    {
+      "name": "Cashew 140G",
+      "colorHex": "#d5a290",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Cashew-5_adbc97a5-ef4b-41a3-a278-73f6e005bb01.jpg?v=1759616893",
+      "position": 4,
+      "sku": "HB00419"
+    },
+    {
+      "name": "Crème Brulee 150G",
+      "colorHex": "#daaa91",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/150GCREMEBRULEE_227913b1-d7dc-48d5-9af6-694dd85e2676.jpg?v=1759616893",
+      "position": 5,
+      "sku": "HB00420"
+    },
+    {
+      "name": "Shortbread 200B",
+      "colorHex": "#c79989",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Shortbread-7_eac73c15-2856-4886-8bf9-dd3e52727abe.jpg?v=1759616905",
+      "position": 6,
+      "sku": "HB00436"
+    },
+    {
+      "name": "Chai 210B",
+      "colorHex": "#d8a592",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Chai-8_5bac95c0-71d7-4492-9a0e-b0156ca91eb9.jpg?v=1759616893",
+      "position": 7,
+      "sku": "HB00412"
+    },
+    {
+      "name": "Custard 220N",
+      "colorHex": "#d59a83",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Custard-9_bf70e0b6-5fe5-48a6-a4f2-5b8cf50a4fbd.jpg?v=1759616893",
+      "position": 8,
+      "sku": "HB00421"
+    },
+    {
+      "name": "Macaroon 230N",
+      "colorHex": "#e6b39e",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Macaroon-10_2d23df12-1db3-4f24-8d94-1ca352fb56be.jpg?v=1759616908",
+      "position": 9,
+      "sku": "HB00487"
+    },
+    {
+      "name": "Toasted Coconut 240N",
+      "colorHex": "#bb8675",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-ToastedCoconut-11_597f235a-ea19-4232-9afd-5e5cb87c1831.jpg?v=1759616894",
+      "position": 10,
+      "sku": "HB00422"
+    },
+    {
+      "name": "Peaches N Cream 245B",
+      "colorHex": "#d0947f",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-PeachesNCream-12_32a5d4f5-8f7b-4678-a05d-4cc30ee34e59.jpg?v=1759616908",
+      "position": 11,
+      "sku": "HB00488"
+    },
+    {
+      "name": "Cheesecake 250G",
+      "colorHex": "#daa191",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Cheesecake-13_3fd84ef7-4410-4b09-bdf6-4ec7994ec9f4.jpg?v=1759616909",
+      "position": 12,
+      "sku": "HB00489"
+    },
+    {
+      "name": "Apple Pie 255B",
+      "colorHex": "#c58873",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-ApplePie-14_99c2e7a4-3fc5-48c6-bf1f-38064988e07d.jpg?v=1759616908",
+      "position": 13,
+      "sku": "HB00490"
+    },
+    {
+      "name": "Latte 300N",
+      "colorHex": "#bf846b",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Latte-15_0d9f3360-077c-4555-bbf2-29beac520b44.jpg?v=1759616908",
+      "position": 14,
+      "sku": "HB00491"
+    },
+    {
+      "name": "Amaretti 310G",
+      "colorHex": "#dba082",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HBFFoundation-Packshot-Amaretti-16_52c01467-26df-4df0-9562-291edfdaba68.jpg?v=1759616909",
+      "position": 15,
+      "sku": "HB00492"
+    },
+    {
+      "name": "Shortcake 315B",
+      "colorHex": "#cb8e79",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Shortcake-17_5504711e-9435-4a41-b2f8-016f2626c2cb.jpg?v=1759616909",
+      "position": 16,
+      "sku": "HB00493"
+    },
+    {
+      "name": "Tres Leches 320G",
+      "colorHex": "#dc9b7b",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-TresLeches-18_82172565-25a0-4d99-8b1f-c46812cf5b9a.jpg?v=1759616894",
+      "position": 17,
+      "sku": "HB00424"
+    },
+    {
+      "name": "Butter Pecan 330N",
+      "colorHex": "#be8068",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-ButterPecan-19_403ec65a-31d1-405c-8edb-9e85f393f5fb.jpg?v=1759616909",
+      "position": 18,
+      "sku": "HB00494"
+    },
+    {
+      "name": "Beignet 335B",
+      "colorHex": "#a96e61",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Beignet-20_d1bfbd7a-eb73-417f-b45a-66181a4ff977.jpg?v=1759616909",
+      "position": 19,
+      "sku": "HB00495"
+    },
+    {
+      "name": "Baklava 340G",
+      "colorHex": "#c2896f",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Baklava-21_72a23908-ef1b-4b9a-ba30-5e991efad141.jpg?v=1759616909",
+      "position": 20,
+      "sku": "HB00496"
+    },
+    {
+      "name": "Dulce De Leche 350G",
+      "colorHex": "#d49473",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-DulceDeLeche-22_cd382d82-52f4-4acc-b022-da1c7bd78c25.jpg?v=1759616893",
+      "position": 21,
+      "sku": "HB00417"
+    },
+    {
+      "name": "Macchiato 400G",
+      "colorHex": "#c78a71",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Macchiato-23_15218f35-e6bb-4d44-9862-4e8c2a0ad1b9.jpg?v=1759616909",
+      "position": 22,
+      "sku": "HB00497"
+    },
+    {
+      "name": "Biscotti 405N",
+      "colorHex": "#b57b60",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Biscotti-24_8a75f3c1-730e-45c5-85b2-5b6796c3aadf.jpg?v=1759616909",
+      "position": 23,
+      "sku": "HB00498"
+    },
+    {
+      "name": "Brown Sugar 410G",
+      "colorHex": "#c28268",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-BrownSugar-25_743cc0d0-b0f8-4c91-9d35-5560e6553076.jpg?v=1759616913",
+      "position": 24,
+      "sku": "HB00499"
+    },
+    {
+      "name": "Churro 415N",
+      "colorHex": "#ac6a4f",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Churro-26_2b5f6610-7f37-46ab-8dd5-48f40e0a23fd.jpg?v=1759616913",
+      "position": 25,
+      "sku": "HB00501"
+    },
+    {
+      "name": "Toffee 420G",
+      "colorHex": "#c08366",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Toffee-27_3df3dd32-bc6c-4877-8e56-7376f34746af.jpg?v=1759616913",
+      "position": 26,
+      "sku": "HB00502"
+    },
+    {
+      "name": "Gingerbread 430N",
+      "colorHex": "#a46851",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Gingerbread-28_01f2e644-feda-40b3-859c-1d7ce026c9a0.jpg?v=1759616893",
+      "position": 27,
+      "sku": "HB00429"
+    },
+    {
+      "name": "Cinnamon 440G",
+      "colorHex": "#a36c54",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Cinnamon-29_b2427f30-5f9a-46f0-bec6-eb9cfb2f2f72.jpg?v=1759616905",
+      "position": 28,
+      "sku": "HB00451"
+    },
+    {
+      "name": "Chocolate Mousse 450G",
+      "colorHex": "#bc7d5e",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-ChocolateMousse-30_d2ae2a8d-8f5a-4275-9e21-f387482ab410.jpg?v=1759616913",
+      "position": 29,
+      "sku": "HB00503"
+    },
+    {
+      "name": "Peanut Butter Cup 455R",
+      "colorHex": "#9c5e49",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-PeanutButterCup-31_982bb061-5750-43f2-90ae-2a16feee8555.jpg?v=1759616913",
+      "position": 30,
+      "sku": "HB00504"
+    },
+    {
+      "name": "Mocha 500G",
+      "colorHex": "#83523d",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Mocha-32_cb3a04c0-f13e-43aa-95b1-f7136dd271a9.jpg?v=1759616905",
+      "position": 31,
+      "sku": "HB00453"
+    },
+    {
+      "name": "Cocoa 510R",
+      "colorHex": "#7a4b39",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/510RCOCOA_09fefb45-7000-4f6b-89dc-bc432e6f2cee.jpg?v=1759616914",
+      "position": 32,
+      "sku": "HB00505"
+    },
+    {
+      "name": "Nutmeg 520G",
+      "colorHex": "#845241",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Nutmeg-34_cb91c1c7-d0d2-47a0-82c9-d7f34e4003ff.jpg?v=1759616905",
+      "position": 33,
+      "sku": "HB00455"
+    },
+    {
+      "name": "Coffee Bean 530R",
+      "colorHex": "#704338",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-CoffeeBean-35_6ea1eb7f-8714-47ae-9080-c8755f8bef52.jpg?v=1759616913",
+      "position": 34,
+      "sku": "HB00506"
+    },
+    {
+      "name": "Chocolate Truffle 540G",
+      "colorHex": "#704838",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-ChocolateMousse-30_d2ae2a8d-8f5a-4275-9e21-f387482ab410.jpg?v=1759616913",
+      "position": 35,
+      "sku": "HB00507"
+    },
+    {
+      "name": "Hot Fudge 550R",
+      "colorHex": "#805043",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-HotFudge-37_917a0e96-1b1d-4d7e-899d-9b8c079b0186.jpg?v=1759616893",
+      "position": 36,
+      "sku": "HB00433"
+    },
+    {
+      "name": "Ganache 560R",
+      "colorHex": "#8c574d",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-Ganache-38_3a4fd3e4-ea91-46a6-bffc-97ba9e1f9889.jpg?v=1759616913",
+      "position": 37,
+      "sku": "HB00508"
+    },
+    {
+      "name": "Lava Cake 590R",
+      "colorHex": "#613d34",
+      "imageUrl": "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/HB-FFoundation-Packshot-LavaCake-39_442ea0d0-4559-4948-a042-a6e884c92d44.jpg?v=1759616913",
+      "position": 38,
+      "sku": "HB00509"
+    }
+  ],
+  "productImages": [
+    "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/groupshot_3484bc28-37d8-452d-9c75-7c496b1926c3.jpg?v=1759616893",
+    "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/FFR-Fair-to-Medium-With-Names_d761eec5-c35f-4b2e-b9dc-186c18c1dc0c.png?v=1759616894",
+    "https://cdn.shopify.com/s/files/1/0959/8962/9206/files/FFR-Medium-Tan-to-Rich-With-Names_fba93707-0eeb-44c3-8e3b-398099909204.png?v=1759616894"
+  ]
+}

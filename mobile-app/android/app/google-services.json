@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "687249927493",
+    "project_id": "deema-al-hayat",
+    "storage_bucket": "deema-al-hayat.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:687249927493:android:8d10dcb59fcc969e3ca22c",
+        "android_client_info": {
+          "package_name": "com.deemaalhayat.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqBHUA9qM2cueH91yHWLNCX9RAxUUgNNk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

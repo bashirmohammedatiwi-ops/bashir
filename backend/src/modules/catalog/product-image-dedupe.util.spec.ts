@@ -19,13 +19,21 @@ function media(overrides: Partial<MediaForDedupe> & { id: string }): MediaForDed
   };
 }
 
-// same hash via different media ids (should not happen in DB, but gallery rows can reference dup uploads)
-const rows = partitionDuplicateProductImages([
+// same original filename but different files — must keep both
+const sameNameDifferentFiles = partitionDuplicateProductImages([
   { id: "pi-1", mediaId: "m-1", media: media({ id: "m-1", originalName: "a.jpg" }) },
   { id: "pi-2", mediaId: "m-2", media: media({ id: "m-2", originalName: "a.jpg", width: 800, height: 800 }) },
 ]);
-assert.equal(rows.removeIds.length, 1);
-assert.equal(rows.keep.length, 1);
+assert.equal(sameNameDifferentFiles.removeIds.length, 0);
+assert.equal(sameNameDifferentFiles.keep.length, 2);
+
+// same content hash (true duplicate)
+const sameHash = partitionDuplicateProductImages([
+  { id: "pi-1", mediaId: "m-1", media: media({ id: "m-1", hash: "dup-hash" }) },
+  { id: "pi-2", mediaId: "m-2", media: media({ id: "m-2", hash: "dup-hash", originalName: "other.jpg" }) },
+]);
+assert.equal(sameHash.removeIds.length, 1);
+assert.equal(sameHash.keep.length, 1);
 
 // same display url path
 const byUrl = partitionDuplicateProductImages([

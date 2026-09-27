@@ -7,3 +7,5 @@ uploads/
 coverage/
 *.log
 .DS_Store
+firebase-service-account.json
+*-firebase-adminsdk-*.json

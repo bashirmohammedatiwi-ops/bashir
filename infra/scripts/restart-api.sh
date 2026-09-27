@@ -11,6 +11,9 @@ if [[ ! -f .env ]]; then
 fi
 
 COMPOSE="docker compose -f docker-compose.prod.yml"
+if [[ -f docker-compose.firebase.yml ]]; then
+  COMPOSE="$COMPOSE -f docker-compose.firebase.yml"
+fi
 if [[ -f docker-compose.override.yml ]]; then
   COMPOSE="$COMPOSE -f docker-compose.override.yml"
 fi

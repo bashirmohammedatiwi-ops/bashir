@@ -96,7 +96,6 @@ export function PageBuilderStudio({
   const { data: tertiary } = useQuery({ queryKey: ["tertiary-all"], queryFn: () => queries.tertiarySections() });
   const { data: brands } = useQuery({ queryKey: ["brands"], queryFn: () => queries.brands() });
   const { data: packages } = useQuery({ queryKey: ["packages"], queryFn: queries.packages });
-  const { data: products } = useQuery({ queryKey: ["products-lite"], queryFn: () => queries.products({ limit: 300 }) });
   const { data: skinConcerns } = useQuery({ queryKey: ["skin-concerns"], queryFn: () => queries.skinConcerns(true) });
 
   const editorEntities = useMemo(
@@ -107,10 +106,10 @@ export function PageBuilderStudio({
       tertiary: tertiary ?? [],
       brands: brands ?? [],
       packages: packages ?? [],
-      products: products?.data ?? [],
+      products: [],
       skinConcerns: skinConcerns ?? [],
     }),
-    [banners, categories, subcategories, tertiary, brands, packages, products, skinConcerns],
+    [banners, categories, subcategories, tertiary, brands, packages, skinConcerns],
   );
 
   const sorted = useMemo(

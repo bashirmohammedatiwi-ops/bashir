@@ -14,11 +14,7 @@ function normPath(s: string) {
   return s.replace(/\\/g, "/").trim().toLowerCase();
 }
 
-function normName(s: string) {
-  return s.trim().toLowerCase().replace(/\s+/g, " ");
-}
-
-/** مفاتيح لمطابقة الصور المكررة داخل معرض منتج واحد */
+/** مفاتيح لمطابقة الصور المكررة فعلياً (نفس الملف — وليس مجرد اسم ملف متشابه). */
 export function dedupeKeysForMedia(media: MediaForDedupe): string[] {
   const keys = new Set<string>();
   keys.add(`id:${media.id}`);
@@ -29,12 +25,6 @@ export function dedupeKeysForMedia(media: MediaForDedupe): string[] {
 
   const url = normPath(`${media.publicUrlBase}/${media.filename}`);
   if (url) keys.add(`url:${url}`);
-
-  const name = normName(media.originalName ?? "");
-  if (name.length > 2) {
-    keys.add(`name:${name}`);
-    keys.add(`name+dim:${name}:${media.width}x${media.height}`);
-  }
 
   return [...keys];
 }

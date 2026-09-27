@@ -18,6 +18,9 @@ source .env
 set +a
 
 COMPOSE="docker compose -f docker-compose.prod.yml"
+if [[ -f docker-compose.firebase.yml ]]; then
+  COMPOSE="$COMPOSE -f docker-compose.firebase.yml"
+fi
 # shellcheck source=lib/deploy-common.sh
 source "$ROOT/scripts/lib/deploy-common.sh"
 

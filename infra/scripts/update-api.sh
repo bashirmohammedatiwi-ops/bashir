@@ -9,6 +9,9 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 COMPOSE="docker compose -f docker-compose.prod.yml"
+if [[ -f docker-compose.firebase.yml ]]; then
+  COMPOSE="$COMPOSE -f docker-compose.firebase.yml"
+fi
 DOMAIN="${DOMAIN:-187.127.88.146}"
 
 if [[ -f .env ]]; then

@@ -25,13 +25,30 @@ function aggregateProductPricingFromShades(form: FormInstance) {
     (sum: number, shade: { stock?: number }) => sum + Number(shade?.stock ?? 0),
     0,
   );
-  const lead = synced[0];
+
+  const inStock = synced.filter((shade: { stock?: number }) => (shade?.stock ?? 0) > 0);
+  const pool = inStock.length ? inStock : synced;
+  const lead = [...pool].sort(
+    (
+      a: { discountPercent?: number; price?: number },
+      b: { discountPercent?: number; price?: number },
+    ) => {
+      const disc = Number(b.discountPercent ?? 0) - Number(a.discountPercent ?? 0);
+      if (disc !== 0) return disc;
+      return Number(a.price ?? Number.MAX_SAFE_INTEGER) - Number(b.price ?? Number.MAX_SAFE_INTEGER);
+    },
+  )[0];
+
+  const maxDiscount = Math.max(
+    0,
+    ...shades.map((shade: { discountPercent?: number }) => Number(shade?.discountPercent ?? 0)),
+  );
 
   form.setFieldsValue({
     stock: totalStock,
-    price: lead.price ?? form.getFieldValue("price"),
-    originalPrice: lead.originalPrice ?? form.getFieldValue("originalPrice"),
-    discountPercent: lead.discountPercent ?? form.getFieldValue("discountPercent"),
+    price: lead?.price ?? form.getFieldValue("price"),
+    originalPrice: lead?.originalPrice ?? form.getFieldValue("originalPrice"),
+    discountPercent: maxDiscount,
   });
 }
 

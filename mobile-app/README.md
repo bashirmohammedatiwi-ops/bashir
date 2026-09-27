@@ -93,12 +93,12 @@ Support: support@deemaalhayat.com
 | حذف الحساب | حسابي → حذف الحساب |
 | اللغات | العربية، الإنجليزية |
 
-## Firebase / Push (التحديث 1.1)
+## Firebase / Push
 
-> **الإصدار الحالي 1.0:** `AppConfig.pushNotificationsEnabled = false` — لا يُطلب إذن إشعارات ولا Push على شاشة الهاتف.
-> قائمة الإشعارات داخل التطبيق (من السيرفر) تعمل بدون Firebase.
+`AppConfig.pushNotificationsEnabled = true`. التطبيق يطلب إذن الإشعارات ويسجّل جهاز FCM.
+قائمة الإشعارات داخل التطبيق تعمل حتى لو السيرفر بلا Firebase Admin.
 
-لتفعيل Push في تحديث لاحق، راجع `FIREBASE_SETUP.md` واضبط `pushNotificationsEnabled = true`.
+راجع `FIREBASE_SETUP.md` لإعداد APNs وحساب الخدمة على الـ VPS.
 
 ## الإصدار
 

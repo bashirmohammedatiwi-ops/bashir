@@ -88,6 +88,8 @@ export type CatalogImportOption = {
   shadeCount?: number;
   shadeName?: string;
   matchedShadeName?: string;
+  colorHex?: string;
+  swatchUrl?: string;
   parentAsin?: string;
   listingAsin?: string;
   price?: string;
@@ -450,6 +452,8 @@ function mapBarcodeResult(r: Record<string, unknown>, storeId: string): CatalogI
     shadeCount: Number(r.shadeCount || 0),
     shadeName: String(r.shadeName || ""),
     matchedShadeName: String(r.matchedShadeName || r.shadeName || ""),
+    colorHex: String(r.colorHex || r.hex || ""),
+    swatchUrl: String(r.swatchUrl || r.swatchImage || ""),
     price: String(r.price || ""),
     category: String(r.category || ""),
     matchType: String(r.matchType || "barcode"),
