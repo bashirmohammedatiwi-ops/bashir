@@ -256,8 +256,8 @@ export class MediaService {
 
       const variantJob = {
         mediaId: media.id,
-        // Generate variants from JPEG to avoid WebP→WebP double compression
-        originalPath: jpgPath,
+        // WebP master keeps alpha; JPEG fallback is flattened separately per variant.
+        originalPath: webpPath,
         absDir,
         baseName,
         skipThumb: true,

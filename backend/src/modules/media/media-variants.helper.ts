@@ -47,8 +47,6 @@ export async function generateMediaVariants(
     unlimited: true,
     sequentialRead: true,
   }).rotate();
-  original = await flattenAlphaToWhite(original);
-
   for (const v of IMAGE_VARIANTS) {
     if (skipThumb && v.name === "thumb" && variants.thumb?.formats?.webp) {
       continue;
@@ -87,7 +85,8 @@ export async function generateMediaVariants(
 
     if (JPEG_VARIANT_NAMES.has(v.name)) {
       const jpgPath = path.join(absDir, `${baseName}_${v.name}.jpg`);
-      await resized.clone().jpeg(COMPRESS.jpeg).toFile(jpgPath);
+      const jpgPipeline = await flattenAlphaToWhite(resized.clone());
+      await jpgPipeline.jpeg(COMPRESS.jpeg).toFile(jpgPath);
       formats.jpg = `${media.publicUrlBase}/${baseName}_${v.name}.jpg`;
     }
 

@@ -35,7 +35,7 @@ async function reprocessOne(media: {
   }
 
   const buffer = await fs.readFile(sourcePath);
-  const optimized = await optimizeForStorage(buffer);
+  const optimized = await optimizeForStorage(buffer, { preserveAlpha: false });
 
   const thumbWebpPath = path.join(absDir, `${baseName}_thumb.webp`);
   const thumbAvifPath = path.join(absDir, `${baseName}_thumb.avif`);

@@ -33,8 +33,16 @@ export const JPEG_VARIANT_NAMES = new Set(["large"]);
 /** AVIF for list/detail sizes — biggest win for mobile bandwidth. */
 export const AVIF_VARIANT_NAMES = new Set(["thumb", "small", "medium", "large"]);
 
-/** خلفية منتجات — PNG الشفاف يُدمج عليها (بدلاً من الأسود الافتراضي في sharp). */
+/** JPEG لا يدعم الشفافية — ندمج قناة ألفا على أبيض له فقط. */
 export const PRODUCT_IMAGE_BACKGROUND = { r: 255, g: 255, b: 255 } as const;
+
+export type OptimizeForStorageOptions = {
+  /**
+   * When false, alpha is flattened to white before every output (legacy product reprocess).
+   * Default true: WebP/AVIF keep transparency; only JPEG is flattened.
+   */
+  preserveAlpha?: boolean;
+};
 
 function sharpInput(buffer: Buffer) {
   return sharp(buffer, {
@@ -65,7 +73,7 @@ function fitWithinMax(width: number, height: number) {
   };
 }
 
-/** يدمج قناة الشفافية على أبيض — يمنع الخلفية السوداء في JPEG/WebP. */
+/** يدمج قناة الشفافية على أبيض — للـ JPEG فقط في المسار الافتراضي. */
 export async function flattenAlphaToWhite(pipeline: sharp.Sharp): Promise<sharp.Sharp> {
   const meta = await pipeline.clone().metadata();
   if (meta.hasAlpha) {
@@ -90,7 +98,11 @@ export interface OptimizedImage {
  * Compress and resize before writing to disk.
  * Always stores WebP + JPEG originals; also prepares a 240px thumb for immediate display.
  */
-export async function optimizeForStorage(buffer: Buffer): Promise<OptimizedImage> {
+export async function optimizeForStorage(
+  buffer: Buffer,
+  options: OptimizeForStorageOptions = {},
+): Promise<OptimizedImage> {
+  const preserveAlpha = options.preserveAlpha !== false;
   let meta: sharp.Metadata;
   try {
     meta = await sharpInput(buffer).metadata();
@@ -112,7 +124,9 @@ export async function optimizeForStorage(buffer: Buffer): Promise<OptimizedImage
     });
   }
 
-  pipeline = await flattenAlphaToWhite(pipeline);
+  if (!preserveAlpha) {
+    pipeline = await flattenAlphaToWhite(pipeline);
+  }
 
   const thumbPipeline = pipeline.clone().resize({
     width: 320,
@@ -121,9 +135,11 @@ export async function optimizeForStorage(buffer: Buffer): Promise<OptimizedImage
     kernel: sharp.kernel.lanczos3,
   });
 
+  const jpegPipeline = preserveAlpha ? await flattenAlphaToWhite(pipeline.clone()) : pipeline.clone();
+
   const [webpBuffer, jpegBuffer, thumbWebpBuffer, thumbAvifBuffer, outMeta] = await Promise.all([
     pipeline.clone().webp(COMPRESS.webp).toBuffer(),
-    pipeline.clone().jpeg(COMPRESS.jpeg).toBuffer(),
+    jpegPipeline.jpeg(COMPRESS.jpeg).toBuffer(),
     thumbPipeline.clone().webp({ ...COMPRESS.webp, quality: 85 }).toBuffer(),
     thumbPipeline.clone().avif({ ...COMPRESS.avif, quality: 55 }).toBuffer().catch(() => Buffer.alloc(0)),
     pipeline.clone().webp(COMPRESS.webp).metadata(),
