@@ -1,7 +1,9 @@
-import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { barcodeLookupCandidates } from "../../common/barcode.util";
 import { PrismaService } from "../../common/prisma.service";
-import { GoogleImagesService } from "./google-images.service";
+import { CursorNamingClient } from "./cursor-naming.client";
+import { GlobalBarcodeEnrichmentService, type GlobalBarcodeHit } from "./global-barcode-enrichment.service";
+import { GoogleImageHit, GoogleImagesService } from "./google-images.service";
 
 type FreeHint = {
   title?: string;
@@ -10,6 +12,7 @@ type FreeHint = {
   categoryHints?: string[];
   source?: string;
   imageUrl?: string;
+  colorHex?: string;
 };
 
 type GptAutofillJson = {
@@ -33,6 +36,14 @@ type GptAutofillJson = {
   needs_review: boolean;
 };
 
+type GptShadeRow = {
+  barcode: string;
+  code: string;
+  name_en: string;
+  name_ar: string;
+  color_hex: string;
+};
+
 type CategoryCodeEntry = {
   id: string;
   code: string;
@@ -48,50 +59,11 @@ type CategoryCatalog = {
   byCode: Map<string, CategoryCodeEntry>;
 };
 
-const AUTOFILL_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    brand_ar: { type: "string" },
-    brand_en: { type: "string" },
-    name_ar: { type: "string" },
-    name_en: { type: "string" },
-    description_ar: { type: "string" },
-    description_en: { type: "string" },
-    category_main_code: { type: "string" },
-    category_sub_codes: { type: "array", items: { type: "string" } },
-    category_tertiary_codes: { type: "array", items: { type: "string" } },
-    category_main_ar: { type: "string" },
-    category_sub_ar: { type: "string" },
-    category_tertiary_ar: { type: "string" },
-    category_subs_ar: { type: "array", items: { type: "string" } },
-    category_tertiaries_ar: { type: "array", items: { type: "string" } },
-    confidence: { type: "number" },
-    needs_review: { type: "boolean" },
-  },
-  required: [
-    "brand_ar",
-    "brand_en",
-    "name_ar",
-    "name_en",
-    "description_ar",
-    "description_en",
-    "category_main_code",
-    "category_sub_codes",
-    "category_tertiary_codes",
-    "category_main_ar",
-    "category_sub_ar",
-    "category_tertiary_ar",
-    "category_subs_ar",
-    "category_tertiaries_ar",
-    "confidence",
-    "needs_review",
-  ],
-} as const;
-
 /** Beauty product-type synonyms — fallback name matching only (not primary). */
 const CATEGORY_SYNONYMS: Record<string, string[]> = {
   كونسيلر: ["concealer", "cover", "تصحيح"],
+  منظف: ["cleanser", "cleansing", "موس تنظيف", "cleansing mousse", "foam cleanser"],
+  "موس تنظيف": ["cleansing mousse", "mousse", "cleanser"],
   فاونديشن: ["foundation", "fond de teint", "كريم اساس", "كريم أساس"],
   ماسكارا: ["mascara"],
   "احمر شفاه": ["lipstick", "أحمر شفاه", "روج", "ليبستيك", "lip stick"],
@@ -114,30 +86,19 @@ const CATEGORY_SYNONYMS: Record<string, string[]> = {
   "عناية الفم والاسنان": ["oral", "dental care", "teeth"],
 };
 
-/** Tokens too generic for fallback name matching. */
+/** Tokens too generic for *partial* matching. Exact labels like شفاه/وجه still match. */
 const GENERIC_CATEGORY_TOKENS = new Set(
   [
     "عناية",
     "العناية",
     "مكياج",
     "تجميل",
-    "وجه",
-    "عيون",
-    "شفاه",
-    "حواجب",
-    "شعر",
-    "جسم",
-    "بشرة",
     "care",
     "skin",
     "makeup",
-    "face",
-    "eye",
-    "eyes",
-    "lips",
-    "lip",
-    "hair",
-    "body",
+    "beauty",
+    "product",
+    "cosmetic",
   ].map((s) => s.toLowerCase()),
 );
 
@@ -150,6 +111,8 @@ export class AiProductService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly images: GoogleImagesService,
+    private readonly cursor: CursorNamingClient,
+    private readonly globalEnrichment: GlobalBarcodeEnrichmentService,
   ) {}
 
   async autofill(barcode: string, hint?: string, modelChoice?: string, force = false) {
@@ -198,8 +161,8 @@ export class AiProductService {
       };
     }
 
-    const resolved = this.resolveOpenAiModel(modelChoice);
-    const cacheKey = `v12|${force ? "force|" : ""}${digits}|${resolved.apiModel}|${(hint ?? "").trim().toLowerCase()}`;
+    const resolved = this.cursor.resolveModel(modelChoice);
+    const cacheKey = `v16|${force ? "force|" : ""}${digits}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
     const cached = this.autofillCache.get(cacheKey);
     if (cached && Date.now() - cached.at < 30 * 60_000) {
       const cachedPayload = cached.payload as {
@@ -211,30 +174,66 @@ export class AiProductService {
       };
       const hasName = Boolean((cachedPayload.nameAr || cachedPayload.nameEn || "").trim());
       const hasBrand = Boolean((cachedPayload.brandAr || cachedPayload.brandEn || "").trim());
-      if (hasName && hasBrand) {
+      const nameBad =
+        this.isBarcodeLikeText(String(cachedPayload.nameEn ?? "")) ||
+        this.isBarcodeLikeText(String(cachedPayload.nameAr ?? ""));
+      if (hasName && hasBrand && !nameBad) {
         return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
       }
       this.autofillCache.delete(cacheKey);
     }
 
-    const apiKey = process.env.OPENAI_API_KEY?.trim();
-    if (!apiKey) {
-      throw new ServiceUnavailableException("OPENAI_API_KEY غير مُعد على السيرفر");
+    const wallStarted = Date.now();
+    const wallBudgetMs = 70_000;
+
+    // 2) Free barcode DBs + global/Shopify boost (critical when OBF/GoUPC miss)
+    let free = await this.freeBarcodeHint(digits);
+    if (!free.title?.trim() || !free.brand?.trim()) {
+      try {
+        const [globalHit, shopMap] = await Promise.all([
+          Promise.race([
+            this.globalEnrichment.enrichBarcode(digits, hint, { budgetMs: 7_500 }),
+            new Promise<GlobalBarcodeHit | null>((resolve) => setTimeout(() => resolve(null), 7_500)),
+          ]),
+          Promise.race([
+            this.globalEnrichment.enrichFamilyFromShopify([digits], hint || free.title || free.brand),
+            new Promise<Map<string, GlobalBarcodeHit>>((resolve) => setTimeout(() => resolve(new Map()), 6_000)),
+          ]),
+        ]);
+        const shop = shopMap.get(digits);
+        const mergedTitle =
+          shop?.shadeName && shop?.title
+            ? `${shop.title} — ${shop.shadeName}`
+            : shop?.title || globalHit?.title || free.title;
+        const mergedBrand = shop?.brand || globalHit?.brand || free.brand;
+        if (mergedTitle || mergedBrand) {
+          free = {
+            ...free,
+            title: mergedTitle || free.title,
+            brand: mergedBrand || free.brand,
+            imageUrl: shop?.imageUrl || globalHit?.imageUrl || free.imageUrl,
+            colorHex: shop?.colorHex || globalHit?.colorHex || free.colorHex,
+            source: [free.source, shop?.source, globalHit?.source].filter(Boolean).join("+") || "global",
+          };
+        }
+      } catch (err) {
+        this.logger.warn(`Autofill global boost skipped: ${(err as Error).message}`);
+      }
     }
 
-    const model = resolved.apiModel;
-
-    // 2) Free barcode DBs + go-upc (many regional beauty EANs are missing from OBF/UPC alone)
-    const free = await this.freeBarcodeHint(digits);
-
-    // 3) Barcode images first; supplement with brand/title only if barcode hits are thin
-    const imageHits = await this.images.searchByBarcode(digits, 48, [
+    // 3) Fast barcode images (hard cap) — never block autofill on unbounded image search
+    const imageHints = [
       free.brand,
       free.title,
       free.brand && free.title ? `${free.brand} ${free.title}`.slice(0, 90) : null,
       existing?.nameEn,
       existing?.nameAr,
-    ].filter((s): s is string => Boolean(s && String(s).trim().length >= 2)));
+      hint,
+    ].filter((s): s is string => Boolean(s && String(s).trim().length >= 2));
+    const imageHits = await Promise.race([
+      this.images.searchByBarcodeFast(digits, 24, imageHints),
+      new Promise<GoogleImageHit[]>((resolve) => setTimeout(() => resolve([]), 8_000)),
+    ]);
     if (free.imageUrl?.startsWith("http")) {
       const key = free.imageUrl.toLowerCase();
       if (!imageHits.some((h) => h.url.toLowerCase() === key)) {
@@ -260,51 +259,107 @@ export class AiProductService {
           .join(" | ")
       : hint?.trim() || undefined;
 
-    // 4) GPT with web_search — retry once if empty/weak (transient empty replies)
-    let rawGpt: GptAutofillJson;
-    let usedWebSearch = false;
-    try {
-      const first = await this.callGpt({
-        apiKey,
-        model,
+    // 4) Heuristic + Cursor naming (default GPT-5.6 Terra) — never accept barcode-as-name silently
+    let draft = this.buildHeuristicAutofill({ barcode: digits, free, imageTitles, hint: reviewHint });
+    const remaining = wallBudgetMs - (Date.now() - wallStarted);
+    const namingBudget = Math.max(
+      12_000,
+      Math.min(resolved.apiModel.includes("terra") || resolved.apiModel.includes("sol") ? 35_000 : 18_000, remaining - 8_000),
+    );
+    let named = await this.cursor.verifyBilingualNames(
+      {
         barcode: digits,
-        free,
-        hint: reviewHint,
+        brand_ar: draft.brand_ar,
+        brand_en: draft.brand_en,
+        name_ar: draft.name_ar,
+        name_en: draft.name_en,
+        dbTitle: free.title,
+        dbBrand: free.brand,
+        quantity: free.quantity,
         imageTitles,
-      });
-      rawGpt = first.gpt;
-      usedWebSearch = first.usedWebSearch;
-      if (this.isWeakGpt(rawGpt)) {
-        this.logger.warn(`Weak GPT autofill for ${digits} — retrying once`);
-        const second = await this.callGpt({
-          apiKey,
-          model,
-          barcode: digits,
-          free,
-          hint: [reviewHint, "RETRY: previous reply was empty/incomplete. Fill all fields."]
-            .filter(Boolean)
-            .join(" | "),
-          imageTitles,
-        });
-        if (!this.isWeakGpt(second.gpt) || this.gptScore(second.gpt) >= this.gptScore(rawGpt)) {
-          rawGpt = second.gpt;
-          usedWebSearch = second.usedWebSearch || usedWebSearch;
+        hint: reviewHint,
+      },
+      resolved.choice,
+      namingBudget,
+    );
+    let gpt = this.polishNaming({
+      ...draft,
+      brand_ar: named.brand_ar || draft.brand_ar,
+      brand_en: named.brand_en || draft.brand_en,
+      name_ar: named.name_ar || draft.name_ar,
+      name_en: named.name_en || draft.name_en,
+      needs_review: draft.needs_review || !named.verified,
+      confidence: named.verified ? Math.max(draft.confidence, 72) : Math.min(draft.confidence, 45),
+    });
+
+    // If still barcode-like / empty brand, one more enrich + Terra naming pass
+    if (
+      this.isBarcodeLikeText(gpt.name_en) ||
+      this.isBarcodeLikeText(gpt.name_ar) ||
+      !String(gpt.brand_en || gpt.brand_ar).trim()
+    ) {
+      try {
+        const shopMap = await Promise.race([
+          this.globalEnrichment.enrichFamilyFromShopify(
+            [digits],
+            [hint, free.title, free.brand, "lipstick makeup"].filter(Boolean).join(" "),
+          ),
+          new Promise<Map<string, GlobalBarcodeHit>>((resolve) => setTimeout(() => resolve(new Map()), 8_000)),
+        ]);
+        const shop = shopMap.get(digits);
+        if (shop?.title || shop?.shadeName || shop?.brand) {
+          free = {
+            ...free,
+            title: shop.shadeName ? `${shop.title ?? ""} — ${shop.shadeName}`.trim() : shop.title || free.title,
+            brand: shop.brand || free.brand,
+            imageUrl: shop.imageUrl || free.imageUrl,
+            source: [free.source, shop.source].filter(Boolean).join("+"),
+          };
+          draft = this.buildHeuristicAutofill({ barcode: digits, free, imageTitles, hint: reviewHint });
         }
+        const retryBudget = Math.min(28_000, Math.max(10_000, wallBudgetMs - (Date.now() - wallStarted) - 5_000));
+        named = await this.cursor.verifyBilingualNames(
+          {
+            barcode: digits,
+            brand_ar: draft.brand_ar,
+            brand_en: draft.brand_en,
+            name_ar: draft.name_ar,
+            name_en: draft.name_en,
+            dbTitle: free.title,
+            dbBrand: free.brand,
+            quantity: free.quantity,
+            imageTitles,
+            hint: reviewHint || free.title,
+            extraContext: "CRITICAL: name must NOT be the barcode digits. Prefer brand + product line.",
+          },
+          "gpt-5.6-terra",
+          retryBudget,
+        );
+        gpt = this.polishNaming({
+          ...draft,
+          brand_ar: named.brand_ar || draft.brand_ar,
+          brand_en: named.brand_en || draft.brand_en,
+          name_ar: named.name_ar || draft.name_ar,
+          name_en: named.name_en || draft.name_en,
+          needs_review: true,
+          confidence: named.verified ? Math.max(draft.confidence, 68) : 30,
+        });
+      } catch (err) {
+        this.logger.warn(`Autofill recovery pass failed: ${(err as Error).message}`);
       }
-    } catch (err) {
-      this.logger.warn(`GPT autofill failed for ${digits}: ${(err as Error).message} — retrying`);
-      const second = await this.callGpt({
-        apiKey,
-        model,
-        barcode: digits,
-        free,
-        hint: reviewHint,
-        imageTitles,
-      });
-      rawGpt = second.gpt;
-      usedWebSearch = second.usedWebSearch;
     }
-    const gpt = this.polishNaming(rawGpt);
+
+    const namesVerified =
+      named.verified &&
+      !this.isWeakGpt(gpt) &&
+      !this.isBarcodeLikeText(gpt.name_en) &&
+      !this.isBarcodeLikeText(gpt.name_ar);
+    if (imageHits.length < 8 && Date.now() - wallStarted < wallBudgetMs - 6_000) {
+      await Promise.race([
+        this.mergeNamedImageSearch(imageHits, gpt),
+        new Promise<void>((resolve) => setTimeout(resolve, 6_000)),
+      ]);
+    }
 
     const matched = await this.matchCategories(gpt);
     const issues = this.buildQualityIssues({
@@ -355,9 +410,12 @@ export class AiProductService {
         category: matched,
       },
       meta: {
-        model,
+        model: resolved.apiModel,
         modelChoice: resolved.choice,
-        usedWebSearch,
+        fast: resolved.fast,
+        usedWebSearch: false,
+        namesVerified,
+        namingSource: namesVerified ? resolved.apiModel : "heuristic",
         freeHintSource: free.source ?? null,
         freeHintTitle: free.title ?? null,
         imageTitleHints: imageTitles.slice(0, 5),
@@ -371,7 +429,9 @@ export class AiProductService {
     };
     const cacheable =
       Boolean((payload.nameAr || payload.nameEn || "").trim()) &&
-      Boolean((payload.brandAr || payload.brandEn || "").trim());
+      Boolean((payload.brandAr || payload.brandEn || "").trim()) &&
+      !this.isBarcodeLikeText(payload.nameEn) &&
+      !this.isBarcodeLikeText(payload.nameAr);
     if (cacheable) {
       this.autofillCache.set(cacheKey, { at: Date.now(), payload: payload as unknown as Record<string, unknown> });
     }
@@ -383,66 +443,444 @@ export class AiProductService {
     return this.autofill(barcode, hint, modelChoice, true);
   }
 
+  /**
+   * Makeup shade-family add: many scanned EANs → one product + shade list
+   * (code, official name, hex) + bilingual naming. Images are chosen on the phone.
+   */
+  /** Global smart enrich — worldwide barcode DBs + web + image search (not catalog-only). */
+  async enrichShadesGlobal(barcodes: string[], hint?: string) {
+    const unique = this.normalizeBarcodeList(barcodes);
+    if (!unique.length) throw new BadRequestException("أدخل باركود واحد على الأقل");
+
+    const globalMap = await this.globalEnrichment.enrichShadeFamily(unique, hint, { budgetMs: 42_000 });
+    const catalogHints = new Map<string, FreeHint>();
+    await Promise.race([
+      Promise.all([
+        this.enrichFamilyFromCatalogProduct(unique, catalogHints),
+        this.enrichShadeHintsFromCatalog(unique, catalogHints),
+      ]),
+      new Promise<void>((resolve) => setTimeout(resolve, 12_000)),
+    ]);
+
+    const shades = unique.map((barcode, index) => {
+      const global = globalMap.get(barcode);
+      const catalog = catalogHints.get(barcode);
+      const merged = this.mergeGlobalAndCatalogHint(global, catalog, hint);
+      const row = this.guessShadeRow(barcode, merged, index);
+      return {
+        barcode,
+        code: row.code,
+        name: this.formatShadeDisplayName(row),
+        nameEn: row.name_en,
+        nameAr: row.name_ar,
+        colorHex: this.normalizeShadeHex(row.color_hex),
+        imageUrl: this.pickShadeImageUrl(merged),
+        source: merged.source ?? global?.source ?? "global",
+        confidence: global?.confidence ?? 0,
+      };
+    });
+
+    const lead = unique[0];
+    const leadHint = catalogHints.get(lead) ?? this.globalHitToFreeHint(globalMap.get(lead), hint);
+    const draft = this.buildHeuristicAutofill({
+      barcode: lead,
+      free: leadHint,
+      hint,
+      shadeFamily: true,
+    });
+    const familyDraft = this.sanitizeShadeFamilyProductNames(draft, {
+      hint,
+      freeByBarcode: catalogHints,
+    });
+
+    return {
+      barcodes: unique,
+      brandEn: familyDraft.brand_en,
+      brandAr: familyDraft.brand_ar,
+      nameEn: familyDraft.name_en,
+      nameAr: familyDraft.name_ar,
+      shades,
+      meta: {
+        engine: "global-v1",
+        sources: [
+          "openbeautyfacts",
+          "openfoodfacts",
+          "go-upc",
+          "upcitemdb",
+          "barcodelookup",
+          "ean-search",
+          "web",
+          "image-search",
+          "catalog-boost",
+        ],
+        shadeCount: shades.length,
+        namedCount: shades.filter((s) => !this.isGenericShadeName(s.nameEn)).length,
+      },
+    };
+  }
+
+  async shadeFamily(rawBarcodes: string[], hint?: string, modelChoice?: string) {
+    const unique = this.normalizeBarcodeList(rawBarcodes);
+    if (!unique.length) throw new BadRequestException("أدخل باركود تدرج واحد على الأقل");
+
+    try {
+      return await this.shadeFamilyFast(unique, hint, modelChoice);
+    } catch (err) {
+      this.logger.warn(`shadeFamily fast path failed, using fallback: ${(err as Error).message}`);
+      return await this.buildShadeFamilyFallback(unique, hint, modelChoice);
+    }
+  }
+
+  /** Fast shade-family path — must finish within ~45s for 15+ barcodes. */
+  private async shadeFamilyFast(rawBarcodes: string[], hint?: string, modelChoice?: string) {
+    const unique = rawBarcodes;
+    const resolved = this.cursor.resolveModel(modelChoice);
+    const cacheKey = `shade-v21|${unique.join(",")}|${resolved.choice}|${(hint ?? "").trim().toLowerCase()}`;
+    const cached = this.autofillCache.get(cacheKey);
+    if (cached && Date.now() - cached.at < 20 * 60_000) {
+      return { ...cached.payload, meta: { ...(cached.payload.meta as object), cached: true } };
+    }
+
+    const [existingHits, freeByBarcode] = await Promise.all([
+      Promise.all(
+        unique.map(async (barcode) => {
+          const product = await this.findExistingProduct(barcode);
+          if (!product) return null;
+          return {
+            barcode,
+            productId: product.id,
+            nameAr: product.nameAr || product.name || "",
+            nameEn: product.nameEn || "",
+            matchedShadeName: (product as { matchedShadeName?: string }).matchedShadeName || null,
+          };
+        }),
+      ).then((rows) => rows.filter((h): h is NonNullable<typeof h> => Boolean(h))),
+      (async () => {
+        const globalMap = await this.globalEnrichment.enrichShadeFamily(unique, hint, { budgetMs: 42_000 });
+        const map = new Map<string, FreeHint>();
+        for (const barcode of unique) {
+          map.set(barcode, this.globalHitToFreeHint(globalMap.get(barcode), hint));
+        }
+        return map;
+      })(),
+    ]);
+
+    const existingByBarcode = new Map(
+      existingHits.map((h) => [h.barcode.toLowerCase(), h] as const),
+    );
+
+    const lead = unique[0];
+    const leadFree = freeByBarcode.get(lead) ?? {};
+
+    const [, imageHits] = await Promise.all([
+      Promise.race([
+        Promise.all([
+          this.enrichFamilyFromCatalogProduct(unique, freeByBarcode),
+          this.enrichShadeHintsFromCatalog(unique, freeByBarcode),
+        ]),
+        new Promise<void>((resolve) => setTimeout(resolve, 15_000)),
+      ]),
+      this.images.searchByBarcodeFast(lead, 16, [
+        leadFree.brand,
+        leadFree.title,
+        hint,
+      ].filter((s): s is string => Boolean(s && String(s).trim().length >= 2))),
+    ]);
+    const imageTitles = this.extractIdentityTitles(imageHits);
+    const enrichedLead = freeByBarcode.get(lead) ?? leadFree;
+
+    let draft = this.buildHeuristicAutofill({
+      barcode: lead,
+      free: enrichedLead,
+      imageTitles,
+      hint,
+      shadeFamily: true,
+    });
+    draft = this.refineShadeFamilyDraft(draft, {
+      barcode: lead,
+      hint,
+      freeByBarcode,
+      imageTitles,
+    });
+
+    await this.healWeakShadeHints(unique, freeByBarcode, hint, draft);
+
+    let shadeRows = unique.map((barcode, index) =>
+      this.guessShadeRow(
+        barcode,
+        freeByBarcode.get(barcode),
+        index,
+        existingByBarcode.get(barcode.toLowerCase())?.matchedShadeName,
+      ),
+    );
+
+    const preGeneric = shadeRows.filter((r) => this.isGenericShadeName(r.name_en));
+    if (preGeneric.length) {
+      try {
+        await Promise.race([
+          this.enrichShadeHintsFromImages(
+            preGeneric.map((r) => r.barcode),
+            freeByBarcode,
+            [
+              draft.brand_en,
+              draft.brand_ar,
+              draft.name_en,
+              draft.name_ar,
+              hint,
+              enrichedLead.title,
+              enrichedLead.brand,
+            ].filter((s): s is string => Boolean(s && String(s).trim().length >= 2)),
+          ),
+          new Promise<void>((resolve) => setTimeout(resolve, 12_000)),
+        ]);
+        shadeRows = unique.map((barcode, index) =>
+          this.guessShadeRow(
+            barcode,
+            freeByBarcode.get(barcode),
+            index,
+            existingByBarcode.get(barcode.toLowerCase())?.matchedShadeName,
+          ),
+        );
+      } catch {
+        /* optional image heal */
+      }
+    }
+
+    const namingBudgetMs =
+      unique.length >= 10 ? 18_000 : unique.length <= 8 ? 14_000 : 16_000;
+    const named = await this.cursor.verifyBilingualNames(
+      {
+        barcode: lead,
+        brand_ar: draft.brand_ar,
+        brand_en: draft.brand_en,
+        name_ar: draft.name_ar,
+        name_en: draft.name_en,
+        dbTitle: enrichedLead.title,
+        dbBrand: enrichedLead.brand,
+        quantity: enrichedLead.quantity,
+        imageTitles,
+        hint,
+        extraContext: `shade_family barcodes=${unique.join(",")} product_type=${draft.category_tertiary_ar || ""}`,
+      },
+      resolved.choice,
+      namingBudgetMs,
+    );
+    const polished = this.polishNaming({
+      ...draft,
+      brand_ar: named.brand_ar || draft.brand_ar,
+      brand_en: named.brand_en || draft.brand_en,
+      name_ar: named.name_ar || draft.name_ar,
+      name_en: named.name_en || draft.name_en,
+      needs_review: draft.needs_review || !named.verified,
+      confidence: named.verified ? Math.max(draft.confidence, 72) : Math.min(draft.confidence, 45),
+    });
+    const familyIdentity = this.guardShadeFamilyIdentity(polished, lead, hint, freeByBarcode);
+    const namesVerified = named.verified && !this.isWeakGpt(familyIdentity);
+    const matched = await this.matchCategories(familyIdentity);
+
+    const genericCount = shadeRows.filter((r) => this.isGenericShadeName(r.name_en)).length;
+    const shouldAiShadeNames =
+      genericCount >= 1 && unique.length <= 20 && this.cursor.hasApiKey();
+    if (shouldAiShadeNames) {
+      try {
+        const genericOnly = shadeRows.filter((r) => this.isGenericShadeName(r.name_en));
+        const aiShades = await Promise.race([
+          this.cursor.verifyShadeFamilyNames(
+            {
+              brand_en: familyIdentity.brand_en,
+              brand_ar: familyIdentity.brand_ar,
+              product_en: familyIdentity.name_en,
+              hint,
+              shades: (genericOnly.length ? genericOnly : shadeRows).map((row) => ({
+                barcode: row.barcode,
+                code: row.code,
+                name_en: row.name_en,
+                db_title: freeByBarcode.get(row.barcode)?.title,
+              })),
+            },
+            resolved.choice,
+            genericOnly.length <= 3 ? 22_000 : unique.length >= 8 ? 28_000 : 32_000,
+          ),
+          new Promise<null>((resolve) =>
+            setTimeout(
+              () => resolve(null),
+              resolved.apiModel.includes("terra") || resolved.apiModel.includes("sol") ? 35_000 : 22_000,
+            ),
+          ),
+        ]);
+        if (aiShades?.length) {
+          const byBc = new Map(aiShades.map((s) => [s.barcode.toLowerCase(), s] as const));
+          shadeRows = shadeRows.map((row) => {
+            const hit = byBc.get(row.barcode.toLowerCase());
+            if (!hit || this.isGenericShadeName(hit.name_en)) return row;
+            return {
+              ...row,
+              name_en: hit.name_en,
+              name_ar: hit.name_ar || this.polishMarketArabic(this.guessShadeNameAr(hit.name_en, row.code)),
+            };
+          });
+        }
+      } catch (err) {
+        this.logger.warn(`Shade-family AI naming skipped: ${(err as Error).message}`);
+      }
+    }
+
+    const gptByBarcode = new Map<string, GptShadeRow>();
+    for (const row of shadeRows) {
+      const key = (String(row.barcode ?? "").replace(/\D/g, "") || String(row.barcode ?? "").trim()).toLowerCase();
+      if (!key) continue;
+      gptByBarcode.set(key, row);
+    }
+
+    const shades = this.sortShadeFamily(
+      unique.map((barcode, index) => {
+        const row = gptByBarcode.get(barcode.toLowerCase());
+        let code = String(row?.code ?? "").trim();
+        if (this.isBarcodeFragmentCode(code, barcode)) code = "";
+        const nameEn = String(row?.name_en ?? "").trim();
+        const nameAr = this.polishMarketArabic(String(row?.name_ar ?? "").trim());
+        let name = "";
+        const cleanEn = nameEn
+          .replace(new RegExp(`^shade\\s*${code}\\s*`, "i"), "")
+          .replace(new RegExp(`^${code}\\s*`, "i"), "")
+          .trim();
+        if (cleanEn && code && !cleanEn.toLowerCase().includes(code.toLowerCase())) {
+          name = `${cleanEn} ${code}`;
+        } else if (cleanEn) {
+          name = cleanEn;
+        } else if (nameEn) {
+          name = nameEn;
+        } else if (code && nameAr) {
+          name = nameAr.includes(code) ? nameAr : `${nameAr} ${code}`;
+        } else {
+          name = nameAr || code || `تدرج ${index + 1}`;
+        }
+        return {
+          barcode,
+          code,
+          name,
+          nameEn: nameEn || name,
+          nameAr: nameAr || name,
+          colorHex: this.normalizeShadeHex(row?.color_hex),
+          imageUrl: this.pickShadeImageUrl(freeByBarcode.get(barcode)),
+          position: index,
+        };
+      }),
+    ).map((shade, index) => ({ ...shade, position: index }));
+
+    const galleryQuery = [familyIdentity.brand_en || familyIdentity.brand_ar, familyIdentity.name_en || familyIdentity.name_ar]
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 90);
+    let galleryImages = imageHits;
+    if (galleryQuery.length >= 4 && galleryImages.length < 4) {
+      try {
+        const extra = await Promise.race([
+          this.images.searchQuery(galleryQuery, 24),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("gallery search timeout")), 8_000),
+          ),
+        ]);
+        const seenUrl = new Set(galleryImages.map((h) => h.url.toLowerCase()));
+        for (const hit of extra) {
+          if (seenUrl.has(hit.url.toLowerCase())) continue;
+          seenUrl.add(hit.url.toLowerCase());
+          galleryImages.push(hit);
+        }
+      } catch (err) {
+        this.logger.warn(`Shade-family gallery search skipped: ${(err as Error).message}`);
+      }
+    }
+
+    const payload = {
+      barcodes: unique,
+      brandAr: familyIdentity.brand_ar,
+      brandEn: familyIdentity.brand_en,
+      nameAr: familyIdentity.name_ar,
+      nameEn: familyIdentity.name_en,
+      descriptionAr: familyIdentity.description_ar,
+      descriptionEn: familyIdentity.description_en,
+      productTypeAr: String(draft.category_tertiary_ar || draft.category_sub_ar || "").trim(),
+      category: matched,
+      confidence: familyIdentity.confidence > 0 ? familyIdentity.confidence : familyIdentity.needs_review ? 35 : 70,
+      needsReview: familyIdentity.needs_review || familyIdentity.confidence < 45 || shades.some((s) => !s.code),
+      shades,
+      images: galleryImages,
+      existingHits,
+      meta: {
+        model: resolved.apiModel,
+        modelChoice: resolved.choice,
+        fast: resolved.fast,
+        usedWebSearch: true,
+        globalEngine: "global-v1",
+        namesVerified,
+        namingSource: namesVerified ? resolved.apiModel : "heuristic",
+        shadeCount: shades.length,
+        imageCount: galleryImages.length,
+        imageQuery: galleryQuery || lead,
+        cached: false,
+      },
+    };
+
+    this.autofillCache.set(cacheKey, { at: Date.now(), payload: payload as unknown as Record<string, unknown> });
+    return payload;
+  }
+
   listModels() {
     return {
-      default: "gpt-5.6-luna-low",
+      default: "gpt-5.6-terra",
+      namesOnly: true,
+      provider: "cursor",
       models: [
         {
+          id: "gpt-5.6-terra",
+          labelAr: "GPT-5.6 Terra (موصى به)",
+          labelEn: "GPT-5.6 Terra",
+          descriptionAr: "أفضل توازن جودة/سرعة لتسمية المنتج المفرد عبر Cursor API",
+          apiModel: "gpt-5.6-terra",
+          fast: false,
+          costTier: "high",
+        },
+        {
+          id: "gpt-5.6-sol",
+          labelAr: "GPT-5.6 Sol",
+          labelEn: "GPT-5.6 Sol",
+          descriptionAr: "أقوى استدلال — أبطأ وأغلى",
+          apiModel: "gpt-5.6-sol",
+          fast: false,
+          costTier: "highest",
+        },
+        {
           id: "gpt-5.6-luna-low",
-          labelAr: "5.6 Luna Low",
-          labelEn: "Luna Low",
-          descriptionAr: "الأرخص — مع بحث ويب للباركود",
-          apiModel: "gpt-5.4-nano",
+          labelAr: "GPT-5.6 Luna",
+          labelEn: "GPT-5.6 Luna",
+          descriptionAr: "أسرع وأرخص ضمن عائلة 5.6",
+          apiModel: "gpt-5.6-luna",
+          fast: false,
+          costTier: "medium",
+        },
+        {
+          id: "composer-2.5-low",
+          labelAr: "Composer 2.5 Low",
+          labelEn: "Composer 2.5 Low",
+          descriptionAr: "تأكيد اسم رخيص وسريع",
+          apiModel: "composer-2.5",
+          fast: false,
           costTier: "lowest",
         },
         {
-          id: "gpt-5.6-luna-medium",
-          labelAr: "5.6 Luna Medium",
-          labelEn: "Luna Medium",
-          descriptionAr: "أدق للتسمية + بحث ويب — تكلفة أعلى قليلاً",
-          apiModel: "gpt-5.4-mini",
+          id: "composer-2.5-fast",
+          labelAr: "Composer 2.5 Fast",
+          labelEn: "Composer 2.5 Fast",
+          descriptionAr: "Composer أسرع بتكلفة أعلى",
+          apiModel: "composer-2.5",
+          fast: true,
           costTier: "medium",
         },
       ],
     };
-  }
-
-  /**
-   * Cursor slugs (luna-low / luna-medium) are not OpenAI API model ids.
-   * Map them to the closest cheap OpenAI models.
-   */
-  private resolveOpenAiModel(choice?: string): { choice: string; apiModel: string } {
-    const raw = (choice ?? process.env.OPENAI_MODEL ?? "gpt-5.6-luna-low").trim();
-    const key = raw.toLowerCase().replace(/_/g, "-");
-
-    if (
-      key === "gpt-5.6-luna-medium" ||
-      key === "luna-medium" ||
-      key === "luna-med" ||
-      /luna[-]?med/i.test(key)
-    ) {
-      return { choice: "gpt-5.6-luna-medium", apiModel: "gpt-5.4-mini" };
-    }
-
-    if (
-      key === "gpt-5.6-luna-low" ||
-      key === "luna-low" ||
-      /luna[-]?low/i.test(key) ||
-      key === "gpt-5.4-nano"
-    ) {
-      return { choice: "gpt-5.6-luna-low", apiModel: "gpt-5.4-nano" };
-    }
-
-    if (key === "gpt-5.4-mini") {
-      return { choice: "gpt-5.6-luna-medium", apiModel: "gpt-5.4-mini" };
-    }
-
-    // Allow explicit OpenAI ids as escape hatch
-    if (/^gpt-/i.test(raw)) {
-      return { choice: raw, apiModel: raw };
-    }
-
-    return { choice: "gpt-5.6-luna-low", apiModel: "gpt-5.4-nano" };
   }
 
   /** Refresh images by barcode + optional product name — no AI. */
@@ -458,7 +896,7 @@ export class AiProductService {
     if (mode === "name") {
       const q = (query ?? nameHint ?? "").replace(/\s+/g, " ").trim();
       if (q.length < 2) throw new BadRequestException("أدخل اسم المنتج للبحث");
-      const images = await this.images.searchQuery(q, 48);
+      const images = await this.images.searchQuery(q, 72);
       return {
         barcode: digits,
         images,
@@ -472,7 +910,63 @@ export class AiProductService {
       .split(/[|,/]+/)
       .map((s) => s.replace(/\s+/g, " ").trim())
       .filter((s) => s.length >= 2);
-    const images = await this.images.searchByBarcode(q, 48, hints);
+
+    const images: GoogleImageHit[] = [];
+    const seen = new Set<string>();
+    const pushUnique = (batch: GoogleImageHit[]) => {
+      for (const hit of batch) {
+        const key = hit.url.toLowerCase();
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        images.push(hit);
+      }
+    };
+
+    try {
+      const shopify = await Promise.race([
+        this.globalEnrichment.enrichFamilyFromShopify([digits], hints.join(" ")),
+        new Promise<Map<string, GlobalBarcodeHit>>((resolve) => setTimeout(() => resolve(new Map()), 4_500)),
+      ]);
+      const shopHit = shopify.get(digits);
+      if (shopHit?.imageUrl?.startsWith("http")) {
+        pushUnique([
+          {
+            url: shopHit.imageUrl,
+            thumbUrl: shopHit.imageUrl,
+            title: shopHit.shadeName || shopHit.title || digits,
+            source: shopHit.source ?? "shopify",
+          },
+        ]);
+      }
+    } catch {
+      /* optional fast path */
+    }
+
+    const searched = await Promise.race([
+      this.images.searchByBarcode(q, 36, hints),
+      new Promise<GoogleImageHit[]>((resolve) => setTimeout(() => resolve([]), 18_000)),
+    ]);
+    pushUnique(searched);
+
+    if (images.length < 4 && hints.length) {
+      try {
+        const nameQ = hints[0].slice(0, 90);
+        const extra = await Promise.race([
+          this.images.searchQuery(nameQ, 48),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("name fallback timeout")), 8_000),
+          ),
+        ]);
+        const seen = new Set(images.map((h) => h.url.toLowerCase()));
+        for (const hit of extra) {
+          if (seen.has(hit.url.toLowerCase())) continue;
+          seen.add(hit.url.toLowerCase());
+          images.push(hit);
+        }
+      } catch (err) {
+        this.logger.warn(`searchImages name fallback skipped: ${(err as Error).message}`);
+      }
+    }
     return {
       barcode: digits,
       images,
@@ -566,6 +1060,18 @@ export class AiProductService {
     const curBrand = (ex as { brand?: { name?: string } } | null)?.brand?.name?.trim() || "";
     const curDescAr = (ex as { descriptionAr?: string } | null)?.descriptionAr?.trim() || "";
     const imageCountInDb = (ex as { _count?: { images?: number } } | null)?._count?.images ?? 0;
+
+    const arPrefix = this.brandPrefixForArabicTitle(gpt.brand_en || "", gpt.brand_ar || "");
+    if (curNameAr && arPrefix && !curNameAr.toLowerCase().startsWith(arPrefix.toLowerCase())) {
+      issues.push({
+        code: "name_ar_brand_prefix",
+        severity: "medium",
+        field: "nameAr",
+        messageAr: `الاسم العربي يجب أن يبدأ بالبراند كما هو: ${arPrefix}`,
+        current: curNameAr,
+        suggested: gpt.name_ar,
+      });
+    }
 
     if (!curNameAr) {
       issues.push({
@@ -748,6 +1254,173 @@ export class AiProductService {
     return best;
   }
 
+  /** Lighter barcode lookup for multi-shade scans — 2 sources, short timeout. */
+  private async freeBarcodeHintLight(barcode: string): Promise<FreeHint> {
+    const variants = barcodeLookupCandidates(barcode)
+      .filter((v) => /^\d{8,14}$/.test(v))
+      .slice(0, 2);
+    const tasks: Promise<FreeHint>[] = [];
+    for (const v of variants) {
+      tasks.push(
+        this.lookupOpenBeautyFacts(v),
+        this.lookupOpenFoodFacts(v),
+        this.lookupUpcItemDb(v),
+        this.lookupGoUpc(v),
+      );
+    }
+    const results = (await Promise.all(tasks)).filter((r) => r.title?.trim());
+    if (!results.length) return {};
+    const rank = (source?: string) => (source === "openbeautyfacts" ? 0 : source === "go-upc" ? 1 : 9);
+    results.sort((a, b) => rank(a.source) - rank(b.source));
+    return { ...results[0] };
+  }
+
+  /** Ultra-light lookup for shade-family (6–15 barcodes) — 2 sources, 4s cap. */
+  private async freeBarcodeHintShadeFamily(barcode: string): Promise<FreeHint> {
+    const variants = barcodeLookupCandidates(barcode)
+      .filter((v) => /^\d{8,14}$/.test(v))
+      .slice(0, 1);
+    const tasks: Promise<FreeHint>[] = [];
+    for (const v of variants) {
+      tasks.push(this.lookupGoUpc(v), this.lookupOpenBeautyFacts(v));
+    }
+    const results = await Promise.race([
+      Promise.all(tasks).then((rows) => rows.filter((r) => r.title?.trim())),
+      new Promise<FreeHint[]>((resolve) => setTimeout(() => resolve([]), 4_000)),
+    ]);
+    if (!results.length) return {};
+    const rank = (source?: string) => (source === "go-upc" ? 0 : source === "openbeautyfacts" ? 1 : 9);
+    results.sort((a, b) => rank(a.source) - rank(b.source));
+    return { ...results[0] };
+  }
+
+  private async buildShadeFamilyFallback(barcodes: string[], hint?: string, modelChoice?: string) {
+    const resolved = this.cursor.resolveModel(modelChoice);
+    const hintText = String(hint ?? "").trim();
+    const lead = barcodes[0] ?? "";
+
+    const freeByBarcode = new Map<string, FreeHint>();
+    for (let i = 0; i < barcodes.length; i += 8) {
+      const chunk = barcodes.slice(i, i + 8);
+      const part = await Promise.all(
+        chunk.map(async (barcode) => [barcode, await this.freeBarcodeHintLight(barcode)] as const),
+      );
+      for (const [barcode, free] of part) freeByBarcode.set(barcode, free);
+    }
+    const leadFree = freeByBarcode.get(lead) ?? { title: hintText };
+
+    let galleryImages: GoogleImageHit[] = [];
+    try {
+      galleryImages = await Promise.race([
+        this.images.searchByBarcode(lead, 20, [leadFree.brand, leadFree.title, hintText].filter(
+          (s): s is string => Boolean(s && String(s).trim().length >= 2),
+        )),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("fallback gallery timeout")), 10_000),
+        ),
+      ]);
+    } catch (err) {
+      this.logger.warn(`Shade-family fallback gallery skipped: ${(err as Error).message}`);
+    }
+
+    const imageTitles = this.extractIdentityTitles(galleryImages);
+    const draft = this.buildHeuristicAutofill({
+      barcode: lead,
+      free: leadFree,
+      imageTitles,
+      hint: hintText,
+      shadeFamily: true,
+    });
+
+    await this.enrichShadeHintsFromCatalog(barcodes, freeByBarcode);
+    try {
+      await Promise.race([
+        this.enrichShadeHintsFromImages(
+          barcodes,
+          freeByBarcode,
+          [leadFree.brand, leadFree.title, hintText, draft.brand_en, draft.name_en].filter(
+            (s): s is string => Boolean(s && String(s).trim().length >= 2),
+          ),
+        ),
+        new Promise<void>((resolve) => setTimeout(resolve, 12_000)),
+      ]);
+    } catch {
+      /* optional */
+    }
+
+    const shadeRows = barcodes.map((barcode, index) =>
+      this.guessShadeRow(
+        barcode,
+        freeByBarcode.get(barcode) ?? { title: hintText },
+        index,
+      ),
+    );
+    const shades = this.sortShadeFamily(
+      barcodes.map((barcode, index) => {
+        const row = shadeRows[index];
+        const code = String(row?.code ?? "").trim();
+        const nameEn = String(row?.name_en ?? "").trim();
+        const nameAr = this.polishMarketArabic(String(row?.name_ar ?? "").trim());
+        const name = nameEn || nameAr || `تدرج ${index + 1}`;
+        return {
+          barcode,
+          code,
+          name,
+          nameEn: nameEn || name,
+          nameAr: nameAr || name,
+          colorHex: this.normalizeShadeHex(row?.color_hex),
+          position: index,
+        };
+      }),
+    ).map((shade, index) => ({ ...shade, position: index }));
+
+    let matched = {
+      categoryId: null as string | null,
+      subcategoryId: null as string | null,
+      tertiaryCategoryId: null as string | null,
+      subcategoryIds: [] as string[],
+      tertiaryCategoryIds: [] as string[],
+      categoryNameAr: null as string | null,
+      subcategoryNameAr: null as string | null,
+      tertiaryNameAr: null as string | null,
+    };
+    try {
+      matched = await this.matchCategories(draft);
+    } catch (err) {
+      this.logger.warn(`Shade-family fallback categories skipped: ${(err as Error).message}`);
+    }
+
+    return {
+      barcodes,
+      brandAr: draft.brand_ar || "",
+      brandEn: draft.brand_en || "",
+      nameAr: draft.name_ar || hintText,
+      nameEn: draft.name_en || hintText,
+      descriptionAr: draft.description_ar || (hintText ? `${hintText}. متوفر بعدة تدرجات.` : "متوفر بعدة تدرجات."),
+      descriptionEn: draft.description_en || (hintText ? `${hintText}. Available in multiple shades.` : "Available in multiple shades."),
+      productTypeAr: String(draft.category_tertiary_ar || draft.category_sub_ar || "").trim(),
+      category: matched,
+      confidence: 32,
+      needsReview: true,
+      shades,
+      images: galleryImages,
+      existingHits: [],
+      meta: {
+        model: resolved.apiModel,
+        modelChoice: resolved.choice,
+        fast: resolved.fast,
+        usedWebSearch: false,
+        namesVerified: false,
+        namingSource: "fallback",
+        shadeCount: shades.length,
+        imageCount: galleryImages.length,
+        imageQuery: hintText || lead || "",
+        cached: false,
+        fallback: true,
+      },
+    };
+  }
+
   private extractIdentityTitles(
     hits: Array<{ title?: string; source?: string }>,
   ): string[] {
@@ -790,12 +1463,18 @@ export class AiProductService {
       const p = body.product;
       const title = (p.product_name_en || p.product_name || p.product_name_ar || "").trim();
       if (!title) return {};
+      const imageUrl =
+        (p as { image_front_url?: string; image_url?: string; image_front_small_url?: string })
+          .image_front_url ||
+        (p as { image_url?: string }).image_url ||
+        undefined;
       return {
         title,
         brand: (p.brands ?? "").split(",")[0]?.trim() || undefined,
         quantity: p.quantity?.trim() || undefined,
         categoryHints: (p.categories_tags ?? []).slice(0, 6).map((t) => t.replace(/^en:/, "")),
         source: "openbeautyfacts",
+        imageUrl,
       };
     } catch {
       return {};
@@ -824,12 +1503,17 @@ export class AiProductService {
       const p = body.product;
       const title = (p.product_name_en || p.product_name || "").trim();
       if (!title) return {};
+      const imageUrl =
+        (p as { image_front_url?: string; image_url?: string }).image_front_url ||
+        (p as { image_url?: string }).image_url ||
+        undefined;
       return {
         title,
         brand: (p.brands ?? "").split(",")[0]?.trim() || undefined,
         quantity: p.quantity?.trim() || undefined,
         categoryHints: (p.categories_tags ?? []).slice(0, 6).map((t) => t.replace(/^en:/, "")),
         source: "openfoodfacts",
+        imageUrl,
       };
     } catch {
       return {};
@@ -845,7 +1529,7 @@ export class AiProductService {
       });
       if (!res.ok) return {};
       const body = (await res.json()) as {
-        items?: Array<{ title?: string; brand?: string; size?: string; category?: string }>;
+        items?: Array<{ title?: string; brand?: string; size?: string; category?: string; images?: string[] }>;
       };
       const item = body.items?.[0];
       if (!item?.title?.trim()) return {};
@@ -855,6 +1539,7 @@ export class AiProductService {
         quantity: item.size?.trim() || undefined,
         categoryHints: item.category ? [item.category] : undefined,
         source: "upcitemdb",
+        imageUrl: item.images?.[0]?.trim() || undefined,
       };
     } catch {
       return {};
@@ -930,149 +1615,1205 @@ export class AiProductService {
     }
   }
 
-  private async callGpt(args: {
-    apiKey: string;
-    model: string;
+  private buildHeuristicAutofill(args: {
     barcode: string;
     free: FreeHint;
-    hint?: string;
     imageTitles?: string[];
-  }): Promise<{ gpt: GptAutofillJson; usedWebSearch: boolean }> {
-    const catalog = await this.getCategoryCatalog();
-    const categoryHint = catalog.text;
-
-    const known = [
-      args.free.title ? `db_title=${args.free.title}` : null,
-      args.free.brand ? `db_brand=${args.free.brand}` : null,
-      args.free.quantity ? `size=${args.free.quantity}` : null,
-      args.free.source ? `db_source=${args.free.source}` : null,
-      args.free.categoryHints?.length ? `db_tags=${args.free.categoryHints.join(",")}` : null,
-      args.imageTitles?.length ? `image_titles=${args.imageTitles.slice(0, 6).join(" || ")}` : null,
-      args.hint ? `staff=${args.hint}` : null,
+    hint?: string;
+    shadeFamily?: boolean;
+  }): GptAutofillJson {
+    const blob = [
+      args.free.brand,
+      args.free.title,
+      args.hint,
+      ...(args.imageTitles ?? []),
+      ...(args.free.categoryHints ?? []),
     ]
       .filter(Boolean)
-      .join(" | ");
+      .join(" ");
 
-    const instructions = `كاتب كتالوج تجميل لمتجر الحياة (Al Hayaa) في العراق. JSON فقط.
+    const type = this.guessProductType(blob);
+    const rawBrand = (args.free.brand || this.guessBrandFromText(blob) || "").trim();
+    const brandEn = this.canonicalBrandEn(rawBrand);
+    const brandAr = this.canonicalBrandAr(brandEn, rawBrand);
+    const arTitleBrand = this.brandPrefixForArabicTitle(brandEn, brandAr);
 
-IDENTIFY (إلزامي — لا تختلق):
-1) نفّذ web_search واحدة فقط باستعلام = أرقام الباركود فقط (${args.barcode}).
-2) اعتمد نتائج البحث + قواعد الباركود + عناوين الصور. إذا تعارضت الحقائق المجانية مع الويب، ثق بالويب.
-3) منتجات التجميل الإقليمية (يونان/شرق أوسط/أوروبا) غالباً غير مشهورة — ابحث بالباركود ولا تستبدلها بمنتج عالمي شهير مشابه.
-4) إذا لم تجد مصدراً موثوقاً: needs_review=true و confidence≤30. ضع أفضل تخمين حذر من الحقائق المتوفرة فقط — ممنوع اختلاق براند/منتج مشهور خطأً.
-5) لا تكتب وصفاً تسويقياً مفصلاً لمنتج غير مؤكد.
+    let productCore = this.stripRetailerJunk(args.free.title || args.imageTitles?.[0] || args.hint || "");
+    if (brandEn) productCore = this.extractProductCore(productCore, brandEn);
+    if (brandAr && this.norm(brandAr) !== this.norm(brandEn)) {
+      productCore = this.extractProductCore(productCore, brandAr);
+    }
+    productCore = this.stripShadeTokens(productCore);
+    if (args.shadeFamily) {
+      productCore = this.stripFamilyShadeFromTitle(productCore);
+    }
+    const qty = (args.free.quantity || "").trim();
+    if (qty) {
+      const escaped = qty.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      if (!new RegExp(escaped, "i").test(productCore)) {
+        productCore = `${productCore} ${qty}`.trim();
+      }
+    }
+    if (!productCore) {
+      const fromHint = args.hint ? this.stripShadeTokens(this.stripRetailerJunk(args.hint)) : "";
+      productCore = args.shadeFamily ? this.stripFamilyShadeFromTitle(fromHint) : fromHint || type.en || "";
+    }
+    if (!productCore && !args.shadeFamily) productCore = args.barcode;
 
-اللغة العربية (صارم):
-• فصحى واضحة فقط — ممنوع اللهجة العراقية المحكية (مثل: شلون، هواية، هسه، خوش، يمعود…).
-• استخدم مصطلحات سوق التجميل الشائعة في العراق والعالم العربي، وليست كلمات عامية.
-  أمثلة إلزامية: روج/ليبستك → أحمر شفاه | ليب جلوس → جلوس شفاه | فاونديشن مقبول | كونسيلر مقبول.
+    const nameEn = brandEn ? `${brandEn} - ${productCore}` : productCore;
+    const arCore = this.arabicizeProductCore(this.stripLeadingType(productCore, type), type.ar);
+    const nameAr = arTitleBrand ? `${arTitleBrand} - ${arCore}` : arCore;
 
-NAMING (صارم):
-• brand_ar / brand_en = اسم البراند فقط (مرة واحدة).
-• name_en = "{BrandEn} - {Official Product Name}"  (البراند مرة واحدة قبل الشرطة)
-• name_ar = "{براند} - {نوع المنتج بمصطلح سوقي} {اسم الخط EN} {صفة قصيرة} {الحجم إن وُجد}"
-  البراند بالعربي يظهر مرة واحدة فقط قبل الشرطة — ممنوع تكراره.
-  أمثلة:
-  - "سفنتين - كونسيلر Ideal Cover Liquid بتغطية كاملة"
-  - "كوسمالاين - جل استحمام Soft Wave برائحة الورد 650 مل"
-  - "كريست - شرائط تبييض 3D Whitestrips Professional Effects"
-  - "ميبلين - أحمر شفاه SuperStay Matte Ink"
-• مفردات النوع (سوق العراق): foundation→فاونديشن | concealer→كونسيلر | mascara→ماسكارا
-  lipstick/rouge→أحمر شفاه (ممنوع: روج) | lip gloss→جلوس شفاه | lip liner→قلم شفاه
-  brow pencil→قلم حواجب | blush→بلاشر | highlighter→هايلايتر | powder→بودرة
-  eyeliner→ايلاينر أو كحل | eyeshadow→ظل عيون | primer→برايمر | serum→سيروم
-  moisturizer→مرطب | sunscreen→واقي شمس | whitening strips→شرائط تبييض
-
-DESC_AR: جملتان قصيرتان بالفصحى + 3 نقاط فوائد (أو وصف مختصر جداً إذا الثقة منخفضة). بدون لهجة محكية.
-DESC_EN: جملتان + 3 نقاط.
-
-التصنيف (اختر من الشجرة بالرموز — دقة أعلى من الأسماء):
-${categoryHint}
-قواعد التصنيف:
-• انسخ الرموز حرفياً كما هي (مثل M01 أو S03 أو T12) — ممنوع اختراع رموز غير موجودة في الشجرة.
-• category_main_code = رمز رئيسي واحد (Mxx).
-• category_sub_codes = عادةً رمز فرعي واحد فقط (Sxx تحت الرئيسي). أضف ثانياً فقط إذا المنتج يناسب قسمين مختلفين بوضوح — ممنوع اختيار كل أقسام العناية دفعة واحدة.
-• category_tertiary_codes = رموز Txx المناسبة تحت الفرعي المختار (عادة 0–1، حد أقصى 2).
-• املأ category_main_ar / category_sub_ar / category_tertiary_ar بأسماء الأقسام المطابقة للرموز المختارة.
-• category_subs_ar / category_tertiaries_ar اتركها فارغة عادةً.
-بدون باركود درجات.`;
-
-    const userInput = `barcode=${args.barcode}
-known: ${known || "none"}
-STEP1: web_search query="${args.barcode}" once.
-STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code(s) copied from the tree. If unknown: needs_review=true, confidence≤30.`;
-
-    const payload: Record<string, unknown> = {
-      model: args.model,
-      instructions,
-      input: userInput,
-      max_output_tokens: 1200,
-      tools: [{ type: "web_search" }],
-      text: {
-        format: {
-          type: "json_schema",
-          name: "ai_product_autofill",
-          strict: true,
-          schema: AUTOFILL_SCHEMA,
-        },
-      },
-    };
-
-    const res = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${args.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(75_000),
+    const desc = this.templateDescriptions({
+      brandEn,
+      brandAr: arTitleBrand,
+      typeAr: type.ar,
+      typeEn: type.en,
+      line: productCore,
+      shadeFamily: Boolean(args.shadeFamily),
     });
 
-    const body = (await res.json()) as Record<string, unknown>;
-    if (!res.ok) {
-      const err = body.error as { message?: string } | undefined;
-      this.logger.error(`OpenAI error: ${err?.message ?? res.status}`);
-      throw new ServiceUnavailableException(err?.message ?? `OpenAI HTTP ${res.status}`);
+    const weak = !brandEn || (!args.free.title && !(args.imageTitles?.length));
+    return {
+      brand_ar: brandAr,
+      brand_en: brandEn,
+      name_ar: this.polishMarketArabic(nameAr),
+      name_en: nameEn,
+      description_ar: desc.ar,
+      description_en: desc.en,
+      category_main_code: "",
+      category_sub_codes: [],
+      category_tertiary_codes: [],
+      category_main_ar: type.mainAr,
+      category_sub_ar: type.subAr,
+      category_tertiary_ar: type.ar,
+      category_subs_ar: type.subAr ? [type.subAr] : [],
+      category_tertiaries_ar: type.ar ? [type.ar] : [],
+      confidence: weak ? 28 : 62,
+      needs_review: weak,
+    };
+  }
+
+  private isBarcodeLikeText(text: string): boolean {
+    const raw = String(text ?? "").trim();
+    const digits = raw.replace(/\D/g, "");
+    if (digits.length >= 8 && digits.length <= 14 && /^\d+$/.test(digits)) {
+      return raw.replace(/\D/g, "") === digits && raw.length <= digits.length + 2;
+    }
+    return false;
+  }
+
+  private refineShadeFamilyDraft(
+    draft: GptAutofillJson,
+    args: {
+      barcode: string;
+      hint?: string;
+      freeByBarcode: Map<string, FreeHint>;
+      imageTitles: string[];
+    },
+  ): GptAutofillJson {
+    const weakName =
+      this.isBarcodeLikeText(draft.name_en) ||
+      this.isBarcodeLikeText(draft.name_ar) ||
+      !String(draft.brand_en ?? "").trim() ||
+      this.hasShadeSuffixInName(draft.name_en) ||
+      this.hasShadeSuffixInName(draft.name_ar);
+
+    let next = draft;
+    if (weakName) {
+      let bestTitle = String(args.hint ?? "").trim();
+      let bestBrand = "";
+      for (const free of args.freeByBarcode.values()) {
+        const title = String(free?.title ?? "").trim();
+        if (title.length > bestTitle.length) bestTitle = title;
+        if (!bestBrand && free?.brand) bestBrand = String(free.brand).trim();
+      }
+
+      if (bestTitle || bestBrand) {
+        const mergedFree: FreeHint = {
+          ...(args.freeByBarcode.get(args.barcode) ?? {}),
+          title: bestTitle || args.freeByBarcode.get(args.barcode)?.title,
+          brand: bestBrand || args.freeByBarcode.get(args.barcode)?.brand,
+        };
+
+        next = this.buildHeuristicAutofill({
+          barcode: args.barcode,
+          free: mergedFree,
+          imageTitles: args.imageTitles,
+          hint: args.hint,
+          shadeFamily: true,
+        });
+      }
     }
 
-    const output = (body.output as unknown[]) ?? [];
-    const usedWebSearch = output.some((item) => {
-      const row = item as { type?: string };
-      return row.type === "web_search_call" || row.type === "web_search";
+    return this.sanitizeShadeFamilyProductNames(next, {
+      hint: args.hint,
+      freeByBarcode: args.freeByBarcode,
     });
-    const jsonText = this.extractJsonText(body);
-    try {
-      return { gpt: JSON.parse(jsonText) as GptAutofillJson, usedWebSearch };
-    } catch {
-      this.logger.warn(`Invalid GPT JSON for ${args.barcode}: ${jsonText.slice(0, 200)}`);
-      throw new ServiceUnavailableException("رد GPT غير صالح أو ناقص");
+  }
+
+  private sanitizeShadeFamilyProductNames(
+    draft: GptAutofillJson,
+    args: { hint?: string; freeByBarcode: Map<string, FreeHint> },
+  ): GptAutofillJson {
+    const brandEn = String(draft.brand_en ?? "").trim();
+    const productCore = this.deriveShadeFamilyProductCore({
+      hint: args.hint,
+      freeByBarcode: args.freeByBarcode,
+      brandEn,
+      fallbackName: draft.name_en,
+    });
+    if (!productCore) return draft;
+
+    const blob = [productCore, args.hint, brandEn, draft.brand_ar].filter(Boolean).join(" ");
+    const type = this.guessProductType(blob);
+    const nameEn = brandEn ? `${brandEn} - ${productCore}` : productCore;
+    const brandAr = String(draft.brand_ar ?? "").trim();
+    const arTitleBrand = this.brandPrefixForArabicTitle(brandEn, brandAr);
+    const arCore = this.arabicizeProductCore(this.stripLeadingType(productCore, type), type.ar);
+    const nameAr = arTitleBrand ? `${arTitleBrand} - ${arCore}` : arCore;
+
+    return {
+      ...draft,
+      brand_en: brandEn || draft.brand_en,
+      brand_ar: brandAr || draft.brand_ar,
+      name_en: nameEn.replace(/\s+/g, " ").trim(),
+      name_ar: this.polishMarketArabic(nameAr),
+    };
+  }
+
+  private deriveShadeFamilyProductCore(args: {
+    hint?: string;
+    freeByBarcode: Map<string, FreeHint>;
+    brandEn: string;
+    fallbackName?: string;
+  }): string {
+    const hintText = String(args.hint ?? "").trim();
+    if (hintText && !this.isBarcodeLikeText(hintText)) {
+      let fromHint = this.stripFamilyShadeFromTitle(this.stripRetailerJunk(hintText));
+      if (args.brandEn) fromHint = this.extractProductCore(fromHint, args.brandEn);
+      fromHint = this.stripFamilyShadeFromTitle(fromHint);
+      if (fromHint.length >= 4) return fromHint;
+    }
+
+    const strippedTitles = [...args.freeByBarcode.values()]
+      .map((free) => {
+        let title = this.stripFamilyShadeFromTitle(String(free?.title ?? "").trim());
+        if (args.brandEn) title = this.extractProductCore(title, args.brandEn);
+        return this.stripFamilyShadeFromTitle(title);
+      })
+      .filter((t) => t.length >= 6);
+
+    const consensus = this.consensusProductLine(strippedTitles);
+    if (consensus) return consensus;
+
+    const fallback = String(args.fallbackName ?? "").trim();
+    if (fallback) {
+      let core = this.stripFamilyShadeFromTitle(fallback);
+      if (args.brandEn) core = this.extractProductCore(core, args.brandEn);
+      return this.stripFamilyShadeFromTitle(core);
+    }
+    return "";
+  }
+
+  private consensusProductLine(titles: string[]): string {
+    if (!titles.length) return "";
+    const cores = [...new Set(titles.map((t) => t.replace(/\s+/g, " ").trim()).filter((t) => t.length >= 6))];
+    if (!cores.length) return "";
+    cores.sort((a, b) => b.length - a.length);
+    for (const candidate of cores) {
+      const norm = this.norm(candidate);
+      const matches = cores.filter((c) => {
+        const cn = this.norm(c);
+        return cn.includes(norm) || norm.includes(cn);
+      });
+      if (matches.length >= Math.max(2, Math.ceil(cores.length * 0.25))) return candidate;
+    }
+    return cores[0];
+  }
+
+  private hasShadeSuffixInName(name: string): boolean {
+    const raw = String(name ?? "").trim();
+    if (!raw) return false;
+    const stripped = this.stripFamilyShadeFromTitle(raw);
+    return stripped.length >= 4 && this.norm(stripped) !== this.norm(raw);
+  }
+
+  private readonly PRODUCT_LINE_KEYWORDS =
+    /\b(lip\s*fluid|mat\s*passion|mascara|foundation|concealer|lipstick|lip\s*gloss|eyeshadow|eye\s*shadow|eyeliner|blush|bronzer|highlighter|primer|powder|brow|lip\s*liner|lipliner)\b/i;
+
+  private isShadeSegment(seg: string): boolean {
+    const s = seg.trim();
+    if (!s) return false;
+    if (this.PRODUCT_LINE_KEYWORDS.test(s)) return false;
+    if (/^\d{1,3}\s*[-–:]\s*[A-Za-z]/i.test(s)) return true;
+    if (/^\d{1,3}$/.test(s)) return true;
+    if (/^[A-Za-z][A-Za-z\s\-]{2,30}\s+\d{1,3}$/i.test(s)) return true;
+    if (
+      /^[A-Za-z][A-Za-z\s\-]{2,30}\s+\d{1,3}(?:\s+\d+(?:[.,]\d+)?\s*(?:ml|g|oz))?$/i.test(s) &&
+      !this.PRODUCT_LINE_KEYWORDS.test(s)
+    ) {
+      return true;
+    }
+    return false;
+  }
+
+  private stripFamilyShadeFromTitle(title: string): string {
+    let s = this.stripRetailerJunk(String(title ?? "")).trim();
+    if (!s) return "";
+
+    let size = "";
+    const sizeMatch = s.match(/\s+(\d+(?:[.,]\d+)?)\s*(ml|g|oz)\s*$/i);
+    if (sizeMatch) {
+      const n = parseFloat(sizeMatch[1]);
+      const before = s.slice(0, -sizeMatch[0].length).trim();
+      const isProductSize =
+        n >= 10 ||
+        /[.,]/.test(sizeMatch[1]) ||
+        /\b(fluid|lipstick|mascara|cream|gel|lotion|foundation|concealer)\s*$/i.test(before);
+      if (isProductSize) {
+        size = ` ${sizeMatch[1]} ${sizeMatch[2]}`;
+        s = before;
+      }
+    }
+
+    const parts = s.split(/\s*[-–—]\s*/).map((p) => p.trim()).filter(Boolean);
+    while (parts.length > 1 && this.isShadeSegment(parts[parts.length - 1])) {
+      parts.pop();
+    }
+
+    let core = this.stripShadeTokens(parts.join(" - "));
+    if (size && !new RegExp(size.trim(), "i").test(core)) core = `${core}${size}`.trim();
+    return core.replace(/\s+/g, " ").trim();
+  }
+
+  private guardShadeFamilyIdentity(
+    gpt: GptAutofillJson,
+    lead: string,
+    hint: string | undefined,
+    freeByBarcode: Map<string, FreeHint>,
+  ): GptAutofillJson {
+    const bad =
+      this.isBarcodeLikeText(gpt.name_en) ||
+      this.isBarcodeLikeText(gpt.name_ar) ||
+      this.isWeakGpt(gpt) ||
+      this.hasShadeSuffixInName(gpt.name_en) ||
+      this.hasShadeSuffixInName(gpt.name_ar);
+    if (!bad) {
+      return this.sanitizeShadeFamilyProductNames(gpt, { hint, freeByBarcode });
+    }
+
+    const rebuilt = this.refineShadeFamilyDraft(gpt, {
+      barcode: lead,
+      hint,
+      freeByBarcode,
+      imageTitles: [],
+    });
+    if (!this.isBarcodeLikeText(rebuilt.name_en) && String(rebuilt.brand_en ?? "").trim()) {
+      return this.polishNaming(rebuilt);
+    }
+
+    const hintText = String(hint ?? "").trim();
+    if (hintText && !this.isBarcodeLikeText(hintText)) {
+      const brandEn = this.canonicalBrandEn(this.guessBrandFromText(hintText));
+      const brandAr = this.canonicalBrandAr(brandEn, hintText);
+      const core = this.stripFamilyShadeFromTitle(this.stripRetailerJunk(hintText));
+      const productCore = brandEn ? this.extractProductCore(core, brandEn) : core;
+      const nameEn = brandEn ? `${brandEn} - ${productCore}` : productCore;
+      const arBrand = this.brandPrefixForArabicTitle(brandEn, brandAr);
+      const type = this.guessProductType(hintText);
+      const nameAr = arBrand
+        ? `${arBrand} - ${this.arabicizeProductCore(this.stripLeadingType(productCore, type), type.ar)}`
+        : this.arabicizeProductCore(productCore, type.ar);
+      return this.polishNaming({
+        ...gpt,
+        brand_en: brandEn || gpt.brand_en,
+        brand_ar: brandAr || gpt.brand_ar,
+        name_en: nameEn,
+        name_ar: this.polishMarketArabic(nameAr),
+        needs_review: true,
+        confidence: 55,
+      });
+    }
+
+    return { ...gpt, needs_review: true, confidence: Math.min(gpt.confidence ?? 30, 35) };
+  }
+
+  private guessBrandFromText(text: string): string {
+    const n = this.norm(text);
+    const known = [
+      "ARTDECO",
+      "Seventeen",
+      "GOSH",
+      "Mon Reve",
+      "Maybelline",
+      "L'Oréal",
+      "essence",
+      "Catrice",
+      "Bourjois",
+      "Huda Beauty",
+      "Beesline",
+      "Garnier",
+      "Radiant",
+      "Deborah Milano",
+      "Cosmaline",
+      "Grigi",
+      "Crest",
+      "Colgate",
+      "Oral-B",
+    ];
+    for (const b of known) {
+      if (n.includes(this.norm(b))) return b;
+    }
+    return "";
+  }
+
+  private guessProductType(text: string): { ar: string; en: string; mainAr: string; subAr: string } {
+    const n = this.norm(text);
+    const rows: Array<{ test: RegExp; ar: string; en: string; mainAr: string; subAr: string }> = [
+      { test: /cleansing\s*mousse|mousse\s*nettoyante|موس تنظيف/, ar: "موس تنظيف", en: "cleansing mousse", mainAr: "عناية", subAr: "بشرة" },
+      { test: /cleansing\s*foam|رغوة تنظيف/, ar: "رغوة تنظيف", en: "cleansing foam", mainAr: "عناية", subAr: "بشرة" },
+      { test: /micellar|ميسيلار/, ar: "ماء ميسيلار", en: "micellar water", mainAr: "عناية", subAr: "بشرة" },
+      { test: /makeup\s*remover|مزيل مكياج/, ar: "مزيل مكياج", en: "makeup remover", mainAr: "عناية", subAr: "بشرة" },
+      { test: /cleanser|cleansing|منظف وجه|منظف/, ar: "منظف", en: "cleanser", mainAr: "عناية", subAr: "بشرة" },
+      { test: /mat\s*passion|lip\s*fluid|liquid\s*lip/, ar: "أحمر شفاه سائل", en: "liquid lipstick", mainAr: "مكياج", subAr: "شفاه" },
+      { test: /lip\s*fluid|liquid\s*lip|matte\s*ink|lip\s*tint|احمر شفاه سائل/, ar: "أحمر شفاه سائل", en: "liquid lipstick", mainAr: "مكياج", subAr: "شفاه" },
+      { test: /lip\s*gloss|جلوس|gloss/, ar: "جلوس شفاه", en: "lip gloss", mainAr: "مكياج", subAr: "شفاه" },
+      { test: /lip\s*liner|lipliner|قلم شفاه/, ar: "قلم شفاه", en: "lip liner", mainAr: "مكياج", subAr: "شفاه" },
+      { test: /lipstick|احمر شفاه|أحمر شفاه|\brouge\b|ليبستيك/, ar: "أحمر شفاه", en: "lipstick", mainAr: "مكياج", subAr: "شفاه" },
+      { test: /concealer|كونسيلر/, ar: "كونسيلر", en: "concealer", mainAr: "مكياج", subAr: "وجه" },
+      { test: /foundation|فاونديشن|fond de teint|كريم اساس|كريم أساس/, ar: "فاونديشن", en: "foundation", mainAr: "مكياج", subAr: "وجه" },
+      { test: /mascara|ماسكارا/, ar: "ماسكارا", en: "mascara", mainAr: "مكياج", subAr: "عيون" },
+      { test: /eyeshadow|ظل عيون|eye\s*shadow/, ar: "ظل عيون", en: "eyeshadow", mainAr: "مكياج", subAr: "عيون" },
+      { test: /eyeliner|ايلاينر|كحل|kohl/, ar: "ايلاينر", en: "eyeliner", mainAr: "مكياج", subAr: "عيون" },
+      { test: /brow\s*gel|جل حواجب/, ar: "جل حواجب", en: "brow gel", mainAr: "مكياج", subAr: "حواجب" },
+      { test: /brow|حواجب|eyebrow/, ar: "قلم حواجب", en: "brow pencil", mainAr: "مكياج", subAr: "حواجب" },
+      { test: /blush|بلاشر|احمر خدود|أحمر خدود/, ar: "بلاشر", en: "blush", mainAr: "مكياج", subAr: "وجه" },
+      { test: /highlighter|هايلايتر/, ar: "هايلايتر", en: "highlighter", mainAr: "مكياج", subAr: "وجه" },
+      { test: /bronzer|برونزر/, ar: "برونزر", en: "bronzer", mainAr: "مكياج", subAr: "وجه" },
+      { test: /primer|برايمر/, ar: "برايمر", en: "primer", mainAr: "مكياج", subAr: "وجه" },
+      { test: /powder|بودرة/, ar: "بودرة", en: "powder", mainAr: "مكياج", subAr: "وجه" },
+      { test: /serum|سيروم/, ar: "سيروم", en: "serum", mainAr: "عناية", subAr: "بشرة" },
+      { test: /moisturizer|مرطب/, ar: "مرطب", en: "moisturizer", mainAr: "عناية", subAr: "بشرة" },
+      { test: /sunscreen|واقي شمس|\bspf\b/, ar: "واقي شمس", en: "sunscreen", mainAr: "عناية", subAr: "بشرة" },
+      { test: /shampoo|شامبو/, ar: "شامبو", en: "shampoo", mainAr: "عناية", subAr: "شعر" },
+      { test: /conditioner|بلسم/, ar: "بلسم", en: "conditioner", mainAr: "عناية", subAr: "شعر" },
+      { test: /toner|تونر/, ar: "تونر", en: "toner", mainAr: "عناية", subAr: "بشرة" },
+      { test: /body\s*lotion|لوشن جسم/, ar: "لوشن جسم", en: "body lotion", mainAr: "عناية", subAr: "جسم" },
+      { test: /shower\s*gel|جل استحمام/, ar: "جل استحمام", en: "shower gel", mainAr: "عناية", subAr: "جسم" },
+      { test: /nail\s*polish|طلاء اظافر|طلاء أظافر/, ar: "طلاء أظافر", en: "nail polish", mainAr: "مكياج", subAr: "أظافر" },
+      { test: /perfume|eau de|عطر|بارفان/, ar: "عطر", en: "perfume", mainAr: "عطور", subAr: "" },
+      { test: /toothpaste|معجون|oral|dental|mouthwash|غسول فم/, ar: "عناية الفم", en: "oral care", mainAr: "عناية", subAr: "فم" },
+    ];
+    for (const row of rows) {
+      if (row.test.test(n) || row.test.test(text)) return row;
+    }
+    return { ar: "", en: "", mainAr: "مكياج", subAr: "" };
+  }
+
+  private stripRetailerJunk(title: string): string {
+    return title
+      .replace(/\s+/g, " ")
+      .replace(/\b(buy|shop|online|price|offer|sale|amazon|ebay|pharmacy|صيدلية|سعر|عرض)\b/gi, " ")
+      .replace(/\b\d{8,14}\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 120);
+  }
+
+  private stripShadeTokens(text: string): string {
+    return text
+      .replace(/\b(shade|n[°o.]?|nr\.?|color)\s*[#:]?\s*[A-Z]?\d{1,3}\b/gi, " ")
+      .replace(/\b[A-Z]\d{2,3}\b/g, " ")
+      .replace(/\s+#\d{1,3}\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  /** After the brand dash: Arabic market type + optional EN line + size. */
+  private arabicizeProductCore(core: string, typeHintAr?: string): string {
+    let s = (core || "").replace(/\s+/g, " ").trim();
+    if (!s) return (typeHintAr || "").trim();
+
+    const sizes: string[] = [];
+    s = s.replace(/(\d+(?:[.,]\d+)?)\s*(ml|مل|g|غ|gm|gr|grams?|oz)\b/gi, (_m, n: string, u: string) => {
+      const unit = /ml|مل/i.test(u) ? "مل" : /oz/i.test(u) ? "أونصة" : "غ";
+      sizes.push(`${String(n).replace(",", ".")} ${unit}`);
+      return " ";
+    });
+    s = s.replace(/\s+/g, " ").trim();
+
+    const phrases: Array<[RegExp, string]> = [
+      [/cleansing\s+mousse|mousse\s+nettoyante/gi, "موس تنظيف"],
+      [/cleansing\s+foam/gi, "رغوة تنظيف"],
+      [/cleansing\s+milk/gi, "حليب تنظيف"],
+      [/cleansing\s+gel/gi, "جل تنظيف"],
+      [/makeup\s+remover/gi, "مزيل مكياج"],
+      [/micellar\s+water/gi, "ماء ميسيلار"],
+      [/facial\s+cleanser|\bcleanser\b|\bcleansing\b/gi, "منظف"],
+      [/liquid\s+lipstick|lip\s+fluid/gi, "أحمر شفاه سائل"],
+      [/lip\s+gloss/gi, "جلوس شفاه"],
+      [/\blipstick\b|\brouge\b/gi, "أحمر شفاه"],
+      [/lip\s+liner|lipliner/gi, "قلم شفاه"],
+      [/\bconcealer\b/gi, "كونسيلر"],
+      [/\bfoundation\b/gi, "فاونديشن"],
+      [/\bmascara\b/gi, "ماسكارا"],
+      [/eye\s*shadow/gi, "ظل عيون"],
+      [/\beyeliner\b|\bkohl\b/gi, "ايلاينر"],
+      [/brow\s+gel/gi, "جل حواجب"],
+      [/brow\s+pencil|eyebrow/gi, "قلم حواجب"],
+      [/\bblush(er)?\b/gi, "بلاشر"],
+      [/\bhighlighter\b/gi, "هايلايتر"],
+      [/\bbronzer\b/gi, "برونزر"],
+      [/\bprimer\b/gi, "برايمر"],
+      [/\bpowder\b/gi, "بودرة"],
+      [/\bserum\b/gi, "سيروم"],
+      [/moisturi[sz]er/gi, "مرطب"],
+      [/sun\s*screen|\bspf\b/gi, "واقي شمس"],
+      [/\bshampoo\b/gi, "شامبو"],
+      [/\bconditioner\b/gi, "بلسم"],
+      [/shower\s+gel/gi, "جل استحمام"],
+      [/body\s+lotion/gi, "لوشن جسم"],
+      [/\btoner\b/gi, "تونر"],
+      [/\bmask\b|\bmasque\b/gi, "ماسك"],
+      [/\bmousse\b/gi, "موس"],
+      [/\bfoam\b/gi, "رغوة"],
+      [/\bcream\b/gi, "كريم"],
+      [/\blotion\b/gi, "لوشن"],
+      [/\bgel\b/gi, "جل"],
+      [/\boil\b/gi, "زيت"],
+      [/\bspray\b/gi, "بخاخ"],
+      [/\bsoap\b/gi, "صابون"],
+    ];
+
+    const types: string[] = [];
+    for (const [re, ar] of phrases) {
+      if (!re.test(s)) continue;
+      re.lastIndex = 0;
+      if (!types.includes(ar)) types.push(ar);
+      s = s.replace(re, " ");
+      re.lastIndex = 0;
+    }
+    s = s.replace(/\s+/g, " ").trim();
+    for (const t of types) {
+      const esc = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      s = s.replace(new RegExp(esc, "gi"), " ").replace(/\s+/g, " ").trim();
+    }
+
+    const typeAr = types[0] || (!this.hasArabicScript(s) ? (typeHintAr || "").trim() : "");
+    const line = s.replace(/\s+/g, " ").trim();
+    let out = [typeAr, line, ...sizes].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+    out = this.dedupeArabicPhrases(out);
+    if (!this.hasArabicScript(out) && typeHintAr && !out.includes(typeHintAr)) {
+      return `${typeHintAr} ${out}`.replace(/\s+/g, " ").trim();
+    }
+    return out;
+  }
+
+  private dedupeArabicPhrases(text: string): string {
+    let s = (text || "").replace(/\s+/g, " ").trim();
+    if (!s) return s;
+    const known = [
+      "أحمر شفاه سائل",
+      "أحمر شفاه",
+      "جلوس شفاه",
+      "قلم شفاه",
+      "موس تنظيف",
+      "فاونديشن",
+      "كونسيلر",
+      "ماسكارا",
+      "بلاشر",
+      "هايلايتر",
+      "برونزر",
+      "برايمر",
+      "بودرة",
+    ];
+    for (const phrase of known) {
+      const esc = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      s = s.replace(new RegExp(`(${esc})(\\s+\\1)+`, "g"), "$1");
+    }
+    return s.replace(/\s+/g, " ").trim();
+  }
+
+  private stripLeadingType(core: string, type: { ar: string; en: string }): string {
+    let s = core.replace(/\s+/g, " ").trim();
+    for (const t of [type.ar, type.en]) {
+      if (!t) continue;
+      const re = new RegExp(`^${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*[-–:]?\\s*`, "i");
+      s = s.replace(re, "").trim();
+    }
+    return s || core;
+  }
+
+  private templateDescriptions(args: {
+    brandEn: string;
+    brandAr: string;
+    typeAr: string;
+    typeEn: string;
+    line: string;
+    shadeFamily: boolean;
+  }): { ar: string; en: string } {
+    const brand = args.brandAr || args.brandEn || "المنتج";
+    const typeAr = args.typeAr || "منتج تجميل";
+    const typeEn = args.typeEn || "beauty product";
+    const line = args.line || typeEn;
+    const shadeNoteAr = args.shadeFamily ? "متوفر بعدة تدرجات." : "";
+    const shadeNoteEn = args.shadeFamily ? "Available in multiple shades." : "";
+    const ar = `${brand} ${typeAr} ${line}. مناسب للاستخدام اليومي في سوق العراق. ${shadeNoteAr}
+• ملمس مريح وسهل التطبيق
+• لمسة نهائية مناسبة لنوع المنتج
+• عبوة عملية للاستخدام اليومي`.replace(/\s+\n/g, "\n").trim();
+    const en = `${args.brandEn || "This"} ${typeEn} (${line}) for everyday wear. ${shadeNoteEn}
+• Easy to apply
+• Finish suited to the product type
+• Practical everyday packaging`.trim();
+    return { ar: this.polishMarketArabic(ar), en };
+  }
+
+  private guessShadeRow(
+    barcode: string,
+    free: FreeHint | undefined,
+    index: number,
+    existingShadeName?: string | null,
+  ): GptShadeRow {
+    const known = String(existingShadeName ?? "").trim();
+    const title = String(free?.title ?? "").trim();
+    const blob = [known, title, free?.brand].filter(Boolean).join(" ");
+    let code = this.extractShadeCode(blob || title, barcode, index);
+    if (this.isBarcodeFragmentCode(code, barcode)) {
+      code = this.extractShadeCode(known || title, barcode, index);
+    }
+    let nameEn = known ? this.extractShadeName(known, code) || known : this.extractShadeName(title, code);
+    if (!nameEn || this.isGenericShadeName(nameEn)) {
+      nameEn = this.inventShadeLabel(blob || title, code, index);
+    }
+    if (this.isGenericShadeName(nameEn)) {
+      nameEn = this.inventShadeLabel(blob || title, code, index);
+    }
+    const nameAr = this.polishMarketArabic(this.guessShadeNameAr(nameEn, code));
+    const hexFromText = this.extractHexFromText(`${known} ${title} ${blob}`);
+    const color_hex =
+      (free?.colorHex && this.normalizeShadeHex(free.colorHex) !== "#CCCCCC"
+        ? this.normalizeShadeHex(free.colorHex)
+        : "") ||
+      (hexFromText && hexFromText !== "#CCCCCC" ? hexFromText : "") ||
+      this.guessShadeHex(`${nameEn} ${title} ${blob}`);
+    return {
+      barcode,
+      code,
+      name_en: nameEn,
+      name_ar: nameAr,
+      color_hex,
+    };
+  }
+
+  private inventShadeLabel(text: string, code: string, index: number): string {
+    let s = this.stripRetailerJunk(text);
+    s = s.replace(/\bARTDECO\b/gi, " ").replace(/\blip\s*fluid\b/gi, " ");
+    s = s.replace(/\bmat\s*passion\b/gi, " ").replace(/\b\d+\s*ml\b/gi, " ");
+    s = s.replace(/\b(?:nr\.?|no\.?|n[°o]\.?|#)\s*\d+\b/gi, " ");
+    s = s.replace(/\s+/g, " ").trim();
+    const words = s.split(/\s+/).filter((w) => w.length > 1 && !/^\d+$/.test(w));
+    if (words.length >= 2) return words.slice(-2).join(" ");
+    if (words.length === 1) return words[0];
+    return code ? `Shade ${code}` : `Shade ${index + 1}`;
+  }
+
+  private shadeSortNumber(code: string, name: string): number | null {
+    const c = String(code ?? "").trim();
+    if (/^\d{1,3}$/.test(c)) {
+      const n = parseInt(c, 10);
+      return Number.isFinite(n) ? n : null;
+    }
+    const alphaNum = c.match(/^([A-Za-z]?)(\d{1,3})$/);
+    if (alphaNum?.[2]) {
+      const n = parseInt(alphaNum[2], 10);
+      if (n >= 1 && n <= 999) return n;
+    }
+    const nums = [...String(name ?? "").matchAll(/\b(\d{1,3})\b/g)];
+    if (nums.length) {
+      const n = parseInt(nums[nums.length - 1][1], 10);
+      if (n >= 1 && n <= 999) return n;
+    }
+    return null;
+  }
+
+  private compareShadeOrder(
+    a: { code: string; name: string },
+    b: { code: string; name: string },
+    barcodeA: string,
+    barcodeB: string,
+  ): number {
+    const na = this.shadeSortNumber(a.code, a.name);
+    const nb = this.shadeSortNumber(b.code, b.name);
+    if (na != null && nb != null && na !== nb) return na - nb;
+    if (na != null && nb == null) return -1;
+    if (na == null && nb != null) return 1;
+    const nameCmp = String(a.name ?? "").localeCompare(String(b.name ?? ""), undefined, {
+      sensitivity: "base",
+    });
+    if (nameCmp !== 0) return nameCmp;
+    const barcodeCmp = String(barcodeA ?? "").localeCompare(String(barcodeB ?? ""));
+    if (barcodeCmp !== 0) return barcodeCmp;
+    return String(a.code ?? "").localeCompare(String(b.code ?? ""), undefined, { sensitivity: "base" });
+  }
+
+  private sortShadeFamily<
+    T extends { barcode: string; code?: string; name?: string; nameEn?: string },
+  >(shades: T[]): T[] {
+    return [...shades].sort((a, b) =>
+      this.compareShadeOrder(
+        { code: String(a.code ?? ""), name: String(a.name ?? a.nameEn ?? "") },
+        { code: String(b.code ?? ""), name: String(b.name ?? b.nameEn ?? "") },
+        a.barcode,
+        b.barcode,
+      ),
+    );
+  }
+
+  private extractShadeCode(text: string, barcode: string, index: number): string {
+    const t = text || "";
+    const codeDash = t.match(/\b(\d{1,3})\s*[-–]\s*[A-Za-z][A-Za-z\s\-]{2,}/);
+    if (codeDash?.[1]) return codeDash[1];
+
+    const labeled =
+      t.match(/\b(?:shade|n[°o.]?|nr\.?|no\.?|#)\s*([A-Za-z]?\d{1,3})\b/i) ||
+      t.match(/\b([A-Z]{1,2}\d{2,3})\b/);
+    if (labeled?.[1]) return labeled[1].toUpperCase();
+
+    const endNum = t.match(/\b(\d{2,3})\b(?!\s*(?:ml|g|gr|oz)\b)/gi);
+    if (endNum?.length) {
+      const last = endNum[endNum.length - 1];
+      const n = parseInt(last, 10);
+      if (n >= 10 && n <= 999) return String(n);
+    }
+
+    return String(index + 1).padStart(2, "0");
+  }
+
+  private isBarcodeFragmentCode(code: string, barcode: string): boolean {
+    const c = String(code ?? "").trim();
+    if (!/^\d{3,4}$/.test(c)) return false;
+    const digits = barcode.replace(/\D/g, "");
+    return digits.includes(c);
+  }
+
+  private normalizeBarcodeList(rawBarcodes: string[]): string[] {
+    const unique: string[] = [];
+    const seen = new Set<string>();
+    for (const raw of rawBarcodes ?? []) {
+      const digits = String(raw ?? "").replace(/\D/g, "") || String(raw ?? "").trim();
+      if (digits.length < 6) continue;
+      const key = digits.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      unique.push(digits);
+      if (unique.length >= 40) break;
+    }
+    return unique;
+  }
+
+  private pickShadeImageUrl(free?: FreeHint): string | undefined {
+    const url = String(free?.imageUrl ?? "").trim();
+    return url.startsWith("http") ? url : undefined;
+  }
+
+  private globalHitToFreeHint(hit: GlobalBarcodeHit | undefined, hint?: string): FreeHint {
+    if (!hit || hit.confidence <= 0) return {};
+    const family = String(hit.title ?? "").trim();
+    const shade = String(hit.shadeName ?? "").trim();
+    let title = family;
+    if (shade) {
+      const codeDash = shade.match(/^(\d{1,3})\s*[-–]\s*(.+)$/);
+      if (codeDash) {
+        title = family ? `${family} — ${codeDash[2].trim()} ${codeDash[1]}` : shade;
+      } else if (family && !family.toLowerCase().includes(shade.toLowerCase())) {
+        title = `${family} — ${shade}`;
+      } else {
+        title = shade;
+      }
+    } else if (!title && hint) {
+      title = hint;
+    }
+    return {
+      title: title || family,
+      brand: hit.brand,
+      imageUrl: hit.imageUrl,
+      colorHex: hit.colorHex,
+      source: hit.source ? `global:${hit.source}` : "global",
+    };
+  }
+
+  private async healWeakShadeHints(
+    barcodes: string[],
+    freeByBarcode: Map<string, FreeHint>,
+    hint: string | undefined,
+    draft: GptAutofillJson,
+  ): Promise<void> {
+    const weak = barcodes.filter((bc) => {
+      const free = freeByBarcode.get(bc);
+      const title = String(free?.title ?? "").trim();
+      if (!title) return true;
+      const code = this.extractShadeCode(title, bc, 0);
+      const name = this.extractShadeName(title, code);
+      return !name || this.isGenericShadeName(name);
+    });
+    if (!weak.length) return;
+
+    const familyHint = [
+      hint,
+      draft.brand_en,
+      draft.name_en,
+    ]
+      .filter((s): s is string => Boolean(s && String(s).trim().length >= 2))
+      .join(" ")
+      .trim();
+    if (!familyHint) return;
+
+    const shopifyHits = await this.globalEnrichment.enrichFamilyFromShopify(barcodes, familyHint);
+    for (const bc of barcodes) {
+      const digits = this.barcodeDigits(bc);
+      const hit = shopifyHits.get(digits);
+      if (!hit?.shadeName || hit.confidence <= 0) continue;
+      const merged = this.globalHitToFreeHint(hit, familyHint);
+      const cur = freeByBarcode.get(bc) ?? {};
+      freeByBarcode.set(bc, {
+        ...cur,
+        ...merged,
+        title: merged.title || cur.title,
+        brand: merged.brand || cur.brand,
+        colorHex: merged.colorHex || cur.colorHex,
+        imageUrl: merged.imageUrl || cur.imageUrl,
+        source: [cur.source, merged.source].filter(Boolean).join("+"),
+      });
+    }
+
+    const stillWeak = barcodes.filter((bc) => {
+      const free = freeByBarcode.get(bc);
+      const title = String(free?.title ?? "").trim();
+      if (!title) return true;
+      const code = this.extractShadeCode(title, bc, 0);
+      const name = this.extractShadeName(title, code);
+      return !name || this.isGenericShadeName(name);
+    });
+    if (!stillWeak.length) return;
+
+    const namedTitles = barcodes
+      .map((bc) => {
+        const title = String(freeByBarcode.get(bc)?.title ?? "").trim();
+        if (!title) return "";
+        const code = this.extractShadeCode(title, bc, 0);
+        const name = this.extractShadeName(title, code);
+        return !this.isGenericShadeName(name) ? title : "";
+      })
+      .filter(Boolean);
+    const retryHint = [familyHint, ...namedTitles.slice(0, 2)].filter(Boolean).join(" ").trim();
+
+    const retry = await this.globalEnrichment.retryWeakBarcodes(stillWeak, retryHint, { budgetMs: 18_000 });
+    for (const bc of stillWeak) {
+      const digits = this.barcodeDigits(bc);
+      const hit = retry.get(digits);
+      if (!hit || hit.confidence <= 0 || !hit.shadeName) continue;
+      const merged = this.globalHitToFreeHint(hit, retryHint);
+      const cur = freeByBarcode.get(bc) ?? {};
+      freeByBarcode.set(bc, {
+        ...cur,
+        ...merged,
+        title: merged.title || cur.title,
+        brand: merged.brand || cur.brand,
+        colorHex: merged.colorHex || cur.colorHex,
+        imageUrl: merged.imageUrl || cur.imageUrl,
+        source: [cur.source, merged.source].filter(Boolean).join("+"),
+      });
     }
   }
 
-  private extractJsonText(body: Record<string, unknown>): string {
-    const output = (body.output as unknown[]) ?? [];
-    const chunks: string[] = [];
-    for (const item of output) {
-      const row = item as { type?: string; content?: Array<{ type?: string; text?: string }> };
-      if (row.type !== "message" || !row.content) continue;
-      for (const part of row.content) {
-        if ((part.type === "output_text" || part.type === "text") && part.text?.trim()) {
-          chunks.push(part.text);
+  private mergeGlobalAndCatalogHint(
+    global: GlobalBarcodeHit | undefined,
+    catalog: FreeHint | undefined,
+    hint?: string,
+  ): FreeHint {
+    const fromGlobal = this.globalHitToFreeHint(global, hint);
+    if (!catalog?.title?.trim()) return fromGlobal;
+    const catalogTitle = String(catalog.title).trim();
+    const globalTitle = String(fromGlobal.title ?? "").trim();
+    const catalogShade = this.extractShadeName(catalogTitle, "") || catalogTitle;
+    const globalShade = global?.shadeName || this.extractShadeName(globalTitle, "") || globalTitle;
+    const catalogNamed = catalogShade.length >= 2 && !this.isGenericShadeName(catalogShade);
+    const globalNamed =
+      Boolean(global?.shadeName) ||
+      (globalShade.length >= 2 && !this.isGenericShadeName(globalShade));
+
+    if (catalogNamed && (!globalNamed || (global?.confidence ?? 0) < 55)) {
+      return {
+        ...fromGlobal,
+        ...catalog,
+        title: catalogTitle || globalTitle,
+        brand: catalog.brand || fromGlobal.brand,
+        colorHex: catalog.colorHex || fromGlobal.colorHex,
+        imageUrl: catalog.imageUrl || fromGlobal.imageUrl,
+        source: [fromGlobal.source, catalog.source].filter(Boolean).join("+"),
+      };
+    }
+    return {
+      ...catalog,
+      ...fromGlobal,
+      title: globalTitle || catalogTitle,
+      brand: fromGlobal.brand || catalog.brand,
+      colorHex: fromGlobal.colorHex || catalog.colorHex,
+      imageUrl: fromGlobal.imageUrl || catalog.imageUrl,
+    };
+  }
+
+  private formatShadeDisplayName(row: GptShadeRow): string {
+    const code = String(row.code ?? "").trim();
+    const nameEn = String(row.name_en ?? "").trim();
+    const nameAr = String(row.name_ar ?? "").trim();
+    const cleanEn = nameEn
+      .replace(new RegExp(`^shade\\s*${code}\\s*`, "i"), "")
+      .replace(new RegExp(`^${code}\\s*`, "i"), "")
+      .trim();
+    if (cleanEn && code && !cleanEn.toLowerCase().includes(code.toLowerCase())) {
+      return `${cleanEn} ${code}`;
+    }
+    if (cleanEn) return cleanEn;
+    if (nameEn) return nameEn;
+    if (code && nameAr) return nameAr.includes(code) ? nameAr : `${nameAr} ${code}`;
+    return nameAr || code || nameEn;
+  }
+
+  private isGenericShadeName(name: string): boolean {
+    const t = String(name ?? "").trim();
+    if (!t) return true;
+    if (/^تدرج\s*\d+$/i.test(t)) return true;
+    if (/^shade\s*0*\d+$/i.test(t)) return true;
+    if (/^color\s*0*\d+$/i.test(t)) return true;
+    if (/^\d{1,3}$/.test(t)) return true;
+    return false;
+  }
+
+  private catalogHubBase(): string {
+    const raw =
+      process.env.CATALOG_HUB_INTERNAL_URL ??
+      process.env.CATALOG_HUB_URL ??
+      "http://catalog-hub:10000";
+    return raw.replace(/\/$/, "").replace(/\/catalog-hub$/, "");
+  }
+
+  private async lookupCatalogShade(
+    barcode: string,
+  ): Promise<{ shadeName?: string; title?: string; imageUrl?: string; colorHex?: string } | null> {
+    const stores = ["miswag", "faces"];
+    for (const store of stores) {
+      try {
+        const url = `${this.catalogHubBase()}/api/import/search?q=${encodeURIComponent(barcode)}&store=${encodeURIComponent(store)}&stores=${encodeURIComponent(store)}`;
+        const res = await fetch(url, {
+          headers: { Accept: "application/json", "User-Agent": "AlhayaaAiAutofill/2.1" },
+          signal: AbortSignal.timeout(3_000),
+        });
+        if (!res.ok) continue;
+        const body = (await res.json()) as {
+          results?: Array<{
+            shadeName?: string;
+            matchedShadeName?: string;
+            nameEn?: string;
+            nameAr?: string;
+            title?: string;
+            thumb?: string;
+            colorHex?: string;
+            hex?: string;
+            swatchUrl?: string;
+            swatchImage?: string;
+          }>;
+        };
+        const hit = body.results?.[0];
+        if (!hit) continue;
+        const shadeName = String(hit.matchedShadeName || hit.shadeName || "").trim();
+        const title = String(hit.nameEn || hit.nameAr || hit.title || "").trim();
+        const imageUrl = String(hit.swatchUrl || hit.swatchImage || hit.thumb || "").trim();
+        const colorHex = this.normalizeShadeHex(
+          String(hit.colorHex || hit.hex || "").trim() || undefined,
+        );
+        if (shadeName || title) {
+          return {
+            shadeName: shadeName || undefined,
+            title: title || undefined,
+            imageUrl: imageUrl.startsWith("http") ? imageUrl : undefined,
+            colorHex: colorHex !== "#CCCCCC" ? colorHex : undefined,
+          };
         }
+      } catch {
+        /* try next store */
       }
     }
-    const top = body.output_text;
-    if (typeof top === "string" && top.trim()) chunks.push(top);
+    return null;
+  }
 
-    for (const text of chunks) {
-      const trimmed = text.trim();
-      if (trimmed.startsWith("{") && trimmed.endsWith("}")) return trimmed;
-      const start = trimmed.indexOf("{");
-      const end = trimmed.lastIndexOf("}");
-      if (start >= 0 && end > start) return trimmed.slice(start, end + 1);
+  private barcodeDigits(bc: string): string {
+    return String(bc ?? "").replace(/\D/g, "");
+  }
+
+  /** Fetch parent product once and map all shade barcodes (names + hex). */
+  private async enrichFamilyFromCatalogProduct(
+    barcodes: string[],
+    freeByBarcode: Map<string, FreeHint>,
+  ): Promise<void> {
+    const stores = ["miswag", "faces"];
+    const want = new Set(barcodes.map((b) => this.barcodeDigits(b)).filter((d) => d.length >= 8));
+    let parentStore = "";
+    let parentId = "";
+
+    for (const bc of barcodes.slice(0, 3)) {
+      for (const store of stores) {
+        try {
+          const url = `${this.catalogHubBase()}/api/import/search?q=${encodeURIComponent(bc)}&store=${encodeURIComponent(store)}&stores=${encodeURIComponent(store)}`;
+          const res = await fetch(url, {
+            headers: { Accept: "application/json", "User-Agent": "AlhayaaAiAutofill/2.2" },
+            signal: AbortSignal.timeout(8_000),
+          });
+          if (!res.ok) continue;
+          const body = (await res.json()) as {
+            results?: Array<{ sourceId?: string; id?: string; store?: string }>;
+          };
+          const hit = body.results?.[0];
+          const sourceId = String(hit?.sourceId || hit?.id || "").trim();
+          if (sourceId) {
+            parentStore = String(hit?.store || store);
+            parentId = sourceId;
+            break;
+          }
+        } catch {
+          /* try next store */
+        }
+      }
+      if (parentId) break;
     }
-    if (chunks[0]?.trim()) return chunks[0].trim();
-    throw new ServiceUnavailableException("رد GPT فارغ");
+    if (!parentId || !parentStore) return;
+
+    try {
+      const url = `${this.catalogHubBase()}/api/import/${encodeURIComponent(parentStore)}/products/${encodeURIComponent(parentId)}`;
+      const res = await fetch(url, {
+        headers: { Accept: "application/json", "User-Agent": "AlhayaaAiAutofill/2.2" },
+        signal: AbortSignal.timeout(25_000),
+      });
+      if (!res.ok) return;
+      const body = (await res.json()) as {
+        product?: {
+          nameEn?: string;
+          nameAr?: string;
+          shades?: Array<{
+            barcode?: string;
+            name?: string;
+            nameEn?: string;
+            nameAr?: string;
+            colorHex?: string;
+            hex?: string;
+            swatchUrl?: string;
+            swatchImage?: string;
+            imageUrl?: string;
+            image?: string;
+            shadeNumber?: string;
+            shadeCode?: string;
+          }>;
+        };
+      };
+      const product = body.product;
+      const family = String(product?.nameEn || product?.nameAr || "").trim();
+      for (const shade of product?.shades ?? []) {
+        const digits = this.barcodeDigits(String(shade.barcode ?? ""));
+        if (!digits || !want.has(digits)) continue;
+        const rawBc = barcodes.find((b) => this.barcodeDigits(b) === digits) || digits;
+        const cur = freeByBarcode.get(rawBc) ?? {};
+        const shadeLabel = String(shade.nameEn || shade.name || shade.nameAr || "").trim();
+        const code = String(shade.shadeCode || shade.shadeNumber || "").trim();
+        const shadeName =
+          shadeLabel && code && !shadeLabel.toLowerCase().includes(code.toLowerCase())
+            ? `${shadeLabel} ${code}`
+            : shadeLabel || code;
+        const hexRaw = this.normalizeShadeHex(String(shade.colorHex || shade.hex || ""));
+        const img = String(
+          shade.swatchUrl || shade.swatchImage || shade.imageUrl || shade.image || "",
+        ).trim();
+        freeByBarcode.set(rawBc, {
+          ...cur,
+          title: shadeName ? (family ? `${family} — ${shadeName}` : shadeName) : cur.title,
+          colorHex: hexRaw !== "#CCCCCC" ? hexRaw : cur.colorHex,
+          imageUrl: img.startsWith("http") ? img : cur.imageUrl,
+          source: "catalog-family",
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`Catalog family enrich skipped: ${(err as Error).message}`);
+    }
+  }
+
+  private async enrichShadeHintsFromCatalog(
+    barcodes: string[],
+    freeByBarcode: Map<string, FreeHint>,
+  ): Promise<void> {
+    for (let i = 0; i < barcodes.length; i += 6) {
+      const chunk = barcodes.slice(i, i + 6);
+      await Promise.all(
+        chunk.map(async (barcode) => {
+          const cur = freeByBarcode.get(barcode) ?? {};
+          const title = String(cur.title ?? "").trim();
+          const code = this.extractShadeCode(title, barcode, 0);
+          const name = this.extractShadeName(title, code);
+          if (title.length >= 14 && name && !this.isGenericShadeName(name)) return;
+
+          const hit = await this.lookupCatalogShade(barcode);
+          if (!hit) return;
+
+          const next: FreeHint = { ...cur };
+          if (hit.shadeName) {
+            next.title = hit.title
+              ? `${hit.title} — ${hit.shadeName}`
+              : hit.shadeName;
+          } else if (hit.title && hit.title.length > title.length) {
+            next.title = hit.title;
+          }
+          if (!next.imageUrl && hit.imageUrl) next.imageUrl = hit.imageUrl;
+          if (hit.colorHex) next.colorHex = hit.colorHex;
+          next.source = next.source ?? "catalog-hub";
+          freeByBarcode.set(barcode, next);
+        }),
+      );
+    }
+  }
+
+  private async enrichShadeHintsFromImages(
+    barcodes: string[],
+    freeByBarcode: Map<string, FreeHint>,
+    nameHints: string[],
+  ): Promise<void> {
+    const hints = [...new Set(nameHints.map((h) => h.replace(/\s+/g, " ").trim()).filter((h) => h.length >= 2))];
+    const need = barcodes.filter((barcode) => {
+      const title = String(freeByBarcode.get(barcode)?.title ?? "").trim();
+      if (title.length < 10) return true;
+      const code = this.extractShadeCode(title, barcode, 0);
+      const name = this.extractShadeName(title, code);
+      return !name || /^shade\s*\d+$/i.test(name);
+    });
+    if (!need.length) return;
+
+    for (let i = 0; i < need.length; i += 4) {
+      const chunk = need.slice(i, i + 4);
+      await Promise.all(
+        chunk.map(async (barcode) => {
+          try {
+            const hits = await this.images.searchByBarcode(barcode, 24, hints);
+            const titles = this.extractIdentityTitles(hits);
+            const best =
+              titles.find((t) => this.extractShadeName(t, this.extractShadeCode(t, barcode, 0)).length >= 2) ??
+              titles[0] ??
+              hits.find((h) => (h.title ?? "").trim().length >= 12)?.title;
+            if (!best) return;
+            const cur = freeByBarcode.get(barcode) ?? {};
+            const curTitle = String(cur.title ?? "").trim();
+            if (!curTitle || curTitle.length < best.length) {
+              freeByBarcode.set(barcode, { ...cur, title: best.trim(), source: cur.source ?? "image-search" });
+            }
+          } catch {
+            /* ignore per-barcode image failures */
+          }
+        }),
+      );
+    }
+  }
+
+  private extractShadeName(text: string, code: string): string {
+    const quoted = text.match(/["“']([A-Za-z][A-Za-z \-]{2,40})["”']/);
+    if (quoted?.[1]) return quoted[1].trim();
+
+    const nrMatch = text.match(
+      /\b(?:no\.?|nr\.?|n[°o]\.?|#)\s*(\d{1,3})\s*[-–:]\s*([A-Za-z][A-Za-z\s\-]{2,36})/i,
+    );
+    if (nrMatch?.[2]) return nrMatch[2].replace(/\s+/g, " ").trim();
+
+    const codeDash = text.match(/\b(\d{1,3})\s*[-–]\s*([A-Za-z][A-Za-z\s\-]{2,36})\b/);
+    if (codeDash?.[2]) return codeDash[2].replace(/\s+/g, " ").trim();
+
+    const colorTail = text.match(/\b([A-Za-z][A-Za-z\s\-]{2,28}?)\s+(\d{2,3})\s*(?:ml|mL|g|gr|oz)?\s*$/i);
+    if (colorTail?.[1] && colorTail?.[2]) {
+      const label = colorTail[1].replace(/\s+/g, " ").trim();
+      const num = colorTail[2];
+      if (label.length >= 3 && !/^(lip|fluid|mat|passion|artdeco|makeup)$/i.test(label)) {
+        return label;
+      }
+      if (label.length >= 3) return `${label} ${num}`;
+    }
+
+    if (!code) return "";
+    const escaped = code.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const afterCode = text.match(new RegExp(`${escaped}\\s*[-–:]\\s*([A-Za-z][A-Za-z \\-]{2,40})`));
+    if (afterCode?.[1]) return afterCode[1].trim();
+    return "";
+  }
+
+  private guessShadeNameAr(nameEn: string, code: string): string {
+    const n = this.norm(nameEn);
+    const map: Array<[RegExp, string]> = [
+      [/nude|nudist/, "نود"],
+      [/ivory/, "عاجي"],
+      [/beige/, "بيج"],
+      [/rose|pink/, "وردي"],
+      [/coral/, "مرجاني"],
+      [/red|cherry|ruby/, "أحمر"],
+      [/brown|mocha|cocoa|espresso/, "بني"],
+      [/plum|berry/, "برقوقي"],
+      [/clear|transparent/, "شفاف"],
+      [/sand/, "رملي"],
+      [/honey/, "عسلي"],
+      [/caramel/, "كراميل"],
+    ];
+    for (const [re, ar] of map) {
+      if (re.test(n)) return code ? `${code} ${ar}` : ar;
+    }
+    return code || nameEn;
+  }
+
+  private normalizeShadeHex(raw?: string): string {
+    let h = String(raw ?? "").trim().toUpperCase().replace(/^#/, "");
+    if (/^[0-9A-F]{3}$/.test(h)) {
+      h = `${h[0]}${h[0]}${h[1]}${h[1]}${h[2]}${h[2]}`;
+    }
+    if (!/^[0-9A-F]{6}$/.test(h)) return "#CCCCCC";
+    return `#${h}`;
+  }
+
+  private extractHexFromText(text: string): string {
+    const m = String(text || "").match(/#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})\b/);
+    if (!m) return "";
+    return this.normalizeShadeHex(`#${m[1]}`);
+  }
+
+  private guessShadeHex(text: string): string {
+    const n = this.norm(text);
+    const map: Array<[RegExp, string]> = [
+      [/burnt\s*rose|brick\s*red/, "#9B3D3D"],
+      [/smooth\s*plum|deep\s*plum|plum/, "#7B3F61"],
+      [/nudist|nude\s*pink|soft\s*nude/, "#C9A08A"],
+      [/pinky\s*swear|baby\s*pink|light\s*pink/, "#F0A8B8"],
+      [/mauve|dusty\s*rose/, "#B07A8A"],
+      [/terracotta|rust/, "#C45C3A"],
+      [/wine|bordeaux|burgundy/, "#722F37"],
+      [/ivory|porcelain/, "#F4E6D4"],
+      [/nude|beige|sand/, "#D4B08C"],
+      [/honey|caramel|gold/, "#C4924A"],
+      [/rose|pink|blush/, "#E8A0B0"],
+      [/coral|peach/, "#E07A5F"],
+      [/red|cherry|ruby|passion|scarlet/, "#C41E3A"],
+      [/berry|cranberry/, "#9E3A59"],
+      [/brown|mocha|cocoa|espresso|chocolate/, "#6B3E2E"],
+      [/clear|transparent/, "#F6EDE8"],
+      [/black|noir/, "#1A1A1A"],
+      [/orange|tangerine/, "#E86A2A"],
+      [/purple|violet|lilac/, "#8E5A9B"],
+    ];
+    for (const [re, hex] of map) {
+      if (re.test(n)) return hex;
+    }
+    return "#CCCCCC";
   }
 
   private isWeakGpt(gpt: GptAutofillJson): boolean {
@@ -1081,24 +2822,45 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
     return name.length < 3 || brand.length < 1;
   }
 
-  private gptScore(gpt: GptAutofillJson): number {
-    let score = 0;
-    if ((gpt.brand_ar || gpt.brand_en || "").trim()) score += 2;
-    if ((gpt.name_ar || "").trim().length >= 3) score += 3;
-    if ((gpt.name_en || "").trim().length >= 3) score += 2;
-    if ((gpt.category_main_code || gpt.category_main_ar || "").trim()) score += 2;
-    if ((gpt.category_sub_codes?.length || gpt.category_sub_ar || "").toString().trim()) score += 1;
-    if ((gpt.description_ar || "").trim().length > 20) score += 1;
-    return score;
+
+  /** Latin/English brand stays Latin; Arabic brand stays Arabic. */
+  private isLatinBrand(value: string): boolean {
+    const s = (value || "").trim();
+    if (!s || /[\u0600-\u06FF]/.test(s)) return false;
+    return /[A-Za-z]/.test(s);
+  }
+
+  private hasArabicScript(value: string): boolean {
+    return /[\u0600-\u06FF]/.test(value || "");
+  }
+
+  /** Prefix used at the start of name_ar — brand as-is, never translated. */
+  private brandPrefixForArabicTitle(brandEn: string, brandAr: string): string {
+    const en = (brandEn || "").replace(/\s+/g, " ").trim();
+    const ar = (brandAr || "").replace(/\s+/g, " ").trim();
+    if (this.isLatinBrand(en)) return en;
+    if (this.hasArabicScript(ar)) return ar;
+    if (this.isLatinBrand(ar)) return ar;
+    return en || ar;
   }
 
   /** Enforce naming: EN/AR both "Brand - Product" (brand once) + market Arabic terms. */
   private polishNaming(gpt: GptAutofillJson): GptAutofillJson {
     const brandEn = this.canonicalBrandEn(gpt.brand_en || gpt.brand_ar || "");
     const brandAr = this.canonicalBrandAr(brandEn, gpt.brand_ar || "");
+    const arTitleBrand = this.brandPrefixForArabicTitle(brandEn, brandAr);
     const nameEn = this.ensureBrandDashName(gpt.name_en || "", brandEn, { doubleBrand: false });
-    const nameArRaw = this.ensureBrandDashName(gpt.name_ar || "", brandAr, { doubleBrand: false });
-    const nameAr = this.polishMarketArabic(nameArRaw);
+    const nameArRaw = this.ensureBrandDashName(gpt.name_ar || gpt.name_en || "", arTitleBrand, {
+      doubleBrand: false,
+      alsoStrip: [brandEn, brandAr],
+    });
+    const typeHint =
+      gpt.category_tertiary_ar || gpt.category_sub_ar || this.guessProductType(`${nameEn} ${nameArRaw}`).ar;
+    const nameArBody = this.extractProductCore(nameArRaw, arTitleBrand);
+    const nameAr = this.polishMarketArabic(
+      arTitleBrand ? `${arTitleBrand} - ${this.arabicizeProductCore(nameArBody, typeHint)}` : this.arabicizeProductCore(nameArRaw, typeHint),
+    );
+    const nameArFinal = this.dedupeArabicPhrases(nameAr);
     const descriptionAr = this.polishMarketArabic(gpt.description_ar || "");
     const normCodes = (arr: unknown, prefix: string) =>
       (Array.isArray(arr) ? arr : [])
@@ -1110,7 +2872,7 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
       brand_en: brandEn || gpt.brand_en?.trim() || "",
       brand_ar: brandAr || gpt.brand_ar?.trim() || "",
       name_en: nameEn,
-      name_ar: nameAr,
+      name_ar: nameArFinal,
       description_ar: descriptionAr,
       category_main_code: (() => {
         const c = String(gpt.category_main_code ?? "")
@@ -1119,8 +2881,8 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
           .replace(/[^A-Z0-9]/g, "");
         return /^M\d{2}$/.test(c) ? c : "";
       })(),
-      category_sub_codes: normCodes(gpt.category_sub_codes, "S").slice(0, 2),
-      category_tertiary_codes: normCodes(gpt.category_tertiary_codes, "T").slice(0, 2),
+      category_sub_codes: normCodes(gpt.category_sub_codes, "S").slice(0, 4),
+      category_tertiary_codes: normCodes(gpt.category_tertiary_codes, "T").slice(0, 4),
       category_subs_ar: Array.isArray(gpt.category_subs_ar)
         ? gpt.category_subs_ar.map((s) => String(s ?? "").trim()).filter(Boolean)
         : [],
@@ -1172,9 +2934,11 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
       [/garnier|غارنييه/, "Garnier"],
       [/radiant|راديانت/, "Radiant"],
       [/mon\s*reve|مون\s*ريف/, "Mon Reve"],
+      [/artdeco|ارتديكو|آرتديكو|ارتيكو|أرتديكو/, "ARTDECO"],
       [/grigi|جريجي/, "Grigi"],
       [/crest|كريست/, "Crest"],
       [/cosmaline|كوسمالاين/, "Cosmaline"],
+      [/artdeco|ارتديكو|أرتديكو/, "ARTDECO"],
       [/oral[\s-]?b|اورال/, "Oral-B"],
       [/colgate|كولجيت/, "Colgate"],
     ];
@@ -1200,9 +2964,11 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
       [/garnier/, "غارنييه"],
       [/radiant/, "راديانت"],
       [/mon\s*reve/, "مون ريف"],
+      [/artdeco/, "آرتديكو"],
       [/grigi/, "جريجي"],
       [/crest/, "كريست"],
       [/cosmaline/, "كوسمالاين"],
+      [/artdeco/, "أرتديكو"],
       [/oral[\s-]?b/, "اورال بي"],
       [/colgate/, "كولجيت"],
     ];
@@ -1217,12 +2983,17 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
   private ensureBrandDashName(
     name: string,
     brand: string,
-    opts: { doubleBrand?: boolean } = {},
+    opts: { doubleBrand?: boolean; alsoStrip?: string[] } = {},
   ): string {
     const b = brand.replace(/\s+/g, " ").trim();
     if (!b) return name.replace(/\s+/g, " ").trim();
 
-    const product = this.extractProductCore(name, b);
+    let product = this.extractProductCore(name, b);
+    for (const extra of opts.alsoStrip ?? []) {
+      const e = extra.replace(/\s+/g, " ").trim();
+      if (!e || this.norm(e) === this.norm(b)) continue;
+      product = this.extractProductCore(product, e);
+    }
     // doubleBrand kept for backwards-compat but unused (always single brand now)
     const prefix = opts.doubleBrand ? `${b} ${b}` : b;
     if (!product) return `${prefix} -`;
@@ -1410,10 +3181,46 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
     return catalog;
   }
 
+  private async mergeNamedImageSearch(
+    imageHits: GoogleImageHit[],
+    gpt: Pick<GptAutofillJson, "brand_ar" | "brand_en" | "name_ar" | "name_en">,
+  ) {
+    const queries = [
+      [gpt.brand_en || gpt.brand_ar, gpt.name_en].filter(Boolean).join(" "),
+      [gpt.brand_en || gpt.brand_ar, gpt.name_ar].filter(Boolean).join(" "),
+      gpt.name_en,
+      gpt.name_ar,
+    ]
+      .map((s) => String(s ?? "").replace(/\s+/g, " ").trim().slice(0, 90))
+      .filter((s) => s.length >= 4);
+    const seen = new Set(imageHits.map((h) => h.url.toLowerCase()));
+    for (const q of [...new Set(queries)].slice(0, 2)) {
+      if (imageHits.length >= 36) break;
+      try {
+        const extra = await Promise.race([
+          this.images.searchQuery(q, 24),
+          new Promise<GoogleImageHit[]>((resolve) => setTimeout(() => resolve([]), 4_500)),
+        ]);
+        for (const hit of extra) {
+          const key = hit.url.toLowerCase();
+          if (seen.has(key)) continue;
+          seen.add(key);
+          imageHits.push(hit);
+        }
+      } catch (err) {
+        this.logger.warn(`Named image search failed: ${(err as Error).message}`);
+      }
+    }
+  }
+
   private async matchCategories(gpt: GptAutofillJson) {
     const catalog = await this.getCategoryCatalog();
+    const type = this.guessProductType(
+      [gpt.name_ar, gpt.name_en, gpt.category_main_ar, gpt.category_sub_ar, gpt.category_tertiary_ar, gpt.brand_en, gpt.brand_ar]
+        .filter(Boolean)
+        .join(" "),
+    );
 
-    // 1) Primary path: AI-picked codes (validated against tree + parent links)
     const mainFromCode = this.resolveCode(catalog, gpt.category_main_code, "main");
     let mainId = mainFromCode?.id ?? null;
     let mainName = mainFromCode?.nameAr ?? null;
@@ -1423,16 +3230,25 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
     const tertiaryCategoryIds: string[] = [];
     const subcategoryNames: string[] = [];
     const tertiaryNames: string[] = [];
+    const maxMulti = 4;
+
+    const pushSub = (id: string | undefined | null, name?: string | null) => {
+      if (!id || subcategoryIds.includes(id) || subcategoryIds.length >= maxMulti) return;
+      subcategoryIds.push(id);
+      if (name) subcategoryNames.push(name);
+    };
+    const pushTert = (id: string | undefined | null, name?: string | null) => {
+      if (!id || tertiaryCategoryIds.includes(id) || tertiaryCategoryIds.length >= maxMulti) return;
+      tertiaryCategoryIds.push(id);
+      if (name) tertiaryNames.push(name);
+    };
 
     if (mainFromCode) {
       for (const code of gpt.category_sub_codes ?? []) {
-        if (subcategoryIds.length >= 2) break;
         const entry = this.resolveCode(catalog, code, "sub");
         if (!entry) continue;
         if (entry.parentCode !== mainCode && entry.parentId !== mainFromCode.id) continue;
-        if (subcategoryIds.includes(entry.id)) continue;
-        subcategoryIds.push(entry.id);
-        subcategoryNames.push(entry.nameAr);
+        pushSub(entry.id, entry.nameAr);
       }
 
       const allowedSubCodes = new Set(
@@ -1441,60 +3257,120 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
           .map((e) => e.code),
       );
       for (const code of gpt.category_tertiary_codes ?? []) {
-        if (tertiaryCategoryIds.length >= 2) break;
         const entry = this.resolveCode(catalog, code, "tertiary");
         if (!entry) continue;
         if (entry.parentCode && !allowedSubCodes.has(entry.parentCode)) continue;
         if (entry.parentId && !subcategoryIds.includes(entry.parentId)) continue;
-        if (tertiaryCategoryIds.includes(entry.id)) continue;
-        tertiaryCategoryIds.push(entry.id);
-        tertiaryNames.push(entry.nameAr);
+        pushTert(entry.id, entry.nameAr);
       }
     }
 
-    // 2) Fallback: name matching only if codes missing/invalid
     if (!mainId) {
       const mains = [...catalog.byCode.values()]
         .filter((e) => e.level === "main")
-        .map((e) => ({ id: e.id, nameAr: e.nameAr, nameEn: null, name: e.nameAr }));
-      const mainHit =
-        this.bestMatch(mains, gpt.category_main_ar, gpt.category_main_ar) ??
-        this.bestMatch(mains, gpt.name_ar, gpt.name_en);
-      if (mainHit && mainHit.score >= 55) {
-        mainId = mainHit.id;
-        mainName = mainHit.nameAr || mainHit.name || null;
+        .map((e) => ({ id: e.id, nameAr: e.nameAr, nameEn: null as string | null, name: e.nameAr }));
+      const mainHints = this.collectCategoryHints(gpt.category_main_ar, [type.mainAr, gpt.name_ar, gpt.name_en]);
+      for (const hint of mainHints) {
+        const hit = this.bestMatch(mains, hint, hint);
+        if (hit && hit.score >= 48) {
+          mainId = hit.id;
+          mainName = hit.nameAr || hit.name || null;
+          break;
+        }
+      }
+      if (!mainId) {
+        for (const hint of [type.mainAr, gpt.category_main_ar].filter(Boolean)) {
+          const tn = this.norm(hint);
+          if (!tn) continue;
+          const row = mains.find((m) => {
+            const n = this.norm(m.nameAr || m.name || "");
+            return n === tn || n.includes(tn) || tn.includes(n);
+          });
+          if (row) {
+            mainId = row.id;
+            mainName = row.nameAr || row.name || null;
+            break;
+          }
+        }
       }
     }
 
-    if (mainId && !subcategoryIds.length) {
-      const subs = [...catalog.byCode.values()]
-        .filter((e) => e.level === "sub" && e.parentId === mainId)
-        .map((e) => ({ id: e.id, nameAr: e.nameAr, nameEn: null, name: e.nameAr }));
-      const subHints = this.collectCategoryHints(gpt.category_sub_ar, gpt.category_subs_ar);
-      const identityHints = this.collectCategoryHints(gpt.name_ar, [gpt.name_en]);
-      const ids = this.matchManyCategories(subs, subHints, identityHints, {
-        maxSelect: Math.min(2, Math.max(1, subHints.length || 1)),
+    const allEntries = [...catalog.byCode.values()];
+    const subsOfMain = mainId
+      ? allEntries
+          .filter((e) => e.level === "sub" && e.parentId === mainId)
+          .map((e) => ({ id: e.id, nameAr: e.nameAr, nameEn: null as string | null, name: e.nameAr }))
+      : [];
+
+    if (mainId && subcategoryIds.length < maxMulti && subsOfMain.length) {
+      const subHints = this.collectCategoryHints(gpt.category_sub_ar, [
+        ...(gpt.category_subs_ar ?? []),
+        type.subAr,
+        type.ar,
+      ]);
+      const identityHints = this.collectCategoryHints(gpt.name_ar, [gpt.name_en, type.en, type.ar]);
+      const ids = this.matchManyCategories(subsOfMain, subHints, identityHints, {
+        maxSelect: maxMulti,
+        primaryMinScore: 48,
+        identityMinScore: 58,
       });
       for (const id of ids) {
-        const row = subs.find((s) => s.id === id);
-        subcategoryIds.push(id);
-        if (row?.nameAr) subcategoryNames.push(row.nameAr);
+        const row = subsOfMain.find((s) => s.id === id);
+        pushSub(id, row?.nameAr);
+      }
+      if (!subcategoryIds.length && type.subAr) {
+        const tn = this.norm(type.subAr);
+        for (const row of subsOfMain) {
+          const n = this.norm(row.nameAr || row.name || "");
+          if (n === tn || n.includes(tn) || (tn.length >= 3 && tn.includes(n))) {
+            pushSub(row.id, row.nameAr);
+          }
+        }
       }
     }
 
-    if (subcategoryIds.length && !tertiaryCategoryIds.length) {
-      const tert = [...catalog.byCode.values()]
-        .filter((e) => e.level === "tertiary" && e.parentId && subcategoryIds.includes(e.parentId))
-        .map((e) => ({ id: e.id, nameAr: e.nameAr, nameEn: null, name: e.nameAr }));
-      const tertHints = this.collectCategoryHints(gpt.category_tertiary_ar, gpt.category_tertiaries_ar);
-      const identityHints = this.collectCategoryHints(gpt.name_ar, [gpt.name_en]);
-      const ids = this.matchManyCategories(tert, tertHints, identityHints, {
-        maxSelect: Math.min(2, Math.max(1, tertHints.length || 1)),
-      });
-      for (const id of ids) {
-        const row = tert.find((t) => t.id === id);
-        tertiaryCategoryIds.push(id);
-        if (row?.nameAr) tertiaryNames.push(row.nameAr);
+    const tertUnderSubs = (parentIds: string[]) =>
+      allEntries
+        .filter((e) => e.level === "tertiary" && e.parentId && parentIds.includes(e.parentId))
+        .map((e) => ({ id: e.id, nameAr: e.nameAr, nameEn: null as string | null, name: e.nameAr, parentId: e.parentId }));
+
+    if (mainId && tertiaryCategoryIds.length < maxMulti) {
+      const tertHints = this.collectCategoryHints(gpt.category_tertiary_ar, [
+        ...(gpt.category_tertiaries_ar ?? []),
+        type.ar,
+      ]);
+      const identityHints = this.collectCategoryHints(gpt.name_ar, [gpt.name_en, type.en, type.ar]);
+      let tertRows = tertUnderSubs(subcategoryIds);
+      if (!tertRows.length && subsOfMain.length) {
+        tertRows = tertUnderSubs(subsOfMain.map((s) => s.id));
+      }
+      if (tertRows.length) {
+        const ids = this.matchManyCategories(tertRows, tertHints, identityHints, {
+          maxSelect: maxMulti,
+          primaryMinScore: 48,
+          identityMinScore: 58,
+        });
+        for (const id of ids) {
+          const row = tertRows.find((t) => t.id === id);
+          if (row?.parentId) {
+            const parent = subsOfMain.find((s) => s.id === row.parentId) ?? allEntries.find((e) => e.id === row.parentId);
+            pushSub(row.parentId, parent?.nameAr ?? null);
+          }
+          pushTert(id, row?.nameAr);
+        }
+      }
+      if (!tertiaryCategoryIds.length && type.ar) {
+        const tn = this.norm(type.ar);
+        for (const row of tertUnderSubs(subsOfMain.length ? subsOfMain.map((s) => s.id) : subcategoryIds)) {
+          const n = this.norm(row.nameAr || row.name || "");
+          if (n === tn || n.includes(tn) || (tn.length >= 4 && tn.includes(n))) {
+            if (row.parentId) {
+              const parent = subsOfMain.find((s) => s.id === row.parentId);
+              pushSub(row.parentId, parent?.nameAr);
+            }
+            pushTert(row.id, row.nameAr);
+          }
+        }
       }
     }
 
@@ -1504,9 +3380,9 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
       tertiaryCategoryId: tertiaryCategoryIds[0] ?? null,
       subcategoryIds,
       tertiaryCategoryIds,
-      categoryNameAr: mainName || gpt.category_main_ar,
-      subcategoryNameAr: subcategoryNames[0] ?? gpt.category_sub_ar,
-      tertiaryNameAr: tertiaryNames[0] ?? gpt.category_tertiary_ar,
+      categoryNameAr: mainName || gpt.category_main_ar || type.mainAr,
+      subcategoryNameAr: subcategoryNames[0] ?? (gpt.category_sub_ar || type.subAr),
+      tertiaryNameAr: tertiaryNames[0] ?? (gpt.category_tertiary_ar || type.ar),
       subcategoryNamesAr: subcategoryNames,
       tertiaryNamesAr: tertiaryNames,
     };
@@ -1556,35 +3432,35 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
     rows: Array<{ id: string; nameAr: string | null; nameEn: string | null; name?: string | null }>,
     primaryHints: string[],
     identityHints: string[],
-    opts: { maxSelect?: number } = {},
+    opts: { maxSelect?: number; primaryMinScore?: number; identityMinScore?: number } = {},
   ): string[] {
     if (!rows.length) return [];
-    const maxSelect = Math.max(1, opts.maxSelect ?? 1);
+    const maxSelect = Math.max(1, opts.maxSelect ?? 4);
+    const primaryMin = opts.primaryMinScore ?? 48;
+    const identityMin = opts.identityMinScore ?? 58;
 
     const selected: string[] = [];
     const push = (id: string | undefined | null) => {
-      if (!id || selected.includes(id)) return;
-      if (selected.length >= maxSelect) return;
+      if (!id || selected.includes(id) || selected.length >= maxSelect) return;
       selected.push(id);
     };
 
+    const ranked: Array<{ id: string; score: number }> = [];
     for (const hint of primaryHints) {
-      if (selected.length >= maxSelect) break;
       const hit = this.bestMatch(rows, hint, hint);
-      if (hit && hit.score >= 55) push(hit.id);
+      if (hit && hit.score >= primaryMin) ranked.push({ id: hit.id, score: hit.score });
     }
+    ranked.sort((a, b) => b.score - a.score);
+    for (const r of ranked) push(r.id);
 
-    if (!selected.length && identityHints.length) {
-      let best:
-        | ({ id: string; nameAr: string | null; nameEn: string | null; name?: string | null } & {
-            score: number;
-          })
-        | null = null;
+    if (selected.length < maxSelect && identityHints.length) {
+      const extra: Array<{ id: string; score: number }> = [];
       for (const hint of identityHints) {
         const hit = this.bestMatch(rows, hint, hint);
-        if (hit && hit.score >= 70 && (!best || hit.score > best.score)) best = hit;
+        if (hit && hit.score >= identityMin) extra.push({ id: hit.id, score: hit.score });
       }
-      if (best) push(best.id);
+      extra.sort((a, b) => b.score - a.score);
+      for (const r of extra) push(r.id);
     }
 
     return selected;
@@ -1609,16 +3485,16 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
       const expandedCandidates = this.expandTargets(candidates);
       let score = 0;
       for (const t of targets) {
-        if (this.isGenericCategoryToken(t)) continue;
         for (const c of expandedCandidates) {
-          if (this.isGenericCategoryToken(c)) continue;
           if (t === c) {
-            score = Math.max(score, t.length >= 6 ? 100 : 88);
-          } else if (t.includes(c) || c.includes(t)) {
+            score = Math.max(score, t.length >= 3 ? 100 : 88);
+            continue;
+          }
+          if (this.isGenericCategoryToken(t) || this.isGenericCategoryToken(c)) continue;
+          if (t.includes(c) || c.includes(t)) {
             const shorter = t.length <= c.length ? t : c;
             const longer = t.length > c.length ? t : c;
-            // Require a meaningful phrase — blocks "عناية" matching every care sub
-            if (shorter.length < 6) continue;
+            if (shorter.length < 4) continue;
             if (this.isGenericCategoryToken(shorter)) continue;
             score = Math.max(score, shorter.length * 2 >= longer.length ? 90 : 72);
           } else if (this.tokenOverlap(t, c) >= 0.7) {
@@ -1626,7 +3502,7 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
           }
         }
       }
-      if (score >= 55 && (!best || score > best.score)) best = { ...row, score };
+      if (score >= 48 && (!best || score > best.score)) best = { ...row, score };
     }
     return best;
   }
@@ -1635,8 +3511,8 @@ STEP2: return complete JSON — MSA name_ar + official name_en + category_*_code
     const n = this.norm(token);
     if (!n) return true;
     if (GENERIC_CATEGORY_TOKENS.has(n)) return true;
-    // Single short Arabic/Latin word shared by many category labels
-    if (!n.includes(" ") && n.length <= 4) return true;
+    // Short Latin particles only — Arabic labels like شفاه/وجه must still match.
+    if (/^[a-z]+$/.test(n) && n.length <= 3) return true;
     return false;
   }
 

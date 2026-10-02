@@ -1,10 +1,26 @@
-import { IsBoolean, IsIn, IsOptional, IsString, Matches, MaxLength, MinLength } from "class-validator";
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsIn,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from "class-validator";
 import { Transform } from "class-transformer";
 
-/** Client-facing model ids (Cursor-style). Server maps them to OpenAI API models. */
+/** Client-facing model ids. Default quality path uses GPT-5.6 Terra via Cursor API. */
 export const AI_MODEL_CHOICES = [
+  "gpt-5.6-terra",
+  "gpt-5.6-sol",
   "gpt-5.6-luna-low",
   "gpt-5.6-luna-medium",
+  "composer-2.5-low",
+  "composer-2.5-fast",
+  "composer-2.5",
   "gpt-5.4-nano",
   "gpt-5.4-mini",
 ] as const;
@@ -26,7 +42,19 @@ export class AiAutofillDto {
   @IsOptional()
   @IsString()
   @MaxLength(64)
-  @IsIn([...AI_MODEL_CHOICES, "luna-low", "luna-medium", "luna-med"])
+  @IsIn([
+    ...AI_MODEL_CHOICES,
+    "terra",
+    "tera",
+    "gpt-5.6-tera",
+    "sol",
+    "luna",
+    "luna-low",
+    "luna-medium",
+    "luna-med",
+    "composer-low",
+    "composer-fast",
+  ])
   model?: string;
 
   /** When true, run AI even if barcode already exists (correction / review mode). */
@@ -60,6 +88,60 @@ export class AiImagesDto {
   query?: string;
 }
 
+/** Identify a makeup shade family from multiple scanned EANs. */
+export class AiShadeFamilyDto {
+  @Transform(({ value }) =>
+    Array.isArray(value)
+      ? [...new Set(value.map((v: unknown) => String(v ?? "").trim()).filter(Boolean))]
+      : [],
+  )
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(40)
+  @IsString({ each: true })
+  @Matches(/^[0-9A-Za-z\-]{6,32}$/, { each: true })
+  barcodes!: string[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  hint?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  @IsIn([
+    ...AI_MODEL_CHOICES,
+    "terra",
+    "tera",
+    "gpt-5.6-tera",
+    "sol",
+    "luna",
+    "luna-low",
+    "luna-medium",
+    "luna-med",
+    "composer-low",
+    "composer-fast",
+  ])
+  model?: string;
+}
+
+export class AiGlobalShadeEnrichDto {
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(40)
+  @IsString({ each: true })
+  @MinLength(6, { each: true })
+  @MaxLength(32, { each: true })
+  @Matches(/^[0-9A-Za-z\-]{6,32}$/, { each: true })
+  barcodes!: string[];
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  hint?: string;
+}
+
 export class AiReviewExistingDto {
   @IsString()
   @MinLength(6)
@@ -80,6 +162,18 @@ export class AiReviewExistingDto {
   @IsOptional()
   @IsString()
   @MaxLength(64)
-  @IsIn([...AI_MODEL_CHOICES, "luna-low", "luna-medium", "luna-med"])
+  @IsIn([
+    ...AI_MODEL_CHOICES,
+    "terra",
+    "tera",
+    "gpt-5.6-tera",
+    "sol",
+    "luna",
+    "luna-low",
+    "luna-medium",
+    "luna-med",
+    "composer-low",
+    "composer-fast",
+  ])
   model?: string;
 }

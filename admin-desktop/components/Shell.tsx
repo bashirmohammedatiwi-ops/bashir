@@ -34,6 +34,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { href: "/products", label: "المنتجات", short: "م" },
       { href: "/products/app-order", label: "ترتيب التطبيق", short: "تر" },
       { href: "/catalog-import", label: "استيراد الكتالوج", short: "كت" },
+      { href: "/ai-add", label: "إضافة ذكية ✦", short: "AI" },
       { href: "/skin-concerns", label: "دليل البشرة", short: "ب" },
       { href: "/skin-routines", label: "روتين البشرة", short: "ر" },
       { href: "/inventory", label: "المخزون و POS", short: "مخ" },
@@ -78,7 +79,7 @@ const NavLink = memo(function NavLink({
     <Link
       href={item.href}
       prefetch={false}
-      className={`alhayaa-nav-item${active ? " active" : ""}`}
+      className={`alhayaa-nav-item${active ? " active" : ""}${item.href === "/ai-add" ? " ai-nav-featured" : ""}`}
       title={collapsed ? item.label : undefined}
     >
       <span className="alhayaa-nav-icon">{item.short}</span>

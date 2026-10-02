@@ -1,8 +1,9 @@
 "use client";
 
 import { CheckOutlined } from "@ant-design/icons";
-import { Empty, Input, Typography } from "antd";
-import { useMemo, useState } from "react";
+import { Empty, Input, Spin, Typography } from "antd";
+import { useCallback, useMemo, useState } from "react";
+import { useLoadMoreSentinel } from "@/hooks/useLoadMoreSentinel";
 import { mediaThumb } from "@/lib/mediaUrl";
 
 const { Text } = Typography;
@@ -25,6 +26,14 @@ type Props = {
   max?: number;
   imageKey?: "image" | "logo";
   placeholder?: string;
+  searchValue?: string;
+  onSearchChange?: (q: string) => void;
+  serverSearch?: boolean;
+  onLoadMore?: () => void;
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  loading?: boolean;
+  totalCount?: number;
 };
 
 function entityLabel(e: Entity) {
@@ -43,15 +52,44 @@ export function EntityMultiPicker({
   max,
   imageKey = "image",
   placeholder = "بحث...",
+  searchValue,
+  onSearchChange,
+  serverSearch = false,
+  onLoadMore,
+  hasMore = false,
+  loadingMore = false,
+  loading = false,
+  totalCount,
 }: Props) {
-  const [q, setQ] = useState("");
+  const [localQ, setLocalQ] = useState("");
+  const [scrollRoot, setScrollRoot] = useState<Element | null>(null);
   const selected = value ?? [];
+  const q = searchValue ?? localQ;
+
+  const setQ = useCallback(
+    (next: string) => {
+      if (onSearchChange) onSearchChange(next);
+      else setLocalQ(next);
+    },
+    [onSearchChange],
+  );
 
   const filtered = useMemo(() => {
+    if (serverSearch) return items;
     const s = q.trim().toLowerCase();
     if (!s) return items;
     return items.filter((e) => entityLabel(e).toLowerCase().includes(s));
-  }, [items, q]);
+  }, [items, q, serverSearch]);
+
+  const handleLoadMore = useCallback(() => {
+    if (hasMore && !loadingMore) onLoadMore?.();
+  }, [hasMore, loadingMore, onLoadMore]);
+
+  const sentinelRef = useLoadMoreSentinel(handleLoadMore, {
+    enabled: hasMore && !!onLoadMore,
+    root: scrollRoot,
+    rootMargin: "120px",
+  });
 
   function toggle(id: string) {
     const set = new Set(selected);
@@ -77,6 +115,8 @@ export function EntityMultiPicker({
   const selectedItems = selected
     .map((id) => items.find((e) => e.id === id))
     .filter(Boolean) as Entity[];
+
+  const shown = totalCount ?? filtered.length;
 
   return (
     <div className="hb-entity-picker">
@@ -125,10 +165,22 @@ export function EntityMultiPicker({
         style={{ marginBottom: 8 }}
       />
 
-      {filtered.length === 0 ? (
+      {serverSearch && (
+        <Text type="secondary" className="hb-entity-count">
+          {loading && !filtered.length
+            ? "جاري التحميل..."
+            : `عُرض ${filtered.length.toLocaleString("ar-IQ")} من ${shown.toLocaleString("ar-IQ")}`}
+        </Text>
+      )}
+
+      {loading && !filtered.length ? (
+        <div className="hb-entity-loading">
+          <Spin />
+        </div>
+      ) : filtered.length === 0 ? (
         <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="لا توجد عناصر" />
       ) : (
-        <div className="hb-entity-grid">
+        <div className="hb-entity-grid" ref={(node) => setScrollRoot(node)}>
           {filtered.map((e) => {
             const active = selected.includes(e.id);
             const url = entityImage(e, imageKey);
@@ -158,6 +210,12 @@ export function EntityMultiPicker({
               </button>
             );
           })}
+          {loadingMore && (
+            <div className="hb-entity-load-more">
+              <Spin size="small" /> تحميل...
+            </div>
+          )}
+          <div ref={sentinelRef} className="hb-entity-sentinel" aria-hidden />
         </div>
       )}
     </div>

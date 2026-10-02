@@ -288,7 +288,7 @@ export class AuthService {
     role: Role,
     meta?: { ip?: string; userAgent?: string },
   ) {
-    const accessTtl = Number(process.env.JWT_ACCESS_TTL ?? 900);
+    const accessTtl = Number(process.env.JWT_ACCESS_TTL ?? 28800);
     const refreshTtl = Number(process.env.JWT_REFRESH_TTL ?? 60 * 60 * 24 * 30);
     const jti = randomBytes(12).toString("hex");
 
