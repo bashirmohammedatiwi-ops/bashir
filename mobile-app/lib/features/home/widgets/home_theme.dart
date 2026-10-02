@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_fonts.dart';
 import '../../cart/widgets/cart_theme.dart';
 import '../../../core/widgets/app_network_image.dart';
+import '../../../core/widgets/brand_art.dart';
 
 /// نظام تصميم الرئيسية — أنيق ومتناسق مع ألوان اللوغو.
 abstract final class HomeTheme {
@@ -48,9 +50,9 @@ abstract final class HomeTheme {
   static const blush = Color(0xFFFFF8FA);
 
   static const ink = CartTheme.charcoal;
-  static const inkSoft = Color(0xFF6B7A76);
-  static const inkMuted = Color(0xFF9AABA6);
-  static const divider = Color(0xFFE3EDEA);
+  static const inkSoft = AppColors.textSecondary;
+  static const inkMuted = AppColors.textMuted;
+  static const divider = AppColors.border;
 
   static const categoryTileColors = [
     roseWash,
@@ -236,9 +238,9 @@ abstract final class HomeTheme {
         color: surface,
         borderRadius: BorderRadius.circular(cardRadius),
         border: Border.all(color: divider),
-      );
+    );
 
-  // Legacy aliases
+  // Legacy aliases — مستخدمة في أقسام قديمة، ستنظمف عند تمريرة التفاصيل.
   static const petal = roseWash;
   static const mist = surfaceMuted;
   static const blushDeep = divider;
@@ -254,7 +256,7 @@ class HomeCanvasBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: HomeTheme.canvasDecoration(),
-      child: child,
+      child: AmbientBackground(child: child),
     );
   }
 }
@@ -453,21 +455,34 @@ class HomeCountdownBoxes extends StatelessWidget {
         ),
       );
 
-  Widget _box(String v) => Container(
-        width: 28,
-        padding: const EdgeInsets.symmetric(vertical: 5),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: HomeTheme.ink,
-          borderRadius: BorderRadius.circular(6),
+  Widget _box(String v) => AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        transitionBuilder: (child, anim) => FadeTransition(
+          opacity: anim,
+          child: SlideTransition(
+            position: Tween<Offset>(begin: const Offset(0, 0.6), end: Offset.zero).animate(anim),
+            child: child,
+          ),
         ),
-        child: Text(
-          v,
-          style: GoogleFonts.cairo(
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            color: Colors.white,
-            fontFeatures: const [FontFeature.tabularFigures()],
+        child: Container(
+          key: ValueKey(v),
+          width: 28,
+          padding: const EdgeInsets.symmetric(vertical: 5),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFFE83A72), AppColors.roseDark],
+            ),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            v,
+            style: GoogleFonts.cairo(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
           ),
         ),
       );

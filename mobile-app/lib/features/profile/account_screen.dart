@@ -13,6 +13,8 @@ import 'profile_providers.dart';
 import '../settings/legal_document_screen.dart';
 import 'widgets/account_theme.dart';
 import 'widgets/profile_ui.dart';
+
+import '../../core/widgets/entrance.dart';
 import 'widgets/support_contact_section.dart';
 
 class AccountScreen extends ConsumerWidget {
@@ -38,7 +40,7 @@ class AccountScreen extends ConsumerWidget {
                 _ProfileHero(s: s),
                 const SizedBox(height: AccountTheme.sectionGap),
                 ProfileSectionTitle(s.isAr ? 'تسوقي' : 'Shopping', icon: Icons.shopping_bag_outlined),
-                ProfileMenuCard(
+                StaggerEntrance(index: 1, child: ProfileMenuCard(
                   children: [
                     ProfileMenuTile(
                       icon: Icons.receipt_long_outlined,
@@ -66,9 +68,10 @@ class AccountScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
+                ),
                 const SizedBox(height: AccountTheme.sectionGap),
                 ProfileSectionTitle(s.isAr ? 'اكتشفي' : 'Discover', icon: Icons.explore_outlined),
-                ProfileMenuCard(
+                StaggerEntrance(index: 2, child: ProfileMenuCard(
                   children: [
                     ProfileMenuTile(
                       icon: Icons.storefront_outlined,
@@ -85,11 +88,12 @@ class AccountScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
+                ),
                 const SizedBox(height: AccountTheme.sectionGap),
                 SupportContactSection(s: s),
                 const SizedBox(height: AccountTheme.sectionGap),
                 ProfileSectionTitle(s.isAr ? 'الحساب' : 'Account', icon: Icons.person_outline_rounded),
-                ProfileMenuCard(
+                StaggerEntrance(index: 3, child: ProfileMenuCard(
                   children: [
                     ProfileMenuTile(
                       icon: Icons.edit_outlined,
@@ -111,9 +115,10 @@ class AccountScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
+                ),
                 const SizedBox(height: AccountTheme.sectionGap),
                 ProfileSectionTitle(s.legalSection, icon: Icons.gavel_outlined),
-                ProfileMenuCard(
+                StaggerEntrance(index: 4, child: ProfileMenuCard(
                   children: [
                     ProfileMenuTile(
                       icon: Icons.privacy_tip_outlined,
@@ -128,6 +133,7 @@ class AccountScreen extends ConsumerWidget {
                       onTap: () => openLegalDocument(context, LegalDocumentType.terms),
                     ),
                   ],
+                ),
                 ),
                 const SizedBox(height: AccountTheme.sectionGap),
                 ProfileSectionTitle(s.language, icon: Icons.language_rounded),
@@ -220,6 +226,7 @@ class _ProfileHero extends ConsumerWidget {
       subtitle: contact,
       badge: '${user.points} ${s.loyaltyPointsCount}',
       initial: user.name.isNotEmpty ? user.name[0] : '؟',
+      avatarUrl: user.avatarUrl,
       onEdit: () => context.push('/edit-profile'),
     );
   }
@@ -276,7 +283,7 @@ class _GuestView extends ConsumerWidget {
         ),
         const SizedBox(height: AccountTheme.sectionGap),
         ProfileSectionTitle(s.isAr ? 'اكتشفي' : 'Discover', icon: Icons.explore_outlined),
-        ProfileMenuCard(
+        StaggerEntrance(index: 5, child: ProfileMenuCard(
           children: [
             ProfileMenuTile(
               icon: Icons.storefront_outlined,
@@ -292,11 +299,12 @@ class _GuestView extends ConsumerWidget {
             ),
           ],
         ),
+        ),
         const SizedBox(height: AccountTheme.sectionGap),
         SupportContactSection(s: s),
         const SizedBox(height: AccountTheme.sectionGap),
         ProfileSectionTitle(s.legalSection, icon: Icons.gavel_outlined),
-        ProfileMenuCard(
+        StaggerEntrance(index: 6, child: ProfileMenuCard(
           children: [
             ProfileMenuTile(
               icon: Icons.privacy_tip_outlined,
@@ -311,6 +319,7 @@ class _GuestView extends ConsumerWidget {
               onTap: () => openLegalDocument(context, LegalDocumentType.terms),
             ),
           ],
+        ),
         ),
         const SizedBox(height: AccountTheme.sectionGap),
         ProfileSectionTitle(s.language, icon: Icons.language_rounded),

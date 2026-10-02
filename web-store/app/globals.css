@@ -269,7 +269,7 @@ button { font: inherit; }
 .product-image-wrap img { width: 100%; height: 100%; object-fit: cover; }
 .product-placeholder {
   width: 100%; height: 100%; display: grid; place-items: center;
-  color: var(--muted); font-weight: 700;
+  color: var(--brand); opacity: 0.55;
   background: linear-gradient(135deg, var(--brand-soft), var(--brand-wash));
 }
 .badge {
@@ -643,3 +643,38 @@ button { font: inherit; }
   .category-showcase-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
   .trust-bar { grid-template-columns: 1fr; }
 }
+
+/* ─── Skeletons (shimmer) ───────────────────────────────── */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--brand-wash);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.75), transparent);
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer { to { transform: translateX(100%); } }
+.skeleton-line { height: 14px; border-radius: 7px; }
+.skeleton-tiny { height: 11px; }
+.skeleton-title { height: 24px; border-radius: 8px; }
+.skeleton-hero { height: 220px; border-radius: 18px; }
+.skeleton-gallery { height: 420px; border-radius: 18px; }
+.skeleton-circle { border-radius: 50%; }
+.product-detail-skeleton {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 36px; padding: 26px 0;
+}
+.product-detail-skeleton-info { padding-top: 12px; }
+@media (max-width: 820px) {
+  .product-detail-skeleton { grid-template-columns: 1fr; }
+}
+.page-skeleton { padding: 22px 0 40px; }
+
+/* ظهور ناعم لصور المنتجات بعد تحميلها (يمنع الوميض) */
+.product-image-wrap img { opacity: 0; transition: opacity 0.35s ease; }
+.product-image-wrap img.loaded { opacity: 1; }

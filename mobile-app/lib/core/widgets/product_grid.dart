@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/models/product.dart';
+import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../utils/responsive.dart';
 import '../widgets/scroll_perf.dart';
@@ -14,6 +15,11 @@ class ProductGrid extends StatelessWidget {
   final bool showPromoBadge;
   final bool showRating;
   final int extraSlots;
+  /// صف ذيل صريح أسفل الشبكة عند تحميل المزيد.
+  final bool loadingMore;
+  /// إظهار علامة نهاية القائمة عند اكتمالها.
+  final bool showEndMarker;
+  final String? endMarkerLabel;
   final EdgeInsetsGeometry padding;
   final bool listingStyle;
   final Widget? header;
@@ -28,6 +34,9 @@ class ProductGrid extends StatelessWidget {
     this.padding = const EdgeInsets.all(AppSpacing.md),
     this.listingStyle = false,
     this.header,
+    this.loadingMore = false,
+    this.showEndMarker = false,
+    this.endMarkerLabel,
   });
 
   static SliverGridDelegate delegateFor(BuildContext context, {bool listing = false}) {
@@ -51,7 +60,8 @@ class ProductGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final delegate = delegateFor(context, listing: listingStyle);
-    final itemCount = products.length + extraSlots;
+    final extra = loadingMore ? 0 : extraSlots;
+    final itemCount = products.length + extra;
 
     Widget itemBuilder(BuildContext context, int i) {
       if (i >= products.length) {
@@ -73,6 +83,8 @@ class ProductGrid extends StatelessWidget {
       );
     }
 
+    final footer = _buildFooter(context);
+
     if (header != null) {
       return CustomScrollView(
         controller: controller,
@@ -93,21 +105,80 @@ class ProductGrid extends StatelessWidget {
               ),
             ),
           ),
+          if (footer != null) SliverToBoxAdapter(child: footer),
         ],
       );
     }
 
-    return GridView.builder(
+    return CustomScrollView(
       controller: controller,
-      padding: padding,
       physics: AppScrollPerf.physics,
       cacheExtent: AppScrollPerf.gridCacheExtent,
-      addAutomaticKeepAlives: false,
-      addRepaintBoundaries: true,
-      gridDelegate: delegate,
-      itemCount: itemCount,
-      findChildIndexCallback: _indexForKey,
-      itemBuilder: (_, i) => itemBuilder(context, i),
+      slivers: [
+        SliverPadding(
+          padding: padding,
+          sliver: SliverGrid(
+            gridDelegate: delegate,
+            delegate: SliverChildBuilderDelegate(
+              itemBuilder,
+              childCount: itemCount,
+              addAutomaticKeepAlives: false,
+              addRepaintBoundaries: true,
+              findChildIndexCallback: _indexForKey,
+            ),
+          ),
+        ),
+        if (footer != null) SliverToBoxAdapter(child: footer),
+      ],
     );
+  }
+
+  /// صف ذيل صريح: «يحمّل المزيد» أو علامة نهاية القائمة.
+  Widget? _buildFooter(BuildContext context) {
+    if (loadingMore) {
+      return Padding(
+        padding: const EdgeInsets.only(top: 14, bottom: 6),
+        child: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                width: 15,
+                height: 15,
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                endMarkerLabel ?? (Localizations.localeOf(context).languageCode == 'ar' ? 'يحمّل المزيد…' : 'Loading more…'),
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    if (showEndMarker && products.length > 5) {
+      final isAr = Localizations.localeOf(context).languageCode == 'ar';
+      return Padding(
+        padding: const EdgeInsets.only(top: 14, bottom: 6),
+        child: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(width: 28, height: 1, color: AppColors.border),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Text(
+                  endMarkerLabel ?? (isAr ? 'وصلت لنهاية القائمة' : 'You reached the end'),
+                  style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
+                ),
+              ),
+              Container(width: 28, height: 1, color: AppColors.border),
+            ],
+          ),
+        ),
+      );
+    }
+    return null;
   }
 }

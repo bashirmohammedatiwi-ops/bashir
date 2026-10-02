@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { ProductGrid } from "@/components/catalog/ProductGrid";
-import { LoadingState } from "@/components/ui/LoadingState";
+import { CategoryPageSkeleton } from "@/components/ui/Skeleton";
 import { fetchPackage } from "@/lib/api";
 import { formatPrice } from "@/lib/format";
 import { imageFromUnknown } from "@/lib/mediaUrl";
@@ -17,7 +17,7 @@ export function PackageDetailView({ slug }: { slug: string }) {
   });
 
   if (!slug) return <p className="empty-state container">لم تُحدَّد باقة.</p>;
-  if (isLoading) return <LoadingState />;
+  if (isLoading) return <CategoryPageSkeleton />;
   if (isError || !pack) return <p className="empty-state container">الباقة غير موجودة.</p>;
 
   const cover = imageFromUnknown(pack.coverImage);

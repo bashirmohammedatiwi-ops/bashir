@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/json.dart';
 import '../../core/widgets/app_network_image.dart';
+import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/product.dart';
 import '../../data/services/api_service.dart';
@@ -28,7 +29,16 @@ class PackageDetailScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: Text(s.packageTitle)),
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        loading: () => ListView(
+          padding: const EdgeInsets.all(16),
+          children: const [
+            ShimmerBox(height: 220, radius: 20),
+            SizedBox(height: 14),
+            ShimmerBox(height: 90, radius: 16),
+            SizedBox(height: 14),
+            ShimmerBox(height: 160, radius: 16),
+          ],
+        ),
         error: (e, _) => ErrorView(
           message: e.toString(),
           onRetry: () => ref.invalidate(packageDetailProvider(idOrSlug)),

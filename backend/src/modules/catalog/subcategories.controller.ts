@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  UseInterceptors,
   Delete,
   Get,
   Param,
@@ -17,14 +18,21 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { CategoriesService } from "./categories.service";
 import { CreateSubcategoryDto, UpdateSubcategoryDto } from "./dto/category.dto";
+import { CacheResponse, ResponseCacheInterceptor } from "../../common/interceptors/response-cache.interceptor";
+import { RedisCacheService } from "../../common/redis-cache.service";
 
 @ApiTags("subcategories")
 @Controller("subcategories")
 export class SubcategoriesController {
-  constructor(private readonly service: CategoriesService) {}
+  constructor(
+    private readonly service: CategoriesService,
+    private readonly cache: RedisCacheService,
+  ) {}
 
   @Public()
   @Get()
+  @UseInterceptors(ResponseCacheInterceptor)
+  @CacheResponse(60, "rc:catalog:sub")
   list(
     @Query("parentId") parentId?: string,
     @Query("all") all?: string,
@@ -47,23 +55,32 @@ export class SubcategoriesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Post()
-  create(@Body() data: CreateSubcategoryDto) {
-    return this.service.createSubcategory(data);
+  async create(@Body() data: CreateSubcategoryDto) {
+    const result = await this.service.createSubcategory(data);
+    void this.cache.invalidatePrefix("rc:catalog:sub");
+    void this.cache.invalidatePrefix("rc:catalog:tree");
+    return result;
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Patch(":id")
-  update(@Param("id") id: string, @Body() data: UpdateSubcategoryDto) {
-    return this.service.updateSubcategory(id, data);
+  async update(@Param("id") id: string, @Body() data: UpdateSubcategoryDto) {
+    const result = await this.service.updateSubcategory(id, data);
+    void this.cache.invalidatePrefix("rc:catalog:sub");
+    void this.cache.invalidatePrefix("rc:catalog:tree");
+    return result;
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN)
   @Delete(":id")
-  remove(@Param("id") id: string) {
-    return this.service.remove(id);
+  async remove(@Param("id") id: string) {
+    const result = await this.service.remove(id);
+    void this.cache.invalidatePrefix("rc:catalog:sub");
+    void this.cache.invalidatePrefix("rc:catalog:tree");
+    return result;
   }
 }

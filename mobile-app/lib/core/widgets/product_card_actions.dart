@@ -11,6 +11,8 @@ import '../../features/wishlist/wishlist_provider.dart';
 import '../l10n/app_strings.dart';
 import '../l10n/locale_provider.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_motion.dart';
+import 'entrance.dart';
 import 'app_snackbar.dart';
 
 /// زر المفضلة على بطاقة المنتج.
@@ -40,23 +42,27 @@ class ProductCardWishButton extends ConsumerWidget {
           }
           await ref.read(wishlistProvider.notifier).toggle(product);
         },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: wished ? AppColors.primaryLight : const Color(0xFFF5F5F6),
-            border: Border.all(
-              color: wished ? AppColors.primarySoft : AppColors.hairline.withValues(alpha: 0.85),
-              width: wished ? 1.2 : 0.8,
+        child: PulseOnChange(
+          trigger: wished,
+          from: 1.16,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: wished ? AppColors.roseLight : const Color(0xFFF5F5F6),
+              border: Border.all(
+                color: wished ? AppColors.roseSoft : AppColors.hairline.withValues(alpha: 0.85),
+                width: wished ? 1.2 : 0.8,
+              ),
             ),
-          ),
-          child: Icon(
-            wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-            size: size * 0.47,
-            color: wished ? AppColors.primary : AppColors.textMuted,
+            child: Icon(
+              wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+              size: size * 0.47,
+              color: wished ? AppColors.rose : AppColors.textMuted,
+            ),
           ),
         ),
       ),
@@ -245,13 +251,21 @@ class _HomeBadgeCartButton extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(color: Colors.white, width: 1.5),
                   ),
-                  child: Text(
-                    quantity > 99 ? '99+' : '$quantity',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w900,
-                      height: 1,
+                  child: AnimatedSwitcher(
+                    duration: AppMotion.fast,
+                    transitionBuilder: (child, anim) => FadeTransition(
+                      opacity: anim,
+                      child: ScaleTransition(scale: Tween(begin: 0.7, end: 1.0).animate(anim), child: child),
+                    ),
+                    child: Text(
+                      quantity > 99 ? '99+' : '$quantity',
+                      key: ValueKey(quantity),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w900,
+                        height: 1,
+                      ),
                     ),
                   ),
                 ),
@@ -315,7 +329,7 @@ class _DisabledCartButton extends StatelessWidget {
       height: side,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: const Color(0xFFEBEBED),
+        color: AppColors.border,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: AppColors.hairline.withValues(alpha: 0.6)),
       ),

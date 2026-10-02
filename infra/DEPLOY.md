@@ -133,3 +133,22 @@ Copy-Item .env.example .env
 ./scripts/backup.sh
 # ينشئ infra/backups/postgres_*.sql.gz و media_*.tar.gz
 ```
+
+## طبقة الأداء والتحمل (2026-10)
+
+### الكاش متعدد الطبقات (بأقل تكلفة)
+- **Redis** (اختياري، موجود في docker-compose.prod) + **بديل داخلي مجاني** في العملية (سقف `CACHE_MEMORY_MAX_KEYS=500`، LRU تقريبي، TTL مُقيّد بـ120 ث): عند غيوب Redis أو `REDIS_DISABLED=1` تبقى القراءات الساخنة فورية.
+- **خلاصة الرئيسية/العروض**: مُخزّنة أصلاً عبر `HomeFeedCacheService` (TTL عبر `HOME_FEED_CACHE_TTL_SEC`).
+- **جديد — شجرة الأقسام وقوائم البراندات**: `ResponseCacheInterceptor` مع `@CacheResponse(60)` — تخزين استجابات القراءات العامة (يتخطى أي طلب يحمل Authorization) مع إبطال فوري عند أي كتابة من الأدمن. تفقّد `X-Cache: HIT/MISS` للتشخيص.
+
+### الشبكة
+- الضغط يشمل **br + gzip + deflate** الآن (Brotli أولاً للعملاء الداعمين).
+- قوائم المنتجات (`lite=1` — تطبيق الجوال يستخدمها): تُحجب الحقول الثقيلة (`description*`, `ingredients`, `howToUse`, `searchText`) — تقليص الحمولة 50–80%.
+
+### قاعدة البيانات
+- هجرة `20261001140000_hot_path_indexes`: فهارس مركبة للنقاط الساخنة — `Order(userId, createdAt)`, `Review(productId, approved)`, `Product(isActive, categoryId/brandId/soldCount)`.
+- اضبط `connection_limit` في `DATABASE_URL` حسب النسخ، وقلّله مع PgBouncer.
+
+### تطبيق الجوال
+- كاش SWR موجود (ذاكرة + قرص + إعادة تحديث صامتة + خدمة القديم عند الانقطاع) على الخلاصة/الأقسام/البراندات.
+- جديد: **إعادة محاولة تلقائية** واحدة للأخطاء الشبكية العابرة على طلبات GET/HEAD.

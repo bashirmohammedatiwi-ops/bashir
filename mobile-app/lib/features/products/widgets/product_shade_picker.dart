@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/product.dart';
 import 'product_detail_theme.dart';
 
@@ -173,9 +174,7 @@ class _ShadeTile extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: active
-                    ? const Icon(Icons.check_rounded, color: Colors.white, size: 20)
-                    : null,
+                child: _ShadeThumb(shade: shade, active: active),
               ),
               const SizedBox(height: 6),
               Text(
@@ -196,5 +195,30 @@ class _ShadeTile extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+
+/// مصغرة الدرجة: صورتها الحقيقية إن وُجدت، وإلا الدائرة اللونية؛ ووسم نفد للمتوقف.
+class _ShadeThumb extends StatelessWidget {
+  final ProductShade shade;
+  final bool active;
+
+  const _ShadeThumb({required this.shade, required this.active});
+
+  @override
+  Widget build(BuildContext context) {
+    final img = shade.image?.thumb ?? shade.image?.full;
+    if (active) return const Icon(Icons.check_rounded, color: Colors.white, size: 20);
+    if (img != null && img.isNotEmpty) {
+      return ClipOval(
+        child: SizedBox(
+          width: 42,
+          height: 42,
+          child: AppNetworkImage(url: img, fit: BoxFit.cover),
+        ),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }

@@ -1,0 +1,23 @@
+[
+  { "id": "excl_001", "category": "exclusion", "mode": "conversation", "title": "exclude after recommendations", "steps": [
+    { "message": "اقترحلي شامبو للشعر الجاف" },
+    { "message": "لا هالبراند ما اريده، خيارات ثانية", "expects": [{ "kind": "no_brand_from_prior", "turn": 0, "index": 0 }, { "kind": "min_products", "count": 1 }] }
+  ] },
+  { "id": "excl_002", "category": "exclusion", "mode": "conversation", "title": "exclude by name", "steps": [
+    { "message": "اريد عطر نسائي" },
+    { "message": "بدون لوريال", "expects": [{ "kind": "no_brand", "brand": "loreal" }] }
+  ] },
+  { "id": "excl_003", "category": "exclusion", "mode": "single", "title": "exclude upfront", "steps": [{ "message": "اريد شامبو مضاد للقشرة بس بدون هيد اند شولدرز", "expects": [{ "kind": "no_brand", "brand": "head & shoulders" }] }] },
+  { "id": "excl_004", "category": "exclusion", "mode": "single", "title": "exclude brand arabic", "steps": [{ "message": "كريم يدين ما يكون نيفيا", "expects": [{ "kind": "no_brand", "brand": "nivea" }] }] },
+  { "id": "excl_005", "category": "exclusion", "mode": "conversation", "title": "exclude keeps other constraints", "steps": [
+    { "message": "عطر نسائي بحدود 50 الف" },
+    { "message": "مو هذا البراند، غيره", "expects": [{ "kind": "all_products_max_price", "price": 50000 }, { "kind": "no_brand_from_prior", "turn": 0, "index": 0 }] }
+  ] },
+  { "id": "excl_006", "category": "exclusion", "mode": "single", "title": "exclude without alternatives yet", "steps": [{ "message": "ابي مسكارا ما يكون لوريال ولا مايبيلين", "expects": [{ "kind": "no_brand", "brand": "loreal" }, { "kind": "no_brand", "brand": "maybelline" }] }] },
+  { "id": "excl_007", "category": "exclusion", "mode": "conversation", "title": "exclusion persists next turn", "steps": [
+    { "message": "اقترحلي كريم جسم" },
+    { "message": "بلا نيفيا", "expects": [{ "kind": "no_brand", "brand": "nivea" }] },
+    { "message": "عطني خيارات اكثر", "expects": [{ "kind": "no_brand", "brand": "nivea" }] }
+  ] },
+  { "id": "excl_008", "category": "exclusion", "mode": "single", "title": "dislike not permanent", "steps": [{ "message": "ما اريد لوريال اليوم", "expects": [{ "kind": "no_brand", "brand": "loreal" }] }] }
+]

@@ -1,0 +1,5 @@
+[
+  { "id": "loyalty_001", "category": "loyalty", "mode": "single", "title": "points balance guest", "steps": [{ "message": "شكد نقاطي؟", "expects": [{ "kind": "response_type_in", "types": ["ORDER_INFO", "TEXT", "CLARIFICATION"] }, { "kind": "message_mentions", "text": "دخول" }] }] },
+  { "id": "loyalty_002", "category": "loyalty", "mode": "single", "title": "loyalty english", "steps": [{ "message": "how many loyalty points do I have?", "expects": [{ "kind": "response_type_in", "types": ["ORDER_INFO", "TEXT", "CLARIFICATION"] }] }] },
+  { "id": "loyalty_003", "category": "loyalty", "mode": "single", "title": "loyalty no internals leak", "steps": [{ "message": "رصيدي من النقاط شكد؟", "expects": [{ "kind": "message_not_mentions", "text": "PLANNER_HINT" }, { "kind": "response_type_in", "types": ["ORDER_INFO", "TEXT", "CLARIFICATION"] }] }] }
+]

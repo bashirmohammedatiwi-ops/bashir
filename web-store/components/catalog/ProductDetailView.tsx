@@ -1,14 +1,17 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
-import { LoadingState } from "@/components/ui/LoadingState";
+import { ProductDetailSkeleton } from "@/components/ui/Skeleton";
 import { fetchProduct } from "@/lib/api";
 import { formatPrice, localizedName } from "@/lib/format";
 import { productGalleryUrls, productImageUrl } from "@/lib/mediaUrl";
+import { productJsonLd } from "@/lib/seo";
 import { brandHref, categoryHref } from "@/lib/storePaths";
+
+const JSON_LD_ID = "product-json-ld";
 
 export function ProductDetailView({ slug }: { slug: string }) {
   const [activeImage, setActiveImage] = useState(0);
@@ -19,8 +22,23 @@ export function ProductDetailView({ slug }: { slug: string }) {
     enabled: !!slug,
   });
 
+  // SEO للمسار الديناميكي (?slug=): عنوان الصفحة + Product JSON-LD من بيانات المنتج الحقيقية.
+  useEffect(() => {
+    if (!product) return;
+    document.title = `${localizedName(product)} — ديما الحياة`;
+    const existing = document.getElementById(JSON_LD_ID);
+    const script = (existing as HTMLScriptElement | null) ?? document.createElement("script");
+    script.id = JSON_LD_ID;
+    script.type = "application/ld+json";
+    script.textContent = JSON.stringify(productJsonLd(product));
+    if (!script.isConnected) document.head.appendChild(script);
+    return () => {
+      script.remove();
+    };
+  }, [product]);
+
   if (!slug) return <p className="empty-state container">لم يُحدَّد منتج.</p>;
-  if (isLoading) return <LoadingState />;
+  if (isLoading) return <ProductDetailSkeleton />;
   if (isError || !product) {
     return <p className="empty-state container">المنتج غير موجود.</p>;
   }

@@ -13,6 +13,8 @@ import 'home_section_renderer.dart';
 import 'widgets/home_scroll_perf.dart';
 import 'widgets/home_theme.dart';
 
+import '../../core/widgets/brand_art.dart';
+
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -78,10 +80,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             );
                           }
 
-                          return HomeSectionWidget(
+                          return Column(
                             key: ValueKey(slot.section.id),
-                            section: slot.section,
-                            isFirstAfterHero: slot.isFirstAfterHero,
+                            children: [
+                              if (slot.isFirstAfterHero)
+                                const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 72),
+                                  child: WaveDivider(),
+                                ),
+                              HomeSectionWidget(
+                                section: slot.section,
+                                isFirstAfterHero: slot.isFirstAfterHero,
+                              ),
+                            ],
                           );
                         },
                         childCount: slots.length + 1,

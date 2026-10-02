@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/widgets/entrance.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/friendly_error.dart';
@@ -166,8 +167,13 @@ class _CartScreenState extends ConsumerState<CartScreen> {
           : Column(
               children: [
                   Expanded(
-                    child: CustomScrollView(
-                  physics: const BouncingScrollPhysics(),
+                    child: RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(homeFeedProvider);
+                    await Future.delayed(const Duration(milliseconds: 350));
+                  },
+                  child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
                   slivers: [
                     SliverToBoxAdapter(
                           child: CartHeader(
@@ -196,7 +202,10 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                       sliver: SliverList.separated(
                         itemCount: cart.items.length,
                             separatorBuilder: (_, __) => const SizedBox(height: CartTheme.itemGap),
-                            itemBuilder: (_, i) => CartItemCard(item: cart.items[i]),
+                            itemBuilder: (_, i) => StaggerEntrance(
+                              index: i,
+                              child: CartItemCard(item: cart.items[i]),
+                            ),
                       ),
                     ),
                     SliverToBoxAdapter(
@@ -229,6 +238,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                         const SliverToBoxAdapter(child: SizedBox(height: 12)),
                       ],
                     ),
+                  ),
                   ),
                   CartCheckoutBar(
                     subtotal: cart.subtotal,

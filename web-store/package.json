@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3002",
-    "build": "next build",
+    "build": "next build && node scripts/build-sitemap.mjs",
     "lint": "tsc --noEmit",
-    "start": "npx --yes serve out -p 3002 -s"
+    "start": "npx --yes serve out -p 3002 -s",
+    "build:sitemap": "node scripts/build-sitemap.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.100.11",

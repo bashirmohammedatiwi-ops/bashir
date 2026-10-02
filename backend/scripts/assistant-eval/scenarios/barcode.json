@@ -1,0 +1,8 @@
+[
+  { "id": "bar_001", "category": "barcode", "mode": "single", "title": "barcode digits", "steps": [{ "message": "3600523355273", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT"] }, { "kind": "no_leak", "markers": ["PLANNER_HINT"] }] }] },
+  { "id": "bar_002", "category": "barcode", "mode": "single", "title": "barcode label", "steps": [{ "message": "هذا الباركود شنو؟ 4005808865126", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT"] }] }] },
+  { "id": "bar_003", "category": "barcode", "mode": "single", "title": "upc 12 digits", "steps": [{ "message": "3600542524966", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT"] }] }] },
+  { "id": "bar_004", "category": "barcode", "mode": "single", "title": "invalid barcode honest", "steps": [{ "message": "12345", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT", "CLARIFICATION"] }] }] },
+  { "id": "bar_005", "category": "barcode", "mode": "single", "title": "barcode with price question", "steps": [{ "message": "8001841864731 شكد سعره", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT"] }] }] },
+  { "id": "bar_006", "category": "barcode", "mode": "single", "title": "barcode after chat", "steps": [{ "message": "3600542524966", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT"] }] }] }
+]

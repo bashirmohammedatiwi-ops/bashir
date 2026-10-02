@@ -1,12 +1,11 @@
-import { Suspense } from "react";
+import { ProductsPageView } from "./ProductsPageView";
 
-import { ProductsPageClient } from "./ProductsPageClient";
-import { LoadingState } from "@/components/ui/LoadingState";
+export const metadata = {
+  title: "كل المنتجات",
+  description: "تصفّحي كل منتجات التجميل والعناية مع أسعار بالدينار العراقي.",
+  alternates: { canonical: "/products/" },
+};
 
-export default function ProductsPage() {
-  return (
-    <Suspense fallback={<LoadingState />}>
-      <ProductsPageClient />
-    </Suspense>
-  );
+export default function Page() {
+  return <ProductsPageView />;
 }

@@ -5,9 +5,9 @@ import '../../../core/theme/app_colors.dart';
 
 /// هوية صفحة العروض — ألوان اللوغو (وردي + ذهبي).
 abstract final class OffersTheme {
-  static const brand = AppColors.primary;
-  static const brandDark = AppColors.primaryDark;
-  static const brandSoft = AppColors.primaryLight;
+  static const brand = AppColors.rose;
+  static const brandDark = AppColors.roseDark;
+  static const brandSoft = AppColors.roseLight;
   static const brandWash = AppColors.blush;
   static const sale = AppColors.sale;
   static const accent = AppColors.accent;
@@ -57,16 +57,16 @@ abstract final class OffersTheme {
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
           colors: [
-            AppColors.primaryLight.withValues(alpha: 0.9),
+            AppColors.roseLight.withValues(alpha: 0.9),
             Colors.white,
             AppColors.accentSoft.withValues(alpha: 0.35),
           ],
         ),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: AppColors.primarySoft),
+        border: Border.all(color: AppColors.roseSoft),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.08),
+            color: AppColors.rose.withValues(alpha: 0.08),
             blurRadius: 18,
             offset: const Offset(0, 6),
           ),
@@ -81,14 +81,14 @@ abstract final class OffersTheme {
       );
 
   static BoxDecoration chipDecoration({bool selected = false}) => BoxDecoration(
-        gradient: selected ? AppColors.primaryGradient : null,
+        gradient: selected ? AppColors.roseGradient : null,
         color: selected ? null : surface,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: selected ? Colors.transparent : line),
         boxShadow: selected
             ? [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.22),
+                  color: AppColors.rose.withValues(alpha: 0.22),
                   blurRadius: 8,
                   offset: const Offset(0, 3),
                 ),
@@ -167,11 +167,11 @@ class OffersPrimaryButton extends StatelessWidget {
       height: 50,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
+          gradient: AppColors.roseGradient,
           borderRadius: BorderRadius.circular(26),
           boxShadow: [
             BoxShadow(
-              color: AppColors.primary.withValues(alpha: 0.25),
+              color: AppColors.rose.withValues(alpha: 0.25),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),

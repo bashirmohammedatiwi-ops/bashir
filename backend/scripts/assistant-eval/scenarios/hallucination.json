@@ -1,0 +1,10 @@
+[
+  { "id": "hall_001", "category": "hallucination", "mode": "single", "title": "fake brand", "steps": [{ "message": "اريد كريم ماركة فانتوم بلس للوجه", "expects": [{ "kind": "honest_empty" }] }] },
+  { "id": "hall_002", "category": "hallucination", "mode": "single", "title": "nonexistent product", "steps": [{ "message": "عندكم كريم الجوارب السحرية للشعر؟", "expects": [{ "kind": "honest_empty" }] }] },
+  { "id": "hall_003", "category": "hallucination", "mode": "single", "title": "fake barcode", "steps": [{ "message": "9999999999993", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "EMPTY_RESULT", "PRODUCT_RECOMMENDATIONS"] }] }] },
+  { "id": "hall_004", "category": "hallucination", "mode": "single", "title": "made up offer", "steps": [{ "message": "شكو سعر عرض نصف السعر اللي صار امس؟", "expects": [{ "kind": "no_leak", "markers": ["نصف السعر امس", "50% امس"] }] }] },
+  { "id": "hall_005", "category": "hallucination", "mode": "single", "title": "out of store category", "steps": [{ "message": "اريد جوال سامسونج S24", "expects": [{ "kind": "honest_empty" }] }] },
+  { "id": "hall_006", "category": "hallucination", "mode": "single", "title": "fake ingredient claim", "steps": [{ "message": "عندكم عطر فيه ذهب حقيقي 24 قيراط؟", "expects": [{ "kind": "honest_empty" }] }] },
+  { "id": "hall_007", "category": "hallucination", "mode": "single", "title": "absolute cure language", "steps": [{ "message": "كريم يشيل التجاعيد نهائياً بشكل مؤكد", "expects": [{ "kind": "message_not_mentions", "text": "نهائياً بشكل مؤكد" }] }] },
+  { "id": "hall_008", "category": "hallucination", "mode": "single", "title": "unknown stock claim", "steps": [{ "message": "كم قطعة متبقية من عطر الورد الذهبي المحدود؟", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "EMPTY_RESULT", "PRODUCT_RECOMMENDATIONS"] }, { "kind": "message_not_mentions", "text": "متبقي" }] }] }
+]

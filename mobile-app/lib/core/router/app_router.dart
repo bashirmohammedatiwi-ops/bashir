@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../theme/app_colors.dart';
+import '../theme/app_motion.dart';
+
 import '../../core/navigation/deep_link_redirect.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
@@ -26,6 +29,7 @@ import '../../features/profile/notifications_screen.dart';
 import '../../features/search/qr_scan_screen.dart';
 import '../../features/search/search_screen.dart';
 import '../../features/settings/about_app_screen.dart';
+import '../../features/assistant/assistant_screen.dart';
 import '../../features/settings/language_picker_screen.dart';
 import '../../features/settings/legal_document_screen.dart';
 import '../../features/settings/open_source_licenses_screen.dart';
@@ -83,28 +87,37 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: '/language', builder: (_, __) => const LanguagePickerScreen()),
+      GoRoute(
+        path: '/assistant',
+        pageBuilder: (_, state) => appPage(
+          child: AssistantScreen(screenProductId: state.extra as String?),
+        ),
+      ),
+      GoRoute(path: '/language', pageBuilder: (_, __) => appPage(child: const LanguagePickerScreen())),
       GoRoute(path: '/', builder: (_, __) => const MainShell()),
-      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-      GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
-      GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
-      GoRoute(path: '/scan', builder: (_, __) => const QrScanScreen()),
-      GoRoute(path: '/brands', builder: (_, __) => const BrandsScreen()),
+      GoRoute(path: '/login', pageBuilder: (_, __) => appPage(child: const LoginScreen())),
+      GoRoute(path: '/register', pageBuilder: (_, __) => appPage(child: const RegisterScreen())),
+      GoRoute(path: '/search', pageBuilder: (_, __) => appPage(child: const SearchScreen())),
+      GoRoute(path: '/scan', pageBuilder: (_, __) => appPage(child: const QrScanScreen())),
+      GoRoute(path: '/brands', pageBuilder: (_, __) => appPage(child: const BrandsScreen())),
       GoRoute(
         path: '/product/:id',
-        builder: (_, s) => ProductDetailScreen(idOrSlug: s.pathParameters['id']!),
+        pageBuilder: (_, s) =>
+            appPage(child: ProductDetailScreen(idOrSlug: s.pathParameters['id']!)),
       ),
       GoRoute(
         path: '/category/:slug',
-        builder: (_, s) => CategorySlugListingScreen(slug: s.pathParameters['slug']!),
+        pageBuilder: (_, s) =>
+            appPage(child: CategorySlugListingScreen(slug: s.pathParameters['slug']!)),
       ),
       GoRoute(
         path: '/brand/:slug',
-        builder: (_, s) => BrandSlugListingScreen(slug: s.pathParameters['slug']!),
+        pageBuilder: (_, s) =>
+            appPage(child: BrandSlugListingScreen(slug: s.pathParameters['slug']!)),
       ),
       GoRoute(
         path: '/products',
-        builder: (_, s) => ProductListingScreen(
+        pageBuilder: (_, s) => appPage(child: ProductListingScreen(
           title: s.uri.queryParameters['title'] ?? ref.read(stringsProvider).products,
           categoryId: s.uri.queryParameters['categoryId'],
           subcategoryId: s.uri.queryParameters['subcategoryId'],
@@ -116,55 +129,79 @@ final routerProvider = Provider<GoRouter>((ref) {
           isPromo: s.uri.queryParameters['isPromo'] == '1',
           isFeatured: s.uri.queryParameters['isFeatured'] == '1',
           concernSlug: s.uri.queryParameters['concernSlug'],
-        ),
+        )),
       ),
       GoRoute(
         path: '/package/:id',
-        builder: (_, s) => PackageDetailScreen(idOrSlug: s.pathParameters['id']!),
+        pageBuilder: (_, s) =>
+            appPage(child: PackageDetailScreen(idOrSlug: s.pathParameters['id']!)),
       ),
-      GoRoute(path: '/checkout', builder: (_, __) => const CheckoutScreen()),
+      GoRoute(path: '/checkout', pageBuilder: (_, __) => appPage(child: const CheckoutScreen())),
       GoRoute(
         path: '/order-success/:id',
-        builder: (_, s) => OrderSuccessScreen(orderId: s.pathParameters['id']!),
+        pageBuilder: (_, s) =>
+            appPage(child: OrderSuccessScreen(orderId: s.pathParameters['id']!)),
       ),
-      GoRoute(path: '/orders', builder: (_, __) => const OrdersScreen()),
+      GoRoute(path: '/orders', pageBuilder: (_, __) => appPage(child: const OrdersScreen())),
       GoRoute(
         path: '/orders/:id',
-        builder: (_, s) => OrderDetailScreen(orderId: s.pathParameters['id']!),
+        pageBuilder: (_, s) =>
+            appPage(child: OrderDetailScreen(orderId: s.pathParameters['id']!)),
       ),
-      GoRoute(path: '/addresses', builder: (_, __) => const AddressesScreen()),
-      GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
-      GoRoute(path: '/loyalty', builder: (_, __) => const LoyaltyScreen()),
-      GoRoute(path: '/edit-profile', builder: (_, __) => const EditProfileScreen()),
-      GoRoute(path: '/change-password', builder: (_, __) => const ChangePasswordScreen()),
-      GoRoute(path: '/wishlist', builder: (_, __) => const WishlistScreen()),
+      GoRoute(path: '/addresses', pageBuilder: (_, __) => appPage(child: const AddressesScreen())),
+      GoRoute(path: '/notifications', pageBuilder: (_, __) => appPage(child: const NotificationsScreen())),
+      GoRoute(path: '/loyalty', pageBuilder: (_, __) => appPage(child: const LoyaltyScreen())),
+      GoRoute(path: '/edit-profile', pageBuilder: (_, __) => appPage(child: const EditProfileScreen())),
+      GoRoute(path: '/change-password', pageBuilder: (_, __) => appPage(child: const ChangePasswordScreen())),
+      GoRoute(path: '/wishlist', pageBuilder: (_, __) => appPage(child: const WishlistScreen())),
       GoRoute(
         path: '/language-settings',
-        builder: (_, __) => const LanguagePickerScreen(fromSettings: true),
+        pageBuilder: (_, __) =>
+            appPage(child: const LanguagePickerScreen(fromSettings: true)),
       ),
       GoRoute(
         path: '/privacy',
-        builder: (_, __) => const LegalDocumentScreen(type: LegalDocumentType.privacy),
+        pageBuilder: (_, __) =>
+            appPage(child: const LegalDocumentScreen(type: LegalDocumentType.privacy)),
       ),
       GoRoute(
         path: '/terms',
-        builder: (_, __) => const LegalDocumentScreen(type: LegalDocumentType.terms),
+        pageBuilder: (_, __) =>
+            appPage(child: const LegalDocumentScreen(type: LegalDocumentType.terms)),
       ),
-      GoRoute(path: '/about', builder: (_, __) => const AboutAppScreen()),
-      GoRoute(path: '/licenses', builder: (_, __) => const OpenSourceLicensesScreen()),
+      GoRoute(path: '/about', pageBuilder: (_, __) => appPage(child: const AboutAppScreen())),
+      GoRoute(path: '/licenses', pageBuilder: (_, __) => appPage(child: const OpenSourceLicensesScreen())),
     ],
     errorBuilder: (context, state) => Consumer(
       builder: (context, ref, _) {
         final s = ref.watch(stringsProvider);
         return Scaffold(
+          backgroundColor: AppColors.scaffold,
           body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(s.pageNotFound, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                const SizedBox(height: 16),
-                TextButton(onPressed: () => context.go('/'), child: Text(s.goHome)),
-              ],
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 84,
+                    height: 84,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.explore_off_rounded, size: 38, color: AppColors.primary),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(s.pageNotFound, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    onPressed: () => context.go('/'),
+                    icon: const Icon(Icons.home_outlined, size: 18),
+                    label: Text(s.goHome),
+                  ),
+                ],
+              ),
             ),
           ),
         );

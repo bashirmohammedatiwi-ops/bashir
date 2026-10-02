@@ -24,6 +24,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { href: "/dashboard", label: "لوحة المعلومات", short: "لو" },
       { href: "/reports", label: "التقارير", short: "ت" },
+      { href: "/assistant", label: "المساعد الذكي ✦", short: "ذك" },
       { href: "/orders", label: "الطلبات", short: "ط" },
       { href: "/notifications", label: "الإشعارات", short: "إ" },
     ],

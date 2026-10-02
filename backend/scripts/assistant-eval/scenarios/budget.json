@@ -1,0 +1,12 @@
+[
+  { "id": "budg_001", "category": "budget", "mode": "single", "title": "perfume under 50k", "steps": [{ "message": "اريد عطر نسائي بحدود 50 الف", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT"] }, { "kind": "all_products_max_price", "price": 50000 }] }] },
+  { "id": "budg_002", "category": "budget", "mode": "single", "title": "under 20k", "steps": [{ "message": "شي حلو اقل من 20 الف", "expects": [{ "kind": "all_products_max_price", "price": 20000 }] }] },
+  { "id": "budg_003", "category": "budget", "mode": "single", "title": "grouped number", "steps": [{ "message": "اقترح لي كريم وجه بسعر 25,000 او اقل", "expects": [{ "kind": "all_products_max_price", "price": 25000 }] }] },
+  { "id": "budg_004", "category": "budget", "mode": "single", "title": "k suffix", "steps": [{ "message": "شامبو باقل من 10k", "expects": [{ "kind": "all_products_max_price", "price": 10000 }] }] },
+  { "id": "budg_005", "category": "budget", "mode": "single", "title": "arabic digits", "steps": [{ "message": "اريد شي بحدود ٣٠ الف", "expects": [{ "kind": "all_products_max_price", "price": 30000 }] }] },
+  { "id": "budg_006", "category": "budget", "mode": "single", "title": "min and max range", "steps": [{ "message": "عطر بين 20 الف و40 الف", "expects": [{ "kind": "all_products_max_price", "price": 40000 }] }] },
+  { "id": "budg_007", "category": "budget", "mode": "single", "title": "tight budget honest", "steps": [{ "message": "اريد عطر باقل من 100 دينار", "expects": [{ "kind": "honest_empty" }] }] },
+  { "id": "budg_008", "category": "budget", "mode": "single", "title": "impossible budget", "steps": [{ "message": "جهاز ايفون بحدود 50 الف", "expects": [{ "kind": "honest_empty" }, { "kind": "no_leak", "markers": ["TOOL RESULTS", "PLANNER_HINT"] }] }] },
+  { "id": "budg_009", "category": "budget", "mode": "single", "title": "loose phrasing", "steps": [{ "message": "ميزنيتي 45 الف اقترحلي شي تجميل", "expects": [{ "kind": "all_products_max_price", "price": 45000 }] }] },
+  { "id": "budg_010", "category": "budget", "mode": "single", "title": "million scale", "steps": [{ "message": "عطر فاخر بمليون دينار", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT"] }, { "kind": "all_products_max_price", "price": 1000000 }] }] }
+]

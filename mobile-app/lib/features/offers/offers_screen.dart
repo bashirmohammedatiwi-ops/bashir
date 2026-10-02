@@ -10,6 +10,7 @@ import '../../core/utils/friendly_error.dart';
 import '../../core/utils/responsive.dart';
 import '../../core/widgets/product_card.dart';
 import '../../core/widgets/scroll_perf.dart';
+import '../../core/widgets/product_grid.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/home_feed.dart';
@@ -237,16 +238,11 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                             onRetry: () => _fetchMore(reset: true),
                           ),
                         )
-                      else if (_items.isNotEmpty)
+                      else if (_items.isNotEmpty) ...[
                         SliverPadding(
                           padding: EdgeInsets.fromLTRB(OffersTheme.hPad, 0, OffersTheme.hPad, bottomPad),
                           sliver: SliverGrid(
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 0.58,
-                            ),
+                            gridDelegate: ProductGrid.delegateFor(context, listing: true),
                             delegate: SliverChildBuilderDelegate(
                               (context, i) {
                                 if (i >= _items.length) {
@@ -262,12 +258,48 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                                   ),
                                 );
                               },
-                              childCount: _items.length + (_hasMore ? 2 : 0),
+                              childCount: _items.length,
                               addAutomaticKeepAlives: false,
                               addRepaintBoundaries: true,
                             ),
                           ),
-                        )
+                        ),
+                          if (_hasMore)
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 14, bottom: 6),
+                                child: Center(
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const SizedBox(
+                                        width: 15,
+                                        height: 15,
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: OffersTheme.brand),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        s.isAr ? 'يحمّل المزيد…' : 'Loading more…',
+                                        style: const TextStyle(fontSize: 12, color: OffersTheme.inkSoft),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            )
+                          else if (_items.isNotEmpty)
+                            SliverToBoxAdapter(
+                              child: Padding(
+                                padding: const EdgeInsets.only(top: 14, bottom: 6),
+                                child: Center(
+                                  child: Text(
+                                    s.isAr ? 'وصلت لنهاية القائمة' : 'You reached the end',
+                                    style: const TextStyle(fontSize: 11.5, color: OffersTheme.inkMuted),
+                                  ),
+                                ),
+                              ),
+                            ),
+                      ]
                       else if (!_loadingMore && _items.isEmpty && _gridError == null)
                         SliverFillRemaining(
                           hasScrollBody: false,

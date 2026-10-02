@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/widgets/auth_gate.dart';
+import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/address.dart';
 import '../../data/services/api_service.dart';
@@ -35,15 +37,9 @@ class _AddressesBody extends ConsumerWidget {
     final s = ref.s;
     return ProfileScaffold(
       title: s.addresses,
-      actions: [
-        IconButton(
-          onPressed: () => _add(context, ref),
-          icon: const Icon(Icons.add_rounded, color: CartTheme.brand),
-        ),
-      ],
       floatingBottom: ProfilePrimaryButton(label: s.newAddress, onPressed: () => _add(context, ref)),
       body: addresses.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: CartTheme.brand)),
+        loading: () => ListView(padding: const EdgeInsets.all(16), children: List.generate(3, (_) => const Padding(padding: EdgeInsets.only(bottom: 12), child: ShimmerBox(height: 92, radius: 16)))),
         error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(addressesProvider)),
         data: (list) {
           if (list.isEmpty) {
@@ -58,10 +54,24 @@ class _AddressesBody extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 16, ProfileUi.hPad, 80),
             itemCount: list.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (_, i) => _AddressTile(
-              address: list[i],
-              onEdit: () => _edit(context, ref, list[i]),
-              onDelete: () => _delete(context, ref, list[i]),
+            itemBuilder: (_, i) => Dismissible(
+              key: ValueKey(list[i].id),
+              direction: DismissDirection.endToStart,
+              onDismissed: (_) => _delete(context, ref, list[i]),
+              background: Container(
+                alignment: AlignmentDirectional.centerEnd,
+                padding: const EdgeInsetsDirectional.only(end: 20),
+                decoration: BoxDecoration(
+                  color: AppColors.sale,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.delete_outline_rounded, color: Colors.white),
+              ),
+              child: _AddressTile(
+                address: list[i],
+                onEdit: () => _edit(context, ref, list[i]),
+                onDelete: () => _delete(context, ref, list[i]),
+              ),
             ),
           );
         },
@@ -124,14 +134,15 @@ class _AddressesBody extends ConsumerWidget {
   }
 }
 
-class _AddressTile extends StatelessWidget {
+class _AddressTile extends ConsumerWidget {
   final Address address;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   const _AddressTile({required this.address, required this.onEdit, required this.onDelete});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: AccountTheme.pageCard(
@@ -168,8 +179,8 @@ class _AddressTile extends StatelessWidget {
                     color: CartTheme.brandSoft,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text(
-                    'افتراضي',
+                  child: Text(
+                    s.defaultAddress,
                     style: TextStyle(color: CartTheme.brand, fontSize: 11, fontWeight: FontWeight.w700),
                   ),
                 ),
@@ -184,13 +195,13 @@ class _AddressTile extends StatelessWidget {
               TextButton.icon(
                 onPressed: onEdit,
                 icon: const Icon(Icons.edit_outlined, size: 18),
-                label: const Text('تعديل'),
+                label: Text(s.editBtn),
                 style: TextButton.styleFrom(foregroundColor: CartTheme.brand),
               ),
               TextButton.icon(
                 onPressed: onDelete,
                 icon: const Icon(Icons.delete_outline, size: 18),
-                label: const Text('حذف'),
+                label: Text(s.deleteBtn),
                 style: TextButton.styleFrom(foregroundColor: AccountTheme.danger),
               ),
             ],

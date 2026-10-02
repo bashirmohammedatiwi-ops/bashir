@@ -14,6 +14,7 @@ class CartItem {
   final int quantity;
   final String? shadeId;
   final String? shadeName;
+  final String? shadeColor; // hex لعرض نقطة اللون بجانب اسم الدرجة
   final int stock;
 
   const CartItem({
@@ -27,6 +28,7 @@ class CartItem {
     this.quantity = 1,
     this.shadeId,
     this.shadeName,
+    this.shadeColor,
     this.stock = 0,
   });
 
@@ -70,6 +72,7 @@ class CartItem {
       quantity: quantity,
       shadeId: shade?.id,
       shadeName: shade?.name,
+      shadeColor: shade?.colorHex,
       stock: shade?.stock ?? p.stock,
     );
   }
@@ -99,6 +102,7 @@ class CartItem {
         quantity: asInt(json['quantity'], 1),
         shadeId: json['shadeId']?.toString(),
         shadeName: json['shadeName']?.toString(),
+        shadeColor: json['shadeColor']?.toString(),
         stock: asInt(json['stock']),
       );
 

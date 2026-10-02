@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../core/theme/ad_slots.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/pressable.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/banner.dart';
 import '../../../data/models/home_section.dart';
@@ -53,16 +54,15 @@ class HomeBannerStage extends StatelessWidget {
     final radius = layout.radius;
     final tint = _tintFor(sceneIndex, banner);
 
-    Widget card = Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap != null
-            ? () {
-                HapticFeedback.selectionClick();
-                onTap!();
-              }
-            : null,
-        borderRadius: BorderRadius.circular(radius),
+    Widget card = Pressable(
+      onTap: onTap != null
+          ? () {
+              HapticFeedback.selectionClick();
+              onTap!();
+            }
+          : null,
+      child: Material(
+        color: Colors.transparent,
         child: Ink(
           width: cardW,
           height: cardH,
@@ -167,12 +167,14 @@ class _ImageOnlyLayout extends StatelessWidget {
     }
 
     return LayoutBuilder(
-      builder: (context, constraints) => AppNetworkImage(
-        url: banner.imageUrl,
-        width: constraints.maxWidth,
-        height: constraints.maxHeight,
-        fit: BoxFit.contain,
-        backgroundColor: HomeTheme.pearl,
+      builder: (context, constraints) => _FadeInImage(
+        child: AppNetworkImage(
+          url: banner.imageUrl,
+          width: constraints.maxWidth,
+          height: constraints.maxHeight,
+          fit: BoxFit.cover,
+          backgroundColor: HomeTheme.pearl,
+        ),
       ),
     );
   }
@@ -190,4 +192,36 @@ double homeHeroBannerHeight(
       ? resolveBannerLayout(section)
       : BannerLayoutConfig(aspect: HomeTheme.bannerAspect);
   return layout.heightFor(w);
+}
+
+
+/// ظهور ناعم لصورة البانر عند تحميلها.
+class _FadeInImage extends StatefulWidget {
+  final Widget child;
+  const _FadeInImage({required this.child});
+
+  @override
+  State<_FadeInImage> createState() => _FadeInImageState();
+}
+
+class _FadeInImageState extends State<_FadeInImage> {
+  bool _shown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _shown = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedOpacity(
+      opacity: _shown ? 1 : 0,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOut,
+      child: widget.child,
+    );
+  }
 }

@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { ProductGrid } from "@/components/catalog/ProductGrid";
-import { LoadingState } from "@/components/ui/LoadingState";
+import { CategoryPageSkeleton, ProductGridSkeleton } from "@/components/ui/Skeleton";
 import { fetchBrand, fetchProducts } from "@/lib/api";
 import { localizedName } from "@/lib/format";
 import { brandLogoUrl } from "@/lib/mediaUrl";
@@ -22,7 +22,7 @@ export function BrandDetailView({ slug }: { slug: string }) {
   });
 
   if (!slug) return <p className="empty-state container">لم يُحدَّد براند.</p>;
-  if (brandQ.isLoading) return <LoadingState />;
+  if (brandQ.isLoading) return <CategoryPageSkeleton />;
 
   const brand = brandQ.data;
   if (!brand) return <p className="empty-state container">البراند غير موجود.</p>;
@@ -48,7 +48,7 @@ export function BrandDetailView({ slug }: { slug: string }) {
         </div>
       </div>
       <div className="container">
-        {productsQ.isLoading ? <LoadingState /> : <ProductGrid products={productsQ.data?.data ?? []} />}
+        {productsQ.isLoading ? <ProductGridSkeleton /> : <ProductGrid products={productsQ.data?.data ?? []} />}
       </div>
     </>
   );

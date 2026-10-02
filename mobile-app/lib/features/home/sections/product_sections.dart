@@ -175,7 +175,7 @@ class PackagesHomeSection extends ConsumerWidget {
           ? () => openViewAllLink(
                 context,
                 query: section.viewAllQuery,
-                fallbackQuery: 'isPromo=1&title=الباقات',
+                fallbackQuery: 'isPromo=1&title=Packages',
               )
           : null,
       child: HomeHorizontalList(

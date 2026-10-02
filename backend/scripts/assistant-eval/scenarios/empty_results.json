@@ -1,0 +1,10 @@
+[
+  { "id": "emp_001", "category": "empty_results", "mode": "single", "title": "impossible combo", "steps": [{ "message": "اريد عطر ب10 دنانير اصلي من فرنسا", "expects": [{ "kind": "honest_empty" }] }] },
+  { "id": "emp_002", "category": "empty_results", "mode": "single", "title": "nonsense query", "steps": [{ "message": "بلببلب شمشونة", "expects": [{ "kind": "response_type_in", "types": ["EMPTY_RESULT", "CLARIFICATION", "TEXT", "PRODUCT_RECOMMENDATIONS"] }] }] },
+  { "id": "emp_003", "category": "empty_results", "mode": "single", "title": "contradictory constraints", "steps": [{ "message": "اريد عطر خفيف وريحته قوية جداً بنفس الوقت", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_RECOMMENDATIONS", "CLARIFICATION", "TEXT"] }] }] },
+  { "id": "emp_004", "category": "empty_results", "mode": "single", "title": "unknown language", "steps": [{ "message": "bonjour je veux une crème", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT"] }] }] },
+  { "id": "emp_005", "category": "empty_results", "mode": "single", "title": "single emoji", "steps": [{ "message": "🙏", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "CLARIFICATION"] }] }] },
+  { "id": "emp_006", "category": "empty_results", "mode": "single", "title": "very long ramble", "steps": [{ "message": "اريد شي حلو شي زين شي خوش شي رخيص شي فخم شي خفيف شي قوي شي حلو مرة ثانية شي للشعر بس مو شامبو ومو ماسك ومو زيت وبحدود خمسين ولا ولا اكثر", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_RECOMMENDATIONS", "CLARIFICATION", "TEXT", "EMPTY_RESULT"] }] }] },
+  { "id": "emp_007", "category": "empty_results", "mode": "single", "title": "store policy question", "steps": [{ "message": "شكد مدة التوصيل لبغداد؟", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "OUT_OF_SCOPE", "CLARIFICATION"] }, { "kind": "no_leak", "markers": ["TOOL RESULTS"] }] }] },
+  { "id": "emp_008", "category": "empty_results", "mode": "single", "title": "no products category", "steps": [{ "message": "عندكم لبس صيفي؟", "expects": [{ "kind": "honest_empty" }] }] }
+]

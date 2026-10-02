@@ -1,0 +1,24 @@
+[
+  { "id": "gold_001", "category": "golden_conversation", "mode": "conversation", "title": "Gift perfume full journey", "weight": 3, "steps": [
+    { "message": "اريد عطر نسائي هدية بس مو قوي", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_RECOMMENDATIONS", "CLARIFICATION"] }] },
+    { "message": "بحدود 50 الف", "expects": [{ "kind": "all_products_max_price", "price": 50000 }] },
+    { "message": "الثاني شنو ريحته", "expects": [{ "kind": "price_matches_prior_product", "turn": 1, "index": 1 }] },
+    { "message": "لا هذا البراند ما اريده", "expects": [{ "kind": "no_brand_from_prior", "turn": 1, "index": 1 }, { "kind": "all_products_max_price", "price": 50000 }] },
+    { "message": "ارخص", "expects": [{ "kind": "all_products_max_price", "price": 50000 }] },
+    { "message": "قارن الاول والثالث", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_COMPARISON", "TEXT"] }] }
+  ] },
+  { "id": "gold_002", "category": "golden_conversation", "mode": "conversation", "title": "Shampoo constraints stacking", "weight": 3, "steps": [
+    { "message": "اريد شامبو" },
+    { "message": "شعري مصبوغ وجاف", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_RECOMMENDATIONS", "TEXT"] }] },
+    { "message": "بدون لوريال", "expects": [{ "kind": "no_brand", "brand": "loreal" }] },
+    { "message": "اريد حجم كبير", "expects": [{ "kind": "no_brand", "brand": "loreal" }, { "kind": "min_products", "count": 1 }] }
+  ] },
+  { "id": "gold_003", "category": "golden_conversation", "mode": "conversation", "title": "Routine with total budget", "weight": 3, "steps": [
+    { "message": "روتين للبشرة الدهنية بحدود 60 الف وما اريد لوريال", "expects": [{ "kind": "all_products_max_price", "price": 60000 }, { "kind": "no_brand", "brand": "loreal" }] },
+    { "message": "خيارات ثانية", "expects": [{ "kind": "no_brand", "brand": "loreal" }] }
+  ] },
+  { "id": "gold_004", "category": "golden_conversation", "mode": "conversation", "title": "Screen context product page", "weight": 2, "steps": [
+    { "message": "هذا المنتج شنو يفيد؟" },
+    { "message": "اكو شي احسن منه للبشرة الجافة؟", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_RECOMMENDATIONS", "TEXT", "CLARIFICATION"] }] }
+  ] }
+]

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/auth_gate.dart';
+import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/loyalty_summary.dart';
 import '../auth/auth_provider.dart';
@@ -38,7 +39,10 @@ class _LoyaltyBody extends ConsumerWidget {
     return ProfileScaffold(
       title: s.loyaltyPoints,
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: CartTheme.brand)),
+        loading: () => ListView(
+          padding: const EdgeInsets.all(16),
+          children: List.generate(6, (_) => const Padding(padding: EdgeInsets.only(bottom: 12), child: ShimmerBox(height: 64, radius: 16))),
+        ),
         error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(loyaltyProvider)),
         data: (summary) => ListView(
           padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 16, ProfileUi.hPad, 24),

@@ -9,6 +9,7 @@ import multipart from "@fastify/multipart";
 import compress from "@fastify/compress";
 import fastifyStatic from "@fastify/static";
 import * as path from "path";
+import { randomUUID } from "crypto";
 import { AppModule } from "./modules/app.module";
 import { AllExceptionsFilter } from "./common/filters/http-exception.filter";
 import { TransformInterceptor } from "./common/interceptors/transform.interceptor";
@@ -33,6 +34,15 @@ async function bootstrap() {
     { bufferLogs: true },
   );
 
+  // معرف طلب موحد — يظهر بالاستجابة والسجلات لتتبع الأخطاء تحت الحمل.
+  const fastifyInstance = app.getHttpAdapter().getInstance();
+  fastifyInstance.addHook("onRequest", async (request: any, reply: any) => {
+    const incoming = request.headers["x-request-id"];
+    const id = (Array.isArray(incoming) ? incoming[0] : incoming) ?? randomUUID();
+    request.id = id;
+    reply.header("x-request-id", id);
+  });
+
   await app.register(helmet, {
     contentSecurityPolicy: false,
     // HSTS only after HTTPS is live — otherwise browsers force https:// and break HTTP-only deploys
@@ -41,7 +51,7 @@ async function bootstrap() {
   await app.register(multipart, {
     limits: { fileSize: 20 * 1024 * 1024 },
   });
-  await app.register(compress as any, { encodings: ["gzip", "deflate"] });
+  await app.register(compress as any, { encodings: ["br", "gzip", "deflate"] });
 
   const mediaRoot = path.resolve(process.env.MEDIA_ROOT ?? "./uploads");
   const mediaPrefix = (process.env.MEDIA_PUBLIC_PREFIX ?? "/media").replace(/\/$/, "");

@@ -24,6 +24,13 @@ class CartItemCard extends ConsumerWidget {
     context.push('/product/${item.routeId}');
   }
 
+  Color? get _shadeColor {
+    final hex = item.shadeColor;
+    if (hex == null || hex.length < 6) return null;
+    final value = int.tryParse(hex.replaceFirst('#', '0xFF'), radix: 16);
+    return value != null ? Color(value) : null;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lang = ref.watch(languageCodeProvider);
@@ -105,13 +112,36 @@ class CartItemCard extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: CartTheme.pillDecoration(),
-                          child: Text(
-                            item.shadeName!,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: CartTheme.brandDark,
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_shadeColor != null) ...[
+                                Container(
+                                  width: 9,
+                                  height: 9,
+                                  decoration: BoxDecoration(
+                                    color: _shadeColor,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 1.2),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: CartTheme.charcoal.withValues(alpha: 0.15),
+                                        blurRadius: 3,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 5),
+                              ],
+                              Text(
+                                item.shadeName!,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: CartTheme.brandDark,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],

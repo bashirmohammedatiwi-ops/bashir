@@ -16,16 +16,16 @@ class HomeQuickDock extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.s;
     final items = [
-      _Item(Icons.local_offer_outlined, s.quickOffers, () {
+      _Item(0, Icons.local_offer_outlined, s.quickOffers, () {
         ref.read(navIndexProvider.notifier).state = 2;
       }),
-      _Item(Icons.grid_view_rounded, s.navCategories, () {
+      _Item(1, Icons.grid_view_rounded, s.navCategories, () {
         ref.read(navIndexProvider.notifier).state = 1;
       }),
-      _Item(Icons.storefront_outlined, s.quickBrands, () {
+      _Item(2, Icons.storefront_outlined, s.quickBrands, () {
         context.push('/brands');
       }),
-      _Item(Icons.favorite_border_rounded, s.quickWishlist, () {
+      _Item(3, Icons.favorite_border_rounded, s.quickWishlist, () {
         context.push('/wishlist');
       }),
     ];
@@ -44,11 +44,12 @@ class HomeQuickDock extends ConsumerWidget {
 }
 
 class _Item extends StatelessWidget {
+  final int index;
   final IconData icon;
   final String label;
   final VoidCallback onTap;
 
-  const _Item(this.icon, this.label, this.onTap);
+  const _Item(this.index, this.icon, this.label, this.onTap);
 
   @override
   Widget build(BuildContext context) {
@@ -64,12 +65,19 @@ class _Item extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: HomeTheme.pearl,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  HomeTheme.categoryTileColors[index % HomeTheme.categoryTileColors.length],
+                  HomeTheme.pearl,
+                ],
+              ),
               shape: BoxShape.circle,
               border: Border.all(color: HomeTheme.divider),
             ),
             alignment: Alignment.center,
-            child: Icon(icon, size: 20, color: HomeTheme.accent),
+            child: Icon(icon, size: 20, color: HomeTheme.accentDark),
           ),
           const SizedBox(height: 5),
           Text(

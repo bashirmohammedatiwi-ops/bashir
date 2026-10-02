@@ -29,6 +29,8 @@ String? resolveDeepLink(Uri uri) {
       return '/brands';
     case '/cart':
       return '/cart';
+    case '/assistant':
+      return '/assistant';
     case '/privacy':
       return '/privacy';
     case '/terms':

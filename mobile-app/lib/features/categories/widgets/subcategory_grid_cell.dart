@@ -73,6 +73,7 @@ class _SubcategoryFooterSlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!hasTertiary) return const SizedBox.shrink();
     return SizedBox(
       height: CategoriesTheme.subFooterHeight,
       child: DecoratedBox(
@@ -82,29 +83,18 @@ class _SubcategoryFooterSlot extends StatelessWidget {
             top: BorderSide(color: CategoriesTheme.cardBorderColor),
           ),
         ),
-        child: hasTertiary
-            ? Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    HapticFeedback.selectionClick();
-                    onTapTertiary();
-                  },
-                  child: _TertiaryFooterContent(count: count, lang: lang),
-                ),
-              )
-            : const _TertiaryFooterPlaceholder(),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onTapTertiary();
+            },
+            child: _TertiaryFooterContent(count: count, lang: lang),
+          ),
+        ),
       ),
     );
-  }
-}
-
-class _TertiaryFooterPlaceholder extends StatelessWidget {
-  const _TertiaryFooterPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox.expand();
   }
 }
 

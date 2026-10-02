@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  UseInterceptors,
   Param,
   Patch,
   Post,
@@ -18,13 +19,20 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { BrandsService } from "./brands.service";
+import { CacheResponse, ResponseCacheInterceptor } from "../../common/interceptors/response-cache.interceptor";
+import { RedisCacheService } from "../../common/redis-cache.service";
+
+const CACHE_PREFIX = "rc:catalog:brands";
 
 @ApiTags("brands")
 @Controller("brands")
 export class BrandsController {
-  constructor(private readonly service: BrandsService) {}
+  constructor(
+    private readonly service: BrandsService,
+    private readonly cache: RedisCacheService,
+  ) {}
 
-  @Public() @Get() list(
+  @Public() @Get() @UseInterceptors(ResponseCacheInterceptor) @CacheResponse(60, CACHE_PREFIX) list(
     @Req() req: any,
     @Query("featured") featured?: string,
     @Query("all") all?: string,
@@ -55,8 +63,10 @@ export class BrandsController {
   }
 
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  @Post() create(@Body() data: any) {
-    return this.service.create(data);
+  @Post() async create(@Body() data: any) {
+    const created = await this.service.create(data);
+    void this.cache.invalidatePrefix(CACHE_PREFIX);
+    return created;
   }
 
   /** مطابقة براند أو إنشاؤه إن لم يوجد (لاستيراد الكتالوج) */
@@ -120,7 +130,7 @@ export class BrandsController {
   }
 
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  @Patch(":id") update(@Param("id") id: string, @Body() data: any) {
+  @Patch(":id") async update(@Param("id") id: string, @Body() data: any) {
     return this.service.update(id, data);
   }
 

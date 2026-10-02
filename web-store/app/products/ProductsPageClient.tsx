@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { ProductGrid } from "@/components/catalog/ProductGrid";
-import { LoadingState } from "@/components/ui/LoadingState";
+import { ProductGridSkeleton } from "@/components/ui/Skeleton";
 import { fetchProducts } from "@/lib/api";
 
 function flag(v: string | null): boolean | undefined {
@@ -93,7 +93,7 @@ export function ProductsPageClient() {
 
         {total != null ? <p className="results-meta">{total} منتج</p> : null}
 
-        {isLoading ? <LoadingState /> : null}
+        {isLoading ? <ProductGridSkeleton /> : null}
         {isError ? <p className="empty-state">تعذّر تحميل المنتجات.</p> : null}
         {!isLoading && !isError ? (
           products.length ? (

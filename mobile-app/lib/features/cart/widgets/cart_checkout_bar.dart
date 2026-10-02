@@ -6,6 +6,8 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../core/widgets/entrance.dart';
+import '../../../core/widgets/sheen.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../data/models/coupon.dart';
 import '../../auth/auth_provider.dart';
@@ -82,7 +84,8 @@ class CartCheckoutBar extends ConsumerWidget {
                     ),
                   ],
                 ),
-                child: Material(
+                child: Sheen(
+                  child: Material(
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: () {
@@ -119,8 +122,9 @@ class CartCheckoutBar extends ConsumerWidget {
                                 color: Colors.white.withValues(alpha: 0.22),
                                 borderRadius: BorderRadius.circular(999),
                               ),
-                              child: Text(
-                                formatPrice(total),
+                              child: AnimatedNumber(
+                                value: total,
+                                formatter: formatPrice,
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w900,
@@ -136,6 +140,7 @@ class CartCheckoutBar extends ConsumerWidget {
                         ),
                       ),
                     ),
+                  ),
                   ),
                 ),
               ),

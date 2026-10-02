@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { ProductGrid } from "@/components/catalog/ProductGrid";
-import { LoadingState } from "@/components/ui/LoadingState";
+import { CategoryPageSkeleton, ProductGridSkeleton } from "@/components/ui/Skeleton";
 import { fetchCategory, fetchProducts } from "@/lib/api";
 import { localizedName } from "@/lib/format";
 import { categoryImageUrl } from "@/lib/mediaUrl";
@@ -22,7 +22,7 @@ export function CategoryDetailView({ slug }: { slug: string }) {
   });
 
   if (!slug) return <p className="empty-state container">لم يُحدَّد قسم.</p>;
-  if (categoryQ.isLoading) return <LoadingState />;
+  if (categoryQ.isLoading) return <CategoryPageSkeleton />;
 
   const category = categoryQ.data;
   if (!category) return <p className="empty-state container">القسم غير موجود.</p>;
@@ -48,7 +48,7 @@ export function CategoryDetailView({ slug }: { slug: string }) {
         </div>
       </div>
       <div className="container">
-        {productsQ.isLoading ? <LoadingState /> : <ProductGrid products={productsQ.data?.data ?? []} />}
+        {productsQ.isLoading ? <ProductGridSkeleton /> : <ProductGrid products={productsQ.data?.data ?? []} />}
       </div>
     </>
   );

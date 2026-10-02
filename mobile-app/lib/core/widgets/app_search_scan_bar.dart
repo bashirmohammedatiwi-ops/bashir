@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../theme/app_colors.dart';
+import 'sheen.dart';
 
 /// شريط بحث موحّد مع زر مسح الباركود.
 class AppSearchScanBar extends StatelessWidget {
@@ -80,7 +81,8 @@ class AppSearchScanBar extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsetsDirectional.only(end: 5),
-            child: Material(
+            child: Sheen(
+              child: Material(
               color: AppColors.primary,
               borderRadius: BorderRadius.circular(10),
               child: InkWell(
@@ -108,6 +110,7 @@ class AppSearchScanBar extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
             ),
           ),
         ],

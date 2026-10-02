@@ -1,0 +1,8 @@
+[
+  { "id": "orders_001", "category": "orders", "mode": "single", "title": "guest asks about order", "steps": [{ "message": "وين طلبي وصل؟", "expects": [{ "kind": "response_type_in", "types": ["ORDER_INFO", "TEXT", "CLARIFICATION"] }, { "kind": "message_mentions", "text": "دخول" }] }] },
+  { "id": "orders_002", "category": "orders", "mode": "single", "title": "order by number guest", "steps": [{ "message": "شكد طلبي رقم ORD-1234؟", "expects": [{ "kind": "response_type_in", "types": ["ORDER_INFO", "TEXT", "CLARIFICATION"] }, { "kind": "message_mentions", "text": "دخول" }] }] },
+  { "id": "orders_003", "category": "orders", "mode": "single", "title": "order status iraqi dialect", "steps": [{ "message": "طلبي شكد صار؟", "expects": [{ "kind": "response_type_in", "types": ["ORDER_INFO", "TEXT", "CLARIFICATION"] }] }] },
+  { "id": "orders_004", "category": "orders", "mode": "single", "title": "order tracking english", "steps": [{ "message": "where is my order?", "expects": [{ "kind": "response_type_in", "types": ["ORDER_INFO", "TEXT", "CLARIFICATION"] }] }] },
+  { "id": "orders_005", "category": "orders", "mode": "single", "title": "order question stays on orders", "steps": [{ "message": "شنو طلبت منكم آخر مرة؟", "expects": [{ "kind": "response_type_in", "types": ["ORDER_INFO", "TEXT", "CLARIFICATION"] }, { "kind": "message_not_mentions", "text": "PLANNER_HINT" }] }] },
+  { "id": "orders_006", "category": "orders", "mode": "single", "title": "no fabricated order numbers", "steps": [{ "message": "طلبي وين وصل؟", "expects": [{ "kind": "message_not_mentions", "text": "ORD-" }] }] }
+]

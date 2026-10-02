@@ -24,6 +24,7 @@ import { SyncModule } from "./sync/sync.module";
 import { HomeModule } from "./home/home.module";
 import { ShippingModule } from "./shipping/shipping.module";
 import { AiProductModule } from "./ai-product/ai-product.module";
+import { AssistantModule } from "./assistant/assistant.module";
 import { AdminCacheController } from "./admin/admin-cache.controller";
 
 const redisEnabled = process.env.REDIS_DISABLED !== "1";
@@ -71,6 +72,7 @@ const conditionalImports: DynamicModule[] = redisEnabled
     SyncModule,
     ShippingModule,
     AiProductModule,
+    AssistantModule,
   ],
   controllers: [AdminCacheController],
   providers: [

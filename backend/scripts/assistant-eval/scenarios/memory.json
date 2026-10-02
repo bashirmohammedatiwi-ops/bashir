@@ -1,0 +1,6 @@
+[
+  { "id": "memory_001", "category": "memory", "mode": "single", "title": "what do you remember about me", "steps": [{ "message": "شنو تتذكر عني؟", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "CLARIFICATION", "ORDER_INFO"] }] }] },
+  { "id": "memory_002", "category": "memory", "mode": "conversation", "title": "skin type sticks within conversation", "steps": [{ "message": "بشرتي دهنية وابي غسول مناسب", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT", "CLARIFICATION"] }] }, { "message": "وابي مرطب بعد", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT", "CLARIFICATION"] }, { "kind": "message_not_mentions", "text": "PLANNER_HINT" }] }] },
+  { "id": "memory_003", "category": "memory", "mode": "single", "title": "forget request handled politely", "steps": [{ "message": "انسى كل شي تتذكره عني", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "CLARIFICATION"] }] }] },
+  { "id": "memory_004", "category": "memory", "mode": "single", "title": "preferred brand across turns", "steps": [{ "message": "احب منتجات غارنييه اريد شي للشعر", "expects": [{ "kind": "some_brand", "brand": "garnier" } ] }] }
+]

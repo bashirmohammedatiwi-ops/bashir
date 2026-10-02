@@ -100,6 +100,7 @@ class AppStrings {
   String get visitWebsite => isAr ? 'زيارة الموقع' : 'Visit website';
   String get shareProduct => isAr ? 'مشاركة المنتج' : 'Share product';
   String get linkCopied => isAr ? 'تم نسخ الرابط' : 'Link copied';
+  String allReviewsLabel(int count) => isAr ? 'عرض كل التقييمات ($count)' : 'Show all reviews ($count)';
   String get logout => isAr ? 'تسجيل الخروج' : 'Log Out';
   String get logoutConfirmTitle => isAr ? 'تسجيل الخروج' : 'Log Out';
   String get logoutConfirmBody =>
@@ -259,7 +260,6 @@ class AppStrings {
       isAr ? 'تم تطبيق الكوبون $code' : 'Coupon $code applied';
 
   // ─── Offers ───────────────────────────────────────────────────────────────
-  String get offersTitle => isAr ? 'العروض' : 'Offers';
   String get noOffersNow => isAr ? 'لا توجد عروض حالياً' : 'No offers right now';
   String get checkBackSoon =>
       isAr ? 'عودي قريباً لاكتشاف تخفيضات جديدة' : 'Check back soon for new deals';
@@ -280,11 +280,15 @@ class AppStrings {
   // ─── Search ───────────────────────────────────────────────────────────────
   String get recentlyViewed => isAr ? 'شاهدت مؤخراً' : 'Recently Viewed';
   String get noSearchResults => isAr ? 'لا توجد نتائج' : 'No results found';
+  String get noSearchResultsHint => isAr ? 'جرب كلمة ثانية أو امسح باركود المنتج' : 'Try another word or scan the product barcode';
+  String get recentSearches => isAr ? 'بحثك الأخير' : 'Recent searches';
+  String get trendingSearches => isAr ? 'رائج الآن' : 'Trending now';
   String get searchInStore => isAr ? 'ابحث في ديما الحياة' : 'Search deema alhayat';
   String get searchInStoreHint =>
       isAr ? 'اكتب اسم المنتج أو العلامة التجارية' : 'Type a product or brand name';
   String get clear => isAr ? 'مسح' : 'Clear';
   String get scanResults => isAr ? 'نتائج المسح' : 'Scan Results';
+  String get lookingUpProduct => isAr ? 'أدور على المنتج…' : 'Looking up the product…';
   String get scanHint => isAr ? 'وجّه الكاميرا نحو باركود المنتج' : 'Point the camera at the product barcode';
   String get switchCamera => isAr ? 'تبديل الكاميرا' : 'Switch camera';
   String get flash => isAr ? 'الفلاش' : 'Flash';
@@ -334,6 +338,26 @@ class AppStrings {
 
   // ─── Orders ───────────────────────────────────────────────────────────────
   String get orderDetails => isAr ? 'تفاصيل الطلب' : 'Order Details';
+  String get noOrdersYet => isAr ? 'لا توجد طلبات بعد' : 'No orders yet';
+  String get noOrdersHint => isAr ? 'ستظهر طلباتك هنا بعد الشراء' : 'Your orders will appear here after purchase';
+  String get addingToCart => isAr ? 'جاري إضافة المنتجات إلى السلة…' : 'Adding products to cart…';
+  String get addingToCartFailed => isAr ? 'تعذّر إضافة المنتجات. حاول لاحقاً' : 'Could not add products. Try later';
+  String itemsAddedToCart(int count) => isAr ? 'تمت إضافة $count منتج إلى السلة' : '$count items added to cart';
+  String get orderCancelled => isAr ? 'تم إلغاء الطلب وتحديث نقاط الولاء' : 'Order cancelled and loyalty updated';
+  String get trackOrdered => isAr ? 'تم الطلب' : 'Ordered';
+  String get trackConfirmed => isAr ? 'مؤكد' : 'Confirmed';
+  String get trackPreparing => isAr ? 'التجهيز' : 'Preparing';
+  String get trackShipping => isAr ? 'الشحن' : 'Shipping';
+  String get trackDelivered => isAr ? 'التسليم' : 'Delivered';
+  String get editBtn => isAr ? 'تعديل' : 'Edit';
+  String get deleteBtn => isAr ? 'حذف' : 'Delete';
+  String get badgeNew => isAr ? 'جديد' : 'New';
+  String get badgeOffer => isAr ? 'عرض' : 'Offer';
+  String get badgeSoldOut => isAr ? 'نفد' : 'Sold out';
+  String get badgeSoldOutFull => isAr ? 'نفد المخزون' : 'Out of stock';
+  String get packagesTitle => isAr ? 'الباقات' : 'Packages';
+  String get offersTitle => isAr ? 'العروض' : 'Offers';
+  String get supportContact => isAr ? 'تواصل مع الدعم' : 'Contact support';
   String get cancelOrder => isAr ? 'إلغاء الطلب' : 'Cancel Order';
   String get cancelOrderConfirm =>
       isAr ? 'هل أنت متأكد من إلغاء هذا الطلب؟' : 'Are you sure you want to cancel this order?';
@@ -397,6 +421,9 @@ class AppStrings {
   String get goToCart => isAr ? 'الذهاب للسلة' : 'Go to Cart';
   String itemCountLabel(int count) =>
       isAr ? (count == 1 ? '$count منتج' : '$count منتجات') : (count == 1 ? '$count item' : '$count items');
+  String get orderItemsReview => isAr ? 'أصناف طلبك' : 'Your items';
+  String get couponInvalid => isAr ? 'الكوبون غير صالح' : 'Invalid coupon code';
+  String couponMinOrder(String min) => isAr ? 'الحد الأدنى للطلب $min' : 'Minimum order is $min';
   String get confirmOrder => isAr ? 'تأكيد الطلب' : 'Place Order';
   String get delete => isAr ? 'حذف' : 'Delete';
   String get deleteAddressConfirm =>

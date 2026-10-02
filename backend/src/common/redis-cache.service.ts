@@ -45,20 +45,23 @@ export class RedisCacheService implements OnModuleDestroy {
 
   async get<T>(key: string): Promise<T | null> {
     const redis = await this.ensureConnected();
-    if (!redis) return null;
+    if (!redis) return this.memoryGet<T>(key);
     try {
       const raw = await redis.get(key);
-      if (!raw) return null;
+      if (!raw) return this.memoryGet<T>(key);
       return JSON.parse(raw) as T;
     } catch (err) {
       this.logger.warn(`Redis get failed for ${key}: ${err instanceof Error ? err.message : err}`);
-      return null;
+      return this.memoryGet<T>(key);
     }
   }
 
   async set(key: string, value: unknown, ttlSec: number): Promise<void> {
+    if (ttlSec <= 0) return;
+    // Write-through to the in-process fallback so Redis-less nodes stay fast.
+    this.memorySet(key, value, ttlSec);
     const redis = await this.ensureConnected();
-    if (!redis || ttlSec <= 0) return;
+    if (!redis) return;
     try {
       const payload = JSON.stringify(value);
       await redis.set(key, payload, "EX", ttlSec);
@@ -69,7 +72,7 @@ export class RedisCacheService implements OnModuleDestroy {
 
   async invalidatePrefix(prefix: string): Promise<number> {
     const redis = await this.ensureConnected();
-    if (!redis) return 0;
+    if (!redis) return this.memoryInvalidatePrefix(prefix);
     let removed = 0;
     try {
       let cursor = "0";
@@ -84,6 +87,53 @@ export class RedisCacheService implements OnModuleDestroy {
       this.logger.warn(
         `Redis invalidatePrefix failed for ${prefix}: ${err instanceof Error ? err.message : err}`,
       );
+    }
+    return removed + this.memoryInvalidatePrefix(prefix);
+  }
+
+  // ---------------------- in-process fallback ----------------------
+  // Keeps hot reads fast (and free) even without Redis — single-node deploys,
+  // Redis restarts, or REDIS_DISABLED=1. Bounded to MEMORY_MAX_KEYS with
+  // approximate LRU eviction so the process never grows unbounded.
+
+  private readonly memory = new Map<string, { value: string; expiresAt: number }>();
+  private readonly memoryMaxKeys = Number(process.env.CACHE_MEMORY_MAX_KEYS ?? 500);
+
+  private memoryGet<T>(key: string): T | null {
+    const hit = this.memory.get(key);
+    if (!hit) return null;
+    if (hit.expiresAt < Date.now()) {
+      this.memory.delete(key);
+      return null;
+    }
+    // Map preserves insertion order — re-insert to approximate LRU.
+    this.memory.delete(key);
+    this.memory.set(key, hit);
+    try {
+      return JSON.parse(hit.value) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  private memorySet(key: string, value: unknown, ttlSec: number): void {
+    if (this.memoryMaxKeys <= 0) return;
+    // Cap fallback TTL — memory is only a hot-read buffer, not a source of truth.
+    const ttl = Math.min(ttlSec, 120);
+    if (this.memory.size >= this.memoryMaxKeys) {
+      const oldest = this.memory.keys().next().value;
+      if (oldest !== undefined) this.memory.delete(oldest);
+    }
+    this.memory.set(key, { value: JSON.stringify(value), expiresAt: Date.now() + ttl * 1000 });
+  }
+
+  private memoryInvalidatePrefix(prefix: string): number {
+    let removed = 0;
+    for (const key of this.memory.keys()) {
+      if (key.startsWith(prefix)) {
+        this.memory.delete(key);
+        removed += 1;
+      }
     }
     return removed;
   }

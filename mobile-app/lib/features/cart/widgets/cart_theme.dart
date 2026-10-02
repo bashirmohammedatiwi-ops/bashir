@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/responsive.dart';
 import '../../home/widgets/home_theme.dart';
 
-/// ثيم السلة — ألوان اللوغو (تركواز + فحم) بأشكال ناعمة.
+/// ثيم السلة — تركواز اللوغو بأشكال ناعمة. الثوابت تقرأ من AppColors
+/// (المصدر الوحيد) للحفاظ على هوية موحدة عبر التطبيق.
 abstract final class CartTheme {
-  // ألوان اللوغو
-  static const brand = Color(0xFF3A9E8F);
-  static const brandDark = Color(0xFF2F7F73);
-  static const brandSoft = Color(0xFFE8F5F3);
-  static const brandWash = Color(0xFFF4FAF9);
-  static const charcoal = Color(0xFF2D2D2D);
+  // ألوان اللوغو — aliases للهوية الموحدة
+  static const brand = AppColors.primary;
+  static const brandDark = AppColors.primaryDark;
+  static const brandSoft = AppColors.primaryLight;
+  static const brandWash = AppColors.primarySoft;
+  static const charcoal = AppColors.ink;
 
   static const bg = Color(0xFFFAFCFB);
   static const card = Colors.white;
@@ -32,28 +34,28 @@ abstract final class CartTheme {
     return Responsive.shellBottomReserve(context);
   }
 
-  static List<BoxShadow> get softShadow => [
-        BoxShadow(
-          color: brand.withValues(alpha: 0.07),
-          blurRadius: 18,
-          offset: const Offset(0, 6),
-          spreadRadius: -4,
-        ),
-        BoxShadow(
-          color: charcoal.withValues(alpha: 0.04),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-      ];
+  static final List<BoxShadow> softShadow = [
+    BoxShadow(
+      color: brand.withValues(alpha: 0.07),
+      blurRadius: 18,
+      offset: const Offset(0, 6),
+      spreadRadius: -4,
+    ),
+    BoxShadow(
+      color: charcoal.withValues(alpha: 0.04),
+      blurRadius: 8,
+      offset: const Offset(0, 2),
+    ),
+  ];
 
-  static List<BoxShadow> get dockShadow => [
-        BoxShadow(
-          color: brand.withValues(alpha: 0.1),
-          blurRadius: 22,
-          offset: const Offset(0, -6),
-          spreadRadius: -4,
-        ),
-      ];
+  static final List<BoxShadow> dockShadow = [
+    BoxShadow(
+      color: brand.withValues(alpha: 0.1),
+      blurRadius: 22,
+      offset: const Offset(0, -6),
+      spreadRadius: -4,
+    ),
+  ];
 
   static BoxDecoration cardDecoration({Color? color}) => BoxDecoration(
         color: color ?? card,

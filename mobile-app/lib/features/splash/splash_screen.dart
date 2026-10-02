@@ -2,14 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/config/app_config.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_fonts.dart';
+import '../../core/widgets/brand_art.dart';
 
 /// ألوان مستوحاة من اللوغو — متطابقة مع خلفية الرئيسية.
 abstract final class SplashTheme {
-  static const background = Color(0xFFF6FAF9);
-  static const teal = Color(0xFF3A9E8F);
-  static const tealDark = Color(0xFF2F7F73);
-  static const charcoal = Color(0xFF2D2D2D);
+  static const background = AppColors.scaffold;
+  static const teal = AppColors.primary;
+  static const tealDark = AppColors.primaryDark;
+  static const charcoal = AppColors.ink;
 }
 
 /// شاشة افتتاح بسيطة وأنيقة.
@@ -52,7 +54,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     return Scaffold(
       backgroundColor: SplashTheme.background,
-      body: SafeArea(
+      body: AmbientBackground(
+        baseColor: SplashTheme.background,
+        child: SafeArea(
         child: Center(
           child: FadeTransition(
             opacity: _fade,
@@ -105,6 +109,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               ),
             ),
           ),
+        ),
         ),
       ),
     );

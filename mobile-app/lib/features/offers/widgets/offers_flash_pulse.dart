@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/utils/formatters.dart';
+import '../../../data/models/product.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_feed.dart';
 import '../../home/widgets/home_scroll_perf.dart';
@@ -47,15 +49,15 @@ class OffersFlashPulse extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             SizedBox(
-              height: 80,
+              height: 108,
               child: HomeHorizontalList(
-                height: 80,
+                height: 108,
                 padding: EdgeInsets.zero,
                 itemCount: products.length.clamp(0, 10),
                 itemBuilder: (_, i) {
                   final p = products[i];
                   return _ProductThumb(
-                    imageUrl: p.coverUrl,
+                    product: p,
                     onTap: () {
                       HapticFeedback.selectionClick();
                       context.push('/product/${p.slug.isNotEmpty ? p.slug : p.id}');
@@ -72,32 +74,66 @@ class OffersFlashPulse extends ConsumerWidget {
 }
 
 class _ProductThumb extends StatelessWidget {
-  final String? imageUrl;
+  final Product product;
   final VoidCallback onTap;
 
   const _ProductThumb({
-    required this.imageUrl,
+    required this.product,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 8),
+      padding: const EdgeInsetsDirectional.only(end: 8),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: SizedBox(
-              width: 80,
-              height: 80,
-              child: ColoredBox(
-                color: OffersTheme.canvas,
-                child: ProductCoverImage(url: imageUrl ?? '', fit: BoxFit.contain),
-              ),
+          child: SizedBox(
+            width: 118,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 118,
+                    height: 76,
+                    child: ColoredBox(
+                      color: OffersTheme.canvas,
+                      child: ProductCoverImage(url: product.coverUrl, fit: BoxFit.contain),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  product.nameAr ?? product.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700),
+                ),
+                Row(
+                  children: [
+                    Text(
+                      formatPrice(product.price),
+                      style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w900, color: OffersTheme.brand),
+                    ),
+                    if (product.hasDiscount) ...[
+                      const SizedBox(width: 4),
+                      Text(
+                        formatPrice(product.originalPrice),
+                        style: TextStyle(
+                          fontSize: 9,
+                          color: OffersTheme.inkMuted,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
             ),
           ),
         ),

@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_motion.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/utils/friendly_error.dart';
 import '../../../core/utils/phone_util.dart';
@@ -127,12 +129,27 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 decoration: authFieldDecoration(
                   label: s.password,
                   suffix: IconButton(
-                    icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                    icon: AnimatedRotation(
+                      turns: _obscure ? 0 : 1,
+                      duration: AppMotion.base,
+                      curve: AppMotion.ease,
+                      child: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+                    ),
                     onPressed: () => setState(() => _obscure = !_obscure),
                   ),
                 ),
                 validator: (v) => (v == null || v.length < 6) ? s.passwordMin6 : null,
               ),
+            ),
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _password,
+              builder: (context, value, _) {
+                if (value.text.isEmpty) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: _PasswordStrength(password: value.text, isAr: s.isAr),
+                );
+              },
             ),
             const SizedBox(height: 14),
             _TermsCheckbox(
@@ -168,14 +185,33 @@ class _TermsCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Checkbox(value: value, onChanged: onChanged, visualDensity: VisualDensity.compact),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: RichText(
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () => onChanged(!value),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            AnimatedContainer(
+              duration: AppMotion.fast,
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                color: value ? CartTheme.brand : Colors.transparent,
+                borderRadius: BorderRadius.circular(7),
+                border: Border.all(
+                  color: value ? CartTheme.brand : CartTheme.charcoal.withValues(alpha: 0.3),
+                  width: 1.6,
+                ),
+              ),
+              child: value
+                  ? const Icon(Icons.check_rounded, size: 15, color: Colors.white)
+                  : null,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: RichText(
               text: TextSpan(
                 style: TextStyle(fontSize: 12.5, color: Colors.black.withValues(alpha: 0.72), height: 1.45),
                 children: [
@@ -196,7 +232,62 @@ class _TermsCheckbox extends StatelessWidget {
                 ],
               ),
             ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+/// مؤشر قوة كلمة المرور — شريط ملون + وصف.
+class _PasswordStrength extends StatelessWidget {
+  final String password;
+  final bool isAr;
+
+  const _PasswordStrength({required this.password, required this.isAr});
+
+  int get _score {
+    var score = 0;
+    if (password.length >= 6) score++;
+    if (password.length >= 10) score++;
+    if (RegExp(r'[A-Za-z]').hasMatch(password) && RegExp(r'\d').hasMatch(password)) score++;
+    if (RegExp(r'[^A-Za-z0-9]').hasMatch(password)) score++;
+    return score.clamp(0, 4);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const colors = [AppColors.sale, AppColors.warning, AppColors.accent, AppColors.success];
+    const labelsAr = ['ضعيفة جداً', 'ضعيفة', 'متوسطة', 'قوية'];
+    const labelsEn = ['Very weak', 'Weak', 'Medium', 'Strong'];
+    final score = _score;
+    if (score == 0) {
+      return Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: Text(
+          isAr ? 'كلمة المرور قصيرة جداً' : 'Password too short',
+          style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(99),
+          child: LinearProgressIndicator(
+            value: score / 4,
+            minHeight: 4,
+            backgroundColor: AppColors.divider,
+            valueColor: AlwaysStoppedAnimation(colors[score - 1]),
           ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          isAr ? labelsAr[score - 1] : labelsEn[score - 1],
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: colors[score - 1]),
         ),
       ],
     );

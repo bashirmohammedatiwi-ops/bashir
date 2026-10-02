@@ -12,7 +12,7 @@ import {
   ProductSection,
   TrustBar,
 } from "@/components/home/HomeSections";
-import { LoadingState } from "@/components/ui/LoadingState";
+import { HomePageSkeleton } from "@/components/ui/Skeleton";
 import { fetchHome } from "@/lib/api";
 import { displayStoreName } from "@/lib/config";
 
@@ -22,7 +22,7 @@ export default function HomePage() {
     queryFn: fetchHome,
   });
 
-  if (isLoading) return <LoadingState />;
+  if (isLoading) return <HomePageSkeleton />;
   if (isError || !data) {
     return <p className="empty-state container">تعذّر تحميل الصفحة. تأكدي من تشغيل الخادم.</p>;
   }

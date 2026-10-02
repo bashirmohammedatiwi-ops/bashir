@@ -8,13 +8,21 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { CategoriesService } from "./categories.service";
 import { CreateCategoryDto, UpdateCategoryDto } from "./dto/category.dto";
+import { CacheResponse, ResponseCacheInterceptor } from "../../common/interceptors/response-cache.interceptor";
+import { RedisCacheService } from "../../common/redis-cache.service";
+import { UseInterceptors } from "@nestjs/common";
+
+const CACHE_PREFIX = "rc:catalog:tree";
 
 @ApiTags("categories")
 @Controller("categories")
 export class CategoriesController {
-  constructor(private readonly service: CategoriesService) {}
+  constructor(
+    private readonly service: CategoriesService,
+    private readonly cache: RedisCacheService,
+  ) {}
 
-  @Public() @Get() list(
+  @Public() @Get() @UseInterceptors(ResponseCacheInterceptor) @CacheResponse(60, CACHE_PREFIX) list(
     @Req() req: any,
     @Query("all") all?: string,
     @Query("minimal") minimal?: string,
@@ -33,17 +41,23 @@ export class CategoriesController {
   }
 
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  @Post() create(@Body() data: CreateCategoryDto) {
-    return this.service.create(data);
+  @Post() async create(@Body() data: CreateCategoryDto) {
+    const created = await this.service.create(data);
+    void this.cache.invalidatePrefix(CACHE_PREFIX);
+    return created;
   }
 
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  @Patch(":id") update(@Param("id") id: string, @Body() data: UpdateCategoryDto) {
-    return this.service.update(id, data);
+  @Patch(":id") async update(@Param("id") id: string, @Body() data: UpdateCategoryDto) {
+    const updated = await this.service.update(id, data);
+    void this.cache.invalidatePrefix(CACHE_PREFIX);
+    return updated;
   }
 
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)
-  @Delete(":id") remove(@Param("id") id: string) {
-    return this.service.remove(id);
+  @Delete(":id") async remove(@Param("id") id: string) {
+    const removed = await this.service.remove(id);
+    void this.cache.invalidatePrefix(CACHE_PREFIX);
+    return removed;
   }
 }

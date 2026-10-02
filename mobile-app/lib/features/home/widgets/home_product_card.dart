@@ -47,6 +47,13 @@ class HomeProductCard extends ConsumerWidget {
             color: Colors.white,
             borderRadius: BorderRadius.circular(_radius),
             border: Border.all(color: AppColors.hairline.withValues(alpha: 0.55)),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.ink.withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -101,21 +108,18 @@ class _ImageSection extends ConsumerWidget {
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
           child: LayoutBuilder(
             builder: (context, constraints) => Center(
-              child: ProductCoverImage(
-                url: product.coverUrl,
-                width: constraints.maxWidth,
-                height: constraints.maxHeight,
-                fit: BoxFit.contain,
-                filterQuality: FilterQuality.medium,
+              child: Hero(
+                tag: 'product-image-${product.id}',
+                child: ProductCoverImage(
+                  url: product.coverUrl,
+                  width: constraints.maxWidth,
+                  height: constraints.maxHeight,
+                  fit: BoxFit.contain,
+                  filterQuality: FilterQuality.medium,
+                ),
               ),
             ),
           ),
-        ),
-        const Positioned(
-          left: 10,
-          right: 10,
-          bottom: 0,
-          child: Divider(height: 1, thickness: 0.5, color: AppColors.divider),
         ),
         if (product.hasDiscount)
           Positioned(

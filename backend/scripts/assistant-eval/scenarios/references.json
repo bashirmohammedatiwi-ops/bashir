@@ -1,0 +1,42 @@
+[
+  { "id": "ref_001", "category": "references", "mode": "conversation", "title": "الثاني price", "steps": [
+    { "message": "اقترحلي عطور نسائية" },
+    { "message": "الثاني شكد سعره؟", "expects": [{ "kind": "price_matches_prior_product", "turn": 0, "index": 1 }] }
+  ] },
+  { "id": "ref_002", "category": "references", "mode": "conversation", "title": "الأول details", "steps": [
+    { "message": "شامبو للشعر المصبوغ" },
+    { "message": "الأول شنو مكوناته؟", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "PRODUCT_RECOMMENDATIONS"] }, { "kind": "price_matches_prior_product", "turn": 0, "index": 0 }] }
+  ] },
+  { "id": "ref_003", "category": "references", "mode": "conversation", "title": "هذا product", "steps": [
+    { "message": "اقترحلي كريم مرطب" },
+    { "message": "هذا ينفع للبشرة الدهنية؟", "expects": [{ "kind": "price_matches_prior_product", "turn": 0, "index": 0 }] }
+  ] },
+  { "id": "ref_004", "category": "references", "mode": "conversation", "title": "واحد ارخص follow", "steps": [
+    { "message": "سيروم للوجه" },
+    { "message": "اريد واحد ارخص", "expects": [{ "kind": "cheaper_than_prior", "turn": 0 }] }
+  ] },
+  { "id": "ref_005", "category": "references", "mode": "conversation", "title": "لا مو هذا", "steps": [
+    { "message": "عطر رجالي" },
+    { "message": "لا مو هذا، غيره", "expects": [{ "kind": "min_products", "count": 1 }] }
+  ] },
+  { "id": "ref_006", "category": "references", "mode": "conversation", "title": "الثالث", "steps": [
+    { "message": "بخاخ جسم نسائي" },
+    { "message": "الثالث متوفر؟", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "PRODUCT_RECOMMENDATIONS"] }] }
+  ] },
+  { "id": "ref_007", "category": "references", "mode": "conversation", "title": "نفسه بس اكبر", "steps": [
+    { "message": "شامبو مضاد للقشرة" },
+    { "message": "نفسه بس حجم اكبر، اكو؟", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "PRODUCT_RECOMMENDATIONS"] }] }
+  ] },
+  { "id": "ref_008", "category": "references", "mode": "conversation", "title": "أقوى شوي", "steps": [
+    { "message": "عطر حلو خفيف" },
+    { "message": "اريد أقوى شوي من هذا", "expects": [{ "kind": "min_products", "count": 1 }] }
+  ] },
+  { "id": "ref_009", "category": "references", "mode": "conversation", "title": "اغلى", "steps": [
+    { "message": "كريم يدين رخيص" },
+    { "message": "اريد اغلى منه", "expects": [{ "kind": "min_products", "count": 1 }] }
+  ] },
+  { "id": "ref_010", "category": "references", "mode": "conversation", "title": "ليش هذا", "steps": [
+    { "message": "ماسك للشعر التالف" },
+    { "message": "ليش اخترت هذا؟", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "PRODUCT_RECOMMENDATIONS"] }] }
+  ] }
+]

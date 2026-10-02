@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/models/product.dart';
 import '../l10n/locale_provider.dart';
+import '../l10n/app_strings.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_spacing.dart';
 import '../theme/app_typography.dart';
@@ -149,14 +150,15 @@ class _ListingImage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     final visibleShades = product.displayableShades;
     final hasShades = product.hasMultipleDisplayableShades;
     final badge = product.hasDiscount
         ? '-${product.discountPercent}%'
         : product.isNew
-            ? 'جديد'
+            ? s.badgeNew
             : (showPromoBadge && product.isPromo)
-                ? 'عرض'
+                ? s.badgeOffer
                 : null;
 
     return Stack(
@@ -172,12 +174,15 @@ class _ListingImage extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
               child: LayoutBuilder(
                 builder: (context, constraints) => Center(
-                  child: ProductCoverImage(
-                    url: product.coverUrl,
-                    width: constraints.maxWidth,
-                    height: constraints.maxHeight,
-                    fit: BoxFit.contain,
-                    filterQuality: FilterQuality.medium,
+                  child: Hero(
+                    tag: 'product-image-${product.id}',
+                    child: ProductCoverImage(
+                      url: product.coverUrl,
+                      width: constraints.maxWidth,
+                      height: constraints.maxHeight,
+                      fit: BoxFit.contain,
+                      filterQuality: FilterQuality.medium,
+                    ),
                   ),
                 ),
               ),
@@ -430,6 +435,7 @@ class _ImageSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -477,13 +483,13 @@ class _ImageSection extends ConsumerWidget {
           Positioned(
             top: 10,
             left: 10,
-            child: _Badge(label: 'جديد', color: AppColors.ink, lite: lite),
+            child: _Badge(label: s.badgeNew, color: AppColors.ink, lite: lite),
           )
         else if (showPromoBadge && product.isPromo)
           Positioned(
             top: 10,
             left: 10,
-            child: _Badge(label: 'عرض', color: AppColors.primary, lite: lite),
+            child: _Badge(label: s.badgeOffer, color: AppColors.primary, lite: lite),
           ),
         if (_hasShades)
           Positioned(
@@ -500,9 +506,9 @@ class _ImageSection extends ConsumerWidget {
               borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg - 0.5)),
               child: ColoredBox(
                 color: AppColors.surface.withValues(alpha: 0.78),
-                child: const Center(
+                child: Center(
                   child: Text(
-                    'نفد المخزون',
+                    s.badgeSoldOutFull,
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                       color: AppColors.sale,
@@ -593,6 +599,7 @@ class _ShadeDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     final start = _hex(shade.colorHex);
     final end = _hex(shade.colorHexEnd ?? shade.colorHex);
     final hasGradient = shade.colorHexEnd != null &&

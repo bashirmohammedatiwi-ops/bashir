@@ -281,7 +281,9 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
         showRating: true,
         listingStyle: true,
         padding: const EdgeInsets.fromLTRB(ListingTheme.padH, 10, ListingTheme.padH, 32),
-        extraSlots: _hasMore ? 2 : 0,
+        extraSlots: 0,
+        loadingMore: _hasMore && _loading,
+        showEndMarker: !_hasMore,
         header: listingHeader,
       ),
     );
@@ -322,7 +324,7 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
                 child: Align(
-                  alignment: Alignment.centerRight,
+                  alignment: AlignmentDirectional.centerStart,
                   child: Text(s.sortBy, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 17)),
                 ),
               ),

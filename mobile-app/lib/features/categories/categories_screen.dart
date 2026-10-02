@@ -459,16 +459,7 @@ class _CategoriesHeader extends ConsumerWidget {
           onSearchTap: onSearch,
           onScanTap: onScan,
         ),
-        const SizedBox(height: 14),
-        Row(
-          children: [
-            CategoryFilterChip(
-              label: s.categoriesHeader,
-              selected: true,
-              onTap: () {},
-            ),
-          ],
-        ),
+        const SizedBox(height: 6),
       ],
     );
   }

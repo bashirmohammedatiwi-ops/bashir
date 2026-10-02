@@ -38,7 +38,20 @@ class _WishlistScreenState extends ConsumerState<WishlistScreen> {
     return Scaffold(
       backgroundColor: AppColors.scaffold,
       appBar: AppBar(
-        title: Text(s.wishlist),
+        title: Text('${s.wishlist}${wishlist.products.isNotEmpty ? ' (${wishlist.products.length})' : ''}'),
+        actions: [
+          if (wishlist.products.isNotEmpty)
+            IconButton(
+              tooltip: s.clear,
+              onPressed: () async {
+                final notifier = ref.read(wishlistProvider.notifier);
+                for (final product in wishlist.products) {
+                  await notifier.toggle(product);
+                }
+              },
+              icon: const Icon(Icons.delete_sweep_outlined, color: AppColors.rose),
+            ),
+        ],
         elevation: 0,
       ),
       body: !auth.isAuthenticated

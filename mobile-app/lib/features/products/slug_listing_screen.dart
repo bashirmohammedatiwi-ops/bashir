@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/locale_provider.dart';
+import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/brand.dart';
 import '../../data/models/category.dart';
@@ -16,7 +17,7 @@ class CategorySlugListingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(categoryBySlugProvider(slug));
     return async.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => const Scaffold(body: ProductGridSkeleton()),
       error: (e, _) => Scaffold(
         appBar: AppBar(),
         body: ErrorView.from(e, onRetry: () => ref.invalidate(categoryBySlugProvider(slug))),
@@ -37,7 +38,7 @@ class BrandSlugListingScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(brandBySlugProvider(slug));
     return async.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => const Scaffold(body: ProductGridSkeleton()),
       error: (e, _) => Scaffold(
         appBar: AppBar(),
         body: ErrorView.from(e, onRetry: () => ref.invalidate(brandBySlugProvider(slug))),

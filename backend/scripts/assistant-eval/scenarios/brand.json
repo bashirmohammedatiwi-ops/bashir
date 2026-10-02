@@ -1,0 +1,12 @@
+[
+  { "id": "brand_001", "category": "brand", "mode": "single", "title": "brand in arabic", "steps": [{ "message": "اريد شي من لوريال", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT"] }, { "kind": "some_brand", "brand": "loreal" }] }] },
+  { "id": "brand_002", "category": "brand", "mode": "single", "title": "brand latin", "steps": [{ "message": "garnier shampoo", "expects": [{ "kind": "some_brand", "brand": "garnier" }] }] },
+  { "id": "brand_003", "category": "brand", "mode": "single", "title": "brand accented", "steps": [{ "message": "اريد شامبو L'Oréal للشعر", "expects": [{ "kind": "some_brand", "brand": "loreal" }] }] },
+  { "id": "brand_004", "category": "brand", "mode": "single", "title": "maybelline", "steps": [{ "message": "اريد مسكارا من مايبيلين", "expects": [{ "kind": "some_brand", "brand": "maybelline" }] }] },
+  { "id": "brand_005", "category": "brand", "mode": "single", "title": "nivea", "steps": [{ "message": "كريم نيفيا للوجه موجود؟", "expects": [{ "kind": "some_brand", "brand": "nivea" }] }] },
+  { "id": "brand_006", "category": "brand", "mode": "single", "title": "typo brand", "steps": [{ "message": "اريد من غارنييه شامبو", "expects": [{ "kind": "some_brand", "brand": "garnier" }] }] },
+  { "id": "brand_007", "category": "brand", "mode": "single", "title": "unknown brand honest", "steps": [{ "message": "اريد من ماركة Zxqvv حماية للشعر", "expects": [{ "kind": "honest_empty" }] }] },
+  { "id": "brand_008", "category": "brand", "mode": "single", "title": "brand only query", "steps": [{ "message": "لوريال", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT"] }, { "kind": "some_brand", "brand": "loreal" }] }] },
+  { "id": "brand_009", "category": "brand", "mode": "single", "title": "brand mixed script", "steps": [{ "message": "عطر loreal نسائي", "expects": [{ "kind": "some_brand", "brand": "loreal" }] }] },
+  { "id": "brand_010", "category": "brand", "mode": "single", "title": "brand with product type", "steps": [{ "message": "اريد كريم ليلي من نيفيا", "expects": [{ "kind": "some_brand", "brand": "nivea" }] }] }
+]

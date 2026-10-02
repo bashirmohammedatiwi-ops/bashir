@@ -1,0 +1,28 @@
+[
+  { "id": "cmp_001", "category": "comparison", "mode": "conversation", "title": "compare first and third", "steps": [
+    { "message": "اقترحلي 3 عطور نسائية" },
+    { "message": "قارن بين الأول والثالث", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_COMPARISON", "TEXT"] }] }
+  ] },
+  { "id": "cmp_002", "category": "comparison", "mode": "conversation", "title": "compare two", "steps": [
+    { "message": "شامبوين للحيرة الجافة" },
+    { "message": "شو الفرق بينهم؟", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_COMPARISON", "TEXT"] }] }
+  ] },
+  { "id": "cmp_003", "category": "comparison", "mode": "conversation", "title": "compare with context", "steps": [
+    { "message": "كريمات مرطبة للوجه" },
+    { "message": "قارن الاثنين الأوائل", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_COMPARISON", "TEXT"] }, { "kind": "message_not_mentions", "text": "TOOL RESULTS" }] }
+  ] },
+  { "id": "cmp_004", "category": "comparison", "mode": "single", "title": "compare brands", "steps": [{ "message": "شو الفرق بين شامبو لوريال وشامبو غارنييه؟", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_COMPARISON", "TEXT", "PRODUCT_RECOMMENDATIONS"] }] }] },
+  { "id": "cmp_005", "category": "comparison", "mode": "conversation", "title": "decision angle", "steps": [
+    { "message": "عطور رجالية" },
+    { "message": "الاول والثاني، ايش انسب للدوام؟", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_COMPARISON", "TEXT"] }] }
+  ] },
+  { "id": "cmp_006", "category": "comparison", "mode": "conversation", "title": "compare prices", "steps": [
+    { "message": "سيرومات للبشرة" },
+    { "message": "اختار الاثنين الأرخص وقارن أسعارهم", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_COMPARISON", "TEXT"] }] }
+  ] },
+  { "id": "cmp_007", "category": "comparison", "mode": "single", "title": "which better", "steps": [{ "message": "ايهما أفضل للشعر الجاف: شامبو نيفيا او غارنييه؟", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_COMPARISON", "TEXT", "PRODUCT_RECOMMENDATIONS"] }] }] },
+  { "id": "cmp_008", "category": "comparison", "mode": "conversation", "title": "no fabricated comparison", "steps": [
+    { "message": "ماسكات للوجه" },
+    { "message": "قارن الاول والثاني", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_COMPARISON", "TEXT"] }, { "kind": "no_leak", "markers": ["PLANNER_HINT", "CONVERSATION_STATE"] }] }
+  ] }
+]

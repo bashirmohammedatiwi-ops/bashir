@@ -81,6 +81,24 @@ export const queries = {
   loyalty: (userId: string) =>
     api.get(`/loyalty/users/${userId}`).then((r) => r.data?.data ?? r.data),
   homePreview: () => api.get("/home").then((r) => r.data?.data ?? r.data),
+
+  // ---------------------- AI ASSISTANT ----------------------
+  assistantOverview: (days = 30) =>
+    api.get("/assistant/admin/overview", { params: { days } }).then((r) => r.data?.data ?? r.data),
+  assistantConversations: (params?: { take?: number; intent?: string; feedback?: number; days?: number }) =>
+    api
+      .get("/assistant/admin/conversations", { params })
+      .then((r) => r.data?.data ?? r.data),
+  assistantConversation: (id: string) =>
+    api.get(`/assistant/admin/conversations/${id}`).then((r) => r.data?.data ?? r.data),
+  assistantLessons: () =>
+    api.get("/assistant/admin/lessons").then((r) => r.data?.data ?? r.data),
+  assistantMineLessons: (days = 30) =>
+    api.post("/assistant/admin/lessons/mine", undefined, { params: { days } }).then((r) => r.data?.data ?? r.data),
+  assistantAddLesson: (content: string) =>
+    api.post("/assistant/admin/lessons", { content }).then((r) => r.data?.data ?? r.data),
+  assistantToggleLesson: (id: string, isActive: boolean) =>
+    api.patch(`/assistant/admin/lessons/${id}`, { isActive }).then((r) => r.data?.data ?? r.data),
 };
 
 export const mutations = {
@@ -229,5 +247,6 @@ export const mutations = {
 
   deleteMedia: (id: string) => api.delete(`/media/${id}`).then((r) => r.data),
 
-  uploadMediaBase64: (file: File, purpose?: string) => uploadMediaFile(file, purpose ?? "GENERAL"),
+uploadMediaBase64: (file: File, purpose?: string) => uploadMediaFile(file, purpose ?? "GENERAL"),
+
 };

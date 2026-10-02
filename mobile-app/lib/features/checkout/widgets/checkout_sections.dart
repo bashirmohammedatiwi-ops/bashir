@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/widgets/app_network_image.dart';
+import '../../../data/models/cart_item.dart';
+import '../../../core/widgets/shimmer_box.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/responsive.dart';
@@ -215,21 +218,42 @@ class CheckoutLoyaltyCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: CheckoutTheme.cardDecoration(),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: SwitchListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 8),
-        activeThumbColor: CheckoutTheme.brand,
-        title: Text(s.loyaltyUseTitle(points), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14)),
-        subtitle: Text(
-          !enabled
-              ? s.loyaltyPointsNeedMore
-              : useLoyalty && loyaltyDiscount > 0
-                  ? s.loyaltyDiscountHint(formatPrice(loyaltyDiscount), formatPrice(1000))
-                  : s.loyaltyPointsRule,
-          style: TextStyle(fontSize: 12, color: CheckoutTheme.charcoal.withValues(alpha: 0.55)),
-        ),
-        value: enabled && useLoyalty,
-        onChanged: enabled ? onChanged : null,
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: CheckoutTheme.brandSoft,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.stars_outlined, size: 19, color: CheckoutTheme.brand),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(s.loyaltyUseTitle(points), style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
+                const SizedBox(height: 2),
+                Text(
+                  !enabled
+                      ? s.loyaltyPointsNeedMore
+                      : useLoyalty && loyaltyDiscount > 0
+                          ? s.loyaltyDiscountHint(formatPrice(loyaltyDiscount), formatPrice(1000))
+                          : s.loyaltyPointsRule,
+                  style: TextStyle(fontSize: 11.5, color: CheckoutTheme.charcoal.withValues(alpha: 0.55)),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: enabled && useLoyalty,
+            onChanged: enabled ? onChanged : null,
+            activeThumbColor: CheckoutTheme.brand,
+          ),
+        ],
       ),
     );
   }
@@ -303,11 +327,20 @@ class CheckoutSummaryCard extends StatelessWidget {
           if (discount > 0) _Row(label: s.couponDiscount, value: '- ${formatPrice(discount)}', valueColor: AppColors.success),
           if (loyaltyDiscount > 0)
             _Row(label: s.useLoyaltyPoints, value: '- ${formatPrice(loyaltyDiscount)}', valueColor: AppColors.success),
-          _Row(
-            label: s.shipping,
-            value: shippingLoading ? '...' : (shipping == 0 ? s.free : formatPrice(shipping)),
-            valueColor: !shippingLoading && shipping == 0 ? AppColors.success : null,
-          ),
+          if (shippingLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 6),
+              child: Align(
+                alignment: AlignmentDirectional.centerEnd,
+                child: ShimmerBox(width: 64, height: 12, radius: 6),
+              ),
+            )
+          else
+            _Row(
+              label: s.shipping,
+              value: shipping == 0 ? s.free : formatPrice(shipping),
+              valueColor: shipping == 0 ? AppColors.success : null,
+            ),
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 10),
             child: Divider(height: 1, color: CheckoutTheme.brandSoft),
@@ -523,5 +556,74 @@ class _ApplyCouponButton extends StatelessWidget {
       return SizedBox(width: double.infinity, child: button);
     }
     return button;
+  }
+}
+
+
+/// مراجعة أصناف الطلب قبل التأكيد — صور مصغرة مع الكميات والإجمالي.
+class CheckoutItemsReviewCard extends StatelessWidget {
+  final AppStrings s;
+  final List<CartItem> items;
+
+  const CheckoutItemsReviewCard({super.key, required this.s, required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: CheckoutTheme.cardDecoration(),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          CheckoutSectionHeader(icon: Icons.shopping_bag_outlined, title: s.orderItemsReview),
+          const SizedBox(height: 6),
+          for (final item in items)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: SizedBox(
+                      width: 44,
+                      height: 44,
+                      child: AppNetworkImage(url: item.imageUrl, fit: BoxFit.cover),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
+                        ),
+                        if (item.shadeName != null)
+                          Text(
+                            item.shadeName!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 10.5, color: CheckoutTheme.charcoal.withValues(alpha: 0.5)),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text('×${item.quantity}', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                  const SizedBox(width: 10),
+                  Text(
+                    formatPrice(item.price * item.quantity),
+                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }

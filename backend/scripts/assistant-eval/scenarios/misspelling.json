@@ -1,0 +1,10 @@
+[
+  { "id": "misc_001", "category": "misspelling", "mode": "single", "title": "لوريل", "steps": [{ "message": "اريد شامبو لوريل", "expects": [{ "kind": "some_brand", "brand": "loreal" }] }] },
+  { "id": "misc_002", "category": "misspelling", "mode": "single", "title": "نيڤيا", "steps": [{ "message": "كريم نيڤيا موجود؟", "expects": [{ "kind": "some_brand", "brand": "nivea" }] }] },
+  { "id": "misc_003", "category": "misspelling", "mode": "single", "title": "ميبيلين", "steps": [{ "message": "اريد ميبيلين فاونديشن", "expects": [{ "kind": "some_brand", "brand": "maybelline" }] }] },
+  { "id": "misc_004", "category": "misspelling", "mode": "single", "title": "شامبو typod product", "steps": [{ "message": "شامبو للشعر الجاف المصبوغ مصبوغ", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT"] }] }] },
+  { "id": "misc_005", "category": "misspelling", "mode": "single", "title": "مرطب typo", "steps": [{ "message": "اريد مرطپ للوجه", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT"] }] }] },
+  { "id": "misc_006", "category": "misspelling", "mode": "single", "title": "english typo", "steps": [{ "message": "loreal paris shampoo", "expects": [{ "kind": "some_brand", "brand": "loreal" }] }] },
+  { "id": "misc_007", "category": "misspelling", "mode": "single", "title": "mixed keyboard", "steps": [{ "message": "اريد mask لك الشعر", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT"] }] }] },
+  { "id": "misc_008", "category": "misspelling", "mode": "single", "title": "double letters", "steps": [{ "message": "عطر رجالي حلووو", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT"] }] }] }
+]

@@ -9,6 +9,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/friendly_error.dart';
+import '../home/widgets/home_animations.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/widgets/order_detail_skeleton.dart';
@@ -199,7 +200,7 @@ class OrderDetailScreen extends ConsumerWidget {
 
   Future<void> _reorder(BuildContext context, WidgetRef ref, AppOrder order) async {
     HapticFeedback.mediumImpact();
-    AppSnackbar.show(context, 'جاري إضافة المنتجات إلى السلة…', duration: const Duration(seconds: 4));
+    AppSnackbar.show(context, ref.s.addingToCart, duration: const Duration(seconds: 4));
     final api = ref.read(apiServiceProvider);
     var added = 0;
     for (final item in order.items) {
@@ -221,12 +222,12 @@ class OrderDetailScreen extends ConsumerWidget {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     if (added == 0) {
-      AppSnackbar.error(context, 'تعذّر إضافة المنتجات. حاول لاحقاً');
+      AppSnackbar.error(context, ref.s.addingToCartFailed);
       return;
     }
     AppSnackbar.action(
       context,
-      message: 'تمت إضافة $added منتج إلى السلة',
+      message: ref.s.itemsAddedToCart(added),
       actionLabel: 'السلة',
       onAction: () {
         ref.read(navIndexProvider.notifier).state = 3;
@@ -259,7 +260,7 @@ class OrderDetailScreen extends ConsumerWidget {
       ref.invalidate(ordersProvider);
       ref.invalidate(loyaltyProvider);
       ref.read(authProvider.notifier).refreshUser();
-      if (context.mounted) AppSnackbar.success(context, 'تم إلغاء الطلب وتحديث نقاط الولاء');
+      if (context.mounted) AppSnackbar.success(context, s.orderCancelled);
     } catch (e) {
       if (context.mounted) AppSnackbar.error(context, friendlyError(e));
     }
@@ -332,7 +333,12 @@ class _ItemRow extends StatelessWidget {
                       style: AppTypography.body.copyWith(fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 2),
-                    Text('الكمية: ${item.quantity}', style: AppTypography.caption),
+                    Text(
+                      Localizations.localeOf(context).languageCode == 'ar'
+                          ? 'الكمية: ${item.quantity}'
+                          : 'Qty: ${item.quantity}',
+                      style: AppTypography.caption,
+                    ),
                   ],
                 ),
               ),
@@ -345,14 +351,15 @@ class _ItemRow extends StatelessWidget {
   }
 }
 
-class _Tracker extends StatelessWidget {
+class _Tracker extends ConsumerWidget {
   final String status;
   const _Tracker({required this.status});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
     final currentIndex = _statusFlow.indexOf(status).clamp(0, _statusFlow.length - 1);
-    const labels = ['تم الطلب', 'مؤكد', 'التجهيز', 'الشحن', 'التسليم'];
+    final labels = [s.trackOrdered, s.trackConfirmed, s.trackPreparing, s.trackShipping, s.trackDelivered];
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -361,29 +368,13 @@ class _Tracker extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    color: i <= currentIndex ? AppColors.primary : AppColors.border,
-                    shape: BoxShape.circle,
-                    boxShadow: i == currentIndex
-                        ? [
-                            BoxShadow(
-                              color: AppColors.primary.withValues(alpha: 0.3),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ]
-                        : null,
-                  ),
-                  child: Icon(
-                    i < currentIndex ? Icons.check_rounded : Icons.circle,
-                    color: Colors.white,
-                    size: i < currentIndex ? 18 : 8,
-                  ),
-                ),
+                // نبض خفيف على الخطوة الحالية — يوقفه TickerMode تلقائياً خارج الشاشة.
+                if (i == currentIndex)
+                  PulseBadge(
+                    child: _StepDot(reached: true, current: true),
+                  )
+                else
+                  _StepDot(reached: i <= currentIndex, current: false),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   labels[i],
@@ -412,6 +403,40 @@ class _Tracker extends StatelessWidget {
             ),
         ],
       ],
+    );
+  }
+}
+
+class _StepDot extends StatelessWidget {
+  final bool reached;
+  final bool current;
+
+  const _StepDot({required this.reached, required this.current});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: reached ? AppColors.primary : AppColors.border,
+        shape: BoxShape.circle,
+        boxShadow: current
+            ? [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : null,
+      ),
+      child: Icon(
+        current ? Icons.circle : Icons.check_rounded,
+        color: Colors.white,
+        size: current ? 8 : 18,
+      ),
     );
   }
 }

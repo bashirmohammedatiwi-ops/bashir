@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/navigation/notification_navigation.dart';
 import '../../core/utils/friendly_error.dart';
+import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/notification.dart';
 import '../../data/services/api_service.dart';
@@ -49,7 +50,10 @@ class NotificationsScreen extends ConsumerWidget {
           ),
       ],
       body: async.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: CartTheme.brand)),
+        loading: () => ListView(
+          padding: const EdgeInsets.all(16),
+          children: List.generate(6, (_) => const Padding(padding: EdgeInsets.only(bottom: 10), child: ShimmerBox(height: 72, radius: 16))),
+        ),
         error: (e, _) => ErrorView(
           message: friendlyError(e),
           onRetry: () => ref.invalidate(notificationsProvider),

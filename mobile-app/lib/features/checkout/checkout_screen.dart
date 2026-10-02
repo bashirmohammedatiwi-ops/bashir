@@ -12,6 +12,7 @@ import '../../core/widgets/app_snackbar.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../../core/widgets/keyboard_dismiss.dart';
 import '../../core/widgets/shimmer_box.dart';
+import '../../core/widgets/entrance.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/address.dart';
 import '../../data/models/coupon.dart';
@@ -146,6 +147,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _applyCoupon() async {
     FocusScope.of(context).unfocus();
+    final s = ref.read(stringsProvider);
     final code = _couponCtrl.text.trim();
     if (code.isEmpty) return;
     setState(() => _couponError = null);
@@ -155,14 +157,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       if (coupon == null) {
         setState(() {
           _coupon = null;
-          _couponError = 'الكوبون غير صالح';
+          _couponError = s.couponInvalid;
         });
         return;
       }
       if (coupon.minOrder > 0 && subtotal < coupon.minOrder) {
         setState(() {
           _coupon = null;
-          _couponError = 'الحد الأدنى للطلب ${formatPrice(coupon.minOrder)}';
+          _couponError = s.couponMinOrder(formatPrice(coupon.minOrder));
         });
         return;
       }
@@ -171,7 +173,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     } catch (_) {
       setState(() {
         _coupon = null;
-        _couponError = 'الكوبون غير صالح';
+        _couponError = s.couponInvalid;
       });
     }
   }
@@ -377,7 +379,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.only(bottom: 8),
                   children: [
-                    CheckoutDeliveryCard(
+                    StaggerEntrance(
+                      index: 0,
+                      child: CheckoutDeliveryCard(
                       formKey: _formKey,
                       nameFieldKey: _nameFieldKey,
                       phoneFieldKey: _phoneFieldKey,
@@ -403,23 +407,30 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       onAddAddress: _addSavedAddress,
                       onShippingChanged: _refreshShipping,
                     ),
+                    ),
                     const SizedBox(height: 14),
                     CheckoutShippingBanner(s: s, error: _shippingError, onRetry: _refreshShipping),
-                    CheckoutCouponCard(
+                    StaggerEntrance(
+                      index: 1,
+                      child: CheckoutCouponCard(
                       s: s,
                       controller: _couponCtrl,
                       error: _couponError,
                       appliedCode: _coupon?.code,
                       onApply: _applyCoupon,
                     ),
+                    ),
                     const SizedBox(height: 14),
-                    CheckoutPaymentCard(
+                    StaggerEntrance(
+                      index: 2,
+                      child: CheckoutPaymentCard(
                       s: s,
                       paymentMethod: _paymentMethod,
                       onChanged: (v) => setState(() => _paymentMethod = v),
                     ),
+                    ),
                     const SizedBox(height: 14),
-                    CheckoutNotesCard(s: s, controller: _notesCtrl),
+                    StaggerEntrance(index: 3, child: CheckoutNotesCard(s: s, controller: _notesCtrl)),
                     if (points > 0) ...[
                       const SizedBox(height: 14),
                       CheckoutLoyaltyCard(
@@ -432,6 +443,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ),
                     ],
                     const SizedBox(height: 14),
+                    CheckoutItemsReviewCard(s: s, items: ref.watch(cartProvider).items),
+                    const SizedBox(height: 16),
                     CheckoutSummaryCard(
                       s: s,
                       subtotal: subtotal,

@@ -56,75 +56,10 @@ class CheckoutHeader extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              _StepDot(active: true, label: s.deliveryStep),
-              const _StepLine(active: true),
-              _StepDot(active: true, label: s.paymentStep),
-              const _StepLine(active: false),
-              _StepDot(active: false, label: s.confirmStep),
-            ],
-          ),
         ],
       ),
     );
   }
 }
 
-class _StepDot extends StatelessWidget {
-  final bool active;
-  final String label;
 
-  const _StepDot({required this.active, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        children: [
-          Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: active ? CheckoutTheme.brand : CheckoutTheme.brandSoft,
-              border: Border.all(
-                color: active ? CheckoutTheme.brandDark : CheckoutTheme.brand.withValues(alpha: 0.3),
-                width: 2,
-              ),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: active ? CheckoutTheme.brandDark : CheckoutTheme.charcoal.withValues(alpha: 0.45),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StepLine extends StatelessWidget {
-  final bool active;
-  const _StepLine({required this.active});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        height: 2,
-        margin: const EdgeInsets.only(bottom: 22),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(2),
-          color: active ? CheckoutTheme.brand : CheckoutTheme.brandSoft,
-        ),
-      ),
-    );
-  }
-}

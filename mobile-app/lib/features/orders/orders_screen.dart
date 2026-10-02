@@ -89,7 +89,21 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
     );
   }
 
+  static const _filters = [
+    (null, 'الكل', 'All'),
+    ('PENDING', 'بالانتظار', 'Pending'),
+    ('CONFIRMED', 'مؤكد', 'Confirmed'),
+    ('PROCESSING', 'قيد التجهيز', 'Preparing'),
+    ('SHIPPED', 'بالطريق', 'Shipped'),
+    ('DELIVERED', 'مكتمل', 'Delivered'),
+  ];
+  String? _statusFilter;
+
   Widget _buildBody() {
+    final s = ref.s;
+    final filtered = _statusFilter == null
+        ? _items
+        : _items.where((o) => o.status == _statusFilter).toList();
     if (_firstLoad && _loading) {
       return ListView.separated(
         padding: const EdgeInsets.all(AppSpacing.md),
@@ -103,10 +117,11 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       return ErrorView(message: friendlyError(_error!), onRetry: () => _fetch(reset: true));
     }
     if (_items.isEmpty) {
-      return const EmptyState(
+      return EmptyState(
+          butterfly: true,
           icon: Icons.receipt_long_outlined,
-          title: 'لا توجد طلبات بعد',
-          subtitle: 'ستظهر طلباتك هنا بعد الشراء');
+          title: ref.s.noOrdersYet,
+          subtitle: ref.s.noOrdersHint);
     }
     return RefreshIndicator(
       color: AppColors.primary,
@@ -114,34 +129,64 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       child: ListView.separated(
         controller: _scroll,
         padding: const EdgeInsets.all(AppSpacing.md),
-        itemCount: _items.length + (_hasMore ? 1 : 0),
+        itemCount: 1 + filtered.length + (_hasMore && _loading ? 1 : 0),
         separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm + 2),
         itemBuilder: (_, i) {
-          if (i >= _items.length) {
+          if (i == 0) {
+            return SizedBox(
+              height: 40,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _filters.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, f) {
+                  final (value, ar, en) = _filters[f];
+                  final selected = _statusFilter == value;
+                  return ChoiceChip(
+                    label: Text(s.isAr ? ar : en, style: const TextStyle(fontSize: 12.5)),
+                    selected: selected,
+                    onSelected: (_) => setState(() => _statusFilter = value),
+                    selectedColor: AppColors.primaryLight,
+                    labelStyle: TextStyle(
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                      color: selected ? AppColors.primaryDark : AppColors.textSecondary,
+                    ),
+                    side: BorderSide(color: selected ? AppColors.primary : AppColors.border),
+                    visualDensity: VisualDensity.compact,
+                    showCheckmark: false,
+                  );
+                },
+              ),
+            );
+          }
+          if (i > filtered.length) {
             return const Padding(
               padding: EdgeInsets.all(16),
               child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
             );
           }
-          return _OrderCard(order: _items[i]);
+          return _OrderCard(order: filtered[i - 1]);
         },
       ),
     );
   }
 }
 
-class _OrderCard extends StatelessWidget {
+class _OrderCard extends ConsumerWidget {
   final AppOrder order;
   const _OrderCard({required this.order});
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push('/orders/${order.id}'),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        onTap: () => context.push('/orders/${order.id}'),
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md + 2),
         decoration: BoxDecoration(
-          color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(color: AppColors.border),
           boxShadow: [
@@ -167,13 +212,14 @@ class _OrderCard extends StatelessWidget {
             const Divider(height: AppSpacing.lg + 2),
             Row(
               children: [
-                Text('${order.itemCount} منتج', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
+                Text(ref.s.itemCountLabel(order.itemCount), style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
                 const Spacer(),
                 Text(order.totalLabel, style: AppTypography.price.copyWith(fontSize: 16)),
               ],
             ),
           ],
         ),
+      ),
       ),
     );
   }

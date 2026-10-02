@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/theme/app_colors.dart';
+import '../../../core/widgets/sheen.dart';
+import '../../../core/widgets/app_network_image.dart';
 import 'package:flutter/services.dart';
 
 import '../../cart/widgets/cart_theme.dart';
@@ -8,7 +12,7 @@ import 'account_theme.dart';
 abstract final class ProfileUi {
   static const bg = AccountTheme.pageBg;
   static const fieldBg = Colors.white;
-  static const fieldBorder = Color(0xFFE3EDEA);
+  static const fieldBorder = AppColors.border;
   static const label = Color(0xFF8A9693);
   static const hPad = 20.0;
   static const fieldRadius = 14.0;
@@ -196,6 +200,7 @@ class ProfileHeroCard extends StatelessWidget {
   final String subtitle;
   final String? badge;
   final String initial;
+  final String? avatarUrl;
   final VoidCallback? onEdit;
 
   const ProfileHeroCard({
@@ -204,6 +209,7 @@ class ProfileHeroCard extends StatelessWidget {
     required this.subtitle,
     this.badge,
     required this.initial,
+    this.avatarUrl,
     this.onEdit,
   });
 
@@ -222,11 +228,13 @@ class ProfileHeroCard extends StatelessWidget {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1.5),
             ),
-            alignment: Alignment.center,
-            child: Text(
-              initial,
-              style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800),
-            ),
+            clipBehavior: Clip.antiAlias,
+            child: (avatarUrl != null && avatarUrl!.isNotEmpty)
+                ? AppNetworkImage(url: avatarUrl!, fit: BoxFit.cover)
+                : Text(
+                    initial,
+                    style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800),
+                  ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -352,42 +360,44 @@ class ProfilePrimaryButton extends StatelessWidget {
     return SizedBox(
       height: ProfileUi.buttonHeight,
       width: double.infinity,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(buttonRadius),
-          gradient: enabled ? CartTheme.brandGradient : null,
-          color: enabled ? null : CartTheme.brandSoft,
-          boxShadow: enabled
-              ? [
-                  BoxShadow(
-                    color: CartTheme.brand.withValues(alpha: 0.28),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
-                  ),
-                ]
-              : null,
-        ),
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(buttonRadius),
-          child: InkWell(
-            onTap: enabled ? onPressed : null,
+      child: Sheen(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(buttonRadius),
-            child: Center(
-              child: loading
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.4),
-                    )
-                  : Text(
-                      label,
-                      style: TextStyle(
-                        color: enabled ? Colors.white : CartTheme.brandDark.withValues(alpha: 0.5),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                      ),
+            gradient: enabled ? CartTheme.brandGradient : null,
+            color: enabled ? null : CartTheme.brandSoft,
+            boxShadow: enabled
+                ? [
+                    BoxShadow(
+                      color: CartTheme.brand.withValues(alpha: 0.28),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
                     ),
+                  ]
+                : null,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(buttonRadius),
+            child: InkWell(
+              onTap: enabled ? onPressed : null,
+              borderRadius: BorderRadius.circular(buttonRadius),
+              child: Center(
+                child: loading
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2.4),
+                      )
+                    : Text(
+                        label,
+                        style: TextStyle(
+                          color: enabled ? Colors.white : CartTheme.brandDark.withValues(alpha: 0.5),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+              ),
             ),
           ),
         ),

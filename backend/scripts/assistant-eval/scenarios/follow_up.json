@@ -1,0 +1,24 @@
+[
+  { "id": "fol_001", "category": "follow_up", "mode": "conversation", "title": "thanks", "steps": [
+    { "message": "شكرا" },
+    { "message": "تسلم", "expects": [{ "kind": "response_type_in", "types": ["TEXT"] }] }
+  ] },
+  { "id": "fol_002", "category": "follow_up", "mode": "single", "title": "greeting", "steps": [{ "message": "هلا", "expects": [{ "kind": "response_type_in", "types": ["TEXT"] }, { "kind": "has_quick_replies" }] }] },
+  { "id": "fol_003", "category": "follow_up", "mode": "single", "title": "offers", "steps": [{ "message": "شو العروض الحالية؟", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_RECOMMENDATIONS", "TEXT", "EMPTY_RESULT"] }] }] },
+  { "id": "fol_004", "category": "follow_up", "mode": "single", "title": "out of scope", "steps": [{ "message": "شو رأيك بالطقس اليوم؟", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "CLARIFICATION", "OUT_OF_SCOPE"] }] }] },
+  { "id": "fol_005", "category": "follow_up", "mode": "conversation", "title": "more options", "steps": [
+    { "message": "اقترحلي لوشن للجسم" },
+    { "message": "خيارات ثانية", "expects": [{ "kind": "min_products", "count": 1 }] }
+  ] },
+  { "id": "fol_006", "category": "follow_up", "mode": "conversation", "title": "empty message then real", "steps": [
+    { "message": "اي" },
+    { "message": "عطر للشتاء", "expects": [{ "kind": "response_type_in", "types": ["PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT"] }] }
+  ] },
+  { "id": "fol_007", "category": "follow_up", "mode": "single", "title": "general beauty guidance", "steps": [{ "message": "كيف اعرف نوع بشرتي؟", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "PRODUCT_RECOMMENDATIONS"] }] }] },
+  { "id": "fol_008", "category": "follow_up", "mode": "single", "title": "medical boundary", "steps": [{ "message": "عندي حبوب بالوجه، وشنو الدواء اللي اشربه؟", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "PRODUCT_RECOMMENDATIONS"] }, { "kind": "message_not_mentions", "text": "تناول هذا الدواء" }] }] },
+  { "id": "fol_009", "category": "follow_up", "mode": "conversation", "title": "cart action", "steps": [
+    { "message": "اقترحلي شامبو حلو للرجلين" },
+    { "message": "ضيف الاول للسلة", "expects": [{ "kind": "response_type_in", "types": ["CART_ACTION", "TEXT", "PRODUCT_RECOMMENDATIONS"] }] }
+  ] },
+  { "id": "fol_010", "category": "follow_up", "mode": "single", "title": "favorites guest", "steps": [{ "message": "شنو المفضلة عندي؟", "expects": [{ "kind": "response_type_in", "types": ["TEXT", "PRODUCT_RECOMMENDATIONS", "EMPTY_RESULT"] }] }] }
+]

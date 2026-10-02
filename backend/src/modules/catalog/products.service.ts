@@ -11,6 +11,7 @@ import { CreateProductDto, QueryProductsDto, UpdateProductDto } from "./dto/prod
 import { InventorySyncService } from "../sync/inventory-sync.service";
 import { SettingsService } from "../settings/settings.service";
 import { withPlaceholderImages, activeWithoutRealImagesWhere, hasRealProductImagesWhere } from "../../common/product-placeholder.util";
+import { buildSearchText } from "../assistant/retrieval/search-document";
 import { rewriteProductMediaUrls } from "../../common/media-url.util";
 import { PRODUCT_ORDER_BY_BRAND } from "../../common/product-order.util";
 import { sortShadesByNumber } from "../../common/shade-sort.util";
@@ -36,6 +37,19 @@ const productRelationsFull = {
   variants: true,
   skinConcerns: { include: { concern: { select: { id: true, slug: true, name: true } } } },
 };
+
+/**
+ * الحقول الثقيلة المحجوبة عن وضع lite — قوائم المنتجات لا تحتاج نصوص وصف
+ * ولا وثيقة البحث (searchText قد تتجاوز 2KB لكل منتج). يقلص الحمولة 50–80%.
+ */
+const liteScalarOmit = {
+  description: false,
+  descriptionAr: false,
+  descriptionEn: false,
+  ingredients: false,
+  howToUse: false,
+  searchText: false,
+} as const;
 
 const productRelationsLite = {
   brand: { select: { id: true, name: true, slug: true } },
@@ -146,6 +160,8 @@ export class ProductsService {
         orderBy,
         skip: q.skip,
         take: q.limit,
+        // lite = قوائم بلا نصوص وصف/بحث — حمولة أصغر بكثير عبر الشبكة.
+        omit: q.lite ? (liteScalarOmit as unknown as Prisma.ProductOmit) : undefined,
         include: q.lite ? productRelationsLite : productRelationsFull,
       }),
     ]);
@@ -296,6 +312,7 @@ export class ProductsService {
           skinConcerns: { include: { concern: true } },
         },
       });
+      void this.syncAssistantSearchText(product.id);
       if (dto.concernIds?.length) {
         await this.syncSkinConcerns(product.id, dto.concernIds);
       }
@@ -425,6 +442,32 @@ export class ProductsService {
     }
     await this.homeFeedCache.invalidateAll();
     return this.findOne(id);
+  }
+
+  /** Best-effort rebuild of the assistant lexical document on catalog writes. */
+  private async syncAssistantSearchText(productId: string) {
+    try {
+      const product = await this.prisma.product.findUnique({
+        where: { id: productId },
+        include: {
+          brand: { select: { name: true } },
+          category: { select: { name: true, nameAr: true } },
+          subcategory: { select: { name: true, nameAr: true } },
+          tertiaryCategory: { select: { name: true, nameAr: true } },
+          subcategories: { select: { name: true, nameAr: true } },
+          tertiaryCategories: { select: { name: true, nameAr: true } },
+          shades: { select: { name: true } },
+          variants: { select: { label: true, sizeLabel: true } },
+        },
+      });
+      if (!product) return;
+      const searchText = buildSearchText(product);
+      if (searchText !== product.searchText) {
+        await this.prisma.product.update({ where: { id: productId }, data: { searchText } });
+      }
+    } catch {
+      // Retrieval quality maintenance only — never break admin writes.
+    }
   }
 
   private async syncSkinConcerns(productId: string, concernIds: string[]) {

@@ -69,6 +69,28 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 
+  // إعادة محاولة واحدة للأخطاء الشبكية العابرة (انقطاع/مهلة اتصال) على الطلبات الآمنة.
+  dio.interceptors.add(InterceptorsWrapper(
+    onError: (err, handler) async {
+      final method = err.requestOptions.method.toUpperCase();
+      final idempotent = method == 'GET' || method == 'HEAD';
+      final transient = err.type == DioExceptionType.connectionError ||
+          err.type == DioExceptionType.connectionTimeout ||
+          err.type == DioExceptionType.receiveTimeout;
+      final alreadyRetried = err.requestOptions.extra['retried'] == true;
+      if (idempotent && transient && !alreadyRetried) {
+        try {
+          err.requestOptions.extra['retried'] = true;
+          final retried = await dio.fetch(err.requestOptions);
+          return handler.resolve(retried);
+        } catch (_) {
+          // فشلت الإعادة — نمرر الخطأ الأصلي.
+        }
+      }
+      handler.next(err);
+    },
+  ));
+
   dio.interceptors.add(InterceptorsWrapper(
     onRequest: (options, handler) async {
       if (options.extra['auth'] != false) {

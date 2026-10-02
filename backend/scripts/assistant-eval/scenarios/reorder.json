@@ -1,0 +1,6 @@
+[
+  { "id": "reorder_001", "category": "reorder", "mode": "single", "title": "reorder last order guest", "steps": [{ "message": "عيد لي نفس طلب آخر مرة", "expects": [{ "kind": "response_type_in", "types": ["ORDER_INFO", "TEXT", "CLARIFICATION"] }, { "kind": "message_mentions", "text": "دخول" }] }] },
+  { "id": "reorder_002", "category": "reorder", "mode": "single", "title": "reorder english", "steps": [{ "message": "I want to reorder my previous order", "expects": [{ "kind": "response_type_in", "types": ["ORDER_INFO", "TEXT", "CLARIFICATION"] }] }] },
+  { "id": "reorder_003", "category": "reorder", "mode": "single", "title": "reorder no cart action for guests", "steps": [{ "message": "كرر طلبي السابق", "expects": [{ "kind": "message_not_mentions", "text": "PLANNER_HINT" }] }] },
+  { "id": "reorder_004", "category": "reorder", "mode": "single", "title": "reorder dialect", "steps": [{ "message": "اعيد لي الطلب مال امس", "expects": [{ "kind": "response_type_in", "types": ["ORDER_INFO", "TEXT", "CLARIFICATION"] }] }] }
+]

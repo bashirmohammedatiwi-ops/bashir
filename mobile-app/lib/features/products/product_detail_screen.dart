@@ -11,6 +11,7 @@ import '../../core/widgets/app_snackbar.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_motion.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/formatters.dart';
@@ -18,6 +19,8 @@ import '../../core/utils/friendly_error.dart';
 import '../../core/utils/responsive.dart';
 import '../../core/widgets/app_network_image.dart';
 import '../../core/widgets/fullscreen_image_viewer.dart';
+import '../../core/widgets/entrance.dart';
+import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/horizontal_product_list.dart';
 import '../../core/widgets/product_detail_skeleton.dart';
 import '../../core/widgets/states.dart';
@@ -103,9 +106,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final s = ref.s;
     final shade = product.shadeForCart(selected: _shade);
     if (product.hasMultipleDisplayableShades && shade == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(s.selectShadeFirst)),
-      );
+      AppSnackbar.success(context, s.selectShadeFirst);
       return;
     }
     HapticFeedback.mediumImpact();
@@ -200,6 +201,33 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       setState(() => _quantity = v);
                     },
                   ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      ProductDetailTheme.padH,
+                      10,
+                      ProductDetailTheme.padH,
+                      0,
+                    ),
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: const Size.fromHeight(40),
+                        foregroundColor: AppColors.primary,
+                        side: BorderSide(color: AppColors.primarySoft),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      onPressed: () => context.push('/assistant', extra: product.id),
+                      icon: const Icon(Icons.auto_awesome, size: 17),
+                      label: Text(
+                        ref.s.isAr ? 'اسأل المساعد عن هذا المنتج' : 'Ask AI about this product',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
                   if (product.hasMultipleDisplayableShades)
                     Container(
                       margin: const EdgeInsets.fromLTRB(
@@ -286,9 +314,7 @@ class _GalleryAppBar extends ConsumerWidget {
             final slug = product.slug.isNotEmpty ? product.slug : product.id;
             final url = AppConfig.productShareUrl(slug);
             Clipboard.setData(ClipboardData(text: url));
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(s.linkCopied), behavior: SnackBarBehavior.floating),
-            );
+            AppSnackbar.success(context, s.linkCopied);
           },
         ),
         _CircleAction(
@@ -318,7 +344,7 @@ class _GalleryAppBar extends ConsumerWidget {
                   children: [
                     PageView.builder(
                       controller: pageCtrl,
-                    itemCount: gallery.length,
+                      itemCount: gallery.length,
                       onPageChanged: onPageChanged,
                       itemBuilder: (_, i) => GestureDetector(
                         onTap: zoomableUrls.isEmpty
@@ -332,11 +358,20 @@ class _GalleryAppBar extends ConsumerWidget {
                                 ),
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(20, 56, 20, 8),
-                          child: ProductCoverImage(
-                            url: gallery[i],
-                            width: galleryWidth,
-                            fit: BoxFit.contain,
-                          ),
+                          child: i == 0
+                              ? Hero(
+                                  tag: 'product-image-${product.id}',
+                                  child: ProductCoverImage(
+                                    url: gallery[i],
+                                    width: galleryWidth,
+                                    fit: BoxFit.contain,
+                                  ),
+                                )
+                              : ProductCoverImage(
+                                  url: gallery[i],
+                                  width: galleryWidth,
+                                  fit: BoxFit.contain,
+                                ),
                         ),
                       ),
                     ),
@@ -572,7 +607,7 @@ class _HeroCard extends ConsumerWidget {
             const SizedBox(height: 10),
             Row(
               children: [
-                const Icon(Icons.star_rounded, color: AppColors.star, size: 16),
+                _StaggeredStars(rating: product.rating, size: 15),
                 const SizedBox(width: 4),
                 Text(
                   product.rating.toStringAsFixed(1),
@@ -605,8 +640,9 @@ class _HeroCard extends ConsumerWidget {
             spacing: 8,
             runSpacing: 6,
             children: [
-              Text(
-                formatPrice(price),
+              AnimatedNumber(
+                value: price,
+                formatter: formatPrice,
                 style: AppTypography.priceLarge.copyWith(
                   fontSize: Responsive.priceDisplaySize(context),
                   fontWeight: FontWeight.w900,
@@ -743,10 +779,21 @@ class _QuantityStepper extends StatelessWidget {
           ),
           SizedBox(
             width: 34,
-            child: Text(
-              '$quantity',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+            child: AnimatedSwitcher(
+              duration: AppMotion.fast,
+              transitionBuilder: (child, anim) => FadeTransition(
+                opacity: anim,
+                child: SlideTransition(
+                  position: Tween(begin: const Offset(0, 0.4), end: Offset.zero).animate(anim),
+                  child: child,
+                ),
+              ),
+              child: Text(
+                '$quantity',
+                key: ValueKey(quantity),
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+              ),
             ),
           ),
           _StepBtn(
@@ -1081,18 +1128,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        for (var i = 1; i <= 5; i++)
-                          Icon(
-                            i <= product.rating.round()
-                                ? Icons.star_rounded
-                                : Icons.star_border_rounded,
-                            color: AppColors.star,
-                            size: 18,
-                          ),
-                      ],
-                    ),
+                    _StaggeredStars(rating: product.rating, size: 18),
                     const SizedBox(height: 3),
                     Text(
                       s.fromReviews(product.reviewCount),
@@ -1142,10 +1178,32 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
         ],
         const SizedBox(height: 6),
         async.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Center(
-                child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
+          loading: () => Column(
+            children: List.generate(
+              2,
+              (i) => const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ShimmerBox(width: 36, height: 36, radius: 18),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ShimmerBox(width: 140, height: 12),
+                          SizedBox(height: 6),
+                          ShimmerBox(width: double.infinity, height: 10),
+                          SizedBox(height: 4),
+                          ShimmerBox(width: 200, height: 10),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
           error: (e, _) => ErrorView(
             message: friendlyError(e),
@@ -1165,11 +1223,52 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
               children: [
                 const SizedBox(height: 4),
                 for (final Review r in reviews.take(5)) _ReviewTile(review: r),
+                if (reviews.length > 5)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                        foregroundColor: AppColors.primary,
+                      ),
+                      onPressed: () => _showAllReviews(context, reviews),
+                      icon: const Icon(Icons.rate_review_outlined, size: 16),
+                      label: Text(
+                        s.allReviewsLabel(reviews.length),
+                        style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
               ],
             );
           },
         ),
       ],
+    );
+    }
+
+  void _showAllReviews(BuildContext context, List<Review> reviews) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        minChildSize: 0.5,
+        maxChildSize: 0.92,
+        builder: (_, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          ),
+          child: ListView.builder(
+            controller: scrollController,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            itemCount: reviews.length,
+            itemBuilder: (_, i) => _ReviewTile(review: reviews[i]),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1329,8 +1428,9 @@ class _BottomBar extends ConsumerWidget {
                   style: const TextStyle(fontSize: 10.5, color: AppColors.textMuted, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  formatPrice(total),
+                AnimatedNumber(
+                  value: total,
+                  formatter: formatPrice,
                   style: AppTypography.price.copyWith(
                     fontSize: narrow ? 17 : 19,
                     fontWeight: FontWeight.w900,
@@ -1387,6 +1487,38 @@ class _BottomBar extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+
+/// نجوم تتعبت تباعاً عند البناء — ظهور متتابع بارتداد ناعم.
+class _StaggeredStars extends StatelessWidget {
+  final double rating;
+  final double size;
+
+  const _StaggeredStars({required this.rating, required this.size});
+
+  @override
+  Widget build(BuildContext context) {
+    final filled = rating.round();
+    return Row(
+      children: List.generate(5, (i) {
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: 1),
+          duration: AppMotion.slow,
+          curve: Interval(0.12 * i, 1, curve: AppMotion.springSoft),
+          builder: (context, t, child) => Opacity(
+            opacity: t,
+            child: Transform.scale(scale: t, child: child),
+          ),
+          child: Icon(
+            i < filled ? Icons.star_rounded : Icons.star_border_rounded,
+            color: AppColors.star,
+            size: size,
+          ),
+        );
+      }),
     );
   }
 }

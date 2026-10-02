@@ -19,7 +19,10 @@
     "reprocess:media-bg": "npx tsx scripts/reprocess-media-white-bg.ts",
     "backfill:cms-translations": "npx tsx scripts/backfill-cms-translations.ts",
     "link:skin-concerns": "npx tsx scripts/link-skin-concern-products.ts",
-    "generate:skin-concerns": "npx tsx scripts/generate-skin-concern-assignments.ts"
+    "generate:skin-concerns": "npx tsx scripts/generate-skin-concern-assignments.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "eval:assistant": "tsx scripts/assistant-eval/run-eval.ts"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
@@ -83,6 +86,7 @@
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^6.0.3",
+    "vitest": "^4.1.11",
     "xlsx": "^0.18.5"
   }
 }

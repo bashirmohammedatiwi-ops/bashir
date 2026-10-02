@@ -109,7 +109,7 @@ String? buildSectionItemPath({
   if (type == 'search' && value.isNotEmpty) {
     return '/search?q=${Uri.encodeComponent(value)}';
   }
-  if (type == 'offers') return '/products?isPromo=1&title=العروض';
+  if (type == 'offers') return '/products?isPromo=1&title=Offers';
   if (type == 'categoriesTab') return '/categories-tab';
   if (type == 'products' && value.isNotEmpty) {
     return value.startsWith('/') ? value : '/products?$value';
