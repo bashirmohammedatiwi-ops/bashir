@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/app_strings.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_search_scan_bar.dart';
 import '../../../data/models/home_feed.dart';
+import '../../worlds/world_theme.dart';
 import 'offers_theme.dart';
 
 /// رأس صفحة العروض — أنيق بدون عدادات.
@@ -23,12 +23,13 @@ class OffersHero extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.s;
+    final t = context.worldTheme;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(OffersTheme.hPad, topPad + 6, OffersTheme.hPad, 10),
       child: Container(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 16),
-        decoration: OffersTheme.heroDecoration(),
+        decoration: OffersTheme.heroDecoration(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -38,11 +39,11 @@ class OffersHero extends ConsumerWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
+                    gradient: t.primaryGradient,
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.25),
+                        color: t.accent.withValues(alpha: 0.25),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -55,9 +56,9 @@ class OffersHero extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(s.offersTitle, style: OffersTheme.title(size: 21)),
+                      Text(s.offersTitle, style: OffersTheme.title(context, size: 21)),
                       const SizedBox(height: 3),
-                      Text(s.discoverBestDeals, style: OffersTheme.body(size: 12.5)),
+                      Text(s.discoverBestDeals, style: OffersTheme.body(context, size: 12.5)),
                     ],
                   ),
                 ),
@@ -67,8 +68,8 @@ class OffersHero extends ConsumerWidget {
             AppSearchScanBar(
               hint: s.searchHintHome,
               scanLabel: s.scan,
-              fillColor: Colors.white.withValues(alpha: 0.92),
-              borderColor: AppColors.primarySoft,
+              fillColor: t.surface.withValues(alpha: 0.92),
+              borderColor: t.accentSoft,
               onSearchTap: () => context.push('/search'),
               onScanTap: () => context.push('/scan'),
             ),
@@ -80,7 +81,6 @@ class OffersHero extends ConsumerWidget {
                 children: [
                   _Chip(
                     label: s.allOffers,
-                    selected: true,
                     onTap: () => context.push('/products?isPromo=1&title=${Uri.encodeComponent(s.allOffers)}'),
                   ),
                   const SizedBox(width: 8),
@@ -122,8 +122,8 @@ class _Chip extends StatelessWidget {
         borderRadius: BorderRadius.circular(999),
         child: Ink(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          decoration: OffersTheme.chipDecoration(selected: selected),
-          child: Text(label, style: OffersTheme.chip(selected: selected)),
+          decoration: OffersTheme.chipDecoration(context, selected: selected),
+          child: Text(label, style: OffersTheme.chip(context, selected: selected)),
         ),
       ),
     );

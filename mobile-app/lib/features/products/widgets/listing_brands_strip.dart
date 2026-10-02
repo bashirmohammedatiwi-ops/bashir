@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/scroll_perf.dart';
 import '../../../data/models/brand.dart';
+import '../../worlds/world_theme.dart';
 
 /// شريط براندات أفقي لتصفية منتجات القسم الفرعي.
 class ListingBrandsStrip extends ConsumerWidget {
@@ -32,6 +32,7 @@ class ListingBrandsStrip extends ConsumerWidget {
 
     final lang = ref.watch(languageCodeProvider);
     final s = ref.watch(stringsProvider);
+    final t = context.worldTheme;
 
     final strip = SizedBox(
       height: _logoSize + 30,
@@ -82,7 +83,7 @@ class ListingBrandsStrip extends ConsumerWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary.withValues(alpha: 0.9),
+              color: t.ink.withValues(alpha: 0.9),
             ),
           ),
         ),
@@ -111,6 +112,7 @@ class _BrandChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -125,33 +127,33 @@ class _BrandChip extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: selected
-                    ? (icon != null ? AppColors.primary : AppColors.primaryLight)
-                    : Colors.white,
+                    ? (icon != null ? t.accent : t.accentLight)
+                    : t.canvasWarm,
                 border: Border.all(
-                  color: selected ? AppColors.primary : AppColors.hairline,
+                  color: selected ? t.accent : t.hairline,
                   width: selected ? 2 : 1,
                 ),
               ),
               child: ClipOval(
                 child: icon != null
-                    ? Icon(icon, color: selected ? Colors.white : AppColors.textMuted, size: 22)
+                    ? Icon(icon, color: selected ? Colors.white : t.inkMuted, size: 22)
                     : Padding(
                         padding: const EdgeInsets.all(6),
                         child: logoUrl != null && logoUrl!.isNotEmpty
                             ? AppNetworkImage(
                                 url: logoUrl!,
                                 fit: BoxFit.contain,
-                                backgroundColor: Colors.white,
+                                backgroundColor: t.surface,
                               )
                             : ColoredBox(
-                                color: AppColors.primarySoft,
+                                color: t.accentSoft,
                                 child: Center(
                                   child: Text(
                                     initial ?? '•',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w800,
-                                      color: AppColors.primary,
+                                      color: t.accent,
                                     ),
                                   ),
                                 ),
@@ -166,10 +168,10 @@ class _BrandChip extends StatelessWidget {
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 10,
-                height: 1.1,
+                fontSize: 11,
+                height: 1.2,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-                color: selected ? AppColors.primaryDark : AppColors.textSecondary,
+                color: selected ? t.accentDark : t.inkSoft,
               ),
             ),
           ],

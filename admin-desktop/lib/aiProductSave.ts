@@ -69,7 +69,7 @@ export async function saveAiProduct(input: {
       tags: ["ai-add"],
       skinType: [],
       concernIds: [],
-      isActive: true,
+      isActive: false,
     },
     productImages,
   );

@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { CmsPageKey, Prisma } from "@prisma/client";
 import { CmsBilingualService } from "../../common/cms-bilingual.service";
 import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
@@ -6,16 +6,19 @@ import { PrismaService } from "../../common/prisma.service";
 
 @Injectable()
 export class HomeBlocksService {
+  private readonly logger = new Logger(HomeBlocksService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly homeFeedCache: HomeFeedCacheService,
     private readonly cmsBilingual: CmsBilingualService,
   ) {}
 
-  list(activeOnly = true, pageKey: CmsPageKey = CmsPageKey.HOME) {
+  list(activeOnly = true, pageKey: CmsPageKey = CmsPageKey.HOME, worldId?: string) {
     return this.prisma.homeBlock.findMany({
       where: {
         pageKey,
+        worldId: worldId?.trim() ? worldId.trim() : null,
         ...(activeOnly ? { isActive: true } : {}),
       },
       orderBy: { position: "asc" },
@@ -25,7 +28,13 @@ export class HomeBlocksService {
   async create(data: any) {
     try {
       const enriched = await this.cmsBilingual.enrichHomeBlockData(this.pickBilingualFields(data));
-      const result = await this.prisma.homeBlock.create({ data: this.sanitize(enriched) as any });
+      const result = await this.prisma.homeBlock.create({
+        data: this.sanitize({
+          ...data,
+          ...enriched,
+          worldId: data.worldId ?? null,
+        }) as any,
+      });
       await this.homeFeedCache.invalidateAll();
       return result;
     } catch (error) {
@@ -42,7 +51,8 @@ export class HomeBlocksService {
         payload: data.payload !== undefined ? data.payload : existing.payload,
       });
       const enriched = await this.cmsBilingual.enrichHomeBlockData(merged);
-      const result = await this.prisma.homeBlock.update({ where: { id }, data: this.sanitize(enriched, true) as any });
+      const patch = this.sanitize({ ...data, ...enriched }, true);
+      const result = await this.prisma.homeBlock.update({ where: { id }, data: patch as any });
       await this.homeFeedCache.invalidateAll();
       return result;
     } catch (error) {
@@ -93,6 +103,7 @@ export class HomeBlocksService {
     }
     if (!partial || data.isActive !== undefined) out.isActive = data.isActive !== false;
     if (!partial || data.payload !== undefined) out.payload = data.payload ?? {};
+    if (!partial || data.worldId !== undefined) out.worldId = data.worldId || null;
     if (!partial || data.pageKey !== undefined) {
       const raw = String(data.pageKey ?? CmsPageKey.HOME).toUpperCase();
       out.pageKey = raw === CmsPageKey.OFFERS ? CmsPageKey.OFFERS : CmsPageKey.HOME;
@@ -101,6 +112,7 @@ export class HomeBlocksService {
   }
 
   private mapWriteError(error: unknown) {
+    if (error instanceof Error) this.logger.error(error.message);
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       const msg = error.message ?? "";
       if (msg.includes("HomeBlockType") || error.code === "P2006") {

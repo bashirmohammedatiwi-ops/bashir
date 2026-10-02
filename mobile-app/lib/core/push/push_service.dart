@@ -4,8 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../navigation/app_navigation.dart';
-import '../navigation/notification_navigation.dart';
+import '../navigation/pending_push_navigation.dart';
 import '../utils/media_url.dart';
 import 'firebase_init.dart';
 import 'foreground_notification_banner.dart';
@@ -75,14 +74,12 @@ class PushService {
       });
 
       FirebaseMessaging.onMessageOpenedApp.listen((message) {
-        _openFromMessage(message.data);
+        _openFromMessage(message);
       });
 
       final initial = await messaging.getInitialMessage();
       if (initial != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _openFromMessage(initial.data);
-        });
+        _openFromMessage(initial);
       }
     } catch (e) {
       debugPrint('[PushService] init failed: $e');
@@ -104,35 +101,45 @@ class PushService {
     }
   }
 
+  static Map<String, dynamic> _mergedData(RemoteMessage message) {
+    final data = Map<String, dynamic>.from(message.data);
+    final n = message.notification;
+    if (n != null) {
+      data.putIfAbsent('title', () => n.title ?? '');
+      data.putIfAbsent('body', () => n.body ?? '');
+      final image = n.android?.imageUrl ?? n.apple?.imageUrl;
+      if (image != null && image.isNotEmpty) {
+        data.putIfAbsent('imageUrl', () => image);
+      }
+    }
+    return data;
+  }
+
   static void _handleForegroundMessage(WidgetRef ref, RemoteMessage message) {
     if (ref.read(authProvider).isAuthenticated) {
       ref.invalidate(notificationsProvider);
     }
 
-    final notification = message.notification;
-    final data = Map<String, dynamic>.from(message.data);
-    final title = notification?.title ?? data['title']?.toString() ?? '';
-    final body = notification?.body ?? data['body']?.toString() ?? '';
+    final data = _mergedData(message);
+    final title = data['title']?.toString() ?? '';
+    final body = data['body']?.toString() ?? '';
     if (title.isEmpty && body.isEmpty) return;
 
-    final imageUrl = resolveMediaUrl(
-      notification?.android?.imageUrl ??
-          notification?.apple?.imageUrl ??
-          data['imageUrl']?.toString(),
-    );
+    final imageUrl = resolveMediaUrl(data['imageUrl']?.toString());
 
     ForegroundNotificationBanner.show(
       title: title,
       body: body,
-      imageUrl: imageUrl,
+      imageUrl: imageUrl.isEmpty ? null : imageUrl,
       payload: data,
     );
   }
 
-  static void _openFromMessage(Map<String, dynamic> data) {
-    final ctx = rootNavigatorKey.currentContext;
-    if (ctx == null || !ctx.mounted) return;
+  static void _openFromMessage(RemoteMessage message) {
+    final data = _mergedData(message);
+    if (data.isEmpty && (message.notification == null)) return;
     ForegroundNotificationBanner.dismiss();
-    openPushPayload(ctx, data);
+    // لا نفتح فوراً — الـ splash يستخدم MaterialApp بدون GoRouter.
+    PendingPushNavigation.queue(data);
   }
 }

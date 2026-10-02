@@ -44,6 +44,7 @@ import { imagesFromProduct } from "@/lib/productFormHelpers";
 import { buildProductPayload } from "@/lib/productPayload";
 import { displayProductName } from "@/lib/productName";
 import { mutations, queries } from "@/lib/queries";
+import { apiErrorMessage } from "@/lib/apiError";
 import { formatBytes } from "@/lib/formatBytes";
 import { useBarcodeInventorySync } from "@/hooks/useBarcodeInventorySync";
 import { ProductsSortableList } from "@/components/products/ProductsSortableList";
@@ -125,18 +126,41 @@ export function ProductsAdminPage({
     enabled: !reorderMode,
   });
 
-  const { data: reorderData, isLoading: reorderLoading, isFetching: reorderFetching } = useQuery({
+  const {
+    data: reorderData,
+    isLoading: reorderLoading,
+    isFetching: reorderFetching,
+    isError: reorderError,
+    error: reorderErrorValue,
+    refetch: refetchReorder,
+  } = useQuery({
     queryKey: ["products-reorder", filterBrandId, search],
-    queryFn: () =>
-      queries.products({
-        page: 1,
-        limit: 500,
-        search,
-        sort: "brand",
-        brandId: filterBrandId,
-      }),
+    queryFn: async () => {
+      const all: any[] = [];
+      let page = 1;
+      let total = 0;
+      for (;;) {
+        const res = await queries.products({
+          page,
+          limit: 100,
+          search,
+          sort: "brand",
+          brandId: filterBrandId,
+        });
+        const batch = res.data ?? [];
+        all.push(...batch);
+        total = res.meta?.total ?? all.length;
+        const hasNext = res.meta?.hasNext ?? (batch.length === 100 && all.length < total);
+        if (!hasNext || batch.length === 0 || all.length >= total || page >= 40) break;
+        page += 1;
+      }
+      return {
+        data: all,
+        meta: { total, page: 1, limit: all.length, hasNext: false, totalPages: 1 },
+      };
+    },
     enabled: canReorder,
-    staleTime: 3 * 60_000,
+    staleTime: 30_000,
   });
 
   const isLoading = reorderMode ? reorderLoading : infiniteLoading;
@@ -250,13 +274,15 @@ export function ProductsAdminPage({
       const byId = new Map(localOrderProducts.map((p) => [p.id, p]));
       setLocalOrderProducts(ids.map((id) => byId.get(id)).filter(Boolean) as any[]);
     },
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       message.success("تم حفظ ترتيب المنتجات في التطبيق");
+      qc.invalidateQueries({ queryKey: ["products-reorder", vars.brandId] });
       qc.invalidateQueries({ queryKey: ["products"] });
+      qc.invalidateQueries({ queryKey: ["products-infinite"] });
     },
-    onError: () => {
-      message.error("تعذّر حفظ ترتيب المنتجات");
-      qc.invalidateQueries({ queryKey: ["products"] });
+    onError: (err) => {
+      message.error(apiErrorMessage(err, "تعذّر حفظ ترتيب المنتجات"));
+      qc.invalidateQueries({ queryKey: ["products-reorder"] });
     },
   });
 
@@ -494,7 +520,7 @@ export function ProductsAdminPage({
         key: "product",
         render: (_: unknown, r: any) => (
           <div className="alhayaa-product-cell">
-            <ProductThumb product={r} size={56} />
+            <ProductThumb product={r} size={56} fit="contain" />
             <div className="alhayaa-product-cell-text">
               <button type="button" className="alhayaa-product-name" onClick={() => openEdit(r)}>
                 {displayProductName(r)}
@@ -812,7 +838,18 @@ export function ProductsAdminPage({
           type="info"
           showIcon
           message="اختر برانداً لإعادة ترتيب منتجاته"
-          description="ترتيب البراندات نفسه يُدار من صفحة البراندات. هنا يمكنك ترتيب المنتجات داخل كل براند بالسحب والإفلات."
+          description="ترتيب البراندات نفسه يُدار من صفحة البراندات. هنا اسحب صف المنتج أو استخدم الأسهم، ويُحفظ الترتيب مباشرة في التطبيق."
+          style={{ marginBottom: 16 }}
+        />
+      ) : null}
+
+      {reorderMode && filterBrandId && reorderError ? (
+        <Alert
+          type="error"
+          showIcon
+          message="تعذّر تحميل منتجات البراند"
+          description={apiErrorMessage(reorderErrorValue, "حاول مرة أخرى")}
+          action={<Button onClick={() => refetchReorder()}>إعادة المحاولة</Button>}
           style={{ marginBottom: 16 }}
         />
       ) : null}
@@ -857,7 +894,7 @@ export function ProductsAdminPage({
                   className={`pp-card${!r.isActive ? " is-inactive" : ""}${stock <= 5 ? " is-low" : ""}`}
                 >
                   <button type="button" className="pp-card-media" onClick={() => openEdit(r)}>
-                    <ProductThumb product={r} size={160} className="pp-card-thumb" />
+                    <ProductThumb product={r} size={160} fit="contain" className="pp-card-thumb" />
                     {!r.isActive ? <span className="pp-badge is-off">متوقف</span> : null}
                     {r.discountPercent > 0 ? (
                       <span className="pp-badge is-sale">-{r.discountPercent}%</span>

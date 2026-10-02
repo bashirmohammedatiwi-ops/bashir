@@ -392,7 +392,7 @@ class CheckoutBottomBar extends StatelessWidget {
           width: double.infinity,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              gradient: CheckoutTheme.brandGradient,
+              gradient: CheckoutTheme.signatureGradient,
               borderRadius: BorderRadius.circular(999),
               boxShadow: [
                 BoxShadow(
@@ -497,7 +497,7 @@ class _ApplyCouponButton extends StatelessWidget {
       height: 48,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          gradient: CheckoutTheme.brandGradient,
+          gradient: CheckoutTheme.signatureGradient,
           borderRadius: BorderRadius.circular(14),
         ),
         child: Material(

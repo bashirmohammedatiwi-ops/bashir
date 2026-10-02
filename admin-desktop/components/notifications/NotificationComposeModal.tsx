@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Col, Form, Input, Modal, Row, Select, Space, Switch, Typography, message } from "antd";
 import { useEffect, useMemo } from "react";
 import { MediaPicker } from "@/components/MediaPicker";
-import { mediaPreviewUrl, mediaThumb } from "@/lib/mediaUrl";
+import { mediaPreviewUrl, mediaThumb, mediaUrl } from "@/lib/mediaUrl";
 import { mutations, queries } from "@/lib/queries";
 
 const TYPES = [
@@ -72,7 +72,33 @@ function PhonePreview({
         boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
       }}
     >
-      <div style={{ padding: "10px 14px", background: "#111", color: "#fff", fontSize: 12 }}>
+      <div
+        style={{
+          padding: "10px 14px",
+          background: "#0B8F7A",
+          color: "#fff",
+          fontSize: 12,
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+        }}
+      >
+        <span
+          style={{
+            width: 22,
+            height: 22,
+            borderRadius: 6,
+            background: "#fff",
+            color: "#0B8F7A",
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: 800,
+            fontSize: 11,
+          }}
+        >
+          د
+        </span>
         ديما الحياة · الآن
       </div>
       <div style={{ padding: 14, background: "#fff" }}>
@@ -87,26 +113,46 @@ function PhonePreview({
             }}
           />
         ) : null}
-        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{title || "عنوان الإشعار"}</div>
-        <div style={{ color: "#555", fontSize: 13, lineHeight: 1.5 }}>{body || "نص الإشعار يظهر هنا..."}</div>
-        {linkType && linkType !== "NONE" ? (
-          <div style={{ marginTop: 10 }}>
-            <span
-              style={{
-                display: "inline-block",
-                padding: "4px 10px",
-                borderRadius: 999,
-                background: "#f3e8ff",
-                color: "#7c3aed",
-                fontSize: 11,
-                fontWeight: 600,
-              }}
-            >
-              {LINK_LABELS[linkType] ?? linkType}
-              {linkLabel ? ` · ${linkLabel}` : ""}
-            </span>
+        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+          <span
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: "#E6F6F2",
+              color: "#0B8F7A",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 800,
+              flexShrink: 0,
+            }}
+          >
+            د
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{title || "عنوان الإشعار"}</div>
+            <div style={{ color: "#555", fontSize: 13, lineHeight: 1.5 }}>{body || "نص الإشعار يظهر هنا..."}</div>
+            {linkType && linkType !== "NONE" ? (
+              <div style={{ marginTop: 10 }}>
+                <span
+                  style={{
+                    display: "inline-block",
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    background: "#E6F6F2",
+                    color: "#0B8F7A",
+                    fontSize: 11,
+                    fontWeight: 600,
+                  }}
+                >
+                  {LINK_LABELS[linkType] ?? linkType}
+                  {linkLabel ? ` · ${linkLabel}` : ""}
+                </span>
+              </div>
+            ) : null}
           </div>
-        ) : null}
+        </div>
       </div>
     </div>
   );
@@ -225,6 +271,17 @@ export function NotificationComposeModal({ open, onClose }: Props) {
   });
 
   const onFinish = (values: any) => {
+    const rawImage = (values.imageUrl || previewImage || "").trim();
+    // FCM يحتاج رابط مطلق https لعرض صورة الإشعار على الهاتف
+    let imageUrl = rawImage || undefined;
+    if (imageUrl && !/^https?:\/\//i.test(imageUrl)) {
+      const abs = mediaPreviewUrl({ originalUrl: imageUrl } as any) || mediaUrl(imageUrl);
+      imageUrl = abs || imageUrl;
+      if (imageUrl.startsWith("/")) {
+        imageUrl = `https://deemaalhayat.com${imageUrl}`;
+      }
+    }
+
     create.mutate({
       type: values.type,
       title: values.title,
@@ -239,7 +296,7 @@ export function NotificationComposeModal({ open, onClose }: Props) {
           ? values.linkId
           : undefined,
       externalUrl: values.linkType === "EXTERNAL_URL" ? values.externalUrl : undefined,
-      imageUrl: values.imageUrl || undefined,
+      imageUrl,
       sendPush: values.sendPush !== false,
     });
   };

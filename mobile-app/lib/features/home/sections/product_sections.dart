@@ -1,17 +1,20 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_strings.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/card_sizes.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_section.dart';
+import '../../../data/models/product.dart';
 import '../../shell/main_shell.dart';
+import '../../worlds/world_theme.dart';
 import '../home_link.dart';
+import '../widgets/home_product_card.dart';
 import '../widgets/home_product_row.dart';
 import '../widgets/home_scroll_perf.dart';
 import '../widgets/home_section_shell.dart';
@@ -51,6 +54,149 @@ class ProductCarouselSection extends ConsumerWidget {
         itemWidth: Responsive.scaledCarouselWidth(
           context,
           cardSizeSpec(section.productCardSize ?? section.cardSize).productWidth,
+        ),
+      ),
+    );
+  }
+}
+
+/// بطاقات منتجات تتحرك باستمرار مثل شريط سينمائي، وتتوقف عند اللمس.
+class ProductFilmStripSection extends ConsumerWidget {
+  final HomeSection section;
+  final bool compactTop;
+
+  const ProductFilmStripSection({
+    super.key,
+    required this.section,
+    this.compactTop = false,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (section.products.isEmpty) return const SizedBox.shrink();
+    return HomeSectionShell(
+      section: section,
+      compactTop: compactTop,
+      showTitle: section.showTitle,
+      child: ProductFilmStrip(
+        products: section.products,
+        speed: section.marqueeSpeed ?? 4,
+      ),
+    );
+  }
+}
+
+class ProductFilmStrip extends StatefulWidget {
+  final List<Product> products;
+  final double speed;
+
+  const ProductFilmStrip({super.key, required this.products, this.speed = 4});
+
+  @override
+  State<ProductFilmStrip> createState() => _ProductFilmStripState();
+}
+
+class _ProductFilmStripState extends State<ProductFilmStrip> with SingleTickerProviderStateMixin {
+  final _scroll = ScrollController();
+  late final Ticker _ticker;
+  Duration _last = Duration.zero;
+  bool _paused = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ticker = createTicker(_onTick)..start();
+  }
+
+  void _onTick(Duration elapsed) {
+    if (!_scroll.hasClients || _paused || widget.products.length < 2) return;
+    final dt = (elapsed - _last).inMicroseconds / 1000000;
+    _last = elapsed;
+    if (dt <= 0 || dt > 0.08) return;
+    final max = _scroll.position.maxScrollExtent;
+    if (max <= 0) return;
+    final pace = (widget.speed.clamp(1, 10)) * 22 * dt;
+    var next = _scroll.offset + pace;
+    final loopAt = max / 2;
+    if (next >= loopAt) next -= loopAt;
+    _scroll.jumpTo(next);
+  }
+
+  @override
+  void dispose() {
+    _ticker.dispose();
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final width = Responsive.scaledCarouselWidth(context, 150);
+    final height = Responsive.productCardHeight(context);
+    final items = [...widget.products, ...widget.products];
+    return Listener(
+      onPointerDown: (_) => _paused = true,
+      onPointerUp: (_) => _paused = false,
+      onPointerCancel: (_) => _paused = false,
+      child: SizedBox(
+        height: height + 8,
+        child: Stack(
+          children: [
+            ListView.separated(
+              controller: _scroll,
+              scrollDirection: Axis.horizontal,
+              physics: const ClampingScrollPhysics(),
+              padding: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
+              itemCount: items.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (_, i) => HomeProductCard(
+                key: ValueKey('${items[i].id}-$i'),
+                product: items[i],
+                width: width,
+                height: height,
+              ),
+            ),
+            PositionedDirectional(
+              start: 0,
+              top: 0,
+              bottom: 0,
+              width: 28,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: AlignmentDirectional.centerStart,
+                      end: AlignmentDirectional.centerEnd,
+                      colors: [
+                        context.worldTheme.canvas,
+                        context.worldTheme.canvas.withValues(alpha: 0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            PositionedDirectional(
+              end: 0,
+              top: 0,
+              bottom: 0,
+              width: 28,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: AlignmentDirectional.centerEnd,
+                      end: AlignmentDirectional.centerStart,
+                      colors: [
+                        context.worldTheme.canvas,
+                        context.worldTheme.canvas.withValues(alpha: 0),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -190,11 +336,17 @@ class PackagesHomeSection extends ConsumerWidget {
             context,
             cardSizeSpec(p.cardSize ?? section.cardSize).width.toDouble(),
           );
+          final t = context.worldTheme;
           return GestureDetector(
             onTap: () => openPackageLink(context, p),
             child: Container(
               width: cardW,
-              decoration: HomeTheme.cardDecoration(),
+              decoration: BoxDecoration(
+                color: t.surface,
+                borderRadius: BorderRadius.circular(HomeTheme.cardRadius),
+                border: Border.all(color: t.divider),
+                boxShadow: t.cardShadow,
+              ),
               clipBehavior: Clip.antiAlias,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -208,9 +360,9 @@ class PackagesHomeSection extends ConsumerWidget {
                             filterQuality: FilterQuality.medium,
                           )
                         : ColoredBox(
-                            color: HomeTheme.surfaceMuted,
-                            child: const Center(
-                              child: Icon(Icons.card_giftcard_rounded, color: AppColors.primary, size: 36),
+                            color: t.accentLight,
+                            child: Center(
+                              child: Icon(Icons.card_giftcard_rounded, color: t.accent, size: 36),
                             ),
                           ),
                   ),
@@ -219,16 +371,23 @@ class PackagesHomeSection extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(p.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: HomeTheme.chipLabel),
+                        Text(
+                          p.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: HomeTheme.chipLabel.copyWith(color: t.ink),
+                        ),
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            Text(formatPrice(p.price), style: HomeTheme.price),
+                            Text(formatPrice(p.price), style: HomeTheme.price.copyWith(color: t.ink)),
                             if (hasDiscount) ...[
                               const SizedBox(width: 6),
                               Text(
                                 formatPrice(p.originalPrice!),
-                                style: HomeTheme.body(size: 11).copyWith(decoration: TextDecoration.lineThrough),
+                                style: HomeTheme.body(size: 11, color: t.inkMuted).copyWith(
+                                  decoration: TextDecoration.lineThrough,
+                                ),
                               ),
                             ],
                           ],

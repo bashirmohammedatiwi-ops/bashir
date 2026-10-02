@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../worlds/world_theme.dart';
 
 /// بطاقة بيضاء عائمة لأقسام الصفحة الرئيسية.
 class HomeSurfaceCard extends StatelessWidget {
@@ -22,27 +22,15 @@ class HomeSurfaceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return Padding(
       padding: margin,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: color ?? AppColors.homeSurface,
+          color: color ?? t.surface,
           borderRadius: BorderRadius.circular(AppRadius.xl),
-          border: Border.all(color: AppColors.border.withValues(alpha: 0.45)),
-          boxShadow: showShadow
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.06),
-                    blurRadius: 28,
-                    offset: const Offset(0, 10),
-                  ),
-                  BoxShadow(
-                    color: AppColors.textPrimary.withValues(alpha: 0.04),
-                    blurRadius: 12,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
+          border: Border.all(color: t.hairline.withValues(alpha: 0.45)),
+          boxShadow: showShadow ? t.cardShadow : null,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.xl),

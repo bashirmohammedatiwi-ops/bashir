@@ -31,6 +31,14 @@ export class ProductsController {
     return this.products.list(q, !isAdminViewRequest(req));
   }
 
+  @Public()
+  @Get("search")
+  search(@Req() req: any, @Query("q") q: string, @Query("limit") limit?: string) {
+    const parsed = Number(limit);
+    const take = Number.isFinite(parsed) ? parsed : 40;
+    return this.products.searchStorefront(q ?? "", take, !isAdminViewRequest(req));
+  }
+
   // بحث منتج بالباركود للمتجر — يجب أن يسبق مسار :idOrSlug
   @Public()
   @Get("lookup/barcode")

@@ -82,7 +82,7 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
       title: s.myOrders,
       emptyTitle: s.loginToViewOrders,
       child: Scaffold(
-        backgroundColor: AppColors.scaffold,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(title: Text(s.myOrders), elevation: 0),
         body: _buildBody(),
       ),
@@ -143,14 +143,8 @@ class _OrderCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.surface,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          border: Border.all(color: AppColors.hairline.withValues(alpha: 0.75)),
+          boxShadow: AppColors.cardShadow,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -195,8 +189,9 @@ class _StatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: _color.withValues(alpha: 0.12),
+        color: _color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: _color.withValues(alpha: 0.18)),
       ),
       child: Text(orderStatusLabel(status),
           style: TextStyle(color: _color, fontSize: 12, fontWeight: FontWeight.w700)),

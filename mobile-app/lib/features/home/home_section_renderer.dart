@@ -49,7 +49,9 @@ class HomeSectionWidget extends ConsumerWidget {
       'BANNER_GRID_2' => BannerGridSection(section: section, columns: 2),
       'BANNER_GRID_3' => BannerGridSection(section: section, columns: 3),
       'BANNER_CAROUSEL' => BannerCarouselSection(section: section),
-      'PRODUCT_LIST' => ProductCarouselSection(section: section, compactTop: isFirstAfterHero),
+      'PRODUCT_LIST' => section.layout == 'film'
+          ? ProductFilmStripSection(section: section, compactTop: isFirstAfterHero)
+          : ProductCarouselSection(section: section, compactTop: isFirstAfterHero),
       'FLASH_SALE' => FlashSaleHomeSection(section: section, compactTop: isFirstAfterHero),
       'FEATURED_BRANDS' || 'BRAND_SHOWCASE' => BrandHomeSection(section: section, compactTop: isFirstAfterHero),
       'PACKAGES' => PackagesHomeSection(section: section, compactTop: isFirstAfterHero),

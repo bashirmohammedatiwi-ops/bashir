@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/card_sizes.dart';
 import '../../../core/widgets/app_network_image.dart';
+import '../../worlds/world_theme.dart';
 import 'home_theme.dart';
 
 class CircleTile extends StatefulWidget {
@@ -34,6 +34,7 @@ class _CircleTileState extends State<CircleTile> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     final spec = cardSizeSpec(widget.cardSize);
     final diameter = (spec.width > 0 ? spec.width : 64.0).clamp(56.0, 68.0);
 
@@ -56,8 +57,8 @@ class _CircleTileState extends State<CircleTile> {
                 height: diameter,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.primaryLight,
-                  border: Border.all(color: AppColors.border),
+                  color: t.accentLight,
+                  border: Border.all(color: t.hairline),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: Padding(
@@ -73,7 +74,7 @@ class _CircleTileState extends State<CircleTile> {
                 maxLines: 2,
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
-                style: HomeTheme.circleLabel,
+                style: HomeTheme.circleLabel.copyWith(color: t.inkSoft),
               ),
             ],
           ),
@@ -91,6 +92,7 @@ class _CircleContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     if (imageUrl != null && imageUrl!.isNotEmpty) {
       return AppNetworkImage(url: imageUrl!, fit: BoxFit.cover);
     }
@@ -98,6 +100,6 @@ class _CircleContent extends StatelessWidget {
     if (emoji != null && emoji.isNotEmpty) {
       return Center(child: Text(emoji, style: const TextStyle(fontSize: 22, height: 1)));
     }
-    return Icon(Icons.spa_outlined, color: AppColors.primary, size: 24);
+    return Icon(Icons.spa_outlined, color: t.accent, size: 24);
   }
 }

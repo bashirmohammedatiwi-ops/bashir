@@ -31,6 +31,7 @@ import '../../features/settings/legal_document_screen.dart';
 import '../../features/settings/open_source_licenses_screen.dart';
 import '../../features/shell/main_shell.dart';
 import '../../features/wishlist/wishlist_screen.dart';
+import '../../features/worlds/world_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final refresh = ValueNotifier<int>(0);
@@ -88,6 +89,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
       GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
+      GoRoute(
+        path: '/world/:slug',
+        builder: (_, s) => WorldScreen(slug: s.pathParameters['slug']!),
+      ),
       GoRoute(path: '/scan', builder: (_, __) => const QrScanScreen()),
       GoRoute(path: '/brands', builder: (_, __) => const BrandsScreen()),
       GoRoute(

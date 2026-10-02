@@ -208,6 +208,7 @@ model Category {
   multiSubcategoryProducts Product[] @relation("ProductSubcategories")
   multiTertiaryProducts Product[] @relation("ProductTertiaryCategories")
   image           Media?         @relation("CategoryImage", fields: [imageId], references: [id])
+  worldLinks      WorldCategory[]
 
   @@index([isActive])
   @@index([parentId])
@@ -432,6 +433,8 @@ model Media {
   categoryImages  Category[]     @relation("CategoryImage")
   shadeImages     ProductShade[] @relation("ShadeImage")
   banners         Banner[]       @relation("BannerImage")
+  worldCovers     World[]        @relation("WorldCover")
+  worldGallery    WorldGalleryImage[] @relation("WorldGallery")
   packages        Package[]      @relation("PackageCover")
   skinConcerns    SkinConcern[]  @relation("SkinConcernImage")
 
@@ -678,9 +681,12 @@ model Banner {
   updatedAt       DateTime   @updatedAt
 
   image           Media?     @relation("BannerImage", fields: [imageId], references: [id])
+  worldId         String?
+  world           World?     @relation(fields: [worldId], references: [id], onDelete: SetNull)
 
   @@index([isActive])
   @@index([position])
+  @@index([worldId])
 }
 
 enum CmsPageKey {
@@ -699,13 +705,72 @@ model HomeBlock {
   payload         Json           // configuration for the block (filter, ids, layout)
   position        Int            @default(0)
   isActive        Boolean        @default(true)
+  worldId         String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+
+  world           World?         @relation(fields: [worldId], references: [id], onDelete: SetNull)
 
   @@index([isActive])
   @@index([position])
   @@index([pageKey])
   @@index([pageKey, isActive])
+  @@index([worldId])
+}
+
+/// عالم داخل التطبيق: هوية مستقلة، أقسامها، بنراتها، ومنشورات رئيسيتها.
+model World {
+  id            String   @id @default(uuid())
+  slug          String   @unique
+  nameAr        String
+  nameEn        String?
+  taglineAr     String?
+  taglineEn     String?
+  accentColor   String
+  canvasColor   String
+  inkColor      String
+  surfaceColor  String   @default("#FFFFFF")
+  position      Int      @default(0)
+  isActive      Boolean  @default(true)
+  coverImageId  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  coverImage    Media?          @relation("WorldCover", fields: [coverImageId], references: [id])
+  gallery       WorldGalleryImage[]
+  categories    WorldCategory[]
+  banners       Banner[]
+  homeBlocks    HomeBlock[]
+
+  @@index([isActive])
+  @@index([position])
+}
+
+/// صور صفحة الفئات الخاصة بالعالم. مستقلة عن بنرات الصفحة الرئيسية.
+model WorldGalleryImage {
+  id        String   @id @default(uuid())
+  worldId   String
+  mediaId   String
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  world     World    @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  media     Media    @relation("WorldGallery", fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@index([worldId, position])
+  @@index([mediaId])
+}
+
+model WorldCategory {
+  worldId     String
+  categoryId  String
+  position    Int      @default(0)
+
+  world       World    @relation(fields: [worldId], references: [id], onDelete: Cascade)
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([worldId, categoryId])
+  @@index([categoryId])
 }
 
 // ---------------------- REVIEWS ----------------------
@@ -825,4 +890,67 @@ model Setting {
   key             String     @id
   value           Json
   updatedAt       DateTime   @updatedAt
+}
+
+// قواعد تدريب المساعد: ترويج، إخفاء، أو ملاحظة يقرأها في كل جواب.
+model AssistantGuide {
+  id        String   @id @default(uuid())
+  type      String
+  concern   String?
+  productId String?
+  note      String   @default("")
+  priority  Int      @default(5)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([concern])
+}
+
+// فهم المساعد لكل منتج: المشاكل اللي يعالجها، خطوته بالروتين، ومتجه البحث بالمعنى.
+model AssistantProductTag {
+  productId  String   @id
+  kind       String   @default("other")
+  role       String   @default("other")
+  area       String   @default("other")
+  concerns   String[] @default([])
+  audience   String   @default("adult")
+  summary    String   @default("")
+  embedding  Float[]  @default([])
+  sourceHash String
+  updatedAt  DateTime @updatedAt
+}
+
+// معلومات ثابتة عن الزبونة يتذكرها المساعد بين المحادثات.
+model AssistantProfile {
+  userId        String   @id
+  skinType      String?
+  hairType      String?
+  sensitivities String[] @default([])
+  likedBrands   String[] @default([])
+  avoidBrands   String[] @default([])
+  updatedAt     DateTime @updatedAt
+}
+
+// كل دور بمحادثة المساعد: الطلب، اللي انعرض، التقييم، والضغط على البطاقات.
+model AssistantTurn {
+  id           String   @id @default(uuid())
+  userId       String
+  message      String
+  reply        String
+  outcome      String
+  kind         String?
+  concern      String?
+  productIds   String[] @default([])
+  tappedIds    String[] @default([])
+  cartIds      String[] @default([])
+  rating       Int?
+  feedbackNote String?
+  latencyMs    Int      @default(0)
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+  @@index([outcome])
 }

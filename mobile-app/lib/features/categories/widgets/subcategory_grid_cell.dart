@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/l10n/app_strings.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../data/models/category.dart';
+import '../../worlds/world_theme.dart';
 import 'categories_theme.dart';
 import 'category_line_art.dart';
 import 'category_visual_card.dart';
@@ -73,13 +73,14 @@ class _SubcategoryFooterSlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return SizedBox(
       height: CategoriesTheme.subFooterHeight,
       child: DecoratedBox(
-        decoration: const BoxDecoration(
-          color: Color(0xFFFAFAFA),
+        decoration: BoxDecoration(
+          color: t.accentLight.withValues(alpha: 0.55),
           border: Border(
-            top: BorderSide(color: CategoriesTheme.cardBorderColor),
+            top: BorderSide(color: t.hairline),
           ),
         ),
         child: hasTertiary
@@ -133,7 +134,7 @@ class _TertiaryFooterContent extends StatelessWidget {
               style: TextStyle(
                 fontSize: 10.5,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textMuted.withValues(alpha: 0.95),
+                color: context.worldTheme.inkMuted.withValues(alpha: 0.95),
               ),
             ),
           ),
@@ -152,22 +153,23 @@ class _TertiaryChevronChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
-        color: AppColors.primary.withValues(alpha: 0.08),
+        color: t.accent.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.14)),
+        border: Border.all(color: t.accent.withValues(alpha: 0.14)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             '$count',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w800,
-              color: AppColors.primary,
+              color: t.accent,
               height: 1,
             ),
           ),
@@ -175,7 +177,7 @@ class _TertiaryChevronChip extends StatelessWidget {
           Icon(
             Icons.keyboard_arrow_down_rounded,
             size: 17,
-            color: AppColors.primary.withValues(alpha: 0.85),
+            color: t.accent.withValues(alpha: 0.85),
           ),
         ],
       ),
@@ -208,15 +210,16 @@ class _TertiaryPickerSheet extends StatelessWidget {
       maxChildSize: 0.88,
       expand: false,
       builder: (context, scrollController) {
+        final t = context.worldTheme;
         return DecoratedBox(
-          decoration: const BoxDecoration(
-            color: CategoriesTheme.canvas,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          decoration: BoxDecoration(
+            color: t.canvas,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             boxShadow: [
               BoxShadow(
-                color: Color(0x22000000),
+                color: t.ink.withValues(alpha: 0.13),
                 blurRadius: 24,
-                offset: Offset(0, -4),
+                offset: const Offset(0, -4),
               ),
             ],
           ),
@@ -229,7 +232,7 @@ class _TertiaryPickerSheet extends StatelessWidget {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD8D8D8),
+                    color: t.hairline,
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
@@ -334,8 +337,9 @@ class _ViewAllProductsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return Material(
-      color: CategoriesTheme.imageBg,
+      color: t.accentLight,
       borderRadius: BorderRadius.circular(CategoriesTheme.cardRadius),
       child: InkWell(
         onTap: () {
@@ -350,23 +354,23 @@ class _ViewAllProductsButton extends StatelessWidget {
               Icon(
                 Icons.grid_view_rounded,
                 size: 18,
-                color: AppColors.primary.withValues(alpha: 0.9),
+                color: t.accent.withValues(alpha: 0.9),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
                   label,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
+                    color: t.accent,
                   ),
                 ),
               ),
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 13,
-                color: AppColors.primary.withValues(alpha: 0.7),
+                color: t.accent.withValues(alpha: 0.7),
               ),
             ],
           ),
@@ -426,7 +430,7 @@ class _TertiarySheetTile extends StatelessWidget {
             Icon(
               Icons.chevron_right_rounded,
               size: 20,
-              color: AppColors.textMuted.withValues(alpha: 0.65),
+              color: context.worldTheme.inkMuted.withValues(alpha: 0.65),
             ),
           ],
         ),
@@ -516,16 +520,16 @@ class SubcategoryExplorerHeader extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8F8F8),
+                color: context.worldTheme.accentLight.withValues(alpha: 0.55),
                 borderRadius: BorderRadius.circular(CategoriesTheme.cardRadius),
-                border: Border.all(color: CategoriesTheme.cardBorderColor),
+                border: Border.all(color: context.worldTheme.hairline),
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.info_outline_rounded,
                     size: 15,
-                    color: AppColors.textMuted.withValues(alpha: 0.8),
+                    color: context.worldTheme.inkMuted.withValues(alpha: 0.8),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -574,8 +578,9 @@ class _ExplorerActionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return Material(
-      color: AppColors.primary.withValues(alpha: 0.07),
+      color: t.accent.withValues(alpha: 0.07),
       borderRadius: BorderRadius.circular(99),
       child: InkWell(
         onTap: () {
@@ -590,17 +595,17 @@ class _ExplorerActionChip extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
+                  color: t.accent,
                 ),
               ),
               const SizedBox(width: 4),
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 11,
-                color: AppColors.primary.withValues(alpha: 0.75),
+                color: t.accent.withValues(alpha: 0.75),
               ),
             ],
           ),

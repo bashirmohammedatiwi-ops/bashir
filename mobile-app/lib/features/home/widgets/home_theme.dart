@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_fonts.dart';
 import '../../cart/widgets/cart_theme.dart';
+import '../../worlds/world_theme.dart';
 import '../../../core/widgets/app_network_image.dart';
 
 /// نظام تصميم الرئيسية — أنيق ومتناسق مع ألوان اللوغو.
@@ -25,32 +26,32 @@ abstract final class HomeTheme {
   static const bannerInset = 16.0;
   static const bannerRadius = 16.0;
 
-  static const canvas = Color(0xFFF6FAF9);
-  static const canvasWarm = Color(0xFFFAFCFB);
+  static const canvas = Color(0xFFF8F6FB);
+  static const canvasWarm = Color(0xFFFAF8FD);
   static const surface = Colors.white;
   static const surfaceMuted = CartTheme.brandWash;
-  static const pearl = Color(0xFFF8FBFA);
+  static const pearl = Color(0xFFF9F7FD);
   static const champagne = CartTheme.brandSoft;
 
   static const accent = CartTheme.brand;
   static const accentDark = CartTheme.brandDark;
   static const accentLight = CartTheme.brandSoft;
-  static const accentMid = Color(0xFFD4EDE8);
+  static const accentMid = Color(0xFFE3D6F7);
 
   static const sage = CartTheme.brand;
   static const sageDark = CartTheme.brandDark;
   static const sageLight = CartTheme.brandSoft;
   static const sageMid = CartTheme.brandWash;
 
-  static const roseWash = Color(0xFFFFF5F8);
+  static const roseWash = Color(0xFFFAF6FF);
   static const sand = pearl;
   static const lavender = CartTheme.brandWash;
-  static const blush = Color(0xFFFFF8FA);
+  static const blush = Color(0xFFFBF9FF);
 
   static const ink = CartTheme.charcoal;
-  static const inkSoft = Color(0xFF6B7A76);
-  static const inkMuted = Color(0xFF9AABA6);
-  static const divider = Color(0xFFE3EDEA);
+  static const inkSoft = Color(0xFF6A647A);
+  static const inkMuted = Color(0xFF9C95AA);
+  static const divider = Color(0xFFE7E1EF);
 
   static const categoryTileColors = [
     roseWash,
@@ -59,15 +60,15 @@ abstract final class HomeTheme {
     lavender,
     accentLight,
     blush,
-    Color(0xFFF0F4F1),
-    Color(0xFFFAF8F6),
+    Color(0xFFF3EFF8),
+    Color(0xFFF9F7FB),
   ];
 
   static TextStyle brandTitle({double size = 22, required String lang, Color? color}) =>
       brandTitleStyle(size: size, lang: lang, color: color ?? ink);
 
   static TextStyle displayTitle({double size = 22, Color? color}) =>
-      GoogleFonts.cairo(
+      appFont(
         fontSize: size,
         fontWeight: FontWeight.w800,
         height: 1.2,
@@ -75,7 +76,7 @@ abstract final class HomeTheme {
         color: color ?? ink,
       );
 
-  static TextStyle sectionTitle({double size = 17, Color? color}) => GoogleFonts.cairo(
+  static TextStyle sectionTitle({double size = 17, Color? color}) => appFont(
         fontSize: size,
         fontWeight: FontWeight.w800,
         height: 1.25,
@@ -87,14 +88,14 @@ abstract final class HomeTheme {
     Color? color,
     FontWeight weight = FontWeight.w500,
   }) =>
-      GoogleFonts.cairo(
+      appFont(
         fontSize: size,
         fontWeight: weight,
         height: 1.4,
         color: color ?? inkSoft,
       );
 
-  static TextStyle get overline => GoogleFonts.cairo(
+  static TextStyle get overline => appFont(
         fontSize: 10,
         fontWeight: FontWeight.w700,
         letterSpacing: 0.5,
@@ -102,7 +103,7 @@ abstract final class HomeTheme {
         height: 1.2,
       );
 
-  static TextStyle get viewAll => GoogleFonts.cairo(
+  static TextStyle get viewAll => appFont(
         fontSize: 12,
         fontWeight: FontWeight.w700,
         color: accent,
@@ -121,28 +122,28 @@ abstract final class HomeTheme {
         border: Border.all(color: divider),
       );
 
-  static TextStyle get chipLabel => GoogleFonts.cairo(
+  static TextStyle get chipLabel => appFont(
         fontSize: 12,
         fontWeight: FontWeight.w600,
         color: ink,
         height: 1.2,
       );
 
-  static TextStyle get circleLabel => GoogleFonts.cairo(
+  static TextStyle get circleLabel => appFont(
         fontSize: 11,
         fontWeight: FontWeight.w600,
         color: inkSoft,
         height: 1.15,
       );
 
-  static TextStyle get price => GoogleFonts.cairo(
+  static TextStyle get price => appFont(
         fontSize: 14,
         fontWeight: FontWeight.w800,
         color: ink,
         height: 1.2,
       );
 
-  static TextStyle get brandLabel => GoogleFonts.cairo(
+  static TextStyle get brandLabel => appFont(
         fontSize: 10,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.3,
@@ -245,33 +246,42 @@ abstract final class HomeTheme {
   static const blushMid = divider;
 }
 
-class HomeCanvasBackground extends StatelessWidget {
+class HomeCanvasBackground extends ConsumerWidget {
   final Widget child;
 
   const HomeCanvasBackground({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = ref.watch(activeWorldThemeProvider);
     return DecoratedBox(
-      decoration: HomeTheme.canvasDecoration(),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [t.canvasWarm, t.canvas, t.canvas],
+          stops: const [0, 0.25, 1],
+        ),
+      ),
       child: child,
     );
   }
 }
 
-class HomeSectionDivider extends StatelessWidget {
+class HomeSectionDivider extends ConsumerWidget {
   const HomeSectionDivider({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: HomeTheme.paddingH, vertical: 4),
-      child: Divider(height: 1, thickness: 1, color: HomeTheme.divider),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(activeWorldThemeProvider);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH, vertical: 4),
+      child: Divider(height: 1, thickness: 1, color: theme.divider),
     );
   }
 }
 
-class HomeEditorialHeader extends StatelessWidget {
+class HomeEditorialHeader extends ConsumerWidget {
   final String title;
   final String? subtitle;
   final String? headerImageUrl;
@@ -294,7 +304,8 @@ class HomeEditorialHeader extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(activeWorldThemeProvider);
     return Padding(
       padding: EdgeInsets.fromLTRB(
         HomeTheme.paddingH,
@@ -322,16 +333,19 @@ class HomeEditorialHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (overline != null && overline!.isNotEmpty) ...[
-                  Text(overline!, style: HomeTheme.overline),
+                  Text(
+                    overline!,
+                    style: HomeTheme.overline.copyWith(color: theme.accent),
+                  ),
                   const SizedBox(height: 2),
                 ],
                 Text(
                   title,
-                  style: HomeTheme.sectionTitle(size: compact ? 16 : 17),
+                  style: HomeTheme.sectionTitle(size: compact ? 16 : 17, color: theme.ink),
                 ),
                 if (subtitle != null && subtitle!.isNotEmpty) ...[
                   const SizedBox(height: 2),
-                  Text(subtitle!, style: HomeTheme.body(size: 12)),
+                  Text(subtitle!, style: HomeTheme.body(size: 12, color: theme.inkSoft)),
                 ],
               ],
             ),
@@ -346,14 +360,15 @@ class HomeEditorialHeader extends StatelessWidget {
 }
 
 /// رابط «عرض الكل» — دائماً في نهاية صف العنوان (يسار في RTL / يمين في LTR).
-class HomeViewAllLink extends StatelessWidget {
+class HomeViewAllLink extends ConsumerWidget {
   final String label;
   final VoidCallback onTap;
 
   const HomeViewAllLink({super.key, required this.label, required this.onTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(activeWorldThemeProvider);
     return GestureDetector(
       onTap: onTap,
       child: Padding(
@@ -361,8 +376,8 @@ class HomeViewAllLink extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(label, style: HomeTheme.viewAll),
-            Icon(HomeTheme.viewAllChevron(context), size: 16, color: HomeTheme.accent),
+            Text(label, style: HomeTheme.viewAll.copyWith(color: theme.accent)),
+            Icon(HomeTheme.viewAllChevron(context), size: 16, color: theme.accent),
           ],
         ),
       ),
@@ -370,7 +385,7 @@ class HomeViewAllLink extends StatelessWidget {
   }
 }
 
-class HomeFilterPill extends StatelessWidget {
+class HomeFilterPill extends ConsumerWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
@@ -385,9 +400,10 @@ class HomeFilterPill extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(activeWorldThemeProvider);
     return Material(
-      color: selected ? HomeTheme.accent : HomeTheme.surface,
+      color: selected ? theme.accent : theme.surface,
       borderRadius: BorderRadius.circular(HomeTheme.pillRadius),
       child: InkWell(
         onTap: onTap,
@@ -396,7 +412,7 @@ class HomeFilterPill extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(HomeTheme.pillRadius),
-            border: Border.all(color: selected ? HomeTheme.accent : HomeTheme.divider),
+            border: Border.all(color: selected ? theme.accent : theme.divider),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -408,7 +424,7 @@ class HomeFilterPill extends StatelessWidget {
               Text(
                 label,
                 style: HomeTheme.chipLabel.copyWith(
-                  color: selected ? Colors.white : HomeTheme.ink,
+                  color: selected ? Colors.white : theme.ink,
                 ),
               ),
             ],
@@ -463,7 +479,7 @@ class HomeCountdownBoxes extends StatelessWidget {
         ),
         child: Text(
           v,
-          style: GoogleFonts.cairo(
+          style: appFont(
             fontSize: 11,
             fontWeight: FontWeight.w800,
             color: Colors.white,

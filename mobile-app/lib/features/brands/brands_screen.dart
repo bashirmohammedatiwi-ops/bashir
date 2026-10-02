@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/theme/app_fonts.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/friendly_error.dart';
@@ -17,6 +16,8 @@ import '../../data/models/brand.dart';
 import '../../data/models/category.dart';
 import '../catalog/catalog_providers.dart';
 import '../home/home_category_filter.dart';
+import '../worlds/world_theme.dart';
+import '../search/smart_query.dart';
 
 class BrandsScreen extends ConsumerStatefulWidget {
   const BrandsScreen({super.key});
@@ -37,17 +38,16 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
   );
 
   List<Brand> _filterBrands(List<Brand> list, String lang) {
-    if (_query.isEmpty) return list;
-    final q = _query.toLowerCase();
-    return list
-        .where(
-          (b) =>
-              b.name.toLowerCase().contains(q) ||
-              (b.nameAr?.toLowerCase().contains(q) ?? false) ||
-              (b.nameEn?.toLowerCase().contains(q) ?? false) ||
-              b.localizedName(lang).toLowerCase().contains(q),
-        )
+    if (_query.trim().isEmpty) return list;
+    final matched = list
+        .where((b) => textMatchesQuery(_query, [b.name, b.nameAr, b.nameEn, b.slug, b.localizedName(lang)]))
         .toList(growable: false);
+    matched.sort((a, b) {
+      final scoreA = matchScore(_query, [a.name, a.nameAr, a.nameEn, a.slug]);
+      final scoreB = matchScore(_query, [b.name, b.nameAr, b.nameEn, b.slug]);
+      return scoreB.compareTo(scoreA);
+    });
+    return matched;
   }
 
   void _selectCategory(String? id) {
@@ -84,7 +84,7 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
         : ref.watch(categoryBrandsProvider(_selectedCategoryId!));
 
     return Scaffold(
-      backgroundColor: AppColors.scaffold,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -136,27 +136,36 @@ class _BrandsScreenState extends ConsumerState<BrandsScreen> {
                     );
                   }
                   return RefreshIndicator(
-                    color: AppColors.primary,
+                    color: context.worldTheme.accent,
                     onRefresh: _refresh,
-                    child: GridView.builder(
-                      padding: const EdgeInsets.fromLTRB(
-                        AppSpacing.md,
-                        0,
-                        AppSpacing.md,
-                        AppSpacing.md,
-                      ),
-                      gridDelegate: _gridDelegate,
-                      itemCount: filtered.length,
-                      itemBuilder: (_, i) {
-                        final brand = filtered[i];
-                        final name = brand.localizedName(lang);
-                        return _BrandTile(
-                          brand: brand,
-                          name: name,
-                          productsLabel: s.productCount,
-                          onTap: () => _openBrand(brand, name),
-                        );
-                      },
+                    child: CustomScrollView(
+                      slivers: [
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(
+                            16,
+                            0,
+                            16,
+                            12,
+                          ),
+                          sliver: SliverGrid(
+                            gridDelegate: _gridDelegate,
+                            delegate: SliverChildBuilderDelegate(
+                              (_, i) {
+                                final brand = filtered[i];
+                                final name = brand.localizedName(lang);
+                                return _BrandTile(
+                                  brand: brand,
+                                  name: name,
+                                  productsLabel: s.productCount,
+                                  onTap: () => _openBrand(brand, name),
+                                );
+                              },
+                              childCount: filtered.length,
+                            ),
+                          ),
+                        ),
+                        const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                      ],
                     ),
                   );
                 },
@@ -182,16 +191,22 @@ class _PageHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(6, 6, AppSpacing.md, 12),
+      padding: const EdgeInsets.fromLTRB(6, 6, 16, 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           IconButton(
             onPressed: onBack,
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+            icon: Icon(
+              Directionality.of(context) == TextDirection.rtl
+                  ? Icons.arrow_forward_ios_rounded
+                  : Icons.arrow_back_ios_new_rounded,
+              size: 18,
+            ),
             style: IconButton.styleFrom(
-              foregroundColor: AppColors.textPrimary,
+              foregroundColor: t.ink,
             ),
           ),
           Expanded(
@@ -200,19 +215,19 @@ class _PageHeader extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.cairo(
-                    fontSize: 22,
+                  style: appFont(
+                    fontSize: 20,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.textPrimary,
+                    color: t.ink,
                     height: 1.1,
                   ),
                 ),
                 const SizedBox(height: 3),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12.5,
-                    color: AppColors.textMuted,
+                    color: t.inkMuted,
                     height: 1.3,
                   ),
                 ),
@@ -233,15 +248,16 @@ class _SearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return TextField(
       onChanged: onChanged,
-      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: t.ink),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 14),
-        prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textMuted, size: 22),
+        hintStyle: TextStyle(color: t.inkMuted, fontSize: 14),
+        prefixIcon: Icon(Icons.search_rounded, color: t.inkMuted, size: 22),
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: t.surface,
         contentPadding: const EdgeInsets.symmetric(vertical: 13),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -249,11 +265,11 @@ class _SearchField extends StatelessWidget {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: AppColors.hairline.withValues(alpha: 0.9)),
+          borderSide: BorderSide(color: t.hairline.withValues(alpha: 0.9)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.2),
+          borderSide: BorderSide(color: t.accent, width: 1.2),
         ),
       ),
     );
@@ -279,6 +295,7 @@ class _CategoryRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -286,10 +303,10 @@ class _CategoryRail extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w800,
-              color: AppColors.textSecondary,
+              color: t.inkSoft,
               letterSpacing: 0.2,
             ),
           ),
@@ -348,6 +365,7 @@ class _CategoryCircleTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -366,13 +384,13 @@ class _CategoryCircleTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: selected ? AppColors.primary : AppColors.hairline,
+                    color: selected ? t.accent : t.hairline,
                     width: selected ? 2 : 1,
                   ),
                   boxShadow: selected
                       ? [
                           BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.18),
+                            color: t.accent.withValues(alpha: 0.18),
                             blurRadius: 10,
                             offset: const Offset(0, 3),
                           ),
@@ -380,7 +398,7 @@ class _CategoryCircleTile extends StatelessWidget {
                       : null,
                 ),
                 child: ClipOval(
-                  child: _buildCircleContent(),
+                  child: _buildCircleContent(context),
                 ),
               ),
               const SizedBox(height: 6),
@@ -392,7 +410,7 @@ class _CategoryCircleTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 10.5,
                   fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                  color: selected ? AppColors.primaryDark : AppColors.textSecondary,
+                  color: selected ? t.accentDark : t.inkSoft,
                   height: 1.15,
                 ),
               ),
@@ -403,14 +421,15 @@ class _CategoryCircleTile extends StatelessWidget {
     );
   }
 
-  Widget _buildCircleContent() {
+  Widget _buildCircleContent(BuildContext context) {
+    final t = context.worldTheme;
     if (isAll) {
       return ColoredBox(
-        color: selected ? AppColors.primaryLight : AppColors.surface,
+        color: selected ? t.accentLight : t.surface,
         child: Icon(
           Icons.apps_rounded,
           size: 24,
-          color: selected ? AppColors.primary : AppColors.textMuted,
+          color: selected ? t.accent : t.inkMuted,
         ),
       );
     }
@@ -425,7 +444,7 @@ class _CategoryCircleTile extends StatelessWidget {
     }
 
     return ColoredBox(
-      color: selected ? AppColors.primaryLight : AppColors.surface,
+      color: selected ? t.accentLight : t.surface,
       child: Center(
         child: icon != null && icon!.isNotEmpty
             ? Text(icon!, style: const TextStyle(fontSize: 22))
@@ -434,7 +453,7 @@ class _CategoryCircleTile extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: selected ? AppColors.primary : AppColors.textMuted,
+                  color: selected ? t.accent : t.inkMuted,
                 ),
               ),
       ),
@@ -496,18 +515,19 @@ class _BrandTile extends StatelessWidget {
     required this.onTap,
   });
 
-  Color _fallbackBg() {
+  Color _fallbackBg(BuildContext context) {
     final hex = brand.bgColorHex?.replaceFirst('#', '').trim();
-    if (hex == null || hex.length < 6) return AppColors.primaryLight;
+    if (hex == null || hex.length < 6) return context.worldTheme.accentLight;
     try {
       return Color(int.parse('FF${hex.substring(0, 6)}', radix: 16));
     } catch (_) {
-      return AppColors.primaryLight;
+      return context.worldTheme.accentLight;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -515,9 +535,9 @@ class _BrandTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: Ink(
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: t.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.hairline.withValues(alpha: 0.8)),
+            border: Border.all(color: t.hairline.withValues(alpha: 0.8)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -526,13 +546,13 @@ class _BrandTile extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
                   child: ColoredBox(
-                    color: const Color(0xFFFAFAFA),
+                    color: t.accentLight.withValues(alpha: 0.55),
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
                       child: _BrandLogo(
                         brand: brand,
                         name: name,
-                        fallbackBg: _fallbackBg(),
+                        fallbackBg: _fallbackBg(context),
                       ),
                     ),
                   ),
@@ -547,10 +567,10 @@ class _BrandTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+                        color: t.ink,
                         height: 1.15,
                       ),
                     ),
@@ -559,15 +579,15 @@ class _BrandTile extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF3F3F4),
+                          color: t.accentLight,
                           borderRadius: BorderRadius.circular(99),
                         ),
                         child: Text(
                           '${formatNumber(brand.productCount)} $productsLabel',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF7A757F),
+                            color: t.inkMuted,
                             height: 1,
                           ),
                         ),
@@ -597,6 +617,7 @@ class _BrandLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     if (brand.logoUrl.isNotEmpty) {
       return Center(
         child: AppNetworkImage(
@@ -604,7 +625,7 @@ class _BrandLogo extends StatelessWidget {
           fit: BoxFit.contain,
           width: double.infinity,
           height: double.infinity,
-          backgroundColor: const Color(0xFFFAFAFA),
+          backgroundColor: t.accentLight.withValues(alpha: 0.55),
         ),
       );
     }
@@ -620,7 +641,7 @@ class _BrandLogo extends StatelessWidget {
         decoration: BoxDecoration(
           color: fallbackBg,
           shape: BoxShape.circle,
-          border: Border.all(color: AppColors.hairline.withValues(alpha: 0.7)),
+          border: Border.all(color: t.hairline.withValues(alpha: 0.7)),
         ),
         alignment: Alignment.center,
         child: Text(
@@ -628,7 +649,7 @@ class _BrandLogo extends StatelessWidget {
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w900,
-            color: AppColors.primary.withValues(alpha: 0.6),
+            color: t.accent.withValues(alpha: 0.6),
             height: 1,
           ),
         ),

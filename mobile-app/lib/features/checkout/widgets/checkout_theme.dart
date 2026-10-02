@@ -14,6 +14,7 @@ abstract final class CheckoutTheme {
   static const card = CartTheme.card;
 
   static const brandGradient = CartTheme.brandGradient;
+  static const signatureGradient = CartTheme.signatureGradient;
 
   static List<BoxShadow> get softShadow => CartTheme.softShadow;
   static List<BoxShadow> get dockShadow => CartTheme.dockShadow;

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_section.dart';
+import '../../worlds/world_theme.dart';
 import 'gallery_tile_sizer.dart';
 import 'home_theme.dart';
 import 'photo_shape_kit.dart';
@@ -167,6 +168,7 @@ class GalleryPhotoCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (data.imageUrl.isEmpty) return const SizedBox.shrink();
 
+    final t = context.worldTheme;
     String? title;
     String? subtitle;
     String lang = 'ar';
@@ -190,7 +192,7 @@ class GalleryPhotoCard extends ConsumerWidget {
       fit: fit,
       width: width,
       height: height,
-      backgroundColor: HomeTheme.pearl,
+      backgroundColor: t.accentLight,
     );
 
     image = _GalleryOverlay(
@@ -198,6 +200,7 @@ class GalleryPhotoCard extends ConsumerWidget {
       title: title,
       subtitle: subtitle,
       badge: data.badge,
+      accent: t.accent,
       child: image,
     );
 
@@ -205,11 +208,11 @@ class GalleryPhotoCard extends ConsumerWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: t.surface,
         borderRadius: shape == 'circle' ? null : borderRadius,
         shape: shape == 'circle' ? BoxShape.circle : BoxShape.rectangle,
         border: border,
-        boxShadow: (showShadow || data.showShadow) ? HomeTheme.galleryShadow : null,
+        boxShadow: (showShadow || data.showShadow) ? t.cardShadow : null,
       ),
       child: ClipRRect(
         borderRadius: shape == 'circle' ? BorderRadius.zero : borderRadius,
@@ -233,7 +236,7 @@ class GalleryPhotoCard extends ConsumerWidget {
                 title!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: HomeTheme.chipLabel.copyWith(fontSize: 11.5, fontWeight: FontWeight.w700),
+                style: HomeTheme.chipLabel.copyWith(fontSize: 11.5, fontWeight: FontWeight.w700, color: t.ink),
               ),
             if (subtitle?.isNotEmpty ?? false) ...[
               const SizedBox(height: 1),
@@ -241,7 +244,7 @@ class GalleryPhotoCard extends ConsumerWidget {
                 subtitle!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: HomeTheme.body(size: 10.5, color: HomeTheme.inkMuted),
+                style: HomeTheme.body(size: 10.5, color: t.inkMuted),
               ),
             ],
           ],
@@ -452,6 +455,7 @@ class _GalleryOverlay extends StatelessWidget {
   final String? title;
   final String? subtitle;
   final String? badge;
+  final Color accent;
   final Widget child;
 
   const _GalleryOverlay({
@@ -459,6 +463,7 @@ class _GalleryOverlay extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.badge,
+    required this.accent,
     required this.child,
   });
 
@@ -496,7 +501,7 @@ class _GalleryOverlay extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
               decoration: BoxDecoration(
-                color: HomeTheme.accent,
+                color: accent,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(

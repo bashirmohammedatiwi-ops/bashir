@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../../core/widgets/states.dart';
@@ -136,7 +137,7 @@ class _HistoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final positive = item.isEarned;
-    final color = positive ? const Color(0xFF2E9E6A) : AccountTheme.danger;
+    final color = positive ? AppColors.success : AccountTheme.danger;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),

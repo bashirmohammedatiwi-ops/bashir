@@ -40,7 +40,7 @@ const BLOCK_TYPES = Object.entries(TYPE_LABELS).map(([value, label]) => ({ value
 export default function HomeBlocksPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["home-blocks"],
-    queryFn: queries.homeBlocks,
+    queryFn: () => queries.homeBlocks(),
   });
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../theme/app_fonts.dart';
 import '../theme/app_spacing.dart';
+import '../../features/worlds/world_theme.dart';
 
 enum SectionHeaderStyle { standard, niceOne }
 
-class SectionHeader extends StatelessWidget {
+class SectionHeader extends ConsumerWidget {
   final String title;
   final String? actionLabel;
   final VoidCallback? onAction;
@@ -22,7 +24,8 @@ class SectionHeader extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = ref.watch(activeWorldThemeProvider);
     final chevron = Directionality.of(context) == TextDirection.rtl
         ? Icons.chevron_left
         : Icons.chevron_right;
@@ -42,11 +45,11 @@ class SectionHeader extends StatelessWidget {
               width: 4,
               height: 26,
               decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
+                gradient: theme.primaryGradient,
                 borderRadius: BorderRadius.circular(4),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.25),
+                    color: theme.accent.withValues(alpha: 0.25),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -60,10 +63,10 @@ class SectionHeader extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: appFont(
                       fontSize: 19,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      color: theme.ink,
                       letterSpacing: -0.4,
                       height: 1.15,
                     ),
@@ -76,7 +79,7 @@ class SectionHeader extends StatelessWidget {
               if (actionLabel != null) const SizedBox(width: AppSpacing.sm),
             ],
             if (actionLabel != null && onAction != null)
-              _NiceViewAll(label: actionLabel!, onTap: onAction!),
+              _NiceViewAll(label: actionLabel!, onTap: onAction!, theme: theme),
           ],
         ),
       );
@@ -90,7 +93,7 @@ class SectionHeader extends StatelessWidget {
             width: 4,
             height: 22,
             decoration: BoxDecoration(
-              color: AppColors.primary,
+              color: theme.accent,
               borderRadius: BorderRadius.circular(4),
             ),
           ),
@@ -98,14 +101,14 @@ class SectionHeader extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+              style: appFont(fontSize: 17, fontWeight: FontWeight.w800),
             ),
           ),
           if (trailing != null) trailing!,
           if (actionLabel != null && onAction != null)
             TextButton(
               onPressed: onAction,
-              style: TextButton.styleFrom(foregroundColor: AppColors.primary),
+              style: TextButton.styleFrom(foregroundColor: theme.accent),
               child: Row(
                 children: [
                   Text(actionLabel!, style: const TextStyle(fontWeight: FontWeight.w600)),
@@ -122,8 +125,9 @@ class SectionHeader extends StatelessWidget {
 class _NiceViewAll extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
+  final WorldThemePalette theme;
 
-  const _NiceViewAll({required this.label, required this.onTap});
+  const _NiceViewAll({required this.label, required this.onTap, required this.theme});
 
   @override
   Widget build(BuildContext context) {
@@ -132,7 +136,7 @@ class _NiceViewAll extends StatelessWidget {
         : Icons.chevron_right;
 
     return Material(
-      color: AppColors.primaryLight.withValues(alpha: 0.55),
+      color: theme.accentLight.withValues(alpha: 0.55),
       borderRadius: BorderRadius.circular(AppRadius.pill),
       child: InkWell(
         onTap: onTap,
@@ -144,13 +148,13 @@ class _NiceViewAll extends StatelessWidget {
             children: [
               Text(
                 label,
-                style: const TextStyle(
-                  color: AppColors.primary,
+                style: appFont(
+                  color: theme.accentDark,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              Icon(chevron, size: 16, color: AppColors.primary),
+              Icon(chevron, size: 16, color: theme.accent),
             ],
           ),
         ),

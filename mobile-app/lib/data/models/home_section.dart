@@ -213,6 +213,8 @@ class HomeSection {
   final double? framePaddingH;
   final String? titleColor;
   final bool frameShadow;
+  final String? pattern;
+  final String? motion;
 
   const HomeSection({
     required this.id,
@@ -266,6 +268,8 @@ class HomeSection {
     this.framePaddingH,
     this.titleColor,
     this.frameShadow = false,
+    this.pattern,
+    this.motion,
   });
 
   String? titleForLang(String lang) {
@@ -350,6 +354,8 @@ class HomeSection {
         borderColor: json['borderColor']?.toString(),
         framePaddingH: json['framePaddingH'] != null ? (json['framePaddingH'] as num).toDouble() : null,
         titleColor: json['titleColor']?.toString(),
+        pattern: json['pattern']?.toString(),
+        motion: json['motion']?.toString(),
         frameShadow: json['frameShadow'] == true,
       );
 }

@@ -22,6 +22,7 @@ import '../cart/cart_provider.dart';
 import '../catalog/catalog_providers.dart';
 import '../profile/profile_providers.dart';
 import '../shell/main_shell.dart';
+import '../shell/nav_tabs.dart';
 
 const _statusFlow = ['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
 
@@ -34,7 +35,7 @@ class OrderDetailScreen extends ConsumerWidget {
     final s = ref.s;
     final async = ref.watch(orderDetailProvider(orderId));
     return Scaffold(
-      backgroundColor: AppColors.scaffold,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(title: Text(s.orderDetails), elevation: 0),
       body: async.when(
         loading: () => const OrderDetailSkeleton(),
@@ -160,10 +161,34 @@ class OrderDetailScreen extends ConsumerWidget {
             const SizedBox(height: AppSpacing.lg),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => _reorder(context, ref, order),
-                icon: const Icon(Icons.replay_rounded),
-                label: Text(s.reorder),
+              height: 52,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: AppColors.signatureGradient,
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.28),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _reorder(context, ref, order),
+                    borderRadius: BorderRadius.circular(999),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.replay_rounded, color: Colors.white, size: 20),
+                        const SizedBox(width: 8),
+                        Text(s.reorder, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
             if (order.status == 'PENDING' || order.status == 'CONFIRMED') ...[
@@ -229,7 +254,7 @@ class OrderDetailScreen extends ConsumerWidget {
       message: 'تمت إضافة $added منتج إلى السلة',
       actionLabel: 'السلة',
       onAction: () {
-        ref.read(navIndexProvider.notifier).state = 3;
+        ref.read(navIndexProvider.notifier).state = NavTabs.cart;
         context.go('/');
       },
     );
@@ -311,12 +336,18 @@ class _ItemRow extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.sm),
-                child: SizedBox(
-                  width: 60,
-                  height: 60,
-                  child: ProductCoverImage(
-                    url: item.imageUrl,
-                    fit: BoxFit.contain,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  child: ColoredBox(
+                    color: AppColors.blush,
+                    child: SizedBox(
+                      width: 60,
+                      height: 60,
+                      child: ProductCoverImage(
+                        url: item.imageUrl,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -366,7 +397,8 @@ class _Tracker extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: i <= currentIndex ? AppColors.primary : AppColors.border,
+                    gradient: i <= currentIndex ? AppColors.signatureGradient : null,
+                    color: i <= currentIndex ? null : AppColors.border,
                     shape: BoxShape.circle,
                     boxShadow: i == currentIndex
                         ? [
@@ -406,7 +438,11 @@ class _Tracker extends StatelessWidget {
                 width: 16,
                 child: Container(
                   height: 2,
-                  color: i < currentIndex ? AppColors.primary : AppColors.border,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(2),
+                    gradient: i < currentIndex ? AppColors.signatureGradient : null,
+                    color: i < currentIndex ? null : AppColors.border,
+                  ),
                 ),
               ),
             ),

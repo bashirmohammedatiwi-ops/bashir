@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/app_strings.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_fonts.dart';
 import '../../../core/widgets/app_search_scan_bar.dart';
 import '../../../core/widgets/listing_toolbar.dart';
+import '../../worlds/world_theme.dart';
 import 'listing_theme.dart';
 
 /// رأس صفحة المنتجات — بحث + باركود + فلاتر.
@@ -32,9 +33,10 @@ class ListingPageHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.s;
+    final t = context.worldTheme;
 
     return ColoredBox(
-      color: ListingTheme.headerBg,
+      color: ListingTheme.headerBg(context),
       child: SafeArea(
         bottom: false,
         child: DecoratedBox(
@@ -43,12 +45,12 @@ class ListingPageHeader extends ConsumerWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                AppColors.primaryLight.withValues(alpha: 0.45),
-                ListingTheme.headerBg,
+                t.accentLight.withValues(alpha: 0.45),
+                ListingTheme.headerBg(context),
               ],
             ),
             border: Border(
-              bottom: BorderSide(color: AppColors.hairline.withValues(alpha: 0.7)),
+              bottom: BorderSide(color: t.hairline.withValues(alpha: 0.7)),
             ),
           ),
           child: Column(
@@ -60,33 +62,50 @@ class ListingPageHeader extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     _HeaderIconButton(
-                      icon: Icons.arrow_back_ios_new_rounded,
+                      icon: Directionality.of(context) == TextDirection.rtl
+                          ? Icons.arrow_forward_ios_rounded
+                          : Icons.arrow_back_ios_new_rounded,
                       onTap: () => context.pop(),
                     ),
                     const SizedBox(width: 6),
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Row(
                         children: [
-                          Text(
-                            title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -0.4,
-                              height: 1.2,
-                              color: AppColors.textPrimary,
+                          Container(
+                            width: 4,
+                            height: 22,
+                            decoration: BoxDecoration(
+                              gradient: t.primaryGradient,
+                              borderRadius: BorderRadius.circular(99),
                             ),
                           ),
-                          if (subtitle != null && subtitle!.isNotEmpty) ...[
-                            const SizedBox(height: 3),
-                            Text(
-                              subtitle!,
-                              style: ListingTheme.sectionHint.copyWith(fontSize: 12),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: appFont(
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: -0.4,
+                                    height: 1.2,
+                                    color: t.ink,
+                                  ),
+                                ),
+                                if (subtitle != null && subtitle!.isNotEmpty) ...[
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    subtitle!,
+                                    style: ListingTheme.sectionHint(context).copyWith(fontSize: 12),
+                                  ),
+                                ],
+                              ],
                             ),
-                          ],
+                          ),
                         ],
                       ),
                     ),
@@ -98,8 +117,8 @@ class ListingPageHeader extends ConsumerWidget {
                 child: AppSearchScanBar(
                   hint: s.searchHintHome,
                   scanLabel: s.scan,
-                  fillColor: Colors.white,
-                  borderColor: AppColors.primarySoft,
+                  fillColor: t.surface,
+                  borderColor: t.accentSoft,
                   onSearchTap: () => context.push('/search'),
                   onScanTap: () => context.push('/scan'),
                 ),
@@ -130,10 +149,13 @@ class _HeaderIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return Material(
-      color: Colors.white,
+      color: t.surface,
+      elevation: 0,
+      shadowColor: t.accentDark.withValues(alpha: 0.08),
       shape: CircleBorder(
-        side: BorderSide(color: AppColors.hairline.withValues(alpha: 0.8)),
+        side: BorderSide(color: t.hairline.withValues(alpha: 0.8)),
       ),
       child: InkWell(
         onTap: onTap,
@@ -141,7 +163,7 @@ class _HeaderIconButton extends StatelessWidget {
         child: SizedBox(
           width: 40,
           height: 40,
-          child: Icon(icon, size: 17, color: AppColors.textSecondary),
+          child: Icon(icon, size: 17, color: t.inkSoft),
         ),
       ),
     );

@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/category.dart';
-import 'categories_theme.dart';
+import '../../worlds/world_theme.dart';
 
 /// صورة القسم مع fallback أنيق.
 class CategoryImage extends StatelessWidget {
@@ -26,17 +25,20 @@ class CategoryImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    final imageBg = Color.lerp(t.canvas, t.ink, 0.04)!;
+
     if (category.imageUrl.isNotEmpty) {
       final image = AppNetworkImage(
         url: category.imageUrl,
         width: width,
         height: height,
         fit: fit,
-        backgroundColor: CategoriesTheme.imageBg,
+        backgroundColor: imageBg,
       );
       if (!containPadding) return image;
       return ColoredBox(
-        color: CategoriesTheme.imageBg,
+        color: imageBg,
         child: Padding(
           padding: EdgeInsets.all((height ?? width ?? 48) * 0.1),
           child: image,
@@ -49,14 +51,14 @@ class CategoryImage extends StatelessWidget {
         : category.localizedName(lang).characters.first;
 
     return ColoredBox(
-      color: AppColors.primaryLight,
+      color: t.accentLight,
       child: Center(
         child: Text(
           initial,
           style: TextStyle(
             fontSize: (height ?? 48) * 0.32,
             fontWeight: FontWeight.w800,
-            color: AppColors.primary.withValues(alpha: 0.55),
+            color: t.accent.withValues(alpha: 0.55),
           ),
         ),
       ),

@@ -160,7 +160,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final topPad = MediaQuery.paddingOf(context).top;
 
     return Scaffold(
-      backgroundColor: CartTheme.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: cart.isEmpty
           ? CartEmptyView(topPad: topPad)
           : Column(

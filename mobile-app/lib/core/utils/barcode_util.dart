@@ -16,6 +16,15 @@ bool isLikelyBarcode(String code) {
   return RegExp(r'^[A-Za-z0-9][A-Za-z0-9_\-./+]*$').hasMatch(code);
 }
 
+/// هل يبدو الاستعلام باركوداً (مسح أو إدخال يدوي) — يُستخدم لتجاوز فلتر العوالم.
+bool isBarcodeSearchQuery(String? raw) {
+  final normalized = normalizeBarcode(raw);
+  if (normalized.isEmpty) return false;
+  final digits = normalized.replaceAll(RegExp(r'\D'), '');
+  if (digits.length >= 8) return true;
+  return isLikelyBarcode(normalized) && digits.length >= 6;
+}
+
 void _addEanVariants(Set<String> candidates, String value) {
   final digits = value.replaceAll(RegExp(r'\D'), '');
   if (digits.isEmpty) return;

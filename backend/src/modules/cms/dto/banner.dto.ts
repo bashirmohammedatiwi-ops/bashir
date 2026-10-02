@@ -29,6 +29,7 @@ export class CreateBannerDto {
   @IsOptional() @IsBoolean() isActive?: boolean;
   @IsOptional() @IsDateString() startsAt?: string;
   @IsOptional() @IsDateString() endsAt?: string;
+  @IsOptional() @IsString() worldId?: string | null;
 }
 
 export class UpdateBannerDto extends CreateBannerDto {}

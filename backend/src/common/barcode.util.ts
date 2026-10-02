@@ -29,6 +29,15 @@ function addEanVariants(candidates: Set<string>, value: string) {
   }
 }
 
+/** Barcode scan / typed EAN — used to bypass storefront listing filters. */
+export function isBarcodeSearchQuery(raw: string | null | undefined): boolean {
+  const normalized = normalizeBarcode(raw);
+  if (!normalized) return false;
+  const digits = normalized.replace(/\D/g, "");
+  if (digits.length >= 8) return true;
+  return isLikelyBarcode(normalized) && digits.length >= 6;
+}
+
 export function barcodeLookupCandidates(raw: string | null | undefined): string[] {
   const normalized = normalizeBarcode(raw);
   if (!normalized) return [];

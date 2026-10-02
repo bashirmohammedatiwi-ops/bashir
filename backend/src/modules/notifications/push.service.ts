@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as admin from "firebase-admin";
 import * as fs from "fs";
+import { rewriteMediaUrl } from "../../common/media-url.util";
 
 export type PushPayload = {
   title: string;
@@ -62,11 +63,31 @@ export class PushService implements OnModuleInit {
     }
   }
 
+  /** FCM يحتاج رابط صورة مطلق https لعرض الصورة الكبيرة. */
+  static toAbsoluteImageUrl(raw?: string | null): string | undefined {
+    const rewritten = rewriteMediaUrl(raw?.trim() || null);
+    if (!rewritten) return undefined;
+
+    if (rewritten.startsWith("https://") || rewritten.startsWith("http://")) {
+      return rewritten.replace(/^http:\/\//i, "https://");
+    }
+
+    const publicBase = (process.env.MEDIA_PUBLIC_BASE_URL || "https://deemaalhayat.com/media").replace(/\/$/, "");
+    const origin = publicBase.replace(/\/media$/i, "") || "https://deemaalhayat.com";
+
+    if (rewritten.startsWith("/media")) return `${origin}${rewritten}`;
+    if (rewritten.startsWith("/")) return `${origin}${rewritten}`;
+    if (rewritten.startsWith("media/")) return `${origin}/${rewritten}`;
+    return `${publicBase}/${rewritten.replace(/^\//, "")}`;
+  }
+
   private stringifyData(data: Record<string, string>): Record<string, string> {
     const out: Record<string, string> = {};
     for (const [key, value] of Object.entries(data)) {
       if (value == null) continue;
-      out[key] = String(value);
+      const s = String(value).trim();
+      if (!s) continue;
+      out[key] = s;
     }
     return out;
   }
@@ -85,8 +106,15 @@ export class PushService implements OnModuleInit {
     let sent = 0;
     let failed = 0;
     const invalidTokens: string[] = [];
-    const data = this.stringifyData(payload.data);
-    const imageUrl = payload.imageUrl?.trim() || undefined;
+    const imageUrl = PushService.toAbsoluteImageUrl(payload.imageUrl);
+
+    const data = this.stringifyData({
+      ...payload.data,
+      title: payload.title,
+      body: payload.body,
+      ...(imageUrl ? { imageUrl } : {}),
+      click_action: "FLUTTER_NOTIFICATION_CLICK",
+    });
 
     for (let i = 0; i < unique.length; i += CHUNK) {
       const batch = unique.slice(i, i + CHUNK);
@@ -104,17 +132,21 @@ export class PushService implements OnModuleInit {
             notification: {
               channelId: "alhayaa_notifications",
               sound: "default",
+              icon: "ic_notification",
+              color: "#0B8F7A",
               ...(imageUrl ? { imageUrl } : {}),
+              clickAction: "FLUTTER_NOTIFICATION_CLICK",
             },
           },
           apns: {
             payload: {
               aps: {
                 sound: "default",
+                badge: 1,
                 ...(imageUrl ? { mutableContent: true } : {}),
               },
             },
-            ...(imageUrl ? { fcmOptions: { imageUrl } } : {}),
+            fcmOptions: imageUrl ? { imageUrl } : undefined,
           },
         });
         sent += response.successCount;
@@ -123,6 +155,7 @@ export class PushService implements OnModuleInit {
         response.responses.forEach((res, idx) => {
           if (res.success) return;
           const code = res.error?.code ?? "";
+          this.logger.warn(`FCM token fail: ${code} ${res.error?.message ?? ""}`);
           if (
             code === "messaging/registration-token-not-registered" ||
             code === "messaging/invalid-registration-token"

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/app_strings.dart';
 import '../l10n/locale_provider.dart';
+import '../theme/app_colors.dart';
 import '../../features/catalog/catalog_providers.dart';
 import '../../features/cart/widgets/cart_theme.dart';
 import '../../features/profile/widgets/profile_ui.dart';
@@ -99,9 +100,19 @@ class _LangChip extends StatelessWidget {
           height: 44,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? CartTheme.brand : ProfileUi.fieldBg,
+            gradient: selected ? AppColors.signatureGradient : null,
+            color: selected ? null : ProfileUi.fieldBg,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: selected ? CartTheme.brand : ProfileUi.fieldBorder),
+            border: Border.all(color: selected ? Colors.transparent : ProfileUi.fieldBorder),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primary.withValues(alpha: 0.22),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : null,
           ),
           child: Text(
             label,

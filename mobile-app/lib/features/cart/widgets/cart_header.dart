@@ -86,7 +86,7 @@ class CartHeader extends ConsumerWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        gradient: CartTheme.brandGradient,
+                        gradient: CartTheme.signatureGradient,
                         borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(

@@ -91,6 +91,8 @@ export interface ResolvedHomeSection {
   framePaddingH?: number;
   titleColor?: string;
   frameShadow?: boolean;
+  pattern?: string;
+  motion?: string;
 }
 
 @Injectable()
@@ -297,9 +299,10 @@ export class HomeSectionResolver {
             ? ((payload.endsAt as string) ?? ctx.flashEndsAt)
             : undefined;
         const customViewAll = (payload.viewAllQuery as string | undefined)?.trim();
+        const film = payload.layout === "film" || payload.display === "film";
         return {
           ...base,
-          layout: block.type === HomeBlockType.FLASH_SALE ? "flash" : "carousel",
+          layout: block.type === HomeBlockType.FLASH_SALE ? "flash" : film ? "film" : "carousel",
           products,
           endsAt: endsAt ?? null,
           showViewAll: payload.showViewAll !== false,
@@ -487,6 +490,7 @@ export class HomeSectionResolver {
           paddingBottom: Number(payload.paddingBottom) ?? 20,
           frameShadow: payload.shadow !== false,
           showTitle: payload.showTitle !== false,
+          pattern: (payload.pattern as string) || "none",
           children,
         };
       }
@@ -814,9 +818,10 @@ export class HomeSectionResolver {
       ? await this.prisma.media.findMany({ where: { id: { in: mediaIds } } })
       : [];
     const mediaMap = new Map(mediaList.map((m) => [m.id, m]));
-    const max = (payload.maxItems as number) ?? 12;
+    const max = payload.maxItems as number | undefined;
+    const rows = typeof max === "number" && max > 0 ? raw.slice(0, max) : raw;
 
-    return raw.slice(0, max).map((item, idx) => {
+    return rows.map((item, idx) => {
       const media = item.imageId ? mediaMap.get(item.imageId) : null;
       const imageUrl = media ? this.mediaPublicUrl(media) : null;
       const size = resolveCardSize(payload, `circle-${idx}`, idx, item.cardSize);
@@ -883,6 +888,7 @@ export class HomeSectionResolver {
       overlayStyle: (payload.overlayStyle as string) ?? "none",
       borderStyle: (payload.borderStyle as string) ?? "none",
       showShadow: payload.showShadow !== false,
+      motion: (payload.motion as string) || "forward",
       customWidth: this.optionalNumber(payload.customWidth),
       customHeight: this.optionalNumber(payload.customHeight),
       tileCornerRadius: Number(payload.tileCornerRadius) || undefined,
@@ -1095,7 +1101,7 @@ export class HomeSectionResolver {
     else if (filter === "bestSeller") where.isBestSeller = true;
     else if (filter === "featured") where.isFeatured = true;
 
-    const limit = (payload.limit as number) ?? 12;
+    const requested = Number(payload.limit);
     const orderBy =
       filter === "bestSeller"
         ? { soldCount: "desc" as const }
@@ -1104,7 +1110,7 @@ export class HomeSectionResolver {
     const products = await this.prisma.product.findMany({
       where,
       orderBy,
-      take: limit,
+      ...(Number.isFinite(requested) && requested > 0 ? { take: requested } : {}),
       include: productInclude,
     });
     return products.map((p) => withPlaceholderImages(p));

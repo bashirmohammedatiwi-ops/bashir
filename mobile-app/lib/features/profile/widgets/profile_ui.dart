@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../cart/widgets/cart_theme.dart';
+import '../../../core/theme/app_colors.dart';
 import 'account_theme.dart';
 
 /// واجهة موحّدة لصفحات الحساب — بسيطة وأنيقة بألوان اللوغو.
 abstract final class ProfileUi {
   static const bg = AccountTheme.pageBg;
   static const fieldBg = Colors.white;
-  static const fieldBorder = Color(0xFFE3EDEA);
-  static const label = Color(0xFF8A9693);
+  static const fieldBorder = Color(0xFFE7E1EF);
+  static const label = Color(0xFF8B8499);
   static const hPad = 20.0;
   static const fieldRadius = 14.0;
   static const buttonHeight = 52.0;
@@ -355,7 +356,7 @@ class ProfilePrimaryButton extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(buttonRadius),
-          gradient: enabled ? CartTheme.brandGradient : null,
+          gradient: enabled ? CartTheme.signatureGradient : null,
           color: enabled ? null : CartTheme.brandSoft,
           boxShadow: enabled
               ? [
@@ -475,8 +476,9 @@ class ProfileMenuTile extends StatelessWidget {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.12)),
         ),
         child: Icon(icon, color: color, size: 20),
       ),
@@ -491,7 +493,10 @@ class ProfileMenuTile extends StatelessWidget {
             Container(
               margin: const EdgeInsetsDirectional.only(end: 6),
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-              decoration: BoxDecoration(color: CartTheme.brand, borderRadius: BorderRadius.circular(999)),
+              decoration: BoxDecoration(
+                gradient: AppColors.signatureGradient,
+                borderRadius: BorderRadius.circular(999),
+              ),
               child: Text(
                 badge > 9 ? '9+' : '$badge',
                 style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800),

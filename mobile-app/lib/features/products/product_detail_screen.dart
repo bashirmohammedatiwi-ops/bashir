@@ -29,7 +29,9 @@ import '../cart/cart_provider.dart';
 import '../catalog/catalog_providers.dart';
 import '../catalog/recently_viewed_provider.dart';
 import '../shell/main_shell.dart';
+import '../shell/nav_tabs.dart';
 import '../wishlist/wishlist_provider.dart';
+import '../worlds/world_theme.dart';
 import 'widgets/product_detail_theme.dart';
 import 'widgets/product_shade_picker.dart';
 
@@ -75,7 +77,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       next.whenData((p) => ref.read(recentlyViewedProvider.notifier).add(p));
     });
     return Scaffold(
-      backgroundColor: AppColors.scaffold,
+      backgroundColor: context.worldTheme.canvas,
       body: async.when(
         loading: () => const ProductDetailSkeleton(),
         error: (e, _) => Scaffold(
@@ -116,7 +118,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       viewCartLabel: s.viewCart,
       onViewCart: () {
         context.go('/');
-        ref.read(navIndexProvider.notifier).state = 3;
+        ref.read(navIndexProvider.notifier).state = NavTabs.cart;
       },
     );
   }
@@ -169,13 +171,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           zoomableUrls: zoomableUrls,
           imageIndex: _imageIndex,
           pageCtrl: _pageCtrl,
+          selectedShade: _shade,
           onPageChanged: (i) => setState(() => _imageIndex = i),
         ),
         SliverToBoxAdapter(
           child: Transform.translate(
             offset: const Offset(0, -ProductDetailTheme.overlap),
             child: DecoratedBox(
-              decoration: ProductDetailTheme.sheetDecoration(),
+              decoration: ProductDetailTheme.sheetDecoration(context),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -185,13 +188,32 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       width: 32,
                       height: 3.5,
                       decoration: BoxDecoration(
-                        color: AppColors.primarySoft,
+                        color: context.worldTheme.accentSoft,
                         borderRadius: BorderRadius.circular(99),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 14),
-                  _HeroCard(
+                  const SizedBox(height: 16),
+                  _ProductTitleBlock(product: product),
+                  if (product.hasMultipleDisplayableShades) ...[
+                    Container(
+                      margin: const EdgeInsets.fromLTRB(
+                        ProductDetailTheme.padH,
+                        ProductDetailTheme.sectionGap,
+                        ProductDetailTheme.padH,
+                        0,
+                      ),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+                      decoration: ProductDetailTheme.shadeSectionDecoration(context),
+                      child: ProductShadePicker(
+                        shades: shades,
+                        selected: _shade,
+                        strings: ref.s,
+                        onSelect: (s) => setState(() => _shade = s),
+                      ),
+                    ),
+                  ],
+                  _ProductCommerceBlock(
                     product: product,
                     shade: _shade,
                     quantity: _quantity,
@@ -200,23 +222,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       setState(() => _quantity = v);
                     },
                   ),
-                  if (product.hasMultipleDisplayableShades)
-                    Container(
-                      margin: const EdgeInsets.fromLTRB(
-                        ProductDetailTheme.padH,
-                        ProductDetailTheme.sectionGap,
-                        ProductDetailTheme.padH,
-                        0,
-                      ),
-                      padding: const EdgeInsets.all(16),
-                      decoration: ProductDetailTheme.shadeSectionDecoration(),
-                      child: ProductShadePicker(
-                        shades: shades,
-                        selected: _shade,
-                        strings: ref.s,
-                        onSelect: (s) => setState(() => _shade = s),
-                      ),
-                    ),
                   const _TrustStrip(),
                   if (product.localizedDescription(ref.watch(languageCodeProvider)).isNotEmpty ||
                       product.howToUse.isNotEmpty ||
@@ -251,6 +256,7 @@ class _GalleryAppBar extends ConsumerWidget {
   final List<String> zoomableUrls;
   final int imageIndex;
   final PageController pageCtrl;
+  final ProductShade? selectedShade;
   final ValueChanged<int> onPageChanged;
 
   const _GalleryAppBar({
@@ -259,6 +265,7 @@ class _GalleryAppBar extends ConsumerWidget {
     required this.zoomableUrls,
     required this.imageIndex,
     required this.pageCtrl,
+    this.selectedShade,
     required this.onPageChanged,
   });
 
@@ -273,10 +280,12 @@ class _GalleryAppBar extends ConsumerWidget {
     return SliverAppBar(
       pinned: true,
       expandedHeight: Responsive.galleryExpandedHeight(context, hasThumbs: hasThumbs),
-      backgroundColor: ProductDetailTheme.galleryBg,
+      backgroundColor: ProductDetailTheme.galleryBg(context),
       surfaceTintColor: Colors.transparent,
       leading: _CircleAction(
-        icon: Icons.arrow_forward_rounded,
+        icon: Directionality.of(context) == TextDirection.rtl
+            ? Icons.arrow_forward_ios_rounded
+            : Icons.arrow_back_ios_new_rounded,
         onTap: () => context.pop(),
       ),
           actions: [
@@ -293,7 +302,7 @@ class _GalleryAppBar extends ConsumerWidget {
         ),
         _CircleAction(
           icon: wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-          color: wished ? AppColors.sale : AppColors.textPrimary,
+          color: wished ? context.worldTheme.accent : context.worldTheme.ink,
           onTap: () async {
             HapticFeedback.selectionClick();
                 if (!ref.read(authProvider).isAuthenticated) {
@@ -307,9 +316,9 @@ class _GalleryAppBar extends ConsumerWidget {
           ],
           flexibleSpace: FlexibleSpaceBar(
         background: DecoratedBox(
-          decoration: const BoxDecoration(
-            color: ProductDetailTheme.galleryBg,
-            border: Border(bottom: BorderSide(color: AppColors.hairline, width: 0.5)),
+          decoration: BoxDecoration(
+            color: ProductDetailTheme.galleryBg(context),
+            border: Border(bottom: BorderSide(color: context.worldTheme.hairline, width: 0.5)),
           ),
           child: Column(
               children: [
@@ -355,7 +364,7 @@ class _GalleryAppBar extends ConsumerWidget {
                             _GalleryBadge(label: s.newBadge, color: AppColors.ink),
                           if (product.isBestSeller) ...[
                             const SizedBox(width: 6),
-                            _GalleryBadge(label: s.bestSeller, color: AppColors.accent),
+                            _GalleryBadge(label: s.bestSeller, color: context.worldTheme.accentDark),
                           ],
                         ],
                       ),
@@ -378,6 +387,7 @@ class _GalleryAppBar extends ConsumerWidget {
                 ),
               ),
               if (hasThumbs) ...[
+                if (selectedShade != null) _GalleryShadeAccent(shade: selectedShade!),
                 SizedBox(
                   height: 58,
                   child: ListView.separated(
@@ -397,12 +407,13 @@ class _GalleryAppBar extends ConsumerWidget {
                           duration: const Duration(milliseconds: 200),
                           width: 54,
                           decoration: BoxDecoration(
-                      color: Colors.white,
+                            color: context.worldTheme.blush,
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: active ? AppColors.primary : AppColors.hairline,
+                              color: active ? context.worldTheme.accent : context.worldTheme.hairline,
                               width: active ? 1.8 : 0.8,
                             ),
+                            boxShadow: active ? context.worldTheme.cardShadow : null,
                           ),
                           clipBehavior: Clip.antiAlias,
                           child: Padding(
@@ -418,24 +429,59 @@ class _GalleryAppBar extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 10),
-              ] else if (gallery.length > 1)
+              ] else if (gallery.length > 1) ...[
+                  if (selectedShade != null) _GalleryShadeAccent(shade: selectedShade!),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8, top: 4),
                     child: AnimatedSmoothIndicator(
                     activeIndex: imageIndex,
                       count: gallery.length,
-                      effect: const WormEffect(
+                      effect: WormEffect(
                         dotHeight: 7,
                         dotWidth: 7,
-                        activeDotColor: AppColors.primary,
-                        dotColor: AppColors.border,
+                        activeDotColor: context.worldTheme.accent,
+                        dotColor: context.worldTheme.hairline,
                       ),
                     ),
                   ),
+              ] else if (selectedShade != null) ...[
+                _GalleryShadeAccent(shade: selectedShade!),
+                const SizedBox(height: 8),
               ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// شريط التدرج المختار — يربط المعرض باختيار الدرجة.
+class _GalleryShadeAccent extends StatelessWidget {
+  final ProductShade shade;
+
+  const _GalleryShadeAccent({required this.shade});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = shadeGradientColors(shade);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(99),
+        child: SizedBox(
+          height: 5,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+                colors: colors,
+              ),
             ),
           ),
         ),
+      ),
     );
   }
 }
@@ -448,18 +494,18 @@ class _CircleAction extends StatelessWidget {
   const _CircleAction({
     required this.icon,
     required this.onTap,
-    this.color = AppColors.textPrimary,
+    this.color = AppColors.ink,
   });
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Material(
-        color: Colors.white,
+        color: context.worldTheme.surface,
         elevation: 0,
-        shadowColor: AppColors.ink.withValues(alpha: 0.08),
+        shadowColor: context.worldTheme.accentDark.withValues(alpha: 0.1),
         shape: CircleBorder(
-          side: BorderSide(color: AppColors.hairline.withValues(alpha: 0.7), width: 0.6),
+          side: BorderSide(color: context.worldTheme.hairline.withValues(alpha: 0.7), width: 0.6),
         ),
         child: InkWell(
           customBorder: const CircleBorder(),
@@ -523,49 +569,40 @@ class _SectionCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.fromLTRB(ProductDetailTheme.padH, ProductDetailTheme.sectionGap, ProductDetailTheme.padH, 0),
       padding: padding ?? const EdgeInsets.all(16),
-      decoration: ProductDetailTheme.sectionDecoration(),
+      decoration: ProductDetailTheme.sectionDecoration(context),
       child: child,
     );
   }
 }
 
-/// بطاقة رئيسية — الاسم، السعر، الكمية في مكان واحد.
-class _HeroCard extends ConsumerWidget {
+/// عنوان المنتج — بسيط وواضح.
+class _ProductTitleBlock extends ConsumerWidget {
   final Product product;
-  final ProductShade? shade;
-  final int quantity;
-  final ValueChanged<int> onQuantityChanged;
 
-  const _HeroCard({
-    required this.product,
-    required this.shade,
-    required this.quantity,
-    required this.onQuantityChanged,
-  });
+  const _ProductTitleBlock({required this.product});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lang = ref.watch(languageCodeProvider);
     final s = ref.s;
-    final price = shade?.price ?? product.price;
+    final t = context.worldTheme;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: ProductDetailTheme.padH),
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
-      decoration: ProductDetailTheme.heroCardDecoration(),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(ProductDetailTheme.padH, 0, ProductDetailTheme.padH, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (product.brandNameFor(lang).isNotEmpty)
-            Text(product.brandNameFor(lang).toUpperCase(), style: ProductDetailTheme.brandStyle),
-          if (product.brandNameFor(lang).isNotEmpty) const SizedBox(height: 6),
+            Text(product.brandNameFor(lang).toUpperCase(), style: ProductDetailTheme.brandStyle(context)),
+          if (product.brandNameFor(lang).isNotEmpty) const SizedBox(height: 8),
           Text(
             product.localizedName(lang),
             style: AppTypography.sectionTitle.copyWith(
-              fontSize: 19,
-              height: 1.35,
-              letterSpacing: -0.35,
+              fontSize: 21,
+              height: 1.3,
+              letterSpacing: -0.45,
               fontWeight: FontWeight.w800,
+              color: t.ink,
             ),
           ),
           if (product.rating > 0) ...[
@@ -576,18 +613,18 @@ class _HeroCard extends ConsumerWidget {
                 const SizedBox(width: 4),
                 Text(
                   product.rating.toStringAsFixed(1),
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13),
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: t.ink),
                 ),
                 const SizedBox(width: 6),
                 Text(
                   s.reviewCount(product.reviewCount),
-                  style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  style: TextStyle(color: t.inkMuted, fontSize: 12),
                 ),
                 if (product.soldCount > 0) ...[
                   const SizedBox(width: 8),
                   Text(
                     '· ${formatNumber(product.soldCount)}+ ${s.sales}',
-                    style: const TextStyle(color: AppColors.textMuted, fontSize: 11.5),
+                    style: TextStyle(color: t.inkMuted, fontSize: 11.5),
                   ),
                 ],
               ],
@@ -596,10 +633,42 @@ class _HeroCard extends ConsumerWidget {
             const SizedBox(height: 8),
             Text(
               '${formatNumber(product.soldCount)}+ ${s.sales}',
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 11.5, fontWeight: FontWeight.w600),
+              style: TextStyle(color: t.inkMuted, fontSize: 11.5, fontWeight: FontWeight.w600),
             ),
           ],
-          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+}
+
+/// السعر، المخزون، والكمية — بطاقة خفيفة.
+class _ProductCommerceBlock extends ConsumerWidget {
+  final Product product;
+  final ProductShade? shade;
+  final int quantity;
+  final ValueChanged<int> onQuantityChanged;
+
+  const _ProductCommerceBlock({
+    required this.product,
+    required this.shade,
+    required this.quantity,
+    required this.onQuantityChanged,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final price = shade?.price ?? product.price;
+    final t = context.worldTheme;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(ProductDetailTheme.padH, ProductDetailTheme.sectionGap, ProductDetailTheme.padH, 0),
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+      decoration: ProductDetailTheme.heroCardDecoration(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Wrap(
             crossAxisAlignment: WrapCrossAlignment.end,
             spacing: 8,
@@ -611,7 +680,7 @@ class _HeroCard extends ConsumerWidget {
                   fontSize: Responsive.priceDisplaySize(context),
                   fontWeight: FontWeight.w900,
                   letterSpacing: -0.6,
-                  color: product.hasDiscount ? AppColors.primary : AppColors.textPrimary,
+                  color: product.hasDiscount ? AppColors.sale : t.ink,
                 ),
               ),
               if (product.hasDiscount) ...[
@@ -619,8 +688,8 @@ class _HeroCard extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 3),
                   child: Text(
                     formatPrice(product.originalPrice),
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
+                    style: TextStyle(
+                      color: t.inkMuted,
                       decoration: TextDecoration.lineThrough,
                       fontSize: 12.5,
                     ),
@@ -629,13 +698,13 @@ class _HeroCard extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
+                    color: t.accentLight,
                     borderRadius: BorderRadius.circular(99),
                   ),
                   child: Text(
                     s.savePercent(product.discountPercent),
-                    style: const TextStyle(
-                      color: AppColors.primaryDark,
+                    style: TextStyle(
+                      color: t.accentDark,
                       fontSize: 10,
                       fontWeight: FontWeight.w800,
                     ),
@@ -644,34 +713,33 @@ class _HeroCard extends ConsumerWidget {
               ],
             ],
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           _StockBadge(stock: shade?.stock ?? product.stock),
           const SizedBox(height: 14),
           Row(
             children: [
-              Text(s.quantity, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+              Text(s.quantity, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: t.inkSoft)),
               const Spacer(),
               _QuantityStepper(quantity: quantity, onChanged: onQuantityChanged),
             ],
           ),
           if (product.pointsEarned > 0) ...[
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               decoration: BoxDecoration(
-                color: AppColors.accentSoft.withValues(alpha: 0.55),
+                color: t.accentLight.withValues(alpha: 0.45),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.accent.withValues(alpha: 0.15)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.stars_rounded, color: AppColors.accent, size: 16),
+                  Icon(Icons.stars_rounded, color: t.accentDark, size: 16),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       s.earnPoints(product.pointsEarned),
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11.5),
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11.5, color: t.inkSoft),
                     ),
                   ),
                 ],
@@ -729,9 +797,9 @@ class _QuantityStepper extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.elevated,
+        color: context.worldTheme.canvasWarm,
         borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: AppColors.primarySoft.withValues(alpha: 0.8)),
+        border: Border.all(color: context.worldTheme.accentSoft.withValues(alpha: 0.8)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -778,7 +846,7 @@ class _StepBtn extends StatelessWidget {
           child: Icon(
             icon,
             size: 18,
-            color: enabled ? AppColors.primaryDark : AppColors.textMuted,
+            color: enabled ? context.worldTheme.accentDark : context.worldTheme.inkMuted,
           ),
         ),
     );
@@ -795,15 +863,15 @@ class _TrustStrip extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(ProductDetailTheme.padH, ProductDetailTheme.sectionGap, ProductDetailTheme.padH, 0),
       child: DecoratedBox(
-        decoration: ProductDetailTheme.sectionDecoration(),
+        decoration: ProductDetailTheme.sectionDecoration(context),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
           child: Row(
             children: [
               Expanded(child: _TrustChip(icon: Icons.verified_outlined, label: s.authentic100)),
-              Container(width: 1, height: 28, color: AppColors.divider),
+              Container(width: 1, height: 28, color: context.worldTheme.divider),
               Expanded(child: _TrustChip(icon: Icons.local_shipping_outlined, label: s.fastDelivery)),
-              Container(width: 1, height: 28, color: AppColors.divider),
+              Container(width: 1, height: 28, color: context.worldTheme.divider),
               Expanded(child: _TrustChip(icon: Icons.payments_outlined, label: s.securePayment)),
             ],
           ),
@@ -824,18 +892,18 @@ class _TrustChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       child: Column(
         children: [
-          Icon(icon, color: AppColors.accent, size: 17),
+          Icon(icon, color: context.worldTheme.accentDark, size: 17),
           const SizedBox(height: 4),
           Text(
             label,
             textAlign: TextAlign.center,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 9,
+            style: TextStyle(
+              fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: AppColors.textSecondary,
-              height: 1.2,
+              color: context.worldTheme.inkSoft,
+              height: 1.25,
             ),
           ),
         ],
@@ -866,9 +934,9 @@ class _InfoSections extends ConsumerWidget {
       children: [
         for (var i = 0; i < sections.length; i++) ...[
           if (i > 0)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 14),
-              child: Divider(height: 1, thickness: 0.6, color: AppColors.divider),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Divider(height: 1, thickness: 0.6, color: context.worldTheme.divider),
             ),
           _InfoExpandable(
             icon: sections[i].$1,
@@ -916,10 +984,10 @@ class _InfoExpandableState extends State<_InfoExpandable> {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
+                    color: context.worldTheme.accentLight,
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(widget.icon, size: 17, color: AppColors.primary),
+                  child: Icon(widget.icon, size: 17, color: context.worldTheme.accent),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -931,9 +999,9 @@ class _InfoExpandableState extends State<_InfoExpandable> {
                 AnimatedRotation(
                   turns: _expanded ? 0.5 : 0,
                   duration: const Duration(milliseconds: 220),
-                  child: const Icon(
+                  child: Icon(
                     Icons.keyboard_arrow_down_rounded,
-                    color: AppColors.textMuted,
+                    color: context.worldTheme.inkMuted,
                   ),
                 ),
               ],
@@ -948,9 +1016,9 @@ class _InfoExpandableState extends State<_InfoExpandable> {
               alignment: AlignmentDirectional.centerStart,
               child: Text(
                 widget.body,
-                style: const TextStyle(
+                style: TextStyle(
                   height: 1.7,
-                  color: AppColors.textSecondary,
+                  color: context.worldTheme.inkSoft,
                   fontSize: 13.5,
                 ),
               ),
@@ -1025,6 +1093,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
     final authed = ref.watch(authProvider).isAuthenticated;
     final product = widget.product;
     final s = ref.s;
+    final t = context.worldTheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1034,7 +1103,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
             Expanded(
               child: Text(
                 s.ratingsTitle,
-                style: ProductDetailTheme.sectionTitleStyle,
+                style: ProductDetailTheme.sectionTitleStyle(context),
               ),
             ),
               TextButton.icon(
@@ -1046,7 +1115,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                 setState(() => _showForm = !_showForm);
               },
               style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
+                foregroundColor: context.worldTheme.accent,
                 padding: const EdgeInsets.symmetric(horizontal: 8),
               ),
               icon: Icon(_showForm ? Icons.close_rounded : Icons.rate_review_outlined, size: 17),
@@ -1062,19 +1131,19 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
           Container(
             padding: const EdgeInsets.all(13),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFFBF2),
+              color: t.accentLight,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFF5E9CC)),
+              border: Border.all(color: t.accentSoft),
             ),
             child: Row(
               children: [
                 Text(
                   product.rating.toStringAsFixed(1),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.w900,
                     height: 1,
-                    color: AppColors.textPrimary,
+                    color: context.worldTheme.ink,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -1096,7 +1165,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                     const SizedBox(height: 3),
                     Text(
                       s.fromReviews(product.reviewCount),
-                      style: const TextStyle(fontSize: 11.5, color: AppColors.textMuted),
+                      style: TextStyle(fontSize: 11.5, color: context.worldTheme.inkMuted),
                     ),
                   ],
                 ),
@@ -1114,7 +1183,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
             allowHalfRating: true,
             itemCount: 5,
               itemSize: 32,
-            unratedColor: AppColors.border,
+            unratedColor: context.worldTheme.hairline,
             itemBuilder: (_, __) => const Icon(Icons.star_rounded, color: AppColors.star),
             onRatingUpdate: (v) => setState(() => _rating = v),
           ),
@@ -1129,23 +1198,38 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
           SizedBox(
             width: double.infinity,
             height: 46,
-            child: ElevatedButton(
-              onPressed: _submitting ? null : _submit,
-              child: _submitting
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : Text(s.submitReview),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: context.worldTheme.signatureGradient,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: _submitting ? null : _submit,
+                  child: Center(
+                    child: _submitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : Text(
+                            s.submitReview,
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                          ),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
         const SizedBox(height: 6),
         async.when(
-          loading: () => const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
+          loading: () => Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
             child: Center(
-                child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2)),
+                child: CircularProgressIndicator(color: context.worldTheme.accent, strokeWidth: 2)),
           ),
           error: (e, _) => ErrorView(
             message: friendlyError(e),
@@ -1157,7 +1241,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
                   authed ? s.beFirstToReview : s.loginToReview,
-                  style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  style: TextStyle(color: context.worldTheme.inkMuted, fontSize: 13),
                 ),
               );
             }
@@ -1184,7 +1268,7 @@ class _ReviewTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.scaffold,
+        color: context.worldTheme.canvas,
         borderRadius: BorderRadius.circular(13),
       ),
       child: Column(
@@ -1194,10 +1278,10 @@ class _ReviewTile extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 16,
-                backgroundColor: AppColors.primaryLight,
+                backgroundColor: context.worldTheme.accentLight,
                 child: Text(
                   review.userName.isNotEmpty ? review.userName[0] : '؟',
-                  style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800),
+                  style: TextStyle(color: context.worldTheme.accent, fontWeight: FontWeight.w800),
                 ),
               ),
               const SizedBox(width: 9),
@@ -1208,7 +1292,7 @@ class _ReviewTile extends StatelessWidget {
                     Text(review.userName,
                         style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
                     Text(review.dateLabel,
-                        style: const TextStyle(fontSize: 11, color: AppColors.textMuted)),
+                        style: TextStyle(fontSize: 11, color: context.worldTheme.inkMuted)),
                   ],
                 ),
               ),
@@ -1217,7 +1301,7 @@ class _ReviewTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
-                  border: Border.all(color: AppColors.hairline, width: 0.7),
+                  border: Border.all(color: context.worldTheme.hairline, width: 0.7),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -1236,8 +1320,8 @@ class _ReviewTile extends StatelessWidget {
           if (review.comment.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(review.comment,
-                style: const TextStyle(
-                    height: 1.55, color: AppColors.textSecondary, fontSize: 13)),
+                style: TextStyle(
+                    height: 1.55, color: context.worldTheme.inkSoft, fontSize: 13)),
           ],
         ],
       ),
@@ -1274,7 +1358,7 @@ class _SimilarProducts extends ConsumerWidget {
               ),
               child: Text(
                 s.youMayAlsoLike,
-                style: ProductDetailTheme.sectionTitleStyle,
+                style: ProductDetailTheme.sectionTitleStyle(context),
               ),
             ),
             HorizontalProductList(
@@ -1315,7 +1399,7 @@ class _BottomBar extends ConsumerWidget {
 
     return Container(
       padding: EdgeInsets.fromLTRB(narrow ? 14 : 18, 12, narrow ? 14 : 18, 12),
-      decoration: ProductDetailTheme.bottomBarDecoration(),
+      decoration: ProductDetailTheme.bottomBarDecoration(context),
       child: SafeArea(
         top: false,
         child: Row(
@@ -1326,7 +1410,7 @@ class _BottomBar extends ConsumerWidget {
               children: [
                 Text(
                   quantity > 1 ? s.totalWithQty(quantity) : s.total,
-                  style: const TextStyle(fontSize: 10.5, color: AppColors.textMuted, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 10.5, color: context.worldTheme.inkMuted, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -1335,7 +1419,7 @@ class _BottomBar extends ConsumerWidget {
                     fontSize: narrow ? 17 : 19,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.4,
-                    color: AppColors.textPrimary,
+                    color: context.worldTheme.ink,
                   ),
                 ),
               ],
@@ -1346,9 +1430,18 @@ class _BottomBar extends ConsumerWidget {
                 height: narrow ? 46 : 50,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    gradient: enabled ? AppColors.primaryGradient : null,
-                    color: enabled ? null : AppColors.divider,
+                    gradient: enabled ? context.worldTheme.signatureGradient : null,
+                    color: enabled ? null : context.worldTheme.divider,
                     borderRadius: BorderRadius.circular(999),
+                    boxShadow: enabled
+                        ? [
+                            BoxShadow(
+                              color: context.worldTheme.accent.withValues(alpha: 0.28),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ]
+                        : null,
                   ),
                   child: Material(
                     color: Colors.transparent,
@@ -1361,7 +1454,7 @@ class _BottomBar extends ConsumerWidget {
                           Icon(
                             Icons.shopping_bag_rounded,
                             size: narrow ? 18 : 20,
-                            color: enabled ? Colors.white : AppColors.textMuted,
+                            color: enabled ? Colors.white : context.worldTheme.inkMuted,
                           ),
                           SizedBox(width: narrow ? 6 : 8),
                           Flexible(
@@ -1372,7 +1465,7 @@ class _BottomBar extends ConsumerWidget {
                                 style: TextStyle(
                                   fontWeight: FontWeight.w800,
                                   fontSize: narrow ? 13 : 14,
-                                  color: enabled ? Colors.white : AppColors.textMuted,
+                                  color: enabled ? Colors.white : context.worldTheme.inkMuted,
                                 ),
                               ),
                             ),

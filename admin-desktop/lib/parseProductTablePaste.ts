@@ -10,6 +10,8 @@ export type PastedProductRow = {
   category: string;
   subcategory: string;
   tertiary: string;
+  /** Optional public image URL — uploaded during bulk import. */
+  imageUrl: string;
 };
 
 function splitTableCells(line: string): string[] {
@@ -45,12 +47,14 @@ const EMPTY_MAP: Record<ColKey, number> = {
   category: -1,
   subcategory: -1,
   tertiary: -1,
+  imageUrl: -1,
 };
 
 function classifyHeaderCell(cell: string): ColKey | null {
   const c = cell.toLowerCase().replace(/\s+/g, " ").trim();
   if (!c) return null;
   if (/باركود|barcode|ean|upc/.test(c)) return "barcode";
+  if (/صورة|image(\s*url)?|img(\s*url)?|photo|thumbnail|thumb/.test(c)) return "imageUrl";
   if (/وصف/.test(c) && /(إنكل|انك|engl|en\b)/.test(c)) return "descriptionEn";
   if (/وصف/.test(c) && /(عربي|arab|ar\b)/.test(c)) return "descriptionAr";
   if (/^وصف$|description/.test(c)) return "descriptionAr";
@@ -105,7 +109,7 @@ function cellAt(cells: string[], index: number): string {
 /**
  * Parse a GPT / Excel / Markdown product table paste.
  * Expected columns (Arabic headers OK):
- * barcode | nameAr | nameEn | brand | descriptionAr | descriptionEn | category | subcategory | tertiary
+ * barcode | nameAr | nameEn | brand | descriptionAr | descriptionEn | category | subcategory | tertiary | imageUrl
  */
 export function parseProductTablePaste(raw: string): PastedProductRow[] {
   const text = String(raw ?? "").trim();
@@ -148,6 +152,9 @@ export function parseProductTablePaste(raw: string): PastedProductRow[] {
     const nameEn = cellAt(cells, colMap.nameEn);
     if (!nameAr && !nameEn) continue;
 
+    const imageRaw = cellAt(cells, colMap.imageUrl);
+    const imageUrl = /^https?:\/\//i.test(imageRaw) ? imageRaw : "";
+
     seen.add(barcode);
     out.push({
       barcode,
@@ -159,6 +166,7 @@ export function parseProductTablePaste(raw: string): PastedProductRow[] {
       category: cellAt(cells, colMap.category),
       subcategory: cellAt(cells, colMap.subcategory),
       tertiary: cellAt(cells, colMap.tertiary),
+      imageUrl,
     });
   }
 

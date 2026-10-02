@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/responsive.dart';
 import '../../home/widgets/home_theme.dart';
 
 /// ثيم السلة — ألوان اللوغو (تركواز + فحم) بأشكال ناعمة.
 abstract final class CartTheme {
   // ألوان اللوغو
-  static const brand = Color(0xFF3A9E8F);
-  static const brandDark = Color(0xFF2F7F73);
-  static const brandSoft = Color(0xFFE8F5F3);
-  static const brandWash = Color(0xFFF4FAF9);
-  static const charcoal = Color(0xFF2D2D2D);
+  static const brand = Color(0xFF9B6BD8);
+  static const brandDark = Color(0xFF6E45B0);
+  static const brandSoft = Color(0xFFEFE6FC);
+  static const brandWash = Color(0xFFF8F5FE);
+  static const charcoal = Color(0xFF2A2431);
 
-  static const bg = Color(0xFFFAFCFB);
+  static const bg = Color(0xFFFAF8FD);
   static const card = Colors.white;
   static const radiusXl = 26.0;
   static const radiusLg = 20.0;
@@ -27,6 +28,8 @@ abstract final class CartTheme {
     end: Alignment.bottomRight,
     colors: [brand, brandDark],
   );
+
+  static const signatureGradient = AppColors.signatureGradient;
 
   static double shellNavReserve(BuildContext context) {
     return Responsive.shellBottomReserve(context);

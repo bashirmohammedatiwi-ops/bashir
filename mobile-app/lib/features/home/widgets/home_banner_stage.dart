@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme/ad_slots.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/banner.dart';
 import '../../../data/models/home_section.dart';
+import '../../worlds/world_theme.dart';
 import '../home_link.dart';
 import 'home_theme.dart';
 
@@ -46,12 +46,13 @@ class HomeBannerStage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     final screenW = MediaQuery.sizeOf(context).width;
     final cardW = width ??
         (layout.fullBleed ? screenW : screenW - HomeTheme.paddingH * 2);
     final cardH = layout.heightFor(cardW);
     final radius = layout.radius;
-    final tint = _tintFor(sceneIndex, banner);
+    final tint = _tintFor(context, sceneIndex, banner);
 
     Widget card = Material(
       color: Colors.transparent,
@@ -67,17 +68,19 @@ class HomeBannerStage extends StatelessWidget {
           width: cardW,
           height: cardH,
           decoration: BoxDecoration(
-            color: HomeTheme.pearl,
+            color: t.surface,
             borderRadius: BorderRadius.circular(radius),
             border: layout.fullBleed
                 ? null
-                : Border.all(color: HomeTheme.divider),
+                : Border.all(color: t.hairline.withValues(alpha: 0.75)),
+            boxShadow: layout.fullBleed ? null : t.cardShadow,
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(radius),
             child: _ImageOnlyLayout(
               banner: banner,
               tint: tint,
+              imageBg: t.accentLight,
             ),
           ),
         ),
@@ -94,30 +97,31 @@ class HomeBannerStage extends StatelessWidget {
     return card;
   }
 
-  static _BannerTint _tintFor(int index, AppBanner banner) {
+  static _BannerTint _tintFor(BuildContext context, int index, AppBanner banner) {
+    final t = context.worldTheme;
     final custom = parseHexColor(banner.backgroundColor);
     if (custom != null) {
       return _BannerTint(
-        bg: Color.lerp(custom, Colors.white, 0.78)!,
-        border: Color.lerp(custom, Colors.white, 0.62)!.withValues(alpha: 0.85),
+        bg: Color.lerp(custom, t.canvas, 0.78)!,
+        border: Color.lerp(custom, t.canvas, 0.62)!.withValues(alpha: 0.85),
         accent: custom,
       );
     }
-    const presets = [
+    final presets = [
       _BannerTint(
-        bg: Color(0xFFF8F0F2),
-        border: Color(0xFFEED6DE),
-        accent: AppColors.primary,
+        bg: t.accentLight,
+        border: t.accentSoft,
+        accent: t.accent,
       ),
       _BannerTint(
-        bg: Color(0xFFF0F4EE),
-        border: Color(0xFFD4E0CC),
-        accent: HomeTheme.sage,
+        bg: t.canvasWarm,
+        border: t.hairline,
+        accent: t.accentDark,
       ),
       _BannerTint(
-        bg: Color(0xFFF4F0EA),
-        border: Color(0xFFE0D5C8),
-        accent: Color(0xFF8B7355),
+        bg: Color.lerp(t.accent, t.canvas, 0.88)!,
+        border: t.divider,
+        accent: t.accentDark,
       ),
     ];
     return presets[index % presets.length];
@@ -139,10 +143,12 @@ class _BannerTint {
 class _ImageOnlyLayout extends StatelessWidget {
   final AppBanner banner;
   final _BannerTint tint;
+  final Color imageBg;
 
   const _ImageOnlyLayout({
     required this.banner,
     required this.tint,
+    required this.imageBg,
   });
 
   @override
@@ -172,7 +178,7 @@ class _ImageOnlyLayout extends StatelessWidget {
         width: constraints.maxWidth,
         height: constraints.maxHeight,
         fit: BoxFit.contain,
-        backgroundColor: HomeTheme.pearl,
+        backgroundColor: imageBg,
       ),
     );
   }

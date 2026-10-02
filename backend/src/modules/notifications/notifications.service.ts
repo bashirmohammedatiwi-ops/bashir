@@ -229,7 +229,8 @@ export class NotificationsService {
     }
 
     const link = await this.resolveLink(dto);
-    const imageUrl = dto.imageUrl?.trim() || link.imageUrl || null;
+    const imageUrl =
+      PushService.toAbsoluteImageUrl(dto.imageUrl?.trim() || link.imageUrl || null) ?? null;
     const dataPayload = {
       ...this.buildDataPayload(link, imageUrl),
       ...(dto.data ?? {}),
@@ -296,20 +297,25 @@ export class NotificationsService {
     const tokens = devices.map((d) => d.token);
 
     const dataPayload = (notification.data as Record<string, string>) ?? {};
+    const absoluteImage = PushService.toAbsoluteImageUrl(notification.imageUrl) ?? null;
     const pushResult = await this.push.sendToTokens(tokens, {
       title: notification.title,
       body: notification.body,
-      imageUrl: notification.imageUrl,
+      imageUrl: absoluteImage,
       data: {
-        ...dataPayload,
+        ...Object.fromEntries(
+          Object.entries(dataPayload).map(([k, v]) => [k, v == null ? "" : String(v)]),
+        ),
         notificationId: notification.id,
         type: notification.type,
-        linkType: notification.linkType,
+        title: notification.title,
+        body: notification.body,
+        linkType: String(notification.linkType ?? "NONE"),
         ...(notification.linkId ? { linkId: notification.linkId } : {}),
         ...(notification.linkSlug ? { linkSlug: notification.linkSlug } : {}),
         ...(notification.linkLabel ? { linkLabel: notification.linkLabel } : {}),
         ...(notification.externalUrl ? { externalUrl: notification.externalUrl } : {}),
-        ...(notification.imageUrl ? { imageUrl: notification.imageUrl } : {}),
+        ...(absoluteImage ? { imageUrl: absoluteImage } : {}),
       },
     });
 

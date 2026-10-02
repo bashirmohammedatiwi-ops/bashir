@@ -3,13 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/card_sizes.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/home_section.dart';
 import '../../catalog/catalog_providers.dart';
+import '../../worlds/world_theme.dart';
 import '../home_link.dart';
 import '../home_category_filter.dart';
 import '../widgets/home_category_grid.dart';
@@ -52,7 +52,8 @@ class MakeupCategoriesSection extends ConsumerWidget {
     final apiCats = ref.watch(categoriesProvider).valueOrNull;
     final visible = filterStorefrontCategories(section.categories, apiCats);
     if (visible.isEmpty) return const SizedBox.shrink();
-    final accent = parseHexColor(section.backgroundColor) ?? AppColors.primaryLight;
+    final t = context.worldTheme;
+    final accent = parseHexColor(section.backgroundColor) ?? t.accentLight;
 
     final maxH = visible
         .map((c) => resolveItemCardSize(
@@ -131,7 +132,7 @@ class _CategoryTile extends StatelessWidget {
                 Container(
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [Color(0xFFFCE4EC), Color(0xFFFFF5F7)],
+                      colors: [Color(0xFFFDEAF2), Color(0xFFFAF6FE)],
                     ),
                   ),
                   alignment: Alignment.center,
@@ -193,23 +194,29 @@ class _MakeupCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     final displayName = category.localizedName(lang);
     return GestureDetector(
       onTap: () => openCategoryLink(context, category),
       child: Container(
         width: width,
         height: height,
-        decoration: HomeTheme.cardDecoration(),
+        decoration: BoxDecoration(
+          color: t.surface,
+          borderRadius: BorderRadius.circular(HomeTheme.cardRadius),
+          border: Border.all(color: t.divider),
+          boxShadow: t.cardShadow,
+        ),
         clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
             Expanded(
               child: Container(
                 width: double.infinity,
-                color: HomeTheme.mist,
+                color: t.accentLight,
                 child: category.imageUrl.isNotEmpty
                     ? AppNetworkImage(url: category.imageUrl, fit: BoxFit.contain)
-                    : const Icon(Icons.brush_outlined, color: AppColors.primary, size: 36),
+                    : Icon(Icons.brush_outlined, color: t.accent, size: 36),
               ),
             ),
             Padding(
@@ -218,7 +225,7 @@ class _MakeupCard extends StatelessWidget {
                 displayName,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: HomeTheme.chipLabel.copyWith(fontSize: 12),
+                style: HomeTheme.chipLabel.copyWith(fontSize: 12, color: t.ink),
               ),
             ),
           ],

@@ -3,12 +3,45 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 
+/// خط التطبيق كله. تغييره هنا يغيّر كل الشاشات.
+/// نستدعي الخط بالاسم مباشرة: البحث بالاسم يدخل كتالوج Google Fonts كله للتطبيق ويكبّره.
+TextStyle appFont({
+  TextStyle? textStyle,
+  Color? color,
+  double? fontSize,
+  FontWeight? fontWeight,
+  FontStyle? fontStyle,
+  double? height,
+  double? letterSpacing,
+  TextDecoration? decoration,
+  Color? decorationColor,
+  List<Shadow>? shadows,
+  List<FontFeature>? fontFeatures,
+}) {
+  return GoogleFonts.tajawal(
+    fontFeatures: fontFeatures,
+    textStyle: textStyle,
+    color: color,
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    fontStyle: fontStyle,
+    height: height,
+    letterSpacing: letterSpacing,
+    decoration: decoration,
+    decorationColor: decorationColor,
+    shadows: shadows,
+  );
+}
+
+TextTheme appTextTheme(TextTheme base) => GoogleFonts.tajawalTextTheme(base);
+
 /// تحميل الخطوط مسبقاً لتجنب وميض تغيّر الخط عند فتح التطبيق أو تبديل اللغة.
 Future<void> preloadAppFonts() {
   return GoogleFonts.pendingFonts([
-    GoogleFonts.cairo(),
-    GoogleFonts.cairo(fontWeight: FontWeight.w700),
-    GoogleFonts.cairo(fontWeight: FontWeight.w800),
+    appFont(),
+    appFont(fontWeight: FontWeight.w500),
+    appFont(fontWeight: FontWeight.w700),
+    appFont(fontWeight: FontWeight.w800),
     GoogleFonts.elMessiri(fontWeight: FontWeight.w700),
     GoogleFonts.cormorantGaramond(fontWeight: FontWeight.w600),
     GoogleFonts.cormorantGaramond(fontWeight: FontWeight.w700),

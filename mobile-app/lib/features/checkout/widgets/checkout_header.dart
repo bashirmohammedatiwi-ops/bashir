@@ -88,11 +88,21 @@ class _StepDot extends StatelessWidget {
             height: 10,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: active ? CheckoutTheme.brand : CheckoutTheme.brandSoft,
+              gradient: active ? CheckoutTheme.brandGradient : null,
+              color: active ? null : CheckoutTheme.brandSoft,
               border: Border.all(
-                color: active ? CheckoutTheme.brandDark : CheckoutTheme.brand.withValues(alpha: 0.3),
+                color: active ? Colors.transparent : CheckoutTheme.brand.withValues(alpha: 0.3),
                 width: 2,
               ),
+              boxShadow: active
+                  ? [
+                      BoxShadow(
+                        color: CheckoutTheme.brand.withValues(alpha: 0.35),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ]
+                  : null,
             ),
           ),
           const SizedBox(height: 6),
@@ -122,7 +132,8 @@ class _StepLine extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 22),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(2),
-          color: active ? CheckoutTheme.brand : CheckoutTheme.brandSoft,
+          gradient: active ? CheckoutTheme.brandGradient : null,
+          color: active ? null : CheckoutTheme.brandSoft,
         ),
       ),
     );

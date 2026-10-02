@@ -20,6 +20,7 @@ class Category {
   final String? descriptionEn;
   final String? rawImageUrl;
   final AppMedia? image;
+  final String? listingKind;
   final List<Category> children;
 
   const Category({
@@ -38,6 +39,7 @@ class Category {
     this.descriptionEn,
     this.rawImageUrl,
     this.image,
+    this.listingKind,
     this.children = const [],
   });
 
@@ -57,6 +59,7 @@ class Category {
         descriptionEn: json['descriptionEn']?.toString(),
         rawImageUrl: json['imageUrl']?.toString(),
         image: json['image'] is Map ? AppMedia.fromJson(asMap(json['image'])) : null,
+        listingKind: json['listingKind']?.toString(),
         children: asList(json['children']).map(Category.fromJson).toList(),
       );
 

@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
+import '../../../core/theme/app_colors.dart';
+
 const _welcomeVideo = 'assets/videos/welcome.mp4';
 
 /// لون خلفية شاشة الترحيب أثناء التحميل (مطابق لشاشة الإقلاع).
-const _videoBackdrop = Colors.white;
+const _videoBackdrop = AppColors.blush;
 
 /// شاشة ترحيب — فيدio يملأ الشاشة من الأعلى للأسفل.
 class WelcomeScreen extends StatefulWidget {

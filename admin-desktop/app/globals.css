@@ -399,6 +399,20 @@ body {
   object-fit: cover;
 }
 
+.alhayaa-product-thumb[data-fit="contain"] {
+  background: #fff;
+  border-color: #eee;
+}
+
+.alhayaa-product-thumb[data-fit="contain"] img {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  background: #fff;
+}
+
 .alhayaa-product-thumb-fallback {
   font-size: 16px;
   font-weight: 700;

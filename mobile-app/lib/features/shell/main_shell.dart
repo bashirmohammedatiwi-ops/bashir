@@ -4,13 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/utils/responsive.dart';
-import '../home/widgets/home_theme.dart';
 import '../cart/cart_provider.dart';
 import '../cart/cart_screen.dart';
 import '../categories/categories_screen.dart';
 import '../home/home_screen.dart';
 import '../offers/offers_screen.dart';
 import '../profile/account_screen.dart';
+import '../worlds/world_theme.dart';
+import 'nav_tabs.dart';
 import 'shell_nav_bar.dart';
 
 export 'shell_nav_bar.dart' show ShellNavBar;
@@ -31,52 +32,65 @@ class _MainShellState extends ConsumerState<MainShell> {
   Widget build(BuildContext context) {
     final index = ref.watch(navIndexProvider);
     final cartCount = ref.watch(cartProvider.select((c) => c.count));
+    final theme = ref.watch(activeWorldThemeProvider);
     final navHeight = Responsive.shellNavDockHeight(context);
     _visited.add(index);
+    final baseTheme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: HomeTheme.canvas,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Padding(
-            padding: EdgeInsets.only(bottom: navHeight),
-            child: IndexedStack(
-              index: index,
-              sizing: StackFit.expand,
-              children: [
-                TickerMode(enabled: index == 0, child: const HomeScreen()),
-                TickerMode(
-                  enabled: index == 1,
-                  child: _visited.contains(1) ? const CategoriesScreen() : const SizedBox.shrink(),
+    return AnimatedTheme(
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+      data: theme.applyTo(baseTheme),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+        color: theme.canvas,
+        child: Scaffold(
+          backgroundColor: theme.canvas,
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(bottom: navHeight),
+                child: IndexedStack(
+                  index: index,
+                  sizing: StackFit.expand,
+                  children: [
+                    TickerMode(enabled: index == 0, child: const HomeScreen()),
+                    TickerMode(
+                      enabled: index == NavTabs.categories,
+                      child: _visited.contains(NavTabs.categories) ? const CategoriesScreen() : const SizedBox.shrink(),
+                    ),
+                    TickerMode(
+                      enabled: index == NavTabs.offers,
+                      child: _visited.contains(NavTabs.offers) ? const OffersScreen() : const SizedBox.shrink(),
+                    ),
+                    TickerMode(
+                      enabled: index == NavTabs.cart,
+                      child: _visited.contains(NavTabs.cart) ? const CartScreen() : const SizedBox.shrink(),
+                    ),
+                    TickerMode(
+                      enabled: index == NavTabs.account,
+                      child: _visited.contains(NavTabs.account) ? const AccountScreen() : const SizedBox.shrink(),
+                    ),
+                  ],
                 ),
-                TickerMode(
-                  enabled: index == 2,
-                  child: _visited.contains(2) ? const OffersScreen() : const SizedBox.shrink(),
+              ),
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: ShellNavBar(
+                  currentIndex: index,
+                  cartCount: cartCount,
+                  onSelect: _selectTab,
+                  strings: ref.watch(stringsProvider),
+                  theme: theme,
                 ),
-                TickerMode(
-                  enabled: index == 3,
-                  child: _visited.contains(3) ? const CartScreen() : const SizedBox.shrink(),
-                ),
-                TickerMode(
-                  enabled: index == 4,
-                  child: _visited.contains(4) ? const AccountScreen() : const SizedBox.shrink(),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: ShellNavBar(
-              currentIndex: index,
-              cartCount: cartCount,
-              onSelect: _selectTab,
-              strings: ref.watch(stringsProvider),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

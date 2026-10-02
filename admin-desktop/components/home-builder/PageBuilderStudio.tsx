@@ -55,6 +55,7 @@ export type PageBuilderStudioProps = {
   title: string;
   subtitle: string;
   blocksQueryKey: string;
+  worldId?: string;
   exportFilePrefix: string;
   infoBanner?: { message: string; description: string } | null;
 };
@@ -64,6 +65,7 @@ export function PageBuilderStudio({
   title,
   subtitle,
   blocksQueryKey,
+  worldId,
   exportFilePrefix,
   infoBanner,
 }: PageBuilderStudioProps) {
@@ -84,7 +86,7 @@ export function PageBuilderStudio({
   const undoStack = useRef<any[][]>([]);
   const [form] = Form.useForm();
 
-  const blocksQueryFn = pageKey === "OFFERS" ? queries.offersBlocks : queries.homeBlocks;
+  const blocksQueryFn = pageKey === "OFFERS" ? queries.offersBlocks : () => queries.homeBlocks(worldId);
 
   const { data: blocks, isLoading, refetch } = useQuery({
     queryKey: [blocksQueryKey],
@@ -126,6 +128,7 @@ export function PageBuilderStudio({
 
   const blockBody = (extra: Record<string, unknown>) => ({
     pageKey,
+    ...(worldId ? { worldId } : {}),
     ...extra,
   });
 

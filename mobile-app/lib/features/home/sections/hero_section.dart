@@ -8,9 +8,13 @@ import '../../../core/theme/app_colors.dart';
 import '../../../data/models/banner.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/home_section.dart';
+import '../../../data/models/store_world.dart';
 import '../../catalog/catalog_providers.dart';
 import '../home_category_filter.dart';
 import '../home_link.dart';
+import '../../worlds/worlds_home_band.dart';
+import '../../worlds/worlds_provider.dart';
+import '../../worlds/world_theme.dart';
 import '../widgets/home_hero_header.dart';
 import '../widgets/home_banner_stage.dart';
 import '../../../core/l10n/app_strings.dart';
@@ -30,6 +34,8 @@ class HeroHomeSection extends ConsumerStatefulWidget {
 
 class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
   int _bannerIndex = 0;
+  String? _lastSlug;
+  int _slide = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -39,22 +45,107 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
         ? filterStorefrontCategories(fromSection, apiCats)
         : (apiCats != null ? storefrontParentCategories(apiCats) : <Category>[]);
     final banners = widget.section.banners;
+    final worldsAsync = ref.watch(worldsProvider);
+    final worlds = worldsAsync.valueOrNull;
+    final worldsReady = worlds != null && worlds.isNotEmpty;
+    final slug = resolveWorldSlug(selected: ref.watch(selectedWorldSlugProvider), worlds: worlds);
+    if (worldsAsync.isLoading && !worldsReady) {
+      return const SizedBox(height: 360);
+    }
+    final world = slug == null ? null : ref.watch(worldDetailProvider(slug)).valueOrNull;
+    final t = context.worldTheme;
+    final worldCategories = world?.categories ?? const <Category>[];
+    final worldList = worlds ?? const <StoreWorld>[];
+    if (slug != null && slug != _lastSlug) {
+      final previous = worldList.indexWhere((item) => item.slug == _lastSlug);
+      final next = worldList.indexWhere((item) => item.slug == slug);
+      if (previous >= 0 && next >= 0 && previous != next) {
+        _slide = next > previous ? 1 : -1;
+      }
+      _lastSlug = slug;
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const HomeHeroHeader(),
-        const SizedBox(height: 12),
-        _HeroBannerCarousel(
-          section: widget.section,
-          banners: banners,
-          index: _bannerIndex,
-          onChanged: (i) => setState(() => _bannerIndex = i),
-        ),
-        const HomeQuickDock(),
-        if (cats.isNotEmpty) ...[
-          const HomeSectionDivider(),
-          HomeHeroCategoryStrip(categories: cats),
+        if (!worldsReady) const HomeHeroHeader(),
+        if (worldsReady) ...[
+          const WorldTopStage(),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 340),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            layoutBuilder: (current, previous) => Stack(
+              alignment: Alignment.topCenter,
+              children: [...previous, if (current != null) current],
+            ),
+            transitionBuilder: (child, animation) {
+              final rtl = Directionality.of(context) == TextDirection.rtl;
+              final travel = (rtl ? -_slide : _slide) * 0.18;
+              final offset = Tween<Offset>(
+                begin: Offset(travel, 0),
+                end: Offset.zero,
+              ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(position: offset, child: child),
+              );
+            },
+            child: Transform.translate(
+              key: ValueKey(slug ?? 'world'),
+              offset: const Offset(0, -18),
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: t.surface,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  boxShadow: [BoxShadow(color: t.ink.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, -4))],
+                ),
+                child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 8),
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: t.hairline,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                if (worldCategories.isNotEmpty) ...[
+                  HomeHeroCategoryStrip(
+                    categories: worldCategories,
+                    wash: world == null
+                        ? t.accentLight
+                        : Color.alphaBlend(world.accent.withValues(alpha: 0.16), t.surface),
+                    accent: world?.accent,
+                    worldSections: true,
+                  ),
+                ],
+                const WorldHomeBrands(),
+                const GiftWorldHomeCard(),
+                const SizedBox(height: 8),
+              ],
+                ),
+              ),
+            ),
+          ),
+        ] else ...[
+          const SizedBox(height: 12),
+          _HeroBannerCarousel(
+            section: widget.section,
+            banners: banners,
+            index: _bannerIndex,
+            onChanged: (i) => setState(() => _bannerIndex = i),
+          ),
+          if (cats.isNotEmpty) ...[
+            const HomeSectionDivider(),
+            HomeHeroCategoryStrip(categories: cats),
+          ],
+          const HomeQuickDock(),
         ],
       ],
     );
@@ -141,8 +232,8 @@ class _HeroBannerCarousel extends StatelessWidget {
             dotWidth: 5,
             expansionFactor: 3,
             spacing: 6,
-            activeDotColor: AppColors.primary,
-            dotColor: HomeTheme.divider,
+            activeDotColor: context.worldTheme.accent,
+            dotColor: context.worldTheme.divider,
           ),
         ),
       ],

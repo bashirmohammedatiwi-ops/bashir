@@ -125,7 +125,7 @@ class _ArtBody extends StatelessWidget {
           cacheManager: AppImageCacheManager.instance,
           width: size,
           height: size,
-          fit: BoxFit.contain,
+          fit: BoxFit.cover,
           fadeInDuration: Duration.zero,
           fadeOutDuration: Duration.zero,
           memCacheWidth: pixelW,

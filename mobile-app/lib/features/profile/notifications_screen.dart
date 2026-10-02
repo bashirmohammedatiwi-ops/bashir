@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/navigation/notification_navigation.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/notification.dart';
@@ -77,12 +78,12 @@ class NotificationsScreen extends ConsumerWidget {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              CartTheme.brand.withValues(alpha: 0.12),
-                              CartTheme.brand.withValues(alpha: 0.04),
+                              AppColors.primarySoft,
+                              AppColors.roseSoft,
                             ],
                           ),
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: CartTheme.brand.withValues(alpha: 0.18)),
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.18)),
                         ),
                         child: Row(
                           children: [
@@ -90,7 +91,7 @@ class NotificationsScreen extends ConsumerWidget {
                               width: 34,
                               height: 34,
                               decoration: BoxDecoration(
-                                color: CartTheme.brand,
+                                gradient: AppColors.signatureGradient,
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Center(
@@ -142,9 +143,9 @@ class _NotificationCard extends ConsumerWidget {
   const _NotificationCard({required this.notification});
 
   Color get _accent => switch (notification.type.toUpperCase()) {
-        'OFFER' || 'PROMO' => const Color(0xFFE91E8C),
-        'NEW_ARRIVAL' => const Color(0xFF7C3AED),
-        'REMINDER' => const Color(0xFFF59E0B),
+        'OFFER' || 'PROMO' => AppColors.roseDeep,
+        'NEW_ARRIVAL' => AppColors.primary,
+        'REMINDER' => AppColors.warning,
         _ => CartTheme.brand,
       };
 

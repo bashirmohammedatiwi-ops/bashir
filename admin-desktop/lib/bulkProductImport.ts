@@ -10,6 +10,7 @@ import { parseProductTablePaste, type PastedProductRow } from "./parseProductTab
 import { slugSourceName } from "./productName";
 import { mutations, queries } from "./queries";
 import { slugify } from "./slugify";
+import { uploadImageFromUrlWithFallback } from "./uploadFromUrl";
 
 type NamedRow = {
   id: string;
@@ -67,7 +68,7 @@ function labelsOf(entities: NamedRow[], ids: string[]) {
   return ids.map((id) => labelOf(entities, id)).filter(Boolean);
 }
 
-function buildBulkCreatePayload(row: BulkProductResolved) {
+function buildBulkCreatePayload(row: BulkProductResolved, imageIds: string[] = [], isActive = false) {
   const nameAr = row.nameAr.trim();
   const nameEn = row.nameEn.trim();
   const name = nameAr || nameEn;
@@ -98,11 +99,11 @@ function buildBulkCreatePayload(row: BulkProductResolved) {
     isFeatured: false,
     isPromo: false,
     isBogo: false,
-    isActive: true,
+    isActive,
     tags: [],
     skinType: [],
     concernIds: [],
-    imageIds: [],
+    imageIds,
     shades: [],
     variants: [],
   };
@@ -227,7 +228,9 @@ export async function resolveBulkProductRows(rawTable: string): Promise<BulkProd
 export async function importBulkProducts(
   rows: BulkProductResolved[],
   onProgress?: (p: BulkImportProgress) => void,
+  options?: { isActive?: boolean },
 ): Promise<{ ok: number; skipped: number; failed: number }> {
+  const isActive = options?.isActive ?? false;
   const importable = rows.filter((r) => r.canImport);
   let ok = 0;
   let skipped = rows.length - importable.length;
@@ -236,7 +239,17 @@ export async function importBulkProducts(
   for (let i = 0; i < importable.length; i++) {
     const row = importable[i];
     try {
-      await mutations.createProduct(buildBulkCreatePayload(row));
+      const imageIds: string[] = [];
+      const url = String(row.imageUrl || "").trim();
+      if (url) {
+        try {
+          const media = await uploadImageFromUrlWithFallback(url, "PRODUCT");
+          if (media?.id) imageIds.push(String(media.id));
+        } catch {
+          /* keep product even if image fails */
+        }
+      }
+      await mutations.createProduct(buildBulkCreatePayload(row, imageIds, isActive));
       ok += 1;
       onProgress?.({
         index: i + 1,

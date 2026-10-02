@@ -9,6 +9,7 @@ import '../../core/config/app_config.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/utils/responsive.dart';
 import '../../core/widgets/product_card.dart';
+import '../../core/widgets/product_grid.dart';
 import '../../core/widgets/scroll_perf.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
@@ -79,6 +80,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
             page: _page,
             limit: AppConfig.pageSize,
             isPromo: true,
+            sort: 'brand',
             forceRefresh: reset,
           );
       if (!mounted) return;
@@ -171,13 +173,13 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
       child: Scaffold(
-        backgroundColor: OffersTheme.canvas,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: OffersCanvas(
           child: showInitialSkeleton && feedData == null && feed.isLoading
               ? const OffersLoadingView()
               : RefreshIndicator(
-                  color: OffersTheme.brand,
-                  backgroundColor: OffersTheme.surface,
+                  color: Theme.of(context).colorScheme.primary,
+                  backgroundColor: Theme.of(context).colorScheme.surface,
                   edgeOffset: top + 12,
                   onRefresh: _refreshAll,
                   child: CustomScrollView(
@@ -241,12 +243,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                         SliverPadding(
                           padding: EdgeInsets.fromLTRB(OffersTheme.hPad, 0, OffersTheme.hPad, bottomPad),
                           sliver: SliverGrid(
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 0.58,
-                            ),
+                            gridDelegate: ProductGrid.delegateFor(context, listing: true),
                             delegate: SliverChildBuilderDelegate(
                               (context, i) {
                                 if (i >= _items.length) {
@@ -312,16 +309,20 @@ class _OffersEmptyState extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: OffersTheme.brandSoft,
+              decoration: BoxDecoration(
+                color: OffersTheme.brandSoft(context),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.local_offer_outlined, size: 40, color: OffersTheme.brand),
+              child: Icon(Icons.local_offer_outlined, size: 40, color: OffersTheme.brand(context)),
             ),
             const SizedBox(height: 18),
-            Text(title, textAlign: TextAlign.center, style: OffersTheme.title(size: 17, color: OffersTheme.ink)),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: OffersTheme.title(context, size: 17, color: OffersTheme.ink(context)),
+            ),
             const SizedBox(height: 8),
-            Text(subtitle, textAlign: TextAlign.center, style: OffersTheme.body(size: 13)),
+            Text(subtitle, textAlign: TextAlign.center, style: OffersTheme.body(context, size: 13)),
             const SizedBox(height: 22),
             OffersPrimaryButton(label: actionLabel, onPressed: onAction),
           ],

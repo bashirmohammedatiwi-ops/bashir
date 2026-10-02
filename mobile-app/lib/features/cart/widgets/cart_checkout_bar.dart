@@ -72,7 +72,7 @@ class CartCheckoutBar extends ConsumerWidget {
               width: double.infinity,
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  gradient: CartTheme.brandGradient,
+                  gradient: CartTheme.signatureGradient,
                   borderRadius: BorderRadius.circular(999),
                   boxShadow: [
                     BoxShadow(

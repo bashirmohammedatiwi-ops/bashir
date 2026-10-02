@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_strings.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/card_sizes.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_section.dart';
+import '../../worlds/world_theme.dart';
 import '../home_link.dart';
 import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
@@ -79,16 +79,17 @@ class _RoutineCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     final hasDiscount = package.originalPrice != null && package.originalPrice! > package.price;
     return Container(
       width: width,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.8)),
-        color: AppColors.surface,
+        border: Border.all(color: t.hairline.withValues(alpha: 0.8)),
+        color: t.surface,
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.06),
+            color: t.accent.withValues(alpha: 0.06),
             blurRadius: 14,
             offset: const Offset(0, 4),
           ),
@@ -105,10 +106,9 @@ class _RoutineCard extends StatelessWidget {
                     width: width,
                     fit: BoxFit.contain,
                   )
-                : Container(
-                    color: AppColors.primaryLight,
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.spa_outlined, color: AppColors.primary, size: 40),
+                : ColoredBox(
+                    color: t.accentLight,
+                    child: Icon(Icons.spa_outlined, color: t.accent, size: 40),
                   ),
           ),
           Padding(
@@ -120,16 +120,16 @@ class _RoutineCard extends StatelessWidget {
                   package.name,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: t.ink),
                 ),
                 const SizedBox(height: 4),
                 Row(
                   children: [
                     Text(
                       formatPrice(package.price),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w900,
-                        color: AppColors.primary,
+                        color: t.accent,
                         fontSize: 13,
                       ),
                     ),
@@ -139,7 +139,7 @@ class _RoutineCard extends StatelessWidget {
                         formatPrice(package.originalPrice!),
                         style: TextStyle(
                           fontSize: 11,
-                          color: AppColors.textSecondary.withValues(alpha: 0.7),
+                          color: t.inkSoft.withValues(alpha: 0.7),
                           decoration: TextDecoration.lineThrough,
                         ),
                       ),

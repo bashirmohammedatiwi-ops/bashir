@@ -57,24 +57,24 @@ export function ProductsSortableList({
     [products, reorderIds],
   );
 
-  const onDrop = useCallback(
-    (targetId: string) => {
-      if (!dragId || dragId === targetId) {
+  const placeBefore = useCallback(
+    (fromId: string | null, targetId: string) => {
+      if (!fromId || fromId === targetId) {
         setDragId(null);
         setOverId(null);
         return;
       }
       const ids = products.map((p) => p.id);
-      const from = ids.indexOf(dragId);
+      const from = ids.indexOf(fromId);
       const to = ids.indexOf(targetId);
       if (from < 0 || to < 0) return;
       ids.splice(from, 1);
-      ids.splice(to, 0, dragId);
+      ids.splice(to, 0, fromId);
       reorderIds(ids);
       setDragId(null);
       setOverId(null);
     },
-    [products, dragId, reorderIds],
+    [products, reorderIds],
   );
 
   if (loading) {
@@ -102,6 +102,7 @@ export function ProductsSortableList({
           return (
             <article
               key={product.id}
+              draggable={!reordering}
               className={[
                 "pp-order-row",
                 isOver ? "is-over" : "",
@@ -110,38 +111,36 @@ export function ProductsSortableList({
               ]
                 .filter(Boolean)
                 .join(" ")}
+              onDragStart={(e) => {
+                e.dataTransfer.effectAllowed = "move";
+                e.dataTransfer.setData("text/plain", product.id);
+                setDragId(product.id);
+              }}
+              onDragEnd={() => {
+                setDragId(null);
+                setOverId(null);
+              }}
               onDragOver={(e) => {
                 e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
                 setOverId(product.id);
               }}
               onDrop={(e) => {
                 e.preventDefault();
-                onDrop(product.id);
+                const fromId = e.dataTransfer.getData("text/plain") || dragId;
+                placeBefore(fromId, product.id);
               }}
             >
               <span className="pp-order-rank">{idx + 1}</span>
-              <button
-                type="button"
-                className="pp-order-handle"
-                aria-label="سحب للترتيب"
-                draggable={!reordering}
-                onDragStart={(e) => {
-                  e.stopPropagation();
-                  setDragId(product.id);
-                }}
-                onDragEnd={() => {
-                  setDragId(null);
-                  setOverId(null);
-                }}
-              >
+              <span className="pp-order-handle" aria-hidden>
                 <HolderOutlined />
-              </button>
+              </span>
               <button
                 type="button"
                 className="pp-order-thumb-btn"
                 onClick={() => onEdit?.(product)}
               >
-                <ProductThumb product={product} size={56} className="pp-order-thumb" />
+                <ProductThumb product={product} size={56} fit="contain" className="pp-order-thumb" />
               </button>
               <button type="button" className="pp-order-main" onClick={() => onEdit?.(product)}>
                 <strong>{displayProductName(product)}</strong>

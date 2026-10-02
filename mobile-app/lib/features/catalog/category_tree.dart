@@ -27,6 +27,31 @@ Category? findParentCategory(List<Category> roots, String childId) {
   return null;
 }
 
+/// مسار التنقّل: رئيسي › فرعي › ثانوي
+String? categoryBreadcrumb(
+  List<Category> roots,
+  String lang, {
+  String? categoryId,
+  String? subcategoryId,
+  String? tertiaryCategoryId,
+}) {
+  final parts = <String>[];
+  final leafId = tertiaryCategoryId ?? subcategoryId ?? categoryId;
+  if (leafId == null) return null;
+
+  Category? current = findCategoryById(roots, leafId);
+  final stack = <Category>[];
+  while (current != null) {
+    stack.add(current);
+    current = findParentCategory(roots, current.id);
+  }
+  for (final c in stack.reversed) {
+    parts.add(c.localizedName(lang));
+  }
+  if (parts.length < 2) return null;
+  return parts.join(' › ');
+}
+
 Category? _findInChildren(List<Category> nodes, String id) {
   for (final node in nodes) {
     if (node.id == id) return node;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/address.dart';
@@ -146,8 +147,9 @@ class _AddressTile extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: AccountTheme.addresses.withValues(alpha: 0.12),
+                  color: AccountTheme.addresses.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AccountTheme.addresses.withValues(alpha: 0.12)),
                 ),
                 child: const Icon(Icons.location_on_rounded, color: AccountTheme.addresses, size: 20),
               ),
@@ -165,12 +167,12 @@ class _AddressTile extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: CartTheme.brandSoft,
+                    gradient: AppColors.signatureGradient,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Text(
                     'افتراضي',
-                    style: TextStyle(color: CartTheme.brand, fontSize: 11, fontWeight: FontWeight.w700),
+                    style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
                   ),
                 ),
             ],

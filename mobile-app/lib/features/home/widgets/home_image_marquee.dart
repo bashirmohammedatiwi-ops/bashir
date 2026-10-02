@@ -16,6 +16,7 @@ class HomeImageMarquee extends StatefulWidget {
   final double gap;
   final double radius;
   final bool startFromEndInRtl;
+  final bool reverse;
 
   const HomeImageMarquee({
     super.key,
@@ -25,6 +26,7 @@ class HomeImageMarquee extends StatefulWidget {
     this.gap = 12,
     this.radius = 14,
     this.startFromEndInRtl = false,
+    this.reverse = false,
   });
 
   @override
@@ -346,7 +348,7 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
                       builder: (_, __) {
                         final loop = _activePeriod;
                         return Transform.translate(
-                          offset: Offset(-_ctrl.value * loop, 0),
+                          offset: Offset((widget.reverse ? 1 : -1) * _ctrl.value * loop, 0),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             textDirection: TextDirection.ltr,

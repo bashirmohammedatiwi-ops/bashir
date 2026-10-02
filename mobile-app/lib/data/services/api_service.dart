@@ -19,6 +19,7 @@ import '../models/order.dart';
 import '../models/paginated.dart';
 import '../models/product.dart';
 import '../models/review.dart';
+import '../models/store_world.dart';
 import '../models/user.dart';
 
 export '../../core/network/api_exception.dart' show ApiException, parseApiErrorMessage;
@@ -72,20 +73,42 @@ class ApiService {
   }
 
   // ---- HOME ----
-  Future<HomeFeed> getHome({bool forceRefresh = false}) async {
+  Future<HomeFeed> getHome({bool forceRefresh = false, String? worldSlug}) async {
     try {
       final raw = await _cache.getOrFetch<Map<String, dynamic>>(
-        key: 'home_v3',
+        key: worldSlug == null ? 'home_v3' : 'home_v3_world_$worldSlug',
         ttl: AppConfig.homeCacheTtl,
         forceRefresh: forceRefresh,
         fetch: () async {
-          final r = await _dio.get('/home', options: Options(extra: {'auth': false}));
+          final r = await _dio.get(
+            '/home',
+            queryParameters: worldSlug == null ? null : {'world': worldSlug},
+            options: Options(extra: {'auth': false}),
+          );
           return asMap(_data(r));
         },
         parse: (json) => asMap(json),
         serialize: (m) => m,
       );
       return HomeFeed.fromJson(raw);
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  Future<List<StoreWorld>> getWorlds() async {
+    try {
+      final r = await _dio.get('/worlds', options: Options(extra: {'auth': false}));
+      return asList(_data(r)).map(StoreWorld.fromJson).toList();
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  Future<StoreWorld> getWorld(String slug) async {
+    try {
+      final r = await _dio.get('/worlds/$slug', options: Options(extra: {'auth': false}));
+      return StoreWorld.fromJson(asMap(_data(r)));
     } catch (e) {
       _throw(e);
     }
@@ -143,7 +166,7 @@ class ApiService {
   Future<List<Category>> getCategories({bool forceRefresh = false}) async {
     try {
       final raw = await _cache.getOrFetch<List<dynamic>>(
-        key: 'categories_all_v2',
+        key: 'categories_all_v3',
         ttl: AppConfig.catalogCacheTtl,
         forceRefresh: forceRefresh,
         fetch: () async {
@@ -301,6 +324,22 @@ class ApiService {
     }
   }
 
+  /// بحث ذكي للمتجر — ترتيب بالملاءمة، عربي/إنجليزي معاً.
+  Future<Paginated<Product>> searchProducts(String query, {int limit = 40}) async {
+    try {
+      final q = query.trim();
+      if (q.length < 2) return Paginated.empty();
+      final r = await _dio.get(
+        '/products/search',
+        queryParameters: {'q': q, 'limit': limit},
+        options: Options(extra: {'auth': false}),
+      );
+      return Paginated.fromJson(_body(r), Product.fromJson);
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
   String? _productsCacheKey({
     required int page,
     required int limit,
@@ -319,7 +358,7 @@ class ApiService {
     if (page != 1) return null;
     if (search != null && search.isNotEmpty) return null;
     final parts = <String>[
-      'products_v2',
+      'products_v3',
       'l$limit',
       if (categoryId != null) 'c$categoryId',
       if (subcategoryId != null) 'sc$subcategoryId',
@@ -716,6 +755,47 @@ class ApiService {
   Future<void> unregisterDevice({required String token}) async {
     try {
       await _dio.delete('/notifications/devices', data: {'token': token});
+    } catch (_) {}
+  }
+
+  // ---- AI ASSISTANT ----
+  Future<Map<String, dynamic>> assistantChat({
+    required String message,
+    required String lang,
+    List<Map<String, String>> history = const [],
+  }) async {
+    try {
+      final r = await _dio.post('/assistant/chat', data: {
+        'message': message,
+        'lang': lang,
+        if (history.isNotEmpty) 'history': history,
+      });
+      return asMap(_data(r));
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  Future<void> assistantFeedback(String turnId, int rating, {String? note}) async {
+    try {
+      await _dio.post('/assistant/turns/$turnId/feedback', data: {
+        'rating': rating,
+        if (note != null && note.isNotEmpty) 'note': note,
+      });
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  Future<void> assistantTap(String turnId, String productId) async {
+    try {
+      await _dio.post('/assistant/turns/$turnId/tap', data: {'productId': productId});
+    } catch (_) {}
+  }
+
+  Future<void> assistantCart(String turnId, String productId) async {
+    try {
+      await _dio.post('/assistant/turns/$turnId/cart', data: {'productId': productId});
     } catch (_) {}
   }
 }

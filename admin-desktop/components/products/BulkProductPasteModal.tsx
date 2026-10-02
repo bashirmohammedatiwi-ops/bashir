@@ -8,6 +8,7 @@ import {
   Modal,
   Progress,
   Space,
+  Switch,
   Table,
   Tag,
 } from "antd";
@@ -24,6 +25,7 @@ import { parseProductTablePaste, type PastedProductRow } from "@/lib/parseProduc
 import { slugSourceName } from "@/lib/productName";
 import { mutations, queries } from "@/lib/queries";
 import { slugify } from "@/lib/slugify";
+import { uploadImageFromUrlWithFallback } from "@/lib/uploadFromUrl";
 
 type NamedRow = {
   id: string;
@@ -105,7 +107,7 @@ function normalizePasteText(raw: string): string {
   return text;
 }
 
-function buildPayload(row: ResolvedRow) {
+function buildPayload(row: ResolvedRow, imageIds: string[], isActive: boolean) {
   const nameAr = row.nameAr.trim();
   const nameEn = row.nameEn.trim();
   const name = nameAr || nameEn;
@@ -136,11 +138,11 @@ function buildPayload(row: ResolvedRow) {
     isFeatured: false,
     isPromo: false,
     isBogo: false,
-    isActive: true,
+    isActive,
     tags: [] as string[],
     skinType: [] as string[],
     concernIds: [] as string[],
-    imageIds: [] as string[],
+    imageIds,
     shades: [] as unknown[],
     variants: [] as unknown[],
   };
@@ -269,6 +271,8 @@ export function BulkProductPasteModal({ open, onClose }: Props) {
   const [raw, setRaw] = useState("");
   const [rows, setRows] = useState<ResolvedRow[]>([]);
   const [busy, setBusy] = useState(false);
+  /** Default off: bulk imports stay hidden from storefront until reviewed. */
+  const [saveAsActive, setSaveAsActive] = useState(false);
   const [banner, setBanner] = useState<{ type: "success" | "error" | "info"; text: string } | null>(
     null,
   );
@@ -282,6 +286,7 @@ export function BulkProductPasteModal({ open, onClose }: Props) {
     setRaw("");
     setRows([]);
     setBusy(false);
+    setSaveAsActive(false);
     setBanner(null);
     setProgress({ done: 0, total: 0, last: "" });
     setResult(null);
@@ -336,7 +341,17 @@ export function BulkProductPasteModal({ open, onClose }: Props) {
     for (let i = 0; i < importable.length; i++) {
       const row = importable[i];
       try {
-        await mutations.createProduct(buildPayload(row));
+        const imageIds: string[] = [];
+        const url = String(row.imageUrl || "").trim();
+        if (url) {
+          try {
+            const media = await uploadImageFromUrlWithFallback(url, "PRODUCT");
+            if (media?.id) imageIds.push(String(media.id));
+          } catch {
+            /* product still created without image */
+          }
+        }
+        await mutations.createProduct(buildPayload(row, imageIds, saveAsActive));
         ok += 1;
       } catch (err) {
         failed += 1;
@@ -417,9 +432,15 @@ export function BulkProductPasteModal({ open, onClose }: Props) {
             type="info"
             showIcon
             style={{ marginBottom: 12 }}
-            message="الصق جدولاً من Word أو GPT"
-            description="الأعمدة: الباركود · الاسم عربي · الاسم إنكليزي · البراند · الوصف عربي · الوصف إنكليزي · القسم · القسم الفرعي · القسم الثانوي. الأقسام المتعددة تُفصل بـ ،"
+            message="الصق جدولاً من Word أو GPT أو CSV"
+            description="الأعمدة: الباركود · الاسم عربي · الاسم إنكليزي · البراند · الوصف عربي · الوصف إنكليزي · القسم · القسم الفرعي · القسم الثانوي · رابط الصورة (اختياري). الأقسام المتعددة تُفصل بـ ، — الافتراضي: المنتجات تُحفظ غير نشطة."
           />
+          <div style={{ marginBottom: 12 }}>
+            <Space>
+              <Switch checked={saveAsActive} onChange={setSaveAsActive} />
+              <span>{saveAsActive ? "حفظ كمنتجات نشطة" : "حفظ كمنتجات غير نشطة (موصى به)"}</span>
+            </Space>
+          </div>
           <Input.TextArea
             rows={14}
             value={raw}
@@ -437,6 +458,9 @@ export function BulkProductPasteModal({ open, onClose }: Props) {
             <Tag color="blue">الإجمالي: {rows.length}</Tag>
             <Tag color="green">قابل للاستيراد: {stats.importable}</Tag>
             <Tag color="orange">موجود مسبقاً: {stats.exists}</Tag>
+            <Tag color={saveAsActive ? "success" : "default"}>
+              {saveAsActive ? "نشط" : "غير نشط"}
+            </Tag>
             <Tag color="red">سيُتخطى: {stats.blocked}</Tag>
           </Space>
 

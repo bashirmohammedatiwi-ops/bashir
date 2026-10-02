@@ -1,6 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { barcodeLookupCandidates, resolveBarcodeMapKey } from "../../common/barcode.util";
+import { searchStorefrontProductIds } from "../../common/smart-search";
 import { PrismaService } from "../../common/prisma.service";
 import { resolveProductNames } from "../../common/product-names.util";
 import { resolveProductDescriptions } from "../../common/product-descriptions.util";
@@ -12,7 +13,7 @@ import { InventorySyncService } from "../sync/inventory-sync.service";
 import { SettingsService } from "../settings/settings.service";
 import { withPlaceholderImages, activeWithoutRealImagesWhere, hasRealProductImagesWhere } from "../../common/product-placeholder.util";
 import { rewriteProductMediaUrls } from "../../common/media-url.util";
-import { PRODUCT_ORDER_BY_BRAND } from "../../common/product-order.util";
+import { PRODUCT_ORDER_BY_BRAND, PRODUCT_ORDER_WITHIN_BRAND } from "../../common/product-order.util";
 import { sortShadesByNumber } from "../../common/shade-sort.util";
 import { resolveBrandId, resolveCategoryId } from "../../common/entity-resolve.util";
 import {
@@ -46,6 +47,10 @@ const productRelationsLite = {
     take: 1,
     orderBy: { position: "asc" as const },
     include: { media: true },
+  },
+  shades: {
+    orderBy: { position: "asc" as const },
+    include: { image: true },
   },
   _count: { select: { shades: true, variants: true, images: true } },
 };
@@ -103,8 +108,10 @@ export class ProductsService {
     });
     if (categoryFilter) andFilters.push(categoryFilter);
 
-    // فلاتر ظهور واجهة المتجر (لا تُطبَّق على لوحة التحكم)
-    if (storefront) {
+    const textSearch = Boolean(q.search?.trim());
+
+    // فلاتر ظهور واجهة المتجر — لا تُطبَّق أثناء البحث حتى يظهر المنتج حتى لو بلا صورة أو نفد
+    if (storefront && !textSearch) {
       const s = (await this.settings.getAll()) as Record<string, unknown>;
       if (s.hideOutOfStock) {
         andFilters.push({ stock: { gt: 0 } });
@@ -114,32 +121,29 @@ export class ProductsService {
       }
     }
 
+    let rankedSearchIds: string[] = [];
     if (q.search) {
       const barcodeCandidates = barcodeLookupCandidates(q.search);
-      const orFilters: Prisma.ProductWhereInput[] = [
-        { name: { contains: q.search, mode: "insensitive" } },
-        { nameAr: { contains: q.search, mode: "insensitive" } },
-        { nameEn: { contains: q.search, mode: "insensitive" } },
-        { sku: { contains: q.search, mode: "insensitive" } },
-        { barcode: { contains: q.search, mode: "insensitive" } },
-        { tags: { contains: q.search, mode: "insensitive" } },
-        { slug: { contains: q.search, mode: "insensitive" } },
-      ];
+      rankedSearchIds = await searchStorefrontProductIds(this.prisma, q.search, 200);
+      const orFilters: Prisma.ProductWhereInput[] = [];
+      if (rankedSearchIds.length) orFilters.push({ id: { in: rankedSearchIds } });
       if (barcodeCandidates.length) {
-        orFilters.unshift(
+        orFilters.push(
           { barcode: { in: barcodeCandidates } },
           { sku: { in: barcodeCandidates } },
           { shades: { some: { barcode: { in: barcodeCandidates } } } },
         );
       }
-      andFilters.push({ OR: orFilters });
+      andFilters.push(orFilters.length ? { OR: orFilters } : { id: { in: ["00000000-0000-0000-0000-000000000000"] } });
     }
 
     const where: Prisma.ProductWhereInput = { AND: andFilters };
 
-    const orderBy = this.buildOrderBy(q.sort, storefront);
+    const orderBy = q.search?.trim()
+      ? ({ id: "asc" } as const)
+      : this.buildOrderBy(q.sort, storefront, brandId);
 
-    const [total, items] = await this.prisma.$transaction([
+    const [total, rawItems] = await this.prisma.$transaction([
       this.prisma.product.count({ where }),
       this.prisma.product.findMany({
         where,
@@ -150,12 +154,39 @@ export class ProductsService {
       }),
     ]);
 
+    const items = rankedSearchIds.length
+      ? this.orderProductsByRank(rawItems, rankedSearchIds)
+      : rawItems;
+
     return paginate(
       items.map((p) => withPlaceholderImages(rewriteProductMediaUrls(p))),
       total,
       q.page,
       q.limit,
     );
+  }
+
+  /** بحث ذكي للمتجر — منتجات مرتبة بالملاءمة، ثنائي اللغة. */
+  async searchStorefront(query: string, limit = 40, storefront = true) {
+    const q = query.trim();
+    if (q.length < 2) {
+      return paginate([], 0, 1, limit);
+    }
+    return this.list(
+      {
+        page: 1,
+        limit: Math.min(Math.max(limit, 1), 60),
+        search: q,
+        lite: true,
+      } as QueryProductsDto,
+      storefront,
+    );
+  }
+
+  private orderProductsByRank<T extends { id: string }>(items: T[], rankedIds: string[]): T[] {
+    if (!rankedIds.length || items.length < 2) return items;
+    const rank = new Map(rankedIds.map((id, index) => [id, index]));
+    return [...items].sort((a, b) => (rank.get(a.id) ?? 999_999) - (rank.get(b.id) ?? 999_999));
   }
 
   async findOne(idOrSlug: string, storefront = false) {
@@ -923,7 +954,10 @@ export class ProductsService {
   private buildOrderBy(
     sort?: string,
     storefront = false,
+    brandId?: string | null,
   ): Prisma.ProductOrderByWithRelationInput | Prisma.ProductOrderByWithRelationInput[] {
+    const catalogOrder = brandId ? PRODUCT_ORDER_WITHIN_BRAND : PRODUCT_ORDER_BY_BRAND;
+
     switch (sort) {
       case "price_asc":
         return { price: "asc" };
@@ -938,9 +972,9 @@ export class ProductsService {
       case "latest":
         return { createdAt: "desc" };
       case "brand":
-        return PRODUCT_ORDER_BY_BRAND;
+        return catalogOrder;
       default:
-        return storefront ? PRODUCT_ORDER_BY_BRAND : { createdAt: "desc" };
+        return storefront ? catalogOrder : { createdAt: "desc" };
     }
   }
 }

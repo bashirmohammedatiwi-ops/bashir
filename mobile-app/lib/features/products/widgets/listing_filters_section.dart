@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_strings.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../data/models/brand.dart';
+import '../../worlds/world_theme.dart';
 import '../../../data/models/category.dart';
 import '../listing_navigation.dart';
 import 'category_children_strip.dart';
@@ -49,7 +49,7 @@ class ListingFiltersSection extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(ListingTheme.padH, 12, ListingTheme.padH, 4),
       child: DecoratedBox(
-        decoration: ListingTheme.cardDecoration(),
+        decoration: ListingTheme.cardDecoration(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -73,7 +73,7 @@ class ListingFiltersSection extends ConsumerWidget {
                 ),
               ),
               if (showBrands)
-                Divider(height: 1, color: AppColors.hairline.withValues(alpha: 0.7)),
+                Divider(height: 1, color: context.worldTheme.hairline.withValues(alpha: 0.7)),
             ],
             if (showBrands)
               brandsAsync!.when(
@@ -126,6 +126,7 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 2),
       child: Row(
@@ -134,13 +135,13 @@ class _SectionHeader extends StatelessWidget {
             width: 4,
             height: 14,
             decoration: BoxDecoration(
-              color: AppColors.primary,
+              color: t.accent,
               borderRadius: BorderRadius.circular(99),
             ),
           ),
           const SizedBox(width: 8),
-          Expanded(child: Text(title, style: ListingTheme.sectionTitle)),
-          if (hint != null) Text(hint!, style: ListingTheme.sectionHint),
+          Expanded(child: Text(title, style: ListingTheme.sectionTitle(context))),
+          if (hint != null) Text(hint!, style: ListingTheme.sectionHint(context)),
         ],
       ),
     );

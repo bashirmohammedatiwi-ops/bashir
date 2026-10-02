@@ -35,7 +35,7 @@ final offersFeedProvider = FutureProvider.autoDispose<HomeFeed>((ref) async {
 final categoriesProvider = FutureProvider<List<Category>>((ref) async {
   ref.keepAlive();
   // أول تحميل بعد التحديث يجلب من الشبكة (مفتاح كاش جديد + TTL أقصر)
-  return ref.read(apiServiceProvider).getCategories(forceRefresh: false);
+  return ref.read(apiServiceProvider).getCategories(forceRefresh: true);
 });
 
 /// إعادة تحميل الأقسام من السيرفر مباشرة (يسحب للتحديث / إعادة المحاولة).
@@ -92,6 +92,6 @@ final similarProductsProvider = FutureProvider.autoDispose
     .family<List<Product>, ({String categoryId, String excludeId})>((ref, args) async {
   final page = await ref
       .read(apiServiceProvider)
-      .getProducts(categoryId: args.categoryId, limit: 10);
+      .getProducts(categoryId: args.categoryId, limit: 10, sort: 'brand');
   return page.items.where((p) => p.id != args.excludeId).take(8).toList();
 });

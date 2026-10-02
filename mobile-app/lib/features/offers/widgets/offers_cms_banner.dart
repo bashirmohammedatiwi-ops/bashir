@@ -72,8 +72,8 @@ class _OffersCmsBannerState extends State<OffersCmsBanner> {
                       effect: ExpandingDotsEffect(
                         dotHeight: 5,
                         dotWidth: 5,
-                        activeDotColor: OffersTheme.brand,
-                        dotColor: OffersTheme.inkMuted.withValues(alpha: 0.35),
+                        activeDotColor: OffersTheme.brand(context),
+                        dotColor: OffersTheme.inkMuted(context).withValues(alpha: 0.35),
                       ),
                     ),
                   ],

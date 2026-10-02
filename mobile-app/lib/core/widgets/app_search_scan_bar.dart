@@ -35,13 +35,7 @@ class AppSearchScanBar extends StatelessWidget {
         color: fill,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: border, width: 0.8),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.ink.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        boxShadow: AppColors.cardShadow,
       ),
       child: Row(
         children: [
@@ -80,31 +74,37 @@ class AppSearchScanBar extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsetsDirectional.only(end: 5),
-            child: Material(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(10),
-              child: InkWell(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  onScanTap();
-                },
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: AppColors.signatureGradient,
                 borderRadius: BorderRadius.circular(10),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.barcode_reader, size: 16, color: Colors.white),
-                      const SizedBox(width: 5),
-                      Text(
-                        scanLabel,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w800,
+              ),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    onScanTap();
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.barcode_reader, size: 16, color: Colors.white),
+                        const SizedBox(width: 5),
+                        Text(
+                          scanLabel,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

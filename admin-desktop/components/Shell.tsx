@@ -35,6 +35,8 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { href: "/products/app-order", label: "ترتيب التطبيق", short: "تر" },
       { href: "/catalog-import", label: "استيراد الكتالوج", short: "كت" },
       { href: "/ai-add", label: "إضافة ذكية ✦", short: "AI" },
+      { href: "/assistant-training", label: "تدريب المساعد", short: "فض" },
+      { href: "/assistant-insights", label: "أداء المساعد", short: "أد" },
       { href: "/skin-concerns", label: "دليل البشرة", short: "ب" },
       { href: "/skin-routines", label: "روتين البشرة", short: "ر" },
       { href: "/inventory", label: "المخزون و POS", short: "مخ" },
@@ -48,6 +50,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   {
     title: "التسويق",
     items: [
+      { href: "/worlds", label: "العوالم", short: "عو" },
       { href: "/banners", label: "البنرات", short: "ن" },
       { href: "/home-builder", label: "بناء الرئيسية", short: "ر" },
       { href: "/offers-builder", label: "بناء العروض", short: "عر" },

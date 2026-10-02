@@ -18,7 +18,7 @@ class OrderSuccessScreen extends ConsumerWidget {
     final s = ref.s;
     final order = ref.watch(orderDetailProvider(orderId));
     return Scaffold(
-      backgroundColor: AppColors.scaffold,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xxl),
@@ -62,12 +62,12 @@ class OrderSuccessScreen extends ConsumerWidget {
                 data: (o) => Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
+                    gradient: AppColors.signatureGradient,
                     borderRadius: BorderRadius.circular(AppRadius.pill),
                   ),
                   child: Text(
                     s.orderNumberLabel(o.orderNumber),
-                    style: AppTypography.body.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
+                    style: AppTypography.body.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
                   ),
                 ),
                 orElse: () => const SizedBox.shrink(),
@@ -82,12 +82,34 @@ class OrderSuccessScreen extends ConsumerWidget {
               SizedBox(
                 width: double.infinity,
                 height: 52,
-                child: ElevatedButton(
-                  onPressed: () {
-                    HapticFeedback.selectionClick();
-                    context.pushReplacement('/orders/$orderId');
-                  },
-                  child: Text(s.trackOrder),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: AppColors.signatureGradient,
+                    borderRadius: BorderRadius.circular(999),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.28),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        context.pushReplacement('/orders/$orderId');
+                      },
+                      borderRadius: BorderRadius.circular(999),
+                      child: Center(
+                        child: Text(
+                          s.trackOrder,
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: AppSpacing.md),

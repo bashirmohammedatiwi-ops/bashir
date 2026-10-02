@@ -179,7 +179,7 @@ class Product {
       images: asList(json['images']).map(ProductImage.fromJson).toList(),
       shades: shades,
       variants: asList(json['variants']).map(ProductVariant.fromJson).toList(),
-      shadeCount: shades.isNotEmpty ? shades.length : asInt(count['shades']),
+      shadeCount: asInt(count['shades']) > 0 ? asInt(count['shades']) : shades.length,
     );
   }
 

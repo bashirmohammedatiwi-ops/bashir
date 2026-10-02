@@ -28,14 +28,8 @@ class SectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border.all(color: AppColors.hairline.withValues(alpha: 0.75)),
+        boxShadow: AppColors.cardShadow,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,8 +135,9 @@ class StatusChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: _color.withValues(alpha: 0.12),
+        color: _color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(AppRadius.sm),
+        border: Border.all(color: _color.withValues(alpha: 0.18)),
       ),
       child: Text(
         orderStatusLabel(status),

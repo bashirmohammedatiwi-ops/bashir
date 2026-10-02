@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 /// ثيم صفحة الأقسام — إطار ناعم مع بلور خفيف (أسلوب Sephora).
 abstract final class CategoriesTheme {
-  static const pad = 12.0;
+  static const pad = 16.0;
   static const gap = 12.0;
 
-  static const cardRadius = 6.0;
+  static const cardRadius = 14.0;
   static const cardAspectRatio = 1.48;
   static const subCardAspectRatio = 1.22;
   static const titlePad = 12.0;
@@ -23,7 +23,7 @@ abstract final class CategoriesTheme {
         childAspectRatio: subCardAspectRatio,
       );
 
-  static const chipRadius = 4.0;
+  static const chipRadius = 8.0;
   static const cardBorderWidth = 1.0;
 
   static const canvas = Color(0xFFFFFFFF);

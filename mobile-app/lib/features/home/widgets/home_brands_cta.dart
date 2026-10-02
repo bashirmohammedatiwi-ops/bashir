@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/app_strings.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../worlds/world_theme.dart';
 import 'home_theme.dart';
 
 /// زر بارز لعرض كل البراندات — أسفل أقسام الرئيسية.
@@ -14,6 +14,7 @@ class HomeBrandsCta extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.s;
+    final t = context.worldTheme;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 4, HomeTheme.paddingH, 14),
@@ -27,11 +28,11 @@ class HomeBrandsCta extends ConsumerWidget {
           borderRadius: BorderRadius.circular(18),
           child: Ink(
             decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
+              gradient: t.signatureGradient,
               borderRadius: BorderRadius.circular(18),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.28),
+                  color: t.accent.withValues(alpha: 0.28),
                   blurRadius: 18,
                   offset: const Offset(0, 8),
                 ),

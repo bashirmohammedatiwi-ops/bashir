@@ -89,8 +89,15 @@ class CartEmptyView extends ConsumerWidget {
                     height: 52,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
-                        gradient: CartTheme.brandGradient,
+                        gradient: CartTheme.signatureGradient,
                         borderRadius: BorderRadius.circular(999),
+                        boxShadow: [
+                          BoxShadow(
+                            color: CartTheme.brand.withValues(alpha: 0.25),
+                            blurRadius: 14,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
                       ),
                       child: FilledButton(
                         onPressed: () => ref.read(navIndexProvider.notifier).state = 0,

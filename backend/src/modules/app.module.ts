@@ -22,8 +22,10 @@ import { NotificationsModule } from "./notifications/notifications.module";
 import { LoyaltyModule } from "./loyalty/loyalty.module";
 import { SyncModule } from "./sync/sync.module";
 import { HomeModule } from "./home/home.module";
+import { WorldsModule } from "./worlds/worlds.module";
 import { ShippingModule } from "./shipping/shipping.module";
 import { AiProductModule } from "./ai-product/ai-product.module";
+import { AssistantModule } from "./assistant/assistant.module";
 import { AdminCacheController } from "./admin/admin-cache.controller";
 
 const redisEnabled = process.env.REDIS_DISABLED !== "1";
@@ -68,9 +70,11 @@ const conditionalImports: DynamicModule[] = redisEnabled
     NotificationsModule,
     LoyaltyModule,
     HomeModule,
+    WorldsModule,
     SyncModule,
     ShippingModule,
     AiProductModule,
+    AssistantModule,
   ],
   controllers: [AdminCacheController],
   providers: [

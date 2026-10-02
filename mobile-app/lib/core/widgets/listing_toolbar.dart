@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../theme/app_colors.dart';
+import '../../features/worlds/world_theme.dart';
 
 /// شريط ترتيب/تصفية — مسطح بدون ظلال.
 class ListingToolbar extends StatelessWidget {
@@ -59,6 +59,7 @@ class _ToolChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -66,10 +67,11 @@ class _ToolChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         child: Ink(
           decoration: BoxDecoration(
-            color: active ? AppColors.primaryLight : const Color(0xFFF3F3F4),
+            color: active ? t.accentLight : t.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: active ? AppColors.primarySoft : AppColors.hairline.withValues(alpha: 0.75),
+              color: active ? t.accent.withValues(alpha: 0.42) : t.hairline.withValues(alpha: 0.85),
+              width: active ? 1.2 : 1,
             ),
           ),
           padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 12),
@@ -79,7 +81,7 @@ class _ToolChip extends StatelessWidget {
               Icon(
                 icon,
                 size: 17,
-                color: active ? AppColors.primaryDark : const Color(0xFF7A757F),
+                color: active ? t.accentDark : t.inkMuted,
               ),
               const SizedBox(width: 6),
               Flexible(
@@ -90,8 +92,8 @@ class _ToolChip extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: active ? AppColors.primaryDark : AppColors.textPrimary,
+                    fontWeight: active ? FontWeight.w800 : FontWeight.w700,
+                    color: active ? t.accentDark : t.ink,
                   ),
                 ),
               ),

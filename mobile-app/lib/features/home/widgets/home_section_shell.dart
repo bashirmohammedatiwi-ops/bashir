@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_section.dart';
-import '../../cart/widgets/cart_theme.dart';
+import '../../worlds/world_theme.dart';
 import '../home_link.dart';
 import 'home_theme.dart';
 
@@ -139,6 +139,7 @@ class HomeSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return Padding(
       padding: EdgeInsets.fromLTRB(
         HomeTheme.paddingH,
@@ -154,7 +155,7 @@ class HomeSectionHeader extends StatelessWidget {
             height: compact ? 28 : 34,
             margin: const EdgeInsetsDirectional.only(end: 12, top: 2),
             decoration: BoxDecoration(
-              gradient: CartTheme.brandGradient,
+              gradient: t.primaryGradient,
               borderRadius: BorderRadius.circular(99),
             ),
           ),
@@ -175,13 +176,19 @@ class HomeSectionHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (overline != null && overline!.isNotEmpty) ...[
-                  Text(overline!, style: HomeTheme.overline),
+                  Text(
+                    overline!,
+                    style: HomeTheme.overline.copyWith(color: t.inkMuted),
+                  ),
                   const SizedBox(height: 2),
                 ],
-                Text(title, style: HomeTheme.sectionTitle(size: compact ? 16 : 17)),
+                Text(
+                  title,
+                  style: HomeTheme.sectionTitle(size: compact ? 16 : 17).copyWith(color: t.ink),
+                ),
                 if (subtitle != null && subtitle!.isNotEmpty) ...[
                   const SizedBox(height: 2),
-                  Text(subtitle!, style: HomeTheme.body(size: 12)),
+                  Text(subtitle!, style: HomeTheme.body(size: 12).copyWith(color: t.inkSoft)),
                 ],
               ],
             ),

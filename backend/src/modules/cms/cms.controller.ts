@@ -113,9 +113,13 @@ export class CmsController {
   }
 
   // ---- Home Blocks ----
-  @Public() @Get("home-blocks") listHome(@Query("active") active?: string, @Query("page") page?: string) {
+  @Public() @Get("home-blocks") listHome(
+    @Query("active") active?: string,
+    @Query("page") page?: string,
+    @Query("worldId") worldId?: string,
+  ) {
     const pageKey = page?.toLowerCase() === "offers" ? CmsPageKey.OFFERS : CmsPageKey.HOME;
-    return this.home.list(active !== "0", pageKey);
+    return this.home.list(active !== "0", pageKey, worldId);
   }
 
   @ApiBearerAuth() @UseGuards(JwtAuthGuard, RolesGuard) @Roles(Role.SUPER_ADMIN, Role.ADMIN)

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/config/app_config.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/providers/app_info_provider.dart';
+import '../../core/theme/app_colors.dart';
 import '../../core/utils/support_links.dart';
 import '../cart/widgets/cart_theme.dart';
 import '../profile/widgets/account_theme.dart';
@@ -84,13 +85,26 @@ class _AboutHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
       child: Column(
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Image.asset(
-              'assets/images/alhayaa_logo.png',
-              width: 80,
-              height: 80,
-              fit: BoxFit.cover,
+          Container(
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: AppColors.signatureGradient,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.2),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/images/alhayaa_logo.png',
+                width: 80,
+                height: 80,
+                fit: BoxFit.cover,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -109,7 +123,16 @@ class _AboutHeader extends StatelessWidget {
             '${s.version} $version',
             style: ProfileUi.captionStyle(),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 3,
+            decoration: BoxDecoration(
+              gradient: AppColors.signatureGradient,
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+          const SizedBox(height: 14),
           Text(
             s.aboutDescription,
             textAlign: TextAlign.center,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../theme/app_colors.dart';
+import '../theme/app_fonts.dart';
 import '../theme/app_spacing.dart';
 
 /// Snackbar موحّد — نجاح، خطأ، معلومات.
@@ -11,7 +12,7 @@ abstract final class AppSnackbar {
       ..clearSnackBars()
       ..showSnackBar(
         SnackBar(
-          content: Text(message),
+          content: Text(message, style: appFont(color: Colors.white, fontWeight: FontWeight.w600)),
           duration: duration ?? const Duration(seconds: 2),
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(AppSpacing.lg),
@@ -29,7 +30,7 @@ abstract final class AppSnackbar {
             children: [
               const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
               const SizedBox(width: AppSpacing.sm),
-              Expanded(child: Text(message)),
+              Expanded(child: Text(message, style: appFont(color: Colors.white, fontWeight: FontWeight.w600))),
             ],
           ),
           backgroundColor: AppColors.success,
@@ -134,7 +135,7 @@ abstract final class AppSnackbar {
                       onViewCart();
                     },
                     style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primarySoft,
+                      foregroundColor: AppColors.rose,
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -160,7 +161,7 @@ abstract final class AppSnackbar {
             children: [
               const Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
               const SizedBox(width: AppSpacing.sm),
-              Expanded(child: Text(message)),
+              Expanded(child: Text(message, style: appFont(color: Colors.white, fontWeight: FontWeight.w600))),
             ],
           ),
           backgroundColor: AppColors.sale,
@@ -182,11 +183,12 @@ abstract final class AppSnackbar {
       ..clearSnackBars()
       ..showSnackBar(
         SnackBar(
-          content: Text(message),
+          content: Text(message, style: appFont(color: Colors.white, fontWeight: FontWeight.w600)),
+          backgroundColor: AppColors.ink,
           duration: const Duration(seconds: 3),
           action: SnackBarAction(
             label: actionLabel,
-            textColor: Colors.white,
+            textColor: AppColors.rose,
             onPressed: onAction,
           ),
           behavior: SnackBarBehavior.floating,

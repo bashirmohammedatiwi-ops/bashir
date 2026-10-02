@@ -6,6 +6,7 @@ import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify
 import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger";
 import helmet from "@fastify/helmet";
 import multipart from "@fastify/multipart";
+import websocket from "@fastify/websocket";
 import compress from "@fastify/compress";
 import fastifyStatic from "@fastify/static";
 import * as path from "path";
@@ -41,6 +42,7 @@ async function bootstrap() {
   await app.register(multipart, {
     limits: { fileSize: 20 * 1024 * 1024 },
   });
+  await app.register(websocket as any);
   await app.register(compress as any, { encodings: ["gzip", "deflate"] });
 
   const mediaRoot = path.resolve(process.env.MEDIA_ROOT ?? "./uploads");
@@ -75,11 +77,26 @@ async function bootstrap() {
   };
   const allowedOrigins = allowAllOrigins ? ["*"] : expandCorsOrigins(corsOrigins);
 
+  const isTunnelOrigin = (origin: string): boolean => {
+    try {
+      const host = new URL(origin).hostname;
+      return (
+        host.endsWith(".tunnelmole.net") ||
+        host.endsWith(".trycloudflare.com") ||
+        host === "tunnelmole.net" ||
+        host === "trycloudflare.com"
+      );
+    } catch {
+      return false;
+    }
+  };
+
   app.enableCors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       if (allowAllOrigins) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (isTunnelOrigin(origin)) return callback(null, true);
       if (isDev && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
         return callback(null, true);
       }

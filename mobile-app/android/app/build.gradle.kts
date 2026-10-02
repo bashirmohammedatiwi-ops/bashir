@@ -30,7 +30,7 @@ android {
 
     defaultConfig {
         applicationId = "com.deemaalhayat.app"
-        minSdk = flutter.minSdkVersion
+        minSdk = maxOf(flutter.minSdkVersion, 23)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

@@ -9,7 +9,6 @@ import '../../core/navigation/app_navigation.dart';
 import '../../features/cart/cart_provider.dart';
 import '../../features/wishlist/wishlist_provider.dart';
 import '../l10n/app_strings.dart';
-import '../l10n/locale_provider.dart';
 import '../theme/app_colors.dart';
 import 'app_snackbar.dart';
 
@@ -47,11 +46,17 @@ class ProductCardWishButton extends ConsumerWidget {
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: wished ? AppColors.primaryLight : const Color(0xFFF5F5F6),
+            color: Colors.white,
             border: Border.all(
-              color: wished ? AppColors.primarySoft : AppColors.hairline.withValues(alpha: 0.85),
-              width: wished ? 1.2 : 0.8,
+              color: wished ? AppColors.primary.withValues(alpha: 0.35) : const Color(0xFFE5E0EC),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.ink.withValues(alpha: 0.06),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Icon(
             wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
@@ -211,7 +216,7 @@ class _HomeBadgeCartButton extends StatelessWidget {
               width: side,
               height: side,
               decoration: BoxDecoration(
-                color: inCart ? AppColors.primary : const Color(0xFFF3F3F4),
+                color: inCart ? AppColors.primary : AppColors.elevated,
                 borderRadius: BorderRadius.circular(radius),
                 border: Border.all(
                   color: inCart ? AppColors.primary : AppColors.hairline.withValues(alpha: 0.75),
@@ -228,7 +233,7 @@ class _HomeBadgeCartButton extends StatelessWidget {
               ),
               child: Icon(
                 Icons.shopping_bag_outlined,
-                color: inCart ? Colors.white : const Color(0xFF7A757F),
+                color: inCart ? Colors.white : AppColors.textSecondary,
                 size: compact ? 17 : 18,
               ),
             ),
@@ -269,8 +274,8 @@ class _AddCartButton extends StatelessWidget {
 
   const _AddCartButton({required this.onTap, this.compact = false});
 
-  static const _bg = Color(0xFFF3F3F4);
-  static const _icon = Color(0xFF7A757F);
+  static const _bg = AppColors.elevated;
+  static const _icon = AppColors.textSecondary;
 
   @override
   Widget build(BuildContext context) {
@@ -315,7 +320,7 @@ class _DisabledCartButton extends StatelessWidget {
       height: side,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: const Color(0xFFEBEBED),
+        color: AppColors.primarySoft,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: AppColors.hairline.withValues(alpha: 0.6)),
       ),
@@ -350,7 +355,7 @@ class _CartQtyStepper extends StatelessWidget {
       height: height,
       constraints: BoxConstraints(minWidth: compact ? 78 : 96),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F3F4),
+        color: AppColors.elevated,
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: AppColors.hairline.withValues(alpha: 0.8)),
         boxShadow: compact
@@ -425,13 +430,13 @@ class _StepIconButton extends StatelessWidget {
               height: filled ? size - 6 : size - 8,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                color: filled ? const Color(0xFF7A757F) : Colors.transparent,
+                color: filled ? AppColors.primaryDark : Colors.transparent,
                 border: filled ? null : Border.all(color: AppColors.hairline),
               ),
               child: Icon(
                 icon,
                 size: filled ? 16 : 15,
-                color: filled ? Colors.white : const Color(0xFF7A757F),
+                color: filled ? Colors.white : AppColors.textSecondary,
               ),
             ),
           ),

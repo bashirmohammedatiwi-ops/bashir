@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/shell/main_shell.dart';
+import '../../features/shell/nav_tabs.dart';
 
 final rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -16,16 +17,19 @@ void openMainTab(BuildContext context, ProviderContainer container, int index) {
 }
 
 void openCartTab(BuildContext context, ProviderContainer container) =>
-    openMainTab(context, container, 3);
+    openMainTab(context, container, NavTabs.cart);
 
 void openOffersTab(BuildContext context, ProviderContainer container) =>
-    openMainTab(context, container, 2);
+    openMainTab(context, container, NavTabs.offers);
 
 void openCategoriesTab(BuildContext context, ProviderContainer container) =>
-    openMainTab(context, container, 1);
+    openMainTab(context, container, NavTabs.categories);
+
+void openAssistantTab(BuildContext context, ProviderContainer container) =>
+    openHomeTab(context, container);
 
 void openHomeTab(BuildContext context, ProviderContainer container) =>
-    openMainTab(context, container, 0);
+    openMainTab(context, container, NavTabs.home);
 
 /// للاستخدام بدون BuildContext (مثل الإشعارات الفورية).
 void openMainTabFromContainer(ProviderContainer container, int index) {
@@ -38,7 +42,10 @@ void openMainTabFromContainer(ProviderContainer container, int index) {
 }
 
 void openCartFromContainer(ProviderContainer container) =>
-    openMainTabFromContainer(container, 3);
+    openMainTabFromContainer(container, NavTabs.cart);
 
 void openOffersFromContainer(ProviderContainer container) =>
-    openMainTabFromContainer(container, 2);
+    openMainTabFromContainer(container, NavTabs.offers);
+
+void openAssistantFromContainer(ProviderContainer container) =>
+    openMainTabFromContainer(container, NavTabs.home);

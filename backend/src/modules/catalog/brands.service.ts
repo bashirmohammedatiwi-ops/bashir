@@ -12,7 +12,7 @@ function mapBrand(b: any) {
   };
 }
 
-function normalizeBrandKey(name = "") {
+export function normalizeBrandKey(name = "") {
   let key = String(name || "")
     .toLowerCase()
     .normalize("NFKD")

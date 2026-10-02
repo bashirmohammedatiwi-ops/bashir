@@ -10,6 +10,7 @@ import '../../core/navigation/deep_link_redirect.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/barcode_util.dart';
+import '../../core/widgets/camera_corner_frame.dart';
 import '../../data/services/api_service.dart';
 
 /// تنسيقات الباركود الخطي للمنتجات (بدون QR).
@@ -108,9 +109,7 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> with WidgetsBinding
 
     if (!mounted) return;
     context.pop();
-    context.push(
-      '/products?search=${Uri.encodeComponent(lookupCode)}&title=${Uri.encodeComponent(ref.read(stringsProvider).scanResults)}',
-    );
+    context.push('/search?q=${Uri.encodeComponent(lookupCode)}');
   }
 
   @override
@@ -138,34 +137,67 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> with WidgetsBinding
         fit: StackFit.expand,
         children: [
           MobileScanner(controller: _controller, onDetect: _onDetect),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  AppColors.ink.withValues(alpha: 0.45),
+                  Colors.transparent,
+                  Colors.transparent,
+                  AppColors.ink.withValues(alpha: 0.55),
+                ],
+                stops: const [0.0, 0.22, 0.72, 1.0],
+              ),
+            ),
+          ),
           IgnorePointer(
             child: Center(
-              child: Container(
+              child: SizedBox(
                 width: 300,
                 height: 120,
-                decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.primary, width: 3),
-                  borderRadius: BorderRadius.circular(12),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.55), width: 1.5),
+                      ),
+                    ),
+                    const CameraCornerFrame(inset: 0, arm: 18, opacity: 0.95),
+                  ],
                 ),
               ),
             ),
           ),
           if (_busy)
-            const ColoredBox(
-              color: Color(0x66000000),
-              child: Center(child: CircularProgressIndicator(color: Colors.white)),
+            ColoredBox(
+              color: AppColors.ink.withValues(alpha: 0.45),
+              child: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
             ),
           Positioned(
-            left: 0,
-            right: 0,
+            left: 24,
+            right: 24,
             bottom: 32,
-            child: Text(
-              s.scanHint,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                shadows: [Shadow(color: Colors.black54, blurRadius: 8)],
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.surface.withValues(alpha: 0.92),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.primarySoft),
+                boxShadow: AppColors.cardShadow,
+              ),
+              child: Text(
+                s.scanHint,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                  height: 1.4,
+                ),
               ),
             ),
           ),

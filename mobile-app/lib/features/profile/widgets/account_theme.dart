@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/theme/app_colors.dart';
 import '../../cart/widgets/cart_theme.dart';
 
 /// ثيم صفحة حسابي — ألوان واضحة ومتناسقة مع هوية اللوغو.
 abstract final class AccountTheme {
-  static const pageBg = Color(0xFFF6FAF9);
+  static const pageBg = Color(0xFFF8F6FB);
   static const sectionGap = 18.0;
   static const hPad = 16.0;
 
-  static const orders = Color(0xFF2F9E8F);
-  static const wishlist = Color(0xFFE2557A);
+  static const orders = Color(0xFF9B6BD8);
+  static const wishlist = Color(0xFFD16FA0);
   static const loyalty = Color(0xFFC99212);
   static const addresses = Color(0xFF4B7FD6);
   static const brands = Color(0xFF7B5FD4);
-  static const notifications = Color(0xFF3A9E8F);
+  static const notifications = Color(0xFF9B6BD8);
   static const settings = Color(0xFF5C6B7A);
   static const danger = Color(0xFFD64545);
   static const dangerSoft = Color(0xFFFFF0F0);
@@ -26,11 +27,7 @@ abstract final class AccountTheme {
       );
 
   static BoxDecoration heroDecoration() => BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: [Color(0xFF45B0A1), Color(0xFF2A7A6F), Color(0xFF245F57)],
-        ),
+        gradient: AppColors.signatureGradient,
         borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(

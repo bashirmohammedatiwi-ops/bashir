@@ -21,6 +21,7 @@ import '../auth/auth_provider.dart';
 import '../cart/cart_provider.dart';
 import '../cart/coupon_provider.dart';
 import '../shell/main_shell.dart';
+import '../shell/nav_tabs.dart';
 import '../catalog/catalog_providers.dart';
 import '../profile/widgets/address_form.dart';
 import '../profile/profile_providers.dart';
@@ -328,12 +329,33 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           icon: Icons.shopping_bag_outlined,
           title: s.emptyCartTitle,
           subtitle: s.emptyCartSubtitle,
-          action: ElevatedButton(
-            onPressed: () {
-              ref.read(navIndexProvider.notifier).state = 3;
-              context.go('/');
-            },
-            child: Text(s.goToCart),
+          action: SizedBox(
+            height: 48,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: CheckoutTheme.signatureGradient,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(999),
+                  onTap: () {
+                    ref.read(navIndexProvider.notifier).state = NavTabs.cart;
+                    context.go('/');
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Center(
+                      child: Text(
+                        s.goToCart,
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
         ),
       );

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/home_section.dart';
+import '../../worlds/world_theme.dart';
 import '../home_link.dart';
 import '../widgets/home_animations.dart';
 import '../widgets/home_marquee.dart';
@@ -74,6 +75,7 @@ class _PromoCard extends StatelessWidget {
 
     final bg = _bg(strip);
     final fg = _textColor(strip);
+    final t = context.worldTheme;
     final icon = strip.icon?.trim();
     final style = HomeTheme.body(size: 13, color: fg, weight: FontWeight.w600);
 
@@ -83,7 +85,11 @@ class _PromoCard extends StatelessWidget {
         onTap: strip.hasLink ? () => _openLink(context, strip) : null,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: HomeTheme.sectionSurface(tint: bg),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(HomeTheme.cardRadius),
+            border: Border.all(color: t.divider),
+          ),
           child: Row(
             children: [
               if (strip.showIcon) ...[
@@ -91,7 +97,7 @@ class _PromoCard extends StatelessWidget {
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
-                    color: HomeTheme.accentLight,
+                    color: t.accentLight,
                     shape: BoxShape.circle,
                   ),
                   alignment: Alignment.center,
@@ -140,6 +146,7 @@ class _SlimTicker extends StatelessWidget {
 
     final bg = _bg(strip);
     final fg = _textColor(strip);
+    final t = context.worldTheme;
     final icon = strip.icon?.trim();
 
     return HomeTapScale(
@@ -150,7 +157,7 @@ class _SlimTicker extends StatelessWidget {
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: fg.withValues(alpha: 0.08)),
+          border: Border.all(color: t.hairline.withValues(alpha: 0.35)),
         ),
         child: Row(
           children: [
@@ -194,6 +201,7 @@ class _NewsTicker extends StatelessWidget {
 
     final bg = _bg(strip);
     final fg = _textColor(strip);
+    final t = context.worldTheme;
     final label = strip.labelForLang(lang).trim();
 
     return HomeTapScale(
@@ -204,7 +212,7 @@ class _NewsTicker extends StatelessWidget {
           color: bg,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: fg.withValues(alpha: 0.06)),
-          boxShadow: HomeTheme.softShadow,
+          boxShadow: t.cardShadow,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(14),
@@ -213,7 +221,7 @@ class _NewsTicker extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                color: AppColors.primary.withValues(alpha: 0.12),
+                color: t.accent.withValues(alpha: 0.12),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -232,7 +240,7 @@ class _NewsTicker extends StatelessWidget {
                       label,
                       style: HomeTheme.body(
                         size: 11,
-                        color: AppColors.primary,
+                        color: t.accent,
                         weight: FontWeight.w800,
                       ),
                     ),

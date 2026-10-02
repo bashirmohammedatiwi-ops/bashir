@@ -8,13 +8,18 @@ import '../../features/home/home_link.dart';
 import '../navigation/app_navigation.dart';
 import '../utils/support_links.dart';
 
-/// يفتح وجهة الإشعار حسب نوع الرابط.
+/// يفتح وجهة الإشعار حسب نوع الرابط (من القائمة أو من Push).
 void openNotificationLink(BuildContext context, AppNotification notification) {
-  final linkType = (notification.linkType ?? '').toUpperCase();
+  final linkType = (notification.linkType ?? '').trim().toUpperCase();
   final linkId = notification.linkId?.trim() ?? '';
   final linkSlug = notification.linkSlug?.trim() ?? '';
   final externalUrl = notification.externalUrl?.trim() ?? '';
   final s = ProviderScope.containerOf(context).read(stringsProvider);
+  final router = GoRouter.of(context);
+
+  void goPath(String path) {
+    router.push(path);
+  }
 
   if (linkType == 'EXTERNAL_URL' && externalUrl.isNotEmpty) {
     openExternalUrl(externalUrl);
@@ -27,46 +32,59 @@ void openNotificationLink(BuildContext context, AppNotification notification) {
   }
 
   if (linkType == 'ORDER' && linkId.isNotEmpty) {
-    context.push('/orders/$linkId');
+    goPath('/orders/$linkId');
     return;
   }
 
   if (linkType == 'PRODUCT') {
     final target = linkSlug.isNotEmpty ? linkSlug : linkId;
-    if (target.isNotEmpty) context.push('/product/$target');
+    if (target.isNotEmpty) goPath('/product/$target');
     return;
   }
 
   if (linkType == 'CATEGORY') {
     if (linkSlug.isNotEmpty) {
-      context.push('/category/$linkSlug');
+      goPath('/category/$linkSlug');
       return;
     }
     if (linkId.isNotEmpty) {
-      context.push('/products?categoryId=$linkId&title=${Uri.encodeComponent(s.categoriesTitle)}');
+      final q = {
+        'categoryId': linkId,
+        'title': s.categoriesTitle,
+      };
+      goPath(Uri(path: '/products', queryParameters: q).toString());
     }
     return;
   }
 
   if (linkType == 'BRAND') {
-    if (linkSlug.isNotEmpty) {
-      context.push('/brand/$linkSlug');
+    // brandId أكثر ثباتاً من الـ slug عند فتح الإشعار.
+    if (linkId.isNotEmpty) {
+      final title = (notification.linkLabel?.trim().isNotEmpty == true)
+          ? notification.linkLabel!.trim()
+          : s.brands;
+      goPath(
+        Uri(
+          path: '/products',
+          queryParameters: {'brandId': linkId, 'title': title},
+        ).toString(),
+      );
       return;
     }
-    if (linkId.isNotEmpty) {
-      context.push('/products?brandId=$linkId&title=${Uri.encodeComponent(s.brands)}');
+    if (linkSlug.isNotEmpty) {
+      goPath('/brand/$linkSlug');
     }
     return;
   }
 
   if (linkType == 'PACKAGE') {
     final target = linkSlug.isNotEmpty ? linkSlug : linkId;
-    if (target.isNotEmpty) context.push('/package/$target');
+    if (target.isNotEmpty) goPath('/package/$target');
     return;
   }
 
   if (notification.type.toUpperCase() == 'ORDER' && linkId.isNotEmpty) {
-    context.push('/orders/$linkId');
+    goPath('/orders/$linkId');
     return;
   }
 
@@ -76,21 +94,29 @@ void openNotificationLink(BuildContext context, AppNotification notification) {
   }
 }
 
-/// من بيانات FCM.
+/// من بيانات FCM — يوحّد المفاتيح المحتملة من Android/iOS.
 void openPushPayload(BuildContext context, Map<String, dynamic> data) {
+  String? pick(List<String> keys) {
+    for (final key in keys) {
+      final v = data[key]?.toString().trim();
+      if (v != null && v.isNotEmpty) return v;
+    }
+    return null;
+  }
+
   openNotificationLink(
     context,
     AppNotification(
-      id: data['notificationId']?.toString() ?? '',
-      type: data['type']?.toString() ?? '',
-      title: data['title']?.toString() ?? '',
-      body: data['body']?.toString() ?? '',
-      imageUrl: data['imageUrl']?.toString(),
-      linkType: data['linkType']?.toString(),
-      linkId: data['linkId']?.toString(),
-      linkSlug: data['linkSlug']?.toString(),
-      linkLabel: data['linkLabel']?.toString(),
-      externalUrl: data['externalUrl']?.toString(),
+      id: pick(['notificationId', 'notification_id', 'id']) ?? '',
+      type: pick(['type']) ?? '',
+      title: pick(['title']) ?? '',
+      body: pick(['body']) ?? '',
+      imageUrl: pick(['imageUrl', 'image_url', 'image']),
+      linkType: pick(['linkType', 'link_type']),
+      linkId: pick(['linkId', 'link_id']),
+      linkSlug: pick(['linkSlug', 'link_slug']),
+      linkLabel: pick(['linkLabel', 'link_label']),
+      externalUrl: pick(['externalUrl', 'external_url', 'url']),
     ),
   );
 }

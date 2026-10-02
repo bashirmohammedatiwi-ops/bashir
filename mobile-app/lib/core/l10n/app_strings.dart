@@ -21,6 +21,7 @@ class AppStrings {
   // ─── Navigation ───────────────────────────────────────────────────────────
   String get navHome => isAr ? 'الرئيسية' : 'Home';
   String get navCategories => isAr ? 'الفئات' : 'Categories';
+  String get navAssistant => isAr ? 'المساعد' : 'AI';
   String get navOffers => isAr ? 'عروضنا' : 'Offers';
   String get navCart => isAr ? 'السلة' : 'Cart';
   String get navAccount => isAr ? 'حسابي' : 'Account';
@@ -44,7 +45,7 @@ class AppStrings {
   String get searchHintHome =>
       isAr ? 'ابحثي عن منتج، براند، أو باركود…' : 'Search products, brands, or barcodes…';
   String get searchHint =>
-      isAr ? 'ابحث عن منتج، علامة، تصنيف...' : 'Search products, brands, categories...';
+      isAr ? 'ابحثي بالعربي أو الإنجليزي…' : 'Search in Arabic or English…';
   String get scan => isAr ? 'مسح' : 'Scan';
   String get scanBarcode => isAr ? 'مسح الباركود' : 'Scan Barcode';
   String get authentic => isAr ? 'أصلية' : 'Authentic';
@@ -134,6 +135,8 @@ class AppStrings {
       isAr ? 'اكتشفي ما يناسبك بصرياً وسهولة' : 'Discover what suits you — visually and easily';
   String get categoriesSearchPlaceholder =>
       isAr ? 'ابحثي عن قسم أو منتج...' : 'Search for a category or product...';
+  String get categoriesAndBrands => isAr ? 'أقسام وبراندات' : 'Categories & brands';
+  String get brandsAzIndex => isAr ? 'حسب الحرف' : 'A–Z';
   String get searchShort => isAr ? 'بحث' : 'Search';
   String get browseInDetail => isAr ? 'تصفّح بالتفصيل' : 'Browse in detail';
   String groupCount(int n) => isAr ? '$n مجموعة' : '$n groups';
@@ -154,8 +157,8 @@ class AppStrings {
   String get selectTertiarySection =>
       isAr ? 'اختر قسمًا ثانويًا' : 'Choose a sub-section';
   String get tertiarySectionsHint => isAr
-      ? 'اضغطي على «الأقسام الثانوية» أسفل البطاقة لعرض التفاصيل'
-      : 'Tap «Sub-sections» below a card to see details';
+      ? 'اضغطي على القسم الفرعي لعرض الأقسام الثانوية، أو على أيقونة الحقيبة لفتح كل منتجاته'
+      : 'Tap a subcategory to expand secondary sections, or the bag icon for all its products';
   String get viewAllProducts => isAr ? 'عرض الكل' : 'View all';
   String get noSubcategories => isAr ? 'لا أقسام فرعية' : 'No subcategories';
   String get browseAllProductsDirect =>
@@ -227,7 +230,10 @@ class AppStrings {
       ? (stock == 1 ? 'آخر قطعة' : 'متبقى $stock قطع')
       : (stock == 1 ? 'Last one' : 'Only $stock left');
   String get inStock => isAr ? 'متوفر في المخزون' : 'In stock';
-  String get selectShade => isAr ? 'اختاري الدرجة' : 'Select shade';
+  String get selectShade => isAr ? 'اختاري التدرج' : 'Select shade';
+  String get scrollAllShades => isAr ? 'مرّري لعرض كل التدرجات' : 'Swipe to see all shades';
+  String shadePosition(int current, int total) =>
+      isAr ? '$current من $total' : '$current of $total';
   String get authentic100 => isAr ? 'منتجات\nأصلية 100%' : '100%\nAuthentic';
   String get securePayment => isAr ? 'دفع\nعند الاستلام' : 'Cash on\nDelivery';
   String get thanksForReview => isAr ? 'شكراً على تقييمك!' : 'Thanks for your review!';
@@ -279,10 +285,18 @@ class AppStrings {
 
   // ─── Search ───────────────────────────────────────────────────────────────
   String get recentlyViewed => isAr ? 'شاهدت مؤخراً' : 'Recently Viewed';
-  String get noSearchResults => isAr ? 'لا توجد نتائج' : 'No results found';
+  String get noSearchResults => isAr ? 'لا توجد منتجات مطابقة' : 'No matching products';
+  String get searchProductsSection => isAr ? 'المنتجات' : 'Products';
+  String searchProductsFound(int count) =>
+      isAr ? '$count ${count == 1 ? 'منتج' : 'منتجات'}' : '$count ${count == 1 ? 'product' : 'products'}';
+  String get searchBrowseAlso => isAr ? 'تصفّحي أيضاً' : 'Browse also';
   String get searchInStore => isAr ? 'ابحث في ديما الحياة' : 'Search deema alhayat';
-  String get searchInStoreHint =>
-      isAr ? 'اكتب اسم المنتج أو العلامة التجارية' : 'Type a product or brand name';
+  String get searchInStoreHint => isAr
+      ? 'ابحثي بالعربي أو الإنجليزي — الاسم، البراند، القسم، أو الباركود'
+      : 'Search in Arabic or English — name, brand, category, or barcode';
+  String get recentSearches => isAr ? 'بحثتِ عنها' : 'Recent searches';
+  String get alsoMatches => isAr ? 'يطابق أيضاً' : 'Also matches';
+  String get quickIdeas => isAr ? 'اقتراحات سريعة' : 'Quick ideas';
   String get clear => isAr ? 'مسح' : 'Clear';
   String get scanResults => isAr ? 'نتائج المسح' : 'Scan Results';
   String get scanHint => isAr ? 'وجّه الكاميرا نحو باركود المنتج' : 'Point the camera at the product barcode';

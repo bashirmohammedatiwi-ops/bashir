@@ -53,7 +53,13 @@ export const queries = {
   packages: () =>
     api.get("/packages", { params: { all: 1, lite: 1 } }).then((r) => r.data?.data ?? r.data),
   coupons: () => api.get("/coupons").then((r) => r.data?.data ?? r.data),
-  homeBlocks: () => api.get("/home-blocks?active=0&page=home").then((r) => r.data?.data ?? r.data),
+  assistantGuides: () => api.get("/assistant/guides").then((r) => r.data?.data ?? r.data),
+  assistantInsights: (days: number) =>
+    api.get("/assistant/insights", { params: { days } }).then((r) => r.data?.data ?? r.data),
+  homeBlocks: (worldId?: string) =>
+    api
+      .get("/home-blocks", { params: { active: 0, page: "home", ...(worldId ? { worldId } : {}) } })
+      .then((r) => r.data?.data ?? r.data),
   offersBlocks: () => api.get("/home-blocks?active=0&page=offers").then((r) => r.data?.data ?? r.data),
   media: (params?: any) => api.get("/media", { params }).then((r) => r.data),
   mediaById: (id: string) => api.get(`/media/${id}`).then((r) => r.data?.data ?? r.data),
@@ -81,6 +87,7 @@ export const queries = {
   loyalty: (userId: string) =>
     api.get(`/loyalty/users/${userId}`).then((r) => r.data?.data ?? r.data),
   homePreview: () => api.get("/home").then((r) => r.data?.data ?? r.data),
+  worldsManage: () => api.get("/worlds/manage").then((r) => r.data?.data ?? r.data),
 };
 
 export const mutations = {
@@ -206,6 +213,9 @@ export const mutations = {
     api.patch(`/skin-concerns/${id}`, data).then((r) => r.data?.data ?? r.data),
   deleteSkinConcern: (id: string) => api.delete(`/skin-concerns/${id}`).then((r) => r.data),
 
+  updateWorld: (id: string, data: any) =>
+    api.patch(`/worlds/${id}`, data).then((r) => r.data?.data ?? r.data),
+
   createShippingZone: (data: any) =>
     api.post("/shipping/zones", data).then((r) => r.data?.data ?? r.data),
   updateShippingZone: (id: string, data: any) =>
@@ -217,6 +227,10 @@ export const mutations = {
     api.patch(`/shipping/areas/${id}`, data).then((r) => r.data?.data ?? r.data),
   deleteShippingArea: (id: string) => api.delete(`/shipping/areas/${id}`).then((r) => r.data),
 
+  createAssistantGuide: (data: any) => api.post("/assistant/guides", data).then((r) => r.data?.data ?? r.data),
+  updateAssistantGuide: (id: string, data: any) =>
+    api.patch(`/assistant/guides/${id}`, data).then((r) => r.data?.data ?? r.data),
+  deleteAssistantGuide: (id: string) => api.delete(`/assistant/guides/${id}`).then((r) => r.data),
   createCoupon: (data: any) => api.post("/coupons", data).then((r) => r.data?.data ?? r.data),
   updateCoupon: (id: string, data: any) =>
     api.patch(`/coupons/${id}`, data).then((r) => r.data?.data ?? r.data),

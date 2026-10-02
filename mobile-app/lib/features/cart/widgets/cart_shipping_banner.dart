@@ -88,7 +88,7 @@ class CartShippingBanner extends ConsumerWidget {
                     child: LinearProgressIndicator(
                       value: progress,
                       minHeight: 4,
-                      backgroundColor: Colors.white,
+                      backgroundColor: AppColors.primarySoft,
                       color: CartTheme.brand,
                     ),
                   ),

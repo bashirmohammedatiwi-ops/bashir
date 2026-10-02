@@ -10,6 +10,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../auth/auth_provider.dart';
 import '../../profile/profile_providers.dart';
 import '../../shell/main_shell.dart';
+import '../../worlds/world_theme.dart';
 import 'home_theme.dart';
 
 /// هيدر الرئيسية — علامة في الوسط، أيقونات رفيعة، بحث كبسولة.
@@ -26,6 +27,7 @@ class HomeHeader extends ConsumerWidget {
     final solid = scrollProgress > 0.06;
     final lang = ref.watch(languageCodeProvider);
     final s = ref.s;
+    final theme = ref.worldTheme;
     final storeName = AppConfig.displayStoreName(lang);
 
     return AnimatedContainer(
@@ -38,10 +40,10 @@ class HomeHeader extends ConsumerWidget {
         12,
       ),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: solid ? 0.92 : 0),
+        color: theme.surface.withValues(alpha: solid ? 0.92 : 0),
         border: Border(
           bottom: BorderSide(
-            color: HomeTheme.blushDeep.withValues(alpha: solid ? 0.7 : 0),
+            color: theme.hairline.withValues(alpha: solid ? 0.7 : 0),
             width: 0.5,
           ),
         ),
@@ -61,19 +63,19 @@ class HomeHeader extends ConsumerWidget {
                       width: 28,
                       height: 28,
                       decoration: BoxDecoration(
-                        color: HomeTheme.petal,
+                        gradient: theme.signatureGradient,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.spa_outlined,
                         size: 15,
-                        color: AppColors.primary,
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(width: 8),
                     Text(
                       storeName,
-                      style: HomeTheme.displayTitle(size: 22),
+                      style: HomeTheme.displayTitle(size: 22, color: theme.ink),
                     ),
                   ],
                 ),
@@ -248,9 +250,10 @@ class _IconBtn extends StatelessWidget {
                   width: 15,
                   height: 15,
                   alignment: Alignment.center,
-                  decoration: const BoxDecoration(
-                    color: AppColors.sale,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.signatureGradient,
                     shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 1.5),
                   ),
                   child: Text(
                     badge > 9 ? '9+' : '$badge',

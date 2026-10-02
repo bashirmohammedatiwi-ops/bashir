@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { CmsPageKey } from "@prisma/client";
 import { CmsBilingualService } from "../../common/cms-bilingual.service";
 import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
@@ -18,10 +18,11 @@ const productInclude = {
   variants: true,
 };
 
-function activeBannerWhere() {
+function activeBannerWhere(worldId: string | null) {
   const now = new Date();
   return {
     isActive: true,
+    worldId,
     AND: [
       { OR: [{ startsAt: null }, { startsAt: { lte: now } }] },
       { OR: [{ endsAt: null }, { endsAt: { gte: now } }] },
@@ -41,16 +42,34 @@ export class HomeService {
     private readonly cmsBilingual: CmsBilingualService,
   ) {}
 
-  async feed(options?: { skipCache?: boolean }) {
+  async feed(options?: { skipCache?: boolean; worldSlug?: string }) {
     const settings = await this.settings.getAll();
-    const cacheKey = this.homeFeedCache.buildKey(settings as Record<string, unknown>);
+    const world = options?.worldSlug
+      ? await this.prisma.world.findFirst({
+          where: { slug: options.worldSlug, isActive: true },
+          include: {
+            categories: {
+              orderBy: { position: "asc" },
+              include: { category: { select: { id: true, parentId: true } } },
+            },
+          },
+        })
+      : null;
+    if (options?.worldSlug && !world) throw new NotFoundException("World not found");
+    const worldId = world?.id ?? null;
+    const selected = world?.categories.map((link) => link.category) ?? [];
+    const subIds = selected.filter((category) => category.parentId).map((category) => category.id);
+    const legacyRootIds = selected.filter((category) => !category.parentId).map((category) => category.id);
+    const cacheKey =
+      this.homeFeedCache.buildKey(settings as Record<string, unknown>) +
+      (world ? `:world:${world.slug}` : "");
 
     if (!options?.skipCache) {
       const cached = await this.homeFeedCache.get<Record<string, unknown>>(cacheKey);
       if (cached) return cached;
     }
 
-    const payload = await this.buildFeed(settings);
+    const payload = await this.buildFeed(settings, worldId, { subIds, legacyRootIds }, world);
     if (!options?.skipCache) {
       await this.homeFeedCache.set(cacheKey, payload);
     }
@@ -73,13 +92,22 @@ export class HomeService {
     return payload;
   }
 
-  private async buildFeed(settings: Record<string, unknown>) {
+  private async buildFeed(
+    settings: Record<string, unknown>,
+    worldId: string | null = null,
+    scope: { subIds: string[]; legacyRootIds: string[] } = { subIds: [], legacyRootIds: [] },
+    world: { id: string; slug: string; nameAr: string; nameEn: string | null; taglineAr: string | null; taglineEn: string | null; accentColor: string; canvasColor: string; inkColor: string; surfaceColor: string } | null = null,
+  ) {
     const flashEndsAt = (settings as any).flashSaleEndsAt ?? null;
     const s = settings as Record<string, unknown>;
+    const worldMatch = this.worldProductMatch(scope);
+    const worldProductScope = worldMatch ? { OR: worldMatch } : {};
     const productVisibility = {
       ...(s.hideOutOfStock ? { stock: { gt: 0 } } : {}),
       ...(s.hideProductsWithoutImages ? hasRealProductImagesWhere() : {}),
+      ...worldProductScope,
     };
+    const promotedCategories = worldId ? await this.promotedWorldCategories(scope) : null;
 
     const [
       banners,
@@ -94,12 +122,21 @@ export class HomeService {
       promoProducts,
     ] = await Promise.all([
       this.prisma.banner.findMany({
-        where: activeBannerWhere(),
+        where: activeBannerWhere(worldId),
         orderBy: { position: "asc" },
         include: { image: true },
       }),
-      this.categories.list(false, true, true),
-      this.brands.list({ featuredOnly: true, storefront: true }),
+      promotedCategories ? Promise.resolve(promotedCategories) : this.categories.list(false, true, true),
+      worldMatch
+        ? this.prisma.brand.findMany({
+            where: {
+              isActive: true,
+              products: { some: { isActive: true, OR: worldMatch } },
+            },
+            orderBy: { position: "asc" },
+            include: { logo: true },
+          })
+        : this.brands.list({ featuredOnly: true, storefront: true }),
       this.prisma.package.findMany({
         where: { isActive: true },
         orderBy: { position: "asc" },
@@ -111,7 +148,7 @@ export class HomeService {
         include: { image: true },
       }),
       this.prisma.homeBlock.findMany({
-        where: { isActive: true, pageKey: CmsPageKey.HOME },
+        where: { isActive: true, pageKey: CmsPageKey.HOME, worldId },
         orderBy: { position: "asc" },
       }),
       this.prisma.product.findMany({
@@ -163,6 +200,20 @@ export class HomeService {
     );
 
     return {
+      world: world
+        ? {
+            id: world.id,
+            slug: world.slug,
+            nameAr: world.nameAr,
+            nameEn: world.nameEn,
+            taglineAr: world.taglineAr,
+            taglineEn: world.taglineEn,
+            accentColor: world.accentColor,
+            canvasColor: world.canvasColor,
+            inkColor: world.inkColor,
+            surfaceColor: world.surfaceColor,
+          }
+        : null,
       sections,
       banners: enrichedBanners.map((b) => ({
         ...b,
@@ -205,7 +256,7 @@ export class HomeService {
 
     const [banners, brands, packages, skinConcerns, offersBlocks, promoProducts] = await Promise.all([
       this.prisma.banner.findMany({
-        where: activeBannerWhere(),
+        where: activeBannerWhere(null),
         orderBy: { position: "asc" },
         include: { image: true },
       }),
@@ -271,5 +322,58 @@ export class HomeService {
         freeShippingThreshold: (settings as any).freeShippingThreshold ?? 50000,
       },
     };
+  }
+
+  private worldProductMatch(scope: { subIds: string[]; legacyRootIds: string[] }) {
+    const match: Record<string, unknown>[] = [];
+    if (scope.subIds.length) {
+      match.push(
+        { subcategoryId: { in: scope.subIds } },
+        { tertiaryCategory: { parentId: { in: scope.subIds } } },
+      );
+    }
+    if (scope.legacyRootIds.length) {
+      match.push(
+        { categoryId: { in: scope.legacyRootIds } },
+        { subcategory: { parentId: { in: scope.legacyRootIds } } },
+        { tertiaryCategory: { parent: { parentId: { in: scope.legacyRootIds } } } },
+      );
+    }
+    return match.length ? match : null;
+  }
+
+  /** الأقسام الفرعية المختارة تظهر في رئيسية العالم. */
+  private async promotedWorldCategories(scope: { subIds: string[]; legacyRootIds: string[] }) {
+    const ids = [...scope.subIds];
+    if (scope.legacyRootIds.length) {
+      const children = await this.prisma.category.findMany({
+        where: { parentId: { in: scope.legacyRootIds }, isActive: true },
+        select: { id: true },
+        orderBy: { position: "asc" },
+      });
+      ids.push(...children.map((child) => child.id));
+    }
+    if (!ids.length) return [];
+    const rows = await this.prisma.category.findMany({
+      where: { id: { in: ids }, isActive: true },
+      include: { image: true },
+    });
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    return ids.flatMap((id) => {
+      const node = byId.get(id);
+      if (!node) return [];
+      return [{
+        id: node.id,
+        name: node.nameAr || node.name,
+        nameAr: node.nameAr || node.name,
+        nameEn: node.nameEn,
+        slug: node.slug,
+        icon: node.icon,
+        position: node.position,
+        isActive: node.isActive,
+        image: node.image,
+        children: [] as unknown[],
+      }];
+    });
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/bootstrap/app_warmup.dart';
 import 'core/l10n/locale_provider.dart';
+import 'core/navigation/pending_push_navigation.dart';
 import 'core/push/push_service.dart';
 import 'core/config/app_config.dart';
 import 'core/router/app_router.dart';
@@ -14,6 +15,7 @@ import 'core/widgets/scroll_perf.dart';
 import 'features/auth/auth_provider.dart';
 import 'features/catalog/catalog_refresh.dart';
 import 'features/splash/splash_screen.dart';
+import 'features/worlds/world_theme.dart';
 
 class AlhayaaApp extends ConsumerStatefulWidget {
   const AlhayaaApp({super.key});
@@ -98,19 +100,28 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> with WidgetsBindingObse
     }
 
     final router = ref.watch(routerProvider);
-    return MaterialApp.router(
-      title: AppConfig.storeName,
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light,
-      scrollBehavior: const AppScrollBehavior(),
-      routerConfig: router,
-      locale: locale,
-      supportedLocales: _locales,
-      localizationsDelegates: _delegates,
-      builder: (context, child) => ResponsiveApp(
-        child: Directionality(
-          textDirection: direction,
-          child: DismissKeyboard(child: child ?? const SizedBox.shrink()),
+    final worldTheme = ref.watch(activeWorldThemeProvider);
+    // بعد ظهور الـ router (انتهاء الـ splash) نفّذ أي إشعار معلّق.
+    WidgetsBinding.instance.addPostFrameCallback((_) => PendingPushNavigation.flush());
+
+    return AnimatedTheme(
+      duration: const Duration(milliseconds: 320),
+      curve: Curves.easeOutCubic,
+      data: worldTheme.applyTo(AppTheme.light),
+      child: MaterialApp.router(
+        title: AppConfig.storeName,
+        debugShowCheckedModeBanner: false,
+        theme: worldTheme.applyTo(AppTheme.light),
+        scrollBehavior: const AppScrollBehavior(),
+        routerConfig: router,
+        locale: locale,
+        supportedLocales: _locales,
+        localizationsDelegates: _delegates,
+        builder: (context, child) => ResponsiveApp(
+          child: Directionality(
+            textDirection: direction,
+            child: DismissKeyboard(child: child ?? const SizedBox.shrink()),
+          ),
         ),
       ),
     );

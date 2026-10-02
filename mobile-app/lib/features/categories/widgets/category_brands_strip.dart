@@ -4,14 +4,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/locale_provider.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/scroll_perf.dart';
 import '../../../core/widgets/shimmer_box.dart';
 import '../../../data/models/brand.dart';
+import '../../worlds/world_theme.dart';
 
-/// شريط براندات بصفّين كحد أقصى مع تمرير أفقي.
-class CategoryBrandsStrip extends StatelessWidget {
+/// شريط براندات بصفّين مع مؤشر تمرير يوضّح وجود المزيد.
+class CategoryBrandsStrip extends StatefulWidget {
   final List<Brand> brands;
   final String? categoryId;
   final String? subcategoryId;
@@ -30,46 +30,189 @@ class CategoryBrandsStrip extends StatelessWidget {
   static const _logoPadding = 8.0;
 
   @override
+  State<CategoryBrandsStrip> createState() => _CategoryBrandsStripState();
+}
+
+class _CategoryBrandsStripState extends State<CategoryBrandsStrip>
+    with SingleTickerProviderStateMixin {
+  final _scroll = ScrollController();
+  late final AnimationController _nudge;
+  bool _canScroll = false;
+  bool _atEnd = true;
+  double _progress = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _nudge = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+    _scroll.addListener(_syncScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncScroll());
+  }
+
+  @override
+  void didUpdateWidget(covariant CategoryBrandsStrip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncScroll());
+  }
+
+  void _syncScroll() {
+    if (!mounted || !_scroll.hasClients) return;
+    final max = _scroll.position.maxScrollExtent;
+    final offset = _scroll.offset;
+    final canScroll = max > 12;
+    final atEnd = !canScroll || offset >= max - 8;
+    final progress = !canScroll || max <= 0 ? 1.0 : (offset / max).clamp(0.0, 1.0);
+    if (canScroll != _canScroll || atEnd != _atEnd || (progress - _progress).abs() > 0.01) {
+      setState(() {
+        _canScroll = canScroll;
+        _atEnd = atEnd;
+        _progress = progress;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scroll.removeListener(_syncScroll);
+    _scroll.dispose();
+    _nudge.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (brands.isEmpty) return const SizedBox.shrink();
+    if (widget.brands.isEmpty) return const SizedBox.shrink();
 
-    final columns = (brands.length / 2).ceil();
+    final t = context.worldTheme;
+    final columns = (widget.brands.length / 2).ceil();
+    final listHeight =
+        CategoryBrandsStrip._logoSize + 34 + CategoryBrandsStrip._rowGap + CategoryBrandsStrip._logoSize + 34;
+    final showHint = _canScroll && !_atEnd;
 
-    return SizedBox(
-      height: _logoSize + 34 + _rowGap + _logoSize + 34,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: AppScrollPerf.physics,
-        cacheExtent: AppScrollPerf.horizontalCacheExtent,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: columns,
-        separatorBuilder: (_, __) => const SizedBox(width: _colGap),
-        itemBuilder: (_, col) {
-          final top = brands[col * 2];
-          final bottomIndex = col * 2 + 1;
-          final bottom = bottomIndex < brands.length ? brands[bottomIndex] : null;
-          return SizedBox(
-            width: _tileWidth,
-            child: Column(
-              children: [
-                _BrandTile(
-                  brand: top,
-                  categoryId: categoryId,
-                  subcategoryId: subcategoryId,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: listHeight,
+          child: Stack(
+            children: [
+              ListView.separated(
+                controller: _scroll,
+                scrollDirection: Axis.horizontal,
+                physics: AppScrollPerf.physics,
+                cacheExtent: AppScrollPerf.horizontalCacheExtent,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                itemCount: columns,
+                separatorBuilder: (_, __) => const SizedBox(width: CategoryBrandsStrip._colGap),
+                itemBuilder: (_, col) {
+                  final top = widget.brands[col * 2];
+                  final bottomIndex = col * 2 + 1;
+                  final bottom = bottomIndex < widget.brands.length ? widget.brands[bottomIndex] : null;
+                  return SizedBox(
+                    width: CategoryBrandsStrip._tileWidth,
+                    child: Column(
+                      children: [
+                        _BrandTile(
+                          brand: top,
+                          categoryId: widget.categoryId,
+                          subcategoryId: widget.subcategoryId,
+                        ),
+                        const SizedBox(height: CategoryBrandsStrip._rowGap),
+                        bottom != null
+                            ? _BrandTile(
+                                brand: bottom,
+                                categoryId: widget.categoryId,
+                                subcategoryId: widget.subcategoryId,
+                              )
+                            : const SizedBox(
+                                height: CategoryBrandsStrip._logoSize + 34,
+                              ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              if (showHint)
+                PositionedDirectional(
+                  end: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 46,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: AlignmentDirectional.centerStart,
+                          end: AlignmentDirectional.centerEnd,
+                          colors: [
+                            t.surface.withValues(alpha: 0),
+                            t.surface.withValues(alpha: 0.92),
+                          ],
+                        ),
+                      ),
+                      child: Align(
+                        alignment: AlignmentDirectional.centerEnd,
+                        child: Padding(
+                          padding: const EdgeInsetsDirectional.only(end: 2),
+                          child: AnimatedBuilder(
+                            animation: _nudge,
+                            builder: (context, child) {
+                              final dx = 5 * Curves.easeInOut.transform(_nudge.value);
+                              final isRtl = Directionality.of(context) == TextDirection.rtl;
+                              return Transform.translate(
+                                offset: Offset(isRtl ? -dx : dx, 0),
+                                child: child,
+                              );
+                            },
+                            child: Container(
+                              width: 26,
+                              height: 26,
+                              decoration: BoxDecoration(
+                                color: t.surface,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: t.accentSoft),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: t.accent.withValues(alpha: 0.12),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Directionality.of(context) == TextDirection.rtl
+                                    ? Icons.chevron_left_rounded
+                                    : Icons.chevron_right_rounded,
+                                size: 18,
+                                color: t.accent,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-                const SizedBox(height: _rowGap),
-                bottom != null
-                    ? _BrandTile(
-                        brand: bottom,
-                        categoryId: categoryId,
-                        subcategoryId: subcategoryId,
-                      )
-                    : const SizedBox(height: _logoSize + 34),
-              ],
+            ],
+          ),
+        ),
+        if (_canScroll)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 2, 18, 0),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              child: LinearProgressIndicator(
+                value: 0.16 + (_progress * 0.84),
+                minHeight: 3,
+                backgroundColor: t.accentSoft,
+                color: t.accent,
+              ),
             ),
-          );
-        },
-      ),
+          ),
+      ],
     );
   }
 }
@@ -120,6 +263,7 @@ class _BrandTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final lang = ref.watch(languageCodeProvider);
     final name = brand.localizedName(lang);
+    final t = context.worldTheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -147,11 +291,11 @@ class _BrandTile extends ConsumerWidget {
               maxLines: 2,
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 height: 1.2,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
+                color: t.inkSoft,
               ),
             ),
           ],
@@ -172,18 +316,19 @@ class _BrandLogoCircle extends StatelessWidget {
     required this.padding,
   });
 
-  Color _fallbackBg() {
+  Color _fallbackBg(BuildContext context) {
     final hex = brand.bgColorHex?.replaceFirst('#', '').trim();
-    if (hex == null || hex.length < 6) return AppColors.primaryLight;
+    if (hex == null || hex.length < 6) return context.worldTheme.accentLight;
     try {
       return Color(int.parse('FF${hex.substring(0, 6)}', radix: 16));
     } catch (_) {
-      return AppColors.primaryLight;
+      return context.worldTheme.accentLight;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     final inner = size - (padding * 2);
 
     return Container(
@@ -191,11 +336,11 @@ class _BrandLogoCircle extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white,
-        border: Border.all(color: AppColors.hairline.withValues(alpha: 0.85)),
+        color: t.surface,
+        border: Border.all(color: t.hairline.withValues(alpha: 0.85)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.ink.withValues(alpha: 0.05),
+            color: t.ink.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -210,17 +355,17 @@ class _BrandLogoCircle extends StatelessWidget {
                   width: inner,
                   height: inner,
                   fit: BoxFit.contain,
-                  backgroundColor: Colors.white,
+                  backgroundColor: t.surface,
                 )
               : ColoredBox(
-                  color: _fallbackBg(),
+                  color: _fallbackBg(context),
                   child: Center(
                     child: Text(
                       brand.initial ?? brand.name.characters.first,
                       style: TextStyle(
                         fontSize: size * 0.34,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.primary,
+                        color: t.accent,
                       ),
                     ),
                   ),

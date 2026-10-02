@@ -7,6 +7,7 @@ import '../../../core/l10n/app_strings.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../data/models/home_feed.dart';
 import '../../home/widgets/home_scroll_perf.dart';
+import '../../worlds/world_theme.dart';
 import 'offers_theme.dart';
 
 /// عرض سريع — بطاقة أنيقة بدون عدّاد.
@@ -18,6 +19,7 @@ class OffersFlashPulse extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.s;
+    final t = context.worldTheme;
     final products = flashSale.products;
     if (products.isEmpty) return const SizedBox.shrink();
 
@@ -25,7 +27,7 @@ class OffersFlashPulse extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(OffersTheme.hPad, 0, OffersTheme.hPad, 14),
       child: Container(
         padding: const EdgeInsets.all(14),
-        decoration: OffersTheme.surfaceCard(),
+        decoration: OffersTheme.surfaceCard(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -34,14 +36,17 @@ class OffersFlashPulse extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: OffersTheme.brandSoft,
+                    color: OffersTheme.brandSoft(context),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.bolt_rounded, color: OffersTheme.brand, size: 18),
+                  child: Icon(Icons.bolt_rounded, color: OffersTheme.brand(context), size: 18),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(s.flashSale, style: OffersTheme.title(size: 15, color: OffersTheme.ink)),
+                  child: Text(
+                    s.flashSale,
+                    style: OffersTheme.title(context, size: 15, color: OffersTheme.ink(context)),
+                  ),
                 ),
               ],
             ),
@@ -56,6 +61,7 @@ class OffersFlashPulse extends ConsumerWidget {
                   final p = products[i];
                   return _ProductThumb(
                     imageUrl: p.coverUrl,
+                    blush: t.blush,
                     onTap: () {
                       HapticFeedback.selectionClick();
                       context.push('/product/${p.slug.isNotEmpty ? p.slug : p.id}');
@@ -73,17 +79,19 @@ class OffersFlashPulse extends ConsumerWidget {
 
 class _ProductThumb extends StatelessWidget {
   final String? imageUrl;
+  final Color blush;
   final VoidCallback onTap;
 
   const _ProductThumb({
     required this.imageUrl,
+    required this.blush,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 8),
+      padding: const EdgeInsetsDirectional.only(start: 8),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -95,7 +103,7 @@ class _ProductThumb extends StatelessWidget {
               width: 80,
               height: 80,
               child: ColoredBox(
-                color: OffersTheme.canvas,
+                color: blush,
                 child: ProductCoverImage(url: imageUrl ?? '', fit: BoxFit.contain),
               ),
             ),

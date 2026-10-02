@@ -27,7 +27,7 @@ class AccountScreen extends ConsumerWidget {
     final bottomPad = Responsive.shellBottomReserve(context) + 16;
 
     return Scaffold(
-      backgroundColor: ProfileUi.bg,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: !auth.isAuthenticated
           ? _GuestView(s: s, top: top, bottomPad: bottomPad)
           : ListView(

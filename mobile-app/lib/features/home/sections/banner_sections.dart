@@ -10,6 +10,7 @@ import '../widgets/home_animations.dart';
 import '../widgets/home_banner_stage.dart';
 import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
+import '../../worlds/world_theme.dart';
 
 List<AppBanner> sectionBanners(HomeSection section) {
   if (section.banners.isNotEmpty) return section.banners;
@@ -195,6 +196,7 @@ class _BannerCarouselSectionState extends State<BannerCarouselSection> {
     final list = sectionBanners(widget.section);
     if (list.isEmpty) return const SizedBox.shrink();
 
+    final t = context.worldTheme;
     final layout = resolveBannerLayout(widget.section);
     final viewport = layout.fullBleed ? 1.0 : 0.88;
     final cardW = MediaQuery.sizeOf(context).width * viewport;
@@ -236,8 +238,8 @@ class _BannerCarouselSectionState extends State<BannerCarouselSection> {
                 dotWidth: 5,
                 expansionFactor: 3,
                 spacing: 5,
-                activeDotColor: HomeTheme.sage,
-                dotColor: HomeTheme.sage.withValues(alpha: 0.25),
+                activeDotColor: t.accent,
+                dotColor: t.accent.withValues(alpha: 0.22),
               ),
             ),
           ],

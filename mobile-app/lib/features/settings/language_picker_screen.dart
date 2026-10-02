@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/theme/app_fonts.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/l10n/app_strings.dart';
@@ -83,7 +83,7 @@ class _LanguagePickerScreenState extends ConsumerState<LanguagePickerScreen> {
                 ),
                 title: Text(
                   s.language,
-                  style: GoogleFonts.cairo(fontSize: 17, fontWeight: FontWeight.w800),
+                  style: appFont(fontSize: 17, fontWeight: FontWeight.w800),
                 ),
                 centerTitle: true,
               )
@@ -118,7 +118,7 @@ class _LanguagePickerScreenState extends ConsumerState<LanguagePickerScreen> {
                         width: 32,
                         height: 2,
                         decoration: BoxDecoration(
-                          color: SplashTheme.teal.withValues(alpha: 0.5),
+                          color: SplashTheme.brand.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(99),
                         ),
                       ),
@@ -126,13 +126,13 @@ class _LanguagePickerScreenState extends ConsumerState<LanguagePickerScreen> {
                     ],
                     Text(
                       s.chooseLanguage,
-                      style: GoogleFonts.cairo(fontSize: 20, fontWeight: FontWeight.w800),
+                      style: appFont(fontSize: 20, fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       s.chooseLanguageSubtitle,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.cairo(
+                      style: appFont(
                         fontSize: 13.5,
                         color: AppColors.textMuted,
                         fontWeight: FontWeight.w500,
@@ -167,13 +167,13 @@ class _LanguagePickerScreenState extends ConsumerState<LanguagePickerScreen> {
                     onPressed: _confirm,
                     style: ElevatedButton.styleFrom(
                       elevation: 0,
-                      backgroundColor: SplashTheme.teal,
+                      backgroundColor: SplashTheme.brand,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     child: Text(
                       s.continueBtn,
-                      style: GoogleFonts.cairo(fontSize: 15, fontWeight: FontWeight.w800),
+                      style: appFont(fontSize: 15, fontWeight: FontWeight.w800),
                     ),
                   ),
                 ),
@@ -210,10 +210,10 @@ class _LangOption extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: selected ? SplashTheme.teal : AppColors.hairline,
+              color: selected ? SplashTheme.brand : AppColors.hairline,
               width: selected ? 1.6 : 1,
             ),
-            color: selected ? SplashTheme.teal.withValues(alpha: 0.06) : Colors.white,
+            color: selected ? SplashTheme.brand.withValues(alpha: 0.06) : Colors.white,
           ),
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           child: Row(
@@ -224,16 +224,16 @@ class _LangOption extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: GoogleFonts.cairo(
+                      style: appFont(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
-                        color: selected ? SplashTheme.tealDark : AppColors.textPrimary,
+                        color: selected ? SplashTheme.brandDark : AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: GoogleFonts.cairo(
+                      style: appFont(
                         fontSize: 12,
                         color: AppColors.textMuted,
                         fontWeight: FontWeight.w500,
@@ -248,9 +248,9 @@ class _LangOption extends StatelessWidget {
                 height: 22,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: selected ? SplashTheme.teal : Colors.transparent,
+                  color: selected ? SplashTheme.brand : Colors.transparent,
                   border: Border.all(
-                    color: selected ? SplashTheme.teal : AppColors.border,
+                    color: selected ? SplashTheme.brand : AppColors.border,
                     width: 2,
                   ),
                 ),
