@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
 import { SettingsService } from "../settings/settings.service";
+import { QamarCatalogNotifierService } from "../sync/qamar-catalog-notifier.service";
 import {
   CreateSubcategoryDto,
   CreateTertiarySectionDto,
@@ -96,6 +97,7 @@ export class CategoriesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly settings: SettingsService,
+    private readonly qamarSync: QamarCatalogNotifierService,
   ) {}
 
   /// إعدادات إخفاء الأقسام الفارغة في واجهة المتجر.
@@ -424,6 +426,7 @@ export class CategoriesService {
     const row = await this.prisma.category.create({
       data: normalizeCategoryWrite(data) as Prisma.CategoryUncheckedCreateInput,
     });
+    this.qamarSync.notify("category", "created", row.id);
     return this.findOne(row.id);
   }
 
@@ -437,6 +440,7 @@ export class CategoriesService {
         parentId: data.parentId,
       },
     });
+    this.qamarSync.notify("category", "created", row.id);
     return this.findSubcategory(row.id);
   }
 
@@ -457,6 +461,7 @@ export class CategoriesService {
         parentId: data.parentId,
       },
     });
+    this.qamarSync.notify("category", "created", row.id);
     return this.findTertiarySection(row.id);
   }
 
@@ -486,6 +491,7 @@ export class CategoriesService {
       where: { id },
       data: normalizeCategoryWrite(data, { partial: true }) as Prisma.CategoryUncheckedUpdateInput,
     });
+    this.qamarSync.notify("category", "updated", id);
     return this.findOne(id);
   }
 
@@ -509,6 +515,7 @@ export class CategoriesService {
         parentId,
       },
     });
+    this.qamarSync.notify("category", "updated", id);
     return this.findSubcategory(id);
   }
 
@@ -535,6 +542,7 @@ export class CategoriesService {
         parentId,
       },
     });
+    this.qamarSync.notify("category", "updated", id);
     return this.findTertiarySection(id);
   }
 

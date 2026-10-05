@@ -9,6 +9,7 @@ import { paginate } from "../../common/dto/pagination.dto";
 import { CategoriesService } from "./categories.service";
 import { CreateProductDto, QueryProductsDto, UpdateProductDto } from "./dto/product.dto";
 import { InventorySyncService } from "../sync/inventory-sync.service";
+import { QamarCatalogNotifierService } from "../sync/qamar-catalog-notifier.service";
 import { SettingsService } from "../settings/settings.service";
 import { withPlaceholderImages, activeWithoutRealImagesWhere, hasRealProductImagesWhere } from "../../common/product-placeholder.util";
 import { buildSearchText } from "../assistant/retrieval/search-document";
@@ -72,6 +73,7 @@ export class ProductsService {
     private readonly inventorySync: InventorySyncService,
     private readonly settings: SettingsService,
     private readonly homeFeedCache: HomeFeedCacheService,
+    private readonly qamarSync: QamarCatalogNotifierService,
   ) {}
 
   async list(q: QueryProductsDto, storefront = false) {
@@ -317,6 +319,7 @@ export class ProductsService {
         await this.syncSkinConcerns(product.id, dto.concernIds);
       }
       await this.homeFeedCache.invalidateAll();
+      this.qamarSync.notify("product", "created", product.id);
       return this.findOne(product.id);
     } catch (error) {
       throw this.mapProductWriteError(error);
@@ -441,6 +444,7 @@ export class ProductsService {
       await this.syncSkinConcerns(id, dto.concernIds);
     }
     await this.homeFeedCache.invalidateAll();
+    this.qamarSync.notify("product", "updated", id);
     return this.findOne(id);
   }
 

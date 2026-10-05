@@ -5,6 +5,7 @@ import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { fixPosArabicText } from "../../common/pos-text-encoding.util";
 import { PrismaService } from "../../common/prisma.service";
 import { InventorySyncItemDto } from "./dto/inventory-sync.dto";
+import { QamarCatalogNotifierService } from "./qamar-catalog-notifier.service";
 import { StockAlertService } from "./stock-alert.service";
 
 type SanitizedItem = {
@@ -89,6 +90,7 @@ export class InventorySyncService {
     private readonly prisma: PrismaService,
     private readonly stockAlerts: StockAlertService,
     private readonly homeFeedCache: HomeFeedCacheService,
+    private readonly qamarSync: QamarCatalogNotifierService,
   ) {}
 
   async findByBarcode(barcode: string) {
@@ -382,21 +384,22 @@ export class InventorySyncService {
     const productsUpdated = await this.bulkUpdateProducts(sanitized, productMap, shadesUpdated);
 
     this.logger.log(
-      `POS catalog apply: shades=${shadesUpdated.size} products=${productsUpdated.size} items=${sanitized.length}`,
+      `POS catalog apply: shades=${shadesUpdated.size} products=${productsUpdated.barcodes.size} items=${sanitized.length}`,
     );
 
-    if (shadesUpdated.size > 0 || productsUpdated.size > 0) {
+    if (shadesUpdated.size > 0 || productsUpdated.barcodes.size > 0) {
       try {
         await this.homeFeedCache.invalidateAll();
       } catch (err) {
         this.logger.warn(`Home feed cache invalidate failed: ${this.formatError(err)}`);
       }
+      this.qamarSync.notifyProductsUpdated(productsUpdated.productIds);
     }
 
     return {
       productMap,
       shadesUpdated: shadesUpdated.size,
-      productsUpdated: productsUpdated.size,
+      productsUpdated: productsUpdated.barcodes.size,
     };
   }
 
@@ -673,8 +676,9 @@ export class InventorySyncService {
     items: SanitizedItem[],
     productMap: Map<string, { id: string; name: string | null }>,
     syncedShadeBarcodes: Set<string>,
-  ) {
+  ): Promise<{ barcodes: Set<string>; productIds: string[] }> {
     const updated = new Set<string>();
+    const updatedProductIds = new Set<string>();
     const productIds = new Set<string>();
     const directByProductId = new Map<string, { productId: string; item: SanitizedItem; barcode: string }>();
 
@@ -694,7 +698,7 @@ export class InventorySyncService {
       });
     }
 
-    if (!productIds.size) return updated;
+    if (!productIds.size) return { barcodes: updated, productIds: [] };
 
     const idList = [...productIds];
     const [products, allShades] = await Promise.all([
@@ -785,20 +789,26 @@ export class InventorySyncService {
       });
     }
 
-    if (!updates.length) return updated;
+    if (!updates.length) return { barcodes: updated, productIds: [] };
 
     for (let i = 0; i < updates.length; i += PRODUCT_UPDATE_CHUNK) {
       const chunk = updates.slice(i, i + PRODUCT_UPDATE_CHUNK);
       try {
         await this.updateProductChunk(chunk);
-        for (const entry of chunk) updated.add(entry.barcode);
+        for (const entry of chunk) {
+          updated.add(entry.barcode);
+          updatedProductIds.add(entry.productId);
+        }
       } catch (err) {
         this.logger.warn(`Product chunk update failed, falling back: ${this.formatError(err)}`);
         await this.updateProductsFallback(chunk, updated);
+        for (const entry of chunk) {
+          if (updated.has(entry.barcode)) updatedProductIds.add(entry.productId);
+        }
       }
     }
 
-    return updated;
+    return { barcodes: updated, productIds: [...updatedProductIds] };
   }
 
   private async updateProductChunk(
