@@ -1,0 +1,3127 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>كتالوج ريتينول كومبلكس</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --ink: #171417;
+  --soft-ink: #4a4548;
+  --muted: #8a8386;
+  --line: #e8e2dc;
+  --paper: #fffcf9;
+  --mist: #f4f0eb;
+  --burgundy: #6f2a38;
+  --gold: #c4a574;
+  --gold-deep: #9a7a4f;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  font-family: 'Cairo', sans-serif;
+  background: #bdb6ae;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+img { max-width: 100%; display: block; object-fit: contain; }
+.sheet {
+  width: 297mm;
+  height: 210mm;
+  min-height: 210mm;
+  margin: 0 auto 16px;
+  background: var(--paper);
+  position: relative;
+  overflow: hidden;
+  page-break-after: always;
+  box-shadow: 0 18px 48px rgba(0,0,0,.18);
+}
+.sheet.family,
+.sheet.product,
+.sheet.index {
+  display: grid;
+}
+.sheet.family > *:not(.wm-num):not(.family-rail),
+.sheet.product > *,
+.sheet.index > * {
+  min-height: 100%;
+  height: 100%;
+}
+
+.flag {
+  width: 26px; height: 17px;
+  border-radius: 2px;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.1);
+  flex-shrink: 0;
+}
+.ornament {
+  width: 72px; height: 12px;
+  color: var(--gold-deep);
+  margin: 14px 0 16px;
+  opacity: .85;
+}
+.family-panel .ornament,
+.p-content .ornament { color: var(--a, var(--gold-deep)); }
+
+/* ========== COVER ========== */
+.cover {
+  display: grid;
+  grid-template-columns: 18mm 1fr;
+  background:
+    radial-gradient(ellipse 70% 55% at 58% 38%, rgba(196,165,116,.10), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 70% 80%, rgba(111,42,56,.05), transparent 55%),
+    linear-gradient(180deg, #fffefc 0%, #faf6f1 100%);
+}
+.cover-spine {
+  background:
+    linear-gradient(180deg, #1a1012 0%, #6f2a38 42%, #3d1822 100%);
+  position: relative;
+}
+.cover-spine::after {
+  content: '';
+  position: absolute;
+  inset: 14mm 6px;
+  border-top: 1px solid rgba(196,165,116,.45);
+  border-bottom: 1px solid rgba(196,165,116,.45);
+}
+.cover-main {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10mm 18mm;
+}
+.cover-frame {
+  position: absolute;
+  inset: 10mm 12mm 10mm 8mm;
+  border: 1px solid rgba(196,165,116,.35);
+  pointer-events: none;
+}
+.cover-frame::before,
+.cover-frame::after {
+  content: '';
+  position: absolute;
+  width: 18px; height: 18px;
+  border-color: var(--burgundy);
+  border-style: solid;
+}
+.cover-frame::before {
+  top: -1px; right: -1px;
+  border-width: 1.5px 1.5px 0 0;
+}
+.cover-frame::after {
+  bottom: -1px; left: -1px;
+  border-width: 0 0 1.5px 1.5px;
+}
+.cover-corner-tl, .cover-corner-br {
+  position: absolute;
+  width: 18px; height: 18px;
+  border-color: var(--burgundy);
+  border-style: solid;
+  pointer-events: none;
+  z-index: 2;
+}
+.cover-corner-tl {
+  top: calc(10mm - 1px); left: calc(8mm - 1px);
+  border-width: 1.5px 0 0 1.5px;
+}
+.cover-corner-br {
+  bottom: calc(10mm - 1px); right: calc(12mm - 1px);
+  border-width: 0 1.5px 1.5px 0;
+}
+.cover-inner {
+  position: relative; z-index: 1;
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center;
+  max-width: 640px;
+}
+.cover-kicker {
+  font-size: 10px;
+  letter-spacing: .48em;
+  color: var(--burgundy);
+  font-weight: 700;
+  margin-bottom: 18px;
+  margin-right: -.48em;
+}
+.cover-logo {
+  width: 132px; height: 132px;
+  border-radius: 50%;
+  background: #fff;
+  padding: 16px;
+  margin-bottom: 22px;
+  box-shadow:
+    0 0 0 1px rgba(196,165,116,.4),
+    0 0 0 8px rgba(255,255,255,.65),
+    0 22px 50px rgba(40,20,25,.07);
+}
+.cover-logo img { width: 100%; height: 100%; object-fit: contain; }
+.cover-en {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 48px;
+  letter-spacing: .28em;
+  font-weight: 600;
+  margin-right: -.28em;
+  line-height: 1;
+  color: #141214;
+  white-space: nowrap;
+}
+.cover-divider {
+  display: flex; align-items: center; gap: 14px;
+  margin: 16px 0 12px;
+  color: var(--gold-deep);
+  font-size: 11px;
+  letter-spacing: .4em;
+  font-weight: 600;
+  margin-right: -.4em;
+}
+.cover-divider::before,
+.cover-divider::after {
+  content: '';
+  width: 42px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-deep), transparent);
+}
+.cover-ar {
+  font-size: 20px;
+  font-weight: 700;
+  color: #5a5456;
+  letter-spacing: .18em;
+}
+.cover-tag {
+  margin-top: 10px;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 16px;
+  font-style: italic;
+  color: #8a7a70;
+  letter-spacing: .06em;
+}
+.made-in {
+  margin-top: 28px;
+  display: inline-flex; align-items: center; gap: 12px;
+  padding: 12px 24px;
+  border: 1px solid rgba(196,165,116,.55);
+  border-radius: 999px;
+  font-size: 13px;
+  color: #2a2426;
+  background: rgba(255,255,255,.88);
+  letter-spacing: .02em;
+  box-shadow: 0 8px 24px rgba(40,20,25,.04);
+}
+.made-in strong { font-weight: 800; color: var(--burgundy); }
+
+/* ========== INDEX ========== */
+.index {
+  grid-template-columns: 98mm 1fr;
+}
+.index-side {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(196,165,116,.18), transparent 50%),
+    linear-gradient(165deg, #120c0e 0%, #2a151c 48%, #4a2430 100%);
+  color: #fff;
+  padding: 16mm 13mm 14mm;
+  display: flex; flex-direction: column; justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+.index-side::before {
+  content: 'RC';
+  position: absolute;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 180px;
+  font-weight: 600;
+  opacity: .05;
+  left: -10px; bottom: -40px;
+  letter-spacing: -.04em;
+  line-height: 1;
+}
+.index-kicker {
+  font-size: 10px;
+  letter-spacing: .36em;
+  color: var(--gold);
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+.index-side h1 {
+  font-size: 34px;
+  font-weight: 900;
+  line-height: 1.25;
+  position: relative; z-index: 1;
+}
+.index-side .gold-line {
+  width: 48px; height: 1.5px;
+  background: var(--gold);
+  margin: 16px 0 14px;
+}
+.index-side .sub {
+  font-size: 13.5px;
+  line-height: 1.9;
+  color: rgba(255,255,255,.7);
+  position: relative; z-index: 1;
+  max-width: 240px;
+}
+.index-side .italy {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 12px;
+  color: rgba(255,255,255,.88);
+  position: relative; z-index: 1;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255,255,255,.12);
+}
+.index-main {
+  padding: 12mm 12mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  background:
+    linear-gradient(180deg, #fffefc, #faf7f3);
+}
+.ix {
+  display: grid;
+  grid-template-columns: 52px 1fr auto;
+  gap: 14px;
+  align-items: center;
+  padding: 11px 14px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid rgba(232,226,220,.9);
+  box-shadow: 0 4px 14px rgba(30,20,20,.03);
+  position: relative;
+  overflow: hidden;
+}
+.ix::before {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; right: 0;
+  width: 3.5px;
+  background: var(--a);
+}
+.ix-num {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--a);
+  line-height: 1;
+  letter-spacing: .02em;
+}
+.ix strong {
+  display: block;
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 800;
+}
+.ix small {
+  color: var(--muted);
+  font-size: 11.5px;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  letter-spacing: .06em;
+  font-style: italic;
+}
+.ix-count {
+  font-size: 11px;
+  color: var(--muted);
+  background: var(--mist);
+  padding: 5px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+/* ========== FAMILY ========== */
+.family {
+  grid-template-columns: 1.02fr 1fr;
+  background: #fff;
+}
+.family-rail {
+  position: absolute;
+  top: 0; bottom: 0; right: 0;
+  width: 5px;
+  background: linear-gradient(180deg, var(--a), color-mix(in srgb, var(--a) 40%, #1a1012));
+  z-index: 4;
+}
+.family-panel {
+  padding: 14mm 14mm 12mm 12mm;
+  display: flex; flex-direction: column; justify-content: center;
+  position: relative;
+  background: #fff;
+  z-index: 1;
+}
+.fp-eyebrow {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 18px;
+}
+.col-num {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--a);
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  letter-spacing: .04em;
+}
+.col-label {
+  font-size: 11px;
+  letter-spacing: .32em;
+  font-weight: 800;
+  color: var(--a);
+}
+.family-panel h2 {
+  font-size: 29px;
+  font-weight: 900;
+  line-height: 1.28;
+  margin-bottom: 6px;
+  max-width: 420px;
+}
+.family-panel .en {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 22px;
+  color: var(--a);
+  letter-spacing: .08em;
+  font-style: italic;
+}
+.family-panel .desc {
+  font-size: 14px;
+  color: var(--soft-ink);
+  line-height: 1.95;
+  max-width: 430px;
+}
+.fp-meta {
+  display: flex; gap: 10px;
+  margin-top: 22px;
+}
+.meta-box {
+  min-width: 88px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--tint);
+}
+.meta-k {
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
+  margin-bottom: 2px;
+  letter-spacing: .06em;
+}
+.meta-box strong {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--a);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  letter-spacing: .04em;
+}
+.fp-foot {
+  margin-top: 22px;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.fp-foot .dot {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+.family-gallery {
+  background: #f2f2f2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 11mm 10mm;
+  position: relative;
+  z-index: 1;
+}
+.gallery-label {
+  font-size: 10px;
+  letter-spacing: .28em;
+  color: var(--a);
+  font-weight: 800;
+  margin-bottom: 12px;
+  text-align: center;
+}
+.gallery {
+  display: grid; gap: 10px;
+  width: 100%;
+}
+.gallery.n1, .gallery.n2 { grid-template-columns: 1fr 1fr; }
+.gallery.n3, .gallery.n4 { grid-template-columns: 1fr 1fr; }
+.gallery.n5, .gallery.n6 { grid-template-columns: 1fr 1fr 1fr; }
+.thumb {
+  background: #ffffff;
+  border: 3px solid #111111;
+  border-radius: 10px;
+  padding: 10px 8px 8px;
+  text-align: center;
+  box-shadow: none;
+}
+.thumb-stage {
+  height: 100px;
+  display: grid; place-items: center;
+  margin-bottom: 6px;
+  background: #ffffff;
+  border-radius: 0;
+}
+.thumb img {
+  max-height: 94px;
+  max-width: 94%;
+  filter: none;
+}
+.thumb figcaption {
+  font-size: 9.5px;
+  color: var(--muted);
+  line-height: 1.35;
+  min-height: 26px;
+  padding: 0 2px;
+}
+.wm-num {
+  position: absolute;
+  left: 8mm; bottom: -8mm;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 220px;
+  font-weight: 600;
+  color: var(--a);
+  opacity: .05;
+  line-height: 1;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ========== PRODUCT ========== */
+.product {
+  grid-template-columns: 1.12fr 1fr;
+}
+.p-visual {
+  background: #f2f2f2;
+  display: flex;
+  flex-direction: column;
+  padding: 9mm 9mm 8mm;
+  position: relative;
+}
+.p-stage {
+  flex: 1;
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: #ffffff !important;
+  border: 3.5px solid #111111;
+  box-shadow: none;
+  overflow: hidden;
+}
+.p-halo {
+  display: none;
+}
+.p-stage img {
+  position: relative;
+  z-index: 1;
+  max-height: 142mm;
+  max-width: 90%;
+  filter: none;
+}
+.p-floor {
+  display: none;
+}
+.p-visual-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 10.5px;
+  color: var(--muted);
+  letter-spacing: .08em;
+  padding: 0 4px;
+}
+.p-content {
+  padding: 11mm 13mm 10mm 11mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: #fffefc;
+  position: relative;
+  border-right: 1px solid var(--line);
+}
+.p-accent-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--a), var(--gold));
+}
+.p-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 12px;
+}
+.p-chip {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: var(--a);
+  background: color-mix(in srgb, var(--a) 8%, #fff);
+  padding: 6px 13px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--a) 16%, #fff);
+}
+.p-count {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: .1em;
+  font-weight: 600;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 14px;
+}
+.p-brand {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  letter-spacing: .26em;
+  font-size: 12px;
+  color: #9a9194;
+  margin-bottom: 6px;
+}
+.p-content h1 {
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+.p-content .ornament { margin: 10px 0 12px; }
+.p-lead {
+  color: var(--soft-ink);
+  font-size: 12.5px;
+  line-height: 1.85;
+  margin-bottom: 12px;
+}
+.p-bullets {
+  list-style: none;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.p-bullets li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 12px;
+  color: #333;
+  line-height: 1.55;
+  padding: 7px 10px;
+  background: var(--mist);
+  border-radius: 10px;
+  border-right: 3px solid var(--a);
+}
+.p-bullets li::before { content: none; }
+.p-bullets li span { flex: 1; }
+.p-prices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.price {
+  border-radius: 16px;
+  padding: 14px 12px 12px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.price-label {
+  display: block;
+  font-size: 10.5px;
+  margin-bottom: 4px;
+  font-weight: 700;
+  letter-spacing: .04em;
+}
+.price strong {
+  display: block;
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.2;
+}
+.price.retail {
+  background:
+    linear-gradient(145deg, #120c0e 0%, #2a151c 55%, #3d1e28 100%);
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(20,10,12,.18);
+}
+.price.retail strong { color: #e8c99a; }
+.price.wholesale {
+  background: #fff;
+  border: 1.5px solid var(--a);
+  color: var(--ink);
+  box-shadow: 0 8px 20px rgba(30,20,20,.04);
+}
+.price.wholesale .price-label { color: var(--a); }
+.price.wholesale strong { color: var(--a); }
+.p-foot {
+  margin-top: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.p-sku {
+  font-size: 11px;
+  color: #aaa;
+  letter-spacing: .04em;
+}
+.p-italy {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: .06em;
+}
+.p-italy .flag { width: 18px; height: 12px; }
+
+/* ========== CLOSING ========== */
+.closing {
+  display: grid;
+  grid-template-columns: 18mm 1fr;
+  background:
+    radial-gradient(ellipse 70% 55% at 55% 55%, rgba(196,165,116,.10), transparent 60%),
+    linear-gradient(180deg, #fffefc 0%, #faf6f1 100%);
+}
+.closing .cover-main {
+  justify-content: center;
+}
+.closing h2 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 46px;
+  letter-spacing: .26em;
+  font-weight: 600;
+  margin-right: -.26em;
+  color: #141214;
+  white-space: nowrap;
+}
+.closing .thanks {
+  font-size: 16px;
+  color: #5a5456;
+  letter-spacing: .12em;
+  font-weight: 600;
+  margin-top: 4px;
+}
+.closing .cover-tag {
+  margin-top: 8px;
+}
+
+@media print {
+  body { background: #fff; }
+  .sheet { box-shadow: none; margin: 0; }
+}
+@page { size: A4 landscape; margin: 0; }
+</style>
+</head>
+<body>
+
+<section class="sheet cover">
+  <div class="cover-spine" aria-hidden="true"></div>
+  <div class="cover-main">
+    <div class="cover-frame" aria-hidden="true"></div>
+    <span class="cover-corner-tl" aria-hidden="true"></span>
+    <span class="cover-corner-br" aria-hidden="true"></span>
+    <div class="cover-inner">
+      <p class="cover-kicker">PROFESSIONAL HAIR &amp; SKIN CARE</p>
+      <div class="cover-logo"><img src="brand-logo.png" alt="Retinol Complex" /></div>
+      <div class="cover-en">RETINOL COMPLEX</div>
+      <div class="cover-divider">ITALY</div>
+      <div class="cover-ar">كتالوج المنتجات</div>
+      <p class="cover-tag">Italian Professional Beauty</p>
+      <div class="made-in">
+        
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+
+        <span>صُنع في <strong>إيطاليا</strong> · Made in Italy</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sheet index">
+  <div class="index-side">
+    <div>
+      <p class="index-kicker">INDEX</p>
+      <h1>المجموعات<br>والعوائل</h1>
+      <div class="gold-line"></div>
+      <p class="sub">عناية احترافية بالشعر والبشرة بجودة إيطالية أصيلة — مختارة بعناية لكل احتياج.</p>
+    </div>
+    <div class="italy">
+      
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+
+      <span>Made in Italy · Retinol Complex</span>
+    </div>
+  </div>
+  <div class="index-main">
+        <div class="ix" style="--a:#7a3040">
+          <div class="ix-num">01</div>
+          <div>
+            <strong>مجموعة حماية لون الشعر</strong>
+            <small>Color Protection</small>
+          </div>
+          <span class="ix-count">4 منتجات</span>
+        </div>
+        <div class="ix" style="--a:#8a6230">
+          <div class="ix-num">02</div>
+          <div>
+            <strong>مجموعة ضد التجعد</strong>
+            <small>Anti-Frizz</small>
+          </div>
+          <span class="ix-count">4 منتجات</span>
+        </div>
+        <div class="ix" style="--a:#2f5a48">
+          <div class="ix-num">03</div>
+          <div>
+            <strong>مجموعة ضد القشرة</strong>
+            <small>Anti-Dandruff</small>
+          </div>
+          <span class="ix-count">5 منتجات</span>
+        </div>
+        <div class="ix" style="--a:#34506e">
+          <div class="ix-num">04</div>
+          <div>
+            <strong>مجموعة تكثيف الحجم</strong>
+            <small>Volumizing</small>
+          </div>
+          <span class="ix-count">3 منتجات</span>
+        </div>
+        <div class="ix" style="--a:#4d4268">
+          <div class="ix-num">05</div>
+          <div>
+            <strong>مجموعة ضد الاصفرار</strong>
+            <small>Anti-Yellow</small>
+          </div>
+          <span class="ix-count">4 منتجات</span>
+        </div>
+        <div class="ix" style="--a:#6a3542">
+          <div class="ix-num">06</div>
+          <div>
+            <strong>مجموعة ضد تساقط الشعر</strong>
+            <small>Anti-Hair Loss</small>
+          </div>
+          <span class="ix-count">5 منتجات</span>
+        </div>
+        <div class="ix" style="--a:#9a4a24">
+          <div class="ix-num">07</div>
+          <div>
+            <strong>مجموعة SOS MACCHIA</strong>
+            <small>SOS Dark Spot</small>
+          </div>
+          <span class="ix-count">3 منتجات</span>
+        </div>
+        <div class="ix" style="--a:#3a4452">
+          <div class="ix-num">08</div>
+          <div>
+            <strong>علاجات متخصصة</strong>
+            <small>Special Care</small>
+          </div>
+          <span class="ix-count">7 منتجات</span>
+        </div></div>
+</section>
+
+
+    <section class="sheet family" style="--a:#7a3040;--tint:#f8f0f2">
+      <div class="family-rail" aria-hidden="true"></div>
+      <div class="family-panel">
+        <div class="fp-eyebrow">
+          <span class="col-num">01</span>
+          <span class="col-label">COLLECTION</span>
+        </div>
+        <h2>مجموعة حماية لون الشعر</h2>
+        <p class="en">Color Protection</p>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="desc">مجموعة متكاملة للشعر المصبوغ تحمي اللون من البهتان وتمنحه لمعاناً ونعومة مع الحناء والكيراتين والكولاجين.</p>
+        <div class="fp-meta">
+          <div class="meta-box">
+            <span class="meta-k">المنتجات</span>
+            <strong>04</strong>
+          </div>
+          <div class="meta-box">
+            <span class="meta-k">الأصل</span>
+            <strong>Italy</strong>
+          </div>
+        </div>
+        <div class="fp-foot">
+          <span>Retinol Complex</span>
+          <span class="dot"></span>
+          <span>Professional Line</span>
+        </div>
+      </div>
+      <div class="family-gallery">
+        <div class="gallery-label">منتجات المجموعة</div>
+        <div class="gallery n4"><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-color-protection-shampoo-henna-keratin-collagen-500ml.jpg" alt="شامبو حماية اللون Henna Keratin Collagen 500 مل" />
+          </div>
+          <figcaption>شامبو حماية اللون Henna Keratin Collagen 500 م…</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-color-protection-conditioner-henna-collagen-500ml.jpg" alt="بلسم حماية اللون Henna Collagen 500 مل" />
+          </div>
+          <figcaption>بلسم حماية اللون Henna Collagen 500 مل</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-color-protection-hair-mask-collagen-keratin-300ml.jpg" alt="ماسك شعر حماية اللون Collagen Keratin 300 مل" />
+          </div>
+          <figcaption>ماسك شعر حماية اللون Collagen Keratin 300 مل</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-color-protection-hair-serum-henna-collagen-100ml.jpg" alt="سيروم شعر حماية اللون Henna Collagen 100 مل" />
+          </div>
+          <figcaption>سيروم شعر حماية اللون Henna Collagen 100 مل</figcaption>
+        </figure></div>
+      </div>
+      <span class="wm-num" aria-hidden="true">01</span>
+    </section>
+    <section class="sheet product" style="--a:#7a3040;--tint:#f8f0f2">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-color-protection-shampoo-henna-keratin-collagen-500ml.jpg" alt="شامبو حماية اللون Henna Keratin Collagen 500 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">01 · 01/04</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة حماية لون الشعر</span>
+          <span class="p-count" dir="ltr">01 — 04</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>شامبو حماية اللون Henna Keratin Collagen 500 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">شامبو حماية اللون — يحمي لون الشعر المصبوغ ويمنحه لمعاناً صحياً مع تركيبة غنية بالحناء والكيراتين والكولاجين. • ينظّف بلطف دون سحب اللون أو بهتانه — مثالي للشعر الملوّن…</p>
+        <ul class="p-bullets"><li><span>ينظّف بلطف دون سحب اللون أو بهتانه — مثالي للشعر الملوّن والهايلايت.</span></li><li><span>الكيراتين والكولاجين يعزّزان قوة الألياف ويقلّلان التقصف.</span></li><li><span>مستخلص الحناء يدعم ثبات اللون ويمنح لمعاناً طبيعياً.</span></li><li><span>500 مل — للاستخدام اليومي أو بالتناوب مع بلسم السلسلة.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>13٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>9٬100 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174440</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#7a3040;--tint:#f8f0f2">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-color-protection-conditioner-henna-collagen-500ml.jpg" alt="بلسم حماية اللون Henna Collagen 500 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">01 · 02/04</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة حماية لون الشعر</span>
+          <span class="p-count" dir="ltr">02 — 04</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>بلسم حماية اللون Henna Collagen 500 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">بلسم حماية اللون — يحافظ على حيوية اللون ويرطّب الشعر المصبوغ مع حناء وكولاجين. • يغلّف الألياف بطبقة واقية ضد بهتان اللون. • يسهّل التمشيط ويقلّل التقصف على الأطراف. • مكمّل…</p>
+        <ul class="p-bullets"><li><span>يغلّف الألياف بطبقة واقية ضد بهتان اللون.</span></li><li><span>يسهّل التمشيط ويقلّل التقصف على الأطراف.</span></li><li><span>مكمّل أساسي لشامبو Color Protection.</span></li><li><span>500 مل — للاستخدام بعد كل غسلة.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174457</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#7a3040;--tint:#f8f0f2">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-color-protection-hair-mask-collagen-keratin-300ml.jpg" alt="ماسك شعر حماية اللون Collagen Keratin 300 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">01 · 03/04</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة حماية لون الشعر</span>
+          <span class="p-count" dir="ltr">03 — 04</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>ماسك شعر حماية اللون Collagen Keratin 300 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">ماسك شعر حماية اللون — يثبّت اللون ويرطّب الشعر المصبوغ بعمق مع كولاجين وكيراتين. • يعيد اللمعان ويقلّل الجفاف الناتج عن الصبغ المتكرر. • يقوّي الألياف ويحمي من التقصف. •…</p>
+        <ul class="p-bullets"><li><span>يعيد اللمعان ويقلّل الجفاف الناتج عن الصبغ المتكرر.</span></li><li><span>يقوّي الألياف ويحمي من التقصف.</span></li><li><span>استخدميه أسبوعياً مع شامبو وبلسم Color Protection.</span></li><li><span>300 مل — اتركيه 5–10 دقائق على الأطوال والأطراف.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174464</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#7a3040;--tint:#f8f0f2">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-color-protection-hair-serum-henna-collagen-100ml.jpg" alt="سيروم شعر حماية اللون Henna Collagen 100 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">01 · 04/04</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة حماية لون الشعر</span>
+          <span class="p-count" dir="ltr">04 — 04</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>سيروم شعر حماية اللون Henna Collagen 100 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">سيروم شعر حماية اللون — يثبّت اللون ويمنح لمعاناً فورياً مع حناء وكولاجين. • يحمي من بهتان اللون والحرارة والرطوبة. • ينعّم الأطراف ويقلّل التقصف على الشعر المصبوغ. • يُطبّق على…</p>
+        <ul class="p-bullets"><li><span>يحمي من بهتان اللون والحرارة والرطوبة.</span></li><li><span>ينعّم الأطراف ويقلّل التقصف على الشعر المصبوغ.</span></li><li><span>يُطبّق على الشعر الرطب أو الجاف قبل التصفيف.</span></li><li><span>100 مل — بضع قطرات على الأطوال والأطراف.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174471</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet family" style="--a:#8a6230;--tint:#f7f2ea">
+      <div class="family-rail" aria-hidden="true"></div>
+      <div class="family-panel">
+        <div class="fp-eyebrow">
+          <span class="col-num">02</span>
+          <span class="col-label">COLLECTION</span>
+        </div>
+        <h2>مجموعة ضد التجعد</h2>
+        <p class="en">Anti-Frizz</p>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="desc">انضباط ونعومة للشعر الجاف والمجعد مع بذور الكتان والكولاجين — ملمساً حريرياً طوال اليوم.</p>
+        <div class="fp-meta">
+          <div class="meta-box">
+            <span class="meta-k">المنتجات</span>
+            <strong>04</strong>
+          </div>
+          <div class="meta-box">
+            <span class="meta-k">الأصل</span>
+            <strong>Italy</strong>
+          </div>
+        </div>
+        <div class="fp-foot">
+          <span>Retinol Complex</span>
+          <span class="dot"></span>
+          <span>Professional Line</span>
+        </div>
+      </div>
+      <div class="family-gallery">
+        <div class="gallery-label">منتجات المجموعة</div>
+        <div class="gallery n4"><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-intensive-anti-frizz-shampoo-flaxseed-collagen-aloe-500ml.jpg" alt="شامبو مكثّف ضد التجعد Flaxseed Collagen Aloe 500 مل" />
+          </div>
+          <figcaption>شامبو مكثّف ضد التجعد Flaxseed Collagen Aloe 5…</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-anti-frizz-conditioner-shea-ginseng-flaxseed-500ml.jpg" alt="بلسم ضد التجعد Shea Ginseng Flaxseed 500 مل" />
+          </div>
+          <figcaption>بلسم ضد التجعد Shea Ginseng Flaxseed 500 مل</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-nourishing-anti-frizz-hair-mask-flaxseed-collagen-aloe-300ml.jpg" alt="ماسك شعر مغذّي ضد التجعد Flaxseed Collagen Aloe 300 مل" />
+          </div>
+          <figcaption>ماسك شعر مغذّي ضد التجعد Flaxseed Collagen Alo…</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-anti-frizz-hair-serum-spray-flaxseed-collagen-shea-100ml.jpg" alt="سيروم شعر بخاخ ضد التجعد Flaxseed Collagen Shea 100 مل" />
+          </div>
+          <figcaption>سيروم شعر بخاخ ضد التجعد Flaxseed Collagen She…</figcaption>
+        </figure></div>
+      </div>
+      <span class="wm-num" aria-hidden="true">02</span>
+    </section>
+    <section class="sheet product" style="--a:#8a6230;--tint:#f7f2ea">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-intensive-anti-frizz-shampoo-flaxseed-collagen-aloe-500ml.jpg" alt="شامبو مكثّف ضد التجعد Flaxseed Collagen Aloe 500 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">02 · 01/04</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد التجعد</span>
+          <span class="p-count" dir="ltr">01 — 04</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>شامبو مكثّف ضد التجعد Flaxseed Collagen Aloe 500 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">شامبو مكثّف ضد التجعد — يسيطر على التجعد ويمنح شعراً ناعماً قابلاً للتمشيط مع بذور الكتان والكولاجين والألوفيرا. • يرطّب الألياف ويغلّفها بطبقة حماية ضد الرطوبة. • الكولاجين…</p>
+        <ul class="p-bullets"><li><span>يرطّب الألياف ويغلّفها بطبقة حماية ضد الرطوبة.</span></li><li><span>الكولاجين يعزّز المرونة؛ الألوفيرا يهدّئ وينعّم.</span></li><li><span>مثالي للشعر المجعد والجاف والمعرّض للرطوبة.</span></li><li><span>500 مل — أكملي ببلسم أو ماسك السلسلة.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>13٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>9٬100 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174303</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#8a6230;--tint:#f7f2ea">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-anti-frizz-conditioner-shea-ginseng-flaxseed-500ml.jpg" alt="بلسم ضد التجعد Shea Ginseng Flaxseed 500 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">02 · 02/04</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد التجعد</span>
+          <span class="p-count" dir="ltr">02 — 04</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>بلسم ضد التجعد Shea Ginseng Flaxseed 500 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">بلسم ضد التجعد — يرطّب بعمق ويسيطر على التجعد مع زبدة الشيا والجينسنغ وبذور الكتان. • يفك التشابك ويمنح ملمساً ناعماً حريرياً. • الجينسنغ ينشّط فروة الرأس؛ الشيا تغلّف بالرطوبة.…</p>
+        <ul class="p-bullets"><li><span>يفك التشابك ويمنح ملمساً ناعماً حريرياً.</span></li><li><span>الجينسنغ ينشّط فروة الرأس؛ الشيا تغلّف بالرطوبة.</span></li><li><span>مثالي للشعر المجعد والجاف والمعرّض للرطوبة.</span></li><li><span>500 مل — اتركيه دقيقتين ثم اشطفي جيداً.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174310</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#8a6230;--tint:#f7f2ea">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-nourishing-anti-frizz-hair-mask-flaxseed-collagen-aloe-300ml.jpg" alt="ماسك شعر مغذّي ضد التجعد Flaxseed Collagen Aloe 300 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">02 · 03/04</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد التجعد</span>
+          <span class="p-count" dir="ltr">03 — 04</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>ماسك شعر مغذّي ضد التجعد Flaxseed Collagen Aloe 300 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">ماسك شعر مغذّي ضد التجعد — علاج مكثّف يرطّب ويغذّي الشعر الجاف والمجعد مع بذور الكتان والكولاجين والألوفيرا. • يعيد النعومة والمرونة ويسيطر على التجعد لفترة أطول. • مثالي…</p>
+        <ul class="p-bullets"><li><span>يعيد النعومة والمرونة ويسيطر على التجعد لفترة أطول.</span></li><li><span>مثالي أسبوعياً أو بعد التعرض للشمس والكلور.</span></li><li><span>يترك شعراً لامعاً حريرياً دون ثقل.</span></li><li><span>300 مل — اتركيه 5–10 دقائق ثم اشطفي.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174327</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#8a6230;--tint:#f7f2ea">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-anti-frizz-hair-serum-spray-flaxseed-collagen-shea-100ml.jpg" alt="سيروم شعر بخاخ ضد التجعد Flaxseed Collagen Shea 100 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">02 · 04/04</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد التجعد</span>
+          <span class="p-count" dir="ltr">04 — 04</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>سيروم شعر بخاخ ضد التجعد Flaxseed Collagen Shea 100 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">سيروم شعر بخاخ ضد التجعد — يسيطر على التجعد فوراً مع بذور الكتان والكولاجين وزبدة الشيا. • صيغة بخاخ سهلة التطبيق على الشعر الجاف أو الرطب. • يغلّف الألياف ويحمي من الرطوبة…</p>
+        <ul class="p-bullets"><li><span>صيغة بخاخ سهلة التطبيق على الشعر الجاف أو الرطب.</span></li><li><span>يغلّف الألياف ويحمي من الرطوبة والحرارة.</span></li><li><span>مثالي للشعر المجعد والجاف في الجو الحار.</span></li><li><span>100 مل — رشّي من مسافة 20 سم ووزّعي بالأصابع.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174334</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet family" style="--a:#2f5a48;--tint:#eef5f1">
+      <div class="family-rail" aria-hidden="true"></div>
+      <div class="family-panel">
+        <div class="fp-eyebrow">
+          <span class="col-num">03</span>
+          <span class="col-label">COLLECTION</span>
+        </div>
+        <h2>مجموعة ضد القشرة</h2>
+        <p class="en">Anti-Dandruff</p>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="desc">تنقية وتوازن لفروة الرأس مع القراص والأوكالبتوس — انتعاش ونظافة دون جفاف.</p>
+        <div class="fp-meta">
+          <div class="meta-box">
+            <span class="meta-k">المنتجات</span>
+            <strong>05</strong>
+          </div>
+          <div class="meta-box">
+            <span class="meta-k">الأصل</span>
+            <strong>Italy</strong>
+          </div>
+        </div>
+        <div class="fp-foot">
+          <span>Retinol Complex</span>
+          <span class="dot"></span>
+          <span>Professional Line</span>
+        </div>
+      </div>
+      <div class="family-gallery">
+        <div class="gallery-label">منتجات المجموعة</div>
+        <div class="gallery n5"><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-purifying-anti-dandruff-shampoo-nettle-keratin-500ml.jpg" alt="شامبو منقّي ضد القشرة Nettle Keratin 500 مل" />
+          </div>
+          <figcaption>شامبو منقّي ضد القشرة Nettle Keratin 500 مل</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-purifying-anti-dandruff-conditioner-nettle-eucalyptus-sage-500ml.jpg" alt="بلسم منقّي ضد القشرة Nettle Eucalyptus Sage 500 مل" />
+          </div>
+          <figcaption>بلسم منقّي ضد القشرة Nettle Eucalyptus Sage 50…</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-anti-dandruff-balancing-hair-mask-hydrolyzed-keratin-300ml.jpg" alt="ماسك شعر موازن ضد القشرة Hydrolyzed Keratin 300 مل" />
+          </div>
+          <figcaption>ماسك شعر موازن ضد القشرة Hydrolyzed Keratin 30…</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-keratin-hair-purifying-anti-dandruff-ampoules-6x10ml.jpg" alt="أمبولات شعر كيراتين منقّية ضد القشرة 6×10 مل" />
+          </div>
+          <figcaption>أمبولات شعر كيراتين منقّية ضد القشرة 6×10 مل</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-purifying-anti-dandruff-hair-serum-nettle-eucalyptus-arnica-100ml.jpg" alt="سيروم شعر منقّي ضد القشرة Nettle Eucalyptus Arnica 100 مل" />
+          </div>
+          <figcaption>سيروم شعر منقّي ضد القشرة Nettle Eucalyptus Ar…</figcaption>
+        </figure></div>
+      </div>
+      <span class="wm-num" aria-hidden="true">03</span>
+    </section>
+    <section class="sheet product" style="--a:#2f5a48;--tint:#eef5f1">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-purifying-anti-dandruff-shampoo-nettle-keratin-500ml.jpg" alt="شامبو منقّي ضد القشرة Nettle Keratin 500 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">03 · 01/05</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد القشرة</span>
+          <span class="p-count" dir="ltr">01 — 05</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>شامبو منقّي ضد القشرة Nettle Keratin 500 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">شامبو منقّي ضد القشرة — ينظّف فروة الرأس بعمق ويقلّل القشرة والحكة مع مستخلص القراص والكيراتين. • يوازن فروة الرأس الدهنية أو المتهيّجة دون جفاف مفرط. • القراص يهدّئ وينقّي؛…</p>
+        <ul class="p-bullets"><li><span>يوازن فروة الرأس الدهنية أو المتهيّجة دون جفاف مفرط.</span></li><li><span>القراص يهدّئ وينقّي؛ الكيراتين يعزّز قوة الشعر.</span></li><li><span>مناسب للاستخدام المنتظم في فصل الشتاء والصيف العراقي.</span></li><li><span>500 مل — دلكي فروة الرأس بلطف ثم اشطفي جيداً.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>13٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>9٬100 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174358</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#2f5a48;--tint:#eef5f1">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-purifying-anti-dandruff-conditioner-nettle-eucalyptus-sage-500ml.jpg" alt="بلسم منقّي ضد القشرة Nettle Eucalyptus Sage 500 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">03 · 02/05</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد القشرة</span>
+          <span class="p-count" dir="ltr">02 — 05</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>بلسم منقّي ضد القشرة Nettle Eucalyptus Sage 500 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">بلسم منقّي ضد القشرة — يهدّئ فروة الرأس ويرطّب الأطوال دون إثقال مع قراص وكاوبرتس ومرمرية. • يكمّل شامبو Anti-Dandruff لروتين متكامل ضد القشرة. • الأوكالبتوس ينعش وينقّي؛…</p>
+        <ul class="p-bullets"><li><span>يكمّل شامبو Anti-Dandruff لروتين متكامل ضد القشرة.</span></li><li><span>الأوكالبتوس ينعش وينقّي؛ المرمرية توازن الدهون.</span></li><li><span>يقلّل الحكة ويترك شعراً ناعماً قابلاً للتمشيط.</span></li><li><span>500 مل — تجنّبي وضعه مباشرة على فروة الرأس الحساسة جداً.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174365</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#2f5a48;--tint:#eef5f1">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-anti-dandruff-balancing-hair-mask-hydrolyzed-keratin-300ml.jpg" alt="ماسك شعر موازن ضد القشرة Hydrolyzed Keratin 300 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">03 · 03/05</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد القشرة</span>
+          <span class="p-count" dir="ltr">03 — 05</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>ماسك شعر موازن ضد القشرة Hydrolyzed Keratin 300 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">ماسك شعر موازن ضد القشرة — يهدّئ فروة الرأس ويعيد توازنها مع كيراتين متحلّل للأطوال. • يقلّل القشرة والحكة مع ترطيب الألياف. • الكيراتين المتحلّل يعزّز قوة الشعر الضعيف. • علاج…</p>
+        <ul class="p-bullets"><li><span>يقلّل القشرة والحكة مع ترطيب الألياف.</span></li><li><span>الكيراتين المتحلّل يعزّز قوة الشعر الضعيف.</span></li><li><span>علاج أسبوعي مكمّل لروتين Anti-Dandruff.</span></li><li><span>300 مل — دلكي فروة الرأس بلطف واتركي 5–10 دقائق.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174372</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#2f5a48;--tint:#eef5f1">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-keratin-hair-purifying-anti-dandruff-ampoules-6x10ml.jpg" alt="أمبولات شعر كيراتين منقّية ضد القشرة 6×10 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">03 · 04/05</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد القشرة</span>
+          <span class="p-count" dir="ltr">04 — 05</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>أمبولات شعر كيراتين منقّية ضد القشرة 6×10 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">أمبولات شعر كيراتين منقّية ضد القشرة — علاج موضعي مكثّف لفروة الرأس المعرّضة للقشرة. • تنقّي وتهدّئ فروة الرأس وتقلّل الحكة والقشرة. • الكيراتين يدعم قوة الشعر أثناء العلاج. •…</p>
+        <ul class="p-bullets"><li><span>تنقّي وتهدّئ فروة الرأس وتقلّل الحكة والقشرة.</span></li><li><span>الكيراتين يدعم قوة الشعر أثناء العلاج.</span></li><li><span>تُطبّق على فروة الرأس النظيفة دون شطف.</span></li><li><span>6 أمبولات × 10 مل — دورة علاجية مع شامبو Anti-Dandruff.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-170787</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#2f5a48;--tint:#eef5f1">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-purifying-anti-dandruff-hair-serum-nettle-eucalyptus-arnica-100ml.jpg" alt="سيروم شعر منقّي ضد القشرة Nettle Eucalyptus Arnica 100 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">03 · 05/05</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد القشرة</span>
+          <span class="p-count" dir="ltr">05 — 05</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>سيروم شعر منقّي ضد القشرة Nettle Eucalyptus Arnica 100 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">سيروم شعر منقّي ضد القشرة — علاج موضعي يهدّئ فروة الرأس مع قراص وأوكالبتوس وأرنيكا. • يقلّل الحكة والقشرة بين غسلات الشعر. • ينعش فروة الرأس دون جفاف مفرط. • مكمّل مثالي لشامبو…</p>
+        <ul class="p-bullets"><li><span>يقلّل الحكة والقشرة بين غسلات الشعر.</span></li><li><span>ينعش فروة الرأس دون جفاف مفرط.</span></li><li><span>مكمّل مثالي لشامبو وبلسم Anti-Dandruff.</span></li><li><span>100 مل — طبّقي على فروة الرأس الجافة أو الرطبة.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174389</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet family" style="--a:#34506e;--tint:#eef2f7">
+      <div class="family-rail" aria-hidden="true"></div>
+      <div class="family-panel">
+        <div class="fp-eyebrow">
+          <span class="col-num">04</span>
+          <span class="col-label">COLLECTION</span>
+        </div>
+        <h2>مجموعة تكثيف الحجم</h2>
+        <p class="en">Volumizing</p>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="desc">كثافة ورفع من الجذور للشعر الخفيف مع الكولاجين والكينوا — حجم طبيعي دون ثقل.</p>
+        <div class="fp-meta">
+          <div class="meta-box">
+            <span class="meta-k">المنتجات</span>
+            <strong>03</strong>
+          </div>
+          <div class="meta-box">
+            <span class="meta-k">الأصل</span>
+            <strong>Italy</strong>
+          </div>
+        </div>
+        <div class="fp-foot">
+          <span>Retinol Complex</span>
+          <span class="dot"></span>
+          <span>Professional Line</span>
+        </div>
+      </div>
+      <div class="family-gallery">
+        <div class="gallery-label">منتجات المجموعة</div>
+        <div class="gallery n3"><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-volumizing-shampoo-collagen-quinoa-500ml.jpg" alt="شامبو تكثيف الحجم Collagen Quinoa 500 مل" />
+          </div>
+          <figcaption>شامبو تكثيف الحجم Collagen Quinoa 500 مل</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-volumizing-conditioner-collagen-brown-algae-quinoa-500ml.jpg" alt="بلسم تكثيف الحجم Collagen Brown Algae Quinoa 500 مل" />
+          </div>
+          <figcaption>بلسم تكثيف الحجم Collagen Brown Algae Quinoa 5…</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-volumizing-hair-serum-collagen-rice-proteins-moringa-100ml.jpg" alt="سيروم شعر تكثيف الحجم Collagen Rice Proteins Moringa 100 مل" />
+          </div>
+          <figcaption>سيروم شعر تكثيف الحجم Collagen Rice Proteins M…</figcaption>
+        </figure></div>
+      </div>
+      <span class="wm-num" aria-hidden="true">04</span>
+    </section>
+    <section class="sheet product" style="--a:#34506e;--tint:#eef2f7">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-volumizing-shampoo-collagen-quinoa-500ml.jpg" alt="شامبو تكثيف الحجم Collagen Quinoa 500 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">04 · 01/03</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة تكثيف الحجم</span>
+          <span class="p-count" dir="ltr">01 — 03</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>شامبو تكثيف الحجم Collagen Quinoa 500 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">شامبو تكثيف الحجم — يمنح الشعر الخفيف والرقيق مظهراً أكثر امتلاءً ورفعاً من الجذور مع الكولاجين والكينوا. • ينظّف دون إثقال — يترك خصلات خفيفة ومنتفخة. • الكولاجين يدعم قوة…</p>
+        <ul class="p-bullets"><li><span>ينظّف دون إثقال — يترك خصلات خفيفة ومنتفخة.</span></li><li><span>الكولاجين يدعم قوة الألياف؛ الكينوا تغذّي ببروتينات نباتية.</span></li><li><span>مثالي للشعر الناعم والمسطح الذي يفقد الحجم بسرعة.</span></li><li><span>500 مل — جفّفي بالتصويب من الجذور للأطراف.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>13٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>9٬100 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174402</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#34506e;--tint:#eef2f7">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-volumizing-conditioner-collagen-brown-algae-quinoa-500ml.jpg" alt="بلسم تكثيف الحجم Collagen Brown Algae Quinoa 500 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">04 · 02/03</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة تكثيف الحجم</span>
+          <span class="p-count" dir="ltr">02 — 03</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>بلسم تكثيف الحجم Collagen Brown Algae Quinoa 500 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">بلسم تكثيف الحجم — يمنح الشعر الخفيف حجمًا ونعومة دون ثقل مع كولاجين وأعشاب بنية وكينوا. • يرطّب ويفك التشابك مع إحساس خفيف ومرن. • الأعشاب البحرية تغذّي؛ الكولاجين يدعم البنية.…</p>
+        <ul class="p-bullets"><li><span>يرطّب ويفك التشابك مع إحساس خفيف ومرن.</span></li><li><span>الأعشاب البحرية تغذّي؛ الكولاجين يدعم البنية.</span></li><li><span>مثالي بعد شامبو Volumizing لإطلالة أكثر امتلاءً.</span></li><li><span>500 مل — ركّزي على الأطوال والأطراف.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174419</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#34506e;--tint:#eef2f7">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-volumizing-hair-serum-collagen-rice-proteins-moringa-100ml.jpg" alt="سيروم شعر تكثيف الحجم Collagen Rice Proteins Moringa 100 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">04 · 03/03</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة تكثيف الحجم</span>
+          <span class="p-count" dir="ltr">03 — 03</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>سيروم شعر تكثيف الحجم Collagen Rice Proteins Moringa 100 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">سيروم شعر تكثيف الحجم — يمنح الشعر الخفيف حجمًا ورفعاً من الجذور مع كولاجين وبروتينات الأرز والمورينجا. • خفيف الوزن ولا يثقل الخصلات. • يعزّز التماسك والمرونة مع لمعان صحي. •…</p>
+        <ul class="p-bullets"><li><span>خفيف الوزن ولا يثقل الخصلات.</span></li><li><span>يعزّز التماسك والمرونة مع لمعان صحي.</span></li><li><span>مثالي قبل التجفيف للحصول على حجم أقصى.</span></li><li><span>100 مل — وزّعي على الجذور والأطوال.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174433</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet family" style="--a:#4d4268;--tint:#f2f0f6">
+      <div class="family-rail" aria-hidden="true"></div>
+      <div class="family-panel">
+        <div class="fp-eyebrow">
+          <span class="col-num">05</span>
+          <span class="col-label">COLLECTION</span>
+        </div>
+        <h2>مجموعة ضد الاصفرار</h2>
+        <p class="en">Anti-Yellow</p>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="desc">للشعر الأشقر والرمادي والأبيض — يزيل الاصفرار ويعيد البرودة والنقاء.</p>
+        <div class="fp-meta">
+          <div class="meta-box">
+            <span class="meta-k">المنتجات</span>
+            <strong>04</strong>
+          </div>
+          <div class="meta-box">
+            <span class="meta-k">الأصل</span>
+            <strong>Italy</strong>
+          </div>
+        </div>
+        <div class="fp-foot">
+          <span>Retinol Complex</span>
+          <span class="dot"></span>
+          <span>Professional Line</span>
+        </div>
+      </div>
+      <div class="family-gallery">
+        <div class="gallery-label">منتجات المجموعة</div>
+        <div class="gallery n4"><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-intensive-anti-yellow-shampoo-keratin-camellia-500ml.jpg" alt="شامبو مكثّف ضد الاصفرار Keratin Camellia 500 مل" />
+          </div>
+          <figcaption>شامبو مكثّف ضد الاصفرار Keratin Camellia 500 م…</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-intensive-anti-yellow-conditioner-keratin-collagen-camellia-500ml.jpg" alt="بلسم مكثّف ضد الاصفرار Keratin Collagen Camellia 500 مل" />
+          </div>
+          <figcaption>بلسم مكثّف ضد الاصفرار Keratin Collagen Camell…</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-anti-yellow-hair-mask-collagen-keratin-300ml.jpg" alt="ماسك شعر ضد الاصفرار Collagen Keratin 300 مل" />
+          </div>
+          <figcaption>ماسك شعر ضد الاصفرار Collagen Keratin 300 مل</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-anti-yellow-hair-serum-keratin-collagen-camellia-100ml.jpg" alt="سيروم شعر ضد الاصفرار Keratin Collagen Camellia 100 مل" />
+          </div>
+          <figcaption>سيروم شعر ضد الاصفرار Keratin Collagen Camelli…</figcaption>
+        </figure></div>
+      </div>
+      <span class="wm-num" aria-hidden="true">05</span>
+    </section>
+    <section class="sheet product" style="--a:#4d4268;--tint:#f2f0f6">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-intensive-anti-yellow-shampoo-keratin-camellia-500ml.jpg" alt="شامبو مكثّف ضد الاصفرار Keratin Camellia 500 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">05 · 01/04</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد الاصفرار</span>
+          <span class="p-count" dir="ltr">01 — 04</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>شامبو مكثّف ضد الاصفرار Keratin Camellia 500 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">شامبو مكثّف ضد الاصفرار — يزيل البقع الصفراء والبرتقالية من الشعر الأشقر والرمادي والأبيض مع كيراتين وزهر الكاميليا. • يوحّد درجة اللون ويعيد الباردة والنقاء للشعر المصبوغ. •…</p>
+        <ul class="p-bullets"><li><span>يوحّد درجة اللون ويعيد الباردة والنقاء للشعر المصبوغ.</span></li><li><span>الكيراتين يقوّي الألياف والكاميليا تغذّي وتنعّم.</span></li><li><span>مثالي للشعر البلاتيني والرمادي في المناخ الحار.</span></li><li><span>500 مل — استخدميه 1–2 مرات أسبوعياً أو حسب الحاجة.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>13٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>9٬100 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174488</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#4d4268;--tint:#f2f0f6">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-intensive-anti-yellow-conditioner-keratin-collagen-camellia-500ml.jpg" alt="بلسم مكثّف ضد الاصفرار Keratin Collagen Camellia 500 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">05 · 02/04</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد الاصفرار</span>
+          <span class="p-count" dir="ltr">02 — 04</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>بلسم مكثّف ضد الاصفرار Keratin Collagen Camellia 500 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">بلسم مكثّف ضد الاصفرار — يكمّل الشامبو المضاد للاصفرار بترطيب وتنعيم مع الحفاظ على درجة اللون الباردة. • كيراتين وكولاجين لتقوية الشعر الأشقر والرمادي. • زهر الكاميليا يغذّي…</p>
+        <ul class="p-bullets"><li><span>كيراتين وكولاجين لتقوية الشعر الأشقر والرمادي.</span></li><li><span>زهر الكاميليا يغذّي ويمنح لمعاناً حريرياً.</span></li><li><span>يقلّل التجعد ويحسّن قابلية التصفيف.</span></li><li><span>500 مل — استخدميه بعد الشامبو المضاد للاصفرار.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-175546</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#4d4268;--tint:#f2f0f6">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-anti-yellow-hair-mask-collagen-keratin-300ml.jpg" alt="ماسك شعر ضد الاصفرار Collagen Keratin 300 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">05 · 03/04</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد الاصفرار</span>
+          <span class="p-count" dir="ltr">03 — 04</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>ماسك شعر ضد الاصفرار Collagen Keratin 300 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">ماسك شعر ضد الاصفرار — يعيد اللمعان البارد للشعر الأشقر والرمادي مع كولاجين وكيراتين. • يوحّد اللون ويقلّل البقع الصفراء والبرتقالية. • ينعّم ويقوّي الشعر المصبوغ والمبيّض. •…</p>
+        <ul class="p-bullets"><li><span>يوحّد اللون ويقلّل البقع الصفراء والبرتقالية.</span></li><li><span>ينعّم ويقوّي الشعر المصبوغ والمبيّض.</span></li><li><span>علاج أسبوعي مثالي مع شامبو وبلسم Anti-Yellow.</span></li><li><span>300 مل — اتركيه 5–10 دقائق حسب شدة الاصفرار.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-175522</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#4d4268;--tint:#f2f0f6">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-anti-yellow-hair-serum-keratin-collagen-camellia-100ml.jpg" alt="سيروم شعر ضد الاصفرار Keratin Collagen Camellia 100 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">05 · 04/04</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد الاصفرار</span>
+          <span class="p-count" dir="ltr">04 — 04</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>سيروم شعر ضد الاصفرار Keratin Collagen Camellia 100 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">سيروم شعر ضد الاصفرار — يحافظ على درجة اللون الباردة ويمنح لمعاناً للشعر الأشقر والرمادي. • كيراتين وكولاجين للتقوية؛ كاميليا للتغذية. • يقلّل البقع الصفراء بين الغسلات. • يُطبّق…</p>
+        <ul class="p-bullets"><li><span>كيراتين وكولاجين للتقوية؛ كاميليا للتغذية.</span></li><li><span>يقلّل البقع الصفراء بين الغسلات.</span></li><li><span>يُطبّق على الشعر الرطب أو الجاف قبل التصفيف.</span></li><li><span>100 مل — بضع قطرات على الأطوال.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-175539</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet family" style="--a:#6a3542;--tint:#f7eff1">
+      <div class="family-rail" aria-hidden="true"></div>
+      <div class="family-panel">
+        <div class="fp-eyebrow">
+          <span class="col-num">06</span>
+          <span class="col-label">COLLECTION</span>
+        </div>
+        <h2>مجموعة ضد تساقط الشعر</h2>
+        <p class="en">Anti-Hair Loss</p>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="desc">تقوية الجذور ومقاومة التساقط مع السيراميدات والبانثينول — روتين متكامل للعناية اليومية.</p>
+        <div class="fp-meta">
+          <div class="meta-box">
+            <span class="meta-k">المنتجات</span>
+            <strong>05</strong>
+          </div>
+          <div class="meta-box">
+            <span class="meta-k">الأصل</span>
+            <strong>Italy</strong>
+          </div>
+        </div>
+        <div class="fp-foot">
+          <span>Retinol Complex</span>
+          <span class="dot"></span>
+          <span>Professional Line</span>
+        </div>
+      </div>
+      <div class="family-gallery">
+        <div class="gallery-label">منتجات المجموعة</div>
+        <div class="gallery n5"><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-anti-hair-loss-shampoo-panthenol-ceramides-nettle-500ml.jpg" alt="شامبو ضد تساقط الشعر Panthenol Ceramides Nettle 500 مل" />
+          </div>
+          <figcaption>شامبو ضد تساقط الشعر Panthenol Ceramides Nettl…</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-anti-hair-loss-conditioner-ceramides-panthenol-nettle-500ml.jpg" alt="بلسم ضد تساقط الشعر Ceramides Panthenol Nettle 500 مل" />
+          </div>
+          <figcaption>بلسم ضد تساقط الشعر Ceramides Panthenol Nettle…</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-anti-hair-loss-hair-mask-ceramides-panthenol-nettle-500ml.jpg" alt="ماسك شعر ضد التساقط Ceramides Panthenol Nettle 500 مل" />
+          </div>
+          <figcaption>ماسك شعر ضد التساقط Ceramides Panthenol Nettle…</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-keratin-hair-anti-hair-loss-ampoules-6x10ml.jpg" alt="أمبولات شعر كيراتين ضد التساقط 6×10 مل" />
+          </div>
+          <figcaption>أمبولات شعر كيراتين ضد التساقط 6×10 مل</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-anti-hair-loss-serum-panthenol-ceramides-birch-100ml.jpg" alt="سيروم شعر ضد التساقط Panthenol Ceramides Birch 100 مل" />
+          </div>
+          <figcaption>سيروم شعر ضد التساقط Panthenol Ceramides Birch…</figcaption>
+        </figure></div>
+      </div>
+      <span class="wm-num" aria-hidden="true">06</span>
+    </section>
+    <section class="sheet product" style="--a:#6a3542;--tint:#f7eff1">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-anti-hair-loss-shampoo-panthenol-ceramides-nettle-500ml.jpg" alt="شامبو ضد تساقط الشعر Panthenol Ceramides Nettle 500 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">06 · 01/05</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد تساقط الشعر</span>
+          <span class="p-count" dir="ltr">01 — 05</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>شامبو ضد تساقط الشعر Panthenol Ceramides Nettle 500 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">شامبو ضد تساقط الشعر — يقوّي الجذور ويقلّل التساقط مع بانثينول وسيراميدات ومستخلص القراص. • ينظّف فروة الرأس بلطف ويحفّز بيئة صحية للنمو. • السيراميدات تعيد بناء حاجز الرطوبة؛…</p>
+        <ul class="p-bullets"><li><span>ينظّف فروة الرأس بلطف ويحفّز بيئة صحية للنمو.</span></li><li><span>السيراميدات تعيد بناء حاجز الرطوبة؛ البانثينول يرطّب ويهدّئ.</span></li><li><span>مناسب للتساقط الموسمي والشعر الضعيف بعد الصبغ.</span></li><li><span>500 مل — للاستخدام المنتظم مع سيروم أو أمبولات السلسلة.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>13٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>9٬100 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174501</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#6a3542;--tint:#f7eff1">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-anti-hair-loss-conditioner-ceramides-panthenol-nettle-500ml.jpg" alt="بلسم ضد تساقط الشعر Ceramides Panthenol Nettle 500 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">06 · 02/05</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد تساقط الشعر</span>
+          <span class="p-count" dir="ltr">02 — 05</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>بلسم ضد تساقط الشعر Ceramides Panthenol Nettle 500 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">بلسم ضد تساقط الشعر — يكمل علاج التساقط بترطيب عميق وتقوية للألياف مع سيراميدات وبانثينول وقراص. • يسهّل التمشيط ويقلّل التكسر بعد الاستحمام. • يعزّز مرونة الشعر ويحمي الأطراف…</p>
+        <ul class="p-bullets"><li><span>يسهّل التمشيط ويقلّل التكسر بعد الاستحمام.</span></li><li><span>يعزّز مرونة الشعر ويحمي الأطراف الهشة.</span></li><li><span>مكمّل مثالي لشامبو Anti-Hair-Loss من نفس العلامة.</span></li><li><span>500 مل — اتركيه 2–3 دقائق ثم اشطفي.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174518</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#6a3542;--tint:#f7eff1">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-anti-hair-loss-hair-mask-ceramides-panthenol-nettle-500ml.jpg" alt="ماسك شعر ضد التساقط Ceramides Panthenol Nettle 500 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">06 · 03/05</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد تساقط الشعر</span>
+          <span class="p-count" dir="ltr">03 — 05</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>ماسك شعر ضد التساقط Ceramides Panthenol Nettle 500 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">ماسك شعر ضد التساقط — علاج مكثّف يقوّي الجذور ويغذّي الألياف بسيراميدات وبانثينول وقراص. • يقلّل التكسر ويحسّن كثافة مظهر الشعر مع الاستخدام المنتظم. • يرطّب بعمق دون إثقال فروة…</p>
+        <ul class="p-bullets"><li><span>يقلّل التكسر ويحسّن كثافة مظهر الشعر مع الاستخدام المنتظم.</span></li><li><span>يرطّب بعمق دون إثقال فروة الرأس.</span></li><li><span>مثالي مرة إلى مرتين أسبوعياً مع شامبو وبلسم السلسلة.</span></li><li><span>500 مل — اتركيه 10–15 دقيقة ثم اشطفي.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174525</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#6a3542;--tint:#f7eff1">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-keratin-hair-anti-hair-loss-ampoules-6x10ml.jpg" alt="أمبولات شعر كيراتين ضد التساقط 6×10 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">06 · 04/05</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد تساقط الشعر</span>
+          <span class="p-count" dir="ltr">04 — 05</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>أمبولات شعر كيراتين ضد التساقط 6×10 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">أمبولات شعر كيراتين ضد التساقط — علاج مكثّف لفروة الرأس والجذور في دورة 6 أمبولات. • تركيز عالٍ من الكيراتين ومكوّنات مقاومة التساقط. • تُوزّع على فروة الرأس بعد الغسيل ولا…</p>
+        <ul class="p-bullets"><li><span>تركيز عالٍ من الكيراتين ومكوّنات مقاومة التساقط.</span></li><li><span>تُوزّع على فروة الرأس بعد الغسيل ولا تُشطف.</span></li><li><span>مثالية للتساقط الموسمي والشعر الضعيف بعد الإجهاد.</span></li><li><span>6 أمبولات × 10 مل — دورة كاملة أسبوعية أو كل 3 أيام.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-170794</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#6a3542;--tint:#f7eff1">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-anti-hair-loss-serum-panthenol-ceramides-birch-100ml.jpg" alt="سيروم شعر ضد التساقط Panthenol Ceramides Birch 100 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">06 · 05/05</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة ضد تساقط الشعر</span>
+          <span class="p-count" dir="ltr">05 — 05</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>سيروم شعر ضد التساقط Panthenol Ceramides Birch 100 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">سيروم شعر ضد التساقط — يقوّي الجذور ويحفّز فروة الرأس ببانثينول وسيراميدات ومستخلص البتولا. • علاج يومي موضعي للتساقط الموسمي والمزمن. • يرطّب فروة الرأس ويحسّن بيئة النمو. •…</p>
+        <ul class="p-bullets"><li><span>علاج يومي موضعي للتساقط الموسمي والمزمن.</span></li><li><span>يرطّب فروة الرأس ويحسّن بيئة النمو.</span></li><li><span>مكمّل لشامبو وبلسم وماسك Anti-Hair-Loss.</span></li><li><span>100 مل — دلكي فروة الرأس مرة إلى مرتين يومياً.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-174532</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet family" style="--a:#9a4a24;--tint:#f8f1eb">
+      <div class="family-rail" aria-hidden="true"></div>
+      <div class="family-panel">
+        <div class="fp-eyebrow">
+          <span class="col-num">07</span>
+          <span class="col-label">COLLECTION</span>
+        </div>
+        <h2>مجموعة SOS MACCHIA</h2>
+        <p class="en">SOS Dark Spot</p>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="desc">توحيد لون البشرة وتقليل البقع الداكنة مع Active Bright والنياسيناميد.</p>
+        <div class="fp-meta">
+          <div class="meta-box">
+            <span class="meta-k">المنتجات</span>
+            <strong>03</strong>
+          </div>
+          <div class="meta-box">
+            <span class="meta-k">الأصل</span>
+            <strong>Italy</strong>
+          </div>
+        </div>
+        <div class="fp-foot">
+          <span>Retinol Complex</span>
+          <span class="dot"></span>
+          <span>Professional Line</span>
+        </div>
+      </div>
+      <div class="family-gallery">
+        <div class="gallery-label">منتجات المجموعة</div>
+        <div class="gallery n3"><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-sos-dark-spot-facial-cleansing-gel-100ml.jpg" alt="جل منظف للوجه SOS Dark-Spot 100 مل" />
+          </div>
+          <figcaption>جل منظف للوجه SOS Dark-Spot 100 مل</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-sos-dark-spot-imperfection-facial-serum-30ml.jpg" alt="سيروم وجه SOS Dark-Spot Imperfection 30 مل" />
+          </div>
+          <figcaption>سيروم وجه SOS Dark-Spot Imperfection 30 مل</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-sos-dark-spot-brightening-facial-cream-niacinamide-50ml.jpg" alt="كريم وجه SOS Dark-Spot Brightening بنياسيناميد 50 مل" />
+          </div>
+          <figcaption>كريم وجه SOS Dark-Spot Brightening بنياسيناميد…</figcaption>
+        </figure></div>
+      </div>
+      <span class="wm-num" aria-hidden="true">07</span>
+    </section>
+    <section class="sheet product" style="--a:#9a4a24;--tint:#f8f1eb">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-sos-dark-spot-facial-cleansing-gel-100ml.jpg" alt="جل منظف للوجه SOS Dark-Spot 100 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">07 · 01/03</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة SOS MACCHIA</span>
+          <span class="p-count" dir="ltr">01 — 03</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>جل منظف للوجه SOS Dark-Spot 100 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">جل منظف للوجه SOS Dark-Spot — ينظّف بعمق ويهيّئ البشرة لعلاج البقع الداكنة والتصبغات. • يزيل الأوساخ والمكياج والدهون الزائدة بلطف. • صيغة جل منعشة مناسبة للبشرة العادية…</p>
+        <ul class="p-bullets"><li><span>يزيل الأوساخ والمكياج والدهون الزائدة بلطف.</span></li><li><span>صيغة جل منعشة مناسبة للبشرة العادية والمختلطة.</span></li><li><span>الخطوة الأولى في روتين SOS Dark-Spot للتفتيح.</span></li><li><span>100 مل — صباحاً ومساءً على بشرة مبللة ثم اشطفي.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-176680</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#9a4a24;--tint:#f8f1eb">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-sos-dark-spot-imperfection-facial-serum-30ml.jpg" alt="سيروم وجه SOS Dark-Spot Imperfection 30 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">07 · 02/03</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة SOS MACCHIA</span>
+          <span class="p-count" dir="ltr">02 — 03</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>سيروم وجه SOS Dark-Spot Imperfection 30 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">سيروم وجه SOS Dark-Spot Imperfection — يستهدف البقع الداكنة وآثار الحبوب ويوحّد لون البشرة. • تركيبة مركّزة لتفتيح التصبغات وتحسين وضوح البشرة. • قوام خفيف سريع الامتصاص — مثالي…</p>
+        <ul class="p-bullets"><li><span>تركيبة مركّزة لتفتيح التصبغات وتحسين وضوح البشرة.</span></li><li><span>قوام خفيف سريع الامتصاص — مثالي قبل الكريم.</span></li><li><span>مكمّل لجل التنظيف وكريم SOS Dark-Spot.</span></li><li><span>30 مل — 2–3 قطرات صباحاً ومساءً؛ استخدمي واقي شمس نهاراً.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-176673</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#9a4a24;--tint:#f8f1eb">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-sos-dark-spot-brightening-facial-cream-niacinamide-50ml.jpg" alt="كريم وجه SOS Dark-Spot Brightening بنياسيناميد 50 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">07 · 03/03</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">مجموعة SOS MACCHIA</span>
+          <span class="p-count" dir="ltr">03 — 03</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>كريم وجه SOS Dark-Spot Brightening بنياسيناميد 50 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">كريم وجه SOS Dark-Spot Brightening — يفتّح البقع الداكنة ويرطّب مع نياسيناميد لبشرة أكثر إشراقاً. • نياسيناميد يوحّد اللون ويقلّل مظهر التصبغات. • ترطيب يومي خفيف مناسب للبشرة…</p>
+        <ul class="p-bullets"><li><span>نياسيناميد يوحّد اللون ويقلّل مظهر التصبغات.</span></li><li><span>ترطيب يومي خفيف مناسب للبشرة العادية والمختلطة.</span></li><li><span>الخطوة الأخيرة في روتين SOS Dark-Spot.</span></li><li><span>50 مل — صباحاً ومساءً؛ واقي شمس إلزامي نهاراً.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-176666</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet family" style="--a:#3a4452;--tint:#eef1f4">
+      <div class="family-rail" aria-hidden="true"></div>
+      <div class="family-panel">
+        <div class="fp-eyebrow">
+          <span class="col-num">08</span>
+          <span class="col-label">COLLECTION</span>
+        </div>
+        <h2>علاجات متخصصة</h2>
+        <p class="en">Special Care</p>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="desc">أمبولات الكيراتين، علاج 10 في 1، سكراب الفروة، وزيت الخروع — حلول مركّزة لنتائج أوضح.</p>
+        <div class="fp-meta">
+          <div class="meta-box">
+            <span class="meta-k">المنتجات</span>
+            <strong>07</strong>
+          </div>
+          <div class="meta-box">
+            <span class="meta-k">الأصل</span>
+            <strong>Italy</strong>
+          </div>
+        </div>
+        <div class="fp-foot">
+          <span>Retinol Complex</span>
+          <span class="dot"></span>
+          <span>Professional Line</span>
+        </div>
+      </div>
+      <div class="family-gallery">
+        <div class="gallery-label">منتجات المجموعة</div>
+        <div class="gallery n6"><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-10-in-1-hair-treatment-leave-in-100ml.jpg" alt="علاج شعر 10 في 1 بدون شطف Leave-In 100 مل" />
+          </div>
+          <figcaption>علاج شعر 10 في 1 بدون شطف Leave-In 100 مل</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-keratin-hair-restructuring-ampoules-6x10ml.jpg" alt="أمبولات شعر كيراتين لإعادة البناء 6×10 مل" />
+          </div>
+          <figcaption>أمبولات شعر كيراتين لإعادة البناء 6×10 مل</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-exfoliating-shampoo-scrub-hyaluronic-acid-400ml.jpg" alt="شامبو سكراب مقشّر للفروة Hyaluronic Acid 400 مل" />
+          </div>
+          <figcaption>شامبو سكراب مقشّر للفروة Hyaluronic Acid 400 م…</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-cosmetic-castor-oil-100ml.jpg" alt="زيت الخروع التجميلي Cosmetic Castor Oil 100 مل" />
+          </div>
+          <figcaption>زيت الخروع التجميلي Cosmetic Castor Oil 100 مل</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-dry-cracked-heel-repair-cream-150ml.jpg" alt="كريم إصلاح الكعب الجاف والمتشقق 150 مل" />
+          </div>
+          <figcaption>كريم إصلاح الكعب الجاف والمتشقق 150 مل</figcaption>
+        </figure><figure class="thumb">
+          <div class="thumb-stage">
+            <img src="product-photos/retinol-complex-face-and-eye-cleansing-gel-200ml.jpg" alt="جل منظف للوجه والعين 200 مل" />
+          </div>
+          <figcaption>جل منظف للوجه والعين 200 مل</figcaption>
+        </figure></div>
+      </div>
+      <span class="wm-num" aria-hidden="true">08</span>
+    </section>
+    <section class="sheet product" style="--a:#3a4452;--tint:#eef1f4">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-10-in-1-hair-treatment-leave-in-100ml.jpg" alt="علاج شعر 10 في 1 بدون شطف Leave-In 100 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">08 · 01/07</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">علاجات متخصصة</span>
+          <span class="p-count" dir="ltr">01 — 07</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>علاج شعر 10 في 1 بدون شطف Leave-In 100 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">علاج شعر 10 في 1 بدون شطف — حل متكامل للتغذية والحماية والتصفيف بخطوة واحدة. • يرطّب، ينعّم، يقلّل التجعد، يحمي من الحرارة ويسهّل التمشيط. • لا يُشطف — مثالي بعد الاستحمام على…</p>
+        <ul class="p-bullets"><li><span>يرطّب، ينعّم، يقلّل التجعد، يحمي من الحرارة ويسهّل التمشيط.</span></li><li><span>لا يُشطف — مثالي بعد الاستحمام على الشعر الرطب أو الجاف.</span></li><li><span>خفيف الوزن ولا يثقل الشعر — مناسب للاستخدام اليومي.</span></li><li><span>100 مل — رشّي أو وزّعي كمية صغيرة على الأطوال.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-171340</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#3a4452;--tint:#eef1f4">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-keratin-hair-restructuring-ampoules-6x10ml.jpg" alt="أمبولات شعر كيراتين لإعادة البناء 6×10 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">08 · 02/07</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">علاجات متخصصة</span>
+          <span class="p-count" dir="ltr">02 — 07</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>أمبولات شعر كيراتين لإعادة البناء 6×10 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">أمبولات شعر كيراتين لإعادة البناء — تعيد هيكلة الألياف التالفة والجافة بعد الصبغ والحرارة. • كيراتين مركّز يملأ التلف ويعيد المرونة. • تُوزّع على الشعر الرطب أو الجاف مع تدليك…</p>
+        <ul class="p-bullets"><li><span>كيراتين مركّز يملأ التلف ويعيد المرونة.</span></li><li><span>تُوزّع على الشعر الرطب أو الجاف مع تدليك خفيف.</span></li><li><span>مثالية بعد الصبغ أو التسوية أو التعرض للشمس.</span></li><li><span>6 أمبولات × 10 مل — لا تُشطف؛ جفّفي كالمعتاد.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-170770</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#3a4452;--tint:#eef1f4">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-exfoliating-shampoo-scrub-hyaluronic-acid-400ml.jpg" alt="شامبو سكراب مقشّر للفروة Hyaluronic Acid 400 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">08 · 03/07</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">علاجات متخصصة</span>
+          <span class="p-count" dir="ltr">03 — 07</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>شامبو سكراب مقشّر للفروة Hyaluronic Acid 400 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">شامبو سكراب مقشّر للفروة — ينظّف ويقشّر فروة الرأس بلطف مع هيالورونيك أسيد للترطيب. • يزيل تراكم المنتجات والخلايا الميتة والدهون الزائدة. • يحفّز الدورة الدموية ويمنح إحساساً…</p>
+        <ul class="p-bullets"><li><span>يزيل تراكم المنتجات والخلايا الميتة والدهون الزائدة.</span></li><li><span>يحفّز الدورة الدموية ويمنح إحساساً بالانتعاش.</span></li><li><span>مثالي مرة أسبوعياً للشعر الدهني أو فروة الرأس المتهيّجة.</span></li><li><span>400 مل — دلكي بحركات دائرية ثم اشطفي جيداً.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>13٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>9٬100 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-173382</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#3a4452;--tint:#eef1f4">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-cosmetic-castor-oil-100ml.jpg" alt="زيت الخروع التجميلي Cosmetic Castor Oil 100 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">08 · 04/07</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">علاجات متخصصة</span>
+          <span class="p-count" dir="ltr">04 — 07</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>زيت الخروع التجميلي Cosmetic Castor Oil 100 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">زيت الخروع التجميلي — زيت خالص متعدد الاستخدامات للشعر والرموش والحواجب والبشرة الجافة. • يغذّي ويرطّب ويعزّز مظهر كثافة الشعر والرموش. • يُستخدم كماسك ليلي للشعر أو تدليك لفروة…</p>
+        <ul class="p-bullets"><li><span>يغذّي ويرطّب ويعزّز مظهر كثافة الشعر والرموش.</span></li><li><span>يُستخدم كماسك ليلي للشعر أو تدليك لفروة الرأس.</span></li><li><span>مناسب أيضاً للأظافر الجافة والجلد المتشقق.</span></li><li><span>100 مل — كمية قليلة تكفي؛ دلكي بلطف حتى الامتصاص.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>11٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>7٬700 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-172491</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#3a4452;--tint:#eef1f4">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-dry-cracked-heel-repair-cream-150ml.jpg" alt="كريم إصلاح الكعب الجاف والمتشقق 150 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">08 · 05/07</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">علاجات متخصصة</span>
+          <span class="p-count" dir="ltr">05 — 07</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>كريم إصلاح الكعب الجاف والمتشقق 150 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">كريم إصلاح الكعب الجاف والمتشقق — يعالج الجفاف الشديد والتشققات بعمق. • تركيبة غنية تنعّم الجلد المتصلب وتساعد على الإصلاح. • مثالي قبل النوم مع جوارب قطنية للامتصاص الأفضل. •…</p>
+        <ul class="p-bullets"><li><span>كريم إصلاح الكعب الجاف والمتشقق من ريتينول كومبلكس — يعالج الجفاف الشديد والتشققات بعمق.</span></li><li><span>تركيبة غنية تنعّم الجلد المتصلب وتساعد على الإصلاح.</span></li><li><span>مثالي قبل النوم مع جوارب قطنية للامتصاص الأفضل.</span></li><li><span>مناسب أيضاً للكوعين والركبتين الجافين.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>10٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>7٬000 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-173214</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#3a4452;--tint:#eef1f4">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-face-and-eye-cleansing-gel-200ml.jpg" alt="جل منظف للوجه والعين 200 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">08 · 06/07</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">علاجات متخصصة</span>
+          <span class="p-count" dir="ltr">06 — 07</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>جل منظف للوجه والعين 200 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">جل منظف للوجه والعين — ينظّف بلطف الوجه ومنطقة العين دون حرقة أو جفاف. • صيغة لطيفة مناسبة للبشرة الحساسة ومرتدي العدسات. • يزيل المكياج الخفيف والأوساخ اليومية بخطوة واحدة. •…</p>
+        <ul class="p-bullets"><li><span>جل منظف للوجه والعين من ريتينول كومبلكس — ينظّف بلطف الوجه ومنطقة العين دون حرقة أو جفاف.</span></li><li><span>صيغة لطيفة مناسبة للبشرة الحساسة ومرتدي العدسات.</span></li><li><span>يزيل المكياج الخفيف والأوساخ اليومية بخطوة واحدة.</span></li><li><span>حجم عائلي 200 مل — قيمة ممتازة للاستخدام اليومي.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>12٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>8٬400 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-172866</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+    <section class="sheet product" style="--a:#3a4452;--tint:#eef1f4">
+      <aside class="p-visual">
+        <div class="p-stage">
+          <div class="p-halo" aria-hidden="true"></div>
+          <img src="product-photos/retinol-complex-foot-and-shoe-deodorant-spray-100ml.jpg" alt="بخاخ مزيل عرق للقدم والحذاء 100 مل" />
+          <div class="p-floor" aria-hidden="true"></div>
+        </div>
+        <div class="p-visual-meta">
+          <span>Retinol Complex</span>
+          <span dir="ltr">08 · 07/07</span>
+        </div>
+      </aside>
+      <div class="p-content">
+        <div class="p-accent-bar" aria-hidden="true"></div>
+        <header class="p-head">
+          <span class="p-chip">علاجات متخصصة</span>
+          <span class="p-count" dir="ltr">07 — 07</span>
+        </header>
+        <p class="p-brand">RETINOL COMPLEX · ITALY</p>
+        <h1>بخاخ مزيل عرق للقدم والحذاء 100 مل</h1>
+        
+<svg class="ornament" viewBox="0 0 80 12" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <line x1="0" y1="6" x2="28" y2="6" stroke="currentColor" stroke-width="1"/>
+  <path d="M40 1 L44 6 L40 11 L36 6 Z" fill="currentColor"/>
+  <line x1="52" y1="6" x2="80" y2="6" stroke="currentColor" stroke-width="1"/>
+</svg>
+
+        <p class="p-lead">بخاخ مزيل عرق للقدم والحذاء — يقضي على الرائحة الكريهة ويمنح انتعاشاً طويل الأمد. • يُستخدم على القدمين والجوارب والحذاء من الداخل. • يجف بسرعة ولا يترك بقعاً على الجلد أو…</p>
+        <ul class="p-bullets"><li><span>يُستخدم على القدمين والجوارب والحذاء من الداخل.</span></li><li><span>يجف بسرعة ولا يترك بقعاً على الجلد أو القماش.</span></li><li><span>مثالي للصيف والرياضة والأحذية المغلقة.</span></li><li><span>100 مل — رشّ من مسافة 15 سم صباحاً وعند الحاجة.</span></li></ul>
+        <div class="p-prices">
+          <div class="price retail">
+            <span class="price-label">سعر المستهلك</span>
+            <strong>8٬000 د.ع</strong>
+          </div>
+          <div class="price wholesale">
+            <span class="price-label">سعر الجملة</span>
+            <strong>5٬600 د.ع</strong>
+          </div>
+        </div>
+        <footer class="p-foot">
+          <span class="p-sku" dir="ltr">SKU · RCT-173221</span>
+          <span class="p-italy">
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+ Italy</span>
+        </footer>
+      </div>
+    </section>
+
+<section class="sheet closing">
+  <div class="cover-spine" aria-hidden="true"></div>
+  <div class="cover-main">
+    <div class="cover-frame" aria-hidden="true"></div>
+    <span class="cover-corner-tl" aria-hidden="true"></span>
+    <span class="cover-corner-br" aria-hidden="true"></span>
+    <div class="cover-inner">
+      <div class="cover-logo"><img src="brand-logo.png" alt="" /></div>
+      <h2>RETINOL COMPLEX</h2>
+      <div class="cover-divider">ITALY</div>
+      <p class="thanks">عناية إيطالية متكاملة</p>
+      <p class="cover-tag">Thank you · Grazie</p>
+      <div class="made-in">
+        
+<svg class="flag" viewBox="0 0 9 6" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <rect width="3" height="6" fill="#009246"/>
+  <rect x="3" width="3" height="6" fill="#fff"/>
+  <rect x="6" width="3" height="6" fill="#ce2b37"/>
+</svg>
+
+        <span>صُنع في <strong>إيطاليا</strong> · Made in Italy</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

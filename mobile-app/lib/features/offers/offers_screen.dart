@@ -59,6 +59,7 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
   }
 
   void _onScroll() {
+    if (_loadingMore || !_hasMore) return;
     if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 420) {
       _fetchMore();
     }
@@ -114,9 +115,15 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
           _initialLoad = false;
           _gridError = null;
         });
-      } else {
+      } else if (reset || _items.isEmpty) {
         setState(() {
           _gridError = friendlyError(e);
+          _initialLoad = false;
+        });
+      } else {
+        // فشل صفحة لاحقة أثناء التمرير: أوقف الترقيم وامنع إعادة المحاولة اللانهائية.
+        setState(() {
+          _hasMore = false;
           _initialLoad = false;
         });
       }
@@ -312,6 +319,14 @@ class _OffersEmptyState extends StatelessWidget {
               decoration: BoxDecoration(
                 color: OffersTheme.brandSoft(context),
                 shape: BoxShape.circle,
+                border: Border.all(color: OffersTheme.brand(context).withValues(alpha: 0.18)),
+                boxShadow: [
+                  BoxShadow(
+                    color: OffersTheme.brand(context).withValues(alpha: 0.12),
+                    blurRadius: 22,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
               ),
               child: Icon(Icons.local_offer_outlined, size: 40, color: OffersTheme.brand(context)),
             ),

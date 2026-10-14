@@ -29,7 +29,9 @@ class FlashSaleSection extends ConsumerWidget {
             title: sectionTitle,
             actionLabel: s.viewAll,
             style: SectionHeaderStyle.niceOne,
-            onAction: () => context.push('/products?isPromo=1&title=${Uri.encodeComponent(sectionTitle)}'),
+            onAction: () => context.push(
+              '/products?isPromo=1&title=${Uri.encodeComponent(sectionTitle)}',
+            ),
           ),
           HomeHorizontalList(
             height: 248,

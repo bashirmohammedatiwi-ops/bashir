@@ -39,12 +39,20 @@ class OffersHero extends ConsumerWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    gradient: t.primaryGradient,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        OffersTheme.sale,
+                        Color.lerp(OffersTheme.sale, t.accentDark, 0.35)!,
+                      ],
+                    ),
                     borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
                     boxShadow: [
                       BoxShadow(
-                        color: t.accent.withValues(alpha: 0.25),
-                        blurRadius: 10,
+                        color: OffersTheme.sale.withValues(alpha: 0.3),
+                        blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
                     ],
@@ -62,6 +70,31 @@ class OffersHero extends ConsumerWidget {
                     ],
                   ),
                 ),
+                // شارة نسبة — هوية العروض بلون التخفيض.
+                if (flashSale != null)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: OffersTheme.sale.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(99),
+                      border: Border.all(color: OffersTheme.sale.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.bolt_rounded, size: 13, color: OffersTheme.sale),
+                        const SizedBox(width: 3),
+                        Text(
+                          s.flashSale,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: OffersTheme.sale,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
             const SizedBox(height: 14),
@@ -108,7 +141,7 @@ class _Chip extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  const _Chip({required this.label, this.selected = false, required this.onTap});
+  const _Chip({required this.label, required this.onTap}) : selected = false;
 
   @override
   Widget build(BuildContext context) {

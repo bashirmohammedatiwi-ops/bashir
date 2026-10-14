@@ -13,6 +13,7 @@ import '../../data/models/store_world.dart';
 import '../categories/widgets/category_line_art.dart';
 import '../search/smart_query.dart';
 import 'world_explore.dart';
+import 'world_icon.dart';
 import 'worlds_provider.dart';
 
 /// عالم واحد بهويته: الأقسام الفرعية تظهر كالأقسام الرئيسية.
@@ -115,6 +116,7 @@ class _WorldScreenState extends ConsumerState<WorldScreen> {
               _WorldBottomBar(
                 index: showSearch ? 2 : _tab,
                 accent: world.accent,
+                ink: world.ink,
                 lang: lang,
                 onSelect: (i) {
                   HapticFeedback.selectionClick();
@@ -335,9 +337,7 @@ class _WorldHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
-    final backIcon = Directionality.of(context) == TextDirection.rtl
-        ? Icons.arrow_forward_rounded
-        : Icons.arrow_back_rounded;
+    final backIcon = Icons.arrow_back_rounded;
     final tagline = world.localizedTagline(lang);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
@@ -351,7 +351,16 @@ class _WorldHeader extends StatelessWidget {
                 children: [
                   IconButton(onPressed: onBack, icon: Icon(backIcon, color: world.ink, size: 22)),
                   const Spacer(),
-                  Icon(world.motif, size: 22, color: world.accent),
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: world.accent.withValues(alpha: 0.12),
+                      border: Border.all(color: world.accent.withValues(alpha: 0.18)),
+                    ),
+                    child: Center(child: WorldIcon(slug: world.slug, size: 22)),
+                  ),
                 ],
               ),
             ),
@@ -369,7 +378,7 @@ class _WorldHeader extends StatelessWidget {
                     world.localizedName(lang),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 26, height: 1.12, fontWeight: FontWeight.w800, color: world.ink),
+                    style: TextStyle(fontSize: 26, height: 1.12, letterSpacing: -0.4, fontWeight: FontWeight.w800, color: world.ink),
                   ),
                   if (tagline.isNotEmpty) ...[
                     const SizedBox(height: 4),
@@ -383,7 +392,22 @@ class _WorldHeader extends StatelessWidget {
                 ],
               ),
             ),
-            Container(height: 3, color: world.accent),
+            // خط توقيع متدرّج بدل الشريط الصلب — ألطف على العين.
+            Container(
+              height: 3,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: AlignmentDirectional.centerStart,
+                  end: AlignmentDirectional.centerEnd,
+                  colors: [
+                    world.accent,
+                    Color.lerp(world.accent, world.canvas, 0.55)!,
+                    Colors.transparent,
+                  ],
+                  stops: const [0, 0.62, 1],
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -489,14 +513,35 @@ class _IndexEntry extends StatelessWidget {
               children: [
                 SizedBox(
                   width: 34,
-                  child: Text(mark, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: world.accent)),
+                  child: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 220),
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.2,
+                      color: open ? world.accent : world.accent.withValues(alpha: 0.65),
+                    ),
+                    child: Text(mark),
+                  ),
                 ),
-                Container(
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
                   width: 44,
                   height: 44,
-                  decoration: BoxDecoration(border: Border.all(color: world.accent.withValues(alpha: 0.22))),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: open ? world.accent.withValues(alpha: 0.55) : world.accent.withValues(alpha: 0.22),
+                      width: open ? 1.4 : 1,
+                    ),
+                    color: open ? Color.alphaBlend(world.accent.withValues(alpha: 0.06), Colors.white) : Colors.white,
+                    boxShadow: open
+                        ? [BoxShadow(color: world.accent.withValues(alpha: 0.14), blurRadius: 10, offset: const Offset(0, 3))]
+                        : null,
+                  ),
                   clipBehavior: Clip.antiAlias,
-                  child: ColoredBox(color: Colors.white, child: CategoryLineArt(category: category, size: 44)),
+                  child: CategoryLineArt(category: category, size: 44),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -507,7 +552,12 @@ class _IndexEntry extends StatelessWidget {
                         category.localizedName(lang),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: world.ink),
+                        style: TextStyle(
+                          fontSize: 16,
+                          letterSpacing: -0.2,
+                          fontWeight: open ? FontWeight.w800 : FontWeight.w700,
+                          color: world.ink,
+                        ),
                       ),
                       if (children.isNotEmpty)
                         Text(
@@ -517,12 +567,22 @@ class _IndexEntry extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(
-                  children.isEmpty
-                      ? (Directionality.of(context) == TextDirection.rtl ? Icons.arrow_back_rounded : Icons.arrow_forward_rounded)
-                      : (open ? Icons.remove_rounded : Icons.add_rounded),
-                  size: 18,
-                  color: world.accent,
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: open ? world.accent.withValues(alpha: 0.10) : Colors.transparent,
+                  ),
+                  child: Icon(
+                    children.isEmpty
+                        ? (Icons.arrow_forward_rounded)
+                        : (open ? Icons.remove_rounded : Icons.add_rounded),
+                    size: 18,
+                    color: world.accent,
+                  ),
                 ),
               ],
             ),
@@ -530,7 +590,7 @@ class _IndexEntry extends StatelessWidget {
         ),
         if (open && children.isNotEmpty)
           ColoredBox(
-            color: Color.alphaBlend(world.accent.withValues(alpha: 0.07), Colors.white),
+            color: Color.alphaBlend(world.accent.withValues(alpha: 0.05), Colors.white),
             child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
             child: Column(
@@ -546,28 +606,41 @@ class _IndexEntry extends StatelessWidget {
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: Text(
-                      lang == 'en' ? 'All products' : 'كل المنتجات',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: world.accent),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          lang == 'en' ? 'All products' : 'كل المنتجات',
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: world.accent),
+                        ),
+                        const SizedBox(width: 2),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          size: 17,
+                          color: world.accent,
+                        ),
+                      ],
                     ),
                   ),
                 ),
                 for (final child in children)
                   InkWell(
                     onTap: () => onOpenChild(child),
+                    borderRadius: BorderRadius.circular(12),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      padding: const EdgeInsets.symmetric(vertical: 7, horizontal: 4),
                       child: Row(
                         children: [
                           Container(
-                            width: 28,
-                            height: 28,
+                            width: 30,
+                            height: 30,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(color: world.accent.withValues(alpha: 0.25)),
+                              color: Color.alphaBlend(world.accent.withValues(alpha: 0.07), Colors.white),
+                              border: Border.all(color: world.accent.withValues(alpha: 0.22)),
                             ),
                             clipBehavior: Clip.antiAlias,
-                            child: CategoryLineArt(category: child, size: 28),
+                            child: CategoryLineArt(category: child, size: 30),
                           ),
                           const SizedBox(width: 10),
                           Expanded(
@@ -575,8 +648,13 @@ class _IndexEntry extends StatelessWidget {
                               child.localizedName(lang),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: world.ink),
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, letterSpacing: -0.1, color: world.ink),
                             ),
+                          ),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 16,
+                            color: world.accent.withValues(alpha: 0.55),
                           ),
                         ],
                       ),
@@ -594,12 +672,14 @@ class _IndexEntry extends StatelessWidget {
 class _WorldBottomBar extends StatelessWidget {
   final int index;
   final Color accent;
+  final Color ink;
   final String lang;
   final ValueChanged<int> onSelect;
 
   const _WorldBottomBar({
     required this.index,
     required this.accent,
+    required this.ink,
     required this.lang,
     required this.onSelect,
   });
@@ -635,16 +715,20 @@ class _WorldBottomBar extends StatelessWidget {
                     borderRadius: BorderRadius.circular(22),
                     child: Center(
                       child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOutCubic,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
                           color: index == i ? accent.withValues(alpha: 0.12) : Colors.transparent,
                           borderRadius: BorderRadius.circular(14),
+                          boxShadow: index == i
+                              ? [BoxShadow(color: accent.withValues(alpha: 0.18), blurRadius: 8, offset: const Offset(0, 2))]
+                              : null,
                         ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(icons[i], size: 18, color: index == i ? accent : const Color(0xFF9B95A0)),
+                            Icon(icons[i], size: 18, color: index == i ? accent : ink.withValues(alpha: 0.45)),
                             const SizedBox(height: 1),
                             Text(
                               labels[i],
@@ -653,7 +737,7 @@ class _WorldBottomBar extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w700,
-                                color: index == i ? accent : const Color(0xFF9B95A0),
+                                color: index == i ? accent : ink.withValues(alpha: 0.45),
                               ),
                             ),
                           ],

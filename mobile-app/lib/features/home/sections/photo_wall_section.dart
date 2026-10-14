@@ -20,11 +20,16 @@ class PhotoWallSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = section.items.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+    final items = section.items
+        .whereType<Map>()
+        .map((e) => Map<String, dynamic>.from(e))
+        .toList();
     if (items.isEmpty) return const SizedBox.shrink();
 
     final style = _style;
-    final display = _resolveDisplay(section.display ?? section.layout ?? section.sectionLayout);
+    final display = _resolveDisplay(
+      section.display ?? section.layout ?? section.sectionLayout,
+    );
     final gap = section.marqueeGap ?? HomeTheme.itemGap;
     final padH = section.fullBleed ? 0.0 : HomeTheme.paddingH;
     final columns = _columns(section);
@@ -40,42 +45,48 @@ class PhotoWallSection extends StatelessWidget {
           'marquee' => _marquee(items, gap, style),
           'mosaic' => _mosaic(items, gap, style, onTap),
           'grid' || 'bento' || 'stagger' => GalleryGridLayout(
-              section: section,
-              items: items,
-              gap: gap,
-              style: style,
-              columns: columns,
-              onTap: onTap,
-            ),
+            section: section,
+            items: items,
+            gap: gap,
+            style: style,
+            columns: columns,
+            onTap: onTap,
+          ),
           'stack' => GalleryStackLayout(
-              section: section,
-              items: items,
-              gap: gap,
-              style: style,
-              onTap: onTap,
-            ),
-          'pager' => _PhotoPager(section: section, items: items, style: style, onTap: onTap),
+            section: section,
+            items: items,
+            gap: gap,
+            style: style,
+            onTap: onTap,
+          ),
+          'pager' => _PhotoPager(
+            section: section,
+            items: items,
+            style: style,
+            onTap: onTap,
+          ),
           'scroll' || 'carousel' => GalleryHorizontalLayout(
-              section: section,
-              items: items,
-              gap: gap,
-              style: style,
-              onTap: onTap,
-            ),
+            section: section,
+            items: items,
+            gap: gap,
+            style: style,
+            onTap: onTap,
+          ),
           _ => GalleryHorizontalLayout(
-              section: section,
-              items: items,
-              gap: gap,
-              style: style,
-              onTap: onTap,
-            ),
+            section: section,
+            items: items,
+            gap: gap,
+            style: style,
+            onTap: onTap,
+          ),
         },
       ),
     );
   }
 
   int _columns(HomeSection section) {
-    final layout = (section.sectionLayout ?? section.layout ?? '').toLowerCase();
+    final layout = (section.sectionLayout ?? section.layout ?? '')
+        .toLowerCase();
     if (layout == 'grid3' || layout == '3') return 3;
     final fromDisplay = int.tryParse(layout.replaceAll('grid', ''));
     if (fromDisplay != null && fromDisplay > 0) return fromDisplay.clamp(2, 3);
@@ -93,11 +104,11 @@ class PhotoWallSection extends StatelessWidget {
       'scroll' || 'carousel' => 'scroll',
       'bento' || 'mosaic' || 'stagger' => 'grid',
       _ => switch (section.type) {
-          'IMAGE_MARQUEE' => 'marquee',
-          'PHOTO_WALL' || 'IMAGE_COLLAGE' => 'grid',
-          'IMAGE_TILES' => 'grid',
-          _ => 'scroll',
-        },
+        'IMAGE_MARQUEE' => 'marquee',
+        'PHOTO_WALL' || 'IMAGE_COLLAGE' => 'grid',
+        'IMAGE_TILES' => 'grid',
+        _ => 'scroll',
+      },
     };
   }
 
@@ -112,10 +123,23 @@ class PhotoWallSection extends StatelessWidget {
     final rest = items.skip(1).toList();
     return Column(
       children: [
-        GalleryStackLayout(section: section, items: [first], gap: gap, style: style, onTap: onTap),
+        GalleryStackLayout(
+          section: section,
+          items: [first],
+          gap: gap,
+          style: style,
+          onTap: onTap,
+        ),
         if (rest.isNotEmpty) ...[
           SizedBox(height: gap),
-          GalleryGridLayout(section: section, items: rest, gap: gap, style: style, columns: 2, onTap: onTap),
+          GalleryGridLayout(
+            section: section,
+            items: rest,
+            gap: gap,
+            style: style,
+            columns: 2,
+            onTap: onTap,
+          ),
         ],
       ],
     );
@@ -135,7 +159,10 @@ class PhotoWallSection extends StatelessWidget {
           viewportWidth: constraints.maxWidth,
           gap: gap,
           section: section,
-          aspectRatio: GalleryTileSizer.resolveAspect(section, defaultAspect: style.defaultAspect),
+          aspectRatio: GalleryTileSizer.resolveAspect(
+            section,
+            defaultAspect: style.defaultAspect,
+          ),
         );
         final tileH = sizer.tileHeight;
         final tileW = sizer.tileWidth;
@@ -206,11 +233,16 @@ class _PhotoPagerState extends State<_PhotoPager> {
     _timer?.cancel();
     final count = widget.items.length;
     if (count < 2) return;
-    final seconds = (11 - (widget.section.marqueeSpeed ?? 4).clamp(1, 10)).clamp(3, 10);
+    final seconds = (11 - (widget.section.marqueeSpeed ?? 4).clamp(1, 10))
+        .clamp(3, 10);
     _timer = Timer.periodic(Duration(seconds: seconds.toInt()), (_) {
       if (!_page.hasClients) return;
       final next = (_index + 1) % count;
-      _page.animateToPage(next, duration: const Duration(milliseconds: 560), curve: Curves.easeOutCubic);
+      _page.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 560),
+        curve: Curves.easeOutCubic,
+      );
     });
   }
 
@@ -224,7 +256,10 @@ class _PhotoPagerState extends State<_PhotoPager> {
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
-    final aspect = GalleryTileSizer.resolveAspect(widget.section, defaultAspect: widget.style.defaultAspect);
+    final aspect = GalleryTileSizer.resolveAspect(
+      widget.section,
+      defaultAspect: widget.style.defaultAspect,
+    );
     return Column(
       children: [
         AspectRatio(
@@ -260,7 +295,9 @@ class _PhotoPagerState extends State<_PhotoPager> {
                   width: i == _index ? 16 : 6,
                   height: 6,
                   decoration: BoxDecoration(
-                    color: i == _index ? t.accent : t.hairline.withValues(alpha: 0.85),
+                    color: i == _index
+                        ? t.accent
+                        : t.hairline.withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),

@@ -34,6 +34,14 @@ export class QueryPosSyncRunsDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) limit?: number;
 }
 
+export class QueryPosSnapshotsDto {
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) page?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(1000) limit?: number;
+  @IsOptional() @IsString() search?: string;
+  /** عند true يرجع باركودات فقط (أخف للتصدير) */
+  @IsOptional() @Type(() => Boolean) @IsBoolean() barcodesOnly?: boolean;
+}
+
 export class SendStockAlertDto {
   @IsString() @IsNotEmpty() barcode!: string;
   @IsString() alertType!: "RESTOCK" | "LOW_STOCK";

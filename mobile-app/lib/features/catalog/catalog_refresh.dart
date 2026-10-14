@@ -13,6 +13,7 @@ Future<void> refreshStorefrontCatalog(WidgetRef ref) async {
   await cache.remove('offers_v1');
   await cache.remove('categories_all_v3');
   await cache.remove('categories_all_v2');
+  await cache.removePrefix('products_v3');
   await cache.removePrefix('products_v2');
   await cache.removePrefix('product_v2_');
 

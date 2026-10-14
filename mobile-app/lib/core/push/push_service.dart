@@ -25,6 +25,20 @@ class PushService {
   static String? _token;
   static bool _initialized = false;
 
+  /// يطلب إذن الإشعارات في لحظة لها معنى للمستخدم (بعد إتمام طلب) بدل شاشة البداية.
+  static Future<void> requestPermissionInContext() async {
+    if (!AppConfig.pushNotificationsEnabled || !_initialized) return;
+    try {
+      final messaging = FirebaseMessaging.instance;
+      final settings = await messaging.getNotificationSettings();
+      if (settings.authorizationStatus == AuthorizationStatus.notDetermined) {
+        await messaging.requestPermission(alert: true, badge: true, sound: true);
+      }
+    } catch (e) {
+      debugPrint('[PushService] permission request failed: $e');
+    }
+  }
+
   static Future<void> init(WidgetRef ref) async {
     if (!AppConfig.pushNotificationsEnabled) return;
     if (_initialized) return;
@@ -42,7 +56,11 @@ class PushService {
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
       final messaging = FirebaseMessaging.instance;
-      await messaging.requestPermission(alert: true, badge: true, sound: true);
+      // لا نطلب الإذن عند فتح التطبيق — نطلبه بعد أول طلب ناجح (requestPermissionInContext).
+      final settings = await messaging.getNotificationSettings();
+      if (settings.authorizationStatus != AuthorizationStatus.notDetermined) {
+        await messaging.requestPermission(alert: true, badge: true, sound: true);
+      }
 
       if (Platform.isIOS) {
         await messaging.setForegroundNotificationPresentationOptions(
@@ -62,7 +80,8 @@ class PushService {
         await _registerToken(ref, token);
       });
 
-      ref.listen(authProvider, (prev, next) async {
+      // listenManual: هذا خارج build — ref.listen هنا كان يرمي استثناء فيُلغى تسجيل التوكن بعد الدخول.
+      ref.listenManual(authProvider, (prev, next) async {
         if (_token == null) return;
         if (next.isAuthenticated && prev?.isAuthenticated != true) {
           await _registerToken(ref, _token!);

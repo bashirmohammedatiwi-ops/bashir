@@ -140,6 +140,83 @@ export class InventoryAdminService {
     return paginate(items, total, page, limit);
   }
 
+  async listSnapshots(params: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    barcodesOnly?: boolean;
+  }) {
+    const page = params.page ?? 1;
+    const limit = Math.min(params.limit ?? 200, 1000);
+    const skip = (page - 1) * limit;
+
+    const where: Prisma.InventorySyncSnapshotWhereInput = {};
+    if (params.search?.trim()) {
+      const q = params.search.trim();
+      where.OR = [
+        { barcode: { contains: q, mode: "insensitive" } },
+        { productNum: { contains: q, mode: "insensitive" } },
+        { productCode: { contains: q, mode: "insensitive" } },
+        { name: { contains: q, mode: "insensitive" } },
+      ];
+    }
+
+    const [total, rows] = await this.prisma.$transaction([
+      this.prisma.inventorySyncSnapshot.count({ where }),
+      this.prisma.inventorySyncSnapshot.findMany({
+        where,
+        orderBy: [{ syncedAt: "desc" }, { barcode: "asc" }],
+        skip,
+        take: limit,
+        select: params.barcodesOnly
+          ? { barcode: true, syncedAt: true }
+          : {
+              barcode: true,
+              productCode: true,
+              productNum: true,
+              name: true,
+              price: true,
+              originalPrice: true,
+              discountPercent: true,
+              stock: true,
+              offerName: true,
+              syncedAt: true,
+            },
+      }),
+    ]);
+
+    if (params.barcodesOnly) {
+      return {
+        barcodes: rows.map((row) => row.barcode),
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.max(1, Math.ceil(total / limit)),
+          hasNext: page * limit < total,
+          lastSyncedAt: rows[0]?.syncedAt ?? null,
+        },
+      };
+    }
+
+    const barcodes = rows.map((r) => r.barcode);
+    const productMap = await this.buildProductMap(barcodes);
+
+    const items = rows.map((row) => {
+      const linked = productMap.get(row.barcode);
+      return {
+        ...row,
+        name: fixPosArabicText(row.name) ?? row.name,
+        offerName: fixPosArabicText(row.offerName) ?? row.offerName,
+        productId: linked?.id ?? null,
+        productName: linked?.name ?? null,
+        inCatalog: !!linked,
+      };
+    });
+
+    return paginate(items, total, page, limit);
+  }
+
   async listRuns(page = 1, limit = 20) {
     const skip = (page - 1) * limit;
     const [total, items] = await this.prisma.$transaction([

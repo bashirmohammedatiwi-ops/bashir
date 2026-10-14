@@ -30,6 +30,7 @@ import '../../features/settings/language_picker_screen.dart';
 import '../../features/settings/legal_document_screen.dart';
 import '../../features/settings/open_source_licenses_screen.dart';
 import '../../features/shell/main_shell.dart';
+import '../../features/shell/nav_tabs.dart';
 import '../../features/wishlist/wishlist_screen.dart';
 import '../../features/worlds/world_screen.dart';
 
@@ -71,6 +72,14 @@ final routerProvider = Provider<GoRouter>((ref) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final container = ProviderScope.containerOf(context);
           openOffersTab(context, container);
+        });
+        return '/';
+      }
+      if (path == '/brands') {
+        // البراندات صارت تبويباً في الشريط السفلي.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final container = ProviderScope.containerOf(context);
+          openMainTab(context, container, NavTabs.brands);
         });
         return '/';
       }
@@ -121,6 +130,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           isPromo: s.uri.queryParameters['isPromo'] == '1',
           isFeatured: s.uri.queryParameters['isFeatured'] == '1',
           concernSlug: s.uri.queryParameters['concernSlug'],
+          initialMinPrice: int.tryParse(s.uri.queryParameters['minPrice'] ?? ''),
+          initialMaxPrice: int.tryParse(s.uri.queryParameters['maxPrice'] ?? ''),
         ),
       ),
       GoRoute(

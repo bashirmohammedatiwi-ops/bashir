@@ -29,15 +29,17 @@ class CategoryTilesSection extends ConsumerWidget {
 
     return HomeCategoryGrid(
       categories: visible,
-      title: section.titleForLang(ref.watch(languageCodeProvider)) ?? ref.s.categoriesTitle,
+      title:
+          section.titleForLang(ref.watch(languageCodeProvider)) ??
+          ref.s.categoriesTitle,
       showTitle: section.showTitle,
       showViewAll: section.showViewAll,
       onViewAll: section.showViewAll
           ? () => openViewAllLink(
-                context,
-                query: section.viewAllQuery,
-                fallbackQuery: '/categories',
-              )
+              context,
+              query: section.viewAllQuery,
+              fallbackQuery: '/categories',
+            )
           : null,
     );
   }
@@ -56,11 +58,13 @@ class MakeupCategoriesSection extends ConsumerWidget {
     final accent = parseHexColor(section.backgroundColor) ?? t.accentLight;
 
     final maxH = visible
-        .map((c) => resolveItemCardSize(
-              cardSize: c.cardSize,
-              sectionLayout: section.sectionLayout,
-              defaultSize: section.cardSize ?? 'md',
-            ).height)
+        .map(
+          (c) => resolveItemCardSize(
+            cardSize: c.cardSize,
+            sectionLayout: section.sectionLayout,
+            defaultSize: section.cardSize ?? 'md',
+          ).height,
+        )
         .fold(152.0, (a, b) => a > b ? a : b);
 
     return HomeSectionShell(
@@ -71,7 +75,12 @@ class MakeupCategoriesSection extends ConsumerWidget {
           scrollDirection: Axis.horizontal,
           cacheExtent: HomeScrollPerf.horizontalCacheExtent,
           addAutomaticKeepAlives: false,
-          padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 0, HomeTheme.paddingH, 4),
+          padding: const EdgeInsets.fromLTRB(
+            HomeTheme.paddingH,
+            0,
+            HomeTheme.paddingH,
+            4,
+          ),
           itemCount: visible.length,
           separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.sm),
           itemBuilder: (_, i) {
@@ -93,84 +102,6 @@ class MakeupCategoriesSection extends ConsumerWidget {
               ),
             );
           },
-        ),
-      ),
-    );
-  }
-}
-
-class _CategoryTile extends StatelessWidget {
-  final Category category;
-  final double width;
-  final double height;
-
-  const _CategoryTile({
-    required this.category,
-    required this.width,
-    required this.height,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => openCategoryLink(context, category),
-      child: Container(
-        width: width,
-        height: height,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(HomeTheme.cardRadius),
-          boxShadow: HomeTheme.softLift,
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(HomeTheme.cardRadius),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (category.imageUrl.isNotEmpty)
-                AppNetworkImage(url: category.imageUrl, fit: BoxFit.cover)
-              else
-                Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xFFFDEAF2), Color(0xFFFAF6FE)],
-                    ),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    category.icon ?? category.name.characters.first,
-                    style: const TextStyle(fontSize: 28),
-                  ),
-                ),
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.0),
-                      Colors.black.withValues(alpha: 0.48),
-                    ],
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Align(
-                  alignment: Alignment.bottomRight,
-                  child: Text(
-                    category.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: HomeTheme.body(
-                      size: 12,
-                      color: Colors.white,
-                      weight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
@@ -215,7 +146,10 @@ class _MakeupCard extends StatelessWidget {
                 width: double.infinity,
                 color: t.accentLight,
                 child: category.imageUrl.isNotEmpty
-                    ? AppNetworkImage(url: category.imageUrl, fit: BoxFit.contain)
+                    ? AppNetworkImage(
+                        url: category.imageUrl,
+                        fit: BoxFit.contain,
+                      )
                     : Icon(Icons.brush_outlined, color: t.accent, size: 36),
               ),
             ),

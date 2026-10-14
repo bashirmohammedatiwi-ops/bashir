@@ -70,5 +70,9 @@ final wishlistProvider =
       notifier.clear();
     }
   });
+  // مسجّلة الدخول مسبقاً: نحمّل المفضلة فوراً حتى تظهر القلوب صحيحة في كل البطاقات.
+  if (ref.read(authProvider).isAuthenticated) {
+    Future.microtask(notifier.load);
+  }
   return notifier;
 });

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+<defs><linearGradient id="ftS" x1="0" y1="1" x2="0" y2="0"><stop offset="0.5" stop-color="#F6C9A0"/><stop offset="0.98" stop-color="#F6C9A0" stop-opacity="0"/></linearGradient>
+<linearGradient id="ftW" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8ED3F5"/><stop offset="1" stop-color="#1E8BC3"/></linearGradient></defs>
+<g transform="translate(6,0)"><path fill="url(#ftW)" fill-rule="evenodd" d="M36,104 A40,11 0 1 0 116,104 A40,11 0 1 0 36,104 Z M43,104 A33,7.5 0 1 0 109,104 A33,7.5 0 1 0 43,104 Z"/>
+<path fill="#3BA9E0" fill-rule="evenodd" d="M52,102 A26,6 0 1 0 104,102 A26,6 0 1 0 52,102 Z M58,102 A20,3.6 0 1 0 98,102 A20,3.6 0 1 0 58,102 Z"/></g>
+<path fill="url(#ftS)" d="M36,4 C37,22 39,38 37,50 C35,56 33,62 36,67 C39,71 45,71 49,74 C56,79 64,86 72,91 C78,94 86,96 93,96 C97,96 98,91 94,89.5 C88,88 82,87 76,84 C68,79 62,70 58,60 C55,50 54,30 54,4 Z"/>
+<path fill="#E9AE7E" d="M52,52 C55,54 56,58 54,61 C55,58 54,55 52,52 Z"/>
+<path fill="#E9AE7E" d="M84,90 C86,91.5 89,92 91,91.5 C89,93 86,93 84,90 Z"/>
+<path fill="#F27DB0" d="M104,88 C108,82 116,82 118,86 C114,91 108,92 104,88 Z"/>
+<path fill="#F9B4D2" d="M108,70 C111,67 116,68 116,71 C113,73 110,73 108,70 Z"/>
+<path fill="#3BA9E0" d="M20,84 C20,84 17,89 17,91 C17,93 18.5,94.5 20,94.5 C21.5,94.5 23,93 23,91 C23,89 20,84 20,84 Z"/>
+<path fill="#8ED3F5" d="M28,76 C28,76 26,79 26,80.5 C26,82 27,83 28,83 C29,83 30,82 30,80.5 C30,79 28,76 28,76 Z"/>
+</svg>

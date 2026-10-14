@@ -26,3 +26,20 @@ DateTime? parseDate(dynamic value) {
   if (value is DateTime) return value;
   return DateTime.tryParse(value.toString());
 }
+
+/// شارة الخصم "-25%" — معزولة باتجاه LTR حتى لا تنقلب إلى "25%-" داخل نص عربي.
+String formatDiscount(num percent) => '\u2066-${percent.round()}%\u2069';
+
+/// تنظيف نصوص المنتجات القادمة من الاستيراد: `\n` حرفية، مسافات زائدة، أسطر فارغة متكررة.
+String cleanRichText(String raw) {
+  if (raw.isEmpty) return raw;
+  return raw
+      .replaceAll(r'\r\n', '\n')
+      .replaceAll(r'\n', '\n')
+      .replaceAll(r'\t', ' ')
+      .replaceAll('\r\n', '\n')
+      .replaceAll(RegExp(r'[ \t]+\n'), '\n')
+      .replaceAll(RegExp(r'\n{3,}'), '\n\n')
+      .replaceAll(RegExp(r'[ \t]{2,}'), ' ')
+      .trim();
+}

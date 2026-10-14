@@ -47,10 +47,14 @@ class GalleryRenderStyle {
       aspectLabel = section.aspectRatio;
     } else if (section.bannerAspect != null) {
       final a = section.bannerAspect!;
-      if ((a - 1).abs() < 0.05) aspectLabel = '1:1';
-      else if ((a - 4 / 3).abs() < 0.05) aspectLabel = '4:3';
-      else if ((a - 3 / 4).abs() < 0.05) aspectLabel = '3:4';
-      else if ((a - 16 / 9).abs() < 0.05) aspectLabel = '16:9';
+      if ((a - 1).abs() < 0.05)
+        aspectLabel = '1:1';
+      else if ((a - 4 / 3).abs() < 0.05)
+        aspectLabel = '4:3';
+      else if ((a - 3 / 4).abs() < 0.05)
+        aspectLabel = '3:4';
+      else if ((a - 16 / 9).abs() < 0.05)
+        aspectLabel = '16:9';
     }
 
     return GalleryRenderStyle(
@@ -128,10 +132,12 @@ class GalleryRenderStyle {
       PhotoShapeGeometry.aspectForShape(defaultShape);
 
   double tileHeight(double fallback) =>
-      sectionCustomHeight ?? PhotoShapeGeometry.sizeHeight(defaultSize).clamp(96, fallback);
+      sectionCustomHeight ??
+      PhotoShapeGeometry.sizeHeight(defaultSize).clamp(96, fallback);
 
   double tileWidth(double height) {
-    if (sectionCustomWidth != null && sectionCustomWidth! > 0) return sectionCustomWidth!;
+    if (sectionCustomWidth != null && sectionCustomWidth! > 0)
+      return sectionCustomWidth!;
     final aspect = resolvedAspect();
     return height * aspect;
   }
@@ -195,10 +201,13 @@ class GalleryPhotoCard extends ConsumerWidget {
       backgroundColor: t.accentLight,
     );
 
+    // 'none' = النص تحت الصورة فقط؛ غير ذلك = النص فوق الصورة فقط — لا تكرار.
+    final overlayStyle = data.overlayStyle ?? 'none';
+    final textOnImage = overlayStyle != 'none';
     image = _GalleryOverlay(
-      style: data.overlayStyle ?? 'none',
-      title: title,
-      subtitle: subtitle,
+      style: overlayStyle,
+      title: textOnImage ? title : null,
+      subtitle: textOnImage ? subtitle : null,
       badge: data.badge,
       accent: t.accent,
       child: image,
@@ -217,7 +226,9 @@ class GalleryPhotoCard extends ConsumerWidget {
       child: ClipRRect(
         borderRadius: shape == 'circle' ? BorderRadius.zero : borderRadius,
         child: shape == 'circle'
-            ? ClipOval(child: SizedBox(width: width, height: height, child: image))
+            ? ClipOval(
+                child: SizedBox(width: width, height: height, child: image),
+              )
             : SizedBox(width: width, height: height, child: image),
       ),
     );
@@ -229,24 +240,56 @@ class GalleryPhotoCard extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           framedImage,
-          if (showCaption && _hasCaption(lang) && (data.overlayStyle ?? 'none') == 'none') ...[
-            const SizedBox(height: 6),
-            if (title?.isNotEmpty ?? false)
-              Text(
-                title!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: HomeTheme.chipLabel.copyWith(fontSize: 11.5, fontWeight: FontWeight.w700, color: t.ink),
-              ),
-            if (subtitle?.isNotEmpty ?? false) ...[
-              const SizedBox(height: 1),
-              Text(
-                subtitle!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: HomeTheme.body(size: 10.5, color: t.inkMuted),
-              ),
-            ],
+          if (showCaption &&
+              _hasCaption(lang) &&
+              (data.overlayStyle ?? 'none') == 'none') ...[
+            const SizedBox(height: 9),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (title?.isNotEmpty ?? false)
+                        Text(
+                          title!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: HomeTheme.chipLabel.copyWith(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w800,
+                            color: t.ink,
+                            height: 1.2,
+                          ),
+                        ),
+                      if (subtitle?.isNotEmpty ?? false)
+                        Text(
+                          subtitle!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: HomeTheme.body(size: 11, color: t.inkMuted),
+                        ),
+                    ],
+                  ),
+                ),
+                if (onTap != null && width >= 110)
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: t.surface,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: t.accentSoft),
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 14,
+                      color: t.accentDark,
+                    ),
+                  ),
+              ],
+            ),
           ],
         ],
       ),
@@ -295,26 +338,43 @@ class GalleryGridLayout extends StatelessWidget {
           viewportWidth: constraints.maxWidth,
           gap: gap,
           section: section,
-          aspectRatio: GalleryTileSizer.resolveAspect(section, defaultAspect: style.defaultAspect),
+          aspectRatio: GalleryTileSizer.resolveAspect(
+            section,
+            defaultAspect: style.defaultAspect,
+          ),
           gridColumns: columns,
         );
         final tileW = sizer.tileWidth;
         final tileH = sizer.tileHeight;
 
+        // الصف الأخير الناقص يتمدد ليملأ العرض — لا بطاقات يتيمة ولا فراغات.
+        final visible = items
+            .where((raw) => style.tileData(raw).imageUrl.isNotEmpty)
+            .toList();
+        final remainder = columns > 1 ? visible.length % columns : 0;
+        final rowW = constraints.maxWidth;
         return Wrap(
           spacing: gap,
           runSpacing: gap,
           textDirection: Directionality.of(context),
           children: [
-            for (final raw in items)
+            for (var i = 0; i < visible.length; i++)
               Builder(
                 builder: (context) {
+                  final raw = visible[i];
                   final data = style.tileData(raw);
-                  if (data.imageUrl.isEmpty) return const SizedBox.shrink();
+                  final inLastRow =
+                      remainder > 0 && i >= visible.length - remainder;
+                  final w = inLastRow
+                      ? (rowW - gap * (remainder - 1)) / remainder
+                      : tileW;
+                  final h = inLastRow && remainder == 1
+                      ? (w / 2.1).clamp(120.0, tileH)
+                      : tileH;
                   return GalleryPhotoCard(
                     data: data,
-                    width: tileW,
-                    height: tileH,
+                    width: w,
+                    height: h,
                     fit: style.fit,
                     cornerRadiusOverride: style.tileCornerRadius,
                     showCaption: (data.overlayStyle ?? 'none') == 'none',
@@ -354,7 +414,10 @@ class GalleryHorizontalLayout extends StatelessWidget {
           viewportWidth: constraints.maxWidth,
           gap: gap,
           section: section,
-          aspectRatio: GalleryTileSizer.resolveAspect(section, defaultAspect: style.defaultAspect),
+          aspectRatio: GalleryTileSizer.resolveAspect(
+            section,
+            defaultAspect: style.defaultAspect,
+          ),
         );
         final tileH = sizer.tileHeight;
         final tileW = sizer.tileWidth;
@@ -364,7 +427,9 @@ class GalleryHorizontalLayout extends StatelessWidget {
           height: tileH + captionExtra,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
             padding: EdgeInsets.zero,
             itemCount: items.length,
             separatorBuilder: (_, __) => SizedBox(width: gap),
@@ -421,7 +486,10 @@ class GalleryStackLayout extends StatelessWidget {
           viewportWidth: constraints.maxWidth,
           gap: gap,
           section: section,
-          aspectRatio: GalleryTileSizer.resolveAspect(section, defaultAspect: style.defaultAspect),
+          aspectRatio: GalleryTileSizer.resolveAspect(
+            section,
+            defaultAspect: style.defaultAspect,
+          ),
         );
 
         return Column(
@@ -469,7 +537,8 @@ class _GalleryOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasText = (title?.isNotEmpty ?? false) || (subtitle?.isNotEmpty ?? false);
+    final hasText =
+        (title?.isNotEmpty ?? false) || (subtitle?.isNotEmpty ?? false);
     final hasBadge = badge?.isNotEmpty ?? false;
     if (style == 'none' && !hasText && !hasBadge) return child;
 
@@ -486,7 +555,9 @@ class _GalleryOverlay extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withValues(alpha: style == 'center' ? 0.35 : 0.04),
+                    Colors.black.withValues(
+                      alpha: style == 'center' ? 0.35 : 0.04,
+                    ),
                     Colors.black.withValues(alpha: 0.68),
                   ],
                   stops: const [0.0, 0.5, 1.0],
@@ -506,7 +577,10 @@ class _GalleryOverlay extends StatelessWidget {
               ),
               child: Text(
                 badge!,
-                style: HomeTheme.overline.copyWith(color: Colors.white, fontSize: 10),
+                style: HomeTheme.overline.copyWith(
+                  color: Colors.white,
+                  fontSize: 10,
+                ),
               ),
             ),
           ),
@@ -518,7 +592,11 @@ class _GalleryOverlay extends StatelessWidget {
             top: style == 'center' ? 0 : null,
             child: style == 'center'
                 ? Center(
-                    child: _GalleryOverlayText(title: title, subtitle: subtitle, center: true),
+                    child: _GalleryOverlayText(
+                      title: title,
+                      subtitle: subtitle,
+                      center: true,
+                    ),
                   )
                 : _GalleryOverlayText(title: title, subtitle: subtitle),
           ),
@@ -538,7 +616,9 @@ class _GalleryOverlayText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: center ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      crossAxisAlignment: center
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
       children: [
         if (title != null && title!.isNotEmpty)
           Text(
@@ -546,10 +626,9 @@ class _GalleryOverlayText extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: center ? TextAlign.center : TextAlign.start,
-            style: HomeTheme.sectionTitle(size: 13).copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-            ),
+            style: HomeTheme.sectionTitle(
+              size: 13,
+            ).copyWith(color: Colors.white, fontWeight: FontWeight.w800),
           ),
         if (subtitle != null && subtitle!.isNotEmpty) ...[
           const SizedBox(height: 2),
@@ -558,7 +637,10 @@ class _GalleryOverlayText extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: center ? TextAlign.center : TextAlign.start,
-            style: HomeTheme.body(size: 11, color: Colors.white.withValues(alpha: 0.9)),
+            style: HomeTheme.body(
+              size: 11,
+              color: Colors.white.withValues(alpha: 0.9),
+            ),
           ),
         ],
       ],

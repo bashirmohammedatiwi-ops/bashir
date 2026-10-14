@@ -4,13 +4,15 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/theme/app_colors.dart';
-import '../../../core/theme/app_typography.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../core/utils/responsive.dart';
+import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/coupon.dart';
 import '../../auth/auth_provider.dart';
+import '../../worlds/world_theme.dart';
 import 'cart_theme.dart';
+import 'pill_buttons.dart';
 
+/// شريط الدفع الثابت أسفل السلة: تفصيل مختصر + الإجمالي + زر الإتمام.
 class CartCheckoutBar extends ConsumerWidget {
   final int subtotal;
   final int discount;
@@ -31,116 +33,86 @@ class CartCheckoutBar extends ConsumerWidget {
     this.coupon,
   });
 
-  bool get _qualifiesFreeDelivery =>
-      freeShipping ||
-      (freeShippingThreshold > 0 && subtotal >= freeShippingThreshold);
+  bool get _qualifiesFreeDelivery => freeShipping || (freeShippingThreshold > 0 && subtotal >= freeShippingThreshold);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.s;
-    final narrow = Responsive.isNarrow(context);
+    final t = context.worldTheme;
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: CartTheme.card,
+        color: t.surface,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(CartTheme.radiusXl)),
-        border: Border(top: BorderSide(color: CartTheme.brandSoft)),
-        boxShadow: CartTheme.dockShadow,
+        border: Border(top: BorderSide(color: t.accentSoft)),
+        boxShadow: CartTheme.dockShadow(context),
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 12, CartTheme.hPad, 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _Row(label: s.subtotalItems(itemCount), value: formatPrice(subtotal)),
-            if (discount > 0) ...[
-              const SizedBox(height: 5),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 14, CartTheme.hPad, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _Row(label: s.subtotalItems(itemCount), value: formatPrice(subtotal)),
+              if (discount > 0) ...[
+                const SizedBox(height: 4),
+                _Row(label: s.couponDiscount, value: '- ${formatPrice(discount)}', valueColor: AppColors.success),
+              ],
+              const SizedBox(height: 4),
               _Row(
-                label: s.couponDiscount,
-                value: '- ${formatPrice(discount)}',
-                valueColor: AppColors.success,
+                label: s.shipping,
+                value: _qualifiesFreeDelivery ? s.freeDelivery : s.shippingByDeliveryArea,
+                valueColor: _qualifiesFreeDelivery ? AppColors.success : null,
+                muted: !_qualifiesFreeDelivery,
               ),
-            ],
-            const SizedBox(height: 5),
-            _Row(
-              label: s.shipping,
-              value: _qualifiesFreeDelivery ? s.freeDelivery : s.shippingByDeliveryArea,
-              valueColor: _qualifiesFreeDelivery ? AppColors.success : null,
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: narrow ? 48 : 52,
-              width: double.infinity,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: CartTheme.signatureGradient,
-                  borderRadius: BorderRadius.circular(999),
-                  boxShadow: [
-                    BoxShadow(
-                      color: CartTheme.brand.withValues(alpha: 0.3),
-                      blurRadius: 14,
-                      offset: const Offset(0, 5),
-                    ),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () {
-                      if (!ref.read(authProvider).isAuthenticated) {
-                        context.push('/login');
-                        return;
-                      }
-                      context.push('/checkout');
-                    },
-                    borderRadius: BorderRadius.circular(999),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              s.checkoutBtn,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                fontSize: narrow ? 14 : 15,
-                              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Divider(height: 1, thickness: 1, color: t.divider),
+              ),
+              Row(
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 140),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(s.totalLabel, style: AppText.caption.copyWith(color: t.inkMuted)),
+                        const SizedBox(height: 2),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: AlignmentDirectional.centerStart,
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 200),
+                            child: Text(
+                              formatPrice(total),
+                              key: ValueKey(total),
+                              style: AppText.title1.copyWith(color: t.ink),
                             ),
-                            SizedBox(width: narrow ? 8 : 10),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: narrow ? 8 : 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.22),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Text(
-                                formatPrice(total),
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: narrow ? 12 : 13,
-                                ),
-                              ),
-                            ),
-                            if (!Responsive.isCompact(context)) ...[
-                              const SizedBox(width: 6),
-                              const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 18),
-                            ],
-                          ],
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
-                ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: PrimaryPillButton(
+                      label: s.checkoutBtn,
+                      trailingIcon: Icons.arrow_forward_rounded,
+                      strongHaptic: true,
+                      onTap: () {
+                        if (!ref.read(authProvider).isAuthenticated) {
+                          context.push('/login');
+                          return;
+                        }
+                        context.push('/checkout');
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -151,34 +123,33 @@ class _Row extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
+  final bool muted;
 
-  const _Row({required this.label, required this.value, this.valueColor});
+  const _Row({required this.label, required this.value, this.valueColor, this.muted = false});
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return Row(
       children: [
-        Flexible(
-          flex: 3,
+        Expanded(
           child: Text(
             label,
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: AppTypography.caption.copyWith(fontSize: 12),
+            style: AppText.caption.copyWith(color: t.inkSoft),
           ),
         ),
         const SizedBox(width: 8),
         Flexible(
-          flex: 2,
           child: Text(
             value,
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.end,
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
-              fontSize: 12,
-              color: valueColor ?? CartTheme.charcoal,
+            style: AppText.caption.copyWith(
+              fontWeight: muted ? FontWeight.w500 : FontWeight.w700,
+              color: valueColor ?? (muted ? t.inkMuted : t.ink),
             ),
           ),
         ),

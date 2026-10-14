@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-import '../../features/home/widgets/home_theme.dart';
 import '../../features/worlds/world_theme.dart';
 
 class ShimmerBox extends StatelessWidget {
@@ -96,55 +95,118 @@ class HomeLoadingSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return HomeCanvasBackground(
+    // نفس هيكل الرئيسية الفعلي: كتلة بلون العالم ثم ورقة بيضاء —
+    // المحتوى يحلّ مكانه دون أي قفزة.
+    final t = context.worldTheme;
+    final top = MediaQuery.paddingOf(context).top;
+    final band = Color.lerp(t.accent, Colors.black, 0.1)!;
+    final width = MediaQuery.sizeOf(context).width;
+    final tileW = (width - 16 - 40) / 4.3;
+
+    Widget glass(double size) => Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.white.withValues(alpha: 0.14),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.22)),
+          ),
+        );
+
+    return ColoredBox(
+      color: t.surface,
       child: ListView(
         padding: EdgeInsets.zero,
         physics: const NeverScrollableScrollPhysics(),
         children: [
-          const SizedBox(height: 52),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
+          Container(
+            color: band,
+            padding: EdgeInsets.fromLTRB(18, top + 4, 18, 46),
             child: Row(
               children: [
-                const ShimmerBox(width: 42, height: 42, radius: 21),
-                const Spacer(),
-                const ShimmerBox(width: 42, height: 42, radius: 21),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
-            child: ShimmerBox(height: 48, radius: 999),
-          ),
-          const SizedBox(height: 16),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
-            child: Row(
-              children: List.generate(
-                5,
-                (_) => const Padding(
-                  padding: EdgeInsets.only(left: 10),
-                  child: ShimmerBox(width: 74, height: 84, radius: 16),
+                glass(44),
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 9,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 96,
+                      height: 13,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
+                const Spacer(),
+                glass(44),
+                const SizedBox(width: 8),
+                glass(44),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
-            child: ShimmerBox(height: 290, radius: 0),
-          ),
-          const SizedBox(height: 24),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                ShimmerBox(height: 12, width: 72, radius: 6),
-                SizedBox(height: 16),
-                HorizontalProductsSkeleton(),
-              ],
+          Transform.translate(
+            offset: const Offset(0, -30),
+            child: Container(
+              decoration: BoxDecoration(
+                color: t.surface,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
+              ),
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: t.hairline,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  const ShimmerBox(height: 52, radius: 26),
+                  const SizedBox(height: 14),
+                  const ShimmerBox(height: 86, radius: 22),
+                  const SizedBox(height: 16),
+                  ShimmerBox(height: (width * 0.9 - 12) / 2.15, radius: 24),
+                  const SizedBox(height: 26),
+                  const Row(
+                    children: [
+                      ShimmerBox(width: 120, height: 16, radius: 8),
+                      Spacer(),
+                      ShimmerBox(width: 70, height: 16, radius: 8),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      for (var i = 0; i < 4; i++) ...[
+                        if (i > 0) const SizedBox(width: 10),
+                        Column(
+                          children: [
+                            ShimmerBox(width: tileW, height: tileW, radius: 16),
+                            const SizedBox(height: 7),
+                            ShimmerBox(width: tileW * 0.6, height: 10, radius: 5),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],

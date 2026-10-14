@@ -7,6 +7,7 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import {
+  QueryPosSnapshotsDto,
   QueryPosSyncRunsDto,
   QueryStockAlertsDto,
   RecordPosSyncRunDto,
@@ -54,6 +55,19 @@ export class InventorySyncController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
+  @Get("snapshots")
+  snapshots(@Query() q: QueryPosSnapshotsDto) {
+    return this.admin.listSnapshots({
+      page: q.page,
+      limit: q.limit,
+      search: q.search,
+      barcodesOnly: q.barcodesOnly,
+    });
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF)
   @Get("runs")
   runs(@Query() q: QueryPosSyncRunsDto) {
     return this.admin.listRuns(q.page ?? 1, q.limit ?? 20);
@@ -62,8 +76,10 @@ export class InventorySyncController {
   @Public()
   @SkipThrottle()
   @Post("runs")
-  recordRun(@Body() dto: RecordPosSyncRunDto) {
-    return this.admin.recordRun(dto);
+  async recordRun(@Body() dto: RecordPosSyncRunDto) {
+    const run = await this.admin.recordRun(dto);
+    const reconcile = await this.sync.reconcileAfterFullSync(dto);
+    return { ...run, reconcile };
   }
 
   @ApiBearerAuth()

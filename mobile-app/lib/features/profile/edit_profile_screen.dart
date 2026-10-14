@@ -8,8 +8,11 @@ import '../../core/widgets/auth_gate.dart';
 import '../../data/services/api_service.dart';
 import '../auth/auth_provider.dart';
 import '../auth/widgets/auth_shell.dart';
-import '../cart/widgets/cart_theme.dart';
+import '../../core/widgets/ui/ui.dart';
+import 'widgets/account_strings.dart';
+import 'widgets/account_theme.dart';
 import 'widgets/profile_ui.dart';
+import '../../features/worlds/world_theme.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -42,18 +45,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
-      await ref.read(apiServiceProvider).updateProfile(
-            name: _name.text.trim(),
-            phone: _phone.text.trim(),
-          );
+      await ref
+          .read(apiServiceProvider)
+          .updateProfile(name: _name.text.trim(), phone: _phone.text.trim());
       await ref.read(authProvider.notifier).refreshUser();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ التغييرات')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(ref.read(stringsProvider).acctChangesSaved)),
+        );
         context.pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -72,6 +78,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   Widget _buildForm(BuildContext context, AppStrings s) {
     final user = ref.watch(authProvider).user;
+    final t = context.worldTheme;
+    final name = user?.name.trim() ?? '';
+    final hasEmail = user?.email != null && user!.email!.isNotEmpty;
     return ProfileScaffold(
       title: s.editProfile,
       floatingBottom: ProfilePrimaryButton(
@@ -80,38 +89,36 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         loading: _loading,
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 16, ProfileUi.hPad, 24),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: const EdgeInsets.fromLTRB(
+          ProfileUi.hPad,
+          20,
+          ProfileUi.hPad,
+          24,
+        ),
         child: Form(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Center(
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 36,
-                      backgroundColor: CartTheme.brandSoft,
-                      child: Text(
-                        (user?.name.isNotEmpty == true) ? user!.name[0] : '؟',
-                        style: const TextStyle(
-                          color: CartTheme.brand,
-                          fontSize: 28,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      user?.name ?? '',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: CartTheme.charcoal),
-                    ),
-                  ],
+                child: ProfileAvatar(
+                  initial: name.isNotEmpty ? name[0] : '؟',
+                  size: 76,
                 ),
               ),
+              const SizedBox(height: 10),
+              Text(
+                name,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppText.title2.copyWith(color: t.ink),
+              ),
               const SizedBox(height: 24),
+              ProfileSectionTitle(s.acctPersonalInfo),
               ProfileSurfaceCard(
-                padding: const EdgeInsets.fromLTRB(16, 18, 16, 6),
+                padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -119,38 +126,67 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                       label: s.fullName,
                       field: TextFormField(
                         controller: _name,
-                        decoration: authFieldDecoration(label: s.fullName),
-                        validator: (v) => (v == null || v.trim().length < 2) ? s.enterYourName : null,
+                        textInputAction: TextInputAction.next,
+                        autofillHints: const [AutofillHints.name],
+                        decoration: authFieldDecoration(
+                          context,
+                          label: s.fullName,
+                          icon: Icons.person_outline_rounded,
+                        ),
+                        validator: (v) => (v == null || v.trim().length < 2)
+                            ? s.enterYourName
+                            : null,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    if (user?.email != null && user!.email!.isNotEmpty) ...[
-                      ProfileFieldLabel(s.isAr ? 'البريد الإلكتروني' : 'Email', optional: true),
-                      TextFormField(
-                        initialValue: user.email,
-                        enabled: false,
-                        decoration: profileFieldDecoration(),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
                     authLabeledField(
                       label: s.phoneNumber,
                       field: TextFormField(
                         controller: _phone,
                         keyboardType: TextInputType.phone,
-                        decoration: authFieldDecoration(label: s.phoneNumber, hint: '07701234567'),
+                        textInputAction: TextInputAction.done,
+                        autofillHints: const [AutofillHints.telephoneNumber],
+                        decoration: authFieldDecoration(
+                          context,
+                          label: s.phoneNumber,
+                          hint: '07701234567',
+                          icon: Icons.phone_iphone_rounded,
+                        ),
                         validator: (v) => validateIraqiPhone(v),
                       ),
                     ),
+                    if (hasEmail) ...[
+                      const SizedBox(height: 16),
+                      ProfileFieldLabel(s.acctEmail, optional: true),
+                      TextFormField(
+                        initialValue: user.email,
+                        enabled: false,
+                        style: AppText.body.copyWith(color: t.inkMuted),
+                        decoration: profileFieldDecoration(
+                          context,
+                          prefix: Icon(
+                            Icons.alternate_email_rounded,
+                            size: 20,
+                            color: t.inkMuted,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              const SizedBox(height: 14),
-              ProfileOutlineButton(
-                label: s.changePassword,
-                onPressed: () => context.push('/change-password'),
+              const SizedBox(height: AccountTheme.sectionGap),
+              ProfileSectionTitle(s.acctSecurity),
+              ProfileMenuCard(
+                children: [
+                  ProfileMenuTile(
+                    icon: Icons.lock_outline_rounded,
+                    title: s.changePassword,
+                    subtitle: s.acctPasswordHint,
+                    onTap: () => context.push('/change-password'),
+                  ),
+                ],
               ),
-              const SizedBox(height: 80),
             ],
           ),
         ),

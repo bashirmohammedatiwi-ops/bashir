@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/ui/section_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -7,7 +9,6 @@ import '../../../data/models/home_section.dart';
 import '../../worlds/world_theme.dart';
 import '../home_link.dart';
 import '../home_section_renderer.dart';
-import '../widgets/home_theme.dart';
 
 /// إطار ملون يضم مجموعة أقسام — يظهر في التطبيق كبطاقة مميزة.
 class SectionGroupSection extends ConsumerWidget {
@@ -29,71 +30,75 @@ class SectionGroupSection extends ConsumerWidget {
     final subtitle = section.subtitleForLang(lang);
     final t = context.worldTheme;
 
+    // شريط بعرض الشاشة بخلفية المجموعة ونقشها من مصمّم العوالم،
+    // والمحتوى داخله بحشوة جانبية حتى يحيط به النقش من كل الجهات.
     final bg = parseHexColor(section.backgroundColor) ?? t.accentLight;
     final border = parseHexColor(section.borderColor);
-    final padTop = section.paddingTop ?? 20;
-    final padBottom = section.paddingBottom ?? 20;
-    final titleColor = parseHexColor(section.titleColor);
+    final padTop = section.paddingTop ?? 24;
+    final padBottom = section.paddingBottom ?? 24;
+    final innerH = section.framePaddingH ?? 12;
+    final mq = MediaQuery.of(context);
+    final innerW = mq.size.width - innerH * 2;
+    final hasPattern = (section.pattern ?? 'none') != 'none';
 
     return Container(
-        decoration: BoxDecoration(
-          color: bg,
-          border: border != null ? Border.all(color: border.withValues(alpha: 0.28), width: 1) : null,
-        ),
-        clipBehavior: Clip.antiAlias,
-        padding: EdgeInsets.only(top: padTop, bottom: padBottom),
-        child: Stack(
-          children: [
-            if ((section.pattern ?? 'none') != 'none')
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: CustomPaint(painter: _GroupPatternPainter(section.pattern!, bg)),
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: bg,
+        border: border != null
+            ? Border.symmetric(horizontal: BorderSide(color: border))
+            : null,
+      ),
+      child: Stack(
+        children: [
+          if (hasPattern)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: _GroupPatternPainter(section.pattern!, bg),
                 ),
               ),
-            Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (section.showTitle && (title?.isNotEmpty ?? false)) ...[
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title!,
-                      style: HomeTheme.sectionTitle().copyWith(
-                        color: titleColor ?? t.ink,
-                        fontSize: 18,
+            ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(innerH, padTop, innerH, padBottom),
+            // العناصر الداخلية تقيس عرضها من داخل الشريط لا من الشاشة.
+            child: MediaQuery(
+              data: mq.copyWith(size: Size(innerW, mq.size.height)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // "مجموعة" اسم افتراضي من لوحة التحكم — لا نعرضه كعنوان.
+                  if (section.showTitle &&
+                      (title?.isNotEmpty ?? false) &&
+                      title!.trim() != 'مجموعة' &&
+                      title.trim().toLowerCase() != 'group')
+                    AppSectionTitle(
+                      title: title,
+                      subtitle: subtitle,
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        16,
+                        0,
+                        16,
+                        12,
                       ),
                     ),
-                    if (subtitle?.isNotEmpty ?? false) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        subtitle!,
-                        style: HomeTheme.body(size: 12).copyWith(
-                          color: (titleColor ?? t.ink).withValues(alpha: 0.65),
-                        ),
+                  ...section.children.asMap().entries.map((e) {
+                    final child = e.value;
+                    return Padding(
+                      padding: EdgeInsets.only(top: e.key == 0 ? 0 : 10),
+                      child: HomeSectionWidget(
+                        section: child,
+                        isFirstAfterHero: compactTop && e.key == 0,
+                        nestedInGroup: true,
                       ),
-                    ],
-                  ],
-                ),
+                    );
+                  }),
+                ],
               ),
-            ],
-            ...section.children.asMap().entries.map((e) {
-              final child = e.value;
-              return Padding(
-                padding: EdgeInsets.only(top: e.key == 0 ? 0 : 10),
-                child: HomeSectionWidget(
-                  section: child,
-                  isFirstAfterHero: compactTop && e.key == 0,
-                  nestedInGroup: true,
-                ),
-              );
-            }),
-          ],
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -106,13 +111,15 @@ class _GroupPatternPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final ink = base.computeLuminance() > 0.6 ? AppColors.ink : Colors.white;
+    // لون النقش درجة أعمق من خلفية المجموعة نفسها — واضح ومتناغم بدل رمادي باهت.
+    final light = base.computeLuminance() > 0.6;
+    final ink = light ? Color.lerp(base, AppColors.ink, 0.5)! : Colors.white;
     final paint = Paint()
-      ..color = ink.withValues(alpha: 0.10)
+      ..color = ink.withValues(alpha: light ? 0.28 : 0.14)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     final fill = Paint()
-      ..color = ink.withValues(alpha: 0.08)
+      ..color = ink.withValues(alpha: light ? 0.3 : 0.12)
       ..style = PaintingStyle.fill;
     switch (pattern) {
       case 'dots':
@@ -123,7 +130,11 @@ class _GroupPatternPainter extends CustomPainter {
         }
       case 'lines':
         for (var i = -size.height; i < size.width; i += 14) {
-          canvas.drawLine(Offset(i, 0), Offset(i + size.height, size.height), paint);
+          canvas.drawLine(
+            Offset(i, 0),
+            Offset(i + size.height, size.height),
+            paint,
+          );
         }
       case 'diamonds':
         for (var y = 8.0; y < size.height; y += 22) {
@@ -141,7 +152,12 @@ class _GroupPatternPainter extends CustomPainter {
         for (var y = 12.0; y < size.height; y += 18) {
           final path = Path()..moveTo(0, y);
           for (var x = 0.0; x <= size.width; x += 12) {
-            path.quadraticBezierTo(x + 6, y + ((x ~/ 12).isEven ? -5 : 5), x + 12, y);
+            path.quadraticBezierTo(
+              x + 6,
+              y + ((x ~/ 12).isEven ? -5 : 5),
+              x + 12,
+              y,
+            );
           }
           canvas.drawPath(path, paint);
         }

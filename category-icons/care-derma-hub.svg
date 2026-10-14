@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+<defs><linearGradient id="dhS" x1="0" y1="0" x2="0" y2="1"><stop offset="0.6" stop-color="#F6C9A0"/><stop offset="1" stop-color="#F6C9A0" stop-opacity="0"/></linearGradient>
+<linearGradient id="dhD" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8ED3F5"/><stop offset="1" stop-color="#1E8BC3"/></linearGradient></defs>
+<g id="dhH">
+<path fill="#E9AE7E" d="M24,90 C16,82 11,72 11,65 C11,61.5 15,61 16.5,64 C18.5,71 23,79 30,86 Z"/>
+<path fill="#EDB98A" d="M28,86 C21,76 17.5,66 18.5,58 C19,54.5 23,54.5 23.5,58 C24.5,66 28,74 34,82 Z"/>
+<path fill="#F6C9A0" d="M33,82 C28,72 26,62 27.5,54 C28,50.5 32,50.5 32.5,54 C33,62 35,70 39,78 Z"/>
+<path fill="url(#dhS)" d="M62,118 C44,114 26,102 20,84 C19,79 25,77 28,82 C34,92 46,98 62,100 Z"/>
+</g>
+<use href="#dhH" transform="matrix(-1,0,0,1,128,0)"/>
+<path fill="url(#dhD)" d="M64,18 C64,18 45,45 45,59 C45,71 53.5,80 64,80 C74.5,80 83,71 83,59 C83,45 64,18 64,18 Z"/>
+<path fill="#fff" d="M60.5,50 h7 v8 h8 v7 h-8 v8 h-7 v-8 h-8 v-7 h8 Z"/>
+<path fill="#fff" opacity="0.6" d="M50.5,54 C49.5,60 50.5,66 54.5,70 C52.5,65 51.5,60 52.5,54 Z"/>
+<path fill="#8ED3F5" d="M30,30 C30,30 27,35 27,37 C27,39 28.5,40.5 30,40.5 C31.5,40.5 33,39 33,37 C33,35 30,30 30,30 Z"/>
+<path fill="#3BA9E0" d="M98,24 C98,24 95,29 95,31 C95,33 96.5,34.5 98,34.5 C99.5,34.5 101,33 101,31 C101,29 98,24 98,24 Z"/>
+</svg>

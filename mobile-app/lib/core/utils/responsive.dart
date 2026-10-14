@@ -58,9 +58,9 @@ abstract final class Responsive {
   static double gridChildAspectRatio(BuildContext context, {bool listing = false}) {
     if (listing) {
       return switch (tierOf(context)) {
-        ScreenTier.compact => 0.52,
-        ScreenTier.medium => 0.53,
-        _ => 0.54,
+        ScreenTier.compact => 0.54,
+        ScreenTier.medium => 0.56,
+        _ => 0.58,
       };
     }
     return switch (tierOf(context)) {
@@ -147,8 +147,10 @@ abstract final class Responsive {
   static const double shellNavVisualGap = 0;
 
   /// ارتفاع منطقة الشريط السفلي كاملة (شريط + أزرار النظام داخله).
+  /// ارتفاع منطقة الشريط العائم: هامش علوي + الشريط + المسافة فوق مؤشر النظام.
   static double shellNavDockHeight(BuildContext context) {
-    return bottomNavHeight(context) + systemBottomInset(context);
+    final inset = systemBottomInset(context);
+    return 66 + (inset > 0 ? inset - 8 : 12) + 8;
   }
 
   static double navLabelSize(BuildContext context, {required bool active}) {

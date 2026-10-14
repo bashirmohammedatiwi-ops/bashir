@@ -5,13 +5,14 @@ import 'package:go_router/go_router.dart';
 import '../../core/config/app_config.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/providers/app_info_provider.dart';
-import '../../core/theme/app_colors.dart';
+import '../../core/widgets/ui/ui.dart';
 import '../../core/utils/support_links.dart';
-import '../cart/widgets/cart_theme.dart';
 import '../profile/widgets/account_theme.dart';
 import '../profile/widgets/profile_ui.dart';
 import '../profile/widgets/support_contact_section.dart';
 import 'legal_document_screen.dart';
+import '../../features/worlds/world_theme.dart';
+import '../../core/brand/brand_logo.dart';
 
 class AboutAppScreen extends ConsumerWidget {
   const AboutAppScreen({super.key});
@@ -24,30 +25,34 @@ class AboutAppScreen extends ConsumerWidget {
     return ProfileScaffold(
       title: s.aboutApp,
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 8, ProfileUi.hPad, 32),
+        padding: const EdgeInsets.fromLTRB(
+          ProfileUi.hPad,
+          16,
+          ProfileUi.hPad,
+          32,
+        ),
         children: [
           _AboutHeader(s: s, version: version),
           const SizedBox(height: AccountTheme.sectionGap),
-          ProfileSectionTitle(s.legalSection, icon: Icons.gavel_outlined),
+          ProfileSectionTitle(s.legalSection),
           ProfileMenuCard(
             children: [
               ProfileMenuTile(
                 icon: Icons.privacy_tip_outlined,
                 title: s.privacyPolicy,
-                iconColor: AccountTheme.settings,
-                onTap: () => openLegalDocument(context, LegalDocumentType.privacy),
+                onTap: () =>
+                    openLegalDocument(context, LegalDocumentType.privacy),
               ),
               ProfileMenuTile(
                 icon: Icons.description_outlined,
                 title: s.termsOfService,
-                iconColor: AccountTheme.settings,
-                onTap: () => openLegalDocument(context, LegalDocumentType.terms),
+                onTap: () =>
+                    openLegalDocument(context, LegalDocumentType.terms),
               ),
               ProfileMenuTile(
                 icon: Icons.code_rounded,
                 title: s.openSourceLicenses,
                 subtitle: s.licensesSubtitle,
-                iconColor: AccountTheme.settings,
                 onTap: () => context.push('/licenses'),
               ),
             ],
@@ -55,14 +60,13 @@ class AboutAppScreen extends ConsumerWidget {
           const SizedBox(height: AccountTheme.sectionGap),
           SupportContactSection(s: s),
           const SizedBox(height: AccountTheme.sectionGap),
-          ProfileSectionTitle(s.website, icon: Icons.language_rounded),
+          ProfileSectionTitle(s.website),
           ProfileMenuCard(
             children: [
               ProfileMenuTile(
                 icon: Icons.public_rounded,
                 title: AppConfig.appDomain,
                 subtitle: s.visitWebsite,
-                iconColor: CartTheme.brand,
                 onTap: () => openExternalUrl(AppConfig.appOrigin),
               ),
             ],
@@ -81,29 +85,34 @@ class _AboutHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return ProfileSurfaceCard(
       padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
       child: Column(
         children: [
           Container(
-            padding: const EdgeInsets.all(4),
+            padding: const EdgeInsets.all(3),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: AppColors.signatureGradient,
+              gradient: t.signatureGradient,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.2),
-                  blurRadius: 16,
+                  color: t.accentDark.withValues(alpha: 0.2),
+                  blurRadius: 18,
                   offset: const Offset(0, 6),
                 ),
               ],
             ),
-            child: ClipOval(
-              child: Image.asset(
-                'assets/images/alhayaa_logo.png',
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: t.surface,
+              ),
+              child: const SizedBox(
                 width: 80,
                 height: 80,
-                fit: BoxFit.cover,
+                child: Center(child: BrandMark(height: 54, weight: 0.8)),
               ),
             ),
           ),
@@ -111,36 +120,26 @@ class _AboutHeader extends StatelessWidget {
           Text(
             AppConfig.displayStoreName(s.lang),
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              color: CartTheme.charcoal,
-              letterSpacing: -0.3,
-            ),
+            style: AppText.title1.copyWith(color: t.ink),
           ),
-          const SizedBox(height: 6),
-          Text(
-            '${s.version} $version',
-            style: ProfileUi.captionStyle(),
-          ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Container(
-            width: 40,
-            height: 3,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              gradient: AppColors.signatureGradient,
-              borderRadius: BorderRadius.circular(99),
+              color: t.accentLight,
+              borderRadius: BorderRadius.circular(AppCorners.pill),
+              border: Border.all(color: t.accentSoft),
+            ),
+            child: Text(
+              '${s.version} $version',
+              style: AppText.micro.copyWith(color: t.accentDark),
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
           Text(
             s.aboutDescription,
             textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.55,
-              color: CartTheme.charcoal.withValues(alpha: 0.72),
-            ),
+            style: AppText.body.copyWith(color: t.inkSoft),
           ),
         ],
       ),

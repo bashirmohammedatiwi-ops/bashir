@@ -260,9 +260,7 @@ class _ProductShadePickerState extends State<ProductShadePicker>
                             boxShadow: t.cardShadow,
                           ),
                           child: Icon(
-                            Directionality.of(context) == TextDirection.rtl
-                                ? Icons.chevron_left_rounded
-                                : Icons.chevron_right_rounded,
+                            Icons.chevron_right_rounded,
                             size: 20,
                             color: t.accent,
                           ),

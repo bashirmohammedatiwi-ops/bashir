@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/brand/brand_logo.dart';
 
 const _welcomeVideo = 'assets/videos/welcome.mp4';
 
@@ -26,12 +27,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: _videoBackdrop,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: _videoBackdrop,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+    );
     _initVideo();
   }
 
@@ -63,7 +66,8 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
     final pos = c.value.position;
     final dur = c.value.duration;
-    if (dur.inMilliseconds > 0 && pos.inMilliseconds >= dur.inMilliseconds - 80) {
+    if (dur.inMilliseconds > 0 &&
+        pos.inMilliseconds >= dur.inMilliseconds - 80) {
       _finish();
     }
   }
@@ -108,12 +112,12 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
               )
             : Center(
                 child: _failed
-                    ? const Icon(Icons.movie_outlined, color: Colors.black38, size: 48)
-                    : Image.asset(
-                        'assets/images/app_icon_source.png',
-                        width: 120,
-                        height: 120,
-                      ),
+                    ? const Icon(
+                        Icons.movie_outlined,
+                        color: Colors.black38,
+                        size: 48,
+                      )
+                    : const BrandMark(height: 120),
               ),
       ),
     );

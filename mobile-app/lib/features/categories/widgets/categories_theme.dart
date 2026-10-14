@@ -47,41 +47,46 @@ abstract final class CategoriesTheme {
 
   /// بلور منتشر خفيف جداً حول البطاقة.
   static List<BoxShadow> cardGlow({double radius = cardRadius}) => [
-        BoxShadow(
-          color: const Color(0x12000000),
-          blurRadius: 10,
-          spreadRadius: 0.5,
-          offset: const Offset(0, 2),
-        ),
-        BoxShadow(
-          color: const Color(0x08000000),
-          blurRadius: 18,
-          spreadRadius: 1,
-          offset: const Offset(0, 4),
-        ),
-        BoxShadow(
-          color: const Color(0x0D000000),
-          blurRadius: 2,
-          spreadRadius: 0,
-          offset: const Offset(0, 0),
-        ),
-      ];
+    BoxShadow(
+      color: const Color(0x12000000),
+      blurRadius: 10,
+      spreadRadius: 0.5,
+      offset: const Offset(0, 2),
+    ),
+    BoxShadow(
+      color: const Color(0x08000000),
+      blurRadius: 18,
+      spreadRadius: 1,
+      offset: const Offset(0, 4),
+    ),
+    BoxShadow(
+      color: const Color(0x0D000000),
+      blurRadius: 2,
+      spreadRadius: 0,
+      offset: const Offset(0, 0),
+    ),
+  ];
 
-  static SliverGridDelegate get gridDelegate => const SliverGridDelegateWithFixedCrossAxisCount(
+  static SliverGridDelegate get gridDelegate =>
+      const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         mainAxisSpacing: gap,
         crossAxisSpacing: gap,
         childAspectRatio: cardAspectRatio,
       );
 
-  static BoxDecoration cardDecoration({double radius = cardRadius, bool withGlow = true}) => BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: cardBorderColor, width: cardBorderWidth),
-        boxShadow: withGlow ? cardGlow(radius: radius) : null,
-      );
+  static BoxDecoration cardDecoration({
+    double radius = cardRadius,
+    bool withGlow = true,
+  }) => BoxDecoration(
+    color: surface,
+    borderRadius: BorderRadius.circular(radius),
+    border: Border.all(color: cardBorderColor, width: cardBorderWidth),
+    boxShadow: withGlow ? cardGlow(radius: radius) : null,
+  );
 
-  static BoxDecoration cardBorder({double radius = cardRadius}) => cardDecoration(radius: radius);
+  static BoxDecoration cardBorder({double radius = cardRadius}) =>
+      cardDecoration(radius: radius);
 
   static BoxDecoration searchBar() => cardDecoration(radius: cardRadius);
 }
@@ -104,7 +109,10 @@ class CategoriesFramedSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: CategoriesTheme.cardDecoration(radius: radius, withGlow: withGlow),
+      decoration: CategoriesTheme.cardDecoration(
+        radius: radius,
+        withGlow: withGlow,
+      ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(radius),
         child: Material(

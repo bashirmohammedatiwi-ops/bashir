@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import '../navigation/app_navigation.dart';
 import '../navigation/pending_push_navigation.dart';
 import '../theme/app_colors.dart';
-import '../../features/cart/widgets/cart_theme.dart';
+import '../../features/worlds/world_theme.dart';
+import '../brand/brand_logo.dart';
 
 /// بانر إشعار أثناء فتح التطبيق (foreground).
 class ForegroundNotificationBanner {
@@ -92,7 +93,9 @@ class _Banner extends StatelessWidget {
               children: [
                 if (imageUrl != null && imageUrl!.isNotEmpty)
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(15),
+                    ),
                     child: CachedNetworkImage(
                       imageUrl: imageUrl!,
                       height: 120,
@@ -100,7 +103,7 @@ class _Banner extends StatelessWidget {
                       fit: BoxFit.cover,
                       errorWidget: (_, __, ___) => Container(
                         height: 120,
-                        color: CartTheme.brandWash,
+                        color: context.worldTheme.accentLight,
                         child: const Icon(Icons.image_not_supported_outlined),
                       ),
                     ),
@@ -112,16 +115,19 @@ class _Banner extends StatelessWidget {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(10),
-                        child: Image.asset(
-                          'assets/images/alhayat_butterfly_logo.png',
+                        child: Container(
                           width: 36,
                           height: 36,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            width: 36,
-                            height: 36,
-                            color: CartTheme.brandWash,
-                            child: const Icon(Icons.notifications_active_rounded, color: CartTheme.brand, size: 20),
+                          padding: const EdgeInsets.all(7),
+                          decoration: BoxDecoration(
+                            gradient: context.worldTheme.signatureGradient,
+                          ),
+                          child: const Center(
+                            child: BrandMark(
+                              height: 22,
+                              color: Colors.white,
+                              weight: 1.2,
+                            ),
                           ),
                         ),
                       ),
@@ -134,14 +140,21 @@ class _Banner extends StatelessWidget {
                               title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 14,
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               body,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(color: AppColors.textSecondary, fontSize: 13, height: 1.35),
+                              style: TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 13,
+                                height: 1.35,
+                              ),
                             ),
                           ],
                         ),

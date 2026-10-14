@@ -34,7 +34,9 @@ class HomeSurfaceCard extends StatelessWidget {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.xl),
-          child: padding != null ? Padding(padding: padding!, child: child) : child,
+          child: padding != null
+              ? Padding(padding: padding!, child: child)
+              : child,
         ),
       ),
     );

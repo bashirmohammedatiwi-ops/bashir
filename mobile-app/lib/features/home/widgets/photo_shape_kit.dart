@@ -55,7 +55,9 @@ class PhotoTileData {
   }) {
     final overlayFromRaw = raw['overlayStyle']?.toString().trim();
     final borderFromRaw = raw['borderStyle']?.toString().trim();
-    final shadowFromRaw = raw['showShadow'] is bool ? raw['showShadow'] as bool : defaultShadow;
+    final shadowFromRaw = raw['showShadow'] is bool
+        ? raw['showShadow'] as bool
+        : defaultShadow;
 
     return PhotoTileData(
       imageUrl: _readImageUrl(raw),
@@ -70,8 +72,12 @@ class PhotoTileData {
       aspectRatio: raw['aspectRatio']?.toString().trim().isNotEmpty == true
           ? raw['aspectRatio'].toString()
           : defaultAspect,
-      overlayStyle: overlayFromRaw?.isNotEmpty == true ? overlayFromRaw : defaultOverlay,
-      borderStyle: borderFromRaw?.isNotEmpty == true ? borderFromRaw : defaultBorder,
+      overlayStyle: overlayFromRaw?.isNotEmpty == true
+          ? overlayFromRaw
+          : defaultOverlay,
+      borderStyle: borderFromRaw?.isNotEmpty == true
+          ? borderFromRaw
+          : defaultBorder,
       showShadow: shadowFromRaw,
       customWidth: (raw['customWidth'] as num?)?.toDouble(),
       customHeight: (raw['customHeight'] as num?)?.toDouble(),
@@ -135,7 +141,8 @@ abstract final class PhotoShapeGeometry {
     required PhotoTileData data,
     double? defaultAspect,
   }) {
-    if (data.customWidth != null && data.customWidth! > 0) return data.customWidth!;
+    if (data.customWidth != null && data.customWidth! > 0)
+      return data.customWidth!;
     if (size == 'full') return height * 1.72;
     if (shape == 'circle' || shape == 'square') return height;
     if (shape == 'banner') return height * 1.92;
@@ -155,7 +162,8 @@ abstract final class PhotoShapeGeometry {
   }
 
   static double? parseAspect(String? value) {
-    if (value == null || value.isEmpty || value == 'auto' || value == 'custom') return null;
+    if (value == null || value.isEmpty || value == 'auto' || value == 'custom')
+      return null;
     if (value.contains(':')) {
       final parts = value.split(':');
       if (parts.length == 2) {
@@ -230,9 +238,15 @@ abstract final class PhotoShapeGeometry {
     };
     if (width <= 0) return null;
     if (style == 'accent') {
-      return Border.all(color: HomeTheme.accent.withValues(alpha: 0.85), width: width);
+      return Border.all(
+        color: HomeTheme.accent.withValues(alpha: 0.85),
+        width: width,
+      );
     }
-    return Border.all(color: Colors.white.withValues(alpha: 0.92), width: width);
+    return Border.all(
+      color: Colors.white.withValues(alpha: 0.92),
+      width: width,
+    );
   }
 
   static Widget shapedClip({
@@ -244,16 +258,10 @@ abstract final class PhotoShapeGeometry {
       return ClipOval(child: child);
     }
     if (shape == 'arch') {
-      return ClipPath(
-        clipper: _ArchClipper(radius.topLeft.x),
-        child: child,
-      );
+      return ClipPath(clipper: _ArchClipper(radius.topLeft.x), child: child);
     }
     if (shape == 'diamond') {
-      return ClipPath(
-        clipper: _DiamondClipper(),
-        child: child,
-      );
+      return ClipPath(clipper: _DiamondClipper(), child: child);
     }
     return ClipRRect(borderRadius: radius, child: child);
   }
@@ -296,7 +304,9 @@ class _PhotoTileState extends State<PhotoTile> {
     final w = widget.expand ? null : widget.width;
     final radius = PhotoShapeGeometry.cornerRadius(shape, h);
     final borderRadius = PhotoShapeGeometry.borderRadius(shape, radius);
-    final aspect = widget.aspectRatio ?? PhotoShapeGeometry.parseAspect(widget.data.aspectRatio);
+    final aspect =
+        widget.aspectRatio ??
+        PhotoShapeGeometry.parseAspect(widget.data.aspectRatio);
 
     Widget image = AppNetworkImage(
       url: widget.data.imageUrl,
@@ -377,7 +387,8 @@ class _PhotoOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasText = (title?.isNotEmpty ?? false) || (subtitle?.isNotEmpty ?? false);
+    final hasText =
+        (title?.isNotEmpty ?? false) || (subtitle?.isNotEmpty ?? false);
     final hasBadge = badge?.isNotEmpty ?? false;
     if (style == 'none' && !hasText && !hasBadge) return child;
 
@@ -394,7 +405,9 @@ class _PhotoOverlay extends StatelessWidget {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withValues(alpha: style == 'center' ? 0.35 : 0.05),
+                    Colors.black.withValues(
+                      alpha: style == 'center' ? 0.35 : 0.05,
+                    ),
                     Colors.black.withValues(alpha: 0.72),
                   ],
                   stops: const [0.0, 0.45, 1.0],
@@ -412,10 +425,7 @@ class _PhotoOverlay extends StatelessWidget {
                 color: HomeTheme.accent,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text(
-                badge!,
-                style: GoogleFontsStyle.badge,
-              ),
+              child: Text(badge!, style: GoogleFontsStyle.badge),
             ),
           ),
         if (hasText)
@@ -425,7 +435,13 @@ class _PhotoOverlay extends StatelessWidget {
             bottom: style == 'center' ? null : 12,
             top: style == 'center' ? 0 : null,
             child: style == 'center'
-                ? Center(child: _TextBlock(title: title, subtitle: subtitle, center: true))
+                ? Center(
+                    child: _TextBlock(
+                      title: title,
+                      subtitle: subtitle,
+                      center: true,
+                    ),
+                  )
                 : _TextBlock(title: title, subtitle: subtitle),
           ),
       ],
@@ -444,7 +460,9 @@ class _TextBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: center ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      crossAxisAlignment: center
+          ? CrossAxisAlignment.center
+          : CrossAxisAlignment.start,
       children: [
         if (title != null && title!.isNotEmpty)
           Text(
@@ -452,10 +470,9 @@ class _TextBlock extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: center ? TextAlign.center : TextAlign.start,
-            style: HomeTheme.sectionTitle(size: 13).copyWith(
-              color: Colors.white,
-              fontWeight: FontWeight.w800,
-            ),
+            style: HomeTheme.sectionTitle(
+              size: 13,
+            ).copyWith(color: Colors.white, fontWeight: FontWeight.w800),
           ),
         if (subtitle != null && subtitle!.isNotEmpty) ...[
           const SizedBox(height: 2),
@@ -464,7 +481,10 @@ class _TextBlock extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: center ? TextAlign.center : TextAlign.start,
-            style: HomeTheme.body(size: 11, color: Colors.white.withValues(alpha: 0.9)),
+            style: HomeTheme.body(
+              size: 11,
+              color: Colors.white.withValues(alpha: 0.9),
+            ),
           ),
         ],
       ],
@@ -475,10 +495,10 @@ class _TextBlock extends StatelessWidget {
 /// تجنّب import google_fonts في كل ملف — wrapper بسيط
 abstract final class GoogleFontsStyle {
   static TextStyle get badge => HomeTheme.overline.copyWith(
-        color: Colors.white,
-        fontSize: 10,
-        letterSpacing: 0.2,
-      );
+    color: Colors.white,
+    fontSize: 10,
+    letterSpacing: 0.2,
+  );
 }
 
 class _ArchClipper extends CustomClipper<Path> {
@@ -490,7 +510,12 @@ class _ArchClipper extends CustomClipper<Path> {
     final path = Path();
     path.moveTo(0, size.height);
     path.lineTo(0, archRadius);
-    path.quadraticBezierTo(size.width / 2, -archRadius * 0.15, size.width, archRadius);
+    path.quadraticBezierTo(
+      size.width / 2,
+      -archRadius * 0.15,
+      size.width,
+      archRadius,
+    );
     path.lineTo(size.width, size.height);
     path.close();
     return path;

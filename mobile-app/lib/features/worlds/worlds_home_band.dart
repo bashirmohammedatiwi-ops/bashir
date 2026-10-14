@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import '../../core/widgets/ui/ui.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,6 +15,7 @@ import '../../data/models/banner.dart';
 import '../../data/models/store_world.dart';
 import '../home/home_link.dart';
 import '../home/widgets/home_hero_header.dart';
+import 'world_icon.dart';
 import 'world_theme.dart';
 import 'worlds_provider.dart';
 
@@ -46,19 +48,33 @@ class _WorldTopStageState extends ConsumerState<WorldTopStage> {
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!_page.hasClients) return;
       final next = (_index + 1) % count;
-      _page.animateToPage(next, duration: const Duration(milliseconds: 520), curve: Curves.easeOut);
+      _page.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 520),
+        curve: Curves.easeOut,
+      );
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final lang = ref.watch(languageCodeProvider);
-    final worlds = ref.watch(worldsProvider).valueOrNull ?? const <StoreWorld>[];
+    final worlds =
+        ref.watch(worldsProvider).valueOrNull ?? const <StoreWorld>[];
     if (worlds.isEmpty) return const SizedBox.shrink();
-    final slug = resolveWorldSlug(selected: ref.watch(selectedWorldSlugProvider), worlds: worlds)!;
+    final slug = resolveWorldSlug(
+      selected: ref.watch(selectedWorldSlugProvider),
+      worlds: worlds,
+    )!;
     final world = worlds.firstWhere((item) => item.slug == slug);
     final detail = ref.watch(worldDetailProvider(slug)).valueOrNull ?? world;
-    final banners = ref.watch(worldFeedProvider(slug)).valueOrNull?.banners.where((banner) => banner.hasImage).toList() ??
+    final banners =
+        ref
+            .watch(worldFeedProvider(slug))
+            .valueOrNull
+            ?.banners
+            .where((banner) => banner.hasImage)
+            .toList() ??
         const <AppBanner>[];
     if (_slug != slug) {
       _slug = slug;
@@ -73,130 +89,201 @@ class _WorldTopStageState extends ConsumerState<WorldTopStage> {
     final top = MediaQuery.paddingOf(context).top;
     return SizedBox(
       width: double.infinity,
-      height: top + 336,
+      height: top + 300,
       child: Stack(
         fit: StackFit.expand,
         children: [
-              Positioned.fill(
-                child: banners.isEmpty
-                    ? DecoratedBox(
+          Positioned.fill(
+            child: banners.isEmpty
+                ? DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          accent,
+                          Color.alphaBlend(
+                            accent.withValues(alpha: 0.55),
+                            detail.canvas,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : PageView.builder(
+                    controller: _page,
+                    itemCount: banners.length,
+                    onPageChanged: (i) => setState(() => _index = i),
+                    itemBuilder: (_, i) => GestureDetector(
+                      onTap: () => openBannerLink(context, banners[i]),
+                      child: AppNetworkImage(
+                        url: banners[i].imageUrl,
+                        fit: BoxFit.cover,
+                        backgroundColor: detail.canvas,
+                      ),
+                    ),
+                  ),
+          ),
+          // تعتيم علوي أخف — البنر يظهر أكثر عبر الشفافية.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: top + 196,
+            child: const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0x6E141018), Color(0x00141018)],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: top,
+            left: 0,
+            right: 0,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const HomeHeroHeader(overBanner: true),
+                const SizedBox(height: 10),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  child: Row(
+                    children: [
+                      // خط تأكيد عمودي قبل العنوان — أناقة تحريرية أهدأ.
+                      Container(
+                        width: 3,
+                        height: 16,
                         decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(99),
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
-                            colors: [accent, Color.alphaBlend(accent.withValues(alpha: 0.55), detail.canvas)],
+                            colors: [
+                              Colors.white.withValues(alpha: 0.95),
+                              Colors.white.withValues(alpha: 0.35),
+                            ],
                           ),
+                          boxShadow: const [
+                            BoxShadow(color: Color(0x40000000), blurRadius: 4),
+                          ],
                         ),
-                      )
-                    : PageView.builder(
-                        controller: _page,
-                        itemCount: banners.length,
-                        onPageChanged: (i) => setState(() => _index = i),
-                        itemBuilder: (_, i) => GestureDetector(
-                          onTap: () => openBannerLink(context, banners[i]),
-                          child: AppNetworkImage(
-                            url: banners[i].imageUrl,
-                            fit: BoxFit.cover,
-                            backgroundColor: detail.canvas,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          lang == 'en'
+                              ? 'Choose your world'
+                              : 'اختر القسم المناسب لك',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15.5,
+                            height: 1.15,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.15,
+                            shadows: [
+                              Shadow(
+                                color: Color(0x96000000),
+                                blurRadius: 10,
+                                offset: Offset(0, 2),
+                              ),
+                              Shadow(
+                                color: Color(0x66000000),
+                                blurRadius: 3,
+                                offset: Offset(0, 1),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-              ),
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                height: top + 230,
-                child: const DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0x8C141018), Color(0x00141018)],
-                    ),
-                  ),
-                ),
-              ),
-              Positioned(
-                top: top,
-                left: 0,
-                right: 0,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const HomeHeroHeader(overBanner: true),
-                    const SizedBox(height: 14),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18),
-                      child: Text(
-                        lang == 'en' ? 'Choose your world' : 'اختر القسم المناسب لك',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          height: 1.15,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.2,
-                          shadows: [Shadow(color: Color(0x80000000), blurRadius: 10, offset: Offset(0, 1))],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(14, 0, 14, 0),
-                      child: _WorldGlassTray(
-                        worlds: worlds.where((item) => !item.isGift).take(4).toList(),
-                        lang: lang,
-                        selectedSlug: slug,
-                        onSelect: (item) {
-                          if (item.slug == slug) return;
-                          HapticFeedback.selectionClick();
-                          ref.read(selectedWorldSlugProvider.notifier).state = item.slug;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: 36,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [Color(0x00000000), Color(0x33000000)],
-                    ),
-                  ),
-                ),
-              ),
-              if (banners.length > 1)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 42,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      for (var i = 0; i < banners.length; i++)
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          margin: const EdgeInsets.symmetric(horizontal: 2.5),
-                          width: i == _index ? 14 : 5,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: i == _index ? Colors.white : Colors.white.withValues(alpha: 0.55),
-                            borderRadius: BorderRadius.circular(99),
-                            boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 3)],
-                          ),
-                        ),
                     ],
                   ),
                 ),
-            ],
+                const SizedBox(height: 9),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 0),
+                  child: _WorldGlassTray(
+                    worlds: worlds
+                        .where((item) => !item.isGift)
+                        .take(4)
+                        .toList(),
+                    lang: lang,
+                    selectedSlug: slug,
+                    onSelect: (item) {
+                      if (item.slug == slug) return;
+                      HapticFeedback.selectionClick();
+                      ref.read(selectedWorldSlugProvider.notifier).state =
+                          item.slug;
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
+          const Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height: 36,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0x00000000), Color(0x33000000)],
+                ),
+              ),
+            ),
+          ),
+          if (banners.length > 1)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 42,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (var i = 0; i < banners.length; i++)
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 240),
+                      curve: Curves.easeOutCubic,
+                      margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                      width: i == _index ? 16 : 6,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: i == _index
+                            ? Colors.white
+                            : Colors.white.withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(99),
+                        boxShadow: i == _index
+                            ? const [
+                                BoxShadow(
+                                  color: Color(0x4DFFFFFF),
+                                  blurRadius: 8,
+                                ),
+                                BoxShadow(
+                                  color: Color(0x40000000),
+                                  blurRadius: 3,
+                                ),
+                              ]
+                            : const [
+                                BoxShadow(
+                                  color: Color(0x2E000000),
+                                  blurRadius: 3,
+                                ),
+                              ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -207,7 +294,8 @@ class GiftWorldHomeCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lang = ref.watch(languageCodeProvider);
-    final worlds = ref.watch(worldsProvider).valueOrNull ?? const <StoreWorld>[];
+    final worlds =
+        ref.watch(worldsProvider).valueOrNull ?? const <StoreWorld>[];
     StoreWorld? gift;
     for (final world in worlds) {
       if (world.isGift) {
@@ -216,10 +304,9 @@ class GiftWorldHomeCard extends ConsumerWidget {
       }
     }
     if (gift == null) return const SizedBox.shrink();
-    if (ref.watch(selectedWorldSlugProvider) == gift.slug) return const SizedBox.shrink();
-    final forward = Directionality.of(context) == TextDirection.rtl
-        ? Icons.arrow_back_rounded
-        : Icons.arrow_forward_rounded;
+    if (ref.watch(selectedWorldSlugProvider) == gift.slug)
+      return const SizedBox.shrink();
+    final forward = Icons.arrow_forward_rounded;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 4),
       child: Material(
@@ -234,51 +321,104 @@ class GiftWorldHomeCard extends ConsumerWidget {
             HapticFeedback.selectionClick();
             ref.read(selectedWorldSlugProvider.notifier).state = gift!.slug;
           },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
+          child: Stack(
+            children: [
+              // زخرفة زاوية ناعمة بلون العالم — عمق دون تشويش.
+              PositionedDirectional(
+                top: -26,
+                end: -22,
+                child: Container(
+                  width: 110,
+                  height: 110,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.white,
+                    gradient: RadialGradient(
+                      colors: [
+                        gift.accent.withValues(alpha: 0.20),
+                        gift.accent.withValues(alpha: 0.0),
+                      ],
+                      stops: const [0, 1],
+                    ),
                   ),
-                  child: Icon(gift.motif, size: 20, color: gift.accent),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        gift.localizedName(lang),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          color: gift.ink,
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 13,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Colors.white,
+                            Color.lerp(gift.accent, Colors.white, 0.82)!,
+                          ],
                         ),
-                      ),
-                      if (gift.localizedTagline(lang).isNotEmpty)
-                        Text(
-                          gift.localizedTagline(lang),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: gift.ink.withValues(alpha: 0.55),
+                        boxShadow: [
+                          BoxShadow(
+                            color: gift.accent.withValues(alpha: 0.28),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
-                        ),
-                    ],
-                  ),
+                        ],
+                      ),
+                      child: Center(
+                        child: WorldIcon(slug: gift.slug, size: 26),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            gift.localizedName(lang),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
+                              color: gift.ink,
+                            ),
+                          ),
+                          if (gift.localizedTagline(lang).isNotEmpty)
+                            Text(
+                              gift.localizedTagline(lang),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: gift.ink.withValues(alpha: 0.55),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      width: 30,
+                      height: 30,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: gift.accent.withValues(alpha: 0.10),
+                      ),
+                      child: Icon(forward, size: 17, color: gift.accent),
+                    ),
+                  ],
                 ),
-                Icon(forward, size: 18, color: gift.accent),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -303,41 +443,57 @@ class _WorldGlassTray extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(18),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+        // ضباب أخف — البنر يتنفّس عبر الزجاج.
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: DecoratedBox(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Colors.white.withValues(alpha: 0.22),
-                Colors.white.withValues(alpha: 0.08),
-              ],
+              colors: [Color(0x2EFFFFFF), Color(0x0FFFFFFF)],
             ),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.42)),
-            boxShadow: const [
-              BoxShadow(color: Color(0x40000000), blurRadius: 20, offset: Offset(0, 8)),
-            ],
+            border: Border.fromBorderSide(
+              BorderSide(color: Color(0x59FFFFFF), width: 0.7),
+            ),
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(5, 5, 5, 5),
-            child: Row(
+            padding: const EdgeInsets.all(4),
+            child: Stack(
               children: [
-                for (final world in worlds)
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 2.5),
-                      child: _WorldGlassCell(
-                        world: world,
-                        label: world.localizedName(lang),
-                        selected: world.slug == selectedSlug,
-                        onTap: () => onSelect(world),
+                // وهج علوي ناعم داخل الإطار — عمق زجاجي.
+                Positioned.fill(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.10),
+                          Colors.transparent,
+                        ],
+                        stops: const [0, 0.5],
                       ),
                     ),
                   ),
+                ),
+                Row(
+                  children: [
+                    for (final world in worlds)
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 2),
+                          child: _WorldGlassCell(
+                            world: world,
+                            label: world.localizedName(lang),
+                            selected: world.slug == selectedSlug,
+                            onTap: () => onSelect(world),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -366,81 +522,143 @@ class _WorldGlassCell extends StatelessWidget {
     final sheen = Color.lerp(accent, Colors.white, 0.42)!;
     return GestureDetector(
       onTap: onTap,
-      child: AnimatedContainer(
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedScale(
+        scale: selected ? 1.0 : 0.965,
         duration: const Duration(milliseconds: 260),
         curve: Curves.easeOutCubic,
-        height: 66,
-        padding: const EdgeInsets.fromLTRB(3, 6, 3, 5),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: selected
-                ? [sheen.withValues(alpha: 0.82), accent.withValues(alpha: 0.62)]
-                : [Colors.white.withValues(alpha: 0.20), Colors.white.withValues(alpha: 0.07)],
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+          height: 62,
+          padding: const EdgeInsets.fromLTRB(3, 5, 3, 4),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: selected
+                  ? [
+                      sheen.withValues(alpha: 0.72),
+                      accent.withValues(alpha: 0.52),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.13),
+                      Colors.white.withValues(alpha: 0.04),
+                    ],
+              stops: const [0, 1],
+            ),
+            borderRadius: BorderRadius.circular(13),
+            border: Border.all(
+              color: selected
+                  ? Colors.white.withValues(alpha: 0.88)
+                  : Colors.white.withValues(alpha: 0.20),
+              width: selected ? 1.1 : 0.7,
+            ),
+            boxShadow: selected
+                ? [
+                    BoxShadow(
+                      color: accent.withValues(alpha: 0.38),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                    BoxShadow(
+                      color: Colors.white.withValues(alpha: 0.14),
+                      blurRadius: 5,
+                      offset: const Offset(0, -1),
+                    ),
+                  ]
+                : const [
+                    BoxShadow(
+                      color: Color(0x10000000),
+                      blurRadius: 5,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
           ),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected ? Colors.white.withValues(alpha: 0.92) : Colors.white.withValues(alpha: 0.28),
-            width: selected ? 1.2 : 0.8,
-          ),
-          boxShadow: selected
-              ? [
-                  BoxShadow(color: accent.withValues(alpha: 0.45), blurRadius: 14, offset: const Offset(0, 4)),
-                  BoxShadow(color: Colors.white.withValues(alpha: 0.18), blurRadius: 6, offset: const Offset(0, -1)),
-                ]
-              : null,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 26,
-              height: 26,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    Colors.white.withValues(alpha: selected ? 0.32 : 0.18),
-                    Colors.white.withValues(alpha: selected ? 0.08 : 0.04),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOutCubic,
+                width: selected ? 27 : 25,
+                height: selected ? 27 : 25,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    radius: 0.9,
+                    colors: [
+                      Colors.white.withValues(alpha: selected ? 0.32 : 0.14),
+                      Colors.white.withValues(alpha: selected ? 0.06 : 0.03),
+                    ],
+                  ),
+                  border: Border.all(
+                    color: Colors.white.withValues(
+                      alpha: selected ? 0.50 : 0.18,
+                    ),
+                  ),
+                ),
+                child: SizedBox(
+                  width: 17.5,
+                  height: 17.5,
+                  child: _WorldMark(
+                    slug: world.slug,
+                    color: Colors.white,
+                    selected: selected,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 3.5),
+              Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 10,
+                  height: 1.08,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: -0.12,
+                  color: Colors.white,
+                  shadows: const [
+                    Shadow(
+                      color: Color(0xB0000000),
+                      blurRadius: 7,
+                      offset: Offset(0, 1),
+                    ),
+                    Shadow(
+                      color: Color(0x55000000),
+                      blurRadius: 2,
+                      offset: Offset(0, 0.5),
+                    ),
                   ],
                 ),
-                border: Border.all(color: Colors.white.withValues(alpha: selected ? 0.55 : 0.22)),
               ),
-              child: SizedBox(
-                width: 18,
-                height: 18,
-                child: _WorldMark(slug: world.slug, color: Colors.white, selected: selected),
+              const SizedBox(height: 2.5),
+              // مؤشر انتقاء متوهّج يتوسّع بتخميد نابض.
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutBack,
+                width: selected ? 20 : 0,
+                height: 2.5,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(99),
+                  boxShadow: selected
+                      ? const [
+                          BoxShadow(
+                            color: Color(0xB3FFFFFF),
+                            blurRadius: 6,
+                            spreadRadius: 0.5,
+                          ),
+                          BoxShadow(color: Color(0x66FFFFFF), blurRadius: 12),
+                        ]
+                      : null,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 10.5,
-                height: 1.1,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.15,
-                color: Colors.white,
-                shadows: const [Shadow(color: Color(0xAA000000), blurRadius: 8, offset: Offset(0, 1))],
-              ),
-            ),
-            const SizedBox(height: 3),
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 260),
-              width: selected ? 18 : 0,
-              height: 2,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(99),
-                boxShadow: selected ? const [BoxShadow(color: Color(0x66FFFFFF), blurRadius: 4)] : null,
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -454,11 +672,15 @@ class PinnedWorldBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lang = ref.watch(languageCodeProvider);
-    final worlds = ref.watch(worldsProvider).valueOrNull ?? const <StoreWorld>[];
+    final worlds =
+        ref.watch(worldsProvider).valueOrNull ?? const <StoreWorld>[];
     final featured = worlds.where((world) => !world.isGift).take(4).toList();
     if (featured.isEmpty) return const SizedBox.shrink();
     final theme = ref.watch(activeWorldThemeProvider);
-    final selected = resolveWorldSlug(selected: ref.watch(selectedWorldSlugProvider), worlds: worlds);
+    final selected = resolveWorldSlug(
+      selected: ref.watch(selectedWorldSlugProvider),
+      worlds: worlds,
+    );
     final top = MediaQuery.paddingOf(context).top;
     return ClipRect(
       child: BackdropFilter(
@@ -467,6 +689,13 @@ class PinnedWorldBar extends ConsumerWidget {
           decoration: BoxDecoration(
             color: theme.surface.withValues(alpha: 0.96),
             border: Border(bottom: BorderSide(color: theme.hairline)),
+            boxShadow: [
+              BoxShadow(
+                color: theme.ink.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Padding(
             padding: EdgeInsets.fromLTRB(12, top + 10, 12, 8),
@@ -477,11 +706,13 @@ class PinnedWorldBar extends ConsumerWidget {
                     child: _PinnedWorldChip(
                       label: item.localizedName(lang),
                       accent: item.accent,
+                      ink: theme.ink,
                       selected: item.slug == selected,
                       onTap: () {
                         if (item.slug == selected) return;
                         HapticFeedback.selectionClick();
-                        ref.read(selectedWorldSlugProvider.notifier).state = item.slug;
+                        ref.read(selectedWorldSlugProvider.notifier).state =
+                            item.slug;
                       },
                     ),
                   ),
@@ -499,6 +730,7 @@ class _CategoryWorldIcon extends StatelessWidget {
   final String slug;
   final String label;
   final Color accent;
+  final Color ink;
   final bool selected;
   final VoidCallback onTap;
 
@@ -506,6 +738,7 @@ class _CategoryWorldIcon extends StatelessWidget {
     required this.slug,
     required this.label,
     required this.accent,
+    required this.ink,
     required this.selected,
     required this.onTap,
   });
@@ -531,7 +764,15 @@ class _CategoryWorldIcon extends StatelessWidget {
                   height: selected ? 62 : 52,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: selected ? accent.withValues(alpha: 0.14) : accent.withValues(alpha: 0.06),
+                    gradient: selected
+                        ? RadialGradient(
+                            colors: [
+                              accent.withValues(alpha: 0.20),
+                              accent.withValues(alpha: 0.04),
+                            ],
+                          )
+                        : null,
+                    color: selected ? null : accent.withValues(alpha: 0.06),
                   ),
                 ),
                 AnimatedContainer(
@@ -550,7 +791,9 @@ class _CategoryWorldIcon extends StatelessWidget {
                         : null,
                     color: selected ? null : Colors.white,
                     border: Border.all(
-                      color: selected ? Colors.white.withValues(alpha: 0.85) : accent.withValues(alpha: 0.22),
+                      color: selected
+                          ? Colors.white.withValues(alpha: 0.85)
+                          : accent.withValues(alpha: 0.22),
                       width: selected ? 1.5 : 1,
                     ),
                     boxShadow: [
@@ -579,18 +822,26 @@ class _CategoryWorldIcon extends StatelessWidget {
               fontSize: 11.5,
               height: 1.15,
               fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-              color: selected ? accent : const Color(0xFF5A5458),
+              color: selected ? accent : ink.withValues(alpha: 0.72),
             ),
           ),
           const SizedBox(height: 5),
           AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOutCubic,
-            width: selected ? 18 : 0,
-            height: 3,
+            duration: const Duration(milliseconds: 260),
+            curve: Curves.easeOutBack,
+            width: selected ? 20 : 0,
+            height: 2.5,
             decoration: BoxDecoration(
               color: accent,
               borderRadius: BorderRadius.circular(99),
+              boxShadow: selected
+                  ? [
+                      BoxShadow(
+                        color: accent.withValues(alpha: 0.40),
+                        blurRadius: 5,
+                      ),
+                    ]
+                  : null,
             ),
           ),
         ],
@@ -605,7 +856,11 @@ class _WorldMark extends StatelessWidget {
   final Color color;
   final bool selected;
 
-  const _WorldMark({required this.slug, required this.color, this.selected = false});
+  const _WorldMark({
+    required this.slug,
+    required this.color,
+    this.selected = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -621,12 +876,16 @@ class _WorldMarkPainter extends CustomPainter {
   final Color color;
   final bool selected;
 
-  const _WorldMarkPainter({required this.slug, required this.color, this.selected = false});
+  const _WorldMarkPainter({
+    required this.slug,
+    required this.color,
+    this.selected = false,
+  });
 
   Paint _stroke(double w, {double weight = 1.0, double alpha = 1.0}) => Paint()
     ..color = color.withValues(alpha: alpha)
     ..style = PaintingStyle.stroke
-    ..strokeWidth = w * 0.048 * weight
+    ..strokeWidth = w * 0.042 * weight
     ..strokeCap = StrokeCap.round
     ..strokeJoin = StrokeJoin.round;
 
@@ -638,178 +897,375 @@ class _WorldMarkPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    final thin = _stroke(w, weight: 0.82);
+    final thin = _stroke(w, weight: 0.75);
     final main = _stroke(w);
-    final fill = _fill(selected ? 0.95 : 0.88);
-    final soft = _fill(selected ? 0.28 : 0.18);
+    final accentStroke = _stroke(w, weight: 1.15);
+    final fill = _fill(selected ? 0.98 : 0.90);
+    final soft = _fill(selected ? 0.30 : 0.18);
+    final softer = _fill(selected ? 0.16 : 0.10);
 
     switch (slug) {
       case 'care-rituals':
-        _careRituals(canvas, w, h, main, thin, soft);
+        _careRituals(canvas, w, h, main, thin, fill, soft);
       case 'his-elegance':
-        _hisElegance(canvas, w, h, main, thin, fill);
+        _hisElegance(canvas, w, h, main, thin, accentStroke, fill);
       case 'scent-story':
-        _scentStory(canvas, w, h, main, thin, fill, soft);
+        _scentStory(canvas, w, h, main, thin, fill, soft, softer);
       default:
-        _beautySpell(canvas, w, h, main, thin, fill, soft);
+        _beautySpell(canvas, w, h, main, thin, fill, soft, softer);
     }
   }
 
-  /// وردة أنيقة ببتلات منحنية ولمعة خفيفة — سحر الجمال.
-  void _beautySpell(Canvas canvas, double w, double h, Paint main, Paint thin, Paint fill, Paint soft) {
-    final cx = w * 0.50;
-    final cy = h * 0.50;
-    final c = Offset(cx, cy);
+  /// ── سحر الجمال ────────────────────────────────────────────────────────
+  /// مِسحة أحمر شفاه مائلة داخل هالة شرارة — رمز الجمال الأيقوني.
+  void _beautySpell(
+    Canvas canvas,
+    double w,
+    double h,
+    Paint main,
+    Paint thin,
+    Paint fill,
+    Paint soft,
+    Paint softer,
+  ) {
+    // هالة دائرية خلفية رقيقة تمنح الرمز حضوراً.
+    canvas.drawCircle(Offset(w * 0.50, h * 0.54), w * 0.40, softer);
+    canvas.drawCircle(
+      Offset(w * 0.50, h * 0.54),
+      w * 0.40,
+      _stroke(w, weight: 0.55, alpha: 0.55),
+    );
 
-    for (var i = 0; i < 5; i++) {
-      final a = -math.pi / 2 + i * math.pi * 2 / 5;
-      final petal = Path()
-        ..moveTo(c.dx, c.dy - h * 0.02)
-        ..quadraticBezierTo(
-          c.dx + w * 0.22 * math.cos(a - 0.35),
-          c.dy + h * 0.22 * math.sin(a - 0.35),
-          c.dx + w * 0.30 * math.cos(a),
-          c.dy + h * 0.30 * math.sin(a),
-        )
-        ..quadraticBezierTo(
-          c.dx + w * 0.22 * math.cos(a + 0.35),
-          c.dy + h * 0.22 * math.sin(a + 0.35),
-          c.dx,
-          c.dy - h * 0.02,
-        );
-      canvas.drawPath(petal, main);
-    }
+    // رأس المِسحة: شكل رصاصة مائل بحدبات ناعمة.
+    final bulletTip = Offset(w * 0.64, h * 0.16);
+    final bullet = Path()
+      ..moveTo(bulletTip.dx, bulletTip.dy)
+      // الجانب الطويل (أعلى-يسار نحو القاعدة)
+      ..quadraticBezierTo(w * 0.52, h * 0.24, w * 0.42, h * 0.36)
+      ..quadraticBezierTo(w * 0.34, h * 0.46, w * 0.33, h * 0.56)
+      // قاعدة عريضة
+      ..quadraticBezierTo(w * 0.44, h * 0.62, w * 0.55, h * 0.52)
+      ..quadraticBezierTo(w * 0.66, h * 0.42, w * 0.68, h * 0.30)
+      ..quadraticBezierTo(w * 0.69, h * 0.22, bulletTip.dx, bulletTip.dy)
+      ..close();
+    canvas.drawPath(bullet, main);
 
-    canvas.drawCircle(c, w * 0.055, fill);
-    canvas.drawCircle(Offset(cx + w * 0.14, cy - h * 0.20), w * 0.022, soft);
-    canvas.drawLine(Offset(cx + w * 0.20, cy - h * 0.26), Offset(cx + w * 0.26, cy - h * 0.32), thin);
-    canvas.drawLine(Offset(cx + w * 0.26, cy - h * 0.26), Offset(cx + w * 0.32, cy - h * 0.32), thin);
+    // خط لمعة على جسم الرصاصة.
+    canvas.drawLine(
+      Offset(w * 0.46, h * 0.42),
+      Offset(w * 0.56, h * 0.27),
+      thin,
+    );
+
+    // القاعدة المعدنية — حزام مضلّع.
+    final belt = Path()
+      ..moveTo(w * 0.325, h * 0.585)
+      ..lineTo(w * 0.60, h * 0.545)
+      ..lineTo(w * 0.585, h * 0.72)
+      ..lineTo(w * 0.31, h * 0.765)
+      ..close();
+    canvas.drawPath(belt, main);
+    // خطّا تسليخ أفقيان.
+    canvas.drawLine(
+      Offset(w * 0.317, h * 0.645),
+      Offset(w * 0.593, h * 0.605),
+      thin,
+    );
+    canvas.drawLine(
+      Offset(w * 0.314, h * 0.703),
+      Offset(w * 0.589, h * 0.663),
+      thin,
+    );
+
+    // جسم الأنبوب السفلي.
+    final tube = Path()
+      ..moveTo(w * 0.31, h * 0.765)
+      ..lineTo(w * 0.585, h * 0.72)
+      ..lineTo(w * 0.55, h * 0.90)
+      ..quadraticBezierTo(w * 0.545, h * 0.95, w * 0.50, h * 0.95)
+      ..quadraticBezierTo(w * 0.42, h * 0.95, w * 0.36, h * 0.92)
+      ..quadraticBezierTo(w * 0.30, h * 0.895, w * 0.31, h * 0.765)
+      ..close();
+    canvas.drawPath(tube, main);
+
+    // شرارات لمعان ثلاث حول الرأس.
+    _spark(canvas, Offset(w * 0.80, h * 0.22), w * 0.055, fill);
+    _spark(canvas, Offset(w * 0.20, h * 0.28), w * 0.035, soft);
+    _spark(canvas, Offset(w * 0.24, h * 0.62), w * 0.028, softer);
   }
 
-  /// أوراق متداخلة مع عروق ناعمة — طقوس العناية.
-  void _careRituals(Canvas canvas, double w, double h, Paint main, Paint thin, Paint soft) {
-    final back = Path()
-      ..moveTo(w * 0.52, h * 0.82)
-      ..quadraticBezierTo(w * 0.10, h * 0.58, w * 0.34, h * 0.24)
-      ..quadraticBezierTo(w * 0.44, h * 0.16, w * 0.52, h * 0.24)
-      ..quadraticBezierTo(w * 0.88, h * 0.50, w * 0.52, h * 0.82)
+  /// نجمة لمعان رباعية الفصوص.
+  void _spark(Canvas canvas, Offset c, double r, Paint paint) {
+    final spark = Path()
+      ..moveTo(c.dx, c.dy - r)
+      ..quadraticBezierTo(c.dx + r * 0.18, c.dy - r * 0.18, c.dx + r, c.dy)
+      ..quadraticBezierTo(c.dx + r * 0.18, c.dy + r * 0.18, c.dx, c.dy + r)
+      ..quadraticBezierTo(c.dx - r * 0.18, c.dy + r * 0.18, c.dx - r, c.dy)
+      ..quadraticBezierTo(c.dx - r * 0.18, c.dy - r * 0.18, c.dx, c.dy - r)
       ..close();
-    canvas.drawPath(back, thin);
+    canvas.drawPath(spark, paint);
+  }
 
-    final front = Path()
-      ..moveTo(w * 0.48, h * 0.84)
-      ..quadraticBezierTo(w * 0.18, h * 0.62, w * 0.46, h * 0.30)
-      ..quadraticBezierTo(w * 0.50, h * 0.20, w * 0.56, h * 0.30)
-      ..quadraticBezierTo(w * 0.82, h * 0.54, w * 0.48, h * 0.84)
-      ..close();
-    canvas.drawPath(front, main);
-
-    canvas.drawLine(Offset(w * 0.50, h * 0.76), Offset(w * 0.50, h * 0.32), thin);
-    canvas.drawLine(Offset(w * 0.50, h * 0.58), Offset(w * 0.38, h * 0.50), thin);
-    canvas.drawLine(Offset(w * 0.50, h * 0.46), Offset(w * 0.62, h * 0.40), thin);
-
+  /// ── طقوس العناية ──────────────────────────────────────────────────────
+  /// قطرة كبيرة تحتضن ورقتين متقابلتين — طقس الطبيعة والعناية.
+  void _careRituals(
+    Canvas canvas,
+    double w,
+    double h,
+    Paint main,
+    Paint thin,
+    Paint fill,
+    Paint soft,
+  ) {
+    // القطرة الأم — خط منحنٍ رشيق.
     final drop = Path()
-      ..moveTo(w * 0.72, h * 0.30)
-      ..quadraticBezierTo(w * 0.78, h * 0.42, w * 0.72, h * 0.52)
-      ..quadraticBezierTo(w * 0.66, h * 0.42, w * 0.72, h * 0.30)
+      ..moveTo(w * 0.50, h * 0.08)
+      ..quadraticBezierTo(w * 0.78, h * 0.36, w * 0.78, h * 0.58)
+      ..quadraticBezierTo(w * 0.78, h * 0.83, w * 0.50, h * 0.92)
+      ..quadraticBezierTo(w * 0.22, h * 0.83, w * 0.22, h * 0.58)
+      ..quadraticBezierTo(w * 0.22, h * 0.36, w * 0.50, h * 0.08)
       ..close();
-    canvas.drawPath(drop, soft);
-    canvas.drawPath(drop, thin);
+    canvas.drawPath(drop, main);
+
+    // انعكاس داخلي ناعم على حافة القطرة.
+    canvas.drawArc(
+      Rect.fromCenter(
+        center: Offset(w * 0.50, h * 0.58),
+        width: w * 0.40,
+        height: h * 0.52,
+      ),
+      math.pi * 0.72,
+      math.pi * 0.5,
+      false,
+      thin,
+    );
+
+    // ورقتان متقابلتان داخل القطرة — ساق مشتركة من الأسفل.
+    final stemBottom = Offset(w * 0.50, h * 0.78);
+    canvas.drawLine(stemBottom, Offset(w * 0.50, h * 0.60), main);
+
+    // الورقة اليمنى.
+    final leafR = Path()
+      ..moveTo(w * 0.50, h * 0.66)
+      ..quadraticBezierTo(w * 0.58, h * 0.58, w * 0.66, h * 0.56)
+      ..quadraticBezierTo(w * 0.68, h * 0.64, w * 0.62, h * 0.70)
+      ..quadraticBezierTo(w * 0.57, h * 0.75, w * 0.50, h * 0.72)
+      ..close();
+    canvas.drawPath(leafR, fill);
+    canvas.drawPath(leafR, thin);
+    // عرق الورقة.
+    canvas.drawLine(
+      Offset(w * 0.52, h * 0.67),
+      Offset(w * 0.63, h * 0.595),
+      thin,
+    );
+
+    // الورقة اليسرى (مرآة).
+    final leafL = Path()
+      ..moveTo(w * 0.50, h * 0.66)
+      ..quadraticBezierTo(w * 0.42, h * 0.58, w * 0.34, h * 0.56)
+      ..quadraticBezierTo(w * 0.32, h * 0.64, w * 0.38, h * 0.70)
+      ..quadraticBezierTo(w * 0.43, h * 0.75, w * 0.50, h * 0.72)
+      ..close();
+    canvas.drawPath(leafL, fill);
+    canvas.drawPath(leafL, thin);
+    canvas.drawLine(
+      Offset(w * 0.48, h * 0.67),
+      Offset(w * 0.37, h * 0.595),
+      thin,
+    );
+
+    // برعم صغير أعلى الساق.
+    canvas.drawCircle(Offset(w * 0.50, h * 0.485), w * 0.045, fill);
+    canvas.drawCircle(Offset(w * 0.50, h * 0.485), w * 0.045, thin);
+
+    // فقاعات خفيفة أعلى القطرة — إحساس الطقس والنقاء.
+    canvas.drawCircle(Offset(w * 0.26, h * 0.12), w * 0.045, soft);
+    canvas.drawCircle(Offset(w * 0.26, h * 0.12), w * 0.045, thin);
+    canvas.drawCircle(Offset(w * 0.75, h * 0.16), w * 0.030, thin);
+    canvas.drawCircle(Offset(w * 0.80, h * 0.30), w * 0.020, thin);
   }
 
-  /// ساعة فاخرة بإطار رفيع وتاج جانبي — أناقة الرجل.
-  void _hisElegance(Canvas canvas, double w, double h, Paint main, Paint thin, Paint fill) {
-    final bandTop = RRect.fromRectAndRadius(
-      Rect.fromLTWH(w * 0.38, h * 0.12, w * 0.24, h * 0.10),
-      Radius.circular(w * 0.035),
-    );
-    final bandBot = RRect.fromRectAndRadius(
-      Rect.fromLTWH(w * 0.38, h * 0.78, w * 0.24, h * 0.10),
-      Radius.circular(w * 0.035),
-    );
-    canvas.drawRRect(bandTop, thin);
-    canvas.drawRRect(bandBot, thin);
+  /// ── أناقة الرجل ───────────────────────────────────────────────────────
+  /// ربطة عنق فراشية بوربون مائلة داخل إطار ماسي — أناقة كلاسيكية.
+  void _hisElegance(
+    Canvas canvas,
+    double w,
+    double h,
+    Paint main,
+    Paint thin,
+    Paint accentStroke,
+    Paint fill,
+  ) {
+    // إطار ماسي خلفي (زوايا مقطوعة).
+    final frame = Path()
+      ..moveTo(w * 0.50, h * 0.05)
+      ..lineTo(w * 0.93, h * 0.50)
+      ..lineTo(w * 0.50, h * 0.95)
+      ..lineTo(w * 0.07, h * 0.50)
+      ..close();
+    canvas.drawPath(frame, _stroke(w, weight: 0.6, alpha: 0.45));
 
-    final dial = Offset(w * 0.50, h * 0.50);
-    final r = w * 0.22;
-    canvas.drawCircle(dial, r, main);
-    canvas.drawCircle(dial, r * 0.78, thin);
+    // عقدة الربطة (المثلث العلوي).
+    final knot = Path()
+      ..moveTo(w * 0.50, h * 0.22)
+      ..lineTo(w * 0.62, h * 0.30)
+      ..lineTo(w * 0.50, h * 0.38)
+      ..lineTo(w * 0.38, h * 0.30)
+      ..close();
+    canvas.drawPath(knot, fill);
+    canvas.drawPath(knot, main);
 
-    for (var i = 0; i < 12; i++) {
-      if (i % 3 != 0) continue;
-      final a = -math.pi / 2 + i * math.pi / 6;
-      final inner = dial + Offset(r * 0.62 * math.cos(a), r * 0.62 * math.sin(a));
-      final outer = dial + Offset(r * 0.88 * math.cos(a), r * 0.88 * math.sin(a));
-      canvas.drawLine(inner, outer, thin);
-    }
-
-    canvas.drawLine(dial, dial + Offset(0, -r * 0.46), main);
-    canvas.drawLine(dial, dial + Offset(r * 0.34, r * 0.18), thin);
-    canvas.drawCircle(dial, w * 0.028, fill);
-
-    canvas.drawCircle(Offset(w * 0.68, h * 0.50), w * 0.028, main);
-    canvas.drawLine(Offset(w * 0.68, h * 0.46), Offset(w * 0.68, h * 0.54), thin);
-  }
-
-  /// زجاجة عطر فاخرة بغطاء وذيل رش — حكاية عطر.
-  void _scentStory(Canvas canvas, double w, double h, Paint main, Paint thin, Paint fill, Paint soft) {
-    final cap = RRect.fromRectAndRadius(
-      Rect.fromLTWH(w * 0.38, h * 0.10, w * 0.24, h * 0.09),
-      Radius.circular(w * 0.025),
-    );
-    canvas.drawRRect(cap, main);
-    canvas.drawLine(Offset(w * 0.44, h * 0.19), Offset(w * 0.44, h * 0.28), thin);
-    canvas.drawLine(Offset(w * 0.56, h * 0.19), Offset(w * 0.56, h * 0.28), thin);
-
-    final neck = Path()
-      ..moveTo(w * 0.44, h * 0.28)
-      ..lineTo(w * 0.46, h * 0.36)
-      ..lineTo(w * 0.54, h * 0.36)
-      ..lineTo(w * 0.56, h * 0.28);
-    canvas.drawPath(neck, thin);
-
+    // جسم الربطة — ربطة وِنزِر تتسع ثم تنحصر.
     final body = Path()
-      ..moveTo(w * 0.32, h * 0.40)
-      ..quadraticBezierTo(w * 0.26, h * 0.40, w * 0.26, h * 0.52)
-      ..lineTo(w * 0.26, h * 0.76)
-      ..quadraticBezierTo(w * 0.26, h * 0.88, w * 0.38, h * 0.88)
-      ..lineTo(w * 0.62, h * 0.88)
-      ..quadraticBezierTo(w * 0.74, h * 0.88, w * 0.74, h * 0.76)
-      ..lineTo(w * 0.74, h * 0.52)
-      ..quadraticBezierTo(w * 0.74, h * 0.40, w * 0.68, h * 0.40)
+      ..moveTo(w * 0.44, h * 0.36)
+      ..quadraticBezierTo(w * 0.40, h * 0.50, w * 0.34, h * 0.62)
+      ..quadraticBezierTo(w * 0.30, h * 0.74, w * 0.26, h * 0.84)
+      // الرأس الأيسر للربطة (V الداخلية)
+      ..lineTo(w * 0.50, h * 0.72)
+      ..lineTo(w * 0.74, h * 0.84)
+      ..quadraticBezierTo(w * 0.70, h * 0.74, w * 0.66, h * 0.62)
+      ..quadraticBezierTo(w * 0.60, h * 0.50, w * 0.56, h * 0.36)
       ..close();
     canvas.drawPath(body, main);
 
-    final label = RRect.fromRectAndRadius(
-      Rect.fromLTWH(w * 0.36, h * 0.52, w * 0.28, h * 0.18),
-      Radius.circular(w * 0.02),
+    // خط وسط يفصل شقي الربطة.
+    canvas.drawLine(
+      Offset(w * 0.50, h * 0.40),
+      Offset(w * 0.50, h * 0.71),
+      thin,
     );
-    canvas.drawRRect(label, thin);
 
-    canvas.drawCircle(Offset(w * 0.50, h * 0.61), w * 0.028, fill);
+    // نقطة تثبيت أسفل العقدة.
+    canvas.drawCircle(Offset(w * 0.50, h * 0.375), w * 0.026, fill);
 
-    final mist = Path()
-      ..moveTo(w * 0.62, h * 0.14)
-      ..quadraticBezierTo(w * 0.70, h * 0.08, w * 0.78, h * 0.12)
-      ..quadraticBezierTo(w * 0.72, h * 0.18, w * 0.64, h * 0.16);
-    canvas.drawPath(mist, soft);
-    canvas.drawPath(mist, thin);
+    // شرارة صغيرة أعلى اليمين — لمسة تميّز.
+    _spark(canvas, Offset(w * 0.78, h * 0.20), w * 0.040, fill);
+    canvas.drawCircle(Offset(w * 0.22, h * 0.76), w * 0.020, fill);
+  }
+
+  /// ── حكاية عطر ─────────────────────────────────────────────────────────
+  /// زجاجة عطر ممدودة بقلب زهري وقطرات عبير متصاعدة.
+  void _scentStory(
+    Canvas canvas,
+    double w,
+    double h,
+    Paint main,
+    Paint thin,
+    Paint fill,
+    Paint soft,
+    Paint softer,
+  ) {
+    // قطرات عبير تتصاعد بجانب الفوهة — الحكاية قبل الزجاجة.
+    canvas.drawCircle(Offset(w * 0.50, h * 0.045), w * 0.030, fill);
+    canvas.drawCircle(Offset(w * 0.32, h * 0.10), w * 0.022, soft);
+    canvas.drawCircle(Offset(w * 0.68, h * 0.10), w * 0.022, soft);
+    canvas.drawCircle(Offset(w * 0.20, h * 0.19), w * 0.014, thin);
+
+    // الغطاء — قبة أنيقة.
+    final cap = Path()
+      ..moveTo(w * 0.40, h * 0.22)
+      ..quadraticBezierTo(w * 0.50, h * 0.13, w * 0.60, h * 0.22)
+      ..close();
+    canvas.drawPath(cap, main);
+    canvas.drawLine(
+      Offset(w * 0.40, h * 0.225),
+      Offset(w * 0.60, h * 0.225),
+      main,
+    );
+
+    // عنق قصير.
+    canvas.drawLine(
+      Offset(w * 0.44, h * 0.235),
+      Offset(w * 0.43, h * 0.29),
+      thin,
+    );
+    canvas.drawLine(
+      Offset(w * 0.56, h * 0.235),
+      Offset(w * 0.57, h * 0.29),
+      thin,
+    );
+    canvas.drawLine(
+      Offset(w * 0.43, h * 0.29),
+      Offset(w * 0.57, h * 0.29),
+      thin,
+    );
+
+    // جسم الزجاجة — كتفان ناعمان وتقويس قاعدة.
+    final body = Path()
+      ..moveTo(w * 0.43, h * 0.29)
+      ..quadraticBezierTo(w * 0.36, h * 0.31, w * 0.33, h * 0.40)
+      ..quadraticBezierTo(w * 0.30, h * 0.48, w * 0.30, h * 0.62)
+      ..quadraticBezierTo(w * 0.30, h * 0.80, w * 0.50, h * 0.86)
+      ..quadraticBezierTo(w * 0.70, h * 0.80, w * 0.70, h * 0.62)
+      ..quadraticBezierTo(w * 0.70, h * 0.48, w * 0.67, h * 0.40)
+      ..quadraticBezierTo(w * 0.64, h * 0.31, w * 0.57, h * 0.29)
+      ..close();
+    canvas.drawPath(body, main);
+
+    // انعكاس ضوء على جانب الزجاجة.
+    canvas.drawArc(
+      Rect.fromCenter(
+        center: Offset(w * 0.50, h * 0.58),
+        width: w * 0.34,
+        height: h * 0.44,
+      ),
+      math.pi * 0.75,
+      math.pi * 0.4,
+      false,
+      thin,
+    );
+
+    // قلب زهري داخل الزجاجة — زهرة خمس بتلات صغيرة كروح العطر.
+    final fc = Offset(w * 0.50, h * 0.565);
+    for (var i = 0; i < 5; i++) {
+      final a = -math.pi / 2 + i * math.pi * 2 / 5;
+      final petal = Path()
+        ..moveTo(fc.dx, fc.dy)
+        ..quadraticBezierTo(
+          fc.dx + w * 0.115 * math.cos(a - 0.5),
+          fc.dy + h * 0.115 * math.sin(a - 0.5),
+          fc.dx + w * 0.15 * math.cos(a),
+          fc.dy + h * 0.15 * math.sin(a),
+        )
+        ..quadraticBezierTo(
+          fc.dx + w * 0.115 * math.cos(a + 0.5),
+          fc.dy + h * 0.115 * math.sin(a + 0.5),
+          fc.dx,
+          fc.dy,
+        )
+        ..close();
+      canvas.drawPath(petal, soft);
+      canvas.drawPath(petal, thin);
+    }
+    canvas.drawCircle(fc, w * 0.035, fill);
+
+    // قاعدة أفقية — خط استقرار.
+    canvas.drawLine(
+      Offset(w * 0.36, h * 0.90),
+      Offset(w * 0.64, h * 0.90),
+      _stroke(w, weight: 0.7, alpha: 0.7),
+    );
   }
 
   @override
   bool shouldRepaint(covariant _WorldMarkPainter oldDelegate) =>
-      oldDelegate.slug != slug || oldDelegate.color != color || oldDelegate.selected != selected;
+      oldDelegate.slug != slug ||
+      oldDelegate.color != color ||
+      oldDelegate.selected != selected;
 }
 
 class _PinnedWorldChip extends StatelessWidget {
   final String label;
   final Color accent;
+  final Color ink;
   final bool selected;
   final VoidCallback onTap;
 
   const _PinnedWorldChip({
     required this.label,
     required this.accent,
+    required this.ink,
     required this.selected,
     required this.onTap,
   });
@@ -833,16 +1289,27 @@ class _PinnedWorldChip extends StatelessWidget {
                 fontSize: 13,
                 height: 1.15,
                 fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
-                color: selected ? accent : const Color(0xFF6E686C),
+                color: selected ? accent : ink.withValues(alpha: 0.55),
               ),
             ),
             const SizedBox(height: 7),
             AnimatedContainer(
-              duration: const Duration(milliseconds: 240),
+              duration: const Duration(milliseconds: 260),
               curve: Curves.easeOutCubic,
               width: selected ? 28 : 0,
-              height: 2,
-              decoration: BoxDecoration(color: accent, borderRadius: BorderRadius.circular(99)),
+              height: 2.5,
+              decoration: BoxDecoration(
+                color: accent,
+                borderRadius: BorderRadius.circular(99),
+                boxShadow: selected
+                    ? [
+                        BoxShadow(
+                          color: accent.withValues(alpha: 0.40),
+                          blurRadius: 6,
+                        ),
+                      ]
+                    : null,
+              ),
             ),
           ],
         ),
@@ -857,17 +1324,26 @@ class WorldSwitchBar extends ConsumerWidget {
   final bool showTitle;
   final bool compactFixed;
 
-  const WorldSwitchBar({super.key, this.outerPadding = 16, this.showTitle = true, this.compactFixed = false});
+  const WorldSwitchBar({
+    super.key,
+    this.outerPadding = 16,
+    this.showTitle = true,
+    this.compactFixed = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final worlds = ref.watch(worldsProvider);
     final lang = ref.watch(languageCodeProvider);
+    final theme = ref.watch(activeWorldThemeProvider);
     final selected = ref.watch(selectedWorldSlugProvider);
     return worlds.maybeWhen(
       data: (list) {
         if (list.isEmpty) return const SizedBox.shrink();
-        final slug = selected != null && list.any((world) => world.slug == selected) ? selected : list.first.slug;
+        final slug =
+            selected != null && list.any((world) => world.slug == selected)
+            ? selected
+            : list.first.slug;
         if (selected != slug) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (ref.read(selectedWorldSlugProvider) != slug) {
@@ -884,7 +1360,13 @@ class WorldSwitchBar extends ConsumerWidget {
                 child: Text(
                   lang == 'en' ? 'Choose your world' : 'اختر القسم المناسب لك',
                   textAlign: TextAlign.start,
-                  style: const TextStyle(fontSize: 20, height: 1.2, fontWeight: FontWeight.w800, color: AppColors.ink),
+                  style: TextStyle(
+                    fontSize: 19,
+                    height: 1.2,
+                    letterSpacing: -0.3,
+                    fontWeight: FontWeight.w800,
+                    color: theme.ink,
+                  ),
                 ),
               ),
             if (compactFixed)
@@ -893,7 +1375,8 @@ class WorldSwitchBar extends ConsumerWidget {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (final world in list.where((item) => !item.isGift).take(4))
+                    for (final world
+                        in list.where((item) => !item.isGift).take(4))
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
@@ -901,11 +1384,15 @@ class WorldSwitchBar extends ConsumerWidget {
                             slug: world.slug,
                             label: world.localizedName(lang),
                             accent: world.accent,
+                            ink: theme.ink,
                             selected: world.slug == slug,
                             onTap: () {
                               if (world.slug == slug) return;
                               HapticFeedback.selectionClick();
-                              ref.read(selectedWorldSlugProvider.notifier).state = world.slug;
+                              ref
+                                      .read(selectedWorldSlugProvider.notifier)
+                                      .state =
+                                  world.slug;
                             },
                           ),
                         ),
@@ -914,52 +1401,55 @@ class WorldSwitchBar extends ConsumerWidget {
                 ),
               )
             else
-            SizedBox(
-              height: 34,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: EdgeInsets.symmetric(horizontal: outerPadding),
-                itemCount: list.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (_, i) {
-                  final world = list[i];
-                  final on = world.slug == slug;
-                  return Material(
-                    color: on ? world.accent : AppColors.elevated,
-                    elevation: on ? 1.5 : 0,
-                    shadowColor: world.accent.withValues(alpha: 0.35),
-                    shape: StadiumBorder(
-                      side: BorderSide(color: on ? world.accent : AppColors.hairline),
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      onTap: () {
-                        if (on) return;
-                        HapticFeedback.selectionClick();
-                        ref.read(selectedWorldSlugProvider.notifier).state = world.slug;
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Row(
-                          children: [
-                            Icon(world.motif, size: 14, color: on ? Colors.white : const Color(0xFF8A848C)),
-                            const SizedBox(width: 5),
-                            Text(
-                              world.localizedName(lang),
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: on ? Colors.white : const Color(0xFF3A3438),
-                              ),
-                            ),
-                          ],
+              SizedBox(
+                height: 36,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: EdgeInsets.symmetric(horizontal: outerPadding),
+                  itemCount: list.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemBuilder: (_, i) {
+                    final world = list[i];
+                    final on = world.slug == slug;
+                    return Material(
+                      color: on ? world.accent : theme.surface,
+                      elevation: on ? 1.5 : 0,
+                      shadowColor: world.accent.withValues(alpha: 0.35),
+                      shape: StadiumBorder(
+                        side: BorderSide(
+                          color: on ? world.accent : theme.hairline,
                         ),
                       ),
-                    ),
-                  );
-                },
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () {
+                          if (on) return;
+                          HapticFeedback.selectionClick();
+                          ref.read(selectedWorldSlugProvider.notifier).state =
+                              world.slug;
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 13),
+                          child: Row(
+                            children: [
+                              WorldIcon(slug: world.slug, size: 17),
+                              const SizedBox(width: 5),
+                              Text(
+                                world.localizedName(lang),
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: on ? Colors.white : theme.inkSoft,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
           ],
         );
       },
@@ -973,7 +1463,11 @@ class WorldCategoryGallery extends ConsumerWidget {
   final double outerPadding;
   final double aspectRatio;
 
-  const WorldCategoryGallery({super.key, this.outerPadding = 16, this.aspectRatio = _bannerAspect});
+  const WorldCategoryGallery({
+    super.key,
+    this.outerPadding = 16,
+    this.aspectRatio = _bannerAspect,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1040,7 +1534,11 @@ class _GalleryCarouselState extends State<_GalleryCarousel> {
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!_page.hasClients) return;
       final next = (_index + 1) % widget.urls.length;
-      _page.animateToPage(next, duration: const Duration(milliseconds: 520), curve: Curves.easeOut);
+      _page.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 520),
+        curve: Curves.easeOut,
+      );
     });
   }
 
@@ -1055,7 +1553,12 @@ class _GalleryCarouselState extends State<_GalleryCarousel> {
   Widget build(BuildContext context) {
     final urls = widget.urls;
     return Padding(
-      padding: EdgeInsets.fromLTRB(widget.outerPadding, 0, widget.outerPadding, 2),
+      padding: EdgeInsets.fromLTRB(
+        widget.outerPadding,
+        0,
+        widget.outerPadding,
+        2,
+      ),
       child: Column(
         children: [
           AspectRatio(
@@ -1064,7 +1567,8 @@ class _GalleryCarouselState extends State<_GalleryCarousel> {
               controller: _page,
               itemCount: urls.length,
               onPageChanged: (i) => setState(() => _index = i),
-              itemBuilder: (_, i) => _WideFrame(url: urls[i], accent: widget.accent),
+              itemBuilder: (_, i) =>
+                  _WideFrame(url: urls[i], accent: widget.accent),
             ),
           ),
           if (urls.length > 1) ...[
@@ -1074,13 +1578,22 @@ class _GalleryCarouselState extends State<_GalleryCarousel> {
               children: [
                 for (var i = 0; i < urls.length; i++)
                   AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
+                    duration: const Duration(milliseconds: 240),
+                    curve: Curves.easeOutCubic,
                     margin: const EdgeInsets.symmetric(horizontal: 2.5),
                     width: i == _index ? 16 : 6,
                     height: 6,
                     decoration: BoxDecoration(
                       color: i == _index ? widget.accent : AppColors.hairline,
                       borderRadius: BorderRadius.circular(99),
+                      boxShadow: i == _index
+                          ? [
+                              BoxShadow(
+                                color: widget.accent.withValues(alpha: 0.35),
+                                blurRadius: 6,
+                              ),
+                            ]
+                          : null,
                     ),
                   ),
               ],
@@ -1106,13 +1619,18 @@ class WorldHeroBanners extends ConsumerWidget {
     final world = ref.watch(worldDetailProvider(slug)).valueOrNull;
     return feed.maybeWhen(
       data: (data) {
-        final banners = data.banners.where((banner) => banner.hasImage).toList();
+        final banners = data.banners
+            .where((banner) => banner.hasImage)
+            .toList();
         if (banners.isEmpty) {
           final cover = world?.coverUrl ?? '';
           if (cover.isNotEmpty) {
             return Padding(
               padding: EdgeInsets.fromLTRB(outerPadding, 12, outerPadding, 4),
-              child: _WideFrame(url: cover, accent: world?.accent ?? AppColors.primary),
+              child: _WideFrame(
+                url: cover,
+                accent: world?.accent ?? AppColors.primary,
+              ),
             );
           }
           if (world == null) return const SizedBox(height: 12);
@@ -1139,7 +1657,11 @@ class WorldCategoryImage extends ConsumerWidget {
   final bool fallbackToBanner;
   final double outerPadding;
 
-  const WorldCategoryImage({super.key, this.fallbackToBanner = false, this.outerPadding = 16});
+  const WorldCategoryImage({
+    super.key,
+    this.fallbackToBanner = false,
+    this.outerPadding = 16,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1148,11 +1670,16 @@ class WorldCategoryImage extends ConsumerWidget {
     final world = ref.watch(worldDetailProvider(slug)).valueOrNull;
     final feed = ref.watch(worldFeedProvider(slug)).valueOrNull;
     final cover = world?.coverUrl ?? '';
-    final banners = feed?.banners.where((banner) => banner.hasImage).toList() ?? const <AppBanner>[];
+    final banners =
+        feed?.banners.where((banner) => banner.hasImage).toList() ??
+        const <AppBanner>[];
     final firstBanner = banners.isEmpty ? '' : banners.first.imageUrl;
-    final url = cover.isNotEmpty ? cover : (fallbackToBanner ? firstBanner : '');
+    final url = cover.isNotEmpty
+        ? cover
+        : (fallbackToBanner ? firstBanner : '');
     if (url.isEmpty) return const SizedBox.shrink();
-    if (!fallbackToBanner && banners.isNotEmpty && url == firstBanner) return const SizedBox.shrink();
+    if (!fallbackToBanner && banners.isNotEmpty && url == firstBanner)
+      return const SizedBox.shrink();
     return Padding(
       padding: EdgeInsets.fromLTRB(outerPadding, 12, outerPadding, 4),
       child: _WideFrame(url: url, accent: world?.accent ?? AppColors.primary),
@@ -1202,7 +1729,11 @@ class _WorldBannerCarouselState extends State<_WorldBannerCarousel> {
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!_page.hasClients) return;
       final next = (_index + 1) % widget.banners.length;
-      _page.animateToPage(next, duration: const Duration(milliseconds: 520), curve: Curves.easeOut);
+      _page.animateToPage(
+        next,
+        duration: const Duration(milliseconds: 520),
+        curve: Curves.easeOut,
+      );
     });
   }
 
@@ -1217,7 +1748,12 @@ class _WorldBannerCarouselState extends State<_WorldBannerCarousel> {
   Widget build(BuildContext context) {
     final banners = widget.banners;
     return Padding(
-      padding: EdgeInsets.fromLTRB(widget.outerPadding, 0, widget.outerPadding, 2),
+      padding: EdgeInsets.fromLTRB(
+        widget.outerPadding,
+        0,
+        widget.outerPadding,
+        2,
+      ),
       child: Column(
         children: [
           AspectRatio(
@@ -1230,7 +1766,11 @@ class _WorldBannerCarouselState extends State<_WorldBannerCarousel> {
                 final banner = banners[i];
                 return GestureDetector(
                   onTap: () => openBannerLink(context, banner),
-                  child: _WideFrame(url: banner.imageUrl, accent: widget.accent, padding: EdgeInsets.zero),
+                  child: _WideFrame(
+                    url: banner.imageUrl,
+                    accent: widget.accent,
+                    padding: EdgeInsets.zero,
+                  ),
                 );
               },
             ),
@@ -1242,13 +1782,22 @@ class _WorldBannerCarouselState extends State<_WorldBannerCarousel> {
               children: [
                 for (var i = 0; i < banners.length; i++)
                   AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
+                    duration: const Duration(milliseconds: 240),
+                    curve: Curves.easeOutCubic,
                     margin: const EdgeInsets.symmetric(horizontal: 2.5),
                     width: i == _index ? 16 : 6,
                     height: 6,
                     decoration: BoxDecoration(
                       color: i == _index ? widget.accent : AppColors.hairline,
                       borderRadius: BorderRadius.circular(99),
+                      boxShadow: i == _index
+                          ? [
+                              BoxShadow(
+                                color: widget.accent.withValues(alpha: 0.35),
+                                blurRadius: 6,
+                              ),
+                            ]
+                          : null,
                     ),
                   ),
               ],
@@ -1269,45 +1818,20 @@ class WorldHomeBrands extends ConsumerWidget {
     final slug = ref.watch(selectedWorldSlugProvider);
     if (slug == null) return const SizedBox.shrink();
     final lang = ref.watch(languageCodeProvider);
-    final brands = ref.watch(worldFeedProvider(slug)).valueOrNull?.brands ?? const [];
+    final theme = ref.watch(activeWorldThemeProvider);
+    final brands =
+        ref.watch(worldFeedProvider(slug)).valueOrNull?.brands ?? const [];
     if (brands.isEmpty) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-          child: Row(
-            children: [
-              Text(
-                lang == 'en' ? 'Our brands' : 'برانداتنا',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.ink),
-              ),
-              const Spacer(),
-              Material(
-                color: AppColors.elevated,
-                borderRadius: BorderRadius.circular(999),
-                child: InkWell(
-                  onTap: () => context.push('/brands'),
-                  borderRadius: BorderRadius.circular(999),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    child: Row(
-                      children: [
-                        Text(lang == 'en' ? 'All' : 'عرض الكل', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
-                        Icon(
-                          Directionality.of(context) == TextDirection.rtl ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
-                          size: 18,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+        AppSectionTitle(
+          title: lang == 'en' ? 'Our brands' : 'برانداتنا',
+          actionLabel: lang == 'en' ? 'View all' : 'عرض الكل',
+          onAction: () => context.push('/brands'),
         ),
         SizedBox(
-          height: 98,
+          height: 100,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1316,48 +1840,110 @@ class WorldHomeBrands extends ConsumerWidget {
             itemBuilder: (_, i) {
               final brand = brands[i];
               final name = brand.localizedName(lang);
-              return InkWell(
-                onTap: () => context.push('/products?brandId=${brand.id}&title=${Uri.encodeComponent(name)}'),
-                borderRadius: BorderRadius.circular(40),
-                child: SizedBox(
-                  width: 72,
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 62,
-                        height: 62,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.white,
-                          border: Border.all(color: AppColors.hairline),
-                          boxShadow: const [BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 3))],
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        alignment: Alignment.center,
-                        padding: const EdgeInsets.all(10),
-                        child: brand.logoUrl.isEmpty
-                            ? Text(
-                                name.isEmpty ? '•' : name.substring(0, 1),
-                                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: AppColors.ink),
-                              )
-                            : AppNetworkImage(url: brand.logoUrl, fit: BoxFit.contain, backgroundColor: Colors.white),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF3A3438)),
-                      ),
-                    ],
-                  ),
+              return _HomeBrandPill(
+                name: name,
+                logoUrl: brand.logoUrl,
+                ring: theme.hairline,
+                ink: theme.ink,
+                onTap: () => context.push(
+                  '/products?brandId=${brand.id}&title=${Uri.encodeComponent(name)}',
                 ),
               );
             },
           ),
         ),
       ],
+    );
+  }
+}
+
+/// دائرة براند بيضاء بحلقة مزدوجة وظل منخفض — أهدأ من بطاقة المنتج.
+class _HomeBrandPill extends StatelessWidget {
+  final String name;
+  final String logoUrl;
+  final Color ring;
+  final Color ink;
+  final VoidCallback onTap;
+
+  const _HomeBrandPill({
+    required this.name,
+    required this.logoUrl,
+    required this.ring,
+    required this.ink,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(40),
+      child: SizedBox(
+        width: 72,
+        child: Column(
+          children: [
+            Container(
+              width: 62,
+              height: 62,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+                border: Border.all(color: ring),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x12000000),
+                    blurRadius: 10,
+                    offset: Offset(0, 4),
+                  ),
+                  BoxShadow(
+                    color: Color(0x0A000000),
+                    blurRadius: 3,
+                    offset: Offset(0, 1),
+                  ),
+                ],
+              ),
+              clipBehavior: Clip.antiAlias,
+              alignment: Alignment.center,
+              padding: const EdgeInsets.all(10),
+              // بدون شعار: اسم البراند كعلامة كتابية أنيقة بدل حرف واحد.
+              child: logoUrl.isEmpty
+                  ? FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        name.isEmpty ? '•' : name.toUpperCase(),
+                        maxLines: 2,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 11,
+                          height: 1.1,
+                          letterSpacing: 0.8,
+                          color: ink,
+                        ),
+                      ),
+                    )
+                  : AppNetworkImage(
+                      url: logoUrl,
+                      fit: BoxFit.contain,
+                      backgroundColor: Colors.white,
+                    ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.1,
+                color: ink,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1372,39 +1958,93 @@ class _WorldPlate extends StatelessWidget {
   Widget build(BuildContext context) {
     return AspectRatio(
       aspectRatio: _bannerAspect,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          gradient: LinearGradient(
-            begin: AlignmentDirectional.centerStart,
-            end: AlignmentDirectional.centerEnd,
-            colors: [world.accent, Color.alphaBlend(world.accent.withValues(alpha: 0.45), world.canvas)],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(18),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: AlignmentDirectional.centerStart,
+              end: AlignmentDirectional.centerEnd,
+              colors: [
+                world.accent,
+                Color.lerp(world.accent, world.ink, 0.28)!,
+                Color.alphaBlend(
+                  world.accent.withValues(alpha: 0.45),
+                  world.canvas,
+                ),
+              ],
+              stops: const [0, 0.55, 1],
+            ),
           ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 22),
-          child: Row(
+          child: Stack(
             children: [
-              Icon(world.motif, color: Colors.white, size: 28),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      world.localizedName(lang),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+              // هالة زخرفية بزاوية — عمق للوح الفاليوباك.
+              PositionedDirectional(
+                bottom: -40,
+                start: -30,
+                child: Container(
+                  width: 170,
+                  height: 170,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        Colors.white.withValues(alpha: 0.14),
+                        Colors.white.withValues(alpha: 0.0),
+                      ],
                     ),
-                    if (world.localizedTagline(lang).isNotEmpty)
-                      Text(
-                        world.localizedTagline(lang),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 22),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.18),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.35),
+                        ),
                       ),
+                      child: Center(
+                        child: WorldIcon(slug: world.slug, size: 26),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            world.localizedName(lang),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          if (world.localizedTagline(lang).isNotEmpty)
+                            Text(
+                              world.localizedTagline(lang),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.9),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -1437,7 +2077,11 @@ class _WideFrame extends StatelessWidget {
           border: Border.all(color: accent.withValues(alpha: 0.12)),
         ),
         child: SizedBox.expand(
-          child: AppNetworkImage(url: url, fit: BoxFit.cover, backgroundColor: AppColors.blush),
+          child: AppNetworkImage(
+            url: url,
+            fit: BoxFit.cover,
+            backgroundColor: AppColors.blush,
+          ),
         ),
       ),
     );
@@ -1449,6 +2093,9 @@ class _WideFrame extends StatelessWidget {
       child: image,
     );
     if (padding == EdgeInsets.zero) return framed;
-    return Padding(padding: padding, child: AspectRatio(aspectRatio: _bannerAspect, child: framed));
+    return Padding(
+      padding: padding,
+      child: AspectRatio(aspectRatio: _bannerAspect, child: framed),
+    );
   }
 }

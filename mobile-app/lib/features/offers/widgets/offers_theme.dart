@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/ui/section_title.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
@@ -143,37 +145,7 @@ class OffersSectionHeader extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final t = context.worldTheme;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(OffersTheme.hPad, 20, OffersTheme.hPad, 8),
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 18,
-            decoration: BoxDecoration(
-              gradient: t.signatureGradient,
-              borderRadius: BorderRadius.circular(99),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: OffersTheme.title(context, size: 16)),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 2),
-                  Text(subtitle!, style: OffersTheme.body(context, size: 12)),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => AppSectionTitle(title: title, subtitle: subtitle);
 }
 
 class OffersPrimaryButton extends StatelessWidget {

@@ -1,10 +1,10 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../data/models/banner.dart';
 import '../../../data/models/category.dart';
 import '../../../data/models/home_section.dart';
@@ -16,12 +16,15 @@ import '../../worlds/worlds_home_band.dart';
 import '../../worlds/worlds_provider.dart';
 import '../../worlds/world_theme.dart';
 import '../widgets/home_hero_header.dart';
+import '../widgets/world_banner_carousel.dart';
+import '../widgets/world_showcase.dart';
+import '../widgets/home_extras.dart';
+import '../widgets/home_features.dart';
 import '../widgets/home_banner_stage.dart';
 import '../../../core/l10n/app_strings.dart';
 import '../../../core/l10n/locale_provider.dart';
 import '../widgets/home_category_grid.dart';
 import '../widgets/home_quick_dock.dart';
-import '../widgets/home_section_shell.dart';
 import '../widgets/home_theme.dart';
 
 class HeroHomeSection extends ConsumerStatefulWidget {
@@ -43,19 +46,29 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
     final fromSection = _normalizeCategories(widget.section.categories);
     final cats = fromSection.isNotEmpty
         ? filterStorefrontCategories(fromSection, apiCats)
-        : (apiCats != null ? storefrontParentCategories(apiCats) : <Category>[]);
+        : (apiCats != null
+              ? storefrontParentCategories(apiCats)
+              : <Category>[]);
     final banners = widget.section.banners;
     final worldsAsync = ref.watch(worldsProvider);
     final worlds = worldsAsync.valueOrNull;
     final worldsReady = worlds != null && worlds.isNotEmpty;
-    final slug = resolveWorldSlug(selected: ref.watch(selectedWorldSlugProvider), worlds: worlds);
+    final slug = resolveWorldSlug(
+      selected: ref.watch(selectedWorldSlugProvider),
+      worlds: worlds,
+    );
     if (worldsAsync.isLoading && !worldsReady) {
       return const SizedBox(height: 360);
     }
-    final world = slug == null ? null : ref.watch(worldDetailProvider(slug)).valueOrNull;
+    final world = slug == null
+        ? null
+        : ref.watch(worldDetailProvider(slug)).valueOrNull;
     final t = context.worldTheme;
     final worldCategories = world?.categories ?? const <Category>[];
     final worldList = worlds ?? const <StoreWorld>[];
+    final bandWorld = slug == null
+        ? null
+        : (world ?? worldList.where((w) => w.slug == slug).firstOrNull);
     if (slug != null && slug != _lastSlug) {
       final previous = worldList.indexWhere((item) => item.slug == _lastSlug);
       final next = worldList.indexWhere((item) => item.slug == slug);
@@ -69,67 +82,93 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (!worldsReady) const HomeHeroHeader(),
-        if (worldsReady) ...[
-          const WorldTopStage(),
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 340),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            layoutBuilder: (current, previous) => Stack(
-              alignment: Alignment.topCenter,
-              children: [...previous, if (current != null) current],
-            ),
-            transitionBuilder: (child, animation) {
-              final rtl = Directionality.of(context) == TextDirection.rtl;
-              final travel = (rtl ? -_slide : _slide) * 0.18;
-              final offset = Tween<Offset>(
-                begin: Offset(travel, 0),
-                end: Offset.zero,
-              ).animate(CurvedAnimation(parent: animation, curve: Curves.easeOutCubic));
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(position: offset, child: child),
-              );
-            },
-            child: Transform.translate(
-              key: ValueKey(slug ?? 'world'),
-              offset: const Offset(0, -18),
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: t.surface,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                  boxShadow: [BoxShadow(color: t.ink.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, -4))],
+        if (worldsReady && bandWorld != null) ...[
+          WorldHeroBand(world: bandWorld),
+          // الورقة البيضاء تصعد فوق الكتلة الملوّنة.
+          _PullUp(
+            overlap: WorldHeroBand.sheetOverlap,
+            child: Container(
+              decoration: BoxDecoration(
+                color: t.surface,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(36),
+                  bottom: Radius.circular(32),
                 ),
-                child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 8),
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: t.hairline,
-                      borderRadius: BorderRadius.circular(99),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                if (worldCategories.isNotEmpty) ...[
-                  HomeHeroCategoryStrip(
-                    categories: worldCategories,
-                    wash: world == null
-                        ? t.accentLight
-                        : Color.alphaBlend(world.accent.withValues(alpha: 0.16), t.surface),
-                    accent: world?.accent,
-                    worldSections: true,
+                boxShadow: [
+                  BoxShadow(
+                    color: t.accentDark.withValues(alpha: 0.06),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
                   ),
                 ],
-                const WorldHomeBrands(),
-                const GiftWorldHomeCard(),
-                const SizedBox(height: 8),
-              ],
-                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  WorldSheetTop(
+                    worlds: worldList.where((w) => !w.isGift).toList(),
+                    current: bandWorld,
+                  ),
+                  const SizedBox(height: 16),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 360),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    layoutBuilder: (current, previous) => Stack(
+                      alignment: Alignment.topCenter,
+                      children: [...previous, if (current != null) current],
+                    ),
+                    transitionBuilder: (child, animation) {
+                      final rtl =
+                          Directionality.of(context) == TextDirection.rtl;
+                      final travel = (rtl ? -_slide : _slide) * 0.1;
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position:
+                              Tween<Offset>(
+                                begin: Offset(travel, 0),
+                                end: Offset.zero,
+                              ).animate(
+                                CurvedAnimation(
+                                  parent: animation,
+                                  curve: Curves.easeOutCubic,
+                                ),
+                              ),
+                          child: child,
+                        ),
+                      );
+                    },
+                    child: Column(
+                      key: ValueKey(slug ?? 'world'),
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const WorldBannerCarousel(),
+                        const SizedBox(height: 4),
+                        if (worldCategories.isNotEmpty)
+                          HomeHeroCategoryStrip(
+                            categories: worldCategories,
+                            wash: world == null
+                                ? t.accentLight
+                                : Color.alphaBlend(
+                                    world.accent.withValues(alpha: 0.10),
+                                    t.surface,
+                                  ),
+                            accent: world?.accent,
+                            worldSections: true,
+                          ),
+                        const HomeCartReminder(),
+                        const HomePromiseStrip(),
+                        const HomeContinueShopping(),
+                        const HomeWishlistShelf(),
+                        const WorldHomeBrands(),
+                        const HomeBudgetShelf(),
+                        const GiftWorldHomeCard(),
+                        const SizedBox(height: 18),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
@@ -274,7 +313,10 @@ class QuickCategoryGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return HomeCategoryGrid(categories: categories, title: ref.s.categoriesTitle);
+    return HomeCategoryGrid(
+      categories: categories,
+      title: ref.s.categoriesTitle,
+    );
   }
 }
 
@@ -285,20 +327,89 @@ class CategoryGridSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final apiCats = ref.watch(categoriesProvider).valueOrNull;
-    final cats = filterStorefrontCategories(_normalizeCategories(section.categories), apiCats);
+    final cats = filterStorefrontCategories(
+      _normalizeCategories(section.categories),
+      apiCats,
+    );
     if (cats.isEmpty) return const SizedBox.shrink();
     return HomeCategoryGrid(
       categories: cats,
-      title: section.titleForLang(ref.watch(languageCodeProvider)) ?? ref.s.categoriesTitle,
+      title:
+          section.titleForLang(ref.watch(languageCodeProvider)) ??
+          ref.s.categoriesTitle,
       showTitle: section.showTitle,
       showViewAll: section.showViewAll,
       onViewAll: section.showViewAll
           ? () => openViewAllLink(
-                context,
-                query: section.viewAllQuery,
-                fallbackQuery: '/categories',
-              )
+              context,
+              query: section.viewAllQuery,
+              fallbackQuery: '/categories',
+            )
           : null,
     );
+  }
+}
+
+/// يرفع الابن فوق ما قبله بمقدار [overlap] ويُنقص ارتفاعه المحجوز بنفس المقدار —
+/// بعكس Transform.translate الذي يترك فراغاً أسفله.
+class _PullUp extends SingleChildRenderObjectWidget {
+  final double overlap;
+  const _PullUp({required this.overlap, required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderPullUp(overlap);
+
+  @override
+  void updateRenderObject(BuildContext context, _RenderPullUp renderObject) {
+    renderObject.overlap = overlap;
+  }
+}
+
+class _RenderPullUp extends RenderShiftedBox {
+  _RenderPullUp(this._overlap) : super(null);
+
+  double _overlap;
+  set overlap(double v) {
+    if (v == _overlap) return;
+    _overlap = v;
+    markNeedsLayout();
+  }
+
+  @override
+  void performLayout() {
+    final c = child;
+    if (c == null) {
+      size = constraints.smallest;
+      return;
+    }
+    c.layout(
+      constraints.loosen().copyWith(minWidth: constraints.minWidth),
+      parentUsesSize: true,
+    );
+    size = constraints.constrain(
+      Size(
+        c.size.width,
+        (c.size.height - _overlap).clamp(0.0, double.infinity),
+      ),
+    );
+    (c.parentData! as BoxParentData).offset = Offset(0, -_overlap);
+  }
+
+  // الجزء المرفوع يبقى قابلاً للمس.
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    final area = Rect.fromLTWH(
+      0,
+      -_overlap,
+      size.width,
+      size.height + _overlap,
+    );
+    if (!area.contains(position)) return false;
+    if (hitTestChildren(result, position: position)) {
+      result.add(BoxHitTestEntry(this, position));
+      return true;
+    }
+    return false;
   }
 }

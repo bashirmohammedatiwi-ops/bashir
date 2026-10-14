@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/locale_provider.dart';
 import '../../../core/widgets/app_network_image.dart';
+import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/home_section.dart';
 import '../../worlds/world_theme.dart';
 import '../home_link.dart';
@@ -77,9 +78,15 @@ class HomeSectionShell extends ConsumerWidget {
             compact: compactTop,
             overline: overline,
           )
-        else if ((actionLabel != null && onAction != null) || headerTrailing != null)
+        else if ((actionLabel != null && onAction != null) ||
+            headerTrailing != null)
           Padding(
-            padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 2, HomeTheme.paddingH, 8),
+            padding: const EdgeInsets.fromLTRB(
+              HomeTheme.paddingH,
+              2,
+              HomeTheme.paddingH,
+              8,
+            ),
             child: Row(
               children: [
                 if (headerTrailing != null) headerTrailing!,
@@ -97,7 +104,9 @@ class HomeSectionShell extends ConsumerWidget {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
         child: DecoratedBox(
-          decoration: HomeTheme.sectionSurface(tint: cmsBg ?? HomeTheme.surface),
+          decoration: HomeTheme.sectionSurface(
+            tint: cmsBg ?? HomeTheme.surface,
+          ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(HomeTheme.cardRadius),
             child: content,
@@ -140,23 +149,30 @@ class HomeSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
+    final hasSub = subtitle != null && subtitle!.isNotEmpty;
+    final hasOverline = overline != null && overline!.isNotEmpty;
     return Padding(
-      padding: EdgeInsets.fromLTRB(
+      padding: EdgeInsetsDirectional.fromSTEB(
         HomeTheme.paddingH,
-        compact ? 2 : 6,
+        compact ? 4 : 8,
         HomeTheme.paddingH,
-        10,
+        12,
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
+          // الخط اللوني بطول محتوى العنوان بالضبط — لا يتجاوزه ولا ينزاح.
           Container(
             width: 4,
-            height: compact ? 28 : 34,
-            margin: const EdgeInsetsDirectional.only(end: 12, top: 2),
+            height: (hasSub || hasOverline) ? 36 : 20,
+            margin: const EdgeInsetsDirectional.only(end: 10),
             decoration: BoxDecoration(
-              gradient: t.primaryGradient,
-              borderRadius: BorderRadius.circular(99),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [t.accent, t.accent.withValues(alpha: 0.35)],
+              ),
+              borderRadius: BorderRadius.circular(4),
             ),
           ),
           if (headerImageUrl != null && headerImageUrl!.isNotEmpty) ...[
@@ -174,28 +190,37 @@ class HomeSectionHeader extends StatelessWidget {
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                if (overline != null && overline!.isNotEmpty) ...[
+                if (hasOverline)
                   Text(
                     overline!,
-                    style: HomeTheme.overline.copyWith(color: t.inkMuted),
+                    style: AppText.micro.copyWith(
+                      color: t.inkMuted,
+                      letterSpacing: 0.4,
+                    ),
                   ),
-                  const SizedBox(height: 2),
-                ],
                 Text(
                   title,
-                  style: HomeTheme.sectionTitle(size: compact ? 16 : 17).copyWith(color: t.ink),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.title2.copyWith(color: t.ink),
                 ),
-                if (subtitle != null && subtitle!.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(subtitle!, style: HomeTheme.body(size: 12).copyWith(color: t.inkSoft)),
-                ],
+                if (hasSub)
+                  Text(
+                    subtitle!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.caption.copyWith(color: t.inkSoft),
+                  ),
               ],
             ),
           ),
           if (trailing != null) trailing!,
-          if (actionLabel != null && onAction != null)
-            HomeViewAllLink(label: actionLabel!, onTap: onAction!),
+          if (actionLabel != null && onAction != null) ...[
+            const SizedBox(width: 8),
+            ViewAllButton(label: actionLabel!, onTap: onAction!),
+          ],
         ],
       ),
     );

@@ -22,8 +22,9 @@ class HomeHeader extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final auth = ref.watch(authProvider);
-    final unread =
-        auth.isAuthenticated ? ref.watch(unreadNotificationsCountProvider) : 0;
+    final unread = auth.isAuthenticated
+        ? ref.watch(unreadNotificationsCountProvider)
+        : 0;
     final solid = scrollProgress > 0.06;
     final lang = ref.watch(languageCodeProvider);
     final s = ref.s;
@@ -87,7 +88,10 @@ class HomeHeader extends ConsumerWidget {
                     children: [
                       _IconBtn(
                         icon: Icons.shopping_bag_outlined,
-                        onTap: () => openCartTab(context, ProviderScope.containerOf(context, listen: false)),
+                        onTap: () => openCartTab(
+                          context,
+                          ProviderScope.containerOf(context, listen: false),
+                        ),
                       ),
                       const SizedBox(width: 2),
                       _IconBtn(
@@ -156,7 +160,10 @@ class _SearchPill extends StatelessWidget {
                     Expanded(
                       child: Text(
                         hint,
-                        style: HomeTheme.body(size: 14, color: HomeTheme.inkMuted),
+                        style: HomeTheme.body(
+                          size: 14,
+                          color: HomeTheme.inkMuted,
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -166,10 +173,7 @@ class _SearchPill extends StatelessWidget {
               ),
             ),
           ),
-          _MiniAction(
-            icon: Icons.barcode_reader,
-            onTap: onScan,
-          ),
+          _MiniAction(icon: Icons.barcode_reader, onTap: onScan),
           _MiniAction(
             icon: Icons.grid_view_rounded,
             onTap: onCategories,
@@ -221,11 +225,7 @@ class _IconBtn extends StatelessWidget {
   final VoidCallback onTap;
   final int badge;
 
-  const _IconBtn({
-    required this.icon,
-    required this.onTap,
-    this.badge = 0,
-  });
+  const _IconBtn({required this.icon, required this.onTap, this.badge = 0});
 
   @override
   Widget build(BuildContext context) {

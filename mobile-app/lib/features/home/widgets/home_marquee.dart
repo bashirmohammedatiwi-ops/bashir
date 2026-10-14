@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 class HomeMarquee extends StatefulWidget {
   final String text;
   final TextStyle style;
+
   /// 1 بطيء — 10 سريع
   final double speed;
   final String gap;
@@ -20,16 +21,17 @@ class HomeMarquee extends StatefulWidget {
   State<HomeMarquee> createState() => _HomeMarqueeState();
 }
 
-class _HomeMarqueeState extends State<HomeMarquee> with SingleTickerProviderStateMixin {
+class _HomeMarqueeState extends State<HomeMarquee>
+    with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   double _loopWidth = 320;
   double _textHeight = 20;
 
   TextPainter _buildPainter(String text) => TextPainter(
-        text: TextSpan(text: text, style: widget.style),
-        textDirection: TextDirection.rtl,
-        maxLines: 1,
-      )..layout();
+    text: TextSpan(text: text, style: widget.style),
+    textDirection: TextDirection.rtl,
+    maxLines: 1,
+  )..layout();
 
   double _contentHeight(TextPainter painter) {
     final fontSize = widget.style.fontSize ?? 14;
@@ -89,24 +91,38 @@ class _HomeMarqueeState extends State<HomeMarquee> with SingleTickerProviderStat
 
     final segment = '${widget.text}${widget.gap}';
 
+    // OverflowBox: النص المتحرك أعرض من الشريط عمداً — لا قيود عرض ولا تحذير تجاوز.
+    // الحركة نحو اليمين: النص العربي يدخل من اليسار ويتقدّم باتجاه بداية القراءة.
     return ClipRect(
       child: SizedBox(
         height: _textHeight,
-        child: Align(
-          alignment: Alignment.center,
+        child: OverflowBox(
+          alignment: Alignment.centerRight,
+          maxWidth: double.infinity,
           child: AnimatedBuilder(
             animation: _ctrl,
-            builder: (_, __) => Transform.translate(
-              offset: Offset(-_ctrl.value * _loopWidth, 0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                textDirection: TextDirection.rtl,
-                children: [
-                  Text(segment, style: widget.style, maxLines: 1, overflow: TextOverflow.visible),
-                  Text(segment, style: widget.style, maxLines: 1, overflow: TextOverflow.visible),
-                ],
-              ),
+            builder: (_, child) => Transform.translate(
+              offset: Offset(_ctrl.value * _loopWidth, 0),
+              child: child,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              textDirection: TextDirection.rtl,
+              children: [
+                Text(
+                  segment,
+                  style: widget.style,
+                  maxLines: 1,
+                  softWrap: false,
+                ),
+                Text(
+                  segment,
+                  style: widget.style,
+                  maxLines: 1,
+                  softWrap: false,
+                ),
+              ],
             ),
           ),
         ),

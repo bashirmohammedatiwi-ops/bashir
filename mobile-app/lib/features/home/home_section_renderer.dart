@@ -184,6 +184,8 @@ List<HomeSectionSlot> resolveHomeSectionSlots(HomeFeed feed) {
   for (final s in _cmsSections(feed)) {
     if (!isHomeSectionVisible(s)) continue;
     if (heroHasCategories && _isDuplicateCategorySection(s.type)) continue;
+    // البطاقات التحريرية (عبارة + كلمات) أُزيلت من الرئيسية في كل العوالم.
+    if (s.type == 'PROMO_STRIP') continue;
     slots.add(HomeSectionSlot(
       section: s,
       isFirstAfterHero: firstAfterHero,

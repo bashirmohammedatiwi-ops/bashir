@@ -23,6 +23,7 @@ class AppStrings {
   String get navCategories => isAr ? 'الفئات' : 'Categories';
   String get navAssistant => isAr ? 'المساعد' : 'AI';
   String get navOffers => isAr ? 'عروضنا' : 'Offers';
+  String get navBrands => isAr ? 'البراندات' : 'Brands';
   String get navCart => isAr ? 'السلة' : 'Cart';
   String get navAccount => isAr ? 'حسابي' : 'Account';
 
@@ -118,7 +119,7 @@ class AppStrings {
   String get login => isAr ? 'تسجيل الدخول' : 'Log In';
   String get register => isAr ? 'إنشاء حساب جديد' : 'Create Account';
   String get createAccount => isAr ? 'إنشاء حساب' : 'Create Account';
-  String get guestWelcome => isAr ? 'مرحباً بك في ديما الحياة' : 'Welcome to deema alhayat';
+  String get guestWelcome => isAr ? 'مرحباً بك في ديما الحياة' : 'Welcome to Deema Alhayat';
   String get guestSubtitle => isAr
       ? 'سجّلي الدخول لحفظ مفضلاتك ومتابعة طلباتك ونقاط الولاء.'
       : 'Sign in to save favorites, track orders, and earn loyalty points.';
@@ -126,9 +127,25 @@ class AppStrings {
   String get version => isAr ? 'الإصدار' : 'Version';
   String get aboutDescription => isAr
       ? 'متجر ديما الحياة لمستحضرات التجميل والعناية. الدفع عند الاستلام.'
-      : 'deema alhayat beauty and care store. Cash on delivery.';
+      : 'Deema Alhayat beauty and care store. Cash on delivery.';
 
   // ─── Categories ───────────────────────────────────────────────────────────
+  String get catBrowseTitle => isAr ? 'الأقسام' : 'Categories';
+  String get catSearchHint =>
+      isAr ? 'ابحثي بين الأقسام… ماسكرا، شامبو، عطور' : 'Search categories… mascara, shampoo';
+  String get catLensAll => isAr ? 'كل الأقسام' : 'All';
+  String get catShopAll => isAr ? 'تسوقي الكل' : 'Shop all';
+  String catProducts(String n) => isAr ? '$n منتج' : '$n products';
+  String get catTopBrands => isAr ? 'أبرز البراندات' : 'Top brands';
+  String get catBestSellers => isAr ? 'الأكثر طلباً هنا' : 'Most loved here';
+  String get catSections => isAr ? 'الأقسام' : 'Sections';
+  String catResults(int n) => isAr ? '$n قسم مطابق' : '$n matching categories';
+  String catSearchInProducts(String q) =>
+      isAr ? 'ابحثي عن «$q» في كل المنتجات' : 'Search all products for “$q”';
+  String get catNoMatch => isAr ? 'لا يوجد قسم بهذا الاسم' : 'No category matches';
+  String get catNoMatchHint =>
+      isAr ? 'جرّبي كلمة أخرى، أو ابحثي في المنتجات مباشرة' : 'Try another word, or search products directly';
+  String get catWorldHint => isAr ? 'اختاري عالمك' : 'Pick your world';
   String get noCategories => isAr ? 'لا توجد أقسام' : 'No categories';
   String get categoriesHeader => isAr ? 'الأقسام' : 'Categories';
   String get categoriesBrowseHint =>
@@ -173,6 +190,20 @@ class AppStrings {
   String get noProductsHint =>
       isAr ? 'جرّبي تغيير الفلاتر أو اختيار قسم آخر' : 'Try changing filters or another category';
   String get sortBy => isAr ? 'ترتيب حسب' : 'Sort by';
+  String get lfPrice => isAr ? 'السعر' : 'Price';
+  String get lfInStock => isAr ? 'متوفر' : 'In stock';
+  String get lfOffers => isAr ? 'عروض' : 'On sale';
+  String get lfRating => isAr ? 'التقييم' : 'Rating';
+  String get lfClearAll => isAr ? 'مسح الكل' : 'Clear all';
+  String get lfAnyPrice => isAr ? 'أي سعر' : 'Any price';
+  String get lfCustomPrice => isAr ? 'أو حدّدي نطاقاً' : 'Or set a range';
+  String get lfOffersOnly => isAr ? 'العروض والتخفيضات فقط' : 'Discounted items only';
+  String get lfShowResults => isAr ? 'عرض النتائج' : 'Show results';
+  String lfPriceUnder(String v) => isAr ? 'أقل من $v' : 'Under $v';
+  String lfPriceOver(String v) => isAr ? 'أكثر من $v' : 'Over $v';
+  String lfPriceBetween(String a, String b) => '$a – $b';
+  String lfRatingAtLeast(String r) => isAr ? '$r★ فأكثر' : '$r★ & up';
+  String lfResults(String n) => isAr ? '$n منتج' : '$n products';
   String get sort => isAr ? 'ترتيب' : 'Sort';
   String get filter => isAr ? 'تصفية' : 'Filter';
   String get filterProducts => isAr ? 'تصفية المنتجات' : 'Filter Products';
@@ -193,7 +224,7 @@ class AppStrings {
   String get brandCount => isAr ? 'براند' : 'brands';
 
   // Sort labels
-  String get sortByBrand => isAr ? 'ترتيب البراندات' : 'Brand order';
+  String get sortByBrand => isAr ? 'المقترح' : 'Recommended';
   String get sortLatest => isAr ? 'الأحدث' : 'Latest';
   String get sortPriceAsc => isAr ? 'السعر: من الأقل' : 'Price: Low to High';
   String get sortPriceDesc => isAr ? 'السعر: من الأعلى' : 'Price: High to Low';
@@ -217,6 +248,7 @@ class AppStrings {
   String get newBadge => isAr ? 'جديد' : 'New';
   String get offerBadge => isAr ? 'عرض' : 'Sale';
   String get selectShadeFirst => isAr ? 'يرجى اختيار الدرجة أولاً' : 'Please select a shade first';
+  String get maxStockReached => isAr ? 'وصلت للحد الأقصى للمخزون' : 'Maximum stock reached';
   String get addedToCart => isAr ? 'أُضيف إلى السلة' : 'Added to cart';
   String get viewCart => isAr ? 'عرض السلة' : 'View Cart';
   String get quantity => isAr ? 'الكمية' : 'Quantity';
@@ -224,7 +256,7 @@ class AppStrings {
       isAr ? 'اكسبي $points نقطة عند شراء هذا المنتج' : 'Earn $points points when you buy this';
   String get bestSeller => isAr ? 'الأكثر مبيعاً' : 'Best Seller';
   String reviewCount(int n) => isAr ? '($n تقييم)' : '($n reviews)';
-  String savePercent(int p) => isAr ? 'وفّري $p%' : 'Save $p%';
+  String savePercent(int p) => isAr ? 'وفّري \u2066$p%\u2069' : 'Save $p%';
   String get outOfStockNow => isAr ? 'غير متوفر حالياً' : 'Currently out of stock';
   String lowStock(int stock) => isAr
       ? (stock == 1 ? 'آخر قطعة' : 'متبقى $stock قطع')
@@ -290,7 +322,7 @@ class AppStrings {
   String searchProductsFound(int count) =>
       isAr ? '$count ${count == 1 ? 'منتج' : 'منتجات'}' : '$count ${count == 1 ? 'product' : 'products'}';
   String get searchBrowseAlso => isAr ? 'تصفّحي أيضاً' : 'Browse also';
-  String get searchInStore => isAr ? 'ابحث في ديما الحياة' : 'Search deema alhayat';
+  String get searchInStore => isAr ? 'ابحث في ديما الحياة' : 'Search Deema Alhayat';
   String get searchInStoreHint => isAr
       ? 'ابحثي بالعربي أو الإنجليزي — الاسم، البراند، القسم، أو الباركود'
       : 'Search in Arabic or English — name, brand, category, or barcode';
@@ -452,7 +484,7 @@ class AppStrings {
   String get welcomeBack => isAr ? 'مرحباً بعودتك' : 'Welcome back';
   String get loginPhoneSubtitle =>
       isAr ? 'سجّل دخولك برقم هاتفك لمتابعة التسوّق' : 'Sign in with your phone to continue shopping';
-  String get registerJoinTitle => isAr ? 'انضم إلى الحياة' : 'Join deema alhayat';
+  String get registerJoinTitle => isAr ? 'انضمّي إلى ديما الحياة' : 'Join Deema Alhayat';
   String get registerPhoneSubtitle => isAr
       ? 'أنشئ حسابك برقم هاتفك وابدأ التسوّق واكسب نقاط الولاء'
       : 'Create your account with your phone and start earning loyalty points';

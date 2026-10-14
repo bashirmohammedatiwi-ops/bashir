@@ -151,7 +151,7 @@ class _PackageItemTile extends StatelessWidget {
         child: Text('×$qty', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w800)),
       ),
       title: Text(asString(p['name']), style: const TextStyle(fontWeight: FontWeight.w600)),
-      trailing: const Icon(Icons.chevron_left, color: AppColors.textMuted),
+      trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
       onTap: () {
         final slug = asString(p['slug']);
         final id = asString(p['id']);

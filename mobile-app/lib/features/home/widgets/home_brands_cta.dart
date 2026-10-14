@@ -17,7 +17,12 @@ class HomeBrandsCta extends ConsumerWidget {
     final t = context.worldTheme;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 4, HomeTheme.paddingH, 14),
+      padding: const EdgeInsets.fromLTRB(
+        HomeTheme.paddingH,
+        4,
+        HomeTheme.paddingH,
+        14,
+      ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -47,9 +52,15 @@ class HomeBrandsCta extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.18),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.35),
+                    ),
                   ),
-                  child: const Icon(Icons.diamond_outlined, color: Colors.white, size: 22),
+                  child: const Icon(
+                    Icons.diamond_outlined,
+                    color: Colors.white,
+                    size: 22,
+                  ),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -87,9 +98,7 @@ class HomeBrandsCta extends ConsumerWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    Directionality.of(context) == TextDirection.rtl
-                        ? Icons.arrow_back_ios_new_rounded
-                        : Icons.arrow_forward_ios_rounded,
+                    Icons.arrow_forward_ios_rounded,
                     size: 14,
                     color: Colors.white,
                   ),

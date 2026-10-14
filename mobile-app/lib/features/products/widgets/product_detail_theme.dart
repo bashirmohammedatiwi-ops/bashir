@@ -9,7 +9,8 @@ abstract final class ProductDetailTheme {
   static const padH = 18.0;
   static const sectionGap = 14.0;
 
-  static Color galleryBg(BuildContext context) => context.worldTheme.blush;
+  /// أبيض مثل خلفيات صور المنتجات — المعرض يبدو امتداداً للصورة.
+  static Color galleryBg(BuildContext context) => Colors.white;
 
   static BoxDecoration sheetDecoration(BuildContext context) {
     final t = context.worldTheme;
@@ -87,12 +88,5 @@ abstract final class ProductDetailTheme {
         fontWeight: FontWeight.w800,
         color: context.worldTheme.ink,
         letterSpacing: -0.3,
-      );
-
-  static TextStyle brandStyle(BuildContext context) => TextStyle(
-        color: context.worldTheme.accentDark,
-        fontWeight: FontWeight.w800,
-        fontSize: 10.5,
-        letterSpacing: 0.4,
       );
 }

@@ -62,8 +62,9 @@ class CategoryLineArt extends StatelessWidget {
                   maxH * CategoriesTheme.iconHeightScale,
                 )
               : math.min(maxW, maxH) * CategoriesTheme.iconScale;
-          final alignment =
-              alignCorner ? AlignmentDirectional.bottomEnd : Alignment.center;
+          final alignment = alignCorner
+              ? AlignmentDirectional.bottomEnd
+              : Alignment.center;
 
           return ClipRect(
             child: SizedBox(
@@ -114,7 +115,9 @@ class _ArtBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final corner = alignCorner ? AlignmentDirectional.bottomEnd : Alignment.center;
+    final corner = alignCorner
+        ? AlignmentDirectional.bottomEnd
+        : Alignment.center;
 
     if (category.imageUrl.isNotEmpty) {
       final pixelW = cachePixelWidth(context, size);
@@ -130,7 +133,8 @@ class _ArtBody extends StatelessWidget {
           fadeOutDuration: Duration.zero,
           memCacheWidth: pixelW,
           filterQuality: FilterQuality.medium,
-          placeholder: (_, __) => ShimmerBox(width: size, height: size, radius: 4),
+          placeholder: (_, __) =>
+              ShimmerBox(width: size, height: size, radius: 4),
           errorWidget: (_, __, ___) => _fallbackIcon(context),
         ),
       );
@@ -140,21 +144,14 @@ class _ArtBody extends StatelessWidget {
     if (emoji != null && emoji.isNotEmpty && emoji.runes.length <= 2) {
       return Align(
         alignment: corner,
-        child: Text(
-          emoji,
-          style: TextStyle(fontSize: size * 0.58, height: 1),
-        ),
+        child: Text(emoji, style: TextStyle(fontSize: size * 0.58, height: 1)),
       );
     }
 
     final spec = _resolve(category);
     return Align(
       alignment: corner,
-      child: Icon(
-        spec.icon,
-        size: size * 0.82,
-        color: spec.color,
-      ),
+      child: Icon(spec.icon, size: size * 0.82, color: spec.color),
     );
   }
 
@@ -169,7 +166,8 @@ class _ArtBody extends StatelessWidget {
 
   _ArtSpec _resolve(Category category) {
     final key =
-        '${category.slug} ${category.name} ${category.nameEn ?? ''} ${category.nameAr ?? ''}'.toLowerCase();
+        '${category.slug} ${category.name} ${category.nameEn ?? ''} ${category.nameAr ?? ''}'
+            .toLowerCase();
 
     IconData icon;
     Color? color;
@@ -207,7 +205,7 @@ class _ArtBody extends StatelessWidget {
       color = CategoryLineArt._palette[h % CategoryLineArt._palette.length];
     }
 
-    return _ArtSpec(icon: icon, color: color!);
+    return _ArtSpec(icon: icon, color: color);
   }
 
   bool _has(String key, String a, String b, [String? c, String? d]) {

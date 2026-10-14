@@ -1,113 +1,100 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/responsive.dart';
-import '../../home/widgets/home_theme.dart';
+import '../../../core/widgets/ui/ui.dart';
+import '../../worlds/world_theme.dart';
 
-/// ثيم السلة — ألوان اللوغو (تركواز + فحم) بأشكال ناعمة.
+/// ثيم السلة — مقاسات ثابتة، والألوان تُقرأ من لوحة العالم النشط
+/// (`context.worldTheme`) حتى تتلوّن السلة مع العالم كبقية التطبيق.
 abstract final class CartTheme {
-  // ألوان اللوغو
-  static const brand = Color(0xFF9B6BD8);
-  static const brandDark = Color(0xFF6E45B0);
-  static const brandSoft = Color(0xFFEFE6FC);
-  static const brandWash = Color(0xFFF8F5FE);
-  static const charcoal = Color(0xFF2A2431);
-
-  static const bg = Color(0xFFFAF8FD);
-  static const card = Colors.white;
-  static const radiusXl = 26.0;
-  static const radiusLg = 20.0;
-  static const radiusMd = 16.0;
-  static const radiusSm = 12.0;
+  static const radiusXl = AppCorners.xl;
+  static const radiusLg = AppCorners.lg;
+  static const radiusMd = AppCorners.md;
+  static const radiusSm = AppCorners.sm;
   static const hPad = 16.0;
-  static const itemGap = 10.0;
+  static const itemGap = 12.0;
   static const imageSize = 88.0;
-
-  static const brandGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [brand, brandDark],
-  );
-
-  static const signatureGradient = AppColors.signatureGradient;
 
   static double shellNavReserve(BuildContext context) {
     return Responsive.shellBottomReserve(context);
   }
 
-  static List<BoxShadow> get softShadow => [
-        BoxShadow(
-          color: brand.withValues(alpha: 0.07),
-          blurRadius: 18,
-          offset: const Offset(0, 6),
-          spreadRadius: -4,
-        ),
-        BoxShadow(
-          color: charcoal.withValues(alpha: 0.04),
-          blurRadius: 8,
-          offset: const Offset(0, 2),
-        ),
-      ];
+  static List<BoxShadow> softShadow(BuildContext context) {
+    final t = context.worldTheme;
+    return [
+      BoxShadow(color: t.accent.withValues(alpha: 0.07), blurRadius: 18, offset: const Offset(0, 6), spreadRadius: -4),
+      BoxShadow(color: t.ink.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
+    ];
+  }
 
-  static List<BoxShadow> get dockShadow => [
-        BoxShadow(
-          color: brand.withValues(alpha: 0.1),
-          blurRadius: 22,
-          offset: const Offset(0, -6),
-          spreadRadius: -4,
-        ),
-      ];
+  static List<BoxShadow> dockShadow(BuildContext context) => [
+    BoxShadow(
+      color: context.worldTheme.accentDark.withValues(alpha: 0.08),
+      blurRadius: 22,
+      offset: const Offset(0, -6),
+      spreadRadius: -4,
+    ),
+  ];
 
-  static BoxDecoration cardDecoration({Color? color}) => BoxDecoration(
-        color: color ?? card,
-        borderRadius: BorderRadius.circular(radiusLg),
-        border: Border.all(color: brandSoft),
-        boxShadow: softShadow,
-      );
+  static BoxDecoration cardDecoration(BuildContext context, {Color? color}) {
+    final t = context.worldTheme;
+    return BoxDecoration(
+      color: color ?? t.surface,
+      borderRadius: BorderRadius.circular(radiusLg),
+      border: Border.all(color: t.accentSoft),
+      boxShadow: softShadow(context),
+    );
+  }
 
-  static BoxDecoration pillDecoration({Color? fill}) => BoxDecoration(
-        color: fill ?? brandWash,
-        borderRadius: BorderRadius.circular(999),
-      );
+  static BoxDecoration pillDecoration(BuildContext context, {Color? fill}) => BoxDecoration(
+    color: fill ?? context.worldTheme.accentLight,
+    borderRadius: BorderRadius.circular(AppCorners.pill),
+  );
 
-  static BoxDecoration headerDecoration() => BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-          colors: [
-            brandSoft,
-            bg,
-            Colors.white,
-          ],
-        ),
-        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(radiusXl)),
-      );
+  static BoxDecoration headerDecoration(BuildContext context) {
+    final t = context.worldTheme;
+    return BoxDecoration(
+      gradient: LinearGradient(
+        begin: AlignmentDirectional.topStart.resolve(Directionality.of(context)),
+        end: AlignmentDirectional.bottomEnd.resolve(Directionality.of(context)),
+        colors: [t.accentSoft, t.canvas, t.canvas],
+        stops: const [0, 0.7, 1],
+      ),
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(radiusXl)),
+    );
+  }
+
+  /// دائرة أيقونة ناعمة موحّدة (البانرات، الكوبون، الأقسام).
+  static Widget iconBadge(BuildContext context, IconData icon, {Color? color, double size = 40}) {
+    final t = context.worldTheme;
+    final c = color ?? t.accentDark;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color == null ? t.accentSoft : c.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppCorners.sm),
+      ),
+      child: Icon(icon, color: c, size: size * 0.5),
+    );
+  }
 }
 
+/// عنوان قسم داخل السلة — نفس عنوان الأقسام الموحّد للتطبيق.
 class CartSectionLabel extends StatelessWidget {
   final String title;
+  final String? subtitle;
+  final Widget? trailing;
 
-  const CartSectionLabel({super.key, required this.title});
+  const CartSectionLabel({super.key, required this.title, this.subtitle, this.trailing});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 18, CartTheme.hPad, 10),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              gradient: CartTheme.brandGradient,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(Icons.shopping_bag_outlined, color: Colors.white, size: 17),
-          ),
-          const SizedBox(width: 10),
-          Text(title, style: HomeTheme.sectionTitle(size: 16, color: CartTheme.charcoal)),
-        ],
-      ),
+    return AppSectionTitle(
+      title: title,
+      subtitle: subtitle,
+      trailing: trailing,
+      padding: const EdgeInsetsDirectional.fromSTEB(CartTheme.hPad, 22, CartTheme.hPad, 12),
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
@@ -14,6 +15,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/formatters.dart';
+import '../../core/widgets/ui/ui.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/utils/responsive.dart';
 import '../../core/widgets/app_network_image.dart';
@@ -53,6 +55,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
   @override
   void dispose() {
     _pageCtrl.dispose();
+    _collapsed.dispose();
     super.dispose();
   }
 
@@ -111,7 +114,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       return;
     }
     HapticFeedback.mediumImpact();
-    ref.read(cartProvider.notifier).add(product, quantity: _quantity, shade: shade);
+    final added =
+        ref.read(cartProvider.notifier).add(product, quantity: _quantity, shade: shade);
+    if (!added) {
+      AppSnackbar.error(context, s.maxStockReached);
+      return;
+    }
     AppSnackbar.cartAdded(
       context,
       title: s.addedToCart,
@@ -156,6 +164,9 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     });
   }
 
+  /// يظهر اسم المنتج في الشريط العلوي بعد تجاوز المعرض.
+  final _collapsed = ValueNotifier<bool>(false);
+
   Widget _buildContent(Product product) {
     final shades = product.displayableShades;
     _syncShadeSelection(product);
@@ -163,9 +174,18 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     final gallery = _galleryUrls(product, _shade);
     final zoomableUrls = gallery.where((u) => u.trim().isNotEmpty).toList();
 
-    return CustomScrollView(
+    final collapseAt = Responsive.galleryExpandedHeight(context, hasThumbs: gallery.length > 1) -
+        kToolbarHeight -
+        MediaQuery.paddingOf(context).top;
+    return NotificationListener<ScrollUpdateNotification>(
+      onNotification: (n) {
+        if (n.depth == 0) _collapsed.value = n.metrics.pixels > collapseAt;
+        return false;
+      },
+      child: CustomScrollView(
       slivers: [
         _GalleryAppBar(
+          collapsed: _collapsed,
           product: product,
           gallery: gallery,
           zoomableUrls: zoomableUrls,
@@ -231,7 +251,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       child: _InfoSections(product: product),
                     ),
                   _SectionCard(
-                    child: _ReviewsSection(product: product),
+                    child: _ReviewsSection(product: product, idOrSlug: widget.idOrSlug),
                   ),
                   if (product.category != null)
                     _SimilarProducts(
@@ -245,12 +265,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           ),
         ),
       ],
+      ),
     );
   }
 }
 
 /// معرض الصور — خلفية بيضاء، أزرار عائمة، مصغّرات أسفل الصورة.
 class _GalleryAppBar extends ConsumerWidget {
+  final ValueListenable<bool> collapsed;
   final Product product;
   final List<String> gallery;
   final List<String> zoomableUrls;
@@ -260,6 +282,7 @@ class _GalleryAppBar extends ConsumerWidget {
   final ValueChanged<int> onPageChanged;
 
   const _GalleryAppBar({
+    required this.collapsed,
     required this.product,
     required this.gallery,
     required this.zoomableUrls,
@@ -282,11 +305,26 @@ class _GalleryAppBar extends ConsumerWidget {
       expandedHeight: Responsive.galleryExpandedHeight(context, hasThumbs: hasThumbs),
       backgroundColor: ProductDetailTheme.galleryBg(context),
       surfaceTintColor: Colors.transparent,
-      leading: _CircleAction(
-        icon: Directionality.of(context) == TextDirection.rtl
-            ? Icons.arrow_forward_ios_rounded
-            : Icons.arrow_back_ios_new_rounded,
-        onTap: () => context.pop(),
+      leadingWidth: 60,
+      leading: const Center(child: AppBackButton()),
+      centerTitle: true,
+      title: ValueListenableBuilder<bool>(
+        valueListenable: collapsed,
+        builder: (context, show, _) => AnimatedOpacity(
+          opacity: show ? 1 : 0,
+          duration: const Duration(milliseconds: 180),
+          child: AnimatedSlide(
+            offset: show ? Offset.zero : const Offset(0, 0.3),
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            child: Text(
+              product.localizedName(ref.watch(languageCodeProvider)),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppText.title3.copyWith(color: context.worldTheme.ink),
+            ),
+          ),
+        ),
       ),
           actions: [
         _CircleAction(
@@ -302,7 +340,7 @@ class _GalleryAppBar extends ConsumerWidget {
         ),
         _CircleAction(
           icon: wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-          color: wished ? context.worldTheme.accent : context.worldTheme.ink,
+          color: wished ? AppColors.sale : context.worldTheme.ink,
           onTap: () async {
             HapticFeedback.selectionClick();
                 if (!ref.read(authProvider).isAuthenticated) {
@@ -312,7 +350,7 @@ class _GalleryAppBar extends ConsumerWidget {
                 await ref.read(wishlistProvider.notifier).toggle(product);
               },
             ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
           ],
           flexibleSpace: FlexibleSpaceBar(
         background: DecoratedBox(
@@ -357,26 +395,62 @@ class _GalleryAppBar extends ConsumerWidget {
                         children: [
                           if (product.hasDiscount)
                             _GalleryBadge(
-                              label: '-${product.discountPercent}%',
+                              label: formatDiscount(product.discountPercent),
                               color: AppColors.sale,
                             )
                           else if (product.isNew)
-                            _GalleryBadge(label: s.newBadge, color: AppColors.ink),
+                            _GalleryBadge(label: s.newBadge, color: context.worldTheme.accentDark),
                           if (product.isBestSeller) ...[
                             const SizedBox(width: 6),
-                            _GalleryBadge(label: s.bestSeller, color: context.worldTheme.accentDark),
+                            _GalleryBadge(label: s.bestSeller, color: context.worldTheme.accent),
                           ],
                         ],
                       ),
                     ),
-                    if (zoomableUrls.isNotEmpty)
+                    // عدّاد الصور — pill زجاجي أنيق.
+                    if (gallery.length > 1)
+                      PositionedDirectional(
+                        end: 14,
+                        bottom: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: context.worldTheme.ink.withValues(alpha: 0.45),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '${imageIndex + 1}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1,
+                                ),
+                              ),
+                              Text(
+                                ' / ${gallery.length}',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.65),
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w700,
+                                  height: 1,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else if (zoomableUrls.isNotEmpty)
                       PositionedDirectional(
                         end: 14,
                         bottom: 12,
                         child: Container(
                           padding: const EdgeInsets.all(7),
                           decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.32),
+                            color: context.worldTheme.ink.withValues(alpha: 0.45),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(Icons.zoom_out_map_rounded,
@@ -575,7 +649,7 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-/// عنوان المنتج — بسيط وواضح.
+/// عنوان المنتج — شريحة براند + تقييم داخل بطاقة سطر أنيقة.
 class _ProductTitleBlock extends ConsumerWidget {
   final Product product;
 
@@ -586,15 +660,52 @@ class _ProductTitleBlock extends ConsumerWidget {
     final lang = ref.watch(languageCodeProvider);
     final s = ref.s;
     final t = context.worldTheme;
+    final brand = product.brandNameFor(lang);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(ProductDetailTheme.padH, 0, ProductDetailTheme.padH, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (product.brandNameFor(lang).isNotEmpty)
-            Text(product.brandNameFor(lang).toUpperCase(), style: ProductDetailTheme.brandStyle(context)),
-          if (product.brandNameFor(lang).isNotEmpty) const SizedBox(height: 8),
+          if (brand.isNotEmpty) ...[
+            // شريحة البراند مع نقطة توقيع — بداية تحريرية للصفحة.
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: t.accentLight,
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: t.accentSoft.withValues(alpha: 0.7)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 5,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      gradient: t.signatureGradient,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      brand.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: t.accentDark,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 10.5,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
           Text(
             product.localizedName(lang),
             style: AppTypography.sectionTitle.copyWith(
@@ -605,44 +716,58 @@ class _ProductTitleBlock extends ConsumerWidget {
               color: t.ink,
             ),
           ),
-          if (product.rating > 0) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Icon(Icons.star_rounded, color: AppColors.star, size: 16),
-                const SizedBox(width: 4),
-                Text(
-                  product.rating.toStringAsFixed(1),
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: t.ink),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  s.reviewCount(product.reviewCount),
-                  style: TextStyle(color: t.inkMuted, fontSize: 12),
-                ),
-                if (product.soldCount > 0) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    '· ${formatNumber(product.soldCount)}+ ${s.sales}',
-                    style: TextStyle(color: t.inkMuted, fontSize: 11.5),
-                  ),
+          const SizedBox(height: 10),
+          // سطر الأدلة: تقييم + مبيعات داخل pill ناعم موحّد.
+          if (product.rating > 0 || product.soldCount > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+              decoration: BoxDecoration(
+                color: t.canvasWarm,
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: t.hairline.withValues(alpha: 0.7)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (product.rating > 0) ...[
+                    const Icon(Icons.star_rounded, color: AppColors.star, size: 15),
+                    const SizedBox(width: 3),
+                    Text(
+                      product.rating.toStringAsFixed(1),
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5, color: t.ink),
+                    ),
+                    if (product.reviewCount > 0) ...[
+                      const SizedBox(width: 5),
+                      Text(
+                        '(${product.reviewCount})',
+                        style: TextStyle(color: t.inkMuted, fontSize: 11.5, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ],
+                  if (product.rating > 0 && product.soldCount > 0) ...[
+                    const SizedBox(width: 7),
+                    Container(width: 3.5, height: 3.5, decoration: BoxDecoration(color: t.inkMuted, shape: BoxShape.circle)),
+                    const SizedBox(width: 7),
+                  ],
+                  if (product.soldCount > 0)
+                    Flexible(
+                      child: Text(
+                        '${formatNumber(product.soldCount)}+ ${s.sales}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: t.inkMuted, fontSize: 11.5, fontWeight: FontWeight.w600),
+                      ),
+                    ),
                 ],
-              ],
+              ),
             ),
-          ] else if (product.soldCount > 0) ...[
-            const SizedBox(height: 8),
-            Text(
-              '${formatNumber(product.soldCount)}+ ${s.sales}',
-              style: TextStyle(color: t.inkMuted, fontSize: 11.5, fontWeight: FontWeight.w600),
-            ),
-          ],
         ],
       ),
     );
   }
 }
 
-/// السعر، المخزون، والكمية — بطاقة خفيفة.
+/// السعر، المخزون، والكمية — بطاقة الشراء الرئيسية بعمق بصري.
 class _ProductCommerceBlock extends ConsumerWidget {
   final Product product;
   final ProductShade? shade;
@@ -661,6 +786,7 @@ class _ProductCommerceBlock extends ConsumerWidget {
     final s = ref.s;
     final price = shade?.price ?? product.price;
     final t = context.worldTheme;
+    final stock = shade?.stock ?? product.stock;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(ProductDetailTheme.padH, ProductDetailTheme.sectionGap, ProductDetailTheme.padH, 0),
@@ -669,58 +795,100 @@ class _ProductCommerceBlock extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            crossAxisAlignment: WrapCrossAlignment.end,
-            spacing: 8,
-            runSpacing: 6,
+          // صف السعر — القيمة الكبيرة مع شريط لوني جانبي يمنحها تسلسلاً هرمياً.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(
-                formatPrice(price),
-                style: AppTypography.priceLarge.copyWith(
-                  fontSize: Responsive.priceDisplaySize(context),
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.6,
-                  color: product.hasDiscount ? AppColors.sale : t.ink,
+              Container(
+                width: 4,
+                height: 34,
+                margin: const EdgeInsetsDirectional.only(end: 10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: product.hasDiscount
+                        ? [AppColors.sale, AppColors.sale.withValues(alpha: 0.35)]
+                        : [t.accent, t.accent.withValues(alpha: 0.35)],
+                  ),
+                  borderRadius: BorderRadius.circular(99),
                 ),
               ),
-              if (product.hasDiscount) ...[
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 3),
-                  child: Text(
-                    formatPrice(product.originalPrice),
-                    style: TextStyle(
-                      color: t.inkMuted,
-                      decoration: TextDecoration.lineThrough,
-                      fontSize: 12.5,
+              Expanded(
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.end,
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    Text(
+                      formatPrice(price),
+                      style: AppTypography.priceLarge.copyWith(
+                        fontSize: Responsive.priceDisplaySize(context),
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.6,
+                        color: product.hasDiscount ? AppColors.sale : t.ink,
+                      ),
                     ),
-                  ),
+                    if (product.hasDiscount) ...[
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          formatPrice(product.originalPrice),
+                          style: TextStyle(
+                            color: t.inkMuted,
+                            decoration: TextDecoration.lineThrough,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.sale.withValues(alpha: 0.14),
+                                AppColors.sale.withValues(alpha: 0.05),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(99),
+                            border: Border.all(color: AppColors.sale.withValues(alpha: 0.35)),
+                          ),
+                          child: Text(
+                            s.savePercent(product.discountPercent),
+                            style: TextStyle(
+                              color: AppColors.sale,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: t.accentLight,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                  child: Text(
-                    s.savePercent(product.discountPercent),
-                    style: TextStyle(
-                      color: t.accentDark,
-                      fontSize: 10,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ],
           ),
-          const SizedBox(height: 12),
-          _StockBadge(stock: shade?.stock ?? product.stock),
-          const SizedBox(height: 14),
+          const SizedBox(height: 13),
           Row(
             children: [
-              Text(s.quantity, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: t.inkSoft)),
+              _StockBadge(stock: stock),
               const Spacer(),
-              _QuantityStepper(quantity: quantity, onChanged: onQuantityChanged),
+              if (stock > 0)
+                Text(
+                  s.quantity,
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: t.inkMuted),
+                ),
+              if (stock > 0) const SizedBox(width: 10),
+              if (stock > 0)
+                QuantityStepper(
+                  quantity: quantity,
+                  onChanged: onQuantityChanged,
+                  max: stock.clamp(1, 99),
+                  compact: true,
+                ),
             ],
           ),
           if (product.pointsEarned > 0) ...[
@@ -729,8 +897,16 @@ class _ProductCommerceBlock extends ConsumerWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
               decoration: BoxDecoration(
-                color: t.accentLight.withValues(alpha: 0.45),
+                gradient: LinearGradient(
+                  begin: AlignmentDirectional.centerStart,
+                  end: AlignmentDirectional.centerEnd,
+                  colors: [
+                    t.accentLight.withValues(alpha: 0.65),
+                    t.accentLight.withValues(alpha: 0.25),
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: t.accentSoft.withValues(alpha: 0.6)),
               ),
               child: Row(
                 children: [
@@ -788,72 +964,9 @@ class _StockBadge extends ConsumerWidget {
   }
 }
 
-class _QuantityStepper extends StatelessWidget {
-  final int quantity;
-  final ValueChanged<int> onChanged;
-  const _QuantityStepper({required this.quantity, required this.onChanged});
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: context.worldTheme.canvasWarm,
-        borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: context.worldTheme.accentSoft.withValues(alpha: 0.8)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _StepBtn(
-            icon: Icons.remove_rounded,
-            enabled: quantity > 1,
-            onTap: () => onChanged(quantity - 1),
-          ),
-          SizedBox(
-            width: 34,
-            child: Text(
-              '$quantity',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-            ),
-          ),
-          _StepBtn(
-            icon: Icons.add_rounded,
-            enabled: true,
-            onTap: () => onChanged(quantity + 1),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
-class _StepBtn extends StatelessWidget {
-  final IconData icon;
-  final bool enabled;
-  final VoidCallback onTap;
-
-  const _StepBtn({required this.icon, required this.enabled, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: enabled ? onTap : null,
-      borderRadius: BorderRadius.circular(12),
-        child: SizedBox(
-          width: 34,
-          height: 34,
-          child: Icon(
-            icon,
-            size: 18,
-            color: enabled ? context.worldTheme.accentDark : context.worldTheme.inkMuted,
-          ),
-        ),
-    );
-  }
-}
-
-/// شريط الثقة — رقائق أفقية خفيفة.
+/// شريط الثقة — رقائق أفقية خفيفة مع دوائر أيقون.
 class _TrustStrip extends ConsumerWidget {
   const _TrustStrip();
 
@@ -865,13 +978,13 @@ class _TrustStrip extends ConsumerWidget {
       child: DecoratedBox(
         decoration: ProductDetailTheme.sectionDecoration(context),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
           child: Row(
             children: [
               Expanded(child: _TrustChip(icon: Icons.verified_outlined, label: s.authentic100)),
-              Container(width: 1, height: 28, color: context.worldTheme.divider),
+              Container(width: 1, height: 34, color: context.worldTheme.divider),
               Expanded(child: _TrustChip(icon: Icons.local_shipping_outlined, label: s.fastDelivery)),
-              Container(width: 1, height: 28, color: context.worldTheme.divider),
+              Container(width: 1, height: 34, color: context.worldTheme.divider),
               Expanded(child: _TrustChip(icon: Icons.payments_outlined, label: s.securePayment)),
             ],
           ),
@@ -888,12 +1001,22 @@ class _TrustChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Column(
         children: [
-          Icon(icon, color: context.worldTheme.accentDark, size: 17),
-          const SizedBox(height: 4),
+          Container(
+            width: 30,
+            height: 30,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: t.accentLight.withValues(alpha: 0.8),
+              border: Border.all(color: t.accentSoft.withValues(alpha: 0.7)),
+            ),
+            child: Icon(icon, color: t.accentDark, size: 15),
+          ),
+          const SizedBox(height: 6),
           Text(
             label,
             textAlign: TextAlign.center,
@@ -902,7 +1025,7 @@ class _TrustChip extends StatelessWidget {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
-              color: context.worldTheme.inkSoft,
+              color: t.inkSoft,
               height: 1.25,
             ),
           ),
@@ -921,13 +1044,13 @@ class _InfoSections extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final lang = ref.watch(languageCodeProvider);
     final s = ref.watch(stringsProvider);
-    final desc = product.localizedDescription(lang);
+    final desc = cleanRichText(product.localizedDescription(lang));
     final sections = <(IconData, String, String)>[
       if (desc.isNotEmpty) (Icons.notes_rounded, s.description, desc),
       if (product.howToUse.isNotEmpty)
-        (Icons.auto_fix_high_rounded, s.howToUse, product.howToUse),
+        (Icons.auto_fix_high_rounded, s.howToUse, cleanRichText(product.howToUse)),
       if (product.ingredients.isNotEmpty)
-        (Icons.science_outlined, s.ingredients, product.ingredients),
+        (Icons.science_outlined, s.ingredients, cleanRichText(product.ingredients)),
     ];
 
     return Column(
@@ -1036,7 +1159,8 @@ class _InfoExpandableState extends State<_InfoExpandable> {
 /// التقييمات — ملخّص واضح + نموذج + قائمة.
 class _ReviewsSection extends ConsumerStatefulWidget {
   final Product product;
-  const _ReviewsSection({required this.product});
+  final String idOrSlug;
+  const _ReviewsSection({required this.product, required this.idOrSlug});
 
   @override
   ConsumerState<_ReviewsSection> createState() => _ReviewsSectionState();
@@ -1067,7 +1191,7 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
             _commentCtrl.text.trim(),
           );
       ref.invalidate(productReviewsProvider(widget.product.id));
-      ref.invalidate(productDetailProvider(widget.product.id));
+      ref.invalidate(productDetailProvider(widget.idOrSlug));
       if (mounted) {
         setState(() {
           _showForm = false;
@@ -1127,30 +1251,39 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
           ],
         ),
         if (product.rating > 0) ...[
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.all(13),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
             decoration: BoxDecoration(
-              color: t.accentLight,
+              gradient: LinearGradient(
+                begin: AlignmentDirectional.centerStart,
+                end: AlignmentDirectional.centerEnd,
+                colors: [
+                  t.accentLight.withValues(alpha: 0.9),
+                  t.canvasWarm,
+                ],
+              ),
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: t.accentSoft),
+              border: Border.all(color: t.accentSoft.withValues(alpha: 0.6)),
             ),
             child: Row(
               children: [
-                Text(
-                  product.rating.toStringAsFixed(1),
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w900,
-                    height: 1,
-                    color: context.worldTheme.ink,
-                  ),
-                ),
-                const SizedBox(width: 12),
                 Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    Text(
+                      product.rating.toStringAsFixed(1),
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w900,
+                        height: 1,
+                        letterSpacing: -0.8,
+                        color: t.ink,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
                     Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         for (var i = 1; i <= 5; i++)
                           Icon(
@@ -1158,16 +1291,36 @@ class _ReviewsSectionState extends ConsumerState<_ReviewsSection> {
                                 ? Icons.star_rounded
                                 : Icons.star_border_rounded,
                             color: AppColors.star,
-                            size: 18,
+                            size: 13,
                           ),
                       ],
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      s.fromReviews(product.reviewCount),
-                      style: TextStyle(fontSize: 11.5, color: context.worldTheme.inkMuted),
-                    ),
                   ],
+                ),
+                const SizedBox(width: 14),
+                Container(width: 1, height: 38, color: t.hairline),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        s.fromReviews(product.reviewCount),
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: t.inkSoft,
+                        ),
+                      ),
+                      if (product.soldCount > 0) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          '${formatNumber(product.soldCount)}+ ${s.sales}',
+                          style: TextStyle(fontSize: 11, color: t.inkMuted, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -1264,53 +1417,69 @@ class _ReviewTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(13),
       decoration: BoxDecoration(
-        color: context.worldTheme.canvas,
-        borderRadius: BorderRadius.circular(13),
+        color: t.canvas,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: t.hairline.withValues(alpha: 0.55)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: context.worldTheme.accentLight,
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      t.accentLight,
+                      Color.lerp(t.accent, t.accentLight, 0.6)!,
+                    ],
+                  ),
+                  border: Border.all(color: t.accentSoft.withValues(alpha: 0.8)),
+                ),
+                alignment: Alignment.center,
                 child: Text(
-                  review.userName.isNotEmpty ? review.userName[0] : '؟',
-                  style: TextStyle(color: context.worldTheme.accent, fontWeight: FontWeight.w800),
+                  review.userName.isNotEmpty ? review.userName[0] : '·',
+                  style: TextStyle(color: t.accentDark, fontWeight: FontWeight.w800, fontSize: 13),
                 ),
               ),
-              const SizedBox(width: 9),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(review.userName,
-                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: t.ink)),
+                    const SizedBox(height: 1),
                     Text(review.dateLabel,
-                        style: TextStyle(fontSize: 11, color: context.worldTheme.inkMuted)),
+                        style: TextStyle(fontSize: 10.5, color: t.inkMuted)),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: t.surface,
                   borderRadius: BorderRadius.circular(AppRadius.pill),
-                  border: Border.all(color: context.worldTheme.hairline, width: 0.7),
+                  border: Border.all(color: t.hairline, width: 0.7),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                 children: [
-                    const Icon(Icons.star_rounded, color: AppColors.star, size: 14),
+                    const Icon(Icons.star_rounded, color: AppColors.star, size: 13),
                     const SizedBox(width: 2),
                     Text(
                       review.rating.toStringAsFixed(1),
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 11.5),
+                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11.5, color: t.ink),
                     ),
                   ],
                 ),
@@ -1318,10 +1487,10 @@ class _ReviewTile extends StatelessWidget {
             ],
           ),
           if (review.comment.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 9),
             Text(review.comment,
                 style: TextStyle(
-                    height: 1.55, color: context.worldTheme.inkSoft, fontSize: 13)),
+                    height: 1.6, color: t.inkSoft, fontSize: 13)),
           ],
         ],
       ),

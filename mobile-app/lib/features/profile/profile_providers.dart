@@ -14,29 +14,32 @@ final ordersProvider = FutureProvider.autoDispose<List<AppOrder>>((ref) async {
   return result.items;
 });
 
-final orderDetailProvider =
-    FutureProvider.family.autoDispose<AppOrder, String>((ref, id) {
-  return ref.read(apiServiceProvider).getOrder(id);
-});
+final orderDetailProvider = FutureProvider.family.autoDispose<AppOrder, String>(
+  (ref, id) {
+    return ref.read(apiServiceProvider).getOrder(id);
+  },
+);
 
-final notificationsProvider =
-    FutureProvider.autoDispose<List<AppNotification>>((ref) {
-  final auth = ref.watch(authProvider);
-  if (!auth.isAuthenticated) return Future.value(const []);
-  return ref.read(apiServiceProvider).getNotifications();
-});
+final notificationsProvider = FutureProvider.autoDispose<List<AppNotification>>(
+  (ref) {
+    final auth = ref.watch(authProvider);
+    if (!auth.isAuthenticated) return Future.value(const []);
+    return ref.read(apiServiceProvider).getNotifications();
+  },
+);
 
 final unreadNotificationsCountProvider = Provider<int>((ref) {
   final auth = ref.watch(authProvider);
   if (!auth.isAuthenticated) return 0;
-  return ref.watch(notificationsProvider).maybeWhen(
+  return ref
+      .watch(notificationsProvider)
+      .maybeWhen(
         data: (list) => list.where((n) => !n.read).length,
         orElse: () => 0,
       );
 });
 
 /// مناطق الشحن (محافظات + مناطق) لاختيار العنوان واحتساب الأجور.
-final shippingZonesProvider =
-    FutureProvider<List<Map<String, dynamic>>>((ref) {
+final shippingZonesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) {
   return ref.read(apiServiceProvider).getShippingZones();
 });

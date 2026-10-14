@@ -1,6 +1,9 @@
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+
+import '../../../core/widgets/app_network_image.dart';
 
 import '../../../core/theme/ad_slots.dart';
 import '../../../data/models/banner.dart';
@@ -20,22 +23,66 @@ List<AppBanner> sectionBanners(HomeSection section) {
       .toList();
 }
 
-class BannerFullSection extends StatelessWidget {
+/// بنر كامل — صورة نقية بلا أي كتابة، بإطار ناعم وظل خفيف بلون العالم.
+/// ارتفاع أهدأ من قبل حتى لا تطغى الصورة على الصفحة.
+class BannerFullSection extends ConsumerWidget {
   final HomeSection section;
   const BannerFullSection({super.key, required this.section});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final list = sectionBanners(section);
     if (list.isEmpty) return const SizedBox.shrink();
+    final banner = list.first;
 
-    return HomeSectionShell(
-      section: section,
-      wrapCard: false,
-      child: HomeBannerStage.fromSection(
-        banner: list.first,
+    if (!banner.hasImage) {
+      return HomeSectionShell(
         section: section,
-        onTap: () => openBannerLink(context, list.first),
+        wrapCard: false,
+        child: HomeBannerStage.fromSection(
+          banner: banner,
+          section: section,
+          onTap: () => openBannerLink(context, banner),
+        ),
+      );
+    }
+
+    final t = context.worldTheme;
+    final layout = resolveBannerLayout(section);
+    final width = MediaQuery.sizeOf(context).width - HomeTheme.paddingH * 2;
+    final aspect = layout.aspect.clamp(2.0, 3.0);
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: HomeTheme.paddingH,
+        vertical: 8,
+      ),
+      child: HomeTapScale(
+        onTap: () => openBannerLink(context, banner),
+        child: Container(
+          width: width,
+          height: width / aspect,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                color: t.accentDark.withValues(alpha: 0.12),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+                spreadRadius: -6,
+              ),
+            ],
+          ),
+          clipBehavior: Clip.antiAlias,
+          foregroundDecoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+          ),
+          child: AppNetworkImage(
+            url: banner.imageUrl,
+            fit: BoxFit.cover,
+            backgroundColor: t.accentLight,
+          ),
+        ),
       ),
     );
   }
@@ -44,7 +91,11 @@ class BannerFullSection extends StatelessWidget {
 class BannerGridSection extends StatelessWidget {
   final HomeSection section;
   final int columns;
-  const BannerGridSection({super.key, required this.section, required this.columns});
+  const BannerGridSection({
+    super.key,
+    required this.section,
+    required this.columns,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -77,7 +128,9 @@ class _PairRow extends StatelessWidget {
     final sectionLayout = section.sectionLayout;
     final asymmetric = sectionLayout == 'asymmetric';
     final gap = 10.0;
-    final pad = resolveBannerLayout(section).fullBleed ? 0.0 : HomeTheme.paddingH * 2;
+    final pad = resolveBannerLayout(section).fullBleed
+        ? 0.0
+        : HomeTheme.paddingH * 2;
     final totalW = MediaQuery.sizeOf(context).width - pad;
 
     if (asymmetric && banners.length >= 2) {

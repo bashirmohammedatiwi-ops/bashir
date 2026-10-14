@@ -8,11 +8,13 @@ import '../../features/auth/auth_provider.dart';
 import '../../core/navigation/app_navigation.dart';
 import '../../features/cart/cart_provider.dart';
 import '../../features/wishlist/wishlist_provider.dart';
+import '../../features/worlds/world_theme.dart';
 import '../l10n/app_strings.dart';
 import '../theme/app_colors.dart';
+import '../theme/app_text.dart';
 import 'app_snackbar.dart';
 
-/// زر المفضلة على بطاقة المنتج.
+/// زر المفضلة على بطاقة المنتج — قلب وردي ينبض عند الإضافة.
 class ProductCardWishButton extends ConsumerWidget {
   final Product product;
   final double size;
@@ -25,43 +27,65 @@ class ProductCardWishButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final wished = ref.watch(wishlistProvider.select((s) => s.ids.contains(product.id)));
+    final wished = ref.watch(
+      wishlistProvider.select((s) => s.ids.contains(product.id)),
+    );
+    final t = context.worldTheme;
+    final s = ref.s;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        customBorder: const CircleBorder(),
+    return Semantics(
+      button: true,
+      toggled: wished,
+      label: s.isAr ? 'المفضلة' : 'Wishlist',
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onTap: () async {
-          HapticFeedback.selectionClick();
+          HapticFeedback.lightImpact();
           if (!ref.read(authProvider).isAuthenticated) {
             context.push('/login');
             return;
           }
           await ref.read(wishlistProvider.notifier).toggle(product);
         },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
-            border: Border.all(
-              color: wished ? AppColors.primary.withValues(alpha: 0.35) : const Color(0xFFE5E0EC),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.ink.withValues(alpha: 0.06),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+        // مساحة لمس أوسع من الشكل المرئي.
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: t.surface.withValues(alpha: 0.94),
+              border: Border.all(
+                color: wished
+                    ? AppColors.sale.withValues(alpha: 0.35)
+                    : t.hairline.withValues(alpha: 0.8),
               ),
-            ],
-          ),
-          child: Icon(
-            wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-            size: size * 0.47,
-            color: wished ? AppColors.primary : AppColors.textMuted,
+              boxShadow: [
+                BoxShadow(
+                  color: t.ink.withValues(alpha: 0.06),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 260),
+              transitionBuilder: (child, a) => ScaleTransition(
+                scale: Tween(begin: 0.4, end: 1.0).animate(
+                  CurvedAnimation(parent: a, curve: Curves.easeOutBack),
+                ),
+                child: child,
+              ),
+              child: Icon(
+                wished ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                key: ValueKey(wished),
+                size: size * 0.5,
+                color: wished ? AppColors.sale : t.inkSoft,
+              ),
+            ),
           ),
         ),
       ),
@@ -73,6 +97,7 @@ class ProductCardWishButton extends ConsumerWidget {
 enum ProductCardCartStyle {
   /// عدّاد + / − (صفحات المنتجات والقوائم).
   stepper,
+
   /// زر ثابت + شارة العدد (الرئيسية فقط).
   homeBadge,
 }
@@ -103,16 +128,17 @@ class ProductCardCartControl extends ConsumerWidget {
   }
 
   void _openProduct(BuildContext context) {
-    context.push('/product/${product.slug.isNotEmpty ? product.slug : product.id}');
+    context.push(
+      '/product/${product.slug.isNotEmpty ? product.slug : product.id}',
+    );
   }
 
   void _addFirst(BuildContext context, WidgetRef ref) {
     final s = ref.s;
-    HapticFeedback.lightImpact();
-    ref.read(cartProvider.notifier).add(
-          product,
-          shade: product.soleDisplayableShade,
-        );
+    HapticFeedback.mediumImpact();
+    ref
+        .read(cartProvider.notifier)
+        .add(product, shade: product.soleDisplayableShade);
     AppSnackbar.cartAdded(
       context,
       title: s.addedToCart,
@@ -123,16 +149,23 @@ class ProductCardCartControl extends ConsumerWidget {
     );
   }
 
+  void _increment(BuildContext context, WidgetRef ref) {
+    HapticFeedback.selectionClick();
+    final ok = ref.read(cartProvider.notifier).incrementProduct(product);
+    if (!ok && context.mounted)
+      AppSnackbar.show(context, ref.read(stringsProvider).maxStockReached);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!product.inStock) {
-      return _DisabledCartButton(compact: compact);
-    }
+    final side = compact ? 34.0 : 36.0;
+    if (!product.inStock) return const SizedBox.shrink();
 
-    final hasShades = product.hasDisplayableShades;
-    if (hasShades) {
-      return _AddCartButton(
-        compact: compact,
+    // المنتجات ذات الدرجات تحتاج اختيار درجة — نفتح صفحة المنتج.
+    if (product.hasDisplayableShades) {
+      return _RoundCartButton(
+        side: side,
+        icon: Icons.palette_outlined,
         onTap: () {
           HapticFeedback.lightImpact();
           _openProduct(context);
@@ -142,41 +175,23 @@ class ProductCardCartControl extends ConsumerWidget {
 
     final qty = ref.watch(cartProvider.select(_qty));
 
-    if (style == ProductCardCartStyle.homeBadge) {
-      return _HomeBadgeCartButton(
-        compact: compact,
-        quantity: qty,
-        onTap: () {
-          if (qty <= 0) {
-            _addFirst(context, ref);
-            return;
-          }
-          HapticFeedback.selectionClick();
-          final ok = ref.read(cartProvider.notifier).incrementProduct(product);
-          if (!ok && context.mounted) {
-            AppSnackbar.show(context, 'وصلت للحد الأقصى للمخزون');
-          }
-        },
+    if (style == ProductCardCartStyle.homeBadge || qty <= 0) {
+      return _RoundCartButton(
+        side: side,
+        icon: qty > 0
+            ? Icons.shopping_bag_rounded
+            : Icons.add_shopping_cart_rounded,
+        filled: qty > 0,
+        badge: style == ProductCardCartStyle.homeBadge ? qty : 0,
+        onTap: () =>
+            qty <= 0 ? _addFirst(context, ref) : _increment(context, ref),
       );
     }
 
-    if (qty <= 0) {
-      return _AddCartButton(
-        compact: compact,
-        onTap: () => _addFirst(context, ref),
-      );
-    }
-
-    return _CartQtyStepper(
-      compact: compact,
+    return _CartQtyPill(
+      height: side,
       quantity: qty,
-      onIncrement: () {
-        HapticFeedback.selectionClick();
-        final ok = ref.read(cartProvider.notifier).incrementProduct(product);
-        if (!ok && context.mounted) {
-          AppSnackbar.show(context, 'وصلت للحد الأقصى للمخزون');
-        }
-      },
+      onIncrement: () => _increment(context, ref),
       onDecrement: () {
         HapticFeedback.selectionClick();
         ref.read(cartProvider.notifier).decrementProduct(product.id);
@@ -185,64 +200,68 @@ class ProductCardCartControl extends ConsumerWidget {
   }
 }
 
-class _HomeBadgeCartButton extends StatelessWidget {
-  final bool compact;
-  final int quantity;
+class _RoundCartButton extends StatelessWidget {
+  final double side;
+  final IconData icon;
+  final bool filled;
+  final int badge;
   final VoidCallback onTap;
 
-  const _HomeBadgeCartButton({
-    required this.compact,
-    required this.quantity,
+  const _RoundCartButton({
+    required this.side,
+    required this.icon,
     required this.onTap,
+    this.filled = false,
+    this.badge = 0,
   });
 
   @override
   Widget build(BuildContext context) {
-    final side = compact ? 36.0 : 38.0;
-    final radius = compact ? 11.0 : 12.0;
-    final inCart = quantity > 0;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(radius),
+    final t = context.worldTheme;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(4),
         child: Stack(
           clipBehavior: Clip.none,
           children: [
             AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
+              duration: const Duration(milliseconds: 200),
               curve: Curves.easeOutCubic,
               width: side,
               height: side,
               decoration: BoxDecoration(
-                color: inCart ? AppColors.primary : AppColors.elevated,
-                borderRadius: BorderRadius.circular(radius),
+                shape: BoxShape.circle,
+                color: filled ? t.accent : t.surface,
                 border: Border.all(
-                  color: inCart ? AppColors.primary : AppColors.hairline.withValues(alpha: 0.75),
+                  color: filled ? t.accent : t.hairline.withValues(alpha: 0.9),
                 ),
-                boxShadow: compact
-                    ? [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: inCart ? 0.12 : 0.06),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
+                boxShadow: [
+                  BoxShadow(
+                    color: (filled ? t.accent : t.ink).withValues(
+                      alpha: filled ? 0.28 : 0.07,
+                    ),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
               child: Icon(
-                Icons.shopping_bag_outlined,
-                color: inCart ? Colors.white : AppColors.textSecondary,
-                size: compact ? 17 : 18,
+                icon,
+                size: side * 0.5,
+                color: filled ? Colors.white : t.accentDark,
               ),
             ),
-            if (inCart)
-              Positioned(
-                top: -5,
-                right: -5,
+            if (badge > 0)
+              PositionedDirectional(
+                top: -4,
+                end: -4,
                 child: Container(
-                  constraints: const BoxConstraints(minWidth: 17, minHeight: 17),
+                  constraints: const BoxConstraints(
+                    minWidth: 17,
+                    minHeight: 17,
+                  ),
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
@@ -251,11 +270,10 @@ class _HomeBadgeCartButton extends StatelessWidget {
                     border: Border.all(color: Colors.white, width: 1.5),
                   ),
                   child: Text(
-                    quantity > 99 ? '99+' : '$quantity',
-                    style: const TextStyle(
+                    badge > 99 ? '99+' : '$badge',
+                    style: AppText.micro.copyWith(
                       color: Colors.white,
                       fontSize: 9.5,
-                      fontWeight: FontWeight.w900,
                       height: 1,
                     ),
                   ),
@@ -268,178 +286,71 @@ class _HomeBadgeCartButton extends StatelessWidget {
   }
 }
 
-class _AddCartButton extends StatelessWidget {
-  final VoidCallback onTap;
-  final bool compact;
-
-  const _AddCartButton({required this.onTap, this.compact = false});
-
-  static const _bg = AppColors.elevated;
-  static const _icon = AppColors.textSecondary;
-
-  @override
-  Widget build(BuildContext context) {
-    final side = compact ? 36.0 : 38.0;
-    final radius = compact ? 11.0 : 12.0;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(radius),
-        child: Ink(
-          width: side,
-          height: side,
-          decoration: BoxDecoration(
-            color: _bg,
-            borderRadius: BorderRadius.circular(radius),
-            border: Border.all(color: AppColors.hairline.withValues(alpha: 0.75)),
-          ),
-          child: Icon(
-            Icons.shopping_bag_outlined,
-            color: _icon,
-            size: compact ? 17 : 18,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DisabledCartButton extends StatelessWidget {
-  final bool compact;
-
-  const _DisabledCartButton({this.compact = false});
-
-  @override
-  Widget build(BuildContext context) {
-    final side = compact ? 36.0 : 38.0;
-    final radius = compact ? 11.0 : 12.0;
-    return Container(
-      width: side,
-      height: side,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: AppColors.primarySoft,
-        borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: AppColors.hairline.withValues(alpha: 0.6)),
-      ),
-      child: Icon(
-        Icons.shopping_bag_outlined,
-        size: compact ? 16 : 17,
-        color: AppColors.textMuted,
-      ),
-    );
-  }
-}
-
-class _CartQtyStepper extends StatelessWidget {
+/// عدّاد الكمية على البطاقة بعد الإضافة — حبة ممتلئة بلون العالم.
+class _CartQtyPill extends StatelessWidget {
+  final double height;
   final int quantity;
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
-  final bool compact;
 
-  const _CartQtyStepper({
+  const _CartQtyPill({
+    required this.height,
     required this.quantity,
     required this.onIncrement,
     required this.onDecrement,
-    this.compact = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final height = compact ? 34.0 : 36.0;
-    final radius = compact ? 11.0 : 12.0;
-
-    return Container(
-      height: height,
-      constraints: BoxConstraints(minWidth: compact ? 78 : 96),
-      decoration: BoxDecoration(
-        color: AppColors.elevated,
-        borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: AppColors.hairline.withValues(alpha: 0.8)),
-        boxShadow: compact
-            ? [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.06),
-                  blurRadius: 4,
-                  offset: const Offset(0, 1),
-                ),
-              ]
-            : null,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _StepIconButton(
-            icon: Icons.remove_rounded,
-            onTap: onDecrement,
-            size: height,
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2),
-            child: Text(
-              '$quantity',
-              style: TextStyle(
-                fontSize: compact ? 13 : 14,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-                height: 1,
-              ),
-            ),
-          ),
-          _StepIconButton(
-            icon: Icons.add_rounded,
-            onTap: onIncrement,
-            size: height,
-            filled: true,
-          ),
-        ],
+    final t = context.worldTheme;
+    Widget btn(IconData icon, VoidCallback onTap) => GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: SizedBox(
+        width: height + 4,
+        height: height,
+        child: Icon(icon, size: 17, color: Colors.white),
       ),
     );
-  }
-}
-
-class _StepIconButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  final double size;
-  final bool filled;
-
-  const _StepIconButton({
-    required this.icon,
-    required this.onTap,
-    required this.size,
-    this.filled = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const CircleBorder(),
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Center(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 150),
-              width: filled ? size - 6 : size - 8,
-              height: filled ? size - 6 : size - 8,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                color: filled ? AppColors.primaryDark : Colors.transparent,
-                border: filled ? null : Border.all(color: AppColors.hairline),
-              ),
-              child: Icon(
-                icon,
-                size: filled ? 16 : 15,
-                color: filled ? Colors.white : AppColors.textSecondary,
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Container(
+        height: height,
+        decoration: BoxDecoration(
+          color: t.accent,
+          borderRadius: BorderRadius.circular(999),
+          boxShadow: [
+            BoxShadow(
+              color: t.accent.withValues(alpha: 0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            btn(
+              quantity <= 1
+                  ? Icons.delete_outline_rounded
+                  : Icons.remove_rounded,
+              onDecrement,
+            ),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 160),
+              transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
+              child: Text(
+                '$quantity',
+                key: ValueKey(quantity),
+                style: AppText.label.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  height: 1,
+                ),
               ),
             ),
-          ),
+            btn(Icons.add_rounded, onIncrement),
+          ],
         ),
       ),
     );

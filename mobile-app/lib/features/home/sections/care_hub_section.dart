@@ -18,7 +18,11 @@ enum _CareHubTab { concerns, routine, categories, products }
 class CareHubSection extends ConsumerStatefulWidget {
   final HomeSection section;
   final bool compactTop;
-  const CareHubSection({super.key, required this.section, this.compactTop = false});
+  const CareHubSection({
+    super.key,
+    required this.section,
+    this.compactTop = false,
+  });
 
   @override
   ConsumerState<CareHubSection> createState() => _CareHubSectionState();
@@ -29,7 +33,12 @@ class _CareHubSectionState extends ConsumerState<CareHubSection> {
 
   HomeSection get _section => widget.section;
 
-  List<_CareHubTab> _tabs(bool hasConcerns, bool hasPackages, bool hasCategories, bool hasProducts) {
+  List<_CareHubTab> _tabs(
+    bool hasConcerns,
+    bool hasPackages,
+    bool hasCategories,
+    bool hasProducts,
+  ) {
     final tabs = <_CareHubTab>[];
     if (hasConcerns) tabs.add(_CareHubTab.concerns);
     if (hasPackages) tabs.add(_CareHubTab.routine);
@@ -39,11 +48,11 @@ class _CareHubSectionState extends ConsumerState<CareHubSection> {
   }
 
   String _tabLabel(AppStrings s, _CareHubTab tab) => switch (tab) {
-        _CareHubTab.concerns => s.careTabConcerns,
-        _CareHubTab.routine => s.careTabRoutine,
-        _CareHubTab.categories => s.careTabCategories,
-        _CareHubTab.products => s.careTabProducts,
-      };
+    _CareHubTab.concerns => s.careTabConcerns,
+    _CareHubTab.routine => s.careTabRoutine,
+    _CareHubTab.categories => s.careTabCategories,
+    _CareHubTab.products => s.careTabProducts,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +80,9 @@ class _CareHubSectionState extends ConsumerState<CareHubSection> {
               height: 40,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.screenH),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.screenH,
+                ),
                 itemCount: tabs.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder: (_, i) {

@@ -12,6 +12,7 @@ import '../../../core/widgets/language_toggle_bar.dart';
 import '../auth_provider.dart';
 import '../widgets/auth_shell.dart';
 import '../../profile/widgets/profile_ui.dart';
+import '../../worlds/world_theme.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -38,13 +39,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     HapticFeedback.lightImpact();
     setState(() => _loading = true);
     try {
-      await ref.read(authProvider.notifier).login(_phone.text.trim(), _password.text);
+      await ref
+          .read(authProvider.notifier)
+          .login(_phone.text.trim(), _password.text);
       if (mounted) {
         HapticFeedback.mediumImpact();
         context.pop();
       }
     } catch (e) {
-      if (mounted) AppSnackbar.error(context, friendlyError(e, lang: ref.read(languageCodeProvider)));
+      if (mounted) {
+        AppSnackbar.error(
+          context,
+          friendlyError(e, lang: ref.read(languageCodeProvider)),
+        );
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -56,6 +64,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return AuthShell(
       title: s.login,
       subtitle: s.loginPhoneSubtitle,
+      eyebrow: s.welcomeBack,
       onBack: () => context.pop(),
       footer: ProfileLinkRow(
         prefix: s.noAccountYet,
@@ -74,11 +83,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 keyboardType: TextInputType.phone,
                 textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.telephoneNumber],
-                decoration: authFieldDecoration(label: s.phoneNumber, hint: '07701234567'),
+                decoration: authFieldDecoration(
+                  context,
+                  label: s.phoneNumber,
+                  hint: '07701234567',
+                  icon: Icons.phone_iphone_rounded,
+                ),
                 validator: (v) => validateIraqiPhone(v),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             authLabeledField(
               label: s.password,
               field: TextFormField(
@@ -88,18 +102,27 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 autofillHints: const [AutofillHints.password],
                 onFieldSubmitted: (_) => _submit(),
                 decoration: authFieldDecoration(
+                  context,
                   label: s.password,
-                  suffix: IconButton(
-                    icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                    onPressed: () => setState(() => _obscure = !_obscure),
+                  icon: Icons.lock_outline_rounded,
+                  suffix: AuthPasswordToggle(
+                    obscured: _obscure,
+                    onToggle: () => setState(() => _obscure = !_obscure),
                   ),
                 ),
-                validator: (v) => (v == null || v.length < 6) ? s.passwordMin6 : null,
+                validator: (v) =>
+                    (v == null || v.length < 6) ? s.passwordMin6 : null,
               ),
             ),
-            const SizedBox(height: 28),
-            authPrimaryButton(label: s.login, onPressed: _loading ? null : _submit, loading: _loading),
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
+            authPrimaryButton(
+              label: s.login,
+              onPressed: _loading ? null : _submit,
+              loading: _loading,
+            ),
+            const SizedBox(height: 22),
+            Divider(height: 1, color: context.worldTheme.divider),
+            const SizedBox(height: 18),
             const LanguageToggleBar(embedded: true, showLabel: true),
           ],
         ),

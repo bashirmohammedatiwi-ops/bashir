@@ -61,6 +61,15 @@ Category? _findInChildren(List<Category> nodes, String id) {
   return null;
 }
 
+/// القسم الرئيسي (الجذر) الذي ينتمي إليه قسم ما في الشجرة.
+Category? findRootCategory(List<Category> roots, String id) {
+  for (final root in roots) {
+    if (root.id == id) return root;
+    if (findCategoryById([root], id) != null) return root;
+  }
+  return null;
+}
+
 /// أبناء القسم المعروض في صفحة المنتجات (فرعي عند رئيسي، ثانوي عند فرعي).
 List<Category> listingChildCategories(
   List<Category> roots, {

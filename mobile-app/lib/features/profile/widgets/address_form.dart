@@ -1,31 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_strings.dart';
 import '../../../core/utils/json.dart';
+import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/address.dart';
-import '../../cart/widgets/cart_theme.dart';
 import '../profile_providers.dart';
+import 'account_strings.dart';
+import 'account_theme.dart';
 import 'profile_ui.dart';
+import '../../../features/worlds/world_theme.dart';
 
-/// نموذج إضافة/تعديل عنوان داخل ورقة سفلية. يعيد Address عند الحفظ.
+/// نموذج إضافة/تعديل عنوان داخل الورقة السفلية الموحّدة. يعيد Address عند الحفظ.
 Future<Address?> showAddressForm(BuildContext context, {Address? initial}) {
-  return showModalBottomSheet<Address>(
+  final s = ProviderScope.containerOf(
+    context,
+    listen: false,
+  ).read(stringsProvider);
+  final formKey = GlobalKey<_AddressFormState>();
+  return showAppSheet<Address>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: ProfileUi.bg,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (_) => Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: _AddressForm(initial: initial),
+    title: initial == null ? s.newAddress : s.acctEditAddress,
+    expand: true,
+    builder: (_) => _AddressForm(key: formKey, initial: initial),
+    footer: ProfilePrimaryButton(
+      label: s.acctSaveAddress,
+      icon: Icons.check_rounded,
+      onPressed: () => formKey.currentState?._save(),
     ),
   );
 }
 
 class _AddressForm extends ConsumerStatefulWidget {
   final Address? initial;
-  const _AddressForm({this.initial});
+  const _AddressForm({super.key, this.initial});
   @override
   ConsumerState<_AddressForm> createState() => _AddressFormState();
 }
@@ -65,113 +73,183 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
     super.dispose();
   }
 
+  AppStrings get _s => ref.watch(stringsProvider);
+
   @override
   Widget build(BuildContext context) {
     final zones = ref.watch(shippingZonesProvider);
+    final s = _s;
+    final t = context.worldTheme;
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 16, ProfileUi.hPad, 16),
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  widget.initial == null ? 'عنوان جديد' : 'تعديل العنوان',
-                  textAlign: TextAlign.center,
-                  style: ProfileUi.titleStyle(context),
-                ),
-                const SizedBox(height: 20),
-                ProfileFieldLabel('الاسم الكامل'),
-                TextFormField(
-                  controller: _name,
-                  decoration: profileFieldDecoration(hint: 'الاسم الكامل'),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'مطلوب' : null,
-                ),
-                const SizedBox(height: 16),
-                ProfileFieldLabel('رقم الهاتف'),
-                TextFormField(
-                  controller: _phone,
-                  keyboardType: TextInputType.phone,
-                  decoration: profileFieldDecoration(hint: '07XXXXXXXXX'),
-                  validator: (v) => (v == null || v.trim().length < 7) ? 'رقم غير صحيح' : null,
-                ),
-                const SizedBox(height: 16),
-                zones.when(
-                  loading: () => const LinearProgressIndicator(color: CartTheme.brand),
-                  error: (_, __) => _governorateText(),
-                  data: (list) => _governorateDropdown(list),
-                ),
-                const SizedBox(height: 16),
-                ProfileFieldLabel('الشارع / أقرب نقطة دالة'),
-                TextFormField(
-                  controller: _street,
-                  decoration: profileFieldDecoration(),
-                ),
-                const SizedBox(height: 16),
-                ProfileFieldLabel('رقم المنزل / الشقة'),
-                TextFormField(
-                  controller: _house,
-                  decoration: profileFieldDecoration(),
-                ),
-                const SizedBox(height: 16),
-                ProfileFieldLabel('ملاحظات', optional: true),
-                TextFormField(
-                  controller: _notes,
-                  decoration: profileFieldDecoration(hint: 'ملاحظات'),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  activeTrackColor: CartTheme.brand.withValues(alpha: 0.35),
-                  activeThumbColor: CartTheme.brand,
-                  value: _isDefault,
-                  title: Text('تعيين كعنوان افتراضي', style: ProfileUi.bodyStyle()),
-                  onChanged: (v) => setState(() => _isDefault = v),
-                ),
-                const SizedBox(height: 12),
-                ProfilePrimaryButton(label: 'حفظ العنوان', onPressed: _save),
-              ],
+    return Form(
+      key: _formKey,
+      child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: const EdgeInsets.fromLTRB(
+          ProfileUi.hPad,
+          8,
+          ProfileUi.hPad,
+          20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            ProfileSectionTitle(
+              s.acctRecipient,
+              icon: Icons.person_outline_rounded,
             ),
-          ),
+            ProfileFieldLabel(s.fullName),
+            TextFormField(
+              controller: _name,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.name],
+              decoration: profileFieldDecoration(context, hint: s.fullName),
+              validator: (v) =>
+                  (v == null || v.trim().isEmpty) ? s.acctRequired : null,
+            ),
+            const SizedBox(height: 14),
+            ProfileFieldLabel(s.phoneNumber),
+            TextFormField(
+              controller: _phone,
+              keyboardType: TextInputType.phone,
+              textInputAction: TextInputAction.next,
+              autofillHints: const [AutofillHints.telephoneNumber],
+              decoration: profileFieldDecoration(context, hint: '07XXXXXXXXX'),
+              validator: (v) => (v == null || v.trim().length < 7)
+                  ? s.acctInvalidPhone
+                  : null,
+            ),
+            const SizedBox(height: 22),
+            ProfileSectionTitle(
+              s.acctLocation,
+              icon: Icons.location_on_outlined,
+            ),
+            zones.when(
+              loading: () => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: LinearProgressIndicator(
+                  color: t.accent,
+                  backgroundColor: t.accentSoft,
+                  borderRadius: BorderRadius.circular(AppCorners.pill),
+                ),
+              ),
+              error: (_, __) => _governorateText(),
+              data: (list) => _governorateDropdown(list),
+            ),
+            const SizedBox(height: 14),
+            ProfileFieldLabel(s.acctStreet),
+            TextFormField(
+              controller: _street,
+              textInputAction: TextInputAction.next,
+              decoration: profileFieldDecoration(context),
+            ),
+            const SizedBox(height: 14),
+            ProfileFieldLabel(s.acctHouse),
+            TextFormField(
+              controller: _house,
+              textInputAction: TextInputAction.next,
+              decoration: profileFieldDecoration(context),
+            ),
+            const SizedBox(height: 14),
+            ProfileFieldLabel(s.acctNotes, optional: true),
+            TextFormField(
+              controller: _notes,
+              minLines: 1,
+              maxLines: 3,
+              textInputAction: TextInputAction.done,
+              decoration: profileFieldDecoration(context),
+            ),
+            const SizedBox(height: 18),
+            Container(
+              decoration: BoxDecoration(
+                color: _isDefault ? t.accentLight : t.surface,
+                borderRadius: BorderRadius.circular(AppCorners.md),
+                border: Border.all(
+                  color: _isDefault ? t.accentSoft : t.hairline,
+                ),
+              ),
+              child: SwitchListTile.adaptive(
+                contentPadding: const EdgeInsetsDirectional.fromSTEB(
+                  14,
+                  4,
+                  8,
+                  4,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(AppCorners.md),
+                ),
+                value: _isDefault,
+                secondary: AccountTheme.iconTile(
+                  context,
+                  Icons.home_outlined,
+                  size: 36,
+                ),
+                title: Text(
+                  s.setDefaultAddress,
+                  style: AppText.title3.copyWith(
+                    color: t.ink,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  s.acctDefaultHint,
+                  style: ProfileUi.captionStyle(context),
+                ),
+                onChanged: (v) => setState(() => _isDefault = v),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   Widget _governorateDropdown(List<Map<String, dynamic>> zones) {
-    final govs = zones.map((z) => asString(z['governorate'])).where((e) => e.isNotEmpty).toList();
+    final govs = zones
+        .map((z) => asString(z['governorate']))
+        .where((e) => e.isNotEmpty)
+        .toList();
     final selectedZone = zones.firstWhere(
       (z) => asString(z['governorate']) == _governorate,
       orElse: () => const {},
     );
-    final areas = asList(selectedZone['areas']).map((a) => asString(a['name'])).toList();
+    final areas = asList(
+      selectedZone['areas'],
+    ).map((a) => asString(a['name'])).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ProfileFieldLabel('المحافظة'),
+        ProfileFieldLabel(_s.acctGovernorate),
         DropdownButtonFormField<String>(
           initialValue: govs.contains(_governorate) ? _governorate : null,
           isExpanded: true,
-          decoration: profileFieldDecoration(),
-          items: [for (final g in govs) DropdownMenuItem(value: g, child: Text(g))],
-          validator: (v) => (v == null || v.isEmpty) ? 'اختر المحافظة' : null,
+          decoration: profileFieldDecoration(context),
+          borderRadius: BorderRadius.circular(AppCorners.md),
+          items: [
+            for (final g in govs) DropdownMenuItem(value: g, child: Text(g)),
+          ],
+          hint: Text(_s.acctChooseGovernorate),
+          validator: (v) =>
+              (v == null || v.isEmpty) ? _s.acctChooseGovernorate : null,
           onChanged: (v) => setState(() {
             _governorate = v;
             _area = null;
           }),
         ),
         if (areas.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          ProfileFieldLabel('المنطقة'),
+          const SizedBox(height: 14),
+          ProfileFieldLabel(_s.acctArea),
           DropdownButtonFormField<String>(
             initialValue: areas.contains(_area) ? _area : null,
             isExpanded: true,
-            decoration: profileFieldDecoration(),
-            items: [for (final a in areas) DropdownMenuItem(value: a, child: Text(a))],
+            hint: Text(_s.acctChooseArea),
+            decoration: profileFieldDecoration(context),
+            borderRadius: BorderRadius.circular(AppCorners.md),
+            items: [
+              for (final a in areas) DropdownMenuItem(value: a, child: Text(a)),
+            ],
             onChanged: (v) => setState(() => _area = v),
           ),
         ],
@@ -183,11 +261,12 @@ class _AddressFormState extends ConsumerState<_AddressForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ProfileFieldLabel('المحافظة / المدينة'),
+        ProfileFieldLabel(_s.acctGovernorateCity),
         TextFormField(
           initialValue: _governorate,
-          decoration: profileFieldDecoration(),
-          validator: (v) => (v == null || v.trim().isEmpty) ? 'مطلوب' : null,
+          decoration: profileFieldDecoration(context),
+          validator: (v) =>
+              (v == null || v.trim().isEmpty) ? _s.acctRequired : null,
           onChanged: (v) => _governorate = v,
         ),
       ],

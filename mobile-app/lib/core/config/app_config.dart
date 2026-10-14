@@ -114,7 +114,7 @@ class AppConfig {
       value.replaceAll(RegExp(r'/+$'), '');
 
   static const String storeNameAr = 'ديما الحياة';
-  static const String storeNameEn = 'deema alhayat';
+  static const String storeNameEn = 'Deema Alhayat';
   static const String storeName = storeNameAr;
 
   static String displayStoreName(String lang) =>

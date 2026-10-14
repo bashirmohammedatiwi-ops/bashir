@@ -24,7 +24,9 @@ String? resolveDeepLink(Uri uri) {
       return '/offers';
     case '/categories':
     case '/categories-tab':
-      return '/categories-tab';
+      // نُبقي المسار كما هو (مثل /offers) — الموجّه يفتح تبويب الأقسام مباشرة.
+      // تحويله إلى مسار آخر أولاً كان ينتهي بصفحة "غير موجودة".
+      return path;
     case '/brands':
       return '/brands';
     case '/cart':

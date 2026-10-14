@@ -64,7 +64,10 @@ class _CircleTileState extends State<CircleTile> {
                 child: Padding(
                   padding: const EdgeInsets.all(2),
                   child: ClipOval(
-                    child: _CircleContent(imageUrl: widget.imageUrl, icon: widget.icon),
+                    child: _CircleContent(
+                      imageUrl: widget.imageUrl,
+                      icon: widget.icon,
+                    ),
                   ),
                 ),
               ),
@@ -98,7 +101,9 @@ class _CircleContent extends StatelessWidget {
     }
     final emoji = icon?.trim();
     if (emoji != null && emoji.isNotEmpty) {
-      return Center(child: Text(emoji, style: const TextStyle(fontSize: 22, height: 1)));
+      return Center(
+        child: Text(emoji, style: const TextStyle(fontSize: 22, height: 1)),
+      );
     }
     return Icon(Icons.spa_outlined, color: t.accent, size: 24);
   }

@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'app_colors.dart';
 
-/// خط التطبيق كله. تغييره هنا يغيّر كل الشاشات.
+/// خط التطبيق كله (IBM Plex Sans Arabic — راقٍ وهادئ). تغييره هنا يغيّر كل الشاشات.
 /// نستدعي الخط بالاسم مباشرة: البحث بالاسم يدخل كتالوج Google Fonts كله للتطبيق ويكبّره.
 TextStyle appFont({
   TextStyle? textStyle,
@@ -18,7 +18,7 @@ TextStyle appFont({
   List<Shadow>? shadows,
   List<FontFeature>? fontFeatures,
 }) {
-  return GoogleFonts.tajawal(
+  return GoogleFonts.ibmPlexSansArabic(
     fontFeatures: fontFeatures,
     textStyle: textStyle,
     color: color,
@@ -33,18 +33,21 @@ TextStyle appFont({
   );
 }
 
-TextTheme appTextTheme(TextTheme base) => GoogleFonts.tajawalTextTheme(base);
+TextTheme appTextTheme(TextTheme base) =>
+    GoogleFonts.ibmPlexSansArabicTextTheme(base);
 
 /// تحميل الخطوط مسبقاً لتجنب وميض تغيّر الخط عند فتح التطبيق أو تبديل اللغة.
 Future<void> preloadAppFonts() {
   return GoogleFonts.pendingFonts([
     appFont(),
     appFont(fontWeight: FontWeight.w500),
+    appFont(fontWeight: FontWeight.w600),
     appFont(fontWeight: FontWeight.w700),
-    appFont(fontWeight: FontWeight.w800),
     GoogleFonts.elMessiri(fontWeight: FontWeight.w700),
     GoogleFonts.cormorantGaramond(fontWeight: FontWeight.w600),
     GoogleFonts.cormorantGaramond(fontWeight: FontWeight.w700),
+    // الاسم الإنجليزي في شاشة الافتتاح.
+    GoogleFonts.cinzel(fontWeight: FontWeight.w500),
   ]);
 }
 

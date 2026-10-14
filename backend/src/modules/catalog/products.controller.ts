@@ -39,6 +39,16 @@ export class ProductsController {
     return this.products.searchStorefront(q ?? "", take, !isAdminViewRequest(req));
   }
 
+  // اقتراحات حية أثناء الكتابة — منتجات + براندات + أقسام
+  @Public()
+  @Get("search/suggest")
+  suggest(
+    @Query("q") q: string,
+    @Query("lang") lang?: string,
+  ) {
+    return this.products.suggest(q ?? "", lang === "en" ? "en" : "ar");
+  }
+
   // بحث منتج بالباركود للمتجر — يجب أن يسبق مسار :idOrSlug
   @Public()
   @Get("lookup/barcode")

@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
+import '../../core/push/push_service.dart';
 import '../../core/utils/form_scroll.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/friendly_error.dart';
@@ -28,7 +31,8 @@ import '../profile/profile_providers.dart';
 import 'widgets/checkout_delivery_card.dart';
 import 'widgets/checkout_header.dart';
 import 'widgets/checkout_sections.dart';
-import 'widgets/checkout_theme.dart';
+import '../cart/widgets/pill_buttons.dart';
+import '../worlds/world_theme.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -43,6 +47,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _phoneFieldKey = GlobalKey();
   final _locationFieldKey = GlobalKey();
   final _streetFieldKey = GlobalKey();
+  final _deliverySectionKey = GlobalKey();
+  final _paymentSectionKey = GlobalKey();
+  final _summarySectionKey = GlobalKey();
+  final _activeStep = ValueNotifier<int>(0);
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _streetCtrl = TextEditingController();
@@ -77,11 +85,39 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       }
       _maybeBootstrap();
     });
+    _scrollCtrl.addListener(_syncActiveStep);
+  }
+
+  /// يحدّث مؤشّر الخطوات حسب القسم الظاهر حالياً — واجهة فقط.
+  void _syncActiveStep() {
+    if (!_scrollCtrl.hasClients) return;
+    final pos = _scrollCtrl.position;
+    var step = 0;
+    if (pos.pixels >= pos.maxScrollExtent - 24 && pos.maxScrollExtent > 0) {
+      step = 2;
+    } else {
+      final viewport = context.findRenderObject() as RenderBox?;
+      final threshold = (viewport?.size.height ?? 600) * 0.45;
+      final keys = [_deliverySectionKey, _paymentSectionKey, _summarySectionKey];
+      for (var i = 0; i < keys.length; i++) {
+        final box = keys[i].currentContext?.findRenderObject() as RenderBox?;
+        if (box == null || !box.attached) continue;
+        if (box.localToGlobal(Offset.zero).dy <= threshold) step = i;
+      }
+    }
+    if (_activeStep.value != step) _activeStep.value = step;
+  }
+
+  Future<void> _jumpToStep(int i) async {
+    final key = [_deliverySectionKey, _paymentSectionKey, _summarySectionKey][i];
+    await scrollToFormField(key, alignment: 0.02);
   }
 
   @override
   void dispose() {
+    _scrollCtrl.removeListener(_syncActiveStep);
     _scrollCtrl.dispose();
+    _activeStep.dispose();
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
     _streetCtrl.dispose();
@@ -132,11 +168,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       _shippingError = null;
     });
     try {
-      final fee = await ref.read(apiServiceProvider).shippingQuote(
-            governorate: _governorate,
-            area: _area,
-            subtotal: subtotal,
-          );
+      final fee = await ref
+          .read(apiServiceProvider)
+          .shippingQuote(governorate: _governorate, area: _area, subtotal: subtotal);
       if (mounted) setState(() => _shippingFee = fee);
     } catch (e) {
       if (mounted) setState(() => _shippingError = friendlyError(e));
@@ -149,6 +183,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     FocusScope.of(context).unfocus();
     final code = _couponCtrl.text.trim();
     if (code.isEmpty) return;
+    final s = ref.s;
     setState(() => _couponError = null);
     try {
       final coupon = await ref.read(apiServiceProvider).validateCoupon(code);
@@ -156,14 +191,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       if (coupon == null) {
         setState(() {
           _coupon = null;
-          _couponError = 'الكوبون غير صالح';
+          _couponError = s.invalidCoupon;
         });
         return;
       }
       if (coupon.minOrder > 0 && subtotal < coupon.minOrder) {
         setState(() {
           _coupon = null;
-          _couponError = 'الحد الأدنى للطلب ${formatPrice(coupon.minOrder)}';
+          _couponError = s.minOrderAmount(formatPrice(coupon.minOrder));
         });
         return;
       }
@@ -172,7 +207,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     } catch (_) {
       setState(() {
         _coupon = null;
-        _couponError = 'الكوبون غير صالح';
+        _couponError = s.invalidCoupon;
       });
     }
   }
@@ -203,12 +238,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _scrollToFirstInvalid() async {
     HapticFeedback.lightImpact();
-    await scrollToFirstInvalidFormSection([
-      _nameFieldKey,
-      _phoneFieldKey,
-      _locationFieldKey,
-      _streetFieldKey,
-    ]);
+    await scrollToFirstInvalidFormSection([_nameFieldKey, _phoneFieldKey, _locationFieldKey, _streetFieldKey]);
   }
 
   Future<void> _addSavedAddress() async {
@@ -227,7 +257,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final draft = await showAddressForm(context, initial: initial);
     if (draft == null || !mounted) return;
     try {
-      final created = await ref.read(apiServiceProvider).createAddress(
+      final created = await ref
+          .read(apiServiceProvider)
+          .createAddress(
             Address(
               id: '',
               fullName: draft.fullName,
@@ -261,7 +293,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final cart = ref.read(cartProvider);
       final address = await _upsertAddress();
       ref.invalidate(addressesProvider);
-      final order = await ref.read(apiServiceProvider).createOrder(
+      final order = await ref
+          .read(apiServiceProvider)
+          .createOrder(
             items: cart.items.map((e) => e.toOrderItem()).toList(),
             addressId: address.id,
             couponCode: _coupon?.code,
@@ -275,6 +309,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ref.invalidate(loyaltyProvider);
       ref.read(authProvider.notifier).refreshUser();
       if (mounted) context.pushReplacement('/order-success/${order.id}');
+      unawaited(PushService.requestPermissionInContext());
     } catch (e) {
       if (mounted) AppSnackbar.error(context, friendlyError(e));
     } finally {
@@ -300,11 +335,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final s = ref.s;
-    return AuthGate(
-      title: s.checkout,
-      emptyTitle: s.loginToCheckout,
-      child: _buildCheckout(s),
-    );
+    return AuthGate(title: s.checkout, emptyTitle: s.loginToCheckout, child: _buildCheckout(s));
   }
 
   Widget _buildCheckout(AppStrings s) {
@@ -323,40 +354,29 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     if (cart.isEmpty) {
       return Scaffold(
-        backgroundColor: CheckoutTheme.bg,
-        appBar: AppBar(title: Text(s.checkout), elevation: 0, backgroundColor: CheckoutTheme.bg),
-        body: EmptyState(
-          icon: Icons.shopping_bag_outlined,
-          title: s.emptyCartTitle,
-          subtitle: s.emptyCartSubtitle,
-          action: SizedBox(
-            height: 48,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: CheckoutTheme.signatureGradient,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(999),
-                  onTap: () {
-                    ref.read(navIndexProvider.notifier).state = NavTabs.cart;
-                    context.go('/');
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Center(
-                      child: Text(
-                        s.goToCart,
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800),
-                      ),
-                    ),
+        backgroundColor: context.worldTheme.canvas,
+        body: Column(
+          children: [
+            CheckoutHeader(s: s, itemCount: 0, onBack: () => context.pop()),
+            Expanded(
+              child: EmptyState(
+                icon: Icons.shopping_bag_outlined,
+                title: s.emptyCartTitle,
+                subtitle: s.emptyCartSubtitle,
+                action: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 260),
+                  child: PrimaryPillButton(
+                    label: s.goToCart,
+                    icon: Icons.shopping_bag_outlined,
+                    onTap: () {
+                      ref.read(navIndexProvider.notifier).state = NavTabs.cart;
+                      context.go('/');
+                    },
                   ),
                 ),
               ),
             ),
-          ),
+          ],
         ),
       );
     }
@@ -369,17 +389,23 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final loyaltyDiscount = _useLoyalty ? _loyaltyDiscount : 0;
     final total = (beforeLoyalty - loyaltyDiscount).clamp(0, 1 << 31);
     final savedAddresses = addressesAsync.valueOrNull ?? [];
+    final keyboardOpen = MediaQuery.viewInsetsOf(context).bottom > 0;
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: CheckoutTheme.bg,
+      backgroundColor: context.worldTheme.canvas,
       body: DismissKeyboard(
         child: Column(
           children: [
-            CheckoutHeader(
-              s: s,
-              itemCount: cart.count,
-              onBack: () => context.pop(),
+            ValueListenableBuilder<int>(
+              valueListenable: _activeStep,
+              builder: (_, step, __) => CheckoutHeader(
+                s: s,
+                itemCount: cart.count,
+                onBack: () => context.pop(),
+                activeStep: step,
+                onStepTap: addressesAsync.hasValue ? _jumpToStep : null,
+              ),
             ),
             Expanded(
               child: addressesAsync.when(
@@ -387,19 +413,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.only(bottom: 16),
                   children: const [
-                    Padding(
-                      padding: EdgeInsets.all(16),
-                      child: ShimmerBox(height: 280, radius: 20),
-                    ),
+                    Padding(padding: EdgeInsets.all(16), child: ShimmerBox(height: 320, radius: 20)),
+                    Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: ShimmerBox(height: 140, radius: 20)),
                   ],
                 ),
                 error: (e, _) => ErrorView.from(e, onRetry: () => ref.invalidate(addressesProvider)),
                 data: (_) => ListView(
                   controller: _scrollCtrl,
                   keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.only(top: 16, bottom: 24),
                   children: [
                     CheckoutDeliveryCard(
+                      key: _deliverySectionKey,
                       formKey: _formKey,
                       nameFieldKey: _nameFieldKey,
                       phoneFieldKey: _phoneFieldKey,
@@ -436,6 +461,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     ),
                     const SizedBox(height: 14),
                     CheckoutPaymentCard(
+                      key: _paymentSectionKey,
                       s: s,
                       paymentMethod: _paymentMethod,
                       onChanged: (v) => setState(() => _paymentMethod = v),
@@ -455,7 +481,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     ],
                     const SizedBox(height: 14),
                     CheckoutSummaryCard(
+                      key: _summarySectionKey,
                       s: s,
+                      items: cart.items,
                       subtotal: subtotal,
                       discount: discount,
                       loyaltyDiscount: loyaltyDiscount,
@@ -463,17 +491,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       total: total,
                       shippingLoading: _shippingLoading,
                     ),
-                    const SizedBox(height: 16),
                   ],
                 ),
               ),
             ),
-            CheckoutBottomBar(
-              s: s,
-              total: total,
-              placing: _placing,
-              onPlace: _placeOrder,
-            ),
+            if (!keyboardOpen) CheckoutBottomBar(s: s, total: total, placing: _placing, onPlace: _placeOrder),
           ],
         ),
       ),

@@ -11,10 +11,12 @@ import '../../../core/utils/phone_util.dart';
 import '../../../core/widgets/app_snackbar.dart';
 import '../../../core/widgets/language_toggle_bar.dart';
 import '../../../features/settings/legal_document_screen.dart';
-import '../../cart/widgets/cart_theme.dart';
 import '../auth_provider.dart';
 import '../widgets/auth_shell.dart';
+import '../../../core/widgets/ui/ui.dart';
+import '../../profile/widgets/account_strings.dart';
 import '../../profile/widgets/profile_ui.dart';
+import '../../../features/worlds/world_theme.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -48,7 +50,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     HapticFeedback.lightImpact();
     setState(() => _loading = true);
     try {
-      await ref.read(authProvider.notifier).register(
+      await ref
+          .read(authProvider.notifier)
+          .register(
             name: _name.text.trim(),
             phone: _phone.text.trim(),
             password: _password.text,
@@ -82,6 +86,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return AuthShell(
       title: s.register,
       subtitle: s.registerPhoneSubtitle,
+      eyebrow: s.registerJoinTitle,
       onBack: () => context.pop(),
       footer: ProfileLinkRow(
         prefix: s.haveAccountAlready,
@@ -99,11 +104,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 controller: _name,
                 textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.name],
-                decoration: authFieldDecoration(label: s.fullName),
-                validator: (v) => (v == null || v.trim().length < 2) ? s.enterYourName : null,
+                decoration: authFieldDecoration(
+                  context,
+                  label: s.fullName,
+                  icon: Icons.person_outline_rounded,
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().length < 2) ? s.enterYourName : null,
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             authLabeledField(
               label: s.phoneNumber,
               field: TextFormField(
@@ -111,11 +121,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 keyboardType: TextInputType.phone,
                 textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.telephoneNumber],
-                decoration: authFieldDecoration(label: s.phoneNumber, hint: '07701234567'),
+                decoration: authFieldDecoration(
+                  context,
+                  label: s.phoneNumber,
+                  hint: '07701234567',
+                  icon: Icons.phone_iphone_rounded,
+                ),
                 validator: (v) => validateIraqiPhone(v),
               ),
             ),
-            const SizedBox(height: 18),
+            const SizedBox(height: 16),
             authLabeledField(
               label: s.password,
               field: TextFormField(
@@ -125,13 +140,16 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 autofillHints: const [AutofillHints.newPassword],
                 onFieldSubmitted: (_) => _submit(),
                 decoration: authFieldDecoration(
+                  context,
                   label: s.password,
-                  suffix: IconButton(
-                    icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                    onPressed: () => setState(() => _obscure = !_obscure),
+                  icon: Icons.lock_outline_rounded,
+                  suffix: AuthPasswordToggle(
+                    obscured: _obscure,
+                    onToggle: () => setState(() => _obscure = !_obscure),
                   ),
                 ),
-                validator: (v) => (v == null || v.length < 6) ? s.passwordMin6 : null,
+                validator: (v) =>
+                    (v == null || v.length < 6) ? s.passwordMin6 : null,
               ),
             ),
             const SizedBox(height: 14),
@@ -146,7 +164,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               onPressed: _loading ? null : _submit,
               loading: _loading,
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 22),
+            Divider(height: 1, color: context.worldTheme.divider),
+            const SizedBox(height: 18),
             const LanguageToggleBar(embedded: true, showLabel: true),
           ],
         ),
@@ -168,37 +188,66 @@ class _TermsCheckbox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Checkbox(value: value, onChanged: onChanged, visualDensity: VisualDensity.compact),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: RichText(
-              text: TextSpan(
-                style: TextStyle(fontSize: 12.5, color: Colors.black.withValues(alpha: 0.72), height: 1.45),
-                children: [
-                  TextSpan(text: s.isAr ? 'أوافق على ' : 'I agree to '),
-                  TextSpan(
-                    text: s.termsOfService,
-                    style: const TextStyle(color: CartTheme.brand, fontWeight: FontWeight.w700),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () => openLegalDocument(context, LegalDocumentType.terms),
-                  ),
-                  TextSpan(text: s.isAr ? ' و' : ' and '),
-                  TextSpan(
-                    text: s.privacyPolicy,
-                    style: const TextStyle(color: CartTheme.brand, fontWeight: FontWeight.w700),
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () => openLegalDocument(context, LegalDocumentType.privacy),
-                  ),
-                ],
+    final t = context.worldTheme;
+    final linkStyle = AppText.bodySmall.copyWith(
+      color: t.accentDark,
+      fontWeight: FontWeight.w700,
+    );
+    return Semantics(
+      checked: value,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppCorners.sm),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onChanged(!value);
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: kMinTapTarget,
+                height: kMinTapTarget,
+                child: Checkbox(value: value, onChanged: onChanged),
               ),
-            ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: Text.rich(
+                    TextSpan(
+                      style: AppText.bodySmall.copyWith(color: t.inkSoft),
+                      children: [
+                        TextSpan(text: s.acctIAgreeTo),
+                        TextSpan(
+                          text: s.termsOfService,
+                          style: linkStyle,
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () => openLegalDocument(
+                              context,
+                              LegalDocumentType.terms,
+                            ),
+                        ),
+                        TextSpan(text: s.acctAnd),
+                        TextSpan(
+                          text: s.privacyPolicy,
+                          style: linkStyle,
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () => openLegalDocument(
+                              context,
+                              LegalDocumentType.privacy,
+                            ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }

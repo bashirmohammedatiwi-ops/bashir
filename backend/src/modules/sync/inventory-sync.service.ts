@@ -5,6 +5,7 @@ import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { fixPosArabicText } from "../../common/pos-text-encoding.util";
 import { PrismaService } from "../../common/prisma.service";
 import { InventorySyncItemDto } from "./dto/inventory-sync.dto";
+import { RecordPosSyncRunDto } from "./dto/inventory-admin.dto";
 import { StockAlertService } from "./stock-alert.service";
 
 type SanitizedItem = {
@@ -363,6 +364,130 @@ export class InventorySyncService {
       syncedAt,
       alerts: { restock: 0, lowStock: 0 },
     };
+  }
+
+  /**
+   * بعد مزامنة يدوية كاملة من POS: احذف لقطات لم تُحدَّث في هذه الجلسة
+   * (منتجات حُذفت من POS لكن بقيت على السيرفر).
+   */
+  async reconcileAfterFullSync(dto: RecordPosSyncRunDto) {
+    if (!dto.manual || !dto.ok) {
+      return { purgedSnapshots: 0, zeroedProducts: 0, zeroedShades: 0, skipped: "not_manual_or_failed" };
+    }
+
+    const totalItems = dto.totalItems ?? 0;
+    const syncedItems = dto.syncedItems ?? 0;
+    const failedItems = dto.failedItems ?? 0;
+    const changedItems = dto.changedItems ?? syncedItems;
+
+    if (totalItems <= 0 || syncedItems <= 0 || failedItems > 0) {
+      return { purgedSnapshots: 0, zeroedProducts: 0, zeroedShades: 0, skipped: "incomplete_sync" };
+    }
+
+    // مزامنة كاملة = رُفع (تقريباً) كل صفوف POS في هذه الجلسة
+    const fullUpload =
+      changedItems >= Math.floor(totalItems * 0.95) || syncedItems >= Math.floor(totalItems * 0.95);
+    if (!fullUpload) {
+      return { purgedSnapshots: 0, zeroedProducts: 0, zeroedShades: 0, skipped: "partial_batch" };
+    }
+
+    const durationMs = Math.max(dto.durationMs ?? 0, 60_000);
+    const bufferMs = 180_000;
+    const cutoff = new Date(Date.now() - durationMs - bufferMs);
+
+    const stale = await this.prisma.inventorySyncSnapshot.findMany({
+      where: { syncedAt: { lt: cutoff } },
+      select: { barcode: true },
+    });
+
+    if (!stale.length) {
+      return { purgedSnapshots: 0, zeroedProducts: 0, zeroedShades: 0, cutoff };
+    }
+
+    const staleBarcodes = stale.map((row) => row.barcode);
+    const removed = await this.prisma.inventorySyncSnapshot.deleteMany({
+      where: { syncedAt: { lt: cutoff } },
+    });
+
+    const catalog = await this.zeroCatalogStockForRemovedBarcodes(staleBarcodes);
+
+    try {
+      await this.homeFeedCache.invalidateAll();
+    } catch (err) {
+      this.logger.warn(`Home feed cache invalidate failed after reconcile: ${this.formatError(err)}`);
+    }
+
+    this.logger.log(
+      `POS reconcile: purged=${removed.count} productsZeroed=${catalog.products} shadesZeroed=${catalog.shades} cutoff=${cutoff.toISOString()}`,
+    );
+
+    return {
+      purgedSnapshots: removed.count,
+      zeroedProducts: catalog.products,
+      zeroedShades: catalog.shades,
+      cutoff,
+    };
+  }
+
+  private async zeroCatalogStockForRemovedBarcodes(barcodes: string[]) {
+    const codes = [
+      ...new Set(barcodes.flatMap((barcode) => barcodeLookupCandidates(barcode)).filter(Boolean)),
+    ];
+    if (!codes.length) return { products: 0, shades: 0 };
+
+    const affectedShades = await this.prisma.productShade.findMany({
+      where: { barcode: { in: codes } },
+      select: { id: true, productId: true },
+    });
+
+    const shadeResult = affectedShades.length
+      ? await this.prisma.productShade.updateMany({
+          where: { id: { in: affectedShades.map((s) => s.id) } },
+          data: { stock: 0 },
+        })
+      : { count: 0 };
+
+    const productResult = await this.prisma.product.updateMany({
+      where: {
+        OR: [{ barcode: { in: codes } }, { sku: { in: codes } }],
+      },
+      data: { stock: 0, isPromo: false, discountPercent: 0 },
+    });
+
+    const productIds = [...new Set(affectedShades.map((s) => s.productId))];
+    for (const productId of productIds) {
+      await this.refreshProductStockFromShades(productId);
+    }
+
+    return { products: productResult.count, shades: shadeResult.count };
+  }
+
+  private async refreshProductStockFromShades(productId: string) {
+    const shades = await this.prisma.productShade.findMany({
+      where: { productId },
+      select: {
+        stock: true,
+        price: true,
+        originalPrice: true,
+        discountPercent: true,
+      },
+    });
+    if (!shades.length) return;
+
+    const totalStock = shades.reduce((sum, shade) => sum + (shade.stock ?? 0), 0);
+    const lead = pickLeadShade(shades);
+    const maxDiscount = Math.max(0, ...shades.map((shade) => shade.discountPercent ?? 0));
+
+    await this.prisma.product.update({
+      where: { id: productId },
+      data: {
+        stock: totalStock,
+        price: lead.price ?? 0,
+        originalPrice: lead.originalPrice ?? 0,
+        discountPercent: maxDiscount,
+        isPromo: maxDiscount > 0,
+      },
+    });
   }
 
   /** تحديث التدرجات ثم المنتج الأب مباشرة من عناصر POS */

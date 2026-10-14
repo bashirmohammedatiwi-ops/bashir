@@ -4,10 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../l10n/app_strings.dart';
 import '../l10n/locale_provider.dart';
-import '../theme/app_colors.dart';
 import '../../features/catalog/catalog_providers.dart';
-import '../../features/cart/widgets/cart_theme.dart';
 import '../../features/profile/widgets/profile_ui.dart';
+import '../../features/worlds/world_theme.dart';
 
 /// تبديل اللغة — مدمج داخل الصفحة (ليس شريطاً ثابتاً).
 class LanguageToggleBar extends ConsumerWidget {
@@ -60,7 +59,7 @@ class LanguageToggleBar extends ConsumerWidget {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.fromLTRB(ProfileUi.hPad, top + 8, ProfileUi.hPad, 10),
-      color: ProfileUi.bg,
+      color: context.worldTheme.canvas,
       child: content,
     );
   }
@@ -100,14 +99,14 @@ class _LangChip extends StatelessWidget {
           height: 44,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            gradient: selected ? AppColors.signatureGradient : null,
-            color: selected ? null : ProfileUi.fieldBg,
+            gradient: selected ? context.worldTheme.signatureGradient : null,
+            color: selected ? null : context.worldTheme.surface,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: selected ? Colors.transparent : ProfileUi.fieldBorder),
+            border: Border.all(color: selected ? Colors.transparent : context.worldTheme.hairline),
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color: AppColors.primary.withValues(alpha: 0.22),
+                      color: context.worldTheme.accent.withValues(alpha: 0.22),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
                     ),
@@ -119,7 +118,7 @@ class _LangChip extends StatelessWidget {
             style: TextStyle(
               fontWeight: FontWeight.w700,
               fontSize: 14,
-              color: selected ? Colors.white : CartTheme.brandDark,
+              color: selected ? Colors.white : context.worldTheme.accentDark,
             ),
           ),
         ),

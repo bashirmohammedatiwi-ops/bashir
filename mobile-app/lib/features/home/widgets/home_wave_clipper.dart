@@ -21,5 +21,6 @@ class HomeWaveClipper extends CustomClipper<Path> {
   }
 
   @override
-  bool shouldReclip(covariant HomeWaveClipper old) => old.waveDepth != waveDepth;
+  bool shouldReclip(covariant HomeWaveClipper old) =>
+      old.waveDepth != waveDepth;
 }

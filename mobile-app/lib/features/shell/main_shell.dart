@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/utils/responsive.dart';
+import '../brands/brands_screen.dart';
 import '../cart/cart_provider.dart';
 import '../cart/cart_screen.dart';
 import '../categories/categories_screen.dart';
@@ -17,6 +18,9 @@ import 'shell_nav_bar.dart';
 export 'shell_nav_bar.dart' show ShellNavBar;
 
 final navIndexProvider = StateProvider<int>((ref) => 0);
+
+/// يزداد عند لمس تبويب "الرئيسية" وهي مفتوحة — الرئيسية تصعد للأعلى.
+final homeScrollToTopProvider = StateProvider<int>((ref) => 0);
 
 class MainShell extends ConsumerStatefulWidget {
   const MainShell({super.key});
@@ -59,19 +63,25 @@ class _MainShellState extends ConsumerState<MainShell> {
                     TickerMode(enabled: index == 0, child: const HomeScreen()),
                     TickerMode(
                       enabled: index == NavTabs.categories,
-                      child: _visited.contains(NavTabs.categories) ? const CategoriesScreen() : const SizedBox.shrink(),
+                      child: _visited.contains(NavTabs.categories) ? const _DarkStatusBar(child: CategoriesScreen()) : const SizedBox.shrink(),
                     ),
                     TickerMode(
                       enabled: index == NavTabs.offers,
-                      child: _visited.contains(NavTabs.offers) ? const OffersScreen() : const SizedBox.shrink(),
+                      child: _visited.contains(NavTabs.offers) ? const _DarkStatusBar(child: OffersScreen()) : const SizedBox.shrink(),
                     ),
                     TickerMode(
                       enabled: index == NavTabs.cart,
-                      child: _visited.contains(NavTabs.cart) ? const CartScreen() : const SizedBox.shrink(),
+                      child: _visited.contains(NavTabs.cart) ? const _DarkStatusBar(child: CartScreen()) : const SizedBox.shrink(),
                     ),
                     TickerMode(
                       enabled: index == NavTabs.account,
-                      child: _visited.contains(NavTabs.account) ? const AccountScreen() : const SizedBox.shrink(),
+                      child: _visited.contains(NavTabs.account) ? const _DarkStatusBar(child: AccountScreen()) : const SizedBox.shrink(),
+                    ),
+                    TickerMode(
+                      enabled: index == NavTabs.brands,
+                      child: _visited.contains(NavTabs.brands)
+                          ? const _DarkStatusBar(child: BrandsScreen(embedded: true))
+                          : const SizedBox.shrink(),
                     ),
                   ],
                 ),
@@ -96,9 +106,22 @@ class _MainShellState extends ConsumerState<MainShell> {
   }
 
   void _selectTab(int i) {
-    if (ref.read(navIndexProvider) != i) {
-      HapticFeedback.selectionClick();
+    if (i == NavTabs.home && ref.read(navIndexProvider) == NavTabs.home) {
+      ref.read(homeScrollToTopProvider.notifier).state++;
     }
     ref.read(navIndexProvider.notifier).state = i;
   }
+}
+
+/// تبويبات الخلفية الفاتحة — أيقونات شريط الحالة داكنة دائماً
+/// (الرئيسية تدير شريطها بنفسها لأنها تبدأ فوق صورة).
+class _DarkStatusBar extends StatelessWidget {
+  final Widget child;
+  const _DarkStatusBar({required this.child});
+
+  @override
+  Widget build(BuildContext context) => AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent),
+        child: child,
+      );
 }

@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { barcodeLookupCandidates, resolveBarcodeMapKey } from "../../common/barcode.util";
-import { searchStorefrontProductIds } from "../../common/smart-search";
+import { searchStorefrontProductIds, normalizeSearchText } from "../../common/smart-search";
 import { PrismaService } from "../../common/prisma.service";
 import { resolveProductNames } from "../../common/product-names.util";
 import { resolveProductDescriptions } from "../../common/product-descriptions.util";
@@ -12,7 +12,7 @@ import { CreateProductDto, QueryProductsDto, UpdateProductDto } from "./dto/prod
 import { InventorySyncService } from "../sync/inventory-sync.service";
 import { SettingsService } from "../settings/settings.service";
 import { withPlaceholderImages, activeWithoutRealImagesWhere, hasRealProductImagesWhere } from "../../common/product-placeholder.util";
-import { rewriteProductMediaUrls } from "../../common/media-url.util";
+import { rewriteProductMediaUrls, rewriteMediaUrl } from "../../common/media-url.util";
 import { PRODUCT_ORDER_BY_BRAND, PRODUCT_ORDER_WITHIN_BRAND } from "../../common/product-order.util";
 import { sortShadesByNumber } from "../../common/shade-sort.util";
 import { resolveBrandId, resolveCategoryId } from "../../common/entity-resolve.util";
@@ -181,6 +181,134 @@ export class ProductsService {
       } as QueryProductsDto,
       storefront,
     );
+  }
+
+/**
+ * اقتراحات البحث الحية — منتجات مصغّرة + براندات + أقسام + تصحيح مقترح.
+ * يعتمد كلياً على الكتالوج (بدون سجل بحث).
+ */
+async suggest(query: string, lang: "ar" | "en" = "ar") {
+    const q = (query || "").trim();
+    if (q.length < 2) {
+      return { products: [], brands: [], categories: [], corrected: null };
+    }
+
+    const rankedIds = await searchStorefrontProductIds(this.prisma, q, 6);
+
+    const products = rankedIds.length
+      ? await this.prisma.product.findMany({
+          where: { id: { in: rankedIds }, isActive: true },
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+            nameAr: true,
+            nameEn: true,
+            price: true,
+            discountPercent: true,
+            brand: { select: { name: true } },
+            images: { take: 1, orderBy: { position: "asc" }, include: { media: true } },
+          },
+        })
+      : [];
+
+    const [brands, categories] = await Promise.all([
+      this.suggestBrands(q),
+      this.suggestCategories(q),
+    ]);
+
+    // تصحيح مقترح: إن لم يطابق الاستعلام شيئاً لكن أقرب اسم منتج قريب جداً — اقترحه.
+    let corrected: string | null = null;
+    if (!rankedIds.length && q.length >= 3) {
+      corrected = await this.nearestCatalogTerm(q);
+    }
+
+    return {
+      products: this.orderProductsByRank(products, rankedIds).map((p) => ({
+        id: p.id,
+        slug: p.slug,
+        name: lang === "en" ? p.nameEn || p.name : p.nameAr || p.name,
+        brandName: p.brand?.name ?? null,
+        price: p.price,
+        discountPercent: p.discountPercent,
+        imageUrl: p.images[0]?.media
+          ? rewriteMediaUrl((p.images[0].media as { url?: string }).url ?? null)
+          : null,
+      })),
+      brands,
+      categories,
+      corrected,
+    };
+  }
+
+  /** أقرب مصطلح كتالوج لاستعلام بلا نتائج — لتصحيح الأخطاء المطبعية. */
+  private async nearestCatalogTerm(q: string): Promise<string | null> {
+    const normalized = normalizeSearchText(q);
+    if (normalized.length < 3) return null;
+    try {
+      const rows = await this.prisma.$queryRaw<Array<{ namear: string | null; nameen: string | null }>>`
+        SELECT p."nameAr" AS namear, p."nameEn" AS nameen
+        FROM "Product" p
+        LEFT JOIN "Brand" b ON b.id = p."brandId"
+        WHERE p."isActive" = true
+          AND (
+            word_similarity(${normalized}, regexp_replace(translate(lower(coalesce(p.name,'') || ' ' || coalesce(p."nameAr",'') || ' ' || coalesce(p."nameEn",'')), ${"أإآىةؤئ"}, ${"ااايهوي"}), '[ً-ْٰـ]', '', 'g')) > 0.42
+            OR word_similarity(${normalized}, regexp_replace(translate(lower(coalesce(b.name,'')), ${"أإآىةؤئ"}, ${"ااايهوي"}), '[ً-ْٰـ]', '', 'g')) > 0.42
+          )
+        ORDER BY GREATEST(
+            word_similarity(${normalized}, regexp_replace(translate(lower(coalesce(p.name,'') || ' ' || coalesce(p."nameAr",'') || ' ' || coalesce(p."nameEn",'')), ${"أإآىةؤئ"}, ${"ااايهوي"}), '[ً-ْٰـ]', '', 'g')),
+            word_similarity(${normalized}, regexp_replace(translate(lower(coalesce(b.name,'')), ${"أإآىةؤئ"}, ${"ااايهوي"}), '[ً-ْٰـ]', '', 'g'))
+          ) DESC
+        LIMIT 1
+      `;
+      if (!rows.length) return null;
+      const row = rows[0];
+      // رجّع أول كلمتين من الاسم الأنسب — اقتراح قصير قابل للنقر.
+      const name = (row.nameen || row.namear || "").trim();
+      if (!name) return null;
+      return name.split(/\s+/).slice(0, 2).join(" ");
+    } catch {
+      return null;
+    }
+  }
+
+  private async suggestBrands(q: string) {
+    const rows = await this.prisma.brand.findMany({
+      where: {
+        isActive: true,
+        name: { contains: q, mode: "insensitive" },
+      },
+      select: { id: true, name: true, slug: true },
+      take: 4,
+      orderBy: { position: "asc" },
+    });
+    return rows.map((b) => ({
+      id: b.id,
+      slug: b.slug,
+      name: b.name,
+    }));
+  }
+
+  private async suggestCategories(q: string) {
+    const rows = await this.prisma.category.findMany({
+      where: {
+        isActive: true,
+        parentId: null,
+        OR: [
+          { name: { contains: q, mode: "insensitive" } },
+          { nameAr: { contains: q, mode: "insensitive" } },
+          { nameEn: { contains: q, mode: "insensitive" } },
+        ],
+      },
+      select: { id: true, name: true, nameAr: true, nameEn: true, slug: true },
+      take: 3,
+      orderBy: { position: "asc" },
+    });
+    return rows.map((c) => ({
+      id: c.id,
+      slug: c.slug,
+      name: c.nameAr || c.nameEn || c.name,
+    }));
   }
 
   private orderProductsByRank<T extends { id: string }>(items: T[], rankedIds: string[]): T[] {

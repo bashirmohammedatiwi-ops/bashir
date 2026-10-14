@@ -27,9 +27,7 @@ class CartNotifier extends StateNotifier<CartState> {
     final raw = prefs.getString(_key);
     if (raw == null) return;
     try {
-      final list = (jsonDecode(raw) as List)
-          .map((e) => CartItem.fromJson(Map<String, dynamic>.from(e)))
-          .toList();
+      final list = (jsonDecode(raw) as List).map((e) => CartItem.fromJson(Map<String, dynamic>.from(e))).toList();
       state = CartState(list);
     } catch (_) {}
   }
@@ -66,7 +64,7 @@ class CartNotifier extends StateNotifier<CartState> {
     }
     final items = [
       for (final e in state.items)
-        if (e.key == key) e.copyWith(quantity: quantity.clamp(1, _maxQty(e))) else e
+        if (e.key == key) e.copyWith(quantity: quantity.clamp(1, _maxQty(e))) else e,
     ];
     state = CartState(items);
     _persist();
@@ -120,6 +118,16 @@ class CartNotifier extends StateNotifier<CartState> {
 
   void remove(String key) {
     state = CartState(state.items.where((e) => e.key != key).toList());
+    _persist();
+  }
+
+  /// يعيد عنصراً محذوفاً (زر "تراجع") إلى موضعه السابق إن لم يُضف من جديد.
+  void restore(CartItem item, {int? index}) {
+    if (state.items.any((e) => e.key == item.key)) return;
+    final items = [...state.items];
+    final at = (index ?? items.length).clamp(0, items.length);
+    items.insert(at, item);
+    state = CartState(items);
     _persist();
   }
 

@@ -44,16 +44,26 @@ class ProductCarouselSection extends ConsumerWidget {
       actionLabel: !nested && section.showViewAll ? s.viewAll : null,
       onAction: !nested && section.showViewAll
           ? () => openViewAllLink(
+              context,
+              query: section.viewAllQuery,
+              fallbackQuery: 'isBestSeller=1',
+            )
+          : null,
+      child: HomeProductRow(
+        products: section.products,
+        viewAllLabel: s.viewAll,
+        onViewAll: section.showViewAll
+            ? () => openViewAllLink(
                 context,
                 query: section.viewAllQuery,
                 fallbackQuery: 'isBestSeller=1',
               )
-          : null,
-      child: HomeProductRow(
-        products: section.products,
+            : null,
         itemWidth: Responsive.scaledCarouselWidth(
           context,
-          cardSizeSpec(section.productCardSize ?? section.cardSize).productWidth,
+          cardSizeSpec(
+            section.productCardSize ?? section.cardSize,
+          ).productWidth,
         ),
       ),
     );
@@ -96,7 +106,8 @@ class ProductFilmStrip extends StatefulWidget {
   State<ProductFilmStrip> createState() => _ProductFilmStripState();
 }
 
-class _ProductFilmStripState extends State<ProductFilmStrip> with SingleTickerProviderStateMixin {
+class _ProductFilmStripState extends State<ProductFilmStrip>
+    with SingleTickerProviderStateMixin {
   final _scroll = ScrollController();
   late final Ticker _ticker;
   Duration _last = Duration.zero;
@@ -146,7 +157,9 @@ class _ProductFilmStripState extends State<ProductFilmStrip> with SingleTickerPr
               controller: _scroll,
               scrollDirection: Axis.horizontal,
               physics: const ClampingScrollPhysics(),
-              padding: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
+              padding: EdgeInsets.symmetric(
+                horizontal: Responsive.horizontalPadding(context),
+              ),
               itemCount: items.length,
               separatorBuilder: (_, __) => const SizedBox(width: 12),
               itemBuilder: (_, i) => HomeProductCard(
@@ -207,10 +220,15 @@ class FlashSaleHomeSection extends ConsumerStatefulWidget {
   final HomeSection section;
   final bool compactTop;
 
-  const FlashSaleHomeSection({super.key, required this.section, this.compactTop = false});
+  const FlashSaleHomeSection({
+    super.key,
+    required this.section,
+    this.compactTop = false,
+  });
 
   @override
-  ConsumerState<FlashSaleHomeSection> createState() => _FlashSaleHomeSectionState();
+  ConsumerState<FlashSaleHomeSection> createState() =>
+      _FlashSaleHomeSectionState();
 }
 
 class _FlashSaleHomeSectionState extends ConsumerState<FlashSaleHomeSection> {
@@ -284,17 +302,19 @@ class _FlashSaleHomeSectionState extends ConsumerState<FlashSaleHomeSection> {
       actionLabel: widget.section.showViewAll ? strings.viewAll : null,
       onAction: widget.section.showViewAll
           ? () => openViewAllLink(
-                context,
-                query: widget.section.viewAllQuery,
-                fallbackQuery: 'isPromo=1',
-              )
+              context,
+              query: widget.section.viewAllQuery,
+              fallbackQuery: 'isPromo=1',
+            )
           : null,
       child: HomeProductRow(
         products: widget.section.products,
         showPromoBadge: true,
         itemWidth: Responsive.scaledCarouselWidth(
           context,
-          cardSizeSpec(widget.section.productCardSize ?? widget.section.cardSize).productWidth,
+          cardSizeSpec(
+            widget.section.productCardSize ?? widget.section.cardSize,
+          ).productWidth,
         ),
       ),
     );
@@ -305,7 +325,11 @@ class PackagesHomeSection extends ConsumerWidget {
   final HomeSection section;
   final bool compactTop;
 
-  const PackagesHomeSection({super.key, required this.section, this.compactTop = false});
+  const PackagesHomeSection({
+    super.key,
+    required this.section,
+    this.compactTop = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -319,19 +343,25 @@ class PackagesHomeSection extends ConsumerWidget {
       actionLabel: section.showViewAll ? s.viewAll : null,
       onAction: section.showViewAll
           ? () => openViewAllLink(
-                context,
-                query: section.viewAllQuery,
-                fallbackQuery: 'isPromo=1&title=الباقات',
-              )
+              context,
+              query: section.viewAllQuery,
+              fallbackQuery: 'isPromo=1&title=الباقات',
+            )
           : null,
       child: HomeHorizontalList(
         height: 220,
-        padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 0, HomeTheme.paddingH, 4),
+        padding: const EdgeInsets.fromLTRB(
+          HomeTheme.paddingH,
+          0,
+          HomeTheme.paddingH,
+          4,
+        ),
         itemCount: section.packages.length,
         itemGap: 14,
         itemBuilder: (_, i) {
           final p = section.packages[i];
-          final hasDiscount = p.originalPrice != null && p.originalPrice! > p.price;
+          final hasDiscount =
+              p.originalPrice != null && p.originalPrice! > p.price;
           final cardW = Responsive.scaledCarouselWidth(
             context,
             cardSizeSpec(p.cardSize ?? section.cardSize).width.toDouble(),
@@ -362,7 +392,11 @@ class PackagesHomeSection extends ConsumerWidget {
                         : ColoredBox(
                             color: t.accentLight,
                             child: Center(
-                              child: Icon(Icons.card_giftcard_rounded, color: t.accent, size: 36),
+                              child: Icon(
+                                Icons.card_giftcard_rounded,
+                                color: t.accent,
+                                size: 36,
+                              ),
                             ),
                           ),
                   ),
@@ -380,14 +414,21 @@ class PackagesHomeSection extends ConsumerWidget {
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            Text(formatPrice(p.price), style: HomeTheme.price.copyWith(color: t.ink)),
+                            Text(
+                              formatPrice(p.price),
+                              style: HomeTheme.price.copyWith(color: t.ink),
+                            ),
                             if (hasDiscount) ...[
                               const SizedBox(width: 6),
                               Text(
                                 formatPrice(p.originalPrice!),
-                                style: HomeTheme.body(size: 11, color: t.inkMuted).copyWith(
-                                  decoration: TextDecoration.lineThrough,
-                                ),
+                                style:
+                                    HomeTheme.body(
+                                      size: 11,
+                                      color: t.inkMuted,
+                                    ).copyWith(
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
                               ),
                             ],
                           ],

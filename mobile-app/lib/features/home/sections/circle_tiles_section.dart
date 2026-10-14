@@ -21,14 +21,16 @@ class CircleTilesSection extends ConsumerWidget {
     var items = section.items;
     if (items.isEmpty && section.categories.isNotEmpty) {
       items = section.categories
-          .map((c) => {
-                'id': c.id,
-                'title': c.nameAr ?? c.name,
-                'imageUrl': c.imageUrl,
-                'linkType': c.linkType ?? 'category',
-                'linkValue': c.linkValue ?? c.id,
-                'link': c.link ?? '/products?categoryId=${c.id}',
-              })
+          .map(
+            (c) => {
+              'id': c.id,
+              'title': c.nameAr ?? c.name,
+              'imageUrl': c.imageUrl,
+              'linkType': c.linkType ?? 'category',
+              'linkValue': c.linkValue ?? c.id,
+              'link': c.link ?? '/products?categoryId=${c.id}',
+            },
+          )
           .toList();
     }
     if (items.isEmpty) return const SizedBox.shrink();
@@ -41,7 +43,11 @@ class CircleTilesSection extends ConsumerWidget {
         padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
         child: layout == 'row'
             ? _CircleRow(items: items, lang: lang)
-            : _CircleGrid(items: items, columns: layout == 'grid3' ? 3 : 4, lang: lang),
+            : _CircleGrid(
+                items: items,
+                columns: layout == 'grid3' ? 3 : 4,
+                lang: lang,
+              ),
       ),
     );
   }
@@ -70,7 +76,11 @@ class _CircleGrid extends StatelessWidget {
   final List<dynamic> items;
   final int columns;
   final String lang;
-  const _CircleGrid({required this.items, required this.columns, required this.lang});
+  const _CircleGrid({
+    required this.items,
+    required this.columns,
+    required this.lang,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +91,11 @@ class _CircleGrid extends StatelessWidget {
       children: [
         for (var i = 0; i < items.length; i++)
           SizedBox(
-            width: (MediaQuery.sizeOf(context).width - AppSpacing.screenH * 2 - AppSpacing.sm * (columns - 1)) / columns,
+            width:
+                (MediaQuery.sizeOf(context).width -
+                    AppSpacing.screenH * 2 -
+                    AppSpacing.sm * (columns - 1)) /
+                columns,
             child: _buildTile(context, items[i], lang),
           ),
       ],
@@ -93,7 +107,12 @@ Widget _buildTile(BuildContext context, dynamic data, String lang) {
   if (data is! Map) return const SizedBox.shrink();
   final m = Map<String, dynamic>.from(data);
   final title = cmsTextForLang(m, lang);
-  final subtitle = cmsTextForLang(m, lang, arKey: 'subtitle', enKey: 'subtitleEn');
+  final subtitle = cmsTextForLang(
+    m,
+    lang,
+    arKey: 'subtitle',
+    enKey: 'subtitleEn',
+  );
   return CircleTile(
     title: title.isNotEmpty ? title : (m['title']?.toString() ?? ''),
     subtitle: subtitle.isNotEmpty ? subtitle : m['subtitle']?.toString(),

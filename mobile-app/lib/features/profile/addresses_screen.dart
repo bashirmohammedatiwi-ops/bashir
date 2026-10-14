@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/app_strings.dart';
-import '../../core/theme/app_colors.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../../core/widgets/states.dart';
+import '../../core/widgets/ui/ui.dart';
 import '../../data/models/address.dart';
 import '../../data/services/api_service.dart';
-import '../cart/widgets/cart_theme.dart';
 import 'profile_providers.dart';
 import 'widgets/account_theme.dart';
 import 'widgets/address_form.dart';
 import 'widgets/profile_ui.dart';
+import '../../features/worlds/world_theme.dart';
 
 class AddressesScreen extends ConsumerWidget {
   const AddressesScreen({super.key});
@@ -34,33 +35,49 @@ class _AddressesBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final addresses = ref.watch(addressesProvider);
     final s = ref.s;
+    final hasItems = addresses.valueOrNull?.isNotEmpty ?? false;
     return ProfileScaffold(
       title: s.addresses,
-      actions: [
-        IconButton(
-          onPressed: () => _add(context, ref),
-          icon: const Icon(Icons.add_rounded, color: CartTheme.brand),
-        ),
-      ],
-      floatingBottom: ProfilePrimaryButton(label: s.newAddress, onPressed: () => _add(context, ref)),
+      floatingBottom: hasItems
+          ? ProfilePrimaryButton(
+              label: s.newAddress,
+              icon: Icons.add_location_alt_outlined,
+              onPressed: () => _add(context, ref),
+            )
+          : null,
       body: addresses.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: CartTheme.brand)),
-        error: (e, _) => ErrorView(message: e.toString(), onRetry: () => ref.invalidate(addressesProvider)),
+        loading: () => Center(
+          child: CircularProgressIndicator(color: context.worldTheme.accent),
+        ),
+        error: (e, _) => ErrorView(
+          message: e.toString(),
+          onRetry: () => ref.invalidate(addressesProvider),
+        ),
         data: (list) {
           if (list.isEmpty) {
             return ProfileEmptyState(
               icon: Icons.location_on_outlined,
               title: s.noAddresses,
               subtitle: s.noAddressesHint,
-              action: ProfilePrimaryButton(label: s.newAddress, onPressed: () => _add(context, ref)),
+              action: ProfilePrimaryButton(
+                label: s.newAddress,
+                icon: Icons.add_location_alt_outlined,
+                onPressed: () => _add(context, ref),
+              ),
             );
           }
           return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 16, ProfileUi.hPad, 80),
+            padding: const EdgeInsets.fromLTRB(
+              ProfileUi.hPad,
+              16,
+              ProfileUi.hPad,
+              24,
+            ),
             itemCount: list.length,
             separatorBuilder: (_, __) => const SizedBox(height: 12),
             itemBuilder: (_, i) => _AddressTile(
               address: list[i],
+              s: s,
               onEdit: () => _edit(context, ref, list[i]),
               onDelete: () => _delete(context, ref, list[i]),
             ),
@@ -78,12 +95,18 @@ class _AddressesBody extends ConsumerWidget {
       ref.invalidate(addressesProvider);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
 
-  Future<void> _edit(BuildContext context, WidgetRef ref, Address address) async {
+  Future<void> _edit(
+    BuildContext context,
+    WidgetRef ref,
+    Address address,
+  ) async {
     final result = await showAddressForm(context, initial: address);
     if (result == null) return;
     try {
@@ -91,35 +114,35 @@ class _AddressesBody extends ConsumerWidget {
       ref.invalidate(addressesProvider);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
 
-  Future<void> _delete(BuildContext context, WidgetRef ref, Address address) async {
+  Future<void> _delete(
+    BuildContext context,
+    WidgetRef ref,
+    Address address,
+  ) async {
     final s = ref.s;
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-        title: Text(s.deleteAddress),
-        content: Text(s.deleteAddressConfirm),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(s.cancel)),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: Text(s.delete, style: const TextStyle(color: AccountTheme.danger)),
-          ),
-        ],
-      ),
+    final ok = await showProfileConfirmDialog(
+      context,
+      title: s.deleteAddress,
+      body: s.deleteAddressConfirm,
+      confirmLabel: s.delete,
+      cancelLabel: s.cancel,
     );
-    if (ok != true) return;
+    if (!ok) return;
     try {
       await ref.read(apiServiceProvider).deleteAddress(address.id);
       ref.invalidate(addressesProvider);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
@@ -127,77 +150,165 @@ class _AddressesBody extends ConsumerWidget {
 
 class _AddressTile extends StatelessWidget {
   final Address address;
+  final AppStrings s;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
-  const _AddressTile({required this.address, required this.onEdit, required this.onDelete});
+  const _AddressTile({
+    required this.address,
+    required this.s,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    final isDefault = address.isDefault;
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: AccountTheme.pageCard(
-        color: address.isDefault ? CartTheme.brandWash : Colors.white,
+      decoration: AccountTheme.pageCard(context).copyWith(
+        border: Border.all(
+          color: isDefault
+              ? t.accent.withValues(alpha: 0.45)
+              : t.hairline.withValues(alpha: 0.7),
+          width: isDefault ? 1.4 : 1,
+        ),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AccountTheme.addresses.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AccountTheme.addresses.withValues(alpha: 0.12)),
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(16, 16, 16, 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                AccountTheme.iconTile(
+                  context,
+                  isDefault ? Icons.home_rounded : Icons.location_on_outlined,
                 ),
-                child: const Icon(Icons.location_on_rounded, color: AccountTheme.addresses, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(address.fullName, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
-                    Text(address.phone, style: ProfileUi.captionStyle()),
-                  ],
-                ),
-              ),
-              if (address.isDefault)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    gradient: AppColors.signatureGradient,
-                    borderRadius: BorderRadius.circular(8),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              address.fullName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppText.title3.copyWith(color: t.ink),
+                            ),
+                          ),
+                          if (isDefault) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: t.accentLight,
+                                borderRadius: BorderRadius.circular(
+                                  AppCorners.pill,
+                                ),
+                                border: Border.all(color: t.accentSoft),
+                              ),
+                              child: Text(
+                                s.defaultLabel,
+                                style: AppText.micro.copyWith(
+                                  color: t.accentDark,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        address.phone,
+                        maxLines: 1,
+                        textDirection: TextDirection.ltr,
+                        style: AppText.caption.copyWith(color: t.inkMuted),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        address.summary,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.bodySmall.copyWith(color: t.inkSoft),
+                      ),
+                    ],
                   ),
-                  child: const Text(
-                    'افتراضي',
-                    style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
-                  ),
                 ),
-            ],
+              ],
+            ),
           ),
-          const SizedBox(height: 10),
-          Text(address.summary, style: ProfileUi.captionStyle()),
-          const SizedBox(height: 10),
+          Divider(height: 1, thickness: 1, color: t.divider),
           Row(
-            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              TextButton.icon(
-                onPressed: onEdit,
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                label: const Text('تعديل'),
-                style: TextButton.styleFrom(foregroundColor: CartTheme.brand),
+              Expanded(
+                child: _AddressAction(
+                  icon: Icons.edit_outlined,
+                  label: s.edit,
+                  color: t.accentDark,
+                  onTap: onEdit,
+                ),
               ),
-              TextButton.icon(
-                onPressed: onDelete,
-                icon: const Icon(Icons.delete_outline, size: 18),
-                label: const Text('حذف'),
-                style: TextButton.styleFrom(foregroundColor: AccountTheme.danger),
+              Container(width: 1, height: 24, color: t.divider),
+              Expanded(
+                child: _AddressAction(
+                  icon: Icons.delete_outline_rounded,
+                  label: s.delete,
+                  color: AccountTheme.danger,
+                  onTap: onDelete,
+                ),
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AddressAction extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _AddressAction({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      child: SizedBox(
+        height: 48,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppText.label.copyWith(color: color),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

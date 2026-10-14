@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../../../core/widgets/scroll_perf.dart';
 import 'home_theme.dart';
 
-export '../../../core/widgets/scroll_perf.dart' show AppScrollBehavior, AppScrollPerf;
+export '../../../core/widgets/scroll_perf.dart'
+    show AppScrollBehavior, AppScrollPerf;
 
 /// إعدادات تمرير الرئيسية — للتوافق مع الملفات الحالية.
 abstract final class HomeScrollPerf {
@@ -40,7 +41,8 @@ class HomeHorizontalList extends StatelessWidget {
       itemBuilder: itemBuilder,
       itemGap: itemGap,
       physics: physics,
-      padding: padding ??
+      padding:
+          padding ??
           const EdgeInsets.fromLTRB(
             HomeTheme.paddingH,
             0,

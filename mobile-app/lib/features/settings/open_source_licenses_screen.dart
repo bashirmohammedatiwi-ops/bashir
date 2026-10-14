@@ -4,8 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/app_strings.dart';
-import '../cart/widgets/cart_theme.dart';
+import '../../core/widgets/ui/ui.dart';
 import '../profile/widgets/profile_ui.dart';
+import '../../features/worlds/world_theme.dart';
 
 class _LicenseItem {
   final String name;
@@ -18,10 +19,12 @@ class OpenSourceLicensesScreen extends ConsumerStatefulWidget {
   const OpenSourceLicensesScreen({super.key});
 
   @override
-  ConsumerState<OpenSourceLicensesScreen> createState() => _OpenSourceLicensesScreenState();
+  ConsumerState<OpenSourceLicensesScreen> createState() =>
+      _OpenSourceLicensesScreenState();
 }
 
-class _OpenSourceLicensesScreenState extends ConsumerState<OpenSourceLicensesScreen> {
+class _OpenSourceLicensesScreenState
+    extends ConsumerState<OpenSourceLicensesScreen> {
   final _searchController = TextEditingController();
   final _searchFocus = FocusNode();
 
@@ -57,17 +60,22 @@ class _OpenSourceLicensesScreenState extends ConsumerState<OpenSourceLicensesScr
       }
     }
 
-    final items = merged.entries
-        .map((e) => _LicenseItem(name: e.key, text: e.value.toString()))
-        .toList()
-      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final items =
+        merged.entries
+            .map((e) => _LicenseItem(name: e.key, text: e.value.toString()))
+            .toList()
+          ..sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+          );
 
     return items;
   }
 
   List<_LicenseItem> _filter(List<_LicenseItem> items) {
     if (_query.isEmpty) return items;
-    return items.where((item) => item.name.toLowerCase().contains(_query)).toList();
+    return items
+        .where((item) => item.name.toLowerCase().contains(_query))
+        .toList();
   }
 
   Map<String, List<_LicenseItem>> _groupByLetter(List<_LicenseItem> items) {
@@ -90,38 +98,40 @@ class _OpenSourceLicensesScreenState extends ConsumerState<OpenSourceLicensesScr
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 8, ProfileUi.hPad, 12),
+            padding: const EdgeInsets.fromLTRB(
+              ProfileUi.hPad,
+              14,
+              ProfileUi.hPad,
+              12,
+            ),
             child: TextField(
               controller: _searchController,
               focusNode: _searchFocus,
               textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: s.searchPackages,
-                prefixIcon: const Icon(Icons.search_rounded, size: 22),
-                suffixIcon: _query.isEmpty
+              decoration: profileFieldDecoration(
+                context,
+                hint: s.searchPackages,
+                prefix: Icon(
+                  Icons.search_rounded,
+                  size: 22,
+                  color: context.worldTheme.inkMuted,
+                ),
+                suffix: _query.isEmpty
                     ? null
                     : IconButton(
-                        icon: const Icon(Icons.close_rounded, size: 20),
+                        tooltip: MaterialLocalizations.of(
+                          context,
+                        ).deleteButtonTooltip,
+                        icon: Icon(
+                          Icons.close_rounded,
+                          size: 20,
+                          color: context.worldTheme.inkMuted,
+                        ),
                         onPressed: () {
                           _searchController.clear();
                           _searchFocus.unfocus();
                         },
                       ),
-                filled: true,
-                fillColor: ProfileUi.fieldBg,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(ProfileUi.fieldRadius),
-                  borderSide: const BorderSide(color: ProfileUi.fieldBorder),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(ProfileUi.fieldRadius),
-                  borderSide: const BorderSide(color: ProfileUi.fieldBorder),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(ProfileUi.fieldRadius),
-                  borderSide: const BorderSide(color: CartTheme.brand, width: 1.5),
-                ),
               ),
             ),
           ),
@@ -130,14 +140,16 @@ class _OpenSourceLicensesScreenState extends ConsumerState<OpenSourceLicensesScr
               future: _licensesFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState != ConnectionState.done) {
-                  return const Center(child: CircularProgressIndicator(color: CartTheme.brand));
+                  return Center(
+                    child: CircularProgressIndicator(
+                      color: context.worldTheme.accent,
+                    ),
+                  );
                 }
                 if (snapshot.hasError) {
-                  return Center(
-                    child: Text(
-                      s.errorOccurred,
-                      style: ProfileUi.captionStyle(),
-                    ),
+                  return ProfileEmptyState(
+                    icon: Icons.error_outline_rounded,
+                    title: s.errorOccurred,
                   );
                 }
 
@@ -145,21 +157,32 @@ class _OpenSourceLicensesScreenState extends ConsumerState<OpenSourceLicensesScr
                 final filtered = _filter(all);
 
                 if (filtered.isEmpty) {
-                  return Center(
-                    child: Text(s.noPackagesFound, style: ProfileUi.captionStyle()),
+                  return ProfileEmptyState(
+                    icon: Icons.search_off_rounded,
+                    title: s.noPackagesFound,
                   );
                 }
 
                 final groups = _groupByLetter(filtered);
 
                 return ListView(
-                  padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 0, ProfileUi.hPad, 32),
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(
+                    ProfileUi.hPad,
+                    0,
+                    ProfileUi.hPad,
+                    32,
+                  ),
                   children: [
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsetsDirectional.only(
+                        start: 4,
+                        bottom: 12,
+                      ),
                       child: Text(
                         s.packageCount(filtered.length),
-                        style: ProfileUi.captionStyle(),
+                        style: ProfileUi.captionStyle(context),
                       ),
                     ),
                     for (final letter in groups.keys) ...[
@@ -191,15 +214,10 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+      padding: const EdgeInsetsDirectional.fromSTEB(4, 8, 4, 8),
       child: Text(
         letter,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w800,
-          color: CartTheme.brand,
-          letterSpacing: 0.5,
-        ),
+        style: AppText.label.copyWith(color: context.worldTheme.accentDark),
       ),
     );
   }
@@ -212,29 +230,40 @@ class _LicenseTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.worldTheme;
     return Theme(
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-        childrenPadding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+        tilePadding: const EdgeInsetsDirectional.fromSTEB(16, 2, 12, 2),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        minTileHeight: ProfileUi.rowMinHeight,
+        iconColor: t.accentDark,
+        collapsedIconColor: t.inkMuted,
         title: Text(
           item.name,
-          style: ProfileUi.bodyStyle().copyWith(fontSize: 14),
-        ),
-        trailing: Icon(
-          Icons.unfold_more_rounded,
-          color: CartTheme.charcoal.withValues(alpha: 0.28),
-          size: 22,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: ProfileUi.bodyStyle(context),
         ),
         onExpansionChanged: (_) => HapticFeedback.selectionClick(),
         children: [
-          SelectableText(
-            item.text,
-            style: TextStyle(
-              fontSize: 12,
-              height: 1.55,
-              color: CartTheme.charcoal.withValues(alpha: 0.75),
-              fontFamily: 'monospace',
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: t.canvas,
+              borderRadius: BorderRadius.circular(AppCorners.sm),
+            ),
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: SelectableText(
+                item.text,
+                style: AppText.caption.copyWith(
+                  color: t.inkSoft,
+                  height: 1.55,
+                  fontFamily: 'monospace',
+                ),
+              ),
             ),
           ),
         ],

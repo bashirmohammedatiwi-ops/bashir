@@ -6,6 +6,9 @@ import '../../../core/utils/json.dart';
 import '../../../core/utils/phone_util.dart';
 import '../../../data/models/address.dart';
 import '../../profile/profile_providers.dart';
+import '../../../core/widgets/ui/ui.dart';
+import '../../cart/widgets/cart_theme.dart';
+import '../../worlds/world_theme.dart';
 import 'checkout_theme.dart';
 
 typedef AddressPicked = void Function(Address address);
@@ -58,8 +61,8 @@ class CheckoutDeliveryCard extends ConsumerWidget {
     final zones = ref.watch(shippingZonesProvider);
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: CheckoutTheme.cardDecoration(),
+      margin: const EdgeInsets.symmetric(horizontal: CartTheme.hPad),
+      decoration: CheckoutTheme.cardDecoration(context),
       child: Form(
         key: formKey,
         child: Padding(
@@ -71,13 +74,17 @@ class CheckoutDeliveryCard extends ConsumerWidget {
                 icon: Icons.person_pin_circle_outlined,
                 title: s.recipientInfo,
                 subtitle: s.recipientAutoFill,
+                step: 1,
               ),
               KeyedSubtree(
                 key: nameFieldKey,
                 child: TextFormField(
                   controller: nameCtrl,
                   textInputAction: TextInputAction.next,
+                  textCapitalization: TextCapitalization.words,
+                  autofillHints: const [AutofillHints.name],
                   decoration: CheckoutTheme.fieldDecoration(
+                    context,
                     label: s.fullName,
                     icon: Icons.person_outline_rounded,
                   ),
@@ -90,8 +97,11 @@ class CheckoutDeliveryCard extends ConsumerWidget {
                 child: TextFormField(
                   controller: phoneCtrl,
                   keyboardType: TextInputType.phone,
+                  textDirection: TextDirection.ltr,
+                  autofillHints: const [AutofillHints.telephoneNumber],
                   textInputAction: TextInputAction.next,
                   decoration: CheckoutTheme.fieldDecoration(
+                    context,
                     label: s.phoneNumber,
                     hint: '07701234567',
                     icon: Icons.phone_outlined,
@@ -99,55 +109,42 @@ class CheckoutDeliveryCard extends ConsumerWidget {
                   validator: (v) => validateIraqiPhone(v),
                 ),
               ),
+              const SizedBox(height: 20),
+              Divider(height: 1, color: context.worldTheme.divider),
               const SizedBox(height: 18),
               CheckoutSectionHeader(
                 icon: Icons.location_on_outlined,
                 title: s.deliveryLocation,
                 subtitle: s.deliveryLocationHint,
               ),
-              const SizedBox(height: 10),
               SizedBox(
-                height: 42,
+                height: 44,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  itemCount: savedAddresses.length + 1,
+                  clipBehavior: Clip.none,
+                  itemCount: savedAddresses.length + (onAddAddress != null ? 1 : 0),
                   separatorBuilder: (_, __) => const SizedBox(width: 8),
                   itemBuilder: (_, i) {
                     if (i == savedAddresses.length) {
-                      return ActionChip(
-                        avatar: const Icon(Icons.add_rounded, size: 16, color: CheckoutTheme.brand),
-                        label: Text(
-                          s.addAddress,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                            color: CheckoutTheme.brandDark,
-                          ),
+                      return Center(
+                        child: AppChoiceChip(
+                          icon: Icons.add_rounded,
+                          label: s.addAddress,
+                          selected: false,
+                          onTap: onAddAddress!,
                         ),
-                        backgroundColor: CheckoutTheme.brandWash,
-                        side: const BorderSide(color: CheckoutTheme.brandSoft),
-                        onPressed: onAddAddress,
                       );
                     }
                     final a = savedAddresses[i];
                     final selected = selectedAddressId == a.id;
-                    return FilterChip(
-                      label: Text(
-                        a.isDefault ? '${a.governorate ?? a.city} • ${s.defaultLabel}' : (a.governorate ?? a.city),
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                          color: selected ? CheckoutTheme.brandDark : CheckoutTheme.charcoal,
-                        ),
+                    final place = a.governorate ?? a.city;
+                    return Center(
+                      child: AppChoiceChip(
+                        icon: selected ? Icons.check_circle_rounded : Icons.place_outlined,
+                        label: a.isDefault ? '$place • ${s.defaultLabel}' : place,
+                        selected: selected,
+                        onTap: () => onPickAddress(a),
                       ),
-                      selected: selected,
-                      showCheckmark: false,
-                      selectedColor: CheckoutTheme.brandSoft,
-                      backgroundColor: CheckoutTheme.brandWash,
-                      side: BorderSide(
-                        color: selected ? CheckoutTheme.brand : CheckoutTheme.brandSoft,
-                      ),
-                      onSelected: (_) => onPickAddress(a),
                     );
                   },
                 ),
@@ -156,7 +153,14 @@ class CheckoutDeliveryCard extends ConsumerWidget {
               KeyedSubtree(
                 key: locationFieldKey,
                 child: zones.when(
-                  loading: () => const LinearProgressIndicator(color: CheckoutTheme.brand),
+                  loading: () => ClipRRect(
+                    borderRadius: BorderRadius.circular(AppCorners.pill),
+                    child: LinearProgressIndicator(
+                      color: context.worldTheme.accent,
+                      backgroundColor: context.worldTheme.accentSoft,
+                      minHeight: 3,
+                    ),
+                  ),
                   error: (_, __) => _GovernorateTextField(
                     value: governorate,
                     onChanged: (v) {
@@ -186,6 +190,7 @@ class CheckoutDeliveryCard extends ConsumerWidget {
                   controller: streetCtrl,
                   textInputAction: TextInputAction.next,
                   decoration: CheckoutTheme.fieldDecoration(
+                    context,
                     label: s.streetLabel,
                     icon: Icons.signpost_outlined,
                   ),
@@ -196,10 +201,7 @@ class CheckoutDeliveryCard extends ConsumerWidget {
               TextFormField(
                 controller: houseCtrl,
                 textInputAction: TextInputAction.done,
-                decoration: CheckoutTheme.fieldDecoration(
-                  label: s.houseOptional,
-                  icon: Icons.home_outlined,
-                ),
+                decoration: CheckoutTheme.fieldDecoration(context, label: s.houseOptional, icon: Icons.home_outlined),
               ),
             ],
           ),
@@ -228,10 +230,7 @@ class _GovernorateFields extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.s;
     final govs = zones.map((z) => asString(z['governorate'])).where((e) => e.isNotEmpty).toList();
-    final selectedZone = zones.firstWhere(
-      (z) => asString(z['governorate']) == governorate,
-      orElse: () => const {},
-    );
+    final selectedZone = zones.firstWhere((z) => asString(z['governorate']) == governorate, orElse: () => const {});
     final areas = asList(selectedZone['areas']).map((a) => asString(a['name'])).where((e) => e.isNotEmpty).toList();
 
     return Column(
@@ -240,7 +239,7 @@ class _GovernorateFields extends ConsumerWidget {
           key: ValueKey('gov-$governorate'),
           initialValue: govs.contains(governorate) ? governorate : null,
           isExpanded: true,
-          decoration: CheckoutTheme.fieldDecoration(label: s.governorate, icon: Icons.map_outlined),
+          decoration: CheckoutTheme.fieldDecoration(context, label: s.governorate, icon: Icons.map_outlined),
           items: [for (final g in govs) DropdownMenuItem(value: g, child: Text(g))],
           validator: (v) => (v == null || v.isEmpty) ? s.selectGovernorate : null,
           onChanged: onGovernorateChanged,
@@ -251,7 +250,7 @@ class _GovernorateFields extends ConsumerWidget {
             key: ValueKey('area-$governorate-$area'),
             initialValue: areas.contains(area) ? area : null,
             isExpanded: true,
-            decoration: CheckoutTheme.fieldDecoration(label: s.areaLabel, icon: Icons.place_outlined),
+            decoration: CheckoutTheme.fieldDecoration(context, label: s.areaLabel, icon: Icons.place_outlined),
             items: [for (final a in areas) DropdownMenuItem(value: a, child: Text(a))],
             validator: (v) => (v == null || v.isEmpty) ? s.selectArea : null,
             onChanged: onAreaChanged,
@@ -273,7 +272,7 @@ class _GovernorateTextField extends ConsumerWidget {
     final s = ref.s;
     return TextFormField(
       initialValue: value,
-      decoration: CheckoutTheme.fieldDecoration(label: s.governorateCity, icon: Icons.map_outlined),
+      decoration: CheckoutTheme.fieldDecoration(context, label: s.governorateCity, icon: Icons.map_outlined),
       validator: (v) => (v == null || v.trim().isEmpty) ? s.requiredField : null,
       onChanged: onChanged,
     );

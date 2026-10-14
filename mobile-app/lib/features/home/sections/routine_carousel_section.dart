@@ -30,7 +30,9 @@ class RoutineCarouselSection extends ConsumerWidget {
     if (section.packages.isEmpty) return const SizedBox.shrink();
 
     final s = ref.s;
-    final cardH = cardSizeSpec(section.cardSize).height.clamp(160, 200).toDouble();
+    final cardH = cardSizeSpec(
+      section.cardSize,
+    ).height.clamp(160, 200).toDouble();
 
     return HomeSectionShell(
       section: section,
@@ -39,16 +41,22 @@ class RoutineCarouselSection extends ConsumerWidget {
       actionLabel: !nested && section.showViewAll ? s.viewAll : null,
       onAction: !nested && section.showViewAll
           ? () => openViewAllLink(
-                context,
-                query: section.viewAllQuery,
-                fallbackQuery: 'isPromo=1&title=${Uri.encodeComponent(s.skinRoutineTitle)}',
-              )
+              context,
+              query: section.viewAllQuery,
+              fallbackQuery:
+                  'isPromo=1&title=${Uri.encodeComponent(s.skinRoutineTitle)}',
+            )
           : null,
       child: SizedBox(
         height: cardH,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 0, HomeTheme.paddingH, 4),
+          padding: const EdgeInsets.fromLTRB(
+            HomeTheme.paddingH,
+            0,
+            HomeTheme.paddingH,
+            4,
+          ),
           itemCount: section.packages.length,
           separatorBuilder: (_, __) => const SizedBox(width: 10),
           itemBuilder: (_, i) {
@@ -80,7 +88,8 @@ class _RoutineCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
-    final hasDiscount = package.originalPrice != null && package.originalPrice! > package.price;
+    final hasDiscount =
+        package.originalPrice != null && package.originalPrice! > package.price;
     return Container(
       width: width,
       decoration: BoxDecoration(
@@ -120,7 +129,11 @@ class _RoutineCard extends StatelessWidget {
                   package.name,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: t.ink),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    color: t.ink,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Row(

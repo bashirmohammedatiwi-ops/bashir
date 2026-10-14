@@ -7,6 +7,7 @@ import '../../../core/l10n/locale_provider.dart';
 import '../../../core/navigation/app_navigation.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/camera_corner_frame.dart';
+import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/category.dart';
 import '../../worlds/world_theme.dart';
 import '../home_link.dart';
@@ -34,8 +35,6 @@ class HomeHeroCategoryStrip extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     if (categories.isEmpty) return const SizedBox.shrink();
     final s = ref.s;
-    final t = ref.watch(activeWorldThemeProvider);
-    final chipAccent = accent ?? t.accent;
 
     final container = ProviderScope.containerOf(context, listen: false);
 
@@ -43,46 +42,11 @@ class HomeHeroCategoryStrip extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         worldSections
-            ? Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Row(
-                  children: [
-                    Text(
-                      s.shopByCategory,
-                      style: HomeTheme.sectionTitle(size: 18, color: t.ink),
-                    ),
-                    const Spacer(),
-                    Material(
-                      color: t.accentLight,
-                      borderRadius: BorderRadius.circular(999),
-                      child: InkWell(
-                        onTap: () => openCategoriesTab(context, container),
-                        borderRadius: BorderRadius.circular(999),
-                        child: Padding(
-                          padding: const EdgeInsetsDirectional.fromSTEB(10, 4, 4, 4),
-                          child: Row(
-                            children: [
-                              Text(s.all, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
-                              const SizedBox(width: 6),
-                              Container(
-                                width: 22,
-                                height: 22,
-                                decoration: BoxDecoration(color: t.surface, shape: BoxShape.circle),
-                                child: Icon(
-                                  Directionality.of(context) == TextDirection.rtl
-                                      ? Icons.chevron_left_rounded
-                                      : Icons.chevron_right_rounded,
-                                  size: 16,
-                                  color: chipAccent,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+            ? AppSectionTitle(
+                title: s.shopByCategory,
+                actionLabel: s.viewAll,
+                onAction: () => openCategoriesTab(context, container),
+                padding: const EdgeInsetsDirectional.fromSTEB(16, 6, 16, 12),
               )
             : HomeSectionHeader(
                 title: s.shopByCategory,
@@ -91,38 +55,68 @@ class HomeHeroCategoryStrip extends ConsumerWidget {
                 onAction: () => openCategoriesTab(context, container),
               ),
         worldSections
-            ? SizedBox(
-                height: 176,
-                child: GridView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 6,
-                    childAspectRatio: 1.08,
-                  ),
-                  itemCount: categories.length,
-                  itemBuilder: (_, i) => _CategorySquareTile(
-                    category: categories[i],
-                    index: i,
-                    wash: wash,
-                    worldSections: true,
-                  ),
-                ),
-              )
+            ? _WorldCategoryLayout(categories: categories, wash: wash)
             : SizedBox(
                 height: 108,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: HomeTheme.paddingH,
+                  ),
                   itemCount: categories.length,
                   separatorBuilder: (_, __) => const SizedBox(width: 10),
-                  itemBuilder: (_, i) => _CategorySquareTile(category: categories[i], index: i),
+                  itemBuilder: (_, i) =>
+                      _CategorySquareTile(category: categories[i], index: i),
                 ),
               ),
         if (!worldSections) const HomeBrandsCta(),
       ],
+    );
+  }
+}
+
+/// شبكة أقسام العالم — حجم البلاطة ثابت في كل العوالم مهما اختلف العدد:
+/// أربع بلاطات ظاهرة ولمحة من التالية، صف واحد حتى 6 أقسام وصفّان لما فوقها.
+class _WorldCategoryLayout extends StatelessWidget {
+  final List<Category> categories;
+  final Color? wash;
+  const _WorldCategoryLayout({required this.categories, this.wash});
+
+  static const _gap = 10.0;
+  static const _runGap = 12.0;
+  static const _label = 24.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final n = categories.length;
+    return LayoutBuilder(
+      builder: (context, c) {
+        final tileW = (c.maxWidth - 16 - _gap * 4) / 4.3;
+        final tileH = tileW + _label;
+        // حتى 6 أقسام صف واحد متحرك، وأكثر صفّان — لا فراغات في أي عالم.
+        final rows = n <= 6 ? 1 : 2;
+        return SizedBox(
+          height: rows * tileH + (rows - 1) * _runGap,
+          child: GridView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            physics: const BouncingScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: rows,
+              mainAxisSpacing: _gap,
+              crossAxisSpacing: _runGap,
+              childAspectRatio: tileH / tileW,
+            ),
+            itemCount: n,
+            itemBuilder: (_, i) => _CategorySquareTile(
+              category: categories[i],
+              index: i,
+              wash: wash,
+              worldSections: true,
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -168,7 +162,8 @@ class HomeCategoryGrid extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
             itemCount: categories.length,
             separatorBuilder: (_, __) => const SizedBox(width: 10),
-            itemBuilder: (_, i) => _CategorySquareTile(category: categories[i], index: i),
+            itemBuilder: (_, i) =>
+                _CategorySquareTile(category: categories[i], index: i),
           ),
         ),
       ],
@@ -192,11 +187,11 @@ class _CategorySquareTile extends ConsumerWidget {
   static const _size = 72.0;
 
   static List<Color> _tilePalette(WorldThemePalette t) => [
-        t.accentLight,
-        t.accentSoft,
-        t.canvasWarm,
-        Color.lerp(t.accentLight, t.surface, 0.45)!,
-      ];
+    t.accentLight,
+    t.accentSoft,
+    t.canvasWarm,
+    Color.lerp(t.accentLight, t.surface, 0.45)!,
+  ];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -218,32 +213,51 @@ class _CategorySquareTile extends ConsumerWidget {
           ? Column(
               children: [
                 Expanded(
-                    child: DecoratedBox(
+                  child: DecoratedBox(
+                    // تدرّج ناعم: أفتح في الأعلى كأن ضوءاً يسقط على المنتج.
                     decoration: BoxDecoration(
-                      color: accent,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: t.hairline.withValues(alpha: 0.55)),
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color.lerp(accent, Colors.white, 0.6)!,
+                          accent,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white, width: 1.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: t.accentDark.withValues(alpha: 0.06),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
                     child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: ColoredBox(
-                      color: accent,
-                      child: category.imageUrl.isNotEmpty
-                          ? Padding(
-                              padding: const EdgeInsets.all(8),
-                              child: AppNetworkImage(
-                                url: category.imageUrl,
-                                fit: BoxFit.contain,
-                                backgroundColor: accent,
+                      borderRadius: BorderRadius.circular(18),
+                      child: ColoredBox(
+                        color: Colors.transparent,
+                        child: category.imageUrl.isNotEmpty
+                            ? Padding(
+                                padding: const EdgeInsets.all(8),
+                                child: AppNetworkImage(
+                                  url: category.imageUrl,
+                                  fit: BoxFit.contain,
+                                  backgroundColor: Colors.transparent,
+                                ),
+                              )
+                            : Center(
+                                child: Text(
+                                  category.icon ?? displayName.characters.first,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                    color: t.inkSoft,
+                                  ),
+                                ),
                               ),
-                            )
-                          : Center(
-                              child: Text(
-                                category.icon ?? displayName.characters.first,
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: t.inkSoft),
-                              ),
-                            ),
-                    ),
+                      ),
                     ),
                   ),
                 ),
@@ -253,67 +267,83 @@ class _CategorySquareTile extends ConsumerWidget {
                   maxLines: 1,
                   textAlign: TextAlign.center,
                   overflow: TextOverflow.ellipsis,
-                  style: HomeTheme.circleLabel.copyWith(fontWeight: FontWeight.w700, color: t.ink),
+                  style: HomeTheme.circleLabel.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: t.ink,
+                  ),
                 ),
               ],
             )
           : SizedBox(
-        width: _size,
-        child: Column(
-          children: [
-            SizedBox(
               width: _size,
-              height: _size,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(worldSections ? 14 : 16),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    ColoredBox(
-                      color: accent,
-                      child: category.imageUrl.isNotEmpty
-                          ? Padding(
-                              padding: EdgeInsets.all(worldSections ? 6 : 0),
-                              child: AppNetworkImage(
-                                url: category.imageUrl,
-                                width: _size,
-                                height: _size,
-                                fit: worldSections ? BoxFit.contain : BoxFit.cover,
-                              ),
-                            )
-                          : Center(
-                              child: Text(
-                                category.icon ?? displayName.characters.first,
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                  color: t.inkSoft.withValues(alpha: 0.85),
-                                ),
-                              ),
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: _size,
+                    height: _size,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                        worldSections ? 14 : 16,
+                      ),
+                      child: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          ColoredBox(
+                            color: accent,
+                            child: category.imageUrl.isNotEmpty
+                                ? Padding(
+                                    padding: EdgeInsets.all(
+                                      worldSections ? 6 : 0,
+                                    ),
+                                    child: AppNetworkImage(
+                                      url: category.imageUrl,
+                                      width: _size,
+                                      height: _size,
+                                      fit: worldSections
+                                          ? BoxFit.contain
+                                          : BoxFit.cover,
+                                    ),
+                                  )
+                                : Center(
+                                    child: Text(
+                                      category.icon ??
+                                          displayName.characters.first,
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: t.inkSoft.withValues(
+                                          alpha: 0.85,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                          ),
+                          if (!worldSections)
+                            const CameraCornerFrame(
+                              inset: 6,
+                              arm: 10,
+                              opacity: 0.72,
                             ),
+                        ],
+                      ),
                     ),
-                    if (!worldSections) const CameraCornerFrame(inset: 6, arm: 10, opacity: 0.72),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    displayName,
+                    maxLines: 1,
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: HomeTheme.circleLabel.copyWith(
+                      fontSize: 11,
+                      height: 1.15,
+                      fontWeight: FontWeight.w700,
+                      color: t.ink,
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              displayName,
-              maxLines: 1,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: HomeTheme.circleLabel.copyWith(
-                fontSize: 11,
-                height: 1.15,
-                fontWeight: FontWeight.w700,
-                color: t.ink,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
-

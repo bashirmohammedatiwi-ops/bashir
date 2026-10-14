@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../core/theme/app_colors.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_network_image.dart';
@@ -185,16 +184,26 @@ class _BannerStripState extends State<_BannerStrip> {
     return Column(
       children: [
         SizedBox(
-          height: 118,
+          height: 122,
           child: PageView.builder(
             controller: _page,
             itemCount: banners.length,
             onPageChanged: (i) => setState(() => _index = i),
             itemBuilder: (_, i) {
               final banner = banners[i];
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: _BannerCard(banner: banner, accent: widget.accent, lang: widget.lang, height: 118),
+              final active = i == _index;
+              return AnimatedScale(
+                duration: const Duration(milliseconds: 260),
+                curve: Curves.easeOutCubic,
+                scale: active ? 1.0 : 0.94,
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 260),
+                  opacity: active ? 1.0 : 0.55,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: _BannerCard(banner: banner, accent: widget.accent, lang: widget.lang, height: 122),
+                  ),
+                ),
               );
             },
           ),
@@ -206,13 +215,17 @@ class _BannerStripState extends State<_BannerStrip> {
             children: [
               for (var i = 0; i < banners.length; i++)
                 AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  margin: const EdgeInsets.symmetric(horizontal: 2),
-                  width: i == _index ? 14 : 5,
-                  height: 5,
+                  duration: const Duration(milliseconds: 240),
+                  curve: Curves.easeOutCubic,
+                  margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                  width: i == _index ? 16 : 6,
+                  height: 6,
                   decoration: BoxDecoration(
-                    color: i == _index ? widget.accent : widget.accent.withValues(alpha: 0.25),
+                    color: i == _index ? widget.accent : widget.accent.withValues(alpha: 0.22),
                     borderRadius: BorderRadius.circular(99),
+                    boxShadow: i == _index
+                        ? [BoxShadow(color: widget.accent.withValues(alpha: 0.35), blurRadius: 6)]
+                        : null,
                   ),
                 ),
             ],
@@ -240,15 +253,25 @@ class _BannerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => openBannerLink(context, banner),
-      child: ClipRRect(
+      child: Material(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        elevation: 1.5,
+        shadowColor: accent.withValues(alpha: 0.20),
         child: SizedBox(
           height: height,
           width: double.infinity,
           child: banner.hasImage
               ? AppNetworkImage(url: banner.imageUrl, fit: BoxFit.cover, backgroundColor: Colors.white)
-              : ColoredBox(
-                  color: accent,
+              : DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [accent, Color.lerp(accent, Colors.black, 0.18)!],
+                    ),
+                  ),
                   child: Center(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -282,7 +305,16 @@ class _EditorialTitle extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 12),
       child: Row(
         children: [
-          Expanded(child: Container(height: 1, color: line)),
+          Expanded(
+            child: Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.transparent, line],
+                ),
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text(
@@ -290,7 +322,16 @@ class _EditorialTitle extends StatelessWidget {
               style: TextStyle(fontSize: 12, letterSpacing: 0.8, fontWeight: FontWeight.w800, color: ink),
             ),
           ),
-          Expanded(child: Container(height: 1, color: line)),
+          Expanded(
+            child: Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [line, Colors.transparent],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -319,7 +360,12 @@ class _FeaturedSection extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
       child: Material(
         color: Colors.white,
-        shape: RoundedRectangleBorder(side: BorderSide(color: accent.withValues(alpha: 0.28))),
+        elevation: 1.5,
+        shadowColor: accent.withValues(alpha: 0.18),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: BorderSide(color: accent.withValues(alpha: 0.28)),
+        ),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () {
@@ -333,7 +379,10 @@ class _FeaturedSection extends StatelessWidget {
                 SizedBox(
                   width: 92,
                   height: 92,
-                  child: ColoredBox(color: AppColors.blush, child: CategoryLineArt(category: category, size: 92)),
+                  child: ColoredBox(
+                    color: Color.alphaBlend(accent.withValues(alpha: 0.07), Colors.white),
+                    child: CategoryLineArt(category: category, size: 92),
+                  ),
                 ),
                 Expanded(
                   child: Padding(
@@ -341,13 +390,13 @@ class _FeaturedSection extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('01', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: accent)),
+                        Text('01', style: TextStyle(fontSize: 12, letterSpacing: 0.3, fontWeight: FontWeight.w800, color: accent)),
                         const Spacer(),
                         Text(
                           category.localizedName(lang),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 16, height: 1.15, fontWeight: FontWeight.w800, color: ink),
+                          style: TextStyle(fontSize: 16, height: 1.15, letterSpacing: -0.2, fontWeight: FontWeight.w800, color: ink),
                         ),
                         if (count > 0)
                           Text(
@@ -356,6 +405,14 @@ class _FeaturedSection extends StatelessWidget {
                           ),
                       ],
                     ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(end: 12),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: accent.withValues(alpha: 0.6),
                   ),
                 ),
               ],
@@ -404,12 +461,15 @@ class _IndexLine extends StatelessWidget {
             children: [
               SizedBox(
                 width: 28,
-                child: Text(mark, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: accent)),
+                child: Text(mark, style: TextStyle(fontSize: 12, letterSpacing: 0.2, fontWeight: FontWeight.w800, color: accent)),
               ),
               Container(
                 width: 36,
                 height: 36,
-                decoration: BoxDecoration(border: Border.all(color: accent.withValues(alpha: 0.2))),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: accent.withValues(alpha: 0.2)),
+                ),
                 clipBehavior: Clip.antiAlias,
                 child: ColoredBox(color: Colors.white, child: CategoryLineArt(category: category, size: 36)),
               ),
@@ -419,16 +479,26 @@ class _IndexLine extends StatelessWidget {
                   category.localizedName(lang),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: ink),
+                  style: TextStyle(fontSize: 14, letterSpacing: -0.1, fontWeight: FontWeight.w700, color: ink),
                 ),
               ),
               if (count > 0)
                 Padding(
                   padding: const EdgeInsetsDirectional.only(end: 6),
-                  child: Text('$count', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: ink.withValues(alpha: 0.4))),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Text(
+                      '$count',
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: accent.withValues(alpha: 0.85)),
+                    ),
+                  ),
                 ),
               Icon(
-                Directionality.of(context) == TextDirection.rtl ? Icons.arrow_back_rounded : Icons.arrow_forward_rounded,
+                Icons.arrow_forward_rounded,
                 size: 16,
                 color: accent.withValues(alpha: 0.7),
               ),

@@ -33,9 +33,15 @@ class BrandHomeSection extends ConsumerWidget {
       compactTop: compactTop,
       actionLabel: section.showViewAll ? s.viewAll : null,
       onAction: section.showViewAll
-          ? () => openViewAllLink(context, query: section.viewAllQuery, fallbackQuery: '/brands')
+          ? () => openViewAllLink(
+              context,
+              query: section.viewAllQuery,
+              fallbackQuery: '/brands',
+            )
           : null,
-      child: _cardsLayout ? _BrandCardsRow(brands: section.brands) : _BrandLogosRow(brands: section.brands),
+      child: _cardsLayout
+          ? _BrandCardsRow(brands: section.brands)
+          : _BrandLogosRow(brands: section.brands),
     );
   }
 }
@@ -63,7 +69,10 @@ class _BrandLogosRow extends StatelessWidget {
               onTap: () => openBrandLink(context, b),
               child: Container(
                 width: 112,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 decoration: HomeTheme.sectionSurface(),
                 child: Row(
                   children: [

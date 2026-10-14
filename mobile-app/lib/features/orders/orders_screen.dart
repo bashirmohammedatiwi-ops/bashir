@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/config/app_config.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_typography.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/auth_gate.dart';
@@ -14,6 +12,14 @@ import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/order.dart';
 import '../../data/services/api_service.dart';
+import '../../core/widgets/app_network_image.dart';
+import '../../core/widgets/ui/ui.dart';
+import '../cart/widgets/cart_theme.dart';
+import '../cart/widgets/pill_buttons.dart';
+import '../shell/main_shell.dart';
+import '../worlds/world_theme.dart';
+import 'order_strings.dart';
+import 'widgets/order_status.dart';
 
 class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
@@ -78,49 +84,83 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final s = ref.s;
+    final t = context.worldTheme;
     return AuthGate(
       title: s.myOrders,
       emptyTitle: s.loginToViewOrders,
       child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        appBar: AppBar(title: Text(s.myOrders), elevation: 0),
+        backgroundColor: t.canvas,
+        appBar: AppBar(
+          leading: const Padding(
+            padding: EdgeInsetsDirectional.only(start: 8),
+            child: Center(child: AppBackButton()),
+          ),
+          leadingWidth: 60,
+          titleSpacing: 4,
+          title: Text(s.myOrders, style: AppText.title1.copyWith(color: t.ink)),
+          backgroundColor: t.canvas,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+        ),
         body: _buildBody(),
       ),
     );
   }
 
   Widget _buildBody() {
+    final s = ref.s;
+    final t = context.worldTheme;
     if (_firstLoad && _loading) {
       return ListView.separated(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 8, CartTheme.hPad, 16),
         physics: const NeverScrollableScrollPhysics(),
         itemCount: 4,
-        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm + 2),
-        itemBuilder: (_, __) => const ShimmerBox(height: 110, radius: AppRadius.lg),
+        separatorBuilder: (_, __) => const SizedBox(height: CartTheme.itemGap),
+        itemBuilder: (_, __) => const ShimmerBox(height: 132, radius: AppCorners.lg),
       );
     }
     if (_error != null && _items.isEmpty) {
       return ErrorView(message: friendlyError(_error!), onRetry: () => _fetch(reset: true));
     }
     if (_items.isEmpty) {
-      return const EmptyState(
-          icon: Icons.receipt_long_outlined,
-          title: 'لا توجد طلبات بعد',
-          subtitle: 'ستظهر طلباتك هنا بعد الشراء');
+      return EmptyState(
+        icon: Icons.receipt_long_outlined,
+        title: s.noOrdersTitle,
+        subtitle: s.noOrdersSubtitle,
+        action: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 260),
+          child: PrimaryPillButton(
+            label: s.startShopping,
+            icon: Icons.storefront_outlined,
+            onTap: () {
+              ref.read(navIndexProvider.notifier).state = 0;
+              context.go('/');
+            },
+          ),
+        ),
+      );
     }
     return RefreshIndicator(
-      color: AppColors.primary,
+      color: t.accent,
       onRefresh: () => _fetch(reset: true),
       child: ListView.separated(
         controller: _scroll,
-        padding: const EdgeInsets.all(AppSpacing.md),
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 8, CartTheme.hPad, 24),
         itemCount: _items.length + (_hasMore ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm + 2),
+        separatorBuilder: (_, __) => const SizedBox(height: CartTheme.itemGap),
         itemBuilder: (_, i) {
           if (i >= _items.length) {
-            return const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            return Padding(
+              padding: const EdgeInsets.all(16),
+              child: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(color: t.accent, strokeWidth: 2.4),
+                ),
+              ),
             );
           }
           return _OrderCard(order: _items[i]);
@@ -130,71 +170,132 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   }
 }
 
-class _OrderCard extends StatelessWidget {
+class _OrderCard extends ConsumerWidget {
   final AppOrder order;
   const _OrderCard({required this.order});
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => context.push('/orders/${order.id}'),
-      child: Container(
-        padding: const EdgeInsets.all(AppSpacing.md + 2),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.hairline.withValues(alpha: 0.75)),
-          boxShadow: AppColors.cardShadow,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Text('#${order.orderNumber}', style: AppTypography.body.copyWith(fontWeight: FontWeight.w800)),
-                const Spacer(),
-                _StatusChip(status: order.status),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xs + 2),
-            Text(formatDateTime(order.createdAt), style: AppTypography.caption),
-            const Divider(height: AppSpacing.lg + 2),
-            Row(
-              children: [
-                Text('${order.itemCount} منتج', style: AppTypography.caption.copyWith(color: AppColors.textSecondary)),
-                const Spacer(),
-                Text(order.totalLabel, style: AppTypography.price.copyWith(fontSize: 16)),
-              ],
-            ),
-          ],
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final t = context.worldTheme;
+    final closed = isOrderClosedNegative(order.status);
+    final thumbs = order.items.where((e) => e.imageUrl.isNotEmpty).take(3).toList();
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          context.push('/orders/${order.id}');
+        },
+        borderRadius: BorderRadius.circular(CartTheme.radiusLg),
+        child: Ink(
+          padding: const EdgeInsets.all(16),
+          decoration: CartTheme.cardDecoration(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  CartTheme.iconBadge(
+                    context,
+                    orderStatusIcon(order.status),
+                    color: orderStatusColor(context, order.status),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '#${order.orderNumber}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textDirection: TextDirection.ltr,
+                          style: AppText.title3.copyWith(color: t.ink),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          formatDateTime(order.createdAt),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppText.caption.copyWith(color: t.inkMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  OrderStatusChip(status: order.status),
+                ],
+              ),
+              if (!closed) ...[const SizedBox(height: 14), OrderProgressBar(status: order.status)],
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Divider(height: 1, color: t.divider),
+              ),
+              Row(
+                children: [
+                  if (thumbs.isNotEmpty) ...[
+                    _ThumbStack(urls: thumbs.map((e) => e.imageUrl).toList()),
+                    const SizedBox(width: 10),
+                  ],
+                  Expanded(
+                    child: Text(
+                      s.itemCountLabel(order.itemCount),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.caption.copyWith(color: t.inkSoft),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(order.totalLabel, style: AppText.price.copyWith(color: t.ink)),
+                  const SizedBox(width: 4),
+                  Icon(Icons.chevron_right_rounded, color: t.inkMuted, size: 22),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _StatusChip extends StatelessWidget {
-  final String status;
-  const _StatusChip({required this.status});
-
-  Color get _color => switch (status) {
-        'DELIVERED' => AppColors.success,
-        'CANCELLED' || 'RETURNED' => AppColors.sale,
-        'SHIPPED' || 'PROCESSING' => AppColors.warning,
-        _ => AppColors.primary,
-      };
+class _ThumbStack extends StatelessWidget {
+  final List<String> urls;
+  const _ThumbStack({required this.urls});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: _color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(color: _color.withValues(alpha: 0.18)),
+    final t = context.worldTheme;
+    const size = 34.0;
+    const step = 22.0;
+    return SizedBox(
+      width: size + step * (urls.length - 1),
+      height: size,
+      child: Stack(
+        children: [
+          for (var i = 0; i < urls.length; i++)
+            PositionedDirectional(
+              start: i * step,
+              child: Container(
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  color: t.accentLight,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: t.surface, width: 2),
+                ),
+                child: ClipOval(
+                  child: Padding(
+                    padding: const EdgeInsets.all(3),
+                    child: ProductCoverImage(url: urls[i], fit: BoxFit.contain),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
-      child: Text(orderStatusLabel(status),
-          style: TextStyle(color: _color, fontSize: 12, fontWeight: FontWeight.w700)),
     );
   }
 }

@@ -1,59 +1,92 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/theme/app_colors.dart';
-import '../../cart/widgets/cart_theme.dart';
+import '../../../core/widgets/ui/ui.dart';
+import '../../../features/worlds/world_theme.dart';
 
-/// ثيم صفحة حسابي — ألوان واضحة ومتناسقة مع هوية اللوغو.
+/// ثيم صفحات الحساب — لون واحد متناغم (لون العالم النشط) لكل الأيقونات،
+/// والأحمر محجوز فقط للإجراءات الخطرة (الخروج / الحذف).
 abstract final class AccountTheme {
-  static const pageBg = Color(0xFFF8F6FB);
-  static const sectionGap = 18.0;
+  static const sectionGap = 22.0;
   static const hPad = 16.0;
 
-  static const orders = Color(0xFF9B6BD8);
-  static const wishlist = Color(0xFFD16FA0);
-  static const loyalty = Color(0xFFC99212);
-  static const addresses = Color(0xFF4B7FD6);
-  static const brands = Color(0xFF7B5FD4);
-  static const notifications = Color(0xFF9B6BD8);
-  static const settings = Color(0xFF5C6B7A);
+  /// الاستثناء الوحيد خارج لوحة العالم — للإجراءات الخطرة فقط.
   static const danger = Color(0xFFD64545);
-  static const dangerSoft = Color(0xFFFFF0F0);
+  static Color get dangerSoft => danger.withValues(alpha: 0.08);
 
-  static BoxDecoration pageCard({Color? color}) => BoxDecoration(
-        color: color ?? CartTheme.card,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: CartTheme.brandSoft),
-        boxShadow: CartTheme.softShadow,
-      );
+  static BoxDecoration pageCard(BuildContext context, {Color? color}) {
+    final t = context.worldTheme;
+    return BoxDecoration(
+      color: color ?? t.surface,
+      borderRadius: BorderRadius.circular(AppCorners.lg),
+      border: Border.all(color: t.hairline.withValues(alpha: 0.7)),
+      boxShadow: t.cardShadow,
+    );
+  }
 
-  static BoxDecoration heroDecoration() => BoxDecoration(
-        gradient: AppColors.signatureGradient,
-        borderRadius: BorderRadius.circular(26),
-        boxShadow: [
-          BoxShadow(
-            color: CartTheme.brand.withValues(alpha: 0.28),
-            blurRadius: 22,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      );
+  static BoxDecoration heroDecoration(BuildContext context) {
+    final t = context.worldTheme;
+    return BoxDecoration(
+      gradient: t.signatureGradient,
+      borderRadius: BorderRadius.circular(AppCorners.xl),
+      boxShadow: [
+        BoxShadow(
+          color: t.accentDark.withValues(alpha: 0.22),
+          blurRadius: 24,
+          offset: const Offset(0, 10),
+        ),
+      ],
+    );
+  }
 
-  static Widget sectionTitle(String title, {IconData? icon}) {
+  /// مربّع الأيقونة الموحّد: أيقونة accentDark على خلفية accentLight.
+  static Widget iconTile(
+    BuildContext context,
+    IconData icon, {
+    double size = 40,
+    bool danger = false,
+    Color? color,
+  }) {
+    final t = context.worldTheme;
+    final fg = danger ? AccountTheme.danger : (color ?? t.accentDark);
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: danger
+            ? dangerSoft
+            : (color?.withValues(alpha: 0.1) ?? t.accentLight),
+        borderRadius: BorderRadius.circular(AppCorners.sm),
+        border: Border.all(
+          color: danger
+              ? AccountTheme.danger.withValues(alpha: 0.12)
+              : t.accentSoft,
+        ),
+      ),
+      alignment: Alignment.center,
+      child: Icon(icon, color: fg, size: size * 0.5),
+    );
+  }
+
+  static Widget sectionTitle(
+    BuildContext context,
+    String title, {
+    IconData? icon,
+  }) {
+    final t = context.worldTheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 2, 4, 10),
+      padding: const EdgeInsetsDirectional.fromSTEB(4, 0, 4, 10),
       child: Row(
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 17, color: CartTheme.brandDark),
+            Icon(icon, size: 16, color: t.accentDark),
             const SizedBox(width: 8),
           ],
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w900,
-              color: CartTheme.charcoal,
-              letterSpacing: -0.2,
+          Flexible(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppText.label.copyWith(color: t.inkSoft),
             ),
           ),
         ],

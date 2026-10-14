@@ -5,7 +5,7 @@ import '../cache/image_cache.dart';
 import '../theme/app_colors.dart';
 import '../utils/media_url.dart';
 
-const _fallbackAsset = 'assets/images/app_icon_source.png';
+const _fallbackAsset = 'assets/images/app_icon_brand_foreground.png';
 
 /// صورة شبكية مع كاش محسّن وتحجيم حسب حجم العرض الفعلي.
 class AppNetworkImage extends StatelessWidget {
@@ -58,7 +58,10 @@ class AppNetworkImage extends StatelessWidget {
         maxWidthDiskCache: pixelW,
         maxHeightDiskCache: pixelH,
         filterQuality: FilterQuality.medium,
-        placeholder: (_, __) => _solid(placeholderColor ?? AppColors.shimmerBase),
+        // مع خلفية مخصّصة تظهر الخلفية نفسها أثناء التحميل — لا أشرطة رمادية.
+        placeholder: (_, __) => backgroundColor != null
+            ? const SizedBox.expand()
+            : _solid(placeholderColor ?? AppColors.shimmerBase),
         errorWidget: (_, __, ___) => _fallback(),
         imageBuilder: (context, imageProvider) => Image(
           image: imageProvider,
@@ -89,7 +92,14 @@ class AppNetworkImage extends StatelessWidget {
   }
 
   Widget _solid(Color color) {
-    return Container(width: width, height: height, color: color);
+    // يملأ المساحة المتاحة حتى بدون أبعاد صريحة.
+    return LayoutBuilder(
+      builder: (context, c) => Container(
+        width: width ?? (c.hasBoundedWidth ? c.maxWidth : 0),
+        height: height ?? (c.hasBoundedHeight ? c.maxHeight : 0),
+        color: color,
+      ),
+    );
   }
 
   Widget _fallback() {

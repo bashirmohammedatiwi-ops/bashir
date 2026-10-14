@@ -6,14 +6,15 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/widgets/auth_gate.dart';
 import '../../data/services/api_service.dart';
 import '../auth/widgets/auth_shell.dart';
-import '../cart/widgets/cart_theme.dart';
+import 'widgets/account_theme.dart';
 import 'widgets/profile_ui.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
   const ChangePasswordScreen({super.key});
 
   @override
-  ConsumerState<ChangePasswordScreen> createState() => _ChangePasswordScreenState();
+  ConsumerState<ChangePasswordScreen> createState() =>
+      _ChangePasswordScreenState();
 }
 
 class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
@@ -38,18 +39,22 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
-      await ref.read(apiServiceProvider).changePassword(
+      await ref
+          .read(apiServiceProvider)
+          .changePassword(
             currentPassword: _current.text,
             newPassword: _next.text,
           );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(ref.s.passwordChangedSuccess)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(ref.s.passwordChangedSuccess)));
       context.pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -70,27 +75,23 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
           loading: _loading,
         ),
         body: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 16, ProfileUi.hPad, 24),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.fromLTRB(
+            ProfileUi.hPad,
+            20,
+            ProfileUi.hPad,
+            24,
+          ),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      color: CartTheme.brandSoft,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: CartTheme.brand.withValues(alpha: 0.12),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(Icons.lock_outline_rounded, size: 36, color: CartTheme.brand),
+                  child: AccountTheme.iconTile(
+                    context,
+                    Icons.lock_outline_rounded,
+                    size: 64,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -100,7 +101,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 ),
                 const SizedBox(height: 20),
                 ProfileSurfaceCard(
-                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 6),
+                  padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -109,14 +110,22 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                         field: TextFormField(
                           controller: _current,
                           obscureText: _obscureCurrent,
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const [AutofillHints.password],
                           decoration: authFieldDecoration(
-                            label: '',
-                            suffix: IconButton(
-                              icon: Icon(_obscureCurrent ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                              onPressed: () => setState(() => _obscureCurrent = !_obscureCurrent),
+                            context,
+                            label: s.currentPassword,
+                            icon: Icons.lock_outline_rounded,
+                            suffix: AuthPasswordToggle(
+                              obscured: _obscureCurrent,
+                              onToggle: () => setState(
+                                () => _obscureCurrent = !_obscureCurrent,
+                              ),
                             ),
                           ),
-                          validator: (v) => (v == null || v.length < 6) ? s.passwordMin6 : null,
+                          validator: (v) => (v == null || v.length < 6)
+                              ? s.passwordMin6
+                              : null,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -125,14 +134,21 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                         field: TextFormField(
                           controller: _next,
                           obscureText: _obscureNext,
+                          textInputAction: TextInputAction.next,
+                          autofillHints: const [AutofillHints.newPassword],
                           decoration: authFieldDecoration(
-                            label: '',
-                            suffix: IconButton(
-                              icon: Icon(_obscureNext ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                              onPressed: () => setState(() => _obscureNext = !_obscureNext),
+                            context,
+                            label: s.newPassword,
+                            icon: Icons.key_rounded,
+                            suffix: AuthPasswordToggle(
+                              obscured: _obscureNext,
+                              onToggle: () =>
+                                  setState(() => _obscureNext = !_obscureNext),
                             ),
                           ),
-                          validator: (v) => (v == null || v.length < 6) ? s.passwordMin6 : null,
+                          validator: (v) => (v == null || v.length < 6)
+                              ? s.passwordMin6
+                              : null,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -141,15 +157,24 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                         field: TextFormField(
                           controller: _confirm,
                           obscureText: _obscureConfirm,
+                          textInputAction: TextInputAction.done,
+                          autofillHints: const [AutofillHints.newPassword],
+                          onFieldSubmitted: (_) => _loading ? null : _submit(),
                           decoration: authFieldDecoration(
-                            label: '',
-                            suffix: IconButton(
-                              icon: Icon(_obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                              onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                            context,
+                            label: s.confirmPassword,
+                            icon: Icons.key_rounded,
+                            suffix: AuthPasswordToggle(
+                              obscured: _obscureConfirm,
+                              onToggle: () => setState(
+                                () => _obscureConfirm = !_obscureConfirm,
+                              ),
                             ),
                           ),
                           validator: (v) {
-                            if (v == null || v.isEmpty) return s.confirmPasswordRequired;
+                            if (v == null || v.isEmpty) {
+                              return s.confirmPasswordRequired;
+                            }
                             if (v != _next.text) return s.passwordsDoNotMatch;
                             return null;
                           },
@@ -158,7 +183,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 80),
               ],
             ),
           ),

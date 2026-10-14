@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,9 +7,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/theme/app_colors.dart';
-import '../../core/theme/app_spacing.dart';
-import '../../core/theme/app_typography.dart';
+import '../../core/widgets/app_snackbar.dart';
+import '../../core/widgets/shimmer_box.dart';
+import '../../core/widgets/ui/ui.dart';
+import '../cart/widgets/cart_theme.dart';
+import '../cart/widgets/pill_buttons.dart';
 import '../profile/profile_providers.dart';
+import '../worlds/world_theme.dart';
+import 'checkout_strings.dart';
 
 class OrderSuccessScreen extends ConsumerWidget {
   final String orderId;
@@ -16,119 +23,294 @@ class OrderSuccessScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.s;
+    final t = context.worldTheme;
     final order = ref.watch(orderDetailProvider(orderId));
+
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xxl),
+      backgroundColor: t.canvas,
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [t.accentSoft, t.canvas, t.canvas],
+            stops: const [0, 0.42, 1],
+          ),
+        ),
+        child: SafeArea(
           child: Column(
             children: [
-              const Spacer(flex: 2),
-              TweenAnimationBuilder<double>(
-                tween: Tween(begin: 0, end: 1),
-                duration: const Duration(milliseconds: 600),
-                curve: Curves.elasticOut,
-                builder: (_, value, child) => Transform.scale(scale: value, child: child),
-                child: Container(
-                  width: 112,
-                  height: 112,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.success, Color(0xFF43A047)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.success.withValues(alpha: 0.35),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(Icons.check_rounded, color: Colors.white, size: 56),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xxl),
-              Text(
-                s.orderPlacedSuccess,
-                textAlign: TextAlign.center,
-                style: AppTypography.sectionTitle.copyWith(fontSize: 24),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              order.maybeWhen(
-                data: (o) => Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    gradient: AppColors.signatureGradient,
-                    borderRadius: BorderRadius.circular(AppRadius.pill),
-                  ),
-                  child: Text(
-                    s.orderNumberLabel(o.orderNumber),
-                    style: AppTypography.body.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
-                  ),
-                ),
-                orElse: () => const SizedBox.shrink(),
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Text(
-                s.orderPlacedCodNote,
-                textAlign: TextAlign.center,
-                style: AppTypography.caption.copyWith(fontSize: 14, color: AppColors.textSecondary, height: 1.6),
-              ),
-              const Spacer(flex: 3),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: AppColors.signatureGradient,
-                    borderRadius: BorderRadius.circular(999),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.28),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        context.pushReplacement('/orders/$orderId');
-                      },
-                      borderRadius: BorderRadius.circular(999),
-                      child: Center(
-                        child: Text(
-                          s.trackOrder,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 32, 24, 16),
+                  child: Column(
+                    children: [
+                      const _SuccessBurst(),
+                      const SizedBox(height: 24),
+                      _FadeUp(
+                        delay: 250,
+                        child: Column(
+                          children: [
+                            Text(
+                              s.thankYouTitle,
+                              textAlign: TextAlign.center,
+                              style: AppText.label.copyWith(color: t.accentDark, letterSpacing: 0.4),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              s.orderPlacedSuccess,
+                              textAlign: TextAlign.center,
+                              style: AppText.display.copyWith(color: t.ink),
+                            ),
+                          ],
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 24),
+                      _FadeUp(
+                        delay: 400,
+                        child: order.when(
+                          data: (o) => _OrderNumberCard(number: o.orderNumber),
+                          loading: () => const ShimmerBox(height: 76, radius: AppCorners.lg),
+                          error: (_, __) => const SizedBox.shrink(),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _FadeUp(delay: 520, child: _NextSteps(s: s)),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: AppSpacing.md),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: OutlinedButton(
-                  onPressed: () {
-                    HapticFeedback.selectionClick();
-                    context.go('/');
-                  },
-                  child: Text(s.continueShopping),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 8, CartTheme.hPad, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    PrimaryPillButton(
+                      label: s.trackOrder,
+                      icon: Icons.local_shipping_outlined,
+                      onTap: () => context.pushReplacement('/orders/$orderId'),
+                    ),
+                    const SizedBox(height: 10),
+                    SecondaryPillButton(
+                      label: s.continueShopping,
+                      icon: Icons.storefront_outlined,
+                      onTap: () => context.go('/'),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.md),
             ],
           ),
         ),
       ),
+    );
+  }
+}
+
+class _OrderNumberCard extends ConsumerWidget {
+  final String number;
+  const _OrderNumberCard({required this.number});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final s = ref.s;
+    final t = context.worldTheme;
+    return Container(
+      padding: const EdgeInsetsDirectional.fromSTEB(16, 12, 8, 12),
+      decoration: CartTheme.cardDecoration(context),
+      child: Row(
+        children: [
+          CartTheme.iconBadge(context, Icons.receipt_long_outlined),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(s.orderNumberTitle, style: AppText.caption.copyWith(color: t.inkMuted)),
+                const SizedBox(height: 2),
+                Text(
+                  '#$number',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textDirection: TextDirection.ltr,
+                  style: AppText.title2.copyWith(color: t.ink, letterSpacing: 0.6),
+                ),
+              ],
+            ),
+          ),
+          AppIconButton(
+            icon: Icons.copy_rounded,
+            iconSize: 18,
+            tooltip: s.copy,
+            color: t.accentDark,
+            onTap: () {
+              Clipboard.setData(ClipboardData(text: number));
+              AppSnackbar.success(context, s.orderNumberCopied);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NextSteps extends StatelessWidget {
+  final AppStrings s;
+  const _NextSteps({required this.s});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    final steps = [
+      (Icons.support_agent_rounded, s.nextConfirmCall),
+      (Icons.inventory_2_outlined, s.nextPrepare),
+      (Icons.payments_outlined, s.nextPayOnDelivery),
+    ];
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: CartTheme.cardDecoration(context),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(s.whatsNextTitle, style: AppText.title3.copyWith(color: t.ink)),
+          const SizedBox(height: 12),
+          for (var i = 0; i < steps.length; i++) ...[
+            if (i > 0) const SizedBox(height: 10),
+            Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(color: t.accentLight, shape: BoxShape.circle),
+                  child: Icon(steps[i].$1, size: 17, color: t.accentDark),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(steps[i].$2, style: AppText.bodySmall.copyWith(color: t.inkSoft)),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// علامة نجاح متحركة: حلقات تتّسع + نقاط لامعة تنطلق للخارج — بألوان العالم.
+class _SuccessBurst extends StatefulWidget {
+  const _SuccessBurst();
+
+  @override
+  State<_SuccessBurst> createState() => _SuccessBurstState();
+}
+
+class _SuccessBurstState extends State<_SuccessBurst> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400));
+
+  @override
+  void initState() {
+    super.initState();
+    HapticFeedback.mediumImpact();
+    _c.forward();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    const size = 168.0;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (context, _) {
+          final pop = Curves.elasticOut.transform((_c.value / 0.6).clamp(0.0, 1.0));
+          final ring = Curves.easeOutCubic.transform(_c.value);
+          final sparkle = Curves.easeOutCubic.transform(((_c.value - 0.15) / 0.85).clamp(0.0, 1.0));
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              Opacity(
+                opacity: (1 - ring) * 0.6,
+                child: Container(
+                  width: 96 + 72 * ring,
+                  height: 96 + 72 * ring,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: t.accent, width: 2),
+                  ),
+                ),
+              ),
+              Container(
+                width: 132,
+                height: 132,
+                decoration: BoxDecoration(shape: BoxShape.circle, color: t.surface.withValues(alpha: 0.6)),
+              ),
+              for (var i = 0; i < 10; i++)
+                Transform.translate(
+                  offset: Offset.fromDirection(i * math.pi / 5 - math.pi / 2, 50 + 32 * sparkle),
+                  child: Opacity(
+                    opacity: sparkle < 0.85 ? sparkle.clamp(0.0, 1.0) : (1 - sparkle) / 0.15,
+                    child: Container(
+                      width: i.isEven ? 8 : 5,
+                      height: i.isEven ? 8 : 5,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: i % 3 == 0 ? AppColors.star : (i.isEven ? t.accent : t.accentDark),
+                      ),
+                    ),
+                  ),
+                ),
+              Transform.scale(
+                scale: pop,
+                child: Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    gradient: t.signatureGradient,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(color: t.accent.withValues(alpha: 0.35), blurRadius: 24, offset: const Offset(0, 10)),
+                    ],
+                  ),
+                  child: const Icon(Icons.check_rounded, color: Colors.white, size: 52),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _FadeUp extends StatelessWidget {
+  final int delay;
+  final Widget child;
+  const _FadeUp({required this.delay, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final total = delay + 450;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: total),
+      builder: (_, v, child) {
+        final p = Curves.easeOutCubic.transform(((v * total - delay) / 450).clamp(0.0, 1.0));
+        return Opacity(
+          opacity: p,
+          child: Transform.translate(offset: Offset(0, 14 * (1 - p)), child: child),
+        );
+      },
+      child: child,
     );
   }
 }

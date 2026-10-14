@@ -36,13 +36,11 @@ class SkinConcernsStrip extends ConsumerWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (showTitle && title != null && title!.isNotEmpty)
-          HomeEditorialHeader(
-            title: title!,
-            compact: true,
-          ),
+          HomeEditorialHeader(title: title!, compact: true),
         if (display == 'circles') _CirclesRow(concerns: concerns, lang: lang),
         if (display == 'cards') _CardsList(concerns: concerns, lang: lang),
-        if (display != 'circles' && display != 'cards') _PillsRow(concerns: concerns, lang: lang),
+        if (display != 'circles' && display != 'cards')
+          _PillsRow(concerns: concerns, lang: lang),
       ],
     );
   }
@@ -53,7 +51,9 @@ void _openConcern(BuildContext context, Category concern) {
     context,
     linkType: concern.linkType ?? 'skinConcern',
     linkValue: concern.linkValue ?? concern.slug,
-    legacyLink: concern.link ?? '/products?concernSlug=${Uri.encodeComponent(concern.slug)}',
+    legacyLink:
+        concern.link ??
+        '/products?concernSlug=${Uri.encodeComponent(concern.slug)}',
   );
 }
 
@@ -151,7 +151,12 @@ class _CardsList extends StatelessWidget {
                           ? AppNetworkImage(url: c.imageUrl, fit: BoxFit.cover)
                           : ColoredBox(
                               color: HomeTheme.blush,
-                              child: Center(child: Text(c.icon ?? '✨', style: const TextStyle(fontSize: 28))),
+                              child: Center(
+                                child: Text(
+                                  c.icon ?? '✨',
+                                  style: const TextStyle(fontSize: 28),
+                                ),
+                              ),
                             ),
                     ),
                     Expanded(

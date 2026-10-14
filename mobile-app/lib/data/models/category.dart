@@ -21,6 +21,9 @@ class Category {
   final String? rawImageUrl;
   final AppMedia? image;
   final String? listingKind;
+
+  /// عدد المنتجات كما يرسله الخادم (0 = غير معروف).
+  final int productCount;
   final List<Category> children;
 
   const Category({
@@ -40,6 +43,7 @@ class Category {
     this.rawImageUrl,
     this.image,
     this.listingKind,
+    this.productCount = 0,
     this.children = const [],
   });
 
@@ -60,6 +64,7 @@ class Category {
         rawImageUrl: json['imageUrl']?.toString(),
         image: json['image'] is Map ? AppMedia.fromJson(asMap(json['image'])) : null,
         listingKind: json['listingKind']?.toString(),
+        productCount: asInt(json['productCount']),
         children: asList(json['children']).map(Category.fromJson).toList(),
       );
 
@@ -91,6 +96,16 @@ class Category {
       en: descriptionEn,
       fallback: '',
     );
+  }
+
+  /// عدد المنتجات المعروض: الأكبر بين عدد القسم نفسه ومجموع أبنائه
+  /// (الخادم يحسب الارتباط المباشر فقط، فقد يكون عدد الأب أقل من مجموع أبنائه).
+  int get displayCount {
+    var sum = 0;
+    for (final c in children) {
+      sum += c.displayCount;
+    }
+    return productCount > sum ? productCount : sum;
   }
 
   String get imageUrl {

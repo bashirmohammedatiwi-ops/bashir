@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/app_strings.dart';
-import '../../../core/theme/app_colors.dart';
 import '../../shell/main_shell.dart';
 import '../../shell/nav_tabs.dart';
 import '../../worlds/world_theme.dart';
@@ -34,7 +33,12 @@ class HomeQuickDock extends ConsumerWidget {
     ];
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 12, HomeTheme.paddingH, 0),
+      padding: const EdgeInsets.fromLTRB(
+        HomeTheme.paddingH,
+        12,
+        HomeTheme.paddingH,
+        0,
+      ),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
         decoration: BoxDecoration(
@@ -42,9 +46,7 @@ class HomeQuickDock extends ConsumerWidget {
           borderRadius: BorderRadius.circular(HomeTheme.cardRadius),
           border: Border.all(color: t.divider),
         ),
-        child: Row(
-          children: [for (final item in items) Expanded(child: item)],
-        ),
+        child: Row(children: [for (final item in items) Expanded(child: item)]),
       ),
     );
   }
@@ -75,10 +77,7 @@ class _Item extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  t.accent.withValues(alpha: 0.14),
-                  t.accentLight,
-                ],
+                colors: [t.accent.withValues(alpha: 0.14), t.accentLight],
               ),
               shape: BoxShape.circle,
               border: Border.all(color: t.divider),
@@ -89,7 +88,10 @@ class _Item extends StatelessWidget {
           const SizedBox(height: 5),
           Text(
             label,
-            style: HomeTheme.circleLabel.copyWith(fontSize: 10, color: t.inkSoft),
+            style: HomeTheme.circleLabel.copyWith(
+              fontSize: 10,
+              color: t.inkSoft,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -113,11 +115,20 @@ class HomeTrustStrip extends ConsumerWidget {
         : s.fastDelivery;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(HomeTheme.paddingH, 4, HomeTheme.paddingH, 8),
+      padding: const EdgeInsets.fromLTRB(
+        HomeTheme.paddingH,
+        4,
+        HomeTheme.paddingH,
+        8,
+      ),
       child: Text(
         '${s.authentic}  ·  $shipping  ·  ${s.whatsappSupport}',
         textAlign: TextAlign.center,
-        style: HomeTheme.body(size: 11, color: HomeTheme.inkMuted, weight: FontWeight.w500),
+        style: HomeTheme.body(
+          size: 11,
+          color: HomeTheme.inkMuted,
+          weight: FontWeight.w500,
+        ),
       ),
     );
   }

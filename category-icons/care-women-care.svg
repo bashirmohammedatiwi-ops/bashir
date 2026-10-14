@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+<defs><linearGradient id="wcM" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#F27DB0"/><stop offset="1" stop-color="#D6338A"/></linearGradient></defs>
+<path fill="url(#wcM)" d="M14,62 C14,92 36,116 64,116 C92,116 114,92 114,62 C106,86 88,104 64,104 C40,104 22,86 14,62 Z"/>
+<g transform="translate(0,26)"><path fill="#F9B4D2" transform="rotate(-62 64 66)" d="M64,30 C72,42 72,56 64,66 C56,56 56,42 64,30 Z"/><path fill="#F9B4D2" transform="rotate(62 64 66)" d="M64,30 C72,42 72,56 64,66 C56,56 56,42 64,30 Z"/><path fill="#F27DB0" transform="rotate(-30 64 66)" d="M64,26 C73,38 73,54 64,66 C55,54 55,38 64,26 Z"/><path fill="#F27DB0" transform="rotate(30 64 66)" d="M64,26 C73,38 73,54 64,66 C55,54 55,38 64,26 Z"/><path fill="#D6338A" d="M64,22 C74,34 74,52 64,66 C54,52 54,34 64,22 Z"/></g>
+<path fill="#F9B4D2" d="M30,92 C38,98 50,100 60,96 C52,94 40,90 30,92 Z"/>
+<path fill="#F9B4D2" d="M98,92 C90,98 78,100 68,96 C76,94 88,90 98,92 Z"/>
+<path fill="#F27DB0" d="M22,30 C26,24 34,24 36,28 C32,32 26,33 22,30 Z"/>
+<path fill="#F9B4D2" d="M96,22 C100,19 106,20 106,24 C102,26 98,25 96,22 Z"/>
+<path fill="#D6338A" transform="translate(104,40) scale(0.5)" d="M0,-8 C1,-2 2,-1 8,0 C2,1 1,2 0,8 C-1,2 -2,1 -8,0 C-2,-1 -1,-2 0,-8Z"/>
+</svg>

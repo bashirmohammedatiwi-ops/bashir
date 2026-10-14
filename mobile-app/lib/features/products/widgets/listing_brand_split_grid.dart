@@ -10,11 +10,24 @@ import '../../../data/models/product.dart';
 import '../../worlds/world_theme.dart';
 import 'listing_theme.dart';
 
-/// قائمة منتجات براند مقسّمة: داخل القسم ثم فاصل ثم باقي منتجات البراند.
+/// مجموعة منتجات البراند داخل قسم رئيسي واحد.
+class BrandCategoryGroup {
+  final String categoryId;
+  final String label;
+  final List<Product> products;
+  const BrandCategoryGroup({
+    required this.categoryId,
+    required this.label,
+    required this.products,
+  });
+}
+
+/// قائمة منتجات براند مقسّمة: داخل القسم ثم فاصل ثم باقي منتجات البراند
+/// مجمّعة حسب الأقسام الرئيسية، كل قسم بعنوان وفاصل.
 class ListingBrandSplitGrid extends StatelessWidget {
   final ScrollController? controller;
   final List<Product> inCategory;
-  final List<Product> otherCategories;
+  final List<BrandCategoryGroup> otherGroups;
   final Widget? header;
   final String inCategoryLabel;
   final String otherLabel;
@@ -27,7 +40,7 @@ class ListingBrandSplitGrid extends StatelessWidget {
   const ListingBrandSplitGrid({
     super.key,
     required this.inCategory,
-    required this.otherCategories,
+    required this.otherGroups,
     this.header,
     required this.inCategoryLabel,
     required this.otherLabel,
@@ -42,8 +55,18 @@ class ListingBrandSplitGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final delegate = ProductGrid.delegateFor(context, listing: true);
-    final showDivider = inCategory.isNotEmpty && otherCategories.isNotEmpty;
-    final showOtherHeader = otherCategories.isNotEmpty;
+    final hasOther = otherGroups.any((g) => g.products.isNotEmpty);
+    final showDivider = inCategory.isNotEmpty && hasOther;
+
+    final groupSlivers = <Widget>[
+      for (var i = 0; i < otherGroups.length; i++)
+        if (otherGroups[i].products.isNotEmpty) ..._buildGroupSlivers(
+          delegate,
+          otherGroups[i],
+          isFirst: i == 0,
+          isLast: i == otherGroups.length - 1,
+        ),
+    ];
 
     return CustomScrollView(
       controller: controller,
@@ -60,7 +83,6 @@ class ListingBrandSplitGrid extends StatelessWidget {
             ),
           ),
           _productSliver(
-            context: context,
             delegate: delegate,
             products: inCategory,
             extraSlots: 0,
@@ -68,26 +90,9 @@ class ListingBrandSplitGrid extends StatelessWidget {
           ),
         ],
         if (showDivider)
-          SliverToBoxAdapter(
-            child: BrandCategorySectionDivider(label: dividerLabel),
-          ),
-        if (showOtherHeader) ...[
-          SliverToBoxAdapter(
-            child: _SectionHeading(
-              label: otherLabel,
-              icon: Icons.layers_rounded,
-              emphasized: false,
-            ),
-          ),
-          _productSliver(
-            context: context,
-            delegate: delegate,
-            products: otherCategories,
-            extraSlots: extraSlots,
-            padding: const EdgeInsets.fromLTRB(ListingTheme.padH, 4, ListingTheme.padH, 32),
-          ),
-        ],
-        if (extraSlots > 0 && !showOtherHeader && inCategory.isNotEmpty)
+          SliverToBoxAdapter(child: BrandCategorySectionDivider(label: dividerLabel)),
+        ...groupSlivers,
+        if (extraSlots > 0 && !hasOther && inCategory.isNotEmpty)
           SliverPadding(
             padding: padding,
             sliver: SliverGrid(
@@ -102,8 +107,41 @@ class ListingBrandSplitGrid extends StatelessWidget {
     );
   }
 
+  List<Widget> _buildGroupSlivers(
+    SliverGridDelegate delegate,
+    BrandCategoryGroup group, {
+    required bool isFirst,
+    required bool isLast,
+  }) {
+    return [
+      if (isFirst)
+        SliverToBoxAdapter(
+          child: _SectionHeading(
+            label: otherLabel,
+            icon: Icons.layers_rounded,
+            emphasized: false,
+          ),
+        )
+      else
+        SliverToBoxAdapter(child: BrandCategorySectionDivider(label: group.label)),
+      SliverToBoxAdapter(
+        child: _GroupHeading(label: group.label, emphasized: isFirst),
+      ),
+      _productSliver(
+        delegate: delegate,
+        products: group.products,
+        extraSlots: isLast ? extraSlots : 0,
+        padding: EdgeInsets.fromLTRB(
+          ListingTheme.padH,
+          4,
+          ListingTheme.padH,
+          isLast ? 32 : 8,
+        ),
+      ),
+    ];
+  }
+
   SliverPadding _productSliver({
-    required BuildContext context,
     required SliverGridDelegate delegate,
     required List<Product> products,
     required int extraSlots,
@@ -202,6 +240,47 @@ class _SectionHeading extends StatelessWidget {
   }
 }
 
+/// عنوان مجموعة قسم رئيسي مع عدد المنتجات.
+class _GroupHeading extends StatelessWidget {
+  final String label;
+  final bool emphasized;
+
+  const _GroupHeading({required this.label, this.emphasized = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(ListingTheme.padH, 10, ListingTheme.padH, 2),
+      child: Row(
+        children: [
+          Container(
+            width: 22,
+            height: 3,
+            decoration: BoxDecoration(
+              color: t.accent.withValues(alpha: emphasized ? 0.75 : 0.45),
+              borderRadius: BorderRadius.circular(99),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: emphasized ? 13 : 12.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.1,
+                color: emphasized ? t.ink : t.inkSoft,
+                height: 1.2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// فاصل أنيق بين منتجات البراند في القسم وباقي البراند.
 class BrandCategorySectionDivider extends StatelessWidget {
   final String label;
@@ -213,63 +292,59 @@ class BrandCategorySectionDivider extends StatelessWidget {
     final t = context.worldTheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(ListingTheme.padH, 14, ListingTheme.padH, 4),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _DividerLine(color: t.accent.withValues(alpha: 0.18)),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        t.accentLight.withValues(alpha: 0.95),
-                        t.surface,
-                      ],
-                      begin: AlignmentDirectional.centerStart,
-                      end: AlignmentDirectional.centerEnd,
-                    ),
-                    borderRadius: BorderRadius.circular(99),
-                    border: Border.all(color: t.accentSoft.withValues(alpha: 0.85)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: t.accent.withValues(alpha: 0.08),
-                        blurRadius: 14,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.swap_vert_rounded, size: 16, color: t.accent),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(
-                          label,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w800,
-                            color: t.accentDark,
-                            height: 1.15,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+          Expanded(
+            child: _DividerLine(color: t.accent.withValues(alpha: 0.18)),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    t.accentLight.withValues(alpha: 0.95),
+                    t.surface,
+                  ],
+                  begin: AlignmentDirectional.centerStart,
+                  end: AlignmentDirectional.centerEnd,
                 ),
+                borderRadius: BorderRadius.circular(99),
+                border: Border.all(color: t.accentSoft.withValues(alpha: 0.85)),
+                boxShadow: [
+                  BoxShadow(
+                    color: t.accent.withValues(alpha: 0.08),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              Expanded(
-                child: _DividerLine(color: t.accent.withValues(alpha: 0.18)),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.swap_vert_rounded, size: 16, color: t.accent),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w800,
+                        color: t.accentDark,
+                        height: 1.15,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
+          ),
+          Expanded(
+            child: _DividerLine(color: t.accent.withValues(alpha: 0.18)),
           ),
         ],
       ),
@@ -307,4 +382,8 @@ extension BrandSplitListingLabels on AppStrings {
   String brandSplitDivider(String brandName) => isAr
       ? 'منتجات $brandName في أقسام أخرى'
       : '$brandName in other categories';
+
+  String brandGroupCount(int count) => isAr
+      ? '$count ${count == 1 ? 'منتج' : 'منتجات'}'
+      : '$count ${count == 1 ? 'product' : 'products'}';
 }

@@ -8,6 +8,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/widgets/app_snackbar.dart';
+import '../../core/widgets/ui/ui.dart';
 import '../../data/models/coupon.dart';
 import '../../data/services/api_service.dart';
 import '../catalog/catalog_providers.dart';
@@ -22,6 +23,8 @@ import 'widgets/cart_item_card.dart';
 import 'widgets/cart_recommendations.dart';
 import 'widgets/cart_shipping_banner.dart';
 import 'widgets/cart_theme.dart';
+import '../worlds/world_theme.dart';
+import 'cart_strings.dart';
 
 class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
@@ -109,17 +112,19 @@ class _CartScreenState extends ConsumerState<CartScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(CartTheme.radiusLg)),
+        icon: const Icon(Icons.delete_sweep_outlined, color: AppColors.sale),
         title: Text(ref.s.clearCartTitle),
         content: Text(ref.s.clearCartBody),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: Text(ref.s.cancel)),
           TextButton(
             onPressed: () {
+              HapticFeedback.mediumImpact();
               ref.read(cartProvider.notifier).clear();
               _removeCoupon();
               Navigator.pop(ctx);
             },
-            child: Text(ref.s.clearCart, style: const TextStyle(color: AppColors.sale)),
+            child: Text(ref.s.clearCart, style: AppText.label.copyWith(color: AppColors.sale)),
           ),
         ],
       ),
@@ -143,10 +148,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final cart = ref.watch(cartProvider);
     final coupon = ref.watch(appliedCouponProvider);
     final feed = ref.watch(homeFeedProvider);
-    final threshold = feed.maybeWhen(
-      data: (d) => d.settings.freeShippingThreshold,
-      orElse: () => 50000,
-    );
+    final threshold = feed.maybeWhen(data: (d) => d.settings.freeShippingThreshold, orElse: () => 50000);
 
     ref.listen<CartState>(cartProvider, (prev, next) {
       if (prev?.subtotal != next.subtotal) {
@@ -158,75 +160,81 @@ class _CartScreenState extends ConsumerState<CartScreen> {
     final freeShipping = coupon?.freeShipping ?? false;
     final total = (cart.subtotal - discount).clamp(0, 1 << 31);
     final topPad = MediaQuery.paddingOf(context).top;
+    final t = context.worldTheme;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: cart.isEmpty
-          ? CartEmptyView(topPad: topPad)
-          : Column(
-              children: [
+      backgroundColor: t.canvas,
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 280),
+        child: cart.isEmpty
+            ? CartEmptyView(key: const ValueKey('empty'), topPad: topPad)
+            : Column(
+                key: const ValueKey('filled'),
+                children: [
                   Expanded(
                     child: CustomScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  slivers: [
-                    SliverToBoxAdapter(
-                          child: CartHeader(
-                        count: cart.count,
-                            total: total,
-                        topPad: topPad,
-                        onClear: _clearCart,
-                      ),
-                    ),
-                    SliverToBoxAdapter(
-                          child: CartShippingBanner(
-                        subtotal: cart.subtotal,
-                        threshold: threshold,
-                        freeShippingCoupon: freeShipping,
-                        onBrowse: () {
-                          context.go('/');
-                          ref.read(navIndexProvider.notifier).state = 0;
-                        },
-                      ),
-                    ),
+                      physics: const BouncingScrollPhysics(),
+                      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                      slivers: [
                         SliverToBoxAdapter(
-                          child: CartSectionLabel(title: ref.s.yourProducts),
+                          child: CartHeader(count: cart.count, topPad: topPad, onClear: _clearCart),
                         ),
-                    SliverPadding(
-                          padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 0, CartTheme.hPad, 0),
-                      sliver: SliverList.separated(
-                        itemCount: cart.items.length,
+                        SliverToBoxAdapter(
+                          child: CartShippingBanner(
+                            subtotal: cart.subtotal,
+                            threshold: threshold,
+                            freeShippingCoupon: freeShipping,
+                            onBrowse: () {
+                              context.go('/');
+                              ref.read(navIndexProvider.notifier).state = 0;
+                            },
+                          ),
+                        ),
+                        SliverToBoxAdapter(
+                          child: CartSectionLabel(title: ref.s.yourProducts, subtitle: ref.s.swipeToRemoveHint),
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.symmetric(horizontal: CartTheme.hPad),
+                          sliver: SliverList.separated(
+                            itemCount: cart.items.length,
                             separatorBuilder: (_, __) => const SizedBox(height: CartTheme.itemGap),
-                            itemBuilder: (_, i) => CartItemCard(item: cart.items[i]),
-                      ),
-                    ),
-                    SliverToBoxAdapter(
+                            itemBuilder: (_, i) => CartItemCard(key: ValueKey(cart.items[i].key), item: cart.items[i]),
+                          ),
+                        ),
+                        SliverToBoxAdapter(
                           child: Padding(
-                            padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 6, CartTheme.hPad, 0),
-                            child: Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: CartTheme.cardDecoration(color: CartTheme.brandWash.withValues(alpha: 0.45)),
+                            padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 16, CartTheme.hPad, 0),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 260),
+                              padding: const EdgeInsetsDirectional.fromSTEB(14, 10, 10, 10),
+                              decoration: CartTheme.cardDecoration(
+                                context,
+                                color: coupon != null
+                                    ? Color.alphaBlend(AppColors.success.withValues(alpha: 0.06), t.surface)
+                                    : t.surface,
+                              ),
                               child: CartCouponSection(
-                        controller: _couponCtrl,
-                        focusNode: _couponFocus,
-                        error: _couponError,
-                        loading: _couponLoading,
-                        applied: coupon,
-                        discount: discount,
-                        onApply: _applyCoupon,
-                        onRemove: _removeCoupon,
-                      ),
-                    ),
-                      ),
-                    ),
-                    feed.maybeWhen(
-                      data: (d) {
-                        final recs = d.bestSellers.take(8).toList();
-                        if (recs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+                                controller: _couponCtrl,
+                                focusNode: _couponFocus,
+                                error: _couponError,
+                                loading: _couponLoading,
+                                applied: coupon,
+                                discount: discount,
+                                onApply: _applyCoupon,
+                                onRemove: _removeCoupon,
+                              ),
+                            ),
+                          ),
+                        ),
+                        feed.maybeWhen(
+                          data: (d) {
+                            final recs = d.bestSellers.take(8).toList();
+                            if (recs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
                             return SliverToBoxAdapter(child: CartRecommendations(products: recs));
-                      },
-                      orElse: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
-                    ),
-                        const SliverToBoxAdapter(child: SizedBox(height: 12)),
+                          },
+                          orElse: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
+                        ),
+                        const SliverToBoxAdapter(child: SizedBox(height: 16)),
                       ],
                     ),
                   ),
@@ -241,6 +249,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   ),
                 ],
               ),
+      ),
     );
   }
 }

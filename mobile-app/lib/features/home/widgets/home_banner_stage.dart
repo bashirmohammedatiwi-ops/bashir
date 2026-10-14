@@ -37,7 +37,11 @@ class HomeBannerStage extends StatelessWidget {
     final itemSize = banner.cardSize;
     return HomeBannerStage(
       banner: banner,
-      layout: resolveBannerLayout(section, index: index, itemCardSize: itemSize),
+      layout: resolveBannerLayout(
+        section,
+        index: index,
+        itemCardSize: itemSize,
+      ),
       sceneIndex: sceneIndex,
       onTap: onTap,
       width: width,
@@ -48,7 +52,8 @@ class HomeBannerStage extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.worldTheme;
     final screenW = MediaQuery.sizeOf(context).width;
-    final cardW = width ??
+    final cardW =
+        width ??
         (layout.fullBleed ? screenW : screenW - HomeTheme.paddingH * 2);
     final cardH = layout.heightFor(cardW);
     final radius = layout.radius;
@@ -97,7 +102,11 @@ class HomeBannerStage extends StatelessWidget {
     return card;
   }
 
-  static _BannerTint _tintFor(BuildContext context, int index, AppBanner banner) {
+  static _BannerTint _tintFor(
+    BuildContext context,
+    int index,
+    AppBanner banner,
+  ) {
     final t = context.worldTheme;
     final custom = parseHexColor(banner.backgroundColor);
     if (custom != null) {
@@ -108,16 +117,8 @@ class HomeBannerStage extends StatelessWidget {
       );
     }
     final presets = [
-      _BannerTint(
-        bg: t.accentLight,
-        border: t.accentSoft,
-        accent: t.accent,
-      ),
-      _BannerTint(
-        bg: t.canvasWarm,
-        border: t.hairline,
-        accent: t.accentDark,
-      ),
+      _BannerTint(bg: t.accentLight, border: t.accentSoft, accent: t.accent),
+      _BannerTint(bg: t.canvasWarm, border: t.hairline, accent: t.accentDark),
       _BannerTint(
         bg: Color.lerp(t.accent, t.canvas, 0.88)!,
         border: t.divider,
@@ -190,8 +191,10 @@ double homeHeroBannerHeight(
   double? width,
 }) {
   final inset = HomeTheme.bannerInset;
-  final w = width ??
-      (MediaQuery.sizeOf(context).width - (section?.fullBleed == true ? 0 : inset * 2));
+  final w =
+      width ??
+      (MediaQuery.sizeOf(context).width -
+          (section?.fullBleed == true ? 0 : inset * 2));
   final layout = section != null
       ? resolveBannerLayout(section)
       : BannerLayoutConfig(aspect: HomeTheme.bannerAspect);

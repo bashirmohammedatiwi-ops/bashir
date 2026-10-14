@@ -27,7 +27,14 @@ class MediaGallerySection extends StatelessWidget {
       section: section,
       wrapCard: display != 'stack',
       child: switch (display) {
-        'marquee' => _marquee(context, items, height, gap, defaultShape, defaultSize),
+        'marquee' => _marquee(
+          context,
+          items,
+          height,
+          gap,
+          defaultShape,
+          defaultSize,
+        ),
         'grid' => _grid(context, items, height, gap, defaultShape, defaultSize),
         'stack' => _stack(context, items, defaultShape),
         _ => _scroll(context, items, height, gap, defaultShape, defaultSize),
@@ -50,7 +57,8 @@ class MediaGallerySection extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: HomeTheme.paddingH),
         itemCount: items.length,
         separatorBuilder: (_, __) => SizedBox(width: gap),
-        itemBuilder: (_, i) => _tile(context, items[i], height, defaultShape, defaultSize),
+        itemBuilder: (_, i) =>
+            _tile(context, items[i], height, defaultShape, defaultSize),
       ),
     );
   }
@@ -68,7 +76,11 @@ class MediaGallerySection extends StatelessWidget {
       final m = Map<String, dynamic>.from(raw);
       final url = _imageUrl(m);
       if (url.isEmpty) continue;
-      final w = _tileWidth(height, m['shape']?.toString() ?? defaultShape, m['size']?.toString() ?? defaultSize);
+      final w = _tileWidth(
+        height,
+        m['shape']?.toString() ?? defaultShape,
+        m['size']?.toString() ?? defaultSize,
+      );
       images.add(
         HomeMarqueeImage.fromItem(
           url: url,
@@ -113,7 +125,14 @@ class MediaGallerySection extends StatelessWidget {
           childAspectRatio: _aspectForShape(defaultShape),
         ),
         itemCount: items.length,
-        itemBuilder: (_, i) => _tile(context, items[i], height, defaultShape, defaultSize, expand: true),
+        itemBuilder: (_, i) => _tile(
+          context,
+          items[i],
+          height,
+          defaultShape,
+          defaultSize,
+          expand: true,
+        ),
       ),
     );
   }
@@ -164,7 +183,12 @@ class MediaGallerySection extends StatelessWidget {
           ],
         ),
         clipBehavior: Clip.antiAlias,
-        child: AppNetworkImage(url: url, fit: BoxFit.cover, width: w, height: height),
+        child: AppNetworkImage(
+          url: url,
+          fit: BoxFit.cover,
+          width: w,
+          height: height,
+        ),
       ),
     );
   }
@@ -194,7 +218,9 @@ class MediaGallerySection extends StatelessWidget {
   String _imageUrl(Map<String, dynamic> m) {
     return resolveImageFromPayload(
       directUrl: m['imageUrl']?.toString(),
-      image: m['image'] is Map ? Map<String, dynamic>.from(m['image'] as Map) : null,
+      image: m['image'] is Map
+          ? Map<String, dynamic>.from(m['image'] as Map)
+          : null,
     );
   }
 

@@ -107,7 +107,10 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
 
   double _estimatePeriodWidth() {
     if (widget.images.isEmpty) return 1;
-    return widget.images.fold<double>(0, (sum, img) => sum + img.width + widget.gap);
+    return widget.images.fold<double>(
+      0,
+      (sum, img) => sum + img.width + widget.gap,
+    );
   }
 
   double get _activePeriod =>
@@ -119,7 +122,10 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
     return math.max(3, (viewportWidth / period).ceil() + 2);
   }
 
-  static bool _imagesChanged(List<HomeMarqueeImage> a, List<HomeMarqueeImage> b) {
+  static bool _imagesChanged(
+    List<HomeMarqueeImage> a,
+    List<HomeMarqueeImage> b,
+  ) {
     if (a.length != b.length) return true;
     for (var i = 0; i < a.length; i++) {
       final x = a[i];
@@ -151,7 +157,10 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
     });
   }
 
-  void _applyLoopDuration({required double period, bool preserveProgress = true}) {
+  void _applyLoopDuration({
+    required double period,
+    bool preserveProgress = true,
+  }) {
     final ms = (period / _pxPerSec * 1000).round().clamp(6000, 120000);
     final progress = preserveProgress ? _ctrl.value : 0.0;
     _ctrl
@@ -227,7 +236,8 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
 
     final deltaFromDown = event.position - _pointerDown!;
     if (!_userDragging) {
-      if (deltaFromDown.dx.abs() < _dragSlop && deltaFromDown.dy.abs() < _dragSlop) {
+      if (deltaFromDown.dx.abs() < _dragSlop &&
+          deltaFromDown.dy.abs() < _dragSlop) {
         return;
       }
       if (deltaFromDown.dx.abs() <= deltaFromDown.dy.abs()) return;
@@ -347,18 +357,27 @@ class _HomeImageMarqueeState extends State<HomeImageMarquee>
                       animation: _ctrl,
                       builder: (_, __) {
                         final loop = _activePeriod;
-                        return Transform.translate(
-                          offset: Offset((widget.reverse ? 1 : -1) * _ctrl.value * loop, 0),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            textDirection: TextDirection.ltr,
-                            children: [
-                              for (var i = 0; i < copies; i++)
-                                _period(
-                                  key: i == 0 ? _periodKey : ValueKey('period-$i'),
-                                  periodIndex: i,
-                                ),
-                            ],
+                        return OverflowBox(
+                          alignment: Alignment.centerLeft,
+                          maxWidth: double.infinity,
+                          child: Transform.translate(
+                            offset: Offset(
+                              (widget.reverse ? 1 : -1) * _ctrl.value * loop,
+                              0,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              textDirection: TextDirection.ltr,
+                              children: [
+                                for (var i = 0; i < copies; i++)
+                                  _period(
+                                    key: i == 0
+                                        ? _periodKey
+                                        : ValueKey('period-$i'),
+                                    periodIndex: i,
+                                  ),
+                              ],
+                            ),
                           ),
                         );
                       },

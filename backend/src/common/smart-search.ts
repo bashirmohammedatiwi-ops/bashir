@@ -3,9 +3,24 @@ import { Prisma, PrismaClient } from "@prisma/client";
 const NORM_FROM = "أإآىةؤئ";
 const NORM_TO = "ااايهوي";
 
+/** أرقام عربية-هندية → لاتينية حتى يعمل البحث بالباركود المكتوب بأي لوحة مفاتيح. */
+const ARABIC_DIGITS = "٠١٢٣٤٥٦٧٨٩";
+const PERSIAN_DIGITS = "۰۱۲۳۴۵۶۷۸۹";
+const LATIN_DIGITS = "0123456789";
+
+function normalizeDigits(raw: string): string {
+  let out = raw;
+  for (let i = 0; i < 10; i++) {
+    out = out
+      .replaceAll(ARABIC_DIGITS[i], LATIN_DIGITS[i])
+      .replaceAll(PERSIAN_DIGITS[i], LATIN_DIGITS[i]);
+  }
+  return out;
+}
+
 /** تطبيع عربي/إنجليزي حتى يطابق البحث بغض النظر عن لغة الواجهة. */
 export function normalizeSearchText(raw: string): string {
-  return String(raw || "")
+  return normalizeDigits(String(raw || ""))
     .toLowerCase()
     .replace(/[\u064B-\u0652\u0670\u0640]/g, "")
     .replace(/[أإآٱ]/g, "ا")
@@ -174,6 +189,7 @@ function termScoreClause(pattern: string, starts: string): Prisma.Sql {
 /**
  * بحث ذكي للمتجر — ترتيب بالملاءمة، عربي/إنجليزي، مرادفات، ووسوم المساعد.
  * يرجّع معرّفات مرتبة (الأكثر صلة أولاً).
+ * عند صفر نتائج: محاولة ثانية بتشابه trigram (تحمّل أخطاء الكتابة) إن كانت الإضافة مفعّلة.
  */
 export async function searchStorefrontProductIds(
   prisma: PrismaClient,
@@ -210,7 +226,50 @@ export async function searchStorefrontProductIds(
       p."createdAt" DESC
     LIMIT ${Math.min(Math.max(limit, 1), 200)}
   `;
-  return rows.map((row) => row.id);
+  const ids = rows.map((row) => row.id);
+  if (ids.length) return ids;
+
+  // تحمّل الأخطاء: تشابه trigram على الاسم/البراند عند صفر نتائج مطابقة.
+  return trigramFallbackIds(prisma, normalized, limit);
+}
+
+/**
+ * محاولة إنقاذ الاستعلامات المغلوطة عبر pg_trgm — تعمل فقط إذا كانت الإضافة مفعّلة.
+ * "مايبيلين" تجد Maybelline، و"vitamin" تجد "فيتامين" عبر الاسم الإنجليزي.
+ */
+async function trigramFallbackIds(
+  prisma: PrismaClient,
+  normalized: string,
+  limit: number,
+): Promise<string[]> {
+  const tokens = normalized.split(" ").filter((t) => t.length >= 3);
+  const probe = tokens.sort((a, b) => b.length - a.length)[0];
+  if (!probe) return [];
+  try {
+    const rows = await prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT p.id
+      FROM "Product" p
+      LEFT JOIN "Brand" b ON b.id = p."brandId"
+      WHERE p."isActive" = true
+        AND (
+          word_similarity(${probe}, regexp_replace(translate(lower(coalesce(p.name,'') || ' ' || coalesce(p."nameAr",'') || ' ' || coalesce(p."nameEn",'')), ${NORM_FROM}, ${NORM_TO}), '[ً-ْٰـ]', '', 'g')) > 0.5
+          OR word_similarity(${probe}, regexp_replace(translate(lower(coalesce(b.name,'')), ${NORM_FROM}, ${NORM_TO}), '[ً-ْٰـ]', '', 'g')) > 0.3
+          OR similarity(${probe}, regexp_replace(translate(lower(coalesce(b.name,'')), ${NORM_FROM}, ${NORM_TO}), '[ً-ْٰـ]', '', 'g')) > 0.28
+        )
+      ORDER BY
+        GREATEST(
+          word_similarity(${probe}, regexp_replace(translate(lower(coalesce(p.name,'') || ' ' || coalesce(p."nameAr",'') || ' ' || coalesce(p."nameEn",'')), ${NORM_FROM}, ${NORM_TO}), '[ً-ْٰـ]', '', 'g')),
+          word_similarity(${probe}, regexp_replace(translate(lower(coalesce(b.name,'')), ${NORM_FROM}, ${NORM_TO}), '[ً-ْٰـ]', '', 'g')),
+          similarity(${probe}, regexp_replace(translate(lower(coalesce(b.name,'')), ${NORM_FROM}, ${NORM_TO}), '[ً-ْٰـ]', '', 'g'))
+        ) DESC,
+        p."soldCount" DESC
+      LIMIT ${Math.min(Math.max(limit, 1), 200)}
+    `;
+    return rows.map((row) => row.id);
+  } catch {
+    // pg_trgm غير مفعّل — إرجاع صفر بصمت (السلوك القديم).
+    return [];
+  }
 }
 
 /** @deprecated استخدم searchStorefrontProductIds — يُبقى للتوافق */

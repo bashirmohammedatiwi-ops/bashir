@@ -6,8 +6,10 @@ import '../../core/config/app_config.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/utils/support_links.dart';
-import '../cart/widgets/cart_theme.dart';
+import '../../core/widgets/ui/ui.dart';
+import '../profile/widgets/account_strings.dart';
 import '../profile/widgets/profile_ui.dart';
+import '../../features/worlds/world_theme.dart';
 
 enum LegalDocumentType { privacy, terms }
 
@@ -19,75 +21,79 @@ class LegalDocumentScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.s;
-    final title = type == LegalDocumentType.privacy ? s.privacyPolicy : s.termsOfService;
-    final body = type == LegalDocumentType.privacy ? _privacyBody(s) : _termsBody(s);
+    final title = type == LegalDocumentType.privacy
+        ? s.privacyPolicy
+        : s.termsOfService;
+    final body = type == LegalDocumentType.privacy
+        ? _privacyBody(s)
+        : _termsBody(s);
+
+    final t = context.worldTheme;
 
     return ProfileScaffold(
       title: title,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(ProfileUi.hPad, 16, ProfileUi.hPad, 32),
-        children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: CartTheme.charcoal),
+      body: SelectionArea(
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            ProfileUi.hPad,
+            20,
+            ProfileUi.hPad,
+            32,
           ),
-          const SizedBox(height: 8),
-          Text(
-            s.isAr ? 'آخر تحديث: يوليو 2026' : 'Last updated: July 2026',
-            style: TextStyle(color: CartTheme.charcoal.withValues(alpha: 0.5), fontSize: 12),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: CartTheme.brand.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: CartTheme.brand.withValues(alpha: 0.15)),
+          children: [
+            Text(title, style: AppText.title1.copyWith(color: t.ink)),
+            const SizedBox(height: 6),
+            Text(
+              s.acctLastUpdated,
+              style: AppText.caption.copyWith(color: t.inkMuted),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.info_outline_rounded, size: 18, color: CartTheme.brand.withValues(alpha: 0.85)),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    s.legalInAppNotice,
-                    style: TextStyle(
-                      fontSize: 13,
-                      height: 1.5,
-                      color: CartTheme.charcoal.withValues(alpha: 0.78),
-                    ),
-                  ),
-                ),
-              ],
+            const SizedBox(height: 16),
+            ProfileInfoBanner(
+              icon: Icons.info_outline_rounded,
+              text: s.legalInAppNotice,
             ),
-          ),
-          const SizedBox(height: 20),
-          Text(
-            body,
-            style: TextStyle(
-              fontSize: 14,
-              height: 1.65,
-              color: CartTheme.charcoal.withValues(alpha: 0.85),
+            const SizedBox(height: 16),
+            ProfileSurfaceCard(
+              padding: const EdgeInsets.fromLTRB(18, 20, 18, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (final block in _blocks(body)) _LegalBlock(lines: block),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-          TextButton.icon(
-            onPressed: () async {
-              final url = type == LegalDocumentType.privacy
-                  ? AppConfig.privacyPolicyUrlFor(s.lang)
-                  : AppConfig.termsOfServiceUrlFor(s.lang);
-              final ok = await openExternalUrl(url);
-              if (!context.mounted) return;
-              if (!ok) AppSnackbar.error(context, s.linkOpenFailed);
-            },
-            icon: const Icon(Icons.open_in_new_rounded, size: 18),
-            label: Text(s.viewOnWebsite),
-          ),
-        ],
+            const SizedBox(height: 20),
+            ProfileOutlineButton(
+              label: s.viewOnWebsite,
+              icon: Icons.open_in_new_rounded,
+              onPressed: () async {
+                final url = type == LegalDocumentType.privacy
+                    ? AppConfig.privacyPolicyUrlFor(s.lang)
+                    : AppConfig.termsOfServiceUrlFor(s.lang);
+                final ok = await openExternalUrl(url);
+                if (!context.mounted) return;
+                if (!ok) AppSnackbar.error(context, s.linkOpenFailed);
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
+
+  /// يقسم النص إلى فقرات (كتل مفصولة بسطر فارغ) — للعرض فقط.
+  static List<List<String>> _blocks(String body) => body
+      .trim()
+      .split(RegExp(r'\n\s*\n'))
+      .map(
+        (b) => b
+            .split('\n')
+            .map((l) => l.trim())
+            .where((l) => l.isNotEmpty)
+            .toList(),
+      )
+      .where((b) => b.isNotEmpty)
+      .toList();
 
   static String _privacyBody(AppStrings s) {
     if (s.isAr) {
@@ -120,7 +126,7 @@ class LegalDocumentScreen extends ConsumerWidget {
 ''';
     }
     return '''
-At deema alhayat we respect your privacy. This policy explains what we collect and how we use it.
+At Deema Alhayat we respect your privacy. This policy explains what we collect and how we use it.
 
 Data we collect
 • Name and phone number when you register or place an order.
@@ -182,7 +188,7 @@ Website: https://deemaalhayat.com
 ''';
     }
     return '''
-By using the deema alhayat app you agree to these terms:
+By using the Deema Alhayat app you agree to these terms:
 
 Service
 The app lets you browse and order products with cash on delivery (COD) unless online payment is enabled later.
@@ -201,7 +207,7 @@ Payment & delivery
 Cash on delivery unless stated otherwise. Delivery times are estimates and may vary.
 
 Intellectual property
-Brands, images, and content belong to deema alhayat or suppliers and may not be copied without permission.
+Brands, images, and content belong to Deema Alhayat or suppliers and may not be copied without permission.
 
 Termination
 You may delete your account in the app. Past order records may be retained for legal and accounting purposes.
@@ -217,4 +223,62 @@ Contact: support@deemaalhayat.com
 void openLegalDocument(BuildContext context, LegalDocumentType type) {
   final path = type == LegalDocumentType.privacy ? '/privacy' : '/terms';
   context.push(path);
+}
+
+class _LegalBlock extends StatelessWidget {
+  final List<String> lines;
+  const _LegalBlock({required this.lines});
+
+  bool _isBullet(String l) => l.startsWith('•');
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    final bodyStyle = AppText.body.copyWith(color: t.inkSoft, height: 1.7);
+    final first = lines.first;
+    final hasHeading =
+        lines.length > 1 && !_isBullet(first) && first.length <= 40;
+    final rest = hasHeading ? lines.sublist(1) : lines;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (hasHeading) ...[
+            Text(first, style: AppText.title3.copyWith(color: t.ink)),
+            const SizedBox(height: 6),
+          ],
+          for (final l in rest)
+            if (_isBullet(l))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsetsDirectional.only(
+                        top: 10,
+                        end: 10,
+                        start: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: t.accent,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(l.substring(1).trim(), style: bodyStyle),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Text(l, style: bodyStyle),
+        ],
+      ),
+    );
+  }
 }

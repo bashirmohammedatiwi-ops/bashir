@@ -14,7 +14,7 @@
 **Base URL المعتمد للبوت حالياً:**
 
 ```text
-https://v3ajd7-ip-187-127-88-146.tunnelmole.net
+https://igmbzc-ip-187-127-88-146.tunnelmole.net
 ```
 
 كل المسارات أدناه تكون نسبةً لهذا الـ Base (أو نفس المسار على `https://deemaalhayat.com` إذا كان اتصالك إليه يعمل).
@@ -230,7 +230,7 @@ Content-Type: application/json
 ### 4.3 مثال curl
 
 ```bash
-BASE="https://v3ajd7-ip-187-127-88-146.tunnelmole.net"
+BASE="https://igmbzc-ip-187-127-88-146.tunnelmole.net"
 TOKEN="...."   # من login
 
 curl -sS -X POST "$BASE/api/v1/ai-product/quick-import" \
@@ -529,7 +529,7 @@ Authorization: Bearer <accessToken>
 ```text
 الدفعة: <اسم/رقم>
 الوقت: <...>
-Base: https://v3ajd7-ip-187-127-88-146.tunnelmole.net
+Base: https://igmbzc-ip-187-127-88-146.tunnelmole.net
 
 الإجمالي المحاول: N
 نجح: N
@@ -549,7 +549,7 @@ Base: https://v3ajd7-ip-187-127-88-146.tunnelmole.net
 ## 12) ملخص أوامر للبوت (نسخة قصيرة)
 
 ```text
-BASE = https://v3ajd7-ip-187-127-88-146.tunnelmole.net
+BASE = https://igmbzc-ip-187-127-88-146.tunnelmole.net
 1) POST /api/v1/auth/login  → Bearer token
 2) لكل منتج:
    - اختياري: GET /api/v1/products/barcode-check?barcode=...

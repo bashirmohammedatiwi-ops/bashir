@@ -59,14 +59,6 @@ class AppMedia {
     return null;
   }
 
-  String? _originalUrl() {
-    if (publicUrlBase.isNotEmpty && filename.isNotEmpty) {
-      if (publicUrlBase.contains('.')) return resolveMediaUrl(publicUrlBase);
-      return resolveMediaUrl('$publicUrlBase/$filename.webp');
-    }
-    return null;
-  }
-
   String? _originalFileUrl() {
     if (publicUrlBase.isEmpty || filename.isEmpty) return null;
     final base = publicUrlBase.replaceAll(RegExp(r'/+$'), '');

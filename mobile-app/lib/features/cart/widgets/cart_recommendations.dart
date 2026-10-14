@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_strings.dart';
+import '../../../core/widgets/product_card.dart';
 import '../../../data/models/product.dart';
-import '../../home/widgets/home_product_row.dart';
-import '../../home/widgets/home_theme.dart';
 import 'cart_theme.dart';
 
+/// صف منتجات أفقي مقترح (السلة الممتلئة والفارغة).
 class CartRecommendations extends ConsumerWidget {
   final List<Product> products;
+  final String? title;
+  final String? subtitle;
 
-  const CartRecommendations({super.key, required this.products});
+  const CartRecommendations({super.key, required this.products, this.title, this.subtitle});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -18,33 +20,21 @@ class CartRecommendations extends ConsumerWidget {
     final s = ref.s;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 24, CartTheme.hPad, 12),
-          child: Row(
-            children: [
-              Container(
-                width: 4,
-                height: 18,
-                decoration: BoxDecoration(
-                  gradient: CartTheme.brandGradient,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                s.youMayAlsoLike,
-                style: HomeTheme.sectionTitle(size: 16, color: CartTheme.charcoal),
-              ),
-            ],
+        CartSectionLabel(title: title ?? s.youMayAlsoLike, subtitle: subtitle),
+        SizedBox(
+          height: 262,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(CartTheme.hPad, 0, CartTheme.hPad, 8),
+            itemCount: products.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, i) => RepaintBoundary(
+              child: ProductCard(key: ValueKey(products[i].id), product: products[i], width: 150, lite: true),
+            ),
           ),
         ),
-        HomeProductRow(
-          products: products,
-          padding: const EdgeInsets.symmetric(horizontal: CartTheme.hPad),
-        ),
-        const SizedBox(height: 8),
       ],
     );
   }

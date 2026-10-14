@@ -19,6 +19,7 @@ import '../models/order.dart';
 import '../models/paginated.dart';
 import '../models/product.dart';
 import '../models/review.dart';
+import '../models/search_suggestions.dart';
 import '../models/store_world.dart';
 import '../models/user.dart';
 
@@ -758,45 +759,27 @@ class ApiService {
     } catch (_) {}
   }
 
-  // ---- AI ASSISTANT ----
-  Future<Map<String, dynamic>> assistantChat({
-    required String message,
+  // ---- SEARCH SUGGEST ----
+  /// اقتراحات البحث الحية أثناء الكتابة — منتجات + براندات + أقسام + تصحيح إملائي.
+  /// يُمرَّر [cancelToken] لإلغاء الطلب القديم عند متابعة الكتابة.
+  Future<SearchSuggestions> suggestProducts(
+    String q, {
     required String lang,
-    List<Map<String, String>> history = const [],
+    CancelToken? cancelToken,
   }) async {
     try {
-      final r = await _dio.post('/assistant/chat', data: {
-        'message': message,
-        'lang': lang,
-        if (history.isNotEmpty) 'history': history,
-      });
-      return asMap(_data(r));
+      final query = q.trim();
+      if (query.length < 2) return SearchSuggestions.empty;
+      final r = await _dio.get(
+        '/products/search/suggest',
+        queryParameters: {'q': query, 'lang': lang == 'en' ? 'en' : 'ar'},
+        cancelToken: cancelToken,
+        options: Options(extra: {'auth': false}),
+      );
+      return SearchSuggestions.fromJson(_data(r));
     } catch (e) {
       _throw(e);
     }
-  }
-
-  Future<void> assistantFeedback(String turnId, int rating, {String? note}) async {
-    try {
-      await _dio.post('/assistant/turns/$turnId/feedback', data: {
-        'rating': rating,
-        if (note != null && note.isNotEmpty) 'note': note,
-      });
-    } catch (e) {
-      _throw(e);
-    }
-  }
-
-  Future<void> assistantTap(String turnId, String productId) async {
-    try {
-      await _dio.post('/assistant/turns/$turnId/tap', data: {'productId': productId});
-    } catch (_) {}
-  }
-
-  Future<void> assistantCart(String turnId, String productId) async {
-    try {
-      await _dio.post('/assistant/turns/$turnId/cart', data: {'productId': productId});
-    } catch (_) {}
   }
 }
 

@@ -24,7 +24,8 @@ class AlhayaaApp extends ConsumerStatefulWidget {
   ConsumerState<AlhayaaApp> createState() => _AlhayaaAppState();
 }
 
-class _AlhayaaAppState extends ConsumerState<AlhayaaApp> with WidgetsBindingObserver {
+class _AlhayaaAppState extends ConsumerState<AlhayaaApp>
+    with WidgetsBindingObserver {
   bool _warmedUp = false;
   bool _pushInited = false;
   bool _minSplashDone = false;
@@ -40,9 +41,13 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> with WidgetsBindingObse
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    Future<void>.delayed(const Duration(milliseconds: 1100), () {
-      if (mounted) setState(() => _minSplashDone = true);
-    });
+    // ننتظر اكتمال مشهد الافتتاح ثم ننتقل.
+    Future<void>.delayed(
+      SplashScreen.introDuration + const Duration(milliseconds: 150),
+      () {
+        if (mounted) setState(() => _minSplashDone = true);
+      },
+    );
   }
 
   @override
@@ -70,7 +75,9 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> with WidgetsBindingObse
         !_pushInited &&
         authStatus != AuthStatus.unknown) {
       _pushInited = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) => PushService.init(ref));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => PushService.init(ref),
+      );
     }
 
     final localeSettings = ref.watch(appLocaleProvider);
@@ -80,21 +87,24 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> with WidgetsBindingObse
     final showSplash = booting || !_minSplashDone;
 
     if (showSplash) {
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        scrollBehavior: const AppScrollBehavior(),
-        locale: locale,
-        supportedLocales: _locales,
-        localizationsDelegates: _delegates,
-        builder: (context, child) => ResponsiveApp(
-          child: Directionality(
-            textDirection: direction,
-            child: DismissKeyboard(child: child ?? const SizedBox.shrink()),
+      return _SplashSwitch(
+        showSplash: true,
+        child: MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light,
+          scrollBehavior: const AppScrollBehavior(),
+          locale: locale,
+          supportedLocales: _locales,
+          localizationsDelegates: _delegates,
+          builder: (context, child) => ResponsiveApp(
+            child: Directionality(
+              textDirection: direction,
+              child: DismissKeyboard(child: child ?? const SizedBox.shrink()),
+            ),
           ),
-        ),
-        home: SplashScreen(
-          lang: localeSettings.loaded ? locale.languageCode : 'ar',
+          home: SplashScreen(
+            lang: localeSettings.loaded ? locale.languageCode : 'ar',
+          ),
         ),
       );
     }
@@ -102,26 +112,74 @@ class _AlhayaaAppState extends ConsumerState<AlhayaaApp> with WidgetsBindingObse
     final router = ref.watch(routerProvider);
     final worldTheme = ref.watch(activeWorldThemeProvider);
     // بعد ظهور الـ router (انتهاء الـ splash) نفّذ أي إشعار معلّق.
-    WidgetsBinding.instance.addPostFrameCallback((_) => PendingPushNavigation.flush());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => PendingPushNavigation.flush(),
+    );
 
-    return AnimatedTheme(
-      duration: const Duration(milliseconds: 320),
-      curve: Curves.easeOutCubic,
-      data: worldTheme.applyTo(AppTheme.light),
-      child: MaterialApp.router(
-        title: AppConfig.storeName,
-        debugShowCheckedModeBanner: false,
-        theme: worldTheme.applyTo(AppTheme.light),
-        scrollBehavior: const AppScrollBehavior(),
-        routerConfig: router,
-        locale: locale,
-        supportedLocales: _locales,
-        localizationsDelegates: _delegates,
-        builder: (context, child) => ResponsiveApp(
-          child: Directionality(
-            textDirection: direction,
-            child: DismissKeyboard(child: child ?? const SizedBox.shrink()),
+    return _SplashSwitch(
+      showSplash: false,
+      child: AnimatedTheme(
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+        data: worldTheme.applyTo(AppTheme.light),
+        child: MaterialApp.router(
+          title: AppConfig.storeName,
+          debugShowCheckedModeBanner: false,
+          theme: worldTheme.applyTo(AppTheme.light),
+          scrollBehavior: const AppScrollBehavior(),
+          routerConfig: router,
+          locale: locale,
+          supportedLocales: _locales,
+          localizationsDelegates: _delegates,
+          builder: (context, child) => ResponsiveApp(
+            child: Directionality(
+              textDirection: direction,
+              child: DismissKeyboard(child: child ?? const SizedBox.shrink()),
+            ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// انتقال الافتتاح: المشهد يتمدّد قليلاً ويتلاشى، والرئيسية تظهر من تحته بهدوء.
+class _SplashSwitch extends StatelessWidget {
+  final bool showSplash;
+  final Widget child;
+  const _SplashSwitch({required this.showSplash, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 750),
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
+        transitionBuilder: (child, animation) {
+          final isSplash = child.key == const ValueKey('splash');
+          if (isSplash) {
+            // الخروج: تكبير خفيف مع التلاشي — كأننا نعبر من خلال الحلقة.
+            return FadeTransition(
+              opacity: animation,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 1.12, end: 1).animate(animation),
+                child: child,
+              ),
+            );
+          }
+          return FadeTransition(
+            opacity: animation,
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.97, end: 1).animate(animation),
+              child: child,
+            ),
+          );
+        },
+        child: KeyedSubtree(
+          key: ValueKey(showSplash ? 'splash' : 'app'),
+          child: child,
         ),
       ),
     );

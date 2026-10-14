@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../core/config/app_config.dart';
-import '../../core/theme/app_spacing.dart';
 import '../../core/utils/barcode_util.dart';
+import '../../core/utils/formatters.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/cache/image_cache.dart';
 import '../../core/widgets/product_grid.dart';
 import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
+import '../../core/widgets/ui/ui.dart';
 import '../../data/models/category.dart';
 import '../../data/models/paginated.dart';
 import '../../data/models/product.dart';
@@ -24,7 +26,6 @@ import 'widgets/listing_brand_split_grid.dart';
 import 'widgets/listing_filters_section.dart';
 import 'widgets/listing_page_header.dart';
 import 'widgets/listing_theme.dart';
-
 class ProductListingScreen extends ConsumerStatefulWidget {
   final String title;
   final String? categoryId;
@@ -37,6 +38,10 @@ class ProductListingScreen extends ConsumerStatefulWidget {
   final bool isPromo;
   final bool isFeatured;
   final String? concernSlug;
+
+  /// نطاق سعر مبدئي (مثلاً من "تسوّقي حسب ميزانيتك" في الرئيسية).
+  final int? initialMinPrice;
+  final int? initialMaxPrice;
 
   const ProductListingScreen({
     super.key,
@@ -51,6 +56,8 @@ class ProductListingScreen extends ConsumerStatefulWidget {
     this.isPromo = false,
     this.isFeatured = false,
     this.concernSlug,
+    this.initialMinPrice,
+    this.initialMaxPrice,
   });
 
   @override
@@ -80,11 +87,21 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
   int? _minPrice;
   int? _maxPrice;
   bool _inStock = false;
+  bool _onSale = false;
   double? _minRating;
+  int? _total;
+
+  int get _activeFilterCount =>
+      (_minPrice != null || _maxPrice != null ? 1 : 0) +
+      (_inStock ? 1 : 0) +
+      (_onSale && !widget.isPromo ? 1 : 0) +
+      (_minRating != null ? 1 : 0);
 
   @override
   void initState() {
     super.initState();
+    _minPrice = widget.initialMinPrice;
+    _maxPrice = widget.initialMaxPrice;
     _fetch();
     _scroll.addListener(_onScroll);
   }
@@ -200,12 +217,19 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
     _inCategoryItems.clear();
     _otherBrandItems.clear();
     _firstLoad = true;
+    _total = null;
   }
 
   Future<void> _fetchStandardListing() async {
-    final result = await _queryProducts(page: _page);
+    final result = await _queryProducts(
+      page: _page,
+      categoryId: widget.categoryId,
+      subcategoryId: widget.subcategoryId,
+      tertiaryCategoryId: widget.tertiaryCategoryId,
+    );
     if (!mounted) return;
     setState(() {
+      if (_page == 1) _total = result.total;
       _items.addAll(result.items);
       _hasMore = result.hasNext;
       _page++;
@@ -225,6 +249,7 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
         );
         if (!mounted) return;
         setState(() {
+          if (_inCategoryPage == 1) _total = result.total;
           _inCategoryItems.addAll(result.items);
           _inCategoryHasMore = result.hasNext;
           _inCategoryPage++;
@@ -278,7 +303,7 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
           search: widget.search,
           isNew: widget.isNew ? true : null,
           isBestSeller: widget.isBestSeller ? true : null,
-          isPromo: widget.isPromo ? true : null,
+          isPromo: widget.isPromo || _onSale ? true : null,
           isFeatured: widget.isFeatured ? true : null,
           concernSlug: widget.concernSlug,
           sort: _sort == 'default' || _sort == 'brand' ? 'brand' : _sort,
@@ -312,6 +337,50 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
     return findCategoryById(roots, id)?.localizedName(lang);
   }
 
+  /// يجمع منتجات البراند خارج القسم الحالي في مجموعات حسب القسم الرئيسي،
+  /// بترتيب الأقسام كما في شجرة الأقسام (لوحة التحكم).
+  List<BrandCategoryGroup> _buildOtherGroups(String lang, List<Category> roots) {
+    final s = ref.read(stringsProvider);
+    final groups = <String, List<Product>>{};
+    final order = <String>[];
+
+    // القسم الحالي (بأي مستوى) يُستثنى من المجموعات.
+    final currentScopeId =
+        widget.tertiaryCategoryId ?? widget.subcategoryId ?? widget.categoryId;
+    String? currentRootId;
+    if (currentScopeId != null) {
+      currentRootId = findRootCategory(roots, currentScopeId)?.id;
+    }
+
+    for (final p in _otherBrandItems) {
+      final cat = p.category;
+      if (cat == null) continue;
+      final root = findRootCategory(roots, cat.id);
+      final rootId = root?.id ?? cat.id;
+      if (rootId == currentRootId) continue;
+
+      if (!groups.containsKey(rootId)) {
+        groups[rootId] = [];
+        order.add(rootId);
+        _groupLabelCache[rootId] =
+            root?.localizedName(lang) ?? cat.localizedName(lang);
+      }
+      groups[rootId]!.add(p);
+    }
+
+    return [
+      for (final rootId in order)
+        BrandCategoryGroup(
+          categoryId: rootId,
+          label:
+              '${_groupLabelCache[rootId] ?? ''} · ${s.brandGroupCount(groups[rootId]!.length)}',
+          products: groups[rootId]!,
+        ),
+    ];
+  }
+
+  final Map<String, String> _groupLabelCache = {};
+
   @override
   Widget build(BuildContext context) {
     final s = ref.watch(stringsProvider);
@@ -333,11 +402,30 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
           ListingPageHeader(
             title: title,
             subtitle: crumb,
-            sortLabel: s.sortShortFor(_sort),
-            filterLabel: s.filter,
+            filters: ListingQuickFilters(
+              sortLabel: s.sortShortFor(_sort),
+              sortActive: _sort != 'default',
+              priceLabel: _priceLabel(s),
+              inStock: _inStock,
+              onSale: _onSale || widget.isPromo,
+              showOnSale: !widget.isPromo,
+              ratingLabel: _minRating == null ? null : s.lfRatingAtLeast(_fmtRating(_minRating!)),
+              activeCount: _activeFilterCount,
+              total: _total,
+            ),
             onSort: _openSort,
-            onFilter: _openFilter,
-            hasFilter: _minPrice != null || _maxPrice != null || _inStock || _minRating != null,
+            onPrice: _openPrice,
+            onRating: _openRating,
+            onAllFilters: _openFilter,
+            onToggleInStock: () {
+              setState(() => _inStock = !_inStock);
+              _fetch(reset: true);
+            },
+            onToggleSale: () {
+              setState(() => _onSale = !_onSale);
+              _fetch(reset: true);
+            },
+            onClearAll: _clearFilters,
           ),
           Expanded(child: _buildBody()),
         ],
@@ -388,10 +476,12 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
         ? (findCategoryById(roots, effectiveSubId)?.localizedName(lang) ?? _resolveTitle(lang, s, roots))
         : _resolveTitle(lang, s, roots);
 
-    final showBrandsStrip = effectiveSubId != null;
-    final brandsAsync = showBrandsStrip
+    final showBrandsStrip = effectiveSubId != null || widget.categoryId != null;
+    final brandsAsync = effectiveSubId != null
         ? ref.watch(subcategoryBrandsProvider(effectiveSubId))
-        : null;
+        : widget.categoryId != null
+            ? ref.watch(categoryBrandsProvider(widget.categoryId!))
+            : null;
 
     final filtersSection = (showChildStrip || showBrandsStrip)
         ? ListingFiltersSection(
@@ -414,6 +504,8 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
     if (_splitBrandByCategory) {
       final brandName = _resolveBrandName(lang) ?? widget.title;
       final categoryName = _resolveCategoryScopeName(lang, roots) ?? title;
+      final otherGroups = _buildOtherGroups(lang, roots);
+      final otherCount = otherGroups.fold<int>(0, (sum, g) => sum + g.products.length);
       return RefreshIndicator(
         color: context.worldTheme.accent,
         onRefresh: () async {
@@ -424,9 +516,9 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
           controller: _scroll,
           header: listingHeader,
           inCategory: _inCategoryItems,
-          otherCategories: _otherBrandItems,
+          otherGroups: otherGroups,
           inCategoryLabel: s.brandInThisSection(categoryName, _inCategoryItems.length),
-          otherLabel: s.brandInOtherSections(brandName, _otherBrandItems.length),
+          otherLabel: s.brandInOtherSections(brandName, otherCount),
           dividerLabel: s.brandSplitDivider(brandName),
           showPromoBadge: widget.isPromo,
           showRating: true,
@@ -447,255 +539,419 @@ class _ProductListingScreenState extends ConsumerState<ProductListingScreen> {
         showPromoBadge: widget.isPromo,
         showRating: true,
         listingStyle: true,
-        padding: const EdgeInsets.fromLTRB(ListingTheme.padH, 10, ListingTheme.padH, 32),
+        padding: const EdgeInsets.fromLTRB(ListingTheme.padH, 12, ListingTheme.padH, 32),
         extraSlots: _hasMore ? 2 : 0,
         header: listingHeader,
       ),
     );
   }
 
+  static const _pricePresets = <(int?, int?)>[
+    (null, 10000),
+    (10000, 25000),
+    (25000, 50000),
+    (50000, null),
+  ];
+
+  String? _priceLabel(AppStrings s) {
+    if (_minPrice == null && _maxPrice == null) return null;
+    if (_minPrice == null) return s.lfPriceUnder(formatNumber(_maxPrice));
+    if (_maxPrice == null) return s.lfPriceOver(formatNumber(_minPrice));
+    return s.lfPriceBetween(formatNumber(_minPrice), formatNumber(_maxPrice));
+  }
+
+  String _fmtRating(double r) => r == r.roundToDouble() ? r.toStringAsFixed(0) : r.toString();
+
+  void _clearFilters() {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _minPrice = null;
+      _maxPrice = null;
+      _inStock = false;
+      _onSale = false;
+      _minRating = null;
+    });
+    _fetch(reset: true);
+  }
+
+  void _applyAndFetch(VoidCallback change) {
+    setState(change);
+    _fetch(reset: true);
+  }
+
   void _openSort() {
     final s = ref.read(stringsProvider);
     final options = {
-      'default': (s.sortByBrand, Icons.layers_rounded),
-      'latest': (s.sortLatest, Icons.schedule_rounded),
-      'price_asc': (s.sortPriceAsc, Icons.arrow_upward_rounded),
-      'price_desc': (s.sortPriceDesc, Icons.arrow_downward_rounded),
-      'rating': (s.sortRating, Icons.star_rounded),
+      'default': (s.sortByBrand, Icons.auto_awesome_rounded),
       'popular': (s.sortPopular, Icons.local_fire_department_rounded),
+      'latest': (s.sortLatest, Icons.schedule_rounded),
+      'price_asc': (s.sortPriceAsc, Icons.trending_up_rounded),
+      'price_desc': (s.sortPriceDesc, Icons.trending_down_rounded),
+      'rating': (s.sortRating, Icons.star_rounded),
     };
-
-    showModalBottomSheet(
+    showAppSheet(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (sheetCtx) {
-        final t = sheetCtx.worldTheme;
-        return Container(
-        decoration: BoxDecoration(
-          color: t.surface,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 10),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: t.divider,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
-                child: Align(
-                  alignment: AlignmentDirectional.centerStart,
-                  child: Text(s.sortBy, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: t.ink)),
-                ),
-              ),
-              for (final entry in options.entries)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: Material(
-                    color: _sort == entry.key ? t.accentLight : t.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    child: ListTile(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                        side: BorderSide(
-                          color: _sort == entry.key ? t.accentSoft : t.hairline.withValues(alpha: 0.85),
-                        ),
-                      ),
-                      leading: Icon(
-                        entry.value.$2,
-                        color: _sort == entry.key ? t.accent : t.inkMuted,
-                      ),
-                      title: Text(
-                        entry.value.$1,
-                        style: TextStyle(
-                          fontWeight: _sort == entry.key ? FontWeight.w800 : FontWeight.w600,
-                          color: _sort == entry.key ? t.accentDark : t.ink,
-                        ),
-                      ),
-                      trailing: _sort == entry.key
-                          ? Icon(Icons.check_circle_rounded, color: t.accent)
-                          : null,
-                      onTap: () {
-                        Navigator.pop(sheetCtx);
-                        setState(() => _sort = entry.key);
-                        _fetch(reset: true);
-                      },
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 12),
-            ],
-          ),
-        ),
-      );
-      },
+      title: s.sortBy,
+      builder: (ctx) => ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
+        children: [
+          for (final e in options.entries)
+            _SheetOption(
+              icon: e.value.$2,
+              label: e.value.$1,
+              selected: _sort == e.key,
+              onTap: () {
+                Navigator.pop(ctx);
+                if (_sort != e.key) _applyAndFetch(() => _sort = e.key);
+              },
+            ),
+        ],
+      ),
     );
   }
 
+  void _openPrice() {
+    final s = ref.read(stringsProvider);
+    showAppSheet(
+      context: context,
+      title: s.priceRange,
+      builder: (ctx) => _PriceSheetBody(
+        strings: s,
+        presets: _pricePresets,
+        min: _minPrice,
+        max: _maxPrice,
+        onApply: (min, max) {
+          Navigator.pop(ctx);
+          _applyAndFetch(() {
+            _minPrice = min;
+            _maxPrice = max;
+          });
+        },
+      ),
+    );
+  }
+
+  void _openRating() {
+    final s = ref.read(stringsProvider);
+    showAppSheet(
+      context: context,
+      title: s.minRating,
+      builder: (ctx) => ListView(
+        shrinkWrap: true,
+        padding: const EdgeInsets.fromLTRB(12, 4, 12, 20),
+        children: [
+          for (final r in const <double?>[null, 3, 4, 4.5])
+            _SheetOption(
+              icon: r == null ? Icons.all_inclusive_rounded : Icons.star_rounded,
+              label: r == null ? s.all : s.lfRatingAtLeast(_fmtRating(r)),
+              selected: _minRating == r,
+              onTap: () {
+                Navigator.pop(ctx);
+                if (_minRating != r) _applyAndFetch(() => _minRating = r);
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  /// كل الفلاتر في ورقة واحدة — تُطبّق دفعة واحدة عند "عرض النتائج".
   void _openFilter() {
     final s = ref.read(stringsProvider);
-    int? minP = _minPrice;
-    int? maxP = _maxPrice;
-    bool inStock = _inStock;
-    double? minR = _minRating;
-    final minCtrl = TextEditingController(text: minP?.toString() ?? '');
-    final maxCtrl = TextEditingController(text: maxP?.toString() ?? '');
+    var minP = _minPrice;
+    var maxP = _maxPrice;
+    var inStock = _inStock;
+    var onSale = _onSale;
+    var minR = _minRating;
 
-    showModalBottomSheet(
+    showAppSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetCtx) => StatefulBuilder(
+      title: s.filterProducts,
+      builder: (ctx) => StatefulBuilder(
         builder: (ctx, setSheet) {
           final t = ctx.worldTheme;
-          return Container(
-          decoration: BoxDecoration(
-            color: t.surface,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 12,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Widget label(String text) => Padding(
+                padding: const EdgeInsets.fromLTRB(4, 18, 4, 10),
+                child: Text(text, style: AppText.title3.copyWith(color: t.ink)),
+              );
+          return ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: t.divider,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 18),
-              Text(s.filterProducts, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 17, color: t.ink)),
-              const SizedBox(height: AppSpacing.lg),
-              Text(s.priceRange, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: t.ink)),
-              const SizedBox(height: AppSpacing.sm),
-              Row(children: [
-                Expanded(
-                  child: TextField(
-                    controller: minCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: s.minPrice,
-                      filled: true,
-                      fillColor: ListingTheme.chipBg(ctx),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: TextField(
-                    controller: maxCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: s.maxPrice,
-                      filled: true,
-                      fillColor: ListingTheme.chipBg(ctx),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                  ),
-                ),
-              ]),
-              const SizedBox(height: 8),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                activeThumbColor: t.accent,
-                value: inStock,
-                title: Text(s.inStockOnly, style: TextStyle(fontWeight: FontWeight.w600, color: t.ink)),
-                onChanged: (v) => setSheet(() => inStock = v),
-              ),
-              Text(s.minRating, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: t.ink)),
-              const SizedBox(height: AppSpacing.sm),
+              label(s.priceRange),
               Wrap(
-                spacing: AppSpacing.sm,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  for (final r in [0.0, 3.0, 4.0, 4.5])
-                    ChoiceChip(
-                      label: Text(r == 0 ? s.all : '$r★'),
-                      selected: (minR ?? 0) == r,
-                      showCheckmark: false,
-                      backgroundColor: t.canvasWarm,
-                      selectedColor: t.accentLight,
-                      side: BorderSide(
-                        color: (minR ?? 0) == r ? t.accentSoft : t.hairline,
-                      ),
-                      labelStyle: TextStyle(
-                        fontWeight: (minR ?? 0) == r ? FontWeight.w800 : FontWeight.w600,
-                        color: (minR ?? 0) == r ? t.accentDark : t.inkSoft,
-                      ),
-                      onSelected: (_) => setSheet(() => minR = r == 0 ? null : r),
+                  AppChoiceChip(
+                    label: s.lfAnyPrice,
+                    selected: minP == null && maxP == null,
+                    onTap: () => setSheet(() {
+                      minP = null;
+                      maxP = null;
+                    }),
+                  ),
+                  for (final p in _pricePresets)
+                    AppChoiceChip(
+                      label: p.$1 == null
+                          ? s.lfPriceUnder(formatNumber(p.$2))
+                          : p.$2 == null
+                              ? s.lfPriceOver(formatNumber(p.$1))
+                              : s.lfPriceBetween(formatNumber(p.$1), formatNumber(p.$2)),
+                      selected: minP == p.$1 && maxP == p.$2,
+                      onTap: () => setSheet(() {
+                        minP = p.$1;
+                        maxP = p.$2;
+                      }),
                     ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.lg),
-              Row(children: [
-                Expanded(
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              label(s.minRating),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final r in const <double?>[null, 3, 4, 4.5])
+                    AppChoiceChip(
+                      label: r == null ? s.all : s.lfRatingAtLeast(_fmtRating(r)),
+                      icon: r == null ? null : Icons.star_rounded,
+                      selected: minR == r,
+                      onTap: () => setSheet(() => minR = r),
                     ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      setState(() {
-                        _minPrice = null;
-                        _maxPrice = null;
-                        _inStock = false;
-                        _minRating = null;
-                      });
-                      _fetch(reset: true);
-                    },
-                    child: Text(s.reset),
-                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _SwitchRow(
+                label: s.inStockOnly,
+                icon: Icons.inventory_2_outlined,
+                value: inStock,
+                onChanged: (v) => setSheet(() => inStock = v),
+              ),
+              if (!widget.isPromo)
+                _SwitchRow(
+                  label: s.lfOffersOnly,
+                  icon: Icons.local_offer_outlined,
+                  value: onSale,
+                  onChanged: (v) => setSheet(() => onSale = v),
                 ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => setSheet(() {
+                        minP = null;
+                        maxP = null;
+                        inStock = false;
+                        onSale = false;
+                        minR = null;
+                      }),
+                      child: Text(s.reset),
                     ),
-                    onPressed: () {
-                      Navigator.pop(context);
-                      setState(() {
-                        _minPrice = int.tryParse(minCtrl.text);
-                        _maxPrice = int.tryParse(maxCtrl.text);
-                        _inStock = inStock;
-                        _minRating = minR;
-                      });
-                      _fetch(reset: true);
-                    },
-                    child: Text(s.apply),
                   ),
-                ),
-              ]),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _applyAndFetch(() {
+                          _minPrice = minP;
+                          _maxPrice = maxP;
+                          _inStock = inStock;
+                          _onSale = onSale;
+                          _minRating = minR;
+                        });
+                      },
+                      child: Text(s.lfShowResults),
+                    ),
+                  ),
+                ],
+              ),
             ],
-          ),
-        );
+          );
         },
       ),
+    );
+  }
+}
+
+class _SheetOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _SheetOption({required this.icon, required this.label, required this.selected, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Material(
+        color: selected ? t.accentLight : Colors.transparent,
+        borderRadius: BorderRadius.circular(AppCorners.md),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppCorners.md),
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+            child: Row(
+              children: [
+                Icon(icon, size: 21, color: selected ? t.accent : t.inkMuted),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: AppText.body.copyWith(
+                      color: selected ? t.accentDark : t.ink,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                      height: 1.2,
+                    ),
+                  ),
+                ),
+                AnimatedScale(
+                  duration: const Duration(milliseconds: 180),
+                  scale: selected ? 1 : 0,
+                  child: Icon(Icons.check_circle_rounded, color: t.accent, size: 22),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SwitchRow extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const _SwitchRow({required this.label, required this.icon, required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    return InkWell(
+      onTap: () => onChanged(!value),
+      borderRadius: BorderRadius.circular(AppCorners.md),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: t.inkSoft),
+            const SizedBox(width: 12),
+            Expanded(child: Text(label, style: AppText.body.copyWith(color: t.ink, height: 1.2))),
+            Switch.adaptive(value: value, onChanged: onChanged),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PriceSheetBody extends StatefulWidget {
+  final AppStrings strings;
+  final List<(int?, int?)> presets;
+  final int? min;
+  final int? max;
+  final void Function(int? min, int? max) onApply;
+
+  const _PriceSheetBody({
+    required this.strings,
+    required this.presets,
+    required this.min,
+    required this.max,
+    required this.onApply,
+  });
+
+  @override
+  State<_PriceSheetBody> createState() => _PriceSheetBodyState();
+}
+
+class _PriceSheetBodyState extends State<_PriceSheetBody> {
+  late final _minCtrl = TextEditingController(text: widget.min?.toString() ?? '');
+  late final _maxCtrl = TextEditingController(text: widget.max?.toString() ?? '');
+
+  @override
+  void dispose() {
+    _minCtrl.dispose();
+    _maxCtrl.dispose();
+    super.dispose();
+  }
+
+  String _presetLabel((int?, int?) p) {
+    final s = widget.strings;
+    if (p.$1 == null) return s.lfPriceUnder(formatNumber(p.$2));
+    if (p.$2 == null) return s.lfPriceOver(formatNumber(p.$1));
+    return s.lfPriceBetween(formatNumber(p.$1), formatNumber(p.$2));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = widget.strings;
+    final t = context.worldTheme;
+    return ListView(
+      shrinkWrap: true,
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
+      children: [
+        _SheetOption(
+          icon: Icons.all_inclusive_rounded,
+          label: s.lfAnyPrice,
+          selected: widget.min == null && widget.max == null,
+          onTap: () => widget.onApply(null, null),
+        ),
+        for (final p in widget.presets)
+          _SheetOption(
+            icon: Icons.payments_outlined,
+            label: _presetLabel(p),
+            selected: widget.min == p.$1 && widget.max == p.$2,
+            onTap: () => widget.onApply(p.$1, p.$2),
+          ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 16, 4, 10),
+          child: Text(s.lfCustomPrice, style: AppText.label.copyWith(color: t.inkSoft)),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _minCtrl,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(hintText: s.minPrice),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: TextField(
+                controller: _maxCtrl,
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: InputDecoration(hintText: s.maxPrice),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        ElevatedButton(
+          onPressed: () {
+            var a = int.tryParse(_minCtrl.text);
+            var b = int.tryParse(_maxCtrl.text);
+            if (a != null && b != null && a > b) (a, b) = (b, a);
+            widget.onApply(a, b);
+          },
+          child: Text(s.apply),
+        ),
+      ],
     );
   }
 }
