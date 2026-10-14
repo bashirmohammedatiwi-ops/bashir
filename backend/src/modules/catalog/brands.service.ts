@@ -3,6 +3,7 @@ import { MediaPurpose, Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
 import { MediaService } from "../media/media.service";
 import { SettingsService } from "../settings/settings.service";
+import { QamarCatalogNotifierService } from "../sync/qamar-catalog-notifier.service";
 
 function mapBrand(b: any) {
   return {
@@ -139,6 +140,7 @@ export class BrandsService {
     private readonly prisma: PrismaService,
     private readonly media: MediaService,
     private readonly settings: SettingsService,
+    private readonly qamarSync: QamarCatalogNotifierService,
   ) {}
 
   private categoryProductScope(
@@ -479,12 +481,14 @@ export class BrandsService {
       data = { ...data, initial: String(data.name).trim().charAt(0).toUpperCase() };
     }
     const row = await this.prisma.brand.create({ data });
+    this.qamarSync.notify("brand", "created", row.id);
     return this.findOne(row.id);
   }
 
   async update(id: string, data: any) {
     await this.ensureExists(id);
     await this.prisma.brand.update({ where: { id }, data });
+    this.qamarSync.notify("brand", "updated", id);
     return this.findOne(id);
   }
 
