@@ -31,16 +31,10 @@ QI_SANDBOX_TESTERS=email@example.com,07xxxxxxxxx   # بيئة الاختبار �
 التطبيق لا يحمل اسم المستخدم ولا كلمة المرور — يستلم من السيرفر رقم الطرفية والمفتاح العام فقط.
 في بيئة الاختبار لا يظهر الدفع بالبطاقة إلا للإدارة ولمن في `QI_SANDBOX_TESTERS`.
 
-## ملفات الحزمة (غير مرفوعة إلى git)
+## ملفات الحزمة
 
-من `qicard-payment-sdk-flutter-example-v2.0.4.zip`:
-
-| من الحزمة | إلى المشروع |
-|---|---|
-| `android/app/libs/payment-2.0.4.aar` | `mobile-app/android/app/libs/` |
-| `android/app/libs/emv-3ds-sdk-1.1.6.aar` | `mobile-app/android/app/libs/` |
-| `ios/payment_sdk.xcframework` | `mobile-app/ios/` |
-| `ios/TdsSdkIos.xcframework` | `mobile-app/ios/` |
+ضمن المستودع: `mobile-app/android/app/libs/*.aar` و `mobile-app/ios/*.xcframework`
+(من `qicard-payment-sdk-flutter-example-v2.0.4`).
 
 ## عناوين الإنتاج المطلوبة من Qi
 

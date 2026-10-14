@@ -60,9 +60,3 @@ mobile-app/.flutter-plugins-dependencies
 infra/.env
 infra/backups/
 infra/nginx/default.conf
-
-# حزمة دفع كي كارد (ملفات مملوكة لـ Qi تُسلَّم للتاجر مباشرة — لا تُنشر في مستودع عام).
-# ضعها يدوياً من حزمة qicard-payment-sdk-flutter-example-v2.0.4: انظر docs/qicard-payments.md
-mobile-app/android/app/libs/*.aar
-mobile-app/ios/payment_sdk.xcframework/
-mobile-app/ios/TdsSdkIos.xcframework/
