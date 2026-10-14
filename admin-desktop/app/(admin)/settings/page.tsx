@@ -14,6 +14,7 @@ interface Settings {
   shippingFee: number;
   freeShippingThreshold: number;
   cashOnDelivery: boolean;
+  cardPaymentEnabled?: boolean;
   emailOrders: string;
   flashSaleEndsAt: string | null;
   firstOrderBonusPoints: number;
@@ -105,6 +106,14 @@ export default function SettingsPage() {
                         <InputNumber style={{ width: "100%" }} min={0} max={100} />
                       </Form.Item>
                       <Form.Item name="cashOnDelivery" label="الدفع عند الاستلام" valuePropName="checked">
+                        <Switch />
+                      </Form.Item>
+                      <Form.Item
+                        name="cardPaymentEnabled"
+                        label="الدفع بالبطاقة (كي كارد)"
+                        valuePropName="checked"
+                        tooltip="يظهر في التطبيق فقط عند ضبط بيانات بوابة كي كارد على السيرفر"
+                      >
                         <Switch />
                       </Form.Item>
                       <Form.Item name="pickupEnabled" label="استلام من الفرع" valuePropName="checked">

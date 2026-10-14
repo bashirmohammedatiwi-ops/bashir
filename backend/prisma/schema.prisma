@@ -503,12 +503,62 @@ model Order {
   address          Address?      @relation(fields: [addressId], references: [id])
   items            OrderItem[]
   coupon           Coupon?       @relation(fields: [couponId], references: [id])
+  payments         PaymentTransaction[]
 
   @@index([userId])
   @@index([status])
   @@index([paymentStatus])
   @@index([createdAt])
   @@index([status, createdAt])
+}
+
+/// عملية دفع إلكتروني لدى بوابة كي كارد (QiCard). الطلب قد يملك أكثر من محاولة.
+model PaymentTransaction {
+  id             String   @id @default(uuid())
+  orderId        String
+  provider       String   @default("QI")
+  requestId      String   @unique
+  paymentId      String?  @unique
+  amount         Int
+  currency       String   @default("IQD")
+  /// CREATED | SUCCESS | FAILED | AUTHENTICATION_FAILED (كما تعيدها البوابة)
+  status         String   @default("CREATED")
+  canceled       Boolean  @default(false)
+  refundedAmount Int      @default(0)
+  paymentType    String?
+  maskedPan      String?
+  paymentSystem  String?
+  rrn            String?
+  authId         String?
+  resultCode     String?
+  raw            Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  operations     PaymentOperation[]
+
+  @@index([orderId])
+  @@index([status, createdAt])
+}
+
+/// سجل العمليات على الدفعة: إشعارات البوابة، الاسترجاع، الإلغاء، المزامنة.
+model PaymentOperation {
+  id             String   @id @default(uuid())
+  transactionId  String
+  /// WEBHOOK | SYNC | REFUND | CANCEL
+  type           String
+  requestId      String?
+  amount         Int?
+  success        Boolean  @default(true)
+  message        String?
+  actorId        String?
+  data           Json?
+  createdAt      DateTime @default(now())
+
+  transaction    PaymentTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([transactionId, createdAt])
 }
 
 model OrderItem {

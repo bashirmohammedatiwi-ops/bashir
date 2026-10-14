@@ -92,6 +92,14 @@ services:
       QAMAR_SYNC_WEBHOOK_TIMEOUT_MS: ${QAMAR_SYNC_WEBHOOK_TIMEOUT_MS:-15000}
       FIREBASE_SERVICE_ACCOUNT_JSON: ${FIREBASE_SERVICE_ACCOUNT_JSON:-}
       FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-}
+      # بوابة الدفع كي كارد — بيانات الدخول في infra/.env على السيرفر فقط، والمفتاح العام في secrets/qi_pubkey.pem
+      QI_BASE_URL: ${QI_BASE_URL:-}
+      QI_TERMINAL_ID: ${QI_TERMINAL_ID:-}
+      QI_USERNAME: ${QI_USERNAME:-}
+      QI_PASSWORD: ${QI_PASSWORD:-}
+      QI_PUBLIC_KEY_PATH: ${QI_PUBLIC_KEY_PATH:-/run/secrets/qi_pubkey.pem}
+      QI_CALLBACK_BASE_URL: ${QI_CALLBACK_BASE_URL:-https://${DOMAIN}}
+      QI_SANDBOX_TESTERS: ${QI_SANDBOX_TESTERS:-}
     volumes:
       - mediadata:/data/uploads
       # مفاتيح سرية (مثل Firebase) تبقى على السيرفر في infra/secrets ولا تُرفع إلى git.

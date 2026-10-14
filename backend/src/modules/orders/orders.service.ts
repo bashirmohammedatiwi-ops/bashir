@@ -10,6 +10,8 @@ import { SettingsService } from "../settings/settings.service";
 import { ShippingService } from "../shipping/shipping.service";
 import { LoyaltyService } from "../loyalty/loyalty.service";
 import { paginate } from "../../common/dto/pagination.dto";
+import { OrderEvents } from "./order-events";
+import { QiGatewayService } from "../payments/qi-gateway.service";
 import {
   CreateOrderDto,
   QueryOrdersDto,
@@ -23,6 +25,7 @@ export class OrdersService {
     private readonly settings: SettingsService,
     private readonly shipping: ShippingService,
     private readonly loyalty: LoyaltyService,
+    private readonly events: OrderEvents,
   ) {}
 
   async list(q: QueryOrdersDto) {
@@ -122,6 +125,7 @@ export class OrdersService {
 
   async create(userId: string, dto: CreateOrderDto) {
     if (!dto.items.length) throw new BadRequestException("Empty order");
+    await this.assertPaymentMethodAvailable(userId, dto.paymentMethod ?? PaymentMethod.COD);
 
     const productIds = dto.items.map((i) => i.productId);
     const products = await this.prisma.product.findMany({
@@ -291,6 +295,7 @@ export class OrdersService {
         order.loyaltySpent,
         order.loyaltyEarned,
       );
+      this.events.emitCancelled({ orderId: order.id, actorId });
     }
     if (actorId) {
       await this.prisma.auditLog.create({
@@ -306,7 +311,7 @@ export class OrdersService {
     return updated;
   }
 
-  async cancel(id: string) {
+  async cancel(id: string, actorId?: string) {
     const order = await this.findOne(id);
     if (order.status === OrderStatus.CANCELLED) return order;
     return this.prisma.$transaction(async (tx) => {
@@ -330,8 +335,25 @@ export class OrdersService {
         order.loyaltySpent,
         order.loyaltyEarned,
       );
+      this.events.emitCancelled({ orderId: order.id, actorId });
       return updated;
     });
+  }
+
+  private async assertPaymentMethodAvailable(userId: string, method: PaymentMethod) {
+    const s = (await this.settings.getAll()) as Record<string, unknown>;
+    if (method === PaymentMethod.CARD) {
+      const qi = new QiGatewayService();
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true, email: true, phone: true },
+      });
+      if (s.cardPaymentEnabled === false || !qi.isConfigured || !qi.allowsUser(user)) {
+        throw new BadRequestException("الدفع بالبطاقة غير متاح حالياً");
+      }
+    } else if (method === PaymentMethod.WALLET) {
+      throw new BadRequestException("طريقة الدفع غير مدعومة");
+    }
   }
 
   private async ensure(id: string) {

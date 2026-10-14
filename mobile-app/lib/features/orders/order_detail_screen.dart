@@ -20,6 +20,7 @@ import '../cart/cart_provider.dart';
 import '../cart/widgets/cart_theme.dart';
 import '../cart/widgets/pill_buttons.dart';
 import '../catalog/catalog_providers.dart';
+import '../payments/pay_now_card.dart';
 import '../profile/profile_providers.dart';
 import '../shell/main_shell.dart';
 import '../shell/nav_tabs.dart';
@@ -63,6 +64,10 @@ class OrderDetailScreen extends ConsumerWidget {
             children: [
               _OrderHero(order: order),
               const SizedBox(height: CartTheme.itemGap),
+              if (orderAwaitsCardPayment(order)) ...[
+                PayNowCard(order: order),
+                const SizedBox(height: CartTheme.itemGap),
+              ],
               if (!isOrderClosedNegative(order.status))
                 _DetailCard(
                   icon: Icons.route_outlined,
@@ -150,7 +155,12 @@ class OrderDetailScreen extends ConsumerWidget {
                       ),
                       child: Column(
                         children: [
-                          _InfoLine(icon: Icons.payments_outlined, text: s.cashOnDelivery),
+                          _InfoLine(
+                            icon: order.paymentMethod == 'CARD'
+                                ? Icons.credit_card_rounded
+                                : Icons.payments_outlined,
+                            text: paymentLineFor(s, order),
+                          ),
                           if (order.loyaltyEarned > 0) ...[
                             const SizedBox(height: 8),
                             _InfoLine(

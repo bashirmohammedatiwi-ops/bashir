@@ -17,6 +17,7 @@ import '../models/loyalty_summary.dart';
 import '../models/notification.dart';
 import '../models/order.dart';
 import '../models/paginated.dart';
+import '../models/payment.dart';
 import '../models/product.dart';
 import '../models/review.dart';
 import '../models/search_suggestions.dart';
@@ -695,6 +696,46 @@ class ApiService {
         if (loyaltySpent > 0) 'loyaltySpent': loyaltySpent,
       });
       return AppOrder.fromJson(asMap(_data(r)));
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  // ---- PAYMENTS (QiCard) ----
+  Future<PaymentMethodsConfig> getPaymentMethods() async {
+    try {
+      final r = await _dio.get('/payments/methods');
+      return PaymentMethodsConfig.fromJson(asMap(_data(r)));
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  Future<CardPaymentSession> startCardPayment(String orderId) async {
+    try {
+      final r = await _dio.post('/payments/orders/$orderId/start');
+      return CardPaymentSession.fromJson(asMap(_data(r)));
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  Future<OrderPaymentState> confirmCardPayment(String orderId) async {
+    try {
+      final r = await _dio.post('/payments/orders/$orderId/confirm');
+      return OrderPaymentState.fromJson(asMap(_data(r)));
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  Future<OrderPaymentState> abandonCardPayment(String orderId, {String? transactionId}) async {
+    try {
+      final r = await _dio.post(
+        '/payments/orders/$orderId/abandon',
+        data: {if (transactionId != null && transactionId.isNotEmpty) 'transactionId': transactionId},
+      );
+      return OrderPaymentState.fromJson(asMap(_data(r)));
     } catch (e) {
       _throw(e);
     }

@@ -15,6 +15,7 @@ import {
 import { OrderStatusBadge } from "./OrderStatusBadge";
 import { OrderStatusStepper } from "./OrderStatusStepper";
 import { OrderItemsList } from "./OrderItemsList";
+import { CardPaymentPanel } from "./CardPaymentPanel";
 
 const { Text, Title } = Typography;
 
@@ -157,7 +158,10 @@ export function OrderDetailPanel({ order, loading, onStatusChange, onPaymentStat
           <span>{formatIqd(order.total)}</span>
         </div>
         <div className="ord-summary-meta">
-          <span>{PAYMENT_METHOD_LABELS[order.paymentMethod] ?? order.paymentMethod}</span>
+          <span>
+            {PAYMENT_METHOD_LABELS[order.paymentMethod] ?? order.paymentMethod} •{" "}
+            {PAYMENT_STATUS_LABELS[order.paymentStatus] ?? order.paymentStatus}
+          </span>
           <span>{DELIVERY_LABELS[order.deliveryOption] ?? order.deliveryOption ?? "توصيل عادي"}</span>
         </div>
       </div>
@@ -168,6 +172,8 @@ export function OrderDetailPanel({ order, loading, onStatusChange, onPaymentStat
           <Text>{order.notes}</Text>
         </div>
       )}
+
+      {order.paymentMethod === "CARD" && <CardPaymentPanel orderId={order.id} />}
 
       <div className="ord-actions-card">
         <Text className="ord-section-title">إدارة الطلب</Text>
@@ -184,7 +190,7 @@ export function OrderDetailPanel({ order, loading, onStatusChange, onPaymentStat
               onChange={onStatusChange}
             />
           </div>
-          {onPaymentStatusChange && (
+          {onPaymentStatusChange && order.paymentMethod !== "CARD" && (
             <div>
               <Text type="secondary" className="ord-action-label">
                 حالة الدفع — {PAYMENT_STATUS_LABELS[order.paymentStatus] ?? order.paymentStatus}

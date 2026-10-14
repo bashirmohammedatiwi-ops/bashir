@@ -14,6 +14,7 @@ import '../cart/widgets/cart_theme.dart';
 import '../cart/widgets/pill_buttons.dart';
 import '../profile/profile_providers.dart';
 import '../worlds/world_theme.dart';
+import '../payments/payment_strings.dart';
 import 'checkout_strings.dart';
 
 class OrderSuccessScreen extends ConsumerWidget {
@@ -58,7 +59,9 @@ class OrderSuccessScreen extends ConsumerWidget {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              s.orderPlacedSuccess,
+                              order.valueOrNull?.paymentStatus == 'PAID'
+                                  ? s.orderPaidSuccess
+                                  : s.orderPlacedSuccess,
                               textAlign: TextAlign.center,
                               style: AppText.display.copyWith(color: t.ink),
                             ),
@@ -75,7 +78,10 @@ class OrderSuccessScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _FadeUp(delay: 520, child: _NextSteps(s: s)),
+                      _FadeUp(
+                        delay: 520,
+                        child: _NextSteps(s: s, paidByCard: order.valueOrNull?.paymentStatus == 'PAID'),
+                      ),
                     ],
                   ),
                 ),
@@ -156,7 +162,8 @@ class _OrderNumberCard extends ConsumerWidget {
 
 class _NextSteps extends StatelessWidget {
   final AppStrings s;
-  const _NextSteps({required this.s});
+  final bool paidByCard;
+  const _NextSteps({required this.s, this.paidByCard = false});
 
   @override
   Widget build(BuildContext context) {
@@ -164,7 +171,9 @@ class _NextSteps extends StatelessWidget {
     final steps = [
       (Icons.support_agent_rounded, s.nextConfirmCall),
       (Icons.inventory_2_outlined, s.nextPrepare),
-      (Icons.payments_outlined, s.nextPayOnDelivery),
+      paidByCard
+          ? (Icons.verified_rounded, s.nextPaidByCard)
+          : (Icons.payments_outlined, s.nextPayOnDelivery),
     ];
     return Container(
       width: double.infinity,

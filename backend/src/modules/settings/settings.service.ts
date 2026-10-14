@@ -12,6 +12,7 @@ export const DEFAULT_STORE_SETTINGS = {
   shippingFee: 5000,
   freeShippingThreshold: 50000,
   cashOnDelivery: true,
+  cardPaymentEnabled: true,
   emailOrders: "orders@alhayaa.com",
   flashSaleEndsAt: null as string | null,
   firstOrderBonusPoints: 50,

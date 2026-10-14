@@ -18,6 +18,7 @@ import '../../core/widgets/shimmer_box.dart';
 import '../../core/widgets/states.dart';
 import '../../data/models/address.dart';
 import '../../data/models/coupon.dart';
+import '../../data/models/payment.dart';
 import '../../data/models/user.dart';
 import '../../data/services/api_service.dart';
 import '../auth/auth_provider.dart';
@@ -28,6 +29,7 @@ import '../shell/nav_tabs.dart';
 import '../catalog/catalog_providers.dart';
 import '../profile/widgets/address_form.dart';
 import '../profile/profile_providers.dart';
+import '../payments/card_payment_flow.dart';
 import 'widgets/checkout_delivery_card.dart';
 import 'widgets/checkout_header.dart';
 import 'widgets/checkout_sections.dart';
@@ -308,13 +310,33 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       ref.invalidate(ordersProvider);
       ref.invalidate(loyaltyProvider);
       ref.read(authProvider.notifier).refreshUser();
-      if (mounted) context.pushReplacement('/order-success/${order.id}');
+      if (order.paymentMethod == 'CARD') {
+        await _payOrder(order.id);
+      } else if (mounted) {
+        context.pushReplacement('/order-success/${order.id}');
+      }
       unawaited(PushService.requestPermissionInContext());
     } catch (e) {
       if (mounted) AppSnackbar.error(context, friendlyError(e));
     } finally {
       if (mounted) setState(() => _placing = false);
     }
+  }
+
+  /// الطلب أُنشئ (والسلة أُفرغت) — الآن الدفع بالبطاقة. إن لم يكتمل نذهب لصفحة
+  /// الطلب حيث يمكن الدفع لاحقاً، ولا يضيع شيء.
+  Future<void> _payOrder(String orderId) async {
+    while (mounted) {
+      final outcome = await CardPaymentFlow.run(context, ref, orderId);
+      if (!mounted) return;
+      if (outcome.isPaid) {
+        context.pushReplacement('/order-success/$orderId');
+        return;
+      }
+      final retry = await showPaymentRetrySheet(context, ref.s, outcome);
+      if (!retry) break;
+    }
+    if (mounted) context.pushReplacement('/orders/$orderId');
   }
 
   int get _loyaltyDiscount => (_loyaltySpent ~/ 100) * 1000;
@@ -342,6 +364,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final cart = ref.watch(cartProvider);
     final user = ref.watch(authProvider).user;
     final addressesAsync = ref.watch(addressesProvider);
+    final payMethods = ref.watch(paymentMethodsProvider).valueOrNull ?? PaymentMethodsConfig.fallback;
 
     ref.listen(addressesProvider, (prev, next) {
       next.whenData((list) {
@@ -464,7 +487,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       key: _paymentSectionKey,
                       s: s,
                       paymentMethod: _paymentMethod,
-                      onChanged: (v) => setState(() => _paymentMethod = v),
+                      cardEnabled: payMethods.cardEnabled,
+                      sandbox: payMethods.sandbox,
+                      onChanged: (v) {
+                        HapticFeedback.selectionClick();
+                        setState(() => _paymentMethod = v);
+                      },
                     ),
                     const SizedBox(height: 14),
                     CheckoutNotesCard(s: s, controller: _notesCtrl),
@@ -495,7 +523,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
               ),
             ),
-            if (!keyboardOpen) CheckoutBottomBar(s: s, total: total, placing: _placing, onPlace: _placeOrder),
+            if (!keyboardOpen) CheckoutBottomBar(
+                s: s,
+                total: total,
+                placing: _placing,
+                onPlace: _placeOrder,
+                payByCard: _paymentMethod == 'CARD' && payMethods.cardEnabled,
+              ),
           ],
         ),
       ),

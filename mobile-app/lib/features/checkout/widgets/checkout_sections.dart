@@ -13,6 +13,7 @@ import '../../cart/cart_strings.dart';
 import '../../cart/widgets/cart_theme.dart';
 import '../../cart/widgets/pill_buttons.dart';
 import '../../worlds/world_theme.dart';
+import '../../payments/payment_strings.dart';
 import '../checkout_strings.dart';
 import 'checkout_theme.dart';
 
@@ -108,8 +109,17 @@ class CheckoutPaymentCard extends StatelessWidget {
   final AppStrings s;
   final String paymentMethod;
   final ValueChanged<String> onChanged;
+  final bool cardEnabled;
+  final bool sandbox;
 
-  const CheckoutPaymentCard({super.key, required this.s, required this.paymentMethod, required this.onChanged});
+  const CheckoutPaymentCard({
+    super.key,
+    required this.s,
+    required this.paymentMethod,
+    required this.onChanged,
+    this.cardEnabled = false,
+    this.sandbox = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -129,14 +139,24 @@ class CheckoutPaymentCard extends StatelessWidget {
             onTap: () => onChanged('COD'),
           ),
           const SizedBox(height: 10),
-          _Option(
-            title: s.cardPayment,
-            subtitle: s.cardPaymentSoon,
-            icon: Icons.credit_card_rounded,
-            selected: false,
-            badge: s.cardComingSoon,
-            onTap: null,
-          ),
+          if (cardEnabled)
+            _Option(
+              title: s.cardPaymentTitle,
+              subtitle: s.cardPaymentSubtitle,
+              icon: Icons.credit_card_rounded,
+              selected: paymentMethod == 'CARD',
+              badge: sandbox ? s.sandboxBadge : null,
+              onTap: () => onChanged('CARD'),
+            )
+          else
+            _Option(
+              title: s.cardPayment,
+              subtitle: s.cardPaymentSoon,
+              icon: Icons.credit_card_rounded,
+              selected: false,
+              badge: s.cardComingSoon,
+              onTap: null,
+            ),
         ],
       ),
     );
@@ -585,6 +605,7 @@ class CheckoutBottomBar extends StatelessWidget {
   final int total;
   final bool placing;
   final VoidCallback onPlace;
+  final bool payByCard;
 
   const CheckoutBottomBar({
     super.key,
@@ -592,6 +613,7 @@ class CheckoutBottomBar extends StatelessWidget {
     required this.total,
     required this.placing,
     required this.onPlace,
+    this.payByCard = false,
   });
 
   @override
@@ -633,8 +655,8 @@ class CheckoutBottomBar extends StatelessWidget {
                   const SizedBox(width: 14),
                   Expanded(
                     child: PrimaryPillButton(
-                      label: s.confirmOrder,
-                      icon: Icons.lock_outline_rounded,
+                      label: payByCard ? s.payNow : s.confirmOrder,
+                      icon: payByCard ? Icons.credit_card_rounded : Icons.lock_outline_rounded,
                       loading: placing,
                       onTap: onPlace,
                     ),

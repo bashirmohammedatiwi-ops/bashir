@@ -41,7 +41,7 @@ export const PAYMENT_STATUS_LABELS: Record<string, string> = {
 
 export const PAYMENT_METHOD_LABELS: Record<string, string> = {
   COD: "الدفع عند الاستلام",
-  CARD: "بطاقة",
+  CARD: "بطاقة إلكترونية (كي كارد)",
   WALLET: "محفظة",
 };
 

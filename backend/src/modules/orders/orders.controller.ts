@@ -1,5 +1,6 @@
 import {
   Body,
+  NotFoundException,
   Controller,
   Get,
   Param,
@@ -35,8 +36,10 @@ export class OrdersController {
 
   @Get(":id")
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF, Role.CUSTOMER)
-  one(@Param("id") id: string) {
-    return this.orders.findOne(id);
+  async one(@Param("id") id: string, @CurrentUser() user: any) {
+    const order = await this.orders.findOne(id);
+    assertOwnerOrStaff(order.userId, user);
+    return order;
   }
 
   @Post()
@@ -53,7 +56,15 @@ export class OrdersController {
 
   @Patch(":id/cancel")
   @Roles(Role.SUPER_ADMIN, Role.ADMIN, Role.CUSTOMER)
-  cancel(@Param("id") id: string) {
-    return this.orders.cancel(id);
+  async cancel(@Param("id") id: string, @CurrentUser() user: any) {
+    const order = await this.orders.findOne(id);
+    assertOwnerOrStaff(order.userId, user);
+    return this.orders.cancel(id, user.id);
   }
+}
+
+/** الزبونة ترى وتلغي طلباتها فقط؛ الإدارة ترى الكل. */
+function assertOwnerOrStaff(ownerId: string, user: any) {
+  const staff = [Role.SUPER_ADMIN, Role.ADMIN, Role.STAFF].includes(user?.role);
+  if (!staff && ownerId !== user?.id) throw new NotFoundException("Order not found");
 }
