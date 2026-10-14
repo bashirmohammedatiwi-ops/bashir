@@ -94,6 +94,9 @@ services:
       FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-}
     volumes:
       - mediadata:/data/uploads
+      # مفاتيح سرية (مثل Firebase) تبقى على السيرفر في infra/secrets ولا تُرفع إلى git.
+      # مركّبة هنا مباشرة حتى لا تتوقف الإشعارات عند أي تحديث يستخدم هذا الملف وحده.
+      - ./secrets:/run/secrets:ro
     expose:
       - "3000"
     networks:
