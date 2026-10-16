@@ -46,8 +46,30 @@ class ProductCard extends ConsumerWidget {
     return Semantics(
       button: true,
       label: product.localizedName(lang),
-      child: Material(
+      // الظل على حاوية خارجية — طبقة التموّج في Material تقصّ ما يخرج عن حدودها.
+      child: Container(
+        width: width,
+        decoration: BoxDecoration(
+          color: t.surface,
+          borderRadius: BorderRadius.circular(radius),
+          boxShadow: [
+            BoxShadow(
+              color: t.accentDark.withValues(alpha: 0.07),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+              spreadRadius: -4,
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 3,
+              offset: const Offset(0, 1),
+            ),
+          ],
+        ),
+        child: Material(
         color: Colors.transparent,
+        borderRadius: BorderRadius.circular(radius),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () => context.push(
             '/product/${product.slug.isNotEmpty ? product.slug : product.id}',
@@ -55,26 +77,8 @@ class ProductCard extends ConsumerWidget {
           borderRadius: BorderRadius.circular(radius),
           splashColor: t.accent.withValues(alpha: 0.06),
           highlightColor: t.accent.withValues(alpha: 0.03),
-          child: Ink(
+          child: SizedBox(
             width: width,
-            // بلا حدود: ظل ناعم مزدوج بلون العالم — بطاقات تطفو بهدوء بدل خطوط كثيرة.
-            decoration: BoxDecoration(
-              color: t.surface,
-              borderRadius: BorderRadius.circular(radius),
-              boxShadow: [
-                BoxShadow(
-                  color: t.accentDark.withValues(alpha: 0.07),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                  spreadRadius: -4,
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 3,
-                  offset: const Offset(0, 1),
-                ),
-              ],
-            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -90,6 +94,7 @@ class ProductCard extends ConsumerWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

@@ -21,87 +21,79 @@ class CartHeader extends ConsumerWidget {
     final t = context.worldTheme;
     return Container(
       width: double.infinity,
-      padding: EdgeInsetsDirectional.fromSTEB(CartTheme.hPad, topPad + 12, 8, 18),
+      padding: EdgeInsetsDirectional.fromSTEB(CartTheme.hPad, topPad + 10, 10, 16),
       decoration: CartTheme.headerDecoration(context),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      s.cartTitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppText.display.copyWith(color: t.ink),
-                    ),
-                    if (count > 0) ...[
-                      const SizedBox(height: 2),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 200),
-                        child: Text(
-                          s.itemCountLabel(count),
-                          key: ValueKey(count),
-                          style: AppText.label.copyWith(color: t.accentDark),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              if (onClear != null && count > 0)
-                AppIconButton(
-                  icon: Icons.delete_sweep_outlined,
-                  tooltip: s.clearCartTooltip,
-                  color: t.inkSoft,
-                  onTap: onClear,
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(end: 8),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _TrustChip(icon: Icons.verified_outlined, label: s.authentic),
-                _TrustChip(icon: Icons.local_shipping_outlined, label: s.fastDelivery),
-              ],
+          Flexible(
+            child: Text(
+              s.cartTitle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppText.title1.copyWith(color: t.ink, fontSize: 24, height: 1.2),
             ),
           ),
+          if (count > 0) ...[
+            const SizedBox(width: 10),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 220),
+              transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
+              child: Container(
+                key: ValueKey(count),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  gradient: t.signatureGradient,
+                  borderRadius: BorderRadius.circular(AppCorners.pill),
+                ),
+                child: Text(
+                  s.itemCountLabel(count),
+                  style: AppText.micro.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
+                ),
+              ),
+            ),
+          ],
+          const Spacer(),
+          if (onClear != null && count > 0)
+            _ClearButton(label: s.clearCart, tooltip: s.clearCartTooltip, onTap: onClear!),
         ],
       ),
     );
   }
 }
 
-class _TrustChip extends StatelessWidget {
-  final IconData icon;
+/// زر تفريغ هادئ — نص وأيقونة بدل دائرة ثقيلة.
+class _ClearButton extends StatelessWidget {
   final String label;
-
-  const _TrustChip({required this.icon, required this.label});
+  final String tooltip;
+  final VoidCallback onTap;
+  const _ClearButton({required this.label, required this.tooltip, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
-    return Container(
-      padding: const EdgeInsetsDirectional.fromSTEB(8, 5, 12, 5),
-      decoration: BoxDecoration(
-        color: t.surface.withValues(alpha: 0.8),
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
         borderRadius: BorderRadius.circular(AppCorners.pill),
-        border: Border.all(color: t.accentSoft),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: t.accent),
-          const SizedBox(width: 5),
-          Text(label, style: AppText.micro.copyWith(color: t.accentDark)),
-        ],
+        child: Container(
+          height: 36,
+          padding: const EdgeInsetsDirectional.fromSTEB(10, 0, 12, 0),
+          decoration: BoxDecoration(
+            color: t.surface.withValues(alpha: 0.85),
+            borderRadius: BorderRadius.circular(AppCorners.pill),
+            border: Border.all(color: t.hairline),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.delete_outline_rounded, size: 17, color: t.inkSoft),
+              const SizedBox(width: 4),
+              Text(label, style: AppText.caption.copyWith(color: t.inkSoft, fontWeight: FontWeight.w700)),
+            ],
+          ),
+        ),
       ),
     );
   }

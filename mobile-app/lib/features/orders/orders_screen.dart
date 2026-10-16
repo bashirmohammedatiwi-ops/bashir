@@ -182,17 +182,19 @@ class _OrderCard extends ConsumerWidget {
     final closed = isOrderClosedNegative(order.status);
     final thumbs = order.items.where((e) => e.imageUrl.isNotEmpty).take(3).toList();
 
-    return Material(
+    return DecoratedBox(
+      decoration: CartTheme.cardDecoration(context),
+      child: Material(
       color: Colors.transparent,
+      borderRadius: BorderRadius.circular(CartTheme.radiusLg),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () {
           HapticFeedback.selectionClick();
           context.push('/orders/${order.id}');
         },
-        borderRadius: BorderRadius.circular(CartTheme.radiusLg),
-        child: Ink(
+        child: Padding(
           padding: const EdgeInsets.all(16),
-          decoration: CartTheme.cardDecoration(context),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -267,6 +269,7 @@ class _OrderCard extends ConsumerWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

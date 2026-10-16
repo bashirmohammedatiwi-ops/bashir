@@ -20,7 +20,6 @@ import 'widgets/cart_coupon.dart';
 import 'widgets/cart_empty.dart';
 import 'widgets/cart_header.dart';
 import 'widgets/cart_item_card.dart';
-import 'widgets/cart_recommendations.dart';
 import 'widgets/cart_shipping_banner.dart';
 import 'widgets/cart_theme.dart';
 import '../worlds/world_theme.dart';
@@ -226,27 +225,21 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                             ),
                           ),
                         ),
-                        feed.maybeWhen(
-                          data: (d) {
-                            final recs = d.bestSellers.take(8).toList();
-                            if (recs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
-                            return SliverToBoxAdapter(child: CartRecommendations(products: recs));
-                          },
-                          orElse: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
+                        SliverToBoxAdapter(
+                          child: CartSummaryCard(
+                            subtotal: cart.subtotal,
+                            discount: discount,
+                            total: total,
+                            itemCount: cart.count,
+                            freeShippingThreshold: threshold,
+                            freeShipping: freeShipping,
+                          ),
                         ),
-                        const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                        const SliverToBoxAdapter(child: SizedBox(height: 20)),
                       ],
                     ),
                   ),
-                  CartCheckoutBar(
-                    subtotal: cart.subtotal,
-                    discount: discount,
-                    total: total,
-                    itemCount: cart.count,
-                    freeShippingThreshold: threshold,
-                    freeShipping: freeShipping,
-                    coupon: coupon,
-                  ),
+                  CartCheckoutBar(total: total, itemCount: cart.count),
                 ],
               ),
       ),

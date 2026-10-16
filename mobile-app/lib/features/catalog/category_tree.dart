@@ -114,3 +114,18 @@ String? listingActiveChildId({
   if (categoryId != null) return null;
   return null;
 }
+
+/// يبحث عن قسم بالـ slug في كل مستويات الشجرة، ويعيد مستواه:
+/// 0 = قسم رئيسي، 1 = فرعي، 2 = ثالث.
+({Category category, int depth})? findCategoryBySlug(List<Category> roots, String slug) {
+  ({Category category, int depth})? walk(List<Category> nodes, int depth) {
+    for (final c in nodes) {
+      if (c.slug == slug) return (category: c, depth: depth);
+      final hit = walk(c.children, depth + 1);
+      if (hit != null) return hit;
+    }
+    return null;
+  }
+
+  return walk(roots, 0);
+}

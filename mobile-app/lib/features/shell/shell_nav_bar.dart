@@ -194,9 +194,10 @@ class _NavTab extends StatelessWidget {
           ),
         ),
         if (item.badge > 0)
+          // على الطرف الخارجي للأيقونة — لا يغطي الاسم داخل الحبّة المختارة.
           PositionedDirectional(
             top: -6,
-            end: -8,
+            start: -8,
             child: _Badge(count: item.badge),
           ),
       ],

@@ -87,13 +87,16 @@ class CartItemCard extends ConsumerWidget {
         ),
       ),
       onDismissed: (_) => removeCartItemWithUndo(context, ref, item),
-      child: Material(
+      // الظل على حاوية خارجية: طبقة التموّج في Material تقصّ ما يخرج عن حدودها.
+      child: DecoratedBox(
+        decoration: CartTheme.cardDecoration(context),
+        child: Material(
         color: Colors.transparent,
+        borderRadius: BorderRadius.circular(CartTheme.radiusLg),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () => _openProduct(context),
-          borderRadius: BorderRadius.circular(CartTheme.radiusLg),
-          child: Ink(
-            decoration: CartTheme.cardDecoration(context),
+          child: Padding(
             padding: const EdgeInsetsDirectional.fromSTEB(12, 12, 4, 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -188,6 +191,7 @@ class CartItemCard extends ConsumerWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }
