@@ -2,6 +2,7 @@ import { CatalogIndex, IndexedProduct, RawProduct } from "../catalog";
 import { CONCERN_AREA, LEXICON } from "../lexicon";
 import type { Need } from "../types";
 import { TrainInput, TrainProduct } from "./types";
+import { sigWords } from "./sig";
 
 const KIND_AREA = new Map(LEXICON.filter((v) => v.facet === "kind" && v.area).map((v) => [v.id, v.area!]));
 
@@ -71,5 +72,27 @@ export function buildTrainInput(raw: DatasetRaw, prebuilt?: CatalogIndex): Train
   const phrases = raw.phrases
     .map((ph) => ({ text: ph.phrase, labels: deltaLabels(ph.delta as Partial<Need>), w: ph.source === "admin" ? 4 : 3 }))
     .filter((ph) => ph.labels.length);
-  return { products, phrases, events: raw.events };
+  return { products, phrases: [...phrases, ...behaviorPhrases(raw.events, new Map(products.map((p) => [p.id, p.labels])))], events: raw.events };
+}
+
+const SIGNAL: Record<string, number> = { cart: 1.5, like: 1, click: 0.5 };
+
+/**
+ * تعلّم من سلوك الزبونات: كلمات كتبتها ثم فتحت/أضافت منتجاً ← صفات ذلك المنتج تصبح معنى كلماتها
+ * (إشراف ضمني). الإضافة للسلة أقوى من الفتح، ووزن كل عبارة محدود حتى لا تطغى على الكتالوج.
+ */
+export function behaviorPhrases(events: TrainInput["events"], labelsOf: Map<string, string[]>): TrainInput["phrases"] {
+  const acc = new Map<string, { text: string; labels: string[]; w: number }>();
+  for (const e of events) {
+    const w = SIGNAL[e.type];
+    const words = sigWords(e.sig);
+    const labels = labelsOf.get(e.productId);
+    if (!w || !words.length || !labels?.length) continue;
+    const text = words.join(" ");
+    const key = `${text}|${e.productId}`;
+    const cur = acc.get(key) ?? { text, labels: labels.filter((l) => !l.startsWith("skinType:")), w: 0 };
+    cur.w = Math.min(4, cur.w + w * e.n);
+    acc.set(key, cur);
+  }
+  return [...acc.values()].filter((x) => x.labels.length);
 }

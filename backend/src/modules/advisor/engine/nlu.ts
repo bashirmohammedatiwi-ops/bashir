@@ -2,6 +2,7 @@ import { CatalogIndex, LearnedPhrase } from "./catalog";
 import { CONCERN_AREA, FacetKey, KIND_BY_AREA, LEXICON, RECIPIENT_GENDER } from "./lexicon";
 import { applyDialect, editDistance, normalize, parseMoney, stem, tokens } from "./text";
 import { Intent, Need } from "./types";
+import { correctWord } from "./spell";
 
 /** ما استخرجته المستشارة من رسالة واحدة. */
 export interface Parsed {
@@ -68,7 +69,7 @@ const FUZZY_PHRASES = PHRASES.filter((p) => !p.raw && !p.bare.includes(" ") && p
 const norms = (list: string[]) => new Set(list.flatMap((w) => tokens(w, { keepStop: true })));
 const NEGATORS = norms(["بدون", "بلا", "ليس", "مو", "ما", "لا", "غير", "no", "without", "not", "except", "عدا", "ماريد", "مااريد", "مااحب"]);
 // كلمات قد تفصل النفي عن المنفي («مو من ميبلين»، «ما احب الحلو»).
-const NEG_VERBS = norms(["احب", "اريد", "يعجب", "يعجبني", "تعجبني", "يناسب", "يناسبني", "like", "want", "اكره", "من", "from"]);
+const NEG_VERBS = norms(["احب", "اريد", "يعجب", "يعجبني", "تعجبني", "يناسب", "يناسبني", "like", "want", "اكره", "من", "from", "الريحه", "الرائحه", "الروائح"]);
 
 /** هل العبارة عند الموضع مسبوقة بنفي؟ («ما احب الحلو»، «بدون عطر»، «مو زيتي») */
 function negatedAt(words: string[], start: number): boolean {
@@ -167,7 +168,7 @@ function sortedAliases(catalog: CatalogIndex): [string, string[], string[]][] {
   return list;
 }
 
-export function understand(message: string, catalog: CatalogIndex): Parsed {
+export function understand(message: string, catalog: CatalogIndex, spelled = false): Parsed {
   message = normalize(message).replace(NEUTRAL_RE, " ");
   const norm = normalize(message);
   const raws = rawWords(message);
@@ -324,6 +325,12 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
     const area = CONCERN_AREA[delta.concerns[0]];
     if (area) delta.area = area;
   }
+  // «سيروم يطول الشعر»: نوع عام (سيروم) + مشكلة شعر ← سيروم شعر، والمجال للشعر.
+  if (!single.area && delta.concerns?.length && delta.kinds?.length) {
+    const ca = CONCERN_AREA[delta.concerns[0]];
+    const remap = ca ? KIND_BY_AREA[ca] : undefined;
+    if (ca && ca !== delta.area && remap && delta.kinds.every((k) => remap[k])) delta.area = ca;
+  }
   if (!delta.area && single.skinType && !delta.kinds?.length) delta.area = "skin";
   // «بشرتي تلمع/دهنية بالوسط» كشكوى = نوع بشرة دهني أيضاً (لا مشكلة فقط).
   if (delta.area === "skin" && !delta.skinType && delta.concerns?.includes("oily")) delta.skinType = "oily";
@@ -446,18 +453,46 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
       // أدوات النفي وما نُفي (براند غير متوفر مثلاً) لا يُبحث عنه.
       !NEGATORS.has(w) && !negatedAt(words, i);
   });
+  // ── كلمات بقيت بلا معنى: خطأ كتابة لكلمة نعرفها؟ («واقي شمش»، «سيروووم») نصحح ونعيد الفهم مرة.
+  if (!spelled && freeIdx.length && catalog.products.length) {
+    let changed = false;
+    const fixed = raws.slice();
+    for (const i of freeIdx) {
+      const w = raws[i];
+      if (w.length < 3 || catalog.brandAliases.has(words[i])) continue;
+      const c = correctWord(w, catalog);
+      if (c) {
+        fixed[i] = c;
+        changed = true;
+      }
+    }
+    if (changed) return understand(fixed.join(" "), catalog, true);
+  }
   let free = freeIdx.map((i) => words[i]);
   // ── ما لم يفهمه المعجم: نموذج «ديما» المدرَّب على الكتالوج يستنتج معناه («يلمع بالعرس» ← هايلايتر).
   // كلمات فهمها المعجم كسياق فقط (تغطية/ثبات/مناسبة…) تساعد النموذج على اختيار النوع («يغطي الحبوب» ← كونسيلر).
-  const ctxIdx = intent === "routine" || delta.kinds?.length ? [] : [...consumedBy].filter(([, f]) => CONTEXT_FACETS.has(f)).map(([i]) => i);
+  const ctxIdx =
+    intent === "routine" || delta.kinds?.length
+      ? []
+      : [
+          ...[...consumedBy].filter(([, f]) => CONTEXT_FACETS.has(f)).map(([i]) => i),
+          // «ما يسيح»، «ما يتكسر»: المنفي هنا وصف للأثر المطلوب — دليل على النوع (مثبت مكياج).
+          ...words.map((_, i) => i).filter((i) => !consumed.has(i) && words[i].length >= 3 && !NEGATORS.has(words[i]) && negatedAt(words, i)),
+        ];
   if (catalog.model && (freeIdx.length || ctxIdx.length) && !["reset", "greet", "thanks", "about", "help"].includes(intent)) {
     const inf = catalog.model.inferFree(
       freeIdx.map((i) => raws[i]),
-      { area: delta.area, kinds: delta.kinds, concerns: delta.concerns, families: delta.families, gender: delta.gender, skinType: delta.skinType },
+      {
+        area: delta.area, kinds: delta.kinds, concerns: delta.concerns, families: delta.families, gender: delta.gender, skinType: delta.skinType,
+        occasionNight: single.occasion === "wedding" || single.time === "night" || /(حفله|سهره|مناسبه|party)/.test(norm),
+      },
       ctxIdx.map((i) => raws[i]),
     );
     {
       if (inf.area && !delta.area) delta.area = inf.area;
+      // «وجهي يلمع» + هايلايتر: النوع من المكياج يحدد المجال (مثل قاعدة المعجم).
+      const kindArea = inf.kinds?.length ? KIND_AREA_NLU.get(inf.kinds[0]) : undefined;
+      if (kindArea && delta.area && kindArea !== delta.area && !(KIND_BY_AREA[delta.area] ?? {})[inf.kinds![0]]) delta.area = kindArea;
       if (inf.kinds?.length) {
         const remap = delta.area ? KIND_BY_AREA[delta.area] ?? {} : {};
         delta.kinds = [...new Set(inf.kinds.map((k) => remap[k] ?? k))];

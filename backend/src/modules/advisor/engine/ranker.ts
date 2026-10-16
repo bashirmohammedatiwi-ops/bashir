@@ -172,9 +172,9 @@ function rankOnce(catalog: CatalogIndex, need: Need, opts: Options): RankResult 
     const t = tokens(w);
     return [...t, ...t.flatMap((x) => COLOR_SYNONYMS[x] ?? [])];
   });
-  const textScores = query.length ? catalog.search(query) : null;
+  const textScores = query.length ? catalog.search(query, 400, true) : null;
   const maxText = textScores ? Math.max(0, ...textScores.values()) : 0;
-  const softScores = opts.softText?.length ? catalog.search(opts.softText.flatMap((w) => tokens(w))) : null;
+  const softScores = opts.softText?.length ? catalog.search(opts.softText.flatMap((w) => tokens(w)), 400, true) : null;
   const maxSoft = softScores ? Math.max(0, ...softScores.values()) : 0;
   const candidates = candidatePool(catalog, need).filter((p) => passesHard(catalog, p, need, opts.exclude));
   if (!candidates.length) return { items: [], relaxed: [], total: 0 };

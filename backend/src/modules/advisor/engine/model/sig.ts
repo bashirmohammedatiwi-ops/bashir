@@ -1,4 +1,6 @@
 import type { Need } from "../types";
+import { stem } from "../text";
+import { words } from "./features";
 
 /**
  * بصمة الطلب (بلا أي بيانات شخصية): المجال|النوع ثم صفات مفتاحية.
@@ -17,6 +19,23 @@ export function needSig(n: Partial<Need> | undefined): string {
 
 const PREFIX: Record<string, string> = { c: "concern", s: "skinType", g: "gender", f: "family" };
 
+/**
+ * كلمات طلب الزبونة (مطبّعة، بلا أرقام ولا كلمات وصل، 6 كلمات كحد أقصى) — تُلحق بالبصمة «|q:…»
+ * حتى يتعلم النموذج من التفاعل: كلمات كتبتها ← المنتج الذي فتحته/أضافته.
+ */
+export function queryWords(message: string | undefined): string[] {
+  if (!message) return [];
+  return words(message)
+    .filter((w) => w.length >= 2 && !/\d/.test(w))
+    .slice(0, 6);
+}
+
+/** كلمات الطلب المحفوظة في بصمة. */
+export function sigWords(sig: string | null | undefined): string[] {
+  const m = sig?.match(/\|q:([^|]*)/);
+  return m ? m[1].split(",").filter(Boolean) : [];
+}
+
 /** ميزات الترتيب المتعلّم من بصمة. */
 export function affinityFeatures(sig: string | null | undefined): string[] {
   if (!sig) return [];
@@ -29,10 +48,12 @@ export function affinityFeatures(sig: string | null | undefined): string[] {
     if (!m) continue;
     for (const v of m[2].split(",")) if (v) out.push(`${PREFIX[m[1]]}:${v}`);
   }
+  // كلمات الطلب: «w:جذر» (نفس جذور الكلمات الحرة في الطلب).
+  for (const w of sigWords(sig)) out.push(`w:${stem(w)}`);
   return out;
 }
 
-/** ميزات طلب حالي (لقراءة الترتيب المتعلّم أثناء الترشيح). */
+/** ميزات طلب حالي (لقراءة الترتيب المتعلّم أثناء الترشيح) — مع كلماته الحرة. */
 export function needFeatures(n: Need): string[] {
-  return affinityFeatures(needSig(n));
+  return [...affinityFeatures(needSig(n)), ...n.free.slice(0, 6).map((w) => `w:${w}`)];
 }

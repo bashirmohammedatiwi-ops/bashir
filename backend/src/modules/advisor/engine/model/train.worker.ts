@@ -2,6 +2,8 @@ import { setPriority } from "os";
 import { parentPort, workerData } from "worker_threads";
 import { CatalogIndex, RawProduct } from "../catalog";
 import { evaluate } from "../../eval/evaluate";
+import { evaluateConversations } from "../../eval/conversations";
+import { evaluateSearch } from "../../eval/search-eval";
 import { buildTrainInput, DatasetRaw } from "./dataset";
 import { ModelRuntime } from "./runtime";
 import { pacer, trainModel } from "./train";
@@ -30,13 +32,20 @@ export interface EvalSummary {
   meanMs: number;
   p95Ms: number;
   n: number;
+  /** محادثات متعددة الأدوار ناجحة بالكامل. */
+  convos?: { ok: number; n: number };
+  /** دقة أول 5 نتائج في بحث المتجر. */
+  searchP5?: number;
 }
 
 function summary(catalog: CatalogIndex): EvalSummary {
   const r = evaluate(catalog);
   const s = (k: string) => (r.bySplit[k]?.n ? r.bySplit[k].ok / r.bySplit[k].n : 0);
   const round = (x: number) => Math.round(x * 1000) / 1000;
+  const conv = evaluateConversations(catalog);
   return {
+    convos: { ok: conv.ok, n: conv.n },
+    searchP5: round(evaluateSearch(catalog).p5),
     accuracy: round(r.accuracy),
     dev: round(s("dev")),
     test: round(s("test")),

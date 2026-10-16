@@ -4,7 +4,7 @@ import { rewriteMediaRecord, rewriteMediaUrl } from "../../common/media-url.util
 import { CatalogIndex, LearnedPhrase, RawProduct } from "./engine/catalog";
 import { isUsefulLearning, weakUnderstanding } from "./engine/confidence";
 import { ModelRuntime } from "./engine/model/runtime";
-import { needSig } from "./engine/model/sig";
+import { needSig, queryWords } from "./engine/model/sig";
 import { setDynamicTiers } from "./engine/brands";
 import { phraseWords } from "./engine/nlu";
 import { normalize } from "./engine/text";
@@ -31,6 +31,8 @@ const PROMPTS_SKILLS = [
 const EVENT_TYPES = new Set(["click", "cart", "like", "dislike"]);
 
 const REBUILD_EVERY_MS = 5 * 60_000;
+/** عمر الرد المحفوظ (التفاعل يغيّر الترتيب قليلاً كل بضع دقائق). */
+const REPLY_TTL_MS = 10 * 60_000;
 
 type VariantNode = { formats?: Record<string, string> };
 
@@ -386,9 +388,25 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
           .catch(() => null);
       }
     }
+    // أول رسالة بلا حساب ولا محادثة سابقة: الرد ثابت لنفس الفهرس — من الذاكرة (الأسئلة الشائعة
+    // وأزرار البداية تتكرر كثيراً). يُمسح تلقائياً مع كل إعادة بناء أو نموذج جديد.
+    const cacheKey =
+      !input.userId && !input.productId && !wantsHowto && !(input.state && input.state.turns > 0)
+        ? JSON.stringify([input.message ?? "", action ?? "", input.firstName ?? "", profile ?? null])
+        : null;
+    const cache = cacheKey ? this.replyCacheFor(catalog) : null;
+    const hit = cacheKey ? cache!.get(cacheKey) : undefined;
+    if (hit && Date.now() - hit.at < REPLY_TTL_MS) {
+      cache!.delete(cacheKey!);
+      cache!.set(cacheKey!, hit);
+      if (hit.weak) void this.logQuery(input.message!, false);
+      this.rememberShown(hit.reply, input.message);
+      return structuredClone(hit.reply);
+    }
     // فهم ضعيف حتى مع النموذج؟ نسجل الرسالة (بلا هوية) — تظهر في لوحة التدريب، ويُعاد
     // فحصها بعد كل تدريب.
-    if (input.message && !action && weakUnderstanding(input.message, catalog)) void this.logQuery(input.message, false);
+    const weak = Boolean(input.message && !action && weakUnderstanding(input.message, catalog));
+    if (weak) void this.logQuery(input.message!, false);
     const out = respond({ message: input.message, action }, input.state ?? null, {
       catalog,
       firstName: input.firstName,
@@ -397,8 +415,21 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
       loggedIn: Boolean(input.userId),
       history,
     });
-    this.rememberShown(out);
+    this.rememberShown(out, input.message);
+    if (cacheKey) {
+      cache!.set(cacheKey, { reply: structuredClone(out), weak, at: Date.now() });
+      if (cache!.size > 3000) cache!.delete(cache!.keys().next().value as string);
+    }
     return out;
+  }
+
+  private replyCache: { index: CatalogIndex; model: unknown; map: Map<string, { reply: AdvisorReply; weak: boolean; at: number }> } | null = null;
+  /** ذاكرة الردود للفهرس ونموذجه الحاليين: فهرس/نموذج جديد ← ذاكرة جديدة. */
+  private replyCacheFor(catalog: CatalogIndex) {
+    if (!this.replyCache || this.replyCache.index !== catalog || this.replyCache.model !== catalog.model) {
+      this.replyCache = { index: catalog, model: catalog.model, map: new Map() };
+    }
+    return this.replyCache.map;
   }
 
   /**
@@ -407,9 +438,12 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
    */
   private readonly shownSig = new Map<string, { sig: string; at: number }>();
 
-  private rememberShown(r: AdvisorReply) {
-    const sig = needSig(r.state.need);
-    if (!sig) return;
+  private rememberShown(r: AdvisorReply, message?: string) {
+    const base = needSig(r.state.need);
+    if (!base) return;
+    // كلماتها (بلا أرقام) — يتعلم منها النموذج أي منتجات تقصد بها.
+    const q = queryWords(message).join(",");
+    const sig = q ? `${base}|q:${q}`.slice(0, 140) : base;
     const ids = [...r.products, ...r.groups.flatMap((g) => g.products), ...(r.routine?.steps.map((s) => s.product) ?? [])].map((p) => p.id);
     const at = Date.now();
     for (const id of ids.slice(0, 16)) {
@@ -426,7 +460,7 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
     // بصمة أدق من التي يرسلها التطبيق (المجال|النوع) إن عرضنا المنتج مؤخراً.
     const shown = productId ? this.shownSig.get(productId) : undefined;
     const recent = shown && Date.now() - shown.at < 45 * 60_000 ? shown.sig : undefined;
-    const sig = (recent && (!input.sig || recent.startsWith(input.sig)) ? recent : input.sig)?.slice(0, 60) || null;
+    const sig = (recent && (!input.sig || recent.startsWith(input.sig)) ? recent : input.sig?.slice(0, 60))?.slice(0, 140) || null;
     await this.prisma.advisorEvent.create({ data: { productId, type: input.type, sig } }).catch(() => undefined);
     return { ok: true };
   }

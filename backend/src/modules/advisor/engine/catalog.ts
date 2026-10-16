@@ -709,12 +709,14 @@ export class CatalogIndex {
   }
 
   /** BM25 للاستعلام مع توسعة بادئة للكلمات الطويلة. */
-  search(queryTokens: string[], limit = 400): Map<number, number> {
+  search(queryTokens: string[], limit = 400, semantic = false): Map<number, number> {
     const scores = new Map<number, number>();
     const N = this.products.length;
     for (const qt of new Set(queryTokens)) {
       const terms: { t: string; damp: number }[] = [];
       if (this.postings.has(qt)) terms.push({ t: qt, damp: 1 });
+      // كلمة لا يعرفها الكتالوج: جيرانها في المعنى من النموذج المدرَّب.
+      else if (semantic && this.model) for (const [t, w] of this.model.expandTerm(qt, (x) => this.docFreq(x))) terms.push({ t, damp: w });
       if (qt.length >= 4) for (const v of this.prefixExpand(qt)) terms.push({ t: v, damp: 0.6 });
       for (const { t, damp } of terms) {
         const post = this.postings.get(t)!;

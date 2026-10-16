@@ -80,7 +80,9 @@ function areaOf(need: Partial<Need>): string | undefined {
 }
 
 function mergeNeed(need: Need, delta: Partial<Need>): { need: Need; newTopic: boolean } {
-  const nextArea = areaOf(delta);
+  // «للرجال»، «نسائي» وحدها تعديل للطلب الحالي (مزيل عرق للرجال)، لا انتقال للعطور.
+  const genderOnly = Boolean(delta.gender) && !delta.area && !delta.kinds?.length && !delta.concerns?.length && !delta.families?.length && !delta.skinType;
+  const nextArea = genderOnly ? undefined : areaOf(delta);
   const curArea = areaOf(need);
   const newTopic = Boolean(nextArea && curArea && nextArea !== curArea);
   // موضوع جديد: نبدأ من الصفر مع الاحتفاظ بنوع البشرة (صفة ثابتة للزبونة).
@@ -1075,7 +1077,7 @@ const COMPLEMENT_RE = /(شنو يكمل|شي يكمل|يكمله|يكملها|ي
 const HOWTO_RE = /(طريقه الاستخدام|طريقه استخدام|شلون استخدم|شلون استعمل|كيف استخدم|كيف استعمل|شلون احطه|شلون احطها|شلون اطبق|how to use)/;
 const COMPARE_RE = /(قارني|قارن |مقارنه|الفرق بينهم|الفرق بين هذول|اي واحد احسن|ايهم احسن|منو احسن|منو الاحسن|اي وحده احسن|compare)/;
 // إشارة لمنتج سابق: «هذا»، «هاي»، «الأول»…
-const REF_RE = /(هذا|هذه|هذي|هاي|هاذ|ياه|هو |اله|الاول|الاولى|this|it )/;
+const REF_RE = /(هذا|هذه|هذي|هاي|هاذ|ياه|هو |اله|الاول|الاولى|this|it |استخدمه|استخدمها|استعمله|استعملها|احطه|احطها|اطبقه|اطبقها|اجربه|اجربها|use it)/;
 const CHEAPER_WORDS = /(ارخص|اوفر|بديل|بدائل|dupe|cheaper|اقل سعر)/;
 
 function cardOf(ctx: DialogCtx, p: IndexedProduct, match = 0, reasons: string[] = []): ProductCardOut {

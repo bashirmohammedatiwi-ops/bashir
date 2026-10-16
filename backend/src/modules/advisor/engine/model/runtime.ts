@@ -3,7 +3,7 @@ import type { Need } from "../types";
 import { Assoc } from "./assoc";
 import { wordFeatures } from "./features";
 import { stem, tokens } from "../text";
-import { needSig, affinityFeatures } from "./sig";
+import { needFeatures } from "./sig";
 import { EnrichOut, ModelData, ModelFacet } from "./types";
 
 const KIND_AREA = new Map(LEXICON.filter((v) => v.facet === "kind" && v.area).map((v) => [v.id, v.area!]));
@@ -20,6 +20,8 @@ export interface Inferred {
 }
 
 export interface Known {
+  /** مناسبة/سهرة («بالعرس»، «للحفلة») — مكياج الوجه محتمل حتى لو قالت «وجهي». */
+  occasionNight?: boolean;
   area?: string;
   kinds?: string[];
   concerns?: string[];
@@ -28,7 +30,14 @@ export interface Known {
   skinType?: string;
 }
 
-const GENERIC = new Set(tokens("كريم كريمات منتج منتجات شي شيء نوع انواع اريد احتاج يخلي تخلي يكون تكون حلو حلوه زين زينه جيد افضل احسن", { keepStop: true }));
+const GENERIC = new Set(
+  tokens(
+    "كريم كريمات منتج منتجات شي شيء نوع انواع اريد احتاج يخلي تخلي يكون تكون حلو حلوه زين زينه جيد افضل احسن " +
+      // إشارة لمنتج معروض وأسئلة الاستخدام — ليست وصفاً لنوع جديد («شلون استخدم الثالث»).
+      "استخدم استخدمه استعمل احط احطه اطبق الاول الثاني الثالث الرابع الاخير رقم واحد وحده هذا هذه هاي",
+    { keepStop: true },
+  ),
+);
 
 /** عتبات الثقة لفهم كلام الزبونة (ضُبطت على قسم التطوير من مجموعة التقييم). */
 export const INFER = {
@@ -67,12 +76,24 @@ export class ModelRuntime {
     return this.data.enrich?.[productId];
   }
 
-  private allowed(facet: ModelFacet, area?: string): Set<string> | undefined {
+  private allowed(facet: ModelFacet, area?: string, makeupCtx = false): Set<string> | undefined {
     if (!area) return undefined;
     const fi = ["area", "kind", "concern", "family", "gender", "skinType", "finish"].indexOf(facet);
-    if (facet === "kind") return new Set(this.assoc.labels[fi].filter((k) => KIND_AREA.get(k) === area));
+    // «وجهي يلمع بالعرس»: في مناسبة، «وجهي» تشمل مكياج الوجه أيضاً (هايلايتر).
+    if (facet === "kind") return new Set(this.assoc.labels[fi].filter((k) => KIND_AREA.get(k) === area || (area === "skin" && makeupCtx && KIND_AREA.get(k) === "makeup")));
     if (facet === "concern") return new Set(this.assoc.labels[fi].filter((c) => (CONCERN_AREA[c] ?? area) === area || (area === "body" && CONCERN_AREA[c] === "skin")));
     return undefined;
+  }
+
+  /**
+   * كلمة لا تظهر في نصوص الكتالوج ← كلمات قريبة منها في المعنى تظهر فيه (للبحث النصي):
+   * «هايش» ← «مجعد، هيشان». [جذر، وزن 0..1].
+   */
+  expandTerm(stemmed: string, docFreq: (t: string) => number): [string, number][] {
+    return this.neighbors(stemmed)
+      .filter(([w, cos]) => cos >= 0.6 && docFreq(w) >= 2)
+      .slice(0, 3)
+      .map(([w, cos]) => [w, Math.round(cos * 0.6 * 100) / 100]);
   }
 
   /** أقرب كلمات في المعنى (من المتجهات المدرَّبة): [كلمة، تشابه 0..1]. */
@@ -109,8 +130,8 @@ export class ModelRuntime {
    * تصويت الكلمات لصفة: كل كلمة تقترح أقوى صفة ترتبط بها (احتمال × وزن الكلمة)،
    * بشرط دعم كافٍ (n) ورفع واضح عن النسبة العامة. يعيد الصفات المقبولة والكلمات التي صوّتت.
    */
-  private vote(facet: ModelFacet, feats: [string, number][][], threshold: number, area?: string, multi = 1): { labels: string[]; words: number[] } {
-    const allowed = this.allowed(facet, area);
+  private vote(facet: ModelFacet, feats: [string, number][][], threshold: number, area?: string, multi = 1, makeupCtx = false): { labels: string[]; words: number[] } {
+    const allowed = this.allowed(facet, area, makeupCtx);
     const votes: { label: string; score: number; word: number }[] = [];
     feats.forEach((fs, i) => {
       let best: { label: string; score: number } | null = null;
@@ -158,7 +179,7 @@ export class ModelRuntime {
     if (!known.kinds?.length) {
       // كلمات السياق تصوّت للنوع فقط، ولا تُحسب «مفسَّرة» (فهمها المعجم أصلاً).
       const ctx = context.filter((w) => !GENERIC.has(stem(w))).map((w) => wordFeatures(w).map((f): [string, number] => [f, 1]));
-      const r = this.vote("kind", [...feats, ...ctx], INFER.kind, area, area ? 2 : 1);
+      const r = this.vote("kind", [...feats, ...ctx], INFER.kind, area, area ? 2 : 1, Boolean(known.occasionNight));
       const k = take({ labels: r.labels, words: r.words.filter((i) => i < feats.length) });
       if (k.length) {
         out.kinds = k;
@@ -193,9 +214,10 @@ export class ModelRuntime {
   /** دفعة متعلّمة لكل منتج لهذا الطلب (متوسط ميزات الطلب) — مخزنة لكل بصمة. */
   affinityFor(need: Need): Map<string, number> | null {
     if (!this.affinity.size) return null;
-    const sig = needSig(need);
+    const all = needFeatures(need);
+    const sig = all.join("|");
     if (this.affCache.has(sig)) return this.affCache.get(sig)!;
-    const feats = affinityFeatures(sig).filter((f) => this.affinity.has(f));
+    const feats = all.filter((f) => this.affinity.has(f));
     let out: Map<string, number> | null = null;
     if (feats.length) {
       out = new Map();

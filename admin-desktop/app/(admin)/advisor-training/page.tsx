@@ -214,6 +214,14 @@ export default function AdvisorTrainingPage() {
                     <Text type="secondary" style={{ fontSize: 12 }}>
                       دقة أول 5 ترشيحات: {p100(before.p5)} ← {p100(after.p5)} · زمن الرد: {after.meanMs} ملي ثانية
                     </Text>
+                    {after.convos && (
+                      <div>
+                        <Text type="secondary" style={{ fontSize: 12 }}>
+                          محادثات متعددة الأدوار: {after.convos.ok}/{after.convos.n}
+                          {after.searchP5 != null && <> · بحث المتجر (أول 5): {p100(before.searchP5)} ← {p100(after.searchP5)}</>}
+                        </Text>
+                      </div>
+                    )}
                   </div>
                 )}
                 <SettingSwitch

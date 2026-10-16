@@ -81,13 +81,17 @@ function groupsFor(catalog: CatalogIndex, toks: string[], prefixLast: boolean, r
     const pre = expand && rawLast.length > t.length ? rawLast : t;
     // التجذيع قصّ الكلمة الناقصة («لوري» ← «لور» = لورين)؟ نعتمد ما كُتب فقط.
     const terms = [pre, ...(expand ? catalog.prefixTerms(pre, pre.length <= 2 ? 6 : 10) : [])];
+    // كلمة كاملة لا يعرفها الكتالوج: كلمات بنفس المعنى من النموذج المدرَّب («هايش» ← «مجعد»).
+    const semantic = !catalog.docFreq(t) && !(last && prefixLast) && catalog.model ? catalog.model.expandTerm(t, (x) => catalog.docFreq(x)) : [];
+    for (const [w] of semantic) if (!terms.includes(w)) terms.push(w);
+    const semW = new Map(semantic);
     const dfs = terms.map((x) => catalog.docFreq(x));
     const maxDf = Math.max(1, ...dfs);
     const scores = new Map<number, number>();
     terms.forEach((term, k) => {
       if (!dfs[k]) return;
       // الكلمة الكاملة كما كُتبت لها الأولوية؛ المتوسعات بحسب شيوعها.
-      const w = k === 0 ? (expand ? 0.7 + 0.3 * (dfs[k] / maxDf) : 1) : 0.55 + 0.45 * (dfs[k] / maxDf);
+      const w = semW.get(term) ?? (k === 0 ? (expand ? 0.7 + 0.3 * (dfs[k] / maxDf) : 1) : 0.55 + 0.45 * (dfs[k] / maxDf));
       for (const [d, sc] of catalog.search([term], 3000)) scores.set(d, Math.max(scores.get(d) ?? 0, sc * w));
     });
     // صفات المتوسعات الشائعة (شامبو ← نوع «شامبو») حتى تتقدم منتجاته.
