@@ -98,6 +98,29 @@ function slimMedia(o: Record<string, unknown>) {
   return out;
 }
 
+/** حقول الدرجة التي لا تحتاجها البطاقة (نقاط اللون، العدد، الإضافة السريعة للسلة). */
+const SHADE_DROP_FIELDS = ["barcode", "productId", "imageId", "createdAt", "updatedAt"];
+
+/** في البطاقة: مقاس صغير يكفي (لا large 1600px). */
+function keepVariants(media: unknown, sizes: string[]) {
+  if (!media || typeof media !== "object") return media;
+  const m = media as Record<string, any>;
+  if (!m.variants || typeof m.variants !== "object") return media;
+  const variants: Record<string, unknown> = {};
+  for (const s of sizes) if (m.variants[s]) variants[s] = m.variants[s];
+  return { ...m, variants: Object.keys(variants).length ? variants : m.variants };
+}
+
+function slimCardShade(shade: unknown, depth: number): unknown {
+  if (!shade || typeof shade !== "object") return shade;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(shade as Record<string, unknown>)) {
+    if (SHADE_DROP_FIELDS.includes(k)) continue;
+    out[k] = k === "image" ? keepVariants(slim(v, true, depth + 1), ["thumb"]) : slim(v, true, depth + 1);
+  }
+  return out;
+}
+
 function slim(value: unknown, cards: boolean, depth: number): unknown {
   if (depth > 12 || value === null || typeof value !== "object") return value;
   if (value instanceof Date) return value;
@@ -111,7 +134,16 @@ function slim(value: unknown, cards: boolean, depth: number): unknown {
   for (const [k, v] of Object.entries(o)) {
     if (productCard && CARD_DROP_FIELDS.includes(k)) continue;
     if (productCard && k === "images" && Array.isArray(v)) {
-      out.images = v.slice(0, 1).map((img) => slim(img, cards, depth + 1));
+      out.images = v.slice(0, 1).map((img) => {
+        const slimmed = slim(img, cards, depth + 1) as Record<string, unknown>;
+        return slimmed && typeof slimmed === "object" && slimmed.media
+          ? { ...slimmed, media: keepVariants(slimmed.media, ["thumb", "small", "medium"]) }
+          : slimmed;
+      });
+      continue;
+    }
+    if (productCard && k === "shades" && Array.isArray(v)) {
+      out.shades = v.map((sh) => slimCardShade(sh, depth + 1));
       continue;
     }
     out[k] = slim(v, cards, depth + 1);
