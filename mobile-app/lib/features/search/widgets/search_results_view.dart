@@ -9,6 +9,7 @@ import '../../../core/widgets/shimmer_box.dart';
 import '../../../core/widgets/states.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/product.dart';
+import '../../advisor/widgets/advisor_search_prompt.dart';
 import '../../worlds/world_theme.dart';
 import '../search_strings.dart';
 import '../search_suggest_merge.dart';
@@ -456,7 +457,10 @@ class SearchEmptyView extends StatelessWidget {
             children: [for (final e in related) SearchEntryChip(entry: e, onTap: () => onEntry(e))],
           ),
         ],
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
+        // البحث الحرفي ما لقى شي؟ «ديما» تفهم الطلب بأسلوبه.
+        AdvisorSearchPrompt(query: query),
+        const SizedBox(height: 20),
         Center(
           child: FilledButton.icon(
             onPressed: () {

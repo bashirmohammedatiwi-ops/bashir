@@ -24,11 +24,75 @@ List<InlineSpan> _rich(String text, TextStyle base) {
   return spans;
 }
 
+/// مدة كتابة رسالة بحركة الآلة الكاتبة (سريعة ومحدودة حتى لا تُنتظر).
+Duration typingDuration(String text) => Duration(milliseconds: (220 + text.characters.length * 9).clamp(260, 900));
+
+/// نص يظهر حرفاً حرفاً. يحجز مساحته النهائية من البداية فلا يقفز ما تحته.
+class TypewriterText extends StatefulWidget {
+  final String text;
+  final TextStyle style;
+  final bool animate;
+  final Duration delay;
+  const TypewriterText({super.key, required this.text, required this.style, this.animate = true, this.delay = Duration.zero});
+
+  @override
+  State<TypewriterText> createState() => _TypewriterTextState();
+}
+
+class _TypewriterTextState extends State<TypewriterText> with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(vsync: this, duration: typingDuration(widget.text));
+  late final bool _animate = widget.animate;
+  Timer? _t;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!_animate) {
+      _c.value = 1;
+    } else {
+      _t = Timer(widget.delay, () {
+        if (mounted) _c.forward();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _t?.cancel();
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final full = Text.rich(TextSpan(style: widget.style, children: _rich(widget.text, widget.style)));
+    if (!_animate) return full;
+    final chars = widget.text.characters;
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, __) {
+        if (_c.value >= 1) return full;
+        final n = (chars.length * Curves.easeOut.transform(_c.value)).round();
+        final shown = chars.take(n).toString();
+        return Stack(
+          children: [
+            // المساحة النهائية محجوزة بنص شفاف.
+            Opacity(opacity: 0, child: full),
+            Text.rich(TextSpan(style: widget.style, children: _rich(shown, widget.style))),
+          ],
+        );
+      },
+    );
+  }
+}
+
 /// فقاعة رسالة من «ديما» — الأولى في الرد تحمل الصورة الرمزية.
 class BotBubble extends StatelessWidget {
   final String text;
   final bool showAvatar;
-  const BotBubble({super.key, required this.text, this.showAvatar = true});
+  final bool animate;
+  final Duration typeDelay;
+  const BotBubble({super.key, required this.text, this.showAvatar = true, this.animate = false, this.typeDelay = Duration.zero});
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +118,7 @@ class BotBubble extends StatelessWidget {
                 ),
                 boxShadow: AdvisorStyle.shadow(0.7),
               ),
-              child: Text.rich(TextSpan(style: base, children: _rich(text, base))),
+              child: TypewriterText(text: text, style: base, animate: animate, delay: typeDelay),
             ),
           ),
         ],

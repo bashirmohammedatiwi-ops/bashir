@@ -1,11 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/brand/brand_logo.dart';
+import '../../core/utils/formatters.dart';
+import '../../core/widgets/app_network_image.dart';
+import 'advisor_cart.dart';
 import 'advisor_controller.dart';
 import 'advisor_models.dart';
+import 'advisor_profile.dart';
+import 'widgets/advisor_insight_cards.dart';
+import 'widgets/advisor_knowledge_card.dart';
+import 'widgets/advisor_profile_sheet.dart';
 import 'widgets/advisor_bubbles.dart';
 import 'widgets/advisor_orb.dart';
 import 'widgets/advisor_product_card.dart';
@@ -20,7 +29,11 @@ import 'widgets/stagger_in.dart';
 /// والنتائج بطاقات بنسبة ملاءمة وأسباب، وروتين كامل يضاف للسلة بلمسة.
 class AdvisorScreen extends ConsumerStatefulWidget {
   final String? initialMessage;
-  const AdvisorScreen({super.key, this.initialMessage});
+  /// فُتحت من صفحة منتج: الحديث يبدأ عنه.
+  final String? productId;
+  /// سؤال جاهز عن المنتج (fit | dupe | complement | howto).
+  final String? ask;
+  const AdvisorScreen({super.key, this.initialMessage, this.productId, this.ask});
 
   @override
   ConsumerState<AdvisorScreen> createState() => _AdvisorScreenState();
@@ -36,6 +49,10 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
   int _animatedCount = 0;
   bool _hasText = false;
   double _lastInset = 0;
+  /// زر «إلى الأحدث» حين تبتعد عن آخر المحادثة.
+  final _showJump = ValueNotifier(false);
+  String? _notice;
+  Timer? _noticeTimer;
 
   AdvisorController get _ctl => ref.read(advisorProvider.notifier);
 
@@ -50,8 +67,12 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
       final has = _input.text.trim().isNotEmpty;
       if (has != _hasText) setState(() => _hasText = has);
     });
+    _scroll.addListener(() {
+      if (!_scroll.hasClients) return;
+      _showJump.value = _scroll.position.maxScrollExtent - _scroll.offset > 700;
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _ctl.start();
+      await _ctl.start(productId: widget.productId, ask: widget.ask);
       final m = widget.initialMessage?.trim();
       if (m != null && m.isNotEmpty && mounted) _ctl.send(m);
     });
@@ -62,10 +83,20 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
 
   @override
   void dispose() {
+    _noticeTimer?.cancel();
+    _showJump.dispose();
     _scroll.dispose();
     _input.dispose();
     _focus.dispose();
     super.dispose();
+  }
+
+  void _showNotice(String text) {
+    _noticeTimer?.cancel();
+    setState(() => _notice = text);
+    _noticeTimer = Timer(const Duration(milliseconds: 3200), () {
+      if (mounted) setState(() => _notice = null);
+    });
   }
 
   void _jumpToEnd() {
@@ -116,6 +147,13 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
   Widget build(BuildContext context) {
     final session = ref.watch(advisorProvider);
     ref.listen<AdvisorSession>(advisorProvider, (prev, next) {
+      // محادثة مستعادة من الجهاز: تظهر كما هي بلا حركة، ونذهب لآخرها.
+      if ((prev?.entries.isEmpty ?? true) && next.entries.length > 1 && !next.thinking) {
+        _animatedCount = next.entries.length;
+        WidgetsBinding.instance.addPostFrameCallback((_) => _jumpToEnd());
+        return;
+      }
+      if (next.notice != null && next.notice?.id != prev?.notice?.id) _showNotice(next.notice!.text);
       final grew = next.entries.length > (prev?.entries.length ?? 0);
       if (grew && next.entries.last is BotEntry && next.entries.length > 1) {
         _revealReply();
@@ -158,12 +196,29 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
                 _Header(
                   thinking: session.thinking,
                   canReset: started,
+                  hasProfile: !ref.watch(advisorProfileProvider).isEmpty,
+                  onProfile: () => showAdvisorProfileSheet(context),
                   onBack: () => context.canPop() ? context.pop() : context.go('/'),
                   onReset: () {
                     HapticFeedback.mediumImpact();
                     _input.clear();
                     _ctl.reset();
                   },
+                ),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 280),
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.topCenter,
+                  child: _notice == null
+                      ? const SizedBox(width: double.infinity)
+                      : Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                          child: StaggerIn(
+                            key: ValueKey(_notice),
+                            from: const Offset(0, -10),
+                            child: _NoticePill(text: _notice!, onTap: () => showAdvisorProfileSheet(context)),
+                          ),
+                        ),
                 ),
                 AnimatedSize(
                   duration: const Duration(milliseconds: 300),
@@ -181,7 +236,9 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
                       : const SizedBox(width: double.infinity),
                 ),
                 Expanded(
-                  child: entries.isEmpty
+                  child: Stack(
+                    children: [
+                      Positioned.fill(child: entries.isEmpty
                       ? _EmptyState(
                           error: session.error,
                           onRetry: _ctl.retry,
@@ -224,6 +281,7 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
                                   : _BotTurn(
                                       reply: reply,
                                       animate: animate,
+                                      isLast: i == entries.length - 1,
                                       quizActive: quizActive && i == entries.length - 1 && !session.thinking,
                                       onQuizAnswer: (picked) {
                                         _focus.unfocus();
@@ -232,8 +290,40 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
                                     ),
                             };
                           },
+                        )),
+                      PositionedDirectional(
+                        end: 16,
+                        bottom: 10,
+                        child: ValueListenableBuilder<bool>(
+                          valueListenable: _showJump,
+                          builder: (_, show, __) => IgnorePointer(
+                            ignoring: !show,
+                            child: AnimatedScale(
+                              duration: const Duration(milliseconds: 220),
+                              scale: show ? 1 : 0.6,
+                              child: AnimatedOpacity(
+                                duration: const Duration(milliseconds: 200),
+                                opacity: show ? 1 : 0,
+                                child: _JumpButton(onTap: _scrollToEnd),
+                              ),
+                            ),
+                          ),
                         ),
+                      ),
+                    ],
+                  ),
                 ),
+                if (session.comparing.isNotEmpty)
+                  _CompareTray(
+                    items: session.comparing,
+                    busy: session.thinking,
+                    onRemove: (p) => _ctl.toggleCompare(p),
+                    onClear: _ctl.clearCompare,
+                    onCompare: () {
+                      HapticFeedback.mediumImpact();
+                      _ctl.compareNow();
+                    },
+                  ),
                 _Composer(
                   controller: _input,
                   focus: _focus,
@@ -260,7 +350,16 @@ class _Header extends StatelessWidget {
   final bool canReset;
   final VoidCallback onBack;
   final VoidCallback onReset;
-  const _Header({required this.thinking, required this.canReset, required this.onBack, required this.onReset});
+  final bool hasProfile;
+  final VoidCallback onProfile;
+  const _Header({
+    required this.thinking,
+    required this.canReset,
+    required this.onBack,
+    required this.onReset,
+    required this.hasProfile,
+    required this.onProfile,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -304,13 +403,26 @@ class _Header extends StatelessWidget {
               ],
             ),
           ),
-          AnimatedOpacity(
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              _GlassIcon(icon: hasProfile ? Icons.favorite_rounded : Icons.favorite_border_rounded, onTap: onProfile, tooltip: 'ملفكِ الجمالي'),
+              if (hasProfile)
+                PositionedDirectional(
+                  top: 2,
+                  end: 2,
+                  child: Container(width: 9, height: 9, decoration: BoxDecoration(shape: BoxShape.circle, gradient: AdvisorStyle.gradient, border: Border.all(color: Colors.white, width: 1.5))),
+                ),
+            ],
+          ),
+          AnimatedSize(
             duration: const Duration(milliseconds: 250),
-            opacity: canReset ? 1 : 0,
-            child: IgnorePointer(
-              ignoring: !canReset,
-              child: _GlassIcon(icon: Icons.add_comment_outlined, onTap: onReset, tooltip: 'محادثة جديدة'),
-            ),
+            child: canReset
+                ? Padding(
+                    padding: const EdgeInsetsDirectional.only(start: 8),
+                    child: _GlassIcon(icon: Icons.add_comment_outlined, onTap: onReset, tooltip: 'محادثة جديدة'),
+                  )
+                : const SizedBox.shrink(),
           ),
         ],
       ),
@@ -418,24 +530,44 @@ class _BotTurn extends StatelessWidget {
   final AdvisorReply reply;
   final bool animate;
   final bool quizActive;
+  final bool isLast;
   final ValueChanged<List<AdvisorChip>> onQuizAnswer;
 
-  const _BotTurn({required this.reply, required this.animate, required this.quizActive, required this.onQuizAnswer});
+  const _BotTurn({
+    required this.reply,
+    required this.animate,
+    required this.quizActive,
+    required this.isLast,
+    required this.onQuizAnswer,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final parts = <Widget>[];
+    // الرسائل تُكتب بالتتابع؛ البطاقات تظهر بعد أول رسالة بقليل (لا تنتظر الكل).
+    final parts = <({Widget w, Duration at})>[];
     var first = true;
-    for (final m in reply.messages) {
-      if (TipCard.isTip(m)) {
-        parts.add(TipCard(text: m));
-      } else {
-        parts.add(BotBubble(text: m, showAvatar: first));
-        first = false;
-      }
+    var t = Duration.zero;
+    Duration? cardsAt;
+    // النصيحة تكميلية — تأتي بعد النتائج لا قبلها.
+    final tips = reply.messages.where(TipCard.isTip).toList();
+    for (final m in reply.messages.where((m) => !TipCard.isTip(m))) {
+      parts.add((w: BotBubble(text: m, showAvatar: first, animate: animate, typeDelay: t), at: t));
+      t += typingDuration(m) + const Duration(milliseconds: 90);
+      first = false;
+      cardsAt ??= t;
     }
+    var c = cardsAt ?? Duration.zero;
+    void card(Widget w) {
+      parts.add((w: w, at: c));
+      c += const Duration(milliseconds: 150);
+    }
+
+    if (reply.anchor != null && reply.fit == null) card(AdvisorAnchorTile(product: reply.anchor!));
+    if (reply.knowledge != null) card(AdvisorKnowledgeCard(knowledge: reply.knowledge!, animate: animate));
+    if (reply.fit != null) card(AdvisorFitCard(fit: reply.fit!, animate: animate));
+    if (reply.compare != null) card(AdvisorCompareCard(compare: reply.compare!, animate: animate));
     if (reply.quiz != null) {
-      parts.add(AnimatedSize(
+      card(AnimatedSize(
         duration: const Duration(milliseconds: 320),
         curve: Curves.easeOutCubic,
         alignment: Alignment.topCenter,
@@ -448,15 +580,32 @@ class _BotTurn extends StatelessWidget {
         ),
       ));
     }
-    if (reply.routine != null && reply.routine!.steps.isNotEmpty) {
-      parts.add(AdvisorRoutineCard(routine: reply.routine!, animate: animate));
-    }
+    if (reply.routine != null && reply.routine!.steps.isNotEmpty) card(AdvisorRoutineCard(routine: reply.routine!, animate: animate));
     if (reply.products.isNotEmpty) {
-      parts.add(AdvisorProductRail(products: reply.products, animate: animate));
+      final similar = reply.products.first.similarity != null;
+      card(AdvisorProductRail(
+        title: similar
+            ? (reply.anchor != null ? 'يشبهه' : 'بنفس البصمة')
+            : reply.knowledge != null
+                ? 'منتجات متوفرة فيها المكوّن'
+                : null,
+        products: reply.products,
+        animate: animate,
+        highlightFirst: !similar,
+      ));
     }
     for (final g in reply.groups) {
-      parts.add(AdvisorProductRail(title: g.title, products: g.products, animate: animate, highlightFirst: false));
+      card(AdvisorProductRail(title: g.title, products: g.products, animate: animate, highlightFirst: false));
     }
+    // أكثر من نوع بطلب واحد: إضافة الأفضل من كل نوع بلمسة.
+    if (reply.products.isEmpty && reply.groups.length >= 2 && reply.routine == null) {
+      card(_AddBestOfEach(products: reply.groups.map((g) => g.products.first).toList()));
+    }
+    for (final tip in tips) {
+      card(TipCard(text: tip));
+    }
+    final hasPicks = reply.products.isNotEmpty || reply.groups.isNotEmpty || reply.routine != null;
+    if (hasPicks) card(_Feedback(reply: reply));
 
     return Padding(
       padding: const EdgeInsets.only(top: 12),
@@ -466,9 +615,129 @@ class _BotTurn extends StatelessWidget {
           for (var i = 0; i < parts.length; i++)
             Padding(
               padding: EdgeInsets.only(bottom: i == parts.length - 1 ? 0 : 8),
-              child: StaggerIn(index: i, animate: animate, step: const Duration(milliseconds: 170), child: parts[i]),
+              child: StaggerIn(animate: animate, delay: parts[i].at, child: parts[i].w),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// «هل أفادتكِ؟» — إشارة تتعلم منها «ديما» ترتيبها.
+class _Feedback extends ConsumerStatefulWidget {
+  final AdvisorReply reply;
+  const _Feedback({required this.reply});
+
+  @override
+  ConsumerState<_Feedback> createState() => _FeedbackState();
+}
+
+class _FeedbackState extends ConsumerState<_Feedback> {
+  bool? _liked;
+
+  void _rate(bool liked) {
+    if (_liked != null) return;
+    HapticFeedback.selectionClick();
+    setState(() => _liked = liked);
+    ref.read(advisorProvider.notifier).rate(widget.reply, liked);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(start: 52, end: 16),
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 250),
+        child: _liked != null
+            ? Align(
+                key: const ValueKey('done'),
+                alignment: AlignmentDirectional.centerStart,
+                child: Text(
+                  _liked! ? 'شكراً! راح أتذكر ذوقكِ 💜' : 'شكراً لصراحتكِ — جربي «غيرهم» أو وضحيلي أكثر',
+                  style: AdvisorStyle.text(size: 12, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.4),
+                ),
+              )
+            : Row(
+                key: const ValueKey('ask'),
+                children: [
+                  Text('أفادتكِ الترشيحات؟', style: AdvisorStyle.text(size: 12, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.2)),
+                  const SizedBox(width: 6),
+                  _Thumb(icon: Icons.thumb_up_alt_outlined, onTap: () => _rate(true)),
+                  _Thumb(icon: Icons.thumb_down_alt_outlined, onTap: () => _rate(false)),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _Thumb extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _Thumb({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkResponse(
+      onTap: onTap,
+      radius: 20,
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Icon(icon, size: 17, color: AdvisorStyle.inkMuted),
+      ),
+    );
+  }
+}
+
+class _AddBestOfEach extends ConsumerStatefulWidget {
+  final List<AdvisorProduct> products;
+  const _AddBestOfEach({required this.products});
+
+  @override
+  ConsumerState<_AddBestOfEach> createState() => _AddBestOfEachState();
+}
+
+class _AddBestOfEachState extends ConsumerState<_AddBestOfEach> {
+  bool _busy = false;
+  bool _done = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = widget.products.fold<int>(0, (a, p) => a + p.price);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GestureDetector(
+        onTap: _busy || _done
+            ? null
+            : () async {
+                setState(() => _busy = true);
+                final added = await advisorAddRoutine(context, ref, widget.products);
+                if (!mounted) return;
+                for (final p in widget.products.take(added)) {
+                  ref.read(advisorProvider.notifier).track('cart', productId: p.id);
+                }
+                setState(() {
+                  _busy = false;
+                  _done = added > 0;
+                });
+              },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          height: 50,
+          decoration: BoxDecoration(
+            gradient: _done ? null : AdvisorStyle.gradient,
+            color: _done ? const Color(0xFFE9F7EF) : null,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: _done ? null : [BoxShadow(color: BrandColors.rose.withValues(alpha: 0.3), blurRadius: 14, offset: const Offset(0, 5))],
+          ),
+          alignment: Alignment.center,
+          child: _busy
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2.2, color: Colors.white))
+              : Text(
+                  _done ? 'أُضيفت للسلة ✓' : 'أضيفي الأفضل من كل نوع  •  ${formatPrice(total)}',
+                  style: AdvisorStyle.text(size: 13.5, weight: FontWeight.w800, color: _done ? const Color(0xFF137A48) : Colors.white, height: 1.2),
+                ),
+        ),
       ),
     );
   }
@@ -747,6 +1016,139 @@ class _RailChip extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+
+class _NoticePill extends StatelessWidget {
+  final String text;
+  final VoidCallback onTap;
+  const _NoticePill({required this.text, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: AdvisorStyle.ink,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: AdvisorStyle.ink.withValues(alpha: 0.22), blurRadius: 14, offset: const Offset(0, 5))],
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.favorite_rounded, size: 16, color: BrandColors.roseLight),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(text, maxLines: 2, overflow: TextOverflow.ellipsis, style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w700, color: Colors.white, height: 1.4)),
+            ),
+            const SizedBox(width: 6),
+            Text('تعديل', style: AdvisorStyle.text(size: 12, weight: FontWeight.w800, color: BrandColors.roseLight, height: 1.2)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _JumpButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _JumpButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      shape: const CircleBorder(side: BorderSide(color: AdvisorStyle.glassBorder)),
+      elevation: 3,
+      shadowColor: BrandColors.orchid.withValues(alpha: 0.3),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: const SizedBox.square(dimension: 42, child: Icon(Icons.keyboard_arrow_down_rounded, color: BrandColors.orchid, size: 26)),
+      ),
+    );
+  }
+}
+
+/// سلة المقارنة: صور مصغرة لما اختارته + «قارني الآن».
+class _CompareTray extends StatelessWidget {
+  final List<AdvisorProduct> items;
+  final bool busy;
+  final ValueChanged<AdvisorProduct> onRemove;
+  final VoidCallback onClear;
+  final VoidCallback onCompare;
+  const _CompareTray({required this.items, required this.busy, required this.onRemove, required this.onClear, required this.onCompare});
+
+  @override
+  Widget build(BuildContext context) {
+    final ready = items.length >= 2 && !busy;
+    return StaggerIn(
+      from: const Offset(0, 16),
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(12, 4, 12, 2),
+        padding: const EdgeInsets.fromLTRB(8, 8, 8, 8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: const Color(0xFFEBD3EE)),
+          boxShadow: AdvisorStyle.shadow(1),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(width: 4),
+            const Icon(Icons.balance_rounded, size: 18, color: BrandColors.orchid),
+            const SizedBox(width: 6),
+            for (final p in items)
+              Padding(
+                padding: const EdgeInsetsDirectional.only(end: 6),
+                child: GestureDetector(
+                  onTap: () => onRemove(p),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(color: const Color(0xFFFAF6FC), borderRadius: BorderRadius.circular(12)),
+                        child: AppNetworkImage(url: p.image, fit: BoxFit.contain),
+                      ),
+                      PositionedDirectional(
+                        top: -4,
+                        end: -4,
+                        child: Container(
+                          width: 16,
+                          height: 16,
+                          decoration: const BoxDecoration(color: AdvisorStyle.ink, shape: BoxShape.circle),
+                          child: const Icon(Icons.close_rounded, size: 11, color: Colors.white),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            const Spacer(),
+            if (items.length < 2)
+              Text('اختاري منتجاً آخر', style: AdvisorStyle.text(size: 11.5, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.2)),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap: ready ? onCompare : null,
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 200),
+                opacity: ready ? 1 : 0.45,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(gradient: AdvisorStyle.gradient, borderRadius: BorderRadius.circular(16)),
+                  child: Text('قارني (${items.length})', style: AdvisorStyle.text(size: 13, weight: FontWeight.w800, color: Colors.white, height: 1.2)),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

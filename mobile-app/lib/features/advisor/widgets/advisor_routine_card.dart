@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../advisor_cart.dart';
+import '../advisor_controller.dart';
 import '../advisor_models.dart';
 import 'advisor_style.dart';
 import 'stagger_in.dart';
@@ -37,6 +38,11 @@ class _AdvisorRoutineCardState extends ConsumerState<AdvisorRoutineCard> {
     setState(() => _busy = true);
     final added = await advisorAddRoutine(context, ref, widget.routine.steps.map((s) => s.product).toList());
     if (!mounted) return;
+    if (added > 0) {
+      for (final st in widget.routine.steps) {
+        ref.read(advisorProvider.notifier).track('cart', productId: st.product.id);
+      }
+    }
     setState(() {
       _busy = false;
       _done = added > 0;
@@ -60,7 +66,12 @@ class _AdvisorRoutineCardState extends ConsumerState<AdvisorRoutineCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _Header(title: r.title, steps: r.steps.length, schedule: _schedule, total: r.total),
+              _Header(
+                title: r.title,
+                emoji: r.emoji,
+                subtitle: r.isLook ? '${r.steps.length} قطع متناسقة' : '${r.steps.length} خطوات • $_schedule',
+                total: r.total,
+              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 16, 14, 4),
                 child: Column(
@@ -78,6 +89,7 @@ class _AdvisorRoutineCardState extends ConsumerState<AdvisorRoutineCard> {
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 6, 14, 14),
                 child: _AddAllButton(
+                  isLook: r.isLook,
                   total: r.total,
                   busy: _busy,
                   done: _done,
@@ -94,10 +106,10 @@ class _AdvisorRoutineCardState extends ConsumerState<AdvisorRoutineCard> {
 
 class _Header extends StatelessWidget {
   final String title;
-  final int steps;
-  final String schedule;
+  final String emoji;
+  final String subtitle;
   final int total;
-  const _Header({required this.title, required this.steps, required this.schedule, required this.total});
+  const _Header({required this.title, required this.emoji, required this.subtitle, required this.total});
 
   @override
   Widget build(BuildContext context) {
@@ -127,7 +139,7 @@ class _Header extends StatelessWidget {
                   border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
                 ),
                 alignment: Alignment.center,
-                child: const Text('🧖‍♀️', style: TextStyle(fontSize: 22)),
+                child: Text(emoji, style: const TextStyle(fontSize: 22)),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -137,7 +149,7 @@ class _Header extends StatelessWidget {
                     Text(title, style: AdvisorStyle.text(size: 16, weight: FontWeight.w800, color: Colors.white, height: 1.3)),
                     const SizedBox(height: 2),
                     Text(
-                      '$steps خطوات • $schedule',
+                      subtitle,
                       style: AdvisorStyle.text(size: 12, weight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.85), height: 1.3),
                     ),
                   ],
@@ -218,12 +230,14 @@ class _StepTile extends StatelessWidget {
                   Row(
                     children: [
                       Text('$number. ${step.label}', style: AdvisorStyle.text(size: 13.5, weight: FontWeight.w800, height: 1.3)),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(color: AdvisorStyle.tint, borderRadius: BorderRadius.circular(10)),
-                        child: Text(_when, style: AdvisorStyle.text(size: 10, weight: FontWeight.w700, color: AdvisorStyle.inkSoft, height: 1.4)),
-                      ),
+                      if (step.when != 'any') ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(color: AdvisorStyle.tint, borderRadius: BorderRadius.circular(10)),
+                          child: Text(_when, style: AdvisorStyle.text(size: 10, weight: FontWeight.w700, color: AdvisorStyle.inkSoft, height: 1.4)),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -293,8 +307,9 @@ class _AddAllButton extends StatelessWidget {
   final int total;
   final bool busy;
   final bool done;
+  final bool isLook;
   final VoidCallback onTap;
-  const _AddAllButton({required this.total, required this.busy, required this.done, required this.onTap});
+  const _AddAllButton({required this.total, required this.busy, required this.done, required this.onTap, this.isLook = false});
 
   @override
   Widget build(BuildContext context) {
@@ -332,7 +347,7 @@ class _AddAllButton extends StatelessWidget {
                           children: [
                             const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20),
                             const SizedBox(width: 6),
-                            Text('أُضيف الروتين  •  عرض السلة',
+                            Text(isLook ? 'أُضيف اللوك  •  عرض السلة' : 'أُضيف الروتين  •  عرض السلة',
                                 style: AdvisorStyle.text(size: 13.5, weight: FontWeight.w800, color: AppColors.success, height: 1.2)),
                           ],
                         )
@@ -342,7 +357,7 @@ class _AddAllButton extends StatelessWidget {
                           children: [
                             const Icon(Icons.shopping_bag_rounded, color: Colors.white, size: 19),
                             const SizedBox(width: 8),
-                            Text('أضيفي الروتين كاملاً',
+                            Text(isLook ? 'أضيفي اللوك كاملاً' : 'أضيفي الروتين كاملاً',
                                 style: AdvisorStyle.text(size: 14, weight: FontWeight.w800, color: Colors.white, height: 1.2)),
                             Text('  •  ${formatPrice(total)}',
                                 style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.85), height: 1.2)),

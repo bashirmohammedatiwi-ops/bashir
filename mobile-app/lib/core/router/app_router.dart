@@ -112,7 +112,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           key: s.pageKey,
           transitionDuration: const Duration(milliseconds: 420),
           reverseTransitionDuration: const Duration(milliseconds: 300),
-          child: AdvisorScreen(initialMessage: s.uri.queryParameters['q']),
+          child: AdvisorScreen(
+            initialMessage: s.uri.queryParameters['q'],
+            productId: s.uri.queryParameters['product'],
+            ask: s.uri.queryParameters['ask'],
+          ),
           transitionsBuilder: (_, a, __, child) {
             final t = CurvedAnimation(parent: a, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
             return FadeTransition(

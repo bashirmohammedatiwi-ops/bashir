@@ -980,9 +980,7 @@ function handleKnowledge(state: AdvisorState, ctx: DialogCtx, qa: QaAnswer, kind
       state.lastCards = res.items.slice(0, 3).map((r) => r.p.id);
     }
   }
-  const messages = [...qa.messages];
-  if (products.length) messages.push("وهذه منتجات متوفرة فيها هذا المكوّن:");
-  return reply(state, { messages, knowledge: qa.knowledge, products, chips: qa.chips }, ctx);
+  return reply(state, { messages: [...qa.messages], knowledge: qa.knowledge, products, chips: qa.chips }, ctx);
 }
 
 // ───────────────────────────────────────────────────────── نقطة الدخول

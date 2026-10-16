@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/brand/brand_logo.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../advisor_models.dart';
+import '../advisor_profile.dart';
+import 'advisor_profile_sheet.dart';
 import 'advisor_orb.dart';
 import 'advisor_style.dart';
 import 'stagger_in.dart';
 
 /// واجهة الترحيب: كرة «ديما» الكبيرة، تعريف قصير، بطاقات بدء، وأمثلة أسئلة.
-class AdvisorWelcome extends StatelessWidget {
+class AdvisorWelcome extends ConsumerWidget {
   final AdvisorReply reply;
   final List<String> prompts;
   final bool animate;
@@ -34,7 +38,8 @@ class AdvisorWelcome extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profile = ref.watch(advisorProfileProvider);
     var i = 0;
     Widget item(Widget child) => StaggerIn(index: i++, animate: animate, step: const Duration(milliseconds: 90), child: child);
     final msgs = reply.messages;
@@ -76,7 +81,9 @@ class AdvisorWelcome extends StatelessWidget {
               _Trait('💸', 'تراعي ميزانيتكِ'),
             ],
           )),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          item(_ProfileCard(profile: profile)),
+          const SizedBox(height: 16),
           if (reply.chips.isNotEmpty)
             item(LayoutBuilder(
               builder: (_, c) {
@@ -234,6 +241,60 @@ class _PromptPill extends StatelessWidget {
                 const Icon(Icons.north_west_rounded, size: 16, color: AdvisorStyle.inkMuted),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+
+/// «أتذكركِ»: ملخص ملفها الجمالي، أو دعوة لتعريف نفسها.
+class _ProfileCard extends StatelessWidget {
+  final AdvisorProfile profile;
+  const _ProfileCard({required this.profile});
+
+  @override
+  Widget build(BuildContext context) {
+    final has = !profile.isEmpty;
+    return Material(
+      color: Colors.white.withValues(alpha: 0.9),
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => showAdvisorProfileSheet(context),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: has ? const Color(0xFFEBD3EE) : AdvisorStyle.glassBorder),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(gradient: has ? AdvisorStyle.gradient : AdvisorStyle.softGradient, shape: BoxShape.circle),
+                child: Icon(has ? Icons.favorite_rounded : Icons.favorite_border_rounded, size: 19, color: has ? Colors.white : BrandColors.rose),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(has ? 'أتذكركِ 💜' : 'عرّفيني عليكِ أكثر',
+                        style: AdvisorStyle.text(size: 13.5, weight: FontWeight.w800, height: 1.3)),
+                    Text(
+                      has ? profile.summary() : 'أحفظ نوع بشرتكِ وذوقكِ — على جهازكِ فقط — لترشيحات أدق',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AdvisorStyle.text(size: 11.5, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.45),
+                    ),
+                  ],
+                ),
+              ),
+              Text(has ? 'تعديل' : 'ابدئي', style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w800, color: BrandColors.rose, height: 1.2)),
+            ],
           ),
         ),
       ),

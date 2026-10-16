@@ -9,7 +9,9 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../advisor_cart.dart';
+import '../advisor_controller.dart';
 import '../advisor_models.dart';
+import 'advisor_product_sheet.dart';
 import 'advisor_style.dart';
 import 'stagger_in.dart';
 
@@ -83,35 +85,44 @@ class AdvisorProductRail extends StatelessWidget {
   }
 }
 
-class AdvisorProductCard extends StatelessWidget {
+class AdvisorProductCard extends ConsumerWidget {
   final AdvisorProduct product;
   final bool best;
   final bool animate;
   const AdvisorProductCard({super.key, required this.product, this.best = false, this.animate = true});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final p = product;
+    final selected = ref.watch(advisorProvider.select((s) => s.comparing.any((x) => x.id == p.id)));
     return SizedBox(
       width: _cardWidth,
       height: _cardHeight,
-      child: DecoratedBox(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
-          border: Border.all(color: best ? const Color(0xFFEBD3EE) : AdvisorStyle.glassBorder, width: best ? 1.4 : 1),
-          boxShadow: AdvisorStyle.shadow(best ? 1.2 : 0.8),
+          border: Border.all(
+            color: selected ? BrandColors.rose : (best ? const Color(0xFFEBD3EE) : AdvisorStyle.glassBorder),
+            width: selected ? 2 : (best ? 1.4 : 1),
+          ),
+          boxShadow: AdvisorStyle.shadow(best || selected ? 1.2 : 0.8),
         ),
         child: Material(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(22),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
-            onTap: () => openAdvisorProduct(context, p),
+            onTap: () {
+              ref.read(advisorProvider.notifier).track('click', productId: p.id);
+              openAdvisorProduct(context, p);
+            },
+            onLongPress: () => showAdvisorProductSheet(context, p),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _ImageArea(product: p, best: best, animate: animate),
+                _ImageArea(product: p, best: best, animate: animate, selected: selected),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
@@ -154,7 +165,8 @@ class _ImageArea extends StatelessWidget {
   final AdvisorProduct product;
   final bool best;
   final bool animate;
-  const _ImageArea({required this.product, required this.best, required this.animate});
+  final bool selected;
+  const _ImageArea({required this.product, required this.best, required this.animate, required this.selected});
 
   @override
   Widget build(BuildContext context) {
@@ -176,16 +188,35 @@ class _ImageArea extends StatelessWidget {
               ),
             ),
           ),
-          PositionedDirectional(top: 8, start: 8, child: MatchRing(match: p.match, animate: animate)),
-          if (p.hasDiscount)
+          if (p.match > 0 || p.similarity != null)
             PositionedDirectional(
-              top: 10,
-              end: 10,
+              top: 8,
+              start: 8,
+              child: Column(
+                children: [
+                  MatchRing(match: p.similarity ?? p.match, animate: animate),
+                  if (p.similarity != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Text('شبه', style: AdvisorStyle.text(size: 9.5, weight: FontWeight.w800, color: AdvisorStyle.inkMuted, height: 1)),
+                    ),
+                ],
+              ),
+            ),
+          PositionedDirectional(
+            top: 6,
+            end: 6,
+            child: _MoreButton(product: p, selected: selected),
+          ),
+          if (p.saving >= 1000)
+            PositionedDirectional(
+              top: 44,
+              end: 8,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(color: AppColors.sale, borderRadius: BorderRadius.circular(8)),
-                child: Text(formatDiscount(p.discountPercent),
-                    style: AdvisorStyle.text(size: 10.5, weight: FontWeight.w800, color: Colors.white, height: 1.2)),
+                decoration: BoxDecoration(color: const Color(0xFFE9F7EF), borderRadius: BorderRadius.circular(10)),
+                child: Text('أوفر ${_k(p.saving)}',
+                    style: AdvisorStyle.text(size: 10, weight: FontWeight.w800, color: const Color(0xFF137A48), height: 1.2)),
               ),
             ),
           if (best)
@@ -295,12 +326,24 @@ class _PriceRow extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (p.hasDiscount)
-                Text(
-                  formatPrice(p.originalPrice),
-                  style: AdvisorStyle.text(size: 10.5, color: AdvisorStyle.inkMuted, height: 1.2).copyWith(
-                    decoration: TextDecoration.lineThrough,
-                    decorationColor: AdvisorStyle.inkMuted,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        formatPrice(p.originalPrice),
+                        maxLines: 1,
+                        overflow: TextOverflow.fade,
+                        softWrap: false,
+                        style: AdvisorStyle.text(size: 10.5, color: AdvisorStyle.inkMuted, height: 1.2).copyWith(
+                          decoration: TextDecoration.lineThrough,
+                          decorationColor: AdvisorStyle.inkMuted,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(formatDiscount(p.discountPercent),
+                        style: AdvisorStyle.text(size: 10.5, weight: FontWeight.w800, color: AppColors.sale, height: 1.2)),
+                  ],
                 ),
               FittedBox(
                 fit: BoxFit.scaleDown,
@@ -345,6 +388,7 @@ class _AdvisorAddButtonState extends ConsumerState<AdvisorAddButton> {
     setState(() => _s = _AddState.busy);
     final r = await advisorAddToCart(context, ref, widget.product);
     if (!mounted) return;
+    if (r == AdvisorAddResult.added) ref.read(advisorProvider.notifier).track('cart', productId: widget.product.id);
     setState(() => _s = r == AdvisorAddResult.added ? _AddState.done : _AddState.idle);
     if (r == AdvisorAddResult.added) {
       await Future<void>.delayed(const Duration(milliseconds: 1600));
@@ -394,6 +438,38 @@ class _AdvisorAddButtonState extends ConsumerState<AdvisorAddButton> {
                 color: Colors.white,
               ),
           },
+        ),
+      ),
+    );
+  }
+}
+
+String _k(int v) => v >= 1000 ? '${(v / 1000).round()} ألف' : formatPrice(v);
+
+/// «⋯»: يفتح خيارات المنتج (ليش رشحته، يناسبني؟، بديل أرخص، قارني…).
+class _MoreButton extends StatelessWidget {
+  final AdvisorProduct product;
+  final bool selected;
+  const _MoreButton({required this.product, required this.selected});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => showAdvisorProductSheet(context, product),
+      child: Padding(
+        padding: const EdgeInsets.all(2),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: selected ? null : Colors.white.withValues(alpha: 0.94),
+            gradient: selected ? AdvisorStyle.gradient : null,
+            border: Border.all(color: selected ? Colors.transparent : AdvisorStyle.glassBorder),
+          ),
+          child: Icon(selected ? Icons.balance_rounded : Icons.more_horiz_rounded, size: 17, color: selected ? Colors.white : AdvisorStyle.inkSoft),
         ),
       ),
     );

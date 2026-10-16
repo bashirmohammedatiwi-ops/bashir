@@ -760,6 +760,8 @@ class ApiService {
     String? action,
     Map<String, dynamic>? state,
     String? firstName,
+    Map<String, dynamic>? profile,
+    String? productId,
   }) async {
     try {
       final r = await _dio.post('/advisor/chat',
@@ -768,12 +770,23 @@ class ApiService {
             if (action != null) 'action': action,
             if (state != null) 'state': state,
             if (firstName != null && firstName.isNotEmpty) 'firstName': firstName,
+            if (profile != null && profile.isNotEmpty) 'profile': profile,
+            if (productId != null) 'productId': productId,
           },
           options: Options(extra: {'auth': false}));
       return asMap(_data(r));
     } catch (e) {
       _throw(e);
     }
+  }
+
+  /// إشارة تعلّم مجهولة الهوية (فتح/إضافة/إعجاب) — لا تُعيد خطأ للواجهة.
+  Future<void> advisorFeedback({required String type, String? productId, String? sig}) async {
+    try {
+      await _dio.post('/advisor/feedback',
+          data: {'type': type, if (productId != null) 'productId': productId, if (sig != null && sig.isNotEmpty) 'sig': sig},
+          options: Options(extra: {'auth': false}));
+    } catch (_) {}
   }
 
   // ---- PRODUCT ALERTS ----

@@ -27,6 +27,7 @@ import '../../core/widgets/states.dart';
 import '../../data/models/product.dart';
 import '../../data/models/review.dart';
 import '../../data/services/api_service.dart';
+import '../advisor/widgets/ask_deema_card.dart';
 import '../alerts/restock_watch_provider.dart';
 import '../auth/auth_provider.dart';
 import '../cart/cart_provider.dart';
@@ -256,6 +257,15 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     },
                   ),
                   const _TrustStrip(),
+                  AskDeemaCard(
+                    productId: product.id,
+                    margin: const EdgeInsets.fromLTRB(
+                      ProductDetailTheme.padH,
+                      ProductDetailTheme.sectionGap,
+                      ProductDetailTheme.padH,
+                      0,
+                    ),
+                  ),
                   if (product.localizedDescription(ref.watch(languageCodeProvider)).isNotEmpty ||
                       product.howToUse.isNotEmpty ||
                       product.ingredients.isNotEmpty)

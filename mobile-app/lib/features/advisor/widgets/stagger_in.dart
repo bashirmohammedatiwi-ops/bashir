@@ -10,6 +10,8 @@ class StaggerIn extends StatefulWidget {
   final Duration duration;
   final Offset from;
   final double fromScale;
+  /// تأخير صريح يحل محل «الترتيب × الخطوة».
+  final Duration? delay;
 
   const StaggerIn({
     super.key,
@@ -20,6 +22,7 @@ class StaggerIn extends StatefulWidget {
     this.duration = const Duration(milliseconds: 520),
     this.from = const Offset(0, 14),
     this.fromScale = 1,
+    this.delay,
   });
 
   @override
@@ -37,12 +40,15 @@ class _StaggerInState extends State<StaggerIn> with SingleTickerProviderStateMix
     super.initState();
     if (!_animate) {
       _c.value = 1;
-    } else if (widget.index == 0) {
-      _c.forward();
     } else {
-      Future<void>.delayed(widget.step * widget.index, () {
-        if (mounted) _c.forward();
-      });
+      final d = widget.delay ?? widget.step * widget.index;
+      if (d == Duration.zero) {
+        _c.forward();
+      } else {
+        Future<void>.delayed(d, () {
+          if (mounted) _c.forward();
+        });
+      }
     }
   }
 

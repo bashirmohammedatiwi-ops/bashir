@@ -32,6 +32,12 @@ class AdvisorProduct {
   final int shadeCount;
   final List<String> reasons;
   final int match;
+  /// «ليش رشحته؟»: ما طابق طلبها وما لم يطابق.
+  final List<AdvisorWhy> why;
+  /// نسبة الشبه بالمنتج المرجعي (بدائل/مشابه).
+  final int? similarity;
+  /// كم توفّر مقارنةً بالمرجع.
+  final int saving;
 
   const AdvisorProduct({
     required this.id,
@@ -48,6 +54,9 @@ class AdvisorProduct {
     required this.shadeCount,
     required this.reasons,
     required this.match,
+    this.why = const [],
+    this.similarity,
+    this.saving = 0,
   });
 
   String get route => slug.isNotEmpty ? slug : id;
@@ -68,6 +77,112 @@ class AdvisorProduct {
         shadeCount: asInt(j['shadeCount']),
         reasons: asStringList(j['reasons']).where((e) => e.trim().isNotEmpty).toList(),
         match: asInt(j['match'], 80),
+        why: asList(j['why']).map((e) => AdvisorWhy(ok: e['ok'] == true, text: asString(e['text']))).where((w) => w.text.isNotEmpty).toList(),
+        similarity: j['similarity'] == null ? null : asInt(j['similarity']),
+        saving: asInt(j['saving']),
+      );
+}
+
+class AdvisorWhy {
+  final bool ok;
+  final String text;
+  const AdvisorWhy({required this.ok, required this.text});
+}
+
+/// بطاقة معرفة: جواب سؤال عن مكوّن أو موضوع.
+class AdvisorKnowledge {
+  final String title;
+  final String kind;
+  final String? intro;
+  final List<AdvisorKnowledgeSection> sections;
+  final String? verdictTone;
+  final String? verdictText;
+
+  const AdvisorKnowledge({
+    required this.title,
+    required this.kind,
+    this.intro,
+    required this.sections,
+    this.verdictTone,
+    this.verdictText,
+  });
+
+  factory AdvisorKnowledge.fromJson(Map<String, dynamic> j) {
+    final v = asMap(j['verdict']);
+    return AdvisorKnowledge(
+      title: asString(j['title']),
+      kind: asString(j['kind'], 'info'),
+      intro: j['intro']?.toString(),
+      sections: asList(j['sections'])
+          .map((e) => AdvisorKnowledgeSection(
+                label: asString(e['label']),
+                icon: asString(e['icon']),
+                bullets: asStringList(e['bullets']).where((b) => b.trim().isNotEmpty).toList(),
+              ))
+          .where((x) => x.bullets.isNotEmpty)
+          .toList(),
+      verdictTone: v.isEmpty ? null : asString(v['tone']),
+      verdictText: v.isEmpty ? null : asString(v['text']),
+    );
+  }
+}
+
+class AdvisorKnowledgeSection {
+  final String label;
+  final String icon;
+  final List<String> bullets;
+  const AdvisorKnowledgeSection({required this.label, required this.icon, required this.bullets});
+}
+
+class AdvisorCompareRow {
+  final String label;
+  final List<String> values;
+  final int? best;
+  const AdvisorCompareRow({required this.label, required this.values, this.best});
+}
+
+class AdvisorCompare {
+  final List<AdvisorProduct> products;
+  final List<AdvisorCompareRow> rows;
+  final int winner;
+  final String verdict;
+  const AdvisorCompare({required this.products, required this.rows, required this.winner, required this.verdict});
+
+  factory AdvisorCompare.fromJson(Map<String, dynamic> j) => AdvisorCompare(
+        products: asList(j['products']).map(AdvisorProduct.fromJson).toList(),
+        rows: asList(j['rows'])
+            .map((r) => AdvisorCompareRow(
+                  label: asString(r['label']),
+                  values: asStringList(r['values']),
+                  best: r['best'] == null ? null : asInt(r['best']),
+                ))
+            .toList(),
+        winner: asInt(j['winner']),
+        verdict: asString(j['verdict']),
+      );
+}
+
+class AdvisorFitPoint {
+  /// true = يناسب، false = انتبهي، null = معلومة.
+  final bool? ok;
+  final String text;
+  const AdvisorFitPoint({required this.ok, required this.text});
+}
+
+class AdvisorFit {
+  final AdvisorProduct product;
+  final String tone;
+  final String headline;
+  final List<AdvisorFitPoint> points;
+  const AdvisorFit({required this.product, required this.tone, required this.headline, required this.points});
+
+  factory AdvisorFit.fromJson(Map<String, dynamic> j) => AdvisorFit(
+        product: AdvisorProduct.fromJson(asMap(j['product'])),
+        tone: asString(j['tone'], 'ok'),
+        headline: asString(j['headline']),
+        points: asList(j['points'])
+            .map((p) => AdvisorFitPoint(ok: p['ok'] is bool ? p['ok'] as bool : null, text: asString(p['text'])))
+            .toList(),
       );
 }
 
@@ -92,12 +207,17 @@ class AdvisorRoutine {
   final String title;
   final List<AdvisorRoutineStep> steps;
   final int total;
-  const AdvisorRoutine({required this.title, required this.steps, required this.total});
+  final String emoji;
+  const AdvisorRoutine({required this.title, required this.steps, required this.total, this.emoji = '🧖‍♀️'});
+
+  /// لوك مكياج (قطع) لا روتين عناية (خطوات صباح/مساء).
+  bool get isLook => steps.isNotEmpty && steps.every((s) => s.when == 'any');
 
   factory AdvisorRoutine.fromJson(Map<String, dynamic> j) => AdvisorRoutine(
         title: asString(j['title']),
         steps: asList(j['steps']).map((e) => AdvisorRoutineStep.fromJson(asMap(e))).toList(),
         total: asInt(j['total']),
+        emoji: asString(j['emoji'], '🧖‍♀️'),
       );
 }
 
@@ -153,6 +273,15 @@ class AdvisorReply {
   final List<AdvisorUnderstood> understood;
   final Map<String, dynamic>? state;
   final List<String> prompts;
+  final AdvisorKnowledge? knowledge;
+  final AdvisorCompare? compare;
+  final AdvisorFit? fit;
+  /// المنتج المرجعي (نتحدث عنه، أو بدائل له).
+  final AdvisorProduct? anchor;
+  /// ما تعلّمته عنها في هذا الرد.
+  final Map<String, dynamic>? profileUpdate;
+  /// الرد كما وصل — لحفظ المحادثة على الجهاز.
+  final Map<String, dynamic> raw;
 
   const AdvisorReply({
     this.messages = const [],
@@ -164,6 +293,12 @@ class AdvisorReply {
     this.understood = const [],
     this.state,
     this.prompts = const [],
+    this.knowledge,
+    this.compare,
+    this.fit,
+    this.anchor,
+    this.profileUpdate,
+    this.raw = const {},
   });
 
   factory AdvisorReply.fromJson(Map<String, dynamic> j) => AdvisorReply(
@@ -184,7 +319,20 @@ class AdvisorReply {
             .toList(),
         state: j['state'] is Map ? asMap(j['state']) : null,
         prompts: asStringList(j['prompts']).where((e) => e.trim().isNotEmpty).toList(),
+        knowledge: j['knowledge'] is Map ? AdvisorKnowledge.fromJson(asMap(j['knowledge'])) : null,
+        compare: j['compare'] is Map ? AdvisorCompare.fromJson(asMap(j['compare'])) : null,
+        fit: j['fit'] is Map ? AdvisorFit.fromJson(asMap(j['fit'])) : null,
+        anchor: j['anchor'] is Map ? AdvisorProduct.fromJson(asMap(j['anchor'])) : null,
+        profileUpdate: j['profileUpdate'] is Map ? asMap(j['profileUpdate']) : null,
+        raw: j,
       );
+
+  /// بصمة الطلب للتعلّم (المجال|النوع) — بلا أي بيانات شخصية.
+  String get signature {
+    final need = asMap(asMap(state)['need']);
+    final kinds = asStringList(need['kinds']);
+    return [asString(need['area']), if (kinds.isNotEmpty) kinds.first].where((e) => e.isNotEmpty).join('|');
+  }
 }
 
 /// عنصر في محادثة الشاشة.
