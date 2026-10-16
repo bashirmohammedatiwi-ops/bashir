@@ -9,8 +9,13 @@ import { findBarcodeIndexEntry, upsertBarcodeIndex } from '../lib/core/barcode-i
 import { dedupeImagesPreferLargest, upgradeImageUrl } from '../lib/core/images.js';
 
 const API_BASE = (process.env.API_BASE || 'http://187.127.88.146/api/v1').replace(/\/$/, '');
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@alhayaa.com';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '000000';
+// بيانات الدخول من البيئة فقط — لا قيم افتراضية في مستودع عام.
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error('Set ADMIN_EMAIL and ADMIN_PASSWORD');
+  process.exit(1);
+}
 const CONCURRENCY = Number(process.env.CONCURRENCY || 4);
 const INDEX_ONLY = process.env.INDEX_ONLY === '1'; // default: full Niceone barcode search
 const UPLOAD_CONCURRENCY = Number(process.env.UPLOAD_CONCURRENCY || 6);

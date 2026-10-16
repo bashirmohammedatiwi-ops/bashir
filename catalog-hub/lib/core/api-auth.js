@@ -1,6 +1,7 @@
 const API_BASE = (process.env.API_BASE || 'http://187.127.88.146/api/v1').replace(/\/$/, '');
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@alhayaa.com';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '000000';
+// بيانات الدخول من البيئة فقط — لا قيم افتراضية في مستودع عام.
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
 
 let token = null;
 let tokenAt = 0;
@@ -12,6 +13,9 @@ function isAuthError(status, msg = '') {
 }
 
 export async function login(retries = 3) {
+  if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+    throw new Error('Set ADMIN_EMAIL and ADMIN_PASSWORD');
+  }
   let lastErr;
   for (let i = 0; i <= retries; i++) {
     try {

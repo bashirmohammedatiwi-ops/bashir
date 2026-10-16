@@ -2,8 +2,13 @@
 import { CATEGORIES, perfumeSubs } from '../lib/core/app-categories.js';
 
 const API_BASE = (process.env.API_BASE || 'http://187.127.88.146/api/v1').replace(/\/$/, '');
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@alhayaa.com';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '000000';
+// بيانات الدخول من البيئة فقط — لا قيم افتراضية في مستودع عام.
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || '';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error('Set ADMIN_EMAIL and ADMIN_PASSWORD');
+  process.exit(1);
+}
 const BRAND_ID = 'b610d576-9fb9-4b21-a6a2-74e71b471474';
 const CATEGORY_ID = CATEGORIES.perfumes;
 

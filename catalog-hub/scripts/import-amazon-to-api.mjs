@@ -4,7 +4,7 @@
  *
  * Usage:
  *   API_BASE=http://187.127.88.146/api/v1 \
- *   ADMIN_EMAIL=admin@alhayaa.com \
+ *   ADMIN_EMAIL=... \
  *   ADMIN_PASSWORD='...' \
  *   node scripts/import-amazon-to-api.mjs B07W59CNXQ
  *
