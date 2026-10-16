@@ -112,6 +112,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     // العوالم لم تصل بعد: لا نعرض واجهة المتجر العامة القديمة لحظةً ثم نقفز —
     // نعرض هيكل التحميل حتى تتضح العوالم. (العامة تبقى احتياطاً عند الفشل أو غياب العوالم.)
     final worldsPending = worlds == null && !worldsAsync.hasError;
+    // تعذّر جلب العوالم ولا نسخة محفوظة (أول تشغيل بلا إنترنت): رسالة واضحة بدل
+    // واجهة المتجر العامة القديمة. العامة تبقى فقط إن لم يكن على السيرفر عوالم أصلاً.
+    final worldsFailed = worlds == null && worldsAsync.hasError;
     final worldSlug = resolveWorldSlug(selected: selectedSlug, worlds: worlds);
     if (worlds != null && worldSlug != null && worldSlug != selectedSlug) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -147,9 +150,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final world = worldSlug == null
         ? null
         : ref.watch(worldDetailProvider(worldSlug)).valueOrNull;
-    final feed = worldSlug == null
+    // الواجهة العامة القديمة لا تُطلب إلا إن لم يكن على السيرفر عوالم إطلاقاً.
+    final AsyncValue<HomeFeed> feed = worldSlug != null
+        ? ref.watch(worldFeedProvider(worldSlug))
+        : (worlds != null && worlds.isEmpty)
         ? ref.watch(homeFeedProvider)
-        : ref.watch(worldFeedProvider(worldSlug));
+        : const AsyncValue<HomeFeed>.loading();
     final incoming = feed.valueOrNull;
     if (incoming != null && _heldSlug == worldSlug) {
       _heldFeed = incoming;
@@ -181,7 +187,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           duration: const Duration(milliseconds: 360),
           curve: Curves.easeOutCubic,
           color: canvas,
-          child: worldsPending || visibleFeed == null
+          child: worldsFailed
+              ? ErrorView(
+                  message: friendlyError(worldsAsync.error!),
+                  onRetry: () {
+                    HapticFeedback.lightImpact();
+                    ref.invalidate(worldsProvider);
+                  },
+                )
+              : worldsPending || visibleFeed == null
               ? (!worldsPending && feed.hasError
                     ? ErrorView(
                         message: friendlyError(feed.error!),

@@ -4,6 +4,7 @@ import { ConfigModule } from "@nestjs/config";
 import { BullModule } from "@nestjs/bullmq";
 import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
 import { TransformInterceptor } from "../common/interceptors/transform.interceptor";
+import { MobilePayloadInterceptor } from "../common/interceptors/mobile-payload.interceptor";
 import { PrismaModule } from "../common/prisma.module";
 import { RedisCacheModule } from "../common/redis-cache.module";
 import { HealthModule } from "./health/health.module";
@@ -83,6 +84,7 @@ const conditionalImports: DynamicModule[] = redisEnabled
   controllers: [AdminCacheController],
   providers: [
     { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: MobilePayloadInterceptor },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })

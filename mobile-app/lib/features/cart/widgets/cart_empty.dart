@@ -12,6 +12,7 @@ import 'cart_header.dart';
 import 'cart_recommendations.dart';
 import 'cart_theme.dart';
 import 'pill_buttons.dart';
+import '../../worlds/worlds_provider.dart';
 
 /// السلة الفارغة: رسم ناعم + دعوة للتسوّق + صف الأكثر مبيعاً.
 class CartEmptyView extends ConsumerWidget {
@@ -24,8 +25,17 @@ class CartEmptyView extends ConsumerWidget {
     final s = ref.s;
     final t = context.worldTheme;
     final picks = ref
-        .watch(homeFeedProvider)
-        .maybeWhen(data: (d) => d.bestSellers.take(10).toList(), orElse: () => const <Product>[]);
+        .watch(activeHomeFeedProvider)
+        .maybeWhen(
+          data: (d) => (d.bestSellers.isNotEmpty
+                  ? d.bestSellers
+                  : d.flashSale.products.isNotEmpty
+                  ? d.flashSale.products
+                  : d.promoProducts)
+              .take(10)
+              .toList(),
+          orElse: () => const <Product>[],
+        );
 
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),

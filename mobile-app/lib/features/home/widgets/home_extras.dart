@@ -346,7 +346,7 @@ class HomeFooterSignature extends ConsumerWidget {
     final s = ref.s;
     final lang = ref.watch(languageCodeProvider);
     final t = context.worldTheme;
-    final whatsapp = ref.watch(homeFeedProvider).valueOrNull?.settings.whatsapp;
+    final whatsapp = ref.watch(activeHomeFeedProvider).valueOrNull?.settings.whatsapp;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 30, 16, 8),

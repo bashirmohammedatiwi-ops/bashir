@@ -24,6 +24,7 @@ import 'widgets/cart_shipping_banner.dart';
 import 'widgets/cart_theme.dart';
 import '../worlds/world_theme.dart';
 import 'cart_strings.dart';
+import '../worlds/worlds_provider.dart';
 
 class CartScreen extends ConsumerStatefulWidget {
   const CartScreen({super.key});
@@ -146,7 +147,7 @@ class _CartScreenState extends ConsumerState<CartScreen> {
   Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider);
     final coupon = ref.watch(appliedCouponProvider);
-    final feed = ref.watch(homeFeedProvider);
+    final feed = ref.watch(activeHomeFeedProvider);
     final threshold = feed.maybeWhen(data: (d) => d.settings.freeShippingThreshold, orElse: () => 50000);
 
     ref.listen<CartState>(cartProvider, (prev, next) {

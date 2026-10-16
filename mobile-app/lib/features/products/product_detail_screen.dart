@@ -37,6 +37,7 @@ import '../wishlist/wishlist_provider.dart';
 import '../worlds/world_theme.dart';
 import 'widgets/product_detail_theme.dart';
 import 'widgets/product_shade_picker.dart';
+import '../worlds/worlds_provider.dart';
 
 class ProductDetailScreen extends ConsumerStatefulWidget {
   final String idOrSlug;
@@ -986,7 +987,7 @@ class _FreeDeliveryHint extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final threshold = ref.watch(homeFeedProvider).valueOrNull?.settings.freeShippingThreshold ?? 0;
+    final threshold = ref.watch(activeHomeFeedProvider).valueOrNull?.settings.freeShippingThreshold ?? 0;
     if (threshold <= 0) return const SizedBox.shrink();
     final cart = ref.watch(cartProvider);
     final inCart = cart.items.any((e) => e.productId == productId);

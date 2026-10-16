@@ -17,6 +17,7 @@ import '../../catalog/catalog_providers.dart';
 import '../../wishlist/wishlist_provider.dart';
 import '../../shell/nav_tabs.dart';
 import '../../worlds/world_theme.dart';
+import '../../worlds/worlds_provider.dart';
 
 // ─── سلتكِ بانتظاركِ ─────────────────────────────────────────────────────────
 
@@ -35,7 +36,7 @@ class HomeCartReminder extends ConsumerWidget {
     final thumbs = cart.items.take(3).toList();
     final threshold =
         ref
-            .watch(homeFeedProvider)
+            .watch(activeHomeFeedProvider)
             .valueOrNull
             ?.settings
             .freeShippingThreshold ??

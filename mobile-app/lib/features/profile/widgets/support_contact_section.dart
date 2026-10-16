@@ -7,6 +7,7 @@ import '../../../core/utils/support_links.dart';
 import '../../catalog/catalog_providers.dart';
 import 'account_strings.dart';
 import 'profile_ui.dart';
+import '../../worlds/worlds_provider.dart';
 
 /// قسم الدعم — واتساب/هاتف من إعدادات المتجر + بريد ثابت دائماً.
 class SupportContactSection extends ConsumerWidget {
@@ -17,7 +18,7 @@ class SupportContactSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref
-        .watch(homeFeedProvider)
+        .watch(activeHomeFeedProvider)
         .maybeWhen(data: (d) => d.settings, orElse: () => null);
     final whatsapp = settings?.whatsapp;
     final phone = settings?.supportPhone;

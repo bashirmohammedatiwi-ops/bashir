@@ -65,6 +65,8 @@ final productDetailProvider =
     FutureProvider.family.autoDispose<Product, String>((ref, idOrSlug) async {
   final api = ref.read(apiServiceProvider);
   final product = await api.getProduct(idOrSlug, forceRefresh: false);
+  // وصل من الشبكة للتو: لا طلب ثانٍ. أما إن جاء من الكاش فنتحقق بهدوء من صور أحدث.
+  if (api.isProductFresh(idOrSlug)) return product;
 
   final imageStamp = '${product.coverUrl}|${product.galleryUrls.join(',')}';
   unawaited(() async {

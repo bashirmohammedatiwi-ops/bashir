@@ -98,19 +98,42 @@ class ApiService {
     }
   }
 
-  Future<List<StoreWorld>> getWorlds() async {
+  /// العوالم نادراً ما تتغير: تُعرض من الجهاز فوراً (وبلا إنترنت) وتُحدَّث في الخلفية.
+  Future<List<StoreWorld>> getWorlds({bool forceRefresh = false}) async {
     try {
-      final r = await _dio.get('/worlds', options: Options(extra: {'auth': false}));
-      return asList(_data(r)).map(StoreWorld.fromJson).toList();
+      final raw = await _cache.getOrFetch<List<dynamic>>(
+        key: 'worlds_v1',
+        ttl: const Duration(minutes: 10),
+        maxStaleFactor: 1008, // حتى 7 أيام تُعرض فوراً مع تحديث خلفي
+        forceRefresh: forceRefresh,
+        fetch: () async {
+          final r = await _dio.get('/worlds', options: Options(extra: {'auth': false}));
+          return asList(_data(r));
+        },
+        parse: (json) => asList(json),
+        serialize: (l) => l,
+      );
+      return raw.map((e) => StoreWorld.fromJson(asMap(e))).toList();
     } catch (e) {
       _throw(e);
     }
   }
 
-  Future<StoreWorld> getWorld(String slug) async {
+  Future<StoreWorld> getWorld(String slug, {bool forceRefresh = false}) async {
     try {
-      final r = await _dio.get('/worlds/$slug', options: Options(extra: {'auth': false}));
-      return StoreWorld.fromJson(asMap(_data(r)));
+      final raw = await _cache.getOrFetch<Map<String, dynamic>>(
+        key: 'world_v1_$slug',
+        ttl: const Duration(minutes: 10),
+        maxStaleFactor: 1008,
+        forceRefresh: forceRefresh,
+        fetch: () async {
+          final r = await _dio.get('/worlds/$slug', options: Options(extra: {'auth': false}));
+          return asMap(_data(r));
+        },
+        parse: (json) => asMap(json),
+        serialize: (m) => m,
+      );
+      return StoreWorld.fromJson(raw);
     } catch (e) {
       _throw(e);
     }
@@ -389,6 +412,10 @@ class ApiService {
       _throw(e);
     }
   }
+
+  /// هل جُلب المنتج من الشبكة للتو؟ (لا داعي لإعادة طلبه فوراً)
+  bool isProductFresh(String idOrSlug) =>
+      _cache.isFresh('product_v2_$idOrSlug', const Duration(seconds: 20));
 
   Future<Product> getProduct(String idOrSlug, {bool forceRefresh = false}) async {
     try {

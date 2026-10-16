@@ -40,7 +40,7 @@ class WorldHeroBand extends ConsumerWidget {
     final unread = auth.isAuthenticated
         ? ref.watch(unreadNotificationsCountProvider)
         : 0;
-    final whatsapp = ref.watch(homeFeedProvider).valueOrNull?.settings.whatsapp;
+    final whatsapp = ref.watch(activeHomeFeedProvider).valueOrNull?.settings.whatsapp;
     final firstName = (auth.user?.name ?? '').trim().split(' ').first;
     final base = worldBandColor(world);
 

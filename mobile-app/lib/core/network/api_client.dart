@@ -63,6 +63,9 @@ final dioProvider = Provider<Dio>((ref) {
       headers: const {
         'Accept': 'application/json',
         'Accept-Encoding': 'gzip',
+        // السيرفر يرسل للتطبيق بطاقات خفيفة (صورة غلاف webp، بلا أوصاف) — انظر
+        // backend MobilePayloadInterceptor.
+        'X-Client': 'deema-app',
       },
       responseType: ResponseType.json,
       persistentConnection: true,
