@@ -9,6 +9,7 @@ import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { paginate } from "../../common/dto/pagination.dto";
 import { getCached, setCached } from "../../common/memory-cache.util";
 import { CategoriesService } from "./categories.service";
+import { AdvisorService } from "../advisor/advisor.service";
 import { CreateProductDto, QueryProductsDto, UpdateProductDto } from "./dto/product.dto";
 import { InventorySyncService } from "../sync/inventory-sync.service";
 import { SettingsService } from "../settings/settings.service";
@@ -64,6 +65,7 @@ export class ProductsService {
     private readonly inventorySync: InventorySyncService,
     private readonly settings: SettingsService,
     private readonly homeFeedCache: HomeFeedCacheService,
+    private readonly advisor: AdvisorService,
   ) {}
 
   /** قوائم المتجر تتكرر كثيراً أثناء التنقل بين الأقسام — نحفظها 20 ثانية. */
@@ -136,7 +138,8 @@ export class ProductsService {
     let rankedSearchIds: string[] = [];
     if (q.search) {
       const barcodeCandidates = barcodeLookupCandidates(q.search);
-      rankedSearchIds = await searchStorefrontProductIds(this.prisma, q.search, 200);
+      // المحرك الجديد في الذاكرة (أجزاء من الثانية)؛ القديم احتياط ريثما يجهز الفهرس.
+      rankedSearchIds = this.advisor.rankedIds(q.search, 400) ?? (await searchStorefrontProductIds(this.prisma, q.search, 200));
       const orFilters: Prisma.ProductWhereInput[] = [];
       if (rankedSearchIds.length) orFilters.push({ id: { in: rankedSearchIds } });
       if (barcodeCandidates.length) {
@@ -155,16 +158,30 @@ export class ProductsService {
       ? ({ id: "asc" } as const)
       : this.buildOrderBy(q.sort, storefront, brandId);
 
-    const [total, rawItems] = await this.prisma.$transaction([
-      this.prisma.product.count({ where }),
+    const fetchItems = (w: Prisma.ProductWhereInput, page?: { skip: number; take: number }) =>
       this.prisma.product.findMany({
-        where,
-        orderBy,
-        skip: q.skip,
-        take: q.limit,
+        where: w,
+        ...(page ? { orderBy, skip: page.skip, take: page.take } : {}),
         include: q.lite ? productRelationsLite : productRelationsFull,
-      }),
-    ]);
+      });
+    let total: number;
+    let rawItems: Awaited<ReturnType<typeof fetchItems>>;
+    if (rankedSearchIds.length) {
+      // البحث: نرقّم بترتيب الملاءمة نفسه (كان يُرقَّم بالمعرّف فتضيع أفضل النتائج).
+      const matching = await this.prisma.product.findMany({ where, select: { id: true } });
+      const allowed = new Set(matching.map((m) => m.id));
+      const ranked = new Set(rankedSearchIds);
+      const ordered = [
+        ...matching.map((m) => m.id).filter((id) => !ranked.has(id)), // مطابقة باركود/SKU مباشرة أولاً
+        ...rankedSearchIds.filter((id) => allowed.has(id)),
+      ];
+      total = ordered.length;
+      const pageIds = ordered.slice(q.skip, q.skip + q.limit);
+      rankedSearchIds = pageIds;
+      rawItems = pageIds.length ? await fetchItems({ id: { in: pageIds } }) : [];
+    } else {
+      [total, rawItems] = await Promise.all([this.prisma.product.count({ where }), fetchItems(where, { skip: q.skip, take: q.limit })]);
+    }
 
     const items = rankedSearchIds.length
       ? this.orderProductsByRank(rawItems, rankedSearchIds)

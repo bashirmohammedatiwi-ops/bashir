@@ -4,6 +4,7 @@ import { rewriteMediaRecord, rewriteMediaUrl } from "../../common/media-url.util
 import { CatalogIndex, RawProduct } from "./engine/catalog";
 import { WELCOME_BODY, greetingFor, pick } from "./engine/composer";
 import { STARTERS, respond } from "./engine/dialog";
+import { searchCatalog } from "./engine/search";
 import { AdvisorReply, AdvisorState, Profile } from "./engine/types";
 
 /** أمثلة تُظهر طرق السؤال المختلفة — تتبدل كل ساعة. */
@@ -61,6 +62,18 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
 
   onModuleDestroy() {
     if (this.timer) clearInterval(this.timer);
+  }
+
+  /**
+   * ترتيب سريع لمعرّفات نتائج بحث (لقوائم المنتجات ذات `search=`). يعيد null إن لم
+   * يُبنَ الفهرس بعد — فيستخدم المتصل الطريقة القديمة ريثما يجهز.
+   */
+  rankedIds(query: string, limit = 400): string[] | null {
+    if (!this.index) {
+      this.rebuild().catch(() => undefined);
+      return null;
+    }
+    return searchCatalog(this.index, query).hits.slice(0, limit).map((h) => h.p.id);
   }
 
   /** الفهرس المشترك (يستخدمه البحث أيضاً). */
