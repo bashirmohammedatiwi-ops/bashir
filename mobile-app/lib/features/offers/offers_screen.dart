@@ -37,6 +37,11 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
   final _scroll = ScrollController();
   final _items = <Product>[];
   int _page = 1;
+  /// أقل نسبة خصم معروضة (0 = الكل) — فلترة فورية على ما حُمّل.
+  int _minDiscount = 0;
+
+  List<Product> get _visible =>
+      _minDiscount == 0 ? _items : _items.where((p) => p.discountPercent >= _minDiscount).toList();
   bool _loadingMore = false;
   bool _hasMore = true;
   bool _initialLoad = true;
@@ -246,32 +251,46 @@ class _OffersScreenState extends ConsumerState<OffersScreen> {
                             onRetry: () => _fetchMore(reset: true),
                           ),
                         )
-                      else if (_items.isNotEmpty)
+                      else if (_items.isNotEmpty) ...[
+                        SliverToBoxAdapter(
+                          child: _DiscountTiers(
+                            total: _visible.length,
+                            selected: _minDiscount,
+                            onSelect: (v) {
+                              HapticFeedback.selectionClick();
+                              setState(() => _minDiscount = v);
+                              // فلتر ضيّق قد لا يملأ الشاشة فلا يُطلق التمرير تحميلاً جديداً.
+                              if (_visible.length < 6 && _hasMore && !_loadingMore) _fetchMore();
+                            },
+                          ),
+                        ),
                         SliverPadding(
                           padding: EdgeInsets.fromLTRB(OffersTheme.hPad, 0, OffersTheme.hPad, bottomPad),
                           sliver: SliverGrid(
                             gridDelegate: ProductGrid.delegateFor(context, listing: true),
                             delegate: SliverChildBuilderDelegate(
                               (context, i) {
-                                if (i >= _items.length) {
+                                final items = _visible;
+                                if (i >= items.length) {
                                   return const ShimmerBox(height: double.infinity, radius: OffersTheme.cardRadius);
                                 }
                                 return RepaintBoundary(
                                   child: ProductCard(
-                                    key: ValueKey(_items[i].id),
-                                    product: _items[i],
+                                    key: ValueKey(items[i].id),
+                                    product: items[i],
                                     showPromoBadge: true,
                                     showRating: true,
                                     style: ProductCardStyle.listing,
                                   ),
                                 );
                               },
-                              childCount: _items.length + (_hasMore ? 2 : 0),
+                              childCount: _visible.length + (_hasMore ? 2 : 0),
                               addAutomaticKeepAlives: false,
                               addRepaintBoundaries: true,
                             ),
                           ),
-                        )
+                        ),
+                      ]
                       else if (!_loadingMore && _items.isEmpty && _gridError == null)
                         SliverFillRemaining(
                           hasScrollBody: false,
@@ -342,6 +361,80 @@ class _OffersEmptyState extends StatelessWidget {
             OffersPrimaryButton(label: actionLabel, onPressed: onAction),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// عنوان "كل العروض" مع شرائح نسب الخصم.
+class _DiscountTiers extends ConsumerWidget {
+  final int total;
+  final int selected;
+  final ValueChanged<int> onSelect;
+  const _DiscountTiers({required this.total, required this.selected, required this.onSelect});
+
+  static const _tiers = [0, 20, 30, 50];
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ar = ref.s.isAr;
+    final brand = OffersTheme.brand(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(OffersTheme.hPad, 18, OffersTheme.hPad, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 3,
+                height: 16,
+                decoration: BoxDecoration(color: brand, borderRadius: BorderRadius.circular(2)),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                ar ? 'كل العروض' : 'All offers',
+                style: OffersTheme.title(context, size: 16, color: OffersTheme.ink(context)),
+              ),
+              const SizedBox(width: 6),
+              Text('($total)', style: OffersTheme.body(context, size: 12)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 34,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: _tiers.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 8),
+              itemBuilder: (context, i) {
+                final v = _tiers[i];
+                final on = v == selected;
+                final label = v == 0 ? (ar ? 'الكل' : 'All') : (ar ? 'خصم $v%+' : '$v%+ off');
+                return GestureDetector(
+                  onTap: () => onSelect(v),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: on ? brand : OffersTheme.brandSoft(context),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: brand.withValues(alpha: on ? 1 : 0.2)),
+                    ),
+                    child: Text(
+                      label,
+                      style: OffersTheme.body(context, size: 12.5).copyWith(
+                        color: on ? Colors.white : brand,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
