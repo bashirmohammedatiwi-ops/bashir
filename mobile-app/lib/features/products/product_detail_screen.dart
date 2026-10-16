@@ -668,42 +668,8 @@ class _ProductTitleBlock extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (brand.isNotEmpty) ...[
-            // شريحة البراند مع نقطة توقيع — بداية تحريرية للصفحة.
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: t.accentLight,
-                borderRadius: BorderRadius.circular(99),
-                border: Border.all(color: t.accentSoft.withValues(alpha: 0.7)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 5,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      gradient: t.signatureGradient,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      brand.toUpperCase(),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: t.accentDark,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 10.5,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            // شريحة البراند — تفتح كل منتجات البراند.
+            _BrandChip(product: product, name: brand),
             const SizedBox(height: 10),
           ],
           Text(
@@ -922,6 +888,158 @@ class _ProductCommerceBlock extends ConsumerWidget {
               ),
             ),
           ],
+          if (stock > 0) _FreeDeliveryHint(productId: product.id, addition: price * quantity),
+        ],
+      ),
+    );
+  }
+}
+
+/// شريحة البراند: شعار صغير + الاسم + سهم — تفتح صفحة البراند.
+class _BrandChip extends StatelessWidget {
+  final Product product;
+  final String name;
+  const _BrandChip({required this.product, required this.name});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    final b = product.brand;
+    final logo = b?.logoUrl ?? '';
+    final slug = b?.slug ?? '';
+    final chip = Container(
+      padding: EdgeInsetsDirectional.fromSTEB(logo.isNotEmpty ? 4 : 10, 4, 8, 4),
+      decoration: BoxDecoration(
+        color: t.accentLight,
+        borderRadius: BorderRadius.circular(99),
+        border: Border.all(color: t.accentSoft.withValues(alpha: 0.7)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (logo.isNotEmpty) ...[
+            Container(
+              width: 24,
+              height: 24,
+              padding: const EdgeInsets.all(2),
+              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+              child: ClipOval(
+                child: AppNetworkImage(url: logo, fit: BoxFit.contain, backgroundColor: Colors.white),
+              ),
+            ),
+            const SizedBox(width: 7),
+          ] else ...[
+            Container(
+              width: 5,
+              height: 5,
+              decoration: BoxDecoration(gradient: t.signatureGradient, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 6),
+          ],
+          Flexible(
+            child: Text(
+              name.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: t.accentDark,
+                fontWeight: FontWeight.w800,
+                fontSize: 11,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+          if (slug.isNotEmpty) ...[
+            const SizedBox(width: 2),
+            Icon(Icons.chevron_right_rounded, size: 16, color: t.accentDark),
+          ],
+        ],
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: slug.isEmpty
+          ? chip
+          : GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                HapticFeedback.selectionClick();
+                context.push('/brand/$slug');
+              },
+              child: chip,
+            ),
+    );
+  }
+}
+
+/// كم يبقى للتوصيل المجاني إن أضافت الزبونة هذا المنتج — مع شريط تقدّم.
+class _FreeDeliveryHint extends ConsumerWidget {
+  final String productId;
+  final int addition;
+  const _FreeDeliveryHint({required this.productId, required this.addition});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final threshold = ref.watch(homeFeedProvider).valueOrNull?.settings.freeShippingThreshold ?? 0;
+    if (threshold <= 0) return const SizedBox.shrink();
+    final cart = ref.watch(cartProvider);
+    final inCart = cart.items.any((e) => e.productId == productId);
+    final subtotal = cart.subtotal + (inCart ? 0 : addition);
+    final remaining = threshold - subtotal;
+    final done = remaining <= 0;
+    final progress = (subtotal / threshold).clamp(0.0, 1.0);
+    final t = context.worldTheme;
+    final ar = ref.s.isAr;
+    final label = done
+        ? (ar ? 'طلبك يستحق توصيلاً مجانياً' : 'Your order ships free')
+        : (ar
+            ? 'أضيفي ${formatPrice(remaining)} للتوصيل المجاني'
+            : 'Add ${formatPrice(remaining)} for free delivery');
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(
+        children: [
+          Icon(
+            done ? Icons.check_circle_rounded : Icons.local_shipping_outlined,
+            size: 17,
+            color: done ? AppColors.success : t.accentDark,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: t.inkSoft),
+                ),
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(99),
+                  child: SizedBox(
+                    height: 5,
+                    child: Stack(
+                      children: [
+                        Positioned.fill(child: ColoredBox(color: t.accentLight)),
+                        FractionallySizedBox(
+                          widthFactor: progress,
+                          alignment: AlignmentDirectional.centerStart,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: done
+                                  ? const LinearGradient(colors: [AppColors.success, AppColors.success])
+                                  : t.signatureGradient,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -1565,6 +1683,9 @@ class _BottomBar extends ConsumerWidget {
     final total = unitPrice * quantity;
 
     final narrow = Responsive.isNarrow(context);
+    final inCartQty = ref.watch(cartProvider.select(
+      (c) => c.items.where((e) => e.productId == product.id).fold<int>(0, (n, e) => n + e.quantity),
+    ));
 
     return Container(
       padding: EdgeInsets.fromLTRB(narrow ? 14 : 18, 12, narrow ? 14 : 18, 12),
@@ -1577,10 +1698,28 @@ class _BottomBar extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  quantity > 1 ? s.totalWithQty(quantity) : s.total,
-                  style: TextStyle(fontSize: 10.5, color: context.worldTheme.inkMuted, fontWeight: FontWeight.w600),
-                ),
+                if (inCartQty > 0)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 3),
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: context.worldTheme.accentLight,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: Text(
+                      s.isAr ? 'في سلتك ×$inCartQty' : 'In bag ×$inCartQty',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: context.worldTheme.accentDark,
+                      ),
+                    ),
+                  )
+                else
+                  Text(
+                    quantity > 1 ? s.totalWithQty(quantity) : s.total,
+                    style: TextStyle(fontSize: 10.5, color: context.worldTheme.inkMuted, fontWeight: FontWeight.w600),
+                  ),
                 const SizedBox(height: 2),
                 Text(
                   formatPrice(total),
