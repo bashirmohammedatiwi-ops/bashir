@@ -132,6 +132,12 @@ class _ProductShadePickerState extends State<ProductShadePicker>
   }
 
   int get _currentVisibleIndex {
+    // ترتيب الدرجة المختارة فعلاً — لا ما يقع في منتصف الشريط.
+    final sel = widget.selected;
+    if (sel != null) {
+      final i = widget.shades.indexWhere((s) => s.id == sel.id);
+      if (i >= 0) return i + 1;
+    }
     if (_selectedIndex != null) return _selectedIndex! + 1;
     if (!_scroll.hasClients || widget.shades.isEmpty) return 1;
     final center = _scroll.offset + _scroll.position.viewportDimension / 2;

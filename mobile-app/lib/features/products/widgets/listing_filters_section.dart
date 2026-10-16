@@ -74,8 +74,6 @@ class ListingFiltersSection extends ConsumerWidget {
           title: listingTitle,
         );
 
-    final allCount = childCategories.fold<int>(0, (sum, c) => sum + c.displayCount);
-
     return Padding(
       padding: const EdgeInsets.only(top: 6, bottom: 4),
       child: Column(
@@ -91,9 +89,11 @@ class ListingFiltersSection extends ConsumerWidget {
               separator: 10,
               itemBuilder: (context, i) {
                 if (i == 0) {
+                  // بلا عدد: مجموع الأقسام الفرعية يكرر المنتجات المشتركة بينها،
+                  // والعدد الصحيح ظاهر أصلاً في رأس الصفحة.
                   return _SubTile.all(
                     label: s.all,
-                    count: allCount,
+                    count: 0,
                     selected: activeChildId == null,
                     onTap: () => openChild(null),
                   );
@@ -310,7 +310,7 @@ class _SubTile extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.grid_view_rounded, color: Colors.white, size: 22),
+            Icon(Icons.grid_view_rounded, color: Colors.white, size: count > 0 ? 22 : 26),
             if (count > 0) ...[
               const SizedBox(height: 3),
               Text(
@@ -325,15 +325,20 @@ class _SubTile extends StatelessWidget {
         ),
       );
     } else {
+      final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
       face = DecoratedBox(
+        // صور الأقسام بخلفية بيضاء غالباً: وجه أبيض يذيب حدودها، والتدرّج للرمز فقط.
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color.lerp(wash, Colors.white, 0.6)!, wash],
-          ),
+          color: hasImage ? Colors.white : null,
+          gradient: hasImage
+              ? null
+              : LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color.lerp(wash, Colors.white, 0.6)!, wash],
+                ),
         ),
-        child: imageUrl != null && imageUrl!.isNotEmpty
+        child: hasImage
             ? Padding(
                 padding: const EdgeInsets.all(7),
                 child: AppNetworkImage(url: imageUrl!, fit: BoxFit.contain, backgroundColor: Colors.transparent),
@@ -391,7 +396,7 @@ class _SubTile extends StatelessWidget {
                     clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(selected ? 19 : 21),
-                      border: selected ? null : Border.all(color: Colors.white, width: 1.2),
+                      border: selected ? null : Border.all(color: t.hairline.withValues(alpha: 0.6)),
                       boxShadow: selected
                           ? null
                           : [

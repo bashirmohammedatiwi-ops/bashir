@@ -420,7 +420,10 @@ class _GalleryAppBar extends ConsumerWidget {
                             color: context.worldTheme.ink.withValues(alpha: 0.45),
                             borderRadius: BorderRadius.circular(99),
                           ),
-                          child: Row(
+                          // الأرقام تُقرأ دائماً من اليسار: 1 / 20 لا 20 / 1.
+                          child: Directionality(
+                            textDirection: TextDirection.ltr,
+                            child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
@@ -442,6 +445,7 @@ class _GalleryAppBar extends ConsumerWidget {
                                 ),
                               ),
                             ],
+                          ),
                           ),
                         ),
                       )
