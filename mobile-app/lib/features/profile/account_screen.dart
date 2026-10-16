@@ -639,16 +639,20 @@ class _ActiveOrderCard extends ConsumerWidget {
               const SizedBox(height: 10),
               Row(
                 children: [
+                  // رقم الطلب لاتيني: نثبّته في بداية السطر (يمين) ونترك فراغاً قبل السعر.
                   Expanded(
-                    child: Text(
-                      '#${order.orderNumber}',
-                      textDirection: TextDirection.ltr,
-                      textAlign: TextAlign.start,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppText.title3.copyWith(color: t.ink),
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: Text(
+                        '#${order.orderNumber}',
+                        textDirection: TextDirection.ltr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.title3.copyWith(color: t.ink, letterSpacing: 0.4),
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 12),
                   Text(order.totalLabel, style: AppText.price.copyWith(color: t.accentDark)),
                   const SizedBox(width: 4),
                   Icon(Icons.chevron_right_rounded, color: t.inkMuted, size: 20),

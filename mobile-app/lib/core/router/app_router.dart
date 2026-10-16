@@ -83,6 +83,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         });
         return '/';
       }
+      if (path == '/account') {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final container = ProviderScope.containerOf(context);
+          openMainTab(context, container, NavTabs.account);
+        });
+        return '/';
+      }
       if (path == '/categories' || path == '/categories-tab') {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final container = ProviderScope.containerOf(context);

@@ -31,6 +31,13 @@ String? resolveDeepLink(Uri uri) {
       return '/brands';
     case '/cart':
       return '/cart';
+    // صفحات الزبونة — للإشعارات والحملات (افتحي مفضلتك، تتبّعي طلبك…).
+    case '/account':
+    case '/wishlist':
+    case '/orders':
+    case '/notifications':
+    case '/loyalty':
+      return path;
     case '/privacy':
       return '/privacy';
     case '/terms':
@@ -52,6 +59,9 @@ String? resolveDeepLink(Uri uri) {
 
   final categorySeg = RegExp(r'^/category/([^/]+)$').firstMatch(path);
   if (categorySeg != null) return '/category/${categorySeg.group(1)}';
+
+  final orderSeg = RegExp(r'^/orders/([^/]+)$').firstMatch(path);
+  if (orderSeg != null) return '/orders/${orderSeg.group(1)}';
 
   final brandSeg = RegExp(r'^/brand/([^/]+)$').firstMatch(path);
   if (brandSeg != null) return '/brand/${brandSeg.group(1)}';

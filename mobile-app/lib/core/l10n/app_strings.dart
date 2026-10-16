@@ -337,8 +337,9 @@ class AppStrings {
 
   // ─── Wishlist ─────────────────────────────────────────────────────────────
   String get wishlistIsEmpty => isAr ? 'قائمة المفضلة فارغة' : 'Your wishlist is empty';
-  String get wishlistAddHint =>
-      isAr ? 'أضف منتجات لتجدها هنا' : 'Add products to find them here';
+  String get wishlistAddHint => isAr
+      ? 'احفظي ما يعجبك بلمسة القلب — وسننبهك فور انخفاض سعره'
+      : 'Tap the heart to save what you love — we\'ll alert you when the price drops';
 
   // ─── Brands ───────────────────────────────────────────────────────────────
   String get noBrands => isAr ? 'لا توجد علامات' : 'No brands';
