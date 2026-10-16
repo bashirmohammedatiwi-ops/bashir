@@ -26,6 +26,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    // حزمة كي كارد تعتمد على مكتبة ViewBinding في التطبيق المضيف (ActivityPaymentBinding…).
+    buildFeatures {
+        viewBinding = true
+    }
+
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
