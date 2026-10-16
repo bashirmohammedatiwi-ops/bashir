@@ -17,6 +17,7 @@ import '../../core/widgets/ui/ui.dart';
 import '../cart/widgets/cart_theme.dart';
 import '../cart/widgets/pill_buttons.dart';
 import '../shell/main_shell.dart';
+import '../payments/pay_now_card.dart';
 import '../worlds/world_theme.dart';
 import 'order_strings.dart';
 import 'widgets/order_status.dart';
@@ -240,11 +241,21 @@ class _OrderCard extends ConsumerWidget {
                     const SizedBox(width: 10),
                   ],
                   Expanded(
-                    child: Text(
-                      s.itemCountLabel(order.itemCount),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppText.caption.copyWith(color: t.inkSoft),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          s.itemCountLabel(order.itemCount),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppText.caption.copyWith(color: t.inkSoft),
+                        ),
+                        if (order.paymentMethod == 'CARD') ...[
+                          const SizedBox(height: 4),
+                          CardPaymentPill(order: order),
+                        ],
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),

@@ -165,3 +165,37 @@ String paymentLineFor(AppStrings s, AppOrder o) {
     _ => '${s.cardPaymentTitle} • ${s.awaitingPayment}',
   };
 }
+
+/// شارة صغيرة لحالة الدفع الإلكتروني — تظهر لطلبات البطاقة فقط.
+class CardPaymentPill extends ConsumerWidget {
+  final AppOrder order;
+  const CardPaymentPill({super.key, required this.order});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (order.paymentMethod != 'CARD') return const SizedBox.shrink();
+    final s = ref.s;
+    final (label, color, icon) = switch (order.paymentStatus) {
+      'PAID' => (s.paidByCard, const Color(0xFF2E9E6B), Icons.verified_rounded),
+      'REFUNDED' => (s.paymentRefunded, BrandColors.ink, Icons.undo_rounded),
+      _ when order.status == 'CANCELLED' => (s.paymentFailedShort, BrandColors.ink, Icons.credit_card_off_rounded),
+      'FAILED' => (s.paymentFailedShort, BrandColors.rose, Icons.credit_card_off_rounded),
+      _ => (s.awaitingPayment, BrandColors.rose, Icons.schedule_rounded),
+    };
+    return Container(
+      padding: const EdgeInsetsDirectional.fromSTEB(6, 3, 8, 3),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(label, style: AppText.micro.copyWith(color: color, fontWeight: FontWeight.w800)),
+        ],
+      ),
+    );
+  }
+}

@@ -147,6 +147,8 @@ class CheckoutPaymentCard extends StatelessWidget {
               selected: paymentMethod == 'CARD',
               badge: sandbox ? s.sandboxBadge : null,
               onTap: () => onChanged('CARD'),
+              footer: const _CardNetworks(),
+              expanded: _SecureCardNote(text: s.cardSecureNote),
             )
           else
             _Option(
@@ -171,6 +173,12 @@ class _Option extends StatelessWidget {
   final String? badge;
   final VoidCallback? onTap;
 
+  /// يظهر دائماً تحت الوصف (مثل شبكات البطاقات المقبولة).
+  final Widget? footer;
+
+  /// يتمدد أسفل الخيار عند اختياره فقط.
+  final Widget? expanded;
+
   const _Option({
     required this.title,
     required this.subtitle,
@@ -178,6 +186,8 @@ class _Option extends StatelessWidget {
     required this.selected,
     required this.onTap,
     this.badge,
+    this.footer,
+    this.expanded,
   });
 
   @override
@@ -205,63 +215,138 @@ class _Option extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppCorners.md),
                 border: Border.all(color: selected ? t.accent : t.hairline, width: selected ? 1.5 : 1),
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  CartTheme.iconBadge(context, icon, color: disabled ? t.inkMuted : null),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  Row(
+                    children: [
+                      CartTheme.iconBadge(context, icon, color: disabled ? t.inkMuted : null),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Flexible(
-                              child: Text(
-                                title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: AppText.label.copyWith(color: t.ink),
-                              ),
-                            ),
-                            if (badge != null) ...[
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: t.accentSoft,
-                                  borderRadius: BorderRadius.circular(AppCorners.pill),
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppText.label.copyWith(color: t.ink),
+                                  ),
                                 ),
-                                child: Text(badge!, style: AppText.micro.copyWith(color: t.accentDark)),
-                              ),
-                            ],
+                                if (badge != null) ...[
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: t.accentSoft,
+                                      borderRadius: BorderRadius.circular(AppCorners.pill),
+                                    ),
+                                    child: Text(badge!, style: AppText.micro.copyWith(color: t.accentDark)),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              subtitle,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppText.caption.copyWith(color: t.inkMuted),
+                            ),
+                            if (footer != null) ...[const SizedBox(height: 8), footer!],
                           ],
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          subtitle,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppText.caption.copyWith(color: t.inkMuted),
+                      ),
+                      const SizedBox(width: 8),
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
+                        child: Icon(
+                          selected ? Icons.check_circle_rounded : Icons.radio_button_off_rounded,
+                          key: ValueKey(selected),
+                          color: selected ? t.accent : t.inkMuted.withValues(alpha: 0.6),
+                          size: 24,
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
-                    child: Icon(
-                      selected ? Icons.check_circle_rounded : Icons.radio_button_off_rounded,
-                      key: ValueKey(selected),
-                      color: selected ? t.accent : t.inkMuted.withValues(alpha: 0.6),
-                      size: 24,
+                  if (expanded != null)
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 260),
+                      curve: Curves.easeOutCubic,
+                      alignment: Alignment.topCenter,
+                      child: selected
+                          ? Padding(padding: const EdgeInsets.only(top: 12), child: expanded)
+                          : const SizedBox(width: double.infinity),
                     ),
-                  ),
                 ],
               ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// شبكات البطاقات المقبولة — شارات نصية أنيقة.
+class _CardNetworks extends StatelessWidget {
+  const _CardNetworks();
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    Widget chip(String label, {Color? color}) => Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: t.surface,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: t.hairline),
+      ),
+      child: Text(
+        label,
+        textDirection: TextDirection.ltr,
+        style: AppText.micro.copyWith(color: color ?? t.inkSoft, fontWeight: FontWeight.w800, letterSpacing: 0.4),
+      ),
+    );
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        chip('Qi Card', color: const Color(0xFFB8860B)),
+        chip('Mastercard', color: const Color(0xFFEB5D20)),
+        chip('VISA', color: const Color(0xFF1A1F71)),
+      ],
+    );
+  }
+}
+
+/// ملاحظة الأمان عند اختيار البطاقة.
+class _SecureCardNote extends StatelessWidget {
+  final String text;
+  const _SecureCardNote({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: t.surface.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(AppCorners.sm),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.lock_rounded, size: 16, color: t.accentDark),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text, style: AppText.caption.copyWith(color: t.inkSoft, height: 1.6)),
+          ),
+        ],
       ),
     );
   }
@@ -671,7 +756,7 @@ class CheckoutBottomBar extends StatelessWidget {
                   const SizedBox(width: 4),
                   Flexible(
                     child: Text(
-                      '${s.secureCheckout} • ${s.secureCodNote}',
+                      '${s.secureCheckout} • ${payByCard ? s.secureCardNote : s.secureCodNote}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppText.caption.copyWith(color: t.inkMuted),

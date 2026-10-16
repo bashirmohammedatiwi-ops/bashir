@@ -19,6 +19,7 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         WindowCompat.setDecorFitsSystemWindows(window, false)
         ensureNotificationChannel()
+        QiPaymentScreenPolish.install(application)
         super.onCreate(savedInstanceState)
     }
 

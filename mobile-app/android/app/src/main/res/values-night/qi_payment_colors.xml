@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ألوان شاشة الدفع من كي كارد بهوية ديما الحياة (أوركيد ووردي) — تتجاوز ألوان الحزمة الافتراضية.
+     الشاشة فاتحة دائماً مثل التطبيق، لذا القيم نفسها في الوضع الليلي. -->
+<resources>
+    <color name="finon_pay_sdk_bg">#FFFAFB</color>
+    <color name="finon_pay_sdk_bg_bottom_sheet">#FFFAFB</color>
+    <color name="finon_pay_sdk_bg_card">#FFFFFF</color>
+    <color name="finon_pay_sdk_bg_content">#FFFFFF</color>
+    <color name="finon_pay_sdk_fragment_bg">#FFFAFB</color>
+    <color name="finon_pay_sdk_border">#148A55C9</color>
+    <color name="finon_pay_sdk_stroke_border">#2E8A55C9</color>
+
+    <color name="finon_pay_sdk_button_active_primary">#8A55C9</color>
+    <color name="finon_pay_sdk_button_text_color_primary">#FFFFFF</color>
+    <color name="finon_pay_sdk_button_active_secondary">#148A55C9</color>
+    <color name="finon_pay_sdk_button_text_color_secondary">#8A55C9</color>
+    <color name="finon_pay_sdk_button_widget">#FFFFFF</color>
+    <color name="finon_pay_sdk_ripple_primary">#33FFFFFF</color>
+    <color name="finon_pay_sdk_ripple_secondary">#1F8A55C9</color>
+
+    <color name="finon_pay_sdk_input_frame_normal">#0D8A55C9</color>
+    <color name="finon_pay_sdk_input_frame_error">#FFFFFF</color>
+
+    <color name="finon_pay_sdk_text_bold">#3B2650</color>
+    <color name="finon_pay_sdk_text_regular">#A63B2650</color>
+    <color name="finon_pay_sdk_text_thin">#733B2650</color>
+    <color name="finon_pay_sdk_text_error">#C2508A</color>
+
+    <color name="finon_pay_sdk_receipt_bold">#3B2650</color>
+    <color name="finon_pay_sdk_receipt_regular">#A63B2650</color>
+    <color name="finon_pay_sdk_pdf_background">#FFFFFAFB</color>
+
+    <!-- معاينة البطاقة -->
+    <color name="finon_pay_card_background">#3B2650</color>
+    <color name="finon_pay_card_text_input">#FFFFFF</color>
+    <color name="finon_pay_card_text_title">#B3FFFFFF</color>
+    <color name="finon_pay_card_text_hint">#66FFFFFF</color>
+</resources>
