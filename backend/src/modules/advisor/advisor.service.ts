@@ -114,7 +114,7 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
   async welcome(firstName?: string) {
     const seed = Math.floor(Date.now() / 3_600_000);
     return {
-      messages: [`${pick(GREETINGS, seed)}${firstName ? ` يا ${firstName}` : ""}`, pick(WELCOME_BODY, seed)],
+      messages: [pick(GREETINGS, seed)(firstName?.trim() || undefined), pick(WELCOME_BODY, seed)],
       chips: STARTERS,
       prompts: [
         "بشرتي دهنية وبيها حبوب",

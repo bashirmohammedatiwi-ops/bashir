@@ -32,6 +32,8 @@ export interface IndexedProduct {
   weak: Map<FacetKey, Set<string>>;
   /** جودة مسبقة 0..1 (مبيعات + تقييم). */
   quality: number;
+  /** جنس مرجّح لعطر بلا تصنيف صريح: من وصفه أو من غالبية عطور البراند. */
+  genderHint: string | null;
 }
 
 export interface BrandEntry {
@@ -297,6 +299,18 @@ export class CatalogIndex {
       const weak = new Map<FacetKey, Set<string>>();
       matchFacets(`${name} ${nameEn} ${categoryPath.join(" ")} ${summary}`, strong);
       matchFacets(desc, weak);
+      // الجنس بالأولوية: الاسم ← القسم ← الملخص المخزن (قد يخطئ: «رجالي» لعطر في «عطور نسائية»).
+      {
+        const only = new Set<FacetKey>(["gender"]);
+        let g: Set<string> | undefined;
+        for (const src of [`${name} ${nameEn}`, categoryPath.join(" "), summary]) {
+          const m = new Map<FacetKey, Set<string>>();
+          matchFacets(src, m, only);
+          if ((g = m.get("gender"))?.size) break;
+        }
+        if (g?.size) strong.set("gender", new Set(g));
+        else strong.delete("gender");
+      }
 
       // النوع: الاسم أصدق مصدر («بلسم» في قسم «شامبو وبلسم» بلسمٌ فقط)،
       // ثم وسم الذكاء المخزن، ثم القسم.
@@ -404,6 +418,7 @@ export class CatalogIndex {
         strong,
         weak,
         quality: Math.min(1, quality),
+        genderHint: null,
       });
 
       // BM25: حقول بأوزان.
@@ -445,6 +460,46 @@ export class CatalogIndex {
         }
       }
     });
+
+    // جنس مرجّح للعطور غير المصنفة: الوصف أولاً («عطر نسائي…»)، ثم غالبية عطور البراند
+    // المصنفة (3 على الأقل و80%+ لجنس واحد) — «كلوي» نسائية وإن لم يُذكر.
+    const single = (set?: Set<string>) => {
+      if (!set || set.has("unisex")) return null;
+      const g = [...set].filter((x) => x === "women" || x === "men");
+      return g.length === 1 ? g[0] : null;
+    };
+    const brandGender = new Map<string, { women: number; men: number }>();
+    for (const p of idx.products) {
+      if (p.area !== "fragrance" || !p.brandId) continue;
+      const g = single(p.strong.get("gender"));
+      if (!g) continue;
+      const c = brandGender.get(p.brandId) ?? { women: 0, men: 0 };
+      c[g as "women" | "men"]++;
+      brandGender.set(p.brandId, c);
+    }
+    for (const p of idx.products) {
+      if (p.area !== "fragrance") continue;
+      const sg = p.strong.get("gender");
+      // نسائي ورجالي معاً بلا «للجنسين» تعارض — يُحسم بالبراند، وإلا يُعامل للجنسين.
+      if (sg && sg.has("women") && sg.has("men") && !sg.has("unisex")) {
+        const c = p.brandId ? brandGender.get(p.brandId) : undefined;
+        const n = c ? c.women + c.men : 0;
+        const pick = c && n >= 3 ? (c.women / n >= 0.8 ? "women" : c.men / n >= 0.8 ? "men" : null) : null;
+        p.strong.set("gender", new Set([pick ?? "unisex"]));
+        continue;
+      }
+      if (sg) continue;
+      let hint = single(p.weak.get("gender"));
+      if (!hint && p.brandId) {
+        const c = brandGender.get(p.brandId);
+        const n = c ? c.women + c.men : 0;
+        if (c && n >= 3) {
+          if (c.women / n >= 0.8) hint = "women";
+          else if (c.men / n >= 0.8) hint = "men";
+        }
+      }
+      p.genderHint = hint;
+    }
 
     idx.avgLen = idx.docLen.reduce((a, b) => a + b, 0) / Math.max(1, idx.docLen.length);
     idx.vocab = [...idx.postings.keys()];

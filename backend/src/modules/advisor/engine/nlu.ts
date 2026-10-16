@@ -27,6 +27,8 @@ interface Phrase {
   raw: boolean;
 }
 
+const KIND_AREA_NLU = new Map(LEXICON.filter((x) => x.facet === "kind" && x.area).map((x) => [x.id, x.area!]));
+
 const FACET_PRIORITY = (f: FacetKey) => (f === "kind" ? 0 : f === "area" ? 2 : 1);
 
 /** كلمات مطبّعة + لهجة، بلا تجذيع (بنفس فهرسة `tokens`). */
@@ -54,7 +56,8 @@ const PHRASES: Phrase[] = LEXICON.flatMap((fv) => [
 // تمر بنفس المعالجة (تطبيع/لهجة/تجذيع) حتى تطابق كلمات الرسالة.
 const norms = (list: string[]) => new Set(list.flatMap((w) => tokens(w, { keepStop: true })));
 const NEGATORS = norms(["بدون", "بلا", "ليس", "مو", "ما", "لا", "غير", "no", "without", "not", "except", "عدا", "ماريد", "مااريد", "مااحب"]);
-const NEG_VERBS = norms(["احب", "اريد", "يعجب", "يعجبني", "تعجبني", "يناسب", "يناسبني", "like", "want", "اكره"]);
+// كلمات قد تفصل النفي عن المنفي («مو من ميبلين»، «ما احب الحلو»).
+const NEG_VERBS = norms(["احب", "اريد", "يعجب", "يعجبني", "تعجبني", "يناسب", "يناسبني", "like", "want", "اكره", "من", "from"]);
 
 /** هل العبارة عند الموضع مسبوقة بنفي؟ («ما احب الحلو»، «بدون عطر»، «مو زيتي») */
 function negatedAt(words: string[], start: number): boolean {
@@ -85,6 +88,8 @@ const SORT_RE: [RegExp, Need["sort"]][] = [
   [/(الاكثر مبيعا|الاكثر طلبا|الاشهر|ترند|ترندي|best seller|bestseller|popular|مشهور)/, "best"],
   [/(الاعلى تقييم|افضل تقييم|top rated|اعلى تقييم|اقوى شي|افضل شي|الافضل)/, "rated"],
   [/(جديد|الجديد|احدث|new arrival|newest|latest)/, "new"],
+  // «فخم/راقي» تفضيل للأرقى لا كلمة بحث.
+  [/(فخم|فخمه|فاخر|فاخره|راقي|راقيه|ارقى|براند عالمي|luxury|premium|high end)/, "premium"],
 ];
 
 function parseBudget(norm: string): { min?: number; max?: number } {
@@ -115,9 +120,24 @@ function parseBudget(norm: string): { min?: number; max?: number } {
   return {};
 }
 
+const GENERIC_FORMS = new Set(tokens("كريم كريمات منتج منتجات نوع انواع", { keepStop: true }));
+
+/** صيغة خفيفة للمطابقة مع عبارات الزبونة: «وثابته» ← «ثابت»، «حلوه» ← «حلو». */
+const lite = (w: string) => {
+  let x = w;
+  if (x.length >= 5 && x.startsWith("و")) x = x.slice(1);
+  if (x.length >= 4 && x.endsWith("ه")) x = x.slice(0, -1);
+  return x;
+};
+
+// مديح عام لا صفة: «عطر ريحته حلوة» = رائحته جميلة، لا «عائلة حلوة».
+const NEUTRAL_RE = /(ريحت(ه|ها)|ريحه|رائحت(ه|ها)|رائحه|ريحتو)\s+(حلو|حلوه|طيبه|طيب|زينه|حلوة)/g;
+
 export function understand(message: string, catalog: CatalogIndex): Parsed {
+  message = normalize(message).replace(NEUTRAL_RE, " ");
   const norm = normalize(message);
   const raws = rawWords(message);
+  const lites = raws.map(lite);
   const words = raws.map(stem);
   const mentioned = new Set<string>();
   const delta: Parsed["delta"] = {};
@@ -134,7 +154,8 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
       for (let j = 0; j < pw.length; j++) {
         const w = p.raw ? raws[i + j] : words[i + j];
         const target = pw[j];
-        if (p.latin && j === pw.length - 1 ? !w.startsWith(target) : w !== target) {
+        const alt = p.raw ? lites[i + j] : w;
+        if (p.latin && j === pw.length - 1 ? !w.startsWith(target) : w !== target && alt !== target) {
           ok = false;
           break;
         }
@@ -182,6 +203,13 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
     if (area) delta.area = area;
   }
   if (!delta.area && single.skinType && !delta.kinds?.length) delta.area = "skin";
+
+  // «ثابت/يدوم» للعطر = تركيز عالٍ، ولغير العطر = ثبات طويل (مكياج يدوم).
+  const kindArea = delta.kinds?.map((k) => KIND_AREA_NLU.get(k)).find(Boolean);
+  if (delta.strength === "parfum" && (delta.area ?? kindArea) && (delta.area ?? kindArea) !== "fragrance") {
+    delete delta.strength;
+    delta.attrs = [...new Set([...(delta.attrs ?? []), "longwear"])];
+  }
 
   // النوع يتبع المجال: «مرطب للجسم» = لوشن جسم، «سيروم للشعر» = سيروم شعر.
   if (delta.kinds?.length && delta.area) {
@@ -263,7 +291,13 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
   );
   const free = words.filter(
     (w, i) => !consumed.has(i) && w.length >= 3 && !INTENT_WORDS.has(w) && !/^\d+$/.test(w) &&
-      !["الف", "دينار", "تحت", "فوق", "بين", "ارخص", "اغلى"].includes(w),
+      !["الف", "دينار", "تحت", "فوق", "بين", "ارخص", "اغلى"].includes(w) &&
+      // كلمات الترتيب والنوايا («فخم»، «عروض»، «جديد») ليست أسماء منتجات.
+      !SORT_RE.some(([re]) => re.test(w)) && !RE.deals.test(w) && !RE.cheaper.test(w) && !RE.pricier.test(w) &&
+      // «كريم» مع نوع محدد («كريم واقي شمس») صيغة لا كلمة بحث.
+      !(delta.kinds?.length && GENERIC_FORMS.has(w)) &&
+      // أدوات النفي وما نُفي (براند غير متوفر مثلاً) لا يُبحث عنه.
+      !NEGATORS.has(w) && !negatedAt(words, i),
   );
   if (free.length) delta.free = free;
 

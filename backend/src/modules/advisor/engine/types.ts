@@ -21,7 +21,7 @@ export interface Need {
   excludeBrands: string[];
   minPrice?: number;
   maxPrice?: number;
-  sort?: "cheap" | "best" | "rated" | "new" | "deals";
+  sort?: "cheap" | "best" | "rated" | "new" | "deals" | "premium";
   /** صفات لا تريدها («بدون عطر»، «ما احب الحلو») بصيغة facet:id. */
   avoid: string[];
   /** كلمات حرة لا تنتمي لصفة معروفة — تُستخدم في البحث النصي. */

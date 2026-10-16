@@ -180,7 +180,7 @@ export const LEXICON: FacetValue[] = [
   // ───────────────────────── العطور — الجنس
   v("gender", "women", "نسائي", "For her", ["نسائي", "للنساء", "نسائيه", "women", "woman", "femme", "for her", "pour femme", "lady"], { emoji: "👩", ask: ["لنفسي", "لبنتي", "لاختي", "لامي", "لزوجتي", "لمرتي", "لصديقتي", "حريمي", "نسوان"] }),
   v("gender", "men", "رجالي", "For him", ["رجالي", "للرجال", "men", "homme", "for him", "pour homme", "man", "هوم", "اوم", "بور اوم"], { emoji: "👨", ask: ["لزوجي", "لابوي", "لابي", "لاخوي", "لاخي", "لابني", "لرجل", "شبابي"] }),
-  v("gender", "unisex", "للجنسين", "Unisex", ["للجنسين", "يونيسكس", "unisex", "mixte"], { emoji: "🤝" }),
+  v("gender", "unisex", "للجنسين", "Unisex", ["للجنسين", "لكلا الجنسين", "كلا الجنسين", "الجنسين", "يونيسكس", "يونيسيكس", "unisex", "mixte"], { emoji: "🤝" }),
 
   // ───────────────────────── العطور — العائلة
   v("family", "woody", "خشبي", "Woody", ["خشبي", "خشبيه", "خشب", "صندل", "سيدار", "woody", "wood", "sandalwood", "cedar", "vetiver", "فيتيفر"], { emoji: "🪵" }),
@@ -189,7 +189,7 @@ export const LEXICON: FacetValue[] = [
   v("family", "oriental", "شرقي", "Oriental / Amber", ["شرقي", "عنبر", "امبر", "oriental", "amber", "ambre", "incense", "بخور"], { emoji: "🕌" }),
   v("family", "musk", "مسك", "Musk", ["مسك", "musk", "musc", "white musk"], { emoji: "🤍" }),
   v("family", "vanilla", "فانيلا", "Vanilla", ["فانيلا", "فانيليا", "vanilla", "vanille", "tonka", "تونكا"], { emoji: "🍦" }),
-  v("family", "sweet", "حلو", "Sweet / Gourmand", ["حلو", "سكري", "كراميل", "شوكولا", "gourmand", "sweet", "caramel", "praline", "candy", "honey", "عسل"], { emoji: "🍬", ask: ["ريحه حلوه", "سكريه"] }),
+  v("family", "sweet", "حلو", "Sweet / Gourmand", ["حلو", "سكري", "كراميل", "شوكولا", "gourmand", "sweet", "caramel", "praline", "candy", "honey", "عسل"], { emoji: "🍬", ask: ["سكريه"] }),
   v("family", "fresh", "منعش", "Fresh / Citrus", ["منعش", "حمضي", "ليمون", "برغموت", "fresh", "citrus", "bergamot", "lemon", "orange", "grapefruit", "neroli", "نيرولي"], { emoji: "🍋", ask: ["خفيف", "بارد"] }),
   v("family", "aquatic", "مائي", "Aquatic", ["مائي", "بحري", "aquatic", "marine", "ocean", "aqua", "sea"], { emoji: "🌊" }),
   v("family", "spicy", "حار", "Spicy", ["حار", "توابل", "فلفل", "قرفه", "هيل", "spicy", "pepper", "cinnamon", "cardamom", "saffron", "زعفران"], { emoji: "🌶️" }),
@@ -210,7 +210,7 @@ export const LEXICON: FacetValue[] = [
   // ───────────────────────── المكياج
   v("finish", "matte", "مطفي", "Matte", ["مطفي", "مات", "matte", "mat"], { emoji: "🎯" }),
   v("finish", "glossy", "لامع", "Glossy", ["لامع", "لمعه", "glossy", "shine", "gloss", "shimmer", "glitter", "جليتر"], { emoji: "✨" }),
-  v("finish", "satin", "ساتان", "Satin", ["ساتان", "satin", "creamy", "كريمي"], { emoji: "🎀" }),
+  v("finish", "satin", "ساتان", "Satin", ["ساتان", "satin", "creamy", "قوام كريمي", "ملمس كريمي"], { emoji: "🎀" }),
   v("finish", "dewy", "ندي", "Dewy", ["ندي", "dewy", "glow", "radiant", "مضيء"], { emoji: "💎" }),
   v("coverage", "full", "تغطية عالية", "Full coverage", ["تغطيه عاليه", "تغطيه كامله", "full coverage", "high coverage"], { ask: ["يغطي"] }),
   v("coverage", "light", "تغطية خفيفة", "Light coverage", ["تغطيه خفيفه", "light coverage", "sheer", "طبيعي"], { ask: ["خفيف", "ناتشورال"] }),

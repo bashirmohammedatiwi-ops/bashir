@@ -13,6 +13,7 @@ import {
 } from "./composer";
 import { CONCERN_AREA, FacetKey, LEXICON, facetValue } from "./lexicon";
 import { parseAction, understand } from "./nlu";
+import { li } from "./text";
 import { Ranked, rank, routineTemplate, toCard } from "./ranker";
 import {
   AdvisorReply,
@@ -443,7 +444,11 @@ function understoodChips(n: Need, brandNames: Map<string, string>): AdvisorReply
   for (const c of n.concerns) out.push({ key: `unset:concern=${c}`, label: `${facetValue("concern", c)?.emoji ?? ""} ${facetValue("concern", c)?.label ?? c}`.trim() });
   for (const i of n.ingredients) out.push({ key: `unset:ingredient=${i}`, label: facetValue("ingredient", i)?.label ?? i });
   single("time", "time", n.time);
+  single("strength", "strength", n.strength);
   single("finish", "finish", n.finish);
+  single("coverage", "coverage", n.coverage);
+  for (const a of n.attrs) out.push({ key: `unset:attr=${a}`, label: `${facetValue("attr", a)?.emoji ?? ""} ${facetValue("attr", a)?.label ?? a}`.trim() });
+  for (const f of n.freeFrom) out.push({ key: `unset:freeFrom=${f}`, label: facetValue("freeFrom", f)?.label ?? f });
   for (const b of n.brands) out.push({ key: `unset:brand=${b}`, label: brandNames.get(b) ?? "براند" });
   for (const a of n.avoid) {
     const [facet, id] = a.split(":") as [FacetKey, string];
@@ -451,6 +456,15 @@ function understoodChips(n: Need, brandNames: Map<string, string>): AdvisorReply
     if (fv) out.push({ key: `unset:avoid=${a}`, label: `🚫 ${fv.label}` });
   }
   for (const b of n.excludeBrands) out.push({ key: `unset:excludeBrands=${b}`, label: `🚫 ${brandNames.get(b) ?? "براند"}` });
+  const SORT_LABEL: Record<string, string> = {
+    cheap: "💸 الأوفر",
+    best: "🔥 الأكثر مبيعاً",
+    rated: "⭐ الأعلى تقييماً",
+    new: "🆕 الأحدث",
+    deals: "🏷️ العروض",
+    premium: "💎 فاخر",
+  };
+  if (n.sort && SORT_LABEL[n.sort]) out.push({ key: "unset:sort", label: SORT_LABEL[n.sort] });
   if (n.maxPrice || n.minPrice) {
     out.push({
       key: "unset:budget",
@@ -528,11 +542,17 @@ function recommend(state: AdvisorState, ctx: DialogCtx, lead?: string, opts: { e
     }, ctx);
   }
 
-  const top = res.items.slice(0, 6);
+  // الجودة قبل العدد: نُسقط الترشيحات الضعيفة بعيداً عن الأفضل (مع إبقاء 3 على الأقل).
+  const bestMatch = Math.max(...res.items.slice(0, 6).map((r) => r.match));
+  const floor = Math.max(60, bestMatch - 28);
+  const top = res.items.slice(0, 6).filter((r, i) => i < 3 || r.match >= floor);
   remember(state, top);
   const groups: AdvisorReply["groups"] = [];
   const avgTop = top.slice(0, 3).reduce((s, r) => s + r.p.price, 0) / Math.min(3, top.length);
-  const cheaper = res.items.slice(6).filter((r) => r.p.price <= avgTop * 0.7).slice(0, 4);
+  const cheaper = res.items
+    .slice(6)
+    .filter((r) => r.p.price <= avgTop * 0.7 && r.match >= Math.max(60, bestMatch - 20))
+    .slice(0, 4);
   if (cheaper.length >= 2 && need.sort !== "cheap") {
     groups.push({ title: "بدائل أوفر 💸", products: cheaper.map(toCard) });
     remember(state, cheaper);
@@ -589,10 +609,17 @@ function buildRoutine(state: AdvisorState, ctx: DialogCtx): AdvisorReply {
   remember(state, steps.map((s) => ({ p: ctx.catalog.products.find((p) => p.id === s.product.id)!, score: 0, match: 0, reasons: [] })).filter((r) => r.p));
   const total = steps.reduce((s, x) => s + x.product.price, 0);
   const title = area === "hair" ? "روتين شعركِ" : area === "body" ? "روتين جسمكِ" : "روتين بشرتكِ";
-  const brandNames = new Map(ctx.catalog.brands.map((b) => [b.id, b.name]));
-  const desc = describeNeed({ ...need, kinds: [] }, brandNames);
+  // لمن الروتين: «للبشرة الجافة»، «لتساقط الشعر»… بلا تكرار «منتجات العناية».
+  const forWhom = [
+    need.skinType && area === "skin" ? `للبشرة ال${facetValue("skinType", need.skinType)!.label.replace(/^ال/, "")}` : null,
+    need.concerns.length ? li(need.concerns.map((c) => facetValue("concern", c)?.label).filter(Boolean).join(" و")) : null,
+  ]
+    .filter(Boolean)
+    .join(" و");
   const messages = [
-    pick(["صممت لكِ روتيناً متكاملاً خطوة بخطوة 🧖‍♀️", "هذا روتينكِ المثالي، كل خطوة مختارة لكِ:"], state.turns) + (desc ? ` (${desc})` : ""),
+    forWhom
+      ? pick([`صممت لكِ روتيناً متكاملاً ${forWhom} خطوة بخطوة 🧖‍♀️`, `هذا روتينكِ المثالي ${forWhom} — كل خطوة مختارة لكِ ✨`], state.turns)
+      : pick(["صممت لكِ روتيناً متكاملاً خطوة بخطوة 🧖‍♀️", "هذا روتينكِ المثالي — كل خطوة مختارة لكِ ✨"], state.turns),
     `${steps.length} خطوات بمجموع ${fmtPrice(total)} د.ع — تكدرين تضيفينه كله للسلة بلمسة.`,
   ];
   const tip = tipFor(need, state.turns);
@@ -610,10 +637,19 @@ function buildRoutine(state: AdvisorState, ctx: DialogCtx): AdvisorReply {
 
 /** اسم مختصر للجملة: أطول جزء وصفي (بلا البراند ولا الحجم). */
 function shortName(name: string) {
-  const size = /^\s*[\d.,]+\s*(مل|ml|غ|g|gm|جم|غرام|لتر|l|oz)?\s*$/i;
-  const parts = name.split(/\s[-–—|]\s?/).map((x) => x.trim()).filter((x) => x && !size.test(x));
-  let s = parts.length > 1 ? parts.slice(1).sort((a, b) => b.length - a.length)[0] : parts[0] ?? name;
-  s = s.replace(/[,،]?\s*[\d.,]+\s*(مل|ml|غ|g|gm|جم|غرام|لتر|l|oz)\b.*$/i, "").trim() || s;
+  const unit = "(مل|ml|غ|g|gm|جم|غرام|لتر|l|oz)";
+  const size = new RegExp(`^\\s*[\\d.,]+\\s*${unit}?\\s*$`, "i");
+  // «3 قطع»، «قطعتين»، «طقم من 4» — عدد لا اسم.
+  const count = /^\s*(\d+\s*(قطع|قطعة|قطعه|حبات|pcs|pieces?)|قطعتين|قطعتان)\s*$/i;
+  const parts = name
+    .split(/\s[-–—|]\s?/)
+    .map((x) => x.trim())
+    .filter((x) => x && !size.test(x) && !count.test(x));
+  // الجزء الأول القصير غالباً اسم البراند («فالنتينو - اومو انتنس…») فنفضّل الوصف بعده.
+  const pool = parts.length > 1 && parts[0].split(/\s+/).length <= 2 ? parts.slice(1) : parts;
+  let s = [...pool].sort((a, b) => b.length - a.length)[0] ?? name;
+  // \b لا يعمل مع العربية، فنستخدم «ليس بعده حرف».
+  s = s.replace(new RegExp(`[,،]?\\s*[\\d.,]+\\s*${unit}(?!\\p{L}).*$`, "iu"), "").trim() || s;
   return s.length > 46 ? `${s.slice(0, 44)}…` : s;
 }
 
@@ -705,7 +741,7 @@ export function respond(input: DialogInput, prev: AdvisorState | null | undefine
     }
     case "greet":
       return reply(state, {
-        messages: [`${pick(GREETINGS, seed)}${ctx.firstName ? ` يا ${ctx.firstName}` : ""}`, pick(WELCOME_BODY, seed)],
+        messages: [pick(GREETINGS, seed)(ctx.firstName?.trim() || undefined), pick(WELCOME_BODY, seed)],
         chips: STARTERS,
       }, ctx);
     case "thanks":

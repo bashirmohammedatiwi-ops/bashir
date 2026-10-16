@@ -1,4 +1,5 @@
 import { facetValue } from "./lexicon";
+import { bi, li } from "./text";
 import { Need } from "./types";
 
 /** اختيار عبارة متنوعة (ثابتة لنفس الدور حتى لا تتبدل عند إعادة الرسم). */
@@ -8,10 +9,11 @@ export function pick<T>(options: T[], seed: number): T {
 
 const fmt = (n: number) => Math.round(n).toLocaleString("en-US");
 
-export const GREETINGS = [
-  "أهلاً بكِ! أنا ديما، مستشارتكِ الشخصية للجمال والعطور 🌸",
-  "هلا بيكِ! أنا ديما — أساعدكِ تختارين الأنسب لكِ من بين آلاف المنتجات ✨",
-  "مرحباً حبيبتي! أنا ديما، خبيرتكِ في العناية والمكياج والعطور 💜",
+/** تحية الترحيب — الاسم في مكانه الطبيعي («أهلاً سارة!») لا في آخر الجملة. */
+export const GREETINGS: ((name?: string) => string)[] = [
+  (n) => `${n ? `أهلاً ${n}!` : "أهلاً بكِ!"} أنا ديما، مستشارتكِ الشخصية للجمال والعطور 🌸`,
+  (n) => `${n ? `هلا ${n}!` : "هلا بيكِ!"} أنا ديما — أساعدكِ تختارين الأنسب لكِ من بين آلاف المنتجات ✨`,
+  (n) => `${n ? `مرحباً ${n}!` : "مرحباً حبيبتي!"} أنا ديما، خبيرتكِ في العناية والمكياج والعطور 💜`,
 ];
 
 export const WELCOME_BODY = [
@@ -102,6 +104,8 @@ export function describeNeed(need: Need, brandNames: Map<string, string>): strin
   const perfume = need.area === "fragrance" && (!need.kinds.length || need.kinds[0] === "perfume");
   if (perfume) parts.push("عطور");
   else if (kind) parts.push(kind);
+  // «منتجات العناية بالبشرة للبشرة الدهنية» مكررة — نختصرها حين يُذكر نوع البشرة.
+  else if (need.area === "skin" && need.skinType) parts.push("منتجات عناية");
   else if (area) parts.push(`منتجات ${area}`);
   if (need.gender) parts.push(perfume ? GENDER_PL[need.gender] : facetValue("gender", need.gender)!.label);
   if (need.families.length) {
@@ -115,10 +119,10 @@ export function describeNeed(need: Need, brandNames: Map<string, string>): strin
   if (need.time) parts.push(need.time === "night" ? "للمساء" : "للنهار");
   if (need.skinType) parts.push(`للبشرة ال${facetValue("skinType", need.skinType)!.label.replace(/^ال/, "")}`);
   if (need.concerns.length) {
-    parts.push(`لـ${need.concerns.map((c) => facetValue("concern", c)?.label).filter(Boolean).join(" و")}`);
+    parts.push(li(need.concerns.map((c) => facetValue("concern", c)?.label).filter(Boolean).join(" و")));
   }
   if (need.ingredients.length) {
-    parts.push(`بـ${need.ingredients.map((i) => facetValue("ingredient", i)?.label).filter(Boolean).join(" و")}`);
+    parts.push(bi(need.ingredients.map((i) => facetValue("ingredient", i)?.label).filter(Boolean).join(" و")));
   }
   if (need.finish) parts.push(facetValue("finish", need.finish)!.label);
   if (need.brands.length) parts.push(`من ${need.brands.map((b) => brandNames.get(b) ?? "").filter(Boolean).join(" أو ")}`);

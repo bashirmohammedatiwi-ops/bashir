@@ -142,6 +142,21 @@ export function hasPhrase(normText: string, phrase: string): boolean {
   return new RegExp(`(^|\\s)(و|ب|ل|ف|ك)?(ال|لل)?${escapeRe(p)}(ي|ه|ها|ك|تي|ات|ين)?(\\s|$)`).test(normText);
 }
 
+/** «ل» + اسم: «حب الشباب» ← «لحب الشباب»، «التصبغات» ← «للتصبغات». */
+export function li(label: string): string {
+  return label.startsWith("ال") ? `لل${label.slice(2)}` : `ل${label}`;
+}
+
+/**
+ * «ب» + اسم مكوّن: الكلمة الأجنبية المفردة تأخذ «ال» (بالريتينول، بالساليسيليك)،
+ * والمركّبة تبقى كما هي (بشجرة الشاي، بفيتامين C).
+ */
+export function bi(label: string): string {
+  if (label.startsWith("ال")) return `ب${label}`;
+  const single = !/\s/.test(label.trim());
+  return single && !/^(فيتامين|زيت|حمض|خلاصة)/.test(label) ? `بال${label}` : `ب${label}`;
+}
+
 export function escapeRe(s: string) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

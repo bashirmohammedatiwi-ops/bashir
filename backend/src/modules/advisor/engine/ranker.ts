@@ -1,6 +1,6 @@
 import { CatalogIndex, IndexedProduct } from "./catalog";
 import { CONCERN_INGREDIENTS, FacetKey, facetValue } from "./lexicon";
-import { COLOR_SYNONYMS, tokens } from "./text";
+import { bi, COLOR_SYNONYMS, li, tokens } from "./text";
 import { Need, ProductCardOut } from "./types";
 
 export interface Ranked {
@@ -36,7 +36,8 @@ const WEIGHTS: Partial<Record<FacetKey, number>> = {
   finish: 2,
   coverage: 1.4,
   attr: 1.5,
-  freeFrom: 2,
+  // «بدون عطر/بارابين» طلب صريح — وزنه عالٍ.
+  freeFrom: 3.2,
   occasion: 1,
 };
 
@@ -117,8 +118,9 @@ function passesHard(catalog: CatalogIndex, p: IndexedProduct, need: Need, exclud
   if (baby && need.audience !== "baby") return false;
   if (need.audience === "baby" && !baby) return false;
 
-  // جنس العطر: نستبعد المعاكس الصريح فقط (للجنسين يناسب الجميع).
-  if (need.gender && (p.area === "fragrance" || need.area === "fragrance")) {
+  // الجنس: نستبعد المعاكس الصريح فقط (للجنسين يناسب الجميع) — للعطور وغيرها
+  // («مزيل عرق رجالي» لا يُقترح له «رول أون نسائي»).
+  if (need.gender && need.gender !== "unisex") {
     const g = p.strong.get("gender");
     if (g && !g.has(need.gender) && !g.has("unisex")) return false;
   }
@@ -190,7 +192,7 @@ function rankOnce(catalog: CatalogIndex, need: Need, opts: Options): RankResult 
         synergy += 0.5;
         if (!need.ingredients.includes(ing)) {
           const fv = facetValue("ingredient", ing);
-          if (fv) reasons.push({ w: 1.6, text: `غني بـ${fv.label}` });
+          if (fv) reasons.push({ w: 1.6, text: `غني ${bi(fv.label)}` });
         }
         if (ingredientBonus >= 1.8) break;
       }
@@ -217,7 +219,19 @@ function rankOnce(catalog: CatalogIndex, need: Need, opts: Options): RankResult 
       const g = p.strong.get("gender");
       if (g?.has(need.gender)) score += 1.6;
       else if (g?.has("unisex")) score += 0.6;
+      else if (!g && p.genderHint === need.gender) score += 0.4;
+      else if (!g && p.genderHint) score -= 4; // مرجّح للجنس الآخر: يتأخر كثيراً
       else if (!g) score -= 1.4;
+    } else if (need.gender && need.gender !== "unisex") {
+      // غير العطور: المطابق الصريح يتقدم («شامبو للرجال» لطلب رجالي).
+      if (p.strong.get("gender")?.has(need.gender)) score += 1.2;
+    } else if (!need.gender && !need.recipient && p.area === "fragrance") {
+      // بلا جنس محدد: الزبونة تسأل لنفسها غالباً — ميل خفيف للنسائي وللجنسين.
+      const g = p.strong.get("gender");
+      const eff = g ? (g.has("unisex") ? "unisex" : g.has("women") ? "women" : g.has("men") ? "men" : null) : p.genderHint;
+      if (eff === "women") score += 0.6;
+      else if (eff === "unisex") score += 0.3;
+      else if (eff === "men") score -= 1.1;
     }
     // الهدية: نميل للأرقى ضمن الميزانية (هدية تليق) وللأطقم.
     if (need.occasion === "gift") {
@@ -242,6 +256,20 @@ function rankOnce(catalog: CatalogIndex, need: Need, opts: Options): RankResult 
       case "deals":
         score += p.discountPercent > 0 ? 2 + p.discountPercent / 25 : -3;
         break;
+      case "premium":
+        // الأرقى: ميل للسعر الأعلى مع الجودة، دون أن يطغى على الملاءمة.
+        score += 2.2 * Math.min(1, p.price / (medianPrice * 2.5)) + 0.8 * p.quality;
+        break;
+    }
+
+    // سياق حين لا تكفي الصفات: البراند المطلوب، وجنس العطر.
+    if (need.brands.length && p.brandId && need.brands.includes(p.brandId) && p.brand) {
+      reasons.push({ w: 0.7, text: `من ${p.brand}` });
+    }
+    if (p.area === "fragrance") {
+      const g = p.strong.get("gender");
+      const gl = g?.has("unisex") ? "للجنسين" : g?.has("women") ? "نسائي" : g?.has("men") ? "رجالي" : null;
+      if (gl) reasons.push({ w: need.gender ? 1.1 : 0.4, text: gl });
     }
 
     // شارات عامة
@@ -305,11 +333,11 @@ function dedupe(a: string[]) {
 function reasonText(facet: FacetKey, label: string): string {
   switch (facet) {
     case "concern":
-      return `لـ${label}`;
+      return li(label);
     case "skinType":
       return `للبشرة ال${label.replace(/^ال/, "")}`;
     case "ingredient":
-      return `بـ${label}`;
+      return bi(label);
     case "family":
       return `${label}`;
     case "freeFrom":
