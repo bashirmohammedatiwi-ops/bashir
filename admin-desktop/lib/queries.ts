@@ -231,13 +231,9 @@ export const mutations = {
     api.patch(`/shipping/areas/${id}`, data).then((r) => r.data?.data ?? r.data),
   deleteShippingArea: (id: string) => api.delete(`/shipping/areas/${id}`).then((r) => r.data),
 
-  updateAdvisorTraining: (data: {
-    running?: boolean;
-    liveAi?: boolean;
-    autoNew?: boolean;
-    dailyBatches?: number;
-    tasks?: string[];
-  }) => api.patch("/advisor/admin/training", data).then((r) => r.data?.data ?? r.data),
+  updateAdvisorTraining: (data: { running?: boolean; liveAi?: boolean; autoNew?: boolean }) =>
+    api.patch("/advisor/admin/training", data).then((r) => r.data?.data ?? r.data),
+  trainAdvisorNow: () => api.post("/advisor/admin/training/run").then((r) => r.data?.data ?? r.data),
   deleteAdvisorPhrase: (id: string) => api.delete(`/advisor/admin/phrases/${id}`).then((r) => r.data),
   rebuildAdvisor: () => api.post("/advisor/admin/rebuild").then((r) => r.data?.data ?? r.data),
   tryAdvisor: (message: string) => api.post("/advisor/admin/try", { message }).then((r) => r.data?.data ?? r.data),

@@ -72,6 +72,16 @@ const DIALECT: Record<string, string> = {
   للشفايف: "للشفاه",
   بالشفايف: "بالشفاه",
   شفاتي: "شفاه",
+  شفايفي: "شفاه",
+  // فرانكو شائع: «3atr rjali»، «sha3r».
+  "3atr": "عطر",
+  "3etr": "عطر",
+  "3tr": "عطر",
+  "3utur": "عطور",
+  "sha3r": "شعر",
+  "sh3r": "شعر",
+  "bashra": "بشره",
+  "bshra": "بشره",
 };
 
 export function applyDialect(token: string): string {

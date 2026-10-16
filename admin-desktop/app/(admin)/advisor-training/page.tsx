@@ -5,10 +5,8 @@ import {
   Alert,
   Button,
   Card,
-  Checkbox,
   Col,
   Input,
-  InputNumber,
   Popconfirm,
   Progress,
   Row,
@@ -24,24 +22,16 @@ import {
   message,
 } from "antd";
 import dayjs from "dayjs";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { mutations, queries } from "@/lib/queries";
 
 const { Text, Paragraph } = Typography;
 
-const TASKS = [
-  { value: "products", label: "فهم المنتجات من أوصافها" },
-  { value: "brands", label: "تقييم البراندات الجديدة" },
-  { value: "language", label: "تعلّم لهجة الزبونات" },
-  { value: "queries", label: "أسئلة لم تفهمها ديما" },
-];
-
 const STATE: Record<string, { color: string; label: string }> = {
-  training: { color: "processing", label: "تتدرّب الآن" },
-  stopped: { color: "default", label: "التدريب متوقف" },
-  idle: { color: "success", label: "تعلّمت كل المتوفر — تنتظر جديداً" },
-  capped: { color: "warning", label: "وصلت سقف اليوم — تكمل غداً" },
-  no_ai: { color: "error", label: "مفتاح الذكاء الاصطناعي غير موجود" },
+  training: { color: "processing", label: "تتدرّب الآن (في الخلفية)" },
+  ready: { color: "success", label: "مدرَّبة — التدريب التلقائي يعمل" },
+  stopped: { color: "default", label: "التدريب التلقائي متوقف" },
+  untrained: { color: "warning", label: "لم تتدرّب بعد" },
 };
 
 const SOURCES: Record<string, { color: string; label: string }> = {
@@ -51,15 +41,18 @@ const SOURCES: Record<string, { color: string; label: string }> = {
   admin: { color: "gold", label: "يدوي" },
 };
 
+const FACET_AR: Record<string, string> = { area: "المجال", kind: "النوع", gender: "الجنس", family: "العائلة", concern: "المشكلة", skinType: "نوع البشرة" };
+
 const pct = (a: number, b: number) => (b > 0 ? Math.min(100, Math.round((100 * a) / b)) : 100);
 const fmt = (n: number) => (n ?? 0).toLocaleString("en-US");
+const p100 = (x?: number) => (x == null ? "—" : `${(100 * x).toFixed(1)}%`);
 
 export default function AdvisorTrainingPage() {
   const qc = useQueryClient();
   const { data: s, isLoading } = useQuery({
     queryKey: ["advisor-training"],
     queryFn: queries.advisorTraining,
-    refetchInterval: (q) => ((q.state.data as any)?.running ? 15_000 : 60_000),
+    refetchInterval: (q) => ((q.state.data as any)?.state === "training" ? 10_000 : 60_000),
   });
 
   const update = useMutation({
@@ -67,21 +60,24 @@ export default function AdvisorTrainingPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["advisor-training"] }),
     onError: () => message.error("تعذّر الحفظ"),
   });
+  const trainNow = useMutation({
+    mutationFn: mutations.trainAdvisorNow,
+    onSuccess: () => {
+      message.success("بدأ التدريب في الخلفية — النتيجة تظهر هنا خلال دقائق");
+      qc.invalidateQueries({ queryKey: ["advisor-training"] });
+    },
+  });
   const rebuild = useMutation({
     mutationFn: mutations.rebuildAdvisor,
     onSuccess: (r: any) => message.success(`تم تطبيق المعرفة على ${fmt(r?.products)} منتج`),
   });
 
-  const [batches, setBatches] = useState<number | null>(null);
-  useEffect(() => {
-    if (s?.dailyBatches != null && batches == null) setBatches(s.dailyBatches);
-  }, [s?.dailyBatches, batches]);
-
   const p = s?.progress;
+  const st = s?.stats;
   const running = Boolean(s?.running);
-  const state = STATE[s?.state] ?? STATE.stopped;
-  const usage: any[] = Array.isArray(s?.usage) ? s.usage : [];
-  const today = usage.find((u) => u.day === dayjs().add(3, "hour").format("YYYY-MM-DD"));
+  const state = STATE[s?.state] ?? STATE.untrained;
+  const before = s?.evalBefore;
+  const after = s?.evalAfter;
 
   return (
     <Space direction="vertical" size={16} style={{ width: "100%" }}>
@@ -90,13 +86,13 @@ export default function AdvisorTrainingPage() {
           <Col xs={24} md={6} style={{ textAlign: "center" }}>
             <Progress
               type="dashboard"
-              percent={s?.level ?? 0}
+              percent={after ? Math.round(after.accuracy * 100) : 0}
               size={150}
               strokeColor={{ "0%": "#d4a5c9", "100%": "#8e3b78" }}
               format={(v) => (
                 <div>
                   <div style={{ fontSize: 30, fontWeight: 700 }}>{v}%</div>
-                  <div style={{ fontSize: 12, color: "#888" }}>مستوى الفهم</div>
+                  <div style={{ fontSize: 12, color: "#888" }}>دقة الفهم</div>
                 </div>
               )}
             />
@@ -108,13 +104,13 @@ export default function AdvisorTrainingPage() {
               </Typography.Title>
               <Space wrap>
                 <Tag color={state.color}>{state.label}</Tag>
-                {s?.model && <Tag>{s.model}</Tag>}
-                {s?.lastRunAt && <Text type="secondary">آخر دفعة: {dayjs(s.lastRunAt).format("YYYY/MM/DD HH:mm")}</Text>}
+                <Tag>تدريب داخلي على السيرفر</Tag>
+                {s?.trainedAt && <Text type="secondary">آخر تدريب: {dayjs(s.trainedAt).format("YYYY/MM/DD HH:mm")}</Text>}
               </Space>
               <Paragraph type="secondary" style={{ margin: 0 }}>
-                الذكاء الاصطناعي يدرّس ديما على دفعات صغيرة: يفهم كل منتج من وصفه، يقيّم البراندات، يعلّمها كيف تكتب
-                الزبونات، ويحوّل كل سؤال لم تفهمه إلى معرفة محفوظة. ما تتعلّمه يبقى عندها — فتجيب بعدها بنفسها، بسرعة
-                وبدون أي استهلاك.
+                ديما تتدرّب بنفسها على السيرفر — من أسماء وأوصاف منتجاتكِ، ومما تختاره الزبونات (فتح، سلة، إعجاب) — بدون
+                أي ذكاء خارجي وبدون أي استهلاك. التدريب يعمل تلقائياً كل ليلة أو حين تتغير البيانات، في الخلفية وبأقل
+                أولوية، فلا يبطّئ المتجر.
               </Paragraph>
               {s?.lastError && <Alert type="warning" showIcon message={`آخر خطأ: ${s.lastError}`} />}
             </Space>
@@ -125,14 +121,22 @@ export default function AdvisorTrainingPage() {
               danger={running}
               size="large"
               block
-              disabled={!s?.aiEnabled}
               loading={update.isPending}
               onClick={() => update.mutate({ running: !running })}
-              style={{ height: 56, fontSize: 18 }}
+              style={{ height: 52, fontSize: 17 }}
             >
-              {running ? "⏸ إيقاف التدريب" : "▶ تشغيل التدريب"}
+              {running ? "⏸ إيقاف التدريب التلقائي" : "▶ تشغيل التدريب التلقائي"}
             </Button>
-            <Tooltip title="يعيد بناء فهرس ديما فوراً ليدخل كل ما تعلّمته في الترشيحات (يحدث تلقائياً كل بضع دقائق).">
+            <Button
+              style={{ marginTop: 10 }}
+              block
+              disabled={s?.state === "training"}
+              loading={trainNow.isPending || s?.state === "training"}
+              onClick={() => trainNow.mutate()}
+            >
+              درّبيها الآن
+            </Button>
+            <Tooltip title="يعيد بناء فهرس ديما فوراً (يحدث تلقائياً بعد كل تدريب وكل بضع دقائق).">
               <Button style={{ marginTop: 10 }} block loading={rebuild.isPending} onClick={() => rebuild.mutate()}>
                 طبّق المعرفة الآن
               </Button>
@@ -144,87 +148,86 @@ export default function AdvisorTrainingPage() {
       <Row gutter={[16, 16]}>
         <Col xs={24} lg={14}>
           <Card title="ماذا تعلّمت ديما" loading={isLoading} style={{ height: "100%" }}>
-            {p && (
+            {st ? (
               <Space direction="vertical" size={14} style={{ width: "100%" }}>
-                <ProgressRow
-                  label="فهم المنتجات"
-                  hint={`${fmt(p.products.done)} من ${fmt(p.products.total)} منتج — ${fmt(p.products.weak)} تحتاج فهماً أولاً`}
-                  percent={pct(p.products.done, p.products.total)}
-                />
-                <ProgressRow
-                  label="سمعة البراندات"
-                  hint={`${fmt(p.brands.total - p.brands.unknown)} من ${fmt(p.brands.total)} براند معروف المستوى`}
-                  percent={pct(p.brands.total - p.brands.unknown, p.brands.total)}
-                />
-                <ProgressRow
-                  label="لهجة الزبونات"
-                  hint={`${fmt(p.language.done)} من ${fmt(p.language.total)} مفهوم — ${fmt(p.phrases.bySource?.language ?? 0)} صيغة محفوظة`}
-                  percent={pct(p.language.done, p.language.total)}
-                />
-                <ProgressRow
-                  label="أسئلة الزبونات"
-                  hint={`${fmt(p.questions.resolved)} سؤال صار مفهوماً — ${fmt(p.questions.open)} بانتظار التدريب`}
-                  percent={pct(p.questions.resolved, p.questions.open + p.questions.resolved)}
-                />
-                <Text type="secondary">إجمالي العبارات التي تفهمها ديما الآن بنفسها: {fmt(p.phrases.total)}</Text>
+                <Row gutter={[12, 12]}>
+                  <Col span={8}>
+                    <Statistic title="منتجات تعلّمت منها" value={st.products} />
+                  </Col>
+                  <Col span={8}>
+                    <Statistic title="كلمات تفهم معناها" value={st.features} />
+                  </Col>
+                  <Col span={8}>
+                    <Statistic title="منتجات أكملت صفاتها" value={st.enriched} />
+                  </Col>
+                  <Col span={8}>
+                    <Statistic title="تفاعلات تعلّمت منها" value={st.events} />
+                  </Col>
+                  <Col span={8}>
+                    <Statistic title="أنواع طلبات بترتيب متعلّم" value={st.affinityKeys} />
+                  </Col>
+                  <Col span={8}>
+                    <Statistic title="كلمات بمتجهات معنى" value={st.vocab ?? 0} />
+                  </Col>
+                </Row>
+                <div>
+                  <Text strong>دقة إكمال صفات المنتجات (تحقق متقاطع)</Text>
+                  <div style={{ marginTop: 6 }}>
+                    <Space size={[6, 6]} wrap>
+                      {Object.entries(st.cv ?? {}).map(([k, v]: [string, any]) => (
+                        <Tag key={k} color="purple">
+                          {FACET_AR[k] ?? k}: {p100(v.precision)} دقة · تغطية {p100(v.coverage)}
+                        </Tag>
+                      ))}
+                    </Space>
+                  </div>
+                </div>
+                {p && (
+                  <ProgressRow
+                    label="أسئلة الزبونات"
+                    hint={`${fmt(p.questions.resolved)} سؤال صار مفهوماً — ${fmt(p.questions.open)} لم يُفهم بعد`}
+                    percent={pct(p.questions.resolved, p.questions.open + p.questions.resolved)}
+                  />
+                )}
+                {p && <Text type="secondary">عبارات محفوظة تفهمها ديما: {fmt(p.phrases.total)}</Text>}
               </Space>
+            ) : (
+              <Text type="secondary">ستظهر النتائج بعد أول تدريب (يبدأ تلقائياً بعد تشغيل الخادم بدقائق).</Text>
             )}
           </Card>
         </Col>
         <Col xs={24} lg={10}>
-          <Card title="الإعدادات والاستهلاك" loading={isLoading} style={{ height: "100%" }}>
+          <Card title="القياس والإعدادات" loading={isLoading} style={{ height: "100%" }}>
             {s && (
               <Space direction="vertical" size={14} style={{ width: "100%" }}>
-                <Row gutter={12}>
-                  <Col span={12}>
-                    <Statistic title="دفعات تدريب متبقية اليوم" value={s.remainingToday?.train ?? 0} />
-                  </Col>
-                  <Col span={12}>
-                    <Statistic title="ردود ذكية متبقية اليوم" value={s.remainingToday?.chat ?? 0} />
-                  </Col>
-                </Row>
-                <div>
-                  <Text strong>سقف دفعات التدريب يومياً</Text>
-                  <Space style={{ display: "flex", marginTop: 6 }}>
-                    <InputNumber min={0} max={2000} value={batches} onChange={(v) => setBatches(v ?? 0)} />
-                    <Button
-                      disabled={batches === s.dailyBatches}
-                      onClick={() => update.mutate({ dailyBatches: batches ?? 0 }, { onSuccess: () => message.success("تم الحفظ") })}
-                    >
-                      حفظ
-                    </Button>
-                  </Space>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    كل دفعة = طلب واحد صغير (حتى 12 منتجاً). الأقل = استهلاك أقل وتعلّم أبطأ.
-                  </Text>
-                </div>
+                {before && after && (
+                  <div>
+                    <Text strong>مجموعة اختبار ({after.n} سؤال حقيقي الصيغة)</Text>
+                    <Row gutter={12} style={{ marginTop: 6 }}>
+                      <Col span={12}>
+                        <Statistic title="بدون النموذج" value={p100(before.accuracy)} />
+                      </Col>
+                      <Col span={12}>
+                        <Statistic title="بعد التدريب" value={p100(after.accuracy)} valueStyle={{ color: "#8e3b78" }} />
+                      </Col>
+                    </Row>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                      دقة أول 5 ترشيحات: {p100(before.p5)} ← {p100(after.p5)} · زمن الرد: {after.meanMs} ملي ثانية
+                    </Text>
+                  </div>
+                )}
                 <SettingSwitch
-                  label="الذكاء أثناء المحادثة"
-                  hint="فقط للرسائل التي لم تفهمها ديما، وكل جواب يُحفظ فلا يُدفع ثمنه مرتين."
+                  label="فهم النموذج أثناء المحادثة"
+                  hint="يفهم الكلمات التي لا يعرفها المعجم، ويرتّب حسب ما تختاره الزبونات."
                   checked={s.liveAi}
                   onChange={(v) => update.mutate({ liveAi: v })}
                 />
                 <SettingSwitch
-                  label="فهم المنتجات الجديدة تلقائياً"
-                  hint="حتى والتدريب متوقف: أي منتج تضيفينه تفهمه ديما خلال دقائق."
+                  label="إكمال صفات المنتجات الناقصة"
+                  hint="نوع/جنس/عائلة المنتج حين لا يذكرها اسمه أو قسمه — فقط بدقة عالية."
                   checked={s.autoNew}
                   onChange={(v) => update.mutate({ autoNew: v })}
                 />
-                <div>
-                  <Text strong>مهام التدريب</Text>
-                  <Checkbox.Group
-                    style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 6 }}
-                    options={TASKS}
-                    value={Array.isArray(s.tasks) ? s.tasks : []}
-                    onChange={(v) => v.length && update.mutate({ tasks: v as string[] })}
-                  />
-                </div>
-                {today && (
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    اليوم: {fmt(today.enrichCalls)} دفعة تدريب، {fmt(today.chatCalls)} رد ذكي،{" "}
-                    {fmt(today.promptTokens + today.completionTokens)} رمز.
-                  </Text>
-                )}
               </Space>
             )}
           </Card>
@@ -236,27 +239,8 @@ export default function AdvisorTrainingPage() {
       <Card>
         <Tabs
           items={[
-            { key: "phrases", label: "ما تفهمه الآن", children: <PhrasesTab /> },
+            { key: "phrases", label: "عبارات محفوظة", children: <PhrasesTab /> },
             { key: "questions", label: "أسئلة الزبونات", children: <QuestionsTab /> },
-            {
-              key: "usage",
-              label: "الاستهلاك اليومي",
-              children: (
-                <Table
-                  rowKey="day"
-                  size="small"
-                  dataSource={usage}
-                  pagination={false}
-                  columns={[
-                    { title: "اليوم", dataIndex: "day" },
-                    { title: "دفعات تدريب", dataIndex: "enrichCalls", render: fmt },
-                    { title: "ردود ذكية", dataIndex: "chatCalls", render: fmt },
-                    { title: "رموز الإدخال", dataIndex: "promptTokens", render: fmt },
-                    { title: "رموز الإخراج", dataIndex: "completionTokens", render: fmt },
-                  ]}
-                />
-              ),
-            },
           ]}
         />
       </Card>
@@ -317,13 +301,21 @@ function TryBox() {
             <Text>فهمت:</Text>
             {r.meaning?.length ? r.meaning.map((m: string) => <Tag key={m}>{m}</Tag>) : <Text type="secondary">لا شيء واضح</Text>}
           </Space>
+          {r.byModel?.length > 0 && (
+            <Space wrap style={{ marginTop: 6 }}>
+              <Text type="secondary">منها بفضل التدريب:</Text>
+              {r.byModel.map((m: string) => (
+                <Tag key={m} color="purple">
+                  {m}
+                </Tag>
+              ))}
+            </Space>
+          )}
           <div style={{ marginTop: 6 }}>
-            {r.needsAi ? (
-              <Text type="warning">
-                هذه الرسالة ما زالت غامضة لديما — ستستعين بالذكاء الاصطناعي مرة، ثم تحفظ معناها للمرات القادمة.
-              </Text>
+            {r.weak ? (
+              <Text type="warning">ما زالت غامضة — ستُسجَّل في «أسئلة الزبونات» ويُعاد فحصها بعد كل تدريب.</Text>
             ) : (
-              <Text type="success">تفهمها ديما بنفسها — بدون أي استهلاك.</Text>
+              <Text type="success">تفهمها ديما بنفسها.</Text>
             )}
           </div>
         </div>
@@ -415,7 +407,7 @@ function QuestionsTab() {
           title: "الحالة",
           dataIndex: "resolved",
           width: 130,
-          render: (v: boolean) => (v ? <Tag color="success">صارت مفهومة</Tag> : <Tag color="warning">بانتظار التدريب</Tag>),
+          render: (v: boolean) => (v ? <Tag color="success">صارت مفهومة</Tag> : <Tag color="warning">لم تُفهم بعد</Tag>),
         },
         { title: "آخر مرة", dataIndex: "lastAt", width: 120, render: (d: string) => dayjs(d).format("MM/DD HH:mm") },
       ]}

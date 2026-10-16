@@ -2,10 +2,11 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/commo
 import { PrismaService } from "../../common/prisma.service";
 import { rewriteMediaRecord, rewriteMediaUrl } from "../../common/media-url.util";
 import { CatalogIndex, LearnedPhrase, RawProduct } from "./engine/catalog";
-import { AdvisorAiService } from "./advisor-ai.service";
-import { AiParse, aiToDelta, isUsefulLearning, needsAi } from "./engine/ai";
+import { isUsefulLearning, weakUnderstanding } from "./engine/confidence";
+import { ModelRuntime } from "./engine/model/runtime";
+import { needSig } from "./engine/model/sig";
 import { setDynamicTiers } from "./engine/brands";
-import { phraseWords, understand } from "./engine/nlu";
+import { phraseWords } from "./engine/nlu";
 import { normalize } from "./engine/text";
 import type { Need } from "./engine/types";
 import { WELCOME_BODY, greetingFor, pick } from "./engine/composer";
@@ -46,9 +47,9 @@ function coverUrl(media: unknown): string {
 }
 
 /**
- * «ديما» — المستشارة الذكية. خوارزمية داخلية بالكامل (لا خدمات ذكاء خارجية):
- * فهرس للكتالوج في الذاكرة يُعاد بناؤه دورياً، وفهم اللغة والترتيب يجريان محلياً
- * في أجزاء من الملي ثانية.
+ * «ديما» — المستشارة الذكية. داخلية بالكامل (لا خدمات ذكاء خارجية):
+ * فهرس للكتالوج في الذاكرة يُعاد بناؤه دورياً، ونموذج يُدرَّب على السيرفر نفسه من
+ * الكتالوج وتفاعل الزبونات (AdvisorTrainingService)، والفهم والترتيب محلياً بأجزاء من الملي ثانية.
  */
 @Injectable()
 export class AdvisorService implements OnModuleInit, OnModuleDestroy {
@@ -57,10 +58,28 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
   private building: Promise<CatalogIndex> | null = null;
   private timer?: NodeJS.Timeout;
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly ai: AdvisorAiService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
+
+  /** النموذج المدرَّب الحالي (إن وُجد)، وهل يُستخدم أثناء المحادثة. */
+  private model: ModelRuntime | null = null;
+  private modelLive = true;
+
+  /** نموذج جديد من التدريب: يدخل الفهم والترتيب فوراً، وإثراء المنتجات مع إعادة البناء التالية. */
+  setModel(model: ModelRuntime | null, opts: { rebuild?: boolean } = {}) {
+    this.model = model;
+    if (this.index) this.index.model = this.modelLive ? model ?? undefined : undefined;
+    if (opts.rebuild) this.markDirty();
+  }
+
+  /** إيقاف/تشغيل فهم النموذج أثناء المحادثة (من لوحة التدريب). */
+  setModelLive(on: boolean) {
+    this.modelLive = on;
+    if (this.index) this.index.model = on ? this.model ?? undefined : undefined;
+  }
+
+  currentModel(): ModelRuntime | null {
+    return this.model;
+  }
 
   private dirtyTimer?: NodeJS.Timeout;
   private lastRebuildAt = 0;
@@ -158,80 +177,91 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
     this.lastSig = sig;
   }
 
+  /**
+   * منتجات الكتالوج كما يحتاجها الفهرس. `modelEnrich`: هل نملأ الناقص بما استنتجه النموذج
+   * (لا للتدريب — حتى لا يتعلم النموذج من تخمينه).
+   */
+  async loadRows(modelEnrich = true): Promise<{ raw: RawProduct[]; brandRows: { key: string; data: unknown }[] }> {
+    const [rows, tags] = await Promise.all([
+      this.prisma.product.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          slug: true,
+          name: true,
+          nameAr: true,
+          nameEn: true,
+          description: true,
+          descriptionAr: true,
+          price: true,
+          originalPrice: true,
+          discountPercent: true,
+          rating: true,
+          reviewCount: true,
+          soldCount: true,
+          stock: true,
+          isNew: true,
+          isBestSeller: true,
+          isPromo: true,
+          createdAt: true,
+          sku: true,
+          brand: { select: { id: true, name: true, slug: true } },
+          category: { select: { id: true, slug: true, name: true, nameAr: true } },
+          subcategory: { select: { id: true, slug: true, name: true, nameAr: true } },
+          tertiaryCategory: { select: { id: true, slug: true, name: true, nameAr: true } },
+          images: { take: 1, orderBy: { position: "asc" }, select: { media: true } },
+          _count: { select: { shades: true } },
+          shades: { select: { name: true }, take: 60 },
+        },
+      }),
+      this.prisma.assistantProductTag.findMany({
+        select: { productId: true, kind: true, area: true, concerns: true, audience: true, summary: true },
+      }),
+    ]);
+    // قبل تطبيق الترحيل (أو عند أي تعثر) نبني بدون المعرفة المحفوظة بدل أن يفشل البناء كله.
+    const enrichRows = await this.prisma.advisorEnrichment
+      .findMany({ where: { type: { in: ["product", "brand"] } }, select: { key: true, type: true, data: true } })
+      .catch(() => [] as { key: string; type: string; data: unknown }[]);
+    const enrichBy = new Map(enrichRows.filter((r) => r.type === "product").map((r) => [r.key, r.data as RawProduct["enrich"]]));
+    const tagBy = new Map(tags.map((t) => [t.productId, t]));
+    const model = modelEnrich ? this.model : null;
+    const raw: RawProduct[] = rows.map((r) => ({
+      ...r,
+      description: r.description ?? "",
+      image: coverUrl(r.images[0]?.media),
+      shadeCount: r._count.shades,
+      shadeNames: r.shades.map((x) => x.name).filter(Boolean),
+      tag: tagBy.get(r.id) ?? null,
+      enrich: enrichBy.get(r.id) ?? model?.enrichFor(r.id) ?? null,
+    }));
+    return { raw, brandRows: enrichRows.filter((r) => r.type === "brand") };
+  }
+
   async rebuild(): Promise<CatalogIndex> {
     if (this.building) return this.building;
     this.building = (async () => {
       const started = Date.now();
-      const [rows, tags] = await Promise.all([
-        this.prisma.product.findMany({
-          where: { isActive: true },
-          select: {
-            id: true,
-            slug: true,
-            name: true,
-            nameAr: true,
-            nameEn: true,
-            description: true,
-            descriptionAr: true,
-            price: true,
-            originalPrice: true,
-            discountPercent: true,
-            rating: true,
-            reviewCount: true,
-            soldCount: true,
-            stock: true,
-            isNew: true,
-            isBestSeller: true,
-            isPromo: true,
-            createdAt: true,
-            sku: true,
-            brand: { select: { id: true, name: true, slug: true } },
-            category: { select: { id: true, slug: true, name: true, nameAr: true } },
-            subcategory: { select: { id: true, slug: true, name: true, nameAr: true } },
-            tertiaryCategory: { select: { id: true, slug: true, name: true, nameAr: true } },
-            images: { take: 1, orderBy: { position: "asc" }, select: { media: true } },
-            _count: { select: { shades: true } },
-            shades: { select: { name: true }, take: 60 },
-          },
-        }),
-        this.prisma.assistantProductTag.findMany({
-          select: { productId: true, kind: true, area: true, concerns: true, audience: true, summary: true },
-        }),
-      ]);
-      const [enrichRows, phraseRows] = await Promise.all([
-        // قبل تطبيق الترحيل (أو عند أي تعثر) نبني بدون المعرفة المتعلَّمة بدل أن يفشل البناء كله.
-        this.prisma.advisorEnrichment
-          .findMany({ where: { type: { in: ["product", "brand"] } }, select: { key: true, type: true, data: true } })
-          .catch(() => []),
+      const [{ raw, brandRows }, phraseRows] = await Promise.all([
+        this.loadRows(true),
         this.prisma.advisorPhrase.findMany({ select: { phrase: true, delta: true, intent: true, source: true } }).catch(() => []),
       ]);
-      const enrichBy = new Map(enrichRows.filter((r) => r.type === "product").map((r) => [r.key, r.data as RawProduct["enrich"]]));
-      const tagBy = new Map(tags.map((t) => [t.productId, t]));
-      const raw: RawProduct[] = rows.map((r) => ({
-        ...r,
-        description: r.description ?? "",
-        image: coverUrl(r.images[0]?.media),
-        shadeCount: r._count.shades,
-        shadeNames: r.shades.map((x) => x.name).filter(Boolean),
-        tag: tagBy.get(r.id) ?? null,
-        enrich: enrichBy.get(r.id) ?? null,
-      }));
       const idx = await CatalogIndex.buildAsync(raw);
       idx.applyLearning(await this.learning());
       idx.setLearned(
         phraseRows
-          // معرفة ضعيفة (مجال فقط بلا نوع/مشكلة) تُهمل: تمنع سؤال الذكاء دون أن تفيد.
+          // معرفة ضعيفة (مجال فقط بلا نوع/مشكلة) تُهمل.
           .filter((r) => r.source === "language" || isUsefulLearning(r.delta as Partial<Need>, r.intent))
           .map(
-          (r): LearnedPhrase => ({
-            words: phraseWords(r.phrase),
-            whole: r.source !== "language",
-            delta: r.delta as Partial<Need>,
-            intent: r.intent ?? undefined,
-          }),
-        ),
+            (r): LearnedPhrase => ({
+              words: phraseWords(r.phrase),
+              whole: r.source !== "language",
+              delta: r.delta as Partial<Need>,
+              intent: r.intent ?? undefined,
+            }),
+          ),
       );
-      setDynamicTiers(this.brandEstimates(idx, enrichRows.filter((r) => r.type === "brand")));
+      setDynamicTiers(this.brandEstimates(idx, brandRows));
+      idx.model = this.modelLive ? this.model ?? undefined : undefined;
       this.lastRebuildAt = Date.now();
       this.index = idx;
       this.lastFull = Date.now();
@@ -244,7 +274,7 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
-   * سمعة تلقائية للبراندات خارج القائمة: تقييم الذكاء الاصطناعي إن وُجد، وإلا تقدير من
+   * سمعة تلقائية للبراندات خارج القائمة: تقييم محفوظ إن وُجد، وإلا تقدير من
    * البيانات (أسعاره مقارنة بمنافسيه في نفس النوع + تنوع منتجاته).
    */
   private brandEstimates(idx: CatalogIndex, rated: { key: string; data: unknown }[]): Map<string, number> {
@@ -356,42 +386,48 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
           .catch(() => null);
       }
     }
-    // فهم ضعيف؟ نسجل الرسالة للتدريب، ونستعين بالذكاء الاصطناعي (إن سُمح) — ونحفظ فهمه
-    // عبارةً متعلّمة فلا ندفع ثمن نفس السؤال مرة ثانية.
-    let ai: AiParse | null = null;
-    if (input.message && !action && needsAi(input.message, catalog)) {
-      let learned = false;
-      if (this.ai.enabled && this.ai.liveAi) {
-        ai = await this.ai.parse(input.message, { area: input.state?.need?.area });
-        if (ai) {
-          // نحفظ فقط ما أضاف فيه النموذج معنىً حقيقياً؛ وإلا تبقى الرسالة سؤالاً مفتوحاً للتدريب.
-          const own = aiToDelta(ai, catalog);
-          learned = isUsefulLearning(own.delta, own.intent);
-          if (learned) {
-            const { delta, intent } = aiToDelta(ai, catalog, understand(input.message, catalog));
-            await this.learnPhrase(input.message, delta, intent, "chat");
-          }
-        }
-      }
-      void this.logQuery(input.message, learned);
-    }
-    return respond({ message: input.message, action }, input.state ?? null, {
+    // فهم ضعيف حتى مع النموذج؟ نسجل الرسالة (بلا هوية) — تظهر في لوحة التدريب، ويُعاد
+    // فحصها بعد كل تدريب.
+    if (input.message && !action && weakUnderstanding(input.message, catalog)) void this.logQuery(input.message, false);
+    const out = respond({ message: input.message, action }, input.state ?? null, {
       catalog,
       firstName: input.firstName,
       profile,
       details,
-      ai,
       loggedIn: Boolean(input.userId),
       history,
     });
+    this.rememberShown(out);
+    return out;
+  }
+
+  /**
+   * آخر بصمة طلب عرضت كل منتج (بلا أي هوية، في الذاكرة فقط ولمدة قصيرة) — حتى تُنسب
+   * نقرة/إضافة لاحقة لنوع الطلب الذي جاءت منه، فيتعلم الترتيب «ماذا يناسب هذا الطلب».
+   */
+  private readonly shownSig = new Map<string, { sig: string; at: number }>();
+
+  private rememberShown(r: AdvisorReply) {
+    const sig = needSig(r.state.need);
+    if (!sig) return;
+    const ids = [...r.products, ...r.groups.flatMap((g) => g.products), ...(r.routine?.steps.map((s) => s.product) ?? [])].map((p) => p.id);
+    const at = Date.now();
+    for (const id of ids.slice(0, 16)) {
+      this.shownSig.delete(id);
+      this.shownSig.set(id, { sig, at });
+    }
+    while (this.shownSig.size > 6000) this.shownSig.delete(this.shownSig.keys().next().value as string);
   }
 
   /** تفاعل مجهول: فتح منتج أو إضافته من ترشيح، أو إعجاب بالرد. */
   async feedback(input: { productId?: string; type: string; sig?: string }) {
     if (!EVENT_TYPES.has(input.type)) return { ok: false };
-    await this.prisma.advisorEvent
-      .create({ data: { productId: input.productId?.slice(0, 64) || null, type: input.type, sig: input.sig?.slice(0, 60) || null } })
-      .catch(() => undefined);
+    const productId = input.productId?.slice(0, 64) || null;
+    // بصمة أدق من التي يرسلها التطبيق (المجال|النوع) إن عرضنا المنتج مؤخراً.
+    const shown = productId ? this.shownSig.get(productId) : undefined;
+    const recent = shown && Date.now() - shown.at < 45 * 60_000 ? shown.sig : undefined;
+    const sig = (recent && (!input.sig || recent.startsWith(input.sig)) ? recent : input.sig)?.slice(0, 60) || null;
+    await this.prisma.advisorEvent.create({ data: { productId, type: input.type, sig } }).catch(() => undefined);
     return { ok: true };
   }
 

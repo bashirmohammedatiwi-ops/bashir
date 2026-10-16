@@ -1,3 +1,4 @@
+import type { ModelRuntime } from "./model/runtime";
 import { CONCERN_AREA, FacetKey, KIND_BY_AREA, LEXICON } from "./lexicon";
 import { FAMOUS } from "./famous";
 import type { Need } from "./types";
@@ -95,7 +96,7 @@ export interface RawProduct {
   /** أسماء الدرجات (ألوان) — تدخل البحث النصي. */
   shadeNames?: string[];
   tag?: { kind: string; area: string; concerns: string[]; audience: string; summary: string } | null;
-  /** صفات استخرجها الذكاء الاصطناعي من الوصف مرة واحدة (تملأ الفراغات فقط). */
+  /** صفات مستنتجة من الوصف (محفوظة سابقاً، أو من نموذج «ديما» المدرَّب) — تملأ الفراغات فقط. */
   enrich?: {
     area?: string;
     kind?: string;
@@ -126,14 +127,15 @@ function isIconic(name: string): boolean {
   return ICONIC.some((a) => n.includes(` ${a} `));
 }
 
-/** «نص مجرّد»: كلمات مطبّعة ومجذّعة بفواصل — للمطابقة السريعة بحدود الكلمة. */
-const bare = (text: string) => ` ${tokens(text, { keepStop: true }).join(" ")} `;
 
 interface CompiledTerm {
   facet: FacetKey;
   id: string;
   bare: string;
   latinPrefix: boolean;
+  /** أول كلمة (للفرز السريع) والنص المبحوث عنه جاهزاً. */
+  first: string;
+  needle: string;
 }
 
 /** يُترجم مرة واحدة: كل عبارة في المعجم إلى صيغتها المجرّدة. */
@@ -141,13 +143,9 @@ const COMPILED: CompiledTerm[] = LEXICON.flatMap((fv) =>
   fv.terms
     .map((t) => {
       const b = tokens(t, { keepStop: true }).join(" ");
-      return {
-        facet: fv.facet,
-        id: fv.id,
-        bare: b,
-        // كلمات لاتينية مقطوعة عمداً (moistur, exfoliat) تُطابق بداية الكلمة.
-        latinPrefix: /^[a-z]+$/.test(b) && b.length >= 5,
-      };
+      // كلمات لاتينية مقطوعة عمداً (moistur, exfoliat) تُطابق بداية الكلمة.
+      const latinPrefix = /^[a-z]+$/.test(b) && b.length >= 5;
+      return { facet: fv.facet, id: fv.id, bare: b, latinPrefix, first: b.split(" ")[0], needle: latinPrefix ? ` ${b}` : ` ${b} ` };
     })
     .filter((t) => t.bare.length >= 2),
 );
@@ -158,11 +156,14 @@ function matchFacets(
   only?: Set<FacetKey>,
   lengths?: Map<string, number>,
 ) {
-  const b = bare(text);
+  const toks = tokens(text, { keepStop: true });
+  const b = ` ${toks.join(" ")} `;
+  // فرز سريع: عبارة لا توجد كلمتها الأولى في النص لا تُفحص (نفس النتيجة، أسرع بكثير).
+  const has = new Set(toks);
   for (const t of COMPILED) {
     if (only && !only.has(t.facet)) continue;
-    const hit = t.latinPrefix ? b.includes(` ${t.bare}`) : b.includes(` ${t.bare} `);
-    if (!hit) continue;
+    if (!t.latinPrefix && !has.has(t.first)) continue;
+    if (!b.includes(t.needle)) continue;
     let set = into.get(t.facet);
     if (!set) into.set(t.facet, (set = new Set()));
     set.add(t.id);
@@ -330,6 +331,8 @@ const B = 0.75;
 
 export class CatalogIndex {
   products: IndexedProduct[] = [];
+  /** نموذج «ديما» المدرَّب على السيرفر (فهم الكلمات غير المعروفة + ترتيب متعلّم). */
+  model?: ModelRuntime;
   brands: BrandEntry[] = [];
   /** اسم مجرّد → براندات (قد يكون عائلة). */
   brandAliases = new Map<string, string[]>();
@@ -712,15 +715,7 @@ export class CatalogIndex {
     for (const qt of new Set(queryTokens)) {
       const terms: { t: string; damp: number }[] = [];
       if (this.postings.has(qt)) terms.push({ t: qt, damp: 1 });
-      if (qt.length >= 4) {
-        let n = 0;
-        for (const v of this.vocab) {
-          if (v !== qt && v.startsWith(qt)) {
-            terms.push({ t: v, damp: 0.6 });
-            if (++n >= 6) break;
-          }
-        }
-      }
+      if (qt.length >= 4) for (const v of this.prefixExpand(qt)) terms.push({ t: v, damp: 0.6 });
       for (const { t, damp } of terms) {
         const post = this.postings.get(t)!;
         const idf = Math.log(1 + (N - post.size + 0.5) / (post.size + 0.5));
@@ -733,6 +728,38 @@ export class CatalogIndex {
     }
     if (scores.size <= limit) return scores;
     return new Map([...scores.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit));
+  }
+
+  /** توسعة البادئة (أول 6 كلمات تبدأ بها) — مخزنة، فالكلمات تتكرر كثيراً بين الطلبات. */
+  private readonly prefixCache = new Map<string, string[]>();
+  private prefixExpand(qt: string): string[] {
+    let hit = this.prefixCache.get(qt);
+    if (hit) return hit;
+    hit = [];
+    for (const v of this.vocab) {
+      if (v !== qt && v.startsWith(qt)) {
+        hit.push(v);
+        if (hit.length >= 6) break;
+      }
+    }
+    if (this.prefixCache.size >= 20_000) this.prefixCache.clear();
+    this.prefixCache.set(qt, hit);
+    return hit;
+  }
+
+  /** فهارس المنتجات حسب النوع المؤكد والمجال (لتضييق المرشحين قبل الترتيب). */
+  private pools?: { kind: Map<string, IndexedProduct[]>; area: Map<string, IndexedProduct[]> };
+  poolsByFacet() {
+    if (!this.pools) {
+      const kind = new Map<string, IndexedProduct[]>();
+      const area = new Map<string, IndexedProduct[]>();
+      for (const p of this.products) {
+        for (const k of p.strong.get("kind") ?? []) (kind.get(k) ?? kind.set(k, []).get(k)!).push(p);
+        if (p.area) (area.get(p.area) ?? area.set(p.area, []).get(p.area)!).push(p);
+      }
+      this.pools = { kind, area };
+    }
+    return this.pools;
   }
 
   /** كلمات الفهرس التي تبدأ بالبادئة، الأشيع أولاً (للبحث أثناء الكتابة). */

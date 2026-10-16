@@ -74,7 +74,7 @@ const compact = (s: string) =>
 
 const cache = new Map<string, number>();
 
-/** تقديرات تلقائية لبراندات خارج القائمة (من الذكاء الاصطناعي أو البيانات): اسم البراند ← درجة. */
+/** تقديرات تلقائية لبراندات خارج القائمة (تقييم محفوظ أو من البيانات): اسم البراند ← درجة. */
 let dynamic = new Map<string, number>();
 export function setDynamicTiers(tiers: Map<string, number>) {
   dynamic = tiers;

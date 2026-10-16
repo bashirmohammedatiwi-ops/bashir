@@ -150,6 +150,22 @@ function passesHard(catalog: CatalogIndex, p: IndexedProduct, need: Need, exclud
   return true;
 }
 
+/**
+ * مرشحون محتملون فقط: منتجات النوع المطلوب، أو منتجات المجال المطلوب — مجموعة تشمل حتماً
+ * كل ما يجتاز `passesHard` (نفس النتيجة)، بترتيب الفهرس نفسه، وأصغر بكثير من الكتالوج كله.
+ */
+function candidatePool(catalog: CatalogIndex, need: Need): IndexedProduct[] {
+  const pools = catalog.poolsByFacet();
+  if (need.kinds.length) {
+    if (need.kinds.length === 1) return pools.kind.get(need.kinds[0]) ?? [];
+    const seen = new Set<IndexedProduct>();
+    for (const k of need.kinds) for (const p of pools.kind.get(k) ?? []) seen.add(p);
+    return [...seen].sort((a, b) => a.idx - b.idx);
+  }
+  if (need.area) return pools.area.get(need.area) ?? [];
+  return catalog.products;
+}
+
 function rankOnce(catalog: CatalogIndex, need: Need, opts: Options): RankResult {
   // الألوان العربية تُوسَّع لأسمائها الإنجليزية في أسماء الدرجات.
   const query = need.free.flatMap((w) => {
@@ -160,7 +176,7 @@ function rankOnce(catalog: CatalogIndex, need: Need, opts: Options): RankResult 
   const maxText = textScores ? Math.max(0, ...textScores.values()) : 0;
   const softScores = opts.softText?.length ? catalog.search(opts.softText.flatMap((w) => tokens(w))) : null;
   const maxSoft = softScores ? Math.max(0, ...softScores.values()) : 0;
-  const candidates = catalog.products.filter((p) => passesHard(catalog, p, need, opts.exclude));
+  const candidates = candidatePool(catalog, need).filter((p) => passesHard(catalog, p, need, opts.exclude));
   if (!candidates.length) return { items: [], relaxed: [], total: 0 };
 
   const wanted: [FacetKey, string][] = [];
@@ -185,6 +201,8 @@ function rankOnce(catalog: CatalogIndex, need: Need, opts: Options): RankResult 
 
   const scored: (Ranked & { fit: number; q: number })[] = [];
   const brandQ = brandQuality(catalog);
+  // ترتيب متعلّم: ما تختاره الزبونات (سلة/إعجاب/فتح) لهذا النوع من الطلبات بالذات.
+  const affinity = catalog.model?.affinityFor(need) ?? null;
   // الحجم المطلوب: نقارن بحجم المرشحين المعتاد (بنفس الوحدة تقريباً).
   const sizes = need.size ? candidates.map((p) => sizeValue(p)).filter((v): v is number => v != null).sort((a, b) => a - b) : [];
   const medianSize = sizes.length ? sizes[Math.floor(sizes.length / 2)] : 0;
@@ -323,6 +341,11 @@ function rankOnce(catalog: CatalogIndex, need: Need, opts: Options): RankResult 
     }
 
     if (softScores && maxSoft > 0) extra += 1.6 * ((softScores.get(p.idx) ?? 0) / maxSoft);
+    const learned = affinity?.get(p.id);
+    if (learned) {
+      extra += 0.9 * learned;
+      if (learned >= 0.7) reasons.push({ w: 0.88, text: "تختاره الزبونات" });
+    }
     if (need.size && medianSize) {
       const v = sizeValue(p);
       if (v) {

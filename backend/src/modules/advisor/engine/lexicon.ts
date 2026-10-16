@@ -51,14 +51,14 @@ export const LEXICON: FacetValue[] = [
   v("area", "skin", "العناية بالبشرة", "Skincare", ["بشره", "البشره", "الوجه", "وجه", "skin", "face", "skincare", "facial"], { emoji: "🌸", ask: ["وجهي", "بشرتي"] }),
   v("area", "hair", "العناية بالشعر", "Haircare", ["شعر", "الشعر", "فروه الراس", "hair", "scalp"], { emoji: "💇‍♀️", ask: ["شعري", "راسي"] }),
   v("area", "body", "العناية بالجسم", "Bodycare", ["جسم", "الجسم", "body", "يدين", "hands", "قدم", "feet"], { emoji: "🛁", ask: ["جسمي", "ايدي", "رجلي"] }),
-  v("area", "fragrance", "العطور", "Fragrance", ["عطر", "عطور", "perfume", "parfum", "fragrance", "eau de", "cologne", "كولونيا"], { emoji: "✨" }),
+  v("area", "fragrance", "العطور", "Fragrance", ["عطر", "عطور", "perfume", "parfum", "fragrance", "eau de", "cologne", "كولونيا"], { emoji: "✨", ask: ["smells", "smell", "scent"] }),
   v("area", "makeup", "المكياج", "Makeup", ["مكياج", "ميكب", "makeup", "make up", "cosmetic"], { emoji: "💄", ask: ["ميك اب"] }),
   v("area", "nails", "الأظافر", "Nails", ["اظافر", "اضافر", "مناكير", "nail", "nails"], { emoji: "💅" }),
 
   // ───────────────────────── النوع — عطور
   v("kind", "perfume", "عطر", "Perfume", ["عطر", "perfume", "parfum", "eau de parfum", "eau de toilette", "edp", "edt", "extrait"], { area: "fragrance" }),
-  v("kind", "mist", "معطر جسم", "Body mist", ["بودي مست", "body mist", "بودي سبلاش", "body splash", "سبلاش", "splash", "معطر جسم", "معطر للجسم", "fragrance mist", "hair mist", "بخاخ عطر"], { area: "fragrance" }),
-  v("kind", "deodorant", "مزيل عرق", "Deodorant", ["مزيل عرق", "مزيل للعرق", "ديودرنت", "deodorant", "antiperspirant", "رول اون", "roll on"], { area: "body" }),
+  v("kind", "mist", "معطر جسم", "Body mist", ["بودي مست", "body mist", "بودي سبلاش", "body splash", "سبلاش", "splash", "معطر جسم", "معطر للجسم", "fragrance mist", "hair mist", "بخاخ عطر", "معطر شعر", "معطر للشعر", "عطر شعر", "عطر للشعر", "عطور شعر"], { area: "fragrance" }),
+  v("kind", "deodorant", "مزيل عرق", "Deodorant", ["مزيل عرق", "مزيل للعرق", "ديودرنت", "deodorant", "antiperspirant", "رول اون", "roll on"], { area: "body", ask: ["ريحه ابطي", "ريحه الابط", "ابطي", "تحت ابطي", "اتعرق", "تعرق"] }),
   v("kind", "oil_perfume", "عطر زيتي", "Perfume oil", ["دهن عود", "دهن عطر", "عطر زيتي", "perfume oil", "attar"], { area: "fragrance" }),
   v("kind", "bakhoor", "بخور", "Bakhoor", ["بخور", "bakhoor", "مبخره", "عود بخور"], { area: "fragrance" }),
   v("kind", "home_scent", "معطر منزل", "Home scent", ["معطر منزل", "شمعه", "شموع", "candle", "diffuser", "فواحه", "معطر جو"], { area: "fragrance" }),
@@ -84,7 +84,7 @@ export const LEXICON: FacetValue[] = [
   v("kind", "face_mask", "ماسك وجه", "Face mask", ["ماسك وجه", "ماسك للوجه", "قناع", "face mask", "sheet mask", "clay mask", "ماسك طين"], { area: "skin" }),
   v("kind", "exfoliator", "مقشر", "Exfoliator", ["مقشر", "تقشير", "scrub", "exfoliat", "peeling", "بيلنج"], { area: "skin" }),
   v("kind", "makeup_remover", "مزيل مكياج", "Makeup remover", ["مزيل مكياج", "مزيل المكياج", "makeup remover", "demaquillant", "cleansing oil", "cleansing balm"], { area: "skin" }),
-  v("kind", "lip_care", "مرطب شفاه", "Lip care", ["مرطب شفاه", "مرطب للشفاه", "lip balm", "lip care", "زبده شفاه", "lip mask"], { area: "skin" }),
+  v("kind", "lip_care", "مرطب شفاه", "Lip care", ["مرطب شفاه", "مرطب للشفاه", "lip balm", "lip care", "زبده شفاه", "lip mask"], { area: "skin", ask: ["شفاه متشققه", "شفاهي متشققه", "شفاه ناشفه", "شفاه جافه", "تشقق الشفاه"] }),
 
   // ───────────────────────── النوع — جسم
   v("kind", "body_lotion", "لوشن جسم", "Body lotion", ["لوشن", "لوشن جسم", "body lotion", "body cream", "كريم جسم", "body butter", "زبده جسم"], { area: "body" }),
@@ -126,8 +126,8 @@ export const LEXICON: FacetValue[] = [
   v("concern", "sensitive", "الحساسية والاحمرار", "Sensitivity", ["حساسه", "حساسيه", "تهيج", "احمرار", "مهدئ", "sensitive", "soothing", "redness", "calming", "cica", "سيكا"], { emoji: "🌿", ask: ["تحمر", "تتحسس", "تهيج"] }),
   v("concern", "pores", "المسام", "Pores", ["مسام", "رؤوس سوداء", "blackhead", "pore", "pores"], { emoji: "🔍", ask: ["مسامات", "نقاط سوداء"] }),
   v("concern", "dark_circles", "الهالات", "Dark circles", ["هالات", "هالات سوداء", "انتفاخ", "dark circle", "puffiness", "under eye"], { emoji: "👁️", ask: ["تحت عيوني اسود", "عيوني منتفخه"] }),
-  v("concern", "dull", "البهتان", "Dullness", ["بهتان", "باهته", "اشراقه", "dull", "radiance", "glow", "luminous"], { emoji: "🌟", ask: ["مطفيه", "تعبانه"] }),
-  v("concern", "hairloss", "تساقط الشعر", "Hair loss", ["تساقط", "تساقط الشعر", "hair loss", "hair fall", "anti hair loss", "انبات", "كثافه", "growth", "thinning"], { emoji: "🍃", ask: ["يطيح", "يطوح", "شعري خفيف", "يتساقط"] }),
+  v("concern", "dull", "البهتان", "Dullness", ["بهتان", "باهته", "باهت", "اشراقه", "اشراق", "نضاره", "نضره", "مشرقه", "dull", "radiance", "glow", "luminous"], { emoji: "🌟", ask: ["مطفيه", "تعبانه"] }),
+  v("concern", "hairloss", "تساقط الشعر", "Hair loss", ["تساقط", "تساقط الشعر", "hair loss", "hair fall", "anti hair loss", "انبات", "كثافه", "growth", "thinning"], { emoji: "🍃", ask: ["يطيح", "يطوح", "شعري خفيف", "يتساقط", "يطول الشعر", "يطول شعري", "تطويل الشعر", "يكثف الشعر", "يكثف شعري"] }),
   v("concern", "dandruff", "القشرة", "Dandruff", ["قشره", "قشرة", "dandruff", "flake", "anti dandruff", "حكه الراس"], { emoji: "❄️", ask: ["راسي يحك"] }),
   v("concern", "frizz", "الهيشان والتجعد", "Frizz", ["هيشان", "تجعد", "مجعد", "frizz", "curl", "curly", "smooth", "تنعيم", "keratin"], { emoji: "🌀", ask: ["منفوش", "شعري يكش", "خشن"] }),
   v("concern", "damaged", "الشعر التالف", "Damaged hair", ["تالف", "متقصف", "اطراف متقصفه", "damaged", "repair", "split end", "بروتين", "ترميم"], { emoji: "🩹", ask: ["محروق", "تقصف"] }),
@@ -178,8 +178,8 @@ export const LEXICON: FacetValue[] = [
   v("freeFrom", "oil", "بدون زيوت", "Oil-free", ["خالي من الزيوت", "بدون زيوت", "oil free", "non comedogenic", "لا يسد المسام"]),
 
   // ───────────────────────── العطور — الجنس
-  v("gender", "women", "نسائي", "For her", ["نسائي", "للنساء", "نسائيه", "women", "woman", "femme", "for her", "pour femme", "lady", "pour elle", "donna", "دونا"], { emoji: "👩", ask: ["لنفسي", "لبنتي", "لاختي", "لامي", "لزوجتي", "لمرتي", "لصديقتي", "حريمي", "نسوان"] }),
-  v("gender", "men", "رجالي", "For him", ["رجالي", "للرجال", "men", "homme", "for him", "pour homme", "man", "هوم", "اوم", "بور اوم", "uomo", "اومو", "pour lui"], { emoji: "👨", ask: ["لزوجي", "لابوي", "لابي", "لاخوي", "لاخي", "لابني", "لرجل", "شبابي"] }),
+  v("gender", "women", "نسائي", "For her", ["نسائي", "للنساء", "نسائيه", "women", "woman", "femme", "for her", "pour femme", "lady", "pour elle", "donna", "دونا"], { emoji: "👩", ask: ["لنفسي", "لبنتي", "لاختي", "لامي", "لزوجتي", "لمرتي", "لصديقتي", "حريمي", "نسوان", "بنات", "للبنات", "بناتي", "بنوته", "nisai", "nisa2i", "niswani"] }),
+  v("gender", "men", "رجالي", "For him", ["رجالي", "للرجال", "men", "homme", "for him", "pour homme", "man", "هوم", "اوم", "بور اوم", "uomo", "اومو", "pour lui"], { emoji: "👨", ask: ["لزوجي", "لابوي", "لابي", "لاخوي", "لاخي", "لابني", "لرجل", "شبابي", "rjali", "rijali", "rejali"] }),
   v("gender", "unisex", "للجنسين", "Unisex", ["للجنسين", "لكلا الجنسين", "كلا الجنسين", "الجنسين", "يونيسكس", "يونيسيكس", "unisex", "mixte"], { emoji: "🤝" }),
 
   // ───────────────────────── العطور — العائلة
@@ -187,7 +187,7 @@ export const LEXICON: FacetValue[] = [
   v("family", "oud", "عود", "Oud", ["عود", "oud", "agarwood", "دهن العود"], { emoji: "🏺" }),
   v("family", "floral", "زهري", "Floral", ["زهري", "زهور", "ورد", "ياسمين", "floral", "flower", "rose", "jasmine", "tuberose", "peony", "orchid", "اوركيد", "fleur"], { emoji: "🌹" }),
   v("family", "oriental", "شرقي", "Oriental / Amber", ["شرقي", "عنبر", "امبر", "oriental", "amber", "ambre", "incense", "بخور"], { emoji: "🕌" }),
-  v("family", "musk", "مسك", "Musk", ["مسك", "musk", "musc", "white musk"], { emoji: "🤍" }),
+  v("family", "musk", "مسك", "Musk", ["مسك", "musk", "musc", "white musk"], { emoji: "🤍", ask: ["ريحه نظيفه", "ريحته نظيفه", "مثل الصابون", "ريحه الصابون", "ريحه صابون", "صابوني"] }),
   v("family", "vanilla", "فانيلا", "Vanilla", ["فانيلا", "فانيليا", "vanilla", "vanille", "tonka", "تونكا"], { emoji: "🍦" }),
   v("family", "sweet", "حلو", "Sweet / Gourmand", ["حلو", "سكري", "كراميل", "شوكولا", "gourmand", "sweet", "caramel", "praline", "candy", "honey", "عسل"], { emoji: "🍬", ask: ["سكريه"] }),
   v("family", "fresh", "منعش", "Fresh / Citrus", ["منعش", "حمضي", "ليمون", "برغموت", "fresh", "citrus", "bergamot", "lemon", "orange", "grapefruit", "neroli", "نيرولي"], { emoji: "🍋", ask: ["خفيف", "بارد"] }),
@@ -195,7 +195,7 @@ export const LEXICON: FacetValue[] = [
   v("family", "spicy", "حار", "Spicy", ["حار", "توابل", "فلفل", "قرفه", "هيل", "spicy", "pepper", "cinnamon", "cardamom", "saffron", "زعفران"], { emoji: "🌶️" }),
   v("family", "fruity", "فواكه", "Fruity", ["فواكه", "فاكهه", "fruity", "fruit", "berry", "apple", "peach", "pear", "lychee", "خوخ", "توت"], { emoji: "🍓" }),
   v("family", "leather", "جلدي", "Leather / Tobacco", ["جلد", "جلدي", "تبغ", "leather", "tobacco", "smoky", "دخاني"], { emoji: "🧥" }),
-  v("family", "powdery", "بودري", "Powdery", ["بودري", "powdery", "iris", "ايريس", "violet"], { emoji: "☁️" }),
+  v("family", "powdery", "بودري", "Powdery", ["بودري", "powdery", "iris", "ايريس", "violet"], { emoji: "☁️", ask: ["بودري", "ريحه بودري", "ريحه بودره"] }),
   v("family", "coffee", "قهوة", "Coffee", ["قهوه", "coffee", "espresso", "café"], { emoji: "☕" }),
 
   // ───────────────────────── العطور — الوقت والتركيز والموسم

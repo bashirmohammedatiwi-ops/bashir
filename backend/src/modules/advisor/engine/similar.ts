@@ -43,7 +43,7 @@ const SIM_WORDS = new Set(
 );
 
 export const SIMILAR_RE =
-  /(يشبه|تشبه|شبيه|مشابه|مثل ريح|نفس ريح|نفس رائح|ريحه مثل|ريحتها مثل|ريحته مثل|بديل|بدائل|dupe|alternative|similar to|smells like|كوبي من|تقليد)/;
+  /(يشبه|تشبه|شبيه|مشابه|مثل ريح|نفس ريح|نفس رائح|ريحه مثل|ريحتها مثل|ريحته مثل|قريب من|قريبه من|قريب لريح|بديل|بدائل|dupe|alternative|similar to|smells like|كوبي من|تقليد)/;
 
 const fam = (p: IndexedProduct) => {
   const m = new Map<string, number>();

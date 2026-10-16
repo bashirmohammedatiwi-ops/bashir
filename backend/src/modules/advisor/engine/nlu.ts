@@ -25,6 +25,8 @@ interface Phrase {
   latin: boolean;
   /** عبارات الزبونة تُطابق الكلمة كما كُتبت (بلا تجذيع): «لزوجي» ≠ «لزوجتي». */
   raw: boolean;
+  /** كلماتها مقسّمة مسبقاً. */
+  pw: string[];
 }
 
 const KIND_AREA_NLU = new Map(LEXICON.filter((x) => x.facet === "kind" && x.area).map((x) => [x.id, x.area!]));
@@ -47,11 +49,11 @@ const rawWords = (text: string) =>
 const PHRASES: Phrase[] = LEXICON.flatMap((fv) => [
   ...fv.terms.map((t) => {
     const b = tokens(t, { keepStop: true }).join(" ");
-    return { facet: fv.facet, id: fv.id, bare: b, latin: /^[a-z0-9 ]+$/.test(b), raw: false };
+    return { facet: fv.facet, id: fv.id, bare: b, latin: /^[a-z0-9 ]+$/.test(b), raw: false, pw: b.split(" ") };
   }),
   ...(fv.ask ?? []).map((t) => {
     const b = rawWords(t).join(" ");
-    return { facet: fv.facet, id: fv.id, bare: b, latin: /^[a-z0-9 ]+$/.test(b), raw: true };
+    return { facet: fv.facet, id: fv.id, bare: b, latin: /^[a-z0-9 ]+$/.test(b), raw: true, pw: b.split(" ") };
   }),
 ])
   .filter((p) => p.bare.length >= 2)
@@ -87,7 +89,7 @@ const RE = {
   cheaper: /(ارخص|اقل سعر|اقل من هذا|مو غالي|ميزانيه اقل|cheaper|less expensive|budget)/,
   pricier: /(اغلى|ارقى|فاخر|فخم|براند عالمي|premium|luxury|high end)/,
   deals: /(عروض|عرض|خصم|خصومات|تخفيض|تخفيضات|تنزيلات|sale|offer|deal|discount)/,
-  routine: /(روتين|routine|خطوات|كامل للبشره|كامل للشعر|نظام عنايه)/,
+  routine: /(روتين|routine|خطوات|كامل للبشره|كامل للشعر|نظام عنايه|من الصفر|ابدي اعتني|ابدا اعتني|ابدي اهتم|ابدا اهتم)/,
   quiz: /(اختبار|quiz|اكتشفي|اكتشف|ساعديني اختار|ساعديني اختار|اختاري الي|اختاري لي)/,
   about: /(اسمك|شسمك|ما اسمك|من انتي)/,
   look: /(لوك|look|مكياج( \S+)? (كامل|متكامل)|سله مكياج|طقم مكياج|عده مكياج|مكياج عروس|مكياج عرس|full makeup|makeup look)/,
@@ -151,6 +153,20 @@ const lite = (w: string) => {
 // مديح عام لا صفة: «عطر ريحته حلوة» = رائحته جميلة، لا «عائلة حلوة».
 const NEUTRAL_RE = /(ريحت(ه|ها)|ريحه|رائحت(ه|ها)|رائحه|ريحتو)\s+(حلو|حلوه|طيبه|طيب|زينه|حلوة)/g;
 
+/** صفات سياقية: لا تحدد نوع المنتج بنفسها، لكن كلماتها دليل للنموذج عليه (كلمات المجال لا: «رجلي» قدم لا رجل). */
+const CONTEXT_FACETS = new Set<FacetKey>(["coverage", "attr", "occasion", "time", "season", "finish"]);
+
+/** أسماء البراندات مرتبة (الأطول أولاً) ومقسّمة — تُحسب مرة لكل فهرس. */
+const aliasCache = new WeakMap<CatalogIndex, [string, string[], string[]][]>();
+function sortedAliases(catalog: CatalogIndex): [string, string[], string[]][] {
+  let list = aliasCache.get(catalog);
+  if (!list) {
+    list = [...catalog.brandAliases.entries()].sort((a, b) => b[0].length - a[0].length).map(([a, ids]) => [a, ids, a.split(" ")]);
+    aliasCache.set(catalog, list);
+  }
+  return list;
+}
+
 export function understand(message: string, catalog: CatalogIndex): Parsed {
   message = normalize(message).replace(NEUTRAL_RE, " ");
   const norm = normalize(message);
@@ -163,6 +179,8 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
   const mentioned = new Set<string>();
   const delta: Parsed["delta"] = {};
   const consumed = new Set<number>();
+  /** أي صفة استهلكت كل كلمة (لنعرف كلمات السياق: «ايدي»، «يغطي»، «بالعرس»). */
+  const consumedBy = new Map<number, FacetKey>();
 
   // ── صفات المعجم (الأطول أولاً، مع النفي)
   const multi: Record<string, string[]> = {};
@@ -207,8 +225,12 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
   };
   for (const lp of catalog.learned) if (lp.whole || lp.words.length > 1) applyLearned(lp);
 
+  // فرز سريع: عبارة لا تظهر كلمتها الأولى بأي صيغة في الرسالة لا تُفحص.
+  const seenStem = new Set([...words, ...deW]);
+  const seenRaw = new Set([...raws, ...lites]);
   for (const p of PHRASES) {
-    const pw = p.bare.split(" ");
+    const pw = p.pw;
+    if (!(p.latin && pw.length === 1) && !(p.raw ? seenRaw : seenStem).has(pw[0])) continue;
     for (let i = 0; i + pw.length <= words.length; i++) {
       let ok = true;
       for (let j = 0; j < pw.length; j++) {
@@ -226,7 +248,10 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
       let overlap = false;
       for (let j = 0; j < pw.length; j++) if (consumed.has(i + j)) overlap = true;
       if (overlap) continue;
-      for (let j = 0; j < pw.length; j++) consumed.add(i + j);
+      for (let j = 0; j < pw.length; j++) {
+        consumed.add(i + j);
+        consumedBy.set(i + j, p.facet);
+      }
       mentioned.add(p.facet);
       if (negatedAt(words, i) || (p.facet === "freeFrom")) {
         if (p.facet === "freeFrom") (multi.freeFrom ??= []).push(p.id);
@@ -250,8 +275,8 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
     let bestD = 9;
     for (const p of FUZZY_PHRASES) {
       if (Math.abs(p.bare.length - w.length) > 2) continue;
-      // كلمة قصيرة تحتمل حرفاً واحداً، والطويلة حرفين.
-      const max = w.length >= 8 ? 2 : 1;
+      // كلمة قصيرة تحتمل حرفاً واحداً، والطويلة حرفين (العربية فقط: «something» ليست «soothing»).
+      const max = w.length >= 8 && !/^[a-z]+$/.test(w) ? 2 : 1;
       if (w.length < 5 && p.bare.length < 5) continue;
       const d = editDistance(w, p.bare, max);
       if (d <= max && d < bestD) {
@@ -300,6 +325,8 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
     if (area) delta.area = area;
   }
   if (!delta.area && single.skinType && !delta.kinds?.length) delta.area = "skin";
+  // «بشرتي تلمع/دهنية بالوسط» كشكوى = نوع بشرة دهني أيضاً (لا مشكلة فقط).
+  if (delta.area === "skin" && !delta.skinType && delta.concerns?.includes("oily")) delta.skinType = "oily";
   // «جاف/دهني» في سياق الشعر = جفاف الشعر/فروة دهنية، لا نوع بشرة.
   if (delta.area === "hair") {
     // «لمعان للشعر» = تريده لامعاً، لا فروة دهنية (إلا إن ذكرت الدهون صراحة).
@@ -332,9 +359,10 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
   // ── البراندات (مع تحمّل أخطاء الكتابة للأسماء اللاتينية الطويلة)
   const brands: string[] = [];
   const excludeBrands: string[] = [];
-  const aliases = [...catalog.brandAliases.entries()].sort((a, b) => b[0].length - a[0].length);
-  for (const [alias, ids] of aliases) {
-    const aw = alias.split(" ");
+  const seenBrand = new Set([...words, ...raws]);
+  for (const [alias, ids, aw] of sortedAliases(catalog)) {
+    // اسم لا تظهر كلمته الأولى ولا تحتمل خطأ كتابة (لاتيني طويل) لا يُفحص.
+    if (!seenBrand.has(aw[0]) && !(aw[0].length >= 6 && /^[a-z]+$/.test(aw[0]))) continue;
     for (let i = 0; i + aw.length <= words.length; i++) {
       let ok = true;
       for (let j = 0; j < aw.length; j++) {
@@ -406,8 +434,9 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
       { keepStop: true },
     ),
   );
-  const free = words.filter(
-    (w, i) => !consumed.has(i) && w.length >= 3 && !INTENT_WORDS.has(w) && !/^\d+$/.test(w) &&
+  const freeIdx = words.map((_, i) => i).filter((i) => {
+    const w = words[i];
+    return !consumed.has(i) && w.length >= 3 && !INTENT_WORDS.has(w) && !/^\d+$/.test(w) &&
       !["الف", "دينار", "تحت", "فوق", "بين", "ارخص", "اغلى", "بديل", "بدائل", "بديله", "يشبه", "تشبه", "مثل"].includes(w) &&
       !RE.routine.test(w) && !RE.look.test(w) && !w.startsWith("روت") &&
       // كلمات الترتيب والنوايا («فخم»، «عروض»، «جديد») ليست أسماء منتجات.
@@ -415,8 +444,47 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
       // «كريم» مع نوع محدد («كريم واقي شمس») صيغة لا كلمة بحث.
       !(delta.kinds?.length && GENERIC_FORMS.has(w)) &&
       // أدوات النفي وما نُفي (براند غير متوفر مثلاً) لا يُبحث عنه.
-      !NEGATORS.has(w) && !negatedAt(words, i),
-  );
+      !NEGATORS.has(w) && !negatedAt(words, i);
+  });
+  let free = freeIdx.map((i) => words[i]);
+  // ── ما لم يفهمه المعجم: نموذج «ديما» المدرَّب على الكتالوج يستنتج معناه («يلمع بالعرس» ← هايلايتر).
+  // كلمات فهمها المعجم كسياق فقط (تغطية/ثبات/مناسبة…) تساعد النموذج على اختيار النوع («يغطي الحبوب» ← كونسيلر).
+  const ctxIdx = intent === "routine" || delta.kinds?.length ? [] : [...consumedBy].filter(([, f]) => CONTEXT_FACETS.has(f)).map(([i]) => i);
+  if (catalog.model && (freeIdx.length || ctxIdx.length) && !["reset", "greet", "thanks", "about", "help"].includes(intent)) {
+    const inf = catalog.model.inferFree(
+      freeIdx.map((i) => raws[i]),
+      { area: delta.area, kinds: delta.kinds, concerns: delta.concerns, families: delta.families, gender: delta.gender, skinType: delta.skinType },
+      ctxIdx.map((i) => raws[i]),
+    );
+    {
+      if (inf.area && !delta.area) delta.area = inf.area;
+      if (inf.kinds?.length) {
+        const remap = delta.area ? KIND_BY_AREA[delta.area] ?? {} : {};
+        delta.kinds = [...new Set(inf.kinds.map((k) => remap[k] ?? k))];
+        mentioned.add("kind");
+      }
+      if (inf.concerns?.length) {
+        delta.concerns = inf.concerns;
+        mentioned.add("concern");
+      }
+      if (inf.families?.length) {
+        delta.families = inf.families;
+        mentioned.add("family");
+      }
+      if (inf.gender) {
+        delta.gender = inf.gender;
+        mentioned.add("gender");
+      }
+      if (inf.skinType) {
+        delta.skinType = inf.skinType;
+        mentioned.add("skinType");
+      }
+      if (inf.used.length) {
+        const used = new Set(inf.used.map((k) => freeIdx[k]));
+        free = freeIdx.filter((i) => !used.has(i)).map((i) => words[i]);
+      }
+    }
+  }
   if (free.length) delta.free = [...new Set([...(delta.free ?? []), ...free])];
   if (SIZE_BIG_RE.test(norm)) delta.size = "big";
   else if (SIZE_SMALL_RE.test(norm)) delta.size = "small";
@@ -435,7 +503,8 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
     if (intent === "routine") delta.routine = true;
   }
 
-  return { intent, delta, hasProductSignal: hasProductSignal || free.length > 0, mentioned };
+  const modelSignal = Boolean(delta.kinds?.length || delta.concerns?.length || delta.area || delta.families?.length);
+  return { intent, delta, hasProductSignal: hasProductSignal || modelSignal || free.length > 0, mentioned };
 }
 
 /** أفعال الشرائح: `set:skinType=oily`، `add:concern=acne`، `unset:maxPrice`، `act:more`. */

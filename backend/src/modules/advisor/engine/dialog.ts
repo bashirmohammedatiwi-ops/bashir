@@ -3,7 +3,6 @@ import { famousIn, findByName, findFamousProduct, profileOf, profileOfBoth, prof
 import { COMPLEMENT_WHY, COMPLEMENTS, compareProducts, fitCheck, sizeOf, whyList } from "./insight";
 import { answerQuestion, cautionFor, detectIngredients, QaAnswer, QUESTION_RE } from "./qa";
 import { FAMOUS } from "./famous";
-import { AiParse, mergeAiParse } from "./ai";
 import { mainKind, ownedByKind, personalFor, purchasedCards, recentlyOwned, scentFamilies } from "./personal";
 import {
   ABOUT,
@@ -48,8 +47,6 @@ export interface DialogCtx {
   profile?: Profile;
   /** تفاصيل المنتج المحوري من قاعدة البيانات (لطريقة الاستخدام). */
   details?: { howToUse?: string | null; ingredients?: string | null } | null;
-  /** فهم الذكاء الاصطناعي الاحتياطي (فقط حين لم تفهم «ديما» بثقة). */
-  ai?: AiParse | null;
   /** مسجّلة الدخول؟ (حتى نعرف هل نطلب منها تسجيل الدخول لمشترياتها). */
   loggedIn?: boolean;
   /** مشترياتها من طلباتها (للمسجلات فقط). */
@@ -1290,8 +1287,22 @@ function handleCompare(state: AdvisorState, ctx: DialogCtx, ids: string[]): Advi
   }, ctx);
 }
 
-function handleKnowledge(state: AdvisorState, ctx: DialogCtx, qa: QaAnswer, kinds: string[]): AdvisorReply {
+function handleKnowledge(state: AdvisorState, ctx: DialogCtx, qa: QaAnswer, kinds: string[], delta?: Partial<Need>): AdvisorReply {
   let products: ProductCardOut[] = [];
+  // شكوى بمشكلة واضحة («شعري يدهن بسرعة»، «راسي يحكني»): النصيحة + منتجات لها، والطلب يُحفظ
+  // حتى تعمل «أرخص» و«غيرهم» بعدها.
+  if (!qa.productIngredients.length && qa.knowledge.kind === "info" && delta?.concerns?.length) {
+    const merged = mergeNeed(state.need, { ...delta, routine: false }).need;
+    const res = rank(ctx.catalog, merged, { limit: 6 });
+    if (res.items.length) {
+      state.need = merged;
+      products = res.items.map(toCard);
+      remember(state, res.items);
+      state.lastTop = res.items[0].p.id;
+      state.lastCards = res.items.slice(0, 3).map((r) => r.p.id);
+      return reply(state, { messages: [...qa.messages], knowledge: qa.knowledge, products, chips: qa.chips }, ctx);
+    }
+  }
   if (qa.productIngredients.length) {
     const area = qa.area === "hair" || qa.area === "body" ? qa.area : "skin";
     const need: Need = {
@@ -1417,8 +1428,7 @@ function respondInner(input: DialogInput, prev: AdvisorState | null | undefined,
     state.quiz = undefined;
     const msg = input.message;
     const nm = normalize(msg);
-    let parsed = understand(msg, ctx.catalog);
-    if (ctx.ai) parsed = mergeAiParse(parsed, ctx.ai, ctx.catalog);
+    const parsed = understand(msg, ctx.catalog);
     const newKind = (parsed.delta.kinds?.length ?? 0) > 0;
     const focusP = state.focus ? ctx.catalog.byId(state.focus) : undefined;
     const refExplicit = REF_RE.test(` ${nm} `);
@@ -1433,12 +1443,11 @@ function respondInner(input: DialogInput, prev: AdvisorState | null | undefined,
     if (HISTORY_RE.test(nm)) return handleHistory(state, ctx);
 
     // ── «يشبه/بديل»: مرجع من الكتالوج، أو عطر مشهور، أو المنتج الذي نتحدث عنه.
-    const aiSimilar = ctx.ai?.intent === "similar" && ctx.ai.similarTo ? ctx.ai.similarTo : null;
-    const famous = famousIn(msg) ?? (aiSimilar ? famousIn(aiSimilar) : null);
-    if (SIMILAR_RE.test(nm) || (famous && nm.split(" ").length <= 5) || aiSimilar) {
+    const famous = famousIn(msg);
+    if (SIMILAR_RE.test(nm) || (famous && nm.split(" ").length <= 5)) {
       const cheaper = CHEAPER_WORDS.test(nm);
       // المشهور أولاً (يُطابق بالنوتات)، ثم اسم منتج من الكتالوج.
-      const product = famous ? null : findByName(ctx.catalog, aiSimilar ?? msg, null);
+      const product = famous ? null : findByName(ctx.catalog, msg, null);
       if (product || famous) {
         if (parsed.delta.maxPrice) state.need.maxPrice = parsed.delta.maxPrice;
         return handleSimilar(state, ctx, { product: product ?? undefined, famousId: famous?.id }, cheaper);
@@ -1466,21 +1475,7 @@ function respondInner(input: DialogInput, prev: AdvisorState | null | undefined,
     const qa = answerQuestion(msg);
     if (qa) {
       const productAsk = newKind && !QUESTION_RE.test(` ${nm} `);
-      if (!(qa.knowledge.kind === "ingredient" && productAsk)) return handleKnowledge(state, ctx, qa, parsed.delta.kinds ?? []);
-    }
-    // سؤال عام خارج قاعدة المعرفة أجاب عنه الذكاء الاصطناعي باختصار.
-    if (!qa && ctx.ai?.reply && (ctx.ai.intent === "knowledge" || ctx.ai.intent === "chat")) {
-      const signal = Boolean(
-        parsed.delta.kinds?.length || parsed.delta.concerns?.length || parsed.delta.ingredients?.length || parsed.delta.families?.length,
-      );
-      // جواب الذكاء + منتجات مناسبة متى ما فُهم ما تحتاجه (لا جواب فارغ من الترشيحات).
-      if (signal) {
-        state.need = mergeNeed(state.need, parsed.delta).need;
-        const rec = recommend(state, ctx);
-        rec.messages.unshift(ctx.ai.reply);
-        return rec;
-      }
-      return reply(state, { messages: [ctx.ai.reply], chips: STARTERS.slice(0, 4) }, ctx);
+      if (!(qa.knowledge.kind === "ingredient" && productAsk)) return handleKnowledge(state, ctx, qa, parsed.delta.kinds ?? [], parsed.delta);
     }
     if (newKind || parsed.delta.area) state.focus = undefined;
 
