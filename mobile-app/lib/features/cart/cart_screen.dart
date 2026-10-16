@@ -20,6 +20,8 @@ import 'widgets/cart_coupon.dart';
 import 'widgets/cart_empty.dart';
 import 'widgets/cart_header.dart';
 import 'widgets/cart_item_card.dart';
+import 'widgets/cart_recommendations.dart';
+import '../../data/models/product.dart';
 import 'widgets/cart_shipping_banner.dart';
 import 'widgets/cart_theme.dart';
 import '../worlds/world_theme.dart';
@@ -236,6 +238,8 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                             freeShipping: freeShipping,
                           ),
                         ),
+                        // «يكمّل سلتكِ»: ما يُشترى عادةً مع أغلى ما في السلة (بلا تكرار لما فيها).
+                        SliverToBoxAdapter(child: _CartPairs(cart: cart)),
                         const SliverToBoxAdapter(child: SizedBox(height: 20)),
                       ],
                     ),
@@ -243,6 +247,38 @@ class _CartScreenState extends ConsumerState<CartScreen> {
                   CartCheckoutBar(total: total, itemCount: cart.count),
                 ],
               ),
+      ),
+    );
+  }
+}
+
+class _CartPairs extends ConsumerWidget {
+  final CartState cart;
+  const _CartPairs({required this.cart});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final inCart = cart.items.map((e) => e.productId).toSet();
+    final anchors = ([...cart.items]..sort((a, b) => b.lineTotal.compareTo(a.lineTotal)))
+        .map((e) => e.productId)
+        .toSet()
+        .take(2)
+        .toList();
+    final pairs = <Product>[];
+    for (final id in anchors) {
+      final r = ref.watch(boughtTogetherProvider(id)).valueOrNull;
+      for (final p in r?.items ?? const <Product>[]) {
+        if (!inCart.contains(p.id) && p.stock > 0 && !pairs.any((x) => x.id == p.id)) pairs.add(p);
+      }
+    }
+    if (pairs.length < 2) return const SizedBox.shrink();
+    final ar = ref.s.isAr;
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: CartRecommendations(
+        products: pairs.take(10).toList(),
+        title: ar ? 'يكمّل سلتكِ' : 'Complete your bag',
+        subtitle: ar ? 'اختيارات تناسب ما أضفتِه' : 'Picked to go with your items',
       ),
     );
   }

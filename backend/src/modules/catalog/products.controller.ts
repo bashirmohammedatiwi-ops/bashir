@@ -13,6 +13,7 @@ import {
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { Role } from "@prisma/client";
 import { isAdminViewRequest } from "../../common/admin-view.util";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { Public } from "../../common/decorators/public.decorator";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
@@ -103,6 +104,13 @@ export class ProductsController {
   @Post("reorder")
   reorder(@Body() body: { brandId: string; ids: string[] }) {
     return this.products.reorder(body.brandId, body.ids ?? []);
+  }
+
+  /** مشترياتها السابقة المتوفرة الآن — للمسجّلات فقط (لها وحدها). */
+  @Get("me/buy-again")
+  buyAgain(@CurrentUser() user: { id: string }, @Query("limit") limit?: string) {
+    const n = Number(limit);
+    return this.products.buyAgain(user.id, Number.isFinite(n) && n > 0 ? n : 12);
   }
 
   @Public()

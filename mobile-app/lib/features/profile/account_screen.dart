@@ -1,3 +1,5 @@
+import '../catalog/catalog_providers.dart';
+import '../../core/widgets/product_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -118,6 +120,7 @@ class AccountScreen extends ConsumerWidget {
           ),
         ],
       ),
+      const _BuyAgainRail(),
       const SizedBox(height: AccountTheme.sectionGap),
       ProfileSectionTitle(s.acctAccount),
       ProfileMenuCard(
@@ -667,6 +670,42 @@ class _ActiveOrderCard extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// «اطلبيها مرة ثانية» في حسابها: مشترياتها المتوفرة الآن بسعرها الحالي.
+class _BuyAgainRail extends ConsumerWidget {
+  const _BuyAgainRail();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final products = ref.watch(buyAgainProvider).valueOrNull ?? const [];
+    if (products.isEmpty) return const SizedBox.shrink();
+    final ar = ref.s.isAr;
+    return Padding(
+      padding: const EdgeInsets.only(top: AccountTheme.sectionGap),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ProfileSectionTitle(ar ? 'اطلبيها مرة ثانية' : 'Buy it again'),
+          SizedBox(
+            height: 262,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              clipBehavior: Clip.none,
+              itemCount: products.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, i) => ProductCard(
+                key: ValueKey(products[i].id),
+                product: products[i],
+                width: 150,
+                lite: true,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

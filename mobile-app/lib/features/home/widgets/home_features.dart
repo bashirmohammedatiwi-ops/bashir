@@ -327,6 +327,45 @@ class HomeWishlistShelf extends ConsumerWidget {
   }
 }
 
+// ─── اطلبيها مرة ثانية ──────────────────────────────────────────────────────
+
+/// مشترياتها السابقة المتوفرة الآن — إعادة طلب ما أحبته بلمسة (للمسجّلات).
+class HomeBuyAgainShelf extends ConsumerWidget {
+  const HomeBuyAgainShelf({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!ref.watch(authProvider).isAuthenticated) return const SizedBox.shrink();
+    final products = ref.watch(buyAgainProvider).valueOrNull ?? const [];
+    if (products.length < 2) return const SizedBox.shrink();
+    final ar = ref.s.isAr;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppSectionTitle(
+          title: ar ? 'اطلبيها مرة ثانية' : 'Buy it again',
+          subtitle: ar ? 'من مشترياتكِ السابقة — بسعرها الحالي' : 'From your past orders, at today\'s price',
+        ),
+        SizedBox(
+          height: 262,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: products.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (_, i) => ProductCard(
+              key: ValueKey(products[i].id),
+              product: products[i],
+              width: 150,
+              lite: true,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 // ─── تسوّقي حسب ميزانيتكِ ────────────────────────────────────────────────────
 
 class _Budget {

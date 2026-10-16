@@ -9,6 +9,7 @@ import '../../data/models/loyalty_summary.dart';
 import '../../data/models/product.dart';
 import '../../data/models/review.dart';
 import '../../data/services/api_service.dart';
+import '../auth/auth_provider.dart';
 
 final homeFeedProvider = FutureProvider.autoDispose<HomeFeed>((ref) {
   ref.keepAlive();
@@ -87,6 +88,17 @@ final loyaltyProvider = FutureProvider.autoDispose<LoyaltySummary>((ref) {
 final productReviewsProvider =
     FutureProvider.family.autoDispose<List<Review>, String>((ref, productId) async {
   return ref.read(apiServiceProvider).getProductReviews(productId);
+});
+
+/// «اطلبيها مرة ثانية»: فارغة للزائرة؛ للمسجّلة من طلباتها (تتجدد مع تسجيل الدخول).
+final buyAgainProvider = FutureProvider.autoDispose<List<Product>>((ref) async {
+  final auth = ref.watch(authProvider);
+  if (!auth.isAuthenticated) return const [];
+  try {
+    return await ref.read(apiServiceProvider).getBuyAgain();
+  } catch (_) {
+    return const [];
+  }
 });
 
 /// منتجات مشابهة من نفس القسم (يستثني المنتج الحالي).

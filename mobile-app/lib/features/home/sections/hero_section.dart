@@ -159,6 +159,7 @@ class _HeroHomeSectionState extends ConsumerState<HeroHomeSection> {
                           ),
                         const HomeCartReminder(),
                         const HomePromiseStrip(),
+                        const HomeBuyAgainShelf(),
                         const HomeContinueShopping(),
                         const HomeWishlistShelf(),
                         const WorldHomeBrands(),

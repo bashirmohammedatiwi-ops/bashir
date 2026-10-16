@@ -12,6 +12,10 @@ import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/app_snackbar.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/cart_item.dart';
+import '../../../core/utils/friendly_error.dart';
+import '../../../data/models/product.dart';
+import '../../auth/auth_provider.dart';
+import '../../wishlist/wishlist_provider.dart';
 import '../../worlds/world_theme.dart';
 import '../cart_provider.dart';
 import '../cart_strings.dart';
@@ -34,6 +38,35 @@ void removeCartItemWithUndo(BuildContext context, WidgetRef ref, CartItem item) 
       notifier.restore(item, index: index < 0 ? null : index);
     },
   );
+}
+
+/// «احفظيه لاحقاً»: ينقل المنتج للمفضلة ويخرجه من السلة (السلة للشراء الآن فقط).
+Future<void> saveCartItemForLater(BuildContext context, WidgetRef ref, CartItem item) async {
+  final ar = ref.read(stringsProvider).isAr;
+  if (!ref.read(authProvider).isAuthenticated) {
+    AppSnackbar.show(context, ar ? 'سجّلي الدخول حتى تحفظين المنتج بالمفضلة' : 'Sign in to save items for later');
+    context.push('/login');
+    return;
+  }
+  HapticFeedback.selectionClick();
+  if (!ref.read(wishlistProvider).ids.contains(item.productId)) {
+    try {
+      await ref.read(wishlistProvider.notifier).toggle(Product.fromJson({
+        'id': item.productId,
+        'slug': item.productSlug ?? item.productId,
+        'name': item.name,
+        if (item.nameAr != null) 'nameAr': item.nameAr,
+        if (item.nameEn != null) 'nameEn': item.nameEn,
+        'price': item.price,
+        'stock': item.stock,
+      }));
+    } catch (e) {
+      if (context.mounted) AppSnackbar.error(context, friendlyError(e));
+      return;
+    }
+  }
+  ref.read(cartProvider.notifier).remove(item.key);
+  if (context.mounted) AppSnackbar.show(context, ar ? 'حفظناه بمفضلتكِ ♡' : 'Saved to your wishlist ♡');
 }
 
 class CartItemCard extends ConsumerWidget {
@@ -123,6 +156,19 @@ class CartItemCard extends ConsumerWidget {
                                   height: 1.4,
                                 ),
                               ),
+                            ),
+                          ),
+                          Transform.translate(
+                            offset: const Offset(0, -6),
+                            child: AppIconButton(
+                              icon: Icons.favorite_border_rounded,
+                              size: 30,
+                              iconSize: 16,
+                              outlined: false,
+                              background: Colors.transparent,
+                              color: t.inkMuted,
+                              tooltip: s.isAr ? 'احفظيه لاحقاً' : 'Save for later',
+                              onTap: () => saveCartItemForLater(context, ref, item),
                             ),
                           ),
                           Transform.translate(

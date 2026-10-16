@@ -247,8 +247,24 @@ class _OrderCard extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        // اسم أول منتج: تعرف الطلب من نظرة بدل رقمه فقط.
+                        if (order.items.isNotEmpty)
+                          Text(
+                            order.items.first.productName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppText.caption.copyWith(color: t.ink, fontWeight: FontWeight.w700),
+                          ),
                         Text(
-                          s.itemCountLabel(order.itemCount),
+                          order.items.length > 1
+                              ? (s.isAr
+                                  ? switch (order.items.length - 1) {
+                                      1 => 'ومنتج آخر',
+                                      2 => 'ومنتجان آخران',
+                                      final n => 'و$n منتجات أخرى',
+                                    }
+                                  : '+ ${order.items.length - 1} more')
+                              : s.itemCountLabel(order.itemCount),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppText.caption.copyWith(color: t.inkSoft),

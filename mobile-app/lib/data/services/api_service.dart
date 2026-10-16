@@ -729,6 +729,16 @@ class ApiService {
     }
   }
 
+  /// «اطلبيها مرة ثانية» — مشترياتها السابقة المتوفرة الآن (تحتاج تسجيل الدخول).
+  Future<List<Product>> getBuyAgain({int limit = 12}) async {
+    try {
+      final r = await _dio.get('/products/me/buy-again', queryParameters: {'limit': limit});
+      return asList(_data(r)).map((e) => Product.fromJson(asMap(e))).toList();
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
   /// «يُشترى معه غالباً» — من طلبات المتجر الفعلية، أو مكمّلات من نفس البراند.
   Future<({List<Product> items, bool fromOrders})> getBoughtTogether(String productId) async {
     try {

@@ -422,6 +422,29 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
     return result;
   }
 
+  /**
+   * «اطلبيها مرة ثانية»: ما اشترته الزبونة نفسها (طلبات غير ملغاة)، الأحدث أولاً،
+   * بسعره ومخزونه الحاليين — المتوفر فقط.
+   */
+  async buyAgain(userId: string, limit = 12) {
+    const take = Math.min(Math.max(limit, 1), 20);
+    const rows = await this.prisma.orderItem.findMany({
+      where: { order: { userId, status: { notIn: ["CANCELLED", "REFUNDED"] } } },
+      select: { productId: true, order: { select: { createdAt: true } } },
+      orderBy: { order: { createdAt: "desc" } },
+      take: 200,
+    });
+    const ids: string[] = [];
+    for (const r of rows) if (!ids.includes(r.productId)) ids.push(r.productId);
+    if (!ids.length) return [];
+    const products = await this.prisma.product.findMany({
+      where: { id: { in: ids.slice(0, 60) }, isActive: true, stock: { gt: 0 } },
+      include: productRelationsLite,
+    });
+    products.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+    return products.slice(0, take).map((p) => withPlaceholderImages(rewriteProductMediaUrls(p)));
+  }
+
   async findOne(idOrSlug: string, storefront = false) {
     const product = await this.prisma.product.findFirst({
       where: {
