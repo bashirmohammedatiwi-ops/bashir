@@ -246,14 +246,17 @@ export class OrdersService {
         include: { items: true },
       });
 
+      // The stock check above runs before the transaction, so concurrent orders can all pass it.
+      // Only a conditional decrement is safe against overselling.
       for (const it of itemsData) {
-        await tx.product.update({
-          where: { id: it.productId },
+        const { count } = await tx.product.updateMany({
+          where: { id: it.productId, stock: { gte: it.quantity } },
           data: {
             stock: { decrement: it.quantity },
             soldCount: { increment: it.quantity },
           },
         });
+        if (count === 0) throw new BadRequestException(`Out of stock: ${it.productName}`);
       }
 
       if (couponId) {

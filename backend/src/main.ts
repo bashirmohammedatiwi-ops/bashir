@@ -28,7 +28,9 @@ async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({
-      trustProxy: true,
+      // Exactly one proxy (nginx) sits in front. `true` would trust the leftmost
+      // X-Forwarded-For entry, which the client controls, and defeat rate limiting.
+      trustProxy: 1,
       bodyLimit: 30 * 1024 * 1024,
     }),
     { bufferLogs: true },
