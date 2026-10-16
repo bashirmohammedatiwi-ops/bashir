@@ -285,6 +285,11 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
   // المجال: نوع المنتج أصدق («بلسم» للشعر)، ثم المشكلة، ثم نوع البشرة.
   const kindAreas = [...new Set((delta.kinds ?? []).map((k) => KIND_AREA_NLU.get(k)).filter(Boolean))];
   if (!single.area && kindAreas.length === 1) delta.area = kindAreas[0];
+  // «وجهي» + هايلايتر/برايمر = مكياج (لا نوع بديل بالعناية بالبشرة)؛ أما «مرطب للجسم» فيُحوَّل للجسم أدناه.
+  else if (single.area && kindAreas.length === 1 && kindAreas[0] !== single.area) {
+    const remap = KIND_BY_AREA[single.area] ?? {};
+    if (!(delta.kinds ?? []).some((k) => remap[k])) delta.area = kindAreas[0];
+  }
   if (!delta.area && delta.concerns?.length) {
     const area = CONCERN_AREA[delta.concerns[0]];
     if (area) delta.area = area;

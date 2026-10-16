@@ -631,7 +631,8 @@ function recommendBundle(state: AdvisorState, ctx: DialogCtx, lead: string | und
   const brandNames = new Map(ctx.catalog.brands.map((b) => [b.id, b.name]));
   const desc = describeNeed({ ...need, kinds: [] }, brandNames).replace(/^منتجات (عناية|العناية [^ ]+)\s*/, "");
   const messages = [
-    lead ?? `جهزت لكِ ${names.slice(0, -1).join("، ")} و${names[names.length - 1]}${desc ? ` ${desc}` : ""} — الأنسب من كل نوع ✨`,
+    lead ??
+      `جهزت لكِ ${names.length > 1 ? `${names.slice(0, -1).join("، ")} و${names[names.length - 1]}` : names[0]}${desc ? ` ${desc}` : ""} — الأنسب من كل نوع ✨`,
     "تكدرين تختارين من كل شريط، أو تضيفين الأفضل من كل نوع للسلة.",
   ];
   const tip = tipFor(need, state.turns);

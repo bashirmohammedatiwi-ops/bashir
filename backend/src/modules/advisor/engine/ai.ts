@@ -164,9 +164,11 @@ export function mergeAiParse(parsed: Parsed, ai: AiParse, catalog: CatalogIndex)
   // كلمات حرة بقيت بلا معنى عندنا: نستبدلها بعبارة النموذج القصيرة.
   if (ai.query) d.free = tokens(ai.query).slice(0, 4);
   else if (d.kinds?.length || d.concerns?.length || d.families?.length) d.free = [];
-  if (ai.kinds?.length && !d.area) {
-    const a = ai.kinds.map((k) => facetValue("kind", k)?.area).find(Boolean);
-    if (a) d.area = a;
+  // أنواع النموذج تحدد المجال: «وجهي يلمع» + هايلايتر = مكياج لا عناية بشرة.
+  if (ai.kinds?.length) {
+    const areas = ai.kinds.map((k) => facetValue("kind", k)?.area).filter(Boolean);
+    const a = areas[0];
+    if (a && (!d.area || !areas.includes(d.area))) d.area = a;
   }
   const intent = parsed.intent === "recommend" && ai.intent && INTENTS[ai.intent] ? INTENTS[ai.intent] : parsed.intent;
   if (intent === "routine") d.routine = true;
