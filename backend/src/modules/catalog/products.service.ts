@@ -39,7 +39,7 @@ const productRelationsFull = {
   skinConcerns: { include: { concern: { select: { id: true, slug: true, name: true } } } },
 };
 
-const productRelationsLite = {
+export const productRelationsLite = {
   brand: { select: { id: true, name: true, slug: true } },
   category: { select: { id: true, name: true, slug: true } },
   subcategory: { select: { id: true, name: true, slug: true, parentId: true } },

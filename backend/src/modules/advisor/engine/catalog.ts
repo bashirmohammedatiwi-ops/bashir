@@ -1,5 +1,5 @@
 import { CONCERN_AREA, FacetKey, KIND_BY_AREA, LEXICON } from "./lexicon";
-import { normalize, tokens } from "./text";
+import { editDistance, normalize, tokens } from "./text";
 
 /** منتج كما تراه المستشارة — صفاته مستخرجة من نصه بالمعجم. */
 export interface IndexedProduct {
@@ -10,7 +10,12 @@ export interface IndexedProduct {
   nameEn: string;
   brand: string;
   brandId: string | null;
+  brandSlug: string;
   categoryPath: string[];
+  /** الأقسام (رئيسي/فرعي/دقيق) بمعرّفاتها — لاقتراحات البحث وفلاتره. */
+  cats: { id: string; slug: string; name: string; level: number }[];
+  /** نص الاسم مطبّعاً بحدود الكلمات — لمطابقة العبارة والبادئة بسرعة. */
+  nameBare: string;
   summary: string;
   price: number;
   originalPrice: number;
@@ -64,10 +69,11 @@ export interface RawProduct {
   isBestSeller: boolean;
   isPromo: boolean;
   createdAt: Date;
-  brand: { id: string; name: string } | null;
-  category: { name: string; nameAr: string | null } | null;
-  subcategory: { name: string; nameAr: string | null } | null;
-  tertiaryCategory: { name: string; nameAr: string | null } | null;
+  sku?: string | null;
+  brand: { id: string; name: string; slug?: string | null } | null;
+  category: { id?: string; slug?: string; name: string; nameAr: string | null } | null;
+  subcategory: { id?: string; slug?: string; name: string; nameAr: string | null } | null;
+  tertiaryCategory: { id?: string; slug?: string; name: string; nameAr: string | null } | null;
   image: string;
   shadeCount: number;
   /** أسماء الدرجات (ألوان) — تدخل البحث النصي. */
@@ -405,7 +411,12 @@ export class CatalogIndex {
         nameEn,
         brand: r.brand?.name ?? "",
         brandId: r.brand?.id ?? null,
+        brandSlug: r.brand?.slug ?? "",
         categoryPath,
+        cats: [r.category, r.subcategory, r.tertiaryCategory]
+          .map((c, level) => (c?.id && c.slug ? { id: c.id, slug: c.slug, name: (c.nameAr || c.name) as string, level } : null))
+          .filter(Boolean) as { id: string; slug: string; name: string; level: number }[],
+        nameBare: ` ${tokens(`${name} ${nameEn}`, { keepStop: true }).join(" ")} `,
         summary,
         price: r.price,
         originalPrice: r.originalPrice,
@@ -436,6 +447,7 @@ export class CatalogIndex {
       addField(name, FIELD_WEIGHTS.name);
       addField(nameEn, FIELD_WEIGHTS.name);
       addField(r.brand?.name ?? "", FIELD_WEIGHTS.brand);
+      if (r.sku) addField(r.sku, FIELD_WEIGHTS.name);
       addField(categoryPath.join(" "), FIELD_WEIGHTS.category);
       addField(summary, FIELD_WEIGHTS.summary);
       if (r.shadeNames?.length) addField(r.shadeNames.join(" "), FIELD_WEIGHTS.category);
@@ -613,6 +625,35 @@ export class CatalogIndex {
     }
     if (scores.size <= limit) return scores;
     return new Map([...scores.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit));
+  }
+
+  /** كلمات الفهرس التي تبدأ بالبادئة، الأشيع أولاً (للبحث أثناء الكتابة). */
+  prefixTerms(prefix: string, limit = 8): string[] {
+    if (!prefix) return [];
+    const out: { t: string; df: number }[] = [];
+    for (const v of this.vocab) {
+      if (v.length > prefix.length && v.startsWith(prefix)) out.push({ t: v, df: this.postings.get(v)?.size ?? 0 });
+    }
+    return out.sort((a, b) => b.df - a.df).slice(0, limit).map((x) => x.t);
+  }
+
+  docFreq(term: string): number {
+    return this.postings.get(term)?.size ?? 0;
+  }
+
+  /** أقرب كلمة في الفهرس لكلمة لم تطابق شيئاً (تصحيح إملائي)، الأشيع عند التساوي. */
+  nearestTerm(term: string): string | null {
+    if (term.length < 3 || this.postings.has(term)) return null;
+    const max = term.length >= 7 ? 2 : 1;
+    let best: { t: string; d: number; df: number } | null = null;
+    for (const v of this.vocab) {
+      if (Math.abs(v.length - term.length) > max) continue;
+      const d = editDistance(term, v, max);
+      if (d > max) continue;
+      const df = this.postings.get(v)!.size;
+      if (!best || d < best.d || (d === best.d && df > best.df)) best = { t: v, d, df };
+    }
+    return best && best.df >= 2 ? best.t : null;
   }
 
   /** تطبيق ما تعلّمته من التفاعل: productId → درجة 0..1. */

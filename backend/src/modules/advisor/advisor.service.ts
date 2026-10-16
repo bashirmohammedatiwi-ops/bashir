@@ -21,7 +21,7 @@ const PROMPTS_SKILLS = [
 
 const EVENT_TYPES = new Set(["click", "cart", "like", "dislike"]);
 
-const REBUILD_EVERY_MS = 10 * 60_000;
+const REBUILD_EVERY_MS = 5 * 60_000;
 
 type VariantNode = { formats?: Record<string, string> };
 
@@ -63,7 +63,8 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
     if (this.timer) clearInterval(this.timer);
   }
 
-  private async catalog(): Promise<CatalogIndex> {
+  /** الفهرس المشترك (يستخدمه البحث أيضاً). */
+  async catalog(): Promise<CatalogIndex> {
     if (this.index) return this.index;
     return this.rebuild();
   }
@@ -94,10 +95,11 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
             isBestSeller: true,
             isPromo: true,
             createdAt: true,
-            brand: { select: { id: true, name: true } },
-            category: { select: { name: true, nameAr: true } },
-            subcategory: { select: { name: true, nameAr: true } },
-            tertiaryCategory: { select: { name: true, nameAr: true } },
+            sku: true,
+            brand: { select: { id: true, name: true, slug: true } },
+            category: { select: { id: true, slug: true, name: true, nameAr: true } },
+            subcategory: { select: { id: true, slug: true, name: true, nameAr: true } },
+            tertiaryCategory: { select: { id: true, slug: true, name: true, nameAr: true } },
             images: { take: 1, orderBy: { position: "asc" }, select: { media: true } },
             _count: { select: { shades: true } },
             shades: { select: { name: true }, take: 60 },
