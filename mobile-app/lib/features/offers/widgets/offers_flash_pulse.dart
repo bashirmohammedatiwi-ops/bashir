@@ -9,6 +9,7 @@ import '../../../data/models/home_feed.dart';
 import '../../home/widgets/home_scroll_perf.dart';
 import '../../worlds/world_theme.dart';
 import 'offers_theme.dart';
+import '../../../core/navigation/product_nav.dart';
 
 /// عرض سريع — بطاقة أنيقة بدون عدّاد.
 class OffersFlashPulse extends ConsumerWidget {
@@ -64,7 +65,7 @@ class OffersFlashPulse extends ConsumerWidget {
                     blush: t.blush,
                     onTap: () {
                       HapticFeedback.selectionClick();
-                      context.push('/product/${p.slug.isNotEmpty ? p.slug : p.id}');
+                      openProduct(context, p);
                     },
                   );
                 },

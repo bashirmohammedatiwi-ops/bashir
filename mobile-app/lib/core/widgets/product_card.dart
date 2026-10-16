@@ -11,6 +11,7 @@ import '../theme/app_text.dart';
 import '../utils/formatters.dart';
 import 'app_network_image.dart';
 import 'product_card_actions.dart';
+import '../navigation/product_nav.dart';
 
 /// كان هناك أسلوبان مختلفان؛ الآن تصميم واحد موحّد لكل التطبيق.
 /// يبقى الـ enum للتوافق مع الاستدعاءات القديمة.
@@ -71,9 +72,7 @@ class ProductCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(radius),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
-          onTap: () => context.push(
-            '/product/${product.slug.isNotEmpty ? product.slug : product.id}',
-          ),
+          onTap: () => openProduct(context, product),
           borderRadius: BorderRadius.circular(radius),
           splashColor: t.accent.withValues(alpha: 0.06),
           highlightColor: t.accent.withValues(alpha: 0.03),

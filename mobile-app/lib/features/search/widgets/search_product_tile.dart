@@ -6,6 +6,7 @@ import '../../../core/widgets/app_network_image.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../data/models/product.dart';
 import '../../worlds/world_theme.dart';
+import '../../../core/navigation/product_nav.dart';
 
 /// إبراز الكلمة المطابقة داخل نص — النص المطابق بلون العالم وسميك.
 class HighlightedText extends StatelessWidget {
@@ -166,7 +167,7 @@ class SearchProductTile extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: () =>
-              context.push('/product/${product.slug.isNotEmpty ? product.slug : product.id}'),
+              openProduct(context, product),
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.all(10),

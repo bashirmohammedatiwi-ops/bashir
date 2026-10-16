@@ -15,6 +15,7 @@ import '../search/smart_query.dart';
 import 'world_explore.dart';
 import 'world_icon.dart';
 import 'worlds_provider.dart';
+import '../../core/navigation/product_nav.dart';
 
 /// عالم واحد بهويته: الأقسام الفرعية تظهر كالأقسام الرئيسية.
 class WorldScreen extends ConsumerStatefulWidget {
@@ -280,7 +281,7 @@ class _WorldSearchBody extends ConsumerWidget {
                       borderRadius: BorderRadius.circular(16),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(16),
-                        onTap: () => context.push('/product/${product.slug.isNotEmpty ? product.slug : product.id}'),
+                        onTap: () => openProduct(context, product),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           child: Row(

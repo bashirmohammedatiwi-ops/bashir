@@ -16,6 +16,7 @@ import '../categories/widgets/category_line_art.dart';
 import '../home/home_link.dart';
 import '../home/home_section_renderer.dart';
 import 'worlds_provider.dart';
+import '../../core/navigation/product_nav.dart';
 
 /// رئيسية العالم: بنرات، أقسام، منتجات، وبراندات خاصة به.
 class WorldTabChip extends StatelessWidget {
@@ -571,7 +572,7 @@ class _LeadProduct extends StatelessWidget {
       shape: RoundedRectangleBorder(side: BorderSide(color: accent.withValues(alpha: 0.28))),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => context.push('/product/${product.slug.isNotEmpty ? product.slug : product.id}'),
+        onTap: () => openProduct(context, product),
         child: SizedBox(
           height: 108,
           child: Row(
@@ -640,7 +641,7 @@ class _WorldProductTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           GestureDetector(
-            onTap: () => context.push('/product/${product.slug.isNotEmpty ? product.slug : product.id}'),
+            onTap: () => openProduct(context, product),
             child: DecoratedBox(
               decoration: BoxDecoration(
                 color: Colors.white,

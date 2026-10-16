@@ -8,6 +8,7 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 import '../../core/cache/image_cache.dart';
 import '../../core/config/app_config.dart';
+import '../../core/navigation/product_nav.dart';
 import '../../core/widgets/app_snackbar.dart';
 import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
@@ -81,10 +82,12 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
     ref.listen(productDetailProvider(widget.idOrSlug), (prev, next) {
       next.whenData((p) => ref.read(recentlyViewedProvider.notifier).add(p));
     });
+    // فُتح من بطاقة: نعرض المنتج فوراً ببياناتها، والتفاصيل تكتمل حين تصل.
+    final seed = ProductSeeds.get(widget.idOrSlug);
     return Scaffold(
       backgroundColor: context.worldTheme.canvas,
       body: async.when(
-        loading: () => const ProductDetailSkeleton(),
+        loading: () => seed != null ? _buildContent(seed) : const ProductDetailSkeleton(),
         error: (e, _) => Scaffold(
           appBar: AppBar(),
           body: ErrorView.from(
@@ -101,6 +104,14 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
           shade: _shade,
           onAdd: () => _addToCart(product),
         ),
+        loading: () => seed == null
+            ? null
+            : _BottomBar(
+                product: seed,
+                quantity: _quantity,
+                shade: _shade,
+                onAdd: () => _addToCart(seed),
+              ),
         orElse: () => null,
       ),
     );
