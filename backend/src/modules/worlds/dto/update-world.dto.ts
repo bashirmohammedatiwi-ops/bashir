@@ -15,4 +15,6 @@ export class UpdateWorldDto {
   @IsOptional() @IsArray() @IsString({ each: true }) categoryIds?: string[];
   @IsOptional() @IsArray() @IsString({ each: true }) bannerIds?: string[];
   @IsOptional() @IsArray() @IsString({ each: true }) galleryMediaIds?: string[];
+  /** نطاقات «تسوّقي حسب ميزانيتكِ» لهذا العالم (حتى 4) — مصفوفة فارغة تعيد الافتراضي. */
+  @IsOptional() @IsArray() budgetTiers?: { min?: number | null; max?: number | null }[];
 }

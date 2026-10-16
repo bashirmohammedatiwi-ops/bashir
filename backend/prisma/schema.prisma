@@ -804,6 +804,8 @@ model World {
   position      Int      @default(0)
   isActive      Boolean  @default(true)
   coverImageId  String?
+  /// «تسوّقي حسب ميزانيتكِ»: حتى 4 نطاقات أسعار [{min, max}] بالدينار — فارغ = الافتراضي.
+  budgetTiers   Json?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

@@ -96,7 +96,12 @@ export class WorldsService {
     const exists = await this.prisma.world.findUnique({ where: { id } });
     if (!exists) throw new NotFoundException("World not found");
 
-    const { categoryIds, bannerIds, galleryMediaIds, ...data } = dto;
+    const { categoryIds, bannerIds, galleryMediaIds, budgetTiers, ...rest } = dto;
+    const data: Prisma.WorldUpdateInput = { ...rest };
+    if (budgetTiers !== undefined) {
+      const tiers = cleanBudgetTiers(budgetTiers);
+      data.budgetTiers = tiers.length ? tiers : Prisma.DbNull;
+    }
     await this.prisma.world.update({ where: { id }, data });
 
     if (categoryIds) {
@@ -160,4 +165,18 @@ export class WorldsService {
     ];
     return { ...world, rootCategoryIds, categories };
   }
+}
+
+/** نطاقات ميزانية سليمة: أرقام صحيحة موجبة، «من» أقل من «إلى»، حتى 4، مرتبة تصاعدياً. */
+export function cleanBudgetTiers(raw: unknown): { min: number | null; max: number | null }[] {
+  if (!Array.isArray(raw)) return [];
+  const num = (v: unknown) => {
+    const n = Math.round(Number(v));
+    return v === null || v === undefined || v === "" || !Number.isFinite(n) || n <= 0 ? null : n;
+  };
+  return raw
+    .map((t) => ({ min: num((t as { min?: unknown })?.min), max: num((t as { max?: unknown })?.max) }))
+    .filter((t) => (t.min != null || t.max != null) && (t.min == null || t.max == null || t.min < t.max))
+    .slice(0, 4)
+    .sort((a, b) => (a.min ?? 0) - (b.min ?? 0) || (a.max ?? Infinity) - (b.max ?? Infinity));
 }

@@ -385,6 +385,25 @@ class _Budget {
   );
 }
 
+/// بطاقة نطاق: «أقل من 10 ألف»، «من 10 إلى 25 ألف»، «فاخر +50 ألف» — والعناوين تُبنى من الأرقام.
+_Budget _budgetFor(({int? min, int? max}) r, bool ar, {required bool last}) {
+  final thousands = (r.min ?? 0) % 1000 == 0 && (r.max ?? 0) % 1000 == 0;
+  String short(int v) => thousands ? formatNumber(v ~/ 1000) : formatNumber(v);
+  final unit = thousands ? (ar ? 'ألف د.ع' : 'K IQD') : (ar ? 'د.ع' : 'IQD');
+  String full(int v) => formatNumber(v);
+  if (r.min == null) {
+    return _Budget(null, r.max, ar ? 'أقل من' : 'Under', short(r.max!), unit,
+        ar ? 'أقل من ${full(r.max!)} د.ع' : 'Under ${full(r.max!)} IQD');
+  }
+  if (r.max == null) {
+    final top = last ? (ar ? 'فاخر' : 'Luxe') : (ar ? 'أكثر من' : 'Over');
+    return _Budget(r.min, null, top, '+${short(r.min!)}', unit,
+        ar ? '$top — أكثر من ${full(r.min!)} د.ع' : '$top — over ${full(r.min!)} IQD');
+  }
+  return _Budget(r.min, r.max, ar ? 'من ${short(r.min!)} إلى' : '${short(r.min!)} to', short(r.max!), unit,
+      ar ? 'من ${full(r.min!)} إلى ${full(r.max!)} د.ع' : '${full(r.min!)} – ${full(r.max!)} IQD');
+}
+
 /// أربع بطاقات أسعار بتدرّج يتصاعد مع الميزانية — والأخيرة "فاخر" بلون العالم الكامل.
 /// اللمسة تفتح المنتجات بنطاق السعر مباشرة.
 class HomeBudgetShelf extends ConsumerWidget {
@@ -394,41 +413,13 @@ class HomeBudgetShelf extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.worldTheme;
     final ar = ref.s.isAr;
-    final k = ar ? 'ألف د.ع' : 'K IQD';
-    final tiers = [
-      _Budget(
-        null,
-        10000,
-        ar ? 'أقل من' : 'Under',
-        '10',
-        k,
-        ar ? 'أقل من 10,000 د.ع' : 'Under 10,000 IQD',
-      ),
-      _Budget(
-        10000,
-        25000,
-        ar ? 'من 10 إلى' : '10 to',
-        '25',
-        k,
-        ar ? 'من 10,000 إلى 25,000 د.ع' : '10,000 – 25,000 IQD',
-      ),
-      _Budget(
-        25000,
-        50000,
-        ar ? 'من 25 إلى' : '25 to',
-        '50',
-        k,
-        ar ? 'من 25,000 إلى 50,000 د.ع' : '25,000 – 50,000 IQD',
-      ),
-      _Budget(
-        50000,
-        null,
-        ar ? 'فاخر' : 'Luxe',
-        '+50',
-        k,
-        ar ? 'فاخر — أكثر من 50,000 د.ع' : 'Luxe — over 50,000 IQD',
-      ),
-    ];
+    final slug = ref.watch(selectedWorldSlugProvider);
+    final custom = slug == null ? const <({int? min, int? max})>[] : ref.watch(worldDetailProvider(slug)).valueOrNull?.budgetTiers ?? const [];
+    // نطاقات العالم من لوحة التحكم، وإلا الافتراضي.
+    final ranges = custom.isNotEmpty
+        ? custom
+        : const [(min: null, max: 10000), (min: 10000, max: 25000), (min: 25000, max: 50000), (min: 50000, max: null)];
+    final tiers = [for (var i = 0; i < ranges.length; i++) _budgetFor(ranges[i], ar, last: i == ranges.length - 1)];
     final deep = Color.lerp(t.accent, Colors.black, 0.12)!;
 
     return Column(

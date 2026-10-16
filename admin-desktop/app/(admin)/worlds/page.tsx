@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button, Card, ColorPicker, Input, Space, Switch, Typography, message } from "antd";
+import { Button, Card, ColorPicker, Input, InputNumber, Space, Switch, Typography, message } from "antd";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BulkMediaPicker } from "@/components/home-builder/BulkMediaPicker";
@@ -42,7 +42,34 @@ type WorldRow = {
   position?: number;
   categories?: { categoryId: string; category?: { id: string; name?: string; nameAr?: string } }[];
   gallery?: GalleryRow[];
+  budgetTiers?: BudgetTier[] | null;
 };
+
+type BudgetTier = { min?: number | null; max?: number | null };
+
+/** النطاقات الافتراضية (تظهر في التطبيق إن لم تُحدَّد للعالم). */
+const DEFAULT_BUDGET: BudgetTier[] = [
+  { min: null, max: 10000 },
+  { min: 10000, max: 25000 },
+  { min: 25000, max: 50000 },
+  { min: 50000, max: null },
+];
+
+function budgetFromWorld(world: WorldRow): BudgetTier[] {
+  const list = Array.isArray(world.budgetTiers) && world.budgetTiers.length ? world.budgetTiers : DEFAULT_BUDGET;
+  return [0, 1, 2, 3].map((i) => ({ min: list[i]?.min ?? null, max: list[i]?.max ?? null }));
+}
+
+const fmtIqd = (n: number) => n.toLocaleString("en-US");
+
+/** كيف تظهر البطاقة في التطبيق. */
+function budgetPreview(t: BudgetTier, last: boolean): string {
+  if (t.min == null && t.max == null) return "— (لن تظهر)";
+  if (t.min != null && t.max != null && t.min >= t.max) return "⚠ «من» يجب أن يكون أقل من «إلى»";
+  if (t.min == null) return `أقل من ${fmtIqd(t.max!)} د.ع`;
+  if (t.max == null) return `${last ? "فاخر — " : ""}أكثر من ${fmtIqd(t.min)} د.ع`;
+  return `من ${fmtIqd(t.min)} إلى ${fmtIqd(t.max)} د.ع`;
+}
 
 function galleryFromWorld(world: WorldRow): GalleryDraft[] {
   return [...(world.gallery ?? [])]
@@ -180,6 +207,9 @@ function WorldCard({
     banners.filter((b) => b.worldId === world.id).map((b) => b.id),
   );
   const [gallery, setGallery] = useState<GalleryDraft[]>(() => galleryFromWorld(world));
+  const [budget, setBudget] = useState<BudgetTier[]>(() => budgetFromWorld(world));
+  const setTier = (i: number, key: "min" | "max", v: number | null) =>
+    setBudget((list) => list.map((t, k) => (k === i ? { ...t, [key]: v } : t)));
   const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
@@ -194,6 +224,7 @@ function WorldCard({
     setCategoryIds((world.categories ?? []).map((link) => link.category?.id || link.categoryId));
     setBannerIds(banners.filter((b) => b.worldId === world.id).map((b) => b.id));
     setGallery(galleryFromWorld(world));
+    setBudget(budgetFromWorld(world));
   }, [world, banners]);
 
   return (
@@ -245,6 +276,45 @@ function WorldCard({
           <label>الخلفية <ColorPicker value={canvas} onChange={(v) => setCanvas(colorValue(v, canvas))} /></label>
           <label>النص <ColorPicker value={ink} onChange={(v) => setInk(colorValue(v, ink))} /></label>
         </Space>
+        <div>
+          <Typography.Text strong>تسوّقي حسب ميزانيتكِ</Typography.Text>
+          <Typography.Text type="secondary" style={{ display: "block", marginTop: 4 }}>
+            أربع بطاقات أسعار تظهر في رئيسية هذا العالم (بالدينار). اتركي «من» فارغاً لـ«أقل من»، و«إلى» فارغاً لـ«أكثر من».
+          </Typography.Text>
+          <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
+            {budget.map((tier, i) => (
+              <Space key={i} wrap>
+                <span style={{ width: 22, height: 22, borderRadius: 99, background: canvas, border: `1px solid ${accent}`, display: "inline-grid", placeItems: "center", fontSize: 12 }}>{i + 1}</span>
+                <InputNumber
+                  value={tier.min ?? undefined}
+                  onChange={(v) => setTier(i, "min", v == null ? null : Number(v))}
+                  min={0}
+                  step={1000}
+                  placeholder="من"
+                  formatter={(v) => (v ? Number(v).toLocaleString("en-US") : "")}
+                  parser={(v) => Number((v ?? "").replace(/[^0-9]/g, "")) as unknown as 0}
+                  style={{ width: 140 }}
+                />
+                <InputNumber
+                  value={tier.max ?? undefined}
+                  onChange={(v) => setTier(i, "max", v == null ? null : Number(v))}
+                  min={0}
+                  step={1000}
+                  placeholder="إلى"
+                  formatter={(v) => (v ? Number(v).toLocaleString("en-US") : "")}
+                  parser={(v) => Number((v ?? "").replace(/[^0-9]/g, "")) as unknown as 0}
+                  style={{ width: 140 }}
+                />
+                <Typography.Text type={budgetPreview(tier, i === 3).startsWith("⚠") ? "danger" : "secondary"}>
+                  {budgetPreview(tier, i === 3)}
+                </Typography.Text>
+              </Space>
+            ))}
+            <Button size="small" style={{ justifySelf: "start" }} onClick={() => setBudget(DEFAULT_BUDGET.map((t) => ({ ...t })))}>
+              استرجاع الافتراضي
+            </Button>
+          </div>
+        </div>
         <div>
           <Typography.Text strong>الأقسام الفرعية لهذا العالم</Typography.Text>
           <Typography.Text type="secondary" style={{ display: "block", marginTop: 4 }}>
@@ -411,6 +481,7 @@ function WorldCard({
               isActive: active,
               categoryIds,
               galleryMediaIds: gallery.map((item) => item.mediaId),
+              budgetTiers: budget.filter((t) => t.min != null || t.max != null),
             }, bannerIds)
           }
           style={{ justifySelf: "start" }}

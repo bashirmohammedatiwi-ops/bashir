@@ -20,6 +20,8 @@ class StoreWorld {
   final List<String> galleryUrls;
   final List<String> rootCategoryIds;
   final List<Category> categories;
+  /// نطاقات «تسوّقي حسب ميزانيتكِ» من لوحة التحكم (فارغة = الافتراضي).
+  final List<({int? min, int? max})> budgetTiers;
 
   const StoreWorld({
     required this.id,
@@ -36,6 +38,7 @@ class StoreWorld {
     this.galleryUrls = const [],
     this.rootCategoryIds = const [],
     this.categories = const [],
+    this.budgetTiers = const [],
   });
 
   factory StoreWorld.fromJson(Map<String, dynamic> json) => StoreWorld(
@@ -55,6 +58,15 @@ class StoreWorld {
             ? (json['rootCategoryIds'] as List).map((e) => e.toString()).where((id) => id.isNotEmpty).toList()
             : const [],
         categories: asList(json['categories']).map(Category.fromJson).toList(),
+        budgetTiers: asList(json['budgetTiers'])
+            .map((e) {
+              final m = asMap(e);
+              int? n(Object? v) => v == null ? null : (num.tryParse(v.toString())?.round());
+              return (min: n(m['min']), max: n(m['max']));
+            })
+            .where((t) => t.min != null || t.max != null)
+            .take(4)
+            .toList(),
       );
 
   String localizedName(String lang) => localizedText(
