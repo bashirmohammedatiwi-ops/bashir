@@ -331,7 +331,7 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
 
     const product = await this.prisma.product.findFirst({
       where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }], isActive: true },
-      select: { id: true, brandId: true, subcategoryId: true },
+      select: { id: true, brandId: true, subcategoryId: true, categoryId: true },
     });
     if (!product) throw new NotFoundException("Product not found");
 
@@ -361,6 +361,21 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
         where: {
           ...visible,
           brandId: product.brandId,
+          id: { notIn: [product.id, ...items.map((i) => i.id)] },
+          ...(product.subcategoryId ? { NOT: { subcategoryId: product.subcategoryId } } : {}),
+        },
+        orderBy: [{ soldCount: "desc" }, { createdAt: "desc" }],
+        take: take - items.length,
+        include: productRelationsLite,
+      });
+      items = [...items, ...fill];
+    }
+
+    if (items.length < take && product.categoryId) {
+      const fill = await this.prisma.product.findMany({
+        where: {
+          ...visible,
+          categoryId: product.categoryId,
           id: { notIn: [product.id, ...items.map((i) => i.id)] },
           ...(product.subcategoryId ? { NOT: { subcategoryId: product.subcategoryId } } : {}),
         },
