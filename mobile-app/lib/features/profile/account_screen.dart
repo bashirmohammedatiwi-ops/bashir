@@ -9,7 +9,10 @@ import '../../core/providers/app_info_provider.dart';
 import '../../core/utils/phone_util.dart';
 import '../../core/utils/responsive.dart';
 import '../../core/widgets/ui/ui.dart';
+import '../../data/models/order.dart';
 import '../auth/auth_provider.dart';
+import '../orders/widgets/order_status.dart';
+import '../payments/pay_now_card.dart';
 import '../settings/legal_document_screen.dart';
 import '../wishlist/wishlist_provider.dart';
 import '../worlds/world_theme.dart';
@@ -85,6 +88,7 @@ class AccountScreen extends ConsumerWidget {
 
     return [
       _ProfileHero(s: s),
+      const _ActiveOrderCard(),
       const SizedBox(height: 16),
       _QuickActionsGrid(
         items: [
@@ -572,6 +576,93 @@ class _GuestPerk extends StatelessWidget {
           const SizedBox(width: 5),
           Text(label, style: AppText.micro.copyWith(color: Colors.white)),
         ],
+      ),
+    );
+  }
+}
+
+/// آخر طلب قيد التنفيذ — حالته وتقدّمه بلمحة، ولمسة تفتح تفاصيله.
+class _ActiveOrderCard extends ConsumerWidget {
+  const _ActiveOrderCard();
+
+  static const _done = {'DELIVERED', 'CANCELLED', 'REFUNDED', 'RETURNED'};
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final orders = ref.watch(ordersProvider).valueOrNull ?? const <AppOrder>[];
+    AppOrder? active;
+    for (final o in orders) {
+      if (!_done.contains(o.status)) {
+        active = o;
+        break;
+      }
+    }
+    if (active == null) return const SizedBox.shrink();
+    final order = active;
+    final t = context.worldTheme;
+    final ar = ref.s.isAr;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          context.push('/orders/${order.id}');
+        },
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+          decoration: BoxDecoration(
+            color: t.surface,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: t.accentSoft),
+            boxShadow: t.cardShadow,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(gradient: t.signatureGradient, shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    ar ? 'طلبك الحالي' : 'Current order',
+                    style: AppText.caption.copyWith(color: t.inkMuted, fontWeight: FontWeight.w700),
+                  ),
+                  const Spacer(),
+                  OrderStatusChip(status: order.status),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '#${order.orderNumber}',
+                      textDirection: TextDirection.ltr,
+                      textAlign: TextAlign.start,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.title3.copyWith(color: t.ink),
+                    ),
+                  ),
+                  Text(order.totalLabel, style: AppText.price.copyWith(color: t.accentDark)),
+                  const SizedBox(width: 4),
+                  Icon(Icons.chevron_right_rounded, color: t.inkMuted, size: 20),
+                ],
+              ),
+              if (order.paymentMethod == 'CARD') ...[
+                const SizedBox(height: 8),
+                Align(alignment: AlignmentDirectional.centerStart, child: CardPaymentPill(order: order)),
+              ],
+              const SizedBox(height: 12),
+              OrderProgressBar(status: order.status),
+            ],
+          ),
+        ),
       ),
     );
   }
