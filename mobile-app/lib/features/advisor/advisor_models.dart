@@ -208,7 +208,9 @@ class AdvisorRoutine {
   final List<AdvisorRoutineStep> steps;
   final int total;
   final String emoji;
-  const AdvisorRoutine({required this.title, required this.steps, required this.total, this.emoji = '🧖‍♀️'});
+  /// براند الخط المتناسق (إن كانت أغلب الخطوات منه).
+  final String? brand;
+  const AdvisorRoutine({required this.title, required this.steps, required this.total, this.emoji = '🧖‍♀️', this.brand});
 
   /// لوك مكياج (قطع) لا روتين عناية (خطوات صباح/مساء).
   bool get isLook => steps.isNotEmpty && steps.every((s) => s.when == 'any');
@@ -218,6 +220,7 @@ class AdvisorRoutine {
         steps: asList(j['steps']).map((e) => AdvisorRoutineStep.fromJson(asMap(e))).toList(),
         total: asInt(j['total']),
         emoji: asString(j['emoji'], '🧖‍♀️'),
+        brand: (j['brand']?.toString().isNotEmpty ?? false) ? j['brand'].toString() : null,
       );
 }
 

@@ -1,4 +1,5 @@
 import { CONCERN_AREA, FacetKey, KIND_BY_AREA, LEXICON } from "./lexicon";
+import { FAMOUS } from "./famous";
 import { editDistance, normalize, tokens } from "./text";
 
 /** منتج كما تراه المستشارة — صفاته مستخرجة من نصه بالمعجم. */
@@ -41,6 +42,12 @@ export interface IndexedProduct {
   genderHint: string | null;
   /** ما تعلّمته «ديما» من تفاعل الزبونات مع ترشيحاتها (0..1). */
   learned: number;
+  /** اكتمال بيانات المنتج (صورة حقيقية، وصف، تصنيف) 0..1 — مؤشر جودة حين لا مبيعات. */
+  richness: number;
+  /** صفات مذكورة في الاسم نفسه («facet:id») — أدق من الوصف («غسول لحب الشباب»). */
+  nameKeys: Set<string>;
+  /** عطر أيقوني معروف (سوفاج، بلاك أوبيوم…). */
+  iconic: boolean;
 }
 
 export interface BrandEntry {
@@ -79,6 +86,13 @@ export interface RawProduct {
   /** أسماء الدرجات (ألوان) — تدخل البحث النصي. */
   shadeNames?: string[];
   tag?: { kind: string; area: string; concerns: string[]; audience: string; summary: string } | null;
+}
+
+// أسماء العطور الأيقونية (من قائمة العطور المشهورة) بصيغة مطبّعة.
+const ICONIC = FAMOUS.flatMap((f) => f.aliases.map((a) => normalize(a)).filter((a) => a.length >= 4));
+function isIconic(name: string): boolean {
+  const n = ` ${normalize(name)} `;
+  return ICONIC.some((a) => n.includes(` ${a} `));
 }
 
 /** «نص مجرّد»: كلمات مطبّعة ومجذّعة بفواصل — للمطابقة السريعة بحدود الكلمة. */
@@ -250,6 +264,15 @@ const add = (m: Map<FacetKey, Set<string>>, f: FacetKey, id: string) => {
 const KIND_AREA = new Map(LEXICON.filter((x) => x.facet === "kind" && x.area).map((x) => [x.id, x.area!]));
 
 /** كل كلمات المعجم والكلمات الوصفية الشائعة — لا تُعدّ أسماء براندات. */
+/** صفات عامة شائعة في أسماء المنتجات — لا تصلح اسماً لبراند. */
+const GENERIC_AR = new Set(
+  tokens(
+    "فعال فعاله طبيعي طبيعيه مكثف مكثفه لطيف لطيفه منعش ناعم ناعمه سريع مركز مركزه يومي يوميه ليلي نهاري عميق عميقه " +
+      "مضاد مقاوم واقي منقي مهدئ مغذي مجدد مقوي ثلاثي مزدوج خفيف ثقيل كامل شامل فائق جديد اصلي مميز خاص",
+    { keepStop: true },
+  ),
+);
+
 const LEXICON_WORDS = new Set([
   ...COMPILED.flatMap((t) => t.bare.split(" ")),
   ...tokens(
@@ -457,6 +480,13 @@ export class CatalogIndex {
         quality: Math.min(1, quality),
         genderHint: null,
         learned: 0,
+        richness: (r.image ? 0.5 : 0) + (desc.length > 120 ? 0.3 : desc.length > 30 ? 0.15 : 0) + (r.tag ? 0.2 : 0),
+        nameKeys: (() => {
+          const m = new Map<FacetKey, Set<string>>();
+          matchFacets(`${name} ${nameEn}`, m);
+          return new Set([...m].flatMap(([f, ids]) => [...ids].map((id) => `${f}:${id}`)));
+        })(),
+        iconic: area === "fragrance" && isIconic(`${name} ${nameEn}`),
       });
 
       // BM25: حقول بأوزان.
@@ -581,6 +611,10 @@ export class CatalogIndex {
       if (alias.length < 3 || /\d/.test(alias)) return;
       // كلمة من المعجم (كريم، عطر، احمر…) لا تكون اسم براند.
       if (LEXICON_WORDS.has(alias)) return;
+      // «وحب»، «بالورد»: حرف عطف/جر ملتصق بكلمة عامة — ليست اسماً.
+      const words = alias.split(" ");
+      if (words.some((w) => /^[وبلف]/.test(w) && w.length <= 5 && (LEXICON_WORDS.has(w.slice(1)) || idx.postings.has(w.slice(1))))) return;
+      if (words.every((w) => GENERIC_AR.has(w))) return;
       const list = idx.brandAliases.get(alias) ?? [];
       if (!list.includes(brandId)) list.push(brandId);
       idx.brandAliases.set(alias, list);

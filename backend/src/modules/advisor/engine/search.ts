@@ -1,3 +1,4 @@
+import { brandTier } from "./brands";
 import { CatalogIndex, IndexedProduct } from "./catalog";
 import { FacetKey, LEXICON, facetValue } from "./lexicon";
 import { understand } from "./nlu";
@@ -182,7 +183,8 @@ function run(catalog: CatalogIndex, query: string, f: SearchFilters, prefixLast:
       if (g?.has(d.gender)) score += 1;
       else if (g && !g.has("unisex")) score -= 3;
     }
-    score += p.quality * 1.2 + p.learned * 0.6;
+    // الجودة: سمعة البراند بمجاله، العطور الأيقونية، اكتمال البيانات، المبيعات والتفاعل.
+    score += brandTier(p.brand, p.area) * 1.3 + (p.iconic ? 0.7 : 0) + p.richness * 0.5 + p.quality * 1.2 + p.learned * 0.8;
     if (p.discountPercent > 0) score += 0.2;
     if (p.stock <= 0) score -= 6; // النافد يبقى ظاهراً لكن بالآخر
     hits.push({ p, score });

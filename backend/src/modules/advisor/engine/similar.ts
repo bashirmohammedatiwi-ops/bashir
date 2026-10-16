@@ -306,7 +306,8 @@ export function similarProducts(
     out.push({ p, sim: Math.round(45 + ratio * 54), reasons: [...new Set(reasons)].slice(0, 3), saving, score });
   }
 
-  out.sort((x, y) => y.score - x.score);
+  // الأشبه أولاً (النسبة الظاهرة تنازلية دائماً)، ثم الأوفر عند التقارب.
+  out.sort((x, y) => y.sim - x.sim || (y.saving ?? 0) - (x.saving ?? 0) || y.score - x.score);
   // تنويع: ما يزيد عن اثنين من نفس البراند.
   const perBrand = new Map<string, number>();
   const res: SimilarHit[] = [];

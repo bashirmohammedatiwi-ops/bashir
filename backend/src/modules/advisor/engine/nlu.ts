@@ -144,6 +144,8 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
   const raws = rawWords(message);
   const lites = raws.map(lite);
   const words = raws.map(stem);
+  // «وحب الشباب»: الواو الملتصقة بكلمة قصيرة (التجذيع لا يزيلها حتى لا يخرب «ورد»).
+  const deW = raws.map((w, i) => (w.length >= 3 && w.length <= 4 && w.startsWith("و") ? stem(w.slice(1)) : words[i]));
   const mentioned = new Set<string>();
   const delta: Parsed["delta"] = {};
   const consumed = new Set<number>();
@@ -160,7 +162,8 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
         const w = p.raw ? raws[i + j] : words[i + j];
         const target = pw[j];
         const alt = p.raw ? lites[i + j] : w;
-        if (p.latin && j === pw.length - 1 ? !w.startsWith(target) : w !== target && alt !== target) {
+        const alt2 = p.raw ? raws[i + j] : deW[i + j];
+        if (p.latin && j === pw.length - 1 ? !w.startsWith(target) : w !== target && alt !== target && alt2 !== target) {
           ok = false;
           break;
         }
@@ -339,6 +342,7 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
   const free = words.filter(
     (w, i) => !consumed.has(i) && w.length >= 3 && !INTENT_WORDS.has(w) && !/^\d+$/.test(w) &&
       !["الف", "دينار", "تحت", "فوق", "بين", "ارخص", "اغلى", "بديل", "بدائل", "بديله", "يشبه", "تشبه", "مثل"].includes(w) &&
+      !RE.routine.test(w) && !RE.look.test(w) && !w.startsWith("روت") &&
       // كلمات الترتيب والنوايا («فخم»، «عروض»، «جديد») ليست أسماء منتجات.
       !SORT_RE.some(([re]) => re.test(w)) && !RE.deals.test(w) && !RE.cheaper.test(w) && !RE.pricier.test(w) &&
       // «كريم» مع نوع محدد («كريم واقي شمس») صيغة لا كلمة بحث.

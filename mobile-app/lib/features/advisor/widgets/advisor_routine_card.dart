@@ -69,7 +69,10 @@ class _AdvisorRoutineCardState extends ConsumerState<AdvisorRoutineCard> {
               _Header(
                 title: r.title,
                 emoji: r.emoji,
-                subtitle: r.isLook ? '${r.steps.length} قطع متناسقة' : '${r.steps.length} خطوات • $_schedule',
+                subtitle: [
+                  r.isLook ? '${r.steps.length} قطع متناسقة' : '${r.steps.length} خطوات • $_schedule',
+                  if (r.brand != null) 'من ${r.brand!.split(RegExp(r'\s+(?=[A-Za-z])')).last}',
+                ].join(' • '),
                 total: r.total,
               ),
               Padding(

@@ -641,33 +641,8 @@ function buildRoutine(state: AdvisorState, ctx: DialogCtx): AdvisorReply {
   const area = areaOf(need) ?? "skin";
   const rArea = area === "hair" || area === "body" || area === "makeup" ? area : "skin";
   const template = routineTemplate(rArea, need);
-  const picked = new Set<string>();
-  const steps: RoutineStepOut[] = [];
-  let brand: string | null = null;
-  for (const step of template) {
-    const stepNeed: Need = {
-      ...need,
-      area: rArea,
-      kinds: step.kinds,
-      families: [],
-      free: [],
-      sort: need.sort === "deals" ? "deals" : undefined,
-      maxPrice: need.maxPrice ? Math.round(need.maxPrice * step.share * 1.2) : undefined,
-      minPrice: undefined,
-    };
-    let res = rank(ctx.catalog, stepNeed, { exclude: picked, limit: 3, preferBrand: brand });
-    if (!res.items.length && stepNeed.maxPrice) {
-      // خطوة اختيارية فوق حصتها من الميزانية تُترك؛ الأساسية تأخذ الأوفر المناسب.
-      if (step.optional) continue;
-      res = rank(ctx.catalog, { ...stepNeed, maxPrice: undefined, sort: "cheap" }, { exclude: picked, limit: 3, preferBrand: brand });
-    }
-    const best = res.items[0];
-    if (!best) continue;
-    if (step.optional && best.match < 70) continue;
-    picked.add(best.p.id);
-    brand ??= best.p.brandId; // تناسق: نفضّل نفس البراند للخطوات التالية
-    steps.push({ step: step.step, label: step.label, emoji: step.emoji, when: step.when, product: toCard(best) });
-  }
+  const plan = planRoutine(ctx, need, rArea, template);
+  const steps: RoutineStepOut[] = plan.steps;
   if (!steps.length) return recommend(state, ctx);
   // فوق الميزانية بعد كل هذا؟ نحذف الخطوات الاختيارية الأغلى أولاً.
   if (need.maxPrice) {
@@ -705,11 +680,26 @@ function buildRoutine(state: AdvisorState, ctx: DialogCtx): AdvisorReply {
             : pick(["صممت لكِ روتيناً متكاملاً خطوة بخطوة 🧖‍♀️", "هذا روتينكِ المثالي — كل خطوة مختارة لكِ ✨"], state.turns),
           `${steps.length} خطوات بمجموع ${fmtPrice(total)} د.ع — تكدرين تضيفينه كله للسلة بلمسة.`,
         ];
+  if (plan.brand) {
+    messages.splice(
+      1,
+      0,
+      plan.sameBrand === steps.length
+        ? `كل الخطوات من «${plan.brand}» — تركيبات من نفس الخط مصممة تشتغل سوا ✨`
+        : `${plan.sameBrand} من ${steps.length} خطوات من «${plan.brand}» للتناسق، والباقي أفضل البدائل المتوفرة.`,
+    );
+  }
   const tip = tipFor(need, state.turns);
   if (tip) messages.push(tip);
   return reply(state, {
     messages,
-    routine: { title, steps, total, emoji: rArea === "makeup" ? "💄" : rArea === "hair" ? "💇‍♀️" : rArea === "body" ? "🛁" : "🧖‍♀️" },
+    routine: {
+      title,
+      steps,
+      total,
+      emoji: rArea === "makeup" ? "💄" : rArea === "hair" ? "💇‍♀️" : rArea === "body" ? "🛁" : "🧖‍♀️",
+      brand: plan.brand ?? undefined,
+    },
     chips:
       rArea === "makeup"
         ? [
@@ -723,6 +713,96 @@ function buildRoutine(state: AdvisorState, ctx: DialogCtx): AdvisorReply {
             ...refineChips({ ...need, routine: true }, false).slice(0, 4),
           ],
   }, ctx);
+}
+
+/**
+ * اختيار منتجات الروتين بتناسق البراند: لكل خطوة أفضل المرشحين، ثم نبحث عن البراند
+ * الذي يغطي أكثر الخطوات بمنتج قريب من الأفضل (لا يقل عنه كثيراً)، فنعتمده لها،
+ * ونكمل الباقي بالأفضل من غيره. بعدها نوازن الميزانية.
+ */
+function planRoutine(ctx: DialogCtx, need: Need, rArea: string, template: ReturnType<typeof routineTemplate>) {
+  // كم نقبل أن يقل منتج البراند عن الأفضل — المكياج أقل تسامحاً (كل قطعة تُرى).
+  const DELTA = rArea === "makeup" ? 0.8 : 1.2;
+  const MATCH_GAP = rArea === "makeup" ? 4 : 7;
+  const close = (c: Ranked, best: Ranked) => c.score >= best.score - DELTA && c.match >= best.match - MATCH_GAP;
+  const COH = 0.9; // مكافأة كل خطوة من نفس البراند
+  const per = template.map((step) => {
+    const stepNeed: Need = {
+      ...need,
+      area: rArea,
+      kinds: step.kinds,
+      families: [],
+      free: [],
+      sort: need.sort === "deals" ? "deals" : need.sort === "cheap" ? "cheap" : undefined,
+      maxPrice: need.maxPrice ? Math.round(need.maxPrice * step.share * 1.35) : undefined,
+      minPrice: undefined,
+    };
+    let items = rank(ctx.catalog, stepNeed, { limit: 14, perBrand: 4 }).items;
+    if (!items.length && stepNeed.maxPrice && !step.optional) {
+      // الأساسية فوق حصتها: الأوفر المناسب بلا حد.
+      items = rank(ctx.catalog, { ...stepNeed, maxPrice: undefined, sort: "cheap" }, { limit: 14, perBrand: 4 }).items;
+    }
+    // الاختيارية تُترك إن لم يوجد ما يناسبها فعلاً.
+    if (step.optional && items[0] && items[0].match < 70) items = [];
+    return { step, items };
+  });
+
+  // أفضل براند يغطي أكثر الخطوات.
+  const brands = new Set(per.flatMap((x) => x.items.map((r) => r.p.brandId).filter(Boolean) as string[]));
+  let lead: { id: string; cover: number; value: number } | null = null;
+  for (const b of brands) {
+    let cover = 0;
+    let value = 0;
+    for (const { step, items } of per) {
+      if (!items.length) continue;
+      const c = items.find((r) => r.p.brandId === b);
+      if (c && close(c, items[0])) {
+        cover += step.optional ? 0.5 : 1;
+        value += c.score + COH;
+      } else value += items[0].score;
+    }
+    if (cover >= 2 && (!lead || cover > lead.cover || (cover === lead.cover && value > lead.value))) lead = { id: b, cover, value };
+  }
+
+  const used = new Set<string>();
+  const chosen: { step: (typeof template)[number]; r: Ranked; alts: Ranked[] }[] = [];
+  for (const { step, items } of per) {
+    if (!items.length) continue;
+    const fromLead = lead ? items.find((r) => r.p.brandId === lead!.id && close(r, items[0]) && !used.has(r.p.id)) : undefined;
+    const r = fromLead ?? items.find((x) => !used.has(x.p.id));
+    if (!r) continue;
+    used.add(r.p.id);
+    chosen.push({ step, r, alts: items.filter((x) => x !== r) });
+  }
+
+  // الميزانية: نستبدل الأغلى ببديل قريب الجودة أرخص، ثم نحذف الاختيارية إن لزم.
+  if (need.maxPrice) {
+    let sum = chosen.reduce((a, c) => a + c.r.p.price, 0);
+    for (const c of [...chosen].sort((a, b) => b.r.p.price - a.r.p.price)) {
+      if (sum <= need.maxPrice * 1.05) break;
+      const cheaper = c.alts
+        .filter((x) => !used.has(x.p.id) && x.p.price < c.r.p.price && x.score >= c.r.score - 2)
+        .sort((a, b) => a.p.price - b.p.price)[0];
+      if (!cheaper) continue;
+      used.delete(c.r.p.id);
+      used.add(cheaper.p.id);
+      sum -= c.r.p.price - cheaper.p.price;
+      c.r = cheaper;
+    }
+    for (const c of [...chosen].filter((x) => x.step.optional).sort((a, b) => b.r.p.price - a.r.p.price)) {
+      if (sum <= need.maxPrice * 1.05) break;
+      chosen.splice(chosen.indexOf(c), 1);
+      sum -= c.r.p.price;
+    }
+  }
+
+  const sameBrand = lead ? chosen.filter((c) => c.r.p.brandId === lead!.id).length : 0;
+  const brandName = lead && sameBrand >= 2 ? ctx.catalog.brands.find((b) => b.id === lead!.id)?.name ?? null : null;
+  return {
+    steps: chosen.map(({ step, r }) => ({ step: step.step, label: step.label, emoji: step.emoji, when: step.when, product: toCard(r) })) as RoutineStepOut[],
+    brand: brandName,
+    sameBrand,
+  };
 }
 
 /** اسم مختصر للجملة: أطول جزء وصفي (بلا البراند ولا الحجم). */

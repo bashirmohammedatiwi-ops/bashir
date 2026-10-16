@@ -1,5 +1,6 @@
 import { CatalogIndex, IndexedProduct } from "./catalog";
 import { CONCERN_INGREDIENTS, FacetKey, facetValue } from "./lexicon";
+import { brandTier } from "./brands";
 import { bi, COLOR_SYNONYMS, li, tokens } from "./text";
 import { Need, ProductCardOut } from "./types";
 
@@ -166,116 +167,166 @@ function rankOnce(catalog: CatalogIndex, need: Need, opts: Options): RankResult 
   const newest = Math.max(...candidates.map((p) => p.createdAt));
   const oldest = Math.min(...candidates.map((p) => p.createdAt));
 
-  const scored: Ranked[] = [];
+  const scored: (Ranked & { fit: number; q: number })[] = [];
+  const brandQ = brandQuality(catalog);
+  const treating = need.concerns.length > 0;
   for (const p of candidates) {
-    let facetScore = 0;
-    let facetMax = 0;
+    // ── الملاءمة (0..1): كم يطابق طلبها بالضبط
+    let earned = 0;
+    let max = 0;
     let matched = 0;
     const reasons: { w: number; text: string }[] = [];
 
     for (const [facet, id] of wanted) {
       const w = WEIGHTS[facet] ?? 1;
-      facetMax += w;
+      max += w * 1.25;
       const hit = catalog.has(p, facet, id);
       if (!hit) continue;
       matched++;
-      const gain = hit === "strong" ? w : w * 0.45;
-      facetScore += gain;
+      // مذكورة في الاسم نفسه («غسول لحب الشباب») أدق من الوصف أو التصنيف.
+      const inName = p.nameKeys.has(`${facet}:${id}`);
+      const gain = (hit === "strong" ? w : w * 0.45) + (inName ? w * 0.25 : 0);
+      earned += gain;
       const fv = facetValue(facet, id);
       if (fv) reasons.push({ w: gain, text: reasonText(facet, fv.label) });
     }
 
     // مكوّن معروف بفعاليته للمشكلة المطلوبة.
-    let ingredientBonus = 0;
     let synergy = 0;
-    for (const ing of helpful) {
-      if (catalog.has(p, "ingredient", ing)) {
-        ingredientBonus += 0.9;
-        synergy += 0.5;
+    if (helpful.size) {
+      max += 1.8;
+      let bonus = 0;
+      for (const ing of helpful) {
+        if (!catalog.has(p, "ingredient", ing)) continue;
+        bonus += 0.9;
         if (!need.ingredients.includes(ing)) {
           const fv = facetValue("ingredient", ing);
           if (fv) reasons.push({ w: 1.6, text: `غني ${bi(fv.label)}` });
         }
-        if (ingredientBonus >= 1.8) break;
+        if (bonus >= 1.8) break;
       }
+      earned += bonus;
+      synergy += bonus / 1.8;
     }
 
     // معرفة خبيرة: مع المكياج، البشرة الدهنية تناسبها اللمسة المطفية والجافة الندية.
     if (need.skinType && p.area === "makeup" && !need.finish) {
       const fit = SKIN_FINISH[need.skinType];
-      if (fit && catalog.has(p, "finish", fit.finish)) {
-        ingredientBonus += 1.4;
-        synergy += 1;
-        reasons.push({ w: 1.5, text: fit.reason });
+      if (fit) {
+        max += 1.4;
+        if (catalog.has(p, "finish", fit.finish)) {
+          earned += 1.4;
+          synergy += 1;
+          reasons.push({ w: 1.5, text: fit.reason });
+        }
       }
+    }
+
+    // تعارض صريح: مخصص لنوع بشرة آخر فقط («للبشرة الجافة» لمن بشرتها دهنية).
+    if (need.skinType) {
+      const st = p.strong.get("skinType");
+      if (st && st.size && !st.has(need.skinType) && !(need.skinType === "combination" && st.has("oily"))) earned -= 1.5;
     }
 
     const text = textScores && maxText > 0 ? (textScores.get(p.idx) ?? 0) / maxText : 0;
     if (textScores && text === 0 && !wanted.length) continue; // بحث نصي بلا تطابق إطلاقاً
+    if (textScores) {
+      max += 3;
+      earned += text * 3;
+    }
 
-    let score = facetScore + ingredientBonus + text * 4 + p.quality * 2.6 + p.learned * 1.1;
+    // جنس العطر جزء من الملاءمة حين يُطلب.
+    if (need.gender && p.area === "fragrance") {
+      max += 2;
+      const g = p.strong.get("gender");
+      if (g?.has(need.gender)) earned += 2;
+      else if (g?.has("unisex")) earned += 1.4;
+      else if (!g && p.genderHint === need.gender) earned += 1.2;
+      else if (!g && p.genderHint) earned -= 2; // مرجّح للجنس الآخر
+      else if (!g) earned += 0.6;
+    } else if (need.gender && need.gender !== "unisex" && p.strong.get("gender")?.has(need.gender)) {
+      earned += 1;
+      max += 1;
+    }
+
+    // النوع المطلوب مذكور باسم المنتج (لا فقط بقسمه) — المنتج المقصود فعلاً.
+    if (need.kinds.length) {
+      max += 1;
+      if (need.kinds.some((k) => p.nameKeys.has(`kind:${k}`))) earned += 1;
+    }
+
+    const fit = max ? Math.max(0, Math.min(1, earned / max)) : 0.7;
+
+    // ── الجودة (0..1): سمعة البراند بالمجال، المبيعات والتقييم، تفاعل الزبونات، اكتمال البيانات
+    const tier = brandTier(p.brand, p.area);
+    let quality =
+      0.42 * tier +
+      0.12 * (brandQ.get(p.brandId ?? "") ?? 0) +
+      0.18 * p.quality +
+      0.18 * p.learned +
+      0.1 * p.richness;
+    if (p.iconic) quality += 0.12;
+    // للعلاج (حب الشباب، تساقط…) البراندات المرجعية أهم.
+    if (treating && tier === 1 && (p.area === "skin" || p.area === "hair")) quality += 0.08;
+    quality = Math.min(1, quality);
+
+    // ── القيمة والتفضيلات
+    let extra = 0;
+    if (p.discountPercent > 0) extra += Math.min(0.35, p.discountPercent / 80);
+    // سعر بعيد جداً عن المعتاد بلا طلب «فخم/هدية» يتأخر قليلاً.
+    if (!need.sort && need.occasion !== "gift" && p.price > medianPrice * 3) extra -= 0.4;
+    if (opts.preferBrand && p.brandId === opts.preferBrand) extra += 0.8;
+    if (opts.softFamilies?.length && p.area === "fragrance") {
+      for (const f of opts.softFamilies) if (catalog.has(p, "family", f)) extra += 0.3;
+    }
     // البشرة الحساسة: الأحماض والريتينول القوية تتأخر ما لم تُطلب صراحة.
     if (need.skinType === "sensitive") {
       for (const h of ["retinol", "aha", "salicylic"]) {
         if (!need.ingredients.includes(h) && p.strong.get("ingredient")?.has(h)) {
-          score -= 1;
+          extra -= 1;
           break;
         }
       }
     }
-    // ذوقها المحفوظ (عائلات العطر) — ميل خفيف لا شرط.
-    if (opts.softFamilies?.length && p.area === "fragrance") {
-      for (const f of opts.softFamilies) if (catalog.has(p, "family", f)) score += 0.35;
-    }
-    if (p.discountPercent > 0) score += Math.min(0.6, p.discountPercent / 60);
-    if (opts.preferBrand && p.brandId === opts.preferBrand) score += 0.8;
-    // جنس العطر: المطابق الصريح أفضل من غير المصنف.
-    if (need.gender && p.area === "fragrance") {
-      const g = p.strong.get("gender");
-      if (g?.has(need.gender)) score += 1.6;
-      else if (g?.has("unisex")) score += 0.6;
-      else if (!g && p.genderHint === need.gender) score += 0.4;
-      else if (!g && p.genderHint) score -= 4; // مرجّح للجنس الآخر: يتأخر كثيراً
-      else if (!g) score -= 1.4;
-    } else if (need.gender && need.gender !== "unisex") {
-      // غير العطور: المطابق الصريح يتقدم («شامبو للرجال» لطلب رجالي).
-      if (p.strong.get("gender")?.has(need.gender)) score += 1.2;
-    } else if (!need.gender && !need.recipient && p.area === "fragrance") {
+    if (!need.gender && !need.recipient && p.area === "fragrance") {
       // بلا جنس محدد: الزبونة تسأل لنفسها غالباً — ميل خفيف للنسائي وللجنسين.
       const g = p.strong.get("gender");
       const eff = g ? (g.has("unisex") ? "unisex" : g.has("women") ? "women" : g.has("men") ? "men" : null) : p.genderHint;
-      if (eff === "women") score += 0.6;
-      else if (eff === "unisex") score += 0.3;
-      else if (eff === "men") score -= 1.1;
+      if (eff === "women") extra += 0.5;
+      else if (eff === "unisex") extra += 0.25;
+      else if (eff === "men") extra -= 1;
     }
     // الهدية: نميل للأرقى ضمن الميزانية (هدية تليق) وللأطقم.
     if (need.occasion === "gift") {
       const cap = need.maxPrice ?? medianPrice * 2;
-      score += 1.6 * Math.min(1, p.price / cap);
-      if (p.strong.get("occasion")?.has("gift")) score += 1.2;
+      extra += 1.2 * Math.min(1, p.price / cap);
+      if (p.strong.get("occasion")?.has("gift")) extra += 0.9;
     }
 
     switch (need.sort) {
       case "cheap":
-        score += 2.5 * (1 - Math.min(1, p.price / (medianPrice * 2)));
+        extra += 2.5 * (1 - Math.min(1, p.price / (medianPrice * 2)));
         break;
       case "best":
-        score += 3 * p.quality;
+        extra += 3 * p.quality + 1.5 * p.learned;
         break;
       case "rated":
-        score += 2.5 * ((p.rating || 0) / 5) * Math.min(1, p.reviewCount / 3);
+        extra += 2.5 * ((p.rating || 0) / 5) * Math.min(1, p.reviewCount / 3) + 0.8 * tier;
         break;
       case "new":
-        score += 2.5 * ((p.createdAt - oldest) / Math.max(1, newest - oldest));
+        extra += 2.5 * ((p.createdAt - oldest) / Math.max(1, newest - oldest));
         break;
       case "deals":
-        score += p.discountPercent > 0 ? 2 + p.discountPercent / 25 : -3;
+        extra += p.discountPercent > 0 ? 2 + p.discountPercent / 25 : -3;
         break;
       case "premium":
         // الأرقى: ميل للسعر الأعلى مع الجودة، دون أن يطغى على الملاءمة.
-        score += 2.2 * Math.min(1, p.price / (medianPrice * 2.5)) + 0.8 * p.quality;
+        extra += 2.2 * Math.min(1, p.price / (medianPrice * 2.5)) + 0.8 * tier;
         break;
     }
+
+    // الملاءمة أولاً (وزنها الأكبر)، ثم الجودة، ثم القيمة.
+    const score = 6 * fit + 3.2 * quality + extra;
 
     // سياق حين لا تكفي الصفات: البراند المطلوب، وجنس العطر.
     if (need.brands.length && p.brandId && need.brands.includes(p.brandId) && p.brand) {
@@ -288,32 +339,53 @@ function rankOnce(catalog: CatalogIndex, need: Need, opts: Options): RankResult 
     }
 
     // شارات عامة
+    if (p.iconic) reasons.push({ w: 0.95, text: "عطر أيقوني" });
+    if (treating && tier === 1 && (p.area === "skin" || p.area === "hair")) reasons.push({ w: 0.75, text: "براند موثوق طبياً" });
     if (p.isBestSeller) reasons.push({ w: 0.9, text: "الأكثر مبيعاً" });
     if (p.rating >= 4.5 && p.reviewCount >= 2) reasons.push({ w: 0.8, text: `★ ${p.rating.toFixed(1)}` });
     if (p.discountPercent >= 10) reasons.push({ w: 0.85, text: `خصم ${p.discountPercent}%` });
     if (need.maxPrice && p.price <= need.maxPrice) reasons.push({ w: 0.5, text: "ضمن ميزانيتك" });
 
-    const facetRatio = facetMax ? facetScore / facetMax : 0.7;
-    const match = Math.round(
-      Math.max(
-        55,
-        Math.min(
-          99,
-          52 + facetRatio * 34 + p.quality * 8 + text * 8 + Math.min(1, synergy) * 14 +
-            (matched === wanted.length && wanted.length ? 4 : 0),
-        ),
-      ),
-    );
+    void matched;
+    void synergy;
     scored.push({
       p,
       score,
-      match,
+      match: 0,
+      fit,
+      q: quality,
       reasons: dedupe(reasons.sort((a, b) => b.w - a.w).map((r) => r.text)).slice(0, 3),
     });
   }
 
   scored.sort((a, b) => b.score - a.score);
-  return { items: diversify(scored, need, opts), relaxed: [], total: scored.length };
+  const items = diversify(scored, need, opts);
+  // نسبة الملاءمة الظاهرة تتبع الترتيب نفسه: الأول دائماً الأعلى.
+  let prev = 99;
+  for (const r of items as (Ranked & { fit: number; q: number })[]) {
+    const raw = Math.round(52 + 40 * r.fit + 7 * r.q);
+    r.match = Math.max(55, Math.min(prev, Math.min(99, raw)));
+    prev = r.match;
+  }
+  return { items, relaxed: [], total: scored.length };
+}
+
+/** متوسط جودة منتجات كل براند (مُنعَّم) — يُحسب مرة لكل فهرس. */
+const brandQCache = new WeakMap<CatalogIndex, Map<string, number>>();
+function brandQuality(catalog: CatalogIndex): Map<string, number> {
+  const hit = brandQCache.get(catalog);
+  if (hit) return hit;
+  const sum = new Map<string, { s: number; n: number }>();
+  for (const p of catalog.products) {
+    if (!p.brandId) continue;
+    const e = sum.get(p.brandId) ?? { s: 0, n: 0 };
+    e.s += Math.max(p.quality, p.learned);
+    e.n++;
+    sum.set(p.brandId, e);
+  }
+  const out = new Map([...sum].map(([id, e]) => [id, Math.min(1, (e.s + 0.1 * 5) / (e.n + 5) * 3)]));
+  brandQCache.set(catalog, out);
+  return out;
 }
 
 /** تنويع: لا يسيطر براند واحد على القائمة (إلا إن طلبته الزبونة). */

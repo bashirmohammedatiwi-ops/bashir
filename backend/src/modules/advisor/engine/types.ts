@@ -184,7 +184,7 @@ export interface AdvisorReply {
   products: ProductCardOut[];
   /** مجموعات إضافية: «بدائل اقتصادية»، «الأعلى تقييماً»… */
   groups: { title: string; products: ProductCardOut[] }[];
-  routine?: { title: string; steps: RoutineStepOut[]; total: number; emoji?: string };
+  routine?: { title: string; steps: RoutineStepOut[]; total: number; emoji?: string; brand?: string };
   quiz?: QuizOut;
   knowledge?: KnowledgeOut;
   compare?: CompareOut;
