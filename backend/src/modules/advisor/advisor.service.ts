@@ -55,8 +55,8 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     if (process.env.NODE_ENV === "test") return;
     // بناء أولي متأخر قليلاً حتى لا يزاحم إقلاع الخادم.
-    setTimeout(() => this.rebuild().catch((e) => this.log.warn(`Index build failed: ${e.message}`)), 15_000).unref?.();
-    this.timer = setInterval(() => this.rebuild().catch(() => undefined), REBUILD_EVERY_MS);
+    setTimeout(() => this.refresh().catch((e) => this.log.warn(`Index build failed: ${e.message}`)), 15_000).unref?.();
+    this.timer = setInterval(() => this.refresh().catch(() => undefined), REBUILD_EVERY_MS);
     this.timer.unref?.();
   }
 
@@ -80,6 +80,27 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
   async catalog(): Promise<CatalogIndex> {
     if (this.index) return this.index;
     return this.rebuild();
+  }
+
+  private lastSig = "";
+  private lastFull = 0;
+
+  /**
+   * تحديث دوري: يُعاد البناء فقط إن تغيّر الكتالوج (عدد المنتجات أو آخر تعديل)،
+   * أو مرّت 30 دقيقة — وإلا نحدّث ما تعلّمته «ديما» فقط (سريع).
+   */
+  private async refresh(): Promise<void> {
+    const [p, t] = await Promise.all([
+      this.prisma.product.aggregate({ where: { isActive: true }, _count: { _all: true }, _max: { updatedAt: true } }),
+      this.prisma.assistantProductTag.aggregate({ _max: { updatedAt: true } }),
+    ]);
+    const sig = `${p._count._all}|${p._max.updatedAt?.getTime() ?? 0}|${t._max.updatedAt?.getTime() ?? 0}`;
+    if (this.index && sig === this.lastSig && Date.now() - this.lastFull < 30 * 60_000) {
+      this.index.applyLearning(await this.learning());
+      return;
+    }
+    await this.rebuild();
+    this.lastSig = sig;
   }
 
   async rebuild(): Promise<CatalogIndex> {
@@ -131,9 +152,10 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
         shadeNames: r.shades.map((x) => x.name).filter(Boolean),
         tag: tagBy.get(r.id) ?? null,
       }));
-      const idx = CatalogIndex.build(raw);
+      const idx = await CatalogIndex.buildAsync(raw);
       idx.applyLearning(await this.learning());
       this.index = idx;
+      this.lastFull = Date.now();
       this.log.log(`Advisor index: ${idx.products.length} products, ${idx.brands.length} brands in ${Date.now() - started}ms`);
       return idx;
     })().finally(() => {

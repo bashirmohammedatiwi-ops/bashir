@@ -288,6 +288,24 @@ export class CatalogIndex {
   builtAt = 0;
 
   static build(rows: RawProduct[]): CatalogIndex {
+    const it = CatalogIndex.steps(rows);
+    let r = it.next();
+    while (!r.done) r = it.next();
+    return r.value;
+  }
+
+  /** نفس البناء مقسّماً لدفعات صغيرة — الخادم يبقى يجاوب أثناء إعادة البناء. */
+  static async buildAsync(rows: RawProduct[]): Promise<CatalogIndex> {
+    const it = CatalogIndex.steps(rows);
+    let r = it.next();
+    while (!r.done) {
+      await new Promise((res) => setImmediate(res));
+      r = it.next();
+    }
+    return r.value;
+  }
+
+  private static *steps(rows: RawProduct[]): Generator<void, CatalogIndex, void> {
     const idx = new CatalogIndex();
     const maxSold = Math.max(1, ...rows.map((r) => r.soldCount));
     const brandNames = new Map<
@@ -298,7 +316,9 @@ export class CatalogIndex {
     const simTf: Map<string, number>[] = [];
     const simDf = new Map<string, number>();
 
-    rows.forEach((r, i) => {
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      if (i % 120 === 119) yield;
       const name = r.nameAr || r.name;
       const nameEn = r.nameEn || "";
       const categoryPath = [r.category, r.subcategory, r.tertiaryCategory]
@@ -486,7 +506,7 @@ export class CatalogIndex {
           b.ar.set(prefix, (b.ar.get(prefix) ?? 0) + 1);
         }
       }
-    });
+    }
 
     // جنس مرجّح للعطور غير المصنفة: الوصف أولاً («عطر نسائي…»)، ثم غالبية عطور البراند
     // المصنفة (3 على الأقل و80%+ لجنس واحد) — «كلوي» نسائية وإن لم يُذكر.
@@ -528,6 +548,7 @@ export class CatalogIndex {
       p.genderHint = hint;
     }
 
+    yield;
     // متجهات التشابه: كلمات تظهر في 2..12% من المنتجات، أعلى 32 وزناً لكل منتج، مطبّعة.
     {
       const N = Math.max(1, simTf.length);
@@ -554,6 +575,7 @@ export class CatalogIndex {
       productCount: b.count,
     }));
 
+    yield;
     // جدول الأسماء: الاسم الواحد قد يشير لعائلة براندات («لوريال» → إلفيف، بروفيشنال، باريس…).
     const addAlias = (alias: string, brandId: string) => {
       if (alias.length < 3 || /\d/.test(alias)) return;
