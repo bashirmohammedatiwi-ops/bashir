@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/brand/brand_logo.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/app_network_image.dart';
+import '../../core/widgets/app_snackbar.dart';
 import 'advisor_cart.dart';
 import 'advisor_controller.dart';
 import 'advisor_models.dart';
@@ -160,7 +161,8 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
     final session = ref.watch(advisorProvider);
     ref.listen<AdvisorSession>(advisorProvider, (prev, next) {
       // محادثة مستعادة من الجهاز: تظهر كما هي بلا حركة، ونذهب لآخرها.
-      if ((prev?.entries.isEmpty ?? true) && next.entries.length > 1 && !next.thinking) {
+      // (أو «تراجع» بعد محادثة جديدة): قفزة بأكثر من عنصر واحد دفعة واحدة.
+      if (next.entries.length - (prev?.entries.length ?? 0) >= 2 && !next.thinking) {
         _animatedCount = next.entries.length;
         WidgetsBinding.instance.addPostFrameCallback((_) => _jumpToEnd());
         return;
@@ -216,7 +218,14 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
                   onReset: () {
                     HapticFeedback.mediumImpact();
                     _input.clear();
+                    _focus.unfocus();
                     _ctl.reset();
+                    AppSnackbar.action(
+                      context,
+                      message: 'بدأتِ محادثة جديدة ✨',
+                      actionLabel: 'تراجع',
+                      onAction: _ctl.undoReset,
+                    );
                   },
                 ),
                 AnimatedSize(
@@ -382,15 +391,15 @@ class _Header extends StatelessWidget {
       child: Row(
         children: [
           _GlassIcon(icon: Icons.arrow_back_rounded, onTap: onBack, tooltip: 'رجوع'),
-          const SizedBox(width: 10),
-          AdvisorOrb(size: 42, thinking: thinking),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
+          AdvisorOrb(size: 38, thinking: thinking),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('ديما', style: AdvisorStyle.text(size: 17, weight: FontWeight.w800, height: 1.2)),
+                Text('ديما', style: AdvisorStyle.text(size: 16.5, weight: FontWeight.w800, height: 1.2)),
                 const SizedBox(height: 2),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),
@@ -408,7 +417,7 @@ class _Header extends StatelessWidget {
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        thinking ? 'تختار لكِ الآن…' : 'مستشارتكِ للجمال • متاحة دائماً',
+                        thinking ? 'تكتب…' : 'متاحة الآن',
                         style: AdvisorStyle.text(size: 11.5, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.2),
                       ),
                     ],
@@ -429,16 +438,58 @@ class _Header extends StatelessWidget {
                 ),
             ],
           ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 250),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 260),
+            transitionBuilder: (c, a) => FadeTransition(opacity: a, child: ScaleTransition(scale: Tween(begin: 0.85, end: 1.0).animate(a), child: c)),
             child: canReset
                 ? Padding(
+                    key: const ValueKey('new'),
                     padding: const EdgeInsetsDirectional.only(start: 8),
-                    child: _GlassIcon(icon: Icons.add_comment_outlined, onTap: onReset, tooltip: 'محادثة جديدة'),
+                    child: _NewChatButton(onTap: onReset),
                   )
-                : const SizedBox.shrink(),
+                : const SizedBox.shrink(key: ValueKey('none')),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// «محادثة جديدة» — زر واضح بنص وأيقونة بدل أيقونة مبهمة.
+class _NewChatButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _NewChatButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: 'محادثة جديدة',
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: AdvisorStyle.gradient,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(color: BrandColors.rose.withValues(alpha: 0.30), blurRadius: 12, offset: const Offset(0, 4))],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.add_rounded, size: 18, color: Colors.white),
+                  const SizedBox(width: 4),
+                  Text('محادثة جديدة', style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w800, color: Colors.white, height: 1.2)),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

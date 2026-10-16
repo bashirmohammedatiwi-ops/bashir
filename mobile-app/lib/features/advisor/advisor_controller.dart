@@ -209,12 +209,25 @@ class AdvisorController extends StateNotifier<AdvisorSession> {
     }
   }
 
+  /// المحادثة قبل «محادثة جديدة» — لزر «تراجع».
+  AdvisorSession? _beforeReset;
+
   void reset() {
     _gen++;
     _pending = null;
+    _beforeReset = state.entries.length > 1 ? state.copyWith(thinking: false) : null;
     state = const AdvisorSession();
     _clearStored();
     _welcome();
+  }
+
+  void undoReset() {
+    final prev = _beforeReset;
+    if (prev == null) return;
+    _gen++;
+    _beforeReset = null;
+    state = prev;
+    _persist();
   }
 
   /// إعادة آخر طلب فشل (دون تكرار فقاعة الزبونة).

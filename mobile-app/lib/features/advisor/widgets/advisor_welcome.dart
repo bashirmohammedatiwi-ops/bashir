@@ -2,17 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/brand/brand_logo.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import '../advisor_models.dart';
-import '../advisor_profile.dart';
-import 'advisor_profile_sheet.dart';
 import 'advisor_orb.dart';
 import 'advisor_style.dart';
 import 'stagger_in.dart';
 
-/// واجهة الترحيب: كرة «ديما» الكبيرة، تعريف قصير، بطاقات بدء، وأمثلة أسئلة.
-class AdvisorWelcome extends ConsumerWidget {
+/// واجهة الترحيب — هادئة وقليلة الكلام: الكرة، تحية قصيرة، بطاقات بدء، وأمثلة بسطر واحد.
+class AdvisorWelcome extends StatelessWidget {
   final AdvisorReply reply;
   final List<String> prompts;
   final bool animate;
@@ -37,58 +33,41 @@ class AdvisorWelcome extends ConsumerWidget {
     [Color(0xFFFFEEEA), Color(0xFFFFF6E6)],
   ];
 
+  /// التحية وحدها من رسالة الخادم («مساء الخير بشير 🌙») بلا التعريف الطويل بعدها.
+  String get _greeting {
+    final m = reply.messages.isEmpty ? '' : reply.messages.first;
+    final g = m.split(RegExp(r'\s*(أنا ديما|—)')).first.trim();
+    if (g.isEmpty || g.length > 34) return 'أهلاً بكِ 🌸';
+    return g;
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profile = ref.watch(advisorProfileProvider);
+  Widget build(BuildContext context) {
     var i = 0;
-    Widget item(Widget child) => StaggerIn(index: i++, animate: animate, step: const Duration(milliseconds: 90), child: child);
-    final msgs = reply.messages;
+    Widget item(Widget child) => StaggerIn(index: i++, animate: animate, step: const Duration(milliseconds: 80), child: child);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 8),
       child: Column(
         children: [
-          item(const AdvisorOrb(size: 108)),
-          const SizedBox(height: 12),
-          item(AdvisorGradientText('ديما', style: AdvisorStyle.text(size: 30, weight: FontWeight.w800, height: 1.15))),
+          item(const AdvisorOrb(size: 88)),
+          const SizedBox(height: 14),
           item(Text(
-            'تفهمكِ، تقارن، وتختار لكِ الأنسب',
-            style: AdvisorStyle.text(size: 13, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.5),
+            _greeting,
+            textAlign: TextAlign.center,
+            style: AdvisorStyle.text(size: 21, weight: FontWeight.w800, height: 1.35),
           )),
-          const SizedBox(height: 14),
-          if (msgs.isNotEmpty)
-            item(Text(
-              msgs.first,
-              textAlign: TextAlign.center,
-              style: AdvisorStyle.text(size: 15.5, weight: FontWeight.w700, height: 1.6),
-            )),
-          if (msgs.length > 1) ...[
-            const SizedBox(height: 6),
-            item(Text(
-              msgs[1],
-              textAlign: TextAlign.center,
-              style: AdvisorStyle.text(size: 13, color: AdvisorStyle.inkSoft, height: 1.7),
-            )),
-          ],
-          const SizedBox(height: 14),
-          item(const Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              _Trait('🗣️', 'تفهم لهجتكِ'),
-              _Trait('🧪', 'تقرأ المكونات'),
-              _Trait('💸', 'تراعي ميزانيتكِ'),
-            ],
+          const SizedBox(height: 4),
+          item(Text(
+            'شنو تحتاجين اليوم؟',
+            style: AdvisorStyle.text(size: 14, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.4),
           )),
-          const SizedBox(height: 16),
-          item(_ProfileCard(profile: profile)),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           if (reply.chips.isNotEmpty)
             item(LayoutBuilder(
               builder: (_, c) {
                 const gap = 10.0;
-                final w = (c.maxWidth - gap) / 2;
+                final w = (c.maxWidth - gap * 2) / 3;
                 return Wrap(
                   spacing: gap,
                   runSpacing: gap,
@@ -104,37 +83,25 @@ class AdvisorWelcome extends ConsumerWidget {
             )),
           if (prompts.isNotEmpty) ...[
             const SizedBox(height: 22),
-            item(Row(
-              children: [
-                const Icon(Icons.chat_bubble_outline_rounded, size: 15, color: BrandColors.orchid),
-                const SizedBox(width: 6),
-                Text('أو اسأليني بأسلوبكِ، مثلاً:', style: AdvisorStyle.text(size: 13, weight: FontWeight.w800, height: 1.3)),
-              ],
+            item(Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: Text('أو اسأليني بأسلوبكِ', style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w700, color: AdvisorStyle.inkMuted, height: 1.3)),
             )),
-            const SizedBox(height: 10),
-            for (final p in prompts) item(_PromptPill(text: p, onTap: () => onPrompt(p))),
+            const SizedBox(height: 8),
+            item(SizedBox(
+              height: 42,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                clipBehavior: Clip.none,
+                itemCount: prompts.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (_, k) => _PromptChip(text: prompts[k], onTap: () => onPrompt(prompts[k])),
+              ),
+            )),
           ],
         ],
       ),
-    );
-  }
-}
-
-class _Trait extends StatelessWidget {
-  final String emoji;
-  final String label;
-  const _Trait(this.emoji, this.label);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.75),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AdvisorStyle.glassBorder),
-      ),
-      child: Text('$emoji  $label', style: AdvisorStyle.text(size: 11.5, weight: FontWeight.w700, color: AdvisorStyle.inkSoft, height: 1.3)),
     );
   }
 }
@@ -145,22 +112,12 @@ class _StarterTile extends StatelessWidget {
   final VoidCallback onTap;
   const _StarterTile({required this.chip, required this.tint, required this.onTap});
 
-  String get _hint => switch (chip.value) {
-        'quiz:start=perfume' => '5 أسئلة سريعة',
-        'quiz:start=skin' => 'روتين مخصّص لكِ',
-        'quiz:start=hair' => 'حسب نوع شعركِ',
-        'quiz:start=gift' => 'لأي شخص وبأي ميزانية',
-        'quiz:start=makeup' => 'حسب ذوقكِ',
-        'act:deals' => 'أقوى الخصومات الآن',
-        _ => 'ابدئي من هنا',
-      };
-
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(22),
-        boxShadow: AdvisorStyle.shadow(0.6),
+        boxShadow: AdvisorStyle.shadow(0.5),
       ),
       child: Material(
         borderRadius: BorderRadius.circular(22),
@@ -176,29 +133,33 @@ class _StarterTile extends StatelessWidget {
               HapticFeedback.selectionClick();
               onTap();
             },
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+            child: SizedBox(
+              height: 98,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
+                      shape: BoxShape.circle,
                       boxShadow: [BoxShadow(color: BrandColors.orchid.withValues(alpha: 0.10), blurRadius: 8, offset: const Offset(0, 3))],
                     ),
                     alignment: Alignment.center,
-                    child: Text(chip.emoji ?? '✨', style: const TextStyle(fontSize: 20)),
+                    child: Text(chip.emoji ?? '✨', style: const TextStyle(fontSize: 21)),
                   ),
-                  const SizedBox(height: 10),
-                  Text(chip.label, maxLines: 1, overflow: TextOverflow.ellipsis, style: AdvisorStyle.text(size: 13.5, weight: FontWeight.w800, height: 1.3)),
-                  const SizedBox(height: 2),
-                  Text(_hint,
-                      maxLines: 1,
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    child: Text(
+                      chip.label,
+                      maxLines: 2,
+                      textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
-                      style: AdvisorStyle.text(size: 11, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.3)),
+                      style: AdvisorStyle.text(size: 12, weight: FontWeight.w800, height: 1.3),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -209,93 +170,30 @@ class _StarterTile extends StatelessWidget {
   }
 }
 
-class _PromptPill extends StatelessWidget {
+class _PromptChip extends StatelessWidget {
   final String text;
   final VoidCallback onTap;
-  const _PromptPill({required this.text, required this.onTap});
+  const _PromptChip({required this.text, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: Colors.white.withValues(alpha: 0.82),
-        borderRadius: BorderRadius.circular(18),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            onTap();
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AdvisorStyle.glassBorder),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.format_quote_rounded, size: 18, color: BrandColors.roseLight),
-                const SizedBox(width: 8),
-                Expanded(child: Text(text, style: AdvisorStyle.text(size: 13.5, weight: FontWeight.w600, height: 1.4))),
-                const Icon(Icons.north_west_rounded, size: 16, color: AdvisorStyle.inkMuted),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-
-/// «أتذكركِ»: ملخص ملفها الجمالي، أو دعوة لتعريف نفسها.
-class _ProfileCard extends StatelessWidget {
-  final AdvisorProfile profile;
-  const _ProfileCard({required this.profile});
-
-  @override
-  Widget build(BuildContext context) {
-    final has = !profile.isEmpty;
     return Material(
-      color: Colors.white.withValues(alpha: 0.9),
-      borderRadius: BorderRadius.circular(20),
+      color: Colors.white.withValues(alpha: 0.88),
+      borderRadius: BorderRadius.circular(21),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => showAdvisorProfileSheet(context),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
         child: Container(
-          padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          alignment: Alignment.center,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: has ? const Color(0xFFEBD3EE) : AdvisorStyle.glassBorder),
+            borderRadius: BorderRadius.circular(21),
+            border: Border.all(color: AdvisorStyle.glassBorder),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(gradient: has ? AdvisorStyle.gradient : AdvisorStyle.softGradient, shape: BoxShape.circle),
-                child: Icon(has ? Icons.favorite_rounded : Icons.favorite_border_rounded, size: 19, color: has ? Colors.white : BrandColors.rose),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(has ? 'أتذكركِ 💜' : 'عرّفيني عليكِ أكثر',
-                        style: AdvisorStyle.text(size: 13.5, weight: FontWeight.w800, height: 1.3)),
-                    Text(
-                      has ? profile.summary() : 'أحفظ نوع بشرتكِ وذوقكِ — على جهازكِ فقط — لترشيحات أدق',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AdvisorStyle.text(size: 11.5, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.45),
-                    ),
-                  ],
-                ),
-              ),
-              Text(has ? 'تعديل' : 'ابدئي', style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w800, color: BrandColors.rose, height: 1.2)),
-            ],
-          ),
+          child: Text('«$text»', style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w600, color: AdvisorStyle.inkSoft, height: 1.2)),
         ),
       ),
     );
