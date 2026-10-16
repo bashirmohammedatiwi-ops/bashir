@@ -46,6 +46,9 @@ String? resolveDeepLink(Uri uri) {
       return '/about';
     case '/products':
       return uri.hasQuery ? '/products?${uri.query}' : '/products';
+    // «ديما»: روابط الحملات والإشعارات (سؤال جاهز ?q= أو منتج ?product=).
+    case '/advisor':
+      return uri.hasQuery ? '/advisor?${uri.query}' : '/advisor';
     case '':
     case '/':
       return '/';

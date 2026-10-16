@@ -81,6 +81,18 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
     }
   }
 
+  /// نفس الشاشة فُتحت برابط جديد (سؤال أو منتج آخر).
+  @override
+  void didUpdateWidget(covariant AdvisorScreen old) {
+    super.didUpdateWidget(old);
+    final m = widget.initialMessage?.trim();
+    if (m != null && m.isNotEmpty && m != old.initialMessage) {
+      _ctl.send(m);
+    } else if (widget.productId != null && widget.productId != old.productId) {
+      _ctl.start(productId: widget.productId, ask: widget.ask);
+    }
+  }
+
   @override
   void dispose() {
     _noticeTimer?.cancel();
@@ -154,6 +166,8 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
         return;
       }
       if (next.notice != null && next.notice?.id != prev?.notice?.id) _showNotice(next.notice!.text);
+      // الترحيب وحده يبقى من أعلاه.
+      if (next.entries.length <= 1 && !next.thinking) return;
       final grew = next.entries.length > (prev?.entries.length ?? 0);
       if (grew && next.entries.last is BotEntry && next.entries.length > 1) {
         _revealReply();
