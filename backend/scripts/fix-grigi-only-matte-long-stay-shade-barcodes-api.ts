@@ -5,8 +5,13 @@
  * Usage: npx tsx scripts/fix-grigi-only-matte-long-stay-shade-barcodes-api.ts
  */
 const API_BASE = (process.env.API_BASE ?? "https://deemaalhayat.com/api/v1").replace(/\/$/, "");
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@alhayaa.com";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "000000";
+// بيانات الدخول من البيئة فقط — لا قيم افتراضية في مستودع عام.
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "";
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error("Set ADMIN_EMAIL and ADMIN_PASSWORD");
+  process.exit(1);
+}
 
 const PRODUCT_ID = "c82948b9-b193-4a4b-bfe6-8d8e895cfa36";
 const PREFIX = "520704216";

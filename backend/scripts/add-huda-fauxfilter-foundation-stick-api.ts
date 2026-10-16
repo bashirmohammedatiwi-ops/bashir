@@ -8,7 +8,12 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 const root = dirname(fileURLToPath(import.meta.url));
 const API = (process.env.API_BASE ?? "https://deemaalhayat.com/api/v1").replace(/\/$/, "");
-const email = process.env.ADMIN_EMAIL ?? "admin@alhayaa.com", password = process.env.ADMIN_PASSWORD ?? "000000";
+// بيانات الدخول من البيئة فقط — لا قيم افتراضية في مستودع عام.
+const email = process.env.ADMIN_EMAIL ?? "", password = process.env.ADMIN_PASSWORD ?? "";
+if (!email || !password) {
+  console.error("Set ADMIN_EMAIL and ADMIN_PASSWORD");
+  process.exit(1);
+}
 const MAKEUP = "d3c24d19-dde5-41e5-b0a9-bede45393795", FACE = "2bbecee1-084d-446c-b4fd-65f769130de9", FOUNDATION = "036b1b3c-aa73-4dd1-bdd2-1a12f193645a";
 const PRICE = 65000, ORIGINAL = 75000;
 const built = JSON.parse(readFileSync(join(root, "data/huda-fauxfilter-shades-built.json"), "utf8")) as { shades: { name: string; colorHex: string; imageUrl: string; position: number }[]; productImages: string[] };

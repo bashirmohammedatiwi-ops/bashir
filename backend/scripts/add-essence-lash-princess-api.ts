@@ -1,10 +1,15 @@
 /**
  * إضافة ماسكارات Essence Lash Princess عبر API — بدون صور.
- * Usage: API_BASE=https://deemaalhayat.com/api/v1 ADMIN_PASSWORD=000000 npx tsx scripts/add-essence-lash-princess-api.ts
+ * Usage: API_BASE=https://deemaalhayat.com/api/v1 ADMIN_EMAIL=... ADMIN_PASSWORD=... npx tsx scripts/add-essence-lash-princess-api.ts
  */
 const API_BASE = (process.env.API_BASE ?? "https://deemaalhayat.com/api/v1").replace(/\/$/, "");
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@alhayaa.com";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "000000";
+// بيانات الدخول من البيئة فقط — لا قيم افتراضية في مستودع عام.
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "";
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error("Set ADMIN_EMAIL and ADMIN_PASSWORD");
+  process.exit(1);
+}
 
 const BRAND_ID = "9c5204f9-10be-484a-8e65-23b3ad53bb3c";
 const CATEGORY_ID = "d3c24d19-dde5-41e5-b0a9-bede45393795";

@@ -3,8 +3,13 @@
  * Usage: npx tsx scripts/fix-lp-batch28-names-api.ts
  */
 const API_BASE = (process.env.API_BASE ?? "https://deemaalhayat.com/api/v1").replace(/\/$/, "");
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@alhayaa.com";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "000000";
+// بيانات الدخول من البيئة فقط — لا قيم افتراضية في مستودع عام.
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "";
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error("Set ADMIN_EMAIL and ADMIN_PASSWORD");
+  process.exit(1);
+}
 
 const BR = "\u0644\u0648\u0631\u064A\u0627\u0644 \u0628\u0631\u0648\u0641\u0634\u0646\u0627\u0644 \u0633\u064A\u0631 \u0625\u0643\u0633\u0628\u064A\u0631\u062A";
 const MASK = "\u0642\u0646\u0627\u0639";

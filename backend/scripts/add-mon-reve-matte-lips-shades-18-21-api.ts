@@ -4,8 +4,13 @@
  * Usage: npx tsx scripts/add-mon-reve-matte-lips-shades-18-21-api.ts
  */
 const API_BASE = (process.env.API_BASE ?? "https://deemaalhayat.com/api/v1").replace(/\/$/, "");
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@alhayaa.com";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "000000";
+// بيانات الدخول من البيئة فقط — لا قيم افتراضية في مستودع عام.
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "";
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error("Set ADMIN_EMAIL and ADMIN_PASSWORD");
+  process.exit(1);
+}
 
 const PRODUCT_ID = "2a6cb692-a628-42db-9f4c-4e20f2896f1d";
 const SHADE_PRICE = 7500;

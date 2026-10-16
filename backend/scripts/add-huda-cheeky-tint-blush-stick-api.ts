@@ -7,8 +7,13 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const API = (process.env.API_BASE ?? "https://deemaalhayat.com/api/v1").replace(/\/$/, "");
-const EMAIL = process.env.ADMIN_EMAIL ?? "admin@alhayaa.com";
-const PASSWORD = process.env.ADMIN_PASSWORD ?? "000000";
+// بيانات الدخول من البيئة فقط — لا قيم افتراضية في مستودع عام.
+const EMAIL = process.env.ADMIN_EMAIL ?? "";
+const PASSWORD = process.env.ADMIN_PASSWORD ?? "";
+if (!EMAIL || !PASSWORD) {
+  console.error("Set ADMIN_EMAIL and ADMIN_PASSWORD");
+  process.exit(1);
+}
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MAKEUP = "d3c24d19-dde5-41e5-b0a9-bede45393795";
 const CHEEK = "7b95190f-d5b7-4dff-8456-3c6d10fdafe6";

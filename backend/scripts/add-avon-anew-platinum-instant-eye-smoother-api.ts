@@ -4,8 +4,13 @@
  * Usage: npx tsx scripts/add-avon-anew-platinum-instant-eye-smoother-api.ts
  */
 const API = (process.env.API_BASE ?? "https://deemaalhayat.com/api/v1").replace(/\/$/, "");
-const EMAIL = process.env.ADMIN_EMAIL ?? "admin@alhayaa.com";
-const PASS = process.env.ADMIN_PASSWORD ?? "000000";
+// بيانات الدخول من البيئة فقط — لا قيم افتراضية في مستودع عام.
+const EMAIL = process.env.ADMIN_EMAIL ?? "";
+const PASS = process.env.ADMIN_PASSWORD ?? "";
+if (!EMAIL || !PASS) {
+  console.error("Set ADMIN_EMAIL and ADMIN_PASSWORD");
+  process.exit(1);
+}
 
 const CARE = "9f99dbf3-15c4-4561-8f53-1499a8743a47";
 const FACE = "07661898-571a-4a88-aa6c-76dcdbf53029";

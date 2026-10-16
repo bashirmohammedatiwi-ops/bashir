@@ -1,10 +1,15 @@
 /**
  * إضافة الدفعة الرابعة من منتجات ilove (Hand & Nail Cream) عبر API — بدون صور.
- * Usage: API_BASE=https://deemaalhayat.com/api/v1 ADMIN_PASSWORD=000000 npx tsx scripts/add-ilove-batch4-api.ts
+ * Usage: API_BASE=https://deemaalhayat.com/api/v1 ADMIN_EMAIL=... ADMIN_PASSWORD=... npx tsx scripts/add-ilove-batch4-api.ts
  */
 const API_BASE = (process.env.API_BASE ?? "https://deemaalhayat.com/api/v1").replace(/\/$/, "");
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@alhayaa.com";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "000000";
+// بيانات الدخول من البيئة فقط — لا قيم افتراضية في مستودع عام.
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "";
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error("Set ADMIN_EMAIL and ADMIN_PASSWORD");
+  process.exit(1);
+}
 
 const BRAND_ID = "4f70b98b-0236-41d9-a257-65db3c801091";
 const CARE_ID = "9f99dbf3-15c4-4561-8f53-1499a8743a47";
