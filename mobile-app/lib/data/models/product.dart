@@ -229,6 +229,8 @@ class Product {
 
   String brandNameFor(String lang) => brand?.localizedName(lang) ?? '';
   String get brandName => brand?.name ?? '';
+  /// اسم البراند القصير للبطاقات (لاتيني إن وُجد — بلا خلط لغتين في سطر واحد).
+  String get brandLabel => brand?.label ?? '';
 
   /// تدرجات لها باركود — تُعرض في التطبيق فقط.
   List<ProductShade> get displayableShades =>

@@ -46,12 +46,33 @@ class Brand {
         productCount: asInt(json['productCount']),
       );
 
-  String localizedName(String lang) => localizedText(
-        languageCode: lang,
-        ar: nameAr,
-        en: nameEn,
-        fallback: name,
-      );
+  String localizedName(String lang) {
+    final parts = splitBrandName(name);
+    return localizedText(
+      languageCode: lang,
+      ar: (nameAr?.trim().isNotEmpty ?? false) ? nameAr : parts.ar,
+      en: (nameEn?.trim().isNotEmpty ?? false) ? nameEn : parts.en,
+      fallback: name,
+    );
+  }
+
+  /// اسم قصير للبطاقات والشعارات: الاسم اللاتيني (هوية البراند) إن وُجد.
+  String get label {
+    final en = nameEn?.trim();
+    if (en != null && en.isNotEmpty) return en;
+    return splitBrandName(name).en ?? name;
+  }
 
   String get logoUrl => logo?.thumb ?? '';
+}
+
+final _arabicChar = RegExp(r'[\u0600-\u06FF]');
+
+/// «غولدن روز Golden Rose» ← (ar: «غولدن روز»، en: «Golden Rose»). للاسم بلغة واحدة: null للأخرى.
+({String? ar, String? en}) splitBrandName(String name) {
+  final words = name.trim().split(RegExp(r'\s+'));
+  final ar = words.where((w) => _arabicChar.hasMatch(w)).join(' ');
+  final en = words.where((w) => !_arabicChar.hasMatch(w)).join(' ').trim();
+  if (ar.isEmpty || en.isEmpty || !RegExp(r'[A-Za-zÀ-ÿ]').hasMatch(en)) return (ar: ar.isEmpty ? null : name, en: en.isEmpty ? null : name);
+  return (ar: ar, en: en);
 }

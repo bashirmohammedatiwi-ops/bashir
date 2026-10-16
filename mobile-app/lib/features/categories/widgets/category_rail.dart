@@ -174,7 +174,8 @@ class _RailTile extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: AnimatedDefaultTextStyle(
                       duration: const Duration(milliseconds: 200),
-                      style: AppText.micro.copyWith(
+                      // دمج مع نمط النص الموروث: يبقى خط التطبيق (لا خط النظام).
+                      style: DefaultTextStyle.of(context).style.merge(AppText.micro).copyWith(
                         fontSize: 11.5,
                         height: 1.25,
                         color: selected ? t.accentDark : t.inkSoft,

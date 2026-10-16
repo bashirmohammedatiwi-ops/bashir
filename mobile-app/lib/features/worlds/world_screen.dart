@@ -304,7 +304,7 @@ class _WorldSearchBody extends ConsumerWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(product.localizedName(lang), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontWeight: FontWeight.w700, color: world.ink)),
-                                    Text(product.brandNameFor(lang), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: world.ink.withValues(alpha: 0.5))),
+                                    Text(product.brandLabel, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: world.ink.withValues(alpha: 0.5))),
                                   ],
                                 ),
                               ),
@@ -516,7 +516,7 @@ class _IndexEntry extends StatelessWidget {
                   width: 34,
                   child: AnimatedDefaultTextStyle(
                     duration: const Duration(milliseconds: 220),
-                    style: TextStyle(
+                    style: DefaultTextStyle.of(context).style.copyWith(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 0.2,

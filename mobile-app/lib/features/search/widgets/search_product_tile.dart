@@ -150,7 +150,7 @@ class SearchProductTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
-    final brand = product.brandNameFor(lang);
+    final brand = product.brandLabel;
     final category = product.category?.localizedName(lang) ?? '';
     final q = query;
 

@@ -204,7 +204,7 @@ class _CardInfo extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final lang = ref.watch(languageCodeProvider);
     final t = context.worldTheme;
-    final brand = product.brandNameFor(lang);
+    final brand = product.brandLabel;
     final hasShades =
         product.shades.where((x) => x.hasBarcode).length > 1 ||
         product.shadeCount > 1;
@@ -374,6 +374,22 @@ class ProductShadeSwatchRow extends StatelessWidget {
     if (total < 2) return const SizedBox.shrink();
     final visible = real.take(max).toList();
     final extra = total - visible.length;
+
+    // بلا ألوان في بيانات القائمة: «🎨 21 درجة» أوضح من «+21» وحدها.
+    if (visible.isEmpty) {
+      final ar = Directionality.of(context) == TextDirection.rtl;
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.palette_outlined, size: 12.5, color: t.accent),
+          const SizedBox(width: 3),
+          Text(
+            ar ? '$total درجة' : '$total shades',
+            style: AppText.micro.copyWith(fontSize: 10.5, color: t.inkSoft, height: 1),
+          ),
+        ],
+      );
+    }
 
     return Row(
       mainAxisSize: MainAxisSize.min,

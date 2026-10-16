@@ -1841,7 +1841,7 @@ class WorldHomeBrands extends ConsumerWidget {
               final brand = brands[i];
               final name = brand.localizedName(lang);
               return _HomeBrandPill(
-                name: name,
+                name: brand.label,
                 logoUrl: brand.logoUrl,
                 ring: theme.hairline,
                 ink: theme.ink,

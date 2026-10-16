@@ -86,7 +86,7 @@ class _HeroProductCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.worldTheme;
     final lang = ref.watch(languageCodeProvider);
-    final brand = product.brandNameFor(lang);
+    final brand = product.brandLabel;
     void open() {
       HapticFeedback.lightImpact();
       context.push(

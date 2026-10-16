@@ -1042,6 +1042,7 @@ class _FreeDeliveryHint extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(99),
                   child: SizedBox(
                     height: 5,
+                    width: double.infinity,
                     child: Stack(
                       children: [
                         Positioned.fill(child: ColoredBox(color: t.accentLight)),
