@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma.service";
+import { getCached, setCached } from "../../common/memory-cache.util";
 import { SettingsService } from "../settings/settings.service";
 import { QamarCatalogNotifierService } from "../sync/qamar-catalog-notifier.service";
 import {
@@ -215,7 +216,21 @@ export class CategoriesService {
     return items.filter((c) => presence.get(c.id) === true);
   }
 
+  /**
+   * شجرة الأقسام للمتجر: تُحسب في ~150–250ms وتُطلب مع كل فتح للتطبيق —
+   * نحفظها 30 ثانية (لوحة التحكم لا تمر من هنا فترى البيانات فوراً).
+   */
   async list(all = false, minimal = false, storefront = false) {
+    if (!storefront) return this.buildList(all, minimal, storefront);
+    const key = `categories:list:${all ? 1 : 0}:${minimal ? 1 : 0}`;
+    const hit = getCached<Awaited<ReturnType<CategoriesService["buildList"]>>>(key);
+    if (hit) return hit;
+    const fresh = await this.buildList(all, minimal, storefront);
+    setCached(key, fresh, 30_000);
+    return fresh;
+  }
+
+  private async buildList(all: boolean, minimal: boolean, storefront: boolean) {
     const hideCfg = storefront ? await this.storefrontHideConfig() : null;
     const presence = hideCfg?.any
       ? await this.deepProductPresence(hideCfg.hideOutOfStock)

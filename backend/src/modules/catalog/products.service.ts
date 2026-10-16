@@ -66,7 +66,18 @@ export class ProductsService {
     private readonly homeFeedCache: HomeFeedCacheService,
   ) {}
 
+  /** قوائم المتجر تتكرر كثيراً أثناء التنقل بين الأقسام — نحفظها 20 ثانية. */
   async list(q: QueryProductsDto, storefront = false) {
+    if (!storefront || q.search?.trim()) return this.buildList(q, storefront);
+    const key = `products:list:${JSON.stringify(q)}`;
+    const hit = getCached<Awaited<ReturnType<ProductsService["buildList"]>>>(key);
+    if (hit) return hit;
+    const fresh = await this.buildList(q, storefront);
+    setCached(key, fresh, 20_000);
+    return fresh;
+  }
+
+  private async buildList(q: QueryProductsDto, storefront: boolean) {
     const [brandId, categoryId, subcategoryId, tertiaryCategoryId] = await Promise.all([
       resolveBrandId(this.prisma, q.brandId),
       resolveCategoryId(this.prisma, q.categoryId),
