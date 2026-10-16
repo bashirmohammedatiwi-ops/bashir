@@ -256,8 +256,21 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
     return this.adminDetails(orderId);
   }
 
+  /** إلغاء لدى البوابة: الدفعة المكتملة (قبل التسوية) أو — إن لم توجد — محاولة مفتوحة لم تُدفع. */
   async adminCancel(orderId: string, actorId: string) {
-    const tx = await this.paidTransaction(orderId);
+    await this.ensureOrder(orderId);
+    await this.syncOpen(orderId, "SYNC");
+    const paid = await this.prisma.paymentTransaction.findFirst({
+      where: { orderId, status: "SUCCESS", canceled: false },
+      orderBy: { createdAt: "desc" },
+    });
+    const tx =
+      paid ??
+      (await this.prisma.paymentTransaction.findFirst({
+        where: { orderId, status: "CREATED", canceled: false },
+        orderBy: { createdAt: "desc" },
+      }));
+    if (!tx) throw new BadRequestException("لا توجد عملية قابلة للإلغاء لهذا الطلب");
     await this.cancelAtGateway(tx, actorId, "ADMIN");
     return this.adminDetails(orderId);
   }
@@ -448,6 +461,15 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
+    // دُفع الطلب: المحاولات الأخرى المفتوحة عليه لم تعد لازمة — نلغيها لدى البوابة.
+    if (next === PaymentStatus.PAID) {
+      for (const t of txs) {
+        if (t.status === "CREATED" && !t.canceled) {
+          this.cancelAtGateway(t, undefined, "SUPERSEDED").catch(() => undefined);
+        }
+      }
+    }
+
     if (next === PaymentStatus.PAID || next === PaymentStatus.REFUNDED) {
       const title = next === PaymentStatus.PAID ? "تم استلام دفعتك" : "تم استرجاع المبلغ";
       const body =
@@ -469,6 +491,7 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
   /** طلبات بطاقة لم تُدفع خلال المهلة: نتأكد من البوابة ثم نلغيها ونعيد المخزون. */
   private async expireUnpaidCardOrders() {
     if (!this.qi.isConfigured) return;
+    await this.closeOrphanAttempts();
     const stale = await this.prisma.order.findMany({
       where: {
         paymentMethod: PaymentMethod.CARD,
@@ -496,6 +519,25 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
       await this.orders.cancel(o.id).catch((e) =>
         this.log.warn(`Cancel unpaid ${o.orderNumber} failed: ${e.message}`),
       );
+    }
+  }
+
+  /** محاولات مفتوحة على طلبات دُفعت بمحاولة أخرى: نزامنها، ونلغي ما بقي مفتوحاً لدى البوابة. */
+  private async closeOrphanAttempts() {
+    const orphans = await this.prisma.paymentTransaction.findMany({
+      where: {
+        status: "CREATED",
+        canceled: false,
+        order: { paymentStatus: { in: [PaymentStatus.PAID, PaymentStatus.REFUNDED] } },
+      },
+      take: 50,
+    });
+    for (const tx of orphans) {
+      await this.sync(tx, "SYNC");
+      const latest = await this.prisma.paymentTransaction.findUnique({ where: { id: tx.id } });
+      if (latest && latest.status === "CREATED" && !latest.canceled) {
+        await this.cancelAtGateway(latest, undefined, "SUPERSEDED").catch(() => undefined);
+      }
     }
   }
 

@@ -82,6 +82,7 @@ export function CardPaymentPanel({ orderId }: { orderId: string }) {
 
   const txs: any[] = data?.transactions ?? [];
   const paid = txs.find((t) => t.status === "SUCCESS" && !t.canceled && t.refundable > 0);
+  const open = txs.find((t) => t.status === "CREATED" && !t.canceled);
 
   return (
     <div className="ord-actions-card">
@@ -161,6 +162,22 @@ export function CardPaymentPanel({ orderId }: { orderId: string }) {
           >
             <Button danger icon={<StopOutlined />} loading={cancel.isPending}>
               إلغاء العملية
+            </Button>
+          </Popconfirm>
+        </Space>
+      )}
+
+      {!paid && open && (
+        <Space style={{ marginTop: 12 }} wrap>
+          <Popconfirm
+            title="إلغاء محاولة الدفع المفتوحة؟"
+            description="لم يُخصم أي مبلغ بعد — تُغلق العملية لدى البوابة."
+            okText="إلغاء العملية"
+            cancelText="رجوع"
+            onConfirm={() => cancel.mutate()}
+          >
+            <Button danger icon={<StopOutlined />} loading={cancel.isPending}>
+              إلغاء العملية المفتوحة
             </Button>
           </Popconfirm>
         </Space>
