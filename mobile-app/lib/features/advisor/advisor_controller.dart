@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/utils/barcode_util.dart';
 import '../../core/utils/friendly_error.dart';
 import '../../core/utils/json.dart';
 import '../../data/services/api_service.dart';
@@ -162,6 +163,39 @@ class AdvisorController extends StateNotifier<AdvisorSession> {
   Future<void> focusOn(AdvisorProduct p) async {
     if (state.thinking) return;
     await _turn(UserEntry('أريد أعرف أكثر عن «${_short(p.name)}»'), action: 'set:focus=${p.id};act:focus');
+  }
+
+  /// مسحت باركود منتج داخل «ديما»: «هل يناسبني؟» عنه مباشرة.
+  Future<void> askScanned(String code) async {
+    if (state.thinking) return;
+    final normalized = normalizeBarcode(code);
+    final lookup = normalized.isNotEmpty ? normalized : code.trim();
+    if (lookup.isEmpty) return;
+    String? productId;
+    try {
+      productId = (await _api.lookupProductByBarcode(lookup))?.productId;
+    } catch (_) {}
+    if (!mounted) return;
+    if (productId != null && productId.isNotEmpty) {
+      await _turn(const UserEntry('📷 مسحت منتجاً — هل يناسبني؟'), action: 'set:focus=$productId;act:fit');
+      return;
+    }
+    // غير موجود بالمتجر: نقولها بصراحة ونقترح البحث عن بديله.
+    state = state.copyWith(entries: [
+      ...state.entries,
+      const UserEntry('📷 مسحت منتجاً'),
+      const BotEntry(AdvisorReply(
+        messages: ['ما لكيت هذا المنتج بمتجرنا 🙈 اكتبيلي اسمه أو نوعه، وأدورلكِ عليه أو على أقرب بديل له.'],
+        chips: [
+          AdvisorChip(label: 'بديل لعطر مشهور', value: 'بديل لعطر مشهور', emoji: '🔎'),
+          AdvisorChip(label: 'منتج لبشرتي', value: 'act:quiz', emoji: '🌸'),
+        ],
+        raw: {
+          'messages': ['ما لكيت هذا المنتج بمتجرنا 🙈 اكتبيلي اسمه أو نوعه، وأدورلكِ عليه أو على أقرب بديل له.'],
+        },
+      )),
+    ]);
+    _persist();
   }
 
   /// سؤال سريع عن منتج بعينه (يناسبني؟ بديل أرخص…).

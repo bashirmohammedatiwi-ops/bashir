@@ -11,7 +11,8 @@ import type { Need } from "./engine/types";
 import { WELCOME_BODY, greetingFor, pick } from "./engine/composer";
 import { STARTERS, respond } from "./engine/dialog";
 import { searchCatalog } from "./engine/search";
-import { AdvisorReply, AdvisorState, Profile } from "./engine/types";
+import { AdvisorReply, AdvisorState, PersonalOut, Profile, Purchase } from "./engine/types";
+import { personalFor } from "./engine/personal";
 
 /** أمثلة تُظهر طرق السؤال المختلفة — تتبدل كل ساعة. */
 const PROMPTS_CORE = ["بشرتي دهنية وبيها حبوب", "هدية لأمي بحدود 50 ألف", "روتين كامل للبشرة الجافة", "عطر رجالي خشبي لزوجي", "ماسكارا مقاومة للماء", "سيروم للتصبغات تحت 25 ألف"];
@@ -278,15 +279,55 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
     return out;
   }
 
-  async welcome(firstName?: string) {
+  async welcome(firstName?: string, userId?: string) {
     const seed = Math.floor(Date.now() / 3_600_000);
     const hour = (new Date().getUTCHours() + 3) % 24; // توقيت بغداد
     const rot = <T,>(a: T[], n: number) => Array.from({ length: n }, (_, i) => a[(seed * 3 + i) % a.length]);
+    // للمسجلات: «قارب يخلص؟» و«أكملي روتينكِ» من طلباتها.
+    let personal: PersonalOut[] = [];
+    if (userId) {
+      const [catalog, history] = await Promise.all([this.catalog(), this.historyFor(userId)]);
+      personal = personalFor(catalog, history);
+    }
     return {
       messages: [greetingFor(firstName?.trim() || undefined, hour, seed), pick(WELCOME_BODY, seed)],
       chips: STARTERS,
       prompts: [...rot(PROMPTS_CORE, 3), ...rot(PROMPTS_SKILLS, 3)],
+      personal,
     };
+  }
+
+  private readonly histories = new Map<string, { at: number; list: Purchase[] }>();
+
+  /**
+   * مشترياتها من طلباتها (غير الملغاة) لآخر سنة — لها وحدها، مخزنة 3 دقائق.
+   * لا تُرسل للتطبيق كما هي؛ تُستخدم فقط لتخصيص الترشيحات.
+   */
+  private async historyFor(userId: string): Promise<Purchase[]> {
+    const hit = this.histories.get(userId);
+    if (hit && Date.now() - hit.at < 3 * 60_000) return hit.list;
+    const orders = await this.prisma.order
+      .findMany({
+        where: { userId, status: { notIn: ["CANCELLED", "REFUNDED"] }, createdAt: { gte: new Date(Date.now() - 365 * 86_400_000) } },
+        select: { createdAt: true, items: { select: { productId: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 60,
+      })
+      .catch(() => []);
+    const by = new Map<string, Purchase>();
+    for (const o of orders) {
+      for (const it of o.items) {
+        const e = by.get(it.productId);
+        if (e) {
+          e.times++;
+          e.at = Math.max(e.at, o.createdAt.getTime());
+        } else by.set(it.productId, { productId: it.productId, at: o.createdAt.getTime(), times: 1 });
+      }
+    }
+    const list = [...by.values()];
+    if (this.histories.size > 3000) this.histories.delete(this.histories.keys().next().value as string);
+    this.histories.set(userId, { at: Date.now(), list });
+    return list;
   }
 
   async chat(input: {
@@ -296,8 +337,9 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
     firstName?: string;
     profile?: Profile | null;
     productId?: string;
+    userId?: string;
   }): Promise<AdvisorReply> {
-    const catalog = await this.catalog();
+    const [catalog, history] = await Promise.all([this.catalog(), input.userId ? this.historyFor(input.userId) : Promise.resolve(null)]);
     let action = input.action;
     // فُتحت «ديما» من صفحة منتج: نبدأ الحديث عنه.
     if (input.productId && !input.message && !action) action = `set:focus=${input.productId};act:focus`;
@@ -339,6 +381,8 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
       profile,
       details,
       ai,
+      loggedIn: Boolean(input.userId),
+      history,
     });
   }
 

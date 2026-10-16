@@ -154,6 +154,7 @@ export function describeNeed(need: Need, brandNames: Map<string, string>): strin
     parts.push(bi(need.ingredients.map((i) => facetValue("ingredient", i)?.label).filter(Boolean).join(" و")));
   }
   if (need.finish) parts.push(facetValue("finish", need.finish)!.label);
+  if (need.size) parts.push(need.size === "big" ? "بحجم كبير" : "بحجم صغير");
   if (need.brands.length) parts.push(`من ${need.brands.map((b) => brandNames.get(b) ?? "").filter(Boolean).join(" أو ")}`);
   if (need.maxPrice && need.minPrice) parts.push(`بين ${fmt(need.minPrice)} و${fmt(need.maxPrice)} د.ع`);
   else if (need.maxPrice) parts.push(`ضمن ${fmt(need.maxPrice)} د.ع`);

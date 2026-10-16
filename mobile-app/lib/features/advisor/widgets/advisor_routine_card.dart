@@ -36,10 +36,12 @@ class _AdvisorRoutineCardState extends ConsumerState<AdvisorRoutineCard> {
   Future<void> _addAll() async {
     if (_busy) return;
     setState(() => _busy = true);
-    final added = await advisorAddRoutine(context, ref, widget.routine.steps.map((s) => s.product).toList());
+    // ما عندها أصلاً من مشترياتها لا يُضاف مرة ثانية.
+    final toBuy = widget.routine.steps.where((s) => !s.owned).toList();
+    final added = await advisorAddRoutine(context, ref, toBuy.map((s) => s.product).toList());
     if (!mounted) return;
     if (added > 0) {
-      for (final st in widget.routine.steps) {
+      for (final st in toBuy) {
         ref.read(advisorProvider.notifier).track('cart', productId: st.product.id);
       }
     }
@@ -71,6 +73,7 @@ class _AdvisorRoutineCardState extends ConsumerState<AdvisorRoutineCard> {
                 emoji: r.emoji,
                 subtitle: [
                   r.isLook ? '${r.steps.length} قطع متناسقة' : '${r.steps.length} خطوات • $_schedule',
+                  if (r.steps.any((s) => s.owned)) '${r.steps.where((s) => s.owned).length} عندكِ ✓',
                   if (r.brand != null) 'من ${r.brand!.split(RegExp(r'\s+(?=[A-Za-z])')).last}',
                 ].join(' • '),
                 total: r.total,
@@ -93,6 +96,7 @@ class _AdvisorRoutineCardState extends ConsumerState<AdvisorRoutineCard> {
                 padding: const EdgeInsets.fromLTRB(14, 6, 14, 14),
                 child: _AddAllButton(
                   isLook: r.isLook,
+                  partial: r.steps.any((s) => s.owned),
                   total: r.total,
                   busy: _busy,
                   done: _done,
@@ -241,11 +245,23 @@ class _StepTile extends StatelessWidget {
                           child: Text(_when, style: AdvisorStyle.text(size: 10, weight: FontWeight.w700, color: AdvisorStyle.inkSoft, height: 1.4)),
                         ),
                       ],
+                      if (step.owned) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.success.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text('عندكِ ✓',
+                              style: AdvisorStyle.text(size: 10, weight: FontWeight.w800, color: AppColors.success, height: 1.4)),
+                        ),
+                      ],
                     ],
                   ),
                   const SizedBox(height: 8),
                   Material(
-                    color: const Color(0xFFFCFAFD),
+                    color: step.owned ? const Color(0xFFF4FBF6) : const Color(0xFFFCFAFD),
                     borderRadius: BorderRadius.circular(16),
                     clipBehavior: Clip.antiAlias,
                     child: InkWell(
@@ -280,11 +296,11 @@ class _StepTile extends StatelessWidget {
                                       overflow: TextOverflow.ellipsis,
                                       style: AdvisorStyle.text(size: 12, weight: FontWeight.w600, height: 1.35)),
                                   const SizedBox(height: 2),
-                                  Text(formatPrice(p.price),
+                                  Text(step.owned ? 'من مشترياتكِ' : formatPrice(p.price),
                                       style: AdvisorStyle.text(
                                         size: 12.5,
                                         weight: FontWeight.w800,
-                                        color: p.hasDiscount ? AppColors.sale : AdvisorStyle.ink,
+                                        color: step.owned ? AppColors.success : p.hasDiscount ? AppColors.sale : AdvisorStyle.ink,
                                         height: 1.3,
                                       )),
                                 ],
@@ -312,7 +328,16 @@ class _AddAllButton extends StatelessWidget {
   final bool done;
   final bool isLook;
   final VoidCallback onTap;
-  const _AddAllButton({required this.total, required this.busy, required this.done, required this.onTap, this.isLook = false});
+  /// بعض الخطوات عندها: «أضيفي الناقص» بدل «الروتين كاملاً».
+  final bool partial;
+  const _AddAllButton({
+    required this.total,
+    required this.busy,
+    required this.done,
+    required this.onTap,
+    this.isLook = false,
+    this.partial = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -360,7 +385,7 @@ class _AddAllButton extends StatelessWidget {
                           children: [
                             const Icon(Icons.shopping_bag_rounded, color: Colors.white, size: 19),
                             const SizedBox(width: 8),
-                            Text(isLook ? 'أضيفي اللوك كاملاً' : 'أضيفي الروتين كاملاً',
+                            Text(isLook ? 'أضيفي اللوك كاملاً' : partial ? 'أضيفي الناقص فقط' : 'أضيفي الروتين كاملاً',
                                 style: AdvisorStyle.text(size: 14, weight: FontWeight.w800, color: Colors.white, height: 1.2)),
                             Text('  •  ${formatPrice(total)}',
                                 style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.85), height: 1.2)),

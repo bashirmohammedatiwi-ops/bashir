@@ -28,6 +28,8 @@ export interface Need {
   free: string[];
   /** يريد روتيناً كاملاً لا منتجاً واحداً. */
   routine?: boolean;
+  /** الحجم: «حجم كبير/اقتصادي» أو «ميني/للسفر». */
+  size?: "big" | "small";
 }
 
 export const emptyNeed = (): Need => ({
@@ -64,7 +66,8 @@ export type Intent =
   | "reset"
   | "help"
   | "quiz"
-  | "about";
+  | "about"
+  | "history";
 
 /** حالة المحادثة — يحفظها التطبيق ويعيدها مع كل رسالة (المستشارة بلا ذاكرة خادم). */
 export interface AdvisorState {
@@ -83,6 +86,8 @@ export interface AdvisorState {
   lastTop?: string;
   /** أول بطاقات آخر رد (لـ«قارنيهم»). */
   lastCards?: string[];
+  /** بطاقات آخر رد بترتيب ظهورها — لـ«الثاني»، «الأخير». */
+  lastList?: string[];
   /** مرجع آخر بحث تشابه («p:id» أو «f:id») — لـ«أرخص» بعده. */
   simRef?: string;
   turns: number;
@@ -165,6 +170,25 @@ export interface RoutineStepOut {
   emoji: string;
   when: "am" | "pm" | "both" | "any";
   product: ProductCardOut;
+  /** عندها هذا المنتج من مشترياتها — لا يُضاف للسلة ولا يُحسب بالمجموع. */
+  owned?: boolean;
+}
+
+/** منتج اشترته الزبونة (من طلباتها — للمسجلات فقط). */
+export interface Purchase {
+  productId: string;
+  /** آخر شراء (ms). */
+  at: number;
+  /** كم مرة اشترته. */
+  times: number;
+}
+
+/** اقتراح شخصي في الترحيب: «قارب يخلص؟» أو «أكملي روتينكِ». */
+export interface PersonalOut {
+  title: string;
+  note: string;
+  kind: "refill" | "next";
+  products: ProductCardOut[];
 }
 
 export interface QuizOut {
@@ -191,6 +215,8 @@ export interface AdvisorReply {
   fit?: FitOut;
   /** المنتج المرجعي لبدائل/مشابه/مكمّلات. */
   anchor?: ProductCardOut;
+  /** اقتراحات شخصية من مشترياتها (تجديد، خطوة ناقصة). */
+  personal?: PersonalOut[];
   /** ما تعلّمته عن الزبونة في هذا الرد — يدمجه التطبيق في ملفها. */
   profileUpdate?: Partial<Profile>;
   /** ملخص ما فهمته (شرائح قابلة للإزالة). */

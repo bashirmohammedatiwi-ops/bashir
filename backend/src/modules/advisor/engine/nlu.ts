@@ -130,6 +130,10 @@ function parseBudget(norm: string): { min?: number; max?: number } {
   return {};
 }
 
+/** الحجم: «حجم كبير/اقتصادي» ← الأكبر، «ميني/للسفر» ← الأصغر. */
+const SIZE_BIG_RE = /(حجم (كبير|اكبر|عائلي|اقتصادي)|الحجم الكبير|الحجم الاكبر|كبير الحجم|اكبر حجم|عبوه كبيره|اقتصادي|جامبو|jumbo|large size|big size|bigger size)/;
+const SIZE_SMALL_RE = /(حجم (صغير|اصغر|سفر|تجربه)|الحجم الصغير|صغير الحجم|اصغر حجم|ميني|mini|للسفر|travel size|travel|عبوه صغيره|حجم تجريبي)/;
+
 /** «بدون روتين»، «منتجات منفردة»، «كل واحد لوحده»: منتجات مفردة لا روتين. */
 export const NO_ROUTINE_RE =
   /(منتج(ات)? (مفرد|منفرد|منفصل)|منفرد(ه|ين)?|مفرد(ه)?|منفصل(ه|ين)?|لوحد(ه|ها|هم)|بس منتج|منتج واحد|(مو|مش|بدون|بلا|ما اريد|ما ابي|لا اريد|مابي) ?روتين|without (a )?routine|single products?)/;
@@ -154,7 +158,8 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
   const lites = raws.map(lite);
   const words = raws.map(stem);
   // «وحب الشباب»: الواو الملتصقة بكلمة قصيرة (التجذيع لا يزيلها حتى لا يخرب «ورد»).
-  const deW = raws.map((w, i) => (w.length >= 3 && w.length <= 4 && w.startsWith("و") ? stem(w.slice(1)) : words[i]));
+  // وكذلك اللام والباء: «لحب الشباب»، «بحب الشباب» (بديل مطابقة فقط، الأصل يبقى).
+  const deW = raws.map((w, i) => (w.length >= 3 && (/^[ولب]/.test(w) && (w.length <= 4 || /^[لب]/.test(w))) ? stem(w.slice(1)) : words[i]));
   const mentioned = new Set<string>();
   const delta: Parsed["delta"] = {};
   const consumed = new Set<number>();
@@ -297,6 +302,12 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
   if (!delta.area && single.skinType && !delta.kinds?.length) delta.area = "skin";
   // «جاف/دهني» في سياق الشعر = جفاف الشعر/فروة دهنية، لا نوع بشرة.
   if (delta.area === "hair") {
+    // «لمعان للشعر» = تريده لامعاً، لا فروة دهنية (إلا إن ذكرت الدهون صراحة).
+    if (/(^| )(لمعان|لماع|يلمع|تلمع|لمعه|بريق|shine|shiny)( |$)/.test(norm) && !/(دهني|دهون|فروه|زيوت|oily|greasy)/.test(norm)) {
+      delta.concerns = (delta.concerns ?? []).filter((c) => c !== "oily" && c !== "oily_scalp");
+      if (!delta.concerns.length) delete delta.concerns;
+      delta.free = [...new Set([...(delta.free ?? []), "لمعان"])];
+    }
     const HAIR: Record<string, string> = { dryness: "dry_hair", oily: "oily_scalp", dry: "dry_hair" };
     if (delta.concerns) delta.concerns = [...new Set(delta.concerns.map((c) => HAIR[c] ?? c))];
     if (delta.skinType && HAIR[delta.skinType]) {
@@ -391,7 +402,7 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
   const INTENT_WORDS = new Set(
     tokens(
       "اريد ابي احتاج عندي شي منتج منتجات افضل احسن اقترحي اقترح نصيحه انصحيني شنو شلون كيف ممكن يا حلوه حبيبتي " +
-        "ابحث عن عندكم لديكم يوجد توجد اكو ماكو عطيني دليني ساعديني بس رجاء لو سمحتي please show me recommend suggest best good",
+        "ابحث عن عندكم لديكم يوجد توجد اكو ماكو عطيني دليني ساعديني بس رجاء لو سمحتي يعطي تعطي يخلي تخلي يسوي تسوي يمنح تمنح يكون تكون please show me recommend suggest best good",
       { keepStop: true },
     ),
   );
@@ -406,7 +417,13 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
       // أدوات النفي وما نُفي (براند غير متوفر مثلاً) لا يُبحث عنه.
       !NEGATORS.has(w) && !negatedAt(words, i),
   );
-  if (free.length) delta.free = free;
+  if (free.length) delta.free = [...new Set([...(delta.free ?? []), ...free])];
+  if (SIZE_BIG_RE.test(norm)) delta.size = "big";
+  else if (SIZE_SMALL_RE.test(norm)) delta.size = "small";
+  if (delta.size && delta.free) {
+    delta.free = delta.free.filter((w) => !/^(حجم|الحجم|كبير|اكبر|صغير|اصغر|ميني|mini|سفر|للسفر|اقتصادي|عائلي|عبوه|travel|size)$/.test(w));
+    if (!delta.free.length) delete delta.free;
+  }
   // ما تعلّمته من عبارات كاملة (ميزانية، براند، كلمات بحث).
   if (learnedDelta.maxPrice && !delta.maxPrice) delta.maxPrice = learnedDelta.maxPrice;
   if (learnedDelta.minPrice && !delta.minPrice) delta.minPrice = learnedDelta.minPrice;

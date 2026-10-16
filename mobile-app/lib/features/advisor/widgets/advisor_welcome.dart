@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../core/brand/brand_logo.dart';
 import '../advisor_models.dart';
 import 'advisor_orb.dart';
+import 'advisor_personal_card.dart';
 import 'advisor_style.dart';
 import 'stagger_in.dart';
 
@@ -63,6 +64,12 @@ class AdvisorWelcome extends StatelessWidget {
             style: AdvisorStyle.text(size: 14, weight: FontWeight.w600, color: AdvisorStyle.inkMuted, height: 1.4),
           )),
           const SizedBox(height: 24),
+          // للمسجلات: «قارب يخلص؟» و«أكملي روتينكِ» من مشترياتها — أهم من البطاقات العامة.
+          // بطاقة واحدة مختصرة (التجديد أولاً) — لا نزحم أعلى الشاشة.
+          if (reply.personal.isNotEmpty) ...[
+            item(AdvisorPersonalCard(personal: reply.personal.first, animate: animate, margin: EdgeInsets.zero, compact: true)),
+            const SizedBox(height: 16),
+          ],
           if (reply.chips.isNotEmpty)
             item(LayoutBuilder(
               builder: (_, c) {

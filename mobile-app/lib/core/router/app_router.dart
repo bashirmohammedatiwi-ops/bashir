@@ -130,7 +130,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/world/:slug',
         builder: (_, s) => WorldScreen(slug: s.pathParameters['slug']!),
       ),
-      GoRoute(path: '/scan', builder: (_, __) => const QrScanScreen()),
+      GoRoute(path: '/scan', builder: (_, st) => QrScanScreen(pickOnly: st.uri.queryParameters['pick'] == '1')),
       GoRoute(path: '/brands', builder: (_, __) => const BrandsScreen()),
       GoRoute(
         path: '/product/:id',

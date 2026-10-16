@@ -18,6 +18,7 @@ import 'widgets/advisor_knowledge_card.dart';
 import 'widgets/advisor_profile_sheet.dart';
 import 'widgets/advisor_bubbles.dart';
 import 'widgets/advisor_orb.dart';
+import 'widgets/advisor_personal_card.dart';
 import 'widgets/advisor_product_card.dart';
 import 'widgets/advisor_quiz_card.dart';
 import 'widgets/advisor_routine_card.dart';
@@ -154,6 +155,14 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
     HapticFeedback.selectionClick();
     _focus.unfocus();
     _ctl.tap(c);
+  }
+
+  /// مسح باركود منتج من داخل «ديما» ← «هل يناسبني؟».
+  Future<void> _scan() async {
+    _focus.unfocus();
+    final code = await context.push<String>('/scan?pick=1');
+    if (!mounted || code == null || code.trim().isEmpty) return;
+    await _ctl.askScanned(code);
   }
 
   @override
@@ -356,6 +365,7 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
                   chipsKey: entries.length,
                   onChip: _tapChip,
                   onSend: _send,
+                  onScan: _scan,
                 ),
               ],
             ),
@@ -662,6 +672,9 @@ class _BotTurn extends StatelessWidget {
     for (final g in reply.groups) {
       card(AdvisorProductRail(title: g.title, products: g.products, animate: animate, highlightFirst: false));
     }
+    for (final pc in reply.personal) {
+      card(AdvisorPersonalCard(personal: pc, animate: animate));
+    }
     // أكثر من نوع بطلب واحد: إضافة الأفضل من كل نوع بلمسة.
     if (reply.products.isEmpty && reply.groups.length >= 2 && reply.routine == null) {
       card(_AddBestOfEach(products: reply.groups.map((g) => g.products.first).toList()));
@@ -906,6 +919,7 @@ class _Composer extends StatelessWidget {
   final int chipsKey;
   final ValueChanged<AdvisorChip> onChip;
   final ValueChanged<String?> onSend;
+  final VoidCallback onScan;
 
   const _Composer({
     required this.controller,
@@ -916,6 +930,7 @@ class _Composer extends StatelessWidget {
     required this.chipsKey,
     required this.onChip,
     required this.onSend,
+    required this.onScan,
   });
 
   @override
@@ -993,6 +1008,31 @@ class _Composer extends StatelessWidget {
                         hintStyle: AdvisorStyle.text(size: 13.5, color: AdvisorStyle.inkMuted, height: 1.45),
                       ),
                     ),
+                  ),
+                  // مسح باركود منتج: يظهر حين لا نص (المساحة للكتابة حين تكتب).
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    transitionBuilder: (c, a) => FadeTransition(opacity: a, child: ScaleTransition(scale: a, child: c)),
+                    child: hasText
+                        ? const SizedBox.shrink()
+                        : Padding(
+                            key: const ValueKey('scan'),
+                            padding: const EdgeInsetsDirectional.only(start: 4, bottom: 3),
+                            child: Tooltip(
+                              message: 'امسحي باركود منتج — هل يناسبني؟',
+                              child: InkResponse(
+                                onTap: busy ? null : onScan,
+                                radius: 22,
+                                child: Container(
+                                  width: 38,
+                                  height: 38,
+                                  alignment: Alignment.center,
+                                  decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFF7F0FC)),
+                                  child: const Icon(Icons.qr_code_scanner_rounded, size: 19, color: BrandColors.orchid),
+                                ),
+                              ),
+                            ),
+                          ),
                   ),
                   const SizedBox(width: 6),
                   Padding(

@@ -28,7 +28,9 @@ const _barcodeFormats = <BarcodeFormat>[
 
 /// مسح باركود المنتج بالكاميرا.
 class QrScanScreen extends ConsumerStatefulWidget {
-  const QrScanScreen({super.key});
+  /// وضع الالتقاط: يعيد الرمز لمن فتحه (مثل «ديما») بدل فتح المنتج.
+  final bool pickOnly;
+  const QrScanScreen({super.key, this.pickOnly = false});
 
   @override
   ConsumerState<QrScanScreen> createState() => _QrScanScreenState();
@@ -78,6 +80,11 @@ class _QrScanScreenState extends ConsumerState<QrScanScreen> with WidgetsBinding
     if (raw == null || raw.isEmpty) return;
 
     _busy = true;
+    if (widget.pickOnly) {
+      HapticFeedback.mediumImpact();
+      context.pop(raw);
+      return;
+    }
     unawaited(_navigateForCode(raw));
   }
 

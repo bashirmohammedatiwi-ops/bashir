@@ -192,7 +192,16 @@ class AdvisorRoutineStep {
   final String emoji;
   final String when;
   final AdvisorProduct product;
-  const AdvisorRoutineStep({required this.step, required this.label, required this.emoji, required this.when, required this.product});
+  /// عندها هذا المنتج من مشترياتها — لا يُضاف للسلة.
+  final bool owned;
+  const AdvisorRoutineStep({
+    required this.step,
+    required this.label,
+    required this.emoji,
+    required this.when,
+    required this.product,
+    this.owned = false,
+  });
 
   factory AdvisorRoutineStep.fromJson(Map<String, dynamic> j) => AdvisorRoutineStep(
         step: asString(j['step']),
@@ -200,6 +209,25 @@ class AdvisorRoutineStep {
         emoji: asString(j['emoji']),
         when: asString(j['when'], 'both'),
         product: AdvisorProduct.fromJson(asMap(j['product'])),
+        owned: j['owned'] == true,
+      );
+}
+
+/// اقتراح شخصي من مشترياتها: «قارب يخلص؟» (refill) أو «أكملي روتينكِ» (next).
+class AdvisorPersonal {
+  final String kind;
+  final String title;
+  final String note;
+  final List<AdvisorProduct> products;
+  const AdvisorPersonal({required this.kind, required this.title, required this.note, required this.products});
+
+  bool get isRefill => kind == 'refill';
+
+  factory AdvisorPersonal.fromJson(Map<String, dynamic> j) => AdvisorPersonal(
+        kind: asString(j['kind'], 'refill'),
+        title: asString(j['title']),
+        note: asString(j['note']),
+        products: asList(j['products']).map((e) => AdvisorProduct.fromJson(asMap(e))).toList(),
       );
 }
 
@@ -283,6 +311,8 @@ class AdvisorReply {
   final AdvisorProduct? anchor;
   /// ما تعلّمته عنها في هذا الرد.
   final Map<String, dynamic>? profileUpdate;
+  /// اقتراحات من مشترياتها (للمسجلات).
+  final List<AdvisorPersonal> personal;
   /// الرد كما وصل — لحفظ المحادثة على الجهاز.
   final Map<String, dynamic> raw;
 
@@ -301,6 +331,7 @@ class AdvisorReply {
     this.fit,
     this.anchor,
     this.profileUpdate,
+    this.personal = const [],
     this.raw = const {},
   });
 
@@ -327,6 +358,10 @@ class AdvisorReply {
         fit: j['fit'] is Map ? AdvisorFit.fromJson(asMap(j['fit'])) : null,
         anchor: j['anchor'] is Map ? AdvisorProduct.fromJson(asMap(j['anchor'])) : null,
         profileUpdate: j['profileUpdate'] is Map ? asMap(j['profileUpdate']) : null,
+        personal: asList(j['personal'])
+            .map((e) => AdvisorPersonal.fromJson(asMap(e)))
+            .where((x) => x.products.isNotEmpty)
+            .toList(),
         raw: j,
       );
 

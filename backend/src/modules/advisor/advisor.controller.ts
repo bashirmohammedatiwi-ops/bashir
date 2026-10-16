@@ -1,8 +1,10 @@
-import { Body, Controller, Get, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query, UseGuards } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import { IsIn, IsObject, IsOptional, IsString, MaxLength } from "class-validator";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { Public } from "../../common/decorators/public.decorator";
+import { OptionalJwtGuard } from "./optional-jwt.guard";
 import { AdvisorService } from "./advisor.service";
 import { AdvisorState, Profile } from "./engine/types";
 
@@ -39,16 +41,18 @@ export class AdvisorController {
 
   /** نفس الترحيب، والاسم في جسم الطلب لا في الرابط (لا يُسجَّل في سجلات الخادم). */
   @Public()
+  @UseGuards(OptionalJwtGuard)
   @Post("welcome")
-  welcomePost(@Body() dto: AdvisorWelcomeDto) {
-    return this.advisor.welcome(dto.firstName?.slice(0, 40));
+  welcomePost(@Body() dto: AdvisorWelcomeDto, @CurrentUser() user?: { id: string }) {
+    return this.advisor.welcome(dto.firstName?.slice(0, 40), user?.id);
   }
 
   @Public()
+  @UseGuards(OptionalJwtGuard)
   @Throttle({ default: { limit: 40, ttl: 60_000 } })
   @Post("chat")
-  chat(@Body() dto: AdvisorChatDto) {
-    return this.advisor.chat(dto);
+  chat(@Body() dto: AdvisorChatDto, @CurrentUser() user?: { id: string }) {
+    return this.advisor.chat({ ...dto, userId: user?.id });
   }
 
   /** إشارات التعلّم — مجهولة الهوية تماماً. */

@@ -1,9 +1,10 @@
 import { CatalogIndex, IndexedProduct } from "./catalog";
 import { famousIn, findByName, findFamousProduct, profileOf, profileOfBoth, profileOfFamous, SIMILAR_RE, similarProducts } from "./similar";
-import { COMPLEMENT_WHY, COMPLEMENTS, compareProducts, fitCheck, whyList } from "./insight";
+import { COMPLEMENT_WHY, COMPLEMENTS, compareProducts, fitCheck, sizeOf, whyList } from "./insight";
 import { answerQuestion, cautionFor, detectIngredients, QaAnswer, QUESTION_RE } from "./qa";
 import { FAMOUS } from "./famous";
 import { AiParse, mergeAiParse } from "./ai";
+import { mainKind, ownedByKind, personalFor, purchasedCards, recentlyOwned, scentFamilies } from "./personal";
 import {
   ABOUT,
   GREETINGS,
@@ -28,6 +29,7 @@ import {
   Need,
   ProductCardOut,
   Profile,
+  Purchase,
   QuizOut,
   RoutineStepOut,
   emptyNeed,
@@ -48,12 +50,16 @@ export interface DialogCtx {
   details?: { howToUse?: string | null; ingredients?: string | null } | null;
   /** فهم الذكاء الاصطناعي الاحتياطي (فقط حين لم تفهم «ديما» بثقة). */
   ai?: AiParse | null;
+  /** مسجّلة الدخول؟ (حتى نعرف هل نطلب منها تسجيل الدخول لمشترياتها). */
+  loggedIn?: boolean;
+  /** مشترياتها من طلباتها (للمسجلات فقط). */
+  history?: Purchase[] | null;
 }
 
 // ───────────────────────────────────────────────────────── الحقول
 
 const SINGLE_KEYS = new Set([
-  "area", "skinType", "gender", "time", "strength", "season", "finish", "coverage", "audience", "occasion", "recipient", "sort",
+  "area", "skinType", "gender", "time", "strength", "season", "finish", "coverage", "audience", "occasion", "recipient", "sort", "size",
 ]);
 const MULTI_KEYS: Record<string, keyof Need> = {
   kind: "kinds",
@@ -204,7 +210,8 @@ const QUESTIONS: Record<string, Question> = {
 function specificity(n: Need): number {
   return (
     (n.kinds.length ? 1 : 0) + n.concerns.length + (n.skinType ? 1 : 0) + n.families.length + (n.gender ? 1 : 0) +
-    n.brands.length * 2 + (n.free.length ? 1 : 0) + n.ingredients.length + (n.finish ? 1 : 0) + (n.recipient ? 1 : 0)
+    n.brands.length * 2 + (n.free.length ? 1 : 0) + n.ingredients.length + (n.finish ? 1 : 0) + (n.recipient ? 1 : 0) +
+    (n.size ? 1 : 0) + (n.sort ? 1 : 0)
   );
 }
 
@@ -478,6 +485,7 @@ function understoodChips(n: Need, brandNames: Map<string, string>): AdvisorReply
     premium: "💎 فاخر",
   };
   if (n.sort && SORT_LABEL[n.sort]) out.push({ key: "unset:sort", label: SORT_LABEL[n.sort] });
+  if (n.size) out.push({ key: "unset:size", label: n.size === "big" ? "📦 حجم كبير" : "🧳 حجم صغير" });
   if (n.maxPrice || n.minPrice) {
     out.push({
       key: "unset:budget",
@@ -531,6 +539,7 @@ function reply(state: AdvisorState, partial: Partial<AdvisorReply>, ctx: DialogC
     compare: partial.compare,
     fit: partial.fit,
     anchor: partial.anchor,
+    personal: partial.personal,
     understood: partial.understood ?? understoodChips(state.need, brandNames),
     state,
   };
@@ -545,9 +554,14 @@ function remember(state: AdvisorState, items: Ranked[]) {
 function recommend(state: AdvisorState, ctx: DialogCtx, lead?: string, opts: { exclude?: boolean } = {}): AdvisorReply {
   const need = state.need;
   const brandNames = new Map(ctx.catalog.brands.map((b) => [b.id, b.name]));
-  const exclude = opts.exclude ? new Set(state.shown) : undefined;
+  let exclude = opts.exclude ? new Set(state.shown) : undefined;
+  // ما اشترته قبل أسابيع لا نعيد ترشيحه (إلا إن بحثت عنه بالاسم).
+  const owned = need.free.length || need.brands.length ? new Set<string>() : recentlyOwned(ctx.history);
+  if (owned.size) exclude = new Set([...(exclude ?? []), ...owned]);
   if (need.kinds.length >= 2 && !need.routine) return recommendBundle(state, ctx, lead, exclude);
-  const softFamilies = need.recipient || need.occasion === "gift" ? undefined : ctx.profile?.families;
+  // ذوقها العطري: من ملفها، وإلا من عطور اشترتها.
+  const mine = ctx.profile?.families?.length ? ctx.profile.families : scentFamilies(ctx.catalog, ctx.history);
+  const softFamilies = need.recipient || need.occasion === "gift" ? undefined : mine.length ? mine : undefined;
   const res = rank(ctx.catalog, need, { exclude, limit: 14, softFamilies });
   const seed = state.turns;
 
@@ -596,6 +610,7 @@ function recommend(state: AdvisorState, ctx: DialogCtx, lead?: string, opts: { e
 
   state.lastTop = top[0]?.p.id;
   state.lastCards = top.slice(0, 3).map((r) => r.p.id);
+  state.lastList = top.map((r) => r.p.id);
   state.simRef = undefined;
   const cards = top.map((r) => ({ ...toCard(r), why: whyList(ctx.catalog, r.p, need) }));
   const chips = refineChips(need, true);
@@ -627,6 +642,7 @@ function recommendBundle(state: AdvisorState, ctx: DialogCtx, lead: string | und
   remember(state, all);
   state.lastTop = all[0]?.p.id;
   state.lastCards = groups.map((g) => g.products[0].id).slice(0, 3);
+  state.lastList = groups.map((g) => g.products[0].id);
   const names = groups.map((g) => g.title);
   const brandNames = new Map(ctx.catalog.brands.map((b) => [b.id, b.name]));
   const desc = describeNeed({ ...need, kinds: [] }, brandNames).replace(/^منتجات (عناية|العناية [^ ]+)\s*/, "");
@@ -651,15 +667,17 @@ function buildRoutine(state: AdvisorState, ctx: DialogCtx): AdvisorReply {
   // فوق الميزانية بعد كل هذا؟ نحذف الخطوات الاختيارية الأغلى أولاً.
   if (need.maxPrice) {
     const optional = new Set(template.filter((t) => t.optional).map((t) => t.step));
-    let sum = steps.reduce((a, x) => a + x.product.price, 0);
-    for (const st of [...steps].filter((x) => optional.has(x.step)).sort((a, b) => b.product.price - a.product.price)) {
+    let sum = steps.reduce((a, x) => a + (x.owned ? 0 : x.product.price), 0);
+    for (const st of [...steps].filter((x) => optional.has(x.step) && !x.owned).sort((a, b) => b.product.price - a.product.price)) {
       if (sum <= need.maxPrice * 1.05) break;
       steps.splice(steps.indexOf(st), 1);
       sum -= st.product.price;
     }
   }
   remember(state, steps.map((s) => ({ p: ctx.catalog.products.find((p) => p.id === s.product.id)!, score: 0, match: 0, reasons: [] })).filter((r) => r.p));
-  const total = steps.reduce((s, x) => s + x.product.price, 0);
+  const total = steps.reduce((s, x) => s + (x.owned ? 0 : x.product.price), 0);
+  state.lastList = steps.map((x) => x.product.id);
+  const toBuy = steps.filter((x) => !x.owned).length;
   const night = need.time === "night" || need.occasion === "wedding";
   const title =
     rArea === "makeup" ? (night ? "لوك السهرة" : "لوك يومي ناعم") : area === "hair" ? "روتين شعركِ" : area === "body" ? "روتين جسمكِ" : "روتين بشرتكِ";
@@ -682,8 +700,14 @@ function buildRoutine(state: AdvisorState, ctx: DialogCtx): AdvisorReply {
           forWhom
             ? pick([`صممت لكِ روتيناً متكاملاً ${forWhom} خطوة بخطوة 🧖‍♀️`, `هذا روتينكِ المثالي ${forWhom} — كل خطوة مختارة لكِ ✨`], state.turns)
             : pick(["صممت لكِ روتيناً متكاملاً خطوة بخطوة 🧖‍♀️", "هذا روتينكِ المثالي — كل خطوة مختارة لكِ ✨"], state.turns),
-          `${steps.length} خطوات بمجموع ${fmtPrice(total)} د.ع — تكدرين تضيفينه كله للسلة بلمسة.`,
+          plan.owned
+            ? `${steps.length} خطوات: ${plan.owned} منها عندكِ أصلاً ✓ — ينقصكِ ${toBuy} بمجموع ${fmtPrice(total)} د.ع.`
+            : `${steps.length} خطوات بمجموع ${fmtPrice(total)} د.ع — تكدرين تضيفينه كله للسلة بلمسة.`,
         ];
+  if (plan.owned) {
+    const names = steps.filter((x) => x.owned).map((x) => `«${shortName(x.product.name)}»`).slice(0, 2).join(" و");
+    messages.splice(1, 0, `🛍️ بنيته على مشترياتكِ: ${names} — كملت حولها بأنسب الخطوات.`);
+  }
   if (plan.brand) {
     messages.splice(
       1,
@@ -769,8 +793,33 @@ function planRoutine(ctx: DialogCtx, need: Need, rArea: string, template: Return
   }
 
   const used = new Set<string>();
-  const chosen: { step: (typeof template)[number]; r: Ranked; alts: Ranked[] }[] = [];
+  const chosen: { step: (typeof template)[number]; r: Ranked; alts: Ranked[]; owned?: boolean }[] = [];
+  // ما عندها من مشترياتها يدخل الروتين كما هو (إن ناسب طلبها) — لا تشتريه مرة ثانية.
+  const mineByKind = ownedByKind(ctx.catalog, ctx.history);
+  const ownedFor = (step: (typeof template)[number], items: Ranked[]) => {
+    for (const k of step.kinds) {
+      const p = mineByKind.get(k);
+      if (!p || p.area !== rArea) continue;
+      const st = p.strong.get("skinType");
+      if (need.skinType && st?.size && !st.has(need.skinType)) continue;
+      // خطوة العلاج يجب أن تعالج مشكلتها المطلوبة.
+      if (step.step === "treat" && need.concerns.length && !need.concerns.some((c) => ctx.catalog.has(p, "concern", c))) continue;
+      // يناسب طلبها فعلاً؟ (من أفضل المرشحين للخطوة، أو يطابق أغلب ما طلبته) — غسول حب الشباب لا يدخل روتين البشرة الجافة.
+      if (!items.some((r) => r.p.id === p.id)) {
+        const w = whyList(ctx.catalog, p, { ...need, kinds: [k] }).filter((x) => !/^(من الأكثر|تقييم|عليه خصم)/.test(x.text));
+        if (w.length && w.filter((x) => x.ok).length / w.length < 0.75) continue;
+      }
+      return p;
+    }
+    return null;
+  };
   for (const { step, items } of per) {
+    const mine = rArea !== "makeup" ? ownedFor(step, items) : null;
+    if (mine) {
+      used.add(mine.id);
+      chosen.push({ step, r: { p: mine, score: items[0]?.score ?? 0, match: 100, reasons: ["عندكِ ✓"] }, alts: [], owned: true });
+      continue;
+    }
     if (!items.length) continue;
     const fromLead = lead ? items.find((r) => r.p.brandId === lead!.id && close(r, items[0]) && !used.has(r.p.id)) : undefined;
     const r = fromLead ?? items.find((x) => !used.has(x.p.id));
@@ -781,8 +830,8 @@ function planRoutine(ctx: DialogCtx, need: Need, rArea: string, template: Return
 
   // الميزانية: نستبدل الأغلى ببديل قريب الجودة أرخص، ثم نحذف الاختيارية إن لزم.
   if (need.maxPrice) {
-    let sum = chosen.reduce((a, c) => a + c.r.p.price, 0);
-    for (const c of [...chosen].sort((a, b) => b.r.p.price - a.r.p.price)) {
+    let sum = chosen.reduce((a, c) => a + (c.owned ? 0 : c.r.p.price), 0);
+    for (const c of [...chosen].filter((x) => !x.owned).sort((a, b) => b.r.p.price - a.r.p.price)) {
       if (sum <= need.maxPrice * 1.05) break;
       const cheaper = c.alts
         .filter((x) => !used.has(x.p.id) && x.p.price < c.r.p.price && x.score >= c.r.score - 2)
@@ -793,7 +842,7 @@ function planRoutine(ctx: DialogCtx, need: Need, rArea: string, template: Return
       sum -= c.r.p.price - cheaper.p.price;
       c.r = cheaper;
     }
-    for (const c of [...chosen].filter((x) => x.step.optional).sort((a, b) => b.r.p.price - a.r.p.price)) {
+    for (const c of [...chosen].filter((x) => x.step.optional && !x.owned).sort((a, b) => b.r.p.price - a.r.p.price)) {
       if (sum <= need.maxPrice * 1.05) break;
       chosen.splice(chosen.indexOf(c), 1);
       sum -= c.r.p.price;
@@ -803,10 +852,205 @@ function planRoutine(ctx: DialogCtx, need: Need, rArea: string, template: Return
   const sameBrand = lead ? chosen.filter((c) => c.r.p.brandId === lead!.id).length : 0;
   const brandName = lead && sameBrand >= 2 ? ctx.catalog.brands.find((b) => b.id === lead!.id)?.name ?? null : null;
   return {
-    steps: chosen.map(({ step, r }) => ({ step: step.step, label: step.label, emoji: step.emoji, when: step.when, product: toCard(r) })) as RoutineStepOut[],
+    steps: chosen.map(({ step, r, owned }) => ({
+      step: step.step,
+      label: step.label,
+      emoji: step.emoji,
+      when: step.when,
+      product: toCard(r),
+      ...(owned ? { owned: true } : {}),
+    })) as RoutineStepOut[],
     brand: brandName,
     sameBrand,
+    owned: chosen.filter((c) => c.owned).length,
   };
+}
+
+// ───────────────────────────────────────────────────────── مشترياتها، الإشارة، الأحجام، الطلبات المتعددة
+
+const HISTORY_RE =
+  /(مشترياتي|طلباتي|طلبي السابق|طلبياتي|اللي اشتريته|اللي اشتريتها|اللي اشتريتهم|اللي اخذته|اللي اخذتها|شنو اشتريت|شو اشتريت|نفس اللي اشتريت|نفس اللي اخذت|اعيد الطلب|اعيد طلب|رجعيلي طلبي|كرري طلبي|my orders|what did i buy|reorder|buy again)/;
+
+function handleHistory(state: AdvisorState, ctx: DialogCtx): AdvisorReply {
+  if (!ctx.loggedIn) {
+    return reply(state, {
+      messages: [
+        "حتى أشوف مشترياتكِ وأذكّركِ بوقت تجديدها، سجّلي دخولكِ بالتطبيق أولاً 🔐",
+        "بعدها أعرف شنو قارب يخلص عندكِ، وشنو ينقص روتينكِ — وما أعيد عليكِ شي اشتريتيه.",
+      ],
+      chips: STARTERS.slice(0, 4),
+    }, ctx);
+  }
+  const cards = purchasedCards(ctx.catalog, ctx.history);
+  if (!cards.length) {
+    return reply(state, {
+      messages: ["ما لكيت مشتريات سابقة بحسابكِ بعد 🌸 أول ما تطلبين، أتذكرها وأنبهكِ وقت تجديدها."],
+      chips: STARTERS.slice(0, 4),
+    }, ctx);
+  }
+  const personal = personalFor(ctx.catalog, ctx.history);
+  state.lastTop = cards[0].id;
+  state.lastCards = cards.slice(0, 3).map((c) => c.id);
+  state.lastList = cards.map((c) => c.id);
+  const messages = ["هذه مشترياتكِ الأخيرة 🛍️ — تكدرين تعيدين طلب أي واحد بلمسة."];
+  if (personal[0]) messages.push(`💡 ${personal[0].note}`);
+  return reply(state, {
+    messages,
+    products: cards,
+    personal,
+    chips: [
+      { label: "شنو يكمل روتيني؟", value: "act:complement", emoji: "🧩" },
+      { label: "روتين كامل", value: "act:routine", emoji: "🧖‍♀️" },
+      ...STARTERS.slice(0, 2),
+    ],
+  }, ctx);
+}
+
+const ORD_PRE = "(^| )(ب|و|ل|عن |على )?";
+const ORDINALS: [RegExp, number][] = [
+  [new RegExp(`${ORD_PRE}(الاول|الاولي|اول واحد|اول وحده|اول منتج|رقم (1|واحد))( |$)`), 0],
+  [new RegExp(`${ORD_PRE}(الثاني|الثانيه|التاني|ثاني واحد|ثاني وحده|ثاني منتج|رقم (2|اثنين))( |$)`), 1],
+  [new RegExp(`${ORD_PRE}(الثالث|الثالثه|ثالث واحد|ثالث وحده|ثالث منتج|رقم (3|ثلاثه))( |$)`), 2],
+  [new RegExp(`${ORD_PRE}(الرابع|الرابعه|رابع واحد|رقم (4|اربعه))( |$)`), 3],
+  [new RegExp(`${ORD_PRE}(الاخير|الاخيره|اخر واحد|اخر وحده|اخر منتج)( |$)`), -1],
+];
+
+/** «الثاني»، «الأخير»، «رقم 3» ← بطاقة من آخر رد. */
+function ordinalRef(nm: string, list?: string[]): string | undefined {
+  if (!list?.length) return undefined;
+  for (const [re, i] of ORDINALS) if (re.test(nm)) return i < 0 ? list[list.length - 1] : list[i];
+  return undefined;
+}
+
+const SIZE_REF_RE = /(حجم (اكبر|اصغر|ثاني|غير)|بحجم (اكبر|اصغر|كبير|صغير)|اكبر حجم|اصغر حجم|الحجم الكبير|الحجم الصغير|عبوه (اكبر|اصغر)|bigger|smaller)/;
+
+/** نفس المنتج بحجم آخر (نفس البراند والنوع والاسم تقريباً). */
+function handleSize(state: AdvisorState, ctx: DialogCtx, p: IndexedProduct, dir: "big" | "small"): AdvisorReply {
+  const words = (x: IndexedProduct) =>
+    new Set(x.nameBare.split(" ").filter((w) => w.length > 2 && !/\d/.test(w) && !/^(مل|ml|غرام|غم|ملل|gm)$/i.test(w)));
+  const mine = words(p);
+  const kind = mainKind(p);
+  const my = sizeOf(p.name)?.value;
+  const same = ctx.catalog.products.filter((q) => {
+    if (q.id === p.id || q.stock <= 0 || q.brandId !== p.brandId || mainKind(q) !== kind) return false;
+    const w = words(q);
+    let common = 0;
+    for (const x of w) if (mine.has(x)) common++;
+    return common / Math.max(1, Math.min(w.size, mine.size)) >= 0.7;
+  });
+  const sized = same
+    .map((q) => ({ q, v: sizeOf(q.name)?.value }))
+    .filter((x): x is { q: IndexedProduct; v: number } => x.v != null && my != null && (dir === "big" ? x.v > my : x.v < my))
+    .sort((a, b) => (dir === "big" ? a.v - b.v : b.v - a.v));
+  const anchor = cardOf(ctx, p);
+  state.focus = p.id;
+  if (sized.length && my) {
+    const cards = sized.slice(0, 4).map(({ q, v }) => {
+      const perUnit = q.price / v;
+      const mineUnit = p.price / my;
+      const save = Math.round((1 - perUnit / mineUnit) * 100);
+      return cardOf(ctx, q, 96, [`${v} بدل ${my}`, ...(save >= 5 ? [`سعر الوحدة أوفر ${save}%`] : [])]);
+    });
+    state.lastCards = cards.slice(0, 3).map((c) => c.id);
+    state.lastList = cards.map((c) => c.id);
+    state.lastTop = cards[0].id;
+    return reply(state, {
+      messages: [`نفس «${shortName(p.name)}» ${dir === "big" ? "بحجم أكبر" : "بحجم أصغر"} ✨`],
+      products: cards,
+      anchor,
+      chips: focusChips(p),
+    }, ctx);
+  }
+  // لا حجم آخر لنفس المنتج: الأقرب له من نوعه بالحجم المطلوب.
+  const need: Need = { ...emptyNeed(), ...state.need, area: p.area ?? undefined, kinds: kind ? [kind] : [], size: dir, free: [] };
+  const res = rank(ctx.catalog, need, { limit: 6, exclude: new Set([p.id]) });
+  const cards = res.items.slice(0, 4).map((r) => ({ ...toCard(r), why: whyList(ctx.catalog, r.p, need) }));
+  if (cards.length) {
+    state.lastCards = cards.slice(0, 3).map((c) => c.id);
+    state.lastList = cards.map((c) => c.id);
+  }
+  return reply(state, {
+    messages: [
+      `«${shortName(p.name)}» متوفر عندنا بهذا الحجم فقط حالياً.`,
+      ...(cards.length ? [`هذه خيارات من نفس النوع ${dir === "big" ? "بأحجام أكبر" : "بأحجام أصغر"} قريبة منه:`] : []),
+    ],
+    products: cards,
+    anchor,
+    chips: focusChips(p),
+  }, ctx);
+}
+
+/**
+ * «شامبو للقشرة وعطر لزوجي»: أكثر من طلب برسالة واحدة (مجالات أو أشخاص مختلفون)
+ * ← كل طلب بفهمه الخاص. null إن كان طلباً واحداً.
+ */
+function splitRequests(text: string, catalog: CatalogIndex, depth = 0): ReturnType<typeof understand>[] | null {
+  const words = normalize(text).split(" ").filter(Boolean);
+  if (words.length < 3 || words.length > 26 || depth > 1) return null;
+  for (let i = 1; i < words.length - 0; i++) {
+    const w = words[i];
+    let right: string[];
+    if (w === "و") right = words.slice(i + 1);
+    else if (w.startsWith("و") && w.length > 2) right = [w.slice(1), ...words.slice(i + 1)];
+    else continue;
+    if (!right.length) continue;
+    const a = understand(words.slice(0, i).join(" "), catalog);
+    const b = understand(right.join(" "), catalog);
+    if (!a.delta.kinds?.length || !b.delta.kinds?.length) continue;
+    const areaA = areaOf(a.delta);
+    const areaB = areaOf(b.delta);
+    const sameKinds = a.delta.kinds.join() === b.delta.kinds.join();
+    const differ =
+      (areaA && areaB && areaA !== areaB) ||
+      (a.delta.gender && b.delta.gender && a.delta.gender !== b.delta.gender) ||
+      // «عطر لي وعطر لزوجي»: نفس النوع لشخصين.
+      (sameKinds && (a.delta.gender ?? "") !== (b.delta.gender ?? "")) ||
+      Boolean(b.delta.recipient && a.delta.recipient !== b.delta.recipient);
+    if (!differ) continue;
+    const rest = splitRequests(right.join(" "), catalog, depth + 1);
+    return [a, ...(rest ?? [b])].slice(0, 3);
+  }
+  return null;
+}
+
+function recommendMulti(state: AdvisorState, ctx: DialogCtx, segs: ReturnType<typeof understand>[]): AdvisorReply | null {
+  const brandNames = new Map(ctx.catalog.brands.map((b) => [b.id, b.name]));
+  const exclude = recentlyOwned(ctx.history);
+  const groups: AdvisorReply["groups"] = [];
+  const all: Ranked[] = [];
+  let last: Need | null = null;
+  const otherGender = segs.map((x) => x.delta.gender).find(Boolean);
+  for (const seg of segs) {
+    const segNeed = mergeNeed({ ...emptyNeed(), skinType: state.need.skinType }, seg.delta).need;
+    // الجزء بلا جنس بجانب جزء «لزوجي»: لها هي (من ملفها، وإلا نسائي).
+    if (!segNeed.gender && otherGender && areaOf(segNeed) === "fragrance") {
+      segNeed.gender = otherGender === "men" ? ctx.profile?.gender ?? "women" : undefined;
+    }
+    last = segNeed;
+    for (const k of segNeed.kinds.slice(0, 2)) {
+      const n: Need = { ...segNeed, kinds: [k] };
+      const res = rank(ctx.catalog, n, { limit: 4, exclude });
+      if (!res.items.length) continue;
+      all.push(...res.items);
+      const title = describeNeed(n, brandNames) || facetValue("kind", k)?.label || k;
+      groups.push({ title, products: res.items.map((r) => ({ ...toCard(r), why: whyList(ctx.catalog, r.p, n) })) });
+    }
+  }
+  if (groups.length < 2 || !last) return null;
+  state.need = last;
+  state.asked = [];
+  remember(state, all);
+  state.lastTop = all[0]?.p.id;
+  state.lastCards = groups.map((g) => g.products[0].id).slice(0, 3);
+  state.lastList = groups.map((g) => g.products[0].id);
+  return reply(state, {
+    messages: [
+      "فهمت طلباتكِ — جهزت كل واحد بشريط لحاله، والأفضل أولاً ✨",
+      "تكدرين تضيفين الأفضل من كل نوع للسلة بلمسة.",
+    ],
+    groups,
+    chips: [{ label: "أرخص", value: "act:cheaper", emoji: "💸" }, ...STARTERS.slice(0, 3)],
+  }, ctx);
 }
 
 /** اسم مختصر للجملة: أطول جزء وصفي (بلا البراند ولا الحجم). */
@@ -829,7 +1073,7 @@ function shortName(name: string) {
 
 // ───────────────────────────────────────────────────────── منتج بعينه
 
-const FIT_RE = /(يناسبني|يناسب بشرتي|يناسب شعري|يصلح لي|يصلحلي|ينفع لي|ينفعني|ينفع لبشرتي|مناسب الي|مناسب لي|مناسب لبشرتي|مناسب لشعري|زين الي|زين لبشرتي|يفيدني|suit me|good for me)/;
+const FIT_RE = /(يناسبني|يناسب بشرتي|يناسب شعري|يناسب (ال|لل)?بشره|يناسب (ال|لل)?شعر|يصلح (لل|ل)?بشره|ينفع (لل|ل)?بشره|مناسب (لل|ل)بشره|يناسب الحساسه|يناسب الدهنيه|يناسب الجافه|يصلح لي|يصلحلي|ينفع لي|ينفعني|ينفع لبشرتي|مناسب الي|مناسب لي|مناسب لبشرتي|مناسب لشعري|زين الي|زين لبشرتي|يفيدني|suit me|good for me)/;
 const COMPLEMENT_RE = /(شنو يكمل|شي يكمل|يكمله|يكملها|يكملني|يتنسق|ويه شنو|وياه شنو|شنو استخدم وياه|شنو احط وياه|يمشي وياه|goes with|pair with|complete)/;
 const HOWTO_RE = /(طريقه الاستخدام|طريقه استخدام|شلون استخدم|شلون استعمل|كيف استخدم|كيف استعمل|شلون احطه|شلون احطها|شلون اطبق|how to use)/;
 const COMPARE_RE = /(قارني|قارن |مقارنه|الفرق بينهم|الفرق بين هذول|اي واحد احسن|ايهم احسن|منو احسن|منو الاحسن|اي وحده احسن|compare)/;
@@ -903,6 +1147,7 @@ function handleSimilar(
   remember(state, hits.map((h) => ({ p: h.p, score: 0, match: h.sim, reasons: h.reasons })));
   state.lastTop = hits[0].p.id;
   state.lastCards = hits.slice(0, 3).map((h) => h.p.id);
+  state.lastList = hits.slice(0, 8).map((h) => h.p.id);
   const fams = [...anchor.families.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([f]) => facetValue("family", f)?.label).filter(Boolean);
   const best = hits[0];
   const messages: string[] = [];
@@ -1177,7 +1422,15 @@ function respondInner(input: DialogInput, prev: AdvisorState | null | undefined,
     const newKind = (parsed.delta.kinds?.length ?? 0) > 0;
     const focusP = state.focus ? ctx.catalog.byId(state.focus) : undefined;
     const refExplicit = REF_RE.test(` ${nm} `);
-    const refP = (!newKind ? focusP : undefined) ?? (refExplicit && state.lastTop ? ctx.catalog.byId(state.lastTop) : undefined);
+    // «الثاني»، «الأخير»: إشارة لبطاقة بعينها من آخر رد.
+    const ordId = !newKind ? ordinalRef(nm, state.lastList ?? state.lastCards) : undefined;
+    const ordP = ordId ? ctx.catalog.byId(ordId) : undefined;
+    if (ordP) state.focus = ordP.id;
+    const refP =
+      ordP ?? (!newKind ? focusP : undefined) ?? (refExplicit && state.lastTop ? ctx.catalog.byId(state.lastTop) : undefined);
+
+    // ── مشترياتها: «شنو اشتريت؟»، «رجعيلي طلبي».
+    if (HISTORY_RE.test(nm)) return handleHistory(state, ctx);
 
     // ── «يشبه/بديل»: مرجع من الكتالوج، أو عطر مشهور، أو المنتج الذي نتحدث عنه.
     const aiSimilar = ctx.ai?.intent === "similar" && ctx.ai.similarTo ? ctx.ai.similarTo : null;
@@ -1200,6 +1453,11 @@ function respondInner(input: DialogInput, prev: AdvisorState | null | undefined,
       }
       if (COMPLEMENT_RE.test(nm)) return handleComplement(state, ctx, refP);
       if (HOWTO_RE.test(nm) && !detectIngredients(msg).length) return handleHowto(state, ctx, refP);
+      if (SIZE_REF_RE.test(nm) && !newKind) return handleSize(state, ctx, refP, /(اكبر|كبير|bigger)/.test(nm) ? "big" : "small");
+      // «نفس هذا بس أرخص»، «الثاني أرخص منه»: بدائل أوفر له بالذات.
+      if (CHEAPER_WORDS.test(nm) && !newKind && (ordP || refExplicit)) return handleSimilar(state, ctx, { product: refP }, true);
+      // «شنو رأيكِ بالثاني؟»، «احجيلي عن الأخير».
+      if (ordP && !newKind && !COMPARE_RE.test(nm)) return focusIntro(state, ctx, ordP);
     }
     if (COMPARE_RE.test(nm) && (state.lastCards?.length ?? 0) >= 2 && detectIngredients(msg).length < 2) {
       return handleCompare(state, ctx, state.lastCards!);
@@ -1225,6 +1483,13 @@ function respondInner(input: DialogInput, prev: AdvisorState | null | undefined,
       return reply(state, { messages: [ctx.ai.reply], chips: STARTERS.slice(0, 4) }, ctx);
     }
     if (newKind || parsed.delta.area) state.focus = undefined;
+
+    // ── «شامبو للقشرة وعطر لزوجي»: طلبات متعددة برسالة واحدة.
+    if (newKind && parsed.intent !== "routine" && / و/.test(` ${nm}`)) {
+      const segs = splitRequests(msg, ctx.catalog);
+      const multi = segs ? recommendMulti(state, ctx, segs) : null;
+      if (multi) return multi;
+    }
 
     intent = parsed.intent;
     // طلب نوع منتج بعينه («غسول للبشرة الدهنية») أو «منتجات مفردة/بدون روتين» = منتجات لا روتين.

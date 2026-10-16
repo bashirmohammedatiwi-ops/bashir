@@ -747,9 +747,8 @@ class ApiService {
   Future<Map<String, dynamic>> advisorWelcome({String? name}) async {
     try {
       // الاسم في جسم الطلب لا في الرابط.
-      final r = await _dio.post('/advisor/welcome',
-          data: {if (name != null && name.isNotEmpty) 'firstName': name},
-          options: Options(extra: {'auth': false}));
+      // مع رمز الدخول إن وُجد: «ديما» تعرف مشترياتها (تجديد، روتين ناقص).
+      final r = await _dio.post('/advisor/welcome', data: {if (name != null && name.isNotEmpty) 'firstName': name});
       return asMap(_data(r));
     } catch (e) {
       _throw(e);
@@ -773,8 +772,7 @@ class ApiService {
             if (firstName != null && firstName.isNotEmpty) 'firstName': firstName,
             if (profile != null && profile.isNotEmpty) 'profile': profile,
             if (productId != null) 'productId': productId,
-          },
-          options: Options(extra: {'auth': false}));
+          });
       return asMap(_data(r));
     } catch (e) {
       _throw(e);

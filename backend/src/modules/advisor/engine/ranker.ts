@@ -2,6 +2,7 @@ import { CatalogIndex, IndexedProduct } from "./catalog";
 import { CONCERN_INGREDIENTS, FacetKey, facetValue } from "./lexicon";
 import { brandTier } from "./brands";
 import { bi, COLOR_SYNONYMS, li, tokens } from "./text";
+import { sizeOf } from "./insight";
 import { Need, ProductCardOut } from "./types";
 
 export interface Ranked {
@@ -51,9 +52,20 @@ interface Options {
   perBrand?: number;
   /** عائلات عطرية تحبها (من ملفها) — تفضيل خفيف. */
   softFamilies?: string[];
+  /** كلمات حرة خُففت (قلّت نتائجها): تبقى تفضيلاً لا شرطاً. */
+  softText?: string[];
 }
 
 type Rung = { label: string; apply: (n: Need) => Need } | null;
+
+const sizeCache = new WeakMap<IndexedProduct, number | null>();
+/** حجم المنتج من اسمه (مل/غ) — مخزّن لكل منتج. */
+function sizeValue(p: IndexedProduct): number | null {
+  if (sizeCache.has(p)) return sizeCache.get(p)!;
+  const v = sizeOf(p.name)?.value ?? null;
+  sizeCache.set(p, v);
+  return v;
+}
 
 /** سُلّم التخفيف عند قلة النتائج — بالترتيب من الأخف للأقوى. */
 const RELAX: Rung[] = [
@@ -76,7 +88,9 @@ export function rank(catalog: CatalogIndex, need: Need, opts: Options = {}): Ran
       current = next;
       relaxed.push(rung.label);
     }
-    const res = rankOnce(catalog, current, opts);
+    // الكلمات الحرة المخففة تبقى ترفع ما يذكرها («سيروم يعطي لمعان» ← سيرومات اللمعان أولاً).
+    const softText = relaxed.includes("free") && need.free.length ? need.free : undefined;
+    const res = rankOnce(catalog, current, softText ? { ...opts, softText } : opts);
     if (!best || res.items.length > best.items.length) best = { ...res, relaxed: [...relaxed] };
     if (res.items.length >= 3) return { ...res, relaxed: [...relaxed] };
   }
@@ -144,6 +158,8 @@ function rankOnce(catalog: CatalogIndex, need: Need, opts: Options): RankResult 
   });
   const textScores = query.length ? catalog.search(query) : null;
   const maxText = textScores ? Math.max(0, ...textScores.values()) : 0;
+  const softScores = opts.softText?.length ? catalog.search(opts.softText.flatMap((w) => tokens(w))) : null;
+  const maxSoft = softScores ? Math.max(0, ...softScores.values()) : 0;
   const candidates = catalog.products.filter((p) => passesHard(catalog, p, need, opts.exclude));
   if (!candidates.length) return { items: [], relaxed: [], total: 0 };
 
@@ -169,6 +185,9 @@ function rankOnce(catalog: CatalogIndex, need: Need, opts: Options): RankResult 
 
   const scored: (Ranked & { fit: number; q: number })[] = [];
   const brandQ = brandQuality(catalog);
+  // الحجم المطلوب: نقارن بحجم المرشحين المعتاد (بنفس الوحدة تقريباً).
+  const sizes = need.size ? candidates.map((p) => sizeValue(p)).filter((v): v is number => v != null).sort((a, b) => a - b) : [];
+  const medianSize = sizes.length ? sizes[Math.floor(sizes.length / 2)] : 0;
   const treating = need.concerns.length > 0;
   for (const p of candidates) {
     // ── الملاءمة (0..1): كم يطابق طلبها بالضبط
@@ -301,6 +320,17 @@ function rankOnce(catalog: CatalogIndex, need: Need, opts: Options): RankResult 
       const cap = need.maxPrice ?? medianPrice * 2;
       extra += 1.2 * Math.min(1, p.price / cap);
       if (p.strong.get("occasion")?.has("gift")) extra += 0.9;
+    }
+
+    if (softScores && maxSoft > 0) extra += 1.6 * ((softScores.get(p.idx) ?? 0) / maxSoft);
+    if (need.size && medianSize) {
+      const v = sizeValue(p);
+      if (v) {
+        const r = Math.log2(v / medianSize) * (need.size === "big" ? 1 : -1);
+        extra += 1.1 * Math.max(-1, Math.min(1.5, r));
+        if (r > 0.3) reasons.push({ w: 1.2, text: need.size === "big" ? "حجم كبير" : "حجم صغير" });
+      }
+      if (need.size === "small" && /(ميني|mini|travel|سفر)/i.test(p.name)) extra += 1;
     }
 
     switch (need.sort) {
