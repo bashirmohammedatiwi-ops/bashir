@@ -106,6 +106,13 @@ export class ProductsController {
   }
 
   @Public()
+  @Get(":idOrSlug/bought-together")
+  boughtTogether(@Param("idOrSlug") idOrSlug: string, @Query("limit") limit?: string) {
+    const n = Number(limit);
+    return this.products.boughtTogether(idOrSlug, Number.isFinite(n) && n > 0 ? n : 8);
+  }
+
+  @Public()
   @Get(":idOrSlug")
   findOne(@Req() req: any, @Param("idOrSlug") idOrSlug: string) {
     return this.products.findOne(idOrSlug, !isAdminViewRequest(req));

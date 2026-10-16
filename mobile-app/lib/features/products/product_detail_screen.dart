@@ -251,6 +251,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       padding: EdgeInsets.zero,
                       child: _InfoSections(product: product),
                     ),
+                  _BoughtTogether(product: product),
                   _SectionCard(
                     child: _ReviewsSection(product: product, idOrSlug: widget.idOrSlug),
                   ),
@@ -1651,6 +1652,73 @@ class _SimilarProducts extends ConsumerWidget {
             ),
             HorizontalProductList(
               products: products,
+              padding: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
+            ),
+          ],
+        );
+      },
+      orElse: () => const SizedBox.shrink(),
+    );
+  }
+}
+
+/// «يُشترى معه غالباً» — اختيارات الزبونات مع هذا المنتج.
+class _BoughtTogether extends ConsumerWidget {
+  final Product product;
+  const _BoughtTogether({required this.product});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final async = ref.watch(boughtTogetherProvider(product.id));
+    final t = context.worldTheme;
+    final ar = ref.s.isAr;
+    final brand = product.brandNameFor(ref.watch(languageCodeProvider));
+    return async.maybeWhen(
+      data: (r) {
+        final items = r.items.where((p) => p.id != product.id).toList();
+        if (items.isEmpty) return const SizedBox.shrink();
+        final subtitle = r.fromOrders
+            ? (ar ? 'اختيارات زبوناتنا مع هذا المنتج' : 'What customers pair with this')
+            : (ar
+                ? (brand.isNotEmpty ? 'يكمّل روتينك من $brand' : 'يكمّل روتينك')
+                : (brand.isNotEmpty ? 'Complete your routine with $brand' : 'Complete your routine'));
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(ProductDetailTheme.padH, 22, ProductDetailTheme.padH, 12),
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(gradient: t.signatureGradient, shape: BoxShape.circle),
+                    child: Icon(
+                      r.fromOrders ? Icons.auto_awesome_rounded : Icons.spa_rounded,
+                      color: Colors.white,
+                      size: 17,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          r.fromOrders
+                              ? (ar ? 'يُشترى معه غالباً' : 'Frequently bought together')
+                              : (ar ? 'نكمّله لكِ' : 'Pairs well with'),
+                          style: ProductDetailTheme.sectionTitleStyle(context),
+                        ),
+                        Text(subtitle, style: AppText.caption.copyWith(color: t.inkMuted)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            HorizontalProductList(
+              products: items,
               padding: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
             ),
           ],

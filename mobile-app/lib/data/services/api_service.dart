@@ -701,6 +701,20 @@ class ApiService {
     }
   }
 
+  /// «يُشترى معه غالباً» — من طلبات المتجر الفعلية، أو مكمّلات من نفس البراند.
+  Future<({List<Product> items, bool fromOrders})> getBoughtTogether(String productId) async {
+    try {
+      final r = await _dio.get('/products/$productId/bought-together', queryParameters: {'limit': 8});
+      final body = asMap(_data(r));
+      return (
+        items: asList(body['items']).map((e) => Product.fromJson(asMap(e))).toList(),
+        fromOrders: body['source'] == 'orders',
+      );
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
   // ---- PRODUCT ALERTS ----
   Future<Set<String>> getRestockWatches() async {
     try {

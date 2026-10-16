@@ -88,6 +88,11 @@ final productReviewsProvider =
 });
 
 /// منتجات مشابهة من نفس القسم (يستثني المنتج الحالي).
+final boughtTogetherProvider = FutureProvider.autoDispose
+    .family<({List<Product> items, bool fromOrders}), String>((ref, productId) {
+  return ref.read(apiServiceProvider).getBoughtTogether(productId);
+});
+
 final similarProductsProvider = FutureProvider.autoDispose
     .family<List<Product>, ({String categoryId, String excludeId})>((ref, args) async {
   final page = await ref

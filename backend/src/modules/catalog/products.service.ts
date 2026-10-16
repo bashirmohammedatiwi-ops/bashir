@@ -7,6 +7,7 @@ import { resolveProductNames } from "../../common/product-names.util";
 import { resolveProductDescriptions } from "../../common/product-descriptions.util";
 import { HomeFeedCacheService } from "../../common/home-feed-cache.service";
 import { paginate } from "../../common/dto/pagination.dto";
+import { getCached, setCached } from "../../common/memory-cache.util";
 import { CategoriesService } from "./categories.service";
 import { CreateProductDto, QueryProductsDto, UpdateProductDto } from "./dto/product.dto";
 import { InventorySyncService } from "../sync/inventory-sync.service";
@@ -315,6 +316,67 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
     if (!rankedIds.length || items.length < 2) return items;
     const rank = new Map(rankedIds.map((id, index) => [id, index]));
     return [...items].sort((a, b) => (rank.get(a.id) ?? 999_999) - (rank.get(b.id) ?? 999_999));
+  }
+
+  /**
+   * «يُشترى معه غالباً»: منتجات اشتُريت مع هذا المنتج في نفس الطلبات (غير الملغاة)،
+   * مرتبة بعدد الطلبات المشتركة. إن قلّت البيانات نكمل بأكثر منتجات البراند مبيعاً
+   * من أقسام أخرى (مكمّلة لا مشابهة — المشابهة لها قسم مستقل في الصفحة).
+   */
+  async boughtTogether(idOrSlug: string, limit = 8) {
+    const take = Math.min(Math.max(limit, 1), 12);
+    const cacheKey = `bought-together:${idOrSlug}:${take}`;
+    const cached = getCached<{ items: unknown[]; source: string }>(cacheKey);
+    if (cached) return cached;
+
+    const product = await this.prisma.product.findFirst({
+      where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }], isActive: true },
+      select: { id: true, brandId: true, subcategoryId: true },
+    });
+    if (!product) throw new NotFoundException("Product not found");
+
+    const pairs = await this.prisma.$queryRaw<{ productId: string; n: bigint }[]>`
+      SELECT b."productId", COUNT(DISTINCT b."orderId") AS n
+      FROM "OrderItem" a
+      JOIN "OrderItem" b ON b."orderId" = a."orderId" AND b."productId" <> a."productId"
+      JOIN "Order" o ON o.id = a."orderId"
+      WHERE a."productId" = ${product.id} AND o.status <> 'CANCELLED'
+      GROUP BY b."productId"
+      ORDER BY n DESC
+      LIMIT 40`;
+
+    const visible: Prisma.ProductWhereInput = { isActive: true, stock: { gt: 0 } };
+    const ranked = pairs.map((p) => p.productId);
+    const fromOrders = ranked.length
+      ? await this.prisma.product.findMany({
+          where: { ...visible, id: { in: ranked } },
+          include: productRelationsLite,
+        })
+      : [];
+    fromOrders.sort((x, y) => ranked.indexOf(x.id) - ranked.indexOf(y.id));
+    let items = fromOrders.slice(0, take);
+
+    if (items.length < take && product.brandId) {
+      const fill = await this.prisma.product.findMany({
+        where: {
+          ...visible,
+          brandId: product.brandId,
+          id: { notIn: [product.id, ...items.map((i) => i.id)] },
+          ...(product.subcategoryId ? { NOT: { subcategoryId: product.subcategoryId } } : {}),
+        },
+        orderBy: [{ soldCount: "desc" }, { createdAt: "desc" }],
+        take: take - items.length,
+        include: productRelationsLite,
+      });
+      items = [...items, ...fill];
+    }
+
+    const result = {
+      source: fromOrders.length ? "orders" : "brand",
+      items: items.map((p) => withPlaceholderImages(rewriteProductMediaUrls(p))),
+    };
+    setCached(cacheKey, result, 10 * 60_000);
+    return result;
   }
 
   async findOne(idOrSlug: string, storefront = false) {
