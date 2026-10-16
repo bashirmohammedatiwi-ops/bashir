@@ -20,6 +20,7 @@ import '../models/paginated.dart';
 import '../models/payment.dart';
 import '../models/product.dart';
 import '../models/review.dart';
+import '../models/search_instant.dart';
 import '../models/search_suggestions.dart';
 import '../models/store_world.dart';
 import '../models/user.dart';
@@ -908,6 +909,37 @@ class ApiService {
     try {
       await _dio.delete('/notifications/devices', data: {'token': token});
     } catch (_) {}
+  }
+
+  // ---- SEARCH (v2: محرك في الذاكرة) ----
+  /// اقتراحات فورية أثناء الكتابة — إكمالات + براندات + أقسام + منتجات.
+  Future<SearchInstant> searchInstant(String q, {CancelToken? cancelToken}) async {
+    try {
+      final r = await _dio.get(
+        '/search/instant',
+        queryParameters: {'q': q},
+        cancelToken: cancelToken,
+        options: Options(extra: {'auth': false}),
+      );
+      return SearchInstant.fromJson(_data(r));
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  /// صفحة نتائج مرتبة بالملاءمة مع الفلاتر وعدّاداتها.
+  Future<SearchPage> searchPage(String q, SearchFilters filters, {int page = 1, int limit = 24, CancelToken? cancelToken}) async {
+    try {
+      final r = await _dio.get(
+        '/search',
+        queryParameters: {'q': q, 'page': page, 'limit': limit, ...filters.toQuery()},
+        cancelToken: cancelToken,
+        options: Options(extra: {'auth': false}),
+      );
+      return SearchPage.fromJson(_body(r));
+    } catch (e) {
+      _throw(e);
+    }
   }
 
   // ---- SEARCH SUGGEST ----
