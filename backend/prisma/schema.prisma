@@ -1039,3 +1039,69 @@ model AdvisorEvent {
   @@index([createdAt])
   @@index([productId, type])
 }
+
+// استهلاك «ديما» للذكاء الاصطناعي يومياً — لمراقبة الكلفة ووضع سقف.
+model AdvisorAiUsage {
+  day              String   @id
+  chatCalls        Int      @default(0)
+  enrichCalls      Int      @default(0)
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  cachedTokens     Int      @default(0)
+  updatedAt        DateTime @updatedAt
+}
+
+// صفات استخرجها الذكاء الاصطناعي مرة واحدة لمنتج (أو سمعة براند) — تُدمج في فهرس «ديما».
+model AdvisorEnrichment {
+  key        String   @id
+  /// product | brand
+  type       String
+  data       Json
+  sourceHash String
+  model      String
+  updatedAt  DateTime @updatedAt
+
+  @@index([type])
+}
+
+// ما تعلّمته «ديما» من التدريب: عبارة الزبونة ← معناها (صفات بمعرّفات المعجم).
+// تُفهم بعدها محلياً بلا أي استدعاء للذكاء الاصطناعي.
+model AdvisorPhrase {
+  id        String   @id @default(uuid())
+  /// العبارة مطبّعة
+  phrase    String   @unique
+  delta     Json
+  intent    String?
+  /// training | chat | admin
+  source    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([source])
+}
+
+// رسائل لم تفهمها «ديما» بثقة (مجهولة الهوية) — مادة التدريب التالية.
+model AdvisorQueryLog {
+  id       String   @id @default(uuid())
+  text     String   @unique
+  sample   String
+  count    Int      @default(1)
+  resolved Boolean  @default(false)
+  lastAt   DateTime @default(now())
+
+  @@index([resolved, count])
+}
+
+// حالة التدريب وإعداداته (صف واحد).
+model AdvisorTraining {
+  id           String    @id @default("main")
+  running      Boolean   @default(false)
+  liveAi       Boolean   @default(true)
+  autoNew      Boolean   @default(true)
+  dailyBatches Int       @default(60)
+  tasks        Json
+  startedAt    DateTime?
+  lastRunAt    DateTime?
+  lastError    String?
+  updatedAt    DateTime  @updatedAt
+}

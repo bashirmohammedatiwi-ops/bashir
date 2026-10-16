@@ -54,6 +54,10 @@ export const queries = {
     api.get("/packages", { params: { all: 1, lite: 1 } }).then((r) => r.data?.data ?? r.data),
   coupons: () => api.get("/coupons").then((r) => r.data?.data ?? r.data),
   assistantGuides: () => api.get("/assistant/guides").then((r) => r.data?.data ?? r.data),
+  advisorTraining: () => api.get("/advisor/admin/training").then((r) => r.data?.data ?? r.data),
+  advisorPhrases: (params?: { source?: string; q?: string }) =>
+    api.get("/advisor/admin/phrases", { params }).then((r) => r.data?.data ?? r.data),
+  advisorQuestions: () => api.get("/advisor/admin/questions").then((r) => r.data?.data ?? r.data),
   assistantInsights: (days: number) =>
     api.get("/assistant/insights", { params: { days } }).then((r) => r.data?.data ?? r.data),
   homeBlocks: (worldId?: string) =>
@@ -227,6 +231,16 @@ export const mutations = {
     api.patch(`/shipping/areas/${id}`, data).then((r) => r.data?.data ?? r.data),
   deleteShippingArea: (id: string) => api.delete(`/shipping/areas/${id}`).then((r) => r.data),
 
+  updateAdvisorTraining: (data: {
+    running?: boolean;
+    liveAi?: boolean;
+    autoNew?: boolean;
+    dailyBatches?: number;
+    tasks?: string[];
+  }) => api.patch("/advisor/admin/training", data).then((r) => r.data?.data ?? r.data),
+  deleteAdvisorPhrase: (id: string) => api.delete(`/advisor/admin/phrases/${id}`).then((r) => r.data),
+  rebuildAdvisor: () => api.post("/advisor/admin/rebuild").then((r) => r.data?.data ?? r.data),
+  tryAdvisor: (message: string) => api.post("/advisor/admin/try", { message }).then((r) => r.data?.data ?? r.data),
   createAssistantGuide: (data: any) => api.post("/assistant/guides", data).then((r) => r.data?.data ?? r.data),
   updateAssistantGuide: (id: string, data: any) =>
     api.patch(`/assistant/guides/${id}`, data).then((r) => r.data?.data ?? r.data),

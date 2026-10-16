@@ -1,4 +1,4 @@
-import { CatalogIndex } from "./catalog";
+import { CatalogIndex, LearnedPhrase } from "./catalog";
 import { CONCERN_AREA, FacetKey, KIND_BY_AREA, LEXICON, RECIPIENT_GENDER } from "./lexicon";
 import { applyDialect, editDistance, normalize, parseMoney, stem, tokens } from "./text";
 import { Intent, Need } from "./types";
@@ -30,6 +30,11 @@ interface Phrase {
 const KIND_AREA_NLU = new Map(LEXICON.filter((x) => x.facet === "kind" && x.area).map((x) => [x.id, x.area!]));
 
 const FACET_PRIORITY = (f: FacetKey) => (f === "kind" ? 0 : f === "area" ? 2 : 1);
+
+/** مفتاح عبارة متعلّمة: كلماتها كما تُقارن داخل `understand` (مطبّعة ومجذّعة). */
+export function phraseWords(text: string): string[] {
+  return rawWords(text).map(stem);
+}
 
 /** كلمات مطبّعة + لهجة، بلا تجذيع (بنفس فهرسة `tokens`). */
 const rawWords = (text: string) =>
@@ -125,6 +130,10 @@ function parseBudget(norm: string): { min?: number; max?: number } {
   return {};
 }
 
+/** «بدون روتين»، «منتجات منفردة»، «كل واحد لوحده»: منتجات مفردة لا روتين. */
+export const NO_ROUTINE_RE =
+  /(منتج(ات)? (مفرد|منفرد|منفصل)|منفرد(ه|ين)?|مفرد(ه)?|منفصل(ه|ين)?|لوحد(ه|ها|هم)|بس منتج|منتج واحد|(مو|مش|بدون|بلا|ما اريد|ما ابي|لا اريد|مابي) ?روتين|without (a )?routine|single products?)/;
+
 const GENERIC_FORMS = new Set(tokens("كريم كريمات منتج منتجات نوع انواع", { keepStop: true }));
 
 /** صيغة خفيفة للمطابقة مع عبارات الزبونة: «وثابته» ← «ثابت»، «حلوه» ← «حلو». */
@@ -154,6 +163,45 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
   const multi: Record<string, string[]> = {};
   const single: Record<string, string> = {};
   const avoid: string[] = [];
+
+  // ── ما تعلّمته «ديما» من التدريب: عبارات الزبونات ← معناها (محلياً، بلا ذكاء خارجي).
+  // العبارات الكاملة والمتعددة الكلمات قبل المعجم: هي فهمٌ أدق لصيغة الزبونة بالذات.
+  let learnedIntent: string | undefined;
+  const learnedDelta: Partial<Need> = {};
+  const applyLearned = (lp: LearnedPhrase) => {
+    const n = lp.words.length;
+    if (lp.whole) {
+      if (n !== words.length || lp.words.some((w, k) => w !== words[k])) return;
+      for (let k = 0; k < n; k++) consumed.add(k);
+    } else {
+      let at = -1;
+      for (let i = 0; i + n <= words.length && at < 0; i++) {
+        let ok = true;
+        for (let j = 0; j < n; j++) if (consumed.has(i + j) || (words[i + j] !== lp.words[j] && deW[i + j] !== lp.words[j])) ok = false;
+        if (ok) at = i;
+      }
+      if (at < 0) return;
+      for (let j = 0; j < n; j++) consumed.add(at + j);
+      if (negatedAt(words, at)) {
+        for (const k of lp.delta.kinds ?? []) avoid.push(`kind:${k}`);
+        for (const c of lp.delta.families ?? []) avoid.push(`family:${c}`);
+        return;
+      }
+    }
+    const d = lp.delta;
+    const MULTI: [keyof Need, FacetKey][] = [["kinds", "kind"], ["concerns", "concern"], ["families", "family"], ["ingredients", "ingredient"], ["freeFrom", "freeFrom"], ["attrs", "attr"]];
+    for (const [k, f] of MULTI) for (const v of (d[k] as string[] | undefined) ?? []) (multi[f] ??= []).push(v);
+    const SINGLE_K: [keyof Need, FacetKey][] = [["area", "area"], ["skinType", "skinType"], ["gender", "gender"], ["time", "time"], ["finish", "finish"], ["occasion", "occasion"], ["recipient", "recipient"]];
+    for (const [k, f] of SINGLE_K) if (typeof d[k] === "string") single[f] ??= d[k] as string;
+    if (d.maxPrice) learnedDelta.maxPrice ??= d.maxPrice;
+    if (d.minPrice) learnedDelta.minPrice ??= d.minPrice;
+    if (d.brands?.length) learnedDelta.brands = [...new Set([...(learnedDelta.brands ?? []), ...d.brands])];
+    if (d.free?.length) learnedDelta.free = [...new Set([...(learnedDelta.free ?? []), ...d.free])];
+    if (lp.intent) learnedIntent ??= lp.intent;
+    for (const f of Object.keys(d)) mentioned.add(f === "kinds" ? "kind" : f);
+  };
+  for (const lp of catalog.learned) if (lp.whole || lp.words.length > 1) applyLearned(lp);
+
   for (const p of PHRASES) {
     const pw = p.bare.split(" ");
     for (let i = 0; i + pw.length <= words.length; i++) {
@@ -184,6 +232,9 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
       else (multi[p.facet] ??= []).push(p.id);
     }
   }
+
+  // العبارات المتعلَّمة المفردة بعد المعجم (لا تسرق كلمة من عبارة معجمية أطول).
+  for (const lp of catalog.learned) if (!lp.whole && lp.words.length === 1) applyLearned(lp);
 
   // ── تحمّل أخطاء الكتابة: «شامبوا»، «ماسكرا»، «فاونديشين»، «سيرم».
   for (let i = 0; i < words.length; i++) {
@@ -322,7 +373,7 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
     delta.area = "makeup";
     delta.kinds = [];
     if (/(سهره|عرس|عروس|حفله|مناسبه|night|party|wedding)/.test(norm)) delta.time = "night";
-  } else if (RE.routine.test(norm)) intent = "routine";
+  } else if (RE.routine.test(norm) && !NO_ROUTINE_RE.test(norm)) intent = "routine";
   else if (single.occasion === "gift" || single.recipient) intent = "gift";
   else if (RE.cheaper.test(norm) && !hasProductSignal) intent = "cheaper";
   else if (RE.pricier.test(norm) && !hasProductSignal) intent = "pricier";
@@ -351,6 +402,16 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
       !NEGATORS.has(w) && !negatedAt(words, i),
   );
   if (free.length) delta.free = free;
+  // ما تعلّمته من عبارات كاملة (ميزانية، براند، كلمات بحث).
+  if (learnedDelta.maxPrice && !delta.maxPrice) delta.maxPrice = learnedDelta.maxPrice;
+  if (learnedDelta.minPrice && !delta.minPrice) delta.minPrice = learnedDelta.minPrice;
+  if (learnedDelta.brands?.length && !delta.brands?.length) delta.brands = learnedDelta.brands;
+  if (learnedDelta.free?.length) delta.free = [...new Set([...(delta.free ?? []), ...learnedDelta.free])];
+  if (learnedIntent && intent === "recommend") {
+    const map: Record<string, Intent> = { routine: "routine", gift: "gift", similar: "similar", knowledge: "info" };
+    if (map[learnedIntent]) intent = map[learnedIntent];
+    if (intent === "routine") delta.routine = true;
+  }
 
   return { intent, delta, hasProductSignal: hasProductSignal || free.length > 0, mentioned };
 }

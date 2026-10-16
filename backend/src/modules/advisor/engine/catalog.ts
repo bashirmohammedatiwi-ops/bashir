@@ -1,5 +1,6 @@
 import { CONCERN_AREA, FacetKey, KIND_BY_AREA, LEXICON } from "./lexicon";
 import { FAMOUS } from "./famous";
+import type { Need } from "./types";
 import { editDistance, normalize, tokens } from "./text";
 
 /** منتج كما تراه المستشارة — صفاته مستخرجة من نصه بالمعجم. */
@@ -57,6 +58,14 @@ export interface BrandEntry {
   productCount: number;
 }
 
+export interface LearnedPhrase {
+  words: string[];
+  /** العبارة تمثل رسالة كاملة (لا تُطابق كجزء). */
+  whole: boolean;
+  delta: Partial<Need>;
+  intent?: string;
+}
+
 export interface RawProduct {
   id: string;
   slug: string;
@@ -86,6 +95,17 @@ export interface RawProduct {
   /** أسماء الدرجات (ألوان) — تدخل البحث النصي. */
   shadeNames?: string[];
   tag?: { kind: string; area: string; concerns: string[]; audience: string; summary: string } | null;
+  /** صفات استخرجها الذكاء الاصطناعي من الوصف مرة واحدة (تملأ الفراغات فقط). */
+  enrich?: {
+    area?: string;
+    kind?: string;
+    gender?: string;
+    families?: string[];
+    concerns?: string[];
+    skinTypes?: string[];
+    finish?: string;
+    notes?: string;
+  } | null;
 }
 
 // أسماء العطور الأيقونية (من قائمة العطور المشهورة) بصيغة مطبّعة.
@@ -347,7 +367,9 @@ export class CatalogIndex {
       const categoryPath = [r.category, r.subcategory, r.tertiaryCategory]
         .filter(Boolean)
         .map((c) => (c!.nameAr || c!.name) as string);
-      const summary = r.tag?.summary ?? "";
+      const en = r.enrich ?? null;
+      // نوتات العطر المستخرجة تدخل الملخص (للبحث والتشابه والعائلات).
+      const summary = [r.tag?.summary ?? "", en?.notes ? `نوتات: ${en.notes}` : ""].filter(Boolean).join(" — ");
       const desc = (r.descriptionAr || r.description || "").slice(0, 900);
 
       const strong = new Map<FacetKey, Set<string>>();
@@ -364,6 +386,7 @@ export class CatalogIndex {
           if ((g = m.get("gender"))?.size) break;
         }
         if (g?.size) strong.set("gender", new Set(g));
+        else if (en?.gender) strong.set("gender", new Set([en.gender])); // من الوصف عبر الإثراء
         else strong.delete("gender");
       }
 
@@ -380,6 +403,8 @@ export class CatalogIndex {
         for (const k of nameKindsSorted.slice(1)) add(weak, "kind", k);
       } else if (tagKind) {
         strong.set("kind", new Set([tagKind]));
+      } else if (en?.kind) {
+        strong.set("kind", new Set([en.kind]));
       }
 
       // المجال: كلمة المجال الصريحة في الاسم («…للشعر») ← نوع الاسم ← الوسم ← القسم.
@@ -398,7 +423,7 @@ export class CatalogIndex {
         }
       }
       const tagArea = r.tag ? TAG_AREA[r.tag.area] : undefined;
-      area ??= tagArea ?? null;
+      area ??= tagArea ?? en?.area ?? null;
       if (!area) {
         for (const k of strong.get("kind") ?? []) {
           if (KIND_AREA.has(k)) {
@@ -424,6 +449,13 @@ export class CatalogIndex {
           if (mc) add(strong, "concern", mc);
         }
         if (r.tag.audience === "baby") add(strong, "audience", "baby");
+      }
+      // ما استخرجه الإثراء من الوصف يملأ الفراغات فقط.
+      if (en) {
+        if (area === "fragrance") for (const f of en.families ?? []) add(strong, "family", f);
+        if (!strong.get("concern")?.size) for (const c of en.concerns ?? []) add(strong, "concern", c);
+        if (!strong.get("skinType")?.size) for (const st of en.skinTypes ?? []) add(weak, "skinType", st);
+        if (en.finish && !strong.get("finish")?.size) add(strong, "finish", en.finish);
       }
       // مشاكل لا تخص مجال المنتج تُحذف (شامبو لا يُرشَّح لحب الشباب).
       const concerns = strong.get("concern");
@@ -710,6 +742,19 @@ export class CatalogIndex {
       if (!best || d < best.d || (d === best.d && df > best.df)) best = { t: v, d, df };
     }
     return best && best.df >= 2 ? best.t : null;
+  }
+
+  /** عبارات تعلّمتها «ديما» من التدريب (الأطول أولاً). */
+  learned: LearnedPhrase[] = [];
+
+  setLearned(list: LearnedPhrase[]) {
+    this.learned = [...list].sort((a, b) => Number(b.whole) - Number(a.whole) || b.words.length - a.words.length);
+  }
+
+  addLearned(p: LearnedPhrase) {
+    const key = `${p.whole}|${p.words.join(" ")}`;
+    this.learned = this.learned.filter((x) => `${x.whole}|${x.words.join(" ")}` !== key);
+    this.setLearned([...this.learned, p]);
   }
 
   /** تطبيق ما تعلّمته من التفاعل: productId → درجة 0..1. */

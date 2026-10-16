@@ -74,6 +74,13 @@ const compact = (s: string) =>
 
 const cache = new Map<string, number>();
 
+/** تقديرات تلقائية لبراندات خارج القائمة (من الذكاء الاصطناعي أو البيانات): اسم البراند ← درجة. */
+let dynamic = new Map<string, number>();
+export function setDynamicTiers(tiers: Map<string, number>) {
+  dynamic = tiers;
+  cache.clear();
+}
+
 /** 1 = مرجع، 0.62 = جيد ومنتشر، 0.3 = غير معروف. */
 export function brandTier(brandName: string, area: string | null): number {
   if (!brandName) return 0.3;
@@ -93,6 +100,8 @@ export function brandTier(brandName: string, area: string | null): number {
     if (tiers.a.some(matches)) v = 1;
     else if (tiers.b.some(matches)) v = 0.62;
   }
+  // القائمة المختارة يدوياً أولاً؛ وإلا التقدير التلقائي للبراند الجديد.
+  if (v === 0.3) v = dynamic.get(brandName) ?? v;
   cache.set(key, v);
   return v;
 }

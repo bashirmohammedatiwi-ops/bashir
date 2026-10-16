@@ -3,6 +3,7 @@ import { famousIn, findByName, findFamousProduct, profileOf, profileOfBoth, prof
 import { COMPLEMENT_WHY, COMPLEMENTS, compareProducts, fitCheck, whyList } from "./insight";
 import { answerQuestion, cautionFor, detectIngredients, QaAnswer, QUESTION_RE } from "./qa";
 import { FAMOUS } from "./famous";
+import { AiParse, mergeAiParse } from "./ai";
 import {
   ABOUT,
   GREETINGS,
@@ -16,7 +17,7 @@ import {
   tipFor,
 } from "./composer";
 import { CONCERN_AREA, FacetKey, LEXICON, facetValue } from "./lexicon";
-import { parseAction, understand } from "./nlu";
+import { NO_ROUTINE_RE, parseAction, understand } from "./nlu";
 import { li, normalize } from "./text";
 import { Ranked, rank, routineTemplate, toCard } from "./ranker";
 import {
@@ -45,6 +46,8 @@ export interface DialogCtx {
   profile?: Profile;
   /** تفاصيل المنتج المحوري من قاعدة البيانات (لطريقة الاستخدام). */
   details?: { howToUse?: string | null; ingredients?: string | null } | null;
+  /** فهم الذكاء الاصطناعي الاحتياطي (فقط حين لم تفهم «ديما» بثقة). */
+  ai?: AiParse | null;
 }
 
 // ───────────────────────────────────────────────────────── الحقول
@@ -1124,6 +1127,8 @@ function respondInner(input: DialogInput, prev: AdvisorState | null | undefined,
       }
       if (a.op === "act") {
         intent = (a.key as Intent) ?? null;
+        // «منتجات مفردة»: خروج صريح من وضع الروتين.
+        if (a.key === "recommend") state.need.routine = false;
         continue;
       }
       if (a.op === "quiz" && a.key === "start" && a.val && QUIZZES[a.val]) {
@@ -1166,18 +1171,20 @@ function respondInner(input: DialogInput, prev: AdvisorState | null | undefined,
     state.quiz = undefined;
     const msg = input.message;
     const nm = normalize(msg);
-    const parsed = understand(msg, ctx.catalog);
+    let parsed = understand(msg, ctx.catalog);
+    if (ctx.ai) parsed = mergeAiParse(parsed, ctx.ai, ctx.catalog);
     const newKind = (parsed.delta.kinds?.length ?? 0) > 0;
     const focusP = state.focus ? ctx.catalog.byId(state.focus) : undefined;
     const refExplicit = REF_RE.test(` ${nm} `);
     const refP = (!newKind ? focusP : undefined) ?? (refExplicit && state.lastTop ? ctx.catalog.byId(state.lastTop) : undefined);
 
     // ── «يشبه/بديل»: مرجع من الكتالوج، أو عطر مشهور، أو المنتج الذي نتحدث عنه.
-    const famous = famousIn(msg);
-    if (SIMILAR_RE.test(nm) || (famous && nm.split(" ").length <= 5)) {
+    const aiSimilar = ctx.ai?.intent === "similar" && ctx.ai.similarTo ? ctx.ai.similarTo : null;
+    const famous = famousIn(msg) ?? (aiSimilar ? famousIn(aiSimilar) : null);
+    if (SIMILAR_RE.test(nm) || (famous && nm.split(" ").length <= 5) || aiSimilar) {
       const cheaper = CHEAPER_WORDS.test(nm);
       // المشهور أولاً (يُطابق بالنوتات)، ثم اسم منتج من الكتالوج.
-      const product = famous ? null : findByName(ctx.catalog, msg, null);
+      const product = famous ? null : findByName(ctx.catalog, aiSimilar ?? msg, null);
       if (product || famous) {
         if (parsed.delta.maxPrice) state.need.maxPrice = parsed.delta.maxPrice;
         return handleSimilar(state, ctx, { product: product ?? undefined, famousId: famous?.id }, cheaper);
@@ -1202,9 +1209,28 @@ function respondInner(input: DialogInput, prev: AdvisorState | null | undefined,
       const productAsk = newKind && !QUESTION_RE.test(` ${nm} `);
       if (!(qa.knowledge.kind === "ingredient" && productAsk)) return handleKnowledge(state, ctx, qa, parsed.delta.kinds ?? []);
     }
+    // سؤال عام خارج قاعدة المعرفة أجاب عنه الذكاء الاصطناعي باختصار.
+    if (!qa && ctx.ai?.reply && (ctx.ai.intent === "knowledge" || ctx.ai.intent === "chat")) {
+      const signal = Boolean(parsed.delta.kinds?.length || parsed.delta.concerns?.length || parsed.delta.ingredients?.length);
+      if (ctx.ai.intent === "knowledge" && signal) {
+        state.need = mergeNeed(state.need, parsed.delta).need;
+        const rec = recommend(state, ctx);
+        rec.messages.unshift(ctx.ai.reply);
+        return rec;
+      }
+      return reply(state, { messages: [ctx.ai.reply], chips: STARTERS.slice(0, 4) }, ctx);
+    }
     if (newKind || parsed.delta.area) state.focus = undefined;
 
     intent = parsed.intent;
+    // طلب نوع منتج بعينه («غسول للبشرة الدهنية») أو «منتجات مفردة/بدون روتين» = منتجات لا روتين.
+    if (
+      intent !== "routine" &&
+      (newKind || NO_ROUTINE_RE.test(nm))
+    ) {
+      state.need.routine = false;
+      parsed.delta.routine = undefined;
+    }
     if (parsed.delta.avoid?.length || parsed.delta.excludeBrands?.length) {
       const names = [
         ...(parsed.delta.avoid ?? []).map((a) => {

@@ -1,7 +1,13 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
 import { rewriteMediaRecord, rewriteMediaUrl } from "../../common/media-url.util";
-import { CatalogIndex, RawProduct } from "./engine/catalog";
+import { CatalogIndex, LearnedPhrase, RawProduct } from "./engine/catalog";
+import { AdvisorAiService } from "./advisor-ai.service";
+import { AiParse, aiToDelta, needsAi } from "./engine/ai";
+import { setDynamicTiers } from "./engine/brands";
+import { phraseWords, understand } from "./engine/nlu";
+import { normalize } from "./engine/text";
+import type { Need } from "./engine/types";
 import { WELCOME_BODY, greetingFor, pick } from "./engine/composer";
 import { STARTERS, respond } from "./engine/dialog";
 import { searchCatalog } from "./engine/search";
@@ -50,7 +56,55 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
   private building: Promise<CatalogIndex> | null = null;
   private timer?: NodeJS.Timeout;
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ai: AdvisorAiService,
+  ) {}
+
+  private dirtyTimer?: NodeJS.Timeout;
+  private lastRebuildAt = 0;
+
+  /**
+   * تغيّر شيء (منتج جديد، تعديل، معرفة من التدريب): إعادة بناء خلال دقيقة تقريباً،
+   * مجمّعة حتى لا تتكرر مع كل تعديل صغير.
+   */
+  markDirty() {
+    this.lastSig = "";
+    if (this.dirtyTimer) return;
+    const wait = Math.max(45_000, 120_000 - (Date.now() - this.lastRebuildAt));
+    this.dirtyTimer = setTimeout(() => {
+      this.dirtyTimer = undefined;
+      this.refresh().catch(() => undefined);
+    }, wait);
+    this.dirtyTimer.unref?.();
+  }
+
+  /** يحفظ عبارة تعلّمتها «ديما» ويطبّقها فوراً (بلا انتظار إعادة البناء). */
+  async learnPhrase(text: string, delta: Partial<Need>, intent: string | undefined, source: string, whole = true) {
+    const phrase = normalize(text).replace(/\d{6,}/g, "#").trim().slice(0, 200);
+    if (phrase.length < 2) return;
+    await this.prisma.advisorPhrase
+      .upsert({
+        where: { phrase },
+        create: { phrase, delta: delta as object, intent: intent ?? null, source },
+        update: { delta: delta as object, intent: intent ?? null, source },
+      })
+      .catch(() => undefined);
+    this.index?.addLearned({ words: phraseWords(phrase), whole, delta, intent });
+  }
+
+  /** رسالة لم تُفهم بثقة — تُسجَّل (بلا هوية) لتصبح مادة التدريب التالية. */
+  private async logQuery(message: string, resolved: boolean) {
+    const text = normalize(message).replace(/\d{6,}/g, "#").trim().slice(0, 200);
+    if (text.length < 3) return;
+    await this.prisma.advisorQueryLog
+      .upsert({
+        where: { text },
+        create: { text, sample: message.replace(/\d{6,}/g, "#").slice(0, 200), resolved },
+        update: { count: { increment: 1 }, lastAt: new Date(), ...(resolved ? { resolved: true } : {}) },
+      })
+      .catch(() => undefined);
+  }
 
   onModuleInit() {
     if (process.env.NODE_ENV === "test") return;
@@ -143,6 +197,14 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
           select: { productId: true, kind: true, area: true, concerns: true, audience: true, summary: true },
         }),
       ]);
+      const [enrichRows, phraseRows] = await Promise.all([
+        // قبل تطبيق الترحيل (أو عند أي تعثر) نبني بدون المعرفة المتعلَّمة بدل أن يفشل البناء كله.
+        this.prisma.advisorEnrichment
+          .findMany({ where: { type: { in: ["product", "brand"] } }, select: { key: true, type: true, data: true } })
+          .catch(() => []),
+        this.prisma.advisorPhrase.findMany({ select: { phrase: true, delta: true, intent: true, source: true } }).catch(() => []),
+      ]);
+      const enrichBy = new Map(enrichRows.filter((r) => r.type === "product").map((r) => [r.key, r.data as RawProduct["enrich"]]));
       const tagBy = new Map(tags.map((t) => [t.productId, t]));
       const raw: RawProduct[] = rows.map((r) => ({
         ...r,
@@ -151,9 +213,22 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
         shadeCount: r._count.shades,
         shadeNames: r.shades.map((x) => x.name).filter(Boolean),
         tag: tagBy.get(r.id) ?? null,
+        enrich: enrichBy.get(r.id) ?? null,
       }));
       const idx = await CatalogIndex.buildAsync(raw);
       idx.applyLearning(await this.learning());
+      idx.setLearned(
+        phraseRows.map(
+          (r): LearnedPhrase => ({
+            words: phraseWords(r.phrase),
+            whole: r.source !== "language",
+            delta: r.delta as Partial<Need>,
+            intent: r.intent ?? undefined,
+          }),
+        ),
+      );
+      setDynamicTiers(this.brandEstimates(idx, enrichRows.filter((r) => r.type === "brand")));
+      this.lastRebuildAt = Date.now();
       this.index = idx;
       this.lastFull = Date.now();
       this.log.log(`Advisor index: ${idx.products.length} products, ${idx.brands.length} brands in ${Date.now() - started}ms`);
@@ -162,6 +237,42 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
       this.building = null;
     });
     return this.building;
+  }
+
+  /**
+   * سمعة تلقائية للبراندات خارج القائمة: تقييم الذكاء الاصطناعي إن وُجد، وإلا تقدير من
+   * البيانات (أسعاره مقارنة بمنافسيه في نفس النوع + تنوع منتجاته).
+   */
+  private brandEstimates(idx: CatalogIndex, rated: { key: string; data: unknown }[]): Map<string, number> {
+    const out = new Map<string, number>();
+    const kindMedian = new Map<string, number>();
+    const byKind = new Map<string, number[]>();
+    for (const p of idx.products) {
+      const k = [...(p.strong.get("kind") ?? [])][0];
+      if (!k || !p.price) continue;
+      (byKind.get(k) ?? byKind.set(k, []).get(k)!).push(p.price);
+    }
+    for (const [k, list] of byKind) kindMedian.set(k, list.sort((a, b) => a - b)[Math.floor(list.length / 2)]);
+    const brand = new Map<string, { ratios: number[]; kinds: Set<string> }>();
+    for (const p of idx.products) {
+      const k = [...(p.strong.get("kind") ?? [])][0];
+      if (!p.brand || !k || !kindMedian.get(k)) continue;
+      const e = brand.get(p.brand) ?? { ratios: [], kinds: new Set<string>() };
+      e.ratios.push(p.price / kindMedian.get(k)!);
+      e.kinds.add(k);
+      brand.set(p.brand, e);
+    }
+    for (const [name, e] of brand) {
+      const r = e.ratios.sort((a, b) => a - b)[Math.floor(e.ratios.length / 2)];
+      const est = 0.3 + 0.22 * Math.max(0, Math.min(1, (r - 1) / 1.5)) + 0.08 * Math.min(1, e.kinds.size / 6);
+      out.set(name, Math.min(0.6, est));
+    }
+    const TIER: Record<string, number> = { A: 0.95, B: 0.62, C: 0.35 };
+    for (const r of rated) {
+      const d = r.data as { tier?: string; name?: string };
+      if (d?.name && d.tier && TIER[d.tier]) out.set(d.name, TIER[d.tier]);
+    }
+    return out;
   }
 
   async welcome(firstName?: string) {
@@ -200,11 +311,25 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
           .catch(() => null);
       }
     }
+    // فهم ضعيف؟ نسجل الرسالة للتدريب، ونستعين بالذكاء الاصطناعي (إن سُمح) — ونحفظ فهمه
+    // عبارةً متعلّمة فلا ندفع ثمن نفس السؤال مرة ثانية.
+    let ai: AiParse | null = null;
+    if (input.message && !action && needsAi(input.message, catalog)) {
+      if (this.ai.enabled && this.ai.liveAi) {
+        ai = await this.ai.parse(input.message, { area: input.state?.need?.area });
+        if (ai) {
+          const { delta, intent } = aiToDelta(ai, catalog, understand(input.message, catalog));
+          if (Object.keys(delta).length || intent) await this.learnPhrase(input.message, delta, intent, "chat");
+        }
+      }
+      void this.logQuery(input.message, Boolean(ai));
+    }
     return respond({ message: input.message, action }, input.state ?? null, {
       catalog,
       firstName: input.firstName,
       profile,
       details,
+      ai,
     });
   }
 

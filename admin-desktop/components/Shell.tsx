@@ -35,6 +35,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
       { href: "/products/app-order", label: "ترتيب التطبيق", short: "تر" },
       { href: "/catalog-import", label: "استيراد الكتالوج", short: "كت" },
       { href: "/ai-add", label: "إضافة ذكية ✦", short: "AI" },
+      { href: "/advisor-training", label: "تدريب ديما ✦", short: "دي" },
       { href: "/assistant-training", label: "تدريب المساعد", short: "فض" },
       { href: "/assistant-insights", label: "أداء المساعد", short: "أد" },
       { href: "/skin-concerns", label: "دليل البشرة", short: "ب" },

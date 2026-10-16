@@ -564,6 +564,7 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
         await this.syncSkinConcerns(product.id, dto.concernIds);
       }
       await this.homeFeedCache.invalidateAll();
+      this.advisor.markDirty();
       return this.findOne(product.id);
     } catch (error) {
       throw this.mapProductWriteError(error);
@@ -688,6 +689,7 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
       await this.syncSkinConcerns(id, dto.concernIds);
     }
     await this.homeFeedCache.invalidateAll();
+    this.advisor.markDirty();
     return this.findOne(id);
   }
 
@@ -872,6 +874,7 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
     await this.ensureExists(id);
     await this.prisma.product.delete({ where: { id } });
     await this.homeFeedCache.invalidateAll();
+    this.advisor.markDirty();
     return { success: true };
   }
 
