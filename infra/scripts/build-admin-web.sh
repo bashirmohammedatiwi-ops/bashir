@@ -136,4 +136,12 @@ chmod a+x "$INFRA_ROOT" 2>/dev/null || true
 
 verify_admin_static "$OUT_DIR"
 
+# المجلد استُبدل بإعادة تسمية، وحاوية nginx ما زالت مربوطة بالمجلد القديم المحذوف
+# (فتظهر اللوحة بخطأ 500). إعادة تشغيلها تربطها بالمجلد الجديد.
+NGINX_CONTAINER="$(docker ps --filter "label=com.docker.compose.project=infra" --filter "label=com.docker.compose.service=nginx" -q 2>/dev/null | head -1)"
+if [[ -n "$NGINX_CONTAINER" ]]; then
+  echo "==> Restarting nginx to pick up the new admin folder"
+  docker restart "$NGINX_CONTAINER" >/dev/null
+fi
+
 echo "==> Admin web build ready: infra/admin-static/"
