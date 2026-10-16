@@ -53,9 +53,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     _controller.addListener(_onText);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final q = GoRouterState.of(context).uri.queryParameters['q']?.trim();
-      if (q != null && q.isNotEmpty) _runTerm(q);
+      final q = _initialQuery;
+      if (q != null) _runTerm(q);
     });
+  }
+
+  /// فُتح البحث بكلمة جاهزة (رابط/حملة): نعرض النتائج بلا لوحة مفاتيح.
+  String? _initialQuery;
+  bool _readRoute = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_readRoute) return;
+    _readRoute = true;
+    final q = GoRouterState.of(context).uri.queryParameters['q']?.trim();
+    _initialQuery = q != null && q.isNotEmpty ? q : null;
   }
 
   @override
@@ -200,6 +213,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           _SearchBar(
             controller: _controller,
             focus: _focus,
+            autofocus: _initialQuery == null,
             hint: s.searchFieldHint,
             busy: Listenable.merge([_instant, _barcodeBusy]),
             isBusy: () => _instant.loading || _barcodeBusy.value,
@@ -292,6 +306,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 class _SearchBar extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focus;
+  final bool autofocus;
   final String hint;
   final Listenable busy;
   final bool Function() isBusy;
@@ -302,6 +317,7 @@ class _SearchBar extends StatelessWidget {
   const _SearchBar({
     required this.controller,
     required this.focus,
+    required this.autofocus,
     required this.hint,
     required this.busy,
     required this.isBusy,
@@ -328,7 +344,7 @@ class _SearchBar extends StatelessWidget {
                   child: TextField(
                     controller: controller,
                     focusNode: focus,
-                    autofocus: true,
+                    autofocus: autofocus,
                     textInputAction: TextInputAction.search,
                     autocorrect: false,
                     enableSuggestions: false,
