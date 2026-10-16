@@ -157,6 +157,7 @@ model User {
   orders          Order[]
   reviews         Review[]
   wishlist        Wishlist[]
+  productAlerts   ProductAlert[]
   notifications   Notification[]
   notificationReads NotificationRead[]
   deviceTokens    DeviceToken[]
@@ -304,6 +305,7 @@ model Product {
   reviews         Review[]
   orderItems      OrderItem[]
   wishlist        Wishlist[]
+  productAlerts   ProductAlert[]
   packageItems    PackageItem[]
   skinConcerns    ProductSkinConcern[]
 
@@ -443,6 +445,25 @@ model Media {
 }
 
 // ---------------------- CART / WISHLIST ----------------------
+/// تنبيهات الزبونة على منتج: عودة التوفر (تطلبها بنفسها) وانخفاض السعر (تلقائي لعناصر المفضلة).
+model ProductAlert {
+  id          String    @id @default(uuid())
+  userId      String
+  productId   String
+  /// RESTOCK | PRICE_DROP
+  type        String
+  /// السعر المرجعي لتنبيه انخفاض السعر — يُحدَّث بعد كل تنبيه أو ارتفاع.
+  basePrice   Int?
+  notifiedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId, type])
+  @@index([type, productId])
+}
+
 model Wishlist {
   id              String     @id @default(uuid())
   userId          String

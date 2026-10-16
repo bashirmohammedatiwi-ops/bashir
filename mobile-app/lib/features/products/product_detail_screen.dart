@@ -26,6 +26,7 @@ import '../../core/widgets/states.dart';
 import '../../data/models/product.dart';
 import '../../data/models/review.dart';
 import '../../data/services/api_service.dart';
+import '../alerts/restock_watch_provider.dart';
 import '../auth/auth_provider.dart';
 import '../cart/cart_provider.dart';
 import '../catalog/catalog_providers.dart';
@@ -1734,58 +1735,140 @@ class _BottomBar extends ConsumerWidget {
             ),
             SizedBox(width: narrow ? 10 : 14),
             Expanded(
-              child: SizedBox(
-                height: narrow ? 46 : 50,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    gradient: enabled ? context.worldTheme.signatureGradient : null,
-                    color: enabled ? null : context.worldTheme.divider,
-                    borderRadius: BorderRadius.circular(999),
-                    boxShadow: enabled
-                        ? [
+              child: enabled
+                  ? SizedBox(
+                      height: narrow ? 46 : 50,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: context.worldTheme.signatureGradient,
+                          borderRadius: BorderRadius.circular(999),
+                          boxShadow: [
                             BoxShadow(
                               color: context.worldTheme.accent.withValues(alpha: 0.28),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
-                          ]
-                        : null,
-                  ),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: enabled ? onAdd : null,
-                      borderRadius: BorderRadius.circular(999),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.shopping_bag_rounded,
-                            size: narrow ? 18 : 20,
-                            color: enabled ? Colors.white : context.worldTheme.inkMuted,
-                          ),
-                          SizedBox(width: narrow ? 6 : 8),
-                          Flexible(
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                enabled ? s.addToCartBtn : s.outOfStock,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: narrow ? 13 : 14,
-                                  color: enabled ? Colors.white : context.worldTheme.inkMuted,
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: onAdd,
+                            borderRadius: BorderRadius.circular(999),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.shopping_bag_rounded, size: narrow ? 18 : 20, color: Colors.white),
+                                SizedBox(width: narrow ? 6 : 8),
+                                Flexible(
+                                  child: FittedBox(
+                                    fit: BoxFit.scaleDown,
+                                    child: Text(
+                                      s.addToCartBtn,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: narrow ? 13 : 14,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                              ],
                             ),
                           ),
-                        ],
+                        ),
                       ),
+                    )
+                  : _NotifyMeButton(productId: product.id, height: narrow ? 46 : 50),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// منتج نافد: «أعلميني عند التوفر» — تنبيه على الهاتف فور عودته.
+class _NotifyMeButton extends ConsumerWidget {
+  final String productId;
+  final double height;
+  const _NotifyMeButton({required this.productId, required this.height});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.worldTheme;
+    final ar = ref.s.isAr;
+    final watching = ref.watch(restockWatchProvider).contains(productId);
+
+    Future<void> onTap() async {
+      HapticFeedback.mediumImpact();
+      if (!ref.read(authProvider).isAuthenticated) {
+        context.push('/login');
+        return;
+      }
+      try {
+        final now = await ref.read(restockWatchProvider.notifier).toggle(productId);
+        if (!context.mounted) return;
+        if (now) {
+          AppSnackbar.success(
+            context,
+            ar ? 'تم! سنرسل لك تنبيهاً فور توفره' : "Done! We'll notify you when it's back",
+          );
+        }
+      } catch (e) {
+        if (context.mounted) AppSnackbar.error(context, friendlyError(e));
+      }
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+      height: height,
+      decoration: BoxDecoration(
+        gradient: watching ? null : t.signatureGradient,
+        color: watching ? t.accentLight : null,
+        borderRadius: BorderRadius.circular(999),
+        border: watching ? Border.all(color: t.accent, width: 1.4) : null,
+        boxShadow: watching
+            ? null
+            : [BoxShadow(color: t.accent.withValues(alpha: 0.28), blurRadius: 12, offset: const Offset(0, 4))],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(999),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 220),
+                transitionBuilder: (c, a) => ScaleTransition(scale: a, child: c),
+                child: Icon(
+                  watching ? Icons.notifications_active_rounded : Icons.notifications_none_rounded,
+                  key: ValueKey(watching),
+                  size: 19,
+                  color: watching ? t.accentDark : Colors.white,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    watching
+                        ? (ar ? 'سننبهك فور توفره' : "We'll notify you")
+                        : (ar ? 'أعلميني عند التوفر' : 'Notify me when back'),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13.5,
+                      color: watching ? t.accentDark : Colors.white,
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

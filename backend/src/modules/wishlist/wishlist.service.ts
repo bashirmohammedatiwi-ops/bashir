@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
+import { AlertsService } from "../alerts/alerts.service";
 
 @Injectable()
 export class WishlistService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly alerts: AlertsService,
+  ) {}
 
   list(userId: string) {
     return this.prisma.wishlist.findMany({
@@ -26,16 +30,20 @@ export class WishlistService {
   async add(userId: string, productId: string) {
     const product = await this.prisma.product.findUnique({ where: { id: productId } });
     if (!product) throw new NotFoundException("Product not found");
-    return this.prisma.wishlist.upsert({
+    const row = await this.prisma.wishlist.upsert({
       where: { userId_productId: { userId, productId } },
       create: { userId, productId },
       update: {},
       include: { product: true },
     });
+    // مراقبة السعر تبدأ من سعر الإضافة — تنبيه تلقائي عند انخفاضه.
+    await this.alerts.trackPrice(userId, productId, product.price).catch(() => undefined);
+    return row;
   }
 
   async remove(userId: string, productId: string) {
     await this.prisma.wishlist.deleteMany({ where: { userId, productId } });
+    await this.alerts.untrackPrice(userId, productId).catch(() => undefined);
     return { success: true };
   }
 
@@ -45,6 +53,7 @@ export class WishlistService {
     });
     if (existing) {
       await this.prisma.wishlist.delete({ where: { id: existing.id } });
+      await this.alerts.untrackPrice(userId, productId).catch(() => undefined);
       return { added: false };
     }
     await this.add(userId, productId);

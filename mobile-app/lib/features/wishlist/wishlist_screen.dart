@@ -196,6 +196,19 @@ class _WishlistSummary extends ConsumerWidget {
                 Expanded(child: stat('$available', ar ? 'متوفرة الآن' : 'In stock')),
               ],
             ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(Icons.notifications_active_rounded, size: 15, color: Colors.white.withValues(alpha: 0.9)),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    ar ? 'سننبهك فور انخفاض سعر أي منتج هنا' : "We'll alert you when any of these drops in price",
+                    style: AppText.caption.copyWith(color: Colors.white.withValues(alpha: 0.9)),
+                  ),
+                ),
+              ],
+            ),
             if (available > 0) ...[
               const SizedBox(height: 14),
               GestureDetector(

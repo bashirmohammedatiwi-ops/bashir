@@ -701,6 +701,28 @@ class ApiService {
     }
   }
 
+  // ---- PRODUCT ALERTS ----
+  Future<Set<String>> getRestockWatches() async {
+    try {
+      final r = await _dio.get('/alerts/mine');
+      return asList(asMap(_data(r))['restock']).map((e) => e.toString()).toSet();
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  Future<void> setRestockWatch(String productId, bool watch) async {
+    try {
+      if (watch) {
+        await _dio.post('/alerts/restock/$productId');
+      } else {
+        await _dio.delete('/alerts/restock/$productId');
+      }
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
   // ---- PAYMENTS (QiCard) ----
   Future<PaymentMethodsConfig> getPaymentMethods() async {
     try {
