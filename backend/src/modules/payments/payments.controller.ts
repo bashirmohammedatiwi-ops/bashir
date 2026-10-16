@@ -63,7 +63,7 @@ export class PaymentsController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.CUSTOMER, Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.CUSTOMER, Role.ADMIN, Role.SUPER_ADMIN, Role.STAFF)
   @Post("orders/:orderId/start")
   start(@Param("orderId") orderId: string, @CurrentUser() user: any) {
     return this.payments.startForOrder(user.id, orderId);
@@ -71,7 +71,7 @@ export class PaymentsController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.CUSTOMER, Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.CUSTOMER, Role.ADMIN, Role.SUPER_ADMIN, Role.STAFF)
   @Post("orders/:orderId/confirm")
   confirm(@Param("orderId") orderId: string, @CurrentUser() user: any) {
     return this.payments.confirmForOrder(user.id, orderId);
@@ -79,7 +79,7 @@ export class PaymentsController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.CUSTOMER, Role.ADMIN, Role.SUPER_ADMIN)
+  @Roles(Role.CUSTOMER, Role.ADMIN, Role.SUPER_ADMIN, Role.STAFF)
   @Post("orders/:orderId/abandon")
   abandon(
     @Param("orderId") orderId: string,

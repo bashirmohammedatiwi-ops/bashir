@@ -260,9 +260,13 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
   async adminCancel(orderId: string, actorId: string) {
     await this.ensureOrder(orderId);
     await this.syncOpen(orderId, "SYNC");
+    // دفعة استُرجعت (كلياً أو جزئياً) لا تُلغى — البوابة ترفضها («not in cancelable state»).
     const paid = await this.prisma.paymentTransaction.findFirst({
-      where: { orderId, status: "SUCCESS", canceled: false },
+      where: { orderId, status: "SUCCESS", canceled: false, refundedAmount: 0 },
       orderBy: { createdAt: "desc" },
+    });
+    const refunded = await this.prisma.paymentTransaction.count({
+      where: { orderId, status: "SUCCESS", refundedAmount: { gt: 0 } },
     });
     const tx =
       paid ??
@@ -270,8 +274,20 @@ export class PaymentsService implements OnModuleInit, OnModuleDestroy {
         where: { orderId, status: "CREATED", canceled: false },
         orderBy: { createdAt: "desc" },
       }));
-    if (!tx) throw new BadRequestException("لا توجد عملية قابلة للإلغاء لهذا الطلب");
-    await this.cancelAtGateway(tx, actorId, "ADMIN");
+    if (!tx) {
+      throw new BadRequestException(
+        refunded ? "الدفعة استُرجعت مسبقاً — لا يمكن إلغاؤها بعد الاسترجاع" : "لا توجد عملية قابلة للإلغاء لهذا الطلب",
+      );
+    }
+    try {
+      await this.cancelAtGateway(tx, actorId, "ADMIN");
+    } catch (e) {
+      // بعد التسوية لا يُلغى — الحل استرجاع المبلغ.
+      if (/cancelable state/i.test((e as Error).message)) {
+        throw new BadRequestException("البوابة لا تسمح بإلغاء هذه الدفعة الآن (غالباً تمت تسويتها) — استخدمي «استرجاع» بدلاً منه");
+      }
+      throw e;
+    }
     return this.adminDetails(orderId);
   }
 

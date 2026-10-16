@@ -158,6 +158,14 @@ export class OrdersService {
     if (dto.couponCode) {
       const coupon = await this.prisma.coupon.findUnique({ where: { code: dto.couponCode } });
       if (!coupon || !coupon.isActive) throw new BadRequestException("Invalid coupon");
+      // المدة والعدد المسموح: كوبون منتهٍ أو مستنفد لا يُقبل عند إنشاء الطلب.
+      const now = new Date();
+      if ((coupon.startsAt && coupon.startsAt > now) || (coupon.endsAt && coupon.endsAt <= now)) {
+        throw new BadRequestException("انتهت صلاحية الكوبون");
+      }
+      if (coupon.maxRedemptions != null && coupon.redeemedCount >= coupon.maxRedemptions) {
+        throw new BadRequestException("نفد استخدام هذا الكوبون");
+      }
       if (coupon.minOrder && subtotal < coupon.minOrder)
         throw new BadRequestException("Minimum order not met");
       if (coupon.type === DiscountType.FIRST_ORDER) {
@@ -287,19 +295,15 @@ export class OrdersService {
 
   async updateStatus(id: string, dto: UpdateOrderStatusDto, actorId?: string) {
     const order = await this.findOne(id);
+    // الإلغاء من لوحة التحكم يمر بنفس مسار الإلغاء: إعادة المخزون والنقاط والكوبون،
+    // وعكس الدفعة الإلكترونية (عبر الحدث).
+    if (dto.status === OrderStatus.CANCELLED && order.status !== OrderStatus.CANCELLED) {
+      await this.cancel(id, actorId);
+    }
     const updated = await this.prisma.order.update({
       where: { id },
       data: { status: dto.status, paymentStatus: dto.paymentStatus },
     });
-    if (dto.status === OrderStatus.CANCELLED && order.status !== OrderStatus.CANCELLED) {
-      await this.loyalty.reverseForCancelledOrder(
-        order.userId,
-        order.id,
-        order.loyaltySpent,
-        order.loyaltyEarned,
-      );
-      this.events.emitCancelled({ orderId: order.id, actorId });
-    }
     if (actorId) {
       await this.prisma.auditLog.create({
         data: {
@@ -325,6 +329,13 @@ export class OrdersService {
             stock: { increment: it.quantity },
             soldCount: { decrement: it.quantity },
           },
+        });
+      }
+      // الكوبون يعود متاحاً (لا يُحسب استخدام طلب أُلغي).
+      if (order.couponId) {
+        await tx.coupon.updateMany({
+          where: { id: order.couponId, redeemedCount: { gt: 0 } },
+          data: { redeemedCount: { decrement: 1 } },
         });
       }
       return tx.order.update({
