@@ -145,6 +145,79 @@ class _ProductShadePickerState extends State<ProductShadePicker>
     return (idx + 1).clamp(1, widget.shades.length);
   }
 
+  /// كل الدرجات بشبكة — اختيار سريع حين تكون كثيرة.
+  Future<void> _openAll() async {
+    HapticFeedback.selectionClick();
+    final picked = await showModalBottomSheet<ProductShade>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final t = ctx.worldTheme;
+        final shades = widget.shades;
+        return ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(ctx).height * 0.8),
+          child: Container(
+            decoration: BoxDecoration(color: t.surface, borderRadius: const BorderRadius.vertical(top: Radius.circular(26))),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 10),
+                Center(
+                  child: Container(width: 38, height: 4, decoration: BoxDecoration(color: t.hairline, borderRadius: BorderRadius.circular(99))),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 4),
+                  child: Text(
+                    widget.strings.isAr ? 'اختاري درجتكِ' : 'Choose your shade',
+                    style: ProductDetailTheme.sectionTitleStyle(ctx).copyWith(fontSize: 17),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 0, 18, 10),
+                  child: Text(
+                    widget.strings.isAr
+                        ? '${shades.where((x) => x.inStock).length} متوفرة من ${shades.length}'
+                        : '${shades.where((x) => x.inStock).length} of ${shades.length} in stock',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: t.inkMuted),
+                  ),
+                ),
+                Flexible(
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+                      childAspectRatio: 0.66,
+                    ),
+                    itemCount: shades.length,
+                    itemBuilder: (_, i) {
+                      final shade = shades[i];
+                      return _ShadeGradientTile(
+                        shade: shade,
+                        active: widget.selected?.id == shade.id,
+                        width: double.infinity,
+                        onTap: shade.inStock ? () => Navigator.of(ctx).pop(shade) : null,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (picked == null || !mounted) return;
+    final i = widget.shades.indexWhere((x) => x.id == picked.id);
+    setState(() => _selectedIndex = i >= 0 ? i : null);
+    widget.onSelect(picked);
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = context.worldTheme;
@@ -183,7 +256,31 @@ class _ProductShadePickerState extends State<ProductShadePicker>
                 ],
               ),
             ),
-            if (shades.length > 1)
+            if (shades.length > 5)
+              // درجات كثيرة: كلها بشبكة واحدة بدل التمرير الطويل.
+              Material(
+                color: t.accentLight,
+                shape: StadiumBorder(side: BorderSide(color: t.accentSoft)),
+                child: InkWell(
+                  customBorder: const StadiumBorder(),
+                  onTap: _openAll,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.grid_view_rounded, size: 14, color: t.accentDark),
+                        const SizedBox(width: 5),
+                        Text(
+                          widget.strings.isAr ? 'كل الدرجات (${shades.length})' : 'All shades (${shades.length})',
+                          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: t.accentDark),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            else if (shades.length > 1)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
@@ -394,11 +491,14 @@ class _ShadeGradientTile extends StatelessWidget {
   final ProductShade shade;
   final bool active;
   final VoidCallback? onTap;
+  /// عرض البطاقة (الشبكة تمرر عرض الخلية كاملاً).
+  final double width;
 
   const _ShadeGradientTile({
     required this.shade,
     required this.active,
     this.onTap,
+    this.width = 78,
   });
 
   @override
@@ -415,7 +515,7 @@ class _ShadeGradientTile extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
-          width: 78,
+          width: width,
           padding: const EdgeInsets.fromLTRB(6, 6, 6, 8),
           decoration: BoxDecoration(
             color: active ? t.accentLight.withValues(alpha: 0.65) : t.surface,

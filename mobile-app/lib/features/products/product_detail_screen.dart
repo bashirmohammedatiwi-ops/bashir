@@ -27,7 +27,6 @@ import '../../core/widgets/states.dart';
 import '../../data/models/product.dart';
 import '../../data/models/review.dart';
 import '../../data/services/api_service.dart';
-import '../advisor/widgets/ask_deema_card.dart';
 import '../alerts/restock_watch_provider.dart';
 import '../auth/auth_provider.dart';
 import '../cart/cart_provider.dart';
@@ -37,6 +36,7 @@ import '../shell/main_shell.dart';
 import '../shell/nav_tabs.dart';
 import '../wishlist/wishlist_provider.dart';
 import '../worlds/world_theme.dart';
+import 'widgets/added_to_cart_sheet.dart';
 import 'widgets/product_detail_theme.dart';
 import 'widgets/product_shade_picker.dart';
 import '../worlds/worlds_provider.dart';
@@ -134,10 +134,13 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
       AppSnackbar.error(context, s.maxStockReached);
       return;
     }
-    AppSnackbar.cartAdded(
+    // تأكيد واضح + ما يكمّله + كم يبقى للتوصيل المجاني (بدل إشعار عابر).
+    showAddedToCartSheet(
       context,
-      title: s.addedToCart,
-      viewCartLabel: s.viewCart,
+      product: product,
+      shade: shade,
+      quantity: _quantity,
+      lang: ref.read(languageCodeProvider),
       onViewCart: () {
         context.go('/');
         ref.read(navIndexProvider.notifier).state = NavTabs.cart;
@@ -257,15 +260,6 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                     },
                   ),
                   const _TrustStrip(),
-                  AskDeemaCard(
-                    productId: product.id,
-                    margin: const EdgeInsets.fromLTRB(
-                      ProductDetailTheme.padH,
-                      ProductDetailTheme.sectionGap,
-                      ProductDetailTheme.padH,
-                      0,
-                    ),
-                  ),
                   if (product.localizedDescription(ref.watch(languageCodeProvider)).isNotEmpty ||
                       product.howToUse.isNotEmpty ||
                       product.ingredients.isNotEmpty)
@@ -282,6 +276,7 @@ class _ProductDetailScreenState extends ConsumerState<ProductDetailScreen> {
                       categoryId: product.category!.id,
                       excludeId: product.id,
                     ),
+                  _RecentlyViewed(excludeId: product.id),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -1688,6 +1683,34 @@ class _SimilarProducts extends ConsumerWidget {
   }
 }
 
+/// «شاهدتِها مؤخراً» — للرجوع لمنتج سابق بلمسة (من الجهاز فقط).
+class _RecentlyViewed extends ConsumerWidget {
+  final String excludeId;
+  const _RecentlyViewed({required this.excludeId});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final items = ref.watch(recentlyViewedProvider).where((p) => p.id != excludeId).take(10).toList();
+    if (items.length < 2) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(ProductDetailTheme.padH, 22, ProductDetailTheme.padH, 12),
+          child: Text(
+            ref.s.isAr ? 'شاهدتِها مؤخراً' : 'Recently viewed',
+            style: ProductDetailTheme.sectionTitleStyle(context),
+          ),
+        ),
+        HorizontalProductList(
+          products: items,
+          padding: EdgeInsets.symmetric(horizontal: Responsive.horizontalPadding(context)),
+        ),
+      ],
+    );
+  }
+}
+
 /// «يُشترى معه غالباً» — اختيارات الزبونات مع هذا المنتج.
 class _BoughtTogether extends ConsumerWidget {
   final Product product;
@@ -1808,6 +1831,35 @@ class _BottomBar extends ConsumerWidget {
                         fontWeight: FontWeight.w800,
                         color: context.worldTheme.accentDark,
                       ),
+                    ),
+                  )
+                else if (shade != null && product.hasMultipleDisplayableShades)
+                  // الدرجة المختارة ظاهرة عند الشراء — لا تضيف درجة غير التي تريدها.
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: narrow ? 110 : 140),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 11,
+                          height: 11,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(colors: shadeGradientColors(shade!)),
+                            border: Border.all(color: Colors.white, width: 1.2),
+                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 2)],
+                          ),
+                        ),
+                        const SizedBox(width: 5),
+                        Flexible(
+                          child: Text(
+                            quantity > 1 ? '${shade!.name} ×$quantity' : shade!.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 10.5, color: context.worldTheme.inkSoft, fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ],
                     ),
                   )
                 else
