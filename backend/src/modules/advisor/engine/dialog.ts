@@ -1211,8 +1211,11 @@ function respondInner(input: DialogInput, prev: AdvisorState | null | undefined,
     }
     // سؤال عام خارج قاعدة المعرفة أجاب عنه الذكاء الاصطناعي باختصار.
     if (!qa && ctx.ai?.reply && (ctx.ai.intent === "knowledge" || ctx.ai.intent === "chat")) {
-      const signal = Boolean(parsed.delta.kinds?.length || parsed.delta.concerns?.length || parsed.delta.ingredients?.length);
-      if (ctx.ai.intent === "knowledge" && signal) {
+      const signal = Boolean(
+        parsed.delta.kinds?.length || parsed.delta.concerns?.length || parsed.delta.ingredients?.length || parsed.delta.families?.length,
+      );
+      // جواب الذكاء + منتجات مناسبة متى ما فُهم ما تحتاجه (لا جواب فارغ من الترشيحات).
+      if (signal) {
         state.need = mergeNeed(state.need, parsed.delta).need;
         const rec = recommend(state, ctx);
         rec.messages.unshift(ctx.ai.reply);

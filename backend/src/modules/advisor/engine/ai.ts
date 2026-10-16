@@ -62,8 +62,8 @@ finish: ${vocab("finish")}
 time: ${vocab("time")}
 occasion: ${vocab("occasion")}
 recipient: ${vocab("recipient")}
-intent: recommend (wants products) | routine (full regimen) | knowledge (beauty question, how/why) | similar (smells/looks like a named product) | chat (greeting/small talk) | gift
-Rules: omit unknown fields; never invent ids; prices in IQD ("50 ألف"=50000, "تحت 20"=maxPrice 20000); brand = brand name exactly as she wrote it; similarTo = the product/perfume she compares to; query = 1-4 Arabic words for anything the ids do not cover (as written on products); reply ONLY for knowledge/chat: max 2 short sentences, warm Iraqi feminine tone, no product names, no prices, no medical claims.
+intent: recommend (wants products, or a result/effect: glow, coverage, "smells like soap" → pick the kinds that deliver it) | routine (full regimen) | knowledge (beauty question, how/why) | similar (smells/looks like a named product) | chat (greeting/small talk) | gift
+Rules: omit unknown fields; never invent ids; for any shopping need fill kinds and/or concerns (e.g. glowing face for a wedding → highlighter, primer, foundation; clean soapy scent → perfume + families fresh, musk); prices in IQD ("50 ألف"=50000, "تحت 20"=maxPrice 20000); brand = brand name exactly as she wrote it; similarTo = the product/perfume she compares to; query = 1-4 Arabic words for anything the ids do not cover (as written on products); reply ONLY for knowledge/chat: max 2 short sentences, warm Iraqi feminine tone, no product names, no prices, no medical claims.
 JSON only: {"intent":"","area":"","kinds":[],"concerns":[],"skinType":"","gender":"","families":[],"ingredients":[],"freeFrom":[],"finish":"","time":"","occasion":"","recipient":"","minPrice":null,"maxPrice":null,"brand":"","similarTo":"","query":"","reply":""}`;
 
 const FILLERS = new Set(
@@ -229,6 +229,20 @@ export function aiToDelta(ai: AiParse, catalog: CatalogIndex, base?: Parsed): { 
   }
   const intent = ai.intent && ["routine", "gift", "similar", "knowledge"].includes(ai.intent) ? ai.intent : undefined;
   return { delta: out, intent };
+}
+
+/** هل أضاف النموذج معنىً يستحق الحفظ؟ (نوع، مشكلة، عائلة، مكوّن، براند، ميزانية، أو نية خاصة) */
+export function isUsefulLearning(delta: Partial<Need>, intent?: string | null): boolean {
+  return Boolean(
+    intent ||
+      delta.kinds?.length ||
+      delta.concerns?.length ||
+      delta.families?.length ||
+      delta.ingredients?.length ||
+      delta.brands?.length ||
+      delta.maxPrice ||
+      delta.minPrice,
+  );
 }
 
 /** دفعة رسائل لم تُفهم → فهم كل منها (تدريب على أسئلة الزبونات الحقيقية). */

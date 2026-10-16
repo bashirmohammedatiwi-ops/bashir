@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/commo
 import { PrismaService } from "../../common/prisma.service";
 import { AdvisorAiService } from "./advisor-ai.service";
 import { AdvisorService } from "./advisor.service";
-import { aiToDelta, BATCH_PARSE_SYSTEM, BRAND_SYSTEM, cleanAiParse, cleanEnrich, ENRICH_SYSTEM, LANGUAGE_SYSTEM, needsAi } from "./engine/ai";
+import { aiToDelta, BATCH_PARSE_SYSTEM, BRAND_SYSTEM, cleanAiParse, cleanEnrich, ENRICH_SYSTEM, LANGUAGE_SYSTEM, isUsefulLearning, needsAi } from "./engine/ai";
 import { brandTier } from "./engine/brands";
 import { FacetKey, facetValue, LEXICON } from "./engine/lexicon";
 import { understand } from "./engine/nlu";
@@ -297,8 +297,12 @@ export class AdvisorTrainingService implements OnModuleInit, OnModuleDestroy {
     for (const q of open) {
       const r = got.get(q.id);
       if (r) {
-        const { delta, intent } = aiToDelta(cleanAiParse(r), idx, understand(q.sample, idx));
-        if (Object.keys(delta).length || intent) await this.advisor.learnPhrase(q.sample, delta, intent, "training");
+        const ai = cleanAiParse(r);
+        const own = aiToDelta(ai, idx);
+        if (isUsefulLearning(own.delta, own.intent)) {
+          const { delta, intent } = aiToDelta(ai, idx, understand(q.sample, idx));
+          await this.advisor.learnPhrase(q.sample, delta, intent, "training");
+        }
       }
       await this.prisma.advisorQueryLog.update({ where: { id: q.id }, data: { resolved: true } });
     }

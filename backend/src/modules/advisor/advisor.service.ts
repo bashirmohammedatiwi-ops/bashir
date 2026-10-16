@@ -3,7 +3,7 @@ import { PrismaService } from "../../common/prisma.service";
 import { rewriteMediaRecord, rewriteMediaUrl } from "../../common/media-url.util";
 import { CatalogIndex, LearnedPhrase, RawProduct } from "./engine/catalog";
 import { AdvisorAiService } from "./advisor-ai.service";
-import { AiParse, aiToDelta, needsAi } from "./engine/ai";
+import { AiParse, aiToDelta, isUsefulLearning, needsAi } from "./engine/ai";
 import { setDynamicTiers } from "./engine/brands";
 import { phraseWords, understand } from "./engine/nlu";
 import { normalize } from "./engine/text";
@@ -218,7 +218,10 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
       const idx = await CatalogIndex.buildAsync(raw);
       idx.applyLearning(await this.learning());
       idx.setLearned(
-        phraseRows.map(
+        phraseRows
+          // معرفة ضعيفة (مجال فقط بلا نوع/مشكلة) تُهمل: تمنع سؤال الذكاء دون أن تفيد.
+          .filter((r) => r.source === "language" || isUsefulLearning(r.delta as Partial<Need>, r.intent))
+          .map(
           (r): LearnedPhrase => ({
             words: phraseWords(r.phrase),
             whole: r.source !== "language",
@@ -315,14 +318,20 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
     // عبارةً متعلّمة فلا ندفع ثمن نفس السؤال مرة ثانية.
     let ai: AiParse | null = null;
     if (input.message && !action && needsAi(input.message, catalog)) {
+      let learned = false;
       if (this.ai.enabled && this.ai.liveAi) {
         ai = await this.ai.parse(input.message, { area: input.state?.need?.area });
         if (ai) {
-          const { delta, intent } = aiToDelta(ai, catalog, understand(input.message, catalog));
-          if (Object.keys(delta).length || intent) await this.learnPhrase(input.message, delta, intent, "chat");
+          // نحفظ فقط ما أضاف فيه النموذج معنىً حقيقياً؛ وإلا تبقى الرسالة سؤالاً مفتوحاً للتدريب.
+          const own = aiToDelta(ai, catalog);
+          learned = isUsefulLearning(own.delta, own.intent);
+          if (learned) {
+            const { delta, intent } = aiToDelta(ai, catalog, understand(input.message, catalog));
+            await this.learnPhrase(input.message, delta, intent, "chat");
+          }
         }
       }
-      void this.logQuery(input.message, Boolean(ai));
+      void this.logQuery(input.message, learned);
     }
     return respond({ message: input.message, action }, input.state ?? null, {
       catalog,

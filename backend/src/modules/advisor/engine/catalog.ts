@@ -110,6 +110,17 @@ export interface RawProduct {
 
 // أسماء العطور الأيقونية (من قائمة العطور المشهورة) بصيغة مطبّعة.
 const ICONIC = FAMOUS.flatMap((f) => f.aliases.map((a) => normalize(a)).filter((a) => a.length >= 4));
+
+/** جنس عطر مشهور من اسمه («إنفيكتوس» رجالي حتى لو وُضع خطأً في «عطور نسائية»). */
+const FAMOUS_GENDER = FAMOUS.filter((f) => f.gender === "men" || f.gender === "women").flatMap((f) =>
+  f.aliases.map((a) => normalize(a)).filter((a) => a.length >= 4).map((a) => [a, f.gender as string] as const),
+);
+function famousGender(text: string): string | null {
+  const padded = ` ${normalize(text).replace(/[^\p{L}\p{N}]+/gu, " ")} `;
+  const found = new Set<string>();
+  for (const [a, g] of FAMOUS_GENDER) if (["", "ال", "و", "ب"].some((pre) => padded.includes(` ${pre}${a} `))) found.add(g);
+  return found.size === 1 ? [...found][0] : null;
+}
 function isIconic(name: string): boolean {
   const n = ` ${normalize(name)} `;
   return ICONIC.some((a) => n.includes(` ${a} `));
@@ -385,7 +396,16 @@ export class CatalogIndex {
           matchFacets(src, m, only);
           if ((g = m.get("gender"))?.size) break;
         }
-        if (g?.size) strong.set("gender", new Set(g));
+        const fg = famousGender(`${name} ${nameEn}`);
+        const fromName = (() => {
+          const m = new Map<FacetKey, Set<string>>();
+          matchFacets(`${name} ${nameEn}`, m, only);
+          return m.get("gender");
+        })();
+        // الاسم صريح؟ نأخذه. وإلا العطر المشهور أصدق من قسمٍ قد يكون خطأ.
+        if (fromName?.size) strong.set("gender", new Set(fromName));
+        else if (fg) strong.set("gender", new Set([fg]));
+        else if (g?.size) strong.set("gender", new Set(g));
         else if (en?.gender) strong.set("gender", new Set([en.gender])); // من الوصف عبر الإثراء
         else strong.delete("gender");
       }
