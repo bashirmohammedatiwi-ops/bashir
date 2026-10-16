@@ -61,6 +61,8 @@ class _LoyaltyBody extends ConsumerWidget {
             ),
             children: [
               _PointsCard(summary: summary, userName: user?.name ?? '', s: s),
+              const SizedBox(height: 12),
+              _NextRewardCard(summary: summary),
               const SizedBox(height: AccountTheme.sectionGap),
               ProfileSectionTitle(s.acctHowPointsWork),
               ProfileMenuCard(
@@ -294,6 +296,92 @@ class _HistoryTile extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// المكافأة القادمة: كم نقطة تبقّت لخصم إضافي، بشريط تقدّم.
+class _NextRewardCard extends ConsumerWidget {
+  final LoyaltySummary summary;
+  const _NextRewardCard({required this.summary});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = context.worldTheme;
+    final ar = ref.s.isAr;
+    final block = summary.redeemBlockSize <= 0 ? 100 : summary.redeemBlockSize;
+    final into = summary.points % block;
+    final remaining = block - into;
+    final progress = into / block;
+    final reward = formatPrice(summary.redeemBlockValue);
+    // نقطة لكل 1,000 د.ع — كم تحتاج من مشتريات لتصل.
+    final spend = formatPrice(remaining * 1000);
+
+    return ProfileSurfaceCard(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(gradient: t.signatureGradient, shape: BoxShape.circle),
+                child: const Icon(Icons.card_giftcard_rounded, color: Colors.white, size: 19),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ar ? 'باقي $remaining نقطة لخصم $reward إضافي' : '$remaining points to another $reward off',
+                      style: AppText.label.copyWith(color: t.ink, fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      ar ? 'أي ما يعادل مشتريات بقيمة $spend تقريباً' : 'About $spend of shopping',
+                      style: AppText.caption.copyWith(color: t.inkMuted),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(99),
+            child: SizedBox(
+              height: 8,
+              child: Stack(
+                children: [
+                  Positioned.fill(child: ColoredBox(color: t.accentLight)),
+                  FractionallySizedBox(
+                    widthFactor: progress.clamp(0.03, 1.0),
+                    alignment: AlignmentDirectional.centerStart,
+                    child: DecoratedBox(decoration: BoxDecoration(gradient: t.signatureGradient)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Text('$into / $block', style: AppText.micro.copyWith(color: t.inkMuted, fontWeight: FontWeight.w700)),
+              const Spacer(),
+              if (summary.redeemableBlocks > 0)
+                Text(
+                  ar
+                      ? 'متاح لك الآن خصم ${formatPrice(summary.maxDiscountFromPoints)}'
+                      : '${formatPrice(summary.maxDiscountFromPoints)} available now',
+                  style: AppText.micro.copyWith(color: AppColors.success, fontWeight: FontWeight.w800),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

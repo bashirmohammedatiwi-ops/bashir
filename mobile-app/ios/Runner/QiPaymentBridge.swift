@@ -141,6 +141,7 @@ final class QiPaymentBridge: NSObject {
     )
     details.setPaymentID(paymentId)
     pending = result
+    installKeyboardDismiss()
 
     Task { @MainActor [weak self] in
       do {
@@ -160,8 +161,38 @@ final class QiPaymentBridge: NSObject {
     DispatchQueue.main.async { [weak self] in
       guard let self, let r = self.pending else { return }
       self.pending = nil
+      self.removeKeyboardDismiss()
       r(payload)
     }
+  }
+
+  // MARK: - لوحة المفاتيح في شاشة البطاقة
+  // لمس أي مكان خارج الحقول يغلق لوحة المفاتيح؛ لمس حقل آخر ينقل التركيز طبيعياً.
+
+  private var dismissTap: UITapGestureRecognizer?
+
+  private func installKeyboardDismiss() {
+    guard dismissTap == nil, let window = Self.keyWindow() else { return }
+    let tap = UITapGestureRecognizer(target: self, action: #selector(onBackgroundTap(_:)))
+    tap.cancelsTouchesInView = false
+    tap.delegate = self
+    window.addGestureRecognizer(tap)
+    dismissTap = tap
+  }
+
+  private func removeKeyboardDismiss() {
+    if let tap = dismissTap { tap.view?.removeGestureRecognizer(tap) }
+    dismissTap = nil
+  }
+
+  @objc private func onBackgroundTap(_ g: UITapGestureRecognizer) {
+    g.view?.endEditing(true)
+  }
+
+  private static func keyWindow() -> UIWindow? {
+    UIApplication.shared.connectedScenes
+      .compactMap { ($0 as? UIWindowScene)?.windows.first { $0.isKeyWindow } }
+      .first
   }
 
   @objc private func onSdkBack() {
@@ -185,11 +216,25 @@ final class QiPaymentBridge: NSObject {
   }
 
   private static func topController() -> UIViewController? {
-    let window = UIApplication.shared.connectedScenes
-      .compactMap { ($0 as? UIWindowScene)?.windows.first { $0.isKeyWindow } }
-      .first
-    var top = window?.rootViewController
+    var top = keyWindow()?.rootViewController
     while let presented = top?.presentedViewController { top = presented }
     return top
   }
+}
+
+extension QiPaymentBridge: UIGestureRecognizerDelegate {
+  /// لا نغلق اللوحة إن كان اللمس على حقل نص (أو داخله) — ليتنقّل التركيز بين الحقول.
+  func gestureRecognizer(_ g: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+    var v: UIView? = touch.view
+    while let cur = v {
+      if cur is UITextField || cur is UITextView { return false }
+      v = cur.superview
+    }
+    return true
+  }
+
+  func gestureRecognizer(
+    _ g: UIGestureRecognizer,
+    shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer
+  ) -> Bool { true }
 }
