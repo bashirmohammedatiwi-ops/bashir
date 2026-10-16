@@ -13,6 +13,10 @@ class AdvisorChatDto {
   @IsOptional() @IsString() @MaxLength(40) firstName?: string;
 }
 
+class AdvisorWelcomeDto {
+  @IsOptional() @IsString() @MaxLength(40) firstName?: string;
+}
+
 /** المستشارة متاحة للجميع (حتى قبل تسجيل الدخول) — الحالة يحملها التطبيق. */
 @ApiTags("advisor")
 @Controller("advisor")
@@ -23,6 +27,13 @@ export class AdvisorController {
   @Get("welcome")
   welcome(@Query("name") name?: string) {
     return this.advisor.welcome(name?.slice(0, 40));
+  }
+
+  /** نفس الترحيب، والاسم في جسم الطلب لا في الرابط (لا يُسجَّل في سجلات الخادم). */
+  @Public()
+  @Post("welcome")
+  welcomePost(@Body() dto: AdvisorWelcomeDto) {
+    return this.advisor.welcome(dto.firstName?.slice(0, 40));
   }
 
   @Public()

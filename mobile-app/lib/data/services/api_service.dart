@@ -742,6 +742,40 @@ class ApiService {
     }
   }
 
+  // ---- ADVISOR (ديما) ----
+  Future<Map<String, dynamic>> advisorWelcome({String? name}) async {
+    try {
+      // الاسم في جسم الطلب لا في الرابط.
+      final r = await _dio.post('/advisor/welcome',
+          data: {if (name != null && name.isNotEmpty) 'firstName': name},
+          options: Options(extra: {'auth': false}));
+      return asMap(_data(r));
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> advisorChat({
+    String? message,
+    String? action,
+    Map<String, dynamic>? state,
+    String? firstName,
+  }) async {
+    try {
+      final r = await _dio.post('/advisor/chat',
+          data: {
+            if (message != null) 'message': message,
+            if (action != null) 'action': action,
+            if (state != null) 'state': state,
+            if (firstName != null && firstName.isNotEmpty) 'firstName': firstName,
+          },
+          options: Options(extra: {'auth': false}));
+      return asMap(_data(r));
+    } catch (e) {
+      _throw(e);
+    }
+  }
+
   // ---- PRODUCT ALERTS ----
   Future<Set<String>> getRestockWatches() async {
     try {

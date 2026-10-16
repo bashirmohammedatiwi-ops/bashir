@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/l10n/app_strings.dart';
 import '../../core/utils/responsive.dart';
+import '../advisor/widgets/advisor_launcher.dart';
 import '../brands/brands_screen.dart';
 import '../cart/cart_provider.dart';
 import '../cart/cart_screen.dart';
@@ -85,6 +86,11 @@ class _MainShellState extends ConsumerState<MainShell> {
                     ),
                   ],
                 ),
+              ),
+              PositionedDirectional(
+                end: 14,
+                bottom: navHeight + 12,
+                child: AdvisorLauncher(visible: index == NavTabs.home),
               ),
               Positioned(
                 left: 0,

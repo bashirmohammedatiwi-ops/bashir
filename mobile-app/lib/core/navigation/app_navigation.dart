@@ -25,8 +25,9 @@ void openOffersTab(BuildContext context, ProviderContainer container) =>
 void openCategoriesTab(BuildContext context, ProviderContainer container) =>
     openMainTab(context, container, NavTabs.categories);
 
+/// يفتح «ديما» — المستشارة الشخصية.
 void openAssistantTab(BuildContext context, ProviderContainer container) =>
-    openHomeTab(context, container);
+    context.push('/advisor');
 
 void openHomeTab(BuildContext context, ProviderContainer container) =>
     openMainTab(context, container, NavTabs.home);
@@ -47,5 +48,8 @@ void openCartFromContainer(ProviderContainer container) =>
 void openOffersFromContainer(ProviderContainer container) =>
     openMainTabFromContainer(container, NavTabs.offers);
 
-void openAssistantFromContainer(ProviderContainer container) =>
-    openMainTabFromContainer(container, NavTabs.home);
+void openAssistantFromContainer(ProviderContainer container) {
+  final ctx = rootNavigatorKey.currentContext;
+  if (ctx == null || !ctx.mounted) return;
+  GoRouter.of(ctx).push('/advisor');
+}

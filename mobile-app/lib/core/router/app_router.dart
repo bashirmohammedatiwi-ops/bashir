@@ -7,6 +7,7 @@ import '../../core/l10n/app_strings.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../core/navigation/app_navigation.dart';
 
+import '../../features/advisor/advisor_screen.dart';
 import '../../features/auth/screens/login_screen.dart';
 import '../../features/auth/screens/register_screen.dart';
 import '../../features/brands/brands_screen.dart';
@@ -105,6 +106,22 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/register', builder: (_, __) => const RegisterScreen()),
       GoRoute(path: '/search', builder: (_, __) => const SearchScreen()),
+      GoRoute(
+        path: '/advisor',
+        pageBuilder: (_, s) => CustomTransitionPage(
+          key: s.pageKey,
+          transitionDuration: const Duration(milliseconds: 420),
+          reverseTransitionDuration: const Duration(milliseconds: 300),
+          child: AdvisorScreen(initialMessage: s.uri.queryParameters['q']),
+          transitionsBuilder: (_, a, __, child) {
+            final t = CurvedAnimation(parent: a, curve: Curves.easeOutCubic, reverseCurve: Curves.easeInCubic);
+            return FadeTransition(
+              opacity: t,
+              child: ScaleTransition(scale: Tween(begin: 0.94, end: 1.0).animate(t), child: child),
+            );
+          },
+        ),
+      ),
       GoRoute(
         path: '/world/:slug',
         builder: (_, s) => WorldScreen(slug: s.pathParameters['slug']!),
