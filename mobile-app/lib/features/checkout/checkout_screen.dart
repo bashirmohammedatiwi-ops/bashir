@@ -285,7 +285,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
   Future<void> _placeOrder() async {
     FocusScope.of(context).unfocus();
-    if (!_formKey.currentState!.validate()) {
+    final form = _formKey.currentState;
+    if (form == null) {
+      await scrollToFormField(_deliverySectionKey, alignment: 0.02);
+      return;
+    }
+    if (!form.validate()) {
       await _scrollToFirstInvalid();
       return;
     }
@@ -441,11 +446,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   ],
                 ),
                 error: (e, _) => ErrorView.from(e, onRetry: () => ref.invalidate(addressesProvider)),
-                data: (_) => ListView(
+                // ليست قائمة كسولة: نموذج العنوان في الأعلى يجب أن يبقى حياً حتى
+                // يُتحقق منه عند الضغط على "تأكيد الطلب" من أسفل الصفحة.
+                data: (_) => SingleChildScrollView(
                   controller: _scrollCtrl,
                   keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.only(top: 16, bottom: 24),
-                  children: [
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
                     CheckoutDeliveryCard(
                       key: _deliverySectionKey,
                       formKey: _formKey,
@@ -519,7 +528,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       total: total,
                       shippingLoading: _shippingLoading,
                     ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
