@@ -59,33 +59,37 @@ class HomeBannerStage extends StatelessWidget {
     final radius = layout.radius;
     final tint = _tintFor(context, sceneIndex, banner);
 
-    Widget card = Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap != null
-            ? () {
-                HapticFeedback.selectionClick();
-                onTap!();
-              }
-            : null,
+    Widget card = DecoratedBox(
+      decoration: BoxDecoration(
+        color: t.surface,
         borderRadius: BorderRadius.circular(radius),
-        child: Ink(
-          width: cardW,
-          height: cardH,
-          decoration: BoxDecoration(
-            color: t.surface,
-            borderRadius: BorderRadius.circular(radius),
-            border: layout.fullBleed
-                ? null
-                : Border.all(color: t.hairline.withValues(alpha: 0.75)),
-            boxShadow: layout.fullBleed ? null : t.cardShadow,
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(radius),
-            child: _ImageOnlyLayout(
-              banner: banner,
-              tint: tint,
-              imageBg: t.accentLight,
+        border: layout.fullBleed
+            ? null
+            : Border.all(color: t.hairline.withValues(alpha: 0.75)),
+        boxShadow: layout.fullBleed ? null : t.cardShadow,
+      ),
+      child: Material(
+        borderRadius: BorderRadius.circular(radius),
+        clipBehavior: Clip.antiAlias,
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap != null
+              ? () {
+                  HapticFeedback.selectionClick();
+                  onTap!();
+                }
+              : null,
+          borderRadius: BorderRadius.circular(radius),
+          child: SizedBox(
+            width: cardW,
+            height: cardH,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(radius),
+              child: _ImageOnlyLayout(
+                banner: banner,
+                tint: tint,
+                imageBg: t.accentLight,
+              ),
             ),
           ),
         ),

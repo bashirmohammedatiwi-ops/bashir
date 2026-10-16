@@ -48,10 +48,7 @@ class HighlightedText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = _normalize(query)
-        .split(RegExp(r'\s+'))
-        .where((t) => t.length >= 2)
-        .toList();
+    final tokens = _normalize(query).split(RegExp(r'\s+')).where((t) => t.length >= 2).toList();
     final maxLines = maxLinesGuard ?? 2;
     if (tokens.isEmpty || text.isEmpty) {
       return Text(text, maxLines: maxLines, overflow: TextOverflow.ellipsis, style: base);
@@ -80,11 +77,9 @@ class HighlightedText extends StatelessWidget {
           TextSpan(text: text.substring(0, start)),
           TextSpan(
             text: text.substring(start, end),
-            style: highlight ??
-                base.copyWith(
-                  color: context.worldTheme.accentDark,
-                  fontWeight: FontWeight.w900,
-                ),
+            style:
+                highlight ??
+                base.copyWith(color: context.worldTheme.accentDark, fontWeight: FontWeight.w900),
           ),
           TextSpan(text: text.substring(end)),
         ],
@@ -149,12 +144,7 @@ class SearchProductTile extends StatelessWidget {
   final String lang;
   final String? query;
 
-  const SearchProductTile({
-    super.key,
-    required this.product,
-    required this.lang,
-    this.query,
-  });
+  const SearchProductTile({super.key, required this.product, required this.lang, this.query});
 
   @override
   Widget build(BuildContext context) {
@@ -163,125 +153,134 @@ class SearchProductTile extends StatelessWidget {
     final category = product.category?.localizedName(lang) ?? '';
     final q = query;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => context.push('/product/${product.slug.isNotEmpty ? product.slug : product.id}'),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: t.surface,
         borderRadius: BorderRadius.circular(16),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: t.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: t.hairline.withValues(alpha: 0.65)),
-            boxShadow: t.cardShadow,
-          ),
-          padding: const EdgeInsets.all(10),
-          child: Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: SizedBox(
-                  width: 58,
-                  height: 58,
-                  child: AppNetworkImage(
-                    url: product.coverUrl,
-                    fit: BoxFit.contain,
-                    backgroundColor: t.blush,
+        border: Border.all(color: t.hairline.withValues(alpha: 0.65)),
+        boxShadow: t.cardShadow,
+      ),
+      child: Material(
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () =>
+              context.push('/product/${product.slug.isNotEmpty ? product.slug : product.id}'),
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: SizedBox(
+                    width: 58,
+                    height: 58,
+                    child: AppNetworkImage(
+                      url: product.coverUrl,
+                      fit: BoxFit.contain,
+                      backgroundColor: t.blush,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (brand.isNotEmpty)
-                      q != null && q.length >= 2
-                          ? HighlightedText(
-                              text: brand.toUpperCase(),
-                              query: q,
-                              maxLinesGuard: 1,
-                              base: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.8,
-                                color: t.accentDark,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (brand.isNotEmpty)
+                        q != null && q.length >= 2
+                            ? HighlightedText(
+                                text: brand.toUpperCase(),
+                                query: q,
+                                maxLinesGuard: 1,
+                                base: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                  color: t.accentDark,
+                                ),
+                              )
+                            : Text(
+                                brand.toUpperCase(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.8,
+                                  color: t.accentDark,
+                                ),
                               ),
-                            )
-                          : Text(
-                              brand.toUpperCase(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0.8,
-                                color: t.accentDark,
-                              ),
-                            ),
-                    if (brand.isNotEmpty) const SizedBox(height: 2),
-                    if (q != null && q.length >= 2)
-                      HighlightedText(
-                        text: product.localizedName(lang),
-                        query: q,
-                        base: TextStyle(
-                          fontSize: 13.5,
-                          height: 1.25,
-                          fontWeight: FontWeight.w800,
-                          color: t.ink,
+                      if (brand.isNotEmpty) const SizedBox(height: 2),
+                      if (q != null && q.length >= 2)
+                        HighlightedText(
+                          text: product.localizedName(lang),
+                          query: q,
+                          base: TextStyle(
+                            fontSize: 13.5,
+                            height: 1.25,
+                            fontWeight: FontWeight.w800,
+                            color: t.ink,
+                          ),
+                        )
+                      else
+                        Text(
+                          product.localizedName(lang),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            height: 1.25,
+                            fontWeight: FontWeight.w800,
+                            color: t.ink,
+                          ),
                         ),
-                      )
-                    else
-                      Text(
-                        product.localizedName(lang),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          height: 1.25,
-                          fontWeight: FontWeight.w800,
-                          color: t.ink,
+                      if (q != null) MatchReasonBadge(query: q, product: product),
+                      if (category.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          category,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: t.inkMuted,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                    if (q != null) MatchReasonBadge(query: q, product: product),
-                    if (category.isNotEmpty) ...[
-                      const SizedBox(height: 3),
-                      Text(
-                        category,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 11, color: t.inkMuted, fontWeight: FontWeight.w600),
-                      ),
+                      ],
                     ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      formatPrice(product.price),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        color: product.hasDiscount ? AppColors.sale : t.ink,
+                      ),
+                    ),
+                    if (product.hasDiscount)
+                      Text(
+                        formatPrice(product.originalPrice),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: t.inkMuted,
+                          decoration: TextDecoration.lineThrough,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    formatPrice(product.price),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w900,
-                      color: product.hasDiscount ? AppColors.sale : t.ink,
-                    ),
-                  ),
-                  if (product.hasDiscount)
-                    Text(
-                      formatPrice(product.originalPrice),
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: t.inkMuted,
-                        decoration: TextDecoration.lineThrough,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

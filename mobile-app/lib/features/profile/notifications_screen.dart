@@ -212,26 +212,26 @@ class _NotificationCard extends ConsumerWidget {
     return Semantics(
       button: true,
       label: unread ? s.acctUnread : null,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            HapticFeedback.selectionClick();
-            _open(context, ref);
-          },
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: unread ? t.accentLight : t.surface,
           borderRadius: radius,
-          child: Ink(
-            decoration: BoxDecoration(
-              color: unread ? t.accentLight : t.surface,
-              borderRadius: radius,
-              border: Border.all(
-                color: unread
-                    ? t.accent.withValues(alpha: 0.35)
-                    : t.hairline.withValues(alpha: 0.7),
-                width: unread ? 1.2 : 1,
-              ),
-              boxShadow: t.cardShadow,
-            ),
+          border: Border.all(
+            color: unread
+                ? t.accent.withValues(alpha: 0.35)
+                : t.hairline.withValues(alpha: 0.7),
+            width: unread ? 1.2 : 1,
+          ),
+          boxShadow: t.cardShadow,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              _open(context, ref);
+            },
+            borderRadius: radius,
             child: ClipRRect(
               borderRadius: radius,
               child: Column(
