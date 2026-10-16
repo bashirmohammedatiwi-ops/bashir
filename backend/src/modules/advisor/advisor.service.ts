@@ -2,9 +2,24 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/commo
 import { PrismaService } from "../../common/prisma.service";
 import { rewriteMediaRecord, rewriteMediaUrl } from "../../common/media-url.util";
 import { CatalogIndex, RawProduct } from "./engine/catalog";
-import { GREETINGS, WELCOME_BODY, pick } from "./engine/composer";
+import { WELCOME_BODY, greetingFor, pick } from "./engine/composer";
 import { STARTERS, respond } from "./engine/dialog";
-import { AdvisorReply, AdvisorState } from "./engine/types";
+import { AdvisorReply, AdvisorState, Profile } from "./engine/types";
+
+/** أمثلة تُظهر طرق السؤال المختلفة — تتبدل كل ساعة. */
+const PROMPTS_CORE = ["بشرتي دهنية وبيها حبوب", "هدية لأمي بحدود 50 ألف", "روتين كامل للبشرة الجافة", "عطر رجالي خشبي لزوجي", "ماسكارا مقاومة للماء", "سيروم للتصبغات تحت 25 ألف"];
+const PROMPTS_SKILLS = [
+  "عطر يشبه باكارات بس أرخص",
+  "شنو فائدة النياسيناميد؟",
+  "لوك سهرة كامل بـ 60 ألف",
+  "شامبو وبلسم للشعر الجاف",
+  "اقدر استخدم الريتينول ويه فيتامين سي؟",
+  "شلون أثبّت العطر أطول؟",
+  "بديل أرخص لسوفاج",
+  "شلون أعرف نوع بشرتي؟",
+];
+
+const EVENT_TYPES = new Set(["click", "cart", "like", "dislike"]);
 
 const REBUILD_EVERY_MS = 10 * 60_000;
 
@@ -102,6 +117,7 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
         tag: tagBy.get(r.id) ?? null,
       }));
       const idx = CatalogIndex.build(raw);
+      idx.applyLearning(await this.learning());
       this.index = idx;
       this.log.log(`Advisor index: ${idx.products.length} products, ${idx.brands.length} brands in ${Date.now() - started}ms`);
       return idx;
@@ -113,25 +129,78 @@ export class AdvisorService implements OnModuleInit, OnModuleDestroy {
 
   async welcome(firstName?: string) {
     const seed = Math.floor(Date.now() / 3_600_000);
+    const hour = (new Date().getUTCHours() + 3) % 24; // توقيت بغداد
+    const rot = <T,>(a: T[], n: number) => Array.from({ length: n }, (_, i) => a[(seed * 3 + i) % a.length]);
     return {
-      messages: [pick(GREETINGS, seed)(firstName?.trim() || undefined), pick(WELCOME_BODY, seed)],
+      messages: [greetingFor(firstName?.trim() || undefined, hour, seed), pick(WELCOME_BODY, seed)],
       chips: STARTERS,
-      prompts: [
-        "بشرتي دهنية وبيها حبوب",
-        "عطر نسائي خشبي للسهرة",
-        "شامبو للتساقط تحت 20 ألف",
-        "هدية لأمي بحدود 50 ألف",
-        "ماسكارا مقاومة للماء",
-        "روتين كامل للبشرة الجافة",
-      ],
+      prompts: [...rot(PROMPTS_CORE, 3), ...rot(PROMPTS_SKILLS, 3)],
     };
   }
 
-  async chat(input: { message?: string; action?: string; state?: AdvisorState | null; firstName?: string }): Promise<AdvisorReply> {
+  async chat(input: {
+    message?: string;
+    action?: string;
+    state?: AdvisorState | null;
+    firstName?: string;
+    profile?: Profile | null;
+    productId?: string;
+  }): Promise<AdvisorReply> {
     const catalog = await this.catalog();
-    return respond({ message: input.message, action: input.action }, input.state ?? null, {
+    let action = input.action;
+    // فُتحت «ديما» من صفحة منتج: نبدأ الحديث عنه.
+    if (input.productId && !input.message && !action) action = `set:focus=${input.productId};act:focus`;
+    const profile = sanitizeProfile(input.profile);
+    // طريقة الاستخدام تحتاج نص المنتج الكامل من قاعدة البيانات.
+    let details: { howToUse: string | null; ingredients: string | null } | null = null;
+    const wantsHowto =
+      action?.includes("act:howto") || /(طريق[ةه] الاستخدام|طريق[ةه] استخدام|شلون استخدم|شلون استعمل|كيف استخدم|how to use)/.test(input.message ?? "");
+    if (wantsHowto) {
+      const focus = action?.match(/set:focus=([\w-]+)/)?.[1] ?? input.state?.focus ?? input.state?.lastTop;
+      if (focus) {
+        details = await this.prisma.product
+          .findUnique({ where: { id: focus }, select: { howToUse: true, ingredients: true } })
+          .catch(() => null);
+      }
+    }
+    return respond({ message: input.message, action }, input.state ?? null, {
       catalog,
       firstName: input.firstName,
+      profile,
+      details,
     });
   }
+
+  /** تفاعل مجهول: فتح منتج أو إضافته من ترشيح، أو إعجاب بالرد. */
+  async feedback(input: { productId?: string; type: string; sig?: string }) {
+    if (!EVENT_TYPES.has(input.type)) return { ok: false };
+    await this.prisma.advisorEvent
+      .create({ data: { productId: input.productId?.slice(0, 64) || null, type: input.type, sig: input.sig?.slice(0, 60) || null } })
+      .catch(() => undefined);
+    return { ok: true };
+  }
+
+  /** ما تعلّمته من آخر 90 يوم: الإضافة للسلة أقوى إشارة، ثم الإعجاب، ثم الفتح. */
+  private async learning(): Promise<Map<string, number>> {
+    const since = new Date(Date.now() - 90 * 86_400_000);
+    const rows = await this.prisma.advisorEvent
+      .groupBy({ by: ["productId", "type"], where: { createdAt: { gte: since }, productId: { not: null } }, _count: { _all: true } })
+      .catch(() => [] as { productId: string | null; type: string; _count: { _all: number } }[]);
+    const raw = new Map<string, number>();
+    const W: Record<string, number> = { cart: 3, like: 2, click: 1, dislike: -2.5 };
+    for (const r of rows) {
+      if (!r.productId) continue;
+      raw.set(r.productId, (raw.get(r.productId) ?? 0) + (W[r.type] ?? 0) * r._count._all);
+    }
+    const out = new Map<string, number>();
+    for (const [id, v] of raw) if (v > 0) out.set(id, 1 - Math.exp(-v / 12));
+    return out;
+  }
+}
+
+function sanitizeProfile(p: Profile | null | undefined): Profile | undefined {
+  if (!p || typeof p !== "object") return undefined;
+  const str = (v: unknown) => (typeof v === "string" && v.length <= 24 ? v : undefined);
+  const arr = (v: unknown) => (Array.isArray(v) ? v.filter((x) => typeof x === "string" && x.length <= 24).slice(0, 6) : undefined);
+  return { skinType: str(p.skinType), gender: str(p.gender), concerns: arr(p.concerns), hairConcerns: arr(p.hairConcerns), families: arr(p.families), avoid: arr(p.avoid) };
 }

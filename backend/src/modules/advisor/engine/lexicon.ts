@@ -104,7 +104,7 @@ export const LEXICON: FacetValue[] = [
   v("kind", "mascara", "ماسكارا", "Mascara", ["ماسكارا", "مسكره", "مسكرة", "mascara"], { area: "makeup" }),
   v("kind", "eyeliner", "آيلاينر", "Eyeliner", ["ايلاينر", "ايلاينر", "eyeliner", "كحل", "kohl", "خط العين"], { area: "makeup" }),
   v("kind", "eyeshadow", "ظلال عيون", "Eyeshadow", ["ظلال", "ظل عيون", "ايشادو", "eyeshadow", "باليت عيون", "eye palette"], { area: "makeup" }),
-  v("kind", "brow", "حواجب", "Brows", ["حواجب", "حاجب", "brow", "eyebrow"], { area: "makeup" }),
+  v("kind", "brow", "حواجب", "Brows", ["حواجب", "حاجب", "brow", "eyebrow", "ماسكارا حواجب", "مسكارا حواجب", "ماسكرا حواجب", "brow mascara", "mascara brow", "eyebrow mascara"], { area: "makeup" }),
   v("kind", "lipstick", "أحمر شفاه", "Lipstick", ["احمر شفاه", "روج", "lipstick", "rouge", "ليبستك", "liquid lipstick"], { area: "makeup" }),
   v("kind", "lip_gloss", "ملمع شفاه", "Lip gloss", ["ملمع شفاه", "قلوس", "جلوس", "gloss", "lip gloss", "lip oil"], { area: "makeup" }),
   v("kind", "lip_liner", "محدد شفاه", "Lip liner", ["محدد شفاه", "قلم شفاه", "lip liner", "lip pencil"], { area: "makeup" }),

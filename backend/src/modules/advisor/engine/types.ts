@@ -44,6 +44,14 @@ export const emptyNeed = (): Need => ({
 });
 
 export type Intent =
+  | "info"
+  | "similar"
+  | "compare"
+  | "fit"
+  | "complement"
+  | "howto"
+  | "focus"
+  | "dupe"
   | "greet"
   | "thanks"
   | "recommend"
@@ -69,7 +77,27 @@ export interface AdvisorState {
   lastPrice?: number;
   /** اختبار موجّه جارٍ. */
   quiz?: { id: string; step: number };
+  /** المنتج محور الحديث (فُتحت «ديما» من صفحته، أو سألت عنه). */
+  focus?: string;
+  /** أعلى ترشيح في آخر رد — مرجع «هذا/هاي» حين لا يوجد محور. */
+  lastTop?: string;
+  /** أول بطاقات آخر رد (لـ«قارنيهم»). */
+  lastCards?: string[];
+  /** مرجع آخر بحث تشابه («p:id» أو «f:id») — لـ«أرخص» بعده. */
+  simRef?: string;
   turns: number;
+}
+
+/** ملف الزبونة الجمالي — يحفظه التطبيق على الجهاز ويرسله مع كل رسالة. */
+export interface Profile {
+  skinType?: string;
+  concerns?: string[];
+  hairConcerns?: string[];
+  /** ذوقها في العطور. */
+  families?: string[];
+  /** عطورها لنفسها: نسائي/للجنسين. */
+  gender?: string;
+  avoid?: string[];
 }
 
 export const emptyState = (): AdvisorState => ({ need: emptyNeed(), asked: [], shown: [], turns: 0 });
@@ -98,13 +126,44 @@ export interface ProductCardOut {
   reasons: string[];
   /** مدى الملاءمة 0..100 (للعرض كحلقة). */
   match: number;
+  /** تفصيل «ليش رشحته؟»: ما طابق وما لم يطابق من طلبها. */
+  why?: { ok: boolean; text: string }[];
+  /** نسبة الشبه بالمنتج المرجعي (بدائل/مشابه). */
+  similarity?: number;
+  /** كم توفّر مقارنةً بالمرجع. */
+  saving?: number;
+}
+
+/** بطاقة معرفة: جواب سؤال عن مكوّن أو موضوع. */
+export interface KnowledgeOut {
+  title: string;
+  /** info | ingredient | combo */
+  kind: string;
+  intro?: string;
+  sections: { label: string; icon: string; bullets: string[] }[];
+  /** لمزج مكوّنين: good | care | avoid */
+  verdict?: { tone: "good" | "care" | "avoid"; text: string };
+}
+
+export interface CompareOut {
+  products: ProductCardOut[];
+  rows: { label: string; values: string[]; best?: number }[];
+  winner?: number;
+  verdict: string;
+}
+
+export interface FitOut {
+  product: ProductCardOut;
+  tone: "good" | "ok" | "care";
+  headline: string;
+  points: { ok: boolean | null; text: string }[];
 }
 
 export interface RoutineStepOut {
   step: string;
   label: string;
   emoji: string;
-  when: "am" | "pm" | "both";
+  when: "am" | "pm" | "both" | "any";
   product: ProductCardOut;
 }
 
@@ -125,8 +184,15 @@ export interface AdvisorReply {
   products: ProductCardOut[];
   /** مجموعات إضافية: «بدائل اقتصادية»، «الأعلى تقييماً»… */
   groups: { title: string; products: ProductCardOut[] }[];
-  routine?: { title: string; steps: RoutineStepOut[]; total: number };
+  routine?: { title: string; steps: RoutineStepOut[]; total: number; emoji?: string };
   quiz?: QuizOut;
+  knowledge?: KnowledgeOut;
+  compare?: CompareOut;
+  fit?: FitOut;
+  /** المنتج المرجعي لبدائل/مشابه/مكمّلات. */
+  anchor?: ProductCardOut;
+  /** ما تعلّمته عن الزبونة في هذا الرد — يدمجه التطبيق في ملفها. */
+  profileUpdate?: Partial<Profile>;
   /** ملخص ما فهمته (شرائح قابلة للإزالة). */
   understood: { key: string; label: string }[];
   state: AdvisorState;

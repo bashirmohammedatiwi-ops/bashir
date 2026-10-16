@@ -1025,3 +1025,17 @@ model AssistantTurn {
   @@index([userId, createdAt])
   @@index([outcome])
 }
+
+// تفاعل مجهول الهوية مع ترشيحات «ديما» (فتح، إضافة للسلة، إعجاب) — تتعلم منه ترتيبها.
+model AdvisorEvent {
+  id        String   @id @default(uuid())
+  productId String?
+  /// click | cart | like | dislike
+  type      String
+  /// بصمة الطلب: المجال|النوع (بلا أي بيانات شخصية).
+  sig       String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([productId, type])
+}

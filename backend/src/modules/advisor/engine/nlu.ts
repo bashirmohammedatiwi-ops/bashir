@@ -53,6 +53,10 @@ const PHRASES: Phrase[] = LEXICON.flatMap((fv) => [
   // الأطول أولاً، وعند التساوي النوع قبل المجال («مناكير» = طلاء أظافر لا مجرد «أظافر»).
   .sort((a, b) => b.bare.length - a.bare.length || FACET_PRIORITY(a.facet) - FACET_PRIORITY(b.facet));
 
+/** عبارات من كلمة واحدة لأخطاء الكتابة (الأنواع والمشاكل والمكونات والروائح). */
+const FUZZY_FACETS = new Set<FacetKey>(["kind", "concern", "ingredient", "family", "skinType"]);
+const FUZZY_PHRASES = PHRASES.filter((p) => !p.raw && !p.bare.includes(" ") && p.bare.length >= 4 && FUZZY_FACETS.has(p.facet));
+
 // تمر بنفس المعالجة (تطبيع/لهجة/تجذيع) حتى تطابق كلمات الرسالة.
 const norms = (list: string[]) => new Set(list.flatMap((w) => tokens(w, { keepStop: true })));
 const NEGATORS = norms(["بدون", "بلا", "ليس", "مو", "ما", "لا", "غير", "no", "without", "not", "except", "عدا", "ماريد", "مااريد", "مااحب"]);
@@ -81,6 +85,7 @@ const RE = {
   routine: /(روتين|routine|خطوات|كامل للبشره|كامل للشعر|نظام عنايه)/,
   quiz: /(اختبار|quiz|اكتشفي|اكتشف|ساعديني اختار|ساعديني اختار|اختاري الي|اختاري لي)/,
   about: /(اسمك|شسمك|ما اسمك|من انتي)/,
+  look: /(لوك|look|مكياج( \S+)? (كامل|متكامل)|سله مكياج|طقم مكياج|عده مكياج|مكياج عروس|مكياج عرس|full makeup|makeup look)/,
 };
 
 const SORT_RE: [RegExp, Need["sort"]][] = [
@@ -177,6 +182,32 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
     }
   }
 
+  // ── تحمّل أخطاء الكتابة: «شامبوا»، «ماسكرا»، «فاونديشين»، «سيرم».
+  for (let i = 0; i < words.length; i++) {
+    if (consumed.has(i)) continue;
+    const w = words[i];
+    if (w.length < 4 || /\d/.test(w) || catalog.brandAliases.has(w)) continue;
+    let best: Phrase | null = null;
+    let bestD = 9;
+    for (const p of FUZZY_PHRASES) {
+      if (Math.abs(p.bare.length - w.length) > 2) continue;
+      // كلمة قصيرة تحتمل حرفاً واحداً، والطويلة حرفين.
+      const max = w.length >= 8 ? 2 : 1;
+      if (w.length < 5 && p.bare.length < 5) continue;
+      const d = editDistance(w, p.bare, max);
+      if (d <= max && d < bestD) {
+        bestD = d;
+        best = p;
+      }
+    }
+    if (!best) continue;
+    consumed.add(i);
+    mentioned.add(best.facet);
+    if (negatedAt(words, i)) avoid.push(`${best.facet}:${best.id}`);
+    else if (SINGLE.includes(best.facet)) single[best.facet] ??= best.id;
+    else (multi[best.facet] ??= []).push(best.id);
+  }
+
   // نوع البشرة مقابل مشكلة بنفس الاسم: «بشرتي دهنية» = نوع بشرة.
   if (single.skinType && multi.concern) {
     const map: Record<string, string> = { oily: "oily", dry: "dryness", sensitive: "sensitive" };
@@ -197,12 +228,23 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
   if (single.recipient && !single.gender && RECIPIENT_GENDER[single.recipient]) {
     delta.gender = RECIPIENT_GENDER[single.recipient];
   }
-  // مشكلة أو نوع بشرة يحدد المجال.
-  if (!single.area && delta.concerns?.length) {
+  // المجال: نوع المنتج أصدق («بلسم» للشعر)، ثم المشكلة، ثم نوع البشرة.
+  const kindAreas = [...new Set((delta.kinds ?? []).map((k) => KIND_AREA_NLU.get(k)).filter(Boolean))];
+  if (!single.area && kindAreas.length === 1) delta.area = kindAreas[0];
+  if (!delta.area && delta.concerns?.length) {
     const area = CONCERN_AREA[delta.concerns[0]];
     if (area) delta.area = area;
   }
   if (!delta.area && single.skinType && !delta.kinds?.length) delta.area = "skin";
+  // «جاف/دهني» في سياق الشعر = جفاف الشعر/فروة دهنية، لا نوع بشرة.
+  if (delta.area === "hair") {
+    const HAIR: Record<string, string> = { dryness: "dry_hair", oily: "oily_scalp", dry: "dry_hair" };
+    if (delta.concerns) delta.concerns = [...new Set(delta.concerns.map((c) => HAIR[c] ?? c))];
+    if (delta.skinType && HAIR[delta.skinType]) {
+      delta.concerns = [...new Set([...(delta.concerns ?? []), HAIR[delta.skinType]])];
+      delete delta.skinType;
+    }
+  }
 
   // «ثابت/يدوم» للعطر = تركيز عالٍ، ولغير العطر = ثبات طويل (مكياج يدوم).
   const kindArea = delta.kinds?.map((k) => KIND_AREA_NLU.get(k)).find(Boolean);
@@ -272,7 +314,12 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
   else if (RE.about.test(norm) && !hasProductSignal) intent = "about";
   else if (RE.help.test(norm) && !hasProductSignal) intent = "help";
   else if (RE.quiz.test(norm) && !hasProductSignal) intent = "quiz";
-  else if (RE.routine.test(norm)) intent = "routine";
+  else if (RE.look.test(norm)) {
+    intent = "routine";
+    delta.area = "makeup";
+    delta.kinds = [];
+    if (/(سهره|عرس|عروس|حفله|مناسبه|night|party|wedding)/.test(norm)) delta.time = "night";
+  } else if (RE.routine.test(norm)) intent = "routine";
   else if (single.occasion === "gift" || single.recipient) intent = "gift";
   else if (RE.cheaper.test(norm) && !hasProductSignal) intent = "cheaper";
   else if (RE.pricier.test(norm) && !hasProductSignal) intent = "pricier";
@@ -291,7 +338,7 @@ export function understand(message: string, catalog: CatalogIndex): Parsed {
   );
   const free = words.filter(
     (w, i) => !consumed.has(i) && w.length >= 3 && !INTENT_WORDS.has(w) && !/^\d+$/.test(w) &&
-      !["الف", "دينار", "تحت", "فوق", "بين", "ارخص", "اغلى"].includes(w) &&
+      !["الف", "دينار", "تحت", "فوق", "بين", "ارخص", "اغلى", "بديل", "بدائل", "بديله", "يشبه", "تشبه", "مثل"].includes(w) &&
       // كلمات الترتيب والنوايا («فخم»، «عروض»، «جديد») ليست أسماء منتجات.
       !SORT_RE.some(([re]) => re.test(w)) && !RE.deals.test(w) && !RE.cheaper.test(w) && !RE.pricier.test(w) &&
       // «كريم» مع نوع محدد («كريم واقي شمس») صيغة لا كلمة بحث.

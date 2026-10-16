@@ -1,4 +1,8 @@
-import { CatalogIndex } from "./catalog";
+import { CatalogIndex, IndexedProduct } from "./catalog";
+import { famousIn, findByName, findFamousProduct, profileOf, profileOfBoth, profileOfFamous, SIMILAR_RE, similarProducts } from "./similar";
+import { COMPLEMENT_WHY, COMPLEMENTS, compareProducts, fitCheck, whyList } from "./insight";
+import { answerQuestion, cautionFor, detectIngredients, QaAnswer, QUESTION_RE } from "./qa";
+import { FAMOUS } from "./famous";
 import {
   ABOUT,
   GREETINGS,
@@ -13,7 +17,7 @@ import {
 } from "./composer";
 import { CONCERN_AREA, FacetKey, LEXICON, facetValue } from "./lexicon";
 import { parseAction, understand } from "./nlu";
-import { li } from "./text";
+import { li, normalize } from "./text";
 import { Ranked, rank, routineTemplate, toCard } from "./ranker";
 import {
   AdvisorReply,
@@ -21,6 +25,8 @@ import {
   Chip,
   Intent,
   Need,
+  ProductCardOut,
+  Profile,
   QuizOut,
   RoutineStepOut,
   emptyNeed,
@@ -35,6 +41,10 @@ export interface DialogInput {
 export interface DialogCtx {
   catalog: CatalogIndex;
   firstName?: string;
+  /** ملفها الجمالي المحفوظ على جهازها. */
+  profile?: Profile;
+  /** تفاصيل المنتج المحوري من قاعدة البيانات (لطريقة الاستخدام). */
+  details?: { howToUse?: string | null; ingredients?: string | null } | null;
 }
 
 // ───────────────────────────────────────────────────────── الحقول
@@ -514,6 +524,10 @@ function reply(state: AdvisorState, partial: Partial<AdvisorReply>, ctx: DialogC
     groups: partial.groups ?? [],
     routine: partial.routine,
     quiz: partial.quiz,
+    knowledge: partial.knowledge,
+    compare: partial.compare,
+    fit: partial.fit,
+    anchor: partial.anchor,
     understood: partial.understood ?? understoodChips(state.need, brandNames),
     state,
   };
@@ -529,7 +543,9 @@ function recommend(state: AdvisorState, ctx: DialogCtx, lead?: string, opts: { e
   const need = state.need;
   const brandNames = new Map(ctx.catalog.brands.map((b) => [b.id, b.name]));
   const exclude = opts.exclude ? new Set(state.shown) : undefined;
-  const res = rank(ctx.catalog, need, { exclude, limit: 14 });
+  if (need.kinds.length >= 2 && !need.routine) return recommendBundle(state, ctx, lead, exclude);
+  const softFamilies = need.recipient || need.occasion === "gift" ? undefined : ctx.profile?.families;
+  const res = rank(ctx.catalog, need, { exclude, limit: 14, softFamilies });
   const seed = state.turns;
 
   if (!res.items.length) {
@@ -575,20 +591,63 @@ function recommend(state: AdvisorState, ctx: DialogCtx, lead?: string, opts: { e
   const tip = tipFor(need, seed);
   if (tip) messages.push(tip);
 
-  return reply(state, { messages, products: top.map(toCard), groups, chips: refineChips(need, true) }, ctx);
+  state.lastTop = top[0]?.p.id;
+  state.lastCards = top.slice(0, 3).map((r) => r.p.id);
+  state.simRef = undefined;
+  const cards = top.map((r) => ({ ...toCard(r), why: whyList(ctx.catalog, r.p, need) }));
+  const chips = refineChips(need, true);
+  if (top.length >= 2) {
+    const at = chips.findIndex((c) => c.value === "act:cheaper");
+    chips.splice(at >= 0 ? at : chips.length, 0, { label: "قارني أول اثنين", value: "act:compare", emoji: "⚖️" });
+  }
+  return reply(state, { messages, products: cards, groups, chips: chips.slice(0, 9) }, ctx);
+}
+
+/** أكثر من نوع بطلب واحد («شامبو وبلسم للشعر الجاف»): شريط لكل نوع. */
+function recommendBundle(state: AdvisorState, ctx: DialogCtx, lead: string | undefined, exclude?: Set<string>): AdvisorReply {
+  const need = state.need;
+  const groups: AdvisorReply["groups"] = [];
+  const all: Ranked[] = [];
+  // ترتيب الاستخدام الطبيعي: شامبو قبل البلسم، غسول قبل التونر…
+  const ORDER = ["cleanser", "toner", "serum", "moisturizer", "face_cream", "sunscreen", "shampoo", "conditioner", "hair_mask", "leave_in", "hair_oil", "hair_serum", "primer", "foundation", "concealer", "powder", "blush", "eyeshadow", "eyeliner", "mascara", "lipstick", "lip_gloss", "body_wash", "body_scrub", "body_lotion"];
+  const kinds = [...need.kinds].sort((a, b) => (ORDER.indexOf(a) + 1 || 99) - (ORDER.indexOf(b) + 1 || 99));
+  for (const k of kinds.slice(0, 4)) {
+    const res = rank(ctx.catalog, { ...need, kinds: [k] }, { exclude, limit: 4 });
+    if (!res.items.length) continue;
+    all.push(...res.items);
+    groups.push({
+      title: `${facetValue("kind", k)?.label ?? k}`,
+      products: res.items.map((r) => ({ ...toCard(r), why: whyList(ctx.catalog, r.p, { ...need, kinds: [k] }) })),
+    });
+  }
+  if (!groups.length) return recommend({ ...state, need: { ...need, kinds: need.kinds.slice(0, 1) } }, ctx, lead);
+  remember(state, all);
+  state.lastTop = all[0]?.p.id;
+  state.lastCards = groups.map((g) => g.products[0].id).slice(0, 3);
+  const names = groups.map((g) => g.title);
+  const brandNames = new Map(ctx.catalog.brands.map((b) => [b.id, b.name]));
+  const desc = describeNeed({ ...need, kinds: [] }, brandNames).replace(/^منتجات (عناية|العناية [^ ]+)\s*/, "");
+  const messages = [
+    lead ?? `جهزت لكِ ${names.slice(0, -1).join("، ")} و${names[names.length - 1]}${desc ? ` ${desc}` : ""} — الأنسب من كل نوع ✨`,
+    "تكدرين تختارين من كل شريط، أو تضيفين الأفضل من كل نوع للسلة.",
+  ];
+  const tip = tipFor(need, state.turns);
+  if (tip) messages.push(tip);
+  return reply(state, { messages, groups, chips: refineChips({ ...need, kinds: need.kinds.slice(0, 1) }, true).slice(0, 6) }, ctx);
 }
 
 function buildRoutine(state: AdvisorState, ctx: DialogCtx): AdvisorReply {
   const need = state.need;
   const area = areaOf(need) ?? "skin";
-  const template = routineTemplate(area === "hair" || area === "body" ? area : "skin", need);
+  const rArea = area === "hair" || area === "body" || area === "makeup" ? area : "skin";
+  const template = routineTemplate(rArea, need);
   const picked = new Set<string>();
   const steps: RoutineStepOut[] = [];
   let brand: string | null = null;
   for (const step of template) {
     const stepNeed: Need = {
       ...need,
-      area: area === "hair" || area === "body" ? area : "skin",
+      area: rArea,
       kinds: step.kinds,
       families: [],
       free: [],
@@ -597,7 +656,11 @@ function buildRoutine(state: AdvisorState, ctx: DialogCtx): AdvisorReply {
       minPrice: undefined,
     };
     let res = rank(ctx.catalog, stepNeed, { exclude: picked, limit: 3, preferBrand: brand });
-    if (!res.items.length && stepNeed.maxPrice) res = rank(ctx.catalog, { ...stepNeed, maxPrice: undefined }, { exclude: picked, limit: 3, preferBrand: brand });
+    if (!res.items.length && stepNeed.maxPrice) {
+      // خطوة اختيارية فوق حصتها من الميزانية تُترك؛ الأساسية تأخذ الأوفر المناسب.
+      if (step.optional) continue;
+      res = rank(ctx.catalog, { ...stepNeed, maxPrice: undefined, sort: "cheap" }, { exclude: picked, limit: 3, preferBrand: brand });
+    }
     const best = res.items[0];
     if (!best) continue;
     if (step.optional && best.match < 70) continue;
@@ -606,9 +669,21 @@ function buildRoutine(state: AdvisorState, ctx: DialogCtx): AdvisorReply {
     steps.push({ step: step.step, label: step.label, emoji: step.emoji, when: step.when, product: toCard(best) });
   }
   if (!steps.length) return recommend(state, ctx);
+  // فوق الميزانية بعد كل هذا؟ نحذف الخطوات الاختيارية الأغلى أولاً.
+  if (need.maxPrice) {
+    const optional = new Set(template.filter((t) => t.optional).map((t) => t.step));
+    let sum = steps.reduce((a, x) => a + x.product.price, 0);
+    for (const st of [...steps].filter((x) => optional.has(x.step)).sort((a, b) => b.product.price - a.product.price)) {
+      if (sum <= need.maxPrice * 1.05) break;
+      steps.splice(steps.indexOf(st), 1);
+      sum -= st.product.price;
+    }
+  }
   remember(state, steps.map((s) => ({ p: ctx.catalog.products.find((p) => p.id === s.product.id)!, score: 0, match: 0, reasons: [] })).filter((r) => r.p));
   const total = steps.reduce((s, x) => s + x.product.price, 0);
-  const title = area === "hair" ? "روتين شعركِ" : area === "body" ? "روتين جسمكِ" : "روتين بشرتكِ";
+  const night = need.time === "night" || need.occasion === "wedding";
+  const title =
+    rArea === "makeup" ? (night ? "لوك السهرة" : "لوك يومي ناعم") : area === "hair" ? "روتين شعركِ" : area === "body" ? "روتين جسمكِ" : "روتين بشرتكِ";
   // لمن الروتين: «للبشرة الجافة»، «لتساقط الشعر»… بلا تكرار «منتجات العناية».
   const forWhom = [
     need.skinType && area === "skin" ? `للبشرة ال${facetValue("skinType", need.skinType)!.label.replace(/^ال/, "")}` : null,
@@ -616,22 +691,37 @@ function buildRoutine(state: AdvisorState, ctx: DialogCtx): AdvisorReply {
   ]
     .filter(Boolean)
     .join(" و");
-  const messages = [
-    forWhom
-      ? pick([`صممت لكِ روتيناً متكاملاً ${forWhom} خطوة بخطوة 🧖‍♀️`, `هذا روتينكِ المثالي ${forWhom} — كل خطوة مختارة لكِ ✨`], state.turns)
-      : pick(["صممت لكِ روتيناً متكاملاً خطوة بخطوة 🧖‍♀️", "هذا روتينكِ المثالي — كل خطوة مختارة لكِ ✨"], state.turns),
-    `${steps.length} خطوات بمجموع ${fmtPrice(total)} د.ع — تكدرين تضيفينه كله للسلة بلمسة.`,
-  ];
+  const messages =
+    rArea === "makeup"
+      ? [
+          night
+            ? pick(["نسقت لكِ لوك سهرة متكامل 💄 — كل قطعة متناسقة مع اللي بعدها", "لوك سهرة من البداية للنهاية ✨ اخترت كل قطعة بعناية"], state.turns)
+            : pick(["لوك يومي ناعم وسريع 🌸 — خفيف ويدوم", "إطلالة نهارية طبيعية ✨ بخطوات بسيطة"], state.turns),
+          `${steps.length} قطع بمجموع ${fmtPrice(total)} د.ع${need.maxPrice ? ` (ميزانيتكِ ${fmtPrice(need.maxPrice)})` : ""} — تضيفينها كلها بلمسة.`,
+        ]
+      : [
+          forWhom
+            ? pick([`صممت لكِ روتيناً متكاملاً ${forWhom} خطوة بخطوة 🧖‍♀️`, `هذا روتينكِ المثالي ${forWhom} — كل خطوة مختارة لكِ ✨`], state.turns)
+            : pick(["صممت لكِ روتيناً متكاملاً خطوة بخطوة 🧖‍♀️", "هذا روتينكِ المثالي — كل خطوة مختارة لكِ ✨"], state.turns),
+          `${steps.length} خطوات بمجموع ${fmtPrice(total)} د.ع — تكدرين تضيفينه كله للسلة بلمسة.`,
+        ];
   const tip = tipFor(need, state.turns);
   if (tip) messages.push(tip);
   return reply(state, {
     messages,
-    routine: { title, steps, total },
-    chips: [
-      { label: "روتين أوفر", value: "act:cheaper", emoji: "💸" },
-      { label: "منتجات مفردة", value: "act:recommend", emoji: "🛍️" },
-      ...refineChips({ ...need, routine: true }, false).slice(0, 4),
-    ],
+    routine: { title, steps, total, emoji: rArea === "makeup" ? "💄" : rArea === "hair" ? "💇‍♀️" : rArea === "body" ? "🛁" : "🧖‍♀️" },
+    chips:
+      rArea === "makeup"
+        ? [
+            { label: night ? "لوك يومي" : "لوك سهرة", value: night ? "set:time=day;act:routine" : "set:time=night;act:routine", emoji: night ? "☀️" : "🌙" },
+            { label: "أوفر", value: "act:cheaper", emoji: "💸" },
+            ...chipsFor("finish", ["matte", "dewy"]).map((c) => ({ ...c, value: `${c.value};act:routine` })),
+          ]
+        : [
+            { label: "روتين أوفر", value: "act:cheaper", emoji: "💸" },
+            { label: "منتجات مفردة", value: "act:recommend", emoji: "🛍️" },
+            ...refineChips({ ...need, routine: true }, false).slice(0, 4),
+          ],
   }, ctx);
 }
 
@@ -653,9 +743,283 @@ function shortName(name: string) {
   return s.length > 46 ? `${s.slice(0, 44)}…` : s;
 }
 
+// ───────────────────────────────────────────────────────── منتج بعينه
+
+const FIT_RE = /(يناسبني|يناسب بشرتي|يناسب شعري|يصلح لي|يصلحلي|ينفع لي|ينفعني|ينفع لبشرتي|مناسب الي|مناسب لي|مناسب لبشرتي|مناسب لشعري|زين الي|زين لبشرتي|يفيدني|suit me|good for me)/;
+const COMPLEMENT_RE = /(شنو يكمل|شي يكمل|يكمله|يكملها|يكملني|يتنسق|ويه شنو|وياه شنو|شنو استخدم وياه|شنو احط وياه|يمشي وياه|goes with|pair with|complete)/;
+const HOWTO_RE = /(طريقه الاستخدام|طريقه استخدام|شلون استخدم|شلون استعمل|كيف استخدم|كيف استعمل|شلون احطه|شلون احطها|شلون اطبق|how to use)/;
+const COMPARE_RE = /(قارني|قارن |مقارنه|الفرق بينهم|الفرق بين هذول|اي واحد احسن|ايهم احسن|منو احسن|منو الاحسن|اي وحده احسن|compare)/;
+// إشارة لمنتج سابق: «هذا»، «هاي»، «الأول»…
+const REF_RE = /(هذا|هذه|هذي|هاي|هاذ|ياه|هو |اله|الاول|الاولى|this|it )/;
+const CHEAPER_WORDS = /(ارخص|اوفر|بديل|بدائل|dupe|cheaper|اقل سعر)/;
+
+function cardOf(ctx: DialogCtx, p: IndexedProduct, match = 0, reasons: string[] = []): ProductCardOut {
+  return toCard({ p, score: 0, match, reasons });
+}
+
+function quickMatch(ctx: DialogCtx, p: IndexedProduct, need: Need): number {
+  const w = whyList(ctx.catalog, p, need).filter((x) => !/^(من الأكثر|تقييم|عليه خصم)/.test(x.text));
+  if (!w.length) return 0;
+  return Math.round(55 + 44 * (w.filter((x) => x.ok).length / w.length));
+}
+
+function focusChips(p: IndexedProduct, except?: string): Chip[] {
+  const kind = [...(p.strong.get("kind") ?? [])][0];
+  const chips: Chip[] = [
+    { label: "هل يناسبني؟", value: "act:fit", emoji: "🎯" },
+    { label: "بديل أرخص", value: "act:dupe", emoji: "💸" },
+    { label: "منتجات تشبهه", value: "act:similar", emoji: "🔁" },
+  ];
+  if (kind && COMPLEMENTS[kind]) chips.push({ label: "شنو يكمّله؟", value: "act:complement", emoji: "🧩" });
+  chips.push({ label: "طريقة الاستخدام", value: "act:howto", emoji: "📖" });
+  return chips.filter((c) => c.value !== except);
+}
+
+function focusIntro(state: AdvisorState, ctx: DialogCtx, p: IndexedProduct): AdvisorReply {
+  state.focus = p.id;
+  return reply(state, {
+    messages: [pick([`«${shortName(p.name)}» — شنو تحبين تعرفين عنه؟ 💜`, `اختيار حلو! تسألين عن «${shortName(p.name)}»؟ اختاري سؤالكِ:`], state.turns)],
+    anchor: cardOf(ctx, p),
+    chips: focusChips(p),
+  }, ctx);
+}
+
+function handleSimilar(
+  state: AdvisorState,
+  ctx: DialogCtx,
+  ref: { product?: IndexedProduct; famousId?: string },
+  cheaper: boolean,
+): AdvisorReply {
+  const famous = ref.famousId ? FAMOUS.find((f) => f.id === ref.famousId) : undefined;
+  // العطر المشهور متوفر عندنا؟ نعتمده مرجعاً مع نوتاته.
+  if (famous && !ref.product) {
+    const own = findFamousProduct(ctx.catalog, famous);
+    if (own) ref = { product: own, famousId: famous.id };
+  }
+  const anchor = ref.product ? (famous ? profileOfBoth(ref.product, famous) : profileOf(ref.product)) : famous ? profileOfFamous(famous) : null;
+  if (!anchor) return recommend(state, ctx);
+  state.simRef = famous ? `f:${famous.id}` : `p:${ref.product!.id}`;
+  if (ref.product) state.focus = ref.product.id;
+  const gender = state.need.gender ?? ctx.profile?.gender;
+  const hits = similarProducts(ctx.catalog, anchor, { cheaper, limit: 8, maxPrice: state.need.maxPrice, gender });
+  const name = ref.product ? shortName(ref.product.name) : famous!.name;
+  const anchorCard = ref.product ? cardOf(ctx, ref.product) : undefined;
+  if (!hits.length) {
+    return reply(state, {
+      messages: [
+        cheaper
+          ? `«${name}» من أوفر الخيارات بطابعه أصلاً 👌 ما لقيت بديلاً أرخص يشبهه بشكل كافٍ.`
+          : `ما لقيت منتجاً قريباً كفاية من «${name}» حالياً.`,
+      ],
+      anchor: anchorCard,
+      chips: ref.product ? focusChips(ref.product, cheaper ? "act:dupe" : "act:similar") : STARTERS.slice(0, 4),
+    }, ctx);
+  }
+  const cards = hits.map((h) => ({ ...cardOf(ctx, h.p, h.sim, h.reasons), similarity: h.sim, saving: h.saving }));
+  remember(state, hits.map((h) => ({ p: h.p, score: 0, match: h.sim, reasons: h.reasons })));
+  state.lastTop = hits[0].p.id;
+  state.lastCards = hits.slice(0, 3).map((h) => h.p.id);
+  const fams = [...anchor.families.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([f]) => facetValue("family", f)?.label).filter(Boolean);
+  const best = hits[0];
+  const messages: string[] = [];
+  if (famous && !ref.product) {
+    messages.push(`«${famous.name}» مو متوفر عندنا حالياً، بس هذه عطور بنفس بصمته${fams.length ? ` (${fams.join("، ")})` : ""} ✨`);
+  } else if (famous) {
+    messages.push(
+      cheaper
+        ? `«${famous.name}» متوفر عندنا 💜 وهذه بدائل أوفر بنفس بصمته (${fams.join("، ")}):`
+        : `«${famous.name}» متوفر عندنا 💜 وهذه عطور قريبة منه:`,
+    );
+  } else {
+    messages.push(cheaper ? `بدائل أوفر تشبه «${name}» 💸` : `منتجات تشبه «${name}» بطابعها ✨`);
+  }
+  messages.push(
+    `الأقرب: «${shortName(best.p.name)}» — يشبهه بنسبة ${best.sim}%${best.saving && best.saving > 1000 ? ` وأوفر بـ ${fmtPrice(best.saving)} د.ع` : ""}.`,
+  );
+  if (anchor.area === "fragrance") messages.push("💡 العطور المتشابهة بالطابع تختلف بالثبات والفوحان — جربي على المعصم وانتظري ساعة قبل الحكم.");
+  const chips: Chip[] = [];
+  if (!cheaper) chips.push({ label: "بس الأرخص", value: "act:dupe", emoji: "💸" });
+  else chips.push({ label: "كل المشابهة", value: "act:similar", emoji: "🔁" });
+  if (ref.product) chips.push(...focusChips(ref.product, cheaper ? "act:dupe" : "act:similar").filter((c) => c.value !== "act:dupe" && c.value !== "act:similar").slice(0, 3));
+  chips.push({ label: "قارني أول اثنين", value: "act:compare", emoji: "⚖️" });
+  return reply(state, { messages, anchor: anchorCard, products: cards, chips }, ctx);
+}
+
+function handleFit(state: AdvisorState, ctx: DialogCtx, p: IndexedProduct): AdvisorReply {
+  state.focus = p.id;
+  const r = fitCheck(p, state.need, ctx.profile, cautionFor);
+  const needsSkin = (p.area === "skin" || p.area === "makeup") && !(state.need.skinType ?? ctx.profile?.skinType);
+  const chips: Chip[] = needsSkin
+    ? chipsFor("skinType", ["oily", "dry", "combination", "sensitive"]).map((c) => ({ ...c, value: `${c.value};act:fit` }))
+    : focusChips(p, "act:fit");
+  const lead =
+    r.tone === "good"
+      ? pick(["خبر حلو 💜", "اختيار موفق!"], state.turns)
+      : r.tone === "care"
+        ? "خليني أكون صريحة معكِ:"
+        : "رأيي باختصار:";
+  const messages = [`${lead} «${shortName(p.name)}» — ${r.headline}`];
+  if (needsSkin) messages.push("حتى أقيّمه بدقة، شنو نوع بشرتكِ؟");
+  return reply(state, { messages, fit: { product: cardOf(ctx, p), ...r }, chips }, ctx);
+}
+
+function handleComplement(state: AdvisorState, ctx: DialogCtx, p: IndexedProduct): AdvisorReply {
+  state.focus = p.id;
+  const kind = [...(p.strong.get("kind") ?? [])][0];
+  const comps = (kind && COMPLEMENTS[kind]) || [];
+  const groups: AdvisorReply["groups"] = [];
+  const all: Ranked[] = [];
+  const exclude = new Set([p.id]);
+  for (const k of comps.slice(0, 3)) {
+    const area = KIND_AREA.get(k) ?? p.area ?? undefined;
+    const need: Need = {
+      ...emptyNeed(),
+      area,
+      kinds: [k],
+      concerns: [...(p.strong.get("concern") ?? [])].filter((c) => !CONCERN_AREA[c] || CONCERN_AREA[c] === area),
+      skinType: area === "skin" ? state.need.skinType ?? ctx.profile?.skinType : undefined,
+      families: area === "fragrance" || k === "body_lotion" || k === "mist" ? [...(p.strong.get("family") ?? [])].slice(0, 2) : [],
+      gender: p.area === "fragrance" ? [...(p.strong.get("gender") ?? [])][0] : undefined,
+    };
+    const res = rank(ctx.catalog, need, { exclude, limit: 4, preferBrand: p.brandId });
+    if (!res.items.length) continue;
+    res.items.forEach((r) => exclude.add(r.p.id));
+    all.push(...res.items);
+    groups.push({ title: `${facetValue("kind", k)?.label ?? k} — ${COMPLEMENT_WHY[k] ?? "يكمّل الخطوة"}`, products: res.items.map(toCard) });
+  }
+  if (!groups.length) {
+    return reply(state, { messages: [`«${shortName(p.name)}» يكفي لوحده تقريباً 👌 ما عندي إضافة مهمة له.`], anchor: cardOf(ctx, p), chips: focusChips(p, "act:complement") }, ctx);
+  }
+  remember(state, all);
+  return reply(state, {
+    messages: [
+      pick([`هذه أحلى منتجات تكمّل «${shortName(p.name)}» 🧩`, `حتى تحصلين أفضل نتيجة من «${shortName(p.name)}»، أضيفي وياه:`], state.turns),
+      "فضّلت نفس البراند حين يتوفر — تركيبات متناسقة تشتغل أحسن سوا.",
+    ],
+    anchor: cardOf(ctx, p),
+    groups,
+    chips: focusChips(p, "act:complement"),
+  }, ctx);
+}
+
+const HOWTO_GENERIC: Record<string, string[]> = {
+  cleanser: ["بللي وجهكِ بماء فاتر", "دلكي كمية صغيرة بحركات دائرية دقيقة كاملة", "اشطفي وجففي بالتربيت — صباحاً ومساءً"],
+  toner: ["بعد الغسول على بشرة نظيفة", "بالكف أو قطنة بتربيت خفيف", "انتظري ثواني قبل السيروم"],
+  serum: ["2–3 قطرات على بشرة نظيفة", "وزعيها بالتربيت على الوجه والرقبة", "اتبعيها بالمرطب"],
+  moisturizer: ["كمية بحجم حبة البازلاء", "وزعيها بحركات للأعلى", "صباحاً تحت الواقي، ومساءً كآخر خطوة"],
+  sunscreen: ["آخر خطوة صباحاً", "كمية بطول إصبعين للوجه والرقبة", "جدديه كل ساعتين إذا كنتِ بالشمس"],
+  shampoo: ["على شعر مبلل جيداً", "دلكي فروة الرأس أكثر من الأطراف", "اشطفي جيداً — مرة ثانية إذا الشعر دهني"],
+  conditioner: ["بعد الشامبو على الأطراف ومنتصف الشعر", "اتركيه 2–3 دقائق", "اشطفي بماء فاتر"],
+  hair_mask: ["مرة أو مرتين بالأسبوع بعد الشامبو", "وزعيه على الشعر بعيداً عن الفروة", "اتركيه 10 دقائق ثم اشطفي"],
+  perfume: ["رشي على نقاط النبض: المعصم، الرقبة، خلف الأذن", "لا تفركي بعد الرش", "على بشرة مرطبة يثبت أكثر"],
+  foundation: ["بعد المرطب والبرايمر", "ابدئي من وسط الوجه للخارج بإسفنجة رطبة", "ثبتيه ببودرة خفيفة بمنطقة T"],
+  mascara: ["امسحي الزائد من الفرشاة", "حركي الفرشاة بشكل متعرج من الجذور للأطراف", "طبقتين كحد أقصى قبل ما تجف"],
+  lipstick: ["رطبي الشفاه وانتظري دقيقة", "حددي بمحدد الشفاه أولاً", "طبقة، نشفي بمحرمة، ثم طبقة ثانية للثبات"],
+  body_lotion: ["بعد الشاور على بشرة رطبة قليلاً", "دلكي حتى يمتص", "ركزي على الكوع والركبة"],
+};
+
+function handleHowto(state: AdvisorState, ctx: DialogCtx, p: IndexedProduct): AdvisorReply {
+  state.focus = p.id;
+  const raw = (ctx.details?.howToUse ?? "").replace(/\\n/g, "\n");
+  let steps = raw
+    .split(/\n|•|●|(?<=[.。])\s+|\s-\s/)
+    .map((x) => x.replace(/^[\s\-–•\d.)]+/, "").trim())
+    .filter((x) => x.length >= 6)
+    .slice(0, 6);
+  const kind = [...(p.strong.get("kind") ?? [])][0];
+  const generic = !steps.length;
+  if (generic) steps = HOWTO_GENERIC[kind ?? ""] ?? ["استخدميه حسب التعليمات على العبوة", "ابدئي بكمية صغيرة", "جربيه على مساحة صغيرة أولاً إذا بشرتكِ حساسة"];
+  const sections: NonNullable<AdvisorReply["knowledge"]>["sections"] = [{ label: "الخطوات", icon: "📖", bullets: steps }];
+  const ings = [...(p.strong.get("ingredient") ?? [])];
+  const caution = ings.map(cautionFor).find(Boolean);
+  if (caution) sections.push({ label: "انتبهي", icon: "⚠️", bullets: [caution] });
+  return reply(state, {
+    messages: [generic ? "الطريقة الصحيحة لهذا النوع من المنتجات:" : "تفضلي، طريقة الاستخدام الصحيحة:"],
+    knowledge: { title: `طريقة استخدام «${shortName(p.name)}»`, kind: "info", sections },
+    anchor: cardOf(ctx, p),
+    chips: focusChips(p, "act:howto"),
+  }, ctx);
+}
+
+function handleCompare(state: AdvisorState, ctx: DialogCtx, ids: string[]): AdvisorReply {
+  const ps = [...new Set(ids)].map((id) => ctx.catalog.byId(id)).filter(Boolean).slice(0, 3) as IndexedProduct[];
+  if (ps.length < 2) {
+    return reply(state, {
+      messages: ["اختاري منتجين للمقارنة — اضغطي على «قارني» بالبطاقات، أو اسأليني عن منتجات أولاً 🙂"],
+      chips: STARTERS.slice(0, 4),
+    }, ctx);
+  }
+  const cards = ps.map((p) => cardOf(ctx, p, quickMatch(ctx, p, state.need)));
+  const cmp = compareProducts(ps, cards, state.need, (p) => quickMatch(ctx, p, state.need));
+  state.lastCards = ps.map((p) => p.id);
+  const w = ps[cmp.winner ?? 0];
+  state.focus = w.id;
+  return reply(state, {
+    messages: [pick(["خليني أقارنهم لكِ نقطة نقطة ⚖️", "مقارنة سريعة وواضحة ⚖️"], state.turns)],
+    compare: cmp,
+    chips: focusChips(w).slice(0, 4),
+  }, ctx);
+}
+
+function handleKnowledge(state: AdvisorState, ctx: DialogCtx, qa: QaAnswer, kinds: string[]): AdvisorReply {
+  let products: ProductCardOut[] = [];
+  if (qa.productIngredients.length) {
+    const area = qa.area === "hair" || qa.area === "body" ? qa.area : "skin";
+    const need: Need = {
+      ...emptyNeed(),
+      area,
+      kinds: kinds.filter((k) => KIND_AREA.get(k) === area),
+      ingredients: qa.productIngredients.slice(0, 1),
+      skinType: area === "skin" ? state.need.skinType ?? ctx.profile?.skinType : undefined,
+    };
+    const res = rank(ctx.catalog, need, { limit: 6 });
+    if (res.items.length) {
+      products = res.items.map(toCard);
+      remember(state, res.items);
+      state.lastTop = res.items[0].p.id;
+      state.lastCards = res.items.slice(0, 3).map((r) => r.p.id);
+    }
+  }
+  const messages = [...qa.messages];
+  if (products.length) messages.push("وهذه منتجات متوفرة فيها هذا المكوّن:");
+  return reply(state, { messages, knowledge: qa.knowledge, products, chips: qa.chips }, ctx);
+}
+
 // ───────────────────────────────────────────────────────── نقطة الدخول
 
 export function respond(input: DialogInput, prev: AdvisorState | null | undefined, ctx: DialogCtx): AdvisorReply {
+  const r = respondInner(input, prev, ctx);
+  const upd = learnProfile(prev?.need, r.state.need, ctx.profile, Boolean(input.message || input.action?.includes("quiz:ans")));
+  if (upd) r.profileUpdate = upd;
+  return r;
+}
+
+/** ما قالته عن نفسها (نوع بشرتها، مشاكلها، ذوقها بالعطور) — يُحفظ في ملفها. */
+function learnProfile(before: Need | undefined, after: Need, profile: Profile | undefined, fromUser: boolean): Partial<Profile> | null {
+  if (!fromUser) return null;
+  const upd: Partial<Profile> = {};
+  if (after.skinType && after.skinType !== before?.skinType && after.skinType !== profile?.skinType) upd.skinType = after.skinType;
+  const gift = Boolean(after.recipient || after.occasion === "gift");
+  const newOnes = (a: string[], b: string[] = []) => a.filter((x) => !b.includes(x));
+  if (!gift) {
+    const area = after.area;
+    const addedConcerns = newOnes(after.concerns, before?.concerns);
+    const skinC = addedConcerns.filter((c) => CONCERN_AREA[c] === "skin");
+    const hairC = addedConcerns.filter((c) => CONCERN_AREA[c] === "hair");
+    if (skinC.length && newOnes(skinC, profile?.concerns).length) upd.concerns = [...new Set([...skinC, ...(profile?.concerns ?? [])])].slice(0, 4);
+    if (hairC.length && newOnes(hairC, profile?.hairConcerns).length) upd.hairConcerns = [...new Set([...hairC, ...(profile?.hairConcerns ?? [])])].slice(0, 4);
+    if (area === "fragrance") {
+      const fams = newOnes(after.families, before?.families);
+      if (fams.length && newOnes(fams, profile?.families).length) upd.families = [...new Set([...fams, ...(profile?.families ?? [])])].slice(0, 5);
+      if ((after.gender === "women" || after.gender === "unisex") && after.gender !== before?.gender && after.gender !== profile?.gender) {
+        upd.gender = after.gender;
+      }
+    }
+  }
+  return Object.keys(upd).length ? upd : null;
+}
+
+function respondInner(input: DialogInput, prev: AdvisorState | null | undefined, ctx: DialogCtx): AdvisorReply {
   const state: AdvisorState = prev ? structuredClone(prev) : emptyState();
   state.turns += 1;
   state.need = { ...emptyNeed(), ...state.need };
@@ -667,10 +1031,19 @@ export function respond(input: DialogInput, prev: AdvisorState | null | undefine
   const parts = input.action?.startsWith("quiz:ans=")
     ? [`quiz:ans=${input.action.slice("quiz:ans=".length).replace(/;/g, "|")}`]
     : input.action?.split(";") ?? [];
+  let compareIds: string[] | undefined;
   if (input.action) {
     for (const part of parts) {
       const a = parseAction(part.trim());
       if (!a) continue;
+      if (a.op === "set" && a.key === "focus") {
+        state.focus = a.val || undefined;
+        continue;
+      }
+      if (a.op === "set" && a.key === "compare") {
+        compareIds = (a.val ?? "").split(",").filter(Boolean);
+        continue;
+      }
       if (a.op === "act") {
         intent = (a.key as Intent) ?? null;
         continue;
@@ -713,7 +1086,46 @@ export function respond(input: DialogInput, prev: AdvisorState | null | undefine
   let ack: string | undefined;
   if (input.message?.trim()) {
     state.quiz = undefined;
-    const parsed = understand(input.message, ctx.catalog);
+    const msg = input.message;
+    const nm = normalize(msg);
+    const parsed = understand(msg, ctx.catalog);
+    const newKind = (parsed.delta.kinds?.length ?? 0) > 0;
+    const focusP = state.focus ? ctx.catalog.byId(state.focus) : undefined;
+    const refExplicit = REF_RE.test(` ${nm} `);
+    const refP = (!newKind ? focusP : undefined) ?? (refExplicit && state.lastTop ? ctx.catalog.byId(state.lastTop) : undefined);
+
+    // ── «يشبه/بديل»: مرجع من الكتالوج، أو عطر مشهور، أو المنتج الذي نتحدث عنه.
+    const famous = famousIn(msg);
+    if (SIMILAR_RE.test(nm) || (famous && nm.split(" ").length <= 5)) {
+      const cheaper = CHEAPER_WORDS.test(nm);
+      // المشهور أولاً (يُطابق بالنوتات)، ثم اسم منتج من الكتالوج.
+      const product = famous ? null : findByName(ctx.catalog, msg, null);
+      if (product || famous) {
+        if (parsed.delta.maxPrice) state.need.maxPrice = parsed.delta.maxPrice;
+        return handleSimilar(state, ctx, { product: product ?? undefined, famousId: famous?.id }, cheaper);
+      }
+      if (refP) return handleSimilar(state, ctx, { product: refP }, cheaper);
+    }
+    // ── أسئلة عن منتج بعينه
+    if (refP) {
+      if (FIT_RE.test(nm)) {
+        state.need = mergeNeed(state.need, { skinType: parsed.delta.skinType, concerns: parsed.delta.concerns }).need;
+        return handleFit(state, ctx, refP);
+      }
+      if (COMPLEMENT_RE.test(nm)) return handleComplement(state, ctx, refP);
+      if (HOWTO_RE.test(nm) && !detectIngredients(msg).length) return handleHowto(state, ctx, refP);
+    }
+    if (COMPARE_RE.test(nm) && (state.lastCards?.length ?? 0) >= 2 && detectIngredients(msg).length < 2) {
+      return handleCompare(state, ctx, state.lastCards!);
+    }
+    // ── سؤال معرفة (مكوّن، مزج مكونات، موضوع)
+    const qa = answerQuestion(msg);
+    if (qa) {
+      const productAsk = newKind && !QUESTION_RE.test(` ${nm} `);
+      if (!(qa.knowledge.kind === "ingredient" && productAsk)) return handleKnowledge(state, ctx, qa, parsed.delta.kinds ?? []);
+    }
+    if (newKind || parsed.delta.area) state.focus = undefined;
+
     intent = parsed.intent;
     if (parsed.delta.avoid?.length || parsed.delta.excludeBrands?.length) {
       const names = [
@@ -733,7 +1145,49 @@ export function respond(input: DialogInput, prev: AdvisorState | null | undefine
     }
   }
 
+  // ملفها الجمالي: نوع بشرتها المحفوظ يُعتمد تلقائياً لطلبات البشرة وأساس المكياج.
+  let fromProfile: string | undefined;
+  if (ctx.profile?.skinType && !state.need.skinType && !state.quiz && intent !== "reset") {
+    const a = areaOf(state.need);
+    const base = ["foundation", "concealer", "powder", "primer"];
+    if (a === "skin" || (a === "makeup" && state.need.kinds.some((k) => base.includes(k)))) {
+      state.need.skinType = ctx.profile.skinType;
+      fromProfile = facetValue("skinType", ctx.profile.skinType)?.label;
+    }
+  }
+  const out = dispatch();
+  if (fromProfile && out.messages.length && (out.products.length || out.routine || out.groups.length)) {
+    out.messages.splice(1, 0, `💾 اعتمدت على ملفكِ: بشرة ${fromProfile} — تكدرين تشيلينها من «فهمت منكِ».`);
+  }
+  return out;
+
+  function dispatch(): AdvisorReply {
+  const focusOrTop = () => (state.focus ? ctx.catalog.byId(state.focus) : undefined) ?? (state.lastTop ? ctx.catalog.byId(state.lastTop) : undefined);
   switch (intent) {
+    case "focus": {
+      const p = state.focus ? ctx.catalog.byId(state.focus) : undefined;
+      if (p) return focusIntro(state, ctx, p);
+      break;
+    }
+    case "fit":
+    case "complement":
+    case "howto":
+    case "similar":
+    case "dupe": {
+      const p = focusOrTop();
+      if (!p) {
+        if ((intent === "similar" || intent === "dupe") && state.simRef?.startsWith("f:")) {
+          return handleSimilar(state, ctx, { famousId: state.simRef.slice(2) }, intent === "dupe");
+        }
+        break;
+      }
+      if (intent === "fit") return handleFit(state, ctx, p);
+      if (intent === "complement") return handleComplement(state, ctx, p);
+      if (intent === "howto") return handleHowto(state, ctx, p);
+      return handleSimilar(state, ctx, { product: p }, intent === "dupe");
+    }
+    case "compare":
+      return handleCompare(state, ctx, compareIds ?? state.lastCards ?? []);
     case "reset": {
       const fresh = emptyState();
       fresh.turns = state.turns;
@@ -766,6 +1220,7 @@ export function respond(input: DialogInput, prev: AdvisorState | null | undefine
             { label: "روتين البشرة", value: "set:area=skin;act:routine", emoji: "🌸" },
             { label: "روتين الشعر", value: "set:area=hair;act:routine", emoji: "💇‍♀️" },
             { label: "روتين الجسم", value: "set:area=body;act:routine", emoji: "🛁" },
+            { label: "لوك مكياج", value: "set:area=makeup;act:routine", emoji: "💄" },
           ],
         }, ctx);
       }
@@ -774,6 +1229,11 @@ export function respond(input: DialogInput, prev: AdvisorState | null | undefine
       if (!specificity(state.need) && !areaOf(state.need)) break;
       return recommend(state, ctx, pick(["هذه خيارات ثانية لكِ:", "تفضلي، مجموعة جديدة:"], seed), { exclude: true });
     case "cheaper": {
+      if (state.simRef) {
+        const [t, id] = [state.simRef.slice(0, 1), state.simRef.slice(2)];
+        const p = t === "p" ? ctx.catalog.byId(id) : undefined;
+        return handleSimilar(state, ctx, p ? { product: p } : { famousId: id }, true);
+      }
       const ref = state.lastPrice;
       if (ref) state.need.maxPrice = Math.round(ref * 0.75);
       state.need.sort = "cheap";
@@ -815,5 +1275,6 @@ export function respond(input: DialogInput, prev: AdvisorState | null | undefine
       : undefined;
   const lead = ack ?? giftLead;
   return recommend(state, ctx, lead);
+  }
 }
 

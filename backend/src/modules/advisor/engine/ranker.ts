@@ -48,6 +48,8 @@ interface Options {
   preferBrand?: string | null;
   /** أقصى منتجات من نفس البراند في القائمة (إلا إن طُلب براند). */
   perBrand?: number;
+  /** عائلات عطرية تحبها (من ملفها) — تفضيل خفيف. */
+  softFamilies?: string[];
 }
 
 type Rung = { label: string; apply: (n: Need) => Need } | null;
@@ -211,7 +213,20 @@ function rankOnce(catalog: CatalogIndex, need: Need, opts: Options): RankResult 
     const text = textScores && maxText > 0 ? (textScores.get(p.idx) ?? 0) / maxText : 0;
     if (textScores && text === 0 && !wanted.length) continue; // بحث نصي بلا تطابق إطلاقاً
 
-    let score = facetScore + ingredientBonus + text * 4 + p.quality * 2.6;
+    let score = facetScore + ingredientBonus + text * 4 + p.quality * 2.6 + p.learned * 1.1;
+    // البشرة الحساسة: الأحماض والريتينول القوية تتأخر ما لم تُطلب صراحة.
+    if (need.skinType === "sensitive") {
+      for (const h of ["retinol", "aha", "salicylic"]) {
+        if (!need.ingredients.includes(h) && p.strong.get("ingredient")?.has(h)) {
+          score -= 1;
+          break;
+        }
+      }
+    }
+    // ذوقها المحفوظ (عائلات العطر) — ميل خفيف لا شرط.
+    if (opts.softFamilies?.length && p.area === "fragrance") {
+      for (const f of opts.softFamilies) if (catalog.has(p, "family", f)) score += 0.35;
+    }
     if (p.discountPercent > 0) score += Math.min(0.6, p.discountPercent / 60);
     if (opts.preferBrand && p.brandId === opts.preferBrand) score += 0.8;
     // جنس العطر: المطابق الصريح أفضل من غير المصنف.
@@ -373,13 +388,37 @@ export interface RoutineTemplateStep {
   step: string;
   label: string;
   emoji: string;
-  when: "am" | "pm" | "both";
+  when: "am" | "pm" | "both" | "any";
   kinds: string[];
   share: number;
   optional?: boolean;
 }
 
 export function routineTemplate(area: string, need: Need): RoutineTemplateStep[] {
+  if (area === "makeup") {
+    // لوك متكامل: السهرة أغنى (ظلال، آيلاينر، هايلايتر، مثبت)، والنهار أخف.
+    const night = need.time === "night" || need.occasion === "wedding";
+    const steps: RoutineTemplateStep[] = [
+      { step: "prime", label: "برايمر", emoji: "🫧", when: "any", kinds: ["primer"], share: 0.1, optional: true },
+      { step: "base", label: "كريم الأساس", emoji: "🎨", when: "any", kinds: ["foundation"], share: 0.22 },
+      { step: "conceal", label: "كونسيلر", emoji: "✨", when: "any", kinds: ["concealer"], share: 0.11 },
+      { step: "set", label: "بودرة التثبيت", emoji: "☁️", when: "any", kinds: ["powder"], share: 0.09, optional: !night },
+      { step: "cheeks", label: "أحمر الخدود", emoji: "🌸", when: "any", kinds: ["blush"], share: 0.08 },
+    ];
+    if (night) {
+      steps.push(
+        { step: "glow", label: "هايلايتر", emoji: "💫", when: "any", kinds: ["highlighter"], share: 0.07, optional: true },
+        { step: "eyes", label: "ظلال العيون", emoji: "👁️", when: "any", kinds: ["eyeshadow", "palette"], share: 0.12 },
+        { step: "liner", label: "آيلاينر", emoji: "🖊️", when: "any", kinds: ["eyeliner"], share: 0.06 },
+      );
+    }
+    steps.push(
+      { step: "lashes", label: "ماسكارا", emoji: "🖤", when: "any", kinds: ["mascara"], share: 0.09 },
+      { step: "lips", label: night ? "أحمر الشفاه" : "الشفاه", emoji: "💋", when: "any", kinds: night ? ["lipstick"] : ["tint", "lip_gloss", "lipstick"], share: 0.09 },
+    );
+    if (night) steps.push({ step: "fix", label: "مثبت المكياج", emoji: "💦", when: "any", kinds: ["setting_spray"], share: 0.07, optional: true });
+    return steps;
+  }
   if (area === "hair") {
     const treat = need.concerns.includes("hairloss")
       ? { step: "treat", label: "علاج التساقط", emoji: "🌱", when: "both" as const, kinds: ["hair_serum", "hair_oil"], share: 0.3 }

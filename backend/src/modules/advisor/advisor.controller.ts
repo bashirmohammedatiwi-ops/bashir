@@ -1,16 +1,24 @@
 import { Body, Controller, Get, Post, Query } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
-import { IsObject, IsOptional, IsString, MaxLength } from "class-validator";
+import { IsIn, IsObject, IsOptional, IsString, MaxLength } from "class-validator";
 import { Public } from "../../common/decorators/public.decorator";
 import { AdvisorService } from "./advisor.service";
-import { AdvisorState } from "./engine/types";
+import { AdvisorState, Profile } from "./engine/types";
 
 class AdvisorChatDto {
   @IsOptional() @IsString() @MaxLength(600) message?: string;
   @IsOptional() @IsString() @MaxLength(600) action?: string;
   @IsOptional() @IsObject() state?: AdvisorState;
   @IsOptional() @IsString() @MaxLength(40) firstName?: string;
+  @IsOptional() @IsObject() profile?: Profile;
+  @IsOptional() @IsString() @MaxLength(64) productId?: string;
+}
+
+class AdvisorFeedbackDto {
+  @IsOptional() @IsString() @MaxLength(64) productId?: string;
+  @IsIn(["click", "cart", "like", "dislike"]) type!: string;
+  @IsOptional() @IsString() @MaxLength(60) sig?: string;
 }
 
 class AdvisorWelcomeDto {
@@ -41,5 +49,13 @@ export class AdvisorController {
   @Post("chat")
   chat(@Body() dto: AdvisorChatDto) {
     return this.advisor.chat(dto);
+  }
+
+  /** إشارات التعلّم — مجهولة الهوية تماماً. */
+  @Public()
+  @Throttle({ default: { limit: 60, ttl: 60_000 } })
+  @Post("feedback")
+  feedback(@Body() dto: AdvisorFeedbackDto) {
+    return this.advisor.feedback(dto);
   }
 }

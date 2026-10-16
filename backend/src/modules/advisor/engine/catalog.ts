@@ -34,6 +34,8 @@ export interface IndexedProduct {
   quality: number;
   /** جنس مرجّح لعطر بلا تصنيف صريح: من وصفه أو من غالبية عطور البراند. */
   genderHint: string | null;
+  /** ما تعلّمته «ديما» من تفاعل الزبونات مع ترشيحاتها (0..1). */
+  learned: number;
 }
 
 export interface BrandEntry {
@@ -271,6 +273,8 @@ export class CatalogIndex {
   brands: BrandEntry[] = [];
   /** اسم مجرّد → براندات (قد يكون عائلة). */
   brandAliases = new Map<string, string[]>();
+  /** متجه مختصر لكل منتج (أهم الكلمات المميزة بوزن tf-idf، بلا البراند) — لقياس الشبه بين منتجين. */
+  docVec: Map<string, number>[] = [];
   private postings = new Map<string, Map<number, number>>();
   private docLen: number[] = [];
   private avgLen = 1;
@@ -285,6 +289,8 @@ export class CatalogIndex {
       { name: string; ar: Map<string, number>; first: Map<string, number>; tok: Map<string, number>; count: number }
     >();
     const globalTok = new Map<string, number>();
+    const simTf: Map<string, number>[] = [];
+    const simDf = new Map<string, number>();
 
     rows.forEach((r, i) => {
       const name = r.nameAr || r.name;
@@ -419,6 +425,7 @@ export class CatalogIndex {
         weak,
         quality: Math.min(1, quality),
         genderHint: null,
+        learned: 0,
       });
 
       // BM25: حقول بأوزان.
@@ -433,6 +440,14 @@ export class CatalogIndex {
       addField(summary, FIELD_WEIGHTS.summary);
       if (r.shadeNames?.length) addField(r.shadeNames.join(" "), FIELD_WEIGHTS.category);
       addField(desc, FIELD_WEIGHTS.desc);
+      // للتشابه: الاسم والملخص والوصف فقط (البراند يُهمل حتى لا يطغى على «الطابع»).
+      const st = new Map<string, number>();
+      const brandTok = new Set(tokens(r.brand?.name ?? ""));
+      for (const [text, w] of [[name, 1], [nameEn, 1], [summary, 1.5], [desc, 1]] as const) {
+        for (const t of tokens(text)) if (t.length >= 3 && !brandTok.has(t) && !/^\d+$/.test(t)) st.set(t, (st.get(t) ?? 0) + w);
+      }
+      for (const t of st.keys()) simDf.set(t, (simDf.get(t) ?? 0) + 1);
+      simTf.push(st);
       let len = 0;
       for (const [t, w] of tf) {
         len += w;
@@ -499,6 +514,23 @@ export class CatalogIndex {
         }
       }
       p.genderHint = hint;
+    }
+
+    // متجهات التشابه: كلمات تظهر في 2..12% من المنتجات، أعلى 32 وزناً لكل منتج، مطبّعة.
+    {
+      const N = Math.max(1, simTf.length);
+      idx.docVec = simTf.map((st) => {
+        const w: [string, number][] = [];
+        for (const [t, f] of st) {
+          const df = simDf.get(t) ?? 1;
+          if (df < 2 || df > N * 0.12) continue;
+          w.push([t, Math.log1p(f) * Math.log(N / df)]);
+        }
+        w.sort((a, b) => b[1] - a[1]);
+        const top = w.slice(0, 32);
+        const norm = Math.sqrt(top.reduce((a, [, x]) => a + x * x, 0)) || 1;
+        return new Map(top.map(([t, x]) => [t, x / norm]));
+      });
     }
 
     idx.avgLen = idx.docLen.reduce((a, b) => a + b, 0) / Math.max(1, idx.docLen.length);
@@ -581,6 +613,31 @@ export class CatalogIndex {
     }
     if (scores.size <= limit) return scores;
     return new Map([...scores.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit));
+  }
+
+  /** تطبيق ما تعلّمته من التفاعل: productId → درجة 0..1. */
+  applyLearning(scores: Map<string, number>) {
+    for (const p of this.products) p.learned = scores.get(p.id) ?? 0;
+  }
+
+  byId(id: string): IndexedProduct | undefined {
+    if (!this.idMap) this.idMap = new Map(this.products.map((p) => [p.id, p]));
+    return this.idMap.get(id);
+  }
+  private idMap?: Map<string, IndexedProduct>;
+
+  /** جيب التمام بين متجهي منتجين (0..1). */
+  cosine(a: number, b: number): number {
+    const va = this.docVec[a];
+    const vb = this.docVec[b];
+    if (!va || !vb) return 0;
+    const [small, big] = va.size <= vb.size ? [va, vb] : [vb, va];
+    let dot = 0;
+    for (const [t, x] of small) {
+      const y = big.get(t);
+      if (y) dot += x * y;
+    }
+    return dot;
   }
 
   has(p: IndexedProduct, facet: FacetKey, id: string): "strong" | "weak" | null {
