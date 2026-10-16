@@ -124,7 +124,7 @@ class ListingFiltersSection extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(s.brands, style: ListingTheme.sectionTitle(context)),
+                  Text(s.navBrands, style: ListingTheme.sectionTitle(context)),
                   const SizedBox(width: 6),
                   Text(formatNumber(brands.length), style: ListingTheme.sectionHint(context)),
                   const Spacer(),

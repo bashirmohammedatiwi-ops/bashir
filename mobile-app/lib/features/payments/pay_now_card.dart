@@ -65,8 +65,9 @@ class _PayNowCardState extends ConsumerState<PayNowCard> {
         ),
         boxShadow: [
           BoxShadow(
-            color: BrandColors.orchid.withValues(alpha: 0.3),
-            blurRadius: 22,
+            color: BrandColors.orchid.withValues(alpha: 0.16),
+            blurRadius: 20,
+            spreadRadius: -8,
             offset: const Offset(0, 10),
           ),
         ],
