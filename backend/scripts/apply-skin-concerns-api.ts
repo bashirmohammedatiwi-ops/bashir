@@ -1,14 +1,19 @@
 /**
  * يربط منتجات دليل البشرة عبر API الإدارة (بدون SSH).
  * Usage:
- *   API_BASE=https://deemaalhayat.com/api/v1 ADMIN_PASSWORD=000000 npx tsx scripts/apply-skin-concerns-api.ts
+ *   API_BASE=https://deemaalhayat.com/api/v1 ADMIN_EMAIL=... ADMIN_PASSWORD=... npx tsx scripts/apply-skin-concerns-api.ts
  */
 import { readFileSync } from "fs";
 import { join } from "path";
 
 const API_BASE = (process.env.API_BASE ?? "https://deemaalhayat.com/api/v1").replace(/\/$/, "");
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "admin@alhayaa.com";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "000000";
+// بيانات الدخول من البيئة فقط — لا قيم افتراضية في مستودع عام.
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL ?? "";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD ?? "";
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.error("Set ADMIN_EMAIL and ADMIN_PASSWORD");
+  process.exit(1);
+}
 
 const ASSIGNMENTS_FILE = join(__dirname, "skin-concern-assignments.json");
 
