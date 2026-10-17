@@ -518,6 +518,8 @@ model Order {
   couponId         String?
   loyaltyEarned    Int           @default(0)
   loyaltySpent     Int           @default(0)
+  /// خصم النقاط بالدينار وقت الطلب (النقطة كانت 10 د.ع ثم صارت 1 د.ع).
+  loyaltyDiscount  Int           @default(0)
   deliveryOption   DeliveryOption @default(STANDARD)
   deliveryDate     DateTime?
   notes            String?
@@ -1203,5 +1205,40 @@ model BarcodeDraft {
   @@unique([groupId, barcode])
   @@index([barcode])
   @@index([groupId, addedAt])
+}
+
+// ---------------------- STOCK COUNTS (جرد — تطبيق المدير) ----------------------
+/// جلسة جرد: يمسح الموظف القطع على الرف ثم تُقارن بمخزون الكاشير.
+model StockCount {
+  id          String           @id @default(uuid())
+  name        String
+  note        String?
+  /// OPEN | CLOSED
+  status      String           @default("OPEN")
+  createdById String?
+  closedAt    DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  lines       StockCountLine[]
+
+  @@index([status, createdAt])
+}
+
+model StockCountLine {
+  id         String     @id @default(uuid())
+  countId    String
+  barcode    String
+  productId  String?
+  shadeId    String?
+  name       String?
+  counted    Int        @default(0)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  count      StockCount @relation(fields: [countId], references: [id], onDelete: Cascade)
+
+  @@unique([countId, barcode])
+  @@index([countId])
 }
 

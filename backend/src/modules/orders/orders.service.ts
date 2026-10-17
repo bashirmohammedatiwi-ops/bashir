@@ -9,6 +9,7 @@ import { PrismaService } from "../../common/prisma.service";
 import { SettingsService } from "../settings/settings.service";
 import { ShippingService } from "../shipping/shipping.service";
 import { LoyaltyService } from "../loyalty/loyalty.service";
+import { loyaltyRules, pointsForAmount, redeemablePoints } from "../loyalty/loyalty.rules";
 import { paginate } from "../../common/dto/pagination.dto";
 import { OrderEvents } from "./order-events";
 import { QiGatewayService } from "../payments/qi-gateway.service";
@@ -277,24 +278,16 @@ export class OrdersService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     const maxLoyalty = user?.loyaltyPoints ?? 0;
     const loyaltyPointsRequested = dto.loyaltySpent ?? 0;
-    if (loyaltyPointsRequested > 0) {
-      if (loyaltyPointsRequested % 100 !== 0) {
-        throw new BadRequestException("نقاط الولاء يجب أن تكون بمضاعفات 100");
-      }
-      if (loyaltyPointsRequested > maxLoyalty) {
-        throw new BadRequestException("رصيد نقاط الولاء غير كافٍ");
-      }
+    if (loyaltyPointsRequested > maxLoyalty) {
+      throw new BadRequestException("رصيد نقاط الولاء غير كافٍ");
     }
     const orderBeforeLoyalty = Math.max(0, subtotal - discountTotal + shippingTotal);
-    const maxByTotal = Math.floor(orderBeforeLoyalty / 1000) * 100;
-    const loyaltyPointsUsed = Math.min(
-      loyaltyPointsRequested,
-      maxLoyalty,
-      maxByTotal,
-    );
-    const loyaltyDiscount = Math.floor(loyaltyPointsUsed / 100) * 1000;
+    // كل نقطة = 1 د.ع، بمضاعفات 250 (الإصدارات القديمة ترسل مضاعفات 100: تُقرّب للأسفل بدل الرفض).
+    const rules = loyaltyRules((await this.settings.getAll()) as Record<string, unknown>);
+    const loyaltyPointsUsed = redeemablePoints(loyaltyPointsRequested, maxLoyalty, orderBeforeLoyalty, rules);
+    const loyaltyDiscount = Math.floor(loyaltyPointsUsed * rules.pointValue);
     const total = Math.max(0, subtotal - discountTotal + shippingTotal - loyaltyDiscount);
-    const loyaltyEarned = Math.floor(total / 1000);
+    const loyaltyEarned = pointsForAmount(total, rules);
 
     const orderNumber = "ORD-" + Date.now().toString(36).toUpperCase() +
       randomBytes(2).toString("hex").toUpperCase();
@@ -315,6 +308,7 @@ export class OrdersService {
           total,
           loyaltyEarned,
           loyaltySpent: loyaltyPointsUsed,
+          loyaltyDiscount,
           deliveryOption: delivery,
           notes: dto.notes,
           // هدية: الرسالة تُطبع على البطاقة (300 حرف كحد أقصى).
@@ -360,7 +354,8 @@ export class OrdersService {
       where: { userId, id: { not: order.id }, status: { not: OrderStatus.CANCELLED } },
     });
     if (prevOrders === 0) {
-      await this.loyalty.addPoints(userId, 50, "مكافأة أول طلب", order.id);
+      const bonus = loyaltyRules((await this.settings.getAll()) as Record<string, unknown>).firstOrderBonus;
+      if (bonus > 0) await this.loyalty.addPoints(userId, bonus, "مكافأة أول طلب", order.id);
     }
 
     return order;

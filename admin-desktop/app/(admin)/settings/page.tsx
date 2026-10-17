@@ -219,13 +219,28 @@ export default function SettingsPage() {
                   label: "الولاء والعروض",
                   children: (
                     <>
+                      <Form.Item
+                        name="loyaltyPointValue"
+                        label="قيمة النقطة الواحدة (د.ع)"
+                        extra="1 = كل نقطة تساوي دينار (1,000 نقطة = 1,000 د.ع)"
+                      >
+                        <InputNumber style={{ width: "100%" }} min={0.01} step={1} />
+                      </Form.Item>
+                      <Form.Item
+                        name="loyaltyEarnPercent"
+                        label="نسبة الكسب من قيمة الطلب (%)"
+                        extra="1% = 10 نقاط لكل 1,000 د.ع — تُضاف بعد كل طلب"
+                      >
+                        <InputNumber style={{ width: "100%" }} min={0} max={50} step={0.5} />
+                      </Form.Item>
+                      <Form.Item
+                        name="loyaltyRedeemStep"
+                        label="الاستخدام بمضاعفات (نقطة)"
+                        extra="250 = تستخدم الزبونة 250 أو 500 أو 750… نقطة"
+                      >
+                        <InputNumber style={{ width: "100%" }} min={1} step={250} />
+                      </Form.Item>
                       <Form.Item name="firstOrderBonusPoints" label="مكافأة أول طلب (نقاط)">
-                        <InputNumber style={{ width: "100%" }} min={0} />
-                      </Form.Item>
-                      <Form.Item name="redeem100PointsValue" label="قيمة 100 نقطة (د.ع)">
-                        <InputNumber style={{ width: "100%" }} min={0} />
-                      </Form.Item>
-                      <Form.Item name="pointsPer1000Iqd" label="نقاط لكل 1000 د.ع">
                         <InputNumber style={{ width: "100%" }} min={0} />
                       </Form.Item>
                       <Form.Item name="flashSaleEndsAt" label="انتهاء العرض السريع (ISO)">

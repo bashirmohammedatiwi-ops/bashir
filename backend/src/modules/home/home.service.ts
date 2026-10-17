@@ -11,6 +11,7 @@ import { SettingsService } from "../settings/settings.service";
 import { HomeSectionResolver } from "./home-section.resolver";
 import { isPackageLive, packageInclude, publicPackage, worldScope } from "../cms/packages.service";
 import { publicConcern } from "../cms/skin-concerns.service";
+import { loyaltyRules } from "../loyalty/loyalty.rules";
 
 const productInclude = {
   brand: { select: { id: true, name: true, slug: true } },
@@ -262,6 +263,8 @@ export class HomeService {
         whatsapp: (settings as any).whatsapp,
         supportPhone: (settings as any).supportPhone ?? (settings as any).whatsapp,
         pickupEnabled: (settings as any).pickupEnabled ?? true,
+        // قواعد النقاط للتطبيق (كل نقطة = 1 د.ع افتراضياً).
+        loyalty: loyaltyRules(settings as Record<string, unknown>),
         pickupAddress: (settings as any).pickupAddress ?? "",
         pickupHours: (settings as any).pickupHours ?? "",
         freeShippingThreshold: (settings as any).freeShippingThreshold ?? 50000,
@@ -342,6 +345,8 @@ export class HomeService {
         whatsapp: (settings as any).whatsapp,
         supportPhone: (settings as any).supportPhone ?? (settings as any).whatsapp,
         pickupEnabled: (settings as any).pickupEnabled ?? true,
+        // قواعد النقاط للتطبيق (كل نقطة = 1 د.ع افتراضياً).
+        loyalty: loyaltyRules(settings as Record<string, unknown>),
         pickupAddress: (settings as any).pickupAddress ?? "",
         pickupHours: (settings as any).pickupHours ?? "",
         freeShippingThreshold: (settings as any).freeShippingThreshold ?? 50000,

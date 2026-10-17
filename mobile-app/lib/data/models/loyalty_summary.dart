@@ -1,4 +1,5 @@
 import '../../core/utils/json.dart';
+import 'loyalty_rules.dart';
 
 class LoyaltyHistoryItem {
   final String id;
@@ -26,25 +27,24 @@ class LoyaltyHistoryItem {
 
 class LoyaltySummary {
   final int points;
-  final int redeemBlockSize;
-  final int redeemBlockValue;
+  final LoyaltyRules rules;
   final List<LoyaltyHistoryItem> history;
 
   const LoyaltySummary({
     this.points = 0,
-    this.redeemBlockSize = 100,
-    this.redeemBlockValue = 1000,
+    this.rules = const LoyaltyRules(),
     this.history = const [],
   });
 
   factory LoyaltySummary.fromJson(Map<String, dynamic> json) => LoyaltySummary(
         points: asInt(json['points']),
-        redeemBlockSize: asInt(json['redeemBlockSize'], 100),
-        redeemBlockValue: asInt(json['redeemBlockValue'], 1000),
+        // القواعد من السيرفر؛ الإصدارات القديمة من السيرفر بلا pointValue → الافتراضي.
+        rules: json['pointValue'] != null ? LoyaltyRules.fromJson(json) : const LoyaltyRules(),
         history: asList(json['history']).map((e) => LoyaltyHistoryItem.fromJson(asMap(e))).toList(),
       );
 
-  int get redeemableBlocks => points ~/ redeemBlockSize;
+  /// النقاط القابلة للاستخدام الآن (بمضاعفات الخطوة).
+  int get redeemablePoints => (points ~/ rules.redeemStep) * rules.redeemStep;
 
-  int get maxDiscountFromPoints => redeemableBlocks * redeemBlockValue;
+  int get maxDiscountFromPoints => rules.valueOf(redeemablePoints);
 }

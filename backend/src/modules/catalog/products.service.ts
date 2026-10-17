@@ -1,4 +1,5 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { pointsForAmount } from "../loyalty/loyalty.rules";
 import { Prisma } from "@prisma/client";
 import { barcodeLookupCandidates, resolveBarcodeMapKey } from "../../common/barcode.util";
 import { searchStorefrontProductIds, normalizeSearchText } from "../../common/smart-search";
@@ -537,7 +538,7 @@ async suggest(query: string, lang: "ar" | "en" = "ar") {
           discountPercent: dto.discountPercent ?? 0,
           stock: dto.stock ?? 0,
           rating: dto.rating ?? 0,
-          pointsEarned: dto.pointsEarned ?? Math.floor(dto.price / 1000),
+          pointsEarned: dto.pointsEarned ?? pointsForAmount(dto.price),
           isNew: dto.isNew ?? false,
           isBestSeller: dto.isBestSeller ?? false,
           isFeatured: dto.isFeatured ?? false,

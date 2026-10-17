@@ -69,14 +69,22 @@ class _LoyaltyBody extends ConsumerWidget {
                 children: [
                   _InfoRow(
                     icon: Icons.add_shopping_cart_outlined,
-                    text: s.loyaltyEarnOnOrder,
+                    text: s.loyaltyEarnOnOrder(summary.rules.pointsFor(1000)),
                   ),
                   _InfoRow(
                     icon: Icons.redeem_outlined,
                     text: s.loyaltyRedeemAtCheckout(
-                      formatPrice(summary.redeemBlockValue),
+                      formatPrice(summary.rules.pointValue),
+                      summary.rules.redeemStep,
                     ),
                   ),
+                  if (summary.rules.firstOrderBonus > 0)
+                    _InfoRow(
+                      icon: Icons.celebration_outlined,
+                      text: s.isAr
+                          ? 'مكافأة أول طلب: ${arPoints(summary.rules.firstOrderBonus)} هدية'
+                          : 'First order bonus: ${summary.rules.firstOrderBonus} points',
+                    ),
                 ],
               ),
               const SizedBox(height: AccountTheme.sectionGap),
@@ -227,7 +235,9 @@ class _PointsCard extends StatelessWidget {
           if (discount <= 0) ...[
             const SizedBox(height: 14),
             Text(
-              s.isAr ? 'كل 1,000 د.ع = نقطة ✨ و100 نقطة = خصم 1,000 د.ع' : 'Every 1,000 IQD = 1 point ✨ 100 points = 1,000 IQD off',
+              s.isAr
+                  ? 'كل نقطة = ${formatPrice(summary.rules.pointValue)} ✨ وتكسبين ${arPoints(summary.rules.pointsFor(1000))} عن كل 1,000 د.ع'
+                  : 'Each point = ${formatPrice(summary.rules.pointValue)} ✨ earn ${summary.rules.pointsFor(1000)} per 1,000 IQD',
               style: AppText.caption.copyWith(color: soft, fontWeight: FontWeight.w600),
             ),
           ],
@@ -318,13 +328,14 @@ class _NextRewardCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final t = context.worldTheme;
     final ar = ref.s.isAr;
-    final block = summary.redeemBlockSize <= 0 ? 100 : summary.redeemBlockSize;
+    final r = summary.rules;
+    final block = r.redeemStep;
     final into = summary.points % block;
     final remaining = block - into;
     final progress = into / block;
-    final reward = formatPrice(summary.redeemBlockValue);
-    // نقطة لكل 1,000 د.ع — كم تحتاج من مشتريات لتصل.
-    final spend = formatPrice(remaining * 1000);
+    final reward = formatPrice(r.valueOf(block));
+    // كم تحتاج من مشتريات لتكسب النقاط الباقية (بنسبة الكسب).
+    final spend = formatPrice(r.earnPercent <= 0 ? 0 : (remaining * 100 / r.earnPercent).ceil());
 
     return ProfileSurfaceCard(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
@@ -380,7 +391,7 @@ class _NextRewardCard extends ConsumerWidget {
             children: [
               Text('$into / $block', style: AppText.micro.copyWith(color: t.inkMuted, fontWeight: FontWeight.w700)),
               const Spacer(),
-              if (summary.redeemableBlocks > 0)
+              if (summary.redeemablePoints > 0)
                 Text(
                   ar
                       ? 'متاح لك الآن خصم ${formatPrice(summary.maxDiscountFromPoints)}'

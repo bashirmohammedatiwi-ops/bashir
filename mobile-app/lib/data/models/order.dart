@@ -59,6 +59,8 @@ class AppOrder {
   final int total;
   final int loyaltyEarned;
   final int loyaltySpent;
+  /// خصم النقاط بالدينار (يحفظه السيرفر وقت الطلب — قيمة النقطة تغيّرت مع الوقت).
+  final int loyaltyDiscount;
   final String deliveryOption;
   final String? notes;
   final bool isGift;
@@ -81,6 +83,7 @@ class AppOrder {
     this.total = 0,
     this.loyaltyEarned = 0,
     this.loyaltySpent = 0,
+    this.loyaltyDiscount = 0,
     this.deliveryOption = 'STANDARD',
     this.notes,
     this.isGift = false,
@@ -107,6 +110,7 @@ class AppOrder {
       total: asInt(json['total']),
       loyaltyEarned: asInt(json['loyaltyEarned']),
       loyaltySpent: asInt(json['loyaltySpent']),
+      loyaltyDiscount: asInt(json['loyaltyDiscount'], asInt(json['loyaltySpent'])),
       deliveryOption: asString(json['deliveryOption'], 'STANDARD'),
       notes: json['notes']?.toString(),
       isGift: asBool(json['isGift'], false),

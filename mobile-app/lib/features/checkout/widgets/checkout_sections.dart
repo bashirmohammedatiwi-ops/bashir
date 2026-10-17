@@ -10,6 +10,7 @@ import '../../../core/utils/responsive.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../../core/widgets/ui/ui.dart';
 import '../../../data/models/cart_item.dart';
+import '../../../data/models/loyalty_rules.dart';
 import '../../cart/cart_strings.dart';
 import '../../cart/widgets/cart_theme.dart';
 import '../../cart/widgets/pill_buttons.dart';
@@ -360,6 +361,7 @@ class CheckoutLoyaltyCard extends StatelessWidget {
   final int loyaltyDiscount;
   final bool enabled;
   final ValueChanged<bool> onChanged;
+  final LoyaltyRules rules;
 
   const CheckoutLoyaltyCard({
     super.key,
@@ -369,6 +371,7 @@ class CheckoutLoyaltyCard extends StatelessWidget {
     required this.loyaltyDiscount,
     this.enabled = true,
     required this.onChanged,
+    this.rules = const LoyaltyRules(),
   });
 
   @override
@@ -396,10 +399,10 @@ class CheckoutLoyaltyCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   !enabled
-                      ? s.loyaltyPointsNeedMore
+                      ? s.loyaltyPointsNeedMore(rules.redeemStep)
                       : useLoyalty && loyaltyDiscount > 0
-                      ? s.loyaltyDiscountHint(formatPrice(loyaltyDiscount), formatPrice(1000))
-                      : s.loyaltyPointsRule,
+                      ? s.loyaltyDiscountHint(formatPrice(loyaltyDiscount))
+                      : s.loyaltyPointsRule(formatPrice(rules.pointValue)),
                   style: AppText.caption.copyWith(
                     color: on && loyaltyDiscount > 0 ? AppColors.success : t.inkMuted,
                     fontWeight: on ? FontWeight.w700 : FontWeight.w500,

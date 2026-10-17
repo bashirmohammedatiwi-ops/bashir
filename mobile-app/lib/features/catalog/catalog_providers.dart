@@ -1,4 +1,6 @@
 import 'dart:async';
+import '../worlds/worlds_provider.dart';
+import '../../data/models/loyalty_rules.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/network/api_client.dart';
@@ -113,4 +115,9 @@ final similarProductsProvider = FutureProvider.autoDispose
       .read(apiServiceProvider)
       .getProducts(categoryId: args.categoryId, limit: 10, sort: 'brand');
   return page.items.where((p) => p.id != args.excludeId).take(8).toList();
+});
+
+/// قواعد نقاط الولاء الحالية (من إعدادات المتجر في الرئيسية).
+final loyaltyRulesProvider = Provider<LoyaltyRules>((ref) {
+  return ref.watch(activeHomeFeedProvider).valueOrNull?.settings.loyalty ?? const LoyaltyRules();
 });

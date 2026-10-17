@@ -149,7 +149,7 @@ class OrderDetailScreen extends ConsumerWidget {
                     if (order.loyaltySpent > 0)
                       _SumRow(
                         label: s.loyaltyPointsUsed(order.loyaltySpent),
-                        value: '- ${formatPrice((order.loyaltySpent ~/ 100) * 1000)}',
+                        value: '- ${formatPrice(order.loyaltyDiscount)}',
                         valueColor: AppColors.success,
                       ),
                     _SumRow(

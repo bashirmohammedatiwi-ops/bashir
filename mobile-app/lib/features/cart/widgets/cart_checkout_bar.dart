@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../catalog/catalog_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -39,7 +40,7 @@ class CartSummaryCard extends ConsumerWidget {
     final s = ref.s;
     final t = context.worldTheme;
     final ar = s.isAr;
-    final points = ref.watch(authProvider.select((a) => a.isAuthenticated)) ? total ~/ 1000 : 0;
+    final points = ref.watch(authProvider.select((a) => a.isAuthenticated)) ? ref.watch(loyaltyRulesProvider).pointsFor(total) : 0;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(CartTheme.hPad, 16, CartTheme.hPad, 0),

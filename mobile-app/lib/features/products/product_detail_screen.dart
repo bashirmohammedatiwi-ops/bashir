@@ -958,7 +958,7 @@ class _ProductCommerceBlock extends ConsumerWidget {
                 ),
             ],
           ),
-          if (product.pointsEarned > 0) ...[
+          if (ref.watch(loyaltyRulesProvider).pointsFor(price * quantity) > 0) ...[
             const SizedBox(height: 12),
             Container(
               width: double.infinity,
@@ -981,7 +981,8 @@ class _ProductCommerceBlock extends ConsumerWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      s.earnPoints(product.pointsEarned),
+                      // 1% من السعر (من إعدادات المتجر) — لا القيمة المخزنة القديمة على المنتج.
+                      s.earnPoints(ref.watch(loyaltyRulesProvider).pointsFor(price * quantity)),
                       style: TextStyle(fontWeight: FontWeight.w700, fontSize: 11.5, color: t.inkSoft),
                     ),
                   ),

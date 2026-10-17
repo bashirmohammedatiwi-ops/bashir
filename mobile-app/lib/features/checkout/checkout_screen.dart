@@ -364,7 +364,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     if (mounted) context.pushReplacement('/orders/$orderId');
   }
 
-  int get _loyaltyDiscount => (_loyaltySpent ~/ 100) * 1000;
+  int get _loyaltyDiscount => ref.read(loyaltyRulesProvider).valueOf(_loyaltySpent);
 
   void _toggleLoyalty(bool value, int points, int orderBeforeLoyalty) {
     setState(() {
@@ -373,9 +373,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         _loyaltySpent = 0;
         return;
       }
-      final maxByPoints = (points ~/ 100) * 100;
-      final maxByTotal = (orderBeforeLoyalty ~/ 1000) * 100;
-      _loyaltySpent = maxByPoints < maxByTotal ? maxByPoints : maxByTotal;
+      // كل نقطة = 1 د.ع (من إعدادات المتجر)، بمضاعفات 250، ولا تتجاوز قيمة الطلب.
+      _loyaltySpent = ref.read(loyaltyRulesProvider).redeemable(points, orderBeforeLoyalty);
     });
   }
 
@@ -536,8 +535,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         points: points,
                         useLoyalty: _useLoyalty,
                         loyaltyDiscount: loyaltyDiscount,
-                        enabled: points >= 100,
+                        enabled: points >= ref.watch(loyaltyRulesProvider).redeemStep,
                         onChanged: (v) => _toggleLoyalty(v, points, beforeLoyalty),
+                        rules: ref.watch(loyaltyRulesProvider),
                       ),
                     ],
                     const SizedBox(height: 14),

@@ -432,12 +432,14 @@ class AppStrings {
   String get loginToSeePoints => isAr ? 'سجّلي الدخول لعرض نقاطك' : 'Sign in to view your points';
   String get pointsHistory => isAr ? 'سجل النقاط' : 'Points History';
   String get loyaltyAvailablePoints => isAr ? 'نقطة متاحة' : 'points available';
-  String loyaltyRedeemAtCheckout(String amount) => isAr
-      ? 'كل 100 نقطة = $amount خصم عند إتمام الطلب (اختياري)'
-      : 'Every 100 points = $amount off at checkout (optional)';
-  String get loyaltyEarnOnOrder => isAr
-      ? 'اكسبي نقطة واحدة عن كل 1,000 د.ع في الطلب المكتمل'
-      : 'Earn 1 point for every 1,000 IQD in completed orders';
+  /// «كل نقطة = 1 د.ع خصم — تُستخدم بمضاعفات 250 عند الدفع».
+  String loyaltyRedeemAtCheckout(String perPoint, int step) => isAr
+      ? 'كل نقطة = $perPoint خصم — تُستخدم بمضاعفات $step عند إتمام الطلب'
+      : 'Each point = $perPoint off — redeem in steps of $step at checkout';
+  /// «اكسبي 10 نقاط عن كل 1,000 د.ع من طلبكِ».
+  String loyaltyEarnOnOrder(int perThousand) => isAr
+      ? 'اكسبي ${arPoints(perThousand)} عن كل 1,000 د.ع من طلبكِ'
+      : 'Earn $perThousand points for every 1,000 IQD you spend';
   String get noHistoryYet => isAr ? 'لا يوجد سجل بعد' : 'No history yet';
   String get pointsWillAppearHere =>
       isAr ? 'ستظهر معاملات النقاط هنا' : 'Point transactions will appear here';
@@ -570,15 +572,15 @@ class AppStrings {
   String get useLoyaltyPoints => isAr ? 'نقاط الولاء' : 'Loyalty points';
   String loyaltyUseTitle(int points) =>
       isAr ? 'استخدمي ${arPoints(points)} ولاء' : 'Use $points loyalty points';
-  String loyaltyDiscountHint(String discount, String per100) => isAr
-      ? 'خصم $discount (100 نقطة = $per100)'
-      : '$discount off (100 pts = $per100)';
-  String get loyaltyPointsRule => isAr
-      ? '100 نقطة = خصم 1,000 د.ع من الفاتورة'
-      : '100 points = 1,000 IQD off your order';
-  String get loyaltyPointsNeedMore => isAr
-      ? 'تحتاج 100 نقطة على الأقل للاستخدام'
-      : 'You need at least 100 points to redeem';
+  String loyaltyDiscountHint(String discount) => isAr
+      ? 'خصم $discount من فاتورتكِ'
+      : '$discount off your order';
+  String loyaltyPointsRule(String perPoint) => isAr
+      ? 'كل نقطة = $perPoint خصم من الفاتورة'
+      : 'Each point = $perPoint off your order';
+  String loyaltyPointsNeedMore(int step) => isAr
+      ? 'تحتاجين ${arPoints(step)} على الأقل للاستخدام'
+      : 'You need at least $step points to redeem';
   String loyaltyPointsUsed(int points) =>
       isAr ? 'نقاط مستخدمة ($points)' : 'Points used ($points)';
   String loyaltyPointsEarned(int points) =>

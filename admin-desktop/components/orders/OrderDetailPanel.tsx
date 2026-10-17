@@ -140,8 +140,8 @@ export function OrderDetailPanel({ order, loading, onStatusChange, onPaymentStat
           <>
             {order.loyaltySpent > 0 && (
               <div className="ord-summary-row">
-                <span>نقاط مستخدمة</span>
-                <span>{order.loyaltySpent}</span>
+                <span>نقاط مستخدمة ({order.loyaltySpent.toLocaleString()})</span>
+                <span>- {formatIqd(order.loyaltyDiscount ?? order.loyaltySpent)}</span>
               </div>
             )}
             {order.loyaltyEarned > 0 && (

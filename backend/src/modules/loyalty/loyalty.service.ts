@@ -1,9 +1,14 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../common/prisma.service";
+import { SettingsService } from "../settings/settings.service";
+import { loyaltyRules } from "./loyalty.rules";
 
 @Injectable()
 export class LoyaltyService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settings: SettingsService,
+  ) {}
 
   async summary(userId: string) {
     const user = await this.prisma.user.findUnique({
@@ -16,11 +21,16 @@ export class LoyaltyService {
       orderBy: { createdAt: "desc" },
       take: 50,
     });
+    const r = loyaltyRules((await this.settings.getAll()) as Record<string, unknown>);
     return {
       points,
-      /** كل 100 نقطة = 1,000 د.ع خصم عند الدفع */
-      redeemBlockSize: 100,
-      redeemBlockValue: 1000,
+      /** الحقلان القديمان للإصدارات السابقة من التطبيق. */
+      redeemBlockSize: r.redeemStep,
+      redeemBlockValue: Math.floor(r.redeemStep * r.pointValue),
+      pointValue: r.pointValue,
+      earnPercent: r.earnPercent,
+      redeemStep: r.redeemStep,
+      firstOrderBonus: r.firstOrderBonus,
       history: history.map((h) => ({
         id: h.id,
         title: h.title,
