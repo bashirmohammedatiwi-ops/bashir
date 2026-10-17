@@ -68,7 +68,9 @@ class AdvisorController extends StateNotifier<AdvisorSession> {
   AdvisorController(this._ref) : super(const AdvisorSession());
 
   static const _storeKey = 'advisor_session_v2';
-  static const _keepFor = Duration(days: 3);
+  /// بعد ساعة بلا نشاط تبدأ «ديما» محادثة جديدة (بتحية الوقت) بدل إكمال القديمة.
+  static const _keepFor = Duration(hours: 1);
+  DateTime _lastActive = DateTime.now();
   static const _maxStored = 24;
 
   ApiService get _api => _ref.read(apiServiceProvider);
@@ -93,6 +95,15 @@ class AdvisorController extends StateNotifier<AdvisorSession> {
 
   Future<void> start({String? productId, String? ask}) async {
     if (state.thinking) return;
+    // الجلسة بالذاكرة قديمة (التطبيق بقي مفتوحاً بالخلفية): نبدأ من جديد.
+    if (state.entries.isNotEmpty && DateTime.now().difference(_lastActive) > _keepFor) {
+      _gen++;
+      _pending = null;
+      _beforeReset = null;
+      state = const AdvisorSession();
+      await _clearStored();
+    }
+    _lastActive = DateTime.now();
     if (state.entries.isEmpty && !_restoredOnce) {
       _restoredOnce = true;
       await _restore();
@@ -324,6 +335,7 @@ class AdvisorController extends StateNotifier<AdvisorSession> {
   Timer? _saveTimer;
 
   void _persist() {
+    _lastActive = DateTime.now();
     _saveTimer?.cancel();
     _saveTimer = Timer(const Duration(milliseconds: 400), () async {
       try {

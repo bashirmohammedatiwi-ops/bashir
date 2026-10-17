@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/brand/brand_logo.dart';
@@ -93,7 +94,7 @@ class _AdvisorRoutineCardState extends ConsumerState<AdvisorRoutineCard> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(14, 6, 14, 14),
+                padding: const EdgeInsets.fromLTRB(14, 6, 14, 0),
                 child: _AddAllButton(
                   isLook: r.isLook,
                   partial: r.steps.any((s) => s.owned),
@@ -101,6 +102,37 @@ class _AdvisorRoutineCardState extends ConsumerState<AdvisorRoutineCard> {
                   busy: _busy,
                   done: _done,
                   onTap: _done ? () => openCartTab(context, ProviderScope.containerOf(context, listen: false)) : _addAll,
+                ),
+              ),
+              // بدائل الروتين: أزرار واضحة داخل البطاقة بدل شرائح صغيرة في الأسفل.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 10, 14, 14),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _RoutineAction(
+                        icon: Icons.savings_outlined,
+                        label: r.isLook ? 'لوك أوفر' : 'أوفر',
+                        chip: const AdvisorChip(label: 'نسخة أوفر', value: 'act:cheaper', emoji: '💸'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _RoutineAction(
+                        icon: Icons.diamond_outlined,
+                        label: 'الأرقى',
+                        chip: const AdvisorChip(label: 'نسخة أرقى', value: 'unset:budget;set:sort=premium;act:routine', emoji: '💎'),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _RoutineAction(
+                        icon: Icons.grid_view_rounded,
+                        label: 'منتجات مفردة',
+                        chip: const AdvisorChip(label: 'منتجات مفردة', value: 'act:recommend', emoji: '🛍️'),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -391,6 +423,53 @@ class _AddAllButton extends StatelessWidget {
                                 style: AdvisorStyle.text(size: 12.5, weight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.85), height: 1.2)),
                           ],
                         ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// زر بديل للروتين (أوفر / الأرقى / منتجات مفردة): أيقونة فوق نص، بإطار ناعم.
+class _RoutineAction extends ConsumerWidget {
+  final IconData icon;
+  final String label;
+  final AdvisorChip chip;
+  const _RoutineAction({required this.icon, required this.label, required this.chip});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final busy = ref.watch(advisorProvider.select((s) => s.thinking));
+    return Opacity(
+      opacity: busy ? 0.5 : 1,
+      child: Material(
+        color: AdvisorStyle.tint,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: busy
+              ? null
+              : () {
+                  HapticFeedback.selectionClick();
+                  ref.read(advisorProvider.notifier).tap(chip);
+                },
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AdvisorStyle.glassBorder),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 19, color: BrandColors.orchid),
+                const SizedBox(height: 4),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(label, style: AdvisorStyle.text(size: 12, weight: FontWeight.w800, color: AdvisorStyle.ink, height: 1.2)),
+                ),
+              ],
             ),
           ),
         ),

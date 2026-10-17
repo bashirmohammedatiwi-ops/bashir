@@ -1,3 +1,4 @@
+import { detectSmallTalk, smallTalkReply, splitGreeting } from "./smalltalk";
 import { CatalogIndex, IndexedProduct } from "./catalog";
 import { famousIn, findByName, findFamousProduct, profileOf, profileOfBoth, profileOfFamous, SIMILAR_RE, similarProducts } from "./similar";
 import { COMPLEMENT_WHY, COMPLEMENTS, compareProducts, fitCheck, sizeOf, whyList } from "./insight";
@@ -760,7 +761,8 @@ function planRoutine(ctx: DialogCtx, need: Need, rArea: string, template: Return
       kinds: step.kinds,
       families: [],
       free: [],
-      sort: need.sort === "deals" ? "deals" : need.sort === "cheap" ? "cheap" : undefined,
+      // «الأرقى» من زر الروتين: كل خطوة من أرقى الخيارات المناسبة.
+      sort: need.sort === "deals" ? "deals" : need.sort === "cheap" ? "cheap" : need.sort === "premium" ? "premium" : undefined,
       maxPrice: need.maxPrice ? Math.round(need.maxPrice * step.share * 1.35) : undefined,
       minPrice: undefined,
     };
@@ -1427,7 +1429,23 @@ function respondInner(input: DialogInput, prev: AdvisorState | null | undefined,
   // ── رسالة نصية
   let ack: string | undefined;
   if (input.message?.trim()) {
+    // ── دردشة اجتماعية بلا طلب («السلام عليكم»، «شلونج ديما»، «تمام»): رد لطيف بلا ترشيحات.
+    const talk = detectSmallTalk(input.message);
+    if (talk) {
+      state.quiz = undefined;
+      return reply(state, {
+        messages: smallTalkReply(talk, seed, ctx.firstName?.trim() || undefined, input.message, Boolean(state.lastCards?.length)),
+        chips: state.lastCards?.length ? [{ label: "أرخص", value: "act:cheaper", emoji: "💸" }, { label: "غيرهم", value: "act:more", emoji: "🔄" }, ...STARTERS.slice(0, 3)] : STARTERS.slice(0, 6),
+      }, ctx);
+    }
     state.quiz = undefined;
+    // «هلا شلونج اريد عطر»: التحية سطر ترحيب، والطلب وحده يُفهم.
+    const greeting = splitGreeting(input.message, seed);
+    if (greeting) {
+      const inner = respondInner({ ...input, message: greeting.rest }, prev, ctx);
+      inner.messages.unshift(greeting.lead);
+      return inner;
+    }
     const msg = input.message;
     const nm = normalize(msg);
     const parsed = understand(msg, ctx.catalog);

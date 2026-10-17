@@ -183,6 +183,8 @@ abstract final class AppSnackbar {
       ..clearSnackBars()
       ..showSnackBar(
         SnackBar(
+          // زر الإجراء لا يُبقي الإشعار ظاهراً للأبد (افتراضي فلاتر الجديد).
+          persist: false,
           content: Text(message, style: appFont(color: Colors.white, fontWeight: FontWeight.w600)),
           backgroundColor: AppColors.ink,
           duration: const Duration(seconds: 3),

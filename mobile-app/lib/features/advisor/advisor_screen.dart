@@ -205,7 +205,11 @@ class _AdvisorScreenState extends ConsumerState<AdvisorScreen> {
     final last = session.lastReply;
     final started = entries.length > 1;
     final quizActive = session.state?['quiz'] != null;
-    final rail = started && last != null && last.quiz == null && entries.last is BotEntry ? last.chips : const <AdvisorChip>[];
+    final railAll = started && last != null && last.quiz == null && entries.last is BotEntry ? last.chips : const <AdvisorChip>[];
+    // مع الروتين: «أوفر» و«منتجات مفردة» أزرار داخل بطاقته — لا نكررها بالشريط.
+    final rail = last?.routine != null
+        ? railAll.where((c) => c.value != 'act:cheaper' && c.value != 'act:recommend').toList()
+        : railAll;
     final lastUserIndex = entries.lastIndexWhere((e) => e is UserEntry);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
