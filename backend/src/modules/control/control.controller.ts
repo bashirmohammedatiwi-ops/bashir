@@ -6,10 +6,18 @@ import { Roles } from "../../common/decorators/roles.decorator";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { BarcodeDraftsService } from "./barcode-drafts.service";
+import { ControlCatalogService } from "./control-catalog.service";
+import { ControlOrdersService } from "./control-orders.service";
 import { ControlImagesService } from "./control-images.service";
 import { ControlService } from "./control.service";
 import {
+  ControlAddShadeDto,
+  ControlCreateProductDto,
   ControlImagesAddDto,
+  ControlOrdersQueryDto,
+  ControlOrderStatusDto,
+  PosMissingQueryDto,
+  ProductsBulkDto,
   ControlImagesSetDto,
   ControlProductPatchDto,
   ControlSearchDto,
@@ -38,7 +46,70 @@ export class ControlController {
     private readonly control: ControlService,
     private readonly images: ControlImagesService,
     private readonly drafts: BarcodeDraftsService,
+    private readonly catalog: ControlCatalogService,
+    private readonly ordersSvc: ControlOrdersService,
   ) {}
+
+  // ---------------- orders & sales
+
+  @Get("orders")
+  orders(@Query() q: ControlOrdersQueryDto) {
+    return this.ordersSvc.list(q);
+  }
+
+  @Get("orders/pulse")
+  pulse() {
+    return this.ordersSvc.pulse();
+  }
+
+  @Get("orders/:id")
+  order(@Param("id") id: string) {
+    return this.ordersSvc.detail(id);
+  }
+
+  @Patch("orders/:id/status")
+  orderStatus(@Param("id") id: string, @Body() dto: ControlOrderStatusDto, @CurrentUser() user: Actor) {
+    return this.ordersSvc.setStatus(id, dto, actorId(user));
+  }
+
+  /** الأرقام المالية للمدير فقط (لا الموظف). */
+  @Get("sales")
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  sales() {
+    return this.ordersSvc.sales();
+  }
+
+  // ---------------- catalog
+
+  @Get("categories")
+  categories() {
+    return this.catalog.categories();
+  }
+
+  @Get("pos-missing")
+  posMissing(@Query() q: PosMissingQueryDto) {
+    return this.catalog.posMissing(q);
+  }
+
+  @Post("products")
+  createProduct(@Body() dto: ControlCreateProductDto, @CurrentUser() user: Actor) {
+    return this.catalog.createProduct(dto, actorId(user));
+  }
+
+  @Post("products/bulk")
+  bulkProducts(@Body() dto: ProductsBulkDto, @CurrentUser() user: Actor) {
+    return this.catalog.bulkProducts(dto.ids, dto.isActive ?? true, actorId(user));
+  }
+
+  @Post("products/:id/shades")
+  addShade(@Param("id") id: string, @Body() dto: ControlAddShadeDto, @CurrentUser() user: Actor) {
+    return this.catalog.addShade(id, dto, actorId(user));
+  }
+
+  @Delete("shades/:id")
+  deleteShade(@Param("id") id: string, @CurrentUser() user: Actor) {
+    return this.catalog.deleteShade(id, actorId(user));
+  }
 
   @Get("stats")
   stats() {

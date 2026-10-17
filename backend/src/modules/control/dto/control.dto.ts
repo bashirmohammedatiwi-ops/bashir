@@ -42,6 +42,8 @@ export class ControlProductPatchDto {
   @IsOptional() @IsBoolean() isFeatured?: boolean;
   @IsOptional() @IsString() brandId?: string;
   @IsOptional() @IsString() categoryId?: string;
+  @IsOptional() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) subcategoryIds?: string[];
+  @IsOptional() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) tertiaryCategoryIds?: string[];
 }
 
 export class ControlShadePatchDto {
@@ -133,4 +135,61 @@ export class DraftsMoveDto {
 
 export class DraftsDeleteDto {
   @IsArray() @ArrayMaxSize(500) @IsString({ each: true }) ids: string[];
+}
+
+export class ControlCreateProductDto {
+  @IsOptional() @IsString() @MaxLength(80) barcode?: string;
+  @IsOptional() @IsString() @MaxLength(300) nameAr?: string;
+  @IsOptional() @IsString() @MaxLength(300) nameEn?: string;
+  @IsOptional() @IsString() @MaxLength(20000) descriptionAr?: string;
+  @IsOptional() @IsString() @MaxLength(20000) descriptionEn?: string;
+  /** براند موجود، أو اسم براند جديد يُنشأ تلقائياً */
+  @IsOptional() @IsString() brandId?: string;
+  @IsOptional() @IsString() @MaxLength(120) brandName?: string;
+  @IsOptional() @IsString() categoryId?: string;
+  @IsOptional() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) subcategoryIds?: string[];
+  @IsOptional() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) tertiaryCategoryIds?: string[];
+  /** صور مرفوعة مسبقاً (من الهاتف أو من المسودة) */
+  @IsOptional() @IsArray() @ArrayMaxSize(20) @IsString({ each: true }) imageIds?: string[];
+  /** روابط صور من الويب/المتاجر — يرفعها السيرفر */
+  @IsOptional() @IsArray() @ArrayMaxSize(12) @IsString({ each: true }) imageUrls?: string[];
+  /** السعر إن لم يكن الباركود في الكاشير */
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) price?: number;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+  /** المسودة التي جاء منها (تُعلَّم «أُضيف» فوراً) */
+  @IsOptional() @IsString() draftId?: string;
+}
+
+export class ControlAddShadeDto {
+  @IsString() @MaxLength(160) name: string;
+  @IsOptional() @IsString() @MaxLength(9) colorHex?: string;
+  @IsOptional() @IsString() @MaxLength(80) barcode?: string;
+  @IsOptional() @IsString() imageMediaId?: string;
+  @IsOptional() @IsString() @MaxLength(2000) imageUrl?: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}
+
+export class ControlOrdersQueryDto {
+  @IsOptional() @IsIn(["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED", "open"]) status?: string;
+  @IsOptional() @IsString() @MaxLength(80) q?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) page: number = 1;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(60) limit: number = 30;
+}
+
+export class ControlOrderStatusDto {
+  @IsIn(["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"]) status: string;
+  @IsOptional() @IsIn(["PENDING", "PAID", "FAILED", "REFUNDED"]) paymentStatus?: string;
+}
+
+export class PosMissingQueryDto {
+  @IsOptional() @IsString() @MaxLength(80) q?: string;
+  /** hide = إخفاء المحفوظ في مسودة */
+  @IsOptional() @IsIn(["all", "unsaved"]) saved?: "all" | "unsaved";
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) page: number = 1;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) limit: number = 40;
+}
+
+export class ProductsBulkDto {
+  @IsArray() @ArrayMaxSize(200) @IsString({ each: true }) ids: string[];
+  @IsOptional() @IsBoolean() isActive?: boolean;
 }

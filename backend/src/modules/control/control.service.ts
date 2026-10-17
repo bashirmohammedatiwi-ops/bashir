@@ -53,6 +53,8 @@ const detailInclude = {
   brand: { select: { id: true, name: true, slug: true } },
   category: { select: { id: true, name: true, nameAr: true } },
   subcategory: { select: { id: true, name: true, nameAr: true } },
+  subcategories: { select: { id: true, name: true, nameAr: true } },
+  tertiaryCategories: { select: { id: true, name: true, nameAr: true } },
   images: { orderBy: { position: "asc" as const }, include: { media: true } },
   shades: { orderBy: { position: "asc" as const }, include: { image: true } },
 } satisfies Prisma.ProductInclude;
@@ -329,6 +331,10 @@ export class ControlService {
       brand: p.brand,
       category: p.category ? { id: p.category.id, name: p.category.nameAr || p.category.name } : null,
       subcategory: p.subcategory ? { id: p.subcategory.id, name: p.subcategory.nameAr || p.subcategory.name } : null,
+      brandId: p.brandId,
+      categoryId: p.categoryId,
+      subcategories: p.subcategories.map((c) => ({ id: c.id, name: c.nameAr || c.name })),
+      tertiaryCategories: p.tertiaryCategories.map((c) => ({ id: c.id, name: c.nameAr || c.name })),
       pos: snapFor(p.barcode),
       images: images.map((img, i) => ({
         position: i,
@@ -427,6 +433,11 @@ export class ControlService {
    * مخزون المنتج = مجموع التدرجات الشغالة. السعر من التدرج القائد فقط إن كان للتدرجات أسعار من الكاشير
    * (لا نصفّر سعراً وضع يدوياً لمنتج تدرجاته بلا أسعار).
    */
+  /** إعادة حساب مخزون/سعر المنتج من تدرجاته (بعد إضافة أو حذف أو تشغيل تدرج). */
+  recompute(productId: string) {
+    return this.recomputeFromShades(productId);
+  }
+
   private async recomputeFromShades(productId: string) {
     const all = await this.prisma.productShade.findMany({
       where: { productId },
