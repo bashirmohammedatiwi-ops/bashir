@@ -271,7 +271,7 @@ class _ShadeSheetState extends ConsumerState<ShadeSheet> {
                             ),
                           const SizedBox(height: 4),
                           Text(
-                            '${s.stock > 0 ? 'متوفر ${s.stock}' : 'نافد'}${s.price != null ? ' · ${money(s.price)}' : ''}',
+                            '${s.stock > 0 ? 'متوفر ${s.stock}' : 'نافد'}${(s.price ?? 0) > 0 ? ' · ${money(s.price)}' : ''}',
                             style: TextStyle(fontWeight: FontWeight.w700, color: s.stock > 0 ? AppColors.success : AppColors.danger),
                           ),
                         ],

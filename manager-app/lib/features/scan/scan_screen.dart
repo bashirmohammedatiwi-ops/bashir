@@ -239,10 +239,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
+    // إطار واسع والمعاينة ظاهرة كاملة حوله (تعتيم خفيف فقط) — الكاميرا تملأ الشاشة.
     final window = Rect.fromCenter(
-      center: Offset(size.width / 2, _continuous ? size.height * .27 : size.height * .4),
-      width: size.width * .8,
-      height: _continuous ? size.height * .2 : size.width * .55,
+      center: Offset(size.width / 2, _continuous ? size.height * .3 : size.height * .42),
+      width: size.width * .88,
+      height: _continuous ? size.height * .26 : size.width * .7,
     );
     return Scaffold(
       backgroundColor: Colors.black,
@@ -356,7 +357,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
 
   Widget _results() {
     return DraggableScrollableSheet(
-      initialChildSize: .42,
+      initialChildSize: .34,
       minChildSize: .2,
       maxChildSize: .85,
       builder: (_, scroll) => Container(
@@ -632,7 +633,7 @@ class _WindowPainter extends CustomPainter {
         ..fillType = PathFillType.evenOdd
         ..addRect(Offset.zero & size)
         ..addRRect(rr),
-      Paint()..color = const Color(0x99000000),
+      Paint()..color = const Color(0x40000000),
     );
     final corner = Paint()
       ..color = Colors.white
