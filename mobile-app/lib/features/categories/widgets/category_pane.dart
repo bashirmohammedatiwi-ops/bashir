@@ -886,16 +886,19 @@ class _CategoryTile extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 6),
-            Text(
-              c.localizedName(lang),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: AppText.micro.copyWith(
-                fontSize: 12,
-                height: 1.25,
-                color: t.ink,
-                fontWeight: FontWeight.w700,
+            // مرن: مع تكبير خط الهاتف يُختصر الاسم بدل أن يفيض خارج البلاطة.
+            Flexible(
+              child: Text(
+                c.localizedName(lang),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: AppText.micro.copyWith(
+                  fontSize: 12,
+                  height: 1.25,
+                  color: t.ink,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],

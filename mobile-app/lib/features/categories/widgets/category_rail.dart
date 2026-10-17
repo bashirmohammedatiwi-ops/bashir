@@ -170,24 +170,28 @@ class _RailTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 200),
-                      // دمج مع نمط النص الموروث: يبقى خط التطبيق (لا خط النظام).
-                      style: DefaultTextStyle.of(context).style.merge(AppText.micro).copyWith(
-                        fontSize: 11.5,
-                        height: 1.25,
-                        color: selected ? t.accentDark : t.inkSoft,
-                        fontWeight: selected
-                            ? FontWeight.w800
-                            : FontWeight.w600,
-                      ),
-                      child: Text(
-                        name,
-                        maxLines: 2,
-                        textAlign: TextAlign.center,
-                        overflow: TextOverflow.ellipsis,
+                  Flexible(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 200),
+                        // دمج مع نمط النص الموروث: يبقى خط التطبيق (لا خط النظام).
+                        style: DefaultTextStyle.of(context).style
+                            .merge(AppText.micro)
+                            .copyWith(
+                              fontSize: 11.5,
+                              height: 1.25,
+                              color: selected ? t.accentDark : t.inkSoft,
+                              fontWeight: selected
+                                  ? FontWeight.w800
+                                  : FontWeight.w600,
+                            ),
+                        child: Text(
+                          name,
+                          maxLines: 2,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                   ),
