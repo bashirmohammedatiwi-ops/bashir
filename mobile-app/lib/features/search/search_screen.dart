@@ -378,7 +378,7 @@ class _SearchBar extends StatelessWidget {
                             : IconButton(
                                 onPressed: onClear,
                                 icon: Icon(Icons.cancel_rounded, color: t.inkMuted, size: 20),
-                                tooltip: 'مسح',
+                                tooltip: 'مسح النص',
                               ),
                       ),
                     ),
@@ -393,10 +393,10 @@ class _SearchBar extends StatelessWidget {
                     child: Container(
                       width: 48,
                       height: 48,
+                      // بنفس تعبئة حقل البحث — بلا ظل يُقص عند حافة الشريط.
                       decoration: BoxDecoration(
-                        color: t.surface,
+                        color: Color.alphaBlend(t.accent.withValues(alpha: 0.08), t.surface),
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: [BoxShadow(color: t.ink.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, 4))],
                       ),
                       child: Icon(Icons.qr_code_scanner_rounded, color: t.accentDark, size: 23),
                     ),

@@ -705,6 +705,7 @@ class _ProductTitleBlock extends ConsumerWidget {
               color: t.ink,
             ),
           ),
+          _QuickFacts(product: product, lang: lang),
           const SizedBox(height: 10),
           // سطر الأدلة: تقييم + مبيعات داخل pill ناعم موحّد.
           if (product.rating > 0 || product.soldCount > 0)
@@ -747,6 +748,82 @@ class _ProductTitleBlock extends ConsumerWidget {
                         style: TextStyle(color: t.inkMuted, fontSize: 11.5, fontWeight: FontWeight.w600),
                       ),
                     ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// حقائق سريعة من اسم المنتج: الجنس، تركيز العطر، والحجم — بدل البحث عنها داخل الاسم الطويل.
+List<({IconData icon, String label})> productQuickFacts(Product p, bool ar) {
+  final n = ' ${p.name} ${p.nameEn ?? ''} '.toLowerCase();
+  final facts = <({IconData icon, String label})>[];
+  if (RegExp(r'للجنسين|unisex').hasMatch(n)) {
+    facts.add((icon: Icons.people_alt_outlined, label: ar ? 'للجنسين' : 'Unisex'));
+  } else if (RegExp(r'للرجال|رجالي|pour homme|for men|\bmen\b|homme').hasMatch(n)) {
+    facts.add((icon: Icons.man_rounded, label: ar ? 'رجالي' : 'For him'));
+  } else if (RegExp(r'للنساء|نسائي|pour femme|for women|femme|\bwomen\b').hasMatch(n)) {
+    facts.add((icon: Icons.woman_rounded, label: ar ? 'نسائي' : 'For her'));
+  }
+  String? conc;
+  if (RegExp(r'تواليت|toilette|\bedt\b').hasMatch(n)) {
+    conc = ar ? 'أو دو تواليت' : 'Eau de toilette';
+  } else if (RegExp(r'إكستريه|اكستريه|extrait').hasMatch(n)) {
+    conc = ar ? 'إكستريه' : 'Extrait';
+  } else if (RegExp(r'(أو|او) د(و|ي) (بارفيوم|بارفان|برفيوم|برفان|بيرفيوم)|eau de parfum|\bedp\b').hasMatch(n)) {
+    conc = ar ? 'أو دو بارفيوم' : 'Eau de parfum';
+  } else if (RegExp(r'بارفان|بارفيوم|\bparfum\b').hasMatch(n) && (p.category?.name.contains('عطر') ?? false)) {
+    conc = ar ? 'بارفان' : 'Parfum';
+  } else if (RegExp(r'كولونيا|cologne').hasMatch(n)) {
+    conc = ar ? 'كولونيا' : 'Cologne';
+  }
+  if (conc != null) facts.add((icon: Icons.water_drop_outlined, label: conc));
+  final sizes = RegExp(r'(\d+(?:[.,]\d+)?)\s*(مل|ملل|ml|غم|غرام|جم|gm|g|لتر|l)(?![a-z\u0600-\u06ff])').allMatches(n).toList();
+  if (sizes.isNotEmpty) {
+    final m = sizes.last;
+    final unit = m.group(2)!;
+    final u = RegExp(r'^(مل|ملل|ml)$').hasMatch(unit)
+        ? (ar ? 'مل' : 'ml')
+        : RegExp(r'^(لتر|l)$').hasMatch(unit)
+            ? (ar ? 'لتر' : 'L')
+            : (ar ? 'غ' : 'g');
+    facts.add((icon: Icons.straighten_rounded, label: '${m.group(1)} $u'));
+  }
+  return facts;
+}
+
+class _QuickFacts extends StatelessWidget {
+  final Product product;
+  final String lang;
+  const _QuickFacts({required this.product, required this.lang});
+
+  @override
+  Widget build(BuildContext context) {
+    final facts = productQuickFacts(product, lang == 'ar');
+    if (facts.isEmpty) return const SizedBox.shrink();
+    final t = context.worldTheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: [
+          for (final f in facts)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(
+                color: t.accentLight.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(99),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(f.icon, size: 14, color: t.accentDark),
+                  const SizedBox(width: 4),
+                  Text(f.label, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: t.accentDark)),
                 ],
               ),
             ),
