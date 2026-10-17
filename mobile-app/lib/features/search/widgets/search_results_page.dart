@@ -1,3 +1,5 @@
+import '../smart_query.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/l10n/app_strings.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -78,10 +80,12 @@ class SearchResultsPage extends StatelessWidget {
                       ]),
                     ),
                   ],
-                  if ((meta?.understood ?? const []).isNotEmpty) ...[
+                  // «فهمنا: …» فقط حين فهمنا شيئاً غير ما كُتب حرفياً.
+                  if ((meta?.understood ?? const []).isNotEmpty &&
+                      (meta!.understood.length > 1 || normalizeQuery(meta.understood.first) != normalizeQuery(r.query))) ...[
                     const SizedBox(height: 6),
                     Text(
-                      'فهمنا: ${meta!.understood.join(' • ')}',
+                      'فهمنا: ${meta.understood.join(' • ')}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppText.caption.copyWith(color: t.accentDark, fontWeight: FontWeight.w700),
@@ -104,8 +108,34 @@ class SearchResultsPage extends StatelessWidget {
                     const SizedBox(height: 14),
                     if (r.filters.active)
                       OutlinedButton(onPressed: () => r.setFilters(const SearchFilters()), child: const Text('مسح الفلاتر'))
-                    else
+                    else ...[
+                      Text('جربي كلمة أبسط، أو ابحثي بالإنجليزي أو بالباركود',
+                          textAlign: TextAlign.center, style: AppText.bodySmall.copyWith(color: t.inkMuted)),
+                      const SizedBox(height: 16),
                       AdvisorSearchPrompt(query: r.query),
+                      const SizedBox(height: 20),
+                      Align(
+                        alignment: AlignmentDirectional.centerStart,
+                        child: Text('الأكثر بحثاً', style: AppText.title3.copyWith(color: t.ink)),
+                      ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final term in const ['سيروم', 'واقي شمس', 'أحمر شفاه', 'عطر نسائي', 'شامبو', 'كريم مرطب', 'ماسكارا', 'غسول'])
+                            ActionChip(
+                              avatar: Icon(Icons.search_rounded, size: 15, color: t.accentDark),
+                              label: Text(term),
+                              labelStyle: AppText.label.copyWith(color: t.ink),
+                              backgroundColor: t.surface,
+                              side: BorderSide(color: t.hairline),
+                              shape: const StadiumBorder(),
+                              onPressed: () => context.pushReplacement('/search?q=${Uri.encodeComponent(term)}'),
+                            ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

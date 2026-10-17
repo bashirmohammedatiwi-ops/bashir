@@ -361,7 +361,7 @@ class AppStrings {
   // ─── Wishlist ─────────────────────────────────────────────────────────────
   String get wishlistIsEmpty => isAr ? 'قائمة المفضلة فارغة' : 'Your wishlist is empty';
   String get wishlistAddHint => isAr
-      ? 'احفظي ما يعجبك بلمسة القلب — وسننبهك فور انخفاض سعره'
+      ? 'احفظي ما يعجبكِ بلمسة القلب — ونُنبّهكِ فور انخفاض سعره'
       : 'Tap the heart to save what you love — we\'ll alert you when the price drops';
 
   // ─── Brands ───────────────────────────────────────────────────────────────
