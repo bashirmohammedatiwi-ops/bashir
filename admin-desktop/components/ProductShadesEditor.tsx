@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { Button, Form, Input, Radio, Space, message } from "antd";
+import { Button, Form, Input, Radio, Space, Switch, Tag, message } from "antd";
 import type { FormListFieldData } from "antd/es/form";
 import {
   ProductImageDropzone,
@@ -187,18 +187,25 @@ export function ProductShadesEditor({
         const shade = shadesWatch[field.name] ?? {};
         const isGradient = shade.isGradient === true;
         const preview = shadePreviews[field.name];
+        const isOff = shade.isActive === false;
 
         return (
           <div
             key={field.key}
             style={{
-              border: "1px solid #eee",
+              border: `1px solid ${isOff ? "#f3c2c2" : "#eee"}`,
               borderRadius: 10,
               padding: 12,
               marginBottom: 10,
-              background: "#fafafa",
+              background: isOff ? "#fff6f6" : "#fafafa",
             }}
           >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+              <Form.Item {...field} name={[field.name, "isActive"]} valuePropName="checked" style={{ margin: 0 }} initialValue={true}>
+                <Switch size="small" />
+              </Form.Item>
+              {isOff ? <Tag color="red">موقوف — لا يظهر للزبائن</Tag> : <span style={{ fontSize: 12, color: "#2d8a5a" }}>ظاهر في التطبيق</span>}
+            </div>
             <Space align="start" wrap style={{ width: "100%" }}>
               <div
                 style={{
@@ -415,6 +422,7 @@ export function shadeFromApi(s: any) {
     originalPrice: s.originalPrice ?? 0,
     discountPercent: s.discountPercent ?? 0,
     stock: s.stock ?? 0,
+    isActive: s.isActive !== false,
   };
 }
 
@@ -436,5 +444,6 @@ export function shadeToPayload(s: any, index: number) {
     discountPercent: Number(s.discountPercent ?? 0),
     stock: Number(s.stock ?? 0),
     position: index,
+    isActive: s.isActive !== false,
   };
 }

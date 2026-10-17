@@ -390,6 +390,19 @@ export function ProductsAdminPage({
     [form, resetSync, applyBarcode],
   );
 
+  // فتح منتج مباشرة من «مركز التحكم» أو الباركودات المحفوظة: /products/?edit=<id>
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("edit");
+    if (!id) return;
+    void openEdit({ id });
+    params.delete("edit");
+    const qs = params.toString();
+    window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     const tick = () => void refreshPricing();

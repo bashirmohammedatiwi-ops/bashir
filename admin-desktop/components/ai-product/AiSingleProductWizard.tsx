@@ -35,15 +35,18 @@ type Props = {
   onSuccess?: () => void;
   /** When true, hide close button (page embeds the wizard). */
   embedded?: boolean;
+  /** باركود واسم مبدئيان (من «الباركودات المحفوظة»). */
+  initialBarcode?: string;
+  initialHint?: string;
 };
 
 const STEPS = ["الباركود", "التسمية", "الصور", "التصنيف", "الحفظ"];
 
-export function AiSingleProductWizard({ open, onClose, onSuccess, embedded }: Props) {
+export function AiSingleProductWizard({ open, onClose, onSuccess, embedded, initialBarcode, initialHint }: Props) {
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
-  const [barcode, setBarcode] = useState("");
-  const [hint, setHint] = useState("");
+  const [barcode, setBarcode] = useState(initialBarcode ?? "");
+  const [hint, setHint] = useState(initialHint ?? "");
   const [modelId, setModelId] = useState<string | undefined>();
   const [result, setResult] = useState<AiAutofillResult | null>(null);
   const [nameAr, setNameAr] = useState("");

@@ -31,6 +31,8 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   {
     title: "المنتجات",
     items: [
+      { href: "/control", label: "مركز التحكم ⚡", short: "تح" },
+      { href: "/barcode-drafts", label: "الباركودات المحفوظة", short: "با" },
       { href: "/products", label: "المنتجات", short: "م" },
       { href: "/products/app-order", label: "ترتيب التطبيق", short: "تر" },
       { href: "/catalog-import", label: "استيراد الكتالوج", short: "كت" },

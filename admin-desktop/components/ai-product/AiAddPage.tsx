@@ -1,11 +1,20 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { AiSingleProductWizard } from "./AiSingleProductWizard";
 import "./ai-product.css";
 
 /** Smart add hub — single product only (shade-family AI removed). */
 export function AiAddPage() {
+  // ‎/ai-add/?barcode=…&hint=… — من صفحة «الباركودات المحفوظة»
+  const [prefill, setPrefill] = useState<{ barcode?: string; hint?: string }>({});
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const barcode = params.get("barcode") ?? undefined;
+    if (barcode) setPrefill({ barcode, hint: params.get("hint") ?? undefined });
+  }, []);
+
   return (
     <div className="ai-hub">
       <PageHeader
@@ -53,7 +62,14 @@ export function AiAddPage() {
         </div>
       </div>
 
-      <AiSingleProductWizard open onClose={() => undefined} embedded />
+      <AiSingleProductWizard
+        key={prefill.barcode}
+        open
+        onClose={() => undefined}
+        embedded
+        initialBarcode={prefill.barcode}
+        initialHint={prefill.hint}
+      />
     </div>
   );
 }
