@@ -34,13 +34,18 @@ export class ShippingService {
   create(data: {
     governorate: string;
     standardFee?: number;
+    deliveryDaysMin?: number;
+    deliveryDaysMax?: number;
     position?: number;
     isActive?: boolean;
   }) {
+    const days = this.days(data.deliveryDaysMin, data.deliveryDaysMax);
     return this.prisma.shippingZone.create({
       data: {
         governorate: data.governorate.trim(),
         standardFee: data.standardFee ?? 5000,
+        deliveryDaysMin: days.min ?? 1,
+        deliveryDaysMax: days.max ?? 3,
         position: data.position ?? 0,
         isActive: data.isActive ?? true,
       },
@@ -53,14 +58,19 @@ export class ShippingService {
     data: {
       governorate?: string;
       standardFee?: number;
+      deliveryDaysMin?: number;
+      deliveryDaysMax?: number;
       position?: number;
       isActive?: boolean;
     },
   ) {
+    const days = this.days(data.deliveryDaysMin, data.deliveryDaysMax);
     return this.prisma.shippingZone.update({
       where: { id },
       data: {
         ...data,
+        deliveryDaysMin: days.min,
+        deliveryDaysMax: days.max,
         governorate: data.governorate?.trim(),
       },
       include: zoneIncludeAll,
@@ -69,6 +79,13 @@ export class ShippingService {
 
   remove(id: string) {
     return this.prisma.shippingZone.delete({ where: { id } }).then(() => ({ success: true }));
+  }
+
+  /** أيام التوصيل: الحد الأقصى لا يقل عن الأدنى، وكلاهما بين 0 و30. */
+  private days(min?: number, max?: number) {
+    const c = (v?: number) => (v == null ? undefined : Math.min(30, Math.max(0, Math.round(v))));
+    const a = c(min), b = c(max);
+    return { min: a, max: a != null && b != null && b < a ? a : b };
   }
 
   createArea(data: {

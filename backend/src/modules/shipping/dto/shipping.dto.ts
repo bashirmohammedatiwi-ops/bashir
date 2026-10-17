@@ -12,6 +12,8 @@ import {
 export class CreateShippingZoneDto {
   @IsString() @IsNotEmpty() governorate: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) standardFee?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) deliveryDaysMin?: number;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(0) deliveryDaysMax?: number;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) position?: number;
   @IsOptional() @IsBoolean() isActive?: boolean;
 }

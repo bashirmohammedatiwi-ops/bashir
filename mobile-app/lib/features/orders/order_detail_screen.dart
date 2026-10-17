@@ -110,6 +110,29 @@ class OrderDetailScreen extends ConsumerWidget {
                   ),
                 ),
               ],
+              if (order.isGift) ...[
+                const SizedBox(height: CartTheme.itemGap),
+                _DetailCard(
+                  icon: Icons.card_giftcard_rounded,
+                  title: s.isAr ? 'طلب هدية 🎁' : 'Gift order 🎁',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _InfoLine(
+                        icon: Icons.favorite_border_rounded,
+                        text: order.giftMessage != null ? '«${order.giftMessage}»' : (s.isAr ? 'بدون رسالة' : 'No message'),
+                      ),
+                      if (order.giftHidePrices) ...[
+                        const SizedBox(height: 8),
+                        _InfoLine(
+                          icon: Icons.visibility_off_outlined,
+                          text: s.isAr ? 'الأسعار مخفية — بلا فاتورة داخل الطرد' : 'Prices hidden — no invoice in the parcel',
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: CartTheme.itemGap),
               _DetailCard(
                 icon: Icons.receipt_long_outlined,

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import '../checkout/delivery_estimate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
@@ -988,6 +989,7 @@ class _ProductCommerceBlock extends ConsumerWidget {
               ),
             ),
           ],
+          if (stock > 0) const _DeliveryWhen(),
           if (stock > 0) _FreeDeliveryHint(productId: product.id, addition: price * quantity),
         ],
       ),
@@ -1068,6 +1070,33 @@ class _BrandChip extends StatelessWidget {
               },
               child: chip,
             ),
+    );
+  }
+}
+
+/// «يصلكِ إلى بغداد بين السبت والأحد» — من مدة توصيل المحافظة في لوحة التحكم.
+class _DeliveryWhen extends ConsumerWidget {
+  const _DeliveryWhen();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final w = ref.watch(deliveryHintProvider);
+    if (w == null) return const SizedBox.shrink();
+    final t = context.worldTheme;
+    final text = w.governorate == null
+        ? 'التوصيل لكل المحافظات خلال ${w.minDays == w.maxDays ? '${w.minDays}' : '${w.minDays}–${w.maxDays}'} ${w.maxDays <= 2 ? 'يوم' : 'أيام'}'
+        : w.label();
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(
+        children: [
+          Icon(Icons.schedule_rounded, size: 17, color: t.accentDark),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: t.inkSoft)),
+          ),
+        ],
+      ),
     );
   }
 }

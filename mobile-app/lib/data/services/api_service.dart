@@ -794,6 +794,9 @@ class ApiService {
     int loyaltySpent = 0,
     String paymentMethod = 'COD',
     List<Map<String, dynamic>> packages = const [],
+    bool isGift = false,
+    String? giftMessage,
+    bool giftHidePrices = false,
   }) async {
     try {
       final r = await _dio.post('/orders', data: {
@@ -805,6 +808,9 @@ class ApiService {
         if (addressId != null) 'addressId': addressId,
         if (couponCode != null && couponCode.isNotEmpty) 'couponCode': couponCode,
         if (notes != null && notes.isNotEmpty) 'notes': notes,
+        if (isGift) 'isGift': true,
+        if (isGift && giftMessage != null && giftMessage.isNotEmpty) 'giftMessage': giftMessage,
+        if (isGift) 'giftHidePrices': giftHidePrices,
         if (loyaltySpent > 0) 'loyaltySpent': loyaltySpent,
       });
       return AppOrder.fromJson(asMap(_data(r)));

@@ -166,6 +166,24 @@ export function OrderDetailPanel({ order, loading, onStatusChange, onPaymentStat
         </div>
       </div>
 
+      {order.isGift && (
+        <div className="ord-notes-card ord-gift-card">
+          <Text className="ord-section-title">🎁 طلب هدية</Text>
+          {order.giftMessage ? (
+            <Text style={{ whiteSpace: "pre-wrap" }}>
+              رسالة البطاقة: «{order.giftMessage}»
+            </Text>
+          ) : (
+            <Text type="secondary">بدون رسالة</Text>
+          )}
+          {order.giftHidePrices ? (
+            <Text strong style={{ color: "#cf1322" }}>
+              ⚠️ لا تضعي الفاتورة أو الأسعار داخل الطرد
+            </Text>
+          ) : null}
+        </div>
+      )}
+
       {order.notes && (
         <div className="ord-notes-card">
           <Text className="ord-section-title">ملاحظات العميل</Text>

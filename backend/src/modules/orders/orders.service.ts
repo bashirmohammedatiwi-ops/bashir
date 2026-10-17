@@ -317,6 +317,10 @@ export class OrdersService {
           loyaltySpent: loyaltyPointsUsed,
           deliveryOption: delivery,
           notes: dto.notes,
+          // هدية: الرسالة تُطبع على البطاقة (300 حرف كحد أقصى).
+          isGift: dto.isGift === true,
+          giftMessage: dto.isGift ? dto.giftMessage?.trim().slice(0, 300) || null : null,
+          giftHidePrices: dto.isGift === true && dto.giftHidePrices === true,
           couponId,
           items: { create: itemsData },
         },

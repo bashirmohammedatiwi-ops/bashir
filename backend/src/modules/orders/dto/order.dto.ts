@@ -36,6 +36,9 @@ export class CreateOrderDto {
   @IsOptional() @IsString() addressId?: string;
   @IsOptional() @IsString() couponCode?: string;
   @IsOptional() @IsString() notes?: string;
+  @IsOptional() @IsBoolean() isGift?: boolean;
+  @IsOptional() @IsString() giftMessage?: string;
+  @IsOptional() @IsBoolean() giftHidePrices?: boolean;
   @IsOptional() @IsEnum(PaymentMethod) paymentMethod?: PaymentMethod;
   @IsOptional() @IsEnum(DeliveryOption) deliveryOption?: DeliveryOption;
   @IsOptional() @Type(() => Number) @IsInt() @Min(0) loyaltySpent?: number;

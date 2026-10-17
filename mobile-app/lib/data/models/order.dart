@@ -61,6 +61,9 @@ class AppOrder {
   final int loyaltySpent;
   final String deliveryOption;
   final String? notes;
+  final bool isGift;
+  final String? giftMessage;
+  final bool giftHidePrices;
   final DateTime? createdAt;
   final List<OrderItem> items;
   final Address? address;
@@ -80,6 +83,9 @@ class AppOrder {
     this.loyaltySpent = 0,
     this.deliveryOption = 'STANDARD',
     this.notes,
+    this.isGift = false,
+    this.giftMessage,
+    this.giftHidePrices = false,
     this.createdAt,
     this.items = const [],
     this.address,
@@ -103,6 +109,9 @@ class AppOrder {
       loyaltySpent: asInt(json['loyaltySpent']),
       deliveryOption: asString(json['deliveryOption'], 'STANDARD'),
       notes: json['notes']?.toString(),
+      isGift: asBool(json['isGift'], false),
+      giftMessage: (json['giftMessage']?.toString().trim().isNotEmpty ?? false) ? json['giftMessage'].toString() : null,
+      giftHidePrices: asBool(json['giftHidePrices'], false),
       createdAt: parseDate(json['createdAt']),
       items: items,
       address: json['address'] is Map ? Address.fromJson(asMap(json['address'])) : null,

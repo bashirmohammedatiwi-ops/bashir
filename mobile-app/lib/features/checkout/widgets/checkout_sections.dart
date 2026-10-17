@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -443,6 +444,119 @@ class CheckoutNotesCard extends StatelessWidget {
             decoration: CheckoutTheme.fieldDecoration(context, label: s.notes, icon: Icons.edit_note_outlined),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// «هذا الطلب هدية 🎁»: رسالة على بطاقة الهدية، وإخفاء الأسعار من الفاتورة داخل الطرد.
+class CheckoutGiftCard extends StatelessWidget {
+  final bool isGift;
+  final ValueChanged<bool> onGiftChanged;
+  final TextEditingController messageCtrl;
+  final bool hidePrices;
+  final ValueChanged<bool> onHidePricesChanged;
+
+  const CheckoutGiftCard({
+    super.key,
+    required this.isGift,
+    required this.onGiftChanged,
+    required this.messageCtrl,
+    required this.hidePrices,
+    required this.onHidePricesChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.worldTheme;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 260),
+      margin: _cardMargin,
+      decoration: CheckoutTheme.cardDecoration(context).copyWith(
+        color: isGift ? Color.alphaBlend(t.accent.withValues(alpha: 0.06), t.surface) : null,
+      ),
+      padding: _cardPadding,
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 260),
+        curve: Curves.easeOutCubic,
+        alignment: Alignment.topCenter,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: t.accentLight, borderRadius: BorderRadius.circular(12)),
+                  child: const Text('🎁', style: TextStyle(fontSize: 20)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('هذا الطلب هدية', style: AppText.title3.copyWith(color: t.ink)),
+                      Text('نغلّفه بعناية ونضيف بطاقة برسالتكِ', style: AppText.caption.copyWith(color: t.inkMuted)),
+                    ],
+                  ),
+                ),
+                Switch.adaptive(
+                  value: isGift,
+                  activeTrackColor: t.accent,
+                  onChanged: (v) {
+                    HapticFeedback.selectionClick();
+                    onGiftChanged(v);
+                  },
+                ),
+              ],
+            ),
+            if (isGift) ...[
+              const SizedBox(height: 14),
+              TextField(
+                controller: messageCtrl,
+                minLines: 2,
+                maxLines: 4,
+                maxLength: 200,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: CheckoutTheme.fieldDecoration(
+                  context,
+                  label: 'رسالة بطاقة الهدية (اختياري)',
+                  hint: 'كل عام وأنتِ بخير يا أحلى صديقة 💕',
+                  icon: Icons.favorite_border_rounded,
+                ),
+              ),
+              const SizedBox(height: 4),
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => onHidePricesChanged(!hidePrices),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      Checkbox(
+                        value: hidePrices,
+                        activeColor: t.accent,
+                        onChanged: (v) => onHidePricesChanged(v ?? false),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('إخفاء الأسعار', style: AppText.label.copyWith(color: t.ink)),
+                            Text('لا نضع الفاتورة داخل الطرد — تصلكِ على التطبيق فقط',
+                                style: AppText.caption.copyWith(color: t.inkMuted)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

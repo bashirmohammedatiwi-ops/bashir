@@ -60,6 +60,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _houseCtrl = TextEditingController();
   final _couponCtrl = TextEditingController();
   final _notesCtrl = TextEditingController();
+  // طلب هدية.
+  final _giftMsgCtrl = TextEditingController();
+  bool _isGift = false;
+  bool _giftHidePrices = true;
 
   Coupon? _coupon;
   String? _couponError;
@@ -127,6 +131,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     _houseCtrl.dispose();
     _couponCtrl.dispose();
     _notesCtrl.dispose();
+    _giftMsgCtrl.dispose();
     super.dispose();
   }
 
@@ -318,6 +323,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
             couponCode: _coupon != null && _coupon!.eligibleFor(couponBase) ? _coupon!.code : null,
             packages: packs,
             notes: _notesCtrl.text.trim(),
+            isGift: _isGift,
+            giftMessage: _isGift ? _giftMsgCtrl.text.trim() : null,
+            giftHidePrices: _isGift && _giftHidePrices,
             loyaltySpent: _useLoyalty ? _loyaltySpent : 0,
             paymentMethod: _paymentMethod,
           );
@@ -510,6 +518,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                         HapticFeedback.selectionClick();
                         setState(() => _paymentMethod = v);
                       },
+                    ),
+                    const SizedBox(height: 14),
+                    CheckoutGiftCard(
+                      isGift: _isGift,
+                      onGiftChanged: (v) => setState(() => _isGift = v),
+                      messageCtrl: _giftMsgCtrl,
+                      hidePrices: _giftHidePrices,
+                      onHidePricesChanged: (v) => setState(() => _giftHidePrices = v),
                     ),
                     const SizedBox(height: 14),
                     CheckoutNotesCard(s: s, controller: _notesCtrl),

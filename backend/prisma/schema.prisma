@@ -521,6 +521,10 @@ model Order {
   deliveryOption   DeliveryOption @default(STANDARD)
   deliveryDate     DateTime?
   notes            String?
+  /// طلب هدية: رسالة البطاقة، وإخفاء الأسعار من الفاتورة المرفقة.
+  isGift           Boolean       @default(false)
+  giftMessage      String?
+  giftHidePrices   Boolean       @default(false)
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
 
@@ -742,6 +746,9 @@ model ShippingZone {
   id              String         @id @default(uuid())
   governorate     String         @unique
   standardFee     Int            @default(5000)
+  /// مدة التوصيل المتوقعة بالأيام («يصلكِ خلال 1–2 يوم»).
+  deliveryDaysMin Int            @default(1)
+  deliveryDaysMax Int            @default(3)
   isActive        Boolean        @default(true)
   position        Int            @default(0)
   createdAt       DateTime       @default(now())

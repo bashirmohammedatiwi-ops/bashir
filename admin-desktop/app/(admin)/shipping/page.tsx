@@ -32,6 +32,8 @@ type ShippingZone = {
   id: string;
   governorate: string;
   standardFee: number;
+  deliveryDaysMin?: number;
+  deliveryDaysMax?: number;
   position: number;
   isActive: boolean;
   areas?: ShippingArea[];
@@ -120,7 +122,7 @@ export default function ShippingPage() {
               onClick={() => {
                 setEditing(null);
                 form.resetFields();
-                form.setFieldsValue({ isActive: true, position: 0, standardFee: 5000 });
+                form.setFieldsValue({ isActive: true, position: 0, standardFee: 5000, deliveryDaysMin: 2, deliveryDaysMax: 4 });
                 setOpen(true);
               }}
             >
@@ -179,6 +181,15 @@ export default function ShippingPage() {
                 title: "رسوم التوصيل",
                 dataIndex: "standardFee",
                 render: (v) => `${v?.toLocaleString()} د.ع`,
+              },
+              {
+                title: "مدة التوصيل",
+                render: (_: unknown, r: ShippingZone) =>
+                  r.deliveryDaysMin == null
+                    ? "—"
+                    : r.deliveryDaysMin === r.deliveryDaysMax
+                      ? `${r.deliveryDaysMin} يوم`
+                      : `${r.deliveryDaysMin}–${r.deliveryDaysMax} أيام`,
               },
               {
                 title: "المناطق",
@@ -248,6 +259,19 @@ export default function ShippingPage() {
           <Form.Item name="standardFee" label="رسوم التوصيل الافتراضية" rules={[{ required: true }]}>
             <InputNumber style={{ width: "100%" }} min={0} />
           </Form.Item>
+          <Space.Compact block>
+            <Form.Item
+              name="deliveryDaysMin"
+              label="التوصيل خلال (من يوم)"
+              style={{ flex: 1 }}
+              extra="يظهر للزبونة: «يصلكِ خلال 1–2 يوم»"
+            >
+              <InputNumber style={{ width: "100%" }} min={0} max={30} />
+            </Form.Item>
+            <Form.Item name="deliveryDaysMax" label="إلى (يوم)" style={{ flex: 1, marginInlineStart: 8 }}>
+              <InputNumber style={{ width: "100%" }} min={0} max={30} />
+            </Form.Item>
+          </Space.Compact>
           <Form.Item name="position" label="الترتيب">
             <InputNumber style={{ width: "100%" }} min={0} />
           </Form.Item>

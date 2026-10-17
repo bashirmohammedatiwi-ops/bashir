@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../delivery_estimate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_strings.dart';
@@ -244,6 +245,23 @@ class _GovernorateFields extends ConsumerWidget {
           validator: (v) => (v == null || v.isEmpty) ? s.selectGovernorate : null,
           onChanged: onGovernorateChanged,
         ),
+        // موعد الوصول المتوقع للمحافظة المختارة.
+        if (windowFor(zones, governorate) case final w?)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              children: [
+                Icon(Icons.schedule_rounded, size: 16, color: context.worldTheme.accentDark),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    w.label(withPlace: false),
+                    style: AppText.caption.copyWith(color: context.worldTheme.accentDark, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+          ),
         if (areas.isNotEmpty) ...[
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
