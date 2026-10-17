@@ -11,6 +11,7 @@ Monorepo for the Alhayaa e-commerce platform.
 | `pos-sync-desktop/` | Electron POS sync (SQL Server → VPS) |
 | `infra/` | Docker Compose, Nginx, deployment scripts |
 | `mobile-app/` | Flutter customer app — API only (no mock data), synced with admin panel |
+| `manager-app/` | Flutter manager app — barcode scan (camera / Bluetooth / typed), product & shade on/off, image crop/frame, saved-barcode groups |
 | `docs/` | Project documentation |
 
 ## Quick start

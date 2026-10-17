@@ -1,0 +1,41 @@
+name: manager_app
+description: "ديما الحياة — تطبيق المدير: مسح الباركود، تشغيل وإيقاف المنتجات والتدرجات، إدارة الصور، وحفظ الباركودات الناقصة."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  flutter_riverpod: ^2.5.1
+  dio: ^5.5.0
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.3
+  mobile_scanner: ^7.0.1
+  image_picker: ^1.1.2
+  cached_network_image: ^3.4.0
+  intl: ^0.20.2
+  package_info_plus: ^8.3.0
+  url_launcher: ^6.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: Cairo
+      fonts:
+        - asset: assets/fonts/Cairo-Regular.ttf
+        - asset: assets/fonts/Cairo-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Cairo-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Cairo-Black.ttf
+          weight: 900
