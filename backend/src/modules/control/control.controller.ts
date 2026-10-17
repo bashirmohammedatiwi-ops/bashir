@@ -7,11 +7,15 @@ import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { RolesGuard } from "../auth/guards/roles.guard";
 import { BarcodeDraftsService } from "./barcode-drafts.service";
 import { ControlCatalogService } from "./control-catalog.service";
+import { ControlCustomersService } from "./control-customers.service";
 import { ControlOrdersService } from "./control-orders.service";
 import { ControlImagesService } from "./control-images.service";
 import { ControlService } from "./control.service";
 import {
   ControlAddShadeDto,
+  CustomerActiveDto,
+  CustomerPointsDto,
+  CustomersQueryDto,
   ControlCreateProductDto,
   ControlImagesAddDto,
   ControlOrdersQueryDto,
@@ -48,7 +52,38 @@ export class ControlController {
     private readonly drafts: BarcodeDraftsService,
     private readonly catalog: ControlCatalogService,
     private readonly ordersSvc: ControlOrdersService,
+    private readonly customers: ControlCustomersService,
   ) {}
+
+  // ---------------- customers & store health
+
+  @Get("health")
+  health() {
+    return this.customers.health();
+  }
+
+  @Get("customers")
+  customersList(@Query() q: CustomersQueryDto) {
+    return this.customers.list(q);
+  }
+
+  @Get("customers/:id")
+  customer(@Param("id") id: string) {
+    return this.customers.detail(id);
+  }
+
+  /** الحظر وتعديل النقاط للمدير فقط. */
+  @Patch("customers/:id/active")
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  customerActive(@Param("id") id: string, @Body() dto: CustomerActiveDto, @CurrentUser() user: Actor) {
+    return this.customers.setActive(id, dto.isActive, actorId(user));
+  }
+
+  @Post("customers/:id/points")
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  customerPoints(@Param("id") id: string, @Body() dto: CustomerPointsDto, @CurrentUser() user: Actor) {
+    return this.customers.adjustPoints(id, dto.points, dto.reason ?? "", actorId(user));
+  }
 
   // ---------------- orders & sales
 

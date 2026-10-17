@@ -97,6 +97,27 @@ export class ControlService {
       case "outOfStock":
         conds.push(Prisma.sql`p.stock <= 0`);
         break;
+      case "lowStock": {
+        const row = await this.prisma.setting.findUnique({ where: { key: "store" } });
+        const t = Number((row?.value as Record<string, unknown> | null)?.lowStockThreshold ?? 5) || 5;
+        conds.push(Prisma.sql`p.stock > 0 AND p.stock <= ${t}`);
+        break;
+      }
+      case "hasStock":
+        conds.push(Prisma.sql`p.stock > 0`);
+        break;
+      case "ready":
+        // له مخزون وصورة حقيقية — جاهز للتشغيل
+        conds.push(Prisma.sql`p.stock > 0 AND EXISTS (
+          SELECT 1 FROM "ProductImage" pi JOIN "Media" m ON m.id = pi."mediaId"
+          WHERE pi."productId" = p.id AND m.hash <> ${PRODUCT_PLACEHOLDER_HASH} AND m."storagePath" <> 'placeholder')`);
+        break;
+      case "noCategory":
+        conds.push(Prisma.sql`p."categoryId" IS NULL`);
+        break;
+      case "noDescription":
+        conds.push(Prisma.sql`btrim(coalesce(p."descriptionAr", p.description, '')) = ''`);
+        break;
       case "noBarcode":
         conds.push(Prisma.sql`(p.barcode IS NULL OR btrim(p.barcode) = '')
           AND NOT EXISTS (SELECT 1 FROM "ProductShade" s WHERE s."productId" = p.id AND s.barcode IS NOT NULL AND btrim(s.barcode) <> '')`);

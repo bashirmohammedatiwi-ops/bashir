@@ -22,7 +22,7 @@ export class ControlSearchDto {
   /** all | active | inactive */
   @IsOptional() @IsIn(["all", "active", "inactive"]) status?: "all" | "active" | "inactive";
   /** فلاتر سريعة: بلا صور، فيه تدرج موقوف، نافد، بلا باركود */
-  @IsOptional() @IsIn(["noImages", "shadesOff", "outOfStock", "noBarcode"]) filter?: string;
+  @IsOptional() @IsIn(["noImages", "shadesOff", "outOfStock", "noBarcode", "lowStock", "hasStock", "ready", "noCategory", "noDescription"]) filter?: string;
   @IsOptional() @IsString() brandId?: string;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) page: number = 1;
   @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(60) limit: number = 30;
@@ -192,4 +192,20 @@ export class PosMissingQueryDto {
 export class ProductsBulkDto {
   @IsArray() @ArrayMaxSize(200) @IsString({ each: true }) ids: string[];
   @IsOptional() @IsBoolean() isActive?: boolean;
+}
+
+export class CustomersQueryDto {
+  @IsOptional() @IsString() @MaxLength(80) q?: string;
+  @IsOptional() @IsIn(["recent", "spent", "orders"]) sort?: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) page: number = 1;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(60) limit: number = 30;
+}
+
+export class CustomerPointsDto {
+  @Type(() => Number) @IsInt() @Min(-1000000) @Max(1000000) points: number;
+  @IsOptional() @IsString() @MaxLength(120) reason?: string;
+}
+
+export class CustomerActiveDto {
+  @IsBoolean() isActive: boolean;
 }
