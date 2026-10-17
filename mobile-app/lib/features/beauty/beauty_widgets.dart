@@ -51,6 +51,20 @@ void openConcern(BuildContext context, SkinConcern c) {
 
 // ─── عناصر صغيرة ─────────────────────────────────────────────────────────────
 
+/// عنوان شريط علوي يظهر فقط حين ينطوي الغلاف (لا يتكرر فوق عنوان الصورة).
+class CollapsingTitle extends StatelessWidget {
+  final Widget child;
+  const CollapsingTitle({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final s = context.dependOnInheritedWidgetOfExactType<FlexibleSpaceBarSettings>();
+    if (s == null || s.maxExtent <= s.minExtent) return child;
+    final t = ((s.maxExtent - s.currentExtent) / (s.maxExtent - s.minExtent)).clamp(0.0, 1.0);
+    return Opacity(opacity: t < 0.7 ? 0 : (t - 0.7) / 0.3, child: child);
+  }
+}
+
 /// شارة التوفير: «وفّري 20%».
 class SavingBadge extends StatelessWidget {
   final BeautyPackage pack;
@@ -170,8 +184,10 @@ class _OfferCountdownState extends State<OfferCountdown> {
     final left = widget.endsAt.difference(DateTime.now());
     if (left.isNegative) return const SizedBox.shrink();
     String two(int n) => n.toString().padLeft(2, '0');
-    final text = left.inDays >= 1
-        ? 'ينتهي خلال ${left.inDays} يوم ${left.inHours % 24} س'
+    final d = left.inDays, h = left.inHours % 24;
+    final days = d == 1 ? 'يوم' : d == 2 ? 'يومين' : d <= 10 ? '$d أيام' : '$d يوماً';
+    final text = d >= 1
+        ? 'ينتهي خلال $days${h > 0 ? ' و$h س' : ''}'
         : 'ينتهي خلال ${two(left.inHours)}:${two(left.inMinutes % 60)}:${two(left.inSeconds % 60)}';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -296,7 +312,11 @@ class BeautyPackageCard extends StatelessWidget {
                   Row(
                     children: [
                       Expanded(child: PackagePrice(pack: pack, color: t.ink, muted: t.inkMuted)),
-                      ThumbStack(urls: pack.thumbs, size: 26, max: 3),
+                      // الصورة تعرض المنتجات أصلاً حين لا يوجد غلاف — هنا عددها فقط.
+                      if (pack.coverUrl != null)
+                        ThumbStack(urls: pack.thumbs, size: 26, max: 3, ring: t.surface)
+                      else
+                        Text('${pack.stepCount} منتجات', style: AppText.micro.copyWith(color: t.inkMuted)),
                     ],
                   ),
                 ],
@@ -339,9 +359,15 @@ class _PackageVisual extends StatelessWidget {
                     Expanded(
                       child: Transform.translate(
                         offset: Offset(0, i.isOdd ? 8 : -2),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 3),
-                          child: AppNetworkImage(url: thumbs[i], fit: BoxFit.contain),
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(14),
+                            boxShadow: [BoxShadow(color: colors.last.withValues(alpha: 0.12), blurRadius: 8, offset: const Offset(0, 3))],
+                          ),
+                          child: AspectRatio(aspectRatio: 0.82, child: AppNetworkImage(url: thumbs[i], fit: BoxFit.contain)),
                         ),
                       ),
                     ),

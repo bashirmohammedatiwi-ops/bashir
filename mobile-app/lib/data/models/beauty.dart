@@ -52,7 +52,7 @@ String? _url(dynamic v) {
 }
 
 List<String> _strings(dynamic v) =>
-    asList(v).map((e) => e.toString().trim()).where((e) => e.isNotEmpty).toList();
+    asStringList(v).map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
 
 /// مشكلة بشرة من «دليل البشرة».
 class SkinConcern {

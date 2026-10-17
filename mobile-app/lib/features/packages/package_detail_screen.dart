@@ -85,7 +85,7 @@ class _Body extends ConsumerWidget {
               stretch: true,
               backgroundColor: colors.last,
               foregroundColor: Colors.white,
-              title: Text(pack.name, style: AppText.title3.copyWith(color: Colors.white)),
+              title: CollapsingTitle(child: Text(pack.name, style: AppText.title3.copyWith(color: Colors.white))),
               flexibleSpace: FlexibleSpaceBar(
                 stretchModes: const [StretchMode.zoomBackground],
                 background: _Hero(pack: pack, colors: colors, kindLabel: kindLabel),
@@ -248,7 +248,7 @@ class _Hero extends StatelessWidget {
           AppNetworkImage(url: pack.coverUrl!, fit: BoxFit.cover)
         else
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 90, 24, 96),
+            padding: const EdgeInsets.fromLTRB(24, 76, 24, 128),
             child: Row(
               children: [
                 for (var i = 0; i < pack.thumbs.length.clamp(0, 4); i++)
@@ -271,7 +271,7 @@ class _Hero extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              stops: const [0.4, 1],
+              stops: const [0.58, 1],
               colors: [Colors.transparent, colors.last.withValues(alpha: 0.95)],
             ),
           ),

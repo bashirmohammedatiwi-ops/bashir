@@ -338,7 +338,7 @@ class _GuideBody extends ConsumerWidget {
           stretch: true,
           backgroundColor: dark,
           foregroundColor: Colors.white,
-          title: Text(c.name, style: AppText.title3.copyWith(color: Colors.white)),
+          title: CollapsingTitle(child: Text(c.name, style: AppText.title3.copyWith(color: Colors.white))),
           flexibleSpace: FlexibleSpaceBar(
             collapseMode: CollapseMode.parallax,
             stretchModes: const [StretchMode.zoomBackground],
