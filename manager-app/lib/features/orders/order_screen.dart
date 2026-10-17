@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/format.dart';
@@ -150,6 +151,11 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       appBar: AppBar(
         title: Text(o.orderNumber, textDirection: TextDirection.ltr),
         actions: [
+          IconButton(
+            tooltip: 'مشاركة الطلب (للمندوب مثلاً)',
+            onPressed: () => SharePlus.instance.share(ShareParams(text: _summary(o), subject: 'طلب ${o.orderNumber}')),
+            icon: const Icon(Icons.ios_share_rounded),
+          ),
           IconButton(
             tooltip: 'نسخ ملخص الطلب',
             onPressed: () {
@@ -395,9 +401,7 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
                 ),
                 const SizedBox(width: 8),
                 OutlinedButton.icon(
-                  onPressed: () => _openUrl(
-                    'https://wa.me/${_intlPhone(phone)}?text=${Uri.encodeComponent('مرحباً ${o.customerName}، بخصوص طلبك ${o.orderNumber} من ديما الحياة')}',
-                  ),
+                  onPressed: () => _whatsapp(o, phone),
                   icon: const Icon(Icons.chat_rounded, color: Color(0xFF25D366)),
                   label: const Text('واتساب'),
                 ),
@@ -550,6 +554,84 @@ class _OrderScreenState extends ConsumerState<OrderScreen> {
       ],
     ),
   );
+
+  /// رسائل جاهزة للزبونة حسب حالة الطلب — تُفتح في واتساب ويمكن تعديلها قبل الإرسال.
+  List<(String, IconData, String)> _templates(OrderDetail o) {
+    final first = o.customerName.trim().split(' ').first;
+    final hi = 'مرحباً $first 🌸';
+    final items = o.items.map((it) => '• ${it.name}${it.shadeName != null ? ' (${it.shadeName})' : ''} × ${it.quantity}').join('\n');
+    return [
+      (
+        'تأكيد الطلب',
+        Icons.check_circle_outline_rounded,
+        '$hi\nوصلنا طلبك رقم ${o.orderNumber} من ديما الحياة:\n$items\nالإجمالي ${money(o.total)}${o.paymentMethod == 'COD' ? ' (الدفع عند الاستلام)' : ''}.\nنرجو تأكيد العنوان: ${o.addressLine}\nشكراً لثقتك 💜',
+      ),
+      ('قيد التجهيز', Icons.inventory_2_outlined, '$hi\nطلبك ${o.orderNumber} قيد التجهيز الآن وسيُسلَّم للمندوب قريباً 💜'),
+      (
+        'خرج للتوصيل',
+        Icons.local_shipping_outlined,
+        '$hi\nطلبك ${o.orderNumber} خرج مع المندوب وسيتواصل معك قريباً.${o.paymentMethod == 'COD' ? '\nالمبلغ المطلوب عند الاستلام: ${money(o.total)}' : ''}',
+      ),
+      (
+        'شكر بعد الاستلام',
+        Icons.favorite_outline_rounded,
+        '$hi\nنتمنى أن يعجبك طلبك من ديما الحياة 💜\nيسعدنا تقييمك للمنتجات من التطبيق — رأيك يهمنا.',
+      ),
+      (
+        'منتج غير متوفر',
+        Icons.remove_shopping_cart_outlined,
+        '$hi\nبخصوص طلبك ${o.orderNumber}: نعتذر، أحد المنتجات نفد من المخزون. هل تفضلين بديلاً مشابهاً أم نكمل الطلب بدونه؟',
+      ),
+      (
+        'توضيح العنوان',
+        Icons.place_outlined,
+        '$hi\nبخصوص طلبك ${o.orderNumber}: نحتاج أقرب نقطة دالة للعنوان ليصل المندوب بسهولة. شكراً لك 🌸',
+      ),
+      ('رسالة فارغة', Icons.chat_bubble_outline_rounded, '$hi\nبخصوص طلبك ${o.orderNumber} من ديما الحياة'),
+    ];
+  }
+
+  Future<void> _whatsapp(OrderDetail o, String phone) async {
+    final suggested = switch (o.status) {
+      'PENDING' || 'CONFIRMED' => 0,
+      'PROCESSING' => 1,
+      'SHIPPED' || 'OUT_FOR_DELIVERY' => 2,
+      'DELIVERED' => 3,
+      _ => -1,
+    };
+    final t = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (c) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(8, 0, 8, 12),
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(12, 0, 12, 8),
+              child: Text('رسالة واتساب', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+            ),
+            for (final (i, (title, icon, text)) in _templates(o).indexed)
+              ListTile(
+                leading: Icon(icon, color: i == suggested ? const Color(0xFF25D366) : AppColors.muted),
+                title: Text(title, style: TextStyle(fontWeight: i == suggested ? FontWeight.w800 : FontWeight.w600)),
+                subtitle: Text(
+                  text.replaceAll('\n', ' '),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12),
+                ),
+                trailing: i == suggested ? const Pill('مقترحة', color: Color(0xFF128C4A), bg: Color(0xFFE2F7EA), small: true) : null,
+                onTap: () => Navigator.pop(c, text),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (t == null) return;
+    await _openUrl('https://wa.me/${_intlPhone(phone)}?text=${Uri.encodeComponent(t)}');
+  }
 
   String _summary(OrderDetail o) {
     final b = StringBuffer()

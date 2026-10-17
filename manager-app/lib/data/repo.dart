@@ -188,6 +188,14 @@ class Repo {
     map: (b) => DraftGroup.fromJson(Map<String, dynamic>.from(b)),
   );
 
+  /// المجموعة المختارة، أو أول مجموعة موجودة، أو مجموعة «عام» تُنشأ تلقائياً — الحفظ لا يتعطل أبداً.
+  Future<String> ensureGroup(String? selected) async {
+    if (selected != null) return selected;
+    final list = await groups();
+    if (list.isNotEmpty) return list.first.id;
+    return (await createGroup('عام', color: 'violet')).id;
+  }
+
   Future<void> updateGroup(String id, Map<String, dynamic> patch) => api.patch('/control/draft-groups/$id', data: patch);
   Future<void> deleteGroup(String id) => api.delete('/control/draft-groups/$id');
 

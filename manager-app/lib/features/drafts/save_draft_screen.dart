@@ -88,10 +88,18 @@ class _SaveDraftScreenState extends ConsumerState<SaveDraftScreen> {
   Future<void> _save() async {
     final code = normalizeCode(_barcode.text);
     if (code.isEmpty) return toast(context, 'الباركود فارغ', error: true);
-    if (_groupId == null) return toast(context, 'اختر مجموعة للحفظ', error: true);
     if (_shots.any((s) => s.uploading)) return toast(context, 'انتظر اكتمال رفع الصور', error: true);
     setState(() => _saving = true);
     final repo = ref.read(repoProvider);
+    try {
+      _groupId = await repo.ensureGroup(_groupId);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        toastError(context, e);
+      }
+      return;
+    }
     final ids = [..._existing.map((e) => e.mediaId), ..._shots.where((s) => s.mediaId != null).map((s) => s.mediaId!)];
     try {
       final Draft d;
@@ -168,7 +176,7 @@ class _SaveDraftScreenState extends ConsumerState<SaveDraftScreen> {
               ],
             ),
           ),
-          const SectionTitle('المجموعة'),
+          const SectionTitle('المجموعة', subtitle: 'إن لم تختر يُحفظ في مجموعة «عام»'),
           GroupPicker(selected: _groupId, onChanged: (id) => setState(() => _groupId = id)),
           const SectionTitle('معلومات (اختياري)'),
           TextField(

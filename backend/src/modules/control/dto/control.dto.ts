@@ -209,3 +209,17 @@ export class CustomerPointsDto {
 export class CustomerActiveDto {
   @IsBoolean() isActive: boolean;
 }
+
+export class StockCountCreateDto {
+  @IsOptional() @IsString() @MaxLength(80) name?: string;
+  @IsOptional() @IsString() @MaxLength(500) note?: string;
+}
+
+export class StockCountScanDto {
+  @IsString() @MaxLength(80) barcode: string;
+  @IsOptional() @Type(() => Number) @IsInt() @Min(-10000) @Max(10000) qty?: number;
+}
+
+export class StockCountLineDto {
+  @Type(() => Number) @IsInt() @Min(0) @Max(100000) counted: number;
+}

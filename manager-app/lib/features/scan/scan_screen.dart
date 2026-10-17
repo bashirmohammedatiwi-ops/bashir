@@ -175,12 +175,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with WidgetsBindingObse
   }
 
   Future<void> _quickSave(_Hit h) async {
-    if (_groupId == null) {
-      toast(context, 'اختر مجموعة أولاً', error: true);
-      return;
-    }
     setState(() => h.saving = true);
     try {
+      _groupId = await ref.read(repoProvider).ensureGroup(_groupId);
       final d = await ref.read(repoProvider).saveDraft(groupId: _groupId!, barcode: h.code, name: h.result?.pos?.name);
       h.saved = d;
       Prefs.instance.lastGroupId = _groupId;

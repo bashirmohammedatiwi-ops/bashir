@@ -15,6 +15,8 @@ import '../admin/store_admin_screens.dart';
 import '../catalog/create_product_screen.dart';
 import '../customers/customers_screen.dart';
 import '../catalog/pos_missing_screen.dart';
+import '../count/counts_screen.dart';
+import '../insights/insights_screens.dart';
 import '../drafts/groups_screen.dart';
 import '../product/product_screen.dart';
 import '../sales/sales_screen.dart';
@@ -112,6 +114,39 @@ class MoreScreen extends ConsumerWidget {
                 onTap: () => go(const NotifyScreen()),
               ),
             ]),
+            const SectionTitle('المخزون والتحليل'),
+            grid([
+              _Tile(
+                icon: Icons.fact_check_rounded,
+                color: AppColors.info,
+                title: 'جرد المخزون',
+                sub: 'امسح الرف وقارن بالكاشير',
+                onTap: () => go(const CountsScreen()),
+              ),
+              _Tile(
+                icon: Icons.trending_up_rounded,
+                color: AppColors.rose,
+                title: 'طلب الزبونات',
+                sub: 'نافد ومطلوب وأسئلة ديما',
+                onTap: () => go(const DemandScreen()),
+              ),
+              if (isAdmin)
+                _Tile(
+                  icon: Icons.bar_chart_rounded,
+                  color: AppColors.success,
+                  title: 'التقارير',
+                  sub: 'البراند والمحافظة والساعة',
+                  onTap: () => go(const ReportsScreen()),
+                ),
+              if (isAdmin)
+                _Tile(
+                  icon: Icons.badge_rounded,
+                  color: AppColors.primary,
+                  title: 'فريق العمل',
+                  sub: 'النشاط وإيقاف الحسابات',
+                  onTap: () => go(const StaffScreen()),
+                ),
+            ]),
             const SectionTitle('الكتالوج'),
             grid([
               _Tile(
@@ -167,6 +202,14 @@ class MoreScreen extends ConsumerWidget {
                   title: 'التوصيل',
                   sub: 'الرسوم لكل محافظة',
                   onTap: () => go(const ShippingScreen()),
+                ),
+              if (isAdmin)
+                _Tile(
+                  icon: Icons.view_carousel_rounded,
+                  color: AppColors.rose,
+                  title: 'بنرات الرئيسية',
+                  sub: 'تشغيل وترتيب',
+                  onTap: () => go(const BannersScreen()),
                 ),
               if (isAdmin)
                 _Tile(

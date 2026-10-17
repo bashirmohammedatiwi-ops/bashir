@@ -400,6 +400,22 @@ class ActivityItem {
         return 'إضافة تدرج${meta['name'] != null ? ' «${meta['name']}»' : ''}';
       case 'shade.delete':
         return 'حذف تدرج${meta['name'] != null ? ' «${meta['name']}»' : ''}';
+      case 'customer.points':
+        return 'تعديل نقاط زبونة';
+      case 'customer.block':
+        return 'إيقاف حساب زبونة';
+      case 'customer.unblock':
+        return 'تشغيل حساب زبونة';
+      case 'count.close':
+        return 'إغلاق جرد';
+      case 'count.reopen':
+        return 'إعادة فتح جرد';
+      case 'staff.disable':
+        return 'إيقاف حساب موظف';
+      case 'staff.enable':
+        return 'تشغيل حساب موظف';
+      case 'ORDER_STATUS_UPDATE':
+        return 'طلب ${meta['orderNumber'] ?? ''} ← ${orderStatusLabels[meta['status']] ?? meta['status'] ?? ''}';
       default:
         return action;
     }

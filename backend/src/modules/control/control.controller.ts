@@ -8,12 +8,16 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import { BarcodeDraftsService } from "./barcode-drafts.service";
 import { ControlCatalogService } from "./control-catalog.service";
 import { ControlCustomersService } from "./control-customers.service";
+import { ControlInsightsService } from "./control-insights.service";
 import { ControlOrdersService } from "./control-orders.service";
 import { ControlImagesService } from "./control-images.service";
 import { ControlService } from "./control.service";
 import {
   ControlAddShadeDto,
   CustomerActiveDto,
+  StockCountCreateDto,
+  StockCountLineDto,
+  StockCountScanDto,
   CustomerPointsDto,
   CustomersQueryDto,
   ControlCreateProductDto,
@@ -53,7 +57,88 @@ export class ControlController {
     private readonly catalog: ControlCatalogService,
     private readonly ordersSvc: ControlOrdersService,
     private readonly customers: ControlCustomersService,
+    private readonly insights: ControlInsightsService,
   ) {}
+
+  // ---------------- stock counts (جرد)
+
+  @Get("counts")
+  counts() {
+    return this.insights.counts();
+  }
+
+  @Post("counts")
+  createCount(@Body() dto: StockCountCreateDto, @CurrentUser() user: Actor) {
+    return this.insights.createCount(dto.name ?? "", dto.note, actorId(user));
+  }
+
+  @Get("counts/:id")
+  count(@Param("id") id: string) {
+    return this.insights.count(id);
+  }
+
+  @Post("counts/:id/scan")
+  countScan(@Param("id") id: string, @Body() dto: StockCountScanDto) {
+    return this.insights.scan(id, dto.barcode, dto.qty ?? 1);
+  }
+
+  @Patch("counts/:id/lines/:lineId")
+  countLine(@Param("id") id: string, @Param("lineId") lineId: string, @Body() dto: StockCountLineDto) {
+    return this.insights.setLine(id, lineId, dto.counted);
+  }
+
+  @Delete("counts/:id/lines/:lineId")
+  countLineDelete(@Param("id") id: string, @Param("lineId") lineId: string) {
+    return this.insights.deleteLine(id, lineId);
+  }
+
+  @Post("counts/:id/close")
+  countClose(@Param("id") id: string, @Body() body: { reopen?: boolean }, @CurrentUser() user: Actor) {
+    return this.insights.closeCount(id, body?.reopen === true, actorId(user));
+  }
+
+  @Delete("counts/:id")
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  countDelete(@Param("id") id: string) {
+    return this.insights.deleteCount(id);
+  }
+
+  // ---------------- demand, reports, staff
+
+  @Get("demand")
+  demand() {
+    return this.insights.demand();
+  }
+
+  @Get("reports")
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  report(@Query("days") days?: string) {
+    return this.insights.report(Number(days) || 30);
+  }
+
+  @Get("banners")
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  banners() {
+    return this.insights.banners();
+  }
+
+  @Get("staff")
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  staff() {
+    return this.insights.staff();
+  }
+
+  @Get("staff/:id/activity")
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  staffActivity(@Param("id") id: string) {
+    return this.insights.staffActivity(id);
+  }
+
+  @Patch("staff/:id/active")
+  @Roles(Role.SUPER_ADMIN, Role.ADMIN)
+  staffActive(@Param("id") id: string, @Body() dto: CustomerActiveDto, @CurrentUser() user: Actor) {
+    return this.insights.setStaffActive(id, dto.isActive, actorId(user));
+  }
 
   // ---------------- customers & store health
 
