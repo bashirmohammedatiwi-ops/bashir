@@ -131,6 +131,13 @@ class CardPaymentFlow {
         return const CardPaymentOutcome(CardPaymentResult.paid);
       }
       if (state.attemptFailed || sdkOutcome.status == QiSdkStatus.error) {
+        // واجهة الدفع انتهت بخطأ والمحاولة لم تُدفع: نغلقها لدى البوابة (السيرفر يتحقق أولاً
+        // ولا يلغي إلا محاولة ما زالت مفتوحة) — لا تبقى معلّقة حتى انتهاء المهلة.
+        if (sdkOutcome.status == QiSdkStatus.error) {
+          unawaited(api.abandonCardPayment(orderId, transactionId: session.transactionId).catchError(
+                (_) => OrderPaymentState(orderId: orderId, paymentStatus: 'PENDING'),
+              ));
+        }
         return CardPaymentOutcome(CardPaymentResult.failed, s.paymentFailedHint);
       }
       return CardPaymentOutcome(CardPaymentResult.pending, s.paymentPendingHint);
